@@ -850,3 +850,32 @@ Stage Summary:
 - **PWA** — manifest, ikone (SVG+PNG 192/512), service worker, offline cache, appleWebApp
 - **Navigacija** — 8 glavnih zavihkov (Domov/AR/Slike/Kalkulator/Meritve/Nagib/Zaloga/Več) + 6 v Več meniju
 - Pripravljeno za F7 (končna QA + push na GitHub)
+
+---
+Task ID: 11
+Agent: Main Orchestrator (Z.ai Code)
+Task: F7 — Končna QA + commit (push pending token)
+
+Work Log:
+- Celovita QA z agent-browser (viewport 390x844 mobilno + 1280x800 desktop):
+  - Domov: dashboard z 5 projekti, iskalnik, filtri, aktivni projekt (amber obroba)
+  - AR kamera: gumb "Odpri AR kamero"
+  - Slike: gumb "Slikaj", filtri Vse/Pred/Med/Po, števci
+  - Kalkulator: "Izračunaj razmike"
+  - Meritve: prikaz meritev
+  - Nagib: "Vklopi libelo" (digitalna libela)
+  - Zaloga: inventar z low-stock badge
+  - Več meni: 6 opcij (Izvoz PDF, Galerija realizacij, Katalog profilov, Skice, Dokumenti, Varnost)
+  - Izvoz PDF: Delovni list monterja + Ponudba za stranko
+- Sticky footer potrjen: nav.fixed.bottom-0 prisoten, bodyH=2239, vh=844 (pravilno pusha navzdol)
+- Responsivnost: desktop max-w-lg (512px centered), mobilno full-width
+- 0 napak v konzoli, 0 ESLint errors (6 neškodljivih warnings za unused eslint-disable)
+- Dev server stabilen (HTTP 200, vsi APIji vračajo prave podatke)
+- Commit uspešen: "feat: F5 slikanje + F6 PDF izvoz + PWA" (16 datotek: 8 modified, 8 new)
+- Push na GitHub: NASTAVLJEN REMOTE MANJKA — prejšnji token (ghp_ysN6...) je bil preklican iz varnostnih razlogov
+
+Stage Summary:
+- **Vsi 7 faz zaključene** (F0–F6 + F7 QA)
+- **Aplikacija popolnoma delujoča** na http://localhost:81 (gateway) / http://localhost:3000
+- **16 datotek commitano** lokalno
+- **Pending**: push na github.com/markec12345678/Roksal-Railing-Manager — potreben nov veljaven GitHub Personal Access Token (stari je bil preklican zaradi varnosti)
