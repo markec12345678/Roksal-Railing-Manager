@@ -1,8 +1,4 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// Roksal Field v2.4 - SQLite Production Schema
 
 generator client {
   provider = "prisma-client-js"
@@ -13,20 +9,323 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+// ============================================
+// 1. UPORABNIKI IN VLOGE
+// ============================================
+
+enum UserRole {
+  ADMIN
+  VODJA
+  MONTER
+  SKLADISCE
 }
 
-model Post {
+model Profile {
+  id         String    @id @default(cuid())
+  ime        String
+  email      String    @unique
+  vloga      UserRole  @default(MONTER)
+  telefon    String?
+  ekipaId    String?
+  lastActive DateTime  @default(now())
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  projects   Project[] @relation("InstallerProjects")
+  leads      Project[] @relation("ManagerProjects")
+  auditLogs  AuditLog[]
+}
+
+// ============================================
+// 2. STRANKE
+// ============================================
+
+model Customer {
+  id        String    @id @default(cuid())
+  ime       String
+  naslov    String
+  telefon   String?
+  email     String?
+  createdAt DateTime  @default(now())
+
+  projects  Project[]
+}
+
+// ============================================
+// 3. PROJEKTI - Centralno vozlišče
+// ============================================
+
+enum ProjectStatus {
+  NACRTOVANO
+  V_TEKU
+  ZAKLJUCENO
+  USTAVLJENO
+}
+
+model Project {
+  id            String        @id @default(cuid())
+  customerId    String
+  nazivProjekta String
+  status        ProjectStatus @default(NACRTOVANO)
+  monterId      String?
+  vodjaId       String?
+  ekipaId       String?
+  datumMontaze  DateTime?
+  opombe        String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  mobileProjectId   String?
+  originalImagePath String?
+  geminiEstimate    String?
+  latitude          Float?
+  longitude         Float?
+  projectData       String?
+
+  customer      Customer       @relation(fields: [customerId], references: [id])
+  monter        Profile?       @relation("InstallerProjects", fields: [monterId], references: [id])
+  vodja         Profile?       @relation("ManagerProjects", fields: [vodjaId], references: [id])
+  measurements  Measurement[]
+  documents     Document[]
+  materials     MaterialUsage[]
+  auditLogs     AuditLog[]
+  inventoryMoves InventoryMovement[]
+  arSnapshots   ArSnapshot[]
+  sketches      Sketch[]
+  slopes        Slope[]
+  galleryItems  GalleryItem[]
+}
+
+// ============================================
+// 4. MERITVE - AR/LiDAR podpora
+// ============================================
+
+model Measurement {
+  id           String   @id @default(cuid())
+  projectId    String
+  dolzinaMm    Int
+  visinaMm     Int
+  lidarScanUrl String?
+  arMetadata   String?
+  gpsLokacija  String?
+  createdAt    DateTime @default(now())
+  createdBy    String?
+
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+// ============================================
+// 5. ZALOGA IN INVENTAR
+// ============================================
+
+model Inventory {
+  id              String              @id @default(cuid())
+  sifraMateriala  String              @unique
+  naziv           String
+  tip             String
+  kolicinaZaloga  Float               @default(0)
+  enota           String
+  minimalnaZaloga Float               @default(5)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  usages          MaterialUsage[]
+  movements       InventoryMovement[]
+}
+
+// ============================================
+// 6. PORABA MATERIALA NA PROJEKTU
+// ============================================
+
+model MaterialUsage {
+  id                  String    @id @default(cuid())
+  projectId           String
+  inventoryId         String
+  porabljenaKolicina  Float
+  datumVpisa          DateTime  @default(now())
+
+  project   Project   @relation(fields: [projectId], references: [id])
+  inventory Inventory @relation(fields: [inventoryId], references: [id])
+}
+
+// ============================================
+// 7. PREMIKI ZALOGE
+// ============================================
+
+model InventoryMovement {
+  id          String    @id @default(cuid())
+  inventoryId String
+  projectId   String?
+  kolicina    Float
+  tipPremika  String
+  createdAt   DateTime  @default(now())
+  createdBy   String?
+
+  inventory Inventory @relation(fields: [inventoryId], references: [id])
+  project   Project?  @relation(fields: [projectId], references: [id])
+}
+
+// ============================================
+// 8. DOKUMENTI
+// ============================================
+
+enum DocumentType {
+  TEHNICNI_LIST
+  PRIMOPREDAJA
+  E_RACUN
+  ZAPISNIK_NAVORA
+}
+
+model Document {
+  id           String       @id @default(cuid())
+  projectId    String
+  pdfUrl       String?
+  signatureUrl String?
+  tipDokumenta DocumentType @default(TEHNICNI_LIST)
+  status       String       @default("GENERIRANO")
+  createdAt    DateTime     @default(now())
+
+  project      Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+// ============================================
+// 9. AUDIT LOG
+// ============================================
+
+model AuditLog {
   id        String   @id @default(cuid())
-  title     String
-  content   String?
-  published Boolean  @default(false)
-  authorId  String
+  userId    String
+  projectId String?
+  akcija    String
+  oldValue  String?
+  newValue  String?
+  ipAddress String?
+  userAgent String?
+  timestamp DateTime @default(now())
+
+  user    Profile  @relation(fields: [userId], references: [id])
+  project Project? @relation(fields: [projectId], references: [id])
+}
+
+// ============================================
+// 10. OBVESTILA
+// ============================================
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  naslov    String
+  sporocilo String?
+  isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+}
+
+// ============================================
+// 11. KATALOG PROFILOV OGRAJ (Roksal)
+// ============================================
+
+model Profil {
+  id          String   @id @default(cuid())
+  sifra       String   @unique
+  naziv       String
+  material    String   // alu / inox / wpc / steklo
+  kategorija  String   // npr. "WPC H-Line", "Inox Line", "Steklo"
+  visinaMm    Int      @default(1100)
+  sirinaMm    Int      @default(140)
+  cenaM       Float    // EUR na meter linearni
+  barvaRal    String?  // privzeta RAL koda
+  slikaUrl    String?
+  aktivna     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  arSnapshots  ArSnapshot[]
+  galleryItems GalleryItem[]
+}
+
+// ============================================
+// 12. AR POSNETKI (kamera + točke + vizualizacija)
+// ============================================
+
+model ArSnapshot {
+  id         String   @id @default(cuid())
+  projectId  String
+  profilId   String?
+  imageUrl   String   // base64 PNG (video frame + canvas overlay)
+  tocke      String   // JSON: [{x,y,label}]
+  meritve    String?  // JSON: [{a:{x,y}, b:{x,y}, dolzinaMm, oznaka}]
+  kalibracija String? // JSON: {pixelsPerCm}
+  opombe     String?
+  createdAt  DateTime @default(now())
+
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  profil     Profil?  @relation(fields: [profilId], references: [id])
+}
+
+// ============================================
+// 13. SKICE (ročno risanje na canvas)
+// ============================================
+
+model Sketch {
+  id         String   @id @default(cuid())
+  projectId  String
+  naziv      String
+  pngData    String   // base64 PNG
+  povzetek   String?  // besedilni opis skice
+  createdAt  DateTime @default(now())
+
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+// ============================================
+// 14. GALERIJA REALIZACIJ
+// ============================================
+
+model GalleryItem {
+  id         String   @id @default(cuid())
+  projectId  String?
+  profilId   String?
+  naslov     String
+  opis       String?
+  lokacija   String?
+  slikaPred  String?  // base64 ali URL
+  slikaPo    String?  // base64 ali URL
+  javno      Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  project    Project? @relation(fields: [projectId], references: [id])
+  profil     Profil?  @relation(fields: [profilId], references: [id])
+}
+
+// ============================================
+// 15. NAGIBI (inclinometer meritve)
+// ============================================
+
+model Slope {
+  id         String   @id @default(cuid())
+  projectId  String
+  kotStopinje Float   // nagib v stopinjah
+  smer       String?  // "X" (horizontal) / "Y" (front-back)
+  lokacija   String?  // opis npr. "talna plošča balkona"
+  veljaven   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+// ============================================
+// 16. SLIKE PROJEKTA (pred/med/po montaži)
+// ============================================
+
+model ProjectPhoto {
+  id          String   @id @default(cuid())
+  projectId   String
+  kategorija  String   // "PRED" | "MED" | "PO"
+  imageData   String   // base64 JPEG
+  opomba      String?
+  latitude    Float?
+  longitude   Float?
+  createdAt   DateTime @default(now())
+
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }
