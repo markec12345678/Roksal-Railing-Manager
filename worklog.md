@@ -1246,3 +1246,27 @@ Stage Summary:
 - **Združljivost**: ohranjena obstoječa props interface (`projectId: string | null`), CameraCapture, kategorije PRED/MED/PO, GPS, JPEG kompresija 1280px/0.75
 - **Lint**: 0 errors, 0 warnings (po --fix)
 - **Dev server**: HTTP 200 na `/`; photos tab rendera; API 500 je pre-existing (Prisma cache)
+
+---
+Task ID: I5
+Agent: Main Orchestrator (Z.ai Code)
+Task: QA + push izboljšav na GitHub
+
+Work Log:
+- Restart dev serverja (rešitev za PrismaClient cache — db.projectPhoto je bil undefined po db:push)
+- Celovita QA z agent-browser (viewport 390x844):
+  - Meritve: quick-add (Razdalja/Višina/Kot/Nagib), Umeritev reference, 3 segmenti (Severni/Vzhodni/Stopnišče), CSV/PDF izvoz
+  - Kalkulator: 5 načinov (Vetrna/Razmak palic/Kotni/Skupni material/Predpisi), SVG diagrami, PDF izvozi
+  - Galerija: masonry, lightbox, filtri (material/lokacija/leto), iskalnik, PDF katalog, statistika, featured
+  - Slike: annotation editor (8 orodij), batch upload, pred/po pari, masonry, filtri, enhanced preview
+- Lint: 0 errors (warnings v nepovezanih datotekah)
+- 0 runtime napak v konzoli
+- Commit: "feat: maksimalna izboljšava meritev/kalkulator/galerije/slik" (8 datotek, +7252/-665 vrstic)
+- Push na GitHub: 6d0b1df → d45975c (main)
+- Token odstranjen iz remote URL-ja
+
+Stage Summary:
+- **4 moduli maksimalno izboljšani** na podlagi raziskave spleta/forumov
+- **+7252 vrstic** nove funkcionalnosti
+- **Pushan na GitHub** (commit d45975c)
+- **VARNOSTNO OPOZORILO**: token ghp_ysN6... je v zgodovini chata (3×) — UPORABNIK MORA preklicati

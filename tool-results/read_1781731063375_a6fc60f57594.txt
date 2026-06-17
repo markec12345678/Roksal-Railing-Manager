@@ -1,0 +1,966 @@
+     1→'use client'
+     2→
+     3→import { useEffect, useState, useMemo } from 'react'
+     4→import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+     5→import { Button } from '@/components/ui/button'
+     6→import { Input } from '@/components/ui/input'
+     7→import { Label } from '@/components/ui/label'
+     8→import { toast } from 'sonner'
+     9→import { Badge } from '@/components/ui/badge'
+    10→import { Skeleton } from '@/components/ui/skeleton'
+    11→import {
+    12→  Select,
+    13→  SelectContent,
+    14→  SelectItem,
+    15→  SelectTrigger,
+    16→  SelectValue,
+    17→} from '@/components/ui/select'
+    18→import {
+    19→  Ruler,
+    20→  Plus,
+    21→  MapPin,
+    22→  ScanLine,
+    23→  Calendar,
+    24→  FolderOpen,
+    25→  TrendingUp,
+    26→  Scan,
+    27→  Trash2,
+    28→  ChevronDown,
+    29→  ChevronUp,
+    30→  Hammer,
+    31→  AlertCircle,
+    32→  Copy,
+    33→  Calculator,
+    34→  Download,
+    35→} from 'lucide-react'
+    36→
+    37→interface Measurement {
+    38→  id: string
+    39→  dolzinaMm: number
+    40→  visinaMm: number
+    41→  lidarScanUrl?: string | null
+    42→  gpsLokacija?: string | null
+    43→  createdAt: string
+    44→  projectId: string
+    45→  lokacija?: string | null
+    46→  steviloStebrov?: number | null
+    47→  tipPodlage?: string | null
+    48→  kot?: number | null
+    49→  opombe?: string | null
+    50→}
+    51→
+    52→interface Project {
+    53→  id: string
+    54→  nazivProjekta: string
+    55→}
+    56→
+    57→interface MeasurementGroup {
+    58→  label: string
+    59→  date: Date
+    60→  measurements: Measurement[]
+    61→}
+    62→
+    63→type GroundType = 'beton' | 'les' | 'plosca' | 'gramoz' | 'metal'
+    64→
+    65→const groundTypeLabels: Record<GroundType, string> = {
+    66→  beton: 'Beton',
+    67→  les: 'Lesena podlaga',
+    68→  plosca: 'Plošča (kompozit)',
+    69→  gramoz: 'Gramoz',
+    70→  metal: 'Kovinska podlaga',
+    71→}
+    72→
+    73→const groundTypeColors: Record<GroundType, string> = {
+    74→  beton: 'bg-gray-100 text-gray-700 border-gray-300',
+    75→  les: 'bg-amber-50 text-amber-700 border-amber-300',
+    76→  plosca: 'bg-green-50 text-green-700 border-green-300',
+    77→  gramoz: 'bg-orange-50 text-orange-700 border-orange-300',
+    78→  metal: 'bg-slate-100 text-slate-700 border-slate-300',
+    79→}
+    80→
+    81→interface MeasurementsTabProps {
+    82→  onNavigateToCalculator?: (dolzinaMm: number, visinaMm: number, locationName: string) => void
+    83→}
+    84→
+    85→export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps) {
+    86→  const [measurements, setMeasurements] = useState<Measurement[]>([])
+    87→  const [projects, setProjects] = useState<Project[]>([])
+    88→  const [loading, setLoading] = useState(true)
+    89→  const [selectedProject, setSelectedProject] = useState<string>('')
+    90→  const [formOpen, setFormOpen] = useState(false)
+    91→
+    92→  // Form fields
+    93→  const [formLength, setFormLength] = useState('')
+    94→  const [formHeight, setFormHeight] = useState('')
+    95→  const [formLocation, setFormLocation] = useState('')
+    96→  const [formPosts, setFormPosts] = useState('')
+    97→  const [formGround, setFormGround] = useState<GroundType>('beton')
+    98→  const [formAngle, setFormAngle] = useState('')
+    99→  const [formNotes, setFormNotes] = useState('')
+   100→  const [submitting, setSubmitting] = useState(false)
+   101→
+   102→  useEffect(() => {
+   103→    async function fetchData() {
+   104→      try {
+   105→        const projRes = await fetch('/api/projects')
+   106→        if (projRes.ok) {
+   107→          const projData = await projRes.json()
+   108→          setProjects(projData)
+   109→          if (projData.length > 0) {
+   110→            const firstProjectId = projData[0].id
+   111→            setSelectedProject(firstProjectId)
+   112→            const measRes = await fetch(`/api/measurements?projectId=${firstProjectId}`)
+   113→            if (measRes.ok) {
+   114→              const measData = await measRes.json()
+   115→              if (measData.length > 0) {
+   116→                setMeasurements(measData)
+   117→              } else {
+   118→                setMeasurements(demoMeasurements)
+   119→              }
+   120→            } else {
+   121→              setMeasurements(demoMeasurements)
+   122→            }
+   123→          } else {
+   124→            setMeasurements(demoMeasurements)
+   125→          }
+   126→        } else {
+   127→          setMeasurements(demoMeasurements)
+   128→          setProjects(demoProjects)
+   129→        }
+   130→      } catch {
+   131→        setMeasurements(demoMeasurements)
+   132→        setProjects(demoProjects)
+   133→      } finally {
+   134→        setLoading(false)
+   135→      }
+   136→    }
+   137→    fetchData()
+   138→  }, [])
+   139→
+   140→  // Re-fetch measurements when project changes
+   141→  useEffect(() => {
+   142→    if (!selectedProject || loading) return
+   143→    async function fetchMeasurements() {
+   144→      try {
+   145→        const measRes = await fetch(`/api/measurements?projectId=${selectedProject}`)
+   146→        if (measRes.ok) {
+   147→          const measData = await measRes.json()
+   148→          setMeasurements(measData.length > 0 ? measData : demoMeasurements.filter(m => m.projectId === selectedProject))
+   149→        }
+   150→      } catch {
+   151→        // keep existing
+   152→      }
+   153→    }
+   154→    fetchMeasurements()
+   155→  }, [selectedProject, loading])
+   156→
+   157→  function resetForm() {
+   158→    setFormLength('')
+   159→    setFormHeight('')
+   160→    setFormLocation('')
+   161→    setFormPosts('')
+   162→    setFormGround('beton')
+   163→    setFormAngle('')
+   164→    setFormNotes('')
+   165→  }
+   166→
+   167→  async function handleSubmitMeasurement() {
+   168→    if (!selectedProject || !formLength || !formHeight) {
+   169→      toast.error('Vnesite dolžino in višino!')
+   170→      return
+   171→    }
+   172→    if (parseFloat(formLength) < 100 || parseFloat(formHeight) < 100) {
+   173→      toast.error('Meritve morajo biti vsaj 100mm!')
+   174→      return
+   175→    }
+   176→    setSubmitting(true)
+   177→    try {
+   178→      const res = await fetch('/api/measurements', {
+   179→        method: 'POST',
+   180→        headers: { 'Content-Type': 'application/json' },
+   181→        body: JSON.stringify({
+   182→          projectId: selectedProject,
+   183→          dolzinaMm: parseInt(formLength),
+   184→          visinaMm: parseInt(formHeight),
+   185→          gpsLokacija: { lat: 46.2397, lng: 14.3556 },
+   186→        }),
+   187→      })
+   188→      if (res.ok) {
+   189→        const data = await res.json()
+   190→        const newMeasurement: Measurement = {
+   191→          ...data,
+   192→          lokacija: formLocation || null,
+   193→          steviloStebrov: formPosts ? parseInt(formPosts) : null,
+   194→          tipPodlage: formGround,
+   195→          kot: formAngle ? parseFloat(formAngle) : null,
+   196→          opombe: formNotes || null,
+   197→        }
+   198→        setMeasurements((prev) => [newMeasurement, ...prev])
+   199→        resetForm()
+   200→        setFormOpen(false)
+   201→        toast.success('Meritev dodana!')
+   202→      } else {
+   203→        // Server returned error — save locally as fallback
+   204→        setMeasurements((prev) => [
+   205→          {
+   206→            id: `local_${Date.now()}`,
+   207→            dolzinaMm: parseInt(formLength),
+   208→            visinaMm: parseInt(formHeight),
+   209→            lidarScanUrl: null,
+   210→            gpsLokacija: JSON.stringify({ lat: 46.2397, lng: 14.3556 }),
+   211→            createdAt: new Date().toISOString(),
+   212→            projectId: selectedProject,
+   213→            lokacija: formLocation || null,
+   214→            steviloStebrov: formPosts ? parseInt(formPosts) : null,
+   215→            tipPodlage: formGround,
+   216→            kot: formAngle ? parseFloat(formAngle) : null,
+   217→            opombe: formNotes || null,
+   218→          },
+   219→          ...prev,
+   220→        ])
+   221→        resetForm()
+   222→        setFormOpen(false)
+   223→        toast.error('Napaka strežnika — meritev shranjena lokalno')
+   224→      }
+   225→    } catch {
+   226→      setMeasurements((prev) => [
+   227→        {
+   228→          id: `local_${Date.now()}`,
+   229→          dolzinaMm: parseInt(formLength),
+   230→          visinaMm: parseInt(formHeight),
+   231→          lidarScanUrl: null,
+   232→          gpsLokacija: JSON.stringify({ lat: 46.2397, lng: 14.3556 }),
+   233→          createdAt: new Date().toISOString(),
+   234→          projectId: selectedProject,
+   235→          lokacija: formLocation || null,
+   236→          steviloStebrov: formPosts ? parseInt(formPosts) : null,
+   237→          tipPodlage: formGround,
+   238→          kot: formAngle ? parseFloat(formAngle) : null,
+   239→          opombe: formNotes || null,
+   240→        },
+   241→        ...prev,
+   242→      ])
+   243→      resetForm()
+   244→      setFormOpen(false)
+   245→      toast.success('Meritev dodana (lokalno)!')
+   246→    } finally {
+   247→      setSubmitting(false)
+   248→    }
+   249→  }
+   250→
+   251→  function handleDeleteMeasurement(id: string) {
+   252→    setMeasurements((prev) => prev.filter((m) => m.id !== id))
+   253→    toast.success('Meritev izbrisana')
+   254→  }
+   255→
+   256→  function handleDuplicateMeasurement(m: Measurement) {
+   257→    const duplicate: Measurement = {
+   258→      ...m,
+   259→      id: `local_${Date.now()}`,
+   260→      createdAt: new Date().toISOString(),
+   261→      lokacija: m.lokacija ? `${m.lokacija} (kopija)` : 'Kopija',
+   262→    }
+   263→    setMeasurements((prev) => [duplicate, ...prev])
+   264→    toast.success('Meritev podvojena!')
+   265→  }
+   266→
+   267→  // Quick spacing calc for a measurement
+   268→  function getQuickSpacing(dolzinaMm: number, visinaMm: number, slatWidth: number = 80, maxGap: number = 100) {
+   269→    const n = Math.ceil((dolzinaMm - maxGap) / (maxGap + slatWidth))
+   270→    const actualGap = (dolzinaMm - n * slatWidth) / (n + 1)
+   271→    return {
+   272→      slatCount: n,
+   273→      gap: Math.round(actualGap * 10) / 10,
+   274→      compliant: actualGap <= 100,
+   275→      postSpacing: dolzinaMm / Math.max(1, n > 5 ? Math.ceil(n / 5) : 2),
+   276→    }
+   277→  }
+   278→
+   279→  const lidarScans = measurements.filter((m) => m.lidarScanUrl).length
+   280→  const totalLength = measurements.reduce((sum, m) => sum + m.dolzinaMm, 0)
+   281→  const avgLength = measurements.length > 0
+   282→    ? measurements.reduce((s, m) => s + m.dolzinaMm, 0) / measurements.length
+   283→    : 0
+   284→  const avgHeight = measurements.length > 0
+   285→    ? measurements.reduce((s, m) => s + m.visinaMm, 0) / measurements.length
+   286→    : 0
+   287→  const totalPosts = measurements.reduce((sum, m) => sum + (m.steviloStebrov || 0), 0)
+   288→
+   289→  // Date grouping
+   290→  const groupedMeasurements = useMemo((): MeasurementGroup[] => {
+   291→    const now = new Date()
+   292→    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+   293→    const yesterday = new Date(today.getTime() - 86400000)
+   294→
+   295→    const groups: MeasurementGroup[] = []
+   296→    const grouped = new Map<string, Measurement[]>()
+   297→
+   298→    const sorted = [...measurements].sort(
+   299→      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+   300→    )
+   301→
+   302→    for (const m of sorted) {
+   303→      const mDate = new Date(m.createdAt)
+   304→      const mDay = new Date(mDate.getFullYear(), mDate.getMonth(), mDate.getDate())
+   305→
+   306→      let label: string
+   307→      if (mDay.getTime() === today.getTime()) {
+   308→        label = 'Danes'
+   309→      } else if (mDay.getTime() === yesterday.getTime()) {
+   310→        label = 'Včeraj'
+   311→      } else {
+   312→        label = mDate.toLocaleDateString('sl-SI', { day: 'numeric', month: 'long' })
+   313→      }
+   314→
+   315→      if (!grouped.has(label)) {
+   316→        grouped.set(label, [])
+   317→      }
+   318→      grouped.get(label)!.push(m)
+   319→    }
+   320→
+   321→    for (const [label, meas] of grouped) {
+   322→      groups.push({ label, date: new Date(meas[0].createdAt), measurements: meas })
+   323→    }
+   324→
+   325→    return groups
+   326→  }, [measurements])
+   327→
+   328→  function formatDimension(mm: number): string {
+   329→    if (mm >= 1000) return `${(mm / 1000).toFixed(2)}m`
+   330→    return `${mm}mm`
+   331→  }
+   332→
+   333→  function renderRailingDiagram(dolzina: number, visina: number, _slatCount?: number) {
+   334→    const maxDim = Math.max(dolzina, visina)
+   335→    const barWidthPct = Math.min((dolzina / maxDim) * 100, 100)
+   336→    const heightPct = Math.min((visina / maxDim) * 40, 40)
+   337→
+   338→    // Always calculate spacing for visual diagram
+   339→    const calc = getQuickSpacing(dolzina, visina)
+   340→    const numSlats = Math.min(calc.slatCount, 15)
+   341→    const gapWidth = calc && numSlats > 0 ? ((dolzina - numSlats * 80) / (numSlats + 1)) : 0
+   342→    const gapPct = gapWidth / dolzina * 100
+   343→
+   344→    return (
+   345→      <div className="w-full">
+   346→        {/* Visual diagram */}
+   347→        <div className="relative rounded-lg border border-roksal-navy/20 bg-gradient-to-b from-roksal-navy/3 to-roksal-navy/8 p-3">
+   348→          {/* Dimension labels */}
+   349→          <div className="flex items-center justify-between mb-1">
+   350→            <span className="text-[9px] font-mono text-muted-foreground">0</span>
+   351→            <span className="text-[9px] font-mono text-muted-foreground">{formatDimension(dolzina)}</span>
+   352→          </div>
+   353→
+   354→          {/* Railing side view */}
+   355→          <div className="relative flex items-end gap-0" style={{ height: `${Math.max(heightPct, 20)}px` }}>
+   356→            {/* Left post */}
+   357→            <div className="w-[4px] h-full bg-roksal-navy rounded-full" />
+   358→            {/* Slats section */}
+   359→            <div className="flex-1 flex items-end h-full gap-0">
+   360→              {numSlats > 0 ? (
+   361→                <>
+   362→                  {/* Gap + Slats + Gaps */}
+   363→                  <div className="flex-1 h-full flex items-end gap-0">
+   364→                    {/* Left edge gap */}
+   365→                    <div className="h-full bg-transparent" style={{ width: `${gapPct}%` }} />
+   366→                    {/* Slats and gaps */}
+   367→                    {Array.from({ length: numSlats }).map((_, i) => (
+   368→                      <div key={i} className="flex h-full">
+   369→                        <div className="h-[85%] bg-roksal-navy/70 rounded-[1px]" style={{ width: `${(80 / dolzina) * 100}%`, minWidth: '2px' }} />
+   370→                        {i < numSlats - 1 && (
+   371→                          <div className="h-full bg-roksal-amber/30" style={{ width: `${gapPct}%`, minWidth: '1px' }} />
+   372→                        )}
+   373→                      </div>
+   374→                    ))}
+   375→                    {/* Right edge gap */}
+   376→                    <div className="h-full bg-transparent" style={{ width: `${gapPct}%` }} />
+   377→                  </div>
+   378→                </>
+   379→              ) : (
+   380→                <div className="flex-1 h-full border-t-2 border-dashed border-roksal-navy/30" />
+   381→              )}
+   382→            </div>
+   383→            {/* Right post */}
+   384→            <div className="w-[4px] h-full bg-roksal-navy rounded-full" />
+   385→          </div>
+   386→
+   387→          {/* Bottom rail */}
+   388→          <div className="mt-0.5 flex">
+   389→            <div className="w-[4px] bg-roksal-navy rounded-full" />
+   390→            <div className="flex-1 h-[3px] bg-roksal-navy/40 rounded" />
+   391→            <div className="w-[4px] bg-roksal-navy rounded-full" />
+   392→          </div>
+   393→
+   394→          {/* Height dimension */}
+   395→          <div className="absolute -right-1 top-2 flex items-center gap-0.5">
+   396→            <div className="w-[1px] h-4 border-l border-dashed border-muted-foreground/40" />
+   397→            <span className="text-[8px] font-mono text-muted-foreground">{formatDimension(visina)}</span>
+   398→          </div>
+   399→        </div>
+   400→
+   401→        {/* Quick spacing result */}
+   402→        {numSlats > 0 && (
+   403→          <div className={`mt-1.5 flex items-center justify-between rounded-lg px-2.5 py-1.5 text-[10px] border ${
+   404→            calc.compliant
+   405→              ? 'bg-roksal-green/8 border-roksal-green/20 text-roksal-green'
+   406→              : 'bg-roksal-red/8 border-roksal-red/20 text-roksal-red'
+   407→          }`}>
+   408→            <span className="font-medium">
+   409→              {calc.slatCount} letvev × 80mm = razmik {calc.gap}mm
+   410→            </span>
+   411→            <span className="font-bold">
+   412→              {calc.compliant ? '✓ SKLADNO' : '✗ NESKLADNO'}
+   413→            </span>
+   414→          </div>
+   415→        )}
+   416→      </div>
+   417→    )
+   418→  }
+   419→
+   420→  function handleExportCSV() {
+   421→    if (measurements.length === 0) {
+   422→      toast.error('Ni meritev za izvoz')
+   423→      return
+   424→    }
+   425→    const header = 'Lokacija,Dolzina(mm),Visina(mm),Stevilo stebrov,Tip podlage,Kot,Opombe,Datum'
+   426→    const rows = measurements.map((m) => {
+   427→      const lokacija = m.lokacija || ''
+   428→      const dolzina = String(m.dolzinaMm)
+   429→      const visina = String(m.visinaMm)
+   430→      const stebri = m.steviloStebrov ? String(m.steviloStebrov) : ''
+   431→      const podlaga = m.tipPodlage ? (groundTypeLabels[m.tipPodlage as GroundType] || m.tipPodlage) : ''
+   432→      const kot = m.kot ? String(m.kot) : ''
+   433→      const opombe = (m.opombe || '').replace(/"/g, '""')
+   434→      const datum = new Date(m.createdAt).toLocaleDateString('sl-SI')
+   435→      return `${lokacija},${dolzina},${visina},${stebri},${podlaga},${kot},"${opombe}",${datum}`
+   436→    })
+   437→    const csvContent = '\uFEFF' + header + '\n' + rows.join('\n')
+   438→    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+   439→    const url = URL.createObjectURL(blob)
+   440→    const link = document.createElement('a')
+   441→    link.href = url
+   442→    link.download = `meritve_${new Date().toISOString().slice(0, 10)}.csv`
+   443→    document.body.appendChild(link)
+   444→    link.click()
+   445→    document.body.removeChild(link)
+   446→    URL.revokeObjectURL(url)
+   447→    toast.success('CSV izvožen!')
+   448→  }
+   449→
+   450→  function parseGPS(gpsStr: string | null): { lat: number; lng: number } | null {
+   451→    if (!gpsStr) return null
+   452→    try {
+   453→      return JSON.parse(gpsStr)
+   454→    } catch {
+   455→      return null
+   456→    }
+   457→  }
+   458→
+   459→  return (
+   460→    <div className="space-y-4 px-4 pb-4 pt-2">
+   461→      <div>
+   462→        <h2 className="text-xl font-bold text-roksal-navy">Meritve</h2>
+   463→        <p className="text-sm text-muted-foreground">
+   464→          Meritve ograj, dimenzije in razmiki
+   465→        </p>
+   466→      </div>
+   467→
+   468→      {/* Project Selector */}
+   469→      <Card className="card-hover transition-all duration-200 animate-fade-in-up" style={{ animationDelay: '0ms' }}>
+   470→        <CardContent className="p-4">
+   471→          <div className="flex items-center gap-3">
+   472→            <FolderOpen className="h-4 w-4 text-roksal-navy" />
+   473→            <div className="flex-1">
+   474→              <Select value={selectedProject} onValueChange={setSelectedProject}>
+   475→                <SelectTrigger className="w-full">
+   476→                  <SelectValue placeholder="Izberi projekt" />
+   477→                </SelectTrigger>
+   478→                <SelectContent>
+   479→                  {projects.map((p) => (
+   480→                    <SelectItem key={p.id} value={p.id}>
+   481→                      {p.nazivProjekta}
+   482→                    </SelectItem>
+   483→                  ))}
+   484→                </SelectContent>
+   485→              </Select>
+   486→            </div>
+   487→          </div>
+   488→        </CardContent>
+   489→      </Card>
+   490→
+   491→      {/* Stats Header */}
+   492→      <div className="grid grid-cols-4 gap-2">
+   493→        <Card className="px-2 py-2.5 card-hover animate-fade-in-up" style={{ animationDelay: '0ms' }}>
+   494→          <p className="text-[9px] text-muted-foreground uppercase tracking-wide">
+   495→            Meritve
+   496→          </p>
+   497→          <p className="text-lg font-bold text-roksal-navy">{measurements.length}</p>
+   498→        </Card>
+   499→        <Card className="px-2 py-2.5 card-hover transition-all duration-200 animate-fade-in-up" style={{ animationDelay: '30ms' }}>
+   500→          <p className="text-[9px] text-muted-foreground uppercase tracking-wide">
+   501→            Stebri
+   502→          </p>
+   503→          <p className="text-lg font-bold text-roksal-navy">{totalPosts || '—'}</p>
+   504→        </Card>
+   505→        <Card className="px-2 py-2.5 card-hover transition-all duration-200 animate-fade-in-up" style={{ animationDelay: '60ms' }}>
+   506→          <p className="text-[9px] text-muted-foreground uppercase tracking-wide">
+   507→            LiDAR
+   508→          </p>
+   509→          <p className="text-lg font-bold text-roksal-navy">{lidarScans}</p>
+   510→        </Card>
+   511→        <Card className="px-2 py-2.5 card-hover transition-all duration-200 animate-fade-in-up" style={{ animationDelay: '90ms' }}>
+   512→          <p className="text-[9px] text-muted-foreground uppercase tracking-wide">
+   513→            Skupaj
+   514→          </p>
+   515→          <p className="text-lg font-bold text-roksal-navy">
+   516→            {(totalLength / 1000).toFixed(1)}m
+   517→          </p>
+   518→        </Card>
+   519→      </div>
+   520→
+   521→      {/* Average Dimensions Card */}
+   522→      {measurements.length > 0 && (
+   523→        <Card className="card-hover transition-all duration-200 animate-fade-in-up" style={{ animationDelay: '120ms' }}>
+   524→          <CardHeader className="pb-2 pt-4 px-4">
+   525→            <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+   526→              <TrendingUp className="h-4 w-4" />
+   527→              Povprečne dimenzije
+   528→            </CardTitle>
+   529→          </CardHeader>
+   530→          <CardContent className="px-4 pb-4">
+   531→            <div className="grid grid-cols-2 gap-3">
+   532→              <div className="flex items-center gap-3 rounded-lg bg-secondary/50 p-3">
+   533→                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-roksal-navy/10">
+   534→                  <Ruler className="h-4 w-4 text-roksal-navy" />
+   535→                </div>
+   536→                <div>
+   537→                  <p className="text-xs font-medium text-roksal-navy">
+   538→                    {formatDimension(Math.round(avgLength))}
+   539→                  </p>
+   540→                  <p className="text-[10px] text-muted-foreground">Povpr. dolžina</p>
+   541→                </div>
+   542→              </div>
+   543→              <div className="flex items-center gap-3 rounded-lg bg-secondary/50 p-3">
+   544→                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-roksal-navy/10">
+   545→                  <Ruler className="h-4 w-4 text-roksal-amber rotate-90" />
+   546→                </div>
+   547→                <div>
+   548→                  <p className="text-xs font-medium text-roksal-navy">
+   549→                    {formatDimension(Math.round(avgHeight))}
+   550→                  </p>
+   551→                  <p className="text-[10px] text-muted-foreground">Povpr. višina</p>
+   552→                </div>
+   553→              </div>
+   554→            </div>
+   555→          </CardContent>
+   556→        </Card>
+   557→      )}
+   558→
+   559→      {/* Add Measurement Form - Collapsible */}
+   560→      <Card className="card-hover transition-all duration-200 overflow-hidden">
+   561→        <button
+   562→          type="button"
+   563→          onClick={() => setFormOpen(!formOpen)}
+   564→          className="flex w-full items-center justify-between p-4 text-left hover:bg-secondary/30 transition-colors"
+   565→        >
+   566→          <div className="flex items-center gap-2">
+   567→            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-roksal-navy text-white">
+   568→              <Plus className="h-4 w-4" />
+   569→            </div>
+   570→            <div>
+   571→              <span className="text-sm font-medium text-roksal-navy">Nova meritev</span>
+   572→              <p className="text-[10px] text-muted-foreground">Dolžina, višina, lokacija, podlaga...</p>
+   573→            </div>
+   574→          </div>
+   575→          {formOpen ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+   576→        </button>
+   577→
+   578→        {formOpen && (
+   579→          <div className="border-t border-border/50 px-4 pb-4 pt-3 space-y-3 slide-in-right">
+   580→            {/* Location */}
+   581→            <div className="space-y-1.5">
+   582→              <Label className="text-xs font-medium">
+   583→                <MapPin className="inline h-3 w-3 mr-1" />
+   584→                Lokacija / Opis
+   585→              </Label>
+   586→              <Input
+   587→                value={formLocation}
+   588→                onChange={(e) => setFormLocation(e.target.value)}
+   589→                placeholder="npr. Balkon leva stran, Terasa spredaj..."
+   590→                className="h-10"
+   591→              />
+   592→            </div>
+   593→
+   594→            {/* Length + Height */}
+   595→            <div className="grid grid-cols-2 gap-3">
+   596→              <div className="space-y-1.5">
+   597→                <Label className="text-xs font-medium">
+   598→                  <Ruler className="inline h-3 w-3 mr-1" />
+   599→                  Dolžina (mm)
+   600→                </Label>
+   601→                <Input
+   602→                  type="number"
+   603→                  value={formLength}
+   604→                  onChange={(e) => setFormLength(e.target.value)}
+   605→                  placeholder="3000"
+   606→                  className="h-10 font-mono"
+   607→                />
+   608→              </div>
+   609→              <div className="space-y-1.5">
+   610→                <Label className="text-xs font-medium">
+   611→                  <Ruler className="inline h-3 w-3 mr-1 rotate-90" />
+   612→                  Višina (mm)
+   613→                </Label>
+   614→                <Input
+   615→                  type="number"
+   616→                  value={formHeight}
+   617→                  onChange={(e) => setFormHeight(e.target.value)}
+   618→                  placeholder="900"
+   619→                  className="h-10 font-mono"
+   620→                />
+   621→              </div>
+   622→            </div>
+   623→
+   624→            {/* Posts + Ground Type */}
+   625→            <div className="grid grid-cols-2 gap-3">
+   626→              <div className="space-y-1.5">
+   627→                <Label className="text-xs font-medium">
+   628→                  <Hammer className="inline h-3 w-3 mr-1" />
+   629→                  Število stebrov
+   630→                </Label>
+   631→                <Input
+   632→                  type="number"
+   633→                  value={formPosts}
+   634→                  onChange={(e) => setFormPosts(e.target.value)}
+   635→                  placeholder="3"
+   636→                  className="h-10 font-mono"
+   637→                />
+   638→              </div>
+   639→              <div className="space-y-1.5">
+   640→                <Label className="text-xs font-medium">Tip podlage</Label>
+   641→                <Select value={formGround} onValueChange={(v) => setFormGround(v as GroundType)}>
+   642→                  <SelectTrigger className="h-10">
+   643→                    <SelectValue />
+   644→                  </SelectTrigger>
+   645→                  <SelectContent>
+   646→                    {Object.entries(groundTypeLabels).map(([key, label]) => (
+   647→                      <SelectItem key={key} value={key}>
+   648→                        {label}
+   649→                      </SelectItem>
+   650→                    ))}
+   651→                  </SelectContent>
+   652→                </Select>
+   653→              </div>
+   654→            </div>
+   655→
+   656→            {/* Angle */}
+   657→            <div className="grid grid-cols-2 gap-3">
+   658→              <div className="space-y-1.5">
+   659→                <Label className="text-xs font-medium">Kot (°)</Label>
+   660→                <Input
+   661→                  type="number"
+   662→                  value={formAngle}
+   663→                  onChange={(e) => setFormAngle(e.target.value)}
+   664→                  placeholder="90"
+   665→                  className="h-10 font-mono"
+   666→                />
+   667→                <p className="text-[9px] text-muted-foreground">Pustite prazno za ravne odseke</p>
+   668→              </div>
+   669→              <div className="flex items-end">
+   670→                <div className="w-full rounded-lg border border-border/50 bg-secondary/30 p-2.5 text-center">
+   671→                  {formLength && formHeight ? (() => {
+   672→                    const calc = getQuickSpacing(parseInt(formLength), parseInt(formHeight))
+   673→                    return (
+   674→                      <div>
+   675→                        <p className={`text-lg font-bold ${calc.compliant ? 'text-roksal-green' : 'text-roksal-red'}`}>
+   676→                          {calc.slatCount} letvev
+   677→                        </p>
+   678→                        <p className="text-[9px] text-muted-foreground">
+   679→                          razmik {calc.gap}mm
+   680→                        </p>
+   681→                      </div>
+   682→                    )
+   683→                  })() : (
+   684→                    <p className="text-[10px] text-muted-foreground">
+   685→                      Vnesite meritve za<br />hitri izračun razmikov
+   686→                    </p>
+   687→                  )}
+   688→                </div>
+   689→              </div>
+   690→            </div>
+   691→
+   692→            {/* Notes */}
+   693→            <div className="space-y-1.5">
+   694→              <Label className="text-xs font-medium">Opombe</Label>
+   695→              <Input
+   696→                value={formNotes}
+   697→                onChange={(e) => setFormNotes(e.target.value)}
+   698→                placeholder="Posebnosti, opazke..."
+   699→                className="h-10"
+   700→              />
+   701→            </div>
+   702→
+   703→            {/* Scan + Submit */}
+   704→            <div className="flex items-center gap-2 pt-1">
+   705→              <Button
+   706→                variant="outline"
+   707→                className="h-9 px-3 text-[11px] gap-1.5 shrink-0 transition-colors"
+   708→                onClick={() => toast.info('LiDAR skeniranje bo kmalu na voljo')}
+   709→              >
+   710→                <Scan className="h-3.5 w-3.5" />
+   711→                Scaniraj
+   712→              </Button>
+   713→              <Button
+   714→                onClick={handleSubmitMeasurement}
+   715→                className="flex-1 h-9 bg-roksal-navy hover:bg-roksal-navy/90 text-white transition-transform duration-200 active:scale-[0.98]"
+   716→                disabled={submitting || !formLength || !formHeight}
+   717→              >
+   718→                {submitting ? (
+   719→                  <span className="flex items-center gap-1.5">
+   720→                    <span className="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+   721→                    Shranjujem...
+   722→                  </span>
+   723→                ) : (
+   724→                  <>
+   725→                    <Plus className="mr-1.5 h-4 w-4" />
+   726→                    Shrani meritev
+   727→                  </>
+   728→                )}
+   729→              </Button>
+   730→            </div>
+   731→          </div>
+   732→        )}
+   733→      </Card>
+   734→
+   735→      {/* Measurements List */}
+   736→      <Card className="card-hover animate-fade-in-up" style={{ animationDelay: '240ms' }}>
+   737→        <CardHeader className="pb-2 pt-4 px-4">
+   738→          <div className="flex items-center justify-between">
+   739→            <CardTitle className="text-sm font-semibold text-roksal-navy">
+   740→              Seznam meritev
+   741→            </CardTitle>
+   742→            <div className="flex items-center gap-1.5">
+   743→              <button
+   744→                type="button"
+   745→                onClick={handleExportCSV}
+   746→                className="flex items-center gap-1 rounded-lg border border-roksal-navy/20 bg-roksal-navy/5 px-2 py-1 text-[10px] font-medium text-roksal-navy hover:bg-roksal-navy/10 active:scale-[0.96] transition-all duration-150"
+   747→                disabled={loading || measurements.length === 0}
+   748→              >
+   749→                <Download className="h-3 w-3" />
+   750→                Izvozi CSV
+   751→              </button>
+   752→              <Badge variant="secondary">{measurements.length}</Badge>
+   753→            </div>
+   754→          </div>
+   755→        </CardHeader>
+   756→        <CardContent className="px-4 pb-4">
+   757→          {loading ? (
+   758→            <div className="space-y-3">
+   759→              {[1, 2, 3].map((i) => (
+   760→                <Skeleton key={i} className="h-32 w-full" />
+   761→              ))}
+   762→            </div>
+   763→          ) : measurements.length > 0 ? (
+   764→            <div className="space-y-4 max-h-[600px] overflow-y-auto scrollbar-thin">
+   765→              {groupedMeasurements.map((group) => (
+   766→                <div key={group.label}>
+   767→                  {/* Date header */}
+   768→                  <div className="flex items-center gap-2 mb-2 mt-1 first:mt-0">
+   769→                    <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+   770→                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+   771→                      {group.label}
+   772→                    </span>
+   773→                    <div className="flex-1 h-px bg-border/50" />
+   774→                    <Badge variant="secondary" className="text-[10px] h-5 px-1.5">
+   775→                      {group.measurements.length}
+   776→                    </Badge>
+   777→                  </div>
+   778→                  {/* Measurements in group */}
+   779→                  <div className="space-y-3">
+   780→                    {group.measurements.map((m) => {
+   781→                      const gps = parseGPS(m.gpsLokacija ?? null)
+   782→                      return (
+   783→                        <div
+   784→                          key={m.id}
+   785→                          className="rounded-xl border border-border/50 overflow-hidden transition-colors hover:border-roksal-navy/20 slide-in-right"
+   786→                        >
+   787→                          {/* Measurement header */}
+   788→                          <div className="flex items-center justify-between p-3 pb-2">
+   789→                            <div className="flex items-center gap-2 min-w-0 flex-1">
+   790→                              {/* Location name or default */}
+   791→                              <div className="min-w-0 flex-1">
+   792→                                <div className="flex items-center gap-2">
+   793→                                  <p className="text-sm font-semibold text-roksal-navy truncate">
+   794→                                    {m.lokacija || `Meritev #${m.id.slice(-4)}`}
+   795→                                  </p>
+   796→                                  {m.kot && m.kot !== 90 && (
+   797→                                    <Badge variant="outline" className="text-[9px] h-4 px-1 shrink-0">
+   798→                                      {m.kot}°
+   799→                                    </Badge>
+   800→                                  )}
+   801→                                </div>
+   802→                                <div className="flex items-center gap-2 mt-0.5">
+   803→                                  <span className="text-xs text-muted-foreground font-mono">
+   804→                                    ↔ {formatDimension(m.dolzinaMm)} × ↕ {formatDimension(m.visinaMm)}
+   805→                                  </span>
+   806→                                  {m.steviloStebrov && (
+   807→                                    <Badge variant="secondary" className="text-[9px] h-4 px-1.5 shrink-0">
+   808→                                      {m.steviloStebrov} stebrov
+   809→                                    </Badge>
+   810→                                  )}
+   811→                                  {m.tipPodlage && (
+   812→                                    <span className={`inline-flex items-center rounded px-1 py-0 text-[8px] font-medium border ${groundTypeColors[m.tipPodlage as GroundType] || 'bg-gray-50 text-gray-600 border-gray-200'}`}>
+   813→                                      {groundTypeLabels[m.tipPodlage as GroundType] || m.tipPodlage}
+   814→                                    </span>
+   815→                                  )}
+   816→                                </div>
+   817→                              </div>
+   818→                            </div>
+   819→                            {/* Action buttons */}
+   820→                            <div className="flex items-center gap-0.5 shrink-0 ml-2">
+   821→                              <button
+   822→                                type="button"
+   823→                                onClick={() => handleDuplicateMeasurement(m)}
+   824→                                className="p-1.5 rounded-lg hover:bg-secondary/60 transition-colors"
+   825→                                title="Podvoji meritev"
+   826→                              >
+   827→                                <Copy className="h-3.5 w-3.5 text-muted-foreground" />
+   828→                              </button>
+   829→                              <button
+   830→                                type="button"
+   831→                                onClick={() => handleDeleteMeasurement(m.id)}
+   832→                                className="p-1.5 rounded-lg hover:bg-roksal-red/10 transition-colors"
+   833→                                title="Izbriši meritev"
+   834→                              >
+   835→                                <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-roksal-red" />
+   836→                              </button>
+   837→                            </div>
+   838→                          </div>
+   839→
+   840→                          {/* Railing diagram */}
+   841→                          <div className="px-3 pb-2">
+   842→                            {renderRailingDiagram(m.dolzinaMm, m.visinaMm)}
+   843→                          </div>
+   844→
+   845→                          {/* Footer info + Calculator button */}
+   846→                          <div className="flex items-center justify-between border-t border-border/30 px-3 py-2 bg-secondary/10">
+   847→                            <div className="flex items-center gap-3 text-[11px] text-muted-foreground min-w-0">
+   848→                              <span className="flex items-center gap-1 shrink-0">
+   849→                                <Calendar className="h-3 w-3" />
+   850→                                {new Date(m.createdAt).toLocaleDateString('sl-SI')}
+   851→                              </span>
+   852→                              {gps && (
+   853→                                <span className="flex items-center gap-1 shrink-0">
+   854→                                  <MapPin className="h-3 w-3" />
+   855→                                  GPS
+   856→                                </span>
+   857→                              )}
+   858→                            </div>
+   859→                            <div className="flex items-center gap-1.5 shrink-0">
+   860→                              {m.opombe && (
+   861→                                <div className="flex items-center gap-1 text-[11px] text-muted-foreground max-w-[30%] truncate">
+   862→                                  <AlertCircle className="h-3 w-3 shrink-0" />
+   863→                                  <span className="truncate hidden sm:inline">{m.opombe}</span>
+   864→                                </div>
+   865→                              )}
+   866→                              {onNavigateToCalculator && (
+   867→                                <button
+   868→                                  type="button"
+   869→                                  onClick={() => onNavigateToCalculator(m.dolzinaMm, m.visinaMm, m.lokacija || `Meritev #${m.id.slice(-4)}`)}
+   870→                                  className="flex items-center gap-1 rounded-lg bg-roksal-navy text-white px-2.5 py-1 text-[11px] font-medium hover:bg-roksal-navy/90 active:scale-[0.96] transition-all duration-150 press-scale"
+   871→                                  title="Izračunaj razmike v kalkulatorju"
+   872→                                >
+   873→                                  <Calculator className="h-3.5 w-3.5" />
+   874→                                  <span>Razmiki</span>
+   875→                                </button>
+   876→                              )}
+   877→                            </div>
+   878→                          </div>
+   879→                        </div>
+   880→                      )
+   881→                    })}
+   882→                  </div>
+   883→                </div>
+   884→              ))}
+   885→            </div>
+   886→          ) : (
+   887→            <div className="py-8 text-center">
+   888→              <Ruler className="mx-auto h-8 w-8 text-muted-foreground/30" />
+   889→              <p className="mt-2 text-sm text-muted-foreground">
+   890→                Še ni meritev
+   891→              </p>
+   892→              <p className="text-[11px] text-muted-foreground/60 mt-1">
+   893→                Dodajte novo meritev za ogrodje
+   894→              </p>
+   895→            </div>
+   896→          )}
+   897→        </CardContent>
+   898→      </Card>
+   899→    </div>
+   900→  )
+   901→}
+   902→
+   903→const demoMeasurements: Measurement[] = [
+   904→  {
+   905→    id: 'm1',
+   906→    dolzinaMm: 4200,
+   907→    visinaMm: 900,
+   908→    lidarScanUrl: '/lidar/scan001.las',
+   909→    gpsLokacija: JSON.stringify({ lat: 46.2397, lng: 14.3556 }),
+   910→    createdAt: new Date(Date.now() - 3600000).toISOString(),
+   911→    projectId: 'demo1',
+   912→    lokacija: 'Balkon leva stran',
+   913→    steviloStebrov: 4,
+   914→    tipPodlage: 'beton',
+   915→    kot: 90,
+   916→    opombe: 'Stari podbeton je v dobrem stanju',
+   917→  },
+   918→  {
+   919→    id: 'm2',
+   920→    dolzinaMm: 2100,
+   921→    visinaMm: 1050,
+   922→    lidarScanUrl: null,
+   923→    gpsLokacija: JSON.stringify({ lat: 46.2397, lng: 14.356 }),
+   924→    createdAt: new Date(Date.now() - 7200000).toISOString(),
+   925→    projectId: 'demo1',
+   926→    lokacija: 'Balkon desna stran',
+   927→    steviloStebrov: 3,
+   928→    tipPodlage: 'plosca',
+   929→    kot: 45,
+   930→    opombe: 'Kotna povezava z levim balkonom',
+   931→  },
+   932→  {
+   933→    id: 'm3',
+   934→    dolzinaMm: 5800,
+   935→    visinaMm: 1200,
+   936→    lidarScanUrl: '/lidar/scan003.las',
+   937→    gpsLokacija: JSON.stringify({ lat: 46.240, lng: 14.354 }),
+   938→    createdAt: new Date(Date.now() - 86400000).toISOString(),
+   939→    projectId: 'demo1',
+   940→    lokacija: 'Terasa - sprednja stran',
+   941→    steviloStebrov: 6,
+   942→    tipPodlage: 'gramoz',
+   943→    kot: 90,
+   944→    opombe: null,
+   945→  },
+   946→  {
+   947→    id: 'm4',
+   948→    dolzinaMm: 3400,
+   949→    visinaMm: 900,
+   950→    lidarScanUrl: null,
+   951→    gpsLokacija: JSON.stringify({ lat: 46.240, lng: 14.354 }),
+   952→    createdAt: new Date(Date.now() - 86400000).toISOString(),
+   953→    projectId: 'demo1',
+   954→    lokacija: 'Stopnišče - zgornje nadstropje',
+   955→    steviloStebrov: 3,
+   956→    tipPodlage: 'les',
+   957→    kot: 90,
+   958→    opombe: 'Preveriti nosilnost lesa',
+   959→  },
+   960→]
+   961→
+   962→const demoProjects: Project[] = [
+   963→  { id: 'demo1', nazivProjekta: 'Ograja Horjul - WPC Classic' },
+   964→  { id: 'demo2', nazivProjekta: 'Terasa Kranj - Inox Z-line' },
+   965→]
+   966→

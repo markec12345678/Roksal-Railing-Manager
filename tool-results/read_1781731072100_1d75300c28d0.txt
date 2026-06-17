@@ -1,0 +1,1445 @@
+     1→     1→'use client'
+     2→     2→
+     3→     3→import { useState, useEffect, useCallback, useMemo } from 'react'
+     4→     4→import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+     5→     5→import { Button } from '@/components/ui/button'
+     6→     6→import { Input } from '@/components/ui/input'
+     7→     7→import { Label } from '@/components/ui/label'
+     8→     8→import { toast } from 'sonner'
+     9→     9→import { Badge } from '@/components/ui/badge'
+    10→    10→import {
+    11→    11→  Select,
+    12→    12→  SelectContent,
+    13→    13→  SelectItem,
+    14→    14→  SelectTrigger,
+    15→    15→  SelectValue,
+    16→    16→} from '@/components/ui/select'
+    17→    17→import { Calculator, AlertTriangle, CheckCircle2, Info, Thermometer, Wind, Anchor, Package, Save, Trash2, Clock, RotateCcw, Ruler, Scissors, ArrowLeft, ArrowDownToLine, Euro } from 'lucide-react'
+    18→    18→
+    19→    19→type CalcMode = 'railing' | 'anchoring' | 'wind'
+    20→    20→type ProfileType = 'classic' | 'z-line' | 'vertical'
+    21→    21→type AnchorType = 'hilti-hit' | 'fischer-fis' | 'generic'
+    22→    22→type TerrainCategory = 'I' | 'II' | 'III' | 'IV'
+    23→    23→type RailingType = 'solid' | 'slatted' | 'z-line'
+    24→    24→
+    25→    25→interface CalcResult {
+    26→    26→  slatCount: number
+    27→    27→  actualGapMm: number
+    28→    28→  totalSlatsLengthMm: number
+    29→    29→  totalGapsLengthMm: number
+    30→    30→  isCompliant: boolean
+    31→    31→  warnings: string[]
+    32→    32→}
+    33→    33→
+    34→    34→interface AnchoringResult {
+    35→    35→  resinVolumeMl: number
+    36→    36→  totalResinMl: number
+    37→    37→  curingTimeMin: number
+    38→    38→  cartridgesNeeded: number
+    39→    39→  warnings: string[]
+    40→    40→}
+    41→    41→
+    42→    42→interface WindResult {
+    43→    43→  windPressureKpa: number
+    44→    44→  totalForceKn: number
+    45→    45→  forcePerMeterNm: number
+    46→    46→  riskLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
+    47→    47→  recommendations: string[]
+    48→    48→}
+    49→    49→
+    50→    50→const modeTabs: { id: CalcMode; label: string; icon: React.ElementType }[] = [
+    51→    51→  { id: 'railing', label: 'Razmiki letev', icon: Calculator },
+    52→    52→  { id: 'anchoring', label: 'Kemično sidranje', icon: Anchor },
+    53→    53→  { id: 'wind', label: 'Vetrna obremenitev', icon: Wind },
+    54→    54→]
+    55→    55→
+    56→    56→const anchorTypeLabels: Record<AnchorType, string> = {
+    57→    57→  'hilti-hit': 'Hilti HIT-RE 500',
+    58→    58→  'fischer-fis': 'Fischer FIS V',
+    59→    59→  'generic': 'Splošno',
+    60→    60→}
+    61→    61→
+    62→    62→const terrainLabels: Record<TerrainCategory, string> = {
+    63→    63→  I: 'I — Odprto morje',
+    64→    64→  II: 'II — Ravninsko',
+    65→    65→  III: 'III — Primestno',
+    66→    66→  IV: 'IV — Urbano',
+    67→    67→}
+    68→    68→
+    69→    69→const railingTypeLabels: Record<RailingType, string> = {
+    70→    70→  solid: 'Polna ograja',
+    71→    71→  slatted: 'Lamelna ograja',
+    72→    72→  'z-line': 'Z-line profil',
+    73→    73→}
+    74→    74→
+    75→    75→const riskColors: Record<string, string> = {
+    76→    76→  LOW: 'bg-roksal-green/15 text-roksal-green border-roksal-green/30',
+    77→    77→  MEDIUM: 'bg-roksal-amber/15 text-roksal-navy border-roksal-amber/30',
+    78→    78→  HIGH: 'bg-roksal-red/15 text-roksal-red border-roksal-red/30',
+    79→    79→  CRITICAL: 'bg-roksal-red/25 text-roksal-red border-roksal-red/50',
+    80→    80→}
+    81→    81→
+    82→    82→const riskLabels: Record<string, string> = {
+    83→    83→  LOW: 'Nizko tveganje',
+    84→    84→  MEDIUM: 'Srednje tveganje',
+    85→    85→  HIGH: 'Visoko tveganje',
+    86→    86→  CRITICAL: 'KRITIČNO',
+    87→    87→}
+    88→    88→
+    89→    89→interface SavedCalculation {
+    90→    90→  id: string
+    91→    91→  date: string
+    92→    92→  mode: CalcMode
+    93→    93→  modeLabel: string
+    94→    94→  keyResult: string
+    95→    95→  inputs: Record<string, string>
+    96→    96→}
+    97→    97→
+    98→    98→import type { CalculatorImportData } from '@/app/page'
+    99→    99→
+   100→   100→interface CalculatorTabProps {
+   101→   101→  importedFromMeasurement?: CalculatorImportData | null
+   102→   102→  onClearImport?: () => void
+   103→   103→  onBackToMeasurements?: () => void
+   104→   104→}
+   105→   105→
+   106→   106→export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackToMeasurements }: CalculatorTabProps) {
+   107→   107→  const [mode, setMode] = useState<CalcMode>('railing')
+   108→   108→
+   109→   109→  // Railing state
+   110→   110→  const [profileType, setProfileType] = useState<ProfileType>('classic')
+   111→   111→  const [totalLength, setTotalLength] = useState('3.0')
+   112→   112→  const [slatWidth, setSlatWidth] = useState('80')
+   113→   113→  const [maxGap, setMaxGap] = useState('100')
+   114→   114→  const [postCount, setPostCount] = useState('')
+   115→   115→  const [railingResult, setRailingResult] = useState<CalcResult | null>(null)
+   116→   116→
+   117→   117→  // Anchoring state
+   118→   118→  const [holeCount, setHoleCount] = useState('8')
+   119→   119→  const [holeDepthMm, setHoleDepthMm] = useState('120')
+   120→   120→  const [holeDiameterMm, setHoleDiameterMm] = useState('14')
+   121→   121→  const [temperature, setTemperature] = useState('20')
+   122→   122→  const [anchorType, setAnchorType] = useState<AnchorType>('hilti-hit')
+   123→   123→  const [anchoringResult, setAnchoringResult] = useState<AnchoringResult | null>(null)
+   124→   124→
+   125→   125→  // Wind state
+   126→   126→  const [heightAboveGround, setHeightAboveGround] = useState('10')
+   127→   127→  const [terrainCategory, setTerrainCategory] = useState<TerrainCategory>('II')
+   128→   128→  const [windSpeedMs, setWindSpeedMs] = useState('25')
+   129→   129→  const [railingAreaM2, setRailingAreaM2] = useState('6')
+   130→   130→  const [railingType, setRailingType] = useState<RailingType>('slatted')
+   131→   131→  const [windResult, setWindResult] = useState<WindResult | null>(null)
+   132→   132→
+   133→   133→  // Compute imported length for display
+   134→   134→  const importedLength = useMemo(() => {
+   135→   135→    if (!importedFromMeasurement) return null
+   136→   136→    return (importedFromMeasurement.dolzinaMm / 1000).toFixed(1)
+   137→   137→  }, [importedFromMeasurement])
+   138→   138→
+   139→   139→  // Effective total length uses import when available, otherwise manual input
+   140→   140→  const effectiveTotalLength = importedLength ?? totalLength
+   141→   141→
+   142→   142→  // Clear import when user manually changes totalLength
+   143→   143→  useEffect(() => {
+   144→   144→    if (importedLength && totalLength) {
+   145→   145→      if (totalLength !== importedLength) {
+   146→   146→        onClearImport?.()
+   147→   147→      }
+   148→   148→    }
+   149→   149→  }, [totalLength, importedLength, onClearImport])
+   150→   150→
+   151→   151→  // Saved calculations
+   152→   152→  const [savedCalculations, setSavedCalculations] = useState<SavedCalculation[]>(() => {
+   153→   153→    if (typeof window !== 'undefined') {
+   154→   154→      try {
+   155→   155→        const stored = localStorage.getItem('roksal-saved-calculations')
+   156→   156→        if (stored) return JSON.parse(stored)
+   157→   157→      } catch {
+   158→   158→        // ignore
+   159→   159→      }
+   160→   160→    }
+   161→   161→    return []
+   162→   162→  })
+   163→   163→
+   164→   164→  const profileLabels: Record<ProfileType, string> = {
+   165→   165→    classic: 'Classic',
+   166→   166→    'z-line': 'Z-line',
+   167→   167→    vertical: 'Vertical',
+   168→   168→  }
+   169→   169→
+   170→   170→  function handleCalculate() {
+   171→   171→    if (mode === 'railing') {
+   172→   172→      calculateRailingClientSide()
+   173→   173→    } else if (mode === 'anchoring') {
+   174→   174→      calculateAnchoringClientSide()
+   175→   175→    } else if (mode === 'wind') {
+   176→   176→      calculateWindClientSide()
+   177→   177→    }
+   178→   178→  }
+   179→   179→
+   180→   180→  function calculateRailingClientSide() {
+   181→   181→    const L = parseFloat(effectiveTotalLength) * 1000
+   182→   182→    const W = parseFloat(slatWidth)
+   183→   183→    const G = parseFloat(maxGap)
+   184→   184→    const n = Math.ceil((L - G) / (G + W))
+   185→   185→    const actualGap = (L - n * W) / (n + 1)
+   186→   186→    const warnings: string[] = []
+   187→   187→
+   188→   188→    if (actualGap > 100) {
+   189→   189→      warnings.push('RAZMIK PRESEGA 100mm — Prepovedano za stanovanjske objekte!')
+   190→   190→    }
+   191→   191→    if (profileType === 'z-line') {
+   192→   192→      warnings.push('Z-line profil: Prekrivanje zagotavlja 100% vizualno zasebnost.')
+   193→   193→    }
+   194→   194→    if (actualGap < 10) {
+   195→   195→      warnings.push('Razmik zelo majhen (<10mm). Preverite dilatacijo WPC materiala.')
+   196→   196→    }
+   197→   197→
+   198→   198→    setRailingResult({
+   199→   199→      slatCount: n,
+   200→   200→      actualGapMm: Math.round(actualGap * 10) / 10,
+   201→   201→      totalSlatsLengthMm: n * W,
+   202→   202→      totalGapsLengthMm: Math.round((n + 1) * actualGap),
+   203→   203→      isCompliant: actualGap <= 100,
+   204→   204→      warnings,
+   205→   205→    })
+   206→   206→  }
+   207→   207→
+   208→   208→  function calculateAnchoringClientSide() {
+   209→   209→    const hc = parseInt(holeCount)
+   210→   210→    const depth = parseFloat(holeDepthMm)
+   211→   211→    const dia = parseFloat(holeDiameterMm)
+   212→   212→    const temp = parseFloat(temperature)
+   213→   213→    const warnings: string[] = []
+   214→   214→
+   215→   215→    const radiusMm = dia / 2
+   216→   216→    const holeVolumeMm3 = Math.PI * Math.pow(radiusMm, 2) * depth
+   217→   217→    const holeVolumeMl = holeVolumeMm3 / 1000
+   218→   218→    const resinPerHole = holeVolumeMl * 1.2
+   219→   219→    const totalResin = resinPerHole * hc
+   220→   220→
+   221→   221→    let curingTimeMin: number
+   222→   222→    if (temp >= 20) {
+   223→   223→      curingTimeMin = 30
+   224→   224→    } else if (temp >= 10) {
+   225→   225→      curingTimeMin = 60
+   226→   226→      warnings.push('Temperatura < 20°C: Podaljšan čas strjevanja. Počakajte vsaj 1 uro.')
+   227→   227→    } else if (temp >= 5) {
+   228→   228→      curingTimeMin = 120
+   229→   229→      warnings.push('Temperatura < 10°C: Zelo podaljšan čas strjevanja (2 uri). Uporabite zimsko formulo smole.')
+   230→   230→    } else {
+   231→   231→      curingTimeMin = 0
+   232→   232→      warnings.push('Temperatura < 5°C: Kemično sidranje NI priporočljivo!')
+   233→   233→    }
+   234→   234→
+   235→   235→    const cartridgeSize = anchorType === 'hilti-hit' ? 330 : 300
+   236→   236→    const cartridgesNeeded = Math.ceil(totalResin / cartridgeSize)
+   237→   237→
+   238→   238→    if (depth < 70) {
+   239→   239→      warnings.push('Globina vrtanja < 70mm. Priporočena minimalna globina za M12 sidro je 70mm.')
+   240→   240→    }
+   241→   241→
+   242→   242→    setAnchoringResult({
+   243→   243→      resinVolumeMl: Math.round(resinPerHole * 10) / 10,
+   244→   244→      totalResinMl: Math.round(totalResin * 10) / 10,
+   245→   245→      curingTimeMin,
+   246→   246→      cartridgesNeeded,
+   247→   247→      warnings,
+   248→   248→    })
+   249→   249→  }
+   250→   250→
+   251→   251→  function calculateWindClientSide() {
+   252→   252→    const h = parseFloat(heightAboveGround)
+   253→   253→    const terrainFactors: Record<string, number> = { I: 1.0, II: 0.91, III: 0.82, IV: 0.73 }
+   254→   254→    const kTerrain = terrainFactors[terrainCategory] || 0.91
+   255→   255→    const heightFactor = Math.pow(h / 10, 0.2)
+   256→   256→    const aeroFactors: Record<string, number> = { solid: 1.3, slatted: 0.8, 'z-line': 0.6 }
+   257→   257→    const cAero = aeroFactors[railingType] || 0.8
+   258→   258→
+   259→   259→    const ws = parseFloat(windSpeedMs)
+   260→   260→    const area = parseFloat(railingAreaM2)
+   261→   261→    const recommendations: string[] = []
+   262→   262→
+   263→   263→    const basePressure = 0.5 * 1.25 * Math.pow(ws, 2)
+   264→   264→    const designPressure = basePressure * kTerrain * heightFactor * cAero
+   265→   265→    const totalForce = designPressure * area
+   266→   266→    const railingLength = Math.sqrt(area)
+   267→   267→    const forcePerMeter = totalForce / railingLength
+   268→   268→
+   269→   269→    let riskLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
+   270→   270→    if (designPressure < 0.5) {
+   271→   271→      riskLevel = 'LOW'
+   272→   272→    } else if (designPressure < 1.0) {
+   273→   273→      riskLevel = 'MEDIUM'
+   274→   274→      recommendations.push('Preverite pritrdilne elemente. Uporabite A4 Inox vijake.')
+   275→   275→    } else if (designPressure < 1.5) {
+   276→   276→      riskLevel = 'HIGH'
+   277→   277→      recommendations.push('Visoka vetrna obremenitev! Uporabite kemično sidranje in dodatne stebre.')
+   278→   278→      recommendations.push('Priporočljivo: Z-line profil za zmanjšanje veternega upora.')
+   279→   279→    } else {
+   280→   280→      riskLevel = 'CRITICAL'
+   281→   281→      recommendations.push('KRITIČNA vetrna obremenitev! Potrebna statična analiza.')
+   282→   282→      recommendations.push('Obvezno: Kemično sidranje vseh stebrov, zmanjšan razmik med stebri.')
+   283→   283→    }
+   284→   284→
+   285→   285→    if (railingType === 'solid' && h > 20) {
+   286→   286→      recommendations.push('Polna ograja nad 20m: Tveganje harmoničnih vibracij. Vgradite dušilna tesnila.')
+   287→   287→    }
+   288→   288→
+   289→   289→    setWindResult({
+   290→   290→      windPressureKpa: Math.round(designPressure * 100) / 100,
+   291→   291→      totalForceKn: Math.round(totalForce * 100) / 100,
+   292→   292→      forcePerMeterNm: Math.round(forcePerMeter * 10) / 10,
+   293→   293→      riskLevel,
+   294→   294→      recommendations,
+   295→   295→    })
+   296→   296→  }
+   297→   297→
+   298→   298→  // Auto-calculate on input change
+   299→   299→  useEffect(() => {
+   300→   300→    if (mode === 'railing') {
+   301→   301→      calculateRailingClientSide()
+   302→   302→    } else if (mode === 'anchoring') {
+   303→   303→      calculateAnchoringClientSide()
+   304→   304→    } else if (mode === 'wind') {
+   305→   305→      calculateWindClientSide()
+   306→   306→    }
+   307→   307→  }, [mode, profileType, effectiveTotalLength, slatWidth, maxGap, postCount, holeCount, holeDepthMm, holeDiameterMm, temperature, anchorType, heightAboveGround, terrainCategory, windSpeedMs, railingAreaM2, railingType])
+   308→   308→
+   309→   309→  // Generate cut list positions
+   310→   310→  function getCutList(): { num: number; type: 'razmik' | 'letva'; startPosMm: number; widthMm: number }[] {
+   311→   311→    if (!railingResult) return []
+   312→   312→    const L = parseFloat(effectiveTotalLength) * 1000
+   313→   313→    const W = parseFloat(slatWidth)
+   314→   314→    const gap = railingResult.actualGapMm
+   315→   315→    const positions: { num: number; type: 'razmik' | 'letva'; startPosMm: number; widthMm: number }[] = []
+   316→   316→    let pos = gap // first gap
+   317→   317→    for (let i = 0; i < railingResult.slatCount; i++) {
+   318→   318→      positions.push({ num: i + 1, type: 'letva', startPosMm: Math.round(pos), widthMm: W })
+   319→   319→      pos += W + gap
+   320→   320→    }
+   321→   321→    return positions
+   322→   322→  }
+   323→   323→
+   324→   324→  function getPostPositions(): number[] {
+   325→   325→    if (!railingResult || !postCount) return []
+   326→   326→    const L = parseFloat(effectiveTotalLength) * 1000
+   327→   327→    const n = parseInt(postCount)
+   328→   328→    if (n < 2) return [0]
+   329→   329→    const spacing = L / (n - 1)
+   330→   330→    return Array.from({ length: n }, (_, i) => Math.round(i * spacing))
+   331→   331→  }
+   332→   332→
+   333→   333→  function renderRailingVisual() {
+   334→   334→    if (!railingResult) return null
+   335→   335→    const L = parseFloat(effectiveTotalLength) * 1000
+   336→   336→    const W = parseFloat(slatWidth)
+   337→   337→    const gap = railingResult.actualGapMm
+   338→   338→    const totalSlatWidth = railingResult.totalSlatsLengthMm
+   339→   339→    const totalGapWidth = railingResult.totalGapsLengthMm
+   340→   340→    const total = totalSlatWidth + totalGapWidth
+   341→   341→    const slatPct = (totalSlatWidth / total) * 100
+   342→   342→    const gapPct = (totalGapWidth / total) * 100
+   343→   343→    const postPositions = getPostPositions()
+   344→   344→    const displayCount = Math.min(railingResult.slatCount, 20)
+   345→   345→
+   346→   346→    return (
+   347→   347→      <div className="space-y-3">
+   348→   348→        {/* Main visual with dimension arrows */}
+   349→   349→        <div className="relative">
+   350→   350→          {/* Top dimension line with total length */}
+   351→   351→          <div className="flex items-center justify-between mb-1 px-0.5">
+   352→   352→            <span className="text-[9px] font-mono text-roksal-navy font-semibold">0mm</span>
+   353→   353→            <div className="flex-1 mx-1">
+   354→   354→              <div className="border-t border-dashed border-roksal-navy/40 relative">
+   355→   355→                <span className="absolute left-1/2 -top-2.5 -translate-x-1/2 text-[9px] font-mono font-bold text-roksal-navy bg-background px-1">
+   356→   356→                  {L}mm = {(L / 1000).toFixed(2)}m
+   357→   357→                </span>
+   358→   358→              </div>
+   359→   359→            </div>
+   360→   360→            <span className="text-[9px] font-mono text-roksal-navy font-semibold">{L}mm</span>
+   361→   361→          </div>
+   362→   362→
+   363→   363→          {/* Railing cross-section */}
+   364→   364→          <div className="relative flex items-end overflow-hidden rounded-lg border border-roksal-navy/20 bg-gradient-to-b from-roksal-navy/3 to-roksal-navy/8 p-3 pt-4 pb-2" style={{ minHeight: '52px' }}>
+   365→   365→            {/* Posts (background layer) */}
+   366→   366→            {postPositions.length > 0 && (
+   367→   367→              <div className="absolute inset-0 flex items-end pointer-events-none">
+   368→   368→                {postPositions.map((pos, i) => {
+   369→   369→                  const pct = (pos / L) * 100
+   370→   370→                  return (
+   371→   371→                    <div
+   372→   372→                      key={i}
+   373→   373→                      className="absolute bottom-0 w-[6px] rounded-full bg-roksal-amber/60"
+   374→   374→                      style={{ left: `${pct}%`, height: '90%' }}
+   375→   375→                    />
+   376→   376→                  )
+   377→   377→                })}
+   378→   378→              </div>
+   379→   379→            )}
+   380→   380→            {/* Slats and gaps */}
+   381→   381→            <div className="flex-1 flex h-10 items-center w-full relative z-10">
+   382→   382→              <div className="h-full bg-roksal-amber/15 border border-dashed border-roksal-amber/30 rounded" style={{ width: `${(gap / L) * 100}%`, minWidth: gap > 0 ? '2px' : '0' }} />
+   383→   383→              {Array.from({ length: displayCount }).map((_, i) => (
+   384→   384→                <div key={i} className="flex h-full">
+   385→   385→                  <div
+   386→   386→                    className={`h-[85%] rounded-[2px] ${profileType === 'z-line' ? 'bg-roksal-navy/80 border-r border-roksal-navy/20' : 'bg-roksal-navy'}`}
+   387→   387→                    style={{ width: `${(W / L) * 100}%`, minWidth: '2px' }}
+   388→   388→                  />
+   389→   389→                  {i < displayCount - 1 && (
+   390→   390→                    <div
+   391→   391→                      className="h-full bg-roksal-amber/15 border border-dashed border-roksal-amber/30 rounded"
+   392→   392→                      style={{ width: `${(gap / L) * 100}%`, minWidth: '1px' }}
+   393→   393→                    />
+   394→   394→                  )}
+   395→   395→                </div>
+   396→   396→              ))}
+   397→   397→              {railingResult.slatCount > 20 && (
+   398→   398→                <div className="flex items-center justify-center bg-gradient-to-l from-white/80 to-transparent px-2 h-full">
+   399→   399→                  <span className="text-[10px] font-medium text-muted-foreground">
+   400→   400→                    +{railingResult.slatCount - 20} letvev
+   401→   401→                  </span>
+   402→   402→                </div>
+   403→   403→              )}
+   404→   404→              <div className="h-full bg-roksal-amber/15 border border-dashed border-roksal-amber/30 rounded" style={{ width: `${(gap / L) * 100}%`, minWidth: gap > 0 ? '2px' : '0' }} />
+   405→   405→            </div>
+   406→   406→          </div>
+   407→   407→
+   408→   408→          {/* Bottom dimension: individual gap annotation */}
+   409→   409→          <div className="flex items-center justify-center mt-1.5">
+   410→   410→            <div className="flex items-center gap-0.5">
+   411→   411→              <Ruler className="h-3 w-3 text-roksal-amber" />
+   412→   412→              <span className="text-[9px] font-mono font-medium text-roksal-amber">
+   413→   413→                Razmik: {gap.toFixed(1)}mm med letvami
+   414→   414→              </span>
+   415→   415→            </div>
+   416→   416→          </div>
+   417→   417→        </div>
+   418→   418→
+   419→   419→        {/* Legend */}
+   420→   420→        <div className="flex items-center justify-center gap-4 text-[10px] text-muted-foreground">
+   421→   421→          <span className="flex items-center gap-1.5">
+   422→   422→            <span className="inline-block h-3 w-3 rounded-[2px] bg-roksal-navy" />
+   423→   423→            Letva ({W}mm)
+   424→   424→          </span>
+   425→   425→          <span className="flex items-center gap-1.5">
+   426→   426→            <span className="inline-block h-3 w-3 rounded-[2px] bg-roksal-amber/15 border border-dashed border-roksal-amber/30" />
+   427→   427→            Razmik ({gap.toFixed(1)}mm)
+   428→   428→          </span>
+   429→   429→          {postPositions.length > 0 && (
+   430→   430→            <span className="flex items-center gap-1.5">
+   431→   431→              <span className="inline-block h-3 w-[6px] rounded-full bg-roksal-amber/60" />
+   432→   432→              Steber
+   433→   433→            </span>
+   434→   434→          )}
+   435→   435→        </div>
+   436→   436→      </div>
+   437→   437→    )
+   438→   438→  }
+   439→   439→
+   440→   440→  function renderCutList() {
+   441→   441→    if (!railingResult) return null
+   442→   442→    const cutList = getCutList()
+   443→   443→    const W = parseFloat(slatWidth)
+   444→   444→    const gap = railingResult.actualGapMm
+   445→   445→    const L = parseFloat(effectiveTotalLength) * 1000
+   446→   446→
+   447→   447→    return (
+   448→   448→      <Card className="overflow-hidden">
+   449→   449→        <CardHeader className="pb-2 pt-4 px-4">
+   450→   450→          <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+   451→   451→            <Scissors className="h-4 w-4" />
+   452→   452→            Seznam rezov — pozicije letvev
+   453→   453→          </CardTitle>
+   454→   454→        </CardHeader>
+   455→   455→        <CardContent className="px-4 pb-4">
+   456→   456→          <div className="overflow-x-auto scrollbar-thin">
+   457→   457→            {/* Header */}
+   458→   458→            <div className="grid grid-cols-12 gap-0 text-[9px] font-semibold text-muted-foreground uppercase tracking-wider pb-1.5 border-b border-border/50 mb-1">
+   459→   459→              <div className="col-span-1 text-center">#</div>
+   460→   460→              <div className="col-span-2 text-center">Tip</div>
+   461→   461→              <div className="col-span-3 text-center">Začetek</div>
+   462→   462→              <div className="col-span-3 text-center">Širina</div>
+   463→   463→              <div className="col-span-3 text-center">Konec</div>
+   464→   464→            </div>
+   465→   465→            {/* First gap row */}
+   466→   466→            <div className="grid grid-cols-12 gap-0 text-[10px] font-mono py-1 border-b border-border/20 bg-roksal-amber/5">
+   467→   467→              <div className="col-span-1 text-center text-muted-foreground">—</div>
+   468→   468→              <div className="col-span-2 text-center"><Badge variant="outline" className="text-[8px] h-4 px-1 bg-roksal-amber/10 border-roksal-amber/30 text-roksal-amber">razmik</Badge></div>
+   469→   469→              <div className="col-span-3 text-center">0</div>
+   470→   470→              <div className="col-span-3 text-center font-medium">{gap.toFixed(1)}</div>
+   471→   471→              <div className="col-span-3 text-center">{gap.toFixed(1)}</div>
+   472→   472→            </div>
+   473→   473→            {/* Slat + gap rows */}
+   474→   474→            {cutList.map((item, i) => {
+   475→   475→              const endPos = item.startPosMm + item.widthMm
+   476→   476→              return (
+   477→   477→                <div key={i}>
+   478→   478→                  {/* Slat row */}
+   479→   479→                  <div className="grid grid-cols-12 gap-0 text-[10px] font-mono py-1 border-b border-border/20">
+   480→   480→                    <div className="col-span-1 text-center font-semibold text-roksal-navy">{item.num}</div>
+   481→   481→                    <div className="col-span-2 text-center"><Badge variant="outline" className="text-[8px] h-4 px-1 bg-roksal-navy/10 border-roksal-navy/30 text-roksal-navy">letva</Badge></div>
+   482→   482→                    <div className="col-span-3 text-center text-roksal-navy font-medium">{item.startPosMm}</div>
+   483→   483→                    <div className="col-span-3 text-center font-medium">{item.widthMm}</div>
+   484→   484→                    <div className="col-span-3 text-center text-roksal-navy font-medium">{endPos}</div>
+   485→   485→                  </div>
+   486→   486→                  {/* Gap row after slat (not after last) */}
+   487→   487→                  {i < cutList.length - 1 && (
+   488→   488→                    <div className="grid grid-cols-12 gap-0 text-[10px] font-mono py-1 border-b border-border/20 bg-roksal-amber/5">
+   489→   489→                      <div className="col-span-1 text-center text-muted-foreground">—</div>
+   490→   490→                      <div className="col-span-2 text-center"><Badge variant="outline" className="text-[8px] h-4 px-1 bg-roksal-amber/10 border-roksal-amber/30 text-roksal-amber">razmik</Badge></div>
+   491→   491→                      <div className="col-span-3 text-center">{endPos}</div>
+   492→   492→                      <div className="col-span-3 text-center font-medium">{gap.toFixed(1)}</div>
+   493→   493→                      <div className="col-span-3 text-center">{(endPos + gap).toFixed(1)}</div>
+   494→   494→                    </div>
+   495→   495→                  )}
+   496→   496→                </div>
+   497→   497→              )
+   498→   498→            })}
+   499→   499→            {/* Last gap row */}
+   500→   500→            <div className="grid grid-cols-12 gap-0 text-[10px] font-mono py-1 bg-roksal-amber/5 rounded-b-lg">
+   501→   501→              <div className="col-span-1 text-center text-muted-foreground">—</div>
+   502→   502→              <div className="col-span-2 text-center"><Badge variant="outline" className="text-[8px] h-4 px-1 bg-roksal-amber/10 border-roksal-amber/30 text-roksal-amber">razmik</Badge></div>
+   503→   503→              <div className="col-span-3 text-center">{cutList.length > 0 ? cutList[cutList.length - 1].startPosMm + W : gap.toFixed(1)}</div>
+   504→   504→              <div className="col-span-3 text-center font-medium">{gap.toFixed(1)}</div>
+   505→   505→              <div className="col-span-3 text-center font-semibold">{L}</div>
+   506→   506→            </div>
+   507→   507→          </div>
+   508→   508→          {/* Summary */}
+   509→   509→          <div className="mt-2 flex items-center justify-between text-[10px] text-muted-foreground border-t border-border/30 pt-2">
+   510→   510→            <span>Skupaj {railingResult.slatCount} letvev × {W}mm</span>
+   511→   511→            <span className="font-mono font-medium">Skupna dolžina: {(railingResult.totalSlatsLengthMm / 1000).toFixed(2)}m</span>
+   512→   512→          </div>
+   513→   513→        </CardContent>
+   514→   514→      </Card>
+   515→   515→    )
+   516→   516→  }
+   517→   517→
+   518→   518→  return (
+   519→   519→    <div className="space-y-4 px-4 pb-4 pt-2">
+   520→   520→      <div className="flex items-start justify-between">
+   521→   521→        <div>
+   522→   522→          <h2 className="text-xl font-bold text-roksal-navy">Kalkulator ograj</h2>
+   523→   523→          <p className="text-sm text-muted-foreground">
+   524→   524→            Izračuni za ograje, sidranje in vetrno obremenitev
+   525→   525→          </p>
+   526→   526→        </div>
+   527→   527→        {importedFromMeasurement && (
+   528→   528→          <button
+   529→   529→            type="button"
+   530→   530→            onClick={onBackToMeasurements}
+   531→   531→            className="flex items-center gap-1.5 rounded-lg border border-roksal-amber/30 bg-roksal-amber/10 px-2.5 py-1.5 text-[11px] font-medium text-roksal-navy hover:bg-roksal-amber/20 active:scale-[0.96] transition-all duration-150 press-scale shrink-0"
+   532→   532→          >
+   533→   533→            <ArrowLeft className="h-3.5 w-3.5" />
+   534→   534→            <span>Nazaj na meritve</span>
+   535→   535→          </button>
+   536→   536→        )}
+   537→   537→      </div>
+   538→   538→
+   539→   539→      {/* Import from measurement indicator */}
+   540→   540→      {importedFromMeasurement && (
+   541→   541→        <div className="flex items-center gap-2.5 rounded-xl border border-roksal-amber/30 bg-roksal-amber/5 px-3.5 py-2.5 animate-fade-in-up">
+   542→   542→          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-roksal-amber/15">
+   543→   543→            <ArrowDownToLine className="h-4 w-4 text-roksal-amber" />
+   544→   544→          </div>
+   545→   545→          <div className="min-w-0 flex-1">
+   546→   546→            <div className="flex items-center gap-1.5">
+   547→   547→              <span className="text-xs font-semibold text-roksal-navy">Uvoženo iz meritev</span>
+   548→   548→              <span className="rounded-full bg-roksal-amber/20 px-1.5 py-0.5 text-[9px] font-bold text-roksal-amber">MERITEV</span>
+   549→   549→            </div>
+   550→   550→            <p className="text-[11px] text-muted-foreground truncate">
+   551→   551→              {importedFromMeasurement.locationName} — {importedFromMeasurement.dolzinaMm}mm × {importedFromMeasurement.visinaMm}mm
+   552→   552→            </p>
+   553→   553→          </div>
+   554→   554→          <button
+   555→   555→            type="button"
+   556→   556→            onClick={onClearImport}
+   557→   557→            className="p-1 rounded-md hover:bg-secondary/60 transition-colors shrink-0"
+   558→   558→            title="Počisti uvoz"
+   559→   559→          >
+   560→   560→            <RotateCcw className="h-3.5 w-3.5 text-muted-foreground" />
+   561→   561→          </button>
+   562→   562→        </div>
+   563→   563→      )}
+   564→   564→
+   565→   565→      {/* Calculator Mode Selector */}
+   566→   566→      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
+   567→   567→        {modeTabs.map((tab) => {
+   568→   568→          const Icon = tab.icon
+   569→   569→          return (
+   570→   570→            <button
+   571→   571→              key={tab.id}
+   572→   572→              onClick={() => setMode(tab.id)}
+   573→   573→              className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+   574→   574→                mode === tab.id
+   575→   575→                  ? 'bg-roksal-navy text-white'
+   576→   576→                  : 'bg-secondary text-muted-foreground hover:text-foreground'
+   577→   577→              }`}
+   578→   578→            >
+   579→   579→              <Icon className="h-3.5 w-3.5" />
+   580→   580→              {tab.label}
+   581→   581→            </button>
+   582→   582→          )
+   583→   583→        })}
+   584→   584→      </div>
+   585→   585→
+   586→   586→      {/* RAILING CALCULATOR */}
+   587→   587→      {mode === 'railing' && (
+   588→   588→        <>
+   589→   589→          {/* Profile Type Selector */}
+   590→   590→          <Card>
+   591→   591→            <CardHeader className="pb-3 pt-4 px-4">
+   592→   592→              <CardTitle className="text-sm font-semibold text-roksal-navy">
+   593→   593→                Tip profila
+   594→   594→              </CardTitle>
+   595→   595→            </CardHeader>
+   596→   596→            <CardContent className="px-4 pb-4">
+   597→   597→              <Select
+   598→   598→                value={profileType}
+   599→   599→                onValueChange={(v) => setProfileType(v as ProfileType)}
+   600→   600→              >
+   601→   601→                <SelectTrigger className="w-full">
+   602→   602→                  <SelectValue />
+   603→   603→                </SelectTrigger>
+   604→   604→                <SelectContent>
+   605→   605→                  <SelectItem value="classic">Classic — Navaden profil</SelectItem>
+   606→   606→                  <SelectItem value="z-line">Z-line — Prekrivni profil</SelectItem>
+   607→   607→                  <SelectItem value="vertical">Vertical — Vertikalne letve</SelectItem>
+   608→   608→                </SelectContent>
+   609→   609→              </Select>
+   610→   610→            </CardContent>
+   611→   611→          </Card>
+   612→   612→
+   613→   613→          {/* Input Fields */}
+   614→   614→          <Card>
+   615→   615→            <CardHeader className="pb-3 pt-4 px-4">
+   616→   616→              <CardTitle className="text-sm font-semibold text-roksal-navy">
+   617→   617→                Meritve
+   618→   618→              </CardTitle>
+   619→   619→            </CardHeader>
+   620→   620→            <CardContent className="space-y-4 px-4 pb-4">
+   621→   621→              <div className="space-y-1.5">
+   622→   622→                <Label htmlFor="totalLength" className="text-xs">
+   623→   623→                  Skupna dolžina (m)
+   624→   624→                </Label>
+   625→   625→                <Input
+   626→   626→                  id="totalLength"
+   627→   627→                  type="number"
+   628→   628→                  value={effectiveTotalLength}
+   629→   629→                  onChange={(e) => setTotalLength(e.target.value)}
+   630→   630→                  placeholder="3.0"
+   631→   631→                  step="0.1"
+   632→   632→                />
+   633→   633→              </div>
+   634→   634→              <div className="space-y-1.5">
+   635→   635→                <Label htmlFor="slatWidth" className="text-xs">
+   636→   636→                  Širina letve (mm)
+   637→   637→                </Label>
+   638→   638→                <Input
+   639→   639→                  id="slatWidth"
+   640→   640→                  type="number"
+   641→   641→                  value={slatWidth}
+   642→   642→                  onChange={(e) => setSlatWidth(e.target.value)}
+   643→   643→                  placeholder="80"
+   644→   644→                />
+   645→   645→              </div>
+   646→   646→              <div className="space-y-1.5">
+   647→   647→                <Label htmlFor="maxGap" className="text-xs">
+   648→   648→                  Maksimalni razmik (mm)
+   649→   649→                </Label>
+   650→   650→                <Input
+   651→   651→                  id="maxGap"
+   652→   652→                  type="number"
+   653→   653→                  value={maxGap}
+   654→   654→                  onChange={(e) => setMaxGap(e.target.value)}
+   655→   655→                  placeholder="100"
+   656→   656→                />
+   657→   657→              </div>
+   658→   658→              <div className="space-y-1.5">
+   659→   659→                <Label htmlFor="postCount" className="text-xs">
+   660→   660→                  Število stebrov (izbirno)
+   661→   661→                </Label>
+   662→   662→                <Input
+   663→   663→                  id="postCount"
+   664→   664→                  type="number"
+   665→   665→                  value={postCount}
+   666→   666→                  onChange={(e) => setPostCount(e.target.value)}
+   667→   667→                  placeholder="3"
+   668→   668→                />
+   669→   669→              </div>
+   670→   670→            </CardContent>
+   671→   671→          </Card>
+   672→   672→
+   673→   673→          {/* Calculate Button */}
+   674→   674→          <Button
+   675→   675→            onClick={handleCalculate}
+   676→   676→            className="w-full bg-roksal-navy hover:bg-roksal-navy/90 text-white h-11"
+   677→   677→          >
+   678→   678→            <Calculator className="mr-2 h-4 w-4" />
+   679→   679→            Izračunaj razmike
+   680→   680→          </Button>
+   681→   681→
+   682→   682→          {/* Results */}
+   683→   683→          {railingResult && (
+   684→   684→            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
+   685→   685→              {/* Visual Representation */}
+   686→   686→              <Card>
+   687→   687→                <CardHeader className="pb-2 pt-4 px-4">
+   688→   688→                  <CardTitle className="text-sm font-semibold text-roksal-navy">
+   689→   689→                    Vizualizacija — {profileLabels[profileType]}
+   690→   690→                  </CardTitle>
+   691→   691→                </CardHeader>
+   692→   692→                <CardContent className="px-4 pb-4">
+   693→   693→                  {renderRailingVisual()}
+   694→   694→                </CardContent>
+   695→   695→              </Card>
+   696→   696→
+   697→   697→              {/* Compliance Status */}
+   698→   698→              <Card
+   699→   699→                className={`overflow-hidden border-l-4 ${
+   700→   700→                  railingResult.isCompliant
+   701→   701→                    ? 'border-l-roksal-green bg-roksal-green/5'
+   702→   702→                    : 'border-l-roksal-red bg-roksal-red/5'
+   703→   703→                }`}
+   704→   704→              >
+   705→   705→                <CardContent className="flex items-center gap-3 p-4">
+   706→   706→                  {railingResult.isCompliant ? (
+   707→   707→                    <CheckCircle2 className="h-6 w-6 shrink-0 text-roksal-green" />
+   708→   708→                  ) : (
+   709→   709→                    <AlertTriangle className="h-6 w-6 shrink-0 text-roksal-red" />
+   710→   710→                  )}
+   711→   711→                  <div>
+   712→   712→                    <p
+   713→   713→                      className={`text-sm font-semibold ${
+   714→   714→                        railingResult.isCompliant ? 'text-roksal-green' : 'text-roksal-red'
+   715→   715→                      }`}
+   716→   716→                    >
+   717→   717→                      {railingResult.isCompliant
+   718→   718→                        ? 'SKLADNO s standardom'
+   719→   719→                        : 'NESKLADNO — Presežen razmik!'}
+   720→   720→                    </p>
+   721→   721→                    <p className="text-xs text-muted-foreground">
+   722→   722→                      Razmik {railingResult.actualGapMm.toFixed(1)}mm{' '}
+   723→   723→                      {railingResult.isCompliant ? '≤' : '>'} 100mm
+   724→   724→                    </p>
+   725→   725→                  </div>
+   726→   726→                </CardContent>
+   727→   727→              </Card>
+   728→   728→
+   729→   729→              {/* Results Grid */}
+   730→   730→              <div className="grid grid-cols-2 gap-3">
+   731→   731→                <Card className="px-3 py-3">
+   732→   732→                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+   733→   733→                    Število letvev
+   734→   734→                  </p>
+   735→   735→                  <p className="text-2xl font-bold text-roksal-navy">
+   736→   736→                    {railingResult.slatCount}
+   737→   737→                  </p>
+   738→   738→                  <p className="text-[10px] text-muted-foreground">
+   739→   739→                    kos × {parseFloat(slatWidth)}mm
+   740→   740→                  </p>
+   741→   741→                </Card>
+   742→   742→                <Card className="px-3 py-3">
+   743→   743→                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+   744→   744→                    Dejanski razmik
+   745→   745→                  </p>
+   746→   746→                  <p className="text-2xl font-bold text-roksal-navy">
+   747→   747→                    {railingResult.actualGapMm.toFixed(1)}
+   748→   748→                  </p>
+   749→   749→                  <p className="text-[10px] text-muted-foreground">mm</p>
+   750→   750→                </Card>
+   751→   751→                <Card className="px-3 py-3">
+   752→   752→                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+   753→   753→                    Skupna širina letvev
+   754→   754→                  </p>
+   755→   755→                  <p className="text-lg font-bold text-roksal-navy">
+   756→   756→                    {(railingResult.totalSlatsLengthMm / 1000).toFixed(2)}m
+   757→   757→                  </p>
+   758→   758→                </Card>
+   759→   759→                <Card className="px-3 py-3">
+   760→   760→                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+   761→   761→                    Skupna širina razmikov
+   762→   762→                  </p>
+   763→   763→                  <p className="text-lg font-bold text-roksal-navy">
+   764→   764→                    {(railingResult.totalGapsLengthMm / 1000).toFixed(2)}m
+   765→   765→                  </p>
+   766→   766→                </Card>
+   767→   767→              </div>
+   768→   768→
+   769→   769→              {/* Warnings */}
+   770→   770→              {railingResult.warnings.length > 0 && (
+   771→   771→                <Card className="border-roksal-amber/30">
+   772→   772→                  <CardHeader className="pb-2 pt-4 px-4">
+   773→   773→                    <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-amber">
+   774→   774→                      <Info className="h-4 w-4" />
+   775→   775→                      Opozorila
+   776→   776→                    </CardTitle>
+   777→   777→                  </CardHeader>
+   778→   778→                  <CardContent className="px-4 pb-4">
+   779→   779→                    <ul className="space-y-1.5">
+   780→   780→                      {railingResult.warnings.map((w, i) => (
+   781→   781→                        <li
+   782→   782→                          key={i}
+   783→   783→                          className="flex items-start gap-2 text-xs text-muted-foreground"
+   784→   784→                        >
+   785→   785→                          <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-roksal-amber" />
+   786→   786→                          {w}
+   787→   787→                        </li>
+   788→   788→                      ))}
+   789→   789→                    </ul>
+   790→   790→                  </CardContent>
+   791→   791→                </Card>
+   792→   792→              )}
+   793→   793→
+   794→   794→              {/* Cut List */}
+   795→   795→              {renderCutList()}
+   796→   796→
+   797→   797→              {/* Skupaj material summary */}
+   798→   798→              <Card className="overflow-hidden border-l-4 border-l-roksal-navy">
+   799→   799→                <CardHeader className="pb-2 pt-4 px-4">
+   800→   800→                  <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+   801→   801→                    <Package className="h-4 w-4" />
+   802→   802→                    Skupaj material
+   803→   803→                  </CardTitle>
+   804→   804→                </CardHeader>
+   805→   805→                <CardContent className="px-4 pb-4">
+   806→   806→                  <div className="grid grid-cols-2 gap-3">
+   807→   807→                    <div className="rounded-lg bg-roksal-navy/5 p-3">
+   808→   808→                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+   809→   809→                        Skupaj tekoče metre letvev
+   810→   810→                      </p>
+   811→   811→                      <p className="text-2xl font-bold text-roksal-navy">
+   812→   812→                        {(railingResult.totalSlatsLengthMm / 1000).toFixed(2)}<span className="text-sm font-normal ml-0.5">m</span>
+   813→   813→                      </p>
+   814→   814→                    </div>
+   815→   815→                    <div className="rounded-lg bg-roksal-amber/10 p-3">
+   816→   816→                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+   817→   817→                        Število letvev
+   818→   818→                      </p>
+   819→   819→                      <p className="text-2xl font-bold text-roksal-amber">
+   820→   820→                        {railingResult.slatCount}<span className="text-sm font-normal ml-0.5">kos</span>
+   821→   821→                      </p>
+   822→   822→                    </div>
+   823→   823→                  </div>
+   824→   824→                  <p className="mt-2 text-[11px] text-muted-foreground">
+   825→   825→                    Za dolžino {parseFloat(effectiveTotalLength)}m s širino letve {parseFloat(slatWidth)}mm je potrebnih{' '}
+   826→   826→                    <span className="font-semibold text-roksal-navy">{railingResult.totalSlatsLengthMm / 1000} tekočih metrov</span> materiala.
+   827→   827→                  </p>
+   828→   828→                </CardContent>
+   829→   829→              </Card>
+   830→   830→
+   831→   831→              {/* Ocena stroškov */}
+   832→   832→              <Card className="overflow-hidden border-l-4 border-l-roksal-amber">
+   833→   833→                <CardHeader className="pb-2 pt-4 px-4">
+   834→   834→                  <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+   835→   835→                    <Euro className="h-4 w-4" />
+   836→   836→                    Ocena stroškov
+   837→   837→                  </CardTitle>
+   838→   838→                </CardHeader>
+   839→   839→                <CardContent className="px-4 pb-4">
+   840→   840→                  {(() => {
+   841→   841→                    const slatPricePerM = profileType === 'z-line' ? 8.5 : 6.2
+   842→   842→                    const slatTotalM = railingResult.totalSlatsLengthMm / 1000
+   843→   843→                    const slatCost = slatTotalM * slatPricePerM
+   844→   844→                    const postsCount = postCount ? parseInt(postCount) : 0
+   845→   845→                    const postsCost = postsCount > 0 ? postsCount * 25 : 0
+   846→   846→                    const anchoringCost = anchoringResult ? anchoringResult.cartridgesNeeded * 12 : 0
+   847→   847→                    const totalCost = slatCost + postsCost + anchoringCost
+   848→   848→                    return (
+   849→   849→                      <div className="space-y-2">
+   850→   850→                        <div className="flex items-center justify-between text-xs py-1.5 border-b border-border/30">
+   851→   851→                          <div className="flex items-center gap-2">
+   852→   852→                            <Euro className="h-3.5 w-3.5 text-muted-foreground" />
+   853→   853→                            <span className="text-muted-foreground">Letve ({slatTotalM.toFixed(2)}m × {slatPricePerM.toFixed(1)} €/m)</span>
+   854→   854→                          </div>
+   855→   855→                          <span className="font-medium text-roksal-navy">{slatCost.toFixed(2)} €</span>
+   856→   856→                        </div>
+   857→   857→                        {postsCount > 0 && (
+   858→   858→                          <div className="flex items-center justify-between text-xs py-1.5 border-b border-border/30">
+   859→   859→                            <div className="flex items-center gap-2">
+   860→   860→                              <Euro className="h-3.5 w-3.5 text-muted-foreground" />
+   861→   861→                              <span className="text-muted-foreground">Stebri ({postsCount} × 25 €)</span>
+   862→   862→                            </div>
+   863→   863→                            <span className="font-medium text-roksal-navy">{postsCost.toFixed(2)} €</span>
+   864→   864→                          </div>
+   865→   865→                        )}
+   866→   866→                        {anchoringCost > 0 && (
+   867→   867→                          <div className="flex items-center justify-between text-xs py-1.5 border-b border-border/30">
+   868→   868→                            <div className="flex items-center gap-2">
+   869→   869→                              <Euro className="h-3.5 w-3.5 text-muted-foreground" />
+   870→   870→                              <span className="text-muted-foreground">Smola/čepi ({anchoringResult!.cartridgesNeeded} × 12 €)</span>
+   871→   871→                            </div>
+   872→   872→                            <span className="font-medium text-roksal-navy">{anchoringCost.toFixed(2)} €</span>
+   873→   873→                          </div>
+   874→   874→                        )}
+   875→   875→                        <div className="flex items-center justify-between text-sm pt-1.5">
+   876→   876→                          <span className="font-bold text-roksal-navy">Skupaj</span>
+   877→   877→                          <span className="font-bold text-roksal-navy text-base">{totalCost.toFixed(2)} €</span>
+   878→   878→                        </div>
+   879→   879→                      </div>
+   880→   880→                    )
+   881→   881→                  })()}
+   882→   882→                </CardContent>
+   883→   883→              </Card>
+   884→   884→
+   885→   885→              {/* Safety Info Box */}
+   886→   886→              <Card className="bg-roksal-navy/5">
+   887→   887→                <CardContent className="flex gap-3 p-4">
+   888→   888→                  <Info className="h-5 w-5 shrink-0 text-roksal-navy" />
+   889→   889→                  <div className="text-xs text-muted-foreground">
+   890→   890→                    <p className="font-medium text-roksal-navy">
+   891→   891→                      Pravilnik o varstvu otrok (SIST EN 13485)
+   892→   892→                    </p>
+   893→   893→                    <p className="mt-1">
+   894→   894→                      Maksimalni razmik med letvami za ograje na stopniščih in balkonih
+   895→   895→                      je <span className="font-bold text-roksal-navy">100mm</span>. Večji
+   896→   896→                      razmiki predstavljajo nevarnost zapletanja (lestveni učinek).
+   897→   897→                    </p>
+   898→   898→                  </div>
+   899→   899→                </CardContent>
+   900→   900→              </Card>
+   901→   901→            </div>
+   902→   902→          )}
+   903→   903→        </>
+   904→   904→      )}
+   905→   905→
+   906→   906→      {/* ANCHORING CALCULATOR */}
+   907→   907→      {mode === 'anchoring' && (
+   908→   908→        <>
+   909→   909→          {/* Anchor Type */}
+   910→   910→          <Card>
+   911→   911→            <CardHeader className="pb-3 pt-4 px-4">
+   912→   912→              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+   913→   913→                <Anchor className="h-4 w-4" />
+   914→   914→                Tip sidra
+   915→   915→              </CardTitle>
+   916→   916→            </CardHeader>
+   917→   917→            <CardContent className="px-4 pb-4">
+   918→   918→              <Select
+   919→   919→                value={anchorType}
+   920→   920→                onValueChange={(v) => setAnchorType(v as AnchorType)}
+   921→   921→              >
+   922→   922→                <SelectTrigger className="w-full">
+   923→   923→                  <SelectValue />
+   924→   924→                </SelectTrigger>
+   925→   925→                <SelectContent>
+   926→   926→                  {Object.entries(anchorTypeLabels).map(([key, label]) => (
+   927→   927→                    <SelectItem key={key} value={key}>
+   928→   928→                      {label}
+   929→   929→                    </SelectItem>
+   930→   930→                  ))}
+   931→   931→                </SelectContent>
+   932→   932→              </Select>
+   933→   933→            </CardContent>
+   934→   934→          </Card>
+   935→   935→
+   936→   936→          {/* Input Fields */}
+   937→   937→          <Card>
+   938→   938→            <CardHeader className="pb-3 pt-4 px-4">
+   939→   939→              <CardTitle className="text-sm font-semibold text-roksal-navy">
+   940→   940→                Parametri sidranja
+   941→   941→              </CardTitle>
+   942→   942→            </CardHeader>
+   943→   943→            <CardContent className="space-y-4 px-4 pb-4">
+   944→   944→              <div className="grid grid-cols-2 gap-3">
+   945→   945→                <div className="space-y-1.5">
+   946→   946→                  <Label htmlFor="holeCount" className="text-xs">
+   947→   947→                    Število lukenj
+   948→   948→                  </Label>
+   949→   949→                  <Input
+   950→   950→                    id="holeCount"
+   951→   951→                    type="number"
+   952→   952→                    value={holeCount}
+   953→   953→                    onChange={(e) => setHoleCount(e.target.value)}
+   954→   954→                    placeholder="8"
+   955→   955→                  />
+   956→   956→                </div>
+   957→   957→                <div className="space-y-1.5">
+   958→   958→                  <Label htmlFor="holeDepth" className="text-xs">
+   959→   959→                    Globina luknje (mm)
+   960→   960→                  </Label>
+   961→   961→                  <Input
+   962→   962→                    id="holeDepth"
+   963→   963→                    type="number"
+   964→   964→                    value={holeDepthMm}
+   965→   965→                    onChange={(e) => setHoleDepthMm(e.target.value)}
+   966→   966→                    placeholder="120"
+   967→   967→                  />
+   968→   968→                </div>
+   969→   969→              </div>
+   970→   970→              <div className="grid grid-cols-2 gap-3">
+   971→   971→                <div className="space-y-1.5">
+   972→   972→                  <Label htmlFor="holeDiameter" className="text-xs">
+   973→   973→                    Premer luknje (mm)
+   974→   974→                  </Label>
+   975→   975→                  <Input
+   976→   976→                    id="holeDiameter"
+   977→   977→                    type="number"
+   978→   978→                    value={holeDiameterMm}
+   979→   979→                    onChange={(e) => setHoleDiameterMm(e.target.value)}
+   980→   980→                    placeholder="14"
+   981→   981→                  />
+   982→   982→                </div>
+   983→   983→                <div className="space-y-1.5">
+   984→   984→                  <Label htmlFor="temperature" className="text-xs">
+   985→   985→                    Temperatura (°C)
+   986→   986→                  </Label>
+   987→   987→                  <Input
+   988→   988→                    id="temperature"
+   989→   989→                    type="number"
+   990→   990→                    value={temperature}
+   991→   991→                    onChange={(e) => setTemperature(e.target.value)}
+   992→   992→                    placeholder="20"
+   993→   993→                  />
+   994→   994→                </div>
+   995→   995→              </div>
+   996→   996→            </CardContent>
+   997→   997→          </Card>
+   998→   998→
+   999→   999→          {/* Temperature Warning */}
+  1000→  1000→          {parseFloat(temperature) < 10 && (
+  1001→  1001→            <div className="flex items-center gap-3 rounded-xl border border-roksal-amber/30 bg-roksal-amber/5 p-3">
+  1002→  1002→              <Thermometer className="h-5 w-5 shrink-0 text-roksal-amber" />
+  1003→  1003→              <p className="text-xs text-muted-foreground">
+  1004→  1004→                {parseFloat(temperature) < 5
+  1005→  1005→                  ? 'POZOR: Temperatura < 5°C. Kemično sidranje ni priporočljivo!'
+  1006→  1006→                  : 'Opozorilo: Nizka temperatura — podaljšan čas strjevanja smole.'}
+  1007→  1007→              </p>
+  1008→  1008→            </div>
+  1009→  1009→          )}
+  1010→  1010→
+  1011→  1011→          {/* Calculate Button */}
+  1012→  1012→          <Button
+  1013→  1013→            onClick={handleCalculate}
+  1014→  1014→            className="w-full bg-roksal-navy hover:bg-roksal-navy/90 text-white h-11"
+  1015→  1015→          >
+  1016→  1016→            <Anchor className="mr-2 h-4 w-4" />
+  1017→  1017→            Izračunaj sidranje
+  1018→  1018→          </Button>
+  1019→  1019→
+  1020→  1020→          {/* Results */}
+  1021→  1021→          {anchoringResult && (
+  1022→  1022→            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
+  1023→  1023→              {/* Main Results */}
+  1024→  1024→              <div className="grid grid-cols-2 gap-3">
+  1025→  1025→                <Card className="px-3 py-3">
+  1026→  1026→                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+  1027→  1027→                    Smola na luknjo
+  1028→  1028→                  </p>
+  1029→  1029→                  <p className="text-2xl font-bold text-roksal-navy">
+  1030→  1030→                    {anchoringResult.resinVolumeMl}
+  1031→  1031→                  </p>
+  1032→  1032→                  <p className="text-[10px] text-muted-foreground">ml</p>
+  1033→  1033→                </Card>
+  1034→  1034→                <Card className="px-3 py-3">
+  1035→  1035→                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+  1036→  1036→                    Skupaj smola
+  1037→  1037→                  </p>
+  1038→  1038→                  <p className="text-2xl font-bold text-roksal-navy">
+  1039→  1039→                    {anchoringResult.totalResinMl}
+  1040→  1040→                  </p>
+  1041→  1041→                  <p className="text-[10px] text-muted-foreground">ml</p>
+  1042→  1042→                </Card>
+  1043→  1043→                <Card className="px-3 py-3">
+  1044→  1044→                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+  1045→  1045→                    Čas strjevanja
+  1046→  1046→                  </p>
+  1047→  1047→                  <p className="text-2xl font-bold text-roksal-navy">
+  1048→  1048→                    {anchoringResult.curingTimeMin}
+  1049→  1049→                  </p>
+  1050→  1050→                  <p className="text-[10px] text-muted-foreground">min</p>
+  1051→  1051→                </Card>
+  1052→  1052→                <Card className="px-3 py-3">
+  1053→  1053→                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+  1054→  1054→                    Patronov
+  1055→  1055→                  </p>
+  1056→  1056→                  <p className="text-2xl font-bold text-roksal-amber">
+  1057→  1057→                    {anchoringResult.cartridgesNeeded}
+  1058→  1058→                  </p>
+  1059→  1059→                  <p className="text-[10px] text-muted-foreground">
+  1060→  1060→                    × {anchorType === 'hilti-hit' ? '330' : '300'}ml
+  1061→  1061→                  </p>
+  1062→  1062→                </Card>
+  1063→  1063→              </div>
+  1064→  1064→
+  1065→  1065→              {/* Warnings */}
+  1066→  1066→              {anchoringResult.warnings.length > 0 && (
+  1067→  1067→                <Card className="border-roksal-amber/30">
+  1068→  1068→                  <CardHeader className="pb-2 pt-4 px-4">
+  1069→  1069→                    <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-amber">
+  1070→  1070→                      <AlertTriangle className="h-4 w-4" />
+  1071→  1071→                      Opozorila
+  1072→  1072→                    </CardTitle>
+  1073→  1073→                  </CardHeader>
+  1074→  1074→                  <CardContent className="px-4 pb-4">
+  1075→  1075→                    <ul className="space-y-1.5">
+  1076→  1076→                      {anchoringResult.warnings.map((w, i) => (
+  1077→  1077→                        <li
+  1078→  1078→                          key={i}
+  1079→  1079→                          className="flex items-start gap-2 text-xs text-muted-foreground"
+  1080→  1080→                        >
+  1081→  1081→                          <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-roksal-amber" />
+  1082→  1082→                          {w}
+  1083→  1083→                        </li>
+  1084→  1084→                      ))}
+  1085→  1085→                    </ul>
+  1086→  1086→                  </CardContent>
+  1087→  1087→                </Card>
+  1088→  1088→              )}
+  1089→  1089→
+  1090→  1090→              {/* Info */}
+  1091→  1091→              <Card className="bg-roksal-navy/5">
+  1092→  1092→                <CardContent className="flex gap-3 p-4">
+  1093→  1093→                  <Info className="h-5 w-5 shrink-0 text-roksal-navy" />
+  1094→  1094→                  <div className="text-xs text-muted-foreground">
+  1095→  1095→                    <p className="font-medium text-roksal-navy">
+  1096→  1096→                      Navodila za sidranje
+  1097→  1097→                    </p>
+  1098→  1098→                    <p className="mt-1">
+  1099→  1099→                      Pri uporabi kemičnega sidranja je obvezno predhodno vrtanje in
+  1100→  1100→                      čiščenje lukenj. Uporabite samo originalne smole proizvajalca.
+  1101→  1101→                      Čas strjevanja je odvisen od temperature okolja.
+  1102→  1102→                    </p>
+  1103→  1103→                  </div>
+  1104→  1104→                </CardContent>
+  1105→  1105→              </Card>
+  1106→  1106→            </div>
+  1107→  1107→          )}
+  1108→  1108→        </>
+  1109→  1109→      )}
+  1110→  1110→
+  1111→  1111→      {/* WIND LOAD CALCULATOR */}
+  1112→  1112→      {mode === 'wind' && (
+  1113→  1113→        <>
+  1114→  1114→          {/* Railing Type */}
+  1115→  1115→          <Card>
+  1116→  1116→            <CardHeader className="pb-3 pt-4 px-4">
+  1117→  1117→              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+  1118→  1118→                <Wind className="h-4 w-4" />
+  1119→  1119→                Tip ograje
+  1120→  1120→              </CardTitle>
+  1121→  1121→            </CardHeader>
+  1122→  1122→            <CardContent className="px-4 pb-4">
+  1123→  1123→              <Select
+  1124→  1124→                value={railingType}
+  1125→  1125→                onValueChange={(v) => setRailingType(v as RailingType)}
+  1126→  1126→              >
+  1127→  1127→                <SelectTrigger className="w-full">
+  1128→  1128→                  <SelectValue />
+  1129→  1129→                </SelectTrigger>
+  1130→  1130→                <SelectContent>
+  1131→  1131→                  {Object.entries(railingTypeLabels).map(([key, label]) => (
+  1132→  1132→                    <SelectItem key={key} value={key}>
+  1133→  1133→                      {label}
+  1134→  1134→                    </SelectItem>
+  1135→  1135→                  ))}
+  1136→  1136→                </SelectContent>
+  1137→  1137→              </Select>
+  1138→  1138→            </CardContent>
+  1139→  1139→          </Card>
+  1140→  1140→
+  1141→  1141→          {/* Input Fields */}
+  1142→  1142→          <Card>
+  1143→  1143→            <CardHeader className="pb-3 pt-4 px-4">
+  1144→  1144→              <CardTitle className="text-sm font-semibold text-roksal-navy">
+  1145→  1145→                Parametri vetra
+  1146→  1146→              </CardTitle>
+  1147→  1147→            </CardHeader>
+  1148→  1148→            <CardContent className="space-y-4 px-4 pb-4">
+  1149→  1149→              <div className="grid grid-cols-2 gap-3">
+  1150→  1150→                <div className="space-y-1.5">
+  1151→  1151→                  <Label htmlFor="windHeight" className="text-xs">
+  1152→  1152→                    Višina nad tlemi (m)
+  1153→  1153→                  </Label>
+  1154→  1154→                  <Input
+  1155→  1155→                    id="windHeight"
+  1156→  1156→                    type="number"
+  1157→  1157→                    value={heightAboveGround}
+  1158→  1158→                    onChange={(e) => setHeightAboveGround(e.target.value)}
+  1159→  1159→                    placeholder="10"
+  1160→  1160→                    step="0.5"
+  1161→  1161→                  />
+  1162→  1162→                </div>
+  1163→  1163→                <div className="space-y-1.5">
+  1164→  1164→                  <Label className="text-xs">Kategorija terena</Label>
+  1165→  1165→                  <Select
+  1166→  1166→                    value={terrainCategory}
+  1167→  1167→                    onValueChange={(v) => setTerrainCategory(v as TerrainCategory)}
+  1168→  1168→                  >
+  1169→  1169→                    <SelectTrigger className="w-full">
+  1170→  1170→                      <SelectValue />
+  1171→  1171→                    </SelectTrigger>
+  1172→  1172→                    <SelectContent>
+  1173→  1173→                      {Object.entries(terrainLabels).map(([key, label]) => (
+  1174→  1174→                        <SelectItem key={key} value={key}>
+  1175→  1175→                          {label}
+  1176→  1176→                        </SelectItem>
+  1177→  1177→                      ))}
+  1178→  1178→                    </SelectContent>
+  1179→  1179→                  </Select>
+  1180→  1180→                </div>
+  1181→  1181→              </div>
+  1182→  1182→              <div className="grid grid-cols-2 gap-3">
+  1183→  1183→                <div className="space-y-1.5">
+  1184→  1184→                  <Label htmlFor="windSpeed" className="text-xs">
+  1185→  1185→                    Hitrost vetra (m/s)
+  1186→  1186→                  </Label>
+  1187→  1187→                  <Input
+  1188→  1188→                    id="windSpeed"
+  1189→  1189→                    type="number"
+  1190→  1190→                    value={windSpeedMs}
+  1191→  1191→                    onChange={(e) => setWindSpeedMs(e.target.value)}
+  1192→  1192→                    placeholder="25"
+  1193→  1193→                    step="0.5"
+  1194→  1194→                  />
+  1195→  1195→                </div>
+  1196→  1196→                <div className="space-y-1.5">
+  1197→  1197→                  <Label htmlFor="railingArea" className="text-xs">
+  1198→  1198→                    Površina ograje (m²)
+  1199→  1199→                  </Label>
+  1200→  1200→                  <Input
+  1201→  1201→                    id="railingArea"
+  1202→  1202→                    type="number"
+  1203→  1203→                    value={railingAreaM2}
+  1204→  1204→                    onChange={(e) => setRailingAreaM2(e.target.value)}
+  1205→  1205→                    placeholder="6"
+  1206→  1206→                    step="0.5"
+  1207→  1207→                  />
+  1208→  1208→                </div>
+  1209→  1209→              </div>
+  1210→  1210→            </CardContent>
+  1211→  1211→          </Card>
+  1212→  1212→
+  1213→  1213→          {/* Calculate Button */}
+  1214→  1214→          <Button
+  1215→  1215→            onClick={handleCalculate}
+  1216→  1216→            className="w-full bg-roksal-navy hover:bg-roksal-navy/90 text-white h-11"
+  1217→  1217→          >
+  1218→  1218→            <Wind className="mr-2 h-4 w-4" />
+  1219→  1219→            Izračunaj vetrno obremenitev
+  1220→  1220→          </Button>
+  1221→  1221→
+  1222→  1222→          {/* Results */}
+  1223→  1223→          {windResult && (
+  1224→  1224→            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
+  1225→  1225→              {/* Risk Level */}
+  1226→  1226→              <Card className={`overflow-hidden border ${riskColors[windResult.riskLevel]}`}>
+  1227→  1227→                <CardContent className="flex items-center gap-3 p-4">
+  1228→  1228→                  {windResult.riskLevel === 'LOW' || windResult.riskLevel === 'MEDIUM' ? (
+  1229→  1229→                    <CheckCircle2 className="h-6 w-6 shrink-0" />
+  1230→  1230→                  ) : (
+  1231→  1231→                    <AlertTriangle className="h-6 w-6 shrink-0" />
+  1232→  1232→                  )}
+  1233→  1233→                  <div>
+  1234→  1234→                    <p className="text-sm font-semibold">
+  1235→  1235→                      {riskLabels[windResult.riskLevel]}
+  1236→  1236→                    </p>
+  1237→  1237→                    <p className="text-xs opacity-75">
+  1238→  1238→                      {windResult.windPressureKpa.toFixed(2)} kPa vetrni tlak
+  1239→  1239→                    </p>
+  1240→  1240→                  </div>
+  1241→  1241→                </CardContent>
+  1242→  1242→              </Card>
+  1243→  1243→
+  1244→  1244→              {/* Main Results */}
+  1245→  1245→              <div className="grid grid-cols-3 gap-3">
+  1246→  1246→                <Card className="px-3 py-3">
+  1247→  1247→                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+  1248→  1248→                    Tlak
+  1249→  1249→                  </p>
+  1250→  1250→                  <p className="text-xl font-bold text-roksal-navy">
+  1251→  1251→                    {windResult.windPressureKpa.toFixed(2)}
+  1252→  1252→                  </p>
+  1253→  1253→                  <p className="text-[10px] text-muted-foreground">kPa</p>
+  1254→  1254→                </Card>
+  1255→  1255→                <Card className="px-3 py-3">
+  1256→  1256→                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+  1257→  1257→                    Skupna sila
+  1258→  1258→                  </p>
+  1259→  1259→                  <p className="text-xl font-bold text-roksal-navy">
+  1260→  1260→                    {windResult.totalForceKn.toFixed(2)}
+  1261→  1261→                  </p>
+  1262→  1262→                  <p className="text-[10px] text-muted-foreground">kN</p>
+  1263→  1263→                </Card>
+  1264→  1264→                <Card className="px-3 py-3">
+  1265→  1265→                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+  1266→  1266→                    Sila/m
+  1267→  1267→                  </p>
+  1268→  1268→                  <p className="text-xl font-bold text-roksal-navy">
+  1269→  1269→                    {windResult.forcePerMeterNm.toFixed(1)}
+  1270→  1270→                  </p>
+  1271→  1271→                  <p className="text-[10px] text-muted-foreground">N/m</p>
+  1272→  1272→                </Card>
+  1273→  1273→              </div>
+  1274→  1274→
+  1275→  1275→              {/* Recommendations */}
+  1276→  1276→              {windResult.recommendations.length > 0 && (
+  1277→  1277→                <Card className="border-roksal-amber/30">
+  1278→  1278→                  <CardHeader className="pb-2 pt-4 px-4">
+  1279→  1279→                    <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-amber">
+  1280→  1280→                      <Info className="h-4 w-4" />
+  1281→  1281→                      Priporočila
+  1282→  1282→                    </CardTitle>
+  1283→  1283→                  </CardHeader>
+  1284→  1284→                  <CardContent className="px-4 pb-4">
+  1285→  1285→                    <ul className="space-y-1.5">
+  1286→  1286→                      {windResult.recommendations.map((r, i) => (
+  1287→  1287→                        <li
+  1288→  1288→                          key={i}
+  1289→  1289→                          className="flex items-start gap-2 text-xs text-muted-foreground"
+  1290→  1290→                        >
+  1291→  1291→                          <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-roksal-amber" />
+  1292→  1292→                          {r}
+  1293→  1293→                        </li>
+  1294→  1294→                      ))}
+  1295→  1295→                    </ul>
+  1296→  1296→                  </CardContent>
+  1297→  1297→                </Card>
+  1298→  1298→              )}
+  1299→  1299→
+  1300→  1300→              {/* Info */}
+  1301→  1301→              <Card className="bg-roksal-navy/5">
+  1302→  1302→                <CardContent className="flex gap-3 p-4">
+  1303→  1303→                  <Info className="h-5 w-5 shrink-0 text-roksal-navy" />
+  1304→  1304→                  <div className="text-xs text-muted-foreground">
+  1305→  1305→                    <p className="font-medium text-roksal-navy">
+  1306→  1306→                      Vetrna obremenitev (EVS EN 1991-1-4)
+  1307→  1307→                    </p>
+  1308→  1308→                    <p className="mt-1">
+  1309→  1309→                      Izračun vključuje osnovni vetrni tlak, terenski faktor, višinski faktor
+  1310→  1310→                      in aerodinamični koeficient. Za kritične primere je potrebna statična analiza.
+  1311→  1311→                    </p>
+  1312→  1312→                  </div>
+  1313→  1313→                </CardContent>
+  1314→  1314→              </Card>
+  1315→  1315→            </div>
+  1316→  1316→          )}
+  1317→  1317→        </>
+  1318→  1318→      )}
+  1319→  1319→
+  1320→  1320→      {/* Save Calculation Button */}
+  1321→  1321→      {(railingResult || anchoringResult || windResult) && (
+  1322→  1322→        <Button
+  1323→  1323→          onClick={() => {
+  1324→  1324→            const modeLabelMap: Record<CalcMode, string> = {
+  1325→  1325→              railing: 'Razmiki letev',
+  1326→  1326→              anchoring: 'Kemično sidranje',
+  1327→  1327→              wind: 'Vetrna obremenitev',
+  1328→  1328→            }
+  1329→  1329→            let keyResult = ''
+  1330→  1330→            let inputs: Record<string, string> = {}
+  1331→  1331→            if (mode === 'railing' && railingResult) {
+  1332→  1332→              keyResult = `${railingResult.slatCount} letvev, razmik ${railingResult.actualGapMm.toFixed(1)}mm`
+  1333→  1333→              inputs = { profileType, totalLength: effectiveTotalLength, slatWidth, maxGap, postCount }
+  1334→  1334→            } else if (mode === 'anchoring' && anchoringResult) {
+  1335→  1335→              keyResult = `${anchoringResult.totalResinMl}ml smola, ${anchoringResult.cartridgesNeeded} patronov`
+  1336→  1336→              inputs = { holeCount, holeDepthMm, holeDiameterMm, temperature, anchorType }
+  1337→  1337→            } else if (mode === 'wind' && windResult) {
+  1338→  1338→              keyResult = `${windResult.windPressureKpa.toFixed(2)} kPa, ${riskLabels[windResult.riskLevel]}`
+  1339→  1339→              inputs = { heightAboveGround, terrainCategory, windSpeedMs, railingAreaM2, railingType }
+  1340→  1340→            }
+  1341→  1341→            const newCalc: SavedCalculation = {
+  1342→  1342→              id: `calc_${Date.now()}`,
+  1343→  1343→              date: new Date().toISOString(),
+  1344→  1344→              mode,
+  1345→  1345→              modeLabel: modeLabelMap[mode],
+  1346→  1346→              keyResult,
+  1347→  1347→              inputs,
+  1348→  1348→            }
+  1349→  1349→            const updated = [newCalc, ...savedCalculations]
+  1350→  1350→            setSavedCalculations(updated)
+  1351→  1351→            try {
+  1352→  1352→              localStorage.setItem('roksal-saved-calculations', JSON.stringify(updated))
+  1353→  1353→            } catch {
+  1354→  1354→              // ignore
+  1355→  1355→            }
+  1356→  1356→            toast.success('Izračun shranjen')
+  1357→  1357→          }}
+  1358→  1358→          className="w-full bg-roksal-navy hover:bg-roksal-navy/90 text-white h-11 transition-all duration-200"
+  1359→  1359→        >
+  1360→  1360→          <Save className="mr-2 h-4 w-4" />
+  1361→  1361→          Shrani izračun
+  1362→  1362→        </Button>
+  1363→  1363→      )}
+  1364→  1364→
+  1365→  1365→      {/* Saved Calculations Section */}
+  1366→  1366→      {savedCalculations.length > 0 && (
+  1367→  1367→        <Card className="card-hover transition-all duration-200">
+  1368→  1368→          <CardHeader className="pb-2 pt-4 px-4">
+  1369→  1369→            <div className="flex items-center justify-between">
+  1370→  1370→              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+  1371→  1371→                <Clock className="h-4 w-4" />
+  1372→  1372→                Shrjeni izračuni
+  1373→  1373→              </CardTitle>
+  1374→  1374→              <Button
+  1375→  1375→                variant="ghost"
+  1376→  1376→                size="sm"
+  1377→  1377→                className="h-7 px-2 text-[10px] text-roksal-red hover:text-roksal-red hover:bg-roksal-red/10"
+  1378→  1378→                onClick={() => {
+  1379→  1379→                  setSavedCalculations([])
+  1380→  1380→                  try { localStorage.removeItem('roksal-saved-calculations') } catch { /* ignore */ }
+  1381→  1381→                  toast.success('Vsi izračuni počiščeni')
+  1382→  1382→                }}
+  1383→  1383→              >
+  1384→  1384→                <Trash2 className="mr-1 h-3 w-3" />
+  1385→  1385→                Počisti vse
+  1386→  1386→              </Button>
+  1387→  1387→            </div>
+  1388→  1388→          </CardHeader>
+  1389→  1389→          <CardContent className="px-4 pb-4">
+  1390→  1390→            <div className="space-y-2 max-h-72 overflow-y-auto scrollbar-thin">
+  1391→  1391→              {savedCalculations.map((calc) => (
+  1392→  1392→                <button
+  1393→  1393→                  key={calc.id}
+  1394→  1394→                  onClick={() => {
+  1395→  1395→                    // Load saved inputs back
+  1396→  1396→                    if (calc.mode === 'railing') {
+  1397→  1397→                      if (calc.inputs.profileType) setProfileType(calc.inputs.profileType as ProfileType)
+  1398→  1398→                      if (calc.inputs.totalLength) setTotalLength(calc.inputs.totalLength)
+  1399→  1399→                      if (calc.inputs.slatWidth) setSlatWidth(calc.inputs.slatWidth)
+  1400→  1400→                      if (calc.inputs.maxGap) setMaxGap(calc.inputs.maxGap)
+  1401→  1401→                      if (calc.inputs.postCount) setPostCount(calc.inputs.postCount)
+  1402→  1402→                      setMode('railing')
+  1403→  1403→                    } else if (calc.mode === 'anchoring') {
+  1404→  1404→                      if (calc.inputs.holeCount) setHoleCount(calc.inputs.holeCount)
+  1405→  1405→                      if (calc.inputs.holeDepthMm) setHoleDepthMm(calc.inputs.holeDepthMm)
+  1406→  1406→                      if (calc.inputs.holeDiameterMm) setHoleDiameterMm(calc.inputs.holeDiameterMm)
+  1407→  1407→                      if (calc.inputs.temperature) setTemperature(calc.inputs.temperature)
+  1408→  1408→                      if (calc.inputs.anchorType) setAnchorType(calc.inputs.anchorType as AnchorType)
+  1409→  1409→                      setMode('anchoring')
+  1410→  1410→                    } else if (calc.mode === 'wind') {
+  1411→  1411→                      if (calc.inputs.heightAboveGround) setHeightAboveGround(calc.inputs.heightAboveGround)
+  1412→  1412→                      if (calc.inputs.terrainCategory) setTerrainCategory(calc.inputs.terrainCategory as TerrainCategory)
+  1413→  1413→                      if (calc.inputs.windSpeedMs) setWindSpeedMs(calc.inputs.windSpeedMs)
+  1414→  1414→                      if (calc.inputs.railingAreaM2) setRailingAreaM2(calc.inputs.railingAreaM2)
+  1415→  1415→                      if (calc.inputs.railingType) setRailingType(calc.inputs.railingType as RailingType)
+  1416→  1416→                      setMode('wind')
+  1417→  1417→                    }
+  1418→  1418→                    toast.info(`Izračun "${calc.modeLabel}" naložen`)
+  1419→  1419→                  }}
+  1420→  1420→                  className="flex w-full items-center justify-between rounded-lg border border-border/50 p-3 transition-colors hover:bg-secondary/30 text-left"
+  1421→  1421→                >
+  1422→  1422→                  <div className="min-w-0 flex-1">
+  1423→  1423→                    <div className="flex items-center gap-2">
+  1424→  1424→                      <Badge variant="secondary" className="text-[10px] h-5 px-1.5 shrink-0">
+  1425→  1425→                        {calc.modeLabel}
+  1426→  1426→                      </Badge>
+  1427→  1427→                      <span className="text-[10px] text-muted-foreground">
+  1428→  1428→                        {new Date(calc.date).toLocaleDateString('sl-SI', { day: 'numeric', month: 'short' })}
+  1429→  1429→                      </span>
+  1430→  1430→                    </div>
+  1431→  1431→                    <p className="mt-0.5 truncate text-xs font-medium text-roksal-navy">
+  1432→  1432→                      {calc.keyResult}
+  1433→  1433→                    </p>
+  1434→  1434→                  </div>
+  1435→  1435→                  <RotateCcw className="h-3.5 w-3.5 shrink-0 text-muted-foreground ml-2" />
+  1436→  1436→                </button>
+  1437→  1437→              ))}
+  1438→  1438→            </div>
+  1439→  1439→          </CardContent>
+  1440→  1440→        </Card>
+  1441→  1441→      )}
+  1442→  1442→    </div>
+  1443→  1443→  )
+  1444→  1444→}
+  1445→  1445→
