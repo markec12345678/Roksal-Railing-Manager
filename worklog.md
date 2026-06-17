@@ -807,3 +807,46 @@ Stage Summary:
 - **Izbira aktivnega projekta** iz dashboarda teče skozi AR/Nagib/Skice
 - **Katalog profilov** prikazuje 10 Roksal profilov z iskanjem in filtri
 - Pripravljeno za F5 (slikanje) in F6 (PDF/PWA)
+
+---
+Task ID: 10
+Agent: Main Orchestrator (Z.ai Code)
+Task: F5 (Slikanje) + F6 (PDF izvoz + PWA)
+
+Work Log:
+- F5: Razširil Prisma shemo z modelom ProjectPhoto (kategorija PRED/MED/PO, imageData base64, GPS lat/lon)
+- F5: Ustvaril /api/photos (GET z filter po kategoriji, POST save, DELETE)
+- F5: Ustvaril src/components/roksal/photo-tab.tsx:
+  - Polnozaslonska kamera (getUserMedia, facingMode:environment) znotraj aplikacije
+  - Kategorija selector (Pred/Med/Po montaži) pred zajemom
+  - JPEG kompresija na 0.75, max 1280px širina (pred prevelikimi slikami)
+  - GPS lokacija avtomatsko (geolocation API, high accuracy)
+  - Opomba k sliki ob shranjevanju
+  - Grid galerija (3 stolpce) s predogledom, badge kategorije, brisanje
+  - Filter po kategoriji, števci (koliko PRED/MED/PO)
+  - Dialog za predogled slike z GPS koordinatami
+- F5: Dodal "Slike" kot glavni zavihek v navigaciji (zamenjal Galerijo, ki je šla v Več meni)
+- F6: PWA — ustvaril public/manifest.json (name, theme_color #1d2b3e, standalone, portrait, slovenski lang)
+- F6: PWA — generiral SVG ikono (navy ozadje + amber ograja + R) in PNG 192/512 preko sharp
+- F6: PWA — ustvaril public/sw.js (service worker: precache osnovnih URL-jev, cache-first za statične, network-first za /api/, cleanup starih cache)
+- F6: PWA — ustvaril src/components/roksal/sw-register.tsx (registracija SW samo v produkciji)
+- F6: Posodobil layout.tsx — metadata z manifest, appleWebApp, viewport z themeColor/viewportFit cover (iOS safe area)
+- F6: Namestil jspdf + jspdf-autotable
+- F6: Ustvaril src/components/roksal/pdf-export.tsx:
+  - "Delovni list monterja" PDF: glava Roksal, podatki projekta, meritve (tabela), slike pred/med/po (2x2 grid), opombe, podpisi, noga
+  - "Ponudba za stranko" PDF: glava, za/dobivalnik, postavke iz meritev (izračun m² × cena), DDV 22%, skupaj, pogoji, podpis
+  - jsPDF + autoTable, Roksal barve (navy/amber), A4 format
+- F6: Dodal "Izvoz PDF" v Več meni (prva opcija)
+- Lint: 0 errors, 6 warnings (samo unused eslint-disable direktive — neškodljive)
+- QA z agent-browser:
+  - Slike zavihek: gumb "Slikaj", filtri (Vse/Pred/Med/Po), števci
+  - Več meni: 6 opcij (Izvoz PDF, Galerija, Katalog, Skice, Dokumenti, Varnost)
+  - Izvoz PDF: oba gumba prikazana (Delovni list + Ponudba)
+  - 0 napak v konzoli
+
+Stage Summary:
+- **Slikanje** s kamero znotraj aplikacije, kategorije pred/med/po, GPS, JPEG kompresija, galerija
+- **PDF izvoz** — delovni list monterja + ponudba za stranko (jsPDF, Roksal branding)
+- **PWA** — manifest, ikone (SVG+PNG 192/512), service worker, offline cache, appleWebApp
+- **Navigacija** — 8 glavnih zavihkov (Domov/AR/Slike/Kalkulator/Meritve/Nagib/Zaloga/Več) + 6 v Več meniju
+- Pripravljeno za F7 (končna QA + push na GitHub)

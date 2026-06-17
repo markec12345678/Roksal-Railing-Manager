@@ -14,6 +14,8 @@ import { ReferenceGallery } from '@/components/roksal/reference-gallery'
 import { RoksalCatalog } from '@/components/roksal/roksal-catalog'
 import { SketchCanvas } from '@/components/roksal/sketch-canvas'
 import { ArScannerLauncher } from '@/components/roksal/ar-scanner-launcher'
+import { PhotoTab } from '@/components/roksal/photo-tab'
+import { PdfExport } from '@/components/roksal/pdf-export'
 import { RefreshCw, Camera, ChevronLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -129,13 +131,17 @@ export default function Home() {
 
   // Ime aktivnega "več" zavihka za nazaj
   const moreLabel = moreTab
-    ? moreTab === 'catalog'
-      ? 'Katalog profilov'
-      : moreTab === 'sketches'
-        ? 'Skice'
-        : moreTab === 'documents'
-          ? 'Dokumenti'
-          : 'Varnost'
+    ? moreTab === 'pdf'
+      ? 'Izvoz PDF'
+      : moreTab === 'gallery'
+        ? 'Galerija realizacij'
+        : moreTab === 'catalog'
+          ? 'Katalog profilov'
+          : moreTab === 'sketches'
+            ? 'Skice'
+            : moreTab === 'documents'
+              ? 'Dokumenti'
+              : 'Varnost'
     : ''
 
   return (
@@ -162,7 +168,7 @@ export default function Home() {
       </div>
 
       {/* Aktivni projekt indikator (kompakten) */}
-      {selectedProject && (activeTab === 'ar' || activeTab === 'inclinometer' || moreTab === 'sketches') && (
+      {selectedProject && (activeTab === 'ar' || activeTab === 'photos' || activeTab === 'inclinometer' || moreTab === 'sketches') && (
         <div className="mx-auto max-w-lg px-3 pb-1">
           <div className="flex items-center gap-2 rounded-lg border border-roksal-amber/30 bg-roksal-amber/5 px-3 py-1.5 text-[11px]">
             <Camera className="h-3 w-3 text-roksal-amber" />
@@ -186,6 +192,7 @@ export default function Home() {
             <ArScannerLauncher projectId={selectedProjectId} />
           </div>
         )}
+        {activeTab === 'photos' && <PhotoTab projectId={selectedProjectId} />}
         {activeTab === 'calculator' && (
           <CalculatorTab
             importedFromMeasurement={calculatorImport}
@@ -196,7 +203,6 @@ export default function Home() {
         {activeTab === 'measurements' && (
           <MeasurementsTab onNavigateToCalculator={handleNavigateToCalculator} />
         )}
-        {activeTab === 'gallery' && <ReferenceGallery />}
         {activeTab === 'inclinometer' && <InclinometerTab projectId={selectedProjectId} />}
         {activeTab === 'inventory' && <InventoryTab />}
 
@@ -217,6 +223,8 @@ export default function Home() {
               Nazaj
             </Button>
             <h2 className="mb-3 text-lg font-bold text-roksal-navy">{moreLabel}</h2>
+            {moreTab === 'pdf' && <PdfExport project={selectedProject} />}
+            {moreTab === 'gallery' && <ReferenceGallery />}
             {moreTab === 'catalog' && <RoksalCatalog />}
             {moreTab === 'documents' && <DocumentsTab />}
             {moreTab === 'safety' && <SafetyTab />}

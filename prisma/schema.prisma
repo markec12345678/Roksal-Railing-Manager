@@ -94,6 +94,7 @@ model Project {
   sketches      Sketch[]
   slopes        Slope[]
   galleryItems  GalleryItem[]
+  photos        ProjectPhoto[]
 }
 
 // ============================================

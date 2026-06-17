@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="96" fill="#1d2b3e"/>
+  <!-- R beton ograje -->
+  <rect x="120" y="160" width="272" height="16" rx="4" fill="#f59e0b"/>
+  <rect x="120" y="200" width="272" height="12" rx="4" fill="#f59e0b" opacity="0.85"/>
+  <rect x="120" y="232" width="272" height="12" rx="4" fill="#f59e0b" opacity="0.7"/>
+  <rect x="120" y="264" width="272" height="12" rx="4" fill="#f59e0b" opacity="0.55"/>
+  <!-- pokončni stebri -->
+  <rect x="120" y="140" width="14" height="232" rx="4" fill="#f59e0b"/>
+  <rect x="378" y="140" width="14" height="232" rx="4" fill="#f59e0b"/>
+  <!-- besedilo R -->
+  <text x="256" y="420" font-family="Arial, sans-serif" font-size="120" font-weight="bold" fill="#f59e0b" text-anchor="middle">R</text>
+</svg>
