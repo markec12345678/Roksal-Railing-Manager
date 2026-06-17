@@ -74,7 +74,7 @@ export default function Home() {
     fetchData()
     syncTimer = setInterval(fetchData, 300000)
     return () => clearInterval(syncTimer)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [])
 
   const badges = useMemo<Record<string, number>>(() => {

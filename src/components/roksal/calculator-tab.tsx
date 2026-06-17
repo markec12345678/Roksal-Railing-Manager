@@ -1,12 +1,21 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
+import { Separator } from '@/components/ui/separator'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import {
   Select,
   SelectContent,
@@ -14,9 +23,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Calculator, AlertTriangle, CheckCircle2, Info, Thermometer, Wind, Anchor, Package, Save, Trash2, Clock, RotateCcw, Ruler, Scissors, ArrowLeft, ArrowDownToLine, Euro } from 'lucide-react'
+import { Calculator, AlertTriangle, CheckCircle2, Info, Thermometer, Wind, Anchor, Package, Save, Trash2, Clock, RotateCcw, Ruler, Scissors, ArrowLeft, ArrowDownToLine, Euro, AlignJustify, Triangle, ShieldCheck, Plus, X, FileDown, Hammer, Drill } from 'lucide-react'
+import {
+  calculateEqualSpacing,
+  calculateAngledSpacing,
+  calculateHoleTemplate,
+  calculateMaterialTotal,
+  checkCompliance,
+  type EqualSpacingResult,
+  type AngledSpacingResult,
+  type MaterialTotalResult,
+  type ComplianceResult,
+  type Profil as LibProfil,
+  type MaterialSegment,
+} from '@/lib/calculator'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 
-type CalcMode = 'railing' | 'anchoring' | 'wind'
+type CalcMode = 'railing' | 'anchoring' | 'wind' | 'baluster' | 'angled' | 'material' | 'compliance'
 type ProfileType = 'classic' | 'z-line' | 'vertical'
 type AnchorType = 'hilti-hit' | 'fischer-fis' | 'generic'
 type TerrainCategory = 'I' | 'II' | 'III' | 'IV'
@@ -51,6 +75,10 @@ const modeTabs: { id: CalcMode; label: string; icon: React.ElementType }[] = [
   { id: 'railing', label: 'Razmiki letev', icon: Calculator },
   { id: 'anchoring', label: 'Kemično sidranje', icon: Anchor },
   { id: 'wind', label: 'Vetrna obremenitev', icon: Wind },
+  { id: 'baluster', label: 'Razmak palic', icon: AlignJustify },
+  { id: 'angled', label: 'Kotni izračun', icon: Triangle },
+  { id: 'material', label: 'Skupni material', icon: Package },
+  { id: 'compliance', label: 'Predpisi', icon: ShieldCheck },
 ]
 
 const anchorTypeLabels: Record<AnchorType, string> = {
@@ -130,6 +158,36 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
   const [railingType, setRailingType] = useState<RailingType>('slatted')
   const [windResult, setWindResult] = useState<WindResult | null>(null)
 
+  // ===== Baluster (Razmak palic) state =====
+  const [balTotalLength, setBalTotalLength] = useState('3.0')
+  const [balWidth, setBalWidth] = useState('40')
+  const [balMaxGap, setBalMaxGap] = useState('110')
+  const [balPostSpacing, setBalPostSpacing] = useState('1500')
+  const [balusterResult, setBalusterResult] = useState<EqualSpacingResult | null>(null)
+
+  // ===== Angled (Kotni izračun) state =====
+  const [angHorizontalLength, setAngHorizontalLength] = useState('2.5')
+  const [angRakeAngle, setAngRakeAngle] = useState('35')
+  const [angWidth, setAngWidth] = useState('40')
+  const [angMaxGap, setAngMaxGap] = useState('110')
+  const [angledResult, setAngledResult] = useState<AngledSpacingResult | null>(null)
+
+  // ===== Material (Skupni material) state =====
+  const [segments, setSegments] = useState<MaterialSegment[]>([
+    { lengthMm: 3000, heightMm: 1100, type: 'level' },
+  ])
+  const [profili, setProfili] = useState<LibProfil[]>([])
+  const [selectedProfileSifra, setSelectedProfileSifra] = useState<string>('')
+  const [materialResult, setMaterialResult] = useState<MaterialTotalResult | null>(null)
+
+  // ===== Compliance (Predpisi) state =====
+  const [compGap, setCompGap] = useState('90')
+  const [compHeight, setCompHeight] = useState('1100')
+  const [compPostSpacing, setCompPostSpacing] = useState('1500')
+  const [compLoadCategory, setCompLoadCategory] = useState<'A' | 'B' | 'C'>('A')
+  const [compDropHeight, setCompDropHeight] = useState('0')
+  const [complianceResult, setComplianceResult] = useState<ComplianceResult | null>(null)
+
   // Compute imported length for display
   const importedLength = useMemo(() => {
     if (!importedFromMeasurement) return null
@@ -174,6 +232,14 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
       calculateAnchoringClientSide()
     } else if (mode === 'wind') {
       calculateWindClientSide()
+    } else if (mode === 'baluster') {
+      calculateBalusterClientSide()
+    } else if (mode === 'angled') {
+      calculateAngledClientSide()
+    } else if (mode === 'material') {
+      calculateMaterialClientSide()
+    } else if (mode === 'compliance') {
+      calculateComplianceClientSide()
     }
   }
 
@@ -295,6 +361,76 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
     })
   }
 
+  // ===== Baluster calculation =====
+  function calculateBalusterClientSide() {
+    const L = parseFloat(balTotalLength) * 1000
+    const W = parseFloat(balWidth)
+    const G = parseFloat(balMaxGap)
+    if (!isFinite(L) || !isFinite(W) || !isFinite(G) || L <= 0 || W <= 0 || G <= 0) {
+      setBalusterResult(null)
+      return
+    }
+    const result = calculateEqualSpacing({
+      totalLengthMm: L,
+      balusterWidthMm: W,
+      maxGapMm: G,
+    })
+    setBalusterResult(result)
+  }
+
+  // ===== Angled calculation =====
+  function calculateAngledClientSide() {
+    const L = parseFloat(angHorizontalLength) * 1000
+    const angle = parseFloat(angRakeAngle)
+    const W = parseFloat(angWidth)
+    const G = parseFloat(angMaxGap)
+    if (!isFinite(L) || !isFinite(angle) || !isFinite(W) || !isFinite(G) || L <= 0 || W <= 0 || G <= 0) {
+      setAngledResult(null)
+      return
+    }
+    const result = calculateAngledSpacing({
+      horizontalLengthMm: L,
+      rakeAngleDeg: angle,
+      balusterWidthMm: W,
+      maxGapMm: G,
+    })
+    setAngledResult(result)
+  }
+
+  // ===== Material calculation =====
+  function calculateMaterialClientSide() {
+    if (segments.length === 0) {
+      setMaterialResult(null)
+      return
+    }
+    const result = calculateMaterialTotal({
+      segments,
+      profileSifra: selectedProfileSifra,
+      profili,
+    })
+    setMaterialResult(result)
+  }
+
+  // ===== Compliance calculation =====
+  function calculateComplianceClientSide() {
+    const gap = parseFloat(compGap)
+    const height = parseFloat(compHeight)
+    const spacing = parseFloat(compPostSpacing)
+    const drop = parseFloat(compDropHeight) || 0
+    if (!isFinite(gap) || !isFinite(height) || !isFinite(spacing)) {
+      setComplianceResult(null)
+      return
+    }
+    const result = checkCompliance({
+      gapMm: gap,
+      heightMm: height,
+      postSpacingMm: spacing,
+      loadCategory: compLoadCategory,
+      dropHeightMm: drop,
+    })
+    setComplianceResult(result)
+  }
+
   // Auto-calculate on input change
   useEffect(() => {
     if (mode === 'railing') {
@@ -303,8 +439,201 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
       calculateAnchoringClientSide()
     } else if (mode === 'wind') {
       calculateWindClientSide()
+    } else if (mode === 'baluster') {
+      calculateBalusterClientSide()
+    } else if (mode === 'angled') {
+      calculateAngledClientSide()
+    } else if (mode === 'material') {
+      calculateMaterialClientSide()
+    } else if (mode === 'compliance') {
+      calculateComplianceClientSide()
     }
-  }, [mode, profileType, effectiveTotalLength, slatWidth, maxGap, postCount, holeCount, holeDepthMm, holeDiameterMm, temperature, anchorType, heightAboveGround, terrainCategory, windSpeedMs, railingAreaM2, railingType])
+  }, [mode, profileType, effectiveTotalLength, slatWidth, maxGap, postCount, holeCount, holeDepthMm, holeDiameterMm, temperature, anchorType, heightAboveGround, terrainCategory, windSpeedMs, railingAreaM2, railingType, balTotalLength, balWidth, balMaxGap, balPostSpacing, angHorizontalLength, angRakeAngle, angWidth, angMaxGap, segments, selectedProfileSifra, compGap, compHeight, compPostSpacing, compLoadCategory, compDropHeight])
+
+  // Fetch profili when material mode is selected
+  useEffect(() => {
+    if (mode === 'material' && profili.length === 0) {
+      fetch('/api/profili')
+        .then((r) => r.json())
+        .then((data: LibProfil[]) => {
+          if (Array.isArray(data)) {
+            setProfili(data)
+            if (data.length > 0 && !selectedProfileSifra) {
+              setSelectedProfileSifra(data[0].sifra)
+            }
+          }
+        })
+        .catch(() => {
+          toast.error('Napaka pri nalaganju profilov')
+        })
+    }
+  }, [mode, profili.length, selectedProfileSifra])
+
+  // ===== PDF: Baluster drilling template =====
+  function exportBalusterPdf() {
+    if (!balusterResult) return
+    const L = parseFloat(balTotalLength) * 1000
+    const W = parseFloat(balWidth)
+    const G = parseFloat(balMaxGap)
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' })
+    const pageW = doc.internal.pageSize.getWidth()
+
+    // Navy header
+    doc.setFillColor(29, 43, 62)
+    doc.rect(0, 0, pageW, 22, 'F')
+    doc.setTextColor(255, 255, 255)
+    doc.setFontSize(15)
+    doc.setFont('helvetica', 'bold')
+    doc.text('ROKSAL — Predloga vrtanja', 14, 12)
+    doc.setFontSize(9)
+    doc.setFont('helvetica', 'normal')
+    doc.text('Kranj, Slovenija', 14, 18)
+    // Amber accent
+    doc.setFillColor(245, 158, 11)
+    doc.rect(0, 22, pageW, 1.5, 'F')
+
+    let y = 30
+    doc.setTextColor(20, 20, 20)
+    doc.setFontSize(11)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Parameter', 14, y)
+    doc.text('Vrednost', 80, y)
+    y += 4
+    doc.setDrawColor(220, 220, 220)
+    doc.line(14, y, pageW - 14, y)
+    y += 5
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(10)
+    const rows: [string, string][] = [
+      ['Skupna dolžina', `${L.toFixed(0)}mm (${(L / 1000).toFixed(2)}m)`],
+      ['Širina palice', `${W}mm`],
+      ['Maksimalni razmik', `${G}mm`],
+      ['Dejanski razmik', `${balusterResult.actualGapMm.toFixed(1)}mm`],
+      ['Število palic', `${balusterResult.balusterCount} kos`],
+      ['Skladnost (SIST EN 1264)', balusterResult.isCompliant ? 'DA ✓' : 'NE ✗'],
+    ]
+    for (const [k, v] of rows) {
+      doc.setTextColor(90, 90, 90)
+      doc.text(k, 14, y)
+      doc.setTextColor(20, 20, 20)
+      doc.text(v, 80, y)
+      y += 5
+    }
+
+    // Hole template table (centers for drilling)
+    y += 4
+    doc.setFontSize(11)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(29, 43, 62)
+    doc.text('Pozicije lukenj (centri palic) od prve točke', 14, y)
+    y += 3
+
+    autoTable(doc, {
+      startY: y,
+      head: [['#', 'mm', 'cm', 'm']],
+      body: balusterResult.centers.map((c, i) => [
+        String(i + 1),
+        `${c.toFixed(1)}`,
+        `${(c / 10).toFixed(2)}`,
+        `${(c / 1000).toFixed(3)}`,
+      ]),
+      theme: 'grid',
+      headStyles: { fillColor: [29, 43, 62], fontSize: 9 },
+      bodyStyles: { fontSize: 8, textColor: [40, 40, 40] },
+      alternateRowStyles: { fillColor: [247, 249, 255] },
+      margin: { left: 14, right: 14 },
+    })
+
+    // Footer
+    const finalY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY
+    doc.setFontSize(8)
+    doc.setTextColor(120, 120, 120)
+    doc.text(
+      `Datum: ${new Date().toLocaleDateString('sl-SI')} — Roksal Railing Manager`,
+      14,
+      finalY + 10,
+    )
+    doc.save(`roksal-predloga-vrtanja-${Date.now()}.pdf`)
+    toast.success('Predloga PDF izvožena')
+  }
+
+  // ===== PDF: Material list =====
+  function exportMaterialPdf() {
+    if (!materialResult) return
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' })
+    const pageW = doc.internal.pageSize.getWidth()
+
+    // Navy header
+    doc.setFillColor(29, 43, 62)
+    doc.rect(0, 0, pageW, 22, 'F')
+    doc.setTextColor(255, 255, 255)
+    doc.setFontSize(15)
+    doc.setFont('helvetica', 'bold')
+    doc.text('ROKSAL — Materialni list', 14, 12)
+    doc.setFontSize(9)
+    doc.setFont('helvetica', 'normal')
+    doc.text('Kranj, Slovenija', 14, 18)
+    // Amber accent
+    doc.setFillColor(245, 158, 11)
+    doc.rect(0, 22, pageW, 1.5, 'F')
+
+    let y = 30
+    doc.setTextColor(20, 20, 20)
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'normal')
+    doc.text(`Profil: ${materialResult.selectedProfile?.naziv ?? '—'} (${materialResult.selectedProfile?.sifra ?? '—'})`, 14, y)
+    y += 5
+    doc.text(`Datum: ${new Date().toLocaleDateString('sl-SI')}`, 14, y)
+    y += 7
+
+    // Summary table
+    autoTable(doc, {
+      startY: y,
+      head: [['Material', 'Količina', 'Enota']],
+      body: [
+        ['Letve (zgoraj + spodaj)', `${materialResult.railLinearMeters.toFixed(2)}`, 'm'],
+        ['Palice (linearni metri)', `${materialResult.balusterLinearMeters.toFixed(2)}`, 'm'],
+        ['Skupno profil', `${materialResult.totalLinearMeters.toFixed(2)}`, 'm'],
+        ['Palice (število)', `${materialResult.balusterCount}`, 'kos'],
+        ['Stebri', `${materialResult.postCount}`, 'kos'],
+        ['Število letvev (top+bottom)', `${materialResult.railCount}`, 'kos'],
+        ['Vijaki (4/palico + 8/stebro)', `${materialResult.screwCount}`, 'kos'],
+        ['Sidra (2/stebro)', `${materialResult.anchorCount}`, 'kos'],
+      ],
+      theme: 'grid',
+      headStyles: { fillColor: [29, 43, 62], fontSize: 9 },
+      bodyStyles: { fontSize: 9 },
+      alternateRowStyles: { fillColor: [247, 249, 255] },
+      margin: { left: 14, right: 14 },
+    })
+
+    // Cost breakdown
+    const y2 = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8
+    autoTable(doc, {
+      startY: y2,
+      head: [['Postavka', 'Cena (€)']],
+      body: [
+        ['Profil material', materialResult.profileCost.toFixed(2)],
+        ['Stebri (25 €/kos)', materialResult.postsCost.toFixed(2)],
+        ['Vijaki (0,10 €/kos)', materialResult.screwsCost.toFixed(2)],
+        ['Sidra (1,50 €/kos)', materialResult.anchorsCost.toFixed(2)],
+        ['SKUPAJ', materialResult.totalCost.toFixed(2)],
+      ],
+      theme: 'grid',
+      headStyles: { fillColor: [245, 158, 11], textColor: [29, 43, 62], fontSize: 9 },
+      bodyStyles: { fontSize: 9 },
+      foot: [['', `${materialResult.totalCost.toFixed(2)} €`]],
+      footStyles: { fillColor: [29, 43, 62], textColor: [255, 255, 255], fontSize: 10 },
+      margin: { left: 14, right: 14 },
+    })
+
+    const finalY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY
+    doc.setFontSize(8)
+    doc.setTextColor(120, 120, 120)
+    doc.text('Roksal Railing Manager — orientacijska cena. Končno ponudbo pripravi vodja projekta.', 14, finalY + 10)
+    doc.save(`roksal-materialni-list-${Date.now()}.pdf`)
+    toast.success('Materialni list PDF izvožen')
+  }
 
   // Generate cut list positions
   function getCutList(): { num: number; type: 'razmik' | 'letva'; startPosMm: number; widthMm: number }[] {
@@ -1317,14 +1646,1030 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
         </>
       )}
 
+      {/* ===== BALUSTER (RAZMAK PALIC) CALCULATOR ===== */}
+      {mode === 'baluster' && (
+        <>
+          <Card>
+            <CardHeader className="pb-3 pt-4 px-4">
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+                <AlignJustify className="h-4 w-4" />
+                Razmak palic — enakomerna porazdelitev
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 px-4 pb-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="balTotalLength" className="text-xs">
+                  Skupna dolžina (m)
+                </Label>
+                <Input
+                  id="balTotalLength"
+                  type="number"
+                  value={balTotalLength}
+                  onChange={(e) => setBalTotalLength(e.target.value)}
+                  placeholder="3.0"
+                  step="0.1"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="balWidth" className="text-xs">
+                    Širina palice (mm)
+                  </Label>
+                  <Input
+                    id="balWidth"
+                    type="number"
+                    value={balWidth}
+                    onChange={(e) => setBalWidth(e.target.value)}
+                    placeholder="40"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="balMaxGap" className="text-xs">
+                    Max razmik (mm)
+                  </Label>
+                  <Input
+                    id="balMaxGap"
+                    type="number"
+                    value={balMaxGap}
+                    onChange={(e) => setBalMaxGap(e.target.value)}
+                    placeholder="110"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="balPostSpacing" className="text-xs">
+                  Razmik stebrov (mm, max 1500)
+                </Label>
+                <Input
+                  id="balPostSpacing"
+                  type="number"
+                  value={balPostSpacing}
+                  onChange={(e) => setBalPostSpacing(e.target.value)}
+                  placeholder="1500"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Button
+            type="button"
+            onClick={handleCalculate}
+            className="w-full bg-roksal-navy hover:bg-roksal-navy/90 text-white h-11"
+          >
+            <AlignJustify className="mr-2 h-4 w-4" />
+            Izračunaj razmak palic
+          </Button>
+
+          {balusterResult && (
+            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
+              {/* Compliance */}
+              <Card
+                className={`overflow-hidden border-l-4 ${
+                  balusterResult.isCompliant
+                    ? 'border-l-roksal-green bg-roksal-green/5'
+                    : 'border-l-roksal-red bg-roksal-red/5'
+                }`}
+              >
+                <CardContent className="flex items-center gap-3 p-4">
+                  {balusterResult.isCompliant ? (
+                    <CheckCircle2 className="h-6 w-6 shrink-0 text-roksal-green" />
+                  ) : (
+                    <AlertTriangle className="h-6 w-6 shrink-0 text-roksal-red" />
+                  )}
+                  <div>
+                    <p
+                      className={`text-sm font-semibold ${
+                        balusterResult.isCompliant ? 'text-roksal-green' : 'text-roksal-red'
+                      }`}
+                    >
+                      {balusterResult.isCompliant
+                        ? 'SKLADNO s predpisi'
+                        : 'NESKLADNO — presežen razmik!'}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Razmik {balusterResult.actualGapMm.toFixed(1)}mm{' '}
+                      {balusterResult.isCompliant ? '≤' : '>'} {balMaxGap}mm
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Result cards */}
+              <div className="grid grid-cols-2 gap-3">
+                <Card className="px-3 py-3">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                    Število palic
+                  </p>
+                  <p className="text-2xl font-bold text-roksal-navy">
+                    {balusterResult.balusterCount}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">kos × {balWidth}mm</p>
+                </Card>
+                <Card className="px-3 py-3">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                    Dejanski razmik
+                  </p>
+                  <p className="text-2xl font-bold text-roksal-navy">
+                    {balusterResult.actualGapMm.toFixed(1)}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">mm</p>
+                </Card>
+              </div>
+
+              {/* SVG diagram */}
+              <Card>
+                <CardHeader className="pb-2 pt-4 px-4">
+                  <CardTitle className="text-sm font-semibold text-roksal-navy">
+                    Vizualizacija — tehnična skica
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="px-4 pb-4">
+                  <BalusterSvg
+                    totalLengthMm={parseFloat(balTotalLength) * 1000}
+                    balusterWidthMm={parseFloat(balWidth)}
+                    positions={balusterResult.positions}
+                    gapMm={balusterResult.actualGapMm}
+                    count={balusterResult.balusterCount}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Positions table */}
+              <Card>
+                <CardHeader className="pb-2 pt-4 px-4">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+                      <Drill className="h-4 w-4" />
+                      Pozicije od prve točke
+                    </CardTitle>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-7 px-2 text-[10px] border-roksal-amber/30 text-roksal-navy hover:bg-roksal-amber/10"
+                      onClick={exportBalusterPdf}
+                    >
+                      <FileDown className="mr-1 h-3 w-3" />
+                      Izvozi PDF
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="px-4 pb-4">
+                  <div className="max-h-80 overflow-y-auto scrollbar-thin rounded-lg border border-border/40">
+                    <Table>
+                      <TableHeader className="sticky top-0 bg-background z-10">
+                        <TableRow>
+                          <TableHead className="w-10 text-center">#</TableHead>
+                          <TableHead className="text-right">mm</TableHead>
+                          <TableHead className="text-right">cm</TableHead>
+                          <TableHead className="text-right">m</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {balusterResult.centers.map((c, i) => (
+                          <TableRow key={i} className="even:bg-roksal-navy/5">
+                            <TableCell className="text-center font-semibold text-roksal-navy">
+                              {i + 1}
+                            </TableCell>
+                            <TableCell className="text-right font-mono text-xs">
+                              {c.toFixed(1)}
+                            </TableCell>
+                            <TableCell className="text-right font-mono text-xs">
+                              {(c / 10).toFixed(2)}
+                            </TableCell>
+                            <TableCell className="text-right font-mono text-xs">
+                              {(c / 1000).toFixed(3)}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                  <p className="mt-2 text-[10px] text-muted-foreground">
+                    Pozicije so centri palic — kjer vrtate luknje za pritrditev.
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Warnings */}
+              {balusterResult.warnings.length > 0 && (
+                <Card className="border-roksal-amber/30">
+                  <CardHeader className="pb-2 pt-4 px-4">
+                    <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-amber">
+                      <Info className="h-4 w-4" />
+                      Opozorila
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="px-4 pb-4">
+                    <ul className="space-y-1.5">
+                      {balusterResult.warnings.map((w, i) => (
+                        <li
+                          key={i}
+                          className="flex items-start gap-2 text-xs text-muted-foreground"
+                        >
+                          <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-roksal-amber" />
+                          {w}
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ===== ANGLED (KOTNI IZRAČUN) CALCULATOR ===== */}
+      {mode === 'angled' && (
+        <>
+          <Card>
+            <CardHeader className="pb-3 pt-4 px-4">
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+                <Triangle className="h-4 w-4" />
+                Kotni / stopniščni izračun
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 px-4 pb-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="angHorizontalLength" className="text-xs">
+                    Horizontalna dolžina (m)
+                  </Label>
+                  <Input
+                    id="angHorizontalLength"
+                    type="number"
+                    value={angHorizontalLength}
+                    onChange={(e) => setAngHorizontalLength(e.target.value)}
+                    placeholder="2.5"
+                    step="0.1"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="angRakeAngle" className="text-xs">
+                    Kot stopnice (°)
+                  </Label>
+                  <Input
+                    id="angRakeAngle"
+                    type="number"
+                    value={angRakeAngle}
+                    onChange={(e) => setAngRakeAngle(e.target.value)}
+                    placeholder="35"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="angWidth" className="text-xs">
+                    Širina palice (mm)
+                  </Label>
+                  <Input
+                    id="angWidth"
+                    type="number"
+                    value={angWidth}
+                    onChange={(e) => setAngWidth(e.target.value)}
+                    placeholder="40"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="angMaxGap" className="text-xs">
+                    Max razmik (mm)
+                  </Label>
+                  <Input
+                    id="angMaxGap"
+                    type="number"
+                    value={angMaxGap}
+                    onChange={(e) => setAngMaxGap(e.target.value)}
+                    placeholder="110"
+                  />
+                </div>
+              </div>
+              <div className="rounded-lg bg-roksal-navy/5 p-3 text-[11px] text-muted-foreground">
+                <p>
+                  <span className="font-medium text-roksal-navy">Tipični koti:</span>{' '}
+                  30–35° (standardno stopnišče), 38–42° (strmo), 45°+ (zelo strmo, preverite statiko).
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Button
+            type="button"
+            onClick={handleCalculate}
+            className="w-full bg-roksal-navy hover:bg-roksal-navy/90 text-white h-11"
+          >
+            <Triangle className="mr-2 h-4 w-4" />
+            Izračunaj kotni izračun
+          </Button>
+
+          {angledResult && (
+            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
+              {/* Result cards */}
+              <div className="grid grid-cols-2 gap-3">
+                <Card className="px-3 py-3">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                    Rake dolžina
+                  </p>
+                  <p className="text-2xl font-bold text-roksal-navy">
+                    {(angledResult.rakeLengthMm / 1000).toFixed(2)}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">m (poševno)</p>
+                </Card>
+                <Card className="px-3 py-3">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                    Kot stopnice
+                  </p>
+                  <p className="text-2xl font-bold text-roksal-navy">
+                    {angledResult.rakeAngleDeg.toFixed(1)}°
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">
+                    horiz. razmik: {angledResult.horizontalGapMm.toFixed(0)}mm
+                  </p>
+                </Card>
+                <Card className="px-3 py-3">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                    Število palic
+                  </p>
+                  <p className="text-2xl font-bold text-roksal-navy">
+                    {angledResult.balusterCount}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">kos</p>
+                </Card>
+                <Card className="px-3 py-3">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                    Dejanski razmik (po rake)
+                  </p>
+                  <p className="text-2xl font-bold text-roksal-navy">
+                    {angledResult.actualGapMm.toFixed(1)}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">mm</p>
+                </Card>
+              </div>
+
+              {/* Compliance */}
+              <Card
+                className={`overflow-hidden border-l-4 ${
+                  angledResult.isCompliant
+                    ? 'border-l-roksal-green bg-roksal-green/5'
+                    : 'border-l-roksal-red bg-roksal-red/5'
+                }`}
+              >
+                <CardContent className="flex items-center gap-3 p-4">
+                  {angledResult.isCompliant ? (
+                    <CheckCircle2 className="h-6 w-6 shrink-0 text-roksal-green" />
+                  ) : (
+                    <AlertTriangle className="h-6 w-6 shrink-0 text-roksal-red" />
+                  )}
+                  <div>
+                    <p
+                      className={`text-sm font-semibold ${
+                        angledResult.isCompliant ? 'text-roksal-green' : 'text-roksal-red'
+                      }`}
+                    >
+                      {angledResult.isCompliant
+                        ? 'SKLADNO s predpisi'
+                        : 'NESKLADNO — presežen razmik!'}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Razmik {angledResult.actualGapMm.toFixed(1)}mm po rake {' '}
+                      {angledResult.isCompliant ? '≤' : '>'} {angMaxGap}mm
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Angled SVG */}
+              <Card>
+                <CardHeader className="pb-2 pt-4 px-4">
+                  <CardTitle className="text-sm font-semibold text-roksal-navy">
+                    Vizualizacija — kose ograje
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="px-4 pb-4">
+                  <AngledSvg
+                    horizontalLengthMm={parseFloat(angHorizontalLength) * 1000}
+                    rakeAngleDeg={parseFloat(angRakeAngle)}
+                    positions={angledResult.positions}
+                    balusterWidthMm={parseFloat(angWidth)}
+                    gapMm={angledResult.actualGapMm}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Positions table */}
+              <Card>
+                <CardHeader className="pb-2 pt-4 px-4">
+                  <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+                    <Drill className="h-4 w-4" />
+                    Pozicije palic (po rake)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="px-4 pb-4">
+                  <div className="max-h-64 overflow-y-auto scrollbar-thin rounded-lg border border-border/40">
+                    <Table>
+                      <TableHeader className="sticky top-0 bg-background z-10">
+                        <TableRow>
+                          <TableHead className="w-10 text-center">#</TableHead>
+                          <TableHead className="text-right">mm</TableHead>
+                          <TableHead className="text-right">cm</TableHead>
+                          <TableHead className="text-right">m</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {angledResult.centers.map((c, i) => (
+                          <TableRow key={i} className="even:bg-roksal-navy/5">
+                            <TableCell className="text-center font-semibold text-roksal-navy">
+                              {i + 1}
+                            </TableCell>
+                            <TableCell className="text-right font-mono text-xs">
+                              {c.toFixed(1)}
+                            </TableCell>
+                            <TableCell className="text-right font-mono text-xs">
+                              {(c / 10).toFixed(2)}
+                            </TableCell>
+                            <TableCell className="text-right font-mono text-xs">
+                              {(c / 1000).toFixed(3)}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Warnings */}
+              {angledResult.warnings.length > 0 && (
+                <Card className="border-roksal-amber/30">
+                  <CardHeader className="pb-2 pt-4 px-4">
+                    <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-amber">
+                      <Info className="h-4 w-4" />
+                      Opozorila
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="px-4 pb-4">
+                    <ul className="space-y-1.5">
+                      {angledResult.warnings.map((w, i) => (
+                        <li
+                          key={i}
+                          className="flex items-start gap-2 text-xs text-muted-foreground"
+                        >
+                          <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-roksal-amber" />
+                          {w}
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ===== MATERIAL (SKUPNI MATERIAL) CALCULATOR ===== */}
+      {mode === 'material' && (
+        <>
+          <Card>
+            <CardHeader className="pb-3 pt-4 px-4">
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+                <Package className="h-4 w-4" />
+                Segmenti projekta
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 px-4 pb-4">
+              {segments.map((seg, i) => (
+                <div
+                  key={i}
+                  className="rounded-lg border border-border/60 bg-background p-3 space-y-2"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-semibold text-roksal-navy">
+                      Segment {i + 1}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSegments(segments.filter((_, idx) => idx !== i))
+                      }}
+                      className="p-1 rounded-md hover:bg-roksal-red/10 text-roksal-red transition-colors"
+                      aria-label="Odstrani segment"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-[10px] text-muted-foreground">Dolžina (m)</Label>
+                      <Input
+                        type="number"
+                        value={seg.lengthMm / 1000}
+                        onChange={(e) => {
+                          const v = parseFloat(e.target.value) * 1000
+                          setSegments(
+                            segments.map((s, idx) =>
+                              idx === i ? { ...s, lengthMm: isFinite(v) ? v : 0 } : s,
+                            ),
+                          )
+                        }}
+                        step="0.1"
+                        className="h-9 text-xs"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] text-muted-foreground">Višina (mm)</Label>
+                      <Input
+                        type="number"
+                        value={seg.heightMm}
+                        onChange={(e) => {
+                          const v = parseInt(e.target.value)
+                          setSegments(
+                            segments.map((s, idx) =>
+                              idx === i ? { ...s, heightMm: isFinite(v) ? v : 0 } : s,
+                            ),
+                          )
+                        }}
+                        className="h-9 text-xs"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] text-muted-foreground">Tip</Label>
+                      <Select
+                        value={seg.type}
+                        onValueChange={(v: 'level' | 'angled' | 'stair') => {
+                          setSegments(
+                            segments.map((s, idx) =>
+                              idx === i
+                                ? {
+                                    ...s,
+                                    type: v,
+                                    rakeAngleDeg: v === 'level' ? undefined : s.rakeAngleDeg ?? 35,
+                                  }
+                                : s,
+                            ),
+                          )
+                        }}
+                      >
+                        <SelectTrigger className="h-9 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="level">Ravno</SelectItem>
+                          <SelectItem value="angled">Koso</SelectItem>
+                          <SelectItem value="stair">Stopnišče</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  {(seg.type === 'angled' || seg.type === 'stair') && (
+                    <div className="space-y-1">
+                      <Label className="text-[10px] text-muted-foreground">Kot stopnice (°)</Label>
+                      <Input
+                        type="number"
+                        value={seg.rakeAngleDeg ?? 35}
+                        onChange={(e) => {
+                          const v = parseFloat(e.target.value)
+                          setSegments(
+                            segments.map((s, idx) =>
+                              idx === i ? { ...s, rakeAngleDeg: isFinite(v) ? v : 0 } : s,
+                            ),
+                          )
+                        }}
+                        className="h-9 text-xs"
+                      />
+                    </div>
+                  )}
+                </div>
+              ))}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full h-9 border-dashed border-roksal-navy/30 text-roksal-navy hover:bg-roksal-navy/5"
+                onClick={() => {
+                  setSegments([
+                    ...segments,
+                    { lengthMm: 3000, heightMm: 1100, type: 'level' },
+                  ])
+                }}
+              >
+                <Plus className="mr-1.5 h-3.5 w-3.5" />
+                Dodaj segment
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Profile selector */}
+          <Card>
+            <CardHeader className="pb-3 pt-4 px-4">
+              <CardTitle className="text-sm font-semibold text-roksal-navy">
+                Profil materiala
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-4 pb-4">
+              {profili.length === 0 ? (
+                <div className="text-center py-4 text-xs text-muted-foreground">
+                  Nalagam profile...
+                </div>
+              ) : (
+                <Select
+                  value={selectedProfileSifra}
+                  onValueChange={setSelectedProfileSifra}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {profili.map((p) => (
+                      <SelectItem key={p.sifra} value={p.sifra}>
+                        {p.naziv} — {p.sifra} ({p.cenaM.toFixed(2)} €/m)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              {selectedProfileSifra && (
+                <p className="mt-2 text-[11px] text-muted-foreground">
+                  Cena profila:{' '}
+                  <span className="font-medium text-roksal-navy">
+                    {profili.find((p) => p.sifra === selectedProfileSifra)?.cenaM.toFixed(2)} €/m
+                  </span>
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Button
+            type="button"
+            onClick={handleCalculate}
+            className="w-full bg-roksal-navy hover:bg-roksal-navy/90 text-white h-11"
+            disabled={segments.length === 0 || !selectedProfileSifra}
+          >
+            <Package className="mr-2 h-4 w-4" />
+            Izračunaj skupni material
+          </Button>
+
+          {materialResult && (
+            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
+              {/* Main totals */}
+              <div className="grid grid-cols-2 gap-3">
+                <Card className="px-3 py-3 col-span-2">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                    Skupno tekoči metri profila
+                  </p>
+                  <p className="text-3xl font-bold text-roksal-navy">
+                    {materialResult.totalLinearMeters.toFixed(2)}
+                    <span className="text-sm font-normal ml-1">m</span>
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">
+                    letve {materialResult.railLinearMeters.toFixed(2)}m + palice {materialResult.balusterLinearMeters.toFixed(2)}m
+                  </p>
+                </Card>
+                <Card className="px-3 py-3">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                    Palice
+                  </p>
+                  <p className="text-2xl font-bold text-roksal-navy">
+                    {materialResult.balusterCount}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">kos</p>
+                </Card>
+                <Card className="px-3 py-3">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                    Stebri
+                  </p>
+                  <p className="text-2xl font-bold text-roksal-navy">
+                    {materialResult.postCount}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">kos (×2 sidra)</p>
+                </Card>
+                <Card className="px-3 py-3">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                    Vijaki
+                  </p>
+                  <p className="text-2xl font-bold text-roksal-navy">
+                    {materialResult.screwCount}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">kos (A4 Inox)</p>
+                </Card>
+                <Card className="px-3 py-3">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                    Sidra
+                  </p>
+                  <p className="text-2xl font-bold text-roksal-navy">
+                    {materialResult.anchorCount}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">kos (kemična)</p>
+                </Card>
+              </div>
+
+              {/* Per-segment breakdown */}
+              <Card>
+                <CardHeader className="pb-2 pt-4 px-4">
+                  <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+                    <Hammer className="h-4 w-4" />
+                    Razdelitev po segmentih
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="px-4 pb-4">
+                  <div className="rounded-lg border border-border/40 overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="text-xs">#</TableHead>
+                          <TableHead className="text-xs">Tip</TableHead>
+                          <TableHead className="text-xs text-right">Dolžina</TableHead>
+                          <TableHead className="text-xs text-right">Palice</TableHead>
+                          <TableHead className="text-xs text-right">Stebri</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {materialResult.perSegment.map((s, i) => (
+                          <TableRow key={i} className="even:bg-roksal-navy/5">
+                            <TableCell className="text-xs font-semibold text-roksal-navy">{i + 1}</TableCell>
+                            <TableCell className="text-xs">
+                              <Badge variant="outline" className="text-[9px] h-4 px-1.5">
+                                {s.type === 'level' ? 'Ravno' : s.type === 'angled' ? 'Koso' : 'Stopnišče'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-xs text-right font-mono">{s.lengthM.toFixed(2)}m</TableCell>
+                            <TableCell className="text-xs text-right font-mono">{s.balusterCount}</TableCell>
+                            <TableCell className="text-xs text-right font-mono">{s.postCount}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Cost breakdown */}
+              <Card className="overflow-hidden border-l-4 border-l-roksal-amber">
+                <CardHeader className="pb-2 pt-4 px-4">
+                  <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+                    <Euro className="h-4 w-4" />
+                    Stroški materiala
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="px-4 pb-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs py-1.5 border-b border-border/30">
+                      <span className="text-muted-foreground">
+                        Profil ({materialResult.totalLinearMeters.toFixed(2)}m ×{' '}
+                        {materialResult.selectedProfile?.cenaM.toFixed(2) ?? '0.00'} €/m)
+                      </span>
+                      <span className="font-medium text-roksal-navy">
+                        {materialResult.profileCost.toFixed(2)} €
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs py-1.5 border-b border-border/30">
+                      <span className="text-muted-foreground">
+                        Stebri ({materialResult.postCount} × 25 €)
+                      </span>
+                      <span className="font-medium text-roksal-navy">
+                        {materialResult.postsCost.toFixed(2)} €
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs py-1.5 border-b border-border/30">
+                      <span className="text-muted-foreground">
+                        Vijaki ({materialResult.screwCount} × 0,10 €)
+                      </span>
+                      <span className="font-medium text-roksal-navy">
+                        {materialResult.screwsCost.toFixed(2)} €
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs py-1.5 border-b border-border/30">
+                      <span className="text-muted-foreground">
+                        Sidra ({materialResult.anchorCount} × 1,50 €)
+                      </span>
+                      <span className="font-medium text-roksal-navy">
+                        {materialResult.anchorsCost.toFixed(2)} €
+                      </span>
+                    </div>
+                    <Separator className="my-1" />
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="font-bold text-roksal-navy text-sm">SKUPAJ</span>
+                      <span className="font-bold text-roksal-amber text-lg">
+                        {materialResult.totalCost.toFixed(2)} €
+                      </span>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-full mt-3 h-9 border-roksal-navy/30 text-roksal-navy hover:bg-roksal-navy/5"
+                    onClick={exportMaterialPdf}
+                  >
+                    <FileDown className="mr-1.5 h-3.5 w-3.5" />
+                    Izvozi materialni list PDF
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ===== COMPLIANCE (PREDPISI) CALCULATOR ===== */}
+      {mode === 'compliance' && (
+        <>
+          <Card>
+            <CardHeader className="pb-3 pt-4 px-4">
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+                <ShieldCheck className="h-4 w-4" />
+                Preverjanje skladnosti s predpisi
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 px-4 pb-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="compGap" className="text-xs">
+                    Razmik med palicami (mm)
+                  </Label>
+                  <Input
+                    id="compGap"
+                    type="number"
+                    value={compGap}
+                    onChange={(e) => setCompGap(e.target.value)}
+                    placeholder="90"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="compHeight" className="text-xs">
+                    Višina ograje (mm)
+                  </Label>
+                  <Input
+                    id="compHeight"
+                    type="number"
+                    value={compHeight}
+                    onChange={(e) => setCompHeight(e.target.value)}
+                    placeholder="1100"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="compPostSpacing" className="text-xs">
+                    Razmik stebrov (mm)
+                  </Label>
+                  <Input
+                    id="compPostSpacing"
+                    type="number"
+                    value={compPostSpacing}
+                    onChange={(e) => setCompPostSpacing(e.target.value)}
+                    placeholder="1500"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="compDropHeight" className="text-xs">
+                    Padec pod ograjo (mm)
+                  </Label>
+                  <Input
+                    id="compDropHeight"
+                    type="number"
+                    value={compDropHeight}
+                    onChange={(e) => setCompDropHeight(e.target.value)}
+                    placeholder="0"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Kategorija obremenitve</Label>
+                <Select
+                  value={compLoadCategory}
+                  onValueChange={(v: 'A' | 'B' | 'C') => setCompLoadCategory(v)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="A">A — Stanovanjsko (0,74 kN/m)</SelectItem>
+                    <SelectItem value="B">B — Javno (1,0 kN/m)</SelectItem>
+                    <SelectItem value="C">C — Intenzivno javno (1,5 kN/m)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Button
+            type="button"
+            onClick={handleCalculate}
+            className="w-full bg-roksal-navy hover:bg-roksal-navy/90 text-white h-11"
+          >
+            <ShieldCheck className="mr-2 h-4 w-4" />
+            Preveri skladnost
+          </Button>
+
+          {complianceResult && (
+            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
+              <Card
+                className={`overflow-hidden border-l-4 ${
+                  complianceResult.passed
+                    ? 'border-l-roksal-green bg-roksal-green/5'
+                    : 'border-l-roksal-red bg-roksal-red/5'
+                }`}
+              >
+                <CardContent className="flex items-center gap-3 p-4">
+                  {complianceResult.passed ? (
+                    <CheckCircle2 className="h-6 w-6 shrink-0 text-roksal-green" />
+                  ) : (
+                    <AlertTriangle className="h-6 w-6 shrink-0 text-roksal-red" />
+                  )}
+                  <div>
+                    <p
+                      className={`text-sm font-semibold ${
+                        complianceResult.passed ? 'text-roksal-green' : 'text-roksal-red'
+                      }`}
+                    >
+                      {complianceResult.passed
+                        ? 'VSE PREVERBE USPEŠNE'
+                        : 'NESKLADNO — potrebne popravke!'}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {complianceResult.checks.filter((c) => c.passed).length}/
+                      {complianceResult.checks.length} preverb uspešnih
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2 pt-4 px-4">
+                  <CardTitle className="text-sm font-semibold text-roksal-navy">
+                    Podrobne preverbe
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="px-4 pb-4 space-y-2">
+                  {complianceResult.checks.map((check, i) => (
+                    <div
+                      key={i}
+                      className={`rounded-lg border p-3 ${
+                        check.passed
+                          ? 'border-roksal-green/30 bg-roksal-green/5'
+                          : 'border-roksal-red/30 bg-roksal-red/5'
+                      }`}
+                    >
+                      <div className="flex items-start gap-2.5">
+                        {check.passed ? (
+                          <CheckCircle2 className="h-5 w-5 shrink-0 text-roksal-green mt-0.5" />
+                        ) : (
+                          <X className="h-5 w-5 shrink-0 text-roksal-red mt-0.5" />
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold text-roksal-navy">{check.name}</p>
+                          <div className="mt-1 grid grid-cols-2 gap-2 text-[11px]">
+                            <div>
+                              <span className="text-muted-foreground">Zahtevano: </span>
+                              <span className="font-medium text-foreground">{check.required}</span>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Dejansko: </span>
+                              <span className="font-medium text-foreground">{check.actual}</span>
+                            </div>
+                          </div>
+                          <p className="mt-1.5 text-[11px] text-muted-foreground">{check.message}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+
+              <Card className="bg-roksal-navy/5">
+                <CardContent className="flex gap-3 p-4">
+                  <Info className="h-5 w-5 shrink-0 text-roksal-navy" />
+                  <div className="text-xs text-muted-foreground">
+                    <p className="font-medium text-roksal-navy">
+                      Sklic predpisov
+                    </p>
+                    <p className="mt-1">
+                      SIST EN 1264 (razmik ≤ 110mm), SIST EN 13485 (višina ograj),
+                      EVS EN 1991-1-1 (horizontalna obremenitev). Za objekte z javnim
+                      dostopom veljajo strožji kriteriji — obvezno posvetovanje s statikom.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        </>
+      )}
+
       {/* Save Calculation Button */}
-      {(railingResult || anchoringResult || windResult) && (
+      {(railingResult || anchoringResult || windResult || balusterResult || angledResult || materialResult || complianceResult) && (
         <Button
+          type="button"
           onClick={() => {
             const modeLabelMap: Record<CalcMode, string> = {
               railing: 'Razmiki letev',
               anchoring: 'Kemično sidranje',
               wind: 'Vetrna obremenitev',
+              baluster: 'Razmak palic',
+              angled: 'Kotni izračun',
+              material: 'Skupni material',
+              compliance: 'Predpisi',
             }
             let keyResult = ''
             let inputs: Record<string, string> = {}
@@ -1337,6 +2682,19 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
             } else if (mode === 'wind' && windResult) {
               keyResult = `${windResult.windPressureKpa.toFixed(2)} kPa, ${riskLabels[windResult.riskLevel]}`
               inputs = { heightAboveGround, terrainCategory, windSpeedMs, railingAreaM2, railingType }
+            } else if (mode === 'baluster' && balusterResult) {
+              keyResult = `${balusterResult.balusterCount} palic, razmik ${balusterResult.actualGapMm.toFixed(1)}mm`
+              inputs = { balTotalLength, balWidth, balMaxGap, balPostSpacing }
+            } else if (mode === 'angled' && angledResult) {
+              keyResult = `${angledResult.balusterCount} palic, rake ${(angledResult.rakeLengthMm / 1000).toFixed(2)}m, kot ${angledResult.rakeAngleDeg.toFixed(1)}°`
+              inputs = { angHorizontalLength, angRakeAngle, angWidth, angMaxGap }
+            } else if (mode === 'material' && materialResult) {
+              keyResult = `${materialResult.totalLinearMeters.toFixed(2)}m profila, ${materialResult.balusterCount} palic, ${materialResult.totalCost.toFixed(2)}€`
+              inputs = { profileSifra: selectedProfileSifra, segments: JSON.stringify(segments) }
+            } else if (mode === 'compliance' && complianceResult) {
+              const ok = complianceResult.checks.filter((c) => c.passed).length
+              keyResult = `${ok}/${complianceResult.checks.length} preverb uspešnih`
+              inputs = { compGap, compHeight, compPostSpacing, compLoadCategory, compDropHeight }
             }
             const newCalc: SavedCalculation = {
               id: `calc_${Date.now()}`,
@@ -1439,6 +2797,361 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
           </CardContent>
         </Card>
       )}
+    </div>
+  )
+}
+
+// ============================================
+// SVG: Baluster diagram (enakomeren razmak)
+// ============================================
+function BalusterSvg({
+  totalLengthMm,
+  balusterWidthMm,
+  positions,
+  gapMm,
+  count,
+}: {
+  totalLengthMm: number
+  balusterWidthMm: number
+  positions: number[]
+  gapMm: number
+  count: number
+}) {
+  if (totalLengthMm <= 0 || positions.length === 0) {
+    return (
+      <div className="text-center py-4 text-xs text-muted-foreground">
+        Ni podatkov za vizualizacijo.
+      </div>
+    )
+  }
+
+  // SVG dimensions
+  const vbW = 1000
+  const vbH = 180
+  const railTopY = 40
+  const railBotY = 130
+  const railHeight = 8
+  const scale = vbW / totalLengthMm
+
+  // Limit display to avoid overdraw
+  const maxDisplay = 60
+  const displayPositions = positions.slice(0, maxDisplay)
+  const truncated = positions.length > maxDisplay
+
+  return (
+    <div className="space-y-2">
+      <svg
+        viewBox={`0 0 ${vbW} ${vbH}`}
+        className="w-full h-auto"
+        preserveAspectRatio="xMidYMid meet"
+        role="img"
+        aria-label={`Vizualizacija ograje: ${count} palic, razmik ${gapMm.toFixed(1)}mm`}
+      >
+        {/* Background grid */}
+        <defs>
+          <pattern id="balGrid" width="50" height="20" patternUnits="userSpaceOnUse">
+            <path d="M 50 0 L 0 0 0 20" fill="none" stroke="#e5e7eb" strokeWidth="0.5" />
+          </pattern>
+        </defs>
+        <rect width={vbW} height={vbH} fill="url(#balGrid)" />
+
+        {/* Top rail */}
+        <rect x="0" y={railTopY - railHeight / 2} width={vbW} height={railHeight} fill="#1d2b3e" />
+        {/* Bottom rail */}
+        <rect x="0" y={railBotY - railHeight / 2} width={vbW} height={railHeight} fill="#1d2b3e" />
+
+        {/* Left post */}
+        <rect x="0" y={railTopY - 12} width="10" height={railBotY - railTopY + 24} fill="#f59e0b" rx="2" />
+        {/* Right post */}
+        <rect
+          x={vbW - 10}
+          y={railTopY - 12}
+          width="10"
+          height={railBotY - railTopY + 24}
+          fill="#f59e0b"
+          rx="2"
+        />
+
+        {/* Balusters */}
+        {displayPositions.map((pos, i) => {
+          const x = pos * scale
+          const w = Math.max(balusterWidthMm * scale, 1.5)
+          return (
+            <rect
+              key={i}
+              x={x}
+              y={railTopY + railHeight / 2}
+              width={w}
+              height={railBotY - railTopY - railHeight}
+              fill="#1d2b3e"
+              opacity="0.85"
+            />
+          )
+        })}
+
+        {/* Gap measurement label */}
+        <text
+          x={vbW / 2}
+          y={vbH - 8}
+          textAnchor="middle"
+          fontSize="14"
+          fill="#1d2b3e"
+          fontWeight="bold"
+          fontFamily="monospace"
+        >
+          Razmik: {gapMm.toFixed(1)}mm — {count} palic — skupaj {(totalLengthMm / 1000).toFixed(2)}m
+        </text>
+
+        {/* Total length arrow */}
+        <line x1="0" y1={railTopY - 18} x2={vbW} y2={railTopY - 18} stroke="#1d2b3e" strokeWidth="0.8" />
+        <line x1="0" y1={railTopY - 22} x2="0" y2={railTopY - 14} stroke="#1d2b3e" strokeWidth="0.8" />
+        <line
+          x1={vbW}
+          y1={railTopY - 22}
+          x2={vbW}
+          y2={railTopY - 14}
+          stroke="#1d2b3e"
+          strokeWidth="0.8"
+        />
+        <text
+          x={vbW / 2}
+          y={railTopY - 24}
+          textAnchor="middle"
+          fontSize="11"
+          fill="#1d2b3e"
+          fontFamily="monospace"
+        >
+          {totalLengthMm.toFixed(0)}mm
+        </text>
+
+        {truncated && (
+          <text x={vbW - 5} y={vbH - 25} textAnchor="end" fontSize="9" fill="#6b7280">
+            (prikazanih prvih {maxDisplay} od {count})
+          </text>
+        )}
+      </svg>
+
+      {/* Legend */}
+      <div className="flex flex-wrap items-center justify-center gap-3 text-[10px] text-muted-foreground">
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block h-3 w-3 rounded-[2px] bg-roksal-navy" />
+          Palica ({balusterWidthMm}mm)
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block h-3 w-2.5 rounded-[2px] bg-roksal-amber" />
+          Steber
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block h-1.5 w-4 bg-roksal-navy" />
+          Letev (zgoraj + spodaj)
+        </span>
+      </div>
+    </div>
+  )
+}
+
+// ============================================
+// SVG: Angled railing diagram (kose / stopnišče)
+// ============================================
+function AngledSvg({
+  horizontalLengthMm,
+  rakeAngleDeg,
+  positions,
+  balusterWidthMm,
+  gapMm,
+}: {
+  horizontalLengthMm: number
+  rakeAngleDeg: number
+  positions: number[]
+  balusterWidthMm: number
+  gapMm: number
+}) {
+  if (horizontalLengthMm <= 0 || positions.length === 0) {
+    return (
+      <div className="text-center py-4 text-xs text-muted-foreground">
+        Ni podatkov za vizualizacijo.
+      </div>
+    )
+  }
+
+  const rad = (rakeAngleDeg * Math.PI) / 180
+  const cosA = Math.cos(rad)
+  const sinA = Math.sin(rad)
+  const rakeLengthMm = horizontalLengthMm / cosA
+
+  // SVG dimensions
+  const vbW = 1000
+  const vbH = 220
+  // Map horizontal length to viewBox width with padding
+  const padX = 60
+  const padTop = 30
+  const usableW = vbW - 2 * padX
+  const usableH = vbH - padTop - 40
+  const scale = usableW / horizontalLengthMm
+
+  // Top rail endpoints (horizontal projection)
+  const x1 = padX
+  const y1 = padTop
+  const x2 = padX + horizontalLengthMm * scale
+  const y2 = padTop + (horizontalLengthMm * Math.tan(rad)) * scale
+  // Clamp y2 to usableH
+  const y2Clamped = Math.min(y2, padTop + usableH)
+  const y2Actual = y2Clamped
+
+  // Bottom rail (offset by railing height ~1100mm, scaled)
+  const railHeightVb = 90
+  const x1b = x1
+  const y1b = y1 + railHeightVb
+  const x2b = x2
+  const y2b = y2Actual + railHeightVb
+
+  // Limit display
+  const maxDisplay = 60
+  const displayPositions = positions.slice(0, maxDisplay)
+
+  // Vector along the rake (unit)
+  const rakeVecX = cosA
+  const rakeVecY = sinA
+  // Perpendicular vector (downward from rake)
+  const perpX = -sinA
+  const perpY = cosA
+
+  return (
+    <div className="space-y-2">
+      <svg
+        viewBox={`0 0 ${vbW} ${vbH}`}
+        className="w-full h-auto"
+        preserveAspectRatio="xMidYMid meet"
+        role="img"
+        aria-label={`Kose ograja: kot ${rakeAngleDeg.toFixed(1)}°, rake dolžina ${(rakeLengthMm / 1000).toFixed(2)}m`}
+      >
+        {/* Background grid */}
+        <defs>
+          <pattern id="angGrid" width="50" height="20" patternUnits="userSpaceOnUse">
+            <path d="M 50 0 L 0 0 0 20" fill="none" stroke="#e5e7eb" strokeWidth="0.5" />
+          </pattern>
+        </defs>
+        <rect width={vbW} height={vbH} fill="url(#angGrid)" />
+
+        {/* Horizontal projection reference (dashed) */}
+        <line
+          x1={x1}
+          y1={y1}
+          x2={x2}
+          y2={y1}
+          stroke="#9ca3af"
+          strokeWidth="0.8"
+          strokeDasharray="4 3"
+        />
+        <text x={(x1 + x2) / 2} y={y1 - 6} textAnchor="middle" fontSize="10" fill="#6b7280" fontFamily="monospace">
+          horizontal: {(horizontalLengthMm / 1000).toFixed(2)}m
+        </text>
+
+        {/* Angle arc */}
+        <path
+          d={`M ${x1 + 30} ${y1} A 30 30 0 0 1 ${x1 + 30 * cosA} ${y1 + 30 * sinA}`}
+          fill="none"
+          stroke="#f59e0b"
+          strokeWidth="1.2"
+        />
+        <text
+          x={x1 + 42}
+          y={y1 + 18}
+          fontSize="11"
+          fill="#f59e0b"
+          fontWeight="bold"
+          fontFamily="monospace"
+        >
+          {rakeAngleDeg.toFixed(1)}°
+        </text>
+
+        {/* Top rail (along rake) */}
+        <line x1={x1} y1={y1} x2={x2} y2={y2Actual} stroke="#1d2b3e" strokeWidth="6" strokeLinecap="round" />
+        {/* Bottom rail */}
+        <line x1={x1b} y1={y1b} x2={x2b} y2={y2b} stroke="#1d2b3e" strokeWidth="6" strokeLinecap="round" />
+
+        {/* Left post */}
+        <line
+          x1={x1}
+          y1={y1}
+          x2={x1b}
+          y2={y1b}
+          stroke="#f59e0b"
+          strokeWidth="8"
+          strokeLinecap="round"
+        />
+        {/* Right post */}
+        <line
+          x1={x2}
+          y1={y2Actual}
+          x2={x2b}
+          y2={y2b}
+          stroke="#f59e0b"
+          strokeWidth="8"
+          strokeLinecap="round"
+        />
+
+        {/* Balusters (perpendicular to rake) */}
+        {displayPositions.map((pos, i) => {
+          // Position along rake (in mm), mapped to vb units
+          const t = pos / rakeLengthMm
+          // Position along the top rail
+          const topX = x1 + (x2 - x1) * t
+          const topY = y1 + (y2Actual - y1) * t
+          // Bottom rail at same t
+          const botX = x1b + (x2b - x1b) * t
+          const botY = y1b + (y2b - y1b) * t
+          return (
+            <line
+              key={i}
+              x1={topX}
+              y1={topY}
+              x2={botX}
+              y2={botY}
+              stroke="#1d2b3e"
+              strokeWidth={Math.max(balusterWidthMm * scale * 0.6, 1)}
+              opacity="0.8"
+            />
+          )
+        })}
+
+        {/* Rake length label */}
+        <text
+          x={(x1 + x2) / 2 + 20}
+          y={(y1 + y2Actual) / 2 + 30}
+          textAnchor="middle"
+          fontSize="11"
+          fill="#1d2b3e"
+          fontWeight="bold"
+          fontFamily="monospace"
+        >
+          rake: {(rakeLengthMm / 1000).toFixed(2)}m — razmik {gapMm.toFixed(1)}mm
+        </text>
+
+        {/* Reference vectors (small annotation) */}
+        <text x="10" y={vbH - 8} fontSize="9" fill="#6b7280" fontFamily="monospace">
+          rakeVec = ({rakeVecX.toFixed(2)}, {rakeVecY.toFixed(2)}) — perp = ({perpX.toFixed(2)}, {perpY.toFixed(2)})
+        </text>
+      </svg>
+
+      <div className="flex flex-wrap items-center justify-center gap-3 text-[10px] text-muted-foreground">
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block h-3 w-3 rounded-[2px] bg-roksal-navy" />
+          Palica
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block h-3 w-2.5 rounded-[2px] bg-roksal-amber" />
+          Steber
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block h-1.5 w-4 bg-roksal-navy" />
+          Letev (zgoraj + spodaj)
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block h-0.5 w-4 border-t border-dashed border-roksal-amber" />
+          Horizontalna projekcija
+        </span>
+      </div>
     </div>
   )
 }

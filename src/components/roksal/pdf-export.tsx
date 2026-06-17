@@ -143,7 +143,7 @@ export function PdfExport({ project }: { project: Project | null }) {
           bodyStyles: { fontSize: 9 },
           margin: { left: 14, right: 14 },
         })
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
         y = (doc as any).lastAutoTable.finalY + 8
       }
 
@@ -336,7 +336,7 @@ export function PdfExport({ project }: { project: Project | null }) {
         columnStyles: { 0: { cellWidth: 8 }, 2: { cellWidth: 22, halign: 'right' }, 3: { cellWidth: 14, halign: 'center' }, 4: { cellWidth: 22, halign: 'right' }, 5: { cellWidth: 26, halign: 'right' } },
         margin: { left: 14, right: 14 },
       })
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       y = (doc as any).lastAutoTable.finalY + 6
 
       const skupaj = items.reduce((s: number, it: { skupaj: string }) => s + parseFloat(it.skupaj.replace(',', '.')), 0)
