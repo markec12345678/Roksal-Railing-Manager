@@ -2028,3 +2028,30 @@ Stage Summary:
 - **Ni novih paketov** — uporabljen obstoječi jspdf + jspdf-autotable + lucide-react
 - **Vsi obstoječi načini in funkcionalnost ohranjena** (props importedFromMeasurement/onClearImport/onBackToMeasurements nespremenjeni)
 - **Lint clean** (0 errors), **dev server OK** (200, no compile errors), **agent-browser verified** (10 modes render, calc works, SVG prikazan, zgodovina deluje)
+
+---
+Task ID: SIMULACIJA-MONTER
+Agent: Main Orchestrator (Z.ai Code)
+Task: Simulacija dela monterja — od kamera do kalkulacije in portala
+
+Work Log:
+- Generiral testno sliko balkona z AI (image-generation skill)
+- Simuliral celoten delovni tok monterja na projektu "Ograja Kokalj":
+  1. Slikanje PRED/MED/PO montaži (3 slike preko API-ja)
+  2. Meritve z laserjem (5 meritev: dolžina 3000mm, višina 1100mm, globina 1200mm, kot 90°, dolžina vzhodni 2500mm)
+  3. Nagib tal (2.5° Y smer)
+  4. AR posnetek s 4 točkami in kalibracijo
+  5. Kalkulator: razmak palic (3m → 20 palic, 104.8mm razmik)
+- Verifikacija v brskalniku:
+  - Meritve zavihek: prikazuje skupna dolžina, povpr. višina, segmenti, površina
+  - Slike zavihek: Pred 1, Med 2, Po 1 (vse kategorije)
+  - Kalkulator: Razmiki letev z avto-izračunom
+  - Portal stranke: VLM potrdil — naslov, status "V teku", slike v vseh 3 sekcijah, kontakt
+- Lint: 0 errors
+- 0 console napak
+
+Stage Summary:
+- **Celovit delovni tok monterja simuliran in verificiran**
+- 10 meritev, 4 slike, 3 nagibi, 1 AR posnetek — vse shranjeno in prikazano
+- Portal stranke deluje — stranka vidi status, slike, kontakt
+- Aplikacija pripravljena za realno uporabo na terenu
