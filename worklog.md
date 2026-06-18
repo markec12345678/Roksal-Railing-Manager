@@ -1601,3 +1601,54 @@ Stage Summary:
 - Ni novih paketov.
 - Key decisions: SQLite ne podpira `mode: 'insensitive'` v Prisma contains, zato uporabljen plain `contains` (SQLite LIKE je case-insensitive za ASCII). Email validacija na clientu z regex pred POST (server ponovno validira z Zod). Iskalni input prikazan samo >6 strank da ne zavzema prostora na majhnih seznamih. Po uspešnem ustvarjanju stranka samodejno izbrana v newProjectCustomer.
 - Conceptual test poteka: uporabnik odpre Nov projekt → klikne "Nova" → izpolni ime+naslov → Shrani stranko → toast "Stranka ustvarjena" → stranka izbrana v Select-u.
+
+---
+Task ID: AR-OVERLAY
+Agent: full-stack-developer (AR grid + realtime + calc)
+Task: Mreža, real-time dimenzije, samodejni kalkulator v AR kameri
+
+Work Log:
+- Read worklog.md to understand prior work (Roksal Railing Manager: Next.js 16 + SQLite + 6-tab SPA, AR scanner already existed with 1706 lines)
+- Read full ar-scanner.tsx (1706 lines) + lib/calculator.ts to understand existing structure
+- Verified lucide-react v0.525.0 has all needed icons: Grid3x3, Calculator, ChevronDown, ChevronUp, CheckCircle2
+
+**Feature 1 — MREŽA (Grid Overlay):**
+- Added constants: GRID_CELL_MM=100, GRID_CELL_PX_UNCALIBRATED=50, GRID_MAJOR_EVERY=5
+- Added pure helper `drawGrid(ctx, w, h, ppm)` — draws minor lines (rgba(255,255,255,0.15)), major lines every 5 cells (rgba(255,255,255,0.3)), and labels at major lines (real-world mm if calibrated, px if not)
+- Grid auto-scales with calibration: cellPx = 100*ppm when calibrated, 50px otherwise
+- Grid drawn in existing canvas useEffect AFTER clearRect, BEFORE railing/points (behind everything, on top of video)
+- Added `gridVisible` state (default true), toggle button with Grid3x3 icon in header toolbar (amber when active)
+
+**Feature 2 — REAL-TIME DIMENZIJE (Live HUD):**
+- Added `realtimeStats` useMemo: computes sirinaMm (maxX-minX / ppm), visinaMm (profil.visinaMm), dolzinaMm (sum of consecutive point distances / ppm), povrsinaM2 (sirina*visina/1e6), stTock, kalibrirano status, ppm
+- HUD is a div overlay (absolute top-3 left-3, NOT on canvas) — bg-roksal-navy/90, max-w-[180px], text-[10px], pointer-events-none
+- Shows 6 rows: Širina, Višina, Dolžina, Površina, Št. točk, Kalibracija (with CheckCircle2 icon when calibrated)
+- Live cursor distance during MEASURE mode: 7th row "→ kurzor" showing live distance from first point to cursor (green)
+- Added `liveCursor` state, updated in handlePointerMove when MEASURE mode + first point set
+- Live measure line drawn on canvas (dashed green) from first point to cursor with distance label
+- Drag distance line drawn on canvas (dashed amber) from dragged point to nearest other point with label — updates in real-time as user drags in MOVE mode
+
+**Feature 3 — SAMODEJNI KALKULATOR (Live Calc Panel):**
+- Added `autoCalc` useMemo using `calculateEqualSpacing` from lib/calculator: balusterCount, actualGapMm, postCount (floor(dolzinaMm/1500)+1), totalLinearMeters (2*dolzinaMm/1000 for top+bottom rails), screwCount (balusters*4 + posts*8), anchorCount (posts*2), cenaMateriala (linearMeters*cenaM), cenaZDDV (*1.22)
+- Collapsible panel at bottom (absolute bottom-3 left-3 right-3, z-20) — header always visible with "Izračun" + key summary ("12 palic · 1.234 €") + chevron toggle
+- Expanded: 3 conditional warnings (no calibration, no profile, <2 points) + 2-col stat grid (8 cells: palic, razmik, stebrov, linearni, vijaki, sidra, material, zDDV) + "Dodaj v kalkulator" button
+- Export button saves to localStorage `roksal_ar_calc_export` with full payload + shows toast "Podatki preneseni v kalkulator"
+- Moved status banner from bottom-3 to bottom-14 so it sits above calc panel header
+
+**Technical:**
+- All existing features preserved (camera, točke add/remove/move, kalibracija, meritve, vizualizacija, capture, zgodovina)
+- Used useMemo for realtimeStats + autoCalc (recompute on tocke/profil/kalibracija change)
+- Grid + live lines drawn in same canvas useEffect (no separate animation loop)
+- HUD + calc panel are div overlays (no canvas redraw needed for text updates)
+- All buttons type="button", all text Slovenian, navy/amber/green theme
+- Imported calculateEqualSpacing + formatEUR from @/lib/calculator
+- File grew from 1706 → 2213 lines (+507 lines, 3 new features)
+- ESLint: 0 errors, 0 warnings
+- Dev server: compiles successfully (✓ Compiled in 284ms)
+
+Stage Summary:
+- **3 features added** to ArScanner as specified: Mreža (grid overlay with calibration-aware scaling), Real-time dimenzije (live HUD with širina/višina/dolžina/površina + live cursor distance), Samodejni kalkulator (collapsible panel with material counts + cost + export to localStorage)
+- **No other files modified** — only ar-scanner.tsx enhanced
+- **No new packages installed** — used existing lucide-react icons + calculator lib functions
+- **Performance**: useMemo for computed values, grid drawn in existing canvas effect, HUD/panel are DOM overlays
+- **All existing features preserved** — camera, points, calibration, measurements, railing viz, capture, history all intact

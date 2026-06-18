@@ -70,9 +70,15 @@ import {
   Loader2,
   RotateCcw,
   AlertTriangle,
+  Grid3x3,
+  Calculator,
+  ChevronDown,
+  ChevronUp,
+  CheckCircle2,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
+import { calculateEqualSpacing, formatEUR } from '@/lib/calculator'
 
 // ============================================================================
 // Types
@@ -148,6 +154,11 @@ const HIT_RADIUS = 30 // px — tap near existing point within this radius
 const DEFAULT_POST_HEIGHT_PX = 200 // fallback post height when not calibrated
 const DEFAULT_SLAT_SPACING_PX = 18 // fallback infill spacing when not calibrated
 const POST_HEIGHT_CAP_PX = 600 // never draw posts taller than this
+
+// Grid overlay (AR-OVERLAY)
+const GRID_CELL_MM = 100 // 1 grid cell = 100mm real-world (when calibrated)
+const GRID_CELL_PX_UNCALIBRATED = 50 // 1 grid cell = 50px (when not calibrated)
+const GRID_MAJOR_EVERY = 5 // major line every 5 cells
 
 // ============================================================================
 // Helpers
@@ -432,6 +443,72 @@ function drawMeasurement(ctx: CanvasRenderingContext2D, m: Meritev): void {
 }
 
 // ============================================================================
+// Grid overlay drawing (AR-OVERLAY)
+// ============================================================================
+
+function drawGrid(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  ppm: number | null,
+): void {
+  const cellPx = ppm && ppm > 0 ? Math.max(8, GRID_CELL_MM * ppm) : GRID_CELL_PX_UNCALIBRATED
+  const majorPx = cellPx * GRID_MAJOR_EVERY
+
+  ctx.save()
+  ctx.lineWidth = 1
+
+  // Minor lines — subtle white
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)'
+  ctx.beginPath()
+  for (let x = cellPx; x < w; x += cellPx) {
+    const i = Math.round(x / cellPx)
+    if (i % GRID_MAJOR_EVERY === 0) continue
+    const xx = Math.round(x) + 0.5
+    ctx.moveTo(xx, 0)
+    ctx.lineTo(xx, h)
+  }
+  for (let y = cellPx; y < h; y += cellPx) {
+    const i = Math.round(y / cellPx)
+    if (i % GRID_MAJOR_EVERY === 0) continue
+    const yy = Math.round(y) + 0.5
+    ctx.moveTo(0, yy)
+    ctx.lineTo(w, yy)
+  }
+  ctx.stroke()
+
+  // Major lines — brighter
+  ctx.strokeStyle = 'rgba(255,255,255,0.3)'
+  ctx.beginPath()
+  for (let x = majorPx; x < w; x += majorPx) {
+    const xx = Math.round(x) + 0.5
+    ctx.moveTo(xx, 0)
+    ctx.lineTo(xx, h)
+  }
+  for (let y = majorPx; y < h; y += majorPx) {
+    const yy = Math.round(y) + 0.5
+    ctx.moveTo(0, yy)
+    ctx.lineTo(w, yy)
+  }
+  ctx.stroke()
+
+  // Labels at major lines (top-left, horizontal axis only to avoid clutter)
+  ctx.font = '9px ui-sans-serif, system-ui, sans-serif'
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'top'
+  for (let x = majorPx, i = 1; x < w - 30; x += majorPx, i++) {
+    const label = ppm ? `${i * GRID_CELL_MM * GRID_MAJOR_EVERY}mm` : `${i * GRID_CELL_PX_UNCALIBRATED * GRID_MAJOR_EVERY}px`
+    const tw = ctx.measureText(label).width
+    ctx.fillStyle = 'rgba(0,0,0,0.45)'
+    ctx.fillRect(x + 3, 3, tw + 6, 12)
+    ctx.fillStyle = 'rgba(255,255,255,0.85)'
+    ctx.fillText(label, x + 6, 5)
+  }
+
+  ctx.restore()
+}
+
+// ============================================================================
 // Main component
 // ============================================================================
 
@@ -480,6 +557,11 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
   const [snapshots, setSnapshots] = useState<ArSnapshot[]>([])
   const [snapshotsLoading, setSnapshotsLoading] = useState(false)
   const [saving, setSaving] = useState(false)
+
+  // Grid + HUD + auto-calc (AR-OVERLAY)
+  const [gridVisible, setGridVisible] = useState(true)
+  const [calcPanelOpen, setCalcPanelOpen] = useState(false)
+  const [liveCursor, setLiveCursor] = useState<XY | null>(null)
 
   // --- Fetch profili on mount ---
   useEffect(() => {
@@ -611,6 +693,94 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
     [profili, selectedProfilId],
   )
 
+  // --- Real-time stats (AR-OVERLAY) ---
+  // Širina / višina / dolžina / površina computed from tocke + kalibracija
+  const realtimeStats = useMemo(() => {
+    const ppm = kalibracija?.pixelsPerMm ?? null
+    const stTock = tocke.length
+    const visinaMm = selectedProfil?.visinaMm ?? null
+
+    if (stTock === 0) {
+      return {
+        sirinaMm: null as number | null,
+        visinaMm,
+        dolzinaMm: 0,
+        povrsinaM2: 0,
+        stTock,
+        kalibrirano: !!kalibracija,
+        ppm,
+      }
+    }
+
+    // Širina = max X − min X
+    const xs = tocke.map((t) => t.x)
+    const minX = Math.min(...xs)
+    const maxX = Math.max(...xs)
+    const sirinaPx = maxX - minX
+    const sirinaMm = ppm ? sirinaPx / ppm : null
+
+    // Dolžina = sum of consecutive distances
+    let dolzinaPx = 0
+    for (let i = 0; i < tocke.length - 1; i++) {
+      dolzinaPx += dist(tocke[i], tocke[i + 1])
+    }
+    const dolzinaMm = ppm ? dolzinaPx / ppm : 0
+
+    // Površina = širina × višina (m²)
+    const povrsinaM2 = sirinaMm && visinaMm ? (sirinaMm * visinaMm) / 1_000_000 : 0
+
+    return {
+      sirinaMm,
+      visinaMm,
+      dolzinaMm,
+      povrsinaM2,
+      stTock,
+      kalibrirano: !!kalibracija,
+      ppm,
+    }
+  }, [tocke, kalibracija, selectedProfil])
+
+  // --- Auto calculation (AR-OVERLAY) ---
+  // Material counts + cost derived from realtimeStats + selectedProfil
+  const autoCalc = useMemo(() => {
+    if (!selectedProfil || !kalibracija || tocke.length < 2) return null
+    const dolzinaMm = realtimeStats.dolzinaMm
+    if (dolzinaMm <= 0) return null
+
+    const visinaMm = selectedProfil.visinaMm
+    const balusterWidthMm = Math.max(1, selectedProfil.sirinaMm || 40)
+
+    const spacing = calculateEqualSpacing({
+      totalLengthMm: dolzinaMm,
+      balusterWidthMm,
+      maxGapMm: 110,
+    })
+
+    const balusterCount = spacing.balusterCount
+    const actualGapMm = spacing.actualGapMm
+    const postCount = Math.floor(dolzinaMm / 1500) + 1
+    // Top + bottom rails = 2× linearni metri
+    const totalLinearMeters = (2 * dolzinaMm) / 1000
+    const screwCount = balusterCount * 4 + postCount * 8
+    const anchorCount = postCount * 2
+    const cenaMateriala = totalLinearMeters * selectedProfil.cenaM
+    const cenaZDDV = cenaMateriala * 1.22
+
+    return {
+      dolzinaMm,
+      visinaMm,
+      balusterCount,
+      actualGapMm,
+      postCount,
+      totalLinearMeters,
+      screwCount,
+      anchorCount,
+      cenaMateriala,
+      cenaZDDV,
+      profil: selectedProfil,
+    }
+  }, [realtimeStats, selectedProfil, kalibracija, tocke.length])
+
   // --- Redraw canvas whenever state changes ---
   useEffect(() => {
     const canvas = canvasRef.current
@@ -622,6 +792,12 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
     ctx.clearRect(0, 0, cssW, cssH)
 
     const ppm = kalibracija?.pixelsPerMm ?? null
+
+    // Grid overlay (AR-OVERLAY) — behind everything, on top of video
+    if (gridVisible) {
+      drawGrid(ctx, cssW, cssH, ppm)
+    }
+
     const postHeightPx =
       ppm && selectedProfil
         ? selectedProfil.visinaMm * ppm
@@ -690,6 +866,97 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
     for (let i = 0; i < tocke.length; i++) {
       drawAnchorPoint(ctx, tocke[i], i, tocke.length)
     }
+
+    // === LIVE OVERLAYS (AR-OVERLAY) ===
+
+    // Live measure line: MEASURE mode, first point set, cursor moving (mouse hover)
+    if (mode === 'MEASURE' && measureFirstPoint && liveCursor) {
+      const dPx = dist(measureFirstPoint, liveCursor)
+      if (dPx > 3) {
+        const dMm = kalibracija ? dPx / kalibracija.pixelsPerMm : 0
+        ctx.save()
+        ctx.strokeStyle = 'rgba(16, 185, 129, 0.75)'
+        ctx.lineWidth = 2
+        ctx.setLineDash([6, 4])
+        ctx.beginPath()
+        ctx.moveTo(measureFirstPoint.x, measureFirstPoint.y)
+        ctx.lineTo(liveCursor.x, liveCursor.y)
+        ctx.stroke()
+        ctx.setLineDash([])
+        // Label at midpoint
+        const mx = (measureFirstPoint.x + liveCursor.x) / 2
+        const my = (measureFirstPoint.y + liveCursor.y) / 2
+        const label = kalibracija ? formatDistance(dMm) : `${Math.round(dPx)} px`
+        ctx.font = 'bold 12px ui-sans-serif, system-ui, sans-serif'
+        const tw = ctx.measureText(label).width + 12
+        ctx.fillStyle = 'rgba(16, 185, 129, 0.95)'
+        if (typeof ctx.roundRect === 'function') {
+          ctx.beginPath()
+          ctx.roundRect(mx - tw / 2, my - 10, tw, 20, 4)
+          ctx.fill()
+        } else {
+          ctx.fillRect(mx - tw / 2, my - 10, tw, 20)
+        }
+        ctx.fillStyle = '#ffffff'
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.fillText(label, mx, my)
+        ctx.restore()
+      }
+    }
+
+    // Drag distance line: MOVE mode, dragging a point → nearest other point
+    const dragIdx = draggingRef.current
+    if (
+      mode === 'MOVE' &&
+      dragIdx !== null &&
+      dragIdx >= 0 &&
+      dragIdx < tocke.length &&
+      tocke.length >= 2
+    ) {
+      const dragged = tocke[dragIdx]
+      let nearestIdx = -1
+      let nearestD = Infinity
+      for (let i = 0; i < tocke.length; i++) {
+        if (i === dragIdx) continue
+        const d = dist(dragged, tocke[i])
+        if (d < nearestD) {
+          nearestD = d
+          nearestIdx = i
+        }
+      }
+      if (nearestIdx !== -1 && nearestD > 1) {
+        const other = tocke[nearestIdx]
+        const dMm = kalibracija ? nearestD / kalibracija.pixelsPerMm : 0
+        ctx.save()
+        ctx.strokeStyle = 'rgba(245, 158, 11, 0.85)'
+        ctx.lineWidth = 2
+        ctx.setLineDash([4, 3])
+        ctx.beginPath()
+        ctx.moveTo(dragged.x, dragged.y)
+        ctx.lineTo(other.x, other.y)
+        ctx.stroke()
+        ctx.setLineDash([])
+        const mx = (dragged.x + other.x) / 2
+        const my = (dragged.y + other.y) / 2
+        const label = kalibracija ? formatDistance(dMm) : `${Math.round(nearestD)} px`
+        ctx.font = 'bold 11px ui-sans-serif, system-ui, sans-serif'
+        const tw = ctx.measureText(label).width + 10
+        ctx.fillStyle = 'rgba(245, 158, 11, 0.95)'
+        if (typeof ctx.roundRect === 'function') {
+          ctx.beginPath()
+          ctx.roundRect(mx - tw / 2, my - 9, tw, 18, 4)
+          ctx.fill()
+        } else {
+          ctx.fillRect(mx - tw / 2, my - 9, tw, 18)
+        }
+        ctx.fillStyle = '#ffffff'
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.fillText(label, mx, my)
+        ctx.restore()
+      }
+    }
   }, [
     tocke,
     meritve,
@@ -699,6 +966,8 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
     measureFirstPoint,
     calibrateActive,
     calFirstPoint,
+    gridVisible,
+    liveCursor,
   ])
 
   // --- Convert a pointer event to canvas CSS-pixel coordinates ---
@@ -757,6 +1026,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
       if (mode === 'MEASURE') {
         if (!measureFirstPoint) {
           setMeasureFirstPoint(p)
+          setLiveCursor(p)
         } else {
           const pixelDist = dist(measureFirstPoint, p)
           const dolzinaMm = kalibracija
@@ -822,23 +1092,29 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
     ],
   )
 
-  // --- Pointer move handler (for MOVE mode drag) ---
+  // --- Pointer move handler (for MOVE mode drag + live cursor) ---
   const handlePointerMove = useCallback(
     (e: React.PointerEvent<HTMLCanvasElement>) => {
-      if (draggingRef.current === null) return
       const p = getCanvasPoint(e)
-      setTocke((prev) => {
-        const idx = draggingRef.current
-        if (idx === null) return prev
-        const next = [...prev]
-        next[idx] = { ...next[idx], x: p.x, y: p.y }
-        return next
-      })
+      // Live cursor for measure mode (mouse hover updates distance live)
+      if (mode === 'MEASURE' && measureFirstPoint) {
+        setLiveCursor(p)
+      }
+      // Dragging a point
+      if (draggingRef.current !== null) {
+        setTocke((prev) => {
+          const idx = draggingRef.current
+          if (idx === null) return prev
+          const next = [...prev]
+          next[idx] = { ...next[idx], x: p.x, y: p.y }
+          return next
+        })
+      }
     },
-    [getCanvasPoint],
+    [getCanvasPoint, mode, measureFirstPoint],
   )
 
-  // --- Pointer up / cancel: end drag ---
+  // --- Pointer up / cancel: end drag + clear live cursor ---
   const handlePointerUp = useCallback(
     (e: React.PointerEvent<HTMLCanvasElement>) => {
       if (draggingRef.current !== null) {
@@ -849,6 +1125,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
         }
         draggingRef.current = null
       }
+      setLiveCursor(null)
     },
     [],
   )
@@ -931,6 +1208,37 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
     setCalFirstPoint(null)
     toast({ title: 'Umeritev ponastavljena' })
   }, [])
+
+  // --- Export to calculator (AR-OVERLAY) ---
+  // Save current auto-calc to localStorage so the Kalkulator tab can pick it up
+  const exportToCalculator = useCallback(() => {
+    if (!autoCalc) return
+    try {
+      const payload = {
+        dolzinaMm: autoCalc.dolzinaMm,
+        visinaMm: autoCalc.visinaMm,
+        profilId: selectedProfilId,
+        profilSifra: autoCalc.profil.sifra,
+        balusterCount: autoCalc.balusterCount,
+        postCount: autoCalc.postCount,
+        totalLinearMeters: autoCalc.totalLinearMeters,
+        cenaMateriala: autoCalc.cenaMateriala,
+        cenaZDDV: autoCalc.cenaZDDV,
+        exportedAt: new Date().toISOString(),
+      }
+      localStorage.setItem('roksal_ar_calc_export', JSON.stringify(payload))
+      toast({
+        title: 'Preneseno',
+        description: 'Podatki preneseni v kalkulator.',
+      })
+    } catch {
+      toast({
+        title: 'Napaka',
+        description: 'Prenos v kalkulator ni uspel.',
+        variant: 'destructive',
+      })
+    }
+  }, [autoCalc, selectedProfilId, toast])
 
   // --- Fetch snapshots for history sheet ---
   const fetchSnapshots = useCallback(async () => {
@@ -1202,6 +1510,30 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
           </Select>
         </div>
 
+        {/* Grid toggle (AR-OVERLAY) */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className={cn(
+                'shrink-0',
+                gridVisible
+                  ? 'text-roksal-amber hover:bg-white/10'
+                  : 'text-white hover:bg-white/10',
+              )}
+              onClick={() => setGridVisible((v) => !v)}
+              aria-label="Mreža"
+            >
+              <Grid3x3 className="h-5 w-5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            {gridVisible ? 'Skrij mrežo' : 'Prikaži mrežo'}
+          </TooltipContent>
+        </Tooltip>
+
         {/* Calibration button + status */}
         <Tooltip>
           <TooltipTrigger asChild>
@@ -1340,10 +1672,185 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
               </div>
             )}
 
-            {/* Status banner */}
-            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
+            {/* === HUD: real-time dimensions (AR-OVERLAY) === */}
+            <div className="absolute top-3 left-3 z-10 pointer-events-none">
+              <div className="bg-roksal-navy/90 text-white rounded-lg p-2 text-[10px] max-w-[180px] backdrop-blur-sm shadow-md">
+                <div className="flex items-center gap-1 mb-1 pb-1 border-b border-white/15">
+                  <Ruler className="h-3 w-3 text-roksal-amber" />
+                  <span className="font-semibold uppercase tracking-wide">Meritve</span>
+                </div>
+                <div className="space-y-0.5">
+                  <div className="flex justify-between gap-2">
+                    <span className="text-white/55">Širina</span>
+                    <span className="font-bold text-roksal-amber">
+                      {realtimeStats.sirinaMm !== null
+                        ? formatDistance(realtimeStats.sirinaMm)
+                        : 'N/A — umeri'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <span className="text-white/55">Višina</span>
+                    <span className="font-bold text-roksal-amber">
+                      {realtimeStats.visinaMm !== null
+                        ? `${realtimeStats.visinaMm} mm`
+                        : 'N/A'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <span className="text-white/55">Dolžina</span>
+                    <span className="font-bold text-roksal-amber">
+                      {realtimeStats.kalibrirano && realtimeStats.dolzinaMm > 0
+                        ? formatDistance(realtimeStats.dolzinaMm)
+                        : 'N/A — umeri'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <span className="text-white/55">Površina</span>
+                    <span className="font-bold text-roksal-amber">
+                      {realtimeStats.povrsinaM2 > 0
+                        ? `${realtimeStats.povrsinaM2.toFixed(2)} m²`
+                        : '—'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <span className="text-white/55">Št. točk</span>
+                    <span className="font-bold text-white">{realtimeStats.stTock}</span>
+                  </div>
+                  <div className="flex justify-between gap-2 pt-0.5 border-t border-white/10">
+                    <span className="text-white/55">Kalibracija</span>
+                    {realtimeStats.kalibrirano && realtimeStats.ppm ? (
+                      <span className="font-semibold text-roksal-green flex items-center gap-0.5">
+                        <CheckCircle2 className="h-2.5 w-2.5" />
+                        {realtimeStats.ppm.toFixed(2)} px/mm
+                      </span>
+                    ) : (
+                      <span className="font-semibold text-roksal-amber">✗ ni umerjeno</span>
+                    )}
+                  </div>
+                  {/* Live cursor distance during MEASURE mode */}
+                  {mode === 'MEASURE' && measureFirstPoint && liveCursor && kalibracija && (
+                    <div className="flex justify-between gap-2 pt-0.5 border-t border-roksal-green/30">
+                      <span className="text-white/55">→ kurzor</span>
+                      <span className="font-bold text-roksal-green">
+                        {formatDistance(
+                          dist(measureFirstPoint, liveCursor) / kalibracija.pixelsPerMm,
+                        )}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Status banner — moved above calc panel */}
+            <div className="absolute bottom-14 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
               <div className="bg-roksal-navy/85 text-white text-xs font-medium px-3 py-1.5 rounded-full backdrop-blur-sm shadow-md whitespace-nowrap">
                 {statusText}
+              </div>
+            </div>
+
+            {/* === AUTO CALC PANEL (AR-OVERLAY) === */}
+            <div className="absolute bottom-3 left-3 right-3 z-20">
+              <div className="bg-roksal-navy/95 text-white rounded-lg shadow-lg backdrop-blur-sm overflow-hidden">
+                {/* Header — always visible, toggles expansion */}
+                <button
+                  type="button"
+                  onClick={() => setCalcPanelOpen((v) => !v)}
+                  className="w-full flex items-center justify-between gap-2 px-3 py-2 hover:bg-white/5 transition-colors"
+                  aria-label={calcPanelOpen ? 'Skrči izračun' : 'Razširi izračun'}
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Calculator className="h-4 w-4 text-roksal-amber shrink-0" />
+                    <span className="text-xs font-semibold shrink-0">Izračun</span>
+                    <span className="text-[10px] text-white/70 truncate">
+                      {autoCalc
+                        ? `${autoCalc.balusterCount} palic · ${formatEUR(autoCalc.cenaMateriala)}`
+                        : '—'}
+                    </span>
+                  </div>
+                  {calcPanelOpen ? (
+                    <ChevronDown className="h-4 w-4 shrink-0" />
+                  ) : (
+                    <ChevronUp className="h-4 w-4 shrink-0" />
+                  )}
+                </button>
+
+                {/* Expanded content */}
+                {calcPanelOpen && (
+                  <div className="px-2.5 pb-2.5 pt-0.5">
+                    {/* Warnings */}
+                    {!kalibracija && (
+                      <div className="mb-1.5 text-[10px] bg-roksal-amber/15 border border-roksal-amber/30 text-roksal-amber rounded px-2 py-1 flex items-center gap-1">
+                        <AlertTriangle className="h-3 w-3 shrink-0" />
+                        <span>Najprej umeri referenco za natančne mere</span>
+                      </div>
+                    )}
+                    {!selectedProfil && (
+                      <div className="mb-1.5 text-[10px] bg-roksal-amber/15 border border-roksal-amber/30 text-roksal-amber rounded px-2 py-1 flex items-center gap-1">
+                        <AlertTriangle className="h-3 w-3 shrink-0" />
+                        <span>Izberi profil</span>
+                      </div>
+                    )}
+                    {tocke.length < 2 && (
+                      <div className="mb-1.5 text-[10px] bg-white/5 border border-white/10 text-white/70 rounded px-2 py-1 flex items-center gap-1">
+                        <AlertTriangle className="h-3 w-3 shrink-0" />
+                        <span>Dodaj vsaj 2 točki za izračun</span>
+                      </div>
+                    )}
+
+                    {/* Stat grid */}
+                    {autoCalc ? (
+                      <>
+                        <div className="grid grid-cols-2 gap-1">
+                          <div className="bg-white/5 rounded px-2 py-1">
+                            <div className="text-[9px] text-white/50 uppercase tracking-wide">Št. palic</div>
+                            <div className="text-sm font-bold text-roksal-amber">{autoCalc.balusterCount}</div>
+                          </div>
+                          <div className="bg-white/5 rounded px-2 py-1">
+                            <div className="text-[9px] text-white/50 uppercase tracking-wide">Razmik</div>
+                            <div className="text-sm font-bold text-roksal-amber">{autoCalc.actualGapMm}mm</div>
+                          </div>
+                          <div className="bg-white/5 rounded px-2 py-1">
+                            <div className="text-[9px] text-white/50 uppercase tracking-wide">Št. stebrov</div>
+                            <div className="text-sm font-bold text-roksal-amber">{autoCalc.postCount}</div>
+                          </div>
+                          <div className="bg-white/5 rounded px-2 py-1">
+                            <div className="text-[9px] text-white/50 uppercase tracking-wide">Linearni</div>
+                            <div className="text-sm font-bold text-roksal-amber">{autoCalc.totalLinearMeters.toFixed(1)}m</div>
+                          </div>
+                          <div className="bg-white/5 rounded px-2 py-1">
+                            <div className="text-[9px] text-white/50 uppercase tracking-wide">Vijaki</div>
+                            <div className="text-sm font-bold text-roksal-amber">{autoCalc.screwCount}</div>
+                          </div>
+                          <div className="bg-white/5 rounded px-2 py-1">
+                            <div className="text-[9px] text-white/50 uppercase tracking-wide">Sidra</div>
+                            <div className="text-sm font-bold text-roksal-amber">{autoCalc.anchorCount}</div>
+                          </div>
+                          <div className="bg-white/5 rounded px-2 py-1">
+                            <div className="text-[9px] text-white/50 uppercase tracking-wide">Material</div>
+                            <div className="text-sm font-bold text-white">{formatEUR(autoCalc.cenaMateriala)}</div>
+                          </div>
+                          <div className="bg-roksal-amber/15 border border-roksal-amber/30 rounded px-2 py-1">
+                            <div className="text-[9px] text-roksal-amber/70 uppercase tracking-wide">Z DDV</div>
+                            <div className="text-sm font-bold text-roksal-amber">{formatEUR(autoCalc.cenaZDDV)}</div>
+                          </div>
+                        </div>
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="w-full mt-2 bg-roksal-amber text-white hover:bg-roksal-amber/90 text-xs h-8"
+                          onClick={exportToCalculator}
+                        >
+                          Dodaj v kalkulator
+                        </Button>
+                      </>
+                    ) : (
+                      <div className="text-[10px] text-white/50 text-center py-2">
+                        Podatki bodo izračunani, ko dodate točke in umerite referenco.
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </>
