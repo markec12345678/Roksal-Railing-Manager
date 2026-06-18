@@ -10,6 +10,12 @@ import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Separator } from '@/components/ui/separator'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import {
   Collapsible,
   CollapsibleContent,
@@ -28,6 +34,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from '@/components/ui/dialog'
 import {
   Ruler,
@@ -58,6 +65,18 @@ import {
   X,
   Save,
   Tag,
+  // P1 — novi ikoni
+  Mic,
+  History,
+  CheckSquare,
+  Square,
+  Archive,
+  ClipboardList,
+  Sparkles,
+  RotateCcw,
+  Filter,
+  Clock,
+  FileSpreadsheet,
 } from 'lucide-react'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
@@ -75,6 +94,7 @@ interface ArMetadata {
   oznaka?: string
   segmentId?: string
   opomba?: string
+  status?: MeasurementStatus
   // starejše polje (združljivost)
   lokacija?: string
   steviloStebrov?: number
@@ -109,6 +129,8 @@ interface Measurement {
   oznaka?: string
   segmentId?: string
   opomba?: string
+  status?: MeasurementStatus
+  kotStopinje?: number | null
 }
 
 interface Project {
@@ -138,6 +160,49 @@ interface CalibrationState {
 interface SlopeReading {
   beta: number
   gamma: number
+}
+
+type MeasurementStatus = 'OSNUTEK' | 'POTRJENA' | 'ARHIVIRANA'
+
+type StatusFilter = 'VSE' | MeasurementStatus
+
+interface AuditEntry {
+  timestamp: string
+  akcija: 'ADD' | 'EDIT' | 'DELETE' | 'STATUS'
+  meritevId: string
+  opis: string
+  staraVrednost?: string
+  novaVrednost?: string
+}
+
+interface PredlogaDef {
+  id: string
+  naziv: string
+  opis: string
+  ikona: typeof Ruler
+}
+
+// Tipizirana oz. varovalna oblika Web Speech API
+interface SpeechRecognitionResultItem {
+  transcript: string
+  confidence: number
+}
+interface SpeechRecognitionLike {
+  lang: string
+  interimResults: boolean
+  continuous: boolean
+  start: () => void
+  stop: () => void
+  abort: () => void
+  onresult: ((event: {
+    resultIndex: number
+    results: ArrayLike<ArrayLike<SpeechRecognitionResultItem> & { isFinal: boolean; length: number }>
+  }) => void) | null
+  onerror: ((event: unknown) => void) | null
+  onend: (() => void) | null
+}
+interface SpeechRecognitionCtor {
+  new (): SpeechRecognitionLike
 }
 
 // ============================================
@@ -197,6 +262,53 @@ const segmentTypeLabels: Record<Segment['type'], string> = {
   lokan: 'Lokan / ukrivljen',
 }
 
+const statusLabels: Record<MeasurementStatus, string> = {
+  OSNUTEK: 'Osnutek',
+  POTRJENA: 'Potrjena',
+  ARHIVIRANA: 'Arhivirana',
+}
+
+const statusColors: Record<MeasurementStatus, string> = {
+  OSNUTEK: 'bg-gray-100 text-gray-600 border-gray-300',
+  POTRJENA: 'bg-green-50 text-green-700 border-green-300',
+  ARHIVIRANA: 'bg-gray-50 text-gray-400 border-gray-200 line-through',
+}
+
+const statusCycle: Record<MeasurementStatus, MeasurementStatus> = {
+  OSNUTEK: 'POTRJENA',
+  POTRJENA: 'ARHIVIRANA',
+  ARHIVIRANA: 'OSNUTEK',
+}
+
+const auditActionLabels: Record<AuditEntry['akcija'], string> = {
+  ADD: 'Dodano',
+  EDIT: 'Spremenjeno',
+  DELETE: 'Izbrisano',
+  STATUS: 'Status',
+}
+
+const auditIcons: Record<AuditEntry['akcija'], typeof Ruler> = {
+  ADD: Plus,
+  EDIT: RefreshCw,
+  DELETE: Trash2,
+  STATUS: RotateCcw,
+}
+
+const auditColors: Record<AuditEntry['akcija'], string> = {
+  ADD: 'bg-green-50 text-green-700',
+  EDIT: 'bg-blue-50 text-blue-700',
+  DELETE: 'bg-red-50 text-red-700',
+  STATUS: 'bg-amber-50 text-amber-700',
+}
+
+const PREDLOGE: PredlogaDef[] = [
+  { id: 'balkon3m', naziv: 'Standardni balkon 3m', opis: 'Balkon + 3 meritve', ikona: Ruler },
+  { id: 'stopnisce', naziv: 'Stopnišče 12 stopnic', opis: 'Stopnišče + 2 meritevi', ikona: Layers },
+  { id: 'loblika', naziv: 'L-oblika 4+2m', opis: '2 segmenta, L tloris', ikona: Triangle },
+  { id: 'terasa5m', naziv: 'Terasa 5m', opis: 'Terasa + 1 meritev', ikona: Mountain },
+  { id: 'prazen', naziv: 'Prazen začetek', opis: 'Samo nova forma', ikona: Plus },
+]
+
 const LOKACIJE_INCLINOMETER = [
   'Talna plošča balkona',
   'Podkonstrukcija',
@@ -239,6 +351,30 @@ function formatDimension(mm: number): string {
 
 function formatM2(mm2: number): string {
   return `${(mm2 / 1_000_000).toFixed(2)}m²`
+}
+
+// P1 — multi-unit prikaz mer
+function formatMultiUnit(mm: number): string {
+  return `${mm}mm · ${Math.round(mm / 10)}cm · ${(mm / 1000).toFixed(2)}m`
+}
+
+function formatAngleMulti(deg: number): string {
+  const rad = (deg * Math.PI) / 180
+  return `${deg}° · ${rad.toFixed(2)}rad`
+}
+
+function formatSlopeMulti(deg: number): string {
+  const pct = Math.tan((deg * Math.PI) / 180) * 100
+  return `${deg.toFixed(1)}° · ${pct.toFixed(1)}%`
+}
+
+function loadAudit(projectId: string): AuditEntry[] {
+  try {
+    const raw = localStorage.getItem(`roksal_audit_${projectId}`)
+    return raw ? (JSON.parse(raw) as AuditEntry[]) : []
+  } catch {
+    return []
+  }
 }
 
 // ============================================
@@ -289,6 +425,26 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
 
   // Razširjeni segmenti (kateri so odprti)
   const [expandedSegments, setExpandedSegments] = useState<Set<string>>(new Set())
+
+  // P1 — Skupinske akcije
+  const [bulkMode, setBulkMode] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [bulkCopyTarget, setBulkCopyTarget] = useState('')
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
+
+  // P1 — Status filter
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('VSE')
+
+  // P1 — Zgodovina sprememb (audit)
+  const [auditEntries, setAuditEntries] = useState<AuditEntry[]>([])
+  const [auditOpen, setAuditOpen] = useState(false)
+  const [auditExpanded, setAuditExpanded] = useState(false)
+
+  // P1 — Glasovni vnos opomb
+  const [voiceListening, setVoiceListening] = useState(false)
+  const [voiceSupported, setVoiceSupported] = useState(false)
+  const [interimText, setInterimText] = useState('')
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null)
 
   // ============================================
   // NALAGANJE PODATKOV
@@ -396,6 +552,33 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
     }
   }, [selectedProject])
 
+  // P1 — Naloži zgodovino sprememb ob spremembi projekta
+  useEffect(() => {
+    if (!selectedProject) return
+    setAuditEntries(loadAudit(selectedProject))
+  }, [selectedProject])
+
+  // P1 — Zaznaj podporo Web Speech API
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const w = window as unknown as {
+      SpeechRecognition?: SpeechRecognitionCtor
+      webkitSpeechRecognition?: SpeechRecognitionCtor
+    }
+    setVoiceSupported(!!(w.SpeechRecognition || w.webkitSpeechRecognition))
+  }, [])
+
+  // P1 — počisti voice recognition ob unmountu
+  useEffect(() => {
+    return () => {
+      try {
+        recognitionRef.current?.abort()
+      } catch {
+        // ignore
+      }
+    }
+  }, [])
+
   // ============================================
   // NORMALIZACIJA MERITEV IZ API-ja
   // ============================================
@@ -415,6 +598,8 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
         oznaka: ar.oznaka,
         segmentId: ar.segmentId,
         opomba: ar.opomba,
+        status: ar.status ?? m.status ?? 'OSNUTEK',
+        kotStopinje: m.kotStopinje ?? ar.kotStopinje ?? null,
       }
     })
   }
@@ -437,6 +622,24 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
     setFormOpomba('')
   }
 
+  // P1 — zapiši v zgodovino sprememb (audit)
+  const pushAudit = useCallback(
+    (entry: Omit<AuditEntry, 'timestamp'>) => {
+      if (!selectedProject) return
+      const full: AuditEntry = { ...entry, timestamp: new Date().toISOString() }
+      setAuditEntries((prev) => {
+        const updated = [full, ...prev].slice(0, 200)
+        try {
+          localStorage.setItem(`roksal_audit_${selectedProject}`, JSON.stringify(updated))
+        } catch {
+          // ignore
+        }
+        return updated
+      })
+    },
+    [selectedProject]
+  )
+
   async function handleSubmitMeasurement() {
     if (!selectedProject || !formLength || !formHeight) {
       toast.error('Vnesite dolžino in višino!')
@@ -453,6 +656,7 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
       oznaka: formOznaka || undefined,
       segmentId: formSegmentId || undefined,
       opomba: formOpomba || undefined,
+      status: 'OSNUTEK',
       lokacija: formLocation || undefined,
       steviloStebrov: formPosts ? parseInt(formPosts) : undefined,
       tipPodlage: formGround,
@@ -485,8 +689,14 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
           oznaka: formOznaka || undefined,
           segmentId: formSegmentId || undefined,
           opomba: formOpomba || undefined,
+          status: 'OSNUTEK',
         }
         setMeasurements((prev) => [newMeasurement, ...prev])
+        pushAudit({
+          akcija: 'ADD',
+          meritevId: newMeasurement.id,
+          opis: `Nova meritev \"${formOznaka || formLocation || newMeasurement.id.slice(-4)}\" dodana — ${formatMultiUnit(parseInt(formLength))}`,
+        })
         resetForm()
         setFormOpen(false)
         toast.success('Meritev dodana!')
@@ -517,19 +727,33 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
       tipPodlage: formGround,
       kot: formAngle ? parseFloat(formAngle) : null,
       opombe: formNotes || null,
-      arMetadata: JSON.stringify(ar),
+      arMetadata: JSON.stringify({ ...ar, status: 'OSNUTEK' }),
       tipMeritve: formTipMeritve,
       oznaka: formOznaka || undefined,
       segmentId: formSegmentId || undefined,
       opomba: formOpomba || undefined,
+      status: 'OSNUTEK',
     }
     setMeasurements((prev) => [newMeasurement, ...prev])
+    pushAudit({
+      akcija: 'ADD',
+      meritevId: newMeasurement.id,
+      opis: `Nova meritev \"${formOznaka || formLocation || newMeasurement.id.slice(-4)}\" dodana (lokalno) — ${formatMultiUnit(parseInt(formLength))}`,
+    })
     resetForm()
     setFormOpen(false)
   }
 
   function handleDeleteMeasurement(id: string) {
+    const m = measurements.find((x) => x.id === id)
     setMeasurements((prev) => prev.filter((m) => m.id !== id))
+    if (m) {
+      pushAudit({
+        akcija: 'DELETE',
+        meritevId: id,
+        opis: `Meritev \"${m.oznaka || m.lokacija || id.slice(-4)}\" izbrisana`,
+      })
+    }
     toast.success('Meritev izbrisana')
   }
 
@@ -540,9 +764,31 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
       createdAt: new Date().toISOString(),
       lokacija: m.lokacija ? `${m.lokacija} (kopija)` : 'Kopija',
       oznaka: m.oznaka ? `${m.oznaka} (kopija)` : undefined,
+      status: 'OSNUTEK',
     }
     setMeasurements((prev) => [duplicate, ...prev])
+    pushAudit({
+      akcija: 'ADD',
+      meritevId: duplicate.id,
+      opis: `Meritev \"${m.oznaka || m.lokacija || m.id.slice(-4)}\" podvojena`,
+    })
     toast.success('Meritev podvojena!')
+  }
+
+  // P1 — cikliranje statusa meritve (OSNUTEK → POTRJENA → ARHIVIRANA → OSNUTEK)
+  function handleStatusCycle(m: Measurement) {
+    const currentStatus: MeasurementStatus = m.status || 'OSNUTEK'
+    const nextStatus = statusCycle[currentStatus]
+    const updated: Measurement = { ...m, status: nextStatus }
+    setMeasurements((prev) => prev.map((x) => (x.id === m.id ? updated : x)))
+    pushAudit({
+      akcija: 'STATUS',
+      meritevId: m.id,
+      opis: `Status meritve \"${m.oznaka || m.lokacija || m.id.slice(-4)}\" spremenjen`,
+      staraVrednost: statusLabels[currentStatus],
+      novaVrednost: statusLabels[nextStatus],
+    })
+    toast.info(`Status: ${statusLabels[currentStatus]} → ${statusLabels[nextStatus]}`)
   }
 
   // Hitri izračun razmikov
@@ -623,7 +869,23 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
     return stats
   }, [allSegments, measurements])
 
-  // Grupiranje po datumu (obstoječa logika)
+  // P1 — števci statusov
+  const statusCounts = useMemo(() => {
+    const counts: Record<MeasurementStatus, number> = { OSNUTEK: 0, POTRJENA: 0, ARHIVIRANA: 0 }
+    measurements.forEach((m) => {
+      const s: MeasurementStatus = m.status || 'OSNUTEK'
+      counts[s]++
+    })
+    return counts
+  }, [measurements])
+
+  // P1 — filtrirane meritve glede na status filter
+  const filteredMeasurements = useMemo(() => {
+    if (statusFilter === 'VSE') return measurements
+    return measurements.filter((m) => (m.status || 'OSNUTEK') === statusFilter)
+  }, [measurements, statusFilter])
+
+  // Grupiranje po datumu (obstoječa logika) — uporablja filtrirane meritve
   const groupedMeasurements = useMemo((): MeasurementGroup[] => {
     const now = new Date()
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
@@ -632,7 +894,7 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
     const groups: MeasurementGroup[] = []
     const grouped = new Map<string, Measurement[]>()
 
-    const sorted = [...measurements].sort(
+    const sorted = [...filteredMeasurements].sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     )
 
@@ -658,7 +920,7 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
     }
 
     return groups
-  }, [measurements])
+  }, [filteredMeasurements])
 
   // ============================================
   // UKREPI ZA SEGMENTE
@@ -787,8 +1049,15 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
           tipMeritve: inclinometerMode,
           oznaka: arMetadata.oznaka,
           opomba: arMetadata.opomba,
+          status: 'OSNUTEK',
+          kotStopinje,
         }
         setMeasurements((prev) => [newMeasurement, ...prev])
+        pushAudit({
+          akcija: 'ADD',
+          meritevId: newMeasurement.id,
+          opis: `${inclinometerMode === 'KOT' ? 'Kot' : 'Nagib'} ${kotStopinje}° shranjen (${lokacija})`,
+        })
         toast.success(`${inclinometerMode === 'KOT' ? 'Kot' : 'Nagib'} ${kotStopinje}° shranjen`)
         setInclinometerOpen(false)
       } else {
@@ -800,12 +1069,19 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
           createdAt: new Date().toISOString(),
           projectId: selectedProject,
           lokacija,
-          arMetadata: JSON.stringify(arMetadata),
+          arMetadata: JSON.stringify({ ...arMetadata, status: 'OSNUTEK' }),
           tipMeritve: inclinometerMode,
           oznaka: arMetadata.oznaka,
           opomba: arMetadata.opomba,
+          status: 'OSNUTEK',
+          kotStopinje,
         }
         setMeasurements((prev) => [newMeasurement, ...prev])
+        pushAudit({
+          akcija: 'ADD',
+          meritevId: newMeasurement.id,
+          opis: `${inclinometerMode === 'KOT' ? 'Kot' : 'Nagib'} ${kotStopinje}° shranjen (lokalno) — ${lokacija}`,
+        })
         toast.success(`${inclinometerMode === 'KOT' ? 'Kot' : 'Nagib'} ${kotStopinje}° shranjen (lokalno)`)
         setInclinometerOpen(false)
       }
@@ -823,21 +1099,27 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
       toast.error('Ni meritev za izvoz')
       return
     }
-    const header = 'Oznaka,Tip,Lokacija,Segment,Dolzina(mm),Visina(mm),Stebri,Podlaga,Kot,Opomba,Opombe,Datum'
+    // P1 — dodani stolpci za multi-unit (mm, cm, m) in status
+    const header = 'Oznaka,Tip,Status,Lokacija,Segment,Dolzina(mm),Dolzina(cm),Dolzina(m),Visina(mm),Visina(cm),Visina(m),Stebri,Podlaga,Kot,Opomba,Opombe,Datum'
     const rows = measurements.map((m) => {
       const oznaka = (m.oznaka || '').replace(/"/g, '""')
       const tip = m.tipMeritve ? tipMeritveLabels[m.tipMeritve] : 'Razdalja'
+      const status = statusLabels[m.status || 'OSNUTEK']
       const lokacija = (m.lokacija || '').replace(/"/g, '""')
       const segment = (m.segmentId || '').replace(/"/g, '""')
-      const dolzina = String(m.dolzinaMm)
-      const visina = String(m.visinaMm)
+      const dMm = String(m.dolzinaMm)
+      const dCm = String(Math.round(m.dolzinaMm / 10))
+      const dM = (m.dolzinaMm / 1000).toFixed(2)
+      const vMm = String(m.visinaMm)
+      const vCm = String(Math.round(m.visinaMm / 10))
+      const vM = (m.visinaMm / 1000).toFixed(2)
       const stebri = m.steviloStebrov ? String(m.steviloStebrov) : ''
       const podlaga = m.tipPodlage ? (groundTypeLabels[m.tipPodlage as GroundType] || m.tipPodlage) : ''
       const kot = m.kot ? String(m.kot) : ''
       const opomba = (m.opomba || '').replace(/"/g, '""')
       const opombe = (m.opombe || '').replace(/"/g, '""')
       const datum = new Date(m.createdAt).toLocaleDateString('sl-SI')
-      return `"${oznaka}","${tip}","${lokacija}","${segment}",${dolzina},${visina},${stebri},"${podlaga}",${kot},"${opomba}","${opombe}",${datum}`
+      return `"${oznaka}","${tip}","${status}","${lokacija}","${segment}",${dMm},${dCm},${dM},${vMm},${vCm},${vM},"${stebri}","${podlaga}",${kot},"${opomba}","${opombe}",${datum}`
     })
     const csvContent = '\uFEFF' + header + '\n' + rows.join('\n')
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
@@ -941,6 +1223,395 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
   }
 
   // ============================================
+  // P1 — PREDLOGE MERITEV (templates)
+  // ============================================
+
+  async function handleApplyPredloga(predlogaId: string) {
+    if (!selectedProject) {
+      toast.error('Izberite projekt!')
+      return
+    }
+    if (predlogaId === 'prazen') {
+      resetForm()
+      setFormOpen(true)
+      toast.info('Odprta forma za novo meritev')
+      return
+    }
+
+    const newSegs: Segment[] = []
+    const newMeas: Array<{ dolzinaMm: number; visinaMm: number; ar: ArMetadata }> = []
+
+    if (predlogaId === 'balkon3m') {
+      if (!segments.some((s) => s.id === 'balkon')) {
+        newSegs.push({ id: 'balkon', name: 'Balkon', type: 'ravni' })
+      }
+      newMeas.push({
+        dolzinaMm: 3000,
+        visinaMm: 1100,
+        ar: { tipMeritve: 'RAZDALJA', oznaka: 'dolžina balkona', segmentId: 'balkon', status: 'OSNUTEK' },
+      })
+      newMeas.push({
+        dolzinaMm: 1,
+        visinaMm: 1100,
+        ar: { tipMeritve: 'VISINA', oznaka: 'višina ograje', segmentId: 'balkon', status: 'OSNUTEK' },
+      })
+      newMeas.push({
+        dolzinaMm: 1,
+        visinaMm: 1,
+        ar: { tipMeritve: 'GLOBINA', oznaka: 'debela stene', segmentId: 'balkon', opomba: 'Debelina stene (mm)', status: 'OSNUTEK' },
+      })
+    } else if (predlogaId === 'stopnisce') {
+      if (!segments.some((s) => s.id === 'stopnisce')) {
+        newSegs.push({ id: 'stopnisce', name: 'Stopnišče', type: 'stopniscje' })
+      }
+      newMeas.push({
+        dolzinaMm: 2400,
+        visinaMm: 1,
+        ar: { tipMeritve: 'SEGMENT', oznaka: 'vodoravno', segmentId: 'stopnisce', status: 'OSNUTEK' },
+      })
+      newMeas.push({
+        dolzinaMm: 1,
+        visinaMm: 1800,
+        ar: { tipMeritve: 'VISINA', oznaka: 'skupna višina', segmentId: 'stopnisce', status: 'OSNUTEK' },
+      })
+    } else if (predlogaId === 'loblika') {
+      if (!segments.some((s) => s.id === 'severni-del')) {
+        newSegs.push({ id: 'severni-del', name: 'Severni del', type: 'ravni' })
+      }
+      if (!segments.some((s) => s.id === 'vzhodni-del')) {
+        newSegs.push({ id: 'vzhodni-del', name: 'Vzhodni del', type: 'kotni' })
+      }
+      newMeas.push({
+        dolzinaMm: 4000,
+        visinaMm: 1100,
+        ar: { tipMeritve: 'RAZDALJA', oznaka: 'severni — dolžina', segmentId: 'severni-del', status: 'OSNUTEK' },
+      })
+      newMeas.push({
+        dolzinaMm: 2000,
+        visinaMm: 1100,
+        ar: { tipMeritve: 'RAZDALJA', oznaka: 'vzhodni — dolžina', segmentId: 'vzhodni-del', status: 'OSNUTEK' },
+      })
+    } else if (predlogaId === 'terasa5m') {
+      if (!segments.some((s) => s.id === 'terasa')) {
+        newSegs.push({ id: 'terasa', name: 'Terasa', type: 'ravni' })
+      }
+      newMeas.push({
+        dolzinaMm: 5000,
+        visinaMm: 1000,
+        ar: { tipMeritve: 'RAZDALJA', oznaka: 'terasa — dolžina', segmentId: 'terasa', status: 'OSNUTEK' },
+      })
+    }
+
+    // Dodaj nove segmente v state + localStorage
+    if (newSegs.length > 0) {
+      setSegments((prev) => [...prev, ...newSegs])
+    }
+
+    // POST vsako meritev na API; ob napaki shrani lokalno
+    let successCount = 0
+    let localCount = 0
+    for (const item of newMeas) {
+      try {
+        const res = await fetch('/api/measurements', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            projectId: selectedProject,
+            dolzinaMm: item.dolzinaMm,
+            visinaMm: item.visinaMm,
+            arMetadata: item.ar,
+            gpsLokacija: { lat: 46.2397, lng: 14.3556 },
+          }),
+        })
+        if (res.ok) {
+          const data = await res.json()
+          const newM: Measurement = {
+            ...data,
+            lokacija: null,
+            steviloStebrov: null,
+            tipPodlage: null,
+            kot: null,
+            opombe: null,
+            tipMeritve: item.ar.tipMeritve,
+            oznaka: item.ar.oznaka,
+            segmentId: item.ar.segmentId,
+            opomba: item.ar.opomba,
+            status: item.ar.status || 'OSNUTEK',
+          }
+          setMeasurements((prev) => [newM, ...prev])
+          successCount++
+        } else {
+          const localM: Measurement = {
+            id: `local_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            dolzinaMm: item.dolzinaMm,
+            visinaMm: item.visinaMm,
+            lidarScanUrl: null,
+            gpsLokacija: JSON.stringify({ lat: 46.2397, lng: 14.3556 }),
+            createdAt: new Date().toISOString(),
+            projectId: selectedProject,
+            lokacija: null,
+            steviloStebrov: null,
+            tipPodlage: null,
+            kot: null,
+            opombe: null,
+            arMetadata: JSON.stringify(item.ar),
+            tipMeritve: item.ar.tipMeritve,
+            oznaka: item.ar.oznaka,
+            segmentId: item.ar.segmentId,
+            opomba: item.ar.opomba,
+            status: item.ar.status || 'OSNUTEK',
+          }
+          setMeasurements((prev) => [localM, ...prev])
+          localCount++
+        }
+      } catch {
+        const localM: Measurement = {
+          id: `local_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          dolzinaMm: item.dolzinaMm,
+          visinaMm: item.visinaMm,
+          lidarScanUrl: null,
+          gpsLokacija: JSON.stringify({ lat: 46.2397, lng: 14.3556 }),
+          createdAt: new Date().toISOString(),
+          projectId: selectedProject,
+          lokacija: null,
+          steviloStebrov: null,
+          tipPodlage: null,
+          kot: null,
+          opombe: null,
+          arMetadata: JSON.stringify(item.ar),
+          tipMeritve: item.ar.tipMeritve,
+          oznaka: item.ar.oznaka,
+          segmentId: item.ar.segmentId,
+          opomba: item.ar.opomba,
+          status: item.ar.status || 'OSNUTEK',
+        }
+        setMeasurements((prev) => [localM, ...prev])
+        localCount++
+      }
+    }
+
+    const predloga = PREDLOGE.find((p) => p.id === predlogaId)
+    pushAudit({
+      akcija: 'ADD',
+      meritevId: 'predloga',
+      opis: `Predloga \"${predloga?.naziv || predlogaId}\" uporabljena — ${newMeas.length} meritev, ${newSegs.length} segmentov`,
+    })
+    toast.success(
+      `Predloga uporabljena: ${predloga?.naziv || predlogaId}${
+        localCount > 0 ? ` (${successCount} sinhroniziranih, ${localCount} lokalno)` : ''
+      }`
+    )
+  }
+
+  // ============================================
+  // P1 — SKUPINSKE AKCIJE (bulk)
+  // ============================================
+
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function handleBulkSelectAll() {
+    setSelectedIds(new Set(filteredMeasurements.map((m) => m.id)))
+  }
+
+  function handleBulkClear() {
+    setSelectedIds(new Set())
+  }
+
+  function handleBulkExportCSV() {
+    const selected = measurements.filter((m) => selectedIds.has(m.id))
+    if (selected.length === 0) {
+      toast.error('Ni izbranih meritev')
+      return
+    }
+    const header = 'Oznaka,Tip,Status,Lokacija,Segment,Dolzina(mm),Dolzina(cm),Dolzina(m),Visina(mm),Visina(cm),Visina(m),Stebri,Podlaga,Kot,Opomba,Opombe,Datum'
+    const rows = selected.map((m) => {
+      const oznaka = (m.oznaka || '').replace(/"/g, '""')
+      const tip = m.tipMeritve ? tipMeritveLabels[m.tipMeritve] : 'Razdalja'
+      const status = statusLabels[m.status || 'OSNUTEK']
+      const lokacija = (m.lokacija || '').replace(/"/g, '""')
+      const segment = (m.segmentId || '').replace(/"/g, '""')
+      const dMm = String(m.dolzinaMm)
+      const dCm = String(Math.round(m.dolzinaMm / 10))
+      const dM = (m.dolzinaMm / 1000).toFixed(2)
+      const vMm = String(m.visinaMm)
+      const vCm = String(Math.round(m.visinaMm / 10))
+      const vM = (m.visinaMm / 1000).toFixed(2)
+      const stebri = m.steviloStebrov ? String(m.steviloStebrov) : ''
+      const podlaga = m.tipPodlage ? (groundTypeLabels[m.tipPodlage as GroundType] || m.tipPodlage) : ''
+      const kot = m.kot ? String(m.kot) : ''
+      const opomba = (m.opomba || '').replace(/"/g, '""')
+      const opombe = (m.opombe || '').replace(/"/g, '""')
+      const datum = new Date(m.createdAt).toLocaleDateString('sl-SI')
+      return `"${oznaka}","${tip}","${status}","${lokacija}","${segment}",${dMm},${dCm},${dM},${vMm},${vCm},${vM},"${stebri}","${podlaga}",${kot},"${opomba}","${opombe}",${datum}`
+    })
+    const csvContent = '\uFEFF' + header + '\n' + rows.join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `meritve_izbrane_${new Date().toISOString().slice(0, 10)}.csv`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    pushAudit({
+      akcija: 'EDIT',
+      meritevId: 'bulk',
+      opis: `Skupinsko izvoženih ${selected.length} meritev (CSV)`,
+    })
+    toast.success(`Izvozenih ${selected.length} meritev (CSV)`)
+  }
+
+  function handleBulkCopyToSegment() {
+    if (!bulkCopyTarget) {
+      toast.error('Izberite ciljni segment')
+      return
+    }
+    const selected = measurements.filter((m) => selectedIds.has(m.id))
+    if (selected.length === 0) {
+      toast.error('Ni izbranih meritev')
+      return
+    }
+    const copies: Measurement[] = selected.map((m) => ({
+      ...m,
+      id: `local_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      createdAt: new Date().toISOString(),
+      segmentId: bulkCopyTarget,
+      oznaka: m.oznaka ? `${m.oznaka} (kopija)` : 'Kopija',
+      status: 'OSNUTEK' as MeasurementStatus,
+    }))
+    setMeasurements((prev) => [...copies, ...prev])
+    pushAudit({
+      akcija: 'ADD',
+      meritevId: 'bulk',
+      opis: `Kopirano ${selected.length} meritev v segment \"${bulkCopyTarget}\"`,
+    })
+    toast.success(`${selected.length} meritev kopiranih v \"${bulkCopyTarget}\"`)
+    setSelectedIds(new Set())
+    setBulkCopyTarget('')
+  }
+
+  function handleBulkDelete() {
+    const selected = measurements.filter((m) => selectedIds.has(m.id))
+    if (selected.length === 0) {
+      toast.error('Ni izbranih meritev')
+      return
+    }
+    // Ker API nima DELETE, meritve označimo kot ARHIVIRANE (ne izgubijo se)
+    setMeasurements((prev) =>
+      prev.map((m) =>
+        selectedIds.has(m.id) ? { ...m, status: 'ARHIVIRANA' as MeasurementStatus } : m
+      )
+    )
+    selected.forEach((m) => {
+      pushAudit({
+        akcija: 'DELETE',
+        meritevId: m.id,
+        opis: `Meritev \"${m.oznaka || m.lokacija || m.id.slice(-4)}\" arhivirana (skupinsko)`,
+      })
+    })
+    toast.success(`${selected.length} meritev arhiviranih`)
+    setSelectedIds(new Set())
+    setBulkDeleteOpen(false)
+  }
+
+  // ============================================
+  // P1 — IZVOZ ZGODOVINE (audit CSV)
+  // ============================================
+
+  function handleExportAuditCSV() {
+    if (auditEntries.length === 0) {
+      toast.error('Ni zgodovine za izvoz')
+      return
+    }
+    const header = 'Cas,Akcija,MeritevId,Opis,StaraVrednost,NovaVrednost'
+    const rows = auditEntries.map((e) => {
+      const cas = new Date(e.timestamp).toLocaleString('sl-SI')
+      const akcija = auditActionLabels[e.akcija]
+      const opis = e.opis.replace(/"/g, '""')
+      const stara = (e.staraVrednost || '').replace(/"/g, '""')
+      const nova = (e.novaVrednost || '').replace(/"/g, '""')
+      return `"${cas}","${akcija}","${e.meritevId}","${opis}","${stara}","${nova}"`
+    })
+    const csvContent = '\uFEFF' + header + '\n' + rows.join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `zgodovina_${selectedProject}_${new Date().toISOString().slice(0, 10)}.csv`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    toast.success('Zgodovina izvožena (CSV)')
+  }
+
+  // ============================================
+  // P1 — GLASOVNI VNOS OPOMB
+  // ============================================
+
+  function handleVoiceToggle() {
+    if (!voiceSupported) return
+    if (voiceListening) {
+      try {
+        recognitionRef.current?.stop()
+      } catch {
+        // ignore
+      }
+      setVoiceListening(false)
+      setInterimText('')
+      return
+    }
+    const w = window as unknown as {
+      SpeechRecognition?: SpeechRecognitionCtor
+      webkitSpeechRecognition?: SpeechRecognitionCtor
+    }
+    const SR = w.SpeechRecognition || w.webkitSpeechRecognition
+    if (!SR) return
+    const recognition = new SR()
+    recognition.lang = 'sl-SI'
+    recognition.interimResults = true
+    recognition.continuous = true
+    recognition.onresult = (event) => {
+      let interim = ''
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const item = event.results[i]
+        const transcript = item[0]?.transcript ?? ''
+        if (item.isFinal) {
+          setFormOpomba((prev) => (prev ? `${prev} ${transcript}`.trim() : transcript))
+        } else {
+          interim += transcript
+        }
+      }
+      setInterimText(interim)
+    }
+    recognition.onerror = () => {
+      toast.error('Napaka pri prepoznavi glasu')
+      setVoiceListening(false)
+      setInterimText('')
+    }
+    recognition.onend = () => {
+      setVoiceListening(false)
+      setInterimText('')
+    }
+    recognitionRef.current = recognition
+    try {
+      recognition.start()
+      setVoiceListening(true)
+      toast.info('Poslušam... govorite opombo')
+    } catch {
+      toast.error('Napaka pri zagonu prepoznavanja')
+    }
+  }
+
+  // ============================================
   // RENDERS — RAILING DIAGRAM (obstoječa logika)
   // ============================================
 
@@ -1023,17 +1694,31 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
   function renderMeasurementCard(m: Measurement) {
     const gps = parseGPS(m.gpsLokacija ?? null)
     const TipIcon = m.tipMeritve ? tipMeritveIcons[m.tipMeritve] : Ruler
+    const mStatus: MeasurementStatus = m.status || 'OSNUTEK'
+    const isArchived = mStatus === 'ARHIVIRANA'
+    const angleDeg = m.kotStopinje ?? m.kot ?? null
     return (
       <div
         key={m.id}
-        className="rounded-xl border border-border/50 overflow-hidden transition-colors hover:border-roksal-navy/20 slide-in-right"
+        className={`rounded-xl border border-border/50 overflow-hidden transition-colors hover:border-roksal-navy/20 slide-in-right ${
+          isArchived ? 'opacity-60' : ''
+        }`}
       >
         {/* Glava meritve */}
         <div className="flex items-center justify-between p-3 pb-2">
           <div className="flex items-center gap-2 min-w-0 flex-1">
+            {/* P1 — bulk checkbox */}
+            {bulkMode && (
+              <Checkbox
+                checked={selectedIds.has(m.id)}
+                onCheckedChange={() => toggleSelect(m.id)}
+                className="shrink-0"
+                aria-label="Izberi meritev"
+              />
+            )}
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
-                <p className="text-sm font-semibold text-roksal-navy truncate">
+                <p className={`text-sm font-semibold text-roksal-navy truncate ${isArchived ? 'line-through' : ''}`}>
                   {m.oznaka || m.lokacija || `Meritev #${m.id.slice(-4)}`}
                 </p>
                 {m.tipMeritve && m.tipMeritve !== 'RAZDALJA' && (
@@ -1046,6 +1731,29 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
                     {tipMeritveLabels[m.tipMeritve]}
                   </span>
                 )}
+                {/* P1 — status badge (clickable) */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={() => handleStatusCycle(m)}
+                      className={`inline-flex items-center gap-0.5 rounded px-1 py-0 text-[8px] font-medium border transition-colors hover:opacity-80 ${
+                        statusColors[mStatus]
+                      }`}
+                      title="Klikni za cikliranje statusa"
+                    >
+                      {mStatus === 'POTRJENA' ? (
+                        <CheckCircle2 className="h-2.5 w-2.5" />
+                      ) : mStatus === 'ARHIVIRANA' ? (
+                        <Archive className="h-2.5 w-2.5" />
+                      ) : (
+                        <RotateCcw className="h-2.5 w-2.5" />
+                      )}
+                      {statusLabels[mStatus]}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>Spremeni status</TooltipContent>
+                </Tooltip>
                 {m.segmentId && (
                   <Badge variant="outline" className="text-[9px] h-4 px-1 shrink-0">
                     <Layers className="h-2.5 w-2.5 mr-0.5" />
@@ -1059,13 +1767,29 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
                 )}
               </div>
               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                {/* P1 — multi-unit prikaz */}
                 {m.tipMeritve !== 'KOT' && m.tipMeritve !== 'NAGIB' && (
-                  <span className="text-xs text-muted-foreground font-mono">
-                    ↔ {formatDimension(m.dolzinaMm)} × ↕ {formatDimension(m.visinaMm)}
+                  <>
+                    <span className="text-[11px] text-muted-foreground font-mono">
+                      ↔ {formatMultiUnit(m.dolzinaMm)}
+                    </span>
+                    <span className="text-[11px] text-muted-foreground font-mono">
+                      ↕ {formatMultiUnit(m.visinaMm)}
+                    </span>
+                  </>
+                )}
+                {m.tipMeritve === 'KOT' && angleDeg != null && (
+                  <span className="text-xs text-roksal-amber font-mono">
+                    {formatAngleMulti(angleDeg)}
+                  </span>
+                )}
+                {m.tipMeritve === 'NAGIB' && angleDeg != null && (
+                  <span className="text-xs text-roksal-amber font-mono">
+                    {formatSlopeMulti(angleDeg)}
                   </span>
                 )}
                 {(m.tipMeritve === 'KOT' || m.tipMeritve === 'NAGIB') && m.opomba && (
-                  <span className="text-xs text-roksal-amber font-mono">{m.opomba}</span>
+                  <span className="text-[11px] text-muted-foreground font-mono">{m.opomba}</span>
                 )}
                 {m.steviloStebrov && (
                   <Badge variant="secondary" className="text-[9px] h-4 px-1.5 shrink-0">
@@ -1199,6 +1923,38 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
         </CardContent>
       </Card>
 
+      {/* P1 — HITRE PREDLOGE (templates) */}
+      <Card className="card-hover transition-all duration-200 animate-fade-in-up border-roksal-amber/20" style={{ animationDelay: '15ms' }}>
+        <CardHeader className="pb-2 pt-4 px-4">
+          <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+            <Sparkles className="h-4 w-4 text-roksal-amber" />
+            Hitre predloge
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="px-4 pb-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {PREDLOGE.map((p) => {
+              const Icon = p.ikona
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => handleApplyPredloga(p.id)}
+                  disabled={!selectedProject}
+                  className="flex flex-col items-start gap-1 rounded-lg border border-border/50 bg-secondary/30 p-2.5 text-left transition-all duration-150 hover:border-roksal-amber/40 hover:bg-roksal-amber/5 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <Icon className="h-3.5 w-3.5 text-roksal-amber" />
+                    <span className="text-[11px] font-semibold text-roksal-navy leading-tight">{p.naziv}</span>
+                  </div>
+                  <span className="text-[9px] text-muted-foreground leading-tight">{p.opis}</span>
+                </button>
+              )
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* POVZETEK PROEKTA (NEW) */}
       <Card className="card-hover transition-all duration-200 animate-fade-in-up" style={{ animationDelay: '30ms' }}>
         <CardHeader className="pb-2 pt-4 px-4">
@@ -1211,11 +1967,11 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
           <div className="grid grid-cols-3 gap-2">
             <div className="rounded-lg bg-secondary/50 p-2.5 text-center">
               <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Skupna dolžina</p>
-              <p className="text-sm font-bold text-roksal-navy">{formatDimension(totalLength)}</p>
+              <p className="text-[11px] font-bold text-roksal-navy leading-tight">{formatMultiUnit(totalLength)}</p>
             </div>
             <div className="rounded-lg bg-secondary/50 p-2.5 text-center">
               <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Povpr. višina</p>
-              <p className="text-sm font-bold text-roksal-navy">{formatDimension(Math.round(avgHeight))}</p>
+              <p className="text-[11px] font-bold text-roksal-navy leading-tight">{formatMultiUnit(Math.round(avgHeight))}</p>
             </div>
             <div className="rounded-lg bg-secondary/50 p-2.5 text-center">
               <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Meritev</p>
@@ -1227,13 +1983,29 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
             </div>
             <div className="rounded-lg bg-secondary/50 p-2.5 text-center">
               <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Najdaljša</p>
-              <p className="text-sm font-bold text-roksal-navy">
-                {longestMeasurement ? formatDimension(longestMeasurement.dolzinaMm) : '—'}
+              <p className="text-[11px] font-bold text-roksal-navy leading-tight">
+                {longestMeasurement ? formatMultiUnit(longestMeasurement.dolzinaMm) : '—'}
               </p>
             </div>
             <div className="rounded-lg bg-secondary/50 p-2.5 text-center">
               <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Površina</p>
               <p className="text-sm font-bold text-roksal-navy">{formatM2(totalArea)}</p>
+            </div>
+          </div>
+          {/* P1 — števci statusov */}
+          <Separator className="my-2.5" />
+          <div className="grid grid-cols-3 gap-2">
+            <div className="rounded-lg bg-gray-50 border border-gray-200 p-2 text-center">
+              <p className="text-[9px] text-gray-500 uppercase tracking-wide">Osnutki</p>
+              <p className="text-sm font-bold text-gray-600">{statusCounts.OSNUTEK}</p>
+            </div>
+            <div className="rounded-lg bg-green-50 border border-green-200 p-2 text-center">
+              <p className="text-[9px] text-green-600 uppercase tracking-wide">Potrjene</p>
+              <p className="text-sm font-bold text-green-700">{statusCounts.POTRJENA}</p>
+            </div>
+            <div className="rounded-lg bg-gray-50 border border-gray-200 p-2 text-center">
+              <p className="text-[9px] text-gray-400 uppercase tracking-wide">Arhivirane</p>
+              <p className="text-sm font-bold text-gray-400 line-through">{statusCounts.ARHIVIRANA}</p>
             </div>
           </div>
         </CardContent>
@@ -1607,15 +2379,48 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
               </div>
             </div>
 
-            {/* Opomba (textarea) */}
+            {/* P1 — Opomba (textarea) z glasovnim vnosom */}
             <div className="space-y-1.5">
-              <Label className="text-xs font-medium">Opomba</Label>
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-medium">Opomba</Label>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={handleVoiceToggle}
+                      disabled={!voiceSupported}
+                      title={voiceSupported ? 'Vnos z glasom' : 'Vnos z glasom ni podprt v tem brskalniku'}
+                      className={`flex items-center gap-1 rounded-lg border px-2 py-1 text-[10px] font-medium transition-all duration-150 active:scale-[0.96] ${
+                        voiceListening
+                          ? 'border-red-300 bg-red-50 text-red-600 animate-pulse'
+                          : voiceSupported
+                            ? 'border-roksal-navy/20 bg-roksal-navy/5 text-roksal-navy hover:bg-roksal-navy/10'
+                            : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+                      }`}
+                    >
+                      <Mic className="h-3 w-3" />
+                      {voiceListening ? 'Poslušam...' : 'Glas'}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {voiceSupported
+                      ? 'Klikni za vnos opombe z glasom (sl-SI)'
+                      : 'Vnos z glasom ni podprt v tem brskalniku'}
+                  </TooltipContent>
+                </Tooltip>
+              </div>
               <Textarea
                 value={formOpomba}
                 onChange={(e) => setFormOpomba(e.target.value)}
                 placeholder="Podrobnejši opis, posebnosti, opozorila..."
                 className="min-h-[60px] text-sm"
               />
+              {interimText && (
+                <p className="text-[10px] text-muted-foreground italic truncate">
+                  <Mic className="inline h-2.5 w-2.5 mr-1" />
+                  {interimText}
+                </p>
+              )}
             </div>
 
             {/* Notes (kratko) */}
@@ -1886,6 +2691,137 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
         </Card>
       )}
 
+      {/* P1 — STATUS FILTER PILLS + BULK TOOLBAR */}
+      <Card className="card-hover animate-fade-in-up" style={{ animationDelay: '285ms' }}>
+        <CardContent className="p-3 space-y-2.5">
+          {/* Status filter pills */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <Filter className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            {(['VSE', 'OSNUTEK', 'POTRJENA', 'ARHIVIRANA'] as StatusFilter[]).map((f) => {
+              const isActive = statusFilter === f
+              const label = f === 'VSE' ? 'Vse' : statusLabels[f as MeasurementStatus]
+              const count = f === 'VSE' ? measurements.length : statusCounts[f as MeasurementStatus]
+              const color =
+                f === 'VSE'
+                  ? isActive
+                    ? 'bg-roksal-navy text-white border-roksal-navy'
+                    : 'bg-secondary/50 text-muted-foreground border-border/50'
+                  : f === 'OSNUTEK'
+                    ? isActive
+                      ? 'bg-gray-600 text-white border-gray-600'
+                      : 'bg-gray-50 text-gray-600 border-gray-200'
+                    : f === 'POTRJENA'
+                      ? isActive
+                        ? 'bg-green-600 text-white border-green-600'
+                        : 'bg-green-50 text-green-700 border-green-200'
+                      : isActive
+                        ? 'bg-gray-400 text-white border-gray-400'
+                        : 'bg-gray-50 text-gray-400 border-gray-200'
+              return (
+                <button
+                  key={f}
+                  type="button"
+                  onClick={() => setStatusFilter(f)}
+                  className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium transition-all duration-150 active:scale-[0.96] ${color}`}
+                >
+                  {label}
+                  <span className="rounded-full bg-black/10 px-1 text-[9px]">{count}</span>
+                </button>
+              )
+            })}
+            <div className="flex-1" />
+            {/* Bulk mode toggle */}
+            <button
+              type="button"
+              onClick={() => {
+                setBulkMode(!bulkMode)
+                if (bulkMode) setSelectedIds(new Set())
+              }}
+              className={`flex items-center gap-1 rounded-lg border px-2 py-1 text-[10px] font-medium transition-all duration-150 active:scale-[0.96] ${
+                bulkMode
+                  ? 'bg-roksal-navy text-white border-roksal-navy'
+                  : 'bg-secondary/50 text-muted-foreground border-border/50 hover:bg-secondary'
+              }`}
+            >
+              {bulkMode ? <CheckSquare className="h-3 w-3" /> : <Square className="h-3 w-3" />}
+              Skupinsko
+            </button>
+          </div>
+
+          {/* Bulk toolbar (prikaže se samo v bulk mode z izborom) */}
+          {bulkMode && (
+            <div className="rounded-lg border border-roksal-navy/20 bg-roksal-navy/5 p-2.5 space-y-2 slide-in-right">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={handleBulkSelectAll}
+                    className="flex items-center gap-1 rounded-md border border-border bg-background px-2 py-0.5 text-[10px] font-medium hover:bg-secondary/50 transition-colors"
+                  >
+                    <CheckSquare className="h-3 w-3" />
+                    Izberi vse
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleBulkClear}
+                    className="flex items-center gap-1 rounded-md border border-border bg-background px-2 py-0.5 text-[10px] font-medium hover:bg-secondary/50 transition-colors"
+                  >
+                    <Square className="h-3 w-3" />
+                    Počisti
+                  </button>
+                  <Badge variant="secondary" className="text-[10px] h-5 px-1.5">
+                    {selectedIds.size} izbrane
+                  </Badge>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
+                <button
+                  type="button"
+                  onClick={handleBulkExportCSV}
+                  disabled={selectedIds.size === 0}
+                  className="flex items-center justify-center gap-1 rounded-md border border-roksal-navy/20 bg-background px-2 py-1 text-[10px] font-medium text-roksal-navy hover:bg-roksal-navy/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  <Download className="h-3 w-3" />
+                  Izvozi izbrane CSV
+                </button>
+                <div className="flex items-center gap-1">
+                  <Select value={bulkCopyTarget} onValueChange={setBulkCopyTarget}>
+                    <SelectTrigger className="h-7 text-[10px] flex-1">
+                      <SelectValue placeholder="Ciljni segment" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {allSegments.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <button
+                    type="button"
+                    onClick={handleBulkCopyToSegment}
+                    disabled={selectedIds.size === 0 || !bulkCopyTarget}
+                    className="flex items-center gap-1 rounded-md border border-roksal-amber/30 bg-roksal-amber/10 px-2 py-1 text-[10px] font-medium text-roksal-amber hover:bg-roksal-amber/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+                  >
+                    <Copy className="h-3 w-3" />
+                    Kopiraj
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setBulkDeleteOpen(true)}
+                  disabled={selectedIds.size === 0}
+                  className="flex items-center justify-center gap-1 rounded-md border border-red-200 bg-red-50 px-2 py-1 text-[10px] font-medium text-red-600 hover:bg-red-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  <Trash2 className="h-3 w-3" />
+                  Izbriši izbrane
+                </button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Measurements List */}
       <Card className="card-hover animate-fade-in-up" style={{ animationDelay: '300ms' }}>
         <CardHeader className="pb-2 pt-4 px-4">
@@ -1910,7 +2846,7 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
                 <FileText className="h-3 w-3" />
                 PDF
               </button>
-              <Badge variant="secondary">{measurements.length}</Badge>
+              <Badge variant="secondary">{filteredMeasurements.length}</Badge>
             </div>
           </div>
         </CardHeader>
@@ -1921,7 +2857,7 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
                 <Skeleton key={i} className="h-32 w-full" />
               ))}
             </div>
-          ) : measurements.length > 0 ? (
+          ) : filteredMeasurements.length > 0 ? (
             <div className="space-y-4 max-h-[600px] overflow-y-auto scrollbar-thin">
               {groupedMeasurements.map((group) => (
                 <div key={group.label}>
@@ -1944,14 +2880,156 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
           ) : (
             <div className="py-8 text-center">
               <Ruler className="mx-auto h-8 w-8 text-muted-foreground/30" />
-              <p className="mt-2 text-sm text-muted-foreground">Še ni meritev</p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {measurements.length === 0 ? 'Še ni meritev' : 'Brez meritev v tem filtru'}
+              </p>
               <p className="text-[11px] text-muted-foreground/60 mt-1">
-                Dodajte novo meritev za ogrodje
+                {measurements.length === 0
+                  ? 'Dodajte novo meritev za ogrodje'
+                  : 'Spremenite filter statusa zgoraj'}
               </p>
             </div>
           )}
         </CardContent>
       </Card>
+
+      {/* P1 — ZGODOVINA SPREMEMB (audit trail) */}
+      <Card className="card-hover animate-fade-in-up" style={{ animationDelay: '315ms' }}>
+        <Collapsible open={auditOpen} onOpenChange={setAuditOpen}>
+          <CollapsibleTrigger asChild>
+            <button
+              type="button"
+              className="flex w-full items-center justify-between p-4 text-left hover:bg-secondary/30 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-roksal-navy/10 text-roksal-navy">
+                  <History className="h-4 w-4" />
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-roksal-navy">Zgodovina sprememb</span>
+                  <p className="text-[10px] text-muted-foreground">
+                    {auditEntries.length} {auditEntries.length === 1 ? 'sprememba' : 'sprememb'} • zadnjih {Math.min(auditEntries.length, 20)} prikazanih
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="text-[10px] h-5 px-1.5">
+                  {auditEntries.length}
+                </Badge>
+                {auditOpen ? (
+                  <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                )}
+              </div>
+            </button>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="border-t border-border/50 px-4 pb-4 pt-3 space-y-3 slide-in-right">
+              {auditEntries.length === 0 ? (
+                <div className="py-6 text-center">
+                  <ClipboardList className="mx-auto h-7 w-7 text-muted-foreground/30" />
+                  <p className="mt-2 text-xs text-muted-foreground">Brez zgodovine sprememb</p>
+                  <p className="text-[10px] text-muted-foreground/60 mt-1">
+                    Spremembe meritev bodo samodejno zabeležene
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-2.5 max-h-96 overflow-y-auto scrollbar-thin">
+                    {auditEntries
+                      .slice(0, auditExpanded ? 200 : 20)
+                      .map((entry, i) => {
+                        const Icon = auditIcons[entry.akcija]
+                        const color = auditColors[entry.akcija]
+                        return (
+                          <div key={`${entry.timestamp}-${i}`} className="flex items-start gap-2.5">
+                            <div className={`flex h-7 w-7 items-center justify-center rounded-full ${color} shrink-0`}>
+                              <Icon className="h-3.5 w-3.5" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs text-foreground leading-tight">{entry.opis}</p>
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                <Clock className="h-2.5 w-2.5 text-muted-foreground" />
+                                <span className="text-[10px] text-muted-foreground">
+                                  {new Date(entry.timestamp).toLocaleString('sl-SI')}
+                                </span>
+                                <Badge variant="outline" className="text-[8px] h-3.5 px-1 py-0">
+                                  {auditActionLabels[entry.akcija]}
+                                </Badge>
+                              </div>
+                              {entry.staraVrednost && entry.novaVrednost && (
+                                <p className="text-[10px] text-muted-foreground mt-0.5">
+                                  <span className="line-through">{entry.staraVrednost}</span>
+                                  {' → '}
+                                  <span className="font-medium text-foreground">{entry.novaVrednost}</span>
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })}
+                  </div>
+                  <div className="flex items-center gap-2 pt-1">
+                    {auditEntries.length > 20 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-7 text-[11px]"
+                        onClick={() => setAuditExpanded(!auditExpanded)}
+                      >
+                        {auditExpanded ? 'Prikaži manj' : `Prikaži več (${auditEntries.length - 20})`}
+                      </Button>
+                    )}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-[11px] ml-auto"
+                      onClick={handleExportAuditCSV}
+                      disabled={auditEntries.length === 0}
+                    >
+                      <FileSpreadsheet className="mr-1 h-3 w-3" />
+                      Izvozi zgodovino
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+      </Card>
+
+      {/* P1 — POTRDITVENI DIALOG ZA SKUPINSKO BRISANJE */}
+      <Dialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Arhiviraj izbrane meritve?</DialogTitle>
+            <DialogDescription>
+              Izbrane meritve ({selectedIds.size}) bodo arhivirane. Arhivirane meritve niso izbrisane
+              in jih lahko pozneje obnovite (cikliranje statusa). Želite nadaljevati?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setBulkDeleteOpen(false)}
+            >
+              Prekliči
+            </Button>
+            <Button
+              type="button"
+              onClick={handleBulkDelete}
+              className="bg-red-600 text-white hover:bg-red-700"
+            >
+              <Archive className="mr-1.5 h-4 w-4" />
+              Arhiviraj ({selectedIds.size})
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
@@ -2374,6 +3452,7 @@ const demoMeasurements: Measurement[] = [
     oznaka: 'dolžina balkona — sever',
     segmentId: 'severni',
     opomba: 'Glavna razdalja severnega dela',
+    status: 'POTRJENA',
   },
   {
     id: 'm2',
@@ -2401,6 +3480,7 @@ const demoMeasurements: Measurement[] = [
     tipMeritve: 'RAZDALJA',
     oznaka: 'vzhodni del — razdalja',
     segmentId: 'vzhodni',
+    status: 'OSNUTEK',
   },
   {
     id: 'm3',
@@ -2427,6 +3507,7 @@ const demoMeasurements: Measurement[] = [
     tipMeritve: 'RAZDALJA',
     oznaka: 'terasa — spredaj',
     segmentId: 'severni',
+    status: 'POTRJENA',
   },
   {
     id: 'm4',
@@ -2456,6 +3537,7 @@ const demoMeasurements: Measurement[] = [
     oznaka: 'višina ograje — stopnišče',
     segmentId: 'stopniscje',
     opomba: 'Preveriti nosilnost lesa — prag je star',
+    status: 'OSNUTEK',
   },
   {
     id: 'm5',
@@ -2473,10 +3555,13 @@ const demoMeasurements: Measurement[] = [
       kotStopinje: 2.5,
       smer: 'Y',
       lokacija: 'Talna plošča balkona',
+      status: 'ARHIVIRANA',
     }),
     tipMeritve: 'NAGIB',
     oznaka: 'Nagib — Talna plošča balkona',
     opomba: 'Nagib 2.5° (levo-desno)',
+    status: 'ARHIVIRANA',
+    kotStopinje: 2.5,
   },
 ]
 

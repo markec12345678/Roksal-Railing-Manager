@@ -631,3 +631,127 @@ export function checkCompliance(input: ComplianceInput): ComplianceResult {
   const passed = checks.every((c) => c.passed)
   return { passed, checks }
 }
+
+// ============================================
+// 9. POMOŽNE FUNKCIJE (Helpers)
+// ============================================
+
+/** Formatira EUR vrednost v slovenskem formatu: 1234.56 → "1.234,56 €" */
+export function formatEUR(eur: number): string {
+  if (!isFinite(eur)) eur = 0
+  const rounded = Math.round(eur * 100) / 100
+  // Loči cela mesta in decimalko
+  const parts = rounded.toFixed(2).split('.')
+  const intPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+  const decPart = parts[1] ?? '00'
+  return `${intPart},${decPart} €`
+}
+
+/** Pretvori število v slovenski format brez EUR: 1234.5 → "1.234,5" */
+export function formatSI(num: number, decimals = 2): string {
+  if (!isFinite(num)) num = 0
+  const rounded = Math.round(num * Math.pow(10, decimals)) / Math.pow(10, decimals)
+  const parts = rounded.toFixed(decimals).split('.')
+  const intPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+  const decPart = parts[1] ?? ''
+  return decPart ? `${intPart},${decPart}` : intPart
+}
+
+// ============================================
+// 10. STROŠEK DELA (Labor cost)
+// ============================================
+
+export interface LaborCostInput {
+  urnaPostavka: number // EUR/h
+  stUr: number // ure skupaj
+  stMonterjev: number // število monterjev
+  transport: number // EUR enkratno
+}
+
+export interface LaborCostResult {
+  urnaPostavka: number
+  stUr: number
+  stMonterjev: number
+  transport: number
+  delaSkupaj: number // urnaPostavka × stUr × stMonterjev + transport
+  cistaDela: number // urnaPostavka × stUr × stMonterjev (brez transporta)
+  predvideniCas: number // skupne ure (stUr × stMonterjev)
+}
+
+export function calculateLaborCost(input: LaborCostInput): LaborCostResult {
+  const urnaPostavka = isFinite(input.urnaPostavka) ? input.urnaPostavka : 0
+  const stUr = isFinite(input.stUr) ? input.stUr : 0
+  const stMonterjev = isFinite(input.stMonterjev) ? input.stMonterjev : 0
+  const transport = isFinite(input.transport) ? input.transport : 0
+
+  const cistaDela = urnaPostavka * stUr * stMonterjev
+  const delaSkupaj = cistaDela + transport
+  const predvideniCas = stUr * stMonterjev
+
+  return {
+    urnaPostavka,
+    stUr,
+    stMonterjev,
+    transport,
+    cistaDela: Math.round(cistaDela * 100) / 100,
+    delaSkupaj: Math.round(delaSkupaj * 100) / 100,
+    predvideniCas,
+  }
+}
+
+// ============================================
+// 11. REZERVA MATERIALA (Material reserve)
+// ============================================
+
+/** Pripravi rezervo na količino in zaokroži navzgor na celo število kosov. */
+export function applyReserve(qty: number, reservePct: number): number {
+  if (!isFinite(qty) || qty < 0) return 0
+  const factor = 1 + (isFinite(reservePct) ? reservePct : 0) / 100
+  return Math.ceil(qty * factor)
+}
+
+// ============================================
+// 12. DDV (VAT)
+// ============================================
+
+export interface DDVResult {
+  base: number // znesek brez DDV
+  ddvPct: number // % DDV
+  ddvAmount: number // znesek DDV
+  total: number // skupaj z DDV
+}
+
+export function calculateDDV(base: number, ddvPct: number): DDVResult {
+  const b = isFinite(base) ? base : 0
+  const pct = isFinite(ddvPct) ? ddvPct : 0
+  const ddvAmount = (b * pct) / 100
+  return {
+    base: Math.round(b * 100) / 100,
+    ddvPct: pct,
+    ddvAmount: Math.round(ddvAmount * 100) / 100,
+    total: Math.round((b + ddvAmount) * 100) / 100,
+  }
+}
+
+// ============================================
+// 13. AKONTACIJA (Advance payment)
+// ============================================
+
+export interface AkontacijaResult {
+  total: number // skupni znesek (z DDV)
+  akontacijaPct: number // %
+  akontacija: number // znesek akontacije
+  preostanek: number // preostanek
+}
+
+export function calculateAkontacija(total: number, akontacijaPct: number): AkontacijaResult {
+  const t = isFinite(total) ? total : 0
+  const pct = isFinite(akontacijaPct) ? akontacijaPct : 0
+  const akontacija = (t * pct) / 100
+  return {
+    total: Math.round(t * 100) / 100,
+    akontacijaPct: pct,
+    akontacija: Math.round(akontacija * 100) / 100,
+    preostanek: Math.round((t - akontacija) * 100) / 100,
+  }
+}

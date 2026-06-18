@@ -1270,3 +1270,158 @@ Stage Summary:
 - **+7252 vrstic** nove funkcionalnosti
 - **Pushan na GitHub** (commit d45975c)
 - **VARNOSTNO OPOZORILO**: token ghp_ysN6... je v zgodovini chata (3×) — UPORABNIK MORA preklicati
+
+---
+Task ID: P1
+Agent: full-stack-developer (Meritve polishing)
+Task: Izpolnitev meritev — predloge, skupinske akcije, status, zgodovina, glasovni vnos, multi-unit
+
+Work Log:
+- Prebral worklog.md (Tasks 1–12, I1–I5) za kontekst
+- Prebral obstoječi measurements-tab.tsx (2486 vrstic) — razumel strukturo: 7 tipi meritev, multi-segment, kalibracija, inline inclinometer, povzetek, CSV/PDF, quick-add
+- Prebral API route (/api/measurements) — samo POST in GET (ni DELETE) + validation schema (dolzinaMm/visinaMm morata biti pozitivni int)
+- Preveril UI komponente (Checkbox, Tooltip, Dialog z DialogDescription, AlertDialog vse obstajajo)
+
+Implementacija 6 funkcionalnosti (vse v isti datoteki, brez dotikanja drugih):
+
+1. **Predloge meritev (Hitre predloge)** — nova Card z 5 predlogami
+   - balkon3m (Balkon + 3 meritve), stopnisce (Stopnišče + 2), loblika (2 segmenta), terasa5m (1), prazen (samo forma)
+   - handleApplyPredloga(): gradi Segment[] + Array<{dolzinaMm, visinaMm, ar}> glede na template, POSTa vsako na API, fallback na lokalno pri napaki
+   - Toast "Predloga uporabljena: X"; audit entry ADD z opisom
+   - PREDLOGE konstanta z ikonami (Ruler, Layers, Triangle, Mountain, Plus)
+
+2. **Skupinske akcije (bulk)** — toggle "Skupinsko" gumb
+   - bulkMode state + selectedIds Set<string>; Checkbox v vsaki kartici (leva stran) ko aktiven
+   - "Izberi vse"/"Počisti" gumbi; Badge "{N} izbrane"
+   - 3 akcije: handleBulkExportCSV (multi-unit stolpci), handleBulkCopyToSegment (Select za ciljni segment + duplikati), handleBulkDelete (potrditveni Dialog → arhivira kot ARHIVIRANA, ker API nima DELETE)
+
+3. **Status meritev** — novo polje v arMetadata.status in Measurement.status
+   - 3 statusi: OSNUTEK (siva), POTRJENA (zelena), ARHIVIRANA (siva, prečrtano, opacity-60)
+   - Klikni status badge → ciklira OSNUTEK → POTRJENA → ARHIVIRANA → OSNUTEK (handleStatusCycle z audit + toast)
+   - Status števci v povzetku (3 ločene celice z barvami)
+   - Filter pills (Vse/Osnutki/Potrjene/Arhivirane) z aktivnimi barvami + count badge
+   - filteredMeasurements useMemo + groupedMeasurements uporablja filtered
+
+4. **Zgodovina sprememb (audit trail)** — localStorage key roksal_audit_{projectId}
+   - AuditEntry interface: {timestamp, akcija, meritevId, opis, staraVrednost?, novaVrednost?}
+   - pushAudit() callback (useCallback) — write v state + localStorage (cap 200 entries)
+   - Vsi handlerji kličejo pushAudit: handleSubmitMeasurement, saveLocalMeasurement, handleDeleteMeasurement, handleDuplicateMeasurement, handleStatusCycle, saveInclinometerReading, handleApplyPredloga, handleBulkExportCSV, handleBulkCopyToSegment, handleBulkDelete
+   - Nova collapsible Card "Zgodovina sprememb" na dnu: timeline (ikona + barva po akciji + opis + čas + badge akcije + stara→nova), zadnjih 20 prikazanih, "Prikaži več" razširi na 200, "Izvozi zgodovino" gumb (CSV)
+   - auditIcons/auditColors/auditActionLabels konstante
+
+5. **Glasovni vnos opomb** — Web Speech API (native browser, brez novih paketov)
+   - SpeechRecognitionLike + SpeechRecognitionCto interface za tipizirano varnost (brez any)
+   - voiceSupported state (zaznan v useEffect), voiceListening, interimText, recognitionRef
+   - handleVoiceToggle(): lang='sl-SI', interimResults=true, continuous=true; onresult dodaja transkript k formOpomba (ne prepisuje)
+   - Mic gumb ob opomba textarea: pulsing red "Poslušam..." med poslušanjem; disabled z tooltip če nepodprt
+   - Cleanup: abort() recognition ob unmountu
+
+6. **Multi-unit prikaz** — helperji formatMultiUnit/formatAngleMulti/formatSlopeMulti
+   - V renderMeasurementCard: "↔ 3000mm · 300cm · 3.00m" + "↕ 1100mm · 110cm · 1.10m" namesto ene
+   - Za KOT: "{deg}° · {rad}rad"; za NAGIB: "{deg}° · {pct}%"
+   - V povzetku (Skupna dolžina, Povpr. višina, Najdaljša) uporabljen formatMultiUnit
+   - CSV izvoz (handleExportCSV + handleBulkExportCSV): 6 novih stolpcev (Dolzina mm/cm/m, Visina mm/cm/m) + Status stolpec
+
+Tehnične podrobnosti:
+- Vsi gumbi type="button"; slovensko besedilo; mobile-first (grid-cols-2 sm:grid-cols-3 za predloge, grid-cols-1 sm:grid-cols-3 za bulk toolbar)
+- Props onNavigateToCalculator ohranjen; toast pattern (sonner) konsistenten z obstoječim
+- Dodani tipi: MeasurementStatus, StatusFilter, AuditEntry, PredlogaDef, SpeechRecognition* (varovalna tipizacija brez `any`)
+- normalizeMeasurements razširjen z status + kotStopinje (iz arMetadata)
+- demoMeasurements posodobljen z raznolikimi statusi (POTRJENA/OSNUTEK/ARHIVIRANA) za demo
+- Lint: 0 errors, 0 warnings (exit code 0)
+- Dev server: ✓ Compiled (111–230ms), GET / 200
+
+Stage Summary:
+- **6 funkcionalnosti dodanih** v measurements-tab.tsx (2486 → 3571 vrstic, +1085 vrstic)
+- **Brez spreminjanja drugih datotek** (samo measurements-tab.tsx)
+- **Brez novih paketov** (Web Speech API je native)
+- **Audit trail** zapiše vse akcije (ADD/EDIT/DELETE/STATUS) v localStorage per-project
+- **Bulk delete** arhivira (ne izbriše) zaradi pomanjkanja DELETE na APIju — ohrani podatke
+- **Status filter** + multi-unit prikaz viden v vseh demo meritvah
+- **Lint clean** (0 errors), dev server deluje (HTTP 200)
+
+---
+Task ID: P2
+Agent: full-stack-developer (Kalkulator polishing)
+Task: Izpolnitev kalkulatorja — predloge, delo, rezerva, DDV, akontacija, zgodovina
+
+Work Log:
+- Prebral delovne dnevnike (Tasks 1–12, I1–I5) za kontekst
+- Prebral src/lib/calculator.ts (633 vrstic, 8 funkcij) in src/components/roksal/calculator-tab.tsx (3157 vrstic)
+
+Spremembe v `src/lib/calculator.ts` (+6 novih funkcij, +123 vrstic):
+- formatEUR(eur): string — slovenski format "1.234,56 €"
+- formatSI(num, decimals): string — slovenski format številk
+- calculateLaborCost(input): LaborCostResult — urnaPostavka × stUr × stMonterjev + transport
+- applyReserve(qty, reservePct): number — Math.ceil(qty × (1 + pct/100))
+- calculateDDV(base, ddvPct): DDVResult — { base, ddvPct, ddvAmount, total }
+- calculateAkontacija(total, akontacijaPct): AkontacijaResult — { total, akontacijaPct, akontacija, preostanek }
+
+Spremembe v `src/components/roksal/calculator-tab.tsx` (+985 vrstic, 7 novih state-ov, 8 novih funkcij):
+- Novi importi: useRef, Collapsible/Trigger/Content, 12 novih lucide ikon (History, BookmarkPlus, FileSpreadsheet, ChevronDown/Up, Calendar, Percent, Wallet, Truck, Users, Timer, Layers)
+- Novi tipi: TemplateMode, CalcTemplate, HistoryEntry + pomožni record-i (templateModeLabels, historyModeIcon, reserveOptions, ddvOptions, akontacijaOptions)
+- Novi state: templates, activeTemplateId, history, historyOpen, projectName, urnaPostavka (35), stUr (8), stMonterjev (2), transport (50), rezervaPctBaluster (10), rezervaPctMaterial (10), ddvPct (22), akontacijaPct (0), calcNonce, skipHistoryRef
+- Nove funkcije: collectCurrentInputs, getCurrentKeyResult, applyInputs, saveTemplate, loadTemplate, deleteTemplate, addToHistory, clearHistory, exportHistoryCsv, loadFromHistory
+- handleCalculate() zdaj poveča calcNonce; useEffect ga opazuje in kliče addToHistory() (po re-render-u, ko so rezultati na voljo)
+- skipHistoryRef prepreči duplikat ob loadFromHistory (ki samodejno re-sproži handleCalculate)
+
+1. Prihranjene predloge (Save/Load templates):
+   - "Shrani predlogo" gumb dodan v 4 načine (Razmak palic, Kotni, Skupni material, Predpisi) — ob kliku window.prompt() za ime
+   - localStorage: `roksal_calc_templates` → array {id, naziv, mode, inputs, createdAt} (max 50)
+   - Card "Prihranjene predloge" na vrhu kalkulatorja (nad mode selectorjem): grid 2 stolpcev, vsaka prikaže naziv + mode badge + datum, klik → loadTemplate, Trash ikona za brisanje, "Počisti vse" gumb
+   - Aktivna predloga highlightana (roksal-amber ring + bg)
+
+2. Strošek dela (Skupni material upgrade):
+   - Nov Card "Strošek dela" z 4 inputi: urnaPostavka (35), stUr (8), stMonterjev (2), transport (50)
+   - "Predvideni čas montaže" prikazan (stUr × stMonterjev)
+   - V izpisu stroškov dodano: Delo (cistaDela), Transport, Predvideni čas, Skupaj brez DDV, DDV, Skupaj z DDV
+
+3. Rezerva materiala (Skupni material + Razmak palic):
+   - Select z 0%, 5%, 10%, 15%, 20% (privzeto 10%)
+   - applyReserve() — Math.ceil(qty × (1+pct/100)) — pomnoži vse količine (palice, stebri, vijaki, sidra)
+   - Info Card: "Brez rezerve: X kos → z rezervo: Y kos (+Z%)"
+   - V materialnem izpisu: vsaka količina prikazuje "brez: X (+Y%)" v podnaslovu
+   - PDF (baluster + material): ločena vrstica "Rezerva materiala: X%"; material PDF ima dodatni stolpec "Z rezervo"
+
+4. DDV ločeno:
+   - Select z 22%, 9.5%, 0% (privzeto 22%)
+   - V vseh izpisih cen: Brez DDV, DDV (X%), Skupaj z DDV (3 vrstice, skupaj bold + ozadje)
+   - V material PDF: ločene vrstice "SKUPAJ BREZ DDV", "DDV (X%)", "SKUPAJ Z DDV" (z didParseCell bold styling)
+
+5. Akontacija (Skupni material):
+   - Select z 0%, 30%, 50%, 70% (privzeto 0%)
+   - Ob >0%: Card z "Akontacija (X%): Y € — ob naročilu" + "Preostanek (Z%): W € — ob prevzemu" + "Predvideni datum plačila" (danes + 7 dni)
+   - PDF: ločena tabela z 2 vrsticama (akontacija + preostanek) + datumski rok
+
+6. Zgodovina izračunov:
+   - Ob vsakem "Izračunaj" kliku: calcNonce se poveča → useEffect zapiše v `roksal_calc_history` (max 30)
+   - Format: {id, timestamp, mode, modeLabel, keyResult, inputs, projectName?}
+   - Nov Card "Zgodovina izračunov" (Collapsible) na dnu kalkulatorja:
+     - Header: History ikona + naslov + count badge + chevron toggle
+     - Ko odprto: timeline prikaz (ikona mode-a + mode badge + timestamp + projectName badge + keyResult) — klik → loadFromHistory (nastavi mode + inputs + skipHistoryRef + re-sproži handleCalculate)
+     - "Izvozi CSV" gumb (BOM za Excel, ; kot separator, " escape)
+     - "Počisti" gumb
+     - Empty state z navodili
+
+Dodatno:
+- "Naziv projekta" input Card pod Templates Card — vpliva na history projectName + PDF
+- Vsi gumbi `type="button"`, vse Slovenian, mobile-first (grid-cols-1 sm:grid-cols-2)
+- Ohranjeni obstoječi props: importedFromMeasurement, onClearImport, onBackToMeasurements
+- localStorage keys: roksal_calc_templates, roksal_calc_history (prefiks `roksal_`)
+- formatEUR() uporabljen v zgodovini (keyResult za material mode)
+- Dev server: 0 compile errors, ✓ Compiled uspešno
+- Lint: 0 errors, 0 warnings (po odstranitvi unused useCallback import in eslint-disable direktive)
+
+Stage Summary:
+- **Datoteki spremenjeni**: samo `src/lib/calculator.ts` (633 → 757 vrstic) in `src/components/roksal/calculator-tab.tsx` (3157 → 4148 vrstic)
+- **6 novih funkcij** v lib (formatEUR, formatSI, calculateLaborCost, applyReserve, calculateDDV, calculateAkontacija)
+- **6 novih funkcionalnosti** v UI: predloge, strošek dela, rezerva materiala, DDV, akontacija, zgodovina
+- **Ključne odločitve**:
+  - calcNonce + skipHistoryRef pattern za zanesljivo pisanje v zgodovino (po re-render-u, ko so rezultati na voljo) + preprečitev duplikatov ob loadFromHistory
+  - applyReserve uporablja Math.ceil (zaokroži navzgor na celo število kosov)
+  - Akontacija datum: danes + 7 dni (predvideni rok plačila)
+  - Zgodovina shranjuje keyResult (ne celoten result objekt) za kompakten prikaz timeline
+  - Vsi izračuni hkrati sinhronizirani v PDF (baluster + material) z vsemi novimi vrsticami
+- **Lint**: 0 errors, 0 warnings
+- **Dev server**: HTTP 200 na `/`, 0 compile errorjev
+- **Združljivost**: vsi obstoječi 7 načini (Vetrna, Razmak palic, Kotni, Skupni material, Predpisi, Razmiki letev, Kemično sidranje) ohranjeni in delujejo
