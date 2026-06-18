@@ -1446,3 +1446,100 @@ Stage Summary:
 - **Kalkulator**: 6 novih funkcij (predloge, delo, rezerva, DDV, akontacija, zgodovina) + 6 lib funkcij
 - **+2453 vrstic** nove funkcionalnosti
 - **Pushan na GitHub** (commit 10cb2ad)
+
+---
+Task ID: P3
+Agent: full-stack-developer (Specifične meritve za ograje)
+Task: Stopnice, koti, enote, štebricki, WPC orientacije
+
+Work Log:
+- Prebral worklog.md (Tasks 1–12, I1–I5, P1, P2) za kontekst
+- Prebral obstoječi measurements-tab.tsx (3571 vrstic) — razumel strukturo: 7 tipov meritev, segmenti, kalibracija, inline inclinometer, predloge, skupinske akcije, status, zgodovina, glasovni vnos, multi-unit prikaz
+- Preveril lucide-react za ikone (Stairs ne obstaja → uporabil Layers2; CornerDownRight, Columns3, Fence, PencilRuler, Lock, Unlock, Bookmark, ArrowRightLeft, Grid3x3, TrendingDown obstajajo)
+- Uvozil Table/* komponente iz shadcn/ui
+
+Tipi in konstante (P3):
+- Razširil TipMeritve union z: KOT_VOGAL, KOT_STOPNISCE, STEBR
+- Razširil Segment['type'] z: WPC_POKOCNE, WPC_VODORAVNE, WPC_POSEVNE
+- Razširil ArMetadata/Measurement z: enota, originalnaVrednost, notranjiKot, zunanjiKot, tipStebra, materialStebra, visinaStebraMm, pozicijaMm, razmikMm, steberOznaka, orientacijaPalic, sirinaPalice, debelinaPalice, razmikPalic, kotPosevnih, stPalic
+- Nove konstante: EnotaTip, TipStebra, MaterialStebra, tipStebraLabels/Colors, materialStebraLabels/Colors, WPC_SIRINE_PALIC, WPC_DEBELINA_DEFAULT, WPC_RAZMAK_DEFAULT, WPC_KOT_POSEVNIH_DEFAULT, StairTemplate, StairCalc
+- Razširil tipMeritveLabels/Icons/Colors + segmentTypeLabels za nove tipe
+
+Pomožne funkcije (P3):
+- convertToMm(value, unit) — mm/cm/m → mm
+- formatInPrimaryUnit(mm, primary) — prikaz v izbrani enoti
+- calculateStairDimensions(skupnaVisina, stStopnic, globina, sirina?) — vrne StairCalc (višina posamezne, kot, dolžina kosa, skupna dolžina, priporocilo z barvo)
+- getNextStebriNumber(measurements, segmentId?) — avto-številčenje S1, S2...
+- calcWpcPalice(orientacija, dolzina, visina, sirina, razmik) — izračun števila WPC palic (pokončne/vodoravne/poševne mreža)
+- loadStairTemplates/saveStairTemplates — localStorage `roksal_stair_templates` (max 30)
+- loadPrimaryUnit — localStorage `roksal_primary_unit`
+
+State (P3):
+- primaryUnit (mm/cm/m, global) — localStorage perstitven
+- formLengthUnit, formHeightUnit — enote v formi
+- stairWizardOpen, stairSkupnaVisina, stairStStopnic, stairGlobina, stairSirina, stairSegmentId, stairTemplates
+- kotomerOpen, kotomerMode (KOT/KOT_VOGAL/KOT_STOPNISCE)
+- stebriFormOpen, stebriTipStebra, stebriMaterial, stebriVisina, stebriPozicija, stebriPozicijaUnit, stebriRazmik, stebriSegmentId
+- wpcSirinaPalice (140), wpcDebelinaPalice (23), wpcRazmikPalic (110), wpcKotPosevnih (45), wpcConfigOpen
+
+Handlerji (P3):
+- handleSubmitMeasurement — posodobljen: pretvori vrednosti v mm pred pošiljanjem, shrani originalno enoto + vrednost v arMetadata za audit
+- saveLocalMeasurement — posodobljen signature (dolzinaMm, visinaMm, originalnaVrednost) ker sedaj pretvorimo prej
+- handleQuickAdd — razširjen za KOT_VOGAL/KOT_STOPNISCE (odpre kotomer)
+- handleStairCreateMeasurements — kreira 5 meritev v stopnišče segmentu: VISINA (skupna višina), GLOBINA (posamezna), KOT_STOPNISCE (rake kot z atan), RAZDALJA (dolžina kosa = sqrt(v²+g²)×n), SEGMENT (št. stopnic)
+- handleSaveStairTemplate/handleLoadStairTemplate/handleDeleteStairTemplate — upravljanje predlog
+- saveKotomerReading — shrani KOT/KOT_VOGAL/KOT_STOPNISCE z notranji/zunanji kot za vogal
+- handleAddSteber — avto-številčenje S1, S2..., pozicija z enoto, auto-razmik iz prejšnjega stebra
+- handleExportStebriCSV — CSV izvoz preglednice stebrov (Oznaka, Tip, Pozicija, Razmik, Višina, Material, Opomba)
+- handleAddWpcPaliceAsStebri — za vsako WPC palico kreira STEBR meritev z oznako P1, P2... in orientacija/material/št.palic v arMetadata
+- useEffect za auto-calc razmika stebra glede na prejšnjega v segmentu
+- useEffect za nalaganje primarne enote + stopniških predlog ob mountu
+- useEffect za persistenco primarne enote v localStorage
+
+Komponente (P3) — 4 nove:
+1. StairDiagram — SVG diagram stopnišča z narisanimi stopnicami (pravokotniki z gradient fill), ograjo (poševna navy črta), dimenzijami (višina levo, globina spodaj, kot lok na prvi stopnici), vse z amber markers
+2. InlineKotomer — protractor SVG (polkrožnica z oznakami 0-180° vsakih 15°), live senzor (DeviceOrientation API beta/gamma), "Zakleni kot" button, ročni vnos; za KOT_VOGAL 2 vnosa (notranji+zunanji, α=180-β), za KOT_STOPNISCE predlog iz stair čarovnika
+3. SteberTable — preglednica stebrov (Table iz shadcn) z sortable prikazom (Oznaka, Tip badge, Pozicija, Razmik, Višina, Material badge), warning če razmik > 1500mm, summary (skupno, povpr. razmik, max razmik, material breakdown), CSV gumb
+4. WpcDiagram — SVG orientation-specific: pokončne (navpične palice), vodoravne (horizontalne palice), poševne (rotirane pod kotom 45°); okvir navy, palice navy/amber; prikaz št. palic + dimenzije
+
+UI kartice (P3):
+- Hitra meriteva — dodana 2. vrstica "Napredne meritve (P3)" z 3 gumbi (KOT_VOGAL, KOT_STOPNISCE, STEBR)
+- Primarna enota za prikaz — pills (mm/cm/m) z live predogledom
+- Stopniščni čarovnik (collapsible) — vidno ko obstaja stopniscje segment; 4 inputi + segment select + real-time izračun (4 mreže + priporocilo z barvo) + StairDiagram + 2 gumba (Ustvari meritve, Shrani kot predlogo) + seznam predlog
+- Inline kotomer — render ko kotomerOpen
+- Štebricki forma (modal card) — ko stebriFormOpen in segments > 0
+- WPC konfiguracija (collapsible) — ko obstaja WPC_* segment; 4 inputi + validacijska opozorila (>110mm warning)
+- V segmentu collapsible: WpcDiagram (za WPC segmente) + SteberTable (za segmente s STEBR) + gumb "Dodaj stebriček" + gumb "Dodaj WPC palice kot materiale" (za WPC segmente)
+
+Demo podatki (P3):
+- Dodanih 6 novih demo meritev (m6-m11): 3 STEBR (S1 Končni ALU, S2 Vmesni ALU, S3 Vogalni INOX), 1 KOT_VOGAL (90°/90°), 1 KOT_STOPNISCE (33°), 1 RAZDALJA za WPC teraso
+- Privzeti demo segmenti razširjeni z WPC_POKOCNE ("WPC terasa")
+
+Tehnične podrobnosti:
+- Vsi gumbi type="button"; vse Slovenian; mobile-first (grid-cols-2/grid-cols-3/grid-cols-4)
+- localStorage keys: roksal_primary_unit, roksal_stair_templates (prefiks `roksal_`)
+- Props onNavigateToCalculator ohranjen
+- handleQuickAdd razširjen za nove kotne tipe
+- normalizeMeasurements razširjen z vsemi P3 polji (enota, notranji/zunanji kot, štebricki, WPC)
+- resetForm razširjen z reset enot (formLengthUnit, formHeightUnit → 'mm')
+- Lint: 0 errors, 0 warnings (exit code 0)
+- Dev server: HTTP 200 na `/`, ✓ Compiled uspešno (154ms), 0 napak
+
+Stage Summary:
+- **Datoteka spremenjena**: samo `src/components/roksal/measurements-tab.tsx` (3571 → 6389 vrstic, +2818 vrstic)
+- **5 naborov funkcionalnosti dodanih**:
+  1. **STOPNICE** — stopniščni čarovnik z auto-izračunom (višina posamezne, kot atan, dolžina kosa sqrt), SVG diagramom, predlogami v localStorage, "Ustvari meritve" (5 meritev v segmentu)
+  2. **KOTI** — 2 nova tipa (KOT_VOGAL teal, KOT_STOPNISCE orange) + InlineKotomer komponenta (protractor SVG, DeviceOrientation API, zaklepanje kota, ročni vnos; za vogal 2 vnosa, za stopnice prefill iz čarovnika)
+  3. **ENOTE** — Select za mm/cm/m ob dolžini in višini z live pretvorbo ("300 cm = 3000 mm"), originalna vrednost shranjena za audit, globalne "Primarna enota" pills (vpliva na prikaz)
+  4. **ŠTEBRICKI** — nov tip STEBR (Columns3, navy); SteberTable z avto-številčenjem S1/S2/S3, tipi (Končni/Vmesni/Vogalni), materiali (ALU/INOX/WPC/DRUGO), auto-razmik iz prejšnjega, CSV izvoz, warning >1500mm, summary (skupno/povpr/max/materiali)
+  5. **WPC orientacije** — 3 novi segment tipi (WPC_POKOCNE/VODORAVNE/POSEVNE); WpcDiagram (SVG za vsako orientacijo), auto-izračun št. palic (pokončne: dolžina/korak, vodoravne: višina/korak, poševne: mreža), WPC konfiguracija (sirina 140/180, debelina 23, razmik 110, kot 45°) z validacijo, "Dodaj kot materiale" (kreira P1, P2... STEBR meritev za vsako palico)
+- **Ključne odločitve**:
+  - Stopniščni kot izračun z atan(višina/globina), priporocilo barvno kodirano (zeleno/oranžno/rdeče)
+  - Kotomer uporablja beta kot od navpičnice (Math.abs((beta+360)%360 - 90))
+  - KOT_VOGAL notranji = 180° - zunanji (komplementarni kotova)
+  - Štebricki auto-razmik iz useEffect (odšteje pozicijo prejšnjega stebra v segmentu)
+  - WPC palice kreirajo STEBR meritev (z materialStebra='WPC', orientacijaPalic, sirinaPalice, stPalic v arMetadata) za enotno upravljanje
+  - WPC poševne palice prikazane kot rotirane črte (line z dx/dy iz kota)
+- **Lint**: 0 errors, 0 warnings
+- **Dev server**: HTTP 200 na `/`, ✓ Compiled (154ms), 0 napak
+- **Združljivost**: vse obstoječe funkcionalnosti ohranjene (hitre predloge, skupinske akcije, status, zgodovina, glasovni vnos, multi-unit prikaz, inclinometer, kalibracija, segmenti, CSV/PDF izvoz)

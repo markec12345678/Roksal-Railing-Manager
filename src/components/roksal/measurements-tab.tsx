@@ -77,7 +77,27 @@ import {
   Filter,
   Clock,
   FileSpreadsheet,
+  // P3 — novi ikoni (stopnice, koti, štebricki, WPC)
+  CornerDownRight,
+  Layers2,
+  Columns3,
+  Fence,
+  PencilRuler,
+  Lock,
+  Unlock,
+  Bookmark,
+  ArrowRightLeft,
+  Grid3x3,
+  TrendingDown,
 } from 'lucide-react'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 
@@ -85,7 +105,18 @@ import autoTable from 'jspdf-autotable'
 // TIPI
 // ============================================
 
-type TipMeritve = 'RAZDALJA' | 'VISINA' | 'KOT' | 'NAGIB' | 'GLOBINA' | 'PREMER' | 'SEGMENT'
+type TipMeritve =
+  | 'RAZDALJA'
+  | 'VISINA'
+  | 'KOT'
+  | 'NAGIB'
+  | 'GLOBINA'
+  | 'PREMER'
+  | 'SEGMENT'
+  // P3 — novi tipi meritev
+  | 'KOT_VOGAL'
+  | 'KOT_STOPNISCE'
+  | 'STEBR'
 
 type GroundType = 'beton' | 'les' | 'plosca' | 'gramoz' | 'metal'
 
@@ -107,6 +138,26 @@ interface ArMetadata {
   // inclinometer
   kotStopinje?: number
   smer?: string
+  // P3 — enote (mm/cm/m)
+  enota?: 'mm' | 'cm' | 'm'
+  originalnaVrednost?: number
+  // P3 — kotomer (vogal: notranji + zunanji kot)
+  notranjiKot?: number
+  zunanjiKot?: number
+  // P3 — štebricki (STEBR)
+  tipStebra?: 'KONCNI' | 'VMESNI' | 'VOGALNI'
+  materialStebra?: 'ALU' | 'INOX' | 'WPC' | 'DRUGO'
+  visinaStebraMm?: number
+  pozicijaMm?: number
+  razmikMm?: number
+  steberOznaka?: string
+  // P3 — WPC palice
+  orientacijaPalic?: 'WPC_POKOCNE' | 'WPC_VODORAVNE' | 'WPC_POSEVNE'
+  sirinaPalice?: number
+  debelinaPalice?: number
+  razmikPalic?: number
+  kotPosevnih?: number
+  stPalic?: number
 }
 
 interface Measurement {
@@ -131,6 +182,26 @@ interface Measurement {
   opomba?: string
   status?: MeasurementStatus
   kotStopinje?: number | null
+  // P3 — enote
+  enota?: 'mm' | 'cm' | 'm'
+  originalnaVrednost?: number
+  // P3 — kotomer
+  notranjiKot?: number | null
+  zunanjiKot?: number | null
+  // P3 — štebricki
+  tipStebra?: 'KONCNI' | 'VMESNI' | 'VOGALNI'
+  materialStebra?: 'ALU' | 'INOX' | 'WPC' | 'DRUGO'
+  visinaStebraMm?: number | null
+  pozicijaMm?: number | null
+  razmikMm?: number | null
+  steberOznaka?: string
+  // P3 — WPC palice
+  orientacijaPalic?: 'WPC_POKOCNE' | 'WPC_VODORAVNE' | 'WPC_POSEVNE'
+  sirinaPalice?: number
+  debelinaPalice?: number
+  razmikPalic?: number
+  kotPosevnih?: number
+  stPalic?: number
 }
 
 interface Project {
@@ -147,7 +218,15 @@ interface MeasurementGroup {
 interface Segment {
   id: string
   name: string
-  type: 'ravni' | 'kotni' | 'stopniscje' | 'lokan'
+  type:
+    | 'ravni'
+    | 'kotni'
+    | 'stopniscje'
+    | 'lokan'
+    // P3 — WPC orientacije
+    | 'WPC_POKOCNE'
+    | 'WPC_VODORAVNE'
+    | 'WPC_POSEVNE'
 }
 
 interface CalibrationState {
@@ -217,6 +296,10 @@ const tipMeritveLabels: Record<TipMeritve, string> = {
   GLOBINA: 'Globina',
   PREMER: 'Premer',
   SEGMENT: 'Segment',
+  // P3 — novi tipi
+  KOT_VOGAL: 'Vogal',
+  KOT_STOPNISCE: 'Kot stopnice',
+  STEBR: 'Stebriček/Palica',
 }
 
 const tipMeritveIcons: Record<TipMeritve, typeof Ruler> = {
@@ -227,6 +310,10 @@ const tipMeritveIcons: Record<TipMeritve, typeof Ruler> = {
   GLOBINA: Crosshair,
   PREMER: Crosshair,
   SEGMENT: Layers,
+  // P3 — novi tipi
+  KOT_VOGAL: CornerDownRight,
+  KOT_STOPNISCE: Layers2,
+  STEBR: Columns3,
 }
 
 const tipMeritveColors: Record<TipMeritve, string> = {
@@ -237,6 +324,10 @@ const tipMeritveColors: Record<TipMeritve, string> = {
   GLOBINA: 'bg-cyan-50 text-cyan-700 border-cyan-200',
   PREMER: 'bg-teal-50 text-teal-700 border-teal-200',
   SEGMENT: 'bg-gray-50 text-gray-700 border-gray-200',
+  // P3 — novi tipi
+  KOT_VOGAL: 'bg-teal-50 text-teal-700 border-teal-200',
+  KOT_STOPNISCE: 'bg-orange-50 text-orange-700 border-orange-200',
+  STEBR: 'bg-roksal-navy/10 text-roksal-navy border-roksal-navy/20',
 }
 
 const groundTypeLabels: Record<GroundType, string> = {
@@ -260,6 +351,10 @@ const segmentTypeLabels: Record<Segment['type'], string> = {
   kotni: 'Kotni odsek',
   stopniscje: 'Stopnišče',
   lokan: 'Lokan / ukrivljen',
+  // P3 — WPC orientacije
+  WPC_POKOCNE: 'WPC pokončne palice',
+  WPC_VODORAVNE: 'WPC vodoravne palice',
+  WPC_POSEVNE: 'WPC poševne palice',
 }
 
 const statusLabels: Record<MeasurementStatus, string> = {
@@ -318,6 +413,71 @@ const LOKACIJE_INCLINOMETER = [
   'Drugo',
 ]
 
+// P3 — konstante za stopniščni čarovnik
+type EnotaTip = 'mm' | 'cm' | 'm'
+
+const enotaLabels: Record<EnotaTip, string> = {
+  mm: 'mm',
+  cm: 'cm',
+  m: 'm',
+}
+
+// P3 — konstante za štebricki
+type TipStebra = 'KONCNI' | 'VMESNI' | 'VOGALNI'
+type MaterialStebra = 'ALU' | 'INOX' | 'WPC' | 'DRUGO'
+
+const tipStebraLabels: Record<TipStebra, string> = {
+  KONCNI: 'Končni',
+  VMESNI: 'Vmesni',
+  VOGALNI: 'Vogalni',
+}
+
+const tipStebraColors: Record<TipStebra, string> = {
+  KONCNI: 'bg-roksal-amber/10 text-roksal-amber border-roksal-amber/30',
+  VMESNI: 'bg-roksal-navy/10 text-roksal-navy border-roksal-navy/20',
+  VOGALNI: 'bg-teal-50 text-teal-700 border-teal-200',
+}
+
+const materialStebraLabels: Record<MaterialStebra, string> = {
+  ALU: 'ALU',
+  INOX: 'INOX',
+  WPC: 'WPC',
+  DRUGO: 'Drugo',
+}
+
+const materialStebraColors: Record<MaterialStebra, string> = {
+  ALU: 'bg-slate-100 text-slate-700 border-slate-300',
+  INOX: 'bg-cyan-50 text-cyan-700 border-cyan-200',
+  WPC: 'bg-amber-50 text-amber-700 border-amber-200',
+  DRUGO: 'bg-gray-50 text-gray-600 border-gray-200',
+}
+
+// P3 — konstante za WPC
+const WPC_SIRINE_PALIC = [140, 180] as const
+const WPC_DEBELINA_DEFAULT = 23
+const WPC_RAZMAK_DEFAULT = 110 // standardni Roksal razmik med palicami
+const WPC_KOT_POSEVNIH_DEFAULT = 45
+
+interface StairTemplate {
+  id: string
+  naziv: string
+  skupnaVisinaMm: number
+  stStopnic: number
+  globinaStopniceMm: number
+  sirinaStopniceMm?: number
+  createdAt: string
+}
+
+interface StairCalc {
+  visinaPosamezne: number
+  kotStopinje: number
+  dolzinaKosa: number
+  skupnaDolzina: number
+  priporocilo: string
+  priporociloColor: string
+  valid: boolean
+}
+
 interface MeasurementsTabProps {
   onNavigateToCalculator?: (dolzinaMm: number, visinaMm: number, locationName: string) => void
 }
@@ -375,6 +535,151 @@ function loadAudit(projectId: string): AuditEntry[] {
   } catch {
     return []
   }
+}
+
+// P3 — pretvorba enot (mm/cm/m) v mm
+function convertToMm(value: number, unit: EnotaTip): number {
+  if (!Number.isFinite(value)) return 0
+  switch (unit) {
+    case 'mm':
+      return value
+    case 'cm':
+      return value * 10
+    case 'm':
+      return value * 1000
+  }
+}
+
+// P3 — prikaz v primarni enoti (default mm)
+function formatInPrimaryUnit(mm: number, primary: EnotaTip): string {
+  if (!Number.isFinite(mm)) return '—'
+  switch (primary) {
+    case 'mm':
+      return `${Math.round(mm)}mm`
+    case 'cm':
+      return `${(mm / 10).toFixed(1)}cm`
+    case 'm':
+      return `${(mm / 1000).toFixed(2)}m`
+  }
+}
+
+// P3 — izračun stopniščnih dimenzij
+function calculateStairDimensions(
+  skupnaVisinaMm: number,
+  stStopnic: number,
+  globinaStopniceMm: number,
+  sirinaStopniceMm?: number
+): StairCalc {
+  if (
+    skupnaVisinaMm <= 0 ||
+    stStopnic <= 0 ||
+    globinaStopniceMm <= 0 ||
+    !Number.isFinite(skupnaVisinaMm) ||
+    !Number.isFinite(stStopnic) ||
+    !Number.isFinite(globinaStopniceMm)
+  ) {
+    return {
+      visinaPosamezne: 0,
+      kotStopinje: 0,
+      dolzinaKosa: 0,
+      skupnaDolzina: 0,
+      priporocilo: 'Vnesite veljavne vhodne podatke',
+      priporociloColor: 'text-muted-foreground',
+      valid: false,
+    }
+  }
+  const visinaPosamezne = skupnaVisinaMm / stStopnic
+  const kotRad = Math.atan(visinaPosamezne / globinaStopniceMm)
+  const kotStopinje = (kotRad * 180) / Math.PI
+  const dolzinaKosa = Math.sqrt(visinaPosamezne ** 2 + globinaStopniceMm ** 2) * stStopnic
+  const rezerva = sirinaStopniceMm ? sirinaStopniceMm * 0.5 : 200 // dodaten rob
+  const skupnaDolzina = dolzinaKosa + rezerva
+  let priporocilo = 'Standardni kot 30–35°'
+  let priporociloColor = 'text-green-700'
+  if (kotStopinje > 40) {
+    priporocilo = 'Nevarno: >40° (prestrmo!)'
+    priporociloColor = 'text-red-600'
+  } else if (kotStopinje > 37) {
+    priporocilo = 'Prestrmo: >37°'
+    priporociloColor = 'text-orange-600'
+  } else if (kotStopinje < 25) {
+    priporocilo = 'Ploščato: <25°'
+    priporociloColor = 'text-amber-600'
+  }
+  return {
+    visinaPosamezne,
+    kotStopinje,
+    dolzinaKosa,
+    skupnaDolzina,
+    priporocilo,
+    priporociloColor,
+    valid: true,
+  }
+}
+
+// P3 — avto-številčenje stebrov v segmentu (S1, S2, ...)
+function getNextStebriNumber(measurements: Measurement[], segmentId?: string): number {
+  const stebri = measurements.filter(
+    (m) => m.tipMeritve === 'STEBR' && (!segmentId || m.segmentId === segmentId)
+  )
+  return stebri.length + 1
+}
+
+// P3 — izračun števila WPC palic za dano orientacijo
+function calcWpcPalice(
+  orientacija: Segment['type'],
+  dolzinaMm: number,
+  visinaMm: number,
+  sirinaPalice: number,
+  razmikPalic: number
+): number {
+  if (sirinaPalice <= 0 || razmikPalic <= 0) return 0
+  const korak = sirinaPalice + razmikPalic
+  if (
+    orientacija === 'WPC_POKOCNE' ||
+    orientacija === 'WPC_VODORAVNE'
+  ) {
+    const relevantnaDim = orientacija === 'WPC_POKOCNE' ? dolzinaMm : visinaMm
+    if (relevantnaDim <= 0) return 0
+    return Math.max(0, Math.floor((relevantnaDim - sirinaPalice) / korak) + 1)
+  }
+  if (orientacija === 'WPC_POSEVNE') {
+    // mreža: (dolžina / korak) × (višina / korak) — približno
+    if (dolzinaMm <= 0 || visinaMm <= 0) return 0
+    const nDolzina = Math.max(0, Math.floor((dolzinaMm - sirinaPalice) / korak) + 1)
+    const nVisina = Math.max(0, Math.floor((visinaMm - sirinaPalice) / korak) + 1)
+    return nDolzina * nVisina
+  }
+  return 0
+}
+
+// P3 — nalaganje/shranjevanje stopniških predlog
+function loadStairTemplates(): StairTemplate[] {
+  try {
+    const raw = localStorage.getItem('roksal_stair_templates')
+    return raw ? (JSON.parse(raw) as StairTemplate[]) : []
+  } catch {
+    return []
+  }
+}
+
+function saveStairTemplates(templates: StairTemplate[]) {
+  try {
+    localStorage.setItem('roksal_stair_templates', JSON.stringify(templates))
+  } catch {
+    // ignore
+  }
+}
+
+// P3 — nalaganje primarne enote
+function loadPrimaryUnit(): EnotaTip {
+  try {
+    const raw = localStorage.getItem('roksal_primary_unit')
+    if (raw === 'mm' || raw === 'cm' || raw === 'm') return raw
+  } catch {
+    // ignore
+  }
+  return 'mm'
 }
 
 // ============================================
@@ -445,6 +750,43 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
   const [voiceSupported, setVoiceSupported] = useState(false)
   const [interimText, setInterimText] = useState('')
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null)
+
+  // P3 — Primarna enota za prikaz (mm / cm / m) — globalna nastavitev
+  const [primaryUnit, setPrimaryUnit] = useState<EnotaTip>('mm')
+
+  // P3 — Enota v formi (ločena za dolžino in višino)
+  const [formLengthUnit, setFormLengthUnit] = useState<EnotaTip>('mm')
+  const [formHeightUnit, setFormHeightUnit] = useState<EnotaTip>('mm')
+
+  // P3 — Stopniščni čarovnik (stair wizard)
+  const [stairWizardOpen, setStairWizardOpen] = useState(false)
+  const [stairSkupnaVisina, setStairSkupnaVisina] = useState('')
+  const [stairStStopnic, setStairStStopnic] = useState('')
+  const [stairGlobina, setStairGlobina] = useState('')
+  const [stairSirina, setStairSirina] = useState('')
+  const [stairSegmentId, setStairSegmentId] = useState('')
+  const [stairTemplates, setStairTemplates] = useState<StairTemplate[]>([])
+
+  // P3 — Inline kotomer (za KOT, KOT_VOGAL, KOT_STOPNISCE)
+  const [kotomerOpen, setKotomerOpen] = useState(false)
+  const [kotomerMode, setKotomerMode] = useState<'KOT' | 'KOT_VOGAL' | 'KOT_STOPNISCE'>('KOT')
+
+  // P3 — Štebricki (STEBR) — forma znotraj meritev
+  const [stebriFormOpen, setStebriFormOpen] = useState(false)
+  const [stebriTipStebra, setStebriTipStebra] = useState<TipStebra>('VMESNI')
+  const [stebriMaterial, setStebriMaterial] = useState<MaterialStebra>('ALU')
+  const [stebriVisina, setStebriVisina] = useState('1100')
+  const [stebriPozicija, setStebriPozicija] = useState('')
+  const [stebriPozicijaUnit, setStebriPozicijaUnit] = useState<EnotaTip>('mm')
+  const [stebriRazmik, setStebriRazmik] = useState('') // auto-calc from previous
+  const [stebriSegmentId, setStebriSegmentId] = useState('')
+
+  // P3 — WPC konfiguracija (porabljenih pri izbiri WPC segmenta)
+  const [wpcSirinaPalice, setWpcSirinaPalice] = useState<number>(140)
+  const [wpcDebelinaPalice, setWpcDebelinaPalice] = useState<number>(WPC_DEBELINA_DEFAULT)
+  const [wpcRazmikPalic, setWpcRazmikPalic] = useState<number>(WPC_RAZMAK_DEFAULT)
+  const [wpcKotPosevnih, setWpcKotPosevnih] = useState<number>(WPC_KOT_POSEVNIH_DEFAULT)
+  const [wpcConfigOpen, setWpcConfigOpen] = useState(false)
 
   // ============================================
   // NALAGANJE PODATKOV
@@ -517,11 +859,12 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
       if (raw) {
         setSegments(JSON.parse(raw) as Segment[])
       } else {
-        // privzeti demo segmenti
+        // privzeti demo segmenti (P3 — vključuje WPC_POKOCNE za demonstracijo)
         setSegments([
           { id: 'severni', name: 'Severni del', type: 'ravni' },
           { id: 'vzhodni', name: 'Vzhodni del', type: 'kotni' },
           { id: 'stopniscje', name: 'Stopnišče', type: 'stopniscje' },
+          { id: 'wpc-terasa', name: 'WPC terasa', type: 'WPC_POKOCNE' },
         ])
       }
     } catch {
@@ -579,6 +922,46 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
     }
   }, [])
 
+  // P3 — naloži primarno enoto + stopniške predloge ob mountu
+  useEffect(() => {
+    setPrimaryUnit(loadPrimaryUnit())
+    setStairTemplates(loadStairTemplates())
+  }, [])
+
+  // P3 — shrani primarno enoto ob spremembi
+  useEffect(() => {
+    try {
+      localStorage.setItem('roksal_primary_unit', primaryUnit)
+    } catch {
+      // ignore
+    }
+  }, [primaryUnit])
+
+  // P3 — auto-calc razmika stebra od prejšnjega stebra v segmentu
+  useEffect(() => {
+    if (!stebriFormOpen) return
+    if (!stebriPozicija || !stebriSegmentId) {
+      setStebriRazmik('')
+      return
+    }
+    const pozicijaMm = convertToMm(parseFloat(stebriPozicija) || 0, stebriPozicijaUnit)
+    if (!Number.isFinite(pozicijaMm) || pozicijaMm <= 0) {
+      setStebriRazmik('')
+      return
+    }
+    const stebri = measurements
+      .filter((m) => m.tipMeritve === 'STEBR' && m.segmentId === stebriSegmentId)
+      .sort((a, b) => (a.pozicijaMm || 0) - (b.pozicijaMm || 0))
+    if (stebri.length === 0) {
+      setStebriRazmik('—')
+      return
+    }
+    const prev = stebri[stebri.length - 1]
+    const prevPozicija = prev.pozicijaMm || 0
+    const razmik = pozicijaMm - prevPozicija
+    setStebriRazmik(razmik > 0 ? String(Math.round(razmik)) : '—')
+  }, [stebriPozicija, stebriPozicijaUnit, stebriSegmentId, stebriFormOpen, measurements])
+
   // ============================================
   // NORMALIZACIJA MERITEV IZ API-ja
   // ============================================
@@ -600,6 +983,26 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
         opomba: ar.opomba,
         status: ar.status ?? m.status ?? 'OSNUTEK',
         kotStopinje: m.kotStopinje ?? ar.kotStopinje ?? null,
+        // P3 — enote
+        enota: ar.enota ?? m.enota,
+        originalnaVrednost: ar.originalnaVrednost ?? m.originalnaVrednost,
+        // P3 — kotomer
+        notranjiKot: ar.notranjiKot ?? m.notranjiKot ?? null,
+        zunanjiKot: ar.zunanjiKot ?? m.zunanjiKot ?? null,
+        // P3 — štebricki
+        tipStebra: ar.tipStebra ?? m.tipStebra,
+        materialStebra: ar.materialStebra ?? m.materialStebra,
+        visinaStebraMm: ar.visinaStebraMm ?? m.visinaStebraMm ?? null,
+        pozicijaMm: ar.pozicijaMm ?? m.pozicijaMm ?? null,
+        razmikMm: ar.razmikMm ?? m.razmikMm ?? null,
+        steberOznaka: ar.steberOznaka ?? m.steberOznaka,
+        // P3 — WPC palice
+        orientacijaPalic: ar.orientacijaPalic ?? m.orientacijaPalic,
+        sirinaPalice: ar.sirinaPalice ?? m.sirinaPalice,
+        debelinaPalice: ar.debelinaPalice ?? m.debelinaPalice,
+        razmikPalic: ar.razmikPalic ?? m.razmikPalic,
+        kotPosevnih: ar.kotPosevnih ?? m.kotPosevnih,
+        stPalic: ar.stPalic ?? m.stPalic,
       }
     })
   }
@@ -620,6 +1023,9 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
     setFormOznaka('')
     setFormSegmentId('')
     setFormOpomba('')
+    // P3 — reset enot
+    setFormLengthUnit('mm')
+    setFormHeightUnit('mm')
   }
 
   // P1 — zapiši v zgodovino sprememb (audit)
@@ -645,11 +1051,17 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
       toast.error('Vnesite dolžino in višino!')
       return
     }
-    if (parseFloat(formLength) < 1 || parseFloat(formHeight) < 1) {
+    if (parseFloat(formLength) < 0.001 || parseFloat(formHeight) < 0.001) {
       toast.error('Meritve morajo biti pozitivne!')
       return
     }
     setSubmitting(true)
+
+    // P3 — pretvorba izbrane enote v mm
+    const rawLength = parseFloat(formLength) || 0
+    const rawHeight = parseFloat(formHeight) || 0
+    const dolzinaMm = Math.max(1, Math.round(convertToMm(rawLength, formLengthUnit)))
+    const visinaMm = Math.max(1, Math.round(convertToMm(rawHeight, formHeightUnit)))
 
     const arMetadata: ArMetadata = {
       tipMeritve: formTipMeritve,
@@ -662,6 +1074,9 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
       tipPodlage: formGround,
       kot: formAngle ? parseFloat(formAngle) : undefined,
       opombe: formNotes || undefined,
+      // P3 — audit: originalna enota + vrednost
+      enota: formLengthUnit,
+      originalnaVrednost: rawLength,
     }
 
     try {
@@ -670,8 +1085,8 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           projectId: selectedProject,
-          dolzinaMm: parseInt(formLength),
-          visinaMm: parseInt(formHeight),
+          dolzinaMm,
+          visinaMm,
           arMetadata,
           gpsLokacija: { lat: 46.2397, lng: 14.3556 },
         }),
@@ -690,34 +1105,37 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
           segmentId: formSegmentId || undefined,
           opomba: formOpomba || undefined,
           status: 'OSNUTEK',
+          // P3
+          enota: formLengthUnit,
+          originalnaVrednost: rawLength,
         }
         setMeasurements((prev) => [newMeasurement, ...prev])
         pushAudit({
           akcija: 'ADD',
           meritevId: newMeasurement.id,
-          opis: `Nova meritev \"${formOznaka || formLocation || newMeasurement.id.slice(-4)}\" dodana — ${formatMultiUnit(parseInt(formLength))}`,
+          opis: `Nova meritev \"${formOznaka || formLocation || newMeasurement.id.slice(-4)}\" dodana — ${formatMultiUnit(dolzinaMm)}`,
         })
         resetForm()
         setFormOpen(false)
         toast.success('Meritev dodana!')
       } else {
         // Server error — save locally as fallback
-        saveLocalMeasurement(arMetadata)
+        saveLocalMeasurement(arMetadata, dolzinaMm, visinaMm, rawLength)
         toast.error('Napaka strežnika — meritev shranjena lokalno')
       }
     } catch {
-      saveLocalMeasurement(arMetadata)
+      saveLocalMeasurement(arMetadata, dolzinaMm, visinaMm, rawLength)
       toast.success('Meritev dodana (lokalno)!')
     } finally {
       setSubmitting(false)
     }
   }
 
-  function saveLocalMeasurement(ar: ArMetadata) {
+  function saveLocalMeasurement(ar: ArMetadata, dolzinaMm: number, visinaMm: number, originalnaVrednost: number) {
     const newMeasurement: Measurement = {
       id: `local_${Date.now()}`,
-      dolzinaMm: parseInt(formLength),
-      visinaMm: parseInt(formHeight),
+      dolzinaMm,
+      visinaMm,
       lidarScanUrl: null,
       gpsLokacija: JSON.stringify({ lat: 46.2397, lng: 14.3556 }),
       createdAt: new Date().toISOString(),
@@ -733,12 +1151,15 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
       segmentId: formSegmentId || undefined,
       opomba: formOpomba || undefined,
       status: 'OSNUTEK',
+      // P3
+      enota: ar.enota,
+      originalnaVrednost,
     }
     setMeasurements((prev) => [newMeasurement, ...prev])
     pushAudit({
       akcija: 'ADD',
       meritevId: newMeasurement.id,
-      opis: `Nova meritev \"${formOznaka || formLocation || newMeasurement.id.slice(-4)}\" dodana (lokalno) — ${formatMultiUnit(parseInt(formLength))}`,
+      opis: `Nova meritev \"${formOznaka || formLocation || newMeasurement.id.slice(-4)}\" dodana (lokalno) — ${formatMultiUnit(dolzinaMm)}`,
     })
     resetForm()
     setFormOpen(false)
@@ -1011,6 +1432,11 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
       setInclinometerMode(tip)
       setInclinometerOpen(true)
     }
+    // P3 — za nove kotne tipe odpri kotomer
+    if (tip === 'KOT_VOGAL' || tip === 'KOT_STOPNISCE') {
+      setKotomerMode(tip)
+      setKotomerOpen(true)
+    }
   }
 
   // Shrani inclinometer meritev
@@ -1091,8 +1517,664 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
   }
 
   // ============================================
-  // IZVOZ CSV
+  // P3 — STOPNIŠČNI ČAROVNIK (stair wizard)
   // ============================================
+
+  const stairCalc = useMemo(() => {
+    return calculateStairDimensions(
+      parseFloat(stairSkupnaVisina) || 0,
+      parseInt(stairStStopnic) || 0,
+      parseFloat(stairGlobina) || 0,
+      stairSirina ? parseFloat(stairSirina) : undefined
+    )
+  }, [stairSkupnaVisina, stairStStopnic, stairGlobina, stairSirina])
+
+  async function handleStairCreateMeasurements() {
+    if (!selectedProject) {
+      toast.error('Izberite projekt!')
+      return
+    }
+    if (!stairCalc.valid) {
+      toast.error('Vnesite veljavne podatke za stopnišče!')
+      return
+    }
+    const skupnaVisinaMm = parseFloat(stairSkupnaVisina) || 0
+    const stStopnic = parseInt(stairStStopnic) || 0
+    const globinaStopniceMm = parseFloat(stairGlobina) || 0
+    const targetSegment = stairSegmentId || 'stopniscje'
+    // zagotovi, da segment obstaja
+    if (!segments.some((s) => s.id === targetSegment)) {
+      setSegments((prev) => [
+        ...prev,
+        { id: targetSegment, name: 'Stopnišče', type: 'stopniscje' },
+      ])
+    }
+
+    const newMeas: Array<{ dolzinaMm: number; visinaMm: number; ar: ArMetadata }> = [
+      {
+        dolzinaMm: 1,
+        visinaMm: Math.round(skupnaVisinaMm),
+        ar: {
+          tipMeritve: 'VISINA',
+          oznaka: 'skupna višina stopnišča',
+          segmentId: targetSegment,
+          opomba: `Skupna višina: ${Math.round(skupnaVisinaMm)}mm`,
+          status: 'OSNUTEK',
+          enota: 'mm',
+        },
+      },
+      {
+        dolzinaMm: Math.round(globinaStopniceMm),
+        visinaMm: 1,
+        ar: {
+          tipMeritve: 'GLOBINA',
+          oznaka: 'globina posamezne stopnice',
+          segmentId: targetSegment,
+          opomba: `Globina/vertikalna: ${Math.round(globinaStopniceMm)}mm`,
+          status: 'OSNUTEK',
+          enota: 'mm',
+        },
+      },
+      {
+        dolzinaMm: 1,
+        visinaMm: 1,
+        ar: {
+          tipMeritve: 'KOT_STOPNISCE',
+          oznaka: 'kot stopnice (rake)',
+          segmentId: targetSegment,
+          opomba: `Kot stopnice: ${stairCalc.kotStopinje.toFixed(1)}° (atan(${Math.round(stairCalc.visinaPosamezne)}/${Math.round(globinaStopniceMm)}))`,
+          kotStopinje: Number(stairCalc.kotStopinje.toFixed(1)),
+          status: 'OSNUTEK',
+          enota: 'mm',
+        },
+      },
+      {
+        dolzinaMm: Math.round(stairCalc.dolzinaKosa),
+        visinaMm: 1,
+        ar: {
+          tipMeritve: 'RAZDALJA',
+          oznaka: 'dolžina kosa (stringer)',
+          segmentId: targetSegment,
+          opomba: `sqrt(${Math.round(stairCalc.visinaPosamezne)}² + ${Math.round(globinaStopniceMm)}²) × ${stStopnic} = ${Math.round(stairCalc.dolzinaKosa)}mm`,
+          status: 'OSNUTEK',
+          enota: 'mm',
+        },
+      },
+      {
+        dolzinaMm: stStopnic,
+        visinaMm: 1,
+        ar: {
+          tipMeritve: 'SEGMENT',
+          oznaka: `št. stopnic: ${stStopnic}`,
+          segmentId: targetSegment,
+          opomba: `Skupno število stopnic: ${stStopnic}`,
+          status: 'OSNUTEK',
+          enota: 'mm',
+        },
+      },
+    ]
+
+    let okCount = 0
+    let localCount = 0
+    for (const item of newMeas) {
+      try {
+        const res = await fetch('/api/measurements', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            projectId: selectedProject,
+            dolzinaMm: item.dolzinaMm,
+            visinaMm: item.visinaMm,
+            arMetadata: item.ar,
+            gpsLokacija: { lat: 46.2397, lng: 14.3556 },
+          }),
+        })
+        if (res.ok) {
+          const data = await res.json()
+          const newM: Measurement = {
+            ...data,
+            lokacija: null,
+            steviloStebrov: null,
+            tipPodlage: null,
+            kot: null,
+            opombe: null,
+            tipMeritve: item.ar.tipMeritve,
+            oznaka: item.ar.oznaka,
+            segmentId: item.ar.segmentId,
+            opomba: item.ar.opomba,
+            status: 'OSNUTEK',
+            enota: 'mm',
+            kotStopinje: item.ar.kotStopinje ?? null,
+          }
+          setMeasurements((prev) => [newM, ...prev])
+          okCount++
+        } else {
+          const localM: Measurement = {
+            id: `local_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            dolzinaMm: item.dolzinaMm,
+            visinaMm: item.visinaMm,
+            lidarScanUrl: null,
+            gpsLokacija: JSON.stringify({ lat: 46.2397, lng: 14.3556 }),
+            createdAt: new Date().toISOString(),
+            projectId: selectedProject,
+            lokacija: null,
+            steviloStebrov: null,
+            tipPodlage: null,
+            kot: null,
+            opombe: null,
+            arMetadata: JSON.stringify(item.ar),
+            tipMeritve: item.ar.tipMeritve,
+            oznaka: item.ar.oznaka,
+            segmentId: item.ar.segmentId,
+            opomba: item.ar.opomba,
+            status: 'OSNUTEK',
+            enota: 'mm',
+            kotStopinje: item.ar.kotStopinje ?? null,
+          }
+          setMeasurements((prev) => [localM, ...prev])
+          localCount++
+        }
+      } catch {
+        const localM: Measurement = {
+          id: `local_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          dolzinaMm: item.dolzinaMm,
+          visinaMm: item.visinaMm,
+          lidarScanUrl: null,
+          gpsLokacija: JSON.stringify({ lat: 46.2397, lng: 14.3556 }),
+          createdAt: new Date().toISOString(),
+          projectId: selectedProject,
+          lokacija: null,
+          steviloStebrov: null,
+          tipPodlage: null,
+          kot: null,
+          opombe: null,
+          arMetadata: JSON.stringify(item.ar),
+          tipMeritve: item.ar.tipMeritve,
+          oznaka: item.ar.oznaka,
+          segmentId: item.ar.segmentId,
+          opomba: item.ar.opomba,
+          status: 'OSNUTEK',
+          enota: 'mm',
+          kotStopinje: item.ar.kotStopinje ?? null,
+        }
+        setMeasurements((prev) => [localM, ...prev])
+        localCount++
+      }
+    }
+
+    pushAudit({
+      akcija: 'ADD',
+      meritevId: 'stair-wizard',
+      opis: `Stopniščni čarovnik: ${stStopnic} stopnic, ${Math.round(skupnaVisinaMm)}mm višine, kot ${stairCalc.kotStopinje.toFixed(1)}° — ${newMeas.length} meritev kreiranih`,
+    })
+    toast.success(
+      `Ustvarjeno ${newMeas.length} meritev${localCount > 0 ? ` (${okCount} sinhroniziranih, ${localCount} lokalno)` : ''}`
+    )
+    setStairWizardOpen(false)
+  }
+
+  function handleSaveStairTemplate() {
+    if (!stairCalc.valid) {
+      toast.error('Vnesite veljavne podatke za shranjevanje predloge!')
+      return
+    }
+    const naziv = window.prompt('Ime predloge za stopnišče:', `Stopnišče ${stairStStopnic} stopnic`)
+    if (!naziv) return
+    const template: StairTemplate = {
+      id: `stair_${Date.now()}`,
+      naziv,
+      skupnaVisinaMm: parseFloat(stairSkupnaVisina) || 0,
+      stStopnic: parseInt(stairStStopnic) || 0,
+      globinaStopniceMm: parseFloat(stairGlobina) || 0,
+      sirinaStopniceMm: stairSirina ? parseFloat(stairSirina) : undefined,
+      createdAt: new Date().toISOString(),
+    }
+    const updated = [template, ...stairTemplates].slice(0, 30)
+    setStairTemplates(updated)
+    saveStairTemplates(updated)
+    toast.success(`Predloga "${naziv}" shranjena`)
+  }
+
+  function handleLoadStairTemplate(t: StairTemplate) {
+    setStairSkupnaVisina(String(t.skupnaVisinaMm))
+    setStairStStopnic(String(t.stStopnic))
+    setStairGlobina(String(t.globinaStopniceMm))
+    setStairSirina(t.sirinaStopniceMm ? String(t.sirinaStopniceMm) : '')
+    toast.info(`Predloga "${t.naziv}" naložena`)
+  }
+
+  function handleDeleteStairTemplate(id: string) {
+    const updated = stairTemplates.filter((t) => t.id !== id)
+    setStairTemplates(updated)
+    saveStairTemplates(updated)
+    toast.success('Predloga izbrisana')
+  }
+
+  // ============================================
+  // P3 — KOTOMER (save callback)
+  // ============================================
+
+  async function saveKotomerReading(
+    kotStopinje: number,
+    notranjiKot: number | null,
+    zunanjiKot: number | null,
+    lokacija: string
+  ) {
+    if (!selectedProject) {
+      toast.error('Izberite projekt!')
+      return
+    }
+    const isVogal = kotomerMode === 'KOT_VOGAL'
+    const oznaka = isVogal
+      ? `Vogal — ${lokacija}`
+      : kotomerMode === 'KOT_STOPNISCE'
+        ? `Kot stopnice — ${lokacija}`
+        : `Kot — ${lokacija}`
+    const arMetadata: ArMetadata = {
+      tipMeritve: kotomerMode,
+      oznaka,
+      segmentId: formSegmentId || undefined,
+      opomba: isVogal
+        ? `Notranji kot: ${notranjiKot ?? '—'}°, Zunanji kot: ${zunanjiKot ?? '—'}°`
+        : `Kot: ${kotStopinje}° (${lokacija})`,
+      kotStopinje,
+      notranjiKot: notranjiKot ?? undefined,
+      zunanjiKot: zunanjiKot ?? undefined,
+      lokacija,
+      status: 'OSNUTEK',
+    }
+
+    try {
+      const res = await fetch('/api/measurements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId: selectedProject,
+          dolzinaMm: 1,
+          visinaMm: 1,
+          arMetadata,
+          gpsLokacija: { lat: 46.2397, lng: 14.3556 },
+        }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        const newM: Measurement = {
+          ...data,
+          lokacija,
+          tipMeritve: kotomerMode,
+          oznaka,
+          opomba: arMetadata.opomba,
+          status: 'OSNUTEK',
+          kotStopinje,
+          notranjiKot: notranjiKot ?? null,
+          zunanjiKot: zunanjiKot ?? null,
+        }
+        setMeasurements((prev) => [newM, ...prev])
+        pushAudit({
+          akcija: 'ADD',
+          meritevId: newM.id,
+          opis: `${oznaka} shranjen — ${kotStopinje}°`,
+        })
+        toast.success(`${oznaka} shranjen`)
+        setKotomerOpen(false)
+      } else {
+        const newM: Measurement = {
+          id: `local_${Date.now()}`,
+          dolzinaMm: 1,
+          visinaMm: 1,
+          createdAt: new Date().toISOString(),
+          projectId: selectedProject,
+          lokacija,
+          arMetadata: JSON.stringify({ ...arMetadata, status: 'OSNUTEK' }),
+          tipMeritve: kotomerMode,
+          oznaka,
+          opomba: arMetadata.opomba,
+          status: 'OSNUTEK',
+          kotStopinje,
+          notranjiKot: notranjiKot ?? null,
+          zunanjiKot: zunanjiKot ?? null,
+        }
+        setMeasurements((prev) => [newM, ...prev])
+        pushAudit({
+          akcija: 'ADD',
+          meritevId: newM.id,
+          opis: `${oznaka} shranjen (lokalno) — ${kotStopinje}°`,
+        })
+        toast.success(`${oznaka} shranjen (lokalno)`)
+        setKotomerOpen(false)
+      }
+    } catch {
+      toast.error('Napaka pri shranjevanju')
+    }
+  }
+
+  // ============================================
+  // P3 — ŠTEBRICKI (STEBR) — dodajanje
+  // ============================================
+
+  async function handleAddSteber() {
+    if (!selectedProject) {
+      toast.error('Izberite projekt!')
+      return
+    }
+    if (!stebriSegmentId) {
+      toast.error('Izberite segment za steber!')
+      return
+    }
+    const pozicijaMm = convertToMm(parseFloat(stebriPozicija) || 0, stebriPozicijaUnit)
+    if (!Number.isFinite(pozicijaMm) || pozicijaMm <= 0) {
+      toast.error('Vnesite veljavno pozicijo stebra!')
+      return
+    }
+    const visinaStebra = parseInt(stebriVisina) || 1100
+    const steberNum = getNextStebriNumber(measurements, stebriSegmentId)
+    const oznaka = `S${steberNum}`
+    const razmikMm = stebriRazmik && stebriRazmik !== '—' ? parseInt(stebriRazmik) : 0
+    const arMetadata: ArMetadata = {
+      tipMeritve: 'STEBR',
+      oznaka,
+      segmentId: stebriSegmentId,
+      opomba: `Stebriček S${steberNum} — ${tipStebraLabels[stebriTipStebra]} (${materialStebraLabels[stebriMaterial]}), višina ${visinaStebra}mm, pozicija ${Math.round(pozicijaMm)}mm`,
+      status: 'OSNUTEK',
+      tipStebra: stebriTipStebra,
+      materialStebra: stebriMaterial,
+      visinaStebraMm: visinaStebra,
+      pozicijaMm: Math.round(pozicijaMm),
+      razmikMm: razmikMm || undefined,
+      steberOznaka: oznaka,
+      enota: stebriPozicijaUnit,
+      originalnaVrednost: parseFloat(stebriPozicija) || 0,
+    }
+
+    try {
+      const res = await fetch('/api/measurements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId: selectedProject,
+          dolzinaMm: Math.max(1, Math.round(pozicijaMm)),
+          visinaMm: visinaStebra,
+          arMetadata,
+          gpsLokacija: { lat: 46.2397, lng: 14.3556 },
+        }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        const newM: Measurement = {
+          ...data,
+          lokacija: null,
+          tipMeritve: 'STEBR',
+          oznaka,
+          segmentId: stebriSegmentId,
+          opomba: arMetadata.opomba,
+          status: 'OSNUTEK',
+          tipStebra: stebriTipStebra,
+          materialStebra: stebriMaterial,
+          visinaStebraMm: visinaStebra,
+          pozicijaMm: Math.round(pozicijaMm),
+          razmikMm: razmikMm || null,
+          steberOznaka: oznaka,
+          enota: stebriPozicijaUnit,
+          originalnaVrednost: parseFloat(stebriPozicija) || 0,
+        }
+        setMeasurements((prev) => [newM, ...prev])
+        pushAudit({
+          akcija: 'ADD',
+          meritevId: newM.id,
+          opis: `Stebriček ${oznaka} dodan — ${tipStebraLabels[stebriTipStebra]}, pozicija ${Math.round(pozicijaMm)}mm`,
+        })
+        toast.success(`Stebriček ${oznaka} dodan!`)
+      } else {
+        const newM: Measurement = {
+          id: `local_${Date.now()}`,
+          dolzinaMm: Math.max(1, Math.round(pozicijaMm)),
+          visinaMm: visinaStebra,
+          lidarScanUrl: null,
+          gpsLokacija: JSON.stringify({ lat: 46.2397, lng: 14.3556 }),
+          createdAt: new Date().toISOString(),
+          projectId: selectedProject,
+          lokacija: null,
+          arMetadata: JSON.stringify({ ...arMetadata, status: 'OSNUTEK' }),
+          tipMeritve: 'STEBR',
+          oznaka,
+          segmentId: stebriSegmentId,
+          opomba: arMetadata.opomba,
+          status: 'OSNUTEK',
+          tipStebra: stebriTipStebra,
+          materialStebra: stebriMaterial,
+          visinaStebraMm: visinaStebra,
+          pozicijaMm: Math.round(pozicijaMm),
+          razmikMm: razmikMm || null,
+          steberOznaka: oznaka,
+          enota: stebriPozicijaUnit,
+          originalnaVrednost: parseFloat(stebriPozicija) || 0,
+        }
+        setMeasurements((prev) => [newM, ...prev])
+        pushAudit({
+          akcija: 'ADD',
+          meritevId: newM.id,
+          opis: `Stebriček ${oznaka} dodan (lokalno) — pozicija ${Math.round(pozicijaMm)}mm`,
+        })
+        toast.success(`Stebriček ${oznaka} dodan (lokalno)!`)
+      }
+    } catch {
+      toast.error('Napaka pri shranjevanju stebra')
+    }
+    // reset forme
+    setStebriPozicija('')
+    setStebriRazmik('')
+    setStebriTipStebra('VMESNI')
+    setStebriMaterial('ALU')
+    setStebriVisina('1100')
+    setStebriPozicijaUnit('mm')
+  }
+
+  function handleExportStebriCSV(segmentId: string) {
+    const stebri = measurements
+      .filter((m) => m.tipMeritve === 'STEBR' && m.segmentId === segmentId)
+      .sort((a, b) => (a.pozicijaMm || 0) - (b.pozicijaMm || 0))
+    if (stebri.length === 0) {
+      toast.error('Ni stebrov za izvoz')
+      return
+    }
+    const header = 'Oznaka,Tip,Pozicija(mm),Razmik(mm),Visina(mm),Material,Opomba'
+    const rows = stebri.map((m) => {
+      const o = (m.steberOznaka || m.oznaka || '').replace(/"/g, '""')
+      const t = m.tipStebra ? tipStebraLabels[m.tipStebra] : ''
+      const poz = m.pozicijaMm ? String(Math.round(m.pozicijaMm)) : ''
+      const raz = m.razmikMm ? String(Math.round(m.razmikMm)) : '—'
+      const vis = m.visinaStebraMm ? String(Math.round(m.visinaStebraMm)) : ''
+      const mat = m.materialStebra ? materialStebraLabels[m.materialStebra] : ''
+      const op = (m.opomba || '').replace(/"/g, '""')
+      return `"${o}","${t}",${poz},${raz},${vis},"${mat}","${op}"`
+    })
+    const csvContent = '\uFEFF' + header + '\n' + rows.join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `stebri_${segmentId}_${new Date().toISOString().slice(0, 10)}.csv`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    pushAudit({
+      akcija: 'EDIT',
+      meritevId: 'stebri-csv',
+      opis: `Izvoženih ${stebri.length} stebrov (CSV) za segment ${segmentId}`,
+    })
+    toast.success(`Izvozenih ${stebri.length} stebrov (CSV)`)
+  }
+
+  // ============================================
+  // P3 — WPC palice (dodaj kot materiale)
+  // ============================================
+
+  async function handleAddWpcPaliceAsStebri(segment: Segment) {
+    if (!selectedProject) {
+      toast.error('Izberite projekt!')
+      return
+    }
+    // uporabi dimenzije iz segmenta (segment stats)
+    const segMeas = measurements.filter((m) => m.segmentId === segment.id)
+    const razdalje = segMeas.filter((m) => !m.tipMeritve || m.tipMeritve === 'RAZDALJA')
+    const visine = segMeas.filter((m) => m.tipMeritve === 'VISINA')
+    const dolzinaMm = razdalje.length > 0 ? Math.max(...razdalje.map((m) => m.dolzinaMm)) : 0
+    const visinaMm = visine.length > 0
+      ? Math.max(...visine.map((m) => m.visinaMm))
+      : segMeas.length > 0
+        ? Math.max(...segMeas.map((m) => m.visinaMm))
+        : 0
+
+    const stPalic = calcWpcPalice(
+      segment.type,
+      dolzinaMm,
+      visinaMm,
+      wpcSirinaPalice,
+      wpcRazmikPalic
+    )
+    if (stPalic === 0) {
+      toast.error('Segment nima dimenzij — dodajte najprej RAZDALJA/VISINA meritev!')
+      return
+    }
+
+    const orientacija = segment.type as 'WPC_POKOCNE' | 'WPC_VODORAVNE' | 'WPC_POSEVNE'
+    let okCount = 0
+    let localCount = 0
+    for (let i = 0; i < stPalic; i++) {
+      const oznaka = `P${i + 1}`
+      const pozicijaMm = i * (wpcSirinaPalice + wpcRazmikPalic) + wpcSirinaPalice / 2
+      const arMetadata: ArMetadata = {
+        tipMeritve: 'STEBR',
+        oznaka,
+        segmentId: segment.id,
+        opomba: `WPC palica P${i + 1} (${segmentTypeLabels[segment.type]}, ${wpcSirinaPalice}×${wpcDebelinaPalice}mm, razmak ${wpcRazmikPalic}mm)`,
+        status: 'OSNUTEK',
+        tipStebra: 'VMESNI',
+        materialStebra: 'WPC',
+        visinaStebraMm: visinaMm || 1100,
+        pozicijaMm: Math.round(pozicijaMm),
+        steberOznaka: oznaka,
+        orientacijaPalic: orientacija,
+        sirinaPalice: wpcSirinaPalice,
+        debelinaPalice: wpcDebelinaPalice,
+        razmikPalic: wpcRazmikPalic,
+        kotPosevnih: segment.type === 'WPC_POSEVNE' ? wpcKotPosevnih : undefined,
+        stPalic,
+        enota: 'mm',
+      }
+      try {
+        const res = await fetch('/api/measurements', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            projectId: selectedProject,
+            dolzinaMm: Math.max(1, Math.round(pozicijaMm)),
+            visinaMm: visinaMm || 1100,
+            arMetadata,
+            gpsLokacija: { lat: 46.2397, lng: 14.3556 },
+          }),
+        })
+        if (res.ok) {
+          const data = await res.json()
+          const newM: Measurement = {
+            ...data,
+            lokacija: null,
+            tipMeritve: 'STEBR',
+            oznaka,
+            segmentId: segment.id,
+            opomba: arMetadata.opomba,
+            status: 'OSNUTEK',
+            tipStebra: 'VMESNI',
+            materialStebra: 'WPC',
+            visinaStebraMm: visinaMm || 1100,
+            pozicijaMm: Math.round(pozicijaMm),
+            steberOznaka: oznaka,
+            orientacijaPalic: orientacija,
+            sirinaPalice: wpcSirinaPalice,
+            debelinaPalice: wpcDebelinaPalice,
+            razmikPalic: wpcRazmikPalic,
+            kotPosevnih: segment.type === 'WPC_POSEVNE' ? wpcKotPosevnih : undefined,
+            stPalic,
+            enota: 'mm',
+          }
+          setMeasurements((prev) => [newM, ...prev])
+          okCount++
+        } else {
+          const localM: Measurement = {
+            id: `local_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            dolzinaMm: Math.max(1, Math.round(pozicijaMm)),
+            visinaMm: visinaMm || 1100,
+            lidarScanUrl: null,
+            gpsLokacija: JSON.stringify({ lat: 46.2397, lng: 14.3556 }),
+            createdAt: new Date().toISOString(),
+            projectId: selectedProject,
+            lokacija: null,
+            arMetadata: JSON.stringify({ ...arMetadata, status: 'OSNUTEK' }),
+            tipMeritve: 'STEBR',
+            oznaka,
+            segmentId: segment.id,
+            opomba: arMetadata.opomba,
+            status: 'OSNUTEK',
+            tipStebra: 'VMESNI',
+            materialStebra: 'WPC',
+            visinaStebraMm: visinaMm || 1100,
+            pozicijaMm: Math.round(pozicijaMm),
+            steberOznaka: oznaka,
+            orientacijaPalic: orientacija,
+            sirinaPalice: wpcSirinaPalice,
+            debelinaPalice: wpcDebelinaPalice,
+            razmikPalic: wpcRazmikPalic,
+            kotPosevnih: segment.type === 'WPC_POSEVNE' ? wpcKotPosevnih : undefined,
+            stPalic,
+            enota: 'mm',
+          }
+          setMeasurements((prev) => [localM, ...prev])
+          localCount++
+        }
+      } catch {
+        const localM: Measurement = {
+          id: `local_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          dolzinaMm: Math.max(1, Math.round(pozicijaMm)),
+          visinaMm: visinaMm || 1100,
+          lidarScanUrl: null,
+          gpsLokacija: JSON.stringify({ lat: 46.2397, lng: 14.3556 }),
+          createdAt: new Date().toISOString(),
+          projectId: selectedProject,
+          lokacija: null,
+          arMetadata: JSON.stringify({ ...arMetadata, status: 'OSNUTEK' }),
+          tipMeritve: 'STEBR',
+          oznaka,
+          segmentId: segment.id,
+          opomba: arMetadata.opomba,
+          status: 'OSNUTEK',
+          tipStebra: 'VMESNI',
+          materialStebra: 'WPC',
+          visinaStebraMm: visinaMm || 1100,
+          pozicijaMm: Math.round(pozicijaMm),
+          steberOznaka: oznaka,
+          orientacijaPalic: orientacija,
+          sirinaPalice: wpcSirinaPalice,
+          debelinaPalice: wpcDebelinaPalice,
+          razmikPalic: wpcRazmikPalic,
+          kotPosevnih: segment.type === 'WPC_POSEVNE' ? wpcKotPosevnih : undefined,
+          stPalic,
+          enota: 'mm',
+        }
+        setMeasurements((prev) => [localM, ...prev])
+        localCount++
+      }
+    }
+
+    pushAudit({
+      akcija: 'ADD',
+      meritevId: 'wpc-palice',
+      opis: `WPC palice dodane: ${stPalic} kos (${segmentTypeLabels[segment.type]}, ${wpcSirinaPalice}×${wpcDebelinaPalice}mm, razmak ${wpcRazmikPalic}mm) v segment ${segment.id}`,
+    })
+    toast.success(
+      `Dodanih ${stPalic} WPC palic${localCount > 0 ? ` (${okCount} sinhroniziranih, ${localCount} lokalno)` : ''}`
+    )
+  }
 
   function handleExportCSV() {
     if (measurements.length === 0) {
@@ -2033,8 +3115,272 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
               )
             })}
           </div>
+          {/* P3 — napredne meritve (vogal, kot stopnice, stebriček) */}
+          <Separator className="my-2.5" />
+          <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-2 px-1">
+            Napredne meritve (P3)
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            {(['KOT_VOGAL', 'KOT_STOPNISCE', 'STEBR'] as TipMeritve[]).map((tip) => {
+              const Icon = tipMeritveIcons[tip]
+              return (
+                <button
+                  key={tip}
+                  type="button"
+                  onClick={() => handleQuickAdd(tip)}
+                  className={`flex flex-col items-center justify-center gap-1 rounded-lg border p-2.5 transition-all duration-150 active:scale-[0.96] hover:border-roksal-navy/40 ${tipMeritveColors[tip]}`}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span className="text-[10px] font-medium">{tipMeritveLabels[tip]}</span>
+                </button>
+              )
+            })}
+          </div>
         </CardContent>
       </Card>
+
+      {/* P3 — PRIMARNA ENOTA ZA PRIKAZ (pills) */}
+      <Card className="card-hover transition-all duration-200 animate-fade-in-up border-roksal-navy/15">
+        <CardContent className="p-3">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
+              <ArrowRightLeft className="h-4 w-4 text-roksal-navy" />
+              <div>
+                <p className="text-xs font-medium text-roksal-navy">Primarna enota za prikaz</p>
+                <p className="text-[9px] text-muted-foreground">Vpliva na vse prikaze dimenzij</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1 rounded-lg border border-border/50 bg-secondary/30 p-0.5">
+              {(['mm', 'cm', 'm'] as EnotaTip[]).map((u) => (
+                <button
+                  key={u}
+                  type="button"
+                  onClick={() => setPrimaryUnit(u)}
+                  className={`rounded-md px-3 py-1 text-xs font-medium transition-all duration-150 active:scale-[0.96] ${
+                    primaryUnit === u
+                      ? 'bg-roksal-navy text-white shadow-sm'
+                      : 'text-muted-foreground hover:text-roksal-navy'
+                  }`}
+                >
+                  {enotaLabels[u]}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="mt-2 rounded-md bg-roksal-amber/5 border border-roksal-amber/15 p-2 text-center">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Predogled</p>
+            <p className="text-sm font-bold text-roksal-navy">
+              {formatInPrimaryUnit(3000, primaryUnit)} · {formatInPrimaryUnit(1100, primaryUnit)}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* P3 — STOPNIŠČNI ČAROVNIK (stair wizard) */}
+      {(segments.some((s) => s.type === 'stopniscje') || stairWizardOpen) && (
+        <Card className="card-hover transition-all duration-200 animate-fade-in-up border-roksal-amber/20">
+          <Collapsible open={stairWizardOpen} onOpenChange={setStairWizardOpen}>
+            <CollapsibleTrigger asChild>
+              <button
+                type="button"
+                className="flex w-full items-center justify-between p-4 text-left hover:bg-secondary/30 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-roksal-amber text-white">
+                    <Layers2 className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-roksal-navy">Stopniščni čarovnik</span>
+                    <p className="text-[10px] text-muted-foreground">
+                      Izračun stopnic, kota, dolžine kosa — z diagramom
+                    </p>
+                  </div>
+                </div>
+                {stairWizardOpen ? (
+                  <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                )}
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="border-t border-border/50 px-4 pb-4 pt-3 space-y-3 slide-in-right">
+                {/* Vhodni podatki */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium">Skupna višina (mm)</Label>
+                    <Input
+                      type="number"
+                      value={stairSkupnaVisina}
+                      onChange={(e) => setStairSkupnaVisina(e.target.value)}
+                      placeholder="2700"
+                      className="h-10 font-mono"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium">Število stopnic</Label>
+                    <Input
+                      type="number"
+                      value={stairStStopnic}
+                      onChange={(e) => setStairStStopnic(e.target.value)}
+                      placeholder="15"
+                      className="h-10 font-mono"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium">Globina stopnice (mm)</Label>
+                    <Input
+                      type="number"
+                      value={stairGlobina}
+                      onChange={(e) => setStairGlobina(e.target.value)}
+                      placeholder="280"
+                      className="h-10 font-mono"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium">Širina stopnice (mm, opcijsko)</Label>
+                    <Input
+                      type="number"
+                      value={stairSirina}
+                      onChange={(e) => setStairSirina(e.target.value)}
+                      placeholder="250"
+                      className="h-10 font-mono"
+                    />
+                  </div>
+                </div>
+
+                {/* Segment */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium">
+                    <Layers className="inline h-3 w-3 mr-1" />
+                    Ciljni segment
+                  </Label>
+                  <Select
+                    value={stairSegmentId}
+                    onValueChange={setStairSegmentId}
+                  >
+                    <SelectTrigger className="h-10">
+                      <SelectValue placeholder="Stopnišče (privzeto)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="stopniscje">Stopnišče (privzeto)</SelectItem>
+                      {segments.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.name} ({segmentTypeLabels[s.type]})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Real-time izračuni */}
+                {stairCalc.valid && (
+                  <div className="grid grid-cols-2 gap-2 rounded-lg border border-roksal-amber/30 bg-roksal-amber/5 p-3 slide-in-right">
+                    <div className="text-center">
+                      <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Višina posamezne</p>
+                      <p className="text-sm font-bold text-roksal-navy">
+                        {Math.round(stairCalc.visinaPosamezne)}mm
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Kot stopnice</p>
+                      <p className="text-sm font-bold text-roksal-navy">
+                        {stairCalc.kotStopinje.toFixed(1)}°
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Dolžina kosa</p>
+                      <p className="text-sm font-bold text-roksal-navy">
+                        {Math.round(stairCalc.dolzinaKosa)}mm
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Skupna dolžina</p>
+                      <p className="text-sm font-bold text-roksal-navy">
+                        {Math.round(stairCalc.skupnaDolzina)}mm
+                      </p>
+                    </div>
+                    <div className="col-span-2 text-center border-t border-roksal-amber/20 pt-2">
+                      <p className={`text-xs font-semibold ${stairCalc.priporociloColor}`}>
+                        {stairCalc.priporocilo}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* SVG diagram */}
+                {stairCalc.valid && (
+                  <StairDiagram
+                    stStopnic={parseInt(stairStStopnic) || 0}
+                    visinaPosamezne={stairCalc.visinaPosamezne}
+                    globinaStopnice={parseFloat(stairGlobina) || 0}
+                    kotStopinje={stairCalc.kotStopinje}
+                  />
+                )}
+
+                {/* Akcije */}
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    onClick={handleStairCreateMeasurements}
+                    disabled={!stairCalc.valid || !selectedProject}
+                    className="flex-1 h-9 bg-roksal-navy text-white hover:bg-roksal-navy/90"
+                  >
+                    <Plus className="mr-1.5 h-4 w-4" />
+                    Ustvari meritve
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleSaveStairTemplate}
+                    disabled={!stairCalc.valid}
+                    className="h-9 px-3 border-roksal-amber/30 text-roksal-amber hover:bg-roksal-amber/10"
+                  >
+                    <Bookmark className="mr-1.5 h-4 w-4" />
+                    Shrani kot predlogo
+                  </Button>
+                </div>
+
+                {/* Predloge */}
+                {stairTemplates.length > 0 && (
+                  <div className="rounded-lg border border-border/50 bg-secondary/20 p-2.5 space-y-1.5">
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+                      Prihranjene predloge ({stairTemplates.length})
+                    </p>
+                    <div className="max-h-32 overflow-y-auto scrollbar-thin space-y-1">
+                      {stairTemplates.map((t) => (
+                        <div
+                          key={t.id}
+                          className="flex items-center justify-between gap-2 rounded-md border border-border/40 bg-background p-1.5"
+                        >
+                          <button
+                            type="button"
+                            onClick={() => handleLoadStairTemplate(t)}
+                            className="flex-1 text-left min-w-0"
+                          >
+                            <p className="text-[11px] font-medium text-roksal-navy truncate">{t.naziv}</p>
+                            <p className="text-[9px] text-muted-foreground font-mono">
+                              {t.skupnaVisinaMm}mm · {t.stStopnic} stopnic · {t.globinaStopniceMm}mm globine
+                            </p>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteStairTemplate(t.id)}
+                            className="p-1 rounded hover:bg-red-50 transition-colors shrink-0"
+                            title="Izbriši predlogo"
+                          >
+                            <Trash2 className="h-3 w-3 text-muted-foreground hover:text-roksal-red" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+        </Card>
+      )}
 
       {/* UMERITEV REFERENCE (NEW) */}
       <Card className="card-hover transition-all duration-200 animate-fade-in-up" style={{ animationDelay: '90ms' }}>
@@ -2168,6 +3514,16 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
         />
       )}
 
+      {/* P3 — INLINE KOTOMER (za KOT / KOT_VOGAL / KOT_STOPNISCE) */}
+      {kotomerOpen && (
+        <InlineKotomer
+          mode={kotomerMode}
+          stairKot={stairCalc.valid ? stairCalc.kotStopinje : null}
+          onClose={() => setKotomerOpen(false)}
+          onSave={saveKotomerReading}
+        />
+      )}
+
       {/* OBRAZEC — Nova meritev (ENHANCED) */}
       <Card className="card-hover transition-all duration-200 overflow-hidden">
         <button
@@ -2274,33 +3630,73 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
               />
             </div>
 
-            {/* Length + Height */}
+            {/* Length + Height (P3 — z enoto) */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium">
                   <Ruler className="inline h-3 w-3 mr-1" />
-                  Dolžina (mm)
+                  Dolžina
                 </Label>
-                <Input
-                  type="number"
-                  value={formLength}
-                  onChange={(e) => setFormLength(e.target.value)}
-                  placeholder="3000"
-                  className="h-10 font-mono"
-                />
+                <div className="flex gap-1.5">
+                  <Input
+                    type="number"
+                    value={formLength}
+                    onChange={(e) => setFormLength(e.target.value)}
+                    placeholder="3000"
+                    className="h-10 font-mono flex-1"
+                  />
+                  <Select
+                    value={formLengthUnit}
+                    onValueChange={(v) => setFormLengthUnit(v as EnotaTip)}
+                  >
+                    <SelectTrigger className="h-10 w-[68px] px-2">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="mm">mm</SelectItem>
+                      <SelectItem value="cm">cm</SelectItem>
+                      <SelectItem value="m">m</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {formLength && formLengthUnit !== 'mm' && (
+                  <p className="text-[9px] text-roksal-amber font-mono">
+                    = {convertToMm(parseFloat(formLength) || 0, formLengthUnit)}mm
+                  </p>
+                )}
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium">
                   <Ruler className="inline h-3 w-3 mr-1 rotate-90" />
-                  Višina (mm)
+                  Višina
                 </Label>
-                <Input
-                  type="number"
-                  value={formHeight}
-                  onChange={(e) => setFormHeight(e.target.value)}
-                  placeholder="900"
-                  className="h-10 font-mono"
-                />
+                <div className="flex gap-1.5">
+                  <Input
+                    type="number"
+                    value={formHeight}
+                    onChange={(e) => setFormHeight(e.target.value)}
+                    placeholder="900"
+                    className="h-10 font-mono flex-1"
+                  />
+                  <Select
+                    value={formHeightUnit}
+                    onValueChange={(v) => setFormHeightUnit(v as EnotaTip)}
+                  >
+                    <SelectTrigger className="h-10 w-[68px] px-2">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="mm">mm</SelectItem>
+                      <SelectItem value="cm">cm</SelectItem>
+                      <SelectItem value="m">m</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {formHeight && formHeightUnit !== 'mm' && (
+                  <p className="text-[9px] text-roksal-amber font-mono">
+                    = {convertToMm(parseFloat(formHeight) || 0, formHeightUnit)}mm
+                  </p>
+                )}
               </div>
             </div>
 
@@ -2591,6 +3987,26 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
                       </CollapsibleTrigger>
                       <CollapsibleContent>
                         <div className="border-t border-border/30 p-2 space-y-2 bg-secondary/5">
+                          {/* P3 — WPC diagram za WPC segmente */}
+                          {(seg.type === 'WPC_POKOCNE' ||
+                            seg.type === 'WPC_VODORAVNE' ||
+                            seg.type === 'WPC_POSEVNE') && (
+                            <WpcDiagram
+                              orientacija={seg.type}
+                              dolzinaMm={stats?.totalLength || 0}
+                              visinaMm={Math.round(stats?.avgHeight || 0) || 1100}
+                              sirinaPalice={wpcSirinaPalice}
+                              debelinaPalice={wpcDebelinaPalice}
+                              razmikPalic={wpcRazmikPalic}
+                              kotPosevnih={wpcKotPosevnih}
+                            />
+                          )}
+                          {/* P3 — Preglednica stebrov za ta segment */}
+                          <SteberTable
+                            measurements={measurements}
+                            segmentId={seg.id}
+                            onExportCsv={() => handleExportStebriCSV(seg.id)}
+                          />
                           {segMeas.length === 0 ? (
                             <p className="text-[11px] text-muted-foreground text-center py-3">
                               V tem segmentu ni meritev
@@ -2606,6 +4022,7 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
                             type="button"
                             onClick={() => {
                               setFormSegmentId(seg.id)
+                              setStebriSegmentId(seg.id)
                               setFormOpen(true)
                               setAddSegmentOpen(false)
                             }}
@@ -2614,6 +4031,31 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
                             <Plus className="inline h-3 w-3 mr-1" />
                             Dodaj meritev v ta segment
                           </button>
+                          {/* P3 — dodaj stebriček v ta segment */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setStebriSegmentId(seg.id)
+                              setStebriFormOpen(true)
+                            }}
+                            className="w-full rounded-lg border border-dashed border-roksal-amber/40 py-1.5 text-[10px] text-roksal-amber hover:bg-roksal-amber/5 transition-colors"
+                          >
+                            <Columns3 className="inline h-3 w-3 mr-1" />
+                            Dodaj stebriček v ta segment
+                          </button>
+                          {/* P3 — dodaj WPC palice za WPC segmente */}
+                          {(seg.type === 'WPC_POKOCNE' ||
+                            seg.type === 'WPC_VODORAVNE' ||
+                            seg.type === 'WPC_POSEVNE') && (
+                            <button
+                              type="button"
+                              onClick={() => handleAddWpcPaliceAsStebri(seg)}
+                              className="w-full rounded-lg border border-dashed border-amber-400/50 py-1.5 text-[10px] text-amber-700 hover:bg-amber-50 transition-colors"
+                            >
+                              <Fence className="inline h-3 w-3 mr-1" />
+                              Dodaj WPC palice kot materiale
+                            </button>
+                          )}
                           <button
                             type="button"
                             onClick={() => handleDeleteSegment(seg.id)}
@@ -2632,6 +4074,273 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
           )}
         </CardContent>
       </Card>
+
+      {/* P3 — ŠTEBRICKI — forma za nov steber */}
+      {allSegments.length > 0 && stebriFormOpen && (
+        <Card className="card-hover animate-fade-in-up border-roksal-amber/20">
+          <CardHeader className="pb-2 pt-4 px-4">
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+                <Columns3 className="h-4 w-4 text-roksal-amber" />
+                Nov stebriček (S{getNextStebriNumber(measurements, stebriSegmentId || undefined)})
+              </CardTitle>
+              <button
+                type="button"
+                onClick={() => setStebriFormOpen(false)}
+                className="p-1.5 rounded-lg hover:bg-secondary/60 transition-colors"
+              >
+                <X className="h-4 w-4 text-muted-foreground" />
+              </button>
+            </div>
+          </CardHeader>
+          <CardContent className="px-4 pb-4 space-y-3 slide-in-right">
+            {/* Segment */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">
+                <Layers className="inline h-3 w-3 mr-1" />
+                Segment
+              </Label>
+              <Select
+                value={stebriSegmentId}
+                onValueChange={setStebriSegmentId}
+              >
+                <SelectTrigger className="h-10">
+                  <SelectValue placeholder="Izberi segment" />
+                </SelectTrigger>
+                <SelectContent>
+                  {allSegments.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.name} ({segmentTypeLabels[s.type]})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              {/* Tip stebra */}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium">Tip stebra</Label>
+                <Select
+                  value={stebriTipStebra}
+                  onValueChange={(v) => setStebriTipStebra(v as TipStebra)}
+                >
+                  <SelectTrigger className="h-10">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(Object.keys(tipStebraLabels) as TipStebra[]).map((t) => (
+                      <SelectItem key={t} value={t}>
+                        {tipStebraLabels[t]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {/* Material */}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium">Material</Label>
+                <Select
+                  value={stebriMaterial}
+                  onValueChange={(v) => setStebriMaterial(v as MaterialStebra)}
+                >
+                  <SelectTrigger className="h-10">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(Object.keys(materialStebraLabels) as MaterialStebra[]).map((m) => (
+                      <SelectItem key={m} value={m}>
+                        {materialStebraLabels[m]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              {/* Pozicija z enoto */}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium">Pozicija od začetka</Label>
+                <div className="flex gap-1.5">
+                  <Input
+                    type="number"
+                    value={stebriPozicija}
+                    onChange={(e) => setStebriPozicija(e.target.value)}
+                    placeholder="0"
+                    className="h-10 font-mono flex-1"
+                  />
+                  <Select
+                    value={stebriPozicijaUnit}
+                    onValueChange={(v) => setStebriPozicijaUnit(v as EnotaTip)}
+                  >
+                    <SelectTrigger className="h-10 w-[68px] px-2">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="mm">mm</SelectItem>
+                      <SelectItem value="cm">cm</SelectItem>
+                      <SelectItem value="m">m</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {stebriPozicija && stebriPozicijaUnit !== 'mm' && (
+                  <p className="text-[9px] text-roksal-amber font-mono">
+                    = {convertToMm(parseFloat(stebriPozicija) || 0, stebriPozicijaUnit)}mm
+                  </p>
+                )}
+              </div>
+              {/* Razmik (auto-calc) */}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium">Razmik do prejšnjega (auto)</Label>
+                <Input
+                  type="text"
+                  value={stebriRazmik || '—'}
+                  readOnly
+                  className="h-10 font-mono bg-secondary/30"
+                />
+                <p className="text-[9px] text-muted-foreground">Izračunano iz pozicije prejšnjega stebra</p>
+              </div>
+            </div>
+
+            {/* Višina stebra */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">
+                <Ruler className="inline h-3 w-3 mr-1 rotate-90" />
+                Višina stebra (mm)
+              </Label>
+              <Input
+                type="number"
+                value={stebriVisina}
+                onChange={(e) => setStebriVisina(e.target.value)}
+                placeholder="1100"
+                className="h-10 font-mono"
+              />
+              <p className="text-[9px] text-muted-foreground">Standardna višina: 1100mm (zakonsko minimum za balkon)</p>
+            </div>
+
+            <Button
+              type="button"
+              onClick={handleAddSteber}
+              disabled={!stebriSegmentId || !stebriPozicija}
+              className="w-full h-9 bg-roksal-amber text-white hover:bg-roksal-amber/90"
+            >
+              <Plus className="mr-1.5 h-4 w-4" />
+              Dodaj stebriček S{getNextStebriNumber(measurements, stebriSegmentId || undefined)}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* P3 — WPC KONFIGURACIJA (prikaz če obstaja WPC segment) */}
+      {allSegments.some(
+        (s) =>
+          s.type === 'WPC_POKOCNE' ||
+          s.type === 'WPC_VODORAVNE' ||
+          s.type === 'WPC_POSEVNE'
+      ) && (
+        <Card className="card-hover animate-fade-in-up border-amber-200">
+          <Collapsible open={wpcConfigOpen} onOpenChange={setWpcConfigOpen}>
+            <CollapsibleTrigger asChild>
+              <button
+                type="button"
+                className="flex w-full items-center justify-between p-4 text-left hover:bg-secondary/30 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500 text-white">
+                    <Fence className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-roksal-navy">WPC konfiguracija</span>
+                    <p className="text-[10px] text-muted-foreground">
+                      Dimenzije palic, razmak, kot poševnih
+                    </p>
+                  </div>
+                </div>
+                {wpcConfigOpen ? (
+                  <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                )}
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="border-t border-border/50 px-4 pb-4 pt-3 space-y-3 slide-in-right">
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Širina palice */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium">Širina palice</Label>
+                    <Select
+                      value={String(wpcSirinaPalice)}
+                      onValueChange={(v) => setWpcSirinaPalice(parseInt(v))}
+                    >
+                      <SelectTrigger className="h-10">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {WPC_SIRINE_PALIC.map((s) => (
+                          <SelectItem key={s} value={String(s)}>
+                            {s}mm
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-[9px] text-muted-foreground">Standardni Roksal profili</p>
+                  </div>
+                  {/* Debelina palice */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium">Debelina palice (mm)</Label>
+                    <Input
+                      type="number"
+                      value={String(wpcDebelinaPalice)}
+                      onChange={(e) => setWpcDebelinaPalice(parseInt(e.target.value) || WPC_DEBELINA_DEFAULT)}
+                      className="h-10 font-mono"
+                    />
+                    <p className="text-[9px] text-muted-foreground">Standard: 23mm</p>
+                  </div>
+                  {/* Razmik */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium">Razmik med palicami (mm)</Label>
+                    <Input
+                      type="number"
+                      value={String(wpcRazmikPalic)}
+                      onChange={(e) => setWpcRazmikPalic(parseInt(e.target.value) || WPC_RAZMAK_DEFAULT)}
+                      className="h-10 font-mono"
+                    />
+                    <p className="text-[9px] text-muted-foreground">Standard: 110mm (predpisi!)</p>
+                  </div>
+                  {/* Kot poševnih */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium">Kot poševnih palic (°)</Label>
+                    <Input
+                      type="number"
+                      value={String(wpcKotPosevnih)}
+                      onChange={(e) => setWpcKotPosevnih(parseInt(e.target.value) || WPC_KOT_POSEVNIH_DEFAULT)}
+                      className="h-10 font-mono"
+                    />
+                    <p className="text-[9px] text-muted-foreground">Standard: 45°</p>
+                  </div>
+                </div>
+                {wpcRazmikPalic > 110 && (
+                  <div className="rounded-lg border border-amber-300 bg-amber-50 p-2.5 text-[10px] text-amber-700 flex items-center gap-1.5">
+                    <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                    Razmik {wpcRazmikPalic}mm presega 110mm — preverite skladnost s predpisi!
+                  </div>
+                )}
+                {wpcRazmikPalic <= 110 && (
+                  <div className="rounded-lg border border-green-200 bg-green-50 p-2.5 text-[10px] text-green-700 flex items-center gap-1.5">
+                    <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                    Razmik {wpcRazmikPalic}mm ustreza predpisom (≤110mm)
+                  </div>
+                )}
+                <p className="text-[10px] text-muted-foreground text-center">
+                  Nastavitve veljajo za vse WPC segmente v projektu.
+                </p>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+        </Card>
+      )}
 
       {/* Stats Header (existing) */}
       <div className="grid grid-cols-4 gap-2">
@@ -3420,6 +5129,932 @@ function InlineInclinometer({
 }
 
 // ============================================
+// P3 — KOMPONENTA: StairDiagram (SVG)
+// ============================================
+
+function StairDiagram({
+  stStopnic,
+  visinaPosamezne,
+  globinaStopnice,
+  kotStopinje,
+}: {
+  stStopnic: number
+  visinaPosamezne: number
+  globinaStopnice: number
+  kotStopinje: number
+}) {
+  // omejimo število narisanih stopnic za berljivost
+  const maxDraw = Math.min(stStopnic, 12)
+  const w = 320
+  const h = 180
+  const margin = 16
+  const usableW = w - margin * 2
+  const usableH = h - margin * 2 - 24 // prostor za oznake
+  const stepW = usableW / maxDraw
+  const stepH = (visinaPosamezne / globinaStopnice) * stepW
+  const totalH = stepH * maxDraw
+  const scaleY = Math.min(1, usableH / totalH) // če preveliko, skrčimo
+  const drawStepH = stepH * scaleY
+  const drawTotalH = drawStepH * maxDraw
+  const baseY = margin + usableH // spodaj
+  // Ograja ob strani (navy line)
+  const railX1 = margin
+  const railY1 = baseY - drawTotalH - 8
+  const railX2 = w - margin
+  const railY2 = baseY
+
+  return (
+    <div className="rounded-lg border border-border/50 bg-gradient-to-br from-roksal-navy/5 to-roksal-amber/5 p-2">
+      <svg
+        viewBox={`0 0 ${w} ${h}`}
+        className="w-full h-auto"
+        role="img"
+        aria-label="Diagram stopnišča"
+      >
+        {/* Ograja (poševna) */}
+        <line
+          x1={railX1}
+          y1={railY1}
+          x2={railX2}
+          y2={railY2}
+          stroke="#1d2b3e"
+          strokeWidth="3"
+          strokeLinecap="round"
+        />
+        <line
+          x1={railX1}
+          y1={railY1 - 4}
+          x2={railX2}
+          y2={railY2 - 4}
+          stroke="#1d2b3e"
+          strokeWidth="1.5"
+          strokeDasharray="3,2"
+          opacity={0.5}
+        />
+        {/* Stopnice (pravokotniki) */}
+        {Array.from({ length: maxDraw }).map((_, i) => {
+          const x = margin + i * stepW
+          const yTop = baseY - (i + 1) * drawStepH
+          return (
+            <g key={i}>
+              <rect
+                x={x}
+                y={yTop}
+                width={stepW}
+                height={drawStepH}
+                fill="#1d2b3e"
+                fillOpacity={0.12 + (i / maxDraw) * 0.15}
+                stroke="#1d2b3e"
+                strokeWidth="0.8"
+              />
+              {/* horizontalna površina stopnice */}
+              <line
+                x1={x}
+                y1={yTop}
+                x2={x + stepW}
+                y2={yTop}
+                stroke="#1d2b3e"
+                strokeWidth="1.2"
+              />
+              {/* navpičnica stopnice */}
+              <line
+                x1={x + stepW}
+                y1={yTop}
+                x2={x + stepW}
+                y2={yTop + drawStepH}
+                stroke="#1d2b3e"
+                strokeWidth="1.2"
+              />
+            </g>
+          )
+        })}
+        {/* Vertikala (višina) — levo */}
+        <line
+          x1={margin - 6}
+          y1={baseY}
+          x2={margin - 6}
+          y2={baseY - drawTotalH}
+          stroke="#f59e0b"
+          strokeWidth="1.5"
+          markerEnd="url(#arrAmberU)"
+          markerStart="url(#arrAmberD)"
+        />
+        <text
+          x={margin - 10}
+          y={baseY - drawTotalH / 2}
+          fill="#f59e0b"
+          fontSize="9"
+          fontWeight="bold"
+          textAnchor="end"
+          transform={`rotate(-90 ${margin - 10} ${baseY - drawTotalH / 2})`}
+        >
+          {Math.round(visinaPosamezne * stStopnic)}mm
+        </text>
+        {/* Horizontala (globina skupna) — spodaj */}
+        <line
+          x1={margin}
+          y1={baseY + 6}
+          x2={margin + maxDraw * stepW}
+          y2={baseY + 6}
+          stroke="#f59e0b"
+          strokeWidth="1.5"
+          markerEnd="url(#arrAmberR)"
+          markerStart="url(#arrAmberL)"
+        />
+        <text
+          x={margin + (maxDraw * stepW) / 2}
+          y={baseY + 18}
+          fill="#f59e0b"
+          fontSize="9"
+          fontWeight="bold"
+          textAnchor="middle"
+        >
+          {Math.round(globinaStopnice * stStopnic)}mm
+        </text>
+        {/* Kot (lok) — na prvi stopnici */}
+        <path
+          d={`M ${margin + stepW * 0.4} ${baseY} A ${stepW * 0.4} ${stepW * 0.4} 0 0 0 ${margin + stepW * 0.4} ${baseY - drawStepH * 0.4}`}
+          fill="none"
+          stroke="#f59e0b"
+          strokeWidth="1.2"
+        />
+        <text
+          x={margin + stepW * 0.45}
+          y={baseY - drawStepH * 0.5}
+          fill="#f59e0b"
+          fontSize="9"
+          fontWeight="bold"
+        >
+          {kotStopinje.toFixed(0)}°
+        </text>
+        {/* markers */}
+        <defs>
+          <marker
+            id="arrAmberR"
+            markerWidth="6"
+            markerHeight="6"
+            refX="5"
+            refY="3"
+            orient="auto"
+          >
+            <path d="M0,0 L6,3 L0,6 Z" fill="#f59e0b" />
+          </marker>
+          <marker
+            id="arrAmberL"
+            markerWidth="6"
+            markerHeight="6"
+            refX="1"
+            refY="3"
+            orient="auto"
+          >
+            <path d="M6,0 L0,3 L6,6 Z" fill="#f59e0b" />
+          </marker>
+          <marker
+            id="arrAmberU"
+            markerWidth="6"
+            markerHeight="6"
+            refX="3"
+            refY="1"
+            orient="auto"
+          >
+            <path d="M0,6 L3,0 L6,6 Z" fill="#f59e0b" />
+          </marker>
+          <marker
+            id="arrAmberD"
+            markerWidth="6"
+            markerHeight="6"
+            refX="3"
+            refY="5"
+            orient="auto"
+          >
+            <path d="M0,0 L3,6 L6,0 Z" fill="#f59e0b" />
+          </marker>
+        </defs>
+      </svg>
+      <div className="mt-1 flex items-center justify-between text-[9px] text-muted-foreground">
+        <span>↕ {Math.round(visinaPosamezne)}mm/stopnico</span>
+        <span>↔ {Math.round(globinaStopnice)}mm globina</span>
+        <span className="font-bold text-roksal-amber">{kotStopinje.toFixed(1)}° kot</span>
+      </div>
+      {stStopnic > maxDraw && (
+        <p className="text-[9px] text-muted-foreground text-center mt-0.5">
+          (prikazanih prvih {maxDraw} od {stStopnic} stopnic)
+        </p>
+      )}
+    </div>
+  )
+}
+
+// ============================================
+// P3 — KOMPONENTA: InlineKotomer (protractor)
+// ============================================
+
+function InlineKotomer({
+  mode,
+  stairKot,
+  onClose,
+  onSave,
+}: {
+  mode: 'KOT' | 'KOT_VOGAL' | 'KOT_STOPNISCE'
+  stairKot: number | null
+  onClose: () => void
+  onSave: (
+    kotStopinje: number,
+    notranjiKot: number | null,
+    zunanjiKot: number | null,
+    lokacija: string
+  ) => void
+}) {
+  const [reading, setReading] = useState<SlopeReading | null>(null)
+  const [permission, setPermission] = useState<'idle' | 'granted' | 'denied' | 'unsupported'>('idle')
+  const [monitoring, setMonitoring] = useState(false)
+  const [lockedAngle, setLockedAngle] = useState<number | null>(null)
+  // P3 — za KOT_STOPNISCE pred-fill iz stair čarovnika (initial state, ne useEffect)
+  const [manualAngle, setManualAngle] = useState<string>(
+    mode === 'KOT_STOPNISCE' && stairKot != null ? stairKot.toFixed(1) : ''
+  )
+  const [notranjiInput, setNotranjiInput] = useState('')
+  const [zunanjiInput, setZunanjiInput] = useState('')
+  const [lokacija, setLokacija] = useState(
+    mode === 'KOT_STOPNISCE' ? 'Stopnišče' : LOKACIJE_INCLINOMETER[0]
+  )
+  const [customLokacija, setCustomLokacija] = useState('')
+
+  const enableSensor = useCallback(async () => {
+    const D =
+      typeof window !== 'undefined'
+        ? (window as unknown as { DeviceOrientationEvent?: { requestPermission?: () => Promise<string> } })
+            .DeviceOrientationEvent
+        : undefined
+    if (!D) {
+      setPermission('unsupported')
+      return
+    }
+    try {
+      if (typeof D.requestPermission === 'function') {
+        const res = await D.requestPermission()
+        if (res !== 'granted') {
+          setPermission('denied')
+          toast.error('Dovoljenje za senzor zavrnjeno')
+          return
+        }
+      }
+      setPermission('granted')
+      setMonitoring(true)
+    } catch {
+      setPermission('denied')
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!monitoring) return
+    const handler = (e: DeviceOrientationEvent) => {
+      const beta = e.beta ?? 0
+      const gamma = e.gamma ?? 0
+      setReading({ beta, gamma })
+    }
+    window.addEventListener('deviceorientation', handler, true)
+    return () => {
+      window.removeEventListener('deviceorientation', handler, true)
+    }
+  }, [monitoring])
+
+  // trenutni kot iz senzorja
+  const currentAngle = reading
+    ? Math.abs((reading.beta + 360) % 360 - 90) // kot od navpičnice
+    : null
+
+  function handleLockAngle() {
+    if (currentAngle == null) {
+      toast.error('Branje senzorja ni na voljo')
+      return
+    }
+    setLockedAngle(Number(currentAngle.toFixed(1)))
+    if (mode === 'KOT_VOGAL') {
+      // notranji = 180 - kot; zunanji = kot
+      setNotranjiInput((180 - Number(currentAngle.toFixed(1))).toFixed(1))
+      setZunanjiInput(currentAngle.toFixed(1))
+    }
+    toast.success(`Kot zaklenjen: ${currentAngle.toFixed(1)}°`)
+  }
+
+  function handleSaveKotomer() {
+    const finalLokacija = lokacija === 'Drugo' ? customLokacija || 'Drugo' : lokacija
+    let kot = 0
+    let notranji: number | null = null
+    let zunanji: number | null = null
+    if (mode === 'KOT_VOGAL') {
+      notranji = parseFloat(notranjiInput) || 0
+      zunanji = parseFloat(zunanjiInput) || 0
+      kot = zunanji // uporabimo zunanji kot kot primarno vrednost
+    } else {
+      kot = lockedAngle ?? parseFloat(manualAngle) ?? 0
+    }
+    if (!Number.isFinite(kot) || kot < 0) {
+      toast.error('Vnesite veljaven kot!')
+      return
+    }
+    onSave(kot, notranji, zunanji, finalLokacija)
+  }
+
+  // vizualni kot za protractor (0-180)
+  const displayAngle =
+    mode === 'KOT_VOGAL'
+      ? parseFloat(zunanjiInput) || lockedAngle || currentAngle || 0
+      : lockedAngle ?? parseFloat(manualAngle) ?? currentAngle ?? 0
+  const clampedAngle = Math.max(0, Math.min(180, displayAngle))
+  // kot v radianih za lok
+  const angleRad = (clampedAngle * Math.PI) / 180
+  const protractorR = 70
+  const cx = 90
+  const cy = 90
+  // točka na loku
+  const endX = cx + protractorR * Math.cos(Math.PI - angleRad)
+  const endY = cy - protractorR * Math.sin(Math.PI - angleRad)
+
+  const modeIcon =
+    mode === 'KOT_VOGAL' ? (
+      <CornerDownRight className="h-4 w-4 text-roksal-amber" />
+    ) : mode === 'KOT_STOPNISCE' ? (
+      <Layers2 className="h-4 w-4 text-roksal-amber" />
+    ) : (
+      <Triangle className="h-4 w-4 text-roksal-amber" />
+    )
+  const modeTitle =
+    mode === 'KOT_VOGAL'
+      ? 'Meritev vogala (L-oblika)'
+      : mode === 'KOT_STOPNISCE'
+        ? 'Kot stopnice (rake)'
+        : 'Meritev kota'
+
+  return (
+    <Card className="card-hover transition-all duration-200 animate-fade-in-up border-roksal-amber/30">
+      <CardHeader className="pb-2 pt-4 px-4">
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+            {modeIcon}
+            {modeTitle}
+          </CardTitle>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1.5 rounded-lg hover:bg-secondary/60 transition-colors"
+          >
+            <X className="h-4 w-4 text-muted-foreground" />
+          </button>
+        </div>
+      </CardHeader>
+      <CardContent className="px-4 pb-4 space-y-3">
+        {/* Protractor SVG */}
+        <div className="flex justify-center">
+          <div className="relative">
+            <svg
+              viewBox="0 0 180 110"
+              className="w-full max-w-[240px]"
+              role="img"
+              aria-label="Kotomer"
+            >
+              {/* osnova (ravna črta) */}
+              <line
+                x1={cx - protractorR}
+                y1={cy}
+                x2={cx + protractorR}
+                y2={cy}
+                stroke="#1d2b3e"
+                strokeWidth="1.5"
+              />
+              {/* polkrožnica (protractor) */}
+              <path
+                d={`M ${cx - protractorR} ${cy} A ${protractorR} ${protractorR} 0 0 1 ${cx + protractorR} ${cy}`}
+                fill="none"
+                stroke="#1d2b3e"
+                strokeWidth="1"
+                opacity={0.4}
+              />
+              {/* oznake stopinj (vsakih 15°) */}
+              {Array.from({ length: 13 }).map((_, i) => {
+                const deg = i * 15
+                const rad = (deg * Math.PI) / 180
+                const x1 = cx + (protractorR - 4) * Math.cos(Math.PI - rad)
+                const y1 = cy - (protractorR - 4) * Math.sin(Math.PI - rad)
+                const x2 = cx + protractorR * Math.cos(Math.PI - rad)
+                const y2 = cy - protractorR * Math.sin(Math.PI - rad)
+                return (
+                  <g key={i}>
+                    <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="#1d2b3e" strokeWidth="0.6" opacity={0.6} />
+                    {deg % 30 === 0 && (
+                      <text
+                        x={cx + (protractorR - 12) * Math.cos(Math.PI - rad)}
+                        y={cy - (protractorR - 12) * Math.sin(Math.PI - rad)}
+                        fill="#1d2b3e"
+                        fontSize="6"
+                        textAnchor="middle"
+                        dominantBaseline="middle"
+                      >
+                        {deg}
+                      </text>
+                    )}
+                  </g>
+                )
+              })}
+              {/* kazalec (rotiran glede na kot) */}
+              <line
+                x1={cx}
+                y1={cy}
+                x2={endX}
+                y2={endY}
+                stroke="#f59e0b"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+              />
+              {/* mehurček (center) */}
+              <circle cx={cx} cy={cy} r="4" fill="#1d2b3e" />
+              <circle cx={cx} cy={cy} r="2" fill="#f59e0b" />
+              {/* prikaz številke kota */}
+              <text
+                x={cx}
+                y={cy + 18}
+                fill="#f59e0b"
+                fontSize="14"
+                fontWeight="bold"
+                textAnchor="middle"
+              >
+                {clampedAngle.toFixed(1)}°
+              </text>
+            </svg>
+          </div>
+        </div>
+
+        {/* Live senzor */}
+        <div className="rounded-lg border border-roksal-navy/10 bg-secondary/20 p-2.5 text-center">
+          <p className="text-[9px] text-muted-foreground uppercase tracking-wide">
+            Senzor naprave (beta/gamma)
+          </p>
+          <p className="text-lg font-bold text-roksal-navy font-mono">
+            {currentAngle != null ? `${currentAngle.toFixed(1)}°` : '—'}
+            {reading && (
+              <span className="ml-2 text-[10px] text-muted-foreground font-normal">
+                (β {reading.beta.toFixed(0)}°, γ {reading.gamma.toFixed(0)}°)
+              </span>
+            )}
+          </p>
+        </div>
+
+        {/* Kontrola senzorja */}
+        {permission === 'idle' && (
+          <Button
+            type="button"
+            onClick={enableSensor}
+            className="w-full bg-roksal-amber text-white hover:bg-roksal-amber/90 h-9"
+          >
+            <Gauge className="mr-2 h-4 w-4" />
+            Vklopi senzor kotomera
+          </Button>
+        )}
+        {permission === 'granted' && (
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              type="button"
+              variant={monitoring ? 'outline' : 'default'}
+              onClick={() => setMonitoring(!monitoring)}
+              className="h-9"
+            >
+              <Gauge className="mr-1.5 h-4 w-4" />
+              {monitoring ? 'Ustavi' : ' merit'}
+            </Button>
+            <Button
+              type="button"
+              onClick={handleLockAngle}
+              disabled={!monitoring || currentAngle == null}
+              className="h-9 bg-roksal-navy text-white hover:bg-roksal-navy/90"
+            >
+              {lockedAngle != null ? <Lock className="mr-1.5 h-4 w-4" /> : <Unlock className="mr-1.5 h-4 w-4" />}
+              {lockedAngle != null ? `Zaklenjeno ${lockedAngle}°` : 'Zakleni kot'}
+            </Button>
+          </div>
+        )}
+        {permission === 'denied' && (
+          <p className="text-center text-[11px] text-red-600">
+            Dostop do senzorjev je zavrnjen.
+          </p>
+        )}
+        {permission === 'unsupported' && (
+          <p className="text-center text-[11px] text-amber-600">
+            Ta naprava ne podpira senzorjev orientacije — uporabite ročni vnos.
+          </p>
+        )}
+
+        {/* Za KOT_VOGAL: 2 vnosa */}
+        {mode === 'KOT_VOGAL' ? (
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Notranji kot (°)</Label>
+              <Input
+                type="number"
+                value={notranjiInput}
+                onChange={(e) => setNotranjiInput(e.target.value)}
+                placeholder="90"
+                className="h-10 font-mono"
+              />
+              <p className="text-[9px] text-muted-foreground">α = 180° − zunanji</p>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Zunanji kot (°)</Label>
+              <Input
+                type="number"
+                value={zunanjiInput}
+                onChange={(e) => setZunanjiInput(e.target.value)}
+                placeholder="90"
+                className="h-10 font-mono"
+              />
+              <p className="text-[9px] text-muted-foreground">β = 180° − notranji</p>
+            </div>
+          </div>
+        ) : (
+          /* Za KOT/KOT_STOPNISCE: 1 vnos */
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">
+              {lockedAngle != null ? 'Zaklenjeni kot (ročno popravljivo)' : 'Ročni vnos kota (°)'}
+            </Label>
+            <Input
+              type="number"
+              value={manualAngle}
+              onChange={(e) => {
+                setManualAngle(e.target.value)
+                setLockedAngle(null)
+              }}
+              placeholder={stairKot != null ? stairKot.toFixed(1) : '33'}
+              className="h-10 font-mono"
+            />
+            {mode === 'KOT_STOPNISCE' && stairKot != null && (
+              <p className="text-[9px] text-roksal-amber">
+                <Bookmark className="inline h-2.5 w-2.5 mr-1" />
+                Predlog iz stopniščnega čarovnika: {stairKot.toFixed(1)}°
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Lokacija */}
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium">Lokacija meritve</Label>
+          <Select value={lokacija} onValueChange={setLokacija}>
+            <SelectTrigger className="h-9">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {LOKACIJE_INCLINOMETER.map((l) => (
+                <SelectItem key={l} value={l}>
+                  {l}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {lokacija === 'Drugo' && (
+            <Input
+              value={customLokacija}
+              onChange={(e) => setCustomLokacija(e.target.value)}
+              placeholder="Opis lokacije"
+              className="h-9"
+            />
+          )}
+        </div>
+
+        <Button
+          type="button"
+          onClick={handleSaveKotomer}
+          className="w-full bg-roksal-navy text-white hover:bg-roksal-navy/90 h-9"
+        >
+          <Save className="mr-2 h-4 w-4" />
+          Shrani kot {mode === 'KOT_VOGAL' ? 'vogal' : mode === 'KOT_STOPNISCE' ? 'kot stopnice' : 'kot'}
+        </Button>
+      </CardContent>
+    </Card>
+  )
+}
+
+// ============================================
+// P3 — KOMPONENTA: SteberTable (preglednica stebrov)
+// ============================================
+
+function SteberTable({
+  measurements,
+  segmentId,
+  onExportCsv,
+}: {
+  measurements: Measurement[]
+  segmentId: string
+  onExportCsv: () => void
+}) {
+  const stebri = useMemo(() => {
+    return measurements
+      .filter((m) => m.tipMeritve === 'STEBR' && m.segmentId === segmentId)
+      .sort((a, b) => (a.pozicijaMm || 0) - (b.pozicijaMm || 0))
+  }, [measurements, segmentId])
+
+  if (stebri.length === 0) return null
+
+  // summary
+  const total = stebri.length
+  const razmiki = stebri
+    .map((s) => s.razmikMm)
+    .filter((r): r is number => r != null && r > 0)
+  const maxRazmik = razmiki.length > 0 ? Math.max(...razmiki) : 0
+  const avgRazmik =
+    razmiki.length > 0 ? razmiki.reduce((s, r) => s + r, 0) / razmiki.length : 0
+  const materialCounts: Record<string, number> = {}
+  stebri.forEach((s) => {
+    const m = s.materialStebra || 'DRUGO'
+    materialCounts[m] = (materialCounts[m] || 0) + 1
+  })
+
+  return (
+    <div className="rounded-lg border border-roksal-navy/15 bg-background overflow-hidden slide-in-right">
+      <div className="flex items-center justify-between p-2 border-b border-border/40 bg-roksal-navy/5">
+        <div className="flex items-center gap-1.5">
+          <Columns3 className="h-3.5 w-3.5 text-roksal-navy" />
+          <span className="text-[11px] font-semibold text-roksal-navy">
+            Preglednica stebrov ({total})
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={onExportCsv}
+          className="flex items-center gap-1 rounded-md border border-roksal-navy/20 bg-background px-1.5 py-0.5 text-[9px] font-medium text-roksal-navy hover:bg-roksal-navy/10 transition-colors"
+        >
+          <Download className="h-2.5 w-2.5" />
+          CSV
+        </button>
+      </div>
+      <div className="max-h-64 overflow-y-auto scrollbar-thin">
+        <Table className="text-[10px]">
+          <TableHeader>
+            <TableRow className="bg-secondary/40 hover:bg-secondary/40">
+              <TableHead className="h-6 px-1.5 text-[9px] font-semibold">Oznaka</TableHead>
+              <TableHead className="h-6 px-1.5 text-[9px] font-semibold">Tip</TableHead>
+              <TableHead className="h-6 px-1.5 text-[9px] font-semibold text-right">Pozicija</TableHead>
+              <TableHead className="h-6 px-1.5 text-[9px] font-semibold text-right">Razmik</TableHead>
+              <TableHead className="h-6 px-1.5 text-[9px] font-semibold text-right">Višina</TableHead>
+              <TableHead className="h-6 px-1.5 text-[9px] font-semibold">Material</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {stebri.map((s, i) => {
+              const razmik = s.razmikMm
+              const razmikPrevelik = razmik != null && razmik > 1500
+              return (
+                <TableRow key={s.id} className={i % 2 === 0 ? 'bg-transparent' : 'bg-secondary/10'}>
+                  <TableCell className="py-1 px-1.5 font-mono font-bold text-roksal-navy">
+                    {s.steberOznaka || s.oznaka || `S${i + 1}`}
+                  </TableCell>
+                  <TableCell className="py-1 px-1.5">
+                    {s.tipStebra && (
+                      <span
+                        className={`inline-flex rounded px-1 py-0 text-[8px] font-medium border ${tipStebraColors[s.tipStebra]}`}
+                      >
+                        {tipStebraLabels[s.tipStebra]}
+                      </span>
+                    )}
+                  </TableCell>
+                  <TableCell className="py-1 px-1.5 text-right font-mono">
+                    {s.pozicijaMm != null ? Math.round(s.pozicijaMm) : '—'}
+                  </TableCell>
+                  <TableCell
+                    className={`py-1 px-1.5 text-right font-mono ${
+                      razmikPrevelik ? 'text-red-600 font-bold' : ''
+                    }`}
+                  >
+                    {razmik != null ? Math.round(razmik) : '—'}
+                  </TableCell>
+                  <TableCell className="py-1 px-1.5 text-right font-mono">
+                    {s.visinaStebraMm != null ? Math.round(s.visinaStebraMm) : '—'}
+                  </TableCell>
+                  <TableCell className="py-1 px-1.5">
+                    {s.materialStebra && (
+                      <span
+                        className={`inline-flex rounded px-1 py-0 text-[8px] font-medium border ${materialStebraColors[s.materialStebra]}`}
+                      >
+                        {materialStebraLabels[s.materialStebra]}
+                      </span>
+                    )}
+                  </TableCell>
+                </TableRow>
+              )
+            })}
+          </TableBody>
+        </Table>
+      </div>
+      {/* Warnings */}
+      {maxRazmik > 1500 && (
+        <div className="border-t border-red-200 bg-red-50 p-1.5 text-[9px] text-red-700 flex items-center gap-1">
+          <AlertCircle className="h-3 w-3 shrink-0" />
+          Razmik {Math.round(maxRazmik)}mm presega 1500mm — preveri statiko!
+        </div>
+      )}
+      {/* Summary */}
+      <div className="border-t border-border/40 p-2 grid grid-cols-2 gap-1.5 text-[9px]">
+        <div className="rounded bg-secondary/30 p-1.5">
+          <p className="text-muted-foreground">Skupno</p>
+          <p className="font-bold text-roksal-navy">{total} stebrov</p>
+        </div>
+        <div className="rounded bg-secondary/30 p-1.5">
+          <p className="text-muted-foreground">Povpr. razmik</p>
+          <p className="font-bold text-roksal-navy">{Math.round(avgRazmik)}mm</p>
+        </div>
+        <div className="rounded bg-secondary/30 p-1.5">
+          <p className="text-muted-foreground">Max razmik</p>
+          <p className={`font-bold ${maxRazmik > 1500 ? 'text-red-600' : 'text-roksal-navy'}`}>
+            {Math.round(maxRazmik)}mm
+          </p>
+        </div>
+        <div className="rounded bg-secondary/30 p-1.5">
+          <p className="text-muted-foreground">Materiali</p>
+          <p className="font-bold text-roksal-navy text-[9px]">
+            {Object.entries(materialCounts)
+              .map(([k, v]) => `${materialStebraLabels[k as MaterialStebra] || k}: ${v}`)
+              .join(', ')}
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ============================================
+// P3 — KOMPONENTA: WpcDiagram (SVG orientacije)
+// ============================================
+
+function WpcDiagram({
+  orientacija,
+  dolzinaMm,
+  visinaMm,
+  sirinaPalice,
+  debelinaPalice,
+  razmikPalic,
+  kotPosevnih,
+}: {
+  orientacija: Segment['type']
+  dolzinaMm: number
+  visinaMm: number
+  sirinaPalice: number
+  debelinaPalice: number
+  razmikPalic: number
+  kotPosevnih: number
+}) {
+  const stPalic = calcWpcPalice(
+    orientacija,
+    dolzinaMm,
+    visinaMm,
+    sirinaPalice,
+    razmikPalic
+  )
+  const w = 280
+  const h = 160
+  const margin = 12
+  const innerW = w - margin * 2
+  const innerH = h - margin * 2 - 18
+
+  // koliko palic narišemo
+  const maxDraw = Math.min(stPalic, 14)
+  const korak = sirinaPalice + razmikPalic
+  // dimenzije v px
+  let paliceCoords: Array<{ x: number; y: number; w: number; h: number }> = []
+  if (orientacija === 'WPC_POKOCNE') {
+    // navpične palice
+    for (let i = 0; i < maxDraw; i++) {
+      const x = margin + (i * korak / korak) * (innerW / Math.max(maxDraw, 1))
+      paliceCoords.push({
+        x: margin + (innerW / Math.max(maxDraw, 1)) * i + 2,
+        y: margin,
+        w: Math.max(3, sirinaPalice / korak * (innerW / Math.max(maxDraw, 1)) - 4),
+        h: innerH,
+      })
+    }
+  } else if (orientacija === 'WPC_VODORAVNE') {
+    for (let i = 0; i < maxDraw; i++) {
+      paliceCoords.push({
+        x: margin,
+        y: margin + (innerH / Math.max(maxDraw, 1)) * i + 2,
+        w: innerW,
+        h: Math.max(2, sirinaPalice / korak * (innerH / Math.max(maxDraw, 1)) - 4),
+      })
+    }
+  } else if (orientacija === 'WPC_POSEVNE') {
+    // poševne pod kotom — nariši kot mrežo diagonal
+    const angle = (kotPosevnih * Math.PI) / 180
+    const numX = Math.min(Math.ceil(Math.sqrt(maxDraw)), 7)
+    const numY = Math.min(Math.ceil(maxDraw / numX), 7)
+    for (let j = 0; j < numY; j++) {
+      for (let i = 0; i < numX; i++) {
+        const idx = j * numX + i
+        if (idx >= maxDraw) break
+        const cx = margin + (innerW / numX) * (i + 0.5)
+        const cy = margin + (innerH / numY) * (j + 0.5)
+        const len = Math.min(innerW / numX, innerH / numY) * 0.6
+        // palica kot rotirani pravokotnik (prikazana kot črta z debelino)
+        paliceCoords.push({ x: cx, y: cy, w: len, h: Math.max(3, debelinaPalice / 23 * 4) })
+      }
+    }
+  }
+
+  const orientacijaLabel =
+    orientacija === 'WPC_POKOCNE'
+      ? 'Pokončne (vertikalne)'
+      : orientacija === 'WPC_VODORAVNE'
+        ? 'Vodoravne (horizontalne)'
+        : `Poševne (${kotPosevnih}°)`
+
+  return (
+    <div className="rounded-lg border border-amber-200 bg-amber-50/30 p-2 slide-in-right">
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-1.5">
+          <Fence className="h-3.5 w-3.5 text-amber-700" />
+          <span className="text-[11px] font-semibold text-roksal-navy">{orientacijaLabel}</span>
+        </div>
+        <Badge variant="outline" className="text-[9px] h-4 px-1 border-amber-300 text-amber-700">
+          {stPalic} palic
+        </Badge>
+      </div>
+      <svg
+        viewBox={`0 0 ${w} ${h}`}
+        className="w-full h-auto"
+        role="img"
+        aria-label={`WPC diagram — ${orientacijaLabel}`}
+      >
+        {/* okvir (ograjje) — navy */}
+        <rect
+          x={margin}
+          y={margin}
+          width={innerW}
+          height={innerH}
+          fill="none"
+          stroke="#1d2b3e"
+          strokeWidth="2"
+          rx="2"
+        />
+        {/* Palice */}
+        {orientacija === 'WPC_POSEVNE'
+          ? paliceCoords.map((p, i) => {
+              // rotirana palica kot debela črta
+              const angle = (kotPosevnih * Math.PI) / 180
+              const dx = (p.w / 2) * Math.cos(angle)
+              const dy = (p.w / 2) * Math.sin(angle)
+              return (
+                <line
+                  key={i}
+                  x1={p.x - dx}
+                  y1={p.y - dy}
+                  x2={p.x + dx}
+                  y2={p.y + dy}
+                  stroke="#f59e0b"
+                  strokeWidth={Math.max(3, p.h)}
+                  strokeLinecap="round"
+                  opacity={0.8}
+                />
+              )
+            })
+          : paliceCoords.map((p, i) => (
+              <rect
+                key={i}
+                x={p.x}
+                y={p.y}
+                width={p.w}
+                height={p.h}
+                fill="#1d2b3e"
+                fillOpacity={0.7}
+                rx="0.5"
+              />
+            ))}
+        {/* dimenzije (amber) */}
+        <text x={margin} y={h - 4} fill="#f59e0b" fontSize="9" fontWeight="bold">
+          ↔ {Math.round(dolzinaMm)}mm
+        </text>
+        <text x={w - margin} y={h - 4} fill="#f59e0b" fontSize="9" fontWeight="bold" textAnchor="end">
+          ↕ {Math.round(visinaMm)}mm
+        </text>
+      </svg>
+      <div className="mt-1 flex items-center justify-between text-[9px] text-muted-foreground">
+        <span>Št. palic: {stPalic} kos</span>
+        <span className="font-mono">
+          WPC {sirinaPalice}×{debelinaPalice}mm, razmak {razmikPalic}mm
+        </span>
+      </div>
+      {stPalic > maxDraw && (
+        <p className="text-[9px] text-muted-foreground text-center mt-0.5">
+          (prikazanih prvih {maxDraw} palic)
+        </p>
+      )}
+      {razmikPalic > 110 && (
+        <p className="text-[9px] text-amber-700 mt-0.5 text-center">
+          <AlertCircle className="inline h-2.5 w-2.5 mr-0.5" />
+          Razmik {razmikPalic}mm presega 110mm — preveri predpise!
+        </p>
+      )}
+    </div>
+  )
+}
+
+// ============================================
 // DEMO PODATKI
 // ============================================
 
@@ -3562,6 +6197,190 @@ const demoMeasurements: Measurement[] = [
     opomba: 'Nagib 2.5° (levo-desno)',
     status: 'ARHIVIRANA',
     kotStopinje: 2.5,
+  },
+  // P3 — demo stebriček
+  {
+    id: 'm6',
+    dolzinaMm: 0,
+    visinaMm: 1100,
+    lidarScanUrl: null,
+    gpsLokacija: JSON.stringify({ lat: 46.2397, lng: 14.3556 }),
+    createdAt: new Date(Date.now() - 3600000).toISOString(),
+    projectId: 'demo1',
+    lokacija: 'Začetek balkona',
+    arMetadata: JSON.stringify({
+      tipMeritve: 'STEBR',
+      oznaka: 'S1',
+      segmentId: 'severni',
+      opomba: 'Stebriček S1 — Končni (ALU), višina 1100mm, pozicija 0mm',
+      status: 'POTRJENA',
+      tipStebra: 'KONCNI',
+      materialStebra: 'ALU',
+      visinaStebraMm: 1100,
+      pozicijaMm: 0,
+      steberOznaka: 'S1',
+      enota: 'mm',
+    }),
+    tipMeritve: 'STEBR',
+    oznaka: 'S1',
+    segmentId: 'severni',
+    opomba: 'Stebriček S1 — Končni (ALU), pozicija 0mm',
+    status: 'POTRJENA',
+    tipStebra: 'KONCNI',
+    materialStebra: 'ALU',
+    visinaStebraMm: 1100,
+    pozicijaMm: 0,
+    steberOznaka: 'S1',
+    enota: 'mm',
+  },
+  {
+    id: 'm7',
+    dolzinaMm: 1500,
+    visinaMm: 1100,
+    lidarScanUrl: null,
+    gpsLokacija: JSON.stringify({ lat: 46.2397, lng: 14.3556 }),
+    createdAt: new Date(Date.now() - 3600000).toISOString(),
+    projectId: 'demo1',
+    lokacija: 'Vmesni steber',
+    arMetadata: JSON.stringify({
+      tipMeritve: 'STEBR',
+      oznaka: 'S2',
+      segmentId: 'severni',
+      opomba: 'Stebriček S2 — Vmesni (ALU), višina 1100mm, pozicija 1500mm',
+      status: 'OSNUTEK',
+      tipStebra: 'VMESNI',
+      materialStebra: 'ALU',
+      visinaStebraMm: 1100,
+      pozicijaMm: 1500,
+      razmikMm: 1500,
+      steberOznaka: 'S2',
+      enota: 'mm',
+    }),
+    tipMeritve: 'STEBR',
+    oznaka: 'S2',
+    segmentId: 'severni',
+    opomba: 'Stebriček S2 — Vmesni (ALU), pozicija 1500mm',
+    status: 'OSNUTEK',
+    tipStebra: 'VMESNI',
+    materialStebra: 'ALU',
+    visinaStebraMm: 1100,
+    pozicijaMm: 1500,
+    razmikMm: 1500,
+    steberOznaka: 'S2',
+    enota: 'mm',
+  },
+  {
+    id: 'm8',
+    dolzinaMm: 3000,
+    visinaMm: 1100,
+    lidarScanUrl: null,
+    gpsLokacija: JSON.stringify({ lat: 46.2397, lng: 14.3556 }),
+    createdAt: new Date(Date.now() - 3600000).toISOString(),
+    projectId: 'demo1',
+    lokacija: 'Vogalni steber',
+    arMetadata: JSON.stringify({
+      tipMeritve: 'STEBR',
+      oznaka: 'S3',
+      segmentId: 'severni',
+      opomba: 'Stebriček S3 — Vogalni (INOX), višina 1100mm, pozicija 3000mm',
+      status: 'OSNUTEK',
+      tipStebra: 'VOGALNI',
+      materialStebra: 'INOX',
+      visinaStebraMm: 1100,
+      pozicijaMm: 3000,
+      razmikMm: 1500,
+      steberOznaka: 'S3',
+      enota: 'mm',
+    }),
+    tipMeritve: 'STEBR',
+    oznaka: 'S3',
+    segmentId: 'severni',
+    opomba: 'Stebriček S3 — Vogalni (INOX), pozicija 3000mm',
+    status: 'OSNUTEK',
+    tipStebra: 'VOGALNI',
+    materialStebra: 'INOX',
+    visinaStebraMm: 1100,
+    pozicijaMm: 3000,
+    razmikMm: 1500,
+    steberOznaka: 'S3',
+    enota: 'mm',
+  },
+  // P3 — demo KOT_VOGAL meritev
+  {
+    id: 'm9',
+    dolzinaMm: 1,
+    visinaMm: 1,
+    lidarScanUrl: null,
+    gpsLokacija: null,
+    createdAt: new Date(Date.now() - 7200000).toISOString(),
+    projectId: 'demo1',
+    lokacija: 'Vogal L-oblike',
+    arMetadata: JSON.stringify({
+      tipMeritve: 'KOT_VOGAL',
+      oznaka: 'Vogal — Vogal L-oblike',
+      opomba: 'Notranji kot: 90°, Zunanji kot: 90°',
+      kotStopinje: 90,
+      notranjiKot: 90,
+      zunanjiKot: 90,
+      lokacija: 'Vogal L-oblike',
+      status: 'OSNUTEK',
+    }),
+    tipMeritve: 'KOT_VOGAL',
+    oznaka: 'Vogal — Vogal L-oblike',
+    opomba: 'Notranji kot: 90°, Zunanji kot: 90°',
+    status: 'OSNUTEK',
+    kotStopinje: 90,
+    notranjiKot: 90,
+    zunanjiKot: 90,
+  },
+  // P3 — demo KOT_STOPNISCE
+  {
+    id: 'm10',
+    dolzinaMm: 1,
+    visinaMm: 1,
+    lidarScanUrl: null,
+    gpsLokacija: null,
+    createdAt: new Date(Date.now() - 86400000).toISOString(),
+    projectId: 'demo1',
+    lokacija: 'Stopnišče',
+    arMetadata: JSON.stringify({
+      tipMeritve: 'KOT_STOPNISCE',
+      oznaka: 'Kot stopnice — Stopnišče',
+      opomba: 'Kot: 33° (Stopnišče)',
+      kotStopinje: 33,
+      lokacija: 'Stopnišče',
+      status: 'OSNUTEK',
+    }),
+    tipMeritve: 'KOT_STOPNISCE',
+    oznaka: 'Kot stopnice — Stopnišče',
+    opomba: 'Kot: 33° (Stopnišče)',
+    status: 'OSNUTEK',
+    kotStopinje: 33,
+  },
+  // P3 — demo WPC terasa — dimenzije za WPC diagram
+  {
+    id: 'm11',
+    dolzinaMm: 4200,
+    visinaMm: 1100,
+    lidarScanUrl: null,
+    gpsLokacija: JSON.stringify({ lat: 46.2397, lng: 14.3556 }),
+    createdAt: new Date(Date.now() - 7200000).toISOString(),
+    projectId: 'demo1',
+    lokacija: 'WPC terasa — dolžina',
+    arMetadata: JSON.stringify({
+      tipMeritve: 'RAZDALJA',
+      oznaka: 'WPC terasa — dolžina',
+      segmentId: 'wpc-terasa',
+      opomba: 'Dolžina WPC terase — pokončne palice',
+      status: 'OSNUTEK',
+      enota: 'mm',
+    }),
+    tipMeritve: 'RAZDALJA',
+    oznaka: 'WPC terasa — dolžina',
+    segmentId: 'wpc-terasa',
+    opomba: 'Dolžina WPC terase — pokončne palice',
+    status: 'OSNUTEK',
+    enota: 'mm',
   },
 ]
 
