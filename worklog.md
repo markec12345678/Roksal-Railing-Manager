@@ -1804,3 +1804,25 @@ Stage Summary:
 - **Teme**: navy #1d2b3e (stene), amber #f59e0b (stebri, selected), green #22c55e (mere), cyan #0ea5e9/#06b6d4 (vrata/okna)
 - **Lint clean** (0 errors), **dev server OK** (200, no compile errors), **agent-browser verified**
 
+
+---
+Task ID: TLORIS-PORTAL-FINAL
+Agent: Main Orchestrator (Z.ai Code)
+Task: QA + commit + push tloris + portala stranke
+
+Work Log:
+- Celovita QA z agent-browser:
+  - Tloris: odpre se iz Več menija, 9 orodij, canvas z gridom
+  - Portal: API GET/POST deluje, javna stran /portal/[token] HTTP 200
+  - Portal stran prikazuje: naslov projekta, status, slike Pred/Med/Po, kontakt
+- Lint: 0 errors, 0 warnings
+- 0 runtime napak
+- Commit: "feat: tloris z elementi + portala stranke" (11 datotek)
+- Push na GitHub: 3a9a7a5 → d5fa3fc (main)
+- Token odstranjen iz remote URL-ja
+
+Stage Summary:
+- **Tloris**: 9 orodij, PDF/DXF/PNG izvoz, uvoz iz meritev, plasti, undo/redo
+- **Portal stranke**: javna stran s statusom/slikami/ceno, SMS/email delitev
+- **+~2400 vrstic** nove funkcionalnosti (tloris ~1950 + portal ~450)
+- **Pushan na GitHub** (commit d5fa3fc)

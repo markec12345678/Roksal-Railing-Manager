@@ -1,0 +1,400 @@
+- normalizeMeasurements razširjen z status + kotStopinje (iz arMetadata)
+- demoMeasurements posodobljen z raznolikimi statusi (POTRJENA/OSNUTEK/ARHIVIRANA) za demo
+- Lint: 0 errors, 0 warnings (exit code 0)
+- Dev server: ✓ Compiled (111–230ms), GET / 200
+
+Stage Summary:
+- **6 funkcionalnosti dodanih** v measurements-tab.tsx (2486 → 3571 vrstic, +1085 vrstic)
+- **Brez spreminjanja drugih datotek** (samo measurements-tab.tsx)
+- **Brez novih paketov** (Web Speech API je native)
+- **Audit trail** zapiše vse akcije (ADD/EDIT/DELETE/STATUS) v localStorage per-project
+- **Bulk delete** arhivira (ne izbriše) zaradi pomanjkanja DELETE na APIju — ohrani podatke
+- **Status filter** + multi-unit prikaz viden v vseh demo meritvah
+- **Lint clean** (0 errors), dev server deluje (HTTP 200)
+
+---
+Task ID: P2
+Agent: full-stack-developer (Kalkulator polishing)
+Task: Izpolnitev kalkulatorja — predloge, delo, rezerva, DDV, akontacija, zgodovina
+
+Work Log:
+- Prebral delovne dnevnike (Tasks 1–12, I1–I5) za kontekst
+- Prebral src/lib/calculator.ts (633 vrstic, 8 funkcij) in src/components/roksal/calculator-tab.tsx (3157 vrstic)
+
+Spremembe v `src/lib/calculator.ts` (+6 novih funkcij, +123 vrstic):
+- formatEUR(eur): string — slovenski format "1.234,56 €"
+- formatSI(num, decimals): string — slovenski format številk
+- calculateLaborCost(input): LaborCostResult — urnaPostavka × stUr × stMonterjev + transport
+- applyReserve(qty, reservePct): number — Math.ceil(qty × (1 + pct/100))
+- calculateDDV(base, ddvPct): DDVResult — { base, ddvPct, ddvAmount, total }
+- calculateAkontacija(total, akontacijaPct): AkontacijaResult — { total, akontacijaPct, akontacija, preostanek }
+
+Spremembe v `src/components/roksal/calculator-tab.tsx` (+985 vrstic, 7 novih state-ov, 8 novih funkcij):
+- Novi importi: useRef, Collapsible/Trigger/Content, 12 novih lucide ikon (History, BookmarkPlus, FileSpreadsheet, ChevronDown/Up, Calendar, Percent, Wallet, Truck, Users, Timer, Layers)
+- Novi tipi: TemplateMode, CalcTemplate, HistoryEntry + pomožni record-i (templateModeLabels, historyModeIcon, reserveOptions, ddvOptions, akontacijaOptions)
+- Novi state: templates, activeTemplateId, history, historyOpen, projectName, urnaPostavka (35), stUr (8), stMonterjev (2), transport (50), rezervaPctBaluster (10), rezervaPctMaterial (10), ddvPct (22), akontacijaPct (0), calcNonce, skipHistoryRef
+- Nove funkcije: collectCurrentInputs, getCurrentKeyResult, applyInputs, saveTemplate, loadTemplate, deleteTemplate, addToHistory, clearHistory, exportHistoryCsv, loadFromHistory
+- handleCalculate() zdaj poveča calcNonce; useEffect ga opazuje in kliče addToHistory() (po re-render-u, ko so rezultati na voljo)
+- skipHistoryRef prepreči duplikat ob loadFromHistory (ki samodejno re-sproži handleCalculate)
+
+1. Prihranjene predloge (Save/Load templates):
+   - "Shrani predlogo" gumb dodan v 4 načine (Razmak palic, Kotni, Skupni material, Predpisi) — ob kliku window.prompt() za ime
+   - localStorage: `roksal_calc_templates` → array {id, naziv, mode, inputs, createdAt} (max 50)
+   - Card "Prihranjene predloge" na vrhu kalkulatorja (nad mode selectorjem): grid 2 stolpcev, vsaka prikaže naziv + mode badge + datum, klik → loadTemplate, Trash ikona za brisanje, "Počisti vse" gumb
+   - Aktivna predloga highlightana (roksal-amber ring + bg)
+
+2. Strošek dela (Skupni material upgrade):
+   - Nov Card "Strošek dela" z 4 inputi: urnaPostavka (35), stUr (8), stMonterjev (2), transport (50)
+   - "Predvideni čas montaže" prikazan (stUr × stMonterjev)
+   - V izpisu stroškov dodano: Delo (cistaDela), Transport, Predvideni čas, Skupaj brez DDV, DDV, Skupaj z DDV
+
+3. Rezerva materiala (Skupni material + Razmak palic):
+   - Select z 0%, 5%, 10%, 15%, 20% (privzeto 10%)
+   - applyReserve() — Math.ceil(qty × (1+pct/100)) — pomnoži vse količine (palice, stebri, vijaki, sidra)
+   - Info Card: "Brez rezerve: X kos → z rezervo: Y kos (+Z%)"
+   - V materialnem izpisu: vsaka količina prikazuje "brez: X (+Y%)" v podnaslovu
+   - PDF (baluster + material): ločena vrstica "Rezerva materiala: X%"; material PDF ima dodatni stolpec "Z rezervo"
+
+4. DDV ločeno:
+   - Select z 22%, 9.5%, 0% (privzeto 22%)
+   - V vseh izpisih cen: Brez DDV, DDV (X%), Skupaj z DDV (3 vrstice, skupaj bold + ozadje)
+   - V material PDF: ločene vrstice "SKUPAJ BREZ DDV", "DDV (X%)", "SKUPAJ Z DDV" (z didParseCell bold styling)
+
+5. Akontacija (Skupni material):
+   - Select z 0%, 30%, 50%, 70% (privzeto 0%)
+   - Ob >0%: Card z "Akontacija (X%): Y € — ob naročilu" + "Preostanek (Z%): W € — ob prevzemu" + "Predvideni datum plačila" (danes + 7 dni)
+   - PDF: ločena tabela z 2 vrsticama (akontacija + preostanek) + datumski rok
+
+6. Zgodovina izračunov:
+   - Ob vsakem "Izračunaj" kliku: calcNonce se poveča → useEffect zapiše v `roksal_calc_history` (max 30)
+   - Format: {id, timestamp, mode, modeLabel, keyResult, inputs, projectName?}
+   - Nov Card "Zgodovina izračunov" (Collapsible) na dnu kalkulatorja:
+     - Header: History ikona + naslov + count badge + chevron toggle
+     - Ko odprto: timeline prikaz (ikona mode-a + mode badge + timestamp + projectName badge + keyResult) — klik → loadFromHistory (nastavi mode + inputs + skipHistoryRef + re-sproži handleCalculate)
+     - "Izvozi CSV" gumb (BOM za Excel, ; kot separator, " escape)
+     - "Počisti" gumb
+     - Empty state z navodili
+
+Dodatno:
+- "Naziv projekta" input Card pod Templates Card — vpliva na history projectName + PDF
+- Vsi gumbi `type="button"`, vse Slovenian, mobile-first (grid-cols-1 sm:grid-cols-2)
+- Ohranjeni obstoječi props: importedFromMeasurement, onClearImport, onBackToMeasurements
+- localStorage keys: roksal_calc_templates, roksal_calc_history (prefiks `roksal_`)
+- formatEUR() uporabljen v zgodovini (keyResult za material mode)
+- Dev server: 0 compile errors, ✓ Compiled uspešno
+- Lint: 0 errors, 0 warnings (po odstranitvi unused useCallback import in eslint-disable direktive)
+
+Stage Summary:
+- **Datoteki spremenjeni**: samo `src/lib/calculator.ts` (633 → 757 vrstic) in `src/components/roksal/calculator-tab.tsx` (3157 → 4148 vrstic)
+- **6 novih funkcij** v lib (formatEUR, formatSI, calculateLaborCost, applyReserve, calculateDDV, calculateAkontacija)
+- **6 novih funkcionalnosti** v UI: predloge, strošek dela, rezerva materiala, DDV, akontacija, zgodovina
+- **Ključne odločitve**:
+  - calcNonce + skipHistoryRef pattern za zanesljivo pisanje v zgodovino (po re-render-u, ko so rezultati na voljo) + preprečitev duplikatov ob loadFromHistory
+  - applyReserve uporablja Math.ceil (zaokroži navzgor na celo število kosov)
+  - Akontacija datum: danes + 7 dni (predvideni rok plačila)
+  - Zgodovina shranjuje keyResult (ne celoten result objekt) za kompakten prikaz timeline
+  - Vsi izračuni hkrati sinhronizirani v PDF (baluster + material) z vsemi novimi vrsticami
+- **Lint**: 0 errors, 0 warnings
+- **Dev server**: HTTP 200 na `/`, 0 compile errorjev
+- **Združljivost**: vsi obstoječi 7 načini (Vetrna, Razmak palic, Kotni, Skupni material, Predpisi, Razmiki letev, Kemično sidranje) ohranjeni in delujejo
+
+---
+Task ID: P3
+Agent: Main Orchestrator (Z.ai Code)
+Task: QA + commit + push izpolnitve meritev/kalkulatorja
+
+Work Log:
+- Celovita QA z agent-browser (viewport 390x844):
+  - Meritve: 4 predloge (Standardni balkon 3m/Stopnišče/L-oblika/Terasa), Skupinsko toggle, filter Vse, Zgodovina sprememb (collapsible)
+  - Kalkulator: Skupni material z urna postavka/št. monterjev/transport, Shrani predlogo gumb, Zgodovina izračunov (collapsible), PDF izvoz
+- Lint: 0 errors, 0 warnings
+- 0 runtime napak
+- Commit: "feat: izpolnitev meritev in kalkulatorja (polishing)" (4 datoteke, +2453/-87 vrstic)
+- Push na GitHub: d45975c → 10cb2ad (main)
+- Token odstranjen iz remote URL-ja
+
+Stage Summary:
+- **Meritve**: 6 novih funkcij (predloge, skupinsko, status, zgodovina, glasovni vnos, multi-unit)
+- **Kalkulator**: 6 novih funkcij (predloge, delo, rezerva, DDV, akontacija, zgodovina) + 6 lib funkcij
+- **+2453 vrstic** nove funkcionalnosti
+- **Pushan na GitHub** (commit 10cb2ad)
+
+---
+Task ID: P3
+Agent: full-stack-developer (Specifične meritve za ograje)
+Task: Stopnice, koti, enote, štebricki, WPC orientacije
+
+Work Log:
+- Prebral worklog.md (Tasks 1–12, I1–I5, P1, P2) za kontekst
+- Prebral obstoječi measurements-tab.tsx (3571 vrstic) — razumel strukturo: 7 tipov meritev, segmenti, kalibracija, inline inclinometer, predloge, skupinske akcije, status, zgodovina, glasovni vnos, multi-unit prikaz
+- Preveril lucide-react za ikone (Stairs ne obstaja → uporabil Layers2; CornerDownRight, Columns3, Fence, PencilRuler, Lock, Unlock, Bookmark, ArrowRightLeft, Grid3x3, TrendingDown obstajajo)
+- Uvozil Table/* komponente iz shadcn/ui
+
+Tipi in konstante (P3):
+- Razširil TipMeritve union z: KOT_VOGAL, KOT_STOPNISCE, STEBR
+- Razširil Segment['type'] z: WPC_POKOCNE, WPC_VODORAVNE, WPC_POSEVNE
+- Razširil ArMetadata/Measurement z: enota, originalnaVrednost, notranjiKot, zunanjiKot, tipStebra, materialStebra, visinaStebraMm, pozicijaMm, razmikMm, steberOznaka, orientacijaPalic, sirinaPalice, debelinaPalice, razmikPalic, kotPosevnih, stPalic
+- Nove konstante: EnotaTip, TipStebra, MaterialStebra, tipStebraLabels/Colors, materialStebraLabels/Colors, WPC_SIRINE_PALIC, WPC_DEBELINA_DEFAULT, WPC_RAZMAK_DEFAULT, WPC_KOT_POSEVNIH_DEFAULT, StairTemplate, StairCalc
+- Razširil tipMeritveLabels/Icons/Colors + segmentTypeLabels za nove tipe
+
+Pomožne funkcije (P3):
+- convertToMm(value, unit) — mm/cm/m → mm
+- formatInPrimaryUnit(mm, primary) — prikaz v izbrani enoti
+- calculateStairDimensions(skupnaVisina, stStopnic, globina, sirina?) — vrne StairCalc (višina posamezne, kot, dolžina kosa, skupna dolžina, priporocilo z barvo)
+- getNextStebriNumber(measurements, segmentId?) — avto-številčenje S1, S2...
+- calcWpcPalice(orientacija, dolzina, visina, sirina, razmik) — izračun števila WPC palic (pokončne/vodoravne/poševne mreža)
+- loadStairTemplates/saveStairTemplates — localStorage `roksal_stair_templates` (max 30)
+- loadPrimaryUnit — localStorage `roksal_primary_unit`
+
+State (P3):
+- primaryUnit (mm/cm/m, global) — localStorage perstitven
+- formLengthUnit, formHeightUnit — enote v formi
+- stairWizardOpen, stairSkupnaVisina, stairStStopnic, stairGlobina, stairSirina, stairSegmentId, stairTemplates
+- kotomerOpen, kotomerMode (KOT/KOT_VOGAL/KOT_STOPNISCE)
+- stebriFormOpen, stebriTipStebra, stebriMaterial, stebriVisina, stebriPozicija, stebriPozicijaUnit, stebriRazmik, stebriSegmentId
+- wpcSirinaPalice (140), wpcDebelinaPalice (23), wpcRazmikPalic (110), wpcKotPosevnih (45), wpcConfigOpen
+
+Handlerji (P3):
+- handleSubmitMeasurement — posodobljen: pretvori vrednosti v mm pred pošiljanjem, shrani originalno enoto + vrednost v arMetadata za audit
+- saveLocalMeasurement — posodobljen signature (dolzinaMm, visinaMm, originalnaVrednost) ker sedaj pretvorimo prej
+- handleQuickAdd — razširjen za KOT_VOGAL/KOT_STOPNISCE (odpre kotomer)
+- handleStairCreateMeasurements — kreira 5 meritev v stopnišče segmentu: VISINA (skupna višina), GLOBINA (posamezna), KOT_STOPNISCE (rake kot z atan), RAZDALJA (dolžina kosa = sqrt(v²+g²)×n), SEGMENT (št. stopnic)
+- handleSaveStairTemplate/handleLoadStairTemplate/handleDeleteStairTemplate — upravljanje predlog
+- saveKotomerReading — shrani KOT/KOT_VOGAL/KOT_STOPNISCE z notranji/zunanji kot za vogal
+- handleAddSteber — avto-številčenje S1, S2..., pozicija z enoto, auto-razmik iz prejšnjega stebra
+- handleExportStebriCSV — CSV izvoz preglednice stebrov (Oznaka, Tip, Pozicija, Razmik, Višina, Material, Opomba)
+- handleAddWpcPaliceAsStebri — za vsako WPC palico kreira STEBR meritev z oznako P1, P2... in orientacija/material/št.palic v arMetadata
+- useEffect za auto-calc razmika stebra glede na prejšnjega v segmentu
+- useEffect za nalaganje primarne enote + stopniških predlog ob mountu
+- useEffect za persistenco primarne enote v localStorage
+
+Komponente (P3) — 4 nove:
+1. StairDiagram — SVG diagram stopnišča z narisanimi stopnicami (pravokotniki z gradient fill), ograjo (poševna navy črta), dimenzijami (višina levo, globina spodaj, kot lok na prvi stopnici), vse z amber markers
+2. InlineKotomer — protractor SVG (polkrožnica z oznakami 0-180° vsakih 15°), live senzor (DeviceOrientation API beta/gamma), "Zakleni kot" button, ročni vnos; za KOT_VOGAL 2 vnosa (notranji+zunanji, α=180-β), za KOT_STOPNISCE predlog iz stair čarovnika
+3. SteberTable — preglednica stebrov (Table iz shadcn) z sortable prikazom (Oznaka, Tip badge, Pozicija, Razmik, Višina, Material badge), warning če razmik > 1500mm, summary (skupno, povpr. razmik, max razmik, material breakdown), CSV gumb
+4. WpcDiagram — SVG orientation-specific: pokončne (navpične palice), vodoravne (horizontalne palice), poševne (rotirane pod kotom 45°); okvir navy, palice navy/amber; prikaz št. palic + dimenzije
+
+UI kartice (P3):
+- Hitra meriteva — dodana 2. vrstica "Napredne meritve (P3)" z 3 gumbi (KOT_VOGAL, KOT_STOPNISCE, STEBR)
+- Primarna enota za prikaz — pills (mm/cm/m) z live predogledom
+- Stopniščni čarovnik (collapsible) — vidno ko obstaja stopniscje segment; 4 inputi + segment select + real-time izračun (4 mreže + priporocilo z barvo) + StairDiagram + 2 gumba (Ustvari meritve, Shrani kot predlogo) + seznam predlog
+- Inline kotomer — render ko kotomerOpen
+- Štebricki forma (modal card) — ko stebriFormOpen in segments > 0
+- WPC konfiguracija (collapsible) — ko obstaja WPC_* segment; 4 inputi + validacijska opozorila (>110mm warning)
+- V segmentu collapsible: WpcDiagram (za WPC segmente) + SteberTable (za segmente s STEBR) + gumb "Dodaj stebriček" + gumb "Dodaj WPC palice kot materiale" (za WPC segmente)
+
+Demo podatki (P3):
+- Dodanih 6 novih demo meritev (m6-m11): 3 STEBR (S1 Končni ALU, S2 Vmesni ALU, S3 Vogalni INOX), 1 KOT_VOGAL (90°/90°), 1 KOT_STOPNISCE (33°), 1 RAZDALJA za WPC teraso
+- Privzeti demo segmenti razširjeni z WPC_POKOCNE ("WPC terasa")
+
+Tehnične podrobnosti:
+- Vsi gumbi type="button"; vse Slovenian; mobile-first (grid-cols-2/grid-cols-3/grid-cols-4)
+- localStorage keys: roksal_primary_unit, roksal_stair_templates (prefiks `roksal_`)
+- Props onNavigateToCalculator ohranjen
+- handleQuickAdd razširjen za nove kotne tipe
+- normalizeMeasurements razširjen z vsemi P3 polji (enota, notranji/zunanji kot, štebricki, WPC)
+- resetForm razširjen z reset enot (formLengthUnit, formHeightUnit → 'mm')
+- Lint: 0 errors, 0 warnings (exit code 0)
+- Dev server: HTTP 200 na `/`, ✓ Compiled uspešno (154ms), 0 napak
+
+Stage Summary:
+- **Datoteka spremenjena**: samo `src/components/roksal/measurements-tab.tsx` (3571 → 6389 vrstic, +2818 vrstic)
+- **5 naborov funkcionalnosti dodanih**:
+  1. **STOPNICE** — stopniščni čarovnik z auto-izračunom (višina posamezne, kot atan, dolžina kosa sqrt), SVG diagramom, predlogami v localStorage, "Ustvari meritve" (5 meritev v segmentu)
+  2. **KOTI** — 2 nova tipa (KOT_VOGAL teal, KOT_STOPNISCE orange) + InlineKotomer komponenta (protractor SVG, DeviceOrientation API, zaklepanje kota, ročni vnos; za vogal 2 vnosa, za stopnice prefill iz čarovnika)
+  3. **ENOTE** — Select za mm/cm/m ob dolžini in višini z live pretvorbo ("300 cm = 3000 mm"), originalna vrednost shranjena za audit, globalne "Primarna enota" pills (vpliva na prikaz)
+  4. **ŠTEBRICKI** — nov tip STEBR (Columns3, navy); SteberTable z avto-številčenjem S1/S2/S3, tipi (Končni/Vmesni/Vogalni), materiali (ALU/INOX/WPC/DRUGO), auto-razmik iz prejšnjega, CSV izvoz, warning >1500mm, summary (skupno/povpr/max/materiali)
+  5. **WPC orientacije** — 3 novi segment tipi (WPC_POKOCNE/VODORAVNE/POSEVNE); WpcDiagram (SVG za vsako orientacijo), auto-izračun št. palic (pokončne: dolžina/korak, vodoravne: višina/korak, poševne: mreža), WPC konfiguracija (sirina 140/180, debelina 23, razmik 110, kot 45°) z validacijo, "Dodaj kot materiale" (kreira P1, P2... STEBR meritev za vsako palico)
+- **Ključne odločitve**:
+  - Stopniščni kot izračun z atan(višina/globina), priporocilo barvno kodirano (zeleno/oranžno/rdeče)
+  - Kotomer uporablja beta kot od navpičnice (Math.abs((beta+360)%360 - 90))
+  - KOT_VOGAL notranji = 180° - zunanji (komplementarni kotova)
+  - Štebricki auto-razmik iz useEffect (odšteje pozicijo prejšnjega stebra v segmentu)
+  - WPC palice kreirajo STEBR meritev (z materialStebra='WPC', orientacijaPalic, sirinaPalice, stPalic v arMetadata) za enotno upravljanje
+  - WPC poševne palice prikazane kot rotirane črte (line z dx/dy iz kota)
+- **Lint**: 0 errors, 0 warnings
+- **Dev server**: HTTP 200 na `/`, ✓ Compiled (154ms), 0 napak
+- **Združljivost**: vse obstoječe funkcionalnosti ohranjene (hitre predloge, skupinske akcije, status, zgodovina, glasovni vnos, multi-unit prikaz, inclinometer, kalibracija, segmenti, CSV/PDF izvoz)
+
+---
+Task ID: P3-FINAL
+Agent: Main Orchestrator (Z.ai Code)
+Task: QA + commit + push specifičnih meritev za ograje
+
+Work Log:
+- Celovita QA z agent-browser (viewport 390x844):
+  - Stopniščni čarovnik: 4 inputi (2700mm/15 stopnic/280mm globina/250mm širina), segment selector, Ustvari/Shrani gumbi
+  - Stebriček/Palica quick-add gumb prisoten
+  - Izračuni v DOM: VIŠINA POSAMEZNE, DOLŽINA KOSA, SKUPNA DOLŽINA
+- Lint: 0 errors, 0 warnings
+- 0 runtime napak
+- Commit: "feat: specifične meritve za ograje" (2 datoteki, +3182/-266 vrstic)
+- Push na GitHub: 10cb2ad → cf6137d (main)
+- Token odstranjen iz remote URL-ja
+
+Stage Summary:
+- **Stopniščni čarovnik** z SVG diagramom in real-time izračuni
+- **2 nova kota** (KOT_VOGAL, KOT_STOPNISCE) + inline kotomer
+- **Vnos v katerikoli enoti** (mm/cm/m) z avtomatsko konverzijo
+- **Štebricki** z avto-številčenjem in preglednico
+- **3 WPC orientacije** (pokončne/vodoravne/poševne) z diagrami
+- **+3182 vrstic** nove funkcionalnosti
+- **Pushan na GitHub** (commit cf6137d)
+
+---
+Task ID: FIX-CUSTOMER
+Agent: full-stack-developer (Customer add fix)
+Task: Popravek vnosa strank — nov API + dialog za novo stranko
+
+Work Log:
+- Prebral worklog.md in analiziral dashboard-tab.tsx, validations.ts, projects API, Prisma Customer model.
+- Ustvaril nov API `/api/customers/route.ts`:
+  - GET: pridobi vse stranke iz `db.customer`, opcionalni `?search=` filter (OR po ime/naslov/telefon/email), vključi `_count.projects`, sortirano po ime asc.
+  - POST: validira z `createCustomerSchema` (Zod), ustvari stranko, vrne 201 z `_count.projects`. Slovenska error sporočila. Trim vrednosti, prazne opcijske → null.
+- Dodal `createCustomerSchema` v `src/lib/validations.ts` (ime min 2, naslov min 3, email format če prisoten, telefon/email optional/nullable).
+- Posodobil `src/components/roksal/dashboard-tab.tsx`:
+  - Razširil `Customer` interface (dodal telefon?, email?, createdAt?, _count?).
+  - Uvozil `UserPlus` iz lucide-react.
+  - Zamenjal `fetchCustomers`: zdaj kliče `/api/customers` direktno, brez fallback demo strank.
+  - Dodal nov state: customerDialogOpen, newCustomerIme/Naslov/Telefon/Email, customerSearch, creatingCustomer.
+  - Dodal `handleCreateCustomer`: validacija (ime/naslov/email regex), POST /api/customers, po uspehu → fetchCustomers() → setNewProjectCustomer(created.id) → zapri dialog → počisti inpute → toast "Stranka ustvarjena". Loading state.
+  - Dodal `resetCustomerDialog` helper (počisti inpute ob zaprtju).
+  - Dodal `filteredCustomers` useMemo (filter po ime/naslov/telefon/email).
+  - V Nov projekt dialogu poleg Select-a dodal gumb "Nova" (UserPlus ikona, ghost, type="button"), odpre customer dialog.
+  - Dodal iskalni Input nad Select (prikaže se samo če je >6 strank) + empty state ("Ni najdenih strank." v SelectContent, "Še ni strank..." hint pod Select če prazno).
+  - Dodan nov Dialog "Nova stranka" z inputi: Ime (obvezno, *), Naslov (obvezno, *), Telefon (opcijsko), Email (opcijsko, type=email), grid 2-stolpca na sm:. Gumba "Prekliči" in "Shrani stranko" (oba type="button"), loading spinner, disabled logika.
+- Zagnal `bun run lint` — 0 errors, 0 warnings.
+- Preveril dev.log: `GET /api/customers 200 in 9ms` + `_count.projects` LEFT JOIN pojavlja se v SQL + `✓ Compiled in 114ms` brez napak.
+
+Stage Summary:
+- Files created: `src/app/api/customers/route.ts` (GET+POST, Zod validacija, _count.projects).
+- Files modified: `src/lib/validations.ts` (dodan createCustomerSchema), `src/components/roksal/dashboard-tab.tsx` (fetchCustomers iz /api/customers, Nova gumb, iskalni input, New Customer Dialog, handleCreateCustomer, filteredCustomers, razširjen Customer interface).
+- Ni spreminjal: page.tsx, bottom-nav, drugih tabov, Prisma schema, drugih komponent.
+- Ni novih paketov.
+- Key decisions: SQLite ne podpira `mode: 'insensitive'` v Prisma contains, zato uporabljen plain `contains` (SQLite LIKE je case-insensitive za ASCII). Email validacija na clientu z regex pred POST (server ponovno validira z Zod). Iskalni input prikazan samo >6 strank da ne zavzema prostora na majhnih seznamih. Po uspešnem ustvarjanju stranka samodejno izbrana v newProjectCustomer.
+- Conceptual test poteka: uporabnik odpre Nov projekt → klikne "Nova" → izpolni ime+naslov → Shrani stranko → toast "Stranka ustvarjena" → stranka izbrana v Select-u.
+
+---
+Task ID: AR-OVERLAY
+Agent: full-stack-developer (AR grid + realtime + calc)
+Task: Mreža, real-time dimenzije, samodejni kalkulator v AR kameri
+
+Work Log:
+- Read worklog.md to understand prior work (Roksal Railing Manager: Next.js 16 + SQLite + 6-tab SPA, AR scanner already existed with 1706 lines)
+- Read full ar-scanner.tsx (1706 lines) + lib/calculator.ts to understand existing structure
+- Verified lucide-react v0.525.0 has all needed icons: Grid3x3, Calculator, ChevronDown, ChevronUp, CheckCircle2
+
+**Feature 1 — MREŽA (Grid Overlay):**
+- Added constants: GRID_CELL_MM=100, GRID_CELL_PX_UNCALIBRATED=50, GRID_MAJOR_EVERY=5
+- Added pure helper `drawGrid(ctx, w, h, ppm)` — draws minor lines (rgba(255,255,255,0.15)), major lines every 5 cells (rgba(255,255,255,0.3)), and labels at major lines (real-world mm if calibrated, px if not)
+- Grid auto-scales with calibration: cellPx = 100*ppm when calibrated, 50px otherwise
+- Grid drawn in existing canvas useEffect AFTER clearRect, BEFORE railing/points (behind everything, on top of video)
+- Added `gridVisible` state (default true), toggle button with Grid3x3 icon in header toolbar (amber when active)
+
+**Feature 2 — REAL-TIME DIMENZIJE (Live HUD):**
+- Added `realtimeStats` useMemo: computes sirinaMm (maxX-minX / ppm), visinaMm (profil.visinaMm), dolzinaMm (sum of consecutive point distances / ppm), povrsinaM2 (sirina*visina/1e6), stTock, kalibrirano status, ppm
+- HUD is a div overlay (absolute top-3 left-3, NOT on canvas) — bg-roksal-navy/90, max-w-[180px], text-[10px], pointer-events-none
+- Shows 6 rows: Širina, Višina, Dolžina, Površina, Št. točk, Kalibracija (with CheckCircle2 icon when calibrated)
+- Live cursor distance during MEASURE mode: 7th row "→ kurzor" showing live distance from first point to cursor (green)
+- Added `liveCursor` state, updated in handlePointerMove when MEASURE mode + first point set
+- Live measure line drawn on canvas (dashed green) from first point to cursor with distance label
+- Drag distance line drawn on canvas (dashed amber) from dragged point to nearest other point with label — updates in real-time as user drags in MOVE mode
+
+**Feature 3 — SAMODEJNI KALKULATOR (Live Calc Panel):**
+- Added `autoCalc` useMemo using `calculateEqualSpacing` from lib/calculator: balusterCount, actualGapMm, postCount (floor(dolzinaMm/1500)+1), totalLinearMeters (2*dolzinaMm/1000 for top+bottom rails), screwCount (balusters*4 + posts*8), anchorCount (posts*2), cenaMateriala (linearMeters*cenaM), cenaZDDV (*1.22)
+- Collapsible panel at bottom (absolute bottom-3 left-3 right-3, z-20) — header always visible with "Izračun" + key summary ("12 palic · 1.234 €") + chevron toggle
+- Expanded: 3 conditional warnings (no calibration, no profile, <2 points) + 2-col stat grid (8 cells: palic, razmik, stebrov, linearni, vijaki, sidra, material, zDDV) + "Dodaj v kalkulator" button
+- Export button saves to localStorage `roksal_ar_calc_export` with full payload + shows toast "Podatki preneseni v kalkulator"
+- Moved status banner from bottom-3 to bottom-14 so it sits above calc panel header
+
+**Technical:**
+- All existing features preserved (camera, točke add/remove/move, kalibracija, meritve, vizualizacija, capture, zgodovina)
+- Used useMemo for realtimeStats + autoCalc (recompute on tocke/profil/kalibracija change)
+- Grid + live lines drawn in same canvas useEffect (no separate animation loop)
+- HUD + calc panel are div overlays (no canvas redraw needed for text updates)
+- All buttons type="button", all text Slovenian, navy/amber/green theme
+- Imported calculateEqualSpacing + formatEUR from @/lib/calculator
+- File grew from 1706 → 2213 lines (+507 lines, 3 new features)
+- ESLint: 0 errors, 0 warnings
+- Dev server: compiles successfully (✓ Compiled in 284ms)
+
+Stage Summary:
+- **3 features added** to ArScanner as specified: Mreža (grid overlay with calibration-aware scaling), Real-time dimenzije (live HUD with širina/višina/dolžina/površina + live cursor distance), Samodejni kalkulator (collapsible panel with material counts + cost + export to localStorage)
+- **No other files modified** — only ar-scanner.tsx enhanced
+- **No new packages installed** — used existing lucide-react icons + calculator lib functions
+- **Performance**: useMemo for computed values, grid drawn in existing canvas effect, HUD/panel are DOM overlays
+- **All existing features preserved** — camera, points, calibration, measurements, railing viz, capture, history all intact
+
+---
+Task ID: FOTO-MERA
+Agent: full-stack-developer (Foto merne črte ImageMeter stil)
+Task: Foto + merne črte z realno dolžino, kalibracija na sliki, prenos v Meritve
+
+Work Log:
+- Prebral worklog.md (1654 vrstic) in obstoječi photo-tab.tsx (1835 vrstic) — razumel AnnotationEditor z 8 orodji (arrow/line/rect/circle/text/pen/measure/eraser), obstoječi "Mera" tool je samo prikazoval piksle brez realne mere
+- Dodal nove importe: Select (SelectContent/Item/Trigger/Value), Collapsible (CollapsibleTrigger/Content), Table (TableHeader/Body/Head/Row/Cell/Footer), ikone ChevronDown/Lightbulb/FileText/Send/Info
+- Razširil Annotation interface z novimi polji: id, pixelLength, realLengthMm, isCalibration, oznaka, seqNum (vsi optional za backward compat)
+- Dodal nove tipe in helper funkcije:
+  - PhotoCalibration interface (realMm, unit, originalValue, pixelsPerMm, oznaka, calibrationAnnId, createdAt)
+  - QUICK_REFS array (A4 297mm, Ploščica 600/300/200mm, Opeka 250mm, Vratilo 800mm)
+  - formatDistanceMulti(mm) → "324 mm · 32.4 cm · 0.32 m" (multi-unit prikaz)
+  - computePixelLength(ann) → hypot(b-a)
+  - distanceToSegment(p, a, b) → za hit-test merne črte (click-to-edit)
+  - genAnnId() → unikatni ID za anotacije
+  - smartSuggestion(mm) → 4 pametna priporočila (višina ograje, razmik palic, razmik stebrov, dolg odsek)
+  - toMm(value, unit) → pretvorba mm/cm/m → mm
+- Popolnoma prepisal drawAnnotation za 'measure' tip:
+  - Nov parameter calibration?: PhotoCalibration | null
+  - Barva črte: amber (#f59e0b) za kalibracijsko, green (#22c55e) za meritev, red (#ef4444) za N/A
+  - Oznaka na črti: "REF · 600 mm · 60.0 cm · 0.60 m" za kalibracijo, "M1 · 324 mm · 32.4 cm · 0.32 m" za meritev, "M1 · N/A — umeri referenco" brez kalibracije
+  - Označba (user-defined oznaka) prefixana pred M# če je vpisana
+  - Arrowhead-i na obeh koncih (obstoječa logika)
+- AnnotationEditor razširjen z novimi props: projectId?, photoId? (oba optional, za persistenco kalibracije)
+- Nov state v AnnotationEditor: photoCalibration, refRealLen, refUnit, refLabel, calibrationExpanded, suggestion, editMeasure, transferring
+- Nov useEffect za load kalibracije iz localStorage (per-photo `roksal_photo_calibration_{photoId}` najprej, nato per-project `roksal_calibration_{projectId}` — kompatibilno z measurements-tab.tsx)
+- Nov persistCalibration() — shranjuje v oba ključa; per-project v obliki {realMm, pixelDistance, pixelsPerMm, note} da je berljivo v measurements-tab
+- redraw() posodobljen: dodeli seqNum mernim anotacijam (brez kalibracijske), pokliče drawAnnotation z calibration
+- onPointerDown posodobljen: hit-test za merne črte (18px threshold) — klik na obstoječo črto odpre edit dialog namesto risanja
+- onPointerUp za measure tool: pokliče commitMeasureLine namesto starega modala
+- commitMeasureLine(ann) — NOVA logika:
+  - Če kalibracija obstaja: izračuna realMm = pxLen/pixelsPerMm, doda med anotacije, sproži smartSuggestion
+  - Če ni kalibracije ampak je refRealLen vnešen: ta črta postane kalibracijska referenca — izračuna pxPerMm, persista, toast "Umerjeno: 2.34 px/mm"
+  - Če ni ne kalibracije ne refRealLen: N/A črta + toast "Ni umeritve" + razširi kalibracijsko kartico
+- clearCalibration() — pobriše kalibracijo iz state + localStorage + odstrani kalibracijsko anotacijo
+- applyPreset(mm) — nastavi refRealLen + refUnit='mm'
+- deleteMeasure(id), saveMeasureLabel(id, oznaka) — CRUD za mere
+- exportCsv() — izvozi vse mere kot CSV (BOM + proper escaping) z MM/CM/M/Piksli stolpci
+- transferToMeasurements() — POST vsako mero v /api/measurements z {projectId, dolzinaMm: round(realMm), visinaMm: 1, arMetadata: {tipMeritve:'RAZDALJA', oznaka, source:'photo', photoId}}; Progress bar med prenosom; toast na koncu
+- measureList useMemo — filter + seqNum + realLengthMm za tabelo
+- measureStats useMemo — total/avg/count za summary row
+- handleSave posodobljen: dodeli seqNum pred skaliranjem, skalira pixelLength, pokliče drawAnnotation z calibration
+- NOVA UI:
+  - Kalibracijska kartica (Collapsible) nad canvasom ko je Mera aktiven: naslov + status badge (✓ Umerjeno X px/mm / ✗ Ni umerjeno), hitre reference chip-i, realna dolžina + enota Select, "Kaj je referenca?" input, navodila, "Počisti" gumb
+  - Suggestion banner pod canvasom (dismissable, amber bg)
+  - "Mere na sliki" tabela pod canvasom: # | Oznaka | Realna dolžina | Dejanja (edit/delete), summary footer (Skupna/Povprečna/Št. mer), CSV + V Meritve gumbi
+  - Edit dialog za mero: podrobnosti (piksli, realna, umeritev) + input za oznako + Izbriši/Prekliči/Shrani
+  - Progress overlay med prenosom v Meritve
+- Posodobil obe AnnotationEditor invokaciji (PhotoTab + CameraCapture) da pošljeta projectId in photoId
+- Odstranil star measureInput/measureValue state in commitMeasure funkcijo in stari modal za vnos mere
+- ESLint: 0 errors, 0 warnings
+- Dev server: ✓ Compiled v 122ms, HTTP 200 na /, brez napak v dev.log
+- Datoteka zrasla z 1835 → 2566 vrstic (+731 vrstic, 5 novih funkcij)
+
+Stage Summary:
+- **5 funkcij dodanih** v AnnotationEditor (photo-tab.tsx) kot specifikacija:
+  1. **KALIBRACIJA NA SLIKI** — Collapsible kartica nad canvasom ko je Mera aktiven; realna dolžina + enota (mm/cm/m) Select; "Kaj je referenca?" input; navodila; status badge (✓/✗); "Počisti" gumb; persistenca v `roksal_photo_calibration_{photoId}` + `roksal_calibration_{projectId}` (kompatibilno z measurements-tab)
+  2. **MERNE ČRTE Z REALNO DOLŽINO** — prva črta postane kalibracijska (izračun px/mm), naslednje črte samodejno izračunajo realMm; oznaka "M1 · 324 mm · 32.4 cm · 0.32 m" (multi-unit); amber za kalibracijo, green za meritev, red za N/A; click-to-edit z edit dialogom (oznaka + podrobnosti + delete)
+  3. **PREGLEDNICA MER** — Table pod canvasom (#/Oznaka/Realna dolžina/Dejanja), summary footer (Skupna/Povprečna/Št.), "Izvozi CSV" + "Prenesi v Meritve" gumbi; prenos POST-a vsako mero v /api/measurements z arMetadata {tipMeritve:'RAZDALJA', oznaka, source:'photo', photoId}
+  4. **HITRE REFERENCE** — 6 preset chip-ov (A4 297, Ploščica 600/300/200, Opeka 250, Vratilo 800); klik nastavi refRealLen + unit
+  5. **SAMODEJNA PRIPOROČILA** — smartSuggestion() ob vsakem novi meri; 4 kategorije (višina ograje 1000-1500, razmik palic 100-150, razmik stebrov 1400-1600, dolg odsek >3000); dismissable banner pod canvasom
+- **Ključne odločitve**: 
+  - visinaMm: 1 namesto 0 (API validacija zahteva positive int) — minimalna validna vrednost
+  - arMetadata poslan kot objekt ne string (API interno JSON.stringify)
+  - Per-project ključ `roksal_calibration_{projectId}` v obliki kompatibilni z measurements-tab.tsx — kalibracija se deli med Foto in Meritve zavihek
+  - Annotation interface razširjen z optional polji (id, pixelLength, realLengthMm, isCalibration, oznaka, seqNum) — backward compatible z drugimi orodji
+  - drawAnnotation dobi nov calibration parameter (optional) — ne poškoduje obstoječih klicev
+  - seqNum se dinamično dodeli v redraw() (renumbering ko se izbriše mera)
+  - Hit-test 18px threshold za click-to-edit (deluje tudi na mobilnih)
+- **Vsa obstoječa funkcionalnost ohranjena**: 8 orodij, 5 barv, 3 debeline, CameraCapture, BeforeAfterSlider, PairCreatorDialog, galerija, filtri, pare
+- **Ničen vpliv na druge datoteke** — samo photo-tab.tsx spremenjen
+- **Vsebimo**: vse gumbi type="button", slovenski UI, navy/amber/green tema, shadcn/ui komponente (Card, Button, Input, Label, Select, Badge, Separator, Table, Collapsible, Dialog, Progress), mobile-first (touch-none canvas, scrollable tabela, collapsible kartica)
