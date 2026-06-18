@@ -51,6 +51,7 @@ import {
   Calculator,
   ChevronDown,
   ChevronUp,
+  UserPlus,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -81,6 +82,10 @@ interface Customer {
   id: string
   ime: string
   naslov: string
+  telefon?: string | null
+  email?: string | null
+  createdAt?: string
+  _count?: { projects: number }
 }
 
 const statusLabels: Record<string, string> = {
@@ -237,6 +242,15 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
   const [newProjectNotes, setNewProjectNotes] = useState('')
   const [creating, setCreating] = useState(false)
 
+  // New customer dialog
+  const [customerDialogOpen, setCustomerDialogOpen] = useState(false)
+  const [newCustomerIme, setNewCustomerIme] = useState('')
+  const [newCustomerNaslov, setNewCustomerNaslov] = useState('')
+  const [newCustomerTelefon, setNewCustomerTelefon] = useState('')
+  const [newCustomerEmail, setNewCustomerEmail] = useState('')
+  const [customerSearch, setCustomerSearch] = useState('')
+  const [creatingCustomer, setCreatingCustomer] = useState(false)
+
   // Project detail dialog
   const [detailProject, setDetailProject] = useState<Project | null>(null)
   const [detailOpen, setDetailOpen] = useState(false)
@@ -281,34 +295,13 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
 
   const fetchCustomers = useCallback(async () => {
     try {
-      const res = await fetch('/api/projects')
+      const res = await fetch('/api/customers')
       if (res.ok) {
-        const data: Project[] = await res.json()
-        const uniqueCustomers = new Map<string, Customer>()
-        for (const p of data) {
-          if (p.customer?.id && p.customer.ime) {
-            uniqueCustomers.set(p.customer.id, {
-              id: p.customer.id,
-              ime: p.customer.ime,
-              naslov: p.customer.naslov,
-            })
-          }
-        }
-        if (uniqueCustomers.size > 0) {
-          setCustomers(Array.from(uniqueCustomers.values()))
-        } else {
-          setCustomers([
-            { id: 'cust1', ime: 'Janez Novak', naslov: 'Horjul 12, 4224 Horjul' },
-            { id: 'cust2', ime: 'Ana Kovačič', naslov: 'Slovenski trg 5, 4000 Kranj' },
-            { id: 'cust3', ime: 'Petra Zupan', naslov: 'Cankarjeva 8, 4227 Železniki' },
-          ])
-        }
+        const data = await res.json()
+        setCustomers(data)
       }
     } catch {
-      setCustomers([
-        { id: 'cust1', ime: 'Janez Novak', naslov: 'Horjul 12, 4224 Horjul' },
-        { id: 'cust2', ime: 'Ana Kovačič', naslov: 'Slovenski trg 5, 4000 Kranj' },
-      ])
+      setCustomers([])
     }
   }, [])
 
@@ -342,6 +335,18 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
     }
     return result
   }, [projects, statusFilter, searchQuery])
+
+  const filteredCustomers = useMemo(() => {
+    if (!customerSearch.trim()) return customers
+    const q = customerSearch.trim().toLowerCase()
+    return customers.filter(
+      (c) =>
+        c.ime.toLowerCase().includes(q) ||
+        c.naslov.toLowerCase().includes(q) ||
+        (c.telefon ?? '').toLowerCase().includes(q) ||
+        (c.email ?? '').toLowerCase().includes(q)
+    )
+  }, [customers, customerSearch])
 
   const activeProjects = filteredProjects.filter((p) => p.status === 'V_TEKU')
   const activeCount = projects.filter((p) => p.status === 'V_TEKU').length
@@ -453,6 +458,59 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
     } finally {
       setCreating(false)
     }
+  }
+
+  async function handleCreateCustomer() {
+    if (!newCustomerIme.trim() || newCustomerIme.trim().length < 2) {
+      toast.error('Ime je obvezno (min 2 znaka)')
+      return
+    }
+    if (!newCustomerNaslov.trim() || newCustomerNaslov.trim().length < 3) {
+      toast.error('Naslov je obvezen (min 3 znaki)')
+      return
+    }
+    if (newCustomerEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newCustomerEmail.trim())) {
+      toast.error('Neveljaven email format')
+      return
+    }
+    setCreatingCustomer(true)
+    try {
+      const res = await fetch('/api/customers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ime: newCustomerIme.trim(),
+          naslov: newCustomerNaslov.trim(),
+          telefon: newCustomerTelefon.trim() || undefined,
+          email: newCustomerEmail.trim() || undefined,
+        }),
+      })
+      if (res.ok) {
+        const created = await res.json()
+        await fetchCustomers()
+        setNewProjectCustomer(created.id)
+        setCustomerDialogOpen(false)
+        setNewCustomerIme('')
+        setNewCustomerNaslov('')
+        setNewCustomerTelefon('')
+        setNewCustomerEmail('')
+        toast.success('Stranka ustvarjena')
+      } else {
+        const err = await res.json().catch(() => null)
+        toast.error(err?.error || 'Napaka pri ustvarjanju stranke')
+      }
+    } catch {
+      toast.error('Napaka pri povezavi s strežnikom')
+    } finally {
+      setCreatingCustomer(false)
+    }
+  }
+
+  function resetCustomerDialog() {
+    setNewCustomerIme('')
+    setNewCustomerNaslov('')
+    setNewCustomerTelefon('')
+    setNewCustomerEmail('')
   }
 
   function openProjectDetail(project: Project) {
@@ -980,19 +1038,55 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Stranka</Label>
+              <div className="flex items-center justify-between">
+                <Label className="text-xs">Stranka</Label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 text-xs text-roksal-navy hover:text-roksal-navy hover:bg-roksal-amber/15"
+                  onClick={() => {
+                    resetCustomerDialog()
+                    setCustomerSearch('')
+                    setCustomerDialogOpen(true)
+                  }}
+                >
+                  <UserPlus className="mr-1 h-3.5 w-3.5" />
+                  Nova
+                </Button>
+              </div>
+              {customers.length > 6 && (
+                <Input
+                  type="text"
+                  placeholder="Iskanje strank..."
+                  value={customerSearch}
+                  onChange={(e) => setCustomerSearch(e.target.value)}
+                  className="h-8 text-xs"
+                />
+              )}
               <Select value={newProjectCustomer} onValueChange={setNewProjectCustomer}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Izberi stranko" />
                 </SelectTrigger>
                 <SelectContent>
-                  {customers.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.ime} — {c.naslov}
-                    </SelectItem>
-                  ))}
+                  {filteredCustomers.length === 0 ? (
+                    <div className="px-3 py-2 text-xs text-muted-foreground">
+                      Ni najdenih strank.
+                    </div>
+                  ) : (
+                    filteredCustomers.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.ime} — {c.naslov}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
+              {customers.length === 0 && (
+                <p className="text-[11px] text-muted-foreground">
+                  Še ni strank. Kliknite »Nova« za dodajanje.
+                </p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="proj-date" className="text-xs">
@@ -1036,6 +1130,106 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                 <Plus className="mr-2 h-4 w-4" />
               )}
               Ustvari
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* New Customer Dialog */}
+      <Dialog
+        open={customerDialogOpen}
+        onOpenChange={(open) => {
+          setCustomerDialogOpen(open)
+          if (!open) resetCustomerDialog()
+        }}
+      >
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="text-roksal-navy">Nova stranka</DialogTitle>
+            <DialogDescription>
+              Ustvarite novo stranko. Po shranjevanju bo samodejno izbrana v projektu.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="cust-ime" className="text-xs">
+                Ime in priimek / Naziv podjetja <span className="text-roksal-red">*</span>
+              </Label>
+              <Input
+                id="cust-ime"
+                value={newCustomerIme}
+                onChange={(e) => setNewCustomerIme(e.target.value)}
+                placeholder="npr. Janez Novak"
+                disabled={creatingCustomer}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="cust-naslov" className="text-xs">
+                Naslov <span className="text-roksal-red">*</span>
+              </Label>
+              <Input
+                id="cust-naslov"
+                value={newCustomerNaslov}
+                onChange={(e) => setNewCustomerNaslov(e.target.value)}
+                placeholder="npr. Trubarjeva 5, 4000 Kranj"
+                disabled={creatingCustomer}
+              />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="cust-telefon" className="text-xs">
+                  Telefon
+                </Label>
+                <Input
+                  id="cust-telefon"
+                  value={newCustomerTelefon}
+                  onChange={(e) => setNewCustomerTelefon(e.target.value)}
+                  placeholder="031 234 567"
+                  disabled={creatingCustomer}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="cust-email" className="text-xs">
+                  Email
+                </Label>
+                <Input
+                  id="cust-email"
+                  type="email"
+                  value={newCustomerEmail}
+                  onChange={(e) => setNewCustomerEmail(e.target.value)}
+                  placeholder="ime@primer.si"
+                  disabled={creatingCustomer}
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setCustomerDialogOpen(false)}
+              disabled={creatingCustomer}
+            >
+              Prekliči
+            </Button>
+            <Button
+              type="button"
+              onClick={handleCreateCustomer}
+              disabled={
+                creatingCustomer ||
+                !newCustomerIme.trim() ||
+                newCustomerIme.trim().length < 2 ||
+                !newCustomerNaslov.trim() ||
+                newCustomerNaslov.trim().length < 3
+              }
+              className="bg-roksal-navy hover:bg-roksal-navy/90 text-white"
+            >
+              {creatingCustomer ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <UserPlus className="mr-2 h-4 w-4" />
+              )}
+              Shrani stranko
             </Button>
           </DialogFooter>
         </DialogContent>

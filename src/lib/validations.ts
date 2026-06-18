@@ -22,6 +22,17 @@ export const updateProjectSchema = z.object({
 })
 
 // ============================================
+// STRANKE
+// ============================================
+
+export const createCustomerSchema = z.object({
+  ime: z.string().min(2, 'Ime je obvezno (min 2 znaka)'),
+  naslov: z.string().min(3, 'Naslov je obvezen (min 3 znaki)'),
+  telefon: z.string().optional().nullable(),
+  email: z.string().email('Neveljaven email format').optional().nullable().or(z.literal('')),
+})
+
+// ============================================
 // MERITVE
 // ============================================
 

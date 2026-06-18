@@ -1568,3 +1568,36 @@ Stage Summary:
 - **3 WPC orientacije** (pokončne/vodoravne/poševne) z diagrami
 - **+3182 vrstic** nove funkcionalnosti
 - **Pushan na GitHub** (commit cf6137d)
+
+---
+Task ID: FIX-CUSTOMER
+Agent: full-stack-developer (Customer add fix)
+Task: Popravek vnosa strank — nov API + dialog za novo stranko
+
+Work Log:
+- Prebral worklog.md in analiziral dashboard-tab.tsx, validations.ts, projects API, Prisma Customer model.
+- Ustvaril nov API `/api/customers/route.ts`:
+  - GET: pridobi vse stranke iz `db.customer`, opcionalni `?search=` filter (OR po ime/naslov/telefon/email), vključi `_count.projects`, sortirano po ime asc.
+  - POST: validira z `createCustomerSchema` (Zod), ustvari stranko, vrne 201 z `_count.projects`. Slovenska error sporočila. Trim vrednosti, prazne opcijske → null.
+- Dodal `createCustomerSchema` v `src/lib/validations.ts` (ime min 2, naslov min 3, email format če prisoten, telefon/email optional/nullable).
+- Posodobil `src/components/roksal/dashboard-tab.tsx`:
+  - Razširil `Customer` interface (dodal telefon?, email?, createdAt?, _count?).
+  - Uvozil `UserPlus` iz lucide-react.
+  - Zamenjal `fetchCustomers`: zdaj kliče `/api/customers` direktno, brez fallback demo strank.
+  - Dodal nov state: customerDialogOpen, newCustomerIme/Naslov/Telefon/Email, customerSearch, creatingCustomer.
+  - Dodal `handleCreateCustomer`: validacija (ime/naslov/email regex), POST /api/customers, po uspehu → fetchCustomers() → setNewProjectCustomer(created.id) → zapri dialog → počisti inpute → toast "Stranka ustvarjena". Loading state.
+  - Dodal `resetCustomerDialog` helper (počisti inpute ob zaprtju).
+  - Dodal `filteredCustomers` useMemo (filter po ime/naslov/telefon/email).
+  - V Nov projekt dialogu poleg Select-a dodal gumb "Nova" (UserPlus ikona, ghost, type="button"), odpre customer dialog.
+  - Dodal iskalni Input nad Select (prikaže se samo če je >6 strank) + empty state ("Ni najdenih strank." v SelectContent, "Še ni strank..." hint pod Select če prazno).
+  - Dodan nov Dialog "Nova stranka" z inputi: Ime (obvezno, *), Naslov (obvezno, *), Telefon (opcijsko), Email (opcijsko, type=email), grid 2-stolpca na sm:. Gumba "Prekliči" in "Shrani stranko" (oba type="button"), loading spinner, disabled logika.
+- Zagnal `bun run lint` — 0 errors, 0 warnings.
+- Preveril dev.log: `GET /api/customers 200 in 9ms` + `_count.projects` LEFT JOIN pojavlja se v SQL + `✓ Compiled in 114ms` brez napak.
+
+Stage Summary:
+- Files created: `src/app/api/customers/route.ts` (GET+POST, Zod validacija, _count.projects).
+- Files modified: `src/lib/validations.ts` (dodan createCustomerSchema), `src/components/roksal/dashboard-tab.tsx` (fetchCustomers iz /api/customers, Nova gumb, iskalni input, New Customer Dialog, handleCreateCustomer, filteredCustomers, razširjen Customer interface).
+- Ni spreminjal: page.tsx, bottom-nav, drugih tabov, Prisma schema, drugih komponent.
+- Ni novih paketov.
+- Key decisions: SQLite ne podpira `mode: 'insensitive'` v Prisma contains, zato uporabljen plain `contains` (SQLite LIKE je case-insensitive za ASCII). Email validacija na clientu z regex pred POST (server ponovno validira z Zod). Iskalni input prikazan samo >6 strank da ne zavzema prostora na majhnih seznamih. Po uspešnem ustvarjanju stranka samodejno izbrana v newProjectCustomer.
+- Conceptual test poteka: uporabnik odpre Nov projekt → klikne "Nova" → izpolni ime+naslov → Shrani stranko → toast "Stranka ustvarjena" → stranka izbrana v Select-u.
