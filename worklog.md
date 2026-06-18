@@ -1652,3 +1652,77 @@ Stage Summary:
 - **No new packages installed** — used existing lucide-react icons + calculator lib functions
 - **Performance**: useMemo for computed values, grid drawn in existing canvas effect, HUD/panel are DOM overlays
 - **All existing features preserved** — camera, points, calibration, measurements, railing viz, capture, history all intact
+
+---
+Task ID: FOTO-MERA
+Agent: full-stack-developer (Foto merne črte ImageMeter stil)
+Task: Foto + merne črte z realno dolžino, kalibracija na sliki, prenos v Meritve
+
+Work Log:
+- Prebral worklog.md (1654 vrstic) in obstoječi photo-tab.tsx (1835 vrstic) — razumel AnnotationEditor z 8 orodji (arrow/line/rect/circle/text/pen/measure/eraser), obstoječi "Mera" tool je samo prikazoval piksle brez realne mere
+- Dodal nove importe: Select (SelectContent/Item/Trigger/Value), Collapsible (CollapsibleTrigger/Content), Table (TableHeader/Body/Head/Row/Cell/Footer), ikone ChevronDown/Lightbulb/FileText/Send/Info
+- Razširil Annotation interface z novimi polji: id, pixelLength, realLengthMm, isCalibration, oznaka, seqNum (vsi optional za backward compat)
+- Dodal nove tipe in helper funkcije:
+  - PhotoCalibration interface (realMm, unit, originalValue, pixelsPerMm, oznaka, calibrationAnnId, createdAt)
+  - QUICK_REFS array (A4 297mm, Ploščica 600/300/200mm, Opeka 250mm, Vratilo 800mm)
+  - formatDistanceMulti(mm) → "324 mm · 32.4 cm · 0.32 m" (multi-unit prikaz)
+  - computePixelLength(ann) → hypot(b-a)
+  - distanceToSegment(p, a, b) → za hit-test merne črte (click-to-edit)
+  - genAnnId() → unikatni ID za anotacije
+  - smartSuggestion(mm) → 4 pametna priporočila (višina ograje, razmik palic, razmik stebrov, dolg odsek)
+  - toMm(value, unit) → pretvorba mm/cm/m → mm
+- Popolnoma prepisal drawAnnotation za 'measure' tip:
+  - Nov parameter calibration?: PhotoCalibration | null
+  - Barva črte: amber (#f59e0b) za kalibracijsko, green (#22c55e) za meritev, red (#ef4444) za N/A
+  - Oznaka na črti: "REF · 600 mm · 60.0 cm · 0.60 m" za kalibracijo, "M1 · 324 mm · 32.4 cm · 0.32 m" za meritev, "M1 · N/A — umeri referenco" brez kalibracije
+  - Označba (user-defined oznaka) prefixana pred M# če je vpisana
+  - Arrowhead-i na obeh koncih (obstoječa logika)
+- AnnotationEditor razširjen z novimi props: projectId?, photoId? (oba optional, za persistenco kalibracije)
+- Nov state v AnnotationEditor: photoCalibration, refRealLen, refUnit, refLabel, calibrationExpanded, suggestion, editMeasure, transferring
+- Nov useEffect za load kalibracije iz localStorage (per-photo `roksal_photo_calibration_{photoId}` najprej, nato per-project `roksal_calibration_{projectId}` — kompatibilno z measurements-tab.tsx)
+- Nov persistCalibration() — shranjuje v oba ključa; per-project v obliki {realMm, pixelDistance, pixelsPerMm, note} da je berljivo v measurements-tab
+- redraw() posodobljen: dodeli seqNum mernim anotacijam (brez kalibracijske), pokliče drawAnnotation z calibration
+- onPointerDown posodobljen: hit-test za merne črte (18px threshold) — klik na obstoječo črto odpre edit dialog namesto risanja
+- onPointerUp za measure tool: pokliče commitMeasureLine namesto starega modala
+- commitMeasureLine(ann) — NOVA logika:
+  - Če kalibracija obstaja: izračuna realMm = pxLen/pixelsPerMm, doda med anotacije, sproži smartSuggestion
+  - Če ni kalibracije ampak je refRealLen vnešen: ta črta postane kalibracijska referenca — izračuna pxPerMm, persista, toast "Umerjeno: 2.34 px/mm"
+  - Če ni ne kalibracije ne refRealLen: N/A črta + toast "Ni umeritve" + razširi kalibracijsko kartico
+- clearCalibration() — pobriše kalibracijo iz state + localStorage + odstrani kalibracijsko anotacijo
+- applyPreset(mm) — nastavi refRealLen + refUnit='mm'
+- deleteMeasure(id), saveMeasureLabel(id, oznaka) — CRUD za mere
+- exportCsv() — izvozi vse mere kot CSV (BOM + proper escaping) z MM/CM/M/Piksli stolpci
+- transferToMeasurements() — POST vsako mero v /api/measurements z {projectId, dolzinaMm: round(realMm), visinaMm: 1, arMetadata: {tipMeritve:'RAZDALJA', oznaka, source:'photo', photoId}}; Progress bar med prenosom; toast na koncu
+- measureList useMemo — filter + seqNum + realLengthMm za tabelo
+- measureStats useMemo — total/avg/count za summary row
+- handleSave posodobljen: dodeli seqNum pred skaliranjem, skalira pixelLength, pokliče drawAnnotation z calibration
+- NOVA UI:
+  - Kalibracijska kartica (Collapsible) nad canvasom ko je Mera aktiven: naslov + status badge (✓ Umerjeno X px/mm / ✗ Ni umerjeno), hitre reference chip-i, realna dolžina + enota Select, "Kaj je referenca?" input, navodila, "Počisti" gumb
+  - Suggestion banner pod canvasom (dismissable, amber bg)
+  - "Mere na sliki" tabela pod canvasom: # | Oznaka | Realna dolžina | Dejanja (edit/delete), summary footer (Skupna/Povprečna/Št. mer), CSV + V Meritve gumbi
+  - Edit dialog za mero: podrobnosti (piksli, realna, umeritev) + input za oznako + Izbriši/Prekliči/Shrani
+  - Progress overlay med prenosom v Meritve
+- Posodobil obe AnnotationEditor invokaciji (PhotoTab + CameraCapture) da pošljeta projectId in photoId
+- Odstranil star measureInput/measureValue state in commitMeasure funkcijo in stari modal za vnos mere
+- ESLint: 0 errors, 0 warnings
+- Dev server: ✓ Compiled v 122ms, HTTP 200 na /, brez napak v dev.log
+- Datoteka zrasla z 1835 → 2566 vrstic (+731 vrstic, 5 novih funkcij)
+
+Stage Summary:
+- **5 funkcij dodanih** v AnnotationEditor (photo-tab.tsx) kot specifikacija:
+  1. **KALIBRACIJA NA SLIKI** — Collapsible kartica nad canvasom ko je Mera aktiven; realna dolžina + enota (mm/cm/m) Select; "Kaj je referenca?" input; navodila; status badge (✓/✗); "Počisti" gumb; persistenca v `roksal_photo_calibration_{photoId}` + `roksal_calibration_{projectId}` (kompatibilno z measurements-tab)
+  2. **MERNE ČRTE Z REALNO DOLŽINO** — prva črta postane kalibracijska (izračun px/mm), naslednje črte samodejno izračunajo realMm; oznaka "M1 · 324 mm · 32.4 cm · 0.32 m" (multi-unit); amber za kalibracijo, green za meritev, red za N/A; click-to-edit z edit dialogom (oznaka + podrobnosti + delete)
+  3. **PREGLEDNICA MER** — Table pod canvasom (#/Oznaka/Realna dolžina/Dejanja), summary footer (Skupna/Povprečna/Št.), "Izvozi CSV" + "Prenesi v Meritve" gumbi; prenos POST-a vsako mero v /api/measurements z arMetadata {tipMeritve:'RAZDALJA', oznaka, source:'photo', photoId}
+  4. **HITRE REFERENCE** — 6 preset chip-ov (A4 297, Ploščica 600/300/200, Opeka 250, Vratilo 800); klik nastavi refRealLen + unit
+  5. **SAMODEJNA PRIPOROČILA** — smartSuggestion() ob vsakem novi meri; 4 kategorije (višina ograje 1000-1500, razmik palic 100-150, razmik stebrov 1400-1600, dolg odsek >3000); dismissable banner pod canvasom
+- **Ključne odločitve**: 
+  - visinaMm: 1 namesto 0 (API validacija zahteva positive int) — minimalna validna vrednost
+  - arMetadata poslan kot objekt ne string (API interno JSON.stringify)
+  - Per-project ključ `roksal_calibration_{projectId}` v obliki kompatibilni z measurements-tab.tsx — kalibracija se deli med Foto in Meritve zavihek
+  - Annotation interface razširjen z optional polji (id, pixelLength, realLengthMm, isCalibration, oznaka, seqNum) — backward compatible z drugimi orodji
+  - drawAnnotation dobi nov calibration parameter (optional) — ne poškoduje obstoječih klicev
+  - seqNum se dinamično dodeli v redraw() (renumbering ko se izbriše mera)
+  - Hit-test 18px threshold za click-to-edit (deluje tudi na mobilnih)
+- **Vsa obstoječa funkcionalnost ohranjena**: 8 orodij, 5 barv, 3 debeline, CameraCapture, BeforeAfterSlider, PairCreatorDialog, galerija, filtri, pare
+- **Ničen vpliv na druge datoteke** — samo photo-tab.tsx spremenjen
+- **Vsebimo**: vse gumbi type="button", slovenski UI, navy/amber/green tema, shadcn/ui komponente (Card, Button, Input, Label, Select, Badge, Separator, Table, Collapsible, Dialog, Progress), mobile-first (touch-none canvas, scrollable tabela, collapsible kartica)

@@ -10,12 +10,16 @@ import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Progress } from '@/components/ui/progress'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible'
+import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell, TableFooter } from '@/components/ui/table'
 import { useToast } from '@/hooks/use-toast'
 import {
   Camera, Trash2, MapPin, Image as ImageIcon, X, Check, Loader2, AlertTriangle,
   ArrowRight, Minus, Square, Circle as CircleIcon, Type, Pencil, Ruler, Eraser,
   Upload, Copy, Download, ChevronLeft, ChevronRight, Images, Layers, Search,
   ExternalLink, Save, Undo2, Calendar, Sparkles, Columns, Trash,
+  ChevronDown, Lightbulb, FileText, Send, Info,
 } from 'lucide-react'
 
 // ============================================================
@@ -34,6 +38,7 @@ interface Photo {
 type Tool = 'arrow' | 'line' | 'rect' | 'circle' | 'text' | 'pen' | 'measure' | 'eraser'
 
 interface Annotation {
+  id?: string
   type: 'arrow' | 'line' | 'rect' | 'circle' | 'text' | 'pen' | 'measure'
   color: string
   width: number
@@ -41,6 +46,86 @@ interface Annotation {
   text?: string
   fontSize?: number
   label?: string
+  // merne črte — realna dolžina (ImageMeter stil)
+  pixelLength?: number
+  realLengthMm?: number
+  isCalibration?: boolean
+  oznaka?: string
+  seqNum?: number
+}
+
+// Kalibracija slike — referenčni objekt za izračun realnih mer
+interface PhotoCalibration {
+  realMm: number            // realna dolžina v mm (normalizirano)
+  unit: 'mm' | 'cm' | 'm'   // originalna enota vnosa
+  originalValue: number     // originalna vrednost vnosa (v originalni enoti)
+  pixelsPerMm: number       // izračunano: piksli na mm
+  oznaka: string            // opis reference (npr. "ploščica")
+  calibrationAnnId: string  // ID anotacije, ki je referenčna črta
+  createdAt: string
+}
+
+const QUICK_REFS = [
+  { label: 'A4 list', mm: 297 },
+  { label: 'Ploščica 600', mm: 600 },
+  { label: 'Ploščica 300', mm: 300 },
+  { label: 'Ploščica 200', mm: 200 },
+  { label: 'Opeka 250', mm: 250 },
+  { label: 'Vratilo 800', mm: 800 },
+]
+
+// Formatira dolžino v več enotah: "324 mm · 32.4 cm · 0.32 m"
+function formatDistanceMulti(mm: number): string {
+  if (!isFinite(mm) || mm <= 0) return '—'
+  const m = mm / 1000
+  const cm = mm / 10
+  return `${Math.round(mm)} mm · ${cm.toFixed(1)} cm · ${m.toFixed(2)} m`
+}
+
+// Izračuna dolžino črte v pikslih
+function computePixelLength(ann: Annotation): number {
+  if (ann.points.length < 2) return 0
+  const [a, b] = ann.points
+  return Math.hypot(b.x - a.x, b.y - a.y)
+}
+
+// Razdalja točke do segmenta (za hit-test merne črte)
+function distanceToSegment(
+  p: { x: number; y: number },
+  a: { x: number; y: number },
+  b: { x: number; y: number }
+): number {
+  const dx = b.x - a.x
+  const dy = b.y - a.y
+  const lenSq = dx * dx + dy * dy
+  if (lenSq === 0) return Math.hypot(p.x - a.x, p.y - a.y)
+  let t = ((p.x - a.x) * dx + (p.y - a.y) * dy) / lenSq
+  t = Math.max(0, Math.min(1, t))
+  const projX = a.x + t * dx
+  const projY = a.y + t * dy
+  return Math.hypot(p.x - projX, p.y - projY)
+}
+
+// Generira unikatni ID za anotacijo
+function genAnnId(): string {
+  return 'ann_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7)
+}
+
+// Pametno priporočilo glede na dolžino mere
+function smartSuggestion(mm: number): string | null {
+  if (!isFinite(mm) || mm <= 0) return null
+  if (mm >= 1000 && mm <= 1500) return '💡 Tipična višina ograje (1100mm)'
+  if (mm >= 100 && mm <= 150) return '💡 Razmik med palicami (110mm max)'
+  if (mm >= 1400 && mm <= 1600) return '💡 Razmik stebrov (1500mm max)'
+  if (mm > 3000) return '💡 Dolg odsek — preveri statiko'
+  return null
+}
+
+// Pretvori vrednost + enoto v mm
+function toMm(value: number, unit: 'mm' | 'cm' | 'm'): number {
+  if (unit === 'cm') return value * 10
+  if (unit === 'm') return value * 1000
+  return value
 }
 
 interface PhotoPair {
@@ -160,7 +245,7 @@ function drawArrowHead(
 }
 
 // Nariše posamezno anotacijo na kontekst
-function drawAnnotation(ctx: CanvasRenderingContext2D, ann: Annotation) {
+function drawAnnotation(ctx: CanvasRenderingContext2D, ann: Annotation, calibration?: PhotoCalibration | null) {
   ctx.strokeStyle = ann.color
   ctx.fillStyle = ann.color
   ctx.lineWidth = Math.max(0.5, ann.width)
@@ -207,25 +292,51 @@ function drawAnnotation(ctx: CanvasRenderingContext2D, ann: Annotation) {
     ctx.lineTo(b.x, b.y)
     ctx.stroke()
   } else if (ann.type === 'measure') {
+    // Merna črta — barva glede na tip (amber=kalibracija, green=meritev)
+    const lineColor = ann.isCalibration ? '#f59e0b' : '#22c55e'
+    ctx.strokeStyle = lineColor
+    ctx.fillStyle = lineColor
+    ctx.lineWidth = Math.max(1.5, ann.width)
+
     ctx.beginPath()
     ctx.moveTo(a.x, a.y)
     ctx.lineTo(b.x, b.y)
     ctx.stroke()
-    drawArrowHead(ctx, a.x, a.y, b.x, b.y, ann.color, ann.width)
-    drawArrowHead(ctx, b.x, b.y, a.x, a.y, ann.color, ann.width)
-    if (ann.label) {
-      const mx = (a.x + b.x) / 2
-      const my = (a.y + b.y) / 2
-      const fs = ann.fontSize ?? 14
-      ctx.font = `bold ${fs}px sans-serif`
-      const w = ctx.measureText(ann.label).width + 12
-      ctx.fillStyle = ann.color
-      ctx.fillRect(mx - w / 2, my - fs / 2 - 4, w, fs + 8)
-      ctx.fillStyle = ann.color === '#ffffff' ? '#1d2b3e' : '#ffffff'
-      ctx.textAlign = 'center'
-      ctx.textBaseline = 'middle'
-      ctx.fillText(ann.label, mx, my)
+    drawArrowHead(ctx, a.x, a.y, b.x, b.y, lineColor, ann.width)
+    drawArrowHead(ctx, b.x, b.y, a.x, a.y, lineColor, ann.width)
+
+    // Oznaka z realno dolžino (multi-unit)
+    const pxLen = ann.pixelLength ?? Math.hypot(b.x - a.x, b.y - a.y)
+    let label: string
+    let bgColor = lineColor
+    let textColor = '#ffffff'
+
+    if (ann.isCalibration) {
+      const realMm = calibration?.realMm ?? 0
+      const ref = calibration?.oznaka ? `${calibration.oznaka} · ` : ''
+      label = `${ref}REF · ${formatDistanceMulti(realMm)}`
+    } else if (calibration && calibration.pixelsPerMm > 0) {
+      const realMm = pxLen / calibration.pixelsPerMm
+      const seq = ann.seqNum ?? 1
+      const base = `M${seq} · ${formatDistanceMulti(realMm)}`
+      label = ann.oznaka ? `${ann.oznaka} · ${base}` : base
+    } else {
+      const seq = ann.seqNum ?? 1
+      label = `M${seq} · N/A — umeri referenco`
+      bgColor = '#ef4444'
     }
+
+    const mx = (a.x + b.x) / 2
+    const my = (a.y + b.y) / 2
+    const fs = ann.fontSize ?? 14
+    ctx.font = `bold ${fs}px sans-serif`
+    const w = ctx.measureText(label).width + 12
+    ctx.fillStyle = bgColor
+    ctx.fillRect(mx - w / 2, my - fs / 2 - 4, w, fs + 8)
+    ctx.fillStyle = textColor
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(label, mx, my)
   } else if (ann.type === 'rect') {
     const x = Math.min(a.x, b.x)
     const y = Math.min(a.y, b.y)
@@ -874,6 +985,8 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
       {annotationPhoto && annotationNewImage && (
         <AnnotationEditor
           imageData={annotationNewImage}
+          projectId={projectId}
+          photoId={annotationPhoto.id}
           onSave={(newData) => handleAnnotationSave(annotationPhoto, newData)}
           onCancel={() => {
             setAnnotationPhoto(null)
@@ -1174,6 +1287,8 @@ function CameraCapture({
     return (
       <AnnotationEditor
         imageData={capturedData}
+        projectId={projectId}
+        photoId={null}
         onSave={(newData) => {
           setCapturedData(newData)
           setAnnotateMode(false)
@@ -1294,10 +1409,14 @@ function AnnotationEditor({
   imageData,
   onSave,
   onCancel,
+  projectId,
+  photoId,
 }: {
   imageData: string
   onSave: (newImageData: string) => void
   onCancel: () => void
+  projectId?: string | null
+  photoId?: string | null
 }) {
   const [tool, setTool] = useState<Tool>('arrow')
   const [color, setColor] = useState(COLORS[0].value)
@@ -1305,14 +1424,96 @@ function AnnotationEditor({
   const [anns, setAnns] = useState<Annotation[]>([])
   const [current, setCurrent] = useState<Annotation | null>(null)
   const [textValue, setTextValue] = useState('')
-  const [measureInput, setMeasureInput] = useState<{ ann: Annotation } | null>(null)
-  const [measureValue, setMeasureValue] = useState('')
   const [saving, setSaving] = useState(false)
+
+  // ——— Kalibracija slike (ImageMeter stil) ———
+  const [photoCalibration, setPhotoCalibration] = useState<PhotoCalibration | null>(null)
+  const [refRealLen, setRefRealLen] = useState('')
+  const [refUnit, setRefUnit] = useState<'mm' | 'cm' | 'm'>('mm')
+  const [refLabel, setRefLabel] = useState('')
+  const [calibrationExpanded, setCalibrationExpanded] = useState(true)
+  const [suggestion, setSuggestion] = useState<{ id: string; text: string } | null>(null)
+  const [editMeasure, setEditMeasure] = useState<{
+    id: string
+    oznaka: string
+    pixelLength: number
+    realLengthMm?: number
+    isCalibration?: boolean
+  } | null>(null)
+  const [transferring, setTransferring] = useState<{ current: number; total: number } | null>(null)
 
   const drawingRef = useRef(false)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const imageRef = useRef<HTMLImageElement>(null)
   const { toast } = useToast()
+
+  // —— Naloži kalibracijo iz localStorage ob odprtju ——
+  useEffect(() => {
+    let loaded: PhotoCalibration | null = null
+    // Najprej poskusi per-photo
+    if (photoId) {
+      try {
+        const raw = localStorage.getItem(`roksal_photo_calibration_${photoId}`)
+        if (raw) loaded = JSON.parse(raw) as PhotoCalibration
+      } catch { /* ignore */ }
+    }
+    // Nato poskusi per-project (kompatibilno z measurements-tab)
+    if (!loaded && projectId) {
+      try {
+        const raw = localStorage.getItem(`roksal_calibration_${projectId}`)
+        if (raw) {
+          const cal = JSON.parse(raw)
+          if (cal && typeof cal.pixelsPerMm === 'number' && cal.pixelsPerMm > 0) {
+            const realMmVal = parseFloat(cal.realMm) || 0
+            loaded = {
+              realMm: realMmVal,
+              unit: 'mm',
+              originalValue: realMmVal,
+              pixelsPerMm: cal.pixelsPerMm,
+              oznaka: typeof cal.note === 'string' ? cal.note : '',
+              calibrationAnnId: '',
+              createdAt: new Date().toISOString(),
+            }
+          }
+        }
+      } catch { /* ignore */ }
+    }
+    if (loaded) {
+      setPhotoCalibration(loaded)
+      if (loaded.oznaka) setRefLabel(loaded.oznaka)
+      if (loaded.originalValue) setRefRealLen(String(loaded.originalValue))
+      if (loaded.unit) setRefUnit(loaded.unit)
+      setCalibrationExpanded(false)
+    } else {
+      setCalibrationExpanded(true)
+    }
+  }, [photoId, projectId])
+
+  // —— Shrani kalibracijo v localStorage ——
+  function persistCalibration(cal: PhotoCalibration | null) {
+    if (photoId) {
+      try {
+        if (cal) localStorage.setItem(`roksal_photo_calibration_${photoId}`, JSON.stringify(cal))
+        else localStorage.removeItem(`roksal_photo_calibration_${photoId}`)
+      } catch { /* ignore */ }
+    }
+    if (projectId) {
+      try {
+        if (cal) {
+          // Per-project ključ (kompatibilen z measurements-tab.tsx)
+          const projectCal = {
+            realMm: String(cal.originalValue),
+            pixelDistance: '',
+            pixelsPerMm: cal.pixelsPerMm,
+            note: cal.oznaka,
+          }
+          localStorage.setItem(`roksal_calibration_${projectId}`, JSON.stringify(projectCal))
+        } else {
+          localStorage.removeItem(`roksal_calibration_${projectId}`)
+        }
+      } catch { /* ignore */ }
+    }
+  }
 
   const redraw = useCallback(() => {
     const canvas = canvasRef.current
@@ -1320,9 +1521,25 @@ function AnnotationEditor({
     const ctx = canvas.getContext('2d')
     if (!ctx) return
     ctx.clearRect(0, 0, canvas.width, canvas.height)
-    for (const ann of anns) drawAnnotation(ctx, ann)
-    if (current) drawAnnotation(ctx, current)
-  }, [anns, current])
+
+    // Dodeli seqNum mernim anotacijam (brez kalibracijske)
+    let measureIdx = 0
+    const annotated = anns.map((ann) => {
+      if (ann.type === 'measure' && !ann.isCalibration) {
+        measureIdx++
+        return { ...ann, seqNum: measureIdx }
+      }
+      return ann
+    })
+    for (const ann of annotated) drawAnnotation(ctx, ann, photoCalibration)
+    if (current) {
+      const curAnnotated =
+        current.type === 'measure' && !current.isCalibration
+          ? { ...current, seqNum: measureIdx + 1 }
+          : current
+      drawAnnotation(ctx, curAnnotated, photoCalibration)
+    }
+  }, [anns, current, photoCalibration])
 
   useEffect(() => {
     redraw()
@@ -1358,12 +1575,40 @@ function AnnotationEditor({
   }
 
   function onPointerDown(e: React.PointerEvent) {
-    if (measureInput) return
+    if (editMeasure) return
     if (tool === 'eraser') {
       setAnns((a) => a.slice(0, -1))
       return
     }
     const p = getPos(e)
+
+    // Hit-test za merne črte — klik na obstoječo črto odpre urejanje
+    if (tool === 'measure') {
+      const hitThreshold = 18
+      for (let i = anns.length - 1; i >= 0; i--) {
+        const ann = anns[i]
+        if (ann.type !== 'measure' || ann.points.length < 2) continue
+        const [a, b] = ann.points
+        const d = distanceToSegment(p, a, b)
+        if (d <= hitThreshold) {
+          const pxLen = ann.pixelLength ?? Math.hypot(b.x - a.x, b.y - a.y)
+          const realMm = ann.isCalibration
+            ? photoCalibration?.realMm
+            : photoCalibration
+              ? pxLen / photoCalibration.pixelsPerMm
+              : undefined
+          setEditMeasure({
+            id: ann.id ?? '',
+            oznaka: ann.oznaka ?? '',
+            pixelLength: pxLen,
+            realLengthMm: realMm,
+            isCalibration: ann.isCalibration,
+          })
+          return
+        }
+      }
+    }
+
     if (tool === 'text') {
       if (!textValue.trim()) {
         toast({ title: 'Vnesite besedilo', description: 'Najprej vnesite besedilo v polje zgoraj.' })
@@ -1372,6 +1617,7 @@ function AnnotationEditor({
       setAnns((a) => [
         ...a,
         {
+          id: genAnnId(),
           type: 'text',
           color,
           width: stroke,
@@ -1390,6 +1636,7 @@ function AnnotationEditor({
       /* ignore */
     }
     const newAnn: Annotation = {
+      id: genAnnId(),
       type: tool,
       color,
       width: stroke,
@@ -1417,27 +1664,209 @@ function AnnotationEditor({
       /* ignore */
     }
     if (current.type === 'measure') {
-      setMeasureInput({ ann: current })
-      setMeasureValue('')
-      setCurrent(null)
+      commitMeasureLine(current)
       return
     }
     setAnns((a) => [...a, current])
     setCurrent(null)
   }
 
-  function commitMeasure() {
-    if (!measureInput) return
-    const length = parseFloat(measureValue)
-    if (isNaN(length) || length <= 0) {
-      toast({ title: 'Vnesite veljavno dolžino', variant: 'destructive' })
+  // —— Obdelaj novo merno črto (kalibracija ALI meritev) ——
+  function commitMeasureLine(ann: Annotation) {
+    const pxLen = computePixelLength(ann)
+    if (pxLen < 5) {
+      // Prekratka črta — prezri
+      setCurrent(null)
       return
     }
-    const label = formatLength(length)
-    setAnns((a) => [...a, { ...measureInput.ann, label, fontSize: 14 + stroke }])
-    setMeasureInput(null)
-    setMeasureValue('')
+    const id = ann.id ?? genAnnId()
+    const annWithLen: Annotation = { ...ann, id, pixelLength: pxLen }
+
+    if (photoCalibration) {
+      // Navadna meritev — izračunaj realno dolžino
+      const realMm = pxLen / photoCalibration.pixelsPerMm
+      const newAnn: Annotation = { ...annWithLen, realLengthMm: realMm, isCalibration: false }
+      setAnns((a) => [...a, newAnn])
+      setCurrent(null)
+      const sugg = smartSuggestion(realMm)
+      if (sugg) setSuggestion({ id, text: sugg })
+      else setSuggestion(null)
+      return
+    }
+
+    // Ni kalibracije — preveri, ali je vnešena realna dolžina reference
+    const realLenVal = parseFloat(refRealLen)
+    if (!isNaN(realLenVal) && realLenVal > 0) {
+      // Ta črta postane kalibracijska referenca
+      const realMm = toMm(realLenVal, refUnit)
+      const pxPerMm = pxLen / realMm
+      const newAnn: Annotation = { ...annWithLen, isCalibration: true, realLengthMm: realMm }
+      const cal: PhotoCalibration = {
+        realMm,
+        unit: refUnit,
+        originalValue: realLenVal,
+        pixelsPerMm: pxPerMm,
+        oznaka: refLabel.trim(),
+        calibrationAnnId: id,
+        createdAt: new Date().toISOString(),
+      }
+      setPhotoCalibration(cal)
+      persistCalibration(cal)
+      setAnns((a) => [...a, newAnn])
+      setCurrent(null)
+      setCalibrationExpanded(false)
+      setSuggestion(null)
+      toast({
+        title: 'Umerjeno!',
+        description: `${pxPerMm.toFixed(2)} px/mm — sedaj lahko meriš!`,
+      })
+      return
+    }
+
+    // Ni kalibracije in ni realne dolžine — N/A črta
+    const newAnn: Annotation = { ...annWithLen, isCalibration: false }
+    setAnns((a) => [...a, newAnn])
+    setCurrent(null)
+    setSuggestion(null)
+    setCalibrationExpanded(true)
+    toast({
+      title: 'Ni umeritve',
+      description: 'Vnesi realno dolžino referenčnega objekta v umeritveni kartici zgoraj.',
+      variant: 'destructive',
+    })
   }
+
+  function clearCalibration() {
+    setPhotoCalibration(null)
+    persistCalibration(null)
+    // Odstrani tudi kalibracijsko anotacijo
+    setAnns((a) => a.filter((ann) => !ann.isCalibration))
+    setRefRealLen('')
+    setRefLabel('')
+    setCalibrationExpanded(true)
+    setSuggestion(null)
+    toast({ title: 'Umeritev počiščena' })
+  }
+
+  function applyPreset(mm: number) {
+    setRefRealLen(String(mm))
+    setRefUnit('mm')
+  }
+
+  function deleteMeasure(id: string) {
+    setAnns((a) => a.filter((ann) => ann.id !== id))
+    setEditMeasure(null)
+  }
+
+  function saveMeasureLabel(id: string, oznaka: string) {
+    setAnns((a) => a.map((ann) => (ann.id === id ? { ...ann, oznaka } : ann)))
+    setEditMeasure(null)
+  }
+
+  function exportCsv() {
+    const measures = anns.filter((a) => a.type === 'measure' && !a.isCalibration)
+    if (measures.length === 0) {
+      toast({ title: 'Ni mer za izvoz', variant: 'destructive' })
+      return
+    }
+    const rows: string[][] = [['#', 'Oznaka', 'Dolžina (mm)', 'Dolžina (cm)', 'Dolžina (m)', 'Piksli']]
+    let idx = 0
+    for (const m of measures) {
+      idx++
+      const pxLen = m.pixelLength ?? computePixelLength(m)
+      const realMm = photoCalibration ? pxLen / photoCalibration.pixelsPerMm : 0
+      rows.push([
+        `M${idx}`,
+        m.oznaka ?? '',
+        String(Math.round(realMm)),
+        (realMm / 10).toFixed(1),
+        (realMm / 1000).toFixed(2),
+        pxLen.toFixed(1),
+      ])
+    }
+    const csv = rows.map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n')
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `roksal-mere-${photoId ?? 'slika'}-${new Date().toISOString().slice(0, 10)}.csv`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    toast({ title: `CSV izvožen (${measures.length} mer)` })
+  }
+
+  async function transferToMeasurements() {
+    if (!projectId) {
+      toast({ title: 'Manjka projekt', description: 'Izberi projekt v zavihku Domov.', variant: 'destructive' })
+      return
+    }
+    const measures = anns.filter((a) => a.type === 'measure' && !a.isCalibration && a.pixelLength)
+    if (measures.length === 0) {
+      toast({ title: 'Ni mer za prenos', variant: 'destructive' })
+      return
+    }
+    if (!photoCalibration) {
+      toast({ title: 'Najprej umeri referenco', variant: 'destructive' })
+      return
+    }
+    setTransferring({ current: 0, total: measures.length })
+    let success = 0
+    for (let i = 0; i < measures.length; i++) {
+      setTransferring({ current: i, total: measures.length })
+      const m = measures[i]
+      const realMm = Math.max(1, Math.round((m.pixelLength ?? 0) / photoCalibration.pixelsPerMm))
+      try {
+        const res = await fetch('/api/measurements', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            projectId,
+            dolzinaMm: realMm,
+            visinaMm: 1,
+            arMetadata: {
+              tipMeritve: 'RAZDALJA',
+              oznaka: m.oznaka || `M${i + 1}`,
+              source: 'photo',
+              photoId: photoId ?? null,
+            },
+          }),
+        })
+        if (res.ok) success++
+      } catch { /* ignore */ }
+      setTransferring({ current: i + 1, total: measures.length })
+    }
+    setTransferring(null)
+    toast({
+      title: `${success} mer prenesenih v Meritve zavihek`,
+      description:
+        success === measures.length
+          ? 'Vse mere uspešno prenesene.'
+          : `${measures.length - success} napak pri prenosu.`,
+    })
+  }
+
+  // —— Preglednica mer (filter + seqNum + stats) ——
+  const measureList = useMemo(() => {
+    let idx = 0
+    return anns
+      .filter((a) => a.type === 'measure' && !a.isCalibration)
+      .map((a) => {
+        idx++
+        const pxLen = a.pixelLength ?? computePixelLength(a)
+        const realMm = photoCalibration ? pxLen / photoCalibration.pixelsPerMm : undefined
+        return { ...a, seqNum: idx, pixelLength: pxLen, realLengthMm: realMm }
+      })
+  }, [anns, photoCalibration])
+
+  const measureStats = useMemo(() => {
+    if (measureList.length === 0) return { total: 0, avg: 0, count: 0 }
+    const validMms = measureList.filter((m) => m.realLengthMm).map((m) => m.realLengthMm as number)
+    if (validMms.length === 0) return { total: 0, avg: 0, count: measureList.length }
+    const total = validMms.reduce((s, m) => s + m, 0)
+    return { total, avg: total / validMms.length, count: measureList.length }
+  }, [measureList])
 
   async function handleSave() {
     setSaving(true)
@@ -1463,14 +1892,21 @@ function AnnotationEditor({
       if (displayCanvas && displayCanvas.width > 0) {
         const scaleX = saveCanvas.width / displayCanvas.width
         const scaleY = saveCanvas.height / displayCanvas.height
+        // Dodeli seqNum pred skaliranjem
+        let measureIdx = 0
         for (const ann of anns) {
+          const seqAnn =
+            ann.type === 'measure' && !ann.isCalibration
+              ? { ...ann, seqNum: ++measureIdx }
+              : ann
           const scaledAnn: Annotation = {
-            ...ann,
-            width: Math.max(0.5, ann.width * scaleX),
-            fontSize: (ann.fontSize ?? 14) * scaleX,
-            points: ann.points.map((p) => ({ x: p.x * scaleX, y: p.y * scaleY })),
+            ...seqAnn,
+            width: Math.max(0.5, seqAnn.width * scaleX),
+            fontSize: (seqAnn.fontSize ?? 14) * scaleX,
+            points: seqAnn.points.map((p) => ({ x: p.x * scaleX, y: p.y * scaleY })),
+            pixelLength: seqAnn.pixelLength ? seqAnn.pixelLength * scaleX : undefined,
           }
-          drawAnnotation(sctx, scaledAnn)
+          drawAnnotation(sctx, scaledAnn, photoCalibration)
         }
       }
 
@@ -1487,6 +1923,7 @@ function AnnotationEditor({
   function clearAll() {
     setAnns([])
     setCurrent(null)
+    setSuggestion(null)
   }
 
   function undoLast() {
@@ -1586,6 +2023,128 @@ function AnnotationEditor({
         )}
       </div>
 
+      {/* KALIBRACIJSKA KARTICA — ko je izbrano orodje Mera */}
+      {tool === 'measure' && (
+        <Collapsible
+          open={calibrationExpanded}
+          onOpenChange={setCalibrationExpanded}
+          className="border-b border-border bg-white"
+        >
+          <div className="flex items-center justify-between gap-2 px-3 py-2">
+            <div className="flex min-w-0 items-center gap-1.5">
+              <Ruler className="h-4 w-4 shrink-0 text-roksal-amber" />
+              <span className="text-[11px] font-semibold text-roksal-navy">Umeritev reference</span>
+              {photoCalibration ? (
+                <Badge className="shrink-0 bg-green-100 text-[9px] text-green-800">
+                  ✓ {photoCalibration.pixelsPerMm.toFixed(2)} px/mm
+                </Badge>
+              ) : (
+                <Badge className="shrink-0 bg-red-100 text-[9px] text-red-800">✗ Ni umerjeno</Badge>
+              )}
+            </div>
+            <div className="flex items-center gap-1">
+              {photoCalibration && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearCalibration}
+                  className="h-7 px-2 text-[10px] text-red-600 hover:bg-red-50 hover:text-red-700"
+                >
+                  <Trash2 className="mr-1 h-3 w-3" />
+                  Počisti
+                </Button>
+              )}
+              <CollapsibleTrigger asChild>
+                <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0">
+                  <ChevronDown
+                    className={`h-4 w-4 transition-transform ${calibrationExpanded ? '' : '-rotate-90'}`}
+                  />
+                </Button>
+              </CollapsibleTrigger>
+            </div>
+          </div>
+          <CollapsibleContent>
+            <div className="space-y-2 px-3 pb-3">
+              {/* Hitre reference */}
+              <div>
+                <Label className="mb-1 block text-[10px] text-muted-foreground">Hitre reference</Label>
+                <div className="flex gap-1 overflow-x-auto pb-1 no-scrollbar">
+                  {QUICK_REFS.map((qr) => (
+                    <button
+                      key={qr.label}
+                      type="button"
+                      onClick={() => applyPreset(qr.mm)}
+                      disabled={!!photoCalibration}
+                      className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] transition-colors disabled:opacity-50 ${
+                        refRealLen === String(qr.mm) && refUnit === 'mm'
+                          ? 'border-roksal-amber bg-roksal-amber text-white'
+                          : 'border-border bg-white text-muted-foreground hover:bg-muted'
+                      }`}
+                    >
+                      {qr.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {/* Realna dolžina + enota */}
+              <div className="grid grid-cols-[1fr_auto] gap-1.5">
+                <div>
+                  <Label className="mb-0.5 block text-[10px] text-muted-foreground">Realna dolžina</Label>
+                  <Input
+                    type="number"
+                    value={refRealLen}
+                    onChange={(e) => setRefRealLen(e.target.value)}
+                    placeholder="npr. 600"
+                    disabled={!!photoCalibration}
+                    className="h-8 text-xs"
+                  />
+                </div>
+                <div>
+                  <Label className="mb-0.5 block text-[10px] text-muted-foreground">Enota</Label>
+                  <Select
+                    value={refUnit}
+                    onValueChange={(v) => setRefUnit(v as 'mm' | 'cm' | 'm')}
+                    disabled={!!photoCalibration}
+                  >
+                    <SelectTrigger className="h-8 w-[70px] text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="mm">mm</SelectItem>
+                      <SelectItem value="cm">cm</SelectItem>
+                      <SelectItem value="m">m</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              {/* Kaj je referenca? */}
+              <div>
+                <Label className="mb-0.5 block text-[10px] text-muted-foreground">
+                  Kaj je referenca? (opcijsko)
+                </Label>
+                <Input
+                  value={refLabel}
+                  onChange={(e) => setRefLabel(e.target.value)}
+                  placeholder="npr. ploščica, A4 list, vratilo"
+                  disabled={!!photoCalibration}
+                  className="h-8 text-xs"
+                />
+              </div>
+              {/* Navodila */}
+              <div className="flex items-start gap-1.5 rounded-md border border-amber-200 bg-amber-50 px-2 py-1.5 text-[10px] text-amber-900">
+                <Info className="mt-0.5 h-3 w-3 shrink-0" />
+                <span>
+                  {photoCalibration
+                    ? `Umerjeno z “${photoCalibration.oznaka || 'referenco'}”. Riši črte za meritve — realna dolžina se izračuna samodejno.`
+                    : '1. Vnesi realno dolžino referenčnega objekta.  2. Nariši črto preko referenčnega objekta na sliki — sistem izračuna px/mm.'}
+                </span>
+              </div>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+      )}
+
       {/* SLIKA + CANVAS */}
       <div className="relative flex-1 overflow-hidden bg-black">
         { }
@@ -1606,6 +2165,124 @@ function AnnotationEditor({
           style={{ touchAction: 'none', cursor: tool === 'text' ? 'text' : tool === 'eraser' ? 'cell' : 'crosshair' }}
         />
       </div>
+
+      {/* PAMETNO PRIPOROČILO — dismissable */}
+      {suggestion && (
+        <div className="flex items-center gap-2 border-t border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-900">
+          <Lightbulb className="h-3.5 w-3.5 shrink-0" />
+          <span className="flex-1">{suggestion.text}</span>
+          <button
+            type="button"
+            onClick={() => setSuggestion(null)}
+            className="shrink-0 rounded p-0.5 hover:bg-amber-100"
+            aria-label="Zapri priporočilo"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </div>
+      )}
+
+      {/* PREGLEDNICA MER — ko je orodje Mera in imamo meritve */}
+      {tool === 'measure' && measureList.length > 0 && (
+        <div className="max-h-[34vh] overflow-y-auto border-t border-border bg-white">
+          <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-border bg-white px-3 py-2">
+            <div className="flex items-center gap-1.5">
+              <Ruler className="h-4 w-4 text-roksal-green" />
+              <span className="text-[11px] font-semibold text-roksal-navy">Mere na sliki</span>
+              <Badge variant="secondary" className="text-[9px]">{measureList.length}</Badge>
+            </div>
+            <div className="flex gap-1">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={exportCsv}
+                className="h-7 px-2 text-[10px]"
+              >
+                <FileText className="mr-1 h-3 w-3" />
+                CSV
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                onClick={transferToMeasurements}
+                disabled={!!transferring || !photoCalibration}
+                className="h-7 bg-roksal-amber px-2 text-[10px] text-white hover:bg-roksal-amber/90"
+              >
+                <Send className="mr-1 h-3 w-3" />
+                V Meritve
+              </Button>
+            </div>
+          </div>
+          <Table>
+            <TableHeader>
+              <TableRow className="h-7">
+                <TableHead className="w-10 px-2 py-1 text-[10px]">#</TableHead>
+                <TableHead className="px-2 py-1 text-[10px]">Oznaka</TableHead>
+                <TableHead className="px-2 py-1 text-[10px]">Realna dolžina</TableHead>
+                <TableHead className="w-16 px-2 py-1 text-right text-[10px]">Dejanja</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {measureList.map((m) => (
+                <TableRow key={m.id} className="h-8">
+                  <TableCell className="px-2 py-1 text-[10px] font-semibold text-roksal-navy">M{m.seqNum}</TableCell>
+                  <TableCell className="px-2 py-1 text-[10px]">
+                    {m.oznaka || <span className="text-muted-foreground">—</span>}
+                  </TableCell>
+                  <TableCell className="px-2 py-1 text-[10px]">
+                    {m.realLengthMm ? (
+                      <span className="font-medium text-roksal-green">{formatDistanceMulti(m.realLengthMm)}</span>
+                    ) : (
+                      <span className="text-red-600">N/A</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="px-2 py-1">
+                    <div className="flex justify-end gap-0.5">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEditMeasure({
+                            id: m.id ?? '',
+                            oznaka: m.oznaka ?? '',
+                            pixelLength: m.pixelLength,
+                            realLengthMm: m.realLengthMm,
+                            isCalibration: false,
+                          })
+                        }
+                        className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-roksal-navy"
+                        aria-label="Uredi mero"
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => deleteMeasure(m.id ?? '')}
+                        className="rounded p-1 text-muted-foreground hover:bg-red-50 hover:text-red-600"
+                        aria-label="Izbriši mero"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+            {measureStats.count > 0 && (
+              <TableFooter>
+                <TableRow className="h-7 bg-muted/50">
+                  <TableCell colSpan={3} className="px-2 py-1 text-[10px] text-muted-foreground">
+                    Skupna: <strong className="text-roksal-navy">{measureStats.total > 0 ? formatDistanceMulti(measureStats.total) : '—'}</strong>
+                    {' · '}Povprečna: <strong className="text-roksal-navy">{measureStats.avg > 0 ? formatLength(measureStats.avg) : '—'}</strong>
+                    {' · '}Št. mer: <strong className="text-roksal-navy">{measureStats.count}</strong>
+                  </TableCell>
+                  <TableCell />
+                </TableRow>
+              </TableFooter>
+            )}
+          </Table>
+        </div>
+      )}
 
       {/* TOOLBAR — orodja */}
       <div className="flex gap-1 overflow-x-auto bg-roksal-navy px-2 py-2 no-scrollbar">
@@ -1629,37 +2306,91 @@ function AnnotationEditor({
         })}
       </div>
 
-      {/* MODAL — vnos mere */}
-      {measureInput && (
-        <Dialog open onOpenChange={(o) => !o && setMeasureInput(null)}>
-          <DialogContent className="max-w-xs">
+      {/* PRENOS V MERITVE — napredek */}
+      {transferring && (
+        <div className="absolute bottom-16 left-4 right-4 z-[90] rounded-lg border border-roksal-amber/40 bg-white p-3 shadow-lg">
+          <div className="mb-1.5 flex items-center justify-between text-xs">
+            <span className="font-medium text-roksal-navy">Prenos mer v Meritve...</span>
+            <span className="text-muted-foreground">
+              {transferring.current} / {transferring.total}
+            </span>
+          </div>
+          <Progress value={(transferring.current / Math.max(1, transferring.total)) * 100} className="h-1.5" />
+        </div>
+      )}
+
+      {/* MODAL — urejanje mere (oznaka + podrobnosti) */}
+      {editMeasure && (
+        <Dialog open onOpenChange={(o) => !o && setEditMeasure(null)}>
+          <DialogContent className="max-w-sm">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-sm">
                 <Ruler className="h-4 w-4 text-roksal-amber" />
-                Dolžina mere
+                {editMeasure.isCalibration ? 'Umeritvena črta (referenca)' : 'Podrobnosti mere'}
               </DialogTitle>
             </DialogHeader>
-            <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">Vnesi realno dolžino (mm)</Label>
-              <Input
-                type="number"
-                value={measureValue}
-                onChange={(e) => setMeasureValue(e.target.value)}
-                placeholder="npr. 1200"
-                autoFocus
-                onKeyDown={(e) => { if (e.key === 'Enter') commitMeasure() }}
-              />
-              <p className="text-[10px] text-muted-foreground">
-                Vrednost se prikaže kot oznaka na črti (npr. &quot;1.20 m&quot;).
-              </p>
+            <div className="space-y-3">
+              {/* Podrobnosti */}
+              <div className="grid grid-cols-2 gap-2 rounded-md border border-border bg-muted/30 p-2 text-[11px]">
+                <div>
+                  <p className="text-[10px] text-muted-foreground">Dolžina v pikslih</p>
+                  <p className="font-medium text-roksal-navy">{editMeasure.pixelLength.toFixed(1)} px</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-muted-foreground">Realna dolžina</p>
+                  {editMeasure.realLengthMm ? (
+                    <p className="font-medium text-roksal-green">{formatDistanceMulti(editMeasure.realLengthMm)}</p>
+                  ) : (
+                    <p className="font-medium text-red-600">N/A — ni umerjeno</p>
+                  )}
+                </div>
+                {photoCalibration && (
+                  <div className="col-span-2">
+                    <p className="text-[10px] text-muted-foreground">Uporabljena umeritev</p>
+                    <p className="font-medium text-roksal-navy">
+                      {photoCalibration.pixelsPerMm.toFixed(2)} px/mm
+                      {photoCalibration.oznaka ? ` · ${photoCalibration.oznaka}` : ''}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Uredi oznako */}
+              <div>
+                <Label className="mb-1 block text-xs text-muted-foreground">Oznaka mere (opcijsko)</Label>
+                <Input
+                  value={editMeasure.oznaka}
+                  onChange={(e) => setEditMeasure({ ...editMeasure, oznaka: e.target.value })}
+                  placeholder="npr. dolžina balkona, višina ograje"
+                  autoFocus
+                />
+                <p className="mt-1 text-[10px] text-muted-foreground">
+                  Oznaka se prikaže v preglednici in na črti na sliki.
+                </p>
+              </div>
             </div>
             <DialogFooter className="gap-2">
-              <Button type="button" variant="outline" size="sm" onClick={() => setMeasureInput(null)}>
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                onClick={() => deleteMeasure(editMeasure.id)}
+                className="mr-auto"
+              >
+                <Trash2 className="mr-1 h-3.5 w-3.5" />
+                Izbriši
+              </Button>
+              <Button type="button" variant="outline" size="sm" onClick={() => setEditMeasure(null)}>
                 Prekliči
               </Button>
-              <Button type="button" size="sm" onClick={commitMeasure} className="bg-roksal-amber text-white hover:bg-roksal-amber/90">
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => saveMeasureLabel(editMeasure.id, editMeasure.oznaka)}
+                className="bg-roksal-amber text-white hover:bg-roksal-amber/90"
+              >
                 <Check className="mr-1 h-3.5 w-3.5" />
-                Potrdi
+                Shrani
               </Button>
             </DialogFooter>
           </DialogContent>
