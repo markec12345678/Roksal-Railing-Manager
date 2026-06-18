@@ -1,0 +1,1836 @@
+     1→     1→'use client'
+     2→     2→
+     3→     3→import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+     4→     4→import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+     5→     5→import { Button } from '@/components/ui/button'
+     6→     6→import { Badge } from '@/components/ui/badge'
+     7→     7→import { Input } from '@/components/ui/input'
+     8→     8→import { Textarea } from '@/components/ui/textarea'
+     9→     9→import { Label } from '@/components/ui/label'
+    10→    10→import { Separator } from '@/components/ui/separator'
+    11→    11→import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+    12→    12→import { Progress } from '@/components/ui/progress'
+    13→    13→import { useToast } from '@/hooks/use-toast'
+    14→    14→import {
+    15→    15→  Camera, Trash2, MapPin, Image as ImageIcon, X, Check, Loader2, AlertTriangle,
+    16→    16→  ArrowRight, Minus, Square, Circle as CircleIcon, Type, Pencil, Ruler, Eraser,
+    17→    17→  Upload, Copy, Download, ChevronLeft, ChevronRight, Images, Layers, Search,
+    18→    18→  ExternalLink, Save, Undo2, Calendar, Sparkles, Columns, Trash,
+    19→    19→} from 'lucide-react'
+    20→    20→
+    21→    21→// ============================================================
+    22→    22→// TIPI & KONSTANTE
+    23→    23→// ============================================================
+    24→    24→interface Photo {
+    25→    25→  id: string
+    26→    26→  kategorija: string
+    27→    27→  imageData: string
+    28→    28→  opomba: string | null
+    29→    29→  latitude: number | null
+    30→    30→  longitude: number | null
+    31→    31→  createdAt: string
+    32→    32→}
+    33→    33→
+    34→    34→type Tool = 'arrow' | 'line' | 'rect' | 'circle' | 'text' | 'pen' | 'measure' | 'eraser'
+    35→    35→
+    36→    36→interface Annotation {
+    37→    37→  type: 'arrow' | 'line' | 'rect' | 'circle' | 'text' | 'pen' | 'measure'
+    38→    38→  color: string
+    39→    39→  width: number
+    40→    40→  points: { x: number; y: number }[]
+    41→    41→  text?: string
+    42→    42→  fontSize?: number
+    43→    43→  label?: string
+    44→    44→}
+    45→    45→
+    46→    46→interface PhotoPair {
+    47→    47→  predId: string
+    48→    48→  poId: string
+    49→    49→}
+    50→    50→
+    51→    51→const KATEGORIJE = [
+    52→    52→  { id: 'PRED', label: 'Pred montažo', short: 'Pred', cls: 'bg-blue-100 text-blue-800' },
+    53→    53→  { id: 'MED', label: 'Med montažo', short: 'Med', cls: 'bg-amber-100 text-amber-800' },
+    54→    54→  { id: 'PO', label: 'Po montaži', short: 'Po', cls: 'bg-green-100 text-green-800' },
+    55→    55→] as const
+    56→    56→
+    57→    57→const COLORS = [
+    58→    58→  { name: 'Rdeča', value: '#ef4444' },
+    59→    59→  { name: 'Oranžna', value: '#f59e0b' },
+    60→    60→  { name: 'Zelena', value: '#22c55e' },
+    61→    61→  { name: 'Temno modra', value: '#1d2b3e' },
+    62→    62→  { name: 'Bela', value: '#ffffff' },
+    63→    63→]
+    64→    64→
+    65→    65→const STROKES = [
+    66→    66→  { name: 'Tanko', value: 2 },
+    67→    67→  { name: 'Srednje', value: 4 },
+    68→    68→  { name: 'Debelo', value: 6 },
+    69→    69→]
+    70→    70→
+    71→    71→const TOOLS: { id: Tool; label: string; icon: typeof Camera }[] = [
+    72→    72→  { id: 'arrow', label: 'Puščica', icon: ArrowRight },
+    73→    73→  { id: 'line', label: 'Črta', icon: Minus },
+    74→    74→  { id: 'rect', label: 'Pravokotnik', icon: Square },
+    75→    75→  { id: 'circle', label: 'Krog', icon: CircleIcon },
+    76→    76→  { id: 'text', label: 'Besedilo', icon: Type },
+    77→    77→  { id: 'pen', label: 'Prostoro', icon: Pencil },
+    78→    78→  { id: 'measure', label: 'Mera', icon: Ruler },
+    79→    79→  { id: 'eraser', label: 'Radiraj', icon: Eraser },
+    80→    80→]
+    81→    81→
+    82→    82→// ============================================================
+    83→    83→// POMOŽNE FUNKCIJE
+    84→    84→// ============================================================
+    85→    85→
+    86→    86→// Komprimira datoteko v base64 JPEG (max 1280px širina, kvaliteta 0.75)
+    87→    87→function compressImageFile(file: File, maxSize = 1280, quality = 0.75): Promise<string> {
+    88→    88→  return new Promise((resolve, reject) => {
+    89→    89→    const reader = new FileReader()
+    90→    90→    reader.onload = () => {
+    91→    91→      const img = new Image()
+    92→    92→      img.onload = () => {
+    93→    93→        const scale = Math.min(1, maxSize / Math.max(1, img.naturalWidth))
+    94→    94→        const canvas = document.createElement('canvas')
+    95→    95→        canvas.width = Math.max(1, Math.round(img.naturalWidth * scale))
+    96→    96→        canvas.height = Math.max(1, Math.round(img.naturalHeight * scale))
+    97→    97→        const ctx = canvas.getContext('2d')
+    98→    98→        if (!ctx) return reject(new Error('Canvas ni podprt'))
+    99→    99→        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+   100→   100→        resolve(canvas.toDataURL('image/jpeg', quality))
+   101→   101→      }
+   102→   102→      img.onerror = () => reject(new Error('Napaka pri nalaganju slike'))
+   103→   103→      img.src = reader.result as string
+   104→   104→    }
+   105→   105→    reader.onerror = () => reject(new Error('Napaka pri branju datoteke'))
+   106→   106→    reader.readAsDataURL(file)
+   107→   107→  })
+   108→   108→}
+   109→   109→
+   110→   110→// Ocena velikosti base64 slike v bajtih
+   111→   111→function estimateBytes(base64: string): number {
+   112→   112→  const idx = base64.indexOf(',')
+   113→   113→  const b64 = idx >= 0 ? base64.slice(idx + 1) : base64
+   114→   114→  return Math.floor(b64.length * 0.75)
+   115→   115→}
+   116→   116→
+   117→   117→function formatBytes(bytes: number): string {
+   118→   118→  if (bytes < 1024) return `${bytes} B`
+   119→   119→  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
+   120→   120→  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+   121→   121→}
+   122→   122→
+   123→   123→function formatRelativeTime(iso: string): string {
+   124→   124→  const date = new Date(iso)
+   125→   125→  const diff = Date.now() - date.getTime()
+   126→   126→  const sec = Math.floor(diff / 1000)
+   127→   127→  if (sec < 60) return 'pravkar'
+   128→   128→  const min = Math.floor(sec / 60)
+   129→   129→  if (min < 60) return `pred ${min} min`
+   130→   130→  const h = Math.floor(min / 60)
+   131→   131→  if (h < 24) return `pred ${h} h`
+   132→   132→  const d = Math.floor(h / 24)
+   133→   133→  if (d < 7) return `pred ${d} d`
+   134→   134→  return date.toLocaleDateString('sl-SI')
+   135→   135→}
+   136→   136→
+   137→   137→function formatLength(mm: number): string {
+   138→   138→  if (mm < 1000) return `${Math.round(mm)} mm`
+   139→   139→  return `${(mm / 1000).toFixed(2)} m`
+   140→   140→}
+   141→   141→
+   142→   142→// Nariše puščično glavo
+   143→   143→function drawArrowHead(
+   144→   144→  ctx: CanvasRenderingContext2D,
+   145→   145→  x1: number, y1: number,
+   146→   146→  x2: number, y2: number,
+   147→   147→  color: string, width: number
+   148→   148→) {
+   149→   149→  const angle = Math.atan2(y2 - y1, x2 - x1)
+   150→   150→  const headLen = Math.max(10, width * 3)
+   151→   151→  ctx.strokeStyle = color
+   152→   152→  ctx.fillStyle = color
+   153→   153→  ctx.lineWidth = width
+   154→   154→  ctx.beginPath()
+   155→   155→  ctx.moveTo(x2, y2)
+   156→   156→  ctx.lineTo(x2 - headLen * Math.cos(angle - Math.PI / 6), y2 - headLen * Math.sin(angle - Math.PI / 6))
+   157→   157→  ctx.moveTo(x2, y2)
+   158→   158→  ctx.lineTo(x2 - headLen * Math.cos(angle + Math.PI / 6), y2 - headLen * Math.sin(angle + Math.PI / 6))
+   159→   159→  ctx.stroke()
+   160→   160→}
+   161→   161→
+   162→   162→// Nariše posamezno anotacijo na kontekst
+   163→   163→function drawAnnotation(ctx: CanvasRenderingContext2D, ann: Annotation) {
+   164→   164→  ctx.strokeStyle = ann.color
+   165→   165→  ctx.fillStyle = ann.color
+   166→   166→  ctx.lineWidth = Math.max(0.5, ann.width)
+   167→   167→  ctx.lineCap = 'round'
+   168→   168→  ctx.lineJoin = 'round'
+   169→   169→
+   170→   170→  if (ann.type === 'pen' && ann.points.length > 0) {
+   171→   171→    ctx.beginPath()
+   172→   172→    ctx.moveTo(ann.points[0].x, ann.points[0].y)
+   173→   173→    for (let i = 1; i < ann.points.length; i++) {
+   174→   174→      ctx.lineTo(ann.points[i].x, ann.points[i].y)
+   175→   175→    }
+   176→   176→    ctx.stroke()
+   177→   177→    return
+   178→   178→  }
+   179→   179→
+   180→   180→  if (ann.type === 'text' && ann.text && ann.points.length >= 1) {
+   181→   181→    const p = ann.points[0]
+   182→   182→    const fs = ann.fontSize ?? 18
+   183→   183→    ctx.font = `bold ${fs}px sans-serif`
+   184→   184→    ctx.textAlign = 'left'
+   185→   185→    ctx.textBaseline = 'top'
+   186→   186→    // Beli rob za vidnost
+   187→   187→    ctx.lineWidth = Math.max(2, fs * 0.18)
+   188→   188→    ctx.strokeStyle = ann.color === '#ffffff' ? '#1d2b3e' : '#ffffff'
+   189→   189→    ctx.strokeText(ann.text, p.x, p.y)
+   190→   190→    ctx.fillStyle = ann.color
+   191→   191→    ctx.fillText(ann.text, p.x, p.y)
+   192→   192→    return
+   193→   193→  }
+   194→   194→
+   195→   195→  if (ann.points.length < 2) return
+   196→   196→
+   197→   197→  const [a, b] = ann.points
+   198→   198→  if (ann.type === 'arrow') {
+   199→   199→    ctx.beginPath()
+   200→   200→    ctx.moveTo(a.x, a.y)
+   201→   201→    ctx.lineTo(b.x, b.y)
+   202→   202→    ctx.stroke()
+   203→   203→    drawArrowHead(ctx, a.x, a.y, b.x, b.y, ann.color, ann.width)
+   204→   204→  } else if (ann.type === 'line') {
+   205→   205→    ctx.beginPath()
+   206→   206→    ctx.moveTo(a.x, a.y)
+   207→   207→    ctx.lineTo(b.x, b.y)
+   208→   208→    ctx.stroke()
+   209→   209→  } else if (ann.type === 'measure') {
+   210→   210→    ctx.beginPath()
+   211→   211→    ctx.moveTo(a.x, a.y)
+   212→   212→    ctx.lineTo(b.x, b.y)
+   213→   213→    ctx.stroke()
+   214→   214→    drawArrowHead(ctx, a.x, a.y, b.x, b.y, ann.color, ann.width)
+   215→   215→    drawArrowHead(ctx, b.x, b.y, a.x, a.y, ann.color, ann.width)
+   216→   216→    if (ann.label) {
+   217→   217→      const mx = (a.x + b.x) / 2
+   218→   218→      const my = (a.y + b.y) / 2
+   219→   219→      const fs = ann.fontSize ?? 14
+   220→   220→      ctx.font = `bold ${fs}px sans-serif`
+   221→   221→      const w = ctx.measureText(ann.label).width + 12
+   222→   222→      ctx.fillStyle = ann.color
+   223→   223→      ctx.fillRect(mx - w / 2, my - fs / 2 - 4, w, fs + 8)
+   224→   224→      ctx.fillStyle = ann.color === '#ffffff' ? '#1d2b3e' : '#ffffff'
+   225→   225→      ctx.textAlign = 'center'
+   226→   226→      ctx.textBaseline = 'middle'
+   227→   227→      ctx.fillText(ann.label, mx, my)
+   228→   228→    }
+   229→   229→  } else if (ann.type === 'rect') {
+   230→   230→    const x = Math.min(a.x, b.x)
+   231→   231→    const y = Math.min(a.y, b.y)
+   232→   232→    const w = Math.abs(b.x - a.x)
+   233→   233→    const h = Math.abs(b.y - a.y)
+   234→   234→    ctx.strokeRect(x, y, w, h)
+   235→   235→  } else if (ann.type === 'circle') {
+   236→   236→    const cx = a.x
+   237→   237→    const cy = a.y
+   238→   238→    const r = Math.max(1, Math.hypot(b.x - a.x, b.y - a.y))
+   239→   239→    ctx.beginPath()
+   240→   240→    ctx.arc(cx, cy, r, 0, Math.PI * 2)
+   241→   241→    ctx.stroke()
+   242→   242→  }
+   243→   243→}
+   244→   244→
+   245→   245→// ============================================================
+   246→   246→// GLAVNA KOMPONENTA — PhotoTab
+   247→   247→// ============================================================
+   248→   248→export function PhotoTab({ projectId }: { projectId: string | null }) {
+   249→   249→  const [cameraOpen, setCameraOpen] = useState(false)
+   250→   250→  const [activeKategorija, setActiveKategorija] = useState<'PRED' | 'MED' | 'PO'>('MED')
+   251→   251→  const [filterKat, setFilterKat] = useState<'ALL' | 'PRED' | 'MED' | 'PO'>('ALL')
+   252→   252→  const [photos, setPhotos] = useState<Photo[]>([])
+   253→   253→  const [loading, setLoading] = useState(false)
+   254→   254→  const [previewPhoto, setPreviewPhoto] = useState<Photo | null>(null)
+   255→   255→  const [annotationPhoto, setAnnotationPhoto] = useState<Photo | null>(null)
+   256→   256→  const [annotationNewImage, setAnnotationNewImage] = useState<string | null>(null)
+   257→   257→  const [viewMode, setViewMode] = useState<'gallery' | 'pairs'>('gallery')
+   258→   258→  const [searchQuery, setSearchQuery] = useState('')
+   259→   259→  const [dateFrom, setDateFrom] = useState('')
+   260→   260→  const [dateTo, setDateTo] = useState('')
+   261→   261→  const [batchProgress, setBatchProgress] = useState<{ current: number; total: number } | null>(null)
+   262→   262→  const [pairCreatorOpen, setPairCreatorOpen] = useState(false)
+   263→   263→  const [pairs, setPairs] = useState<PhotoPair[]>([])
+   264→   264→
+   265→   265→  const fileInputRef = useRef<HTMLInputElement>(null)
+   266→   266→  const { toast } = useToast()
+   267→   267→
+   268→   268→  // ---- Nalaganje slik ----
+   269→   269→  const loadPhotos = useCallback(async () => {
+   270→   270→    if (!projectId) return
+   271→   271→    setLoading(true)
+   272→   272→    try {
+   273→   273→      const res = await fetch(`/api/photos?projectId=${projectId}`)
+   274→   274→      if (res.ok) setPhotos(await res.json())
+   275→   275→    } catch {
+   276→   276→      /* ignore */
+   277→   277→    } finally {
+   278→   278→      setLoading(false)
+   279→   279→    }
+   280→   280→  }, [projectId])
+   281→   281→
+   282→   282→  useEffect(() => {
+   283→   283→    loadPhotos()
+   284→   284→  }, [loadPhotos])
+   285→   285→
+   286→   286→  // ---- Nalaganje parov iz localStorage ----
+   287→   287→  useEffect(() => {
+   288→   288→    if (!projectId) return
+   289→   289→    try {
+   290→   290→      const raw = localStorage.getItem(`roksal_photo_pairs_${projectId}`)
+   291→   291→      if (raw) setPairs(JSON.parse(raw))
+   292→   292→      else setPairs([])
+   293→   293→    } catch {
+   294→   294→      setPairs([])
+   295→   295→    }
+   296→   296→  }, [projectId])
+   297→   297→
+   298→   298→  function savePairs(newPairs: PhotoPair[]) {
+   299→   299→    setPairs(newPairs)
+   300→   300→    if (projectId) {
+   301→   301→      localStorage.setItem(`roksal_photo_pairs_${projectId}`, JSON.stringify(newPairs))
+   302→   302→    }
+   303→   303→  }
+   304→   304→
+   305→   305→  // ---- Filtrirana galerija ----
+   306→   306→  const filteredPhotos = useMemo(() => {
+   307→   307→    let list = photos
+   308→   308→    if (filterKat !== 'ALL') list = list.filter((p) => p.kategorija === filterKat)
+   309→   309→    if (searchQuery.trim()) {
+   310→   310→      const q = searchQuery.toLowerCase()
+   311→   311→      list = list.filter((p) => (p.opomba ?? '').toLowerCase().includes(q))
+   312→   312→    }
+   313→   313→    if (dateFrom) {
+   314→   314→      const from = new Date(dateFrom).getTime()
+   315→   315→      list = list.filter((p) => new Date(p.createdAt).getTime() >= from)
+   316→   316→    }
+   317→   317→    if (dateTo) {
+   318→   318→      const to = new Date(dateTo).getTime() + 24 * 60 * 60 * 1000
+   319→   319→      list = list.filter((p) => new Date(p.createdAt).getTime() <= to)
+   320→   320→    }
+   321→   321→    return list
+   322→   322→  }, [photos, filterKat, searchQuery, dateFrom, dateTo])
+   323→   323→
+   324→   324→  const activeFilterCount =
+   325→   325→    (filterKat !== 'ALL' ? 1 : 0) +
+   326→   326→    (searchQuery.trim() ? 1 : 0) +
+   327→   327→    (dateFrom ? 1 : 0) +
+   328→   328→    (dateTo ? 1 : 0)
+   329→   329→
+   330→   330→  // ---- Statistika ----
+   331→   331→  const stats = useMemo(() => {
+   332→   332→    const total = photos.length
+   333→   333→    const pred = photos.filter((p) => p.kategorija === 'PRED').length
+   334→   334→    const med = photos.filter((p) => p.kategorija === 'MED').length
+   335→   335→    const po = photos.filter((p) => p.kategorija === 'PO').length
+   336→   336→    const lastPhoto = photos[0]
+   337→   337→    const totalBytes = photos.reduce((sum, p) => sum + estimateBytes(p.imageData), 0)
+   338→   338→    return { total, pred, med, po, lastPhoto, totalBytes }
+   339→   339→  }, [photos])
+   340→   340→
+   341→   341→  // ---- Brisanje ----
+   342→   342→  async function handleDelete(id: string) {
+   343→   343→    try {
+   344→   344→      const res = await fetch(`/api/photos?id=${id}`, { method: 'DELETE' })
+   345→   345→      if (res.ok) {
+   346→   346→        toast({ title: 'Slika izbrisana' })
+   347→   347→        // Odstrani tudi iz parov
+   348→   348→        const newPairs = pairs.filter((p) => p.predId !== id && p.poId !== id)
+   349→   349→        if (newPairs.length !== pairs.length) savePairs(newPairs)
+   350→   350→        loadPhotos()
+   351→   351→      }
+   352→   352→    } catch {
+   353→   353→      toast({ title: 'Napaka pri brisanju', variant: 'destructive' })
+   354→   354→    }
+   355→   355→  }
+   356→   356→
+   357→   357→  // ---- Duplikat ----
+   358→   358→  async function handleDuplicate(photo: Photo) {
+   359→   359→    try {
+   360→   360→      const res = await fetch('/api/photos', {
+   361→   361→        method: 'POST',
+   362→   362→        headers: { 'Content-Type': 'application/json' },
+   363→   363→        body: JSON.stringify({
+   364→   364→          projectId,
+   365→   365→          kategorija: photo.kategorija,
+   366→   366→          imageData: photo.imageData,
+   367→   367→          opomba: photo.opomba ? `${photo.opomba} (kopija)` : '(kopija)',
+   368→   368→          latitude: photo.latitude,
+   369→   369→          longitude: photo.longitude,
+   370→   370→        }),
+   371→   371→      })
+   372→   372→      if (res.ok) {
+   373→   373→        toast({ title: 'Kopija ustvarjena' })
+   374→   374→        loadPhotos()
+   375→   375→      }
+   376→   376→    } catch {
+   377→   377→      toast({ title: 'Napaka pri kopiranju', variant: 'destructive' })
+   378→   378→    }
+   379→   379→  }
+   380→   380→
+   381→   381→  // ---- Izvoz slike ----
+   382→   382→  function handleExport(photo: Photo) {
+   383→   383→    const link = document.createElement('a')
+   384→   384→    const dateStr = new Date(photo.createdAt).toISOString().slice(0, 10)
+   385→   385→    link.href = photo.imageData
+   386→   386→    link.download = `roksal-${photo.kategorija}-${dateStr}.jpg`
+   387→   387→    document.body.appendChild(link)
+   388→   388→    link.click()
+   389→   389→    document.body.removeChild(link)
+   390→   390→    toast({ title: 'Slika izvožena' })
+   391→   391→  }
+   392→   392→
+   393→   393→  // ---- Urejanje (anotacije) shrani ----
+   394→   394→  async function handleAnnotationSave(photo: Photo, newImageData: string) {
+   395→   395→    // Ustvari novo sliko z istimi metapodatki, nato izbriši staro
+   396→   396→    try {
+   397→   397→      const res = await fetch('/api/photos', {
+   398→   398→        method: 'POST',
+   399→   399→        headers: { 'Content-Type': 'application/json' },
+   400→   400→        body: JSON.stringify({
+   401→   401→          projectId,
+   402→   402→          kategorija: photo.kategorija,
+   403→   403→          imageData: newImageData,
+   404→   404→          opomba: photo.opomba,
+   405→   405→          latitude: photo.latitude,
+   406→   406→          longitude: photo.longitude,
+   407→   407→        }),
+   408→   408→      })
+   409→   409→      if (res.ok) {
+   410→   410→        const newPhoto = (await res.json()) as Photo
+   411→   411→        // Izbriši staro
+   412→   412→        await fetch(`/api/photos?id=${photo.id}`, { method: 'DELETE' })
+   413→   413→        // Prenesi pare
+   414→   414→        const newPairs = pairs.map((p) =>
+   415→   415→          p.predId === photo.id ? { ...p, predId: newPhoto.id } :
+   416→   416→          p.poId === photo.id ? { ...p, poId: newPhoto.id } : p
+   417→   417→        )
+   418→   418→        if (JSON.stringify(newPairs) !== JSON.stringify(pairs)) savePairs(newPairs)
+   419→   419→        toast({ title: 'Anotacije shranjene' })
+   420→   420→        setAnnotationPhoto(null)
+   421→   421→        setAnnotationNewImage(null)
+   422→   422→        await loadPhotos()
+   423→   423→        setPreviewPhoto(newPhoto)
+   424→   424→      }
+   425→   425→    } catch {
+   426→   426→      toast({ title: 'Napaka pri shranjevanju', variant: 'destructive' })
+   427→   427→    }
+   428→   428→  }
+   429→   429→
+   430→   430→  // ---- Batch upload ----
+   431→   431→  async function handleBatchFiles(files: FileList) {
+   432→   432→    if (!projectId || files.length === 0) return
+   433→   433→    const kat = activeKategorija
+   434→   434→    setBatchProgress({ current: 0, total: files.length })
+   435→   435→
+   436→   436→    // GPS (enkrat na začetku)
+   437→   437→    let lat: number | null = null
+   438→   438→    let lon: number | null = null
+   439→   439→    if (navigator.geolocation) {
+   440→   440→      await new Promise<void>((resolve) => {
+   441→   441→        navigator.geolocation.getCurrentPosition(
+   442→   442→          (pos) => { lat = pos.coords.latitude; lon = pos.coords.longitude; resolve() },
+   443→   443→          () => resolve(),
+   444→   444→          { enableHighAccuracy: true, timeout: 3000 }
+   445→   445→        )
+   446→   446→      })
+   447→   447→    }
+   448→   448→
+   449→   449→    let success = 0
+   450→   450→    for (let i = 0; i < files.length; i++) {
+   451→   451→      setBatchProgress({ current: i, total: files.length })
+   452→   452→      try {
+   453→   453→        const dataUrl = await compressImageFile(files[i])
+   454→   454→        const res = await fetch('/api/photos', {
+   455→   455→          method: 'POST',
+   456→   456→          headers: { 'Content-Type': 'application/json' },
+   457→   457→          body: JSON.stringify({
+   458→   458→            projectId,
+   459→   459→            kategorija: kat,
+   460→   460→            imageData: dataUrl,
+   461→   461→            latitude: lat,
+   462→   462→            longitude: lon,
+   463→   463→          }),
+   464→   464→        })
+   465→   465→        if (res.ok) success++
+   466→   466→      } catch (e) {
+   467→   467→        console.error('Batch upload error:', e)
+   468→   468→      }
+   469→   469→      setBatchProgress({ current: i + 1, total: files.length })
+   470→   470→    }
+   471→   471→
+   472→   472→    setBatchProgress(null)
+   473→   473→    toast({
+   474→   474→      title: `${success} slik dodanih`,
+   475→   475→      description: `Kategorija: ${KATEGORIJE.find((k) => k.id === kat)?.label}`,
+   476→   476→    })
+   477→   477→    loadPhotos()
+   478→   478→  }
+   479→   479→
+   480→   480→  // ---- Predogled: navigacija naprej/nazaj ----
+   481→   481→  const previewIndex = previewPhoto ? filteredPhotos.findIndex((p) => p.id === previewPhoto.id) : -1
+   482→   482→  function navPreview(dir: -1 | 1) {
+   483→   483→    if (previewIndex < 0 || filteredPhotos.length === 0) return
+   484→   484→    const newIdx = (previewIndex + dir + filteredPhotos.length) % filteredPhotos.length
+   485→   485→    setPreviewPhoto(filteredPhotos[newIdx])
+   486→   486→  }
+   487→   487→
+   488→   488→  // ---- Pari za before/after ----
+   489→   489→  const pairsResolved = useMemo(() => {
+   490→   490→    return pairs
+   491→   491→      .map((p) => ({
+   492→   492→        pair: p,
+   493→   493→        pred: photos.find((ph) => ph.id === p.predId && ph.kategorija === 'PRED'),
+   494→   494→        po: photos.find((ph) => ph.id === p.poId && ph.kategorija === 'PO'),
+   495→   495→      }))
+   496→   496→      .filter((x) => x.pred && x.po)
+   497→   497→  }, [pairs, photos])
+   498→   498→
+   499→   499→  const predPhotos = photos.filter((p) => p.kategorija === 'PRED')
+   500→   500→  const poPhotos = photos.filter((p) => p.kategorija === 'PO')
+   501→   501→
+   502→   502→  function clearFilters() {
+   503→   503→    setFilterKat('ALL')
+   504→   504→    setSearchQuery('')
+   505→   505→    setDateFrom('')
+   506→   506→    setDateTo('')
+   507→   507→  }
+   508→   508→
+   509→   509→  return (
+   510→   510→    <div className="space-y-4 p-4">
+   511→   511→      {/* GLAVA — akcije */}
+   512→   512→      <Card>
+   513→   513→        <CardHeader className="pb-3">
+   514→   514→          <CardTitle className="flex items-center gap-2 text-base">
+   515→   515→            <Camera className="h-5 w-5 text-roksal-amber" />
+   516→   516→            Slikanje projekta
+   517→   517→          </CardTitle>
+   518→   518→        </CardHeader>
+   519→   519→        <CardContent className="space-y-4">
+   520→   520→          {!projectId && (
+   521→   521→            <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-800">
+   522→   522→              <AlertTriangle className="mb-1 inline h-3.5 w-3.5" /> Izberite projekt v zavihku Domov pred slikanjem.
+   523→   523→            </div>
+   524→   524→          )}
+   525→   525→
+   526→   526→          {/* Kategorija (velja za slikaj in dodaj iz galerije) */}
+   527→   527→          <div>
+   528→   528→            <Label className="mb-1.5 block text-[11px] text-muted-foreground">Kategorija za nove slike</Label>
+   529→   529→            <div className="grid grid-cols-3 gap-1.5">
+   530→   530→              {KATEGORIJE.map((k) => (
+   531→   531→                <button
+   532→   532→                  key={k.id}
+   533→   533→                  type="button"
+   534→   534→                  onClick={() => setActiveKategorija(k.id as 'PRED' | 'MED' | 'PO')}
+   535→   535→                  className={`rounded-md border px-2 py-2 text-[11px] font-medium transition-colors ${
+   536→   536→                    activeKategorija === k.id
+   537→   537→                      ? 'border-roksal-amber bg-roksal-amber text-white'
+   538→   538→                      : 'border-border bg-white text-muted-foreground hover:bg-muted'
+   539→   539→                  }`}
+   540→   540→                >
+   541→   541→                  {k.short}
+   542→   542→                </button>
+   543→   543→              ))}
+   544→   544→            </div>
+   545→   545→          </div>
+   546→   546→
+   547→   547→          {/* Akcijska gumba */}
+   548→   548→          <div className="grid grid-cols-2 gap-2">
+   549→   549→            <Button
+   550→   550→              type="button"
+   551→   551→              onClick={() => setCameraOpen(true)}
+   552→   552→              disabled={!projectId}
+   553→   553→              className="bg-roksal-amber text-white hover:bg-roksal-amber/90"
+   554→   554→            >
+   555→   555→              <Camera className="mr-2 h-4 w-4" />
+   556→   556→              Slikaj
+   557→   557→            </Button>
+   558→   558→            <Button
+   559→   559→              type="button"
+   560→   560→              variant="outline"
+   561→   561→              onClick={() => fileInputRef.current?.click()}
+   562→   562→              disabled={!projectId}
+   563→   563→            >
+   564→   564→              <Upload className="mr-2 h-4 w-4" />
+   565→   565→              Dodaj iz galerije
+   566→   566→            </Button>
+   567→   567→            <input
+   568→   568→              ref={fileInputRef}
+   569→   569→              type="file"
+   570→   570→              accept="image/*"
+   571→   571→              multiple
+   572→   572→              className="hidden"
+   573→   573→              onChange={(e) => {
+   574→   574→                if (e.target.files && e.target.files.length > 0) {
+   575→   575→                  handleBatchFiles(e.target.files)
+   576→   576→                  e.target.value = ''
+   577→   577→                }
+   578→   578→              }}
+   579→   579→            />
+   580→   580→          </div>
+   581→   581→
+   582→   582→          {/* Statistika */}
+   583→   583→          {projectId && photos.length > 0 && (
+   584→   584→            <div className="grid grid-cols-4 gap-1.5">
+   585→   585→              <div className="rounded-md border border-border bg-white p-1.5 text-center">
+   586→   586→                <div className="text-base font-bold text-roksal-navy">{stats.total}</div>
+   587→   587→                <div className="text-[9px] text-muted-foreground">Skupaj</div>
+   588→   588→              </div>
+   589→   589→              <div className="rounded-md border border-border bg-white p-1.5 text-center">
+   590→   590→                <div className="text-base font-bold text-blue-700">{stats.pred}</div>
+   591→   591→                <div className="text-[9px] text-muted-foreground">Pred</div>
+   592→   592→              </div>
+   593→   593→              <div className="rounded-md border border-border bg-white p-1.5 text-center">
+   594→   594→                <div className="text-base font-bold text-amber-700">{stats.med}</div>
+   595→   595→                <div className="text-[9px] text-muted-foreground">Med</div>
+   596→   596→              </div>
+   597→   597→              <div className="rounded-md border border-border bg-white p-1.5 text-center">
+   598→   598→                <div className="text-base font-bold text-green-700">{stats.po}</div>
+   599→   599→                <div className="text-[9px] text-muted-foreground">Po</div>
+   600→   600→              </div>
+   601→   601→            </div>
+   602→   602→          )}
+   603→   603→
+   604→   604→          {projectId && photos.length > 0 && (
+   605→   605→            <div className="flex items-center justify-between rounded-md bg-muted/50 px-3 py-1.5 text-[11px] text-muted-foreground">
+   606→   606→              <span>
+   607→   607→                <Calendar className="mr-1 inline h-3 w-3" />
+   608→   608→                Zadnja: {stats.lastPhoto ? formatRelativeTime(stats.lastPhoto.createdAt) : '—'}
+   609→   609→              </span>
+   610→   610→              <span>
+   611→   611→                <Layers className="mr-1 inline h-3 w-3" />
+   612→   612→                {formatBytes(stats.totalBytes)}
+   613→   613→              </span>
+   614→   614→            </div>
+   615→   615→          )}
+   616→   616→        </CardContent>
+   617→   617→      </Card>
+   618→   618→
+   619→   619→      {/* VIEW TOGGLE — Galerija / Pred-Po pari */}
+   620→   620→      <div className="flex gap-1.5">
+   621→   621→        <Button
+   622→   622→          type="button"
+   623→   623→          variant={viewMode === 'gallery' ? 'default' : 'outline'}
+   624→   624→          size="sm"
+   625→   625→          onClick={() => setViewMode('gallery')}
+   626→   626→          className={`flex-1 ${viewMode === 'gallery' ? 'bg-roksal-navy text-white' : ''}`}
+   627→   627→        >
+   628→   628→          <Images className="mr-1.5 h-3.5 w-3.5" />
+   629→   629→          Galerija
+   630→   630→        </Button>
+   631→   631→        <Button
+   632→   632→          type="button"
+   633→   633→          variant={viewMode === 'pairs' ? 'default' : 'outline'}
+   634→   634→          size="sm"
+   635→   635→          onClick={() => setViewMode('pairs')}
+   636→   636→          className={`flex-1 ${viewMode === 'pairs' ? 'bg-roksal-navy text-white' : ''}`}
+   637→   637→        >
+   638→   638→          <Columns className="mr-1.5 h-3.5 w-3.5" />
+   639→   639→          Pred/Po pari
+   640→   640→          {pairsResolved.length > 0 && (
+   641→   641→            <Badge variant="secondary" className="ml-1.5 bg-roksal-amber/20 text-roksal-amber">
+   642→   642→              {pairsResolved.length}
+   643→   643→            </Badge>
+   644→   644→          )}
+   645→   645→        </Button>
+   646→   646→      </div>
+   647→   647→
+   648→   648→      {/* GALERIJA — filtri + masonry */}
+   649→   649→      {viewMode === 'gallery' && (
+   650→   650→        <>
+   651→   651→          {/* Filtri */}
+   652→   652→          <div className="space-y-2">
+   653→   653→            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+   654→   654→              {(['ALL', 'PRED', 'MED', 'PO'] as const).map((k) => (
+   655→   655→                <Button
+   656→   656→                  key={k}
+   657→   657→                  type="button"
+   658→   658→                  variant={filterKat === k ? 'default' : 'outline'}
+   659→   659→                  size="sm"
+   660→   660→                  onClick={() => setFilterKat(k)}
+   661→   661→                  className={`h-7 shrink-0 text-[11px] ${filterKat === k ? 'bg-roksal-navy text-white' : ''}`}
+   662→   662→                >
+   663→   663→                  {k === 'ALL' ? 'Vse' : KATEGORIJE.find((c) => c.id === k)?.short}
+   664→   664→                  {k !== 'ALL' && (
+   665→   665→                    <span className="ml-1 text-[10px] opacity-70">
+   666→   666→                      {stats[k.toLowerCase() as 'pred' | 'med' | 'po']}
+   667→   667→                    </span>
+   668→   668→                  )}
+   669→   669→                </Button>
+   670→   670→              ))}
+   671→   671→              {activeFilterCount > 0 && (
+   672→   672→                <Button
+   673→   673→                  type="button"
+   674→   674→                  variant="ghost"
+   675→   675→                  size="sm"
+   676→   676→                  onClick={clearFilters}
+   677→   677→                  className="h-7 shrink-0 text-[11px] text-muted-foreground"
+   678→   678→                >
+   679→   679→                  <X className="mr-1 h-3 w-3" />
+   680→   680→                  Počisti ({activeFilterCount})
+   681→   681→                </Button>
+   682→   682→              )}
+   683→   683→            </div>
+   684→   684→
+   685→   685→            {/* Iskanje + datum */}
+   686→   686→            <div className="space-y-1.5">
+   687→   687→              <div className="relative">
+   688→   688→                <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+   689→   689→                <Input
+   690→   690→                  value={searchQuery}
+   691→   691→                  onChange={(e) => setSearchQuery(e.target.value)}
+   692→   692→                  placeholder="Išči po opombah..."
+   693→   693→                  className="h-8 pl-8 text-xs"
+   694→   694→                />
+   695→   695→              </div>
+   696→   696→              <div className="grid grid-cols-2 gap-1.5">
+   697→   697→                <div>
+   698→   698→                  <Label className="mb-0.5 block text-[10px] text-muted-foreground">Od datuma</Label>
+   699→   699→                  <Input
+   700→   700→                    type="date"
+   701→   701→                    value={dateFrom}
+   702→   702→                    onChange={(e) => setDateFrom(e.target.value)}
+   703→   703→                    className="h-8 text-xs"
+   704→   704→                  />
+   705→   705→                </div>
+   706→   706→                <div>
+   707→   707→                  <Label className="mb-0.5 block text-[10px] text-muted-foreground">Do datuma</Label>
+   708→   708→                  <Input
+   709→   709→                    type="date"
+   710→   710→                    value={dateTo}
+   711→   711→                    onChange={(e) => setDateTo(e.target.value)}
+   712→   712→                    className="h-8 text-xs"
+   713→   713→                  />
+   714→   714→                </div>
+   715→   715→              </div>
+   716→   716→            </div>
+   717→   717→          </div>
+   718→   718→
+   719→   719→          {/* Galerija — masonry */}
+   720→   720→          {loading ? (
+   721→   721→            <div className="columns-2 gap-2 sm:columns-3">
+   722→   722→              {[1, 2, 3, 4, 5, 6].map((i) => (
+   723→   723→                <div key={i} className="mb-2 aspect-square animate-pulse rounded-lg bg-muted" />
+   724→   724→              ))}
+   725→   725→            </div>
+   726→   726→          ) : filteredPhotos.length === 0 ? (
+   727→   727→            <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
+   728→   728→              <ImageIcon className="mb-2 h-10 w-10 opacity-30" />
+   729→   729→              <p className="text-sm">
+   730→   730→                {photos.length === 0 ? 'Ni še slik za ta projekt.' : 'Ni slik, ki ustrezajo filtrom.'}
+   731→   731→              </p>
+   732→   732→            </div>
+   733→   733→          ) : (
+   734→   734→            <div className="columns-2 gap-2 sm:columns-3">
+   735→   735→              {filteredPhotos.map((p) => {
+   736→   736→                const kat = KATEGORIJE.find((k) => k.id === p.kategorija)
+   737→   737→                return (
+   738→   738→                  <div
+   739→   739→                    key={p.id}
+   740→   740→                    className="group relative mb-2 break-inside-avoid overflow-hidden rounded-lg border border-border"
+   741→   741→                  >
+   742→   742→                    { }
+   743→   743→                    <img
+   744→   744→                      src={p.imageData}
+   745→   745→                      alt={p.opomba ?? 'Slika projekta'}
+   746→   746→                      className="w-full cursor-pointer object-cover"
+   747→   747→                      onClick={() => setPreviewPhoto(p)}
+   748→   748→                    />
+   749→   749→                    <div className="absolute left-0 top-0">
+   750→   750→                      <Badge className={`rounded-br-lg rounded-tl-lg text-[8px] ${kat?.cls}`} variant="secondary">
+   751→   751→                        {p.kategorija}
+   752→   752→                      </Badge>
+   753→   753→                    </div>
+   754→   754→                    <button
+   755→   755→                      type="button"
+   756→   756→                      onClick={(e) => {
+   757→   757→                        e.stopPropagation()
+   758→   758→                        handleDelete(p.id)
+   759→   759→                      }}
+   760→   760→                      className="absolute right-1 top-1 rounded-full bg-black/50 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100"
+   761→   761→                      aria-label="Izbriši sliko"
+   762→   762→                    >
+   763→   763→                      <Trash2 className="h-3 w-3" />
+   764→   764→                    </button>
+   765→   765→                    {p.opomba && (
+   766→   766→                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-1.5">
+   767→   767→                        <p className="line-clamp-2 text-[9px] text-white">{p.opomba}</p>
+   768→   768→                      </div>
+   769→   769→                    )}
+   770→   770→                  </div>
+   771→   771→                )
+   772→   772→              })}
+   773→   773→            </div>
+   774→   774→          )}
+   775→   775→        </>
+   776→   776→      )}
+   777→   777→
+   778→   778→      {/* PARI — Pred/Po slider */}
+   779→   779→      {viewMode === 'pairs' && (
+   780→   780→        <div className="space-y-3">
+   781→   781→          <Card>
+   782→   782→            <CardContent className="p-3">
+   783→   783→              <div className="flex items-center justify-between gap-2">
+   784→   784→                <div>
+   785→   785→                  <p className="text-xs font-medium text-roksal-navy">Pred/Po primerjave</p>
+   786→   786→                  <p className="text-[10px] text-muted-foreground">
+   787→   787→                    Poveži PRED in PO slike za predstavitev dela strankam.
+   788→   788→                  </p>
+   789→   789→                </div>
+   790→   790→                <Button
+   791→   791→                  type="button"
+   792→   792→                  size="sm"
+   793→   793→                  onClick={() => setPairCreatorOpen(true)}
+   794→   794→                  disabled={predPhotos.length === 0 || poPhotos.length === 0}
+   795→   795→                  className="bg-roksal-amber text-white hover:bg-roksal-amber/90"
+   796→   796→                >
+   797→   797→                  <Sparkles className="mr-1 h-3.5 w-3.5" />
+   798→   798→                  Ustvari par
+   799→   799→                </Button>
+   800→   800→              </div>
+   801→   801→            </CardContent>
+   802→   802→          </Card>
+   803→   803→
+   804→   804→          {pairsResolved.length === 0 ? (
+   805→   805→            <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
+   806→   806→              <Columns className="mb-2 h-10 w-10 opacity-30" />
+   807→   807→              <p className="text-sm">Ni še ustvarjenih parov.</p>
+   808→   808→              {predPhotos.length === 0 || poPhotos.length === 0 ? (
+   809→   809→                <p className="mt-1 text-[11px]">Potrebne so vsaj ena PRED in ena PO slika.</p>
+   810→   810→              ) : null}
+   811→   811→            </div>
+   812→   812→          ) : (
+   813→   813→            <div className="space-y-3">
+   814→   814→              {pairsResolved.map(({ pair, pred, po }) => (
+   815→   815→                <Card key={`${pair.predId}-${pair.poId}`}>
+   816→   816→                  <CardContent className="p-3">
+   817→   817→                    <BeforeAfterSlider
+   818→   818→                      before={pred!.imageData}
+   819→   819→                      after={po!.imageData}
+   820→   820→                      beforeLabel="PRED"
+   821→   821→                      afterLabel="PO"
+   822→   822→                    />
+   823→   823→                    <div className="mt-2 flex items-center justify-between">
+   824→   824→                      <div className="text-[10px] text-muted-foreground">
+   825→   825→                        {new Date(po!.createdAt).toLocaleDateString('sl-SI')}
+   826→   826→                      </div>
+   827→   827→                      <Button
+   828→   828→                        type="button"
+   829→   829→                        variant="ghost"
+   830→   830→                        size="sm"
+   831→   831→                        onClick={() => savePairs(pairs.filter((p) => p !== pair))}
+   832→   832→                        className="h-7 text-[11px] text-muted-foreground hover:text-destructive"
+   833→   833→                      >
+   834→   834→                        <Trash2 className="mr-1 h-3 w-3" />
+   835→   835→                        Odstrani par
+   836→   836→                      </Button>
+   837→   837→                    </div>
+   838→   838→                  </CardContent>
+   839→   839→                </Card>
+   840→   840→              ))}
+   841→   841→            </div>
+   842→   842→          )}
+   843→   843→        </div>
+   844→   844→      )}
+   845→   845→
+   846→   846→      {/* Kamera modal */}
+   847→   847→      {cameraOpen && (
+   848→   848→        <CameraCapture
+   849→   849→          projectId={projectId!}
+   850→   850→          kategorija={activeKategorija}
+   851→   851→          onKategorijaChange={setActiveKategorija}
+   852→   852→          onClose={() => setCameraOpen(false)}
+   853→   853→          onSaved={() => {
+   854→   854→            loadPhotos()
+   855→   855→            setCameraOpen(false)
+   856→   856→          }}
+   857→   857→        />
+   858→   858→      )}
+   859→   859→
+   860→   860→      {/* Batch upload progress */}
+   861→   861→      {batchProgress && (
+   862→   862→        <div className="fixed bottom-4 left-4 right-4 z-[70] rounded-lg border border-roksal-amber/40 bg-white p-3 shadow-lg">
+   863→   863→          <div className="mb-1.5 flex items-center justify-between text-xs">
+   864→   864→            <span className="font-medium text-roksal-navy">Nalaganje slik...</span>
+   865→   865→            <span className="text-muted-foreground">
+   866→   866→              {batchProgress.current} / {batchProgress.total}
+   867→   867→            </span>
+   868→   868→          </div>
+   869→   869→          <Progress value={(batchProgress.current / batchProgress.total) * 100} className="h-1.5" />
+   870→   870→        </div>
+   871→   871→      )}
+   872→   872→
+   873→   873→      {/* Annotation editor */}
+   874→   874→      {annotationPhoto && annotationNewImage && (
+   875→   875→        <AnnotationEditor
+   876→   876→          imageData={annotationNewImage}
+   877→   877→          onSave={(newData) => handleAnnotationSave(annotationPhoto, newData)}
+   878→   878→          onCancel={() => {
+   879→   879→            setAnnotationPhoto(null)
+   880→   880→            setAnnotationNewImage(null)
+   881→   881→          }}
+   882→   882→        />
+   883→   883→      )}
+   884→   884→
+   885→   885→      {/* Predogled slike — enhanced */}
+   886→   886→      <Dialog open={!!previewPhoto} onOpenChange={(o) => !o && setPreviewPhoto(null)}>
+   887→   887→        <DialogContent className="max-w-lg p-0 sm:p-6">
+   888→   888→          <DialogHeader className="p-4 pb-2 sm:p-0 sm:pb-2">
+   889→   889→            <DialogTitle className="flex items-center gap-2 text-sm">
+   890→   890→              {previewPhoto && (
+   891→   891→                <Badge variant="secondary" className={KATEGORIJE.find((k) => k.id === previewPhoto.kategorija)?.cls}>
+   892→   892→                  {KATEGORIJE.find((k) => k.id === previewPhoto.kategorija)?.label}
+   893→   893→                </Badge>
+   894→   894→              )}
+   895→   895→              {previewPhoto && new Date(previewPhoto.createdAt).toLocaleString('sl-SI')}
+   896→   896→            </DialogTitle>
+   897→   897→          </DialogHeader>
+   898→   898→          {previewPhoto && (
+   899→   899→            <div className="space-y-3 px-4 pb-2 sm:px-0">
+   900→   900→              <div className="relative">
+   901→   901→                { }
+   902→   902→                <img src={previewPhoto.imageData} alt="Predogled" className="max-h-[55vh] w-full rounded-lg object-contain" />
+   903→   903→                {/* Navigacijske puščice */}
+   904→   904→                {filteredPhotos.length > 1 && (
+   905→   905→                  <>
+   906→   906→                    <button
+   907→   907→                      type="button"
+   908→   908→                      onClick={(e) => { e.stopPropagation(); navPreview(-1) }}
+   909→   909→                      className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/60 p-1.5 text-white hover:bg-black/80"
+   910→   910→                      aria-label="Prejšnja"
+   911→   911→                    >
+   912→   912→                      <ChevronLeft className="h-5 w-5" />
+   913→   913→                    </button>
+   914→   914→                    <button
+   915→   915→                      type="button"
+   916→   916→                      onClick={(e) => { e.stopPropagation(); navPreview(1) }}
+   917→   917→                      className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/60 p-1.5 text-white hover:bg-black/80"
+   918→   918→                      aria-label="Naslednja"
+   919→   919→                    >
+   920→   920→                      <ChevronRight className="h-5 w-5" />
+   921→   921→                    </button>
+   922→   922→                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] text-white">
+   923→   923→                      {previewIndex + 1} / {filteredPhotos.length}
+   924→   924→                    </div>
+   925→   925→                  </>
+   926→   926→                )}
+   927→   927→              </div>
+   928→   928→
+   929→   929→              {/* Opomba */}
+   930→   930→              {previewPhoto.opomba && (
+   931→   931→                <p className="rounded-md bg-muted/50 p-2 text-sm text-foreground">{previewPhoto.opomba}</p>
+   932→   932→              )}
+   933→   933→
+   934→   934→              {/* Metapodatki */}
+   935→   935→              <div className="space-y-1 text-[11px] text-muted-foreground">
+   936→   936→                {previewPhoto.latitude !== null && previewPhoto.longitude !== null && (
+   937→   937→                  <a
+   938→   938→                    href={`https://www.google.com/maps?q=${previewPhoto.latitude},${previewPhoto.longitude}`}
+   939→   939→                    target="_blank"
+   940→   940→                    rel="noopener noreferrer"
+   941→   941→                    className="flex items-center gap-1.5 hover:text-roksal-amber"
+   942→   942→                  >
+   943→   943→                    <MapPin className="h-3 w-3 text-roksal-amber" />
+   944→   944→                    {previewPhoto.latitude.toFixed(5)}, {previewPhoto.longitude.toFixed(5)}
+   945→   945→                    <ExternalLink className="h-3 w-3" />
+   946→   946→                  </a>
+   947→   947→                )}
+   948→   948→                <div className="flex items-center gap-1.5">
+   949→   949→                  <Layers className="h-3 w-3 text-roksal-amber" />
+   950→   950→                  Velikost: {formatBytes(estimateBytes(previewPhoto.imageData))}
+   951→   951→                </div>
+   952→   952→              </div>
+   953→   953→
+   954→   954→              <Separator />
+   955→   955→
+   956→   956→              {/* Akcijski gumbi */}
+   957→   957→              <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+   958→   958→                <Button
+   959→   959→                  type="button"
+   960→   960→                  size="sm"
+   961→   961→                  variant="outline"
+   962→   962→                  onClick={() => {
+   963→   963→                    setAnnotationPhoto(previewPhoto)
+   964→   964→                    setAnnotationNewImage(previewPhoto.imageData)
+   965→   965→                  }}
+   966→   966→                >
+   967→   967→                  <Pencil className="mr-1 h-3.5 w-3.5" />
+   968→   968→                  Uredi
+   969→   969→                </Button>
+   970→   970→                <Button
+   971→   971→                  type="button"
+   972→   972→                  size="sm"
+   973→   973→                  variant="outline"
+   974→   974→                  onClick={() => handleDuplicate(previewPhoto)}
+   975→   975→                >
+   976→   976→                  <Copy className="mr-1 h-3.5 w-3.5" />
+   977→   977→                  Kopija
+   978→   978→                </Button>
+   979→   979→                <Button
+   980→   980→                  type="button"
+   981→   981→                  size="sm"
+   982→   982→                  variant="outline"
+   983→   983→                  onClick={() => handleExport(previewPhoto)}
+   984→   984→                >
+   985→   985→                  <Download className="mr-1 h-3.5 w-3.5" />
+   986→   986→                  Izvozi
+   987→   987→                </Button>
+   988→   988→                <Button
+   989→   989→                  type="button"
+   990→   990→                  size="sm"
+   991→   991→                  variant="destructive"
+   992→   992→                  onClick={() => {
+   993→   993→                    handleDelete(previewPhoto.id)
+   994→   994→                    setPreviewPhoto(null)
+   995→   995→                  }}
+   996→   996→                >
+   997→   997→                  <Trash2 className="mr-1 h-3.5 w-3.5" />
+   998→   998→                  Izbriši
+   999→   999→                </Button>
+  1000→  1000→              </div>
+  1001→  1001→            </div>
+  1002→  1002→          )}
+  1003→  1003→        </DialogContent>
+  1004→  1004→      </Dialog>
+  1005→  1005→
+  1006→  1006→      {/* Pair creator dialog — conditionally mounted so initial state resets */}
+  1007→  1007→      {pairCreatorOpen && (
+  1008→  1008→        <PairCreatorDialog
+  1009→  1009→          onClose={() => setPairCreatorOpen(false)}
+  1010→  1010→          predPhotos={predPhotos}
+  1011→  1011→          poPhotos={poPhotos}
+  1012→  1012→          existingPairs={pairs}
+  1013→  1013→          onCreate={(pair) => {
+  1014→  1014→            savePairs([...pairs, pair])
+  1015→  1015→            setPairCreatorOpen(false)
+  1016→  1016→            toast({ title: 'Par ustvarjen' })
+  1017→  1017→          }}
+  1018→  1018→        />
+  1019→  1019→      )}
+  1020→  1020→    </div>
+  1021→  1021→  )
+  1022→  1022→}
+  1023→  1023→
+  1024→  1024→// ============================================================
+  1025→  1025→// CAMERA CAPTURE — polnozaslonska kamera z zajemom + anotacijo
+  1026→  1026→// ============================================================
+  1027→  1027→function CameraCapture({
+  1028→  1028→  projectId,
+  1029→  1029→  kategorija,
+  1030→  1030→  onKategorijaChange,
+  1031→  1031→  onClose,
+  1032→  1032→  onSaved,
+  1033→  1033→}: {
+  1034→  1034→  projectId: string
+  1035→  1035→  kategorija: 'PRED' | 'MED' | 'PO'
+  1036→  1036→  onKategorijaChange: (k: 'PRED' | 'MED' | 'PO') => void
+  1037→  1037→  onClose: () => void
+  1038→  1038→  onSaved: () => void
+  1039→  1039→}) {
+  1040→  1040→  const videoRef = useRef<HTMLVideoElement>(null)
+  1041→  1041→  const streamRef = useRef<MediaStream | null>(null)
+  1042→  1042→  const [status, setStatus] = useState<'starting' | 'ready' | 'error' | 'captured'>('starting')
+  1043→  1043→  const [errorMsg, setErrorMsg] = useState('')
+  1044→  1044→  const [capturedData, setCapturedData] = useState<string | null>(null)
+  1045→  1045→  const [opomba, setOpomba] = useState('')
+  1046→  1046→  const [gps, setGps] = useState<{ lat: number; lon: number } | null>(null)
+  1047→  1047→  const [saving, setSaving] = useState(false)
+  1048→  1048→  const [annotateMode, setAnnotateMode] = useState(false)
+  1049→  1049→  const { toast } = useToast()
+  1050→  1050→
+  1051→  1051→  useEffect(() => {
+  1052→  1052→    let mounted = true
+  1053→  1053→    async function start() {
+  1054→  1054→      try {
+  1055→  1055→        const stream = await navigator.mediaDevices.getUserMedia({
+  1056→  1056→          video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } },
+  1057→  1057→          audio: false,
+  1058→  1058→        })
+  1059→  1059→        if (!mounted) {
+  1060→  1060→          stream.getTracks().forEach((t) => t.stop())
+  1061→  1061→          return
+  1062→  1062→        }
+  1063→  1063→        streamRef.current = stream
+  1064→  1064→        if (videoRef.current) {
+  1065→  1065→          videoRef.current.srcObject = stream
+  1066→  1066→          await videoRef.current.play()
+  1067→  1067→        }
+  1068→  1068→        setStatus('ready')
+  1069→  1069→      } catch (e) {
+  1070→  1070→        setStatus('error')
+  1071→  1071→        setErrorMsg(e instanceof Error ? e.message : 'Kamera ni na voljo')
+  1072→  1072→      }
+  1073→  1073→    }
+  1074→  1074→    start()
+  1075→  1075→
+  1076→  1076→    if (navigator.geolocation) {
+  1077→  1077→      navigator.geolocation.getCurrentPosition(
+  1078→  1078→        (pos) => setGps({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
+  1079→  1079→        () => {},
+  1080→  1080→        { enableHighAccuracy: true, timeout: 5000 }
+  1081→  1081→      )
+  1082→  1082→    }
+  1083→  1083→
+  1084→  1084→    return () => {
+  1085→  1085→      mounted = false
+  1086→  1086→      if (streamRef.current) {
+  1087→  1087→        streamRef.current.getTracks().forEach((t) => t.stop())
+  1088→  1088→        streamRef.current = null
+  1089→  1089→      }
+  1090→  1090→    }
+  1091→  1091→  }, [])
+  1092→  1092→
+  1093→  1093→  function handleCapture() {
+  1094→  1094→    if (!videoRef.current) return
+  1095→  1095→    const video = videoRef.current
+  1096→  1096→    const canvas = document.createElement('canvas')
+  1097→  1097→    const scale = Math.min(1, 1280 / Math.max(1, video.videoWidth))
+  1098→  1098→    canvas.width = Math.max(1, Math.round(video.videoWidth * scale))
+  1099→  1099→    canvas.height = Math.max(1, Math.round(video.videoHeight * scale))
+  1100→  1100→    const ctx = canvas.getContext('2d')
+  1101→  1101→    if (!ctx) return
+  1102→  1102→    ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+  1103→  1103→    const data = canvas.toDataURL('image/jpeg', 0.75)
+  1104→  1104→    setCapturedData(data)
+  1105→  1105→    setStatus('captured')
+  1106→  1106→    if (streamRef.current) {
+  1107→  1107→      streamRef.current.getTracks().forEach((t) => t.stop())
+  1108→  1108→      streamRef.current = null
+  1109→  1109→    }
+  1110→  1110→  }
+  1111→  1111→
+  1112→  1112→  function handleRetake() {
+  1113→  1113→    setCapturedData(null)
+  1114→  1114→    setStatus('starting')
+  1115→  1115→    ;(async () => {
+  1116→  1116→      try {
+  1117→  1117→        const stream = await navigator.mediaDevices.getUserMedia({
+  1118→  1118→          video: { facingMode: 'environment' },
+  1119→  1119→          audio: false,
+  1120→  1120→        })
+  1121→  1121→        streamRef.current = stream
+  1122→  1122→        if (videoRef.current) {
+  1123→  1123→          videoRef.current.srcObject = stream
+  1124→  1124→          await videoRef.current.play()
+  1125→  1125→        }
+  1126→  1126→        setStatus('ready')
+  1127→  1127→      } catch {
+  1128→  1128→        setStatus('error')
+  1129→  1129→      }
+  1130→  1130→    })()
+  1131→  1131→  }
+  1132→  1132→
+  1133→  1133→  async function handleSave() {
+  1134→  1134→    if (!capturedData) return
+  1135→  1135→    setSaving(true)
+  1136→  1136→    try {
+  1137→  1137→      const res = await fetch('/api/photos', {
+  1138→  1138→        method: 'POST',
+  1139→  1139→        headers: { 'Content-Type': 'application/json' },
+  1140→  1140→        body: JSON.stringify({
+  1141→  1141→          projectId,
+  1142→  1142→          kategorija,
+  1143→  1143→          imageData: capturedData,
+  1144→  1144→          opomba: opomba || null,
+  1145→  1145→          latitude: gps?.lat ?? null,
+  1146→  1146→          longitude: gps?.lon ?? null,
+  1147→  1147→        }),
+  1148→  1148→      })
+  1149→  1149→      if (res.ok) {
+  1150→  1150→        toast({
+  1151→  1151→          title: 'Slika shranjena',
+  1152→  1152→          description: `${KATEGORIJE.find((k) => k.id === kategorija)?.label}${gps ? ' · GPS zabeležen' : ''}`,
+  1153→  1153→        })
+  1154→  1154→        onSaved()
+  1155→  1155→      } else {
+  1156→  1156→        toast({ title: 'Napaka pri shranjevanju', variant: 'destructive' })
+  1157→  1157→      }
+  1158→  1158→    } catch {
+  1159→  1159→      toast({ title: 'Omrežna napaka', variant: 'destructive' })
+  1160→  1160→    } finally {
+  1161→  1161→      setSaving(false)
+  1162→  1162→    }
+  1163→  1163→  }
+  1164→  1164→
+  1165→  1165→  function handleClose() {
+  1166→  1166→    if (streamRef.current) {
+  1167→  1167→      streamRef.current.getTracks().forEach((t) => t.stop())
+  1168→  1168→    }
+  1169→  1169→    onClose()
+  1170→  1170→  }
+  1171→  1171→
+  1172→  1172→  // Annotation editor nad zajeto sliko
+  1173→  1173→  if (annotateMode && capturedData) {
+  1174→  1174→    return (
+  1175→  1175→      <AnnotationEditor
+  1176→  1176→        imageData={capturedData}
+  1177→  1177→        onSave={(newData) => {
+  1178→  1178→          setCapturedData(newData)
+  1179→  1179→          setAnnotateMode(false)
+  1180→  1180→          toast({ title: 'Anotacije shranjene na sliko' })
+  1181→  1181→        }}
+  1182→  1182→        onCancel={() => setAnnotateMode(false)}
+  1183→  1183→      />
+  1184→  1184→    )
+  1185→  1185→  }
+  1186→  1186→
+  1187→  1187→  return (
+  1188→  1188→    <div className="fixed inset-0 z-[60] flex flex-col bg-black">
+  1189→  1189→      {/* Header */}
+  1190→  1190→      <div className="flex items-center justify-between bg-black/80 px-4 py-3 text-white">
+  1191→  1191→        <button type="button" onClick={handleClose} className="rounded-full p-1.5 hover:bg-white/10">
+  1192→  1192→          <X className="h-5 w-5" />
+  1193→  1193→        </button>
+  1194→  1194→        <span className="text-sm font-medium">Slikanje — {KATEGORIJE.find((k) => k.id === kategorija)?.label}</span>
+  1195→  1195→        {gps ? (
+  1196→  1196→          <div className="flex items-center gap-1 text-[10px] text-green-400">
+  1197→  1197→            <MapPin className="h-3 w-3" />
+  1198→  1198→            GPS
+  1199→  1199→          </div>
+  1200→  1200→        ) : (
+  1201→  1201→          <div className="w-6" />
+  1202→  1202→        )}
+  1203→  1203→      </div>
+  1204→  1204→
+  1205→  1205→      {/* Kategorija selector */}
+  1206→  1206→      <div className="flex justify-center gap-2 bg-black/80 px-4 py-2">
+  1207→  1207→        {KATEGORIJE.map((k) => (
+  1208→  1208→          <button
+  1209→  1209→            key={k.id}
+  1210→  1210→            type="button"
+  1211→  1211→            onClick={() => onKategorijaChange(k.id as 'PRED' | 'MED' | 'PO')}
+  1212→  1212→            className={`rounded-full px-3 py-1 text-[11px] font-medium transition-colors ${
+  1213→  1213→              kategorija === k.id ? 'bg-roksal-amber text-white' : 'bg-white/10 text-white/70'
+  1214→  1214→            }`}
+  1215→  1215→          >
+  1216→  1216→            {k.label}
+  1217→  1217→          </button>
+  1218→  1218→        ))}
+  1219→  1219→      </div>
+  1220→  1220→
+  1221→  1221→      {/* Vsebina */}
+  1222→  1222→      <div className="relative flex-1 overflow-hidden">
+  1223→  1223→        {status === 'starting' && (
+  1224→  1224→          <div className="flex h-full items-center justify-center text-white">
+  1225→  1225→            <Loader2 className="h-8 w-8 animate-spin" />
+  1226→  1226→          </div>
+  1227→  1227→        )}
+  1228→  1228→        {status === 'error' && (
+  1229→  1229→          <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center text-white">
+  1230→  1230→            <AlertTriangle className="h-10 w-10 text-amber-400" />
+  1231→  1231→            <p className="text-sm">{errorMsg || 'Dostop do kamere je zavrnjen.'}</p>
+  1232→  1232→            <p className="text-[11px] text-white/60">V nastavitvah brskalnika omogočite dostop do kamere.</p>
+  1233→  1233→          </div>
+  1234→  1234→        )}
+  1235→  1235→        {status === 'ready' && (
+  1236→  1236→          <video ref={videoRef} autoPlay playsInline muted className="h-full w-full object-cover" />
+  1237→  1237→        )}
+  1238→  1238→        {status === 'captured' && capturedData && (
+  1239→  1239→           
+  1240→  1240→          <img src={capturedData} alt="Zajeto" className="h-full w-full object-contain" />
+  1241→  1241→        )}
+  1242→  1242→      </div>
+  1243→  1243→
+  1244→  1244→      {/* Footer kontrola */}
+  1245→  1245→      {status === 'ready' && (
+  1246→  1246→        <div className="flex items-center justify-center bg-black/80 py-6">
+  1247→  1247→          <button
+  1248→  1248→            type="button"
+  1249→  1249→            onClick={handleCapture}
+  1250→  1250→            className="flex h-16 w-16 items-center justify-center rounded-full border-4 border-white bg-white/20"
+  1251→  1251→            aria-label="Posnemi"
+  1252→  1252→          >
+  1253→  1253→            <div className="h-12 w-12 rounded-full bg-white" />
+  1254→  1254→          </button>
+  1255→  1255→        </div>
+  1256→  1256→      )}
+  1257→  1257→      {status === 'captured' && (
+  1258→  1258→        <div className="space-y-3 bg-black/80 p-4">
+  1259→  1259→          <Input
+  1260→  1260→            value={opomba}
+  1261→  1261→            onChange={(e) => setOpomba(e.target.value)}
+  1262→  1262→            placeholder="Opomba k sliki (opcijsko)..."
+  1263→  1263→            className="border-white/20 bg-white/10 text-white placeholder:text-white/40"
+  1264→  1264→          />
+  1265→  1265→          <div className="flex gap-2">
+  1266→  1266→            <Button type="button" variant="outline" onClick={handleRetake} className="flex-1 border-white/20 bg-transparent text-white hover:bg-white/10">
+  1267→  1267→              <X className="mr-1 h-4 w-4" />
+  1268→  1268→              Ponovi
+  1269→  1269→            </Button>
+  1270→  1270→            <Button
+  1271→  1271→              type="button"
+  1272→  1272→              variant="outline"
+  1273→  1273→              onClick={() => setAnnotateMode(true)}
+  1274→  1274→              className="flex-1 border-roksal-amber/40 bg-transparent text-roksal-amber hover:bg-roksal-amber/10"
+  1275→  1275→            >
+  1276→  1276→              <Pencil className="mr-1 h-4 w-4" />
+  1277→  1277→              Anotiraj
+  1278→  1278→            </Button>
+  1279→  1279→            <Button type="button" onClick={handleSave} disabled={saving} className="flex-1 bg-roksal-amber text-white hover:bg-roksal-amber/90">
+  1280→  1280→              {saving ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Check className="mr-1 h-4 w-4" />}
+  1281→  1281→              Shrani
+  1282→  1282→            </Button>
+  1283→  1283→          </div>
+  1284→  1284→        </div>
+  1285→  1285→      )}
+  1286→  1286→    </div>
+  1287→  1287→  )
+  1288→  1288→}
+  1289→  1289→
+  1290→  1290→// ============================================================
+  1291→  1291→// ANNOTATION EDITOR — polnozaslonski urejevalnik anotacij
+  1292→  1292→// ============================================================
+  1293→  1293→function AnnotationEditor({
+  1294→  1294→  imageData,
+  1295→  1295→  onSave,
+  1296→  1296→  onCancel,
+  1297→  1297→}: {
+  1298→  1298→  imageData: string
+  1299→  1299→  onSave: (newImageData: string) => void
+  1300→  1300→  onCancel: () => void
+  1301→  1301→}) {
+  1302→  1302→  const [tool, setTool] = useState<Tool>('arrow')
+  1303→  1303→  const [color, setColor] = useState(COLORS[0].value)
+  1304→  1304→  const [stroke, setStroke] = useState(4)
+  1305→  1305→  const [anns, setAnns] = useState<Annotation[]>([])
+  1306→  1306→  const [current, setCurrent] = useState<Annotation | null>(null)
+  1307→  1307→  const [textValue, setTextValue] = useState('')
+  1308→  1308→  const [measureInput, setMeasureInput] = useState<{ ann: Annotation } | null>(null)
+  1309→  1309→  const [measureValue, setMeasureValue] = useState('')
+  1310→  1310→  const [saving, setSaving] = useState(false)
+  1311→  1311→
+  1312→  1312→  const drawingRef = useRef(false)
+  1313→  1313→  const canvasRef = useRef<HTMLCanvasElement>(null)
+  1314→  1314→  const imageRef = useRef<HTMLImageElement>(null)
+  1315→  1315→  const { toast } = useToast()
+  1316→  1316→
+  1317→  1317→  const redraw = useCallback(() => {
+  1318→  1318→    const canvas = canvasRef.current
+  1319→  1319→    if (!canvas) return
+  1320→  1320→    const ctx = canvas.getContext('2d')
+  1321→  1321→    if (!ctx) return
+  1322→  1322→    ctx.clearRect(0, 0, canvas.width, canvas.height)
+  1323→  1323→    for (const ann of anns) drawAnnotation(ctx, ann)
+  1324→  1324→    if (current) drawAnnotation(ctx, current)
+  1325→  1325→  }, [anns, current])
+  1326→  1326→
+  1327→  1327→  useEffect(() => {
+  1328→  1328→    redraw()
+  1329→  1329→  }, [redraw])
+  1330→  1330→
+  1331→  1331→  // Setup canvas size
+  1332→  1332→  useEffect(() => {
+  1333→  1333→    const img = imageRef.current
+  1334→  1334→    const canvas = canvasRef.current
+  1335→  1335→    if (!img || !canvas) return
+  1336→  1336→    const setup = () => {
+  1337→  1337→      const rect = img.getBoundingClientRect()
+  1338→  1338→      if (rect.width === 0 || rect.height === 0) return
+  1339→  1339→      canvas.width = Math.round(rect.width)
+  1340→  1340→      canvas.height = Math.round(rect.height)
+  1341→  1341→      redraw()
+  1342→  1342→    }
+  1343→  1343→    if (img.complete && img.naturalWidth > 0) setup()
+  1344→  1344→    img.addEventListener('load', setup)
+  1345→  1345→    window.addEventListener('resize', setup)
+  1346→  1346→    const t = setTimeout(setup, 50)
+  1347→  1347→    return () => {
+  1348→  1348→      img.removeEventListener('load', setup)
+  1349→  1349→      window.removeEventListener('resize', setup)
+  1350→  1350→      clearTimeout(t)
+  1351→  1351→    }
+  1352→  1352→  }, [redraw])
+  1353→  1353→
+  1354→  1354→  function getPos(e: React.PointerEvent) {
+  1355→  1355→    const canvas = canvasRef.current!
+  1356→  1356→    const rect = canvas.getBoundingClientRect()
+  1357→  1357→    return { x: e.clientX - rect.left, y: e.clientY - rect.top }
+  1358→  1358→  }
+  1359→  1359→
+  1360→  1360→  function onPointerDown(e: React.PointerEvent) {
+  1361→  1361→    if (measureInput) return
+  1362→  1362→    if (tool === 'eraser') {
+  1363→  1363→      setAnns((a) => a.slice(0, -1))
+  1364→  1364→      return
+  1365→  1365→    }
+  1366→  1366→    const p = getPos(e)
+  1367→  1367→    if (tool === 'text') {
+  1368→  1368→      if (!textValue.trim()) {
+  1369→  1369→        toast({ title: 'Vnesite besedilo', description: 'Najprej vnesite besedilo v polje zgoraj.' })
+  1370→  1370→        return
+  1371→  1371→      }
+  1372→  1372→      setAnns((a) => [
+  1373→  1373→        ...a,
+  1374→  1374→        {
+  1375→  1375→          type: 'text',
+  1376→  1376→          color,
+  1377→  1377→          width: stroke,
+  1378→  1378→          points: [p],
+  1379→  1379→          text: textValue.trim(),
+  1380→  1380→          fontSize: 18 + stroke * 2,
+  1381→  1381→        },
+  1382→  1382→      ])
+  1383→  1383→      setTextValue('')
+  1384→  1384→      return
+  1385→  1385→    }
+  1386→  1386→    drawingRef.current = true
+  1387→  1387→    try {
+  1388→  1388→      ;(e.target as Element).setPointerCapture(e.pointerId)
+  1389→  1389→    } catch {
+  1390→  1390→      /* ignore */
+  1391→  1391→    }
+  1392→  1392→    const newAnn: Annotation = {
+  1393→  1393→      type: tool,
+  1394→  1394→      color,
+  1395→  1395→      width: stroke,
+  1396→  1396→      points: [p, p],
+  1397→  1397→    }
+  1398→  1398→    setCurrent(newAnn)
+  1399→  1399→  }
+  1400→  1400→
+  1401→  1401→  function onPointerMove(e: React.PointerEvent) {
+  1402→  1402→    if (!drawingRef.current || !current) return
+  1403→  1403→    const p = getPos(e)
+  1404→  1404→    if (current.type === 'pen') {
+  1405→  1405→      setCurrent({ ...current, points: [...current.points, p] })
+  1406→  1406→    } else {
+  1407→  1407→      setCurrent({ ...current, points: [current.points[0], p] })
+  1408→  1408→    }
+  1409→  1409→  }
+  1410→  1410→
+  1411→  1411→  function onPointerUp(e: React.PointerEvent) {
+  1412→  1412→    if (!drawingRef.current || !current) return
+  1413→  1413→    drawingRef.current = false
+  1414→  1414→    try {
+  1415→  1415→      ;(e.target as Element).releasePointerCapture(e.pointerId)
+  1416→  1416→    } catch {
+  1417→  1417→      /* ignore */
+  1418→  1418→    }
+  1419→  1419→    if (current.type === 'measure') {
+  1420→  1420→      setMeasureInput({ ann: current })
+  1421→  1421→      setMeasureValue('')
+  1422→  1422→      setCurrent(null)
+  1423→  1423→      return
+  1424→  1424→    }
+  1425→  1425→    setAnns((a) => [...a, current])
+  1426→  1426→    setCurrent(null)
+  1427→  1427→  }
+  1428→  1428→
+  1429→  1429→  function commitMeasure() {
+  1430→  1430→    if (!measureInput) return
+  1431→  1431→    const length = parseFloat(measureValue)
+  1432→  1432→    if (isNaN(length) || length <= 0) {
+  1433→  1433→      toast({ title: 'Vnesite veljavno dolžino', variant: 'destructive' })
+  1434→  1434→      return
+  1435→  1435→    }
+  1436→  1436→    const label = formatLength(length)
+  1437→  1437→    setAnns((a) => [...a, { ...measureInput.ann, label, fontSize: 14 + stroke }])
+  1438→  1438→    setMeasureInput(null)
+  1439→  1439→    setMeasureValue('')
+  1440→  1440→  }
+  1441→  1441→
+  1442→  1442→  async function handleSave() {
+  1443→  1443→    setSaving(true)
+  1444→  1444→    try {
+  1445→  1445→      const naturalImg = new Image()
+  1446→  1446→      naturalImg.src = imageData
+  1447→  1447→      await new Promise<void>((resolve, reject) => {
+  1448→  1448→        naturalImg.onload = () => resolve()
+  1449→  1449→        naturalImg.onerror = () => reject(new Error('Napaka pri nalaganju slike'))
+  1450→  1450→      })
+  1451→  1451→      const natW = naturalImg.naturalWidth || 1280
+  1452→  1452→      const natH = naturalImg.naturalHeight || 720
+  1453→  1453→
+  1454→  1454→      const scale = Math.min(1, 1280 / Math.max(1, natW))
+  1455→  1455→      const saveCanvas = document.createElement('canvas')
+  1456→  1456→      saveCanvas.width = Math.max(1, Math.round(natW * scale))
+  1457→  1457→      saveCanvas.height = Math.max(1, Math.round(natH * scale))
+  1458→  1458→      const sctx = saveCanvas.getContext('2d')
+  1459→  1459→      if (!sctx) throw new Error('Canvas ni podprt')
+  1460→  1460→      sctx.drawImage(naturalImg, 0, 0, saveCanvas.width, saveCanvas.height)
+  1461→  1461→
+  1462→  1462→      const displayCanvas = canvasRef.current
+  1463→  1463→      if (displayCanvas && displayCanvas.width > 0) {
+  1464→  1464→        const scaleX = saveCanvas.width / displayCanvas.width
+  1465→  1465→        const scaleY = saveCanvas.height / displayCanvas.height
+  1466→  1466→        for (const ann of anns) {
+  1467→  1467→          const scaledAnn: Annotation = {
+  1468→  1468→            ...ann,
+  1469→  1469→            width: Math.max(0.5, ann.width * scaleX),
+  1470→  1470→            fontSize: (ann.fontSize ?? 14) * scaleX,
+  1471→  1471→            points: ann.points.map((p) => ({ x: p.x * scaleX, y: p.y * scaleY })),
+  1472→  1472→          }
+  1473→  1473→          drawAnnotation(sctx, scaledAnn)
+  1474→  1474→        }
+  1475→  1475→      }
+  1476→  1476→
+  1477→  1477→      const dataUrl = saveCanvas.toDataURL('image/jpeg', 0.75)
+  1478→  1478→      onSave(dataUrl)
+  1479→  1479→    } catch (e) {
+  1480→  1480→      console.error('Annotation save error:', e)
+  1481→  1481→      toast({ title: 'Napaka pri shranjevanju', variant: 'destructive' })
+  1482→  1482→    } finally {
+  1483→  1483→      setSaving(false)
+  1484→  1484→    }
+  1485→  1485→  }
+  1486→  1486→
+  1487→  1487→  function clearAll() {
+  1488→  1488→    setAnns([])
+  1489→  1489→    setCurrent(null)
+  1490→  1490→  }
+  1491→  1491→
+  1492→  1492→  function undoLast() {
+  1493→  1493→    setAnns((a) => a.slice(0, -1))
+  1494→  1494→  }
+  1495→  1495→
+  1496→  1496→  return (
+  1497→  1497→    <div className="fixed inset-0 z-[80] flex flex-col bg-black">
+  1498→  1498→      {/* HEADER — barva + debelina + akcije */}
+  1499→  1499→      <div className="flex flex-wrap items-center gap-2 bg-roksal-navy px-3 py-2 text-white">
+  1500→  1500→        <button
+  1501→  1501→          type="button"
+  1502→  1502→          onClick={onCancel}
+  1503→  1503→          className="rounded-md bg-white/10 px-2.5 py-1.5 text-[11px] font-medium hover:bg-white/20"
+  1504→  1504→        >
+  1505→  1505→          <X className="h-4 w-4" />
+  1506→  1506→        </button>
+  1507→  1507→        <span className="text-xs font-medium">Anotacije</span>
+  1508→  1508→        <span className="ml-1 text-[10px] text-white/60">{anns.length}</span>
+  1509→  1509→
+  1510→  1510→        <div className="ml-auto flex items-center gap-2">
+  1511→  1511→          <button
+  1512→  1512→            type="button"
+  1513→  1513→            onClick={undoLast}
+  1514→  1514→            disabled={anns.length === 0}
+  1515→  1515→            className="rounded-md bg-white/10 px-2 py-1.5 text-[11px] hover:bg-white/20 disabled:opacity-30"
+  1516→  1516→            title="Radiraj zadnjo"
+  1517→  1517→          >
+  1518→  1518→            <Undo2 className="h-3.5 w-3.5" />
+  1519→  1519→          </button>
+  1520→  1520→          <button
+  1521→  1521→            type="button"
+  1522→  1522→            onClick={clearAll}
+  1523→  1523→            disabled={anns.length === 0}
+  1524→  1524→            className="rounded-md bg-white/10 px-2 py-1.5 text-[11px] hover:bg-white/20 disabled:opacity-30"
+  1525→  1525→            title="Počisti vse"
+  1526→  1526→          >
+  1527→  1527→            <Trash className="h-3.5 w-3.5" />
+  1528→  1528→          </button>
+  1529→  1529→          <button
+  1530→  1530→            type="button"
+  1531→  1531→            onClick={handleSave}
+  1532→  1532→            disabled={saving}
+  1533→  1533→            className="rounded-md bg-roksal-amber px-3 py-1.5 text-[11px] font-medium text-white hover:bg-roksal-amber/90 disabled:opacity-50"
+  1534→  1534→          >
+  1535→  1535→            {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+  1536→  1536→            <span className="ml-1">Shrani</span>
+  1537→  1537→          </button>
+  1538→  1538→        </div>
+  1539→  1539→      </div>
+  1540→  1540→
+  1541→  1541→      {/* BARVE + DEBELINA */}
+  1542→  1542→      <div className="flex items-center gap-2 bg-black/80 px-3 py-1.5">
+  1543→  1543→        <div className="flex gap-1.5">
+  1544→  1544→          {COLORS.map((c) => (
+  1545→  1545→            <button
+  1546→  1546→              key={c.value}
+  1547→  1547→              type="button"
+  1548→  1548→              onClick={() => setColor(c.value)}
+  1549→  1549→              className={`h-6 w-6 rounded-full border-2 transition-all ${
+  1550→  1550→                color === c.value ? 'border-white scale-110' : 'border-white/30'
+  1551→  1551→              }`}
+  1552→  1552→              style={{ backgroundColor: c.value }}
+  1553→  1553→              aria-label={c.name}
+  1554→  1554→              title={c.name}
+  1555→  1555→            />
+  1556→  1556→          ))}
+  1557→  1557→        </div>
+  1558→  1558→        <Separator orientation="vertical" className="h-6 bg-white/20" />
+  1559→  1559→        <div className="flex gap-1.5">
+  1560→  1560→          {STROKES.map((s) => (
+  1561→  1561→            <button
+  1562→  1562→              key={s.value}
+  1563→  1563→              type="button"
+  1564→  1564→              onClick={() => setStroke(s.value)}
+  1565→  1565→              className={`flex h-6 w-9 items-center justify-center rounded-md border text-[10px] ${
+  1566→  1566→                stroke === s.value
+  1567→  1567→                  ? 'border-roksal-amber bg-roksal-amber/20 text-roksal-amber'
+  1568→  1568→                  : 'border-white/20 text-white/70'
+  1569→  1569→              }`}
+  1570→  1570→              title={s.name}
+  1571→  1571→            >
+  1572→  1572→              <div className="rounded-full bg-current" style={{ width: s.value + 'px', height: s.value + 'px' }} />
+  1573→  1573→            </button>
+  1574→  1574→          ))}
+  1575→  1575→        </div>
+  1576→  1576→        {tool === 'text' && (
+  1577→  1577→          <>
+  1578→  1578→            <Separator orientation="vertical" className="h-6 bg-white/20" />
+  1579→  1579→            <input
+  1580→  1580→              value={textValue}
+  1581→  1581→              onChange={(e) => setTextValue(e.target.value)}
+  1582→  1582→              placeholder="Vnesi besedilo..."
+  1583→  1583→              className="h-7 flex-1 rounded-md border border-white/20 bg-white/10 px-2 text-[11px] text-white placeholder:text-white/40"
+  1584→  1584→            />
+  1585→  1585→          </>
+  1586→  1586→        )}
+  1587→  1587→      </div>
+  1588→  1588→
+  1589→  1589→      {/* SLIKA + CANVAS */}
+  1590→  1590→      <div className="relative flex-1 overflow-hidden bg-black">
+  1591→  1591→        { }
+  1592→  1592→        <img
+  1593→  1593→          ref={imageRef}
+  1594→  1594→          src={imageData}
+  1595→  1595→          alt="Za anotacijo"
+  1596→  1596→          className="absolute inset-0 h-full w-full object-contain"
+  1597→  1597→          draggable={false}
+  1598→  1598→        />
+  1599→  1599→        <canvas
+  1600→  1600→          ref={canvasRef}
+  1601→  1601→          onPointerDown={onPointerDown}
+  1602→  1602→          onPointerMove={onPointerMove}
+  1603→  1603→          onPointerUp={onPointerUp}
+  1604→  1604→          onPointerCancel={onPointerUp}
+  1605→  1605→          className="absolute inset-0 h-full w-full touch-none"
+  1606→  1606→          style={{ touchAction: 'none', cursor: tool === 'text' ? 'text' : tool === 'eraser' ? 'cell' : 'crosshair' }}
+  1607→  1607→        />
+  1608→  1608→      </div>
+  1609→  1609→
+  1610→  1610→      {/* TOOLBAR — orodja */}
+  1611→  1611→      <div className="flex gap-1 overflow-x-auto bg-roksal-navy px-2 py-2 no-scrollbar">
+  1612→  1612→        {TOOLS.map((t) => {
+  1613→  1613→          const Icon = t.icon
+  1614→  1614→          return (
+  1615→  1615→            <button
+  1616→  1616→              key={t.id}
+  1617→  1617→              type="button"
+  1618→  1618→              onClick={() => setTool(t.id)}
+  1619→  1619→              className={`flex shrink-0 flex-col items-center gap-0.5 rounded-md px-2.5 py-1.5 text-[9px] transition-colors ${
+  1620→  1620→                tool === t.id
+  1621→  1621→                  ? 'bg-roksal-amber text-white'
+  1622→  1622→                  : 'bg-white/10 text-white/70 hover:bg-white/20'
+  1623→  1623→              }`}
+  1624→  1624→            >
+  1625→  1625→              <Icon className="h-4 w-4" />
+  1626→  1626→              {t.label}
+  1627→  1627→            </button>
+  1628→  1628→          )
+  1629→  1629→        })}
+  1630→  1630→      </div>
+  1631→  1631→
+  1632→  1632→      {/* MODAL — vnos mere */}
+  1633→  1633→      {measureInput && (
+  1634→  1634→        <Dialog open onOpenChange={(o) => !o && setMeasureInput(null)}>
+  1635→  1635→          <DialogContent className="max-w-xs">
+  1636→  1636→            <DialogHeader>
+  1637→  1637→              <DialogTitle className="flex items-center gap-2 text-sm">
+  1638→  1638→                <Ruler className="h-4 w-4 text-roksal-amber" />
+  1639→  1639→                Dolžina mere
+  1640→  1640→              </DialogTitle>
+  1641→  1641→            </DialogHeader>
+  1642→  1642→            <div className="space-y-2">
+  1643→  1643→              <Label className="text-xs text-muted-foreground">Vnesi realno dolžino (mm)</Label>
+  1644→  1644→              <Input
+  1645→  1645→                type="number"
+  1646→  1646→                value={measureValue}
+  1647→  1647→                onChange={(e) => setMeasureValue(e.target.value)}
+  1648→  1648→                placeholder="npr. 1200"
+  1649→  1649→                autoFocus
+  1650→  1650→                onKeyDown={(e) => { if (e.key === 'Enter') commitMeasure() }}
+  1651→  1651→              />
+  1652→  1652→              <p className="text-[10px] text-muted-foreground">
+  1653→  1653→                Vrednost se prikaže kot oznaka na črti (npr. &quot;1.20 m&quot;).
+  1654→  1654→              </p>
+  1655→  1655→            </div>
+  1656→  1656→            <DialogFooter className="gap-2">
+  1657→  1657→              <Button type="button" variant="outline" size="sm" onClick={() => setMeasureInput(null)}>
+  1658→  1658→                Prekliči
+  1659→  1659→              </Button>
+  1660→  1660→              <Button type="button" size="sm" onClick={commitMeasure} className="bg-roksal-amber text-white hover:bg-roksal-amber/90">
+  1661→  1661→                <Check className="mr-1 h-3.5 w-3.5" />
+  1662→  1662→                Potrdi
+  1663→  1663→              </Button>
+  1664→  1664→            </DialogFooter>
+  1665→  1665→          </DialogContent>
+  1666→  1666→        </Dialog>
+  1667→  1667→      )}
+  1668→  1668→    </div>
+  1669→  1669→  )
+  1670→  1670→}
+  1671→  1671→
+  1672→  1672→// ============================================================
+  1673→  1673→// BEFORE/AFTER SLIDER — za prikaz Pred/Po parov
+  1674→  1674→// ============================================================
+  1675→  1675→function BeforeAfterSlider({
+  1676→  1676→  before,
+  1677→  1677→  after,
+  1678→  1678→  beforeLabel = 'PRED',
+  1679→  1679→  afterLabel = 'PO',
+  1680→  1680→}: {
+  1681→  1681→  before: string
+  1682→  1682→  after: string
+  1683→  1683→  beforeLabel?: string
+  1684→  1684→  afterLabel?: string
+  1685→  1685→}) {
+  1686→  1686→  const [pos, setPos] = useState(50)
+  1687→  1687→  return (
+  1688→  1688→    <div
+  1689→  1689→      className="relative w-full select-none overflow-hidden rounded-lg"
+  1690→  1690→      style={{ aspectRatio: '4 / 3', backgroundImage: `url(${before})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+  1691→  1691→    >
+  1692→  1692→      {/* After (PO) slika, prevlečena s clip-path */}
+  1693→  1693→      { }
+  1694→  1694→      <img
+  1695→  1695→        src={after}
+  1696→  1696→        alt={afterLabel}
+  1697→  1697→        className="absolute inset-0 h-full w-full object-cover"
+  1698→  1698→        style={{ clipPath: `inset(0 0 0 ${pos}%)` }}
+  1699→  1699→        draggable={false}
+  1700→  1700→      />
+  1701→  1701→      {/* Ločnica */}
+  1702→  1702→      <div
+  1703→  1703→        className="pointer-events-none absolute top-0 bottom-0 w-0.5 bg-white shadow-md"
+  1704→  1704→        style={{ left: `${pos}%` }}
+  1705→  1705→      >
+  1706→  1706→        <div className="absolute top-1/2 left-1/2 flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-roksal-navy bg-white shadow-lg">
+  1707→  1707→          <ChevronLeft className="h-3 w-3 text-roksal-navy" />
+  1708→  1708→          <ChevronRight className="h-3 w-3 text-roksal-navy" />
+  1709→  1709→        </div>
+  1710→  1710→      </div>
+  1711→  1711→      {/* Oznaki */}
+  1712→  1712→      <Badge className="absolute left-2 top-2 bg-blue-500/90 text-white text-[9px]">{beforeLabel}</Badge>
+  1713→  1713→      <Badge className="absolute right-2 top-2 bg-green-600/90 text-white text-[9px]">{afterLabel}</Badge>
+  1714→  1714→      {/* Slider input */}
+  1715→  1715→      <input
+  1716→  1716→        type="range"
+  1717→  1717→        min={0}
+  1718→  1718→        max={100}
+  1719→  1719→        value={pos}
+  1720→  1720→        onChange={(e) => setPos(Number(e.target.value))}
+  1721→  1721→        className="absolute inset-0 h-full w-full cursor-ew-resize opacity-0"
+  1722→  1722→        aria-label="Premakni za primerjavo"
+  1723→  1723→      />
+  1724→  1724→    </div>
+  1725→  1725→  )
+  1726→  1726→}
+  1727→  1727→
+  1728→  1728→// ============================================================
+  1729→  1729→// PAIR CREATOR DIALOG — ročna izbira PRED + PO para
+  1730→  1730→// ============================================================
+  1731→  1731→function PairCreatorDialog({
+  1732→  1732→  onClose,
+  1733→  1733→  predPhotos,
+  1734→  1734→  poPhotos,
+  1735→  1735→  existingPairs,
+  1736→  1736→  onCreate,
+  1737→  1737→}: {
+  1738→  1738→  onClose: () => void
+  1739→  1739→  predPhotos: Photo[]
+  1740→  1740→  poPhotos: Photo[]
+  1741→  1741→  existingPairs: PhotoPair[]
+  1742→  1742→  onCreate: (pair: PhotoPair) => void
+  1743→  1743→}) {
+  1744→  1744→  const predAvailable = predPhotos.filter((p) => !existingPairs.some((pr) => pr.predId === p.id))
+  1745→  1745→  const poAvailable = poPhotos.filter((p) => !existingPairs.some((pr) => pr.poId === p.id))
+  1746→  1746→
+  1747→  1747→  const [predId, setPredId] = useState(() => predAvailable[0]?.id ?? '')
+  1748→  1748→  const [poId, setPoId] = useState(() => poAvailable[0]?.id ?? '')
+  1749→  1749→
+  1750→  1750→  return (
+  1751→  1751→    <Dialog open onOpenChange={(o) => !o && onClose()}>
+  1752→  1752→      <DialogContent className="max-w-md">
+  1753→  1753→        <DialogHeader>
+  1754→  1754→          <DialogTitle className="flex items-center gap-2 text-sm">
+  1755→  1755→            <Sparkles className="h-4 w-4 text-roksal-amber" />
+  1756→  1756→            Ustvari Pred/Po par
+  1757→  1757→          </DialogTitle>
+  1758→  1758→        </DialogHeader>
+  1759→  1759→        <div className="space-y-3">
+  1760→  1760→          <div>
+  1761→  1761→            <Label className="mb-1 block text-xs">PRED slika</Label>
+  1762→  1762→            <select
+  1763→  1763→              value={predId}
+  1764→  1764→              onChange={(e) => setPredId(e.target.value)}
+  1765→  1765→              className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+  1766→  1766→            >
+  1767→  1767→              {predAvailable.length === 0 && <option value="">Ni razpoložljivih PRED slik</option>}
+  1768→  1768→              {predAvailable.map((p) => (
+  1769→  1769→                <option key={p.id} value={p.id}>
+  1770→  1770→                  {new Date(p.createdAt).toLocaleString('sl-SI')}
+  1771→  1771→                  {p.opomba ? ` — ${p.opomba.slice(0, 30)}` : ''}
+  1772→  1772→                </option>
+  1773→  1773→              ))}
+  1774→  1774→            </select>
+  1775→  1775→          </div>
+  1776→  1776→          <div>
+  1777→  1777→            <Label className="mb-1 block text-xs">PO slika</Label>
+  1778→  1778→            <select
+  1779→  1779→              value={poId}
+  1780→  1780→              onChange={(e) => setPoId(e.target.value)}
+  1781→  1781→              className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+  1782→  1782→            >
+  1783→  1783→              {poAvailable.length === 0 && <option value="">Ni razpoložljivih PO slik</option>}
+  1784→  1784→              {poAvailable.map((p) => (
+  1785→  1785→                <option key={p.id} value={p.id}>
+  1786→  1786→                  {new Date(p.createdAt).toLocaleString('sl-SI')}
+  1787→  1787→                  {p.opomba ? ` — ${p.opomba.slice(0, 30)}` : ''}
+  1788→  1788→                </option>
+  1789→  1789→              ))}
+  1790→  1790→            </select>
+  1791→  1791→          </div>
+  1792→  1792→
+  1793→  1793→          {/* Predogled parov */}
+  1794→  1794→          {predId && poId && (
+  1795→  1795→            <div className="grid grid-cols-2 gap-2">
+  1796→  1796→              <div>
+  1797→  1797→                <p className="mb-1 text-[10px] text-muted-foreground">PRED</p>
+  1798→  1798→                { }
+  1799→  1799→                <img
+  1800→  1800→                  src={predPhotos.find((p) => p.id === predId)?.imageData}
+  1801→  1801→                  alt="Pred"
+  1802→  1802→                  className="aspect-[4/3] w-full rounded-md object-cover"
+  1803→  1803→                />
+  1804→  1804→              </div>
+  1805→  1805→              <div>
+  1806→  1806→                <p className="mb-1 text-[10px] text-muted-foreground">PO</p>
+  1807→  1807→                { }
+  1808→  1808→                <img
+  1809→  1809→                  src={poPhotos.find((p) => p.id === poId)?.imageData}
+  1810→  1810→                  alt="Po"
+  1811→  1811→                  className="aspect-[4/3] w-full rounded-md object-cover"
+  1812→  1812→                />
+  1813→  1813→              </div>
+  1814→  1814→            </div>
+  1815→  1815→          )}
+  1816→  1816→        </div>
+  1817→  1817→        <DialogFooter className="gap-2">
+  1818→  1818→          <Button type="button" variant="outline" size="sm" onClick={onClose}>
+  1819→  1819→            Prekliči
+  1820→  1820→          </Button>
+  1821→  1821→          <Button
+  1822→  1822→            type="button"
+  1823→  1823→            size="sm"
+  1824→  1824→            disabled={!predId || !poId}
+  1825→  1825→            onClick={() => onCreate({ predId, poId })}
+  1826→  1826→            className="bg-roksal-amber text-white hover:bg-roksal-amber/90"
+  1827→  1827→          >
+  1828→  1828→            <Check className="mr-1 h-3.5 w-3.5" />
+  1829→  1829→            Ustvari par
+  1830→  1830→          </Button>
+  1831→  1831→        </DialogFooter>
+  1832→  1832→      </DialogContent>
+  1833→  1833→    </Dialog>
+  1834→  1834→  )
+  1835→  1835→}
+  1836→  1836→
