@@ -1,0 +1,2002 @@
+     1→'use client'
+     2→
+     3→import { useEffect, useState, useMemo, useRef, useCallback } from 'react'
+     4→import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+     5→import { Button } from '@/components/ui/button'
+     6→import { Input } from '@/components/ui/input'
+     7→import { Label } from '@/components/ui/label'
+     8→import { Textarea } from '@/components/ui/textarea'
+     9→import { toast } from 'sonner'
+    10→import { Badge } from '@/components/ui/badge'
+    11→import { Skeleton } from '@/components/ui/skeleton'
+    12→import { Separator } from '@/components/ui/separator'
+    13→import { Checkbox } from '@/components/ui/checkbox'
+    14→import {
+    15→  Tooltip,
+    16→  TooltipContent,
+    17→  TooltipTrigger,
+    18→} from '@/components/ui/tooltip'
+    19→import {
+    20→  Collapsible,
+    21→  CollapsibleContent,
+    22→  CollapsibleTrigger,
+    23→} from '@/components/ui/collapsible'
+    24→import {
+    25→  Select,
+    26→  SelectContent,
+    27→  SelectItem,
+    28→  SelectTrigger,
+    29→  SelectValue,
+    30→} from '@/components/ui/select'
+    31→import {
+    32→  Dialog,
+    33→  DialogContent,
+    34→  DialogHeader,
+    35→  DialogTitle,
+    36→  DialogFooter,
+    37→  DialogDescription,
+    38→} from '@/components/ui/dialog'
+    39→import {
+    40→  Ruler,
+    41→  Plus,
+    42→  MapPin,
+    43→  ScanLine,
+    44→  Calendar,
+    45→  FolderOpen,
+    46→  TrendingUp,
+    47→  Scan,
+    48→  Trash2,
+    49→  ChevronDown,
+    50→  ChevronUp,
+    51→  Hammer,
+    52→  AlertCircle,
+    53→  Copy,
+    54→  Calculator,
+    55→  Download,
+    56→  FileText,
+    57→  Crosshair,
+    58→  Layers,
+    59→  Gauge,
+    60→  Triangle,
+    61→  Mountain,
+    62→  CheckCircle2,
+    63→  RefreshCw,
+    64→  Camera,
+    65→  X,
+    66→  Save,
+    67→  Tag,
+    68→  // P1 — novi ikoni
+    69→  Mic,
+    70→  History,
+    71→  CheckSquare,
+    72→  Square,
+    73→  Archive,
+    74→  ClipboardList,
+    75→  Sparkles,
+    76→  RotateCcw,
+    77→  Filter,
+    78→  Clock,
+    79→  FileSpreadsheet,
+    80→  // P3 — novi ikoni (stopnice, koti, štebricki, WPC)
+    81→  CornerDownRight,
+    82→  Layers2,
+    83→  Columns3,
+    84→  Fence,
+    85→  PencilRuler,
+    86→  Lock,
+    87→  Unlock,
+    88→  Bookmark,
+    89→  ArrowRightLeft,
+    90→  Grid3x3,
+    91→  TrendingDown,
+    92→} from 'lucide-react'
+    93→import {
+    94→  Table,
+    95→  TableBody,
+    96→  TableCell,
+    97→  TableHead,
+    98→  TableHeader,
+    99→  TableRow,
+   100→} from '@/components/ui/table'
+   101→import jsPDF from 'jspdf'
+   102→import autoTable from 'jspdf-autotable'
+   103→
+   104→// ============================================
+   105→// TIPI
+   106→// ============================================
+   107→
+   108→type TipMeritve =
+   109→  | 'RAZDALJA'
+   110→  | 'VISINA'
+   111→  | 'KOT'
+   112→  | 'NAGIB'
+   113→  | 'GLOBINA'
+   114→  | 'PREMER'
+   115→  | 'SEGMENT'
+   116→  // P3 — novi tipi meritev
+   117→  | 'KOT_VOGAL'
+   118→  | 'KOT_STOPNISCE'
+   119→  | 'STEBR'
+   120→
+   121→type GroundType = 'beton' | 'les' | 'plosca' | 'gramoz' | 'metal'
+   122→
+   123→interface ArMetadata {
+   124→  tipMeritve?: TipMeritve
+   125→  oznaka?: string
+   126→  segmentId?: string
+   127→  opomba?: string
+   128→  status?: MeasurementStatus
+   129→  // starejše polje (združljivost)
+   130→  lokacija?: string
+   131→  steviloStebrov?: number
+   132→  tipPodlage?: string
+   133→  kot?: number
+   134→  opombe?: string
+   135→  // kalibracija
+   136→  pixelsPerMm?: number
+   137→  calibrationNote?: string
+   138→  // inclinometer
+   139→  kotStopinje?: number
+   140→  smer?: string
+   141→  // P3 — enote (mm/cm/m)
+   142→  enota?: 'mm' | 'cm' | 'm'
+   143→  originalnaVrednost?: number
+   144→  // P3 — kotomer (vogal: notranji + zunanji kot)
+   145→  notranjiKot?: number
+   146→  zunanjiKot?: number
+   147→  // P3 — štebricki (STEBR)
+   148→  tipStebra?: 'KONCNI' | 'VMESNI' | 'VOGALNI'
+   149→  materialStebra?: 'ALU' | 'INOX' | 'WPC' | 'DRUGO'
+   150→  visinaStebraMm?: number
+   151→  pozicijaMm?: number
+   152→  razmikMm?: number
+   153→  steberOznaka?: string
+   154→  // P3 — WPC palice
+   155→  orientacijaPalic?: 'WPC_POKOCNE' | 'WPC_VODORAVNE' | 'WPC_POSEVNE'
+   156→  sirinaPalice?: number
+   157→  debelinaPalice?: number
+   158→  razmikPalic?: number
+   159→  kotPosevnih?: number
+   160→  stPalic?: number
+   161→}
+   162→
+   163→interface Measurement {
+   164→  id: string
+   165→  dolzinaMm: number
+   166→  visinaMm: number
+   167→  lidarScanUrl?: string | null
+   168→  gpsLokacija?: string | null
+   169→  createdAt: string
+   170→  projectId: string
+   171→  // odjemanje iz arMetadata (za prikaz)
+   172→  lokacija?: string | null
+   173→  steviloStebrov?: number | null
+   174→  tipPodlage?: string | null
+   175→  kot?: number | null
+   176→  opombe?: string | null
+   177→  arMetadata?: string | null
+   178→  // razčlenjena polja (za prikaz)
+   179→  tipMeritve?: TipMeritve
+   180→  oznaka?: string
+   181→  segmentId?: string
+   182→  opomba?: string
+   183→  status?: MeasurementStatus
+   184→  kotStopinje?: number | null
+   185→  // P3 — enote
+   186→  enota?: 'mm' | 'cm' | 'm'
+   187→  originalnaVrednost?: number
+   188→  // P3 — kotomer
+   189→  notranjiKot?: number | null
+   190→  zunanjiKot?: number | null
+   191→  // P3 — štebricki
+   192→  tipStebra?: 'KONCNI' | 'VMESNI' | 'VOGALNI'
+   193→  materialStebra?: 'ALU' | 'INOX' | 'WPC' | 'DRUGO'
+   194→  visinaStebraMm?: number | null
+   195→  pozicijaMm?: number | null
+   196→  razmikMm?: number | null
+   197→  steberOznaka?: string
+   198→  // P3 — WPC palice
+   199→  orientacijaPalic?: 'WPC_POKOCNE' | 'WPC_VODORAVNE' | 'WPC_POSEVNE'
+   200→  sirinaPalice?: number
+   201→  debelinaPalice?: number
+   202→  razmikPalic?: number
+   203→  kotPosevnih?: number
+   204→  stPalic?: number
+   205→}
+   206→
+   207→interface Project {
+   208→  id: string
+   209→  nazivProjekta: string
+   210→}
+   211→
+   212→interface MeasurementGroup {
+   213→  label: string
+   214→  date: Date
+   215→  measurements: Measurement[]
+   216→}
+   217→
+   218→interface Segment {
+   219→  id: string
+   220→  name: string
+   221→  type:
+   222→    | 'ravni'
+   223→    | 'kotni'
+   224→    | 'stopniscje'
+   225→    | 'lokan'
+   226→    // P3 — WPC orientacije
+   227→    | 'WPC_POKOCNE'
+   228→    | 'WPC_VODORAVNE'
+   229→    | 'WPC_POSEVNE'
+   230→}
+   231→
+   232→interface CalibrationState {
+   233→  realMm: string
+   234→  pixelDistance: string
+   235→  pixelsPerMm: number | null
+   236→  note: string
+   237→}
+   238→
+   239→interface SlopeReading {
+   240→  beta: number
+   241→  gamma: number
+   242→}
+   243→
+   244→type MeasurementStatus = 'OSNUTEK' | 'POTRJENA' | 'ARHIVIRANA'
+   245→
+   246→type StatusFilter = 'VSE' | MeasurementStatus
+   247→
+   248→interface AuditEntry {
+   249→  timestamp: string
+   250→  akcija: 'ADD' | 'EDIT' | 'DELETE' | 'STATUS'
+   251→  meritevId: string
+   252→  opis: string
+   253→  staraVrednost?: string
+   254→  novaVrednost?: string
+   255→}
+   256→
+   257→interface PredlogaDef {
+   258→  id: string
+   259→  naziv: string
+   260→  opis: string
+   261→  ikona: typeof Ruler
+   262→}
+   263→
+   264→// Tipizirana oz. varovalna oblika Web Speech API
+   265→interface SpeechRecognitionResultItem {
+   266→  transcript: string
+   267→  confidence: number
+   268→}
+   269→interface SpeechRecognitionLike {
+   270→  lang: string
+   271→  interimResults: boolean
+   272→  continuous: boolean
+   273→  start: () => void
+   274→  stop: () => void
+   275→  abort: () => void
+   276→  onresult: ((event: {
+   277→    resultIndex: number
+   278→    results: ArrayLike<ArrayLike<SpeechRecognitionResultItem> & { isFinal: boolean; length: number }>
+   279→  }) => void) | null
+   280→  onerror: ((event: unknown) => void) | null
+   281→  onend: (() => void) | null
+   282→}
+   283→interface SpeechRecognitionCtor {
+   284→  new (): SpeechRecognitionLike
+   285→}
+   286→
+   287→// ============================================
+   288→// KONSTANTE
+   289→// ============================================
+   290→
+   291→const tipMeritveLabels: Record<TipMeritve, string> = {
+   292→  RAZDALJA: 'Razdalja',
+   293→  VISINA: 'Višina',
+   294→  KOT: 'Kot',
+   295→  NAGIB: 'Nagib',
+   296→  GLOBINA: 'Globina',
+   297→  PREMER: 'Premer',
+   298→  SEGMENT: 'Segment',
+   299→  // P3 — novi tipi
+   300→  KOT_VOGAL: 'Vogal',
+   301→  KOT_STOPNISCE: 'Kot stopnice',
+   302→  STEBR: 'Stebriček/Palica',
+   303→}
+   304→
+   305→const tipMeritveIcons: Record<TipMeritve, typeof Ruler> = {
+   306→  RAZDALJA: Ruler,
+   307→  VISINA: Gauge,
+   308→  KOT: Triangle,
+   309→  NAGIB: Mountain,
+   310→  GLOBINA: Crosshair,
+   311→  PREMER: Crosshair,
+   312→  SEGMENT: Layers,
+   313→  // P3 — novi tipi
+   314→  KOT_VOGAL: CornerDownRight,
+   315→  KOT_STOPNISCE: Layers2,
+   316→  STEBR: Columns3,
+   317→}
+   318→
+   319→const tipMeritveColors: Record<TipMeritve, string> = {
+   320→  RAZDALJA: 'bg-roksal-navy/10 text-roksal-navy border-roksal-navy/20',
+   321→  VISINA: 'bg-roksal-amber/10 text-roksal-amber border-roksal-amber/30',
+   322→  KOT: 'bg-purple-50 text-purple-700 border-purple-200',
+   323→  NAGIB: 'bg-orange-50 text-orange-700 border-orange-200',
+   324→  GLOBINA: 'bg-cyan-50 text-cyan-700 border-cyan-200',
+   325→  PREMER: 'bg-teal-50 text-teal-700 border-teal-200',
+   326→  SEGMENT: 'bg-gray-50 text-gray-700 border-gray-200',
+   327→  // P3 — novi tipi
+   328→  KOT_VOGAL: 'bg-teal-50 text-teal-700 border-teal-200',
+   329→  KOT_STOPNISCE: 'bg-orange-50 text-orange-700 border-orange-200',
+   330→  STEBR: 'bg-roksal-navy/10 text-roksal-navy border-roksal-navy/20',
+   331→}
+   332→
+   333→const groundTypeLabels: Record<GroundType, string> = {
+   334→  beton: 'Beton',
+   335→  les: 'Lesena podlaga',
+   336→  plosca: 'Plošča (kompozit)',
+   337→  gramoz: 'Gramoz',
+   338→  metal: 'Kovinska podlaga',
+   339→}
+   340→
+   341→const groundTypeColors: Record<GroundType, string> = {
+   342→  beton: 'bg-gray-100 text-gray-700 border-gray-300',
+   343→  les: 'bg-amber-50 text-amber-700 border-amber-300',
+   344→  plosca: 'bg-green-50 text-green-700 border-green-300',
+   345→  gramoz: 'bg-orange-50 text-orange-700 border-orange-300',
+   346→  metal: 'bg-slate-100 text-slate-700 border-slate-300',
+   347→}
+   348→
+   349→const segmentTypeLabels: Record<Segment['type'], string> = {
+   350→  ravni: 'Ravni odsek',
+   351→  kotni: 'Kotni odsek',
+   352→  stopniscje: 'Stopnišče',
+   353→  lokan: 'Lokan / ukrivljen',
+   354→  // P3 — WPC orientacije
+   355→  WPC_POKOCNE: 'WPC pokončne palice',
+   356→  WPC_VODORAVNE: 'WPC vodoravne palice',
+   357→  WPC_POSEVNE: 'WPC poševne palice',
+   358→}
+   359→
+   360→const statusLabels: Record<MeasurementStatus, string> = {
+   361→  OSNUTEK: 'Osnutek',
+   362→  POTRJENA: 'Potrjena',
+   363→  ARHIVIRANA: 'Arhivirana',
+   364→}
+   365→
+   366→const statusColors: Record<MeasurementStatus, string> = {
+   367→  OSNUTEK: 'bg-gray-100 text-gray-600 border-gray-300',
+   368→  POTRJENA: 'bg-green-50 text-green-700 border-green-300',
+   369→  ARHIVIRANA: 'bg-gray-50 text-gray-400 border-gray-200 line-through',
+   370→}
+   371→
+   372→const statusCycle: Record<MeasurementStatus, MeasurementStatus> = {
+   373→  OSNUTEK: 'POTRJENA',
+   374→  POTRJENA: 'ARHIVIRANA',
+   375→  ARHIVIRANA: 'OSNUTEK',
+   376→}
+   377→
+   378→const auditActionLabels: Record<AuditEntry['akcija'], string> = {
+   379→  ADD: 'Dodano',
+   380→  EDIT: 'Spremenjeno',
+   381→  DELETE: 'Izbrisano',
+   382→  STATUS: 'Status',
+   383→}
+   384→
+   385→const auditIcons: Record<AuditEntry['akcija'], typeof Ruler> = {
+   386→  ADD: Plus,
+   387→  EDIT: RefreshCw,
+   388→  DELETE: Trash2,
+   389→  STATUS: RotateCcw,
+   390→}
+   391→
+   392→const auditColors: Record<AuditEntry['akcija'], string> = {
+   393→  ADD: 'bg-green-50 text-green-700',
+   394→  EDIT: 'bg-blue-50 text-blue-700',
+   395→  DELETE: 'bg-red-50 text-red-700',
+   396→  STATUS: 'bg-amber-50 text-amber-700',
+   397→}
+   398→
+   399→const PREDLOGE: PredlogaDef[] = [
+   400→  { id: 'balkon3m', naziv: 'Standardni balkon 3m', opis: 'Balkon + 3 meritve', ikona: Ruler },
+   401→  { id: 'stopnisce', naziv: 'Stopnišče 12 stopnic', opis: 'Stopnišče + 2 meritevi', ikona: Layers },
+   402→  { id: 'loblika', naziv: 'L-oblika 4+2m', opis: '2 segmenta, L tloris', ikona: Triangle },
+   403→  { id: 'terasa5m', naziv: 'Terasa 5m', opis: 'Terasa + 1 meritev', ikona: Mountain },
+   404→  { id: 'prazen', naziv: 'Prazen začetek', opis: 'Samo nova forma', ikona: Plus },
+   405→]
+   406→
+   407→const LOKACIJE_INCLINOMETER = [
+   408→  'Talna plošča balkona',
+   409→  'Podkonstrukcija',
+   410→  'Rob balkona',
+   411→  'Stopnišče',
+   412→  'Terasa',
+   413→  'Drugo',
+   414→]
+   415→
+   416→// P3 — konstante za stopniščni čarovnik
+   417→type EnotaTip = 'mm' | 'cm' | 'm'
+   418→
+   419→const enotaLabels: Record<EnotaTip, string> = {
+   420→  mm: 'mm',
+   421→  cm: 'cm',
+   422→  m: 'm',
+   423→}
+   424→
+   425→// P3 — konstante za štebricki
+   426→type TipStebra = 'KONCNI' | 'VMESNI' | 'VOGALNI'
+   427→type MaterialStebra = 'ALU' | 'INOX' | 'WPC' | 'DRUGO'
+   428→
+   429→const tipStebraLabels: Record<TipStebra, string> = {
+   430→  KONCNI: 'Končni',
+   431→  VMESNI: 'Vmesni',
+   432→  VOGALNI: 'Vogalni',
+   433→}
+   434→
+   435→const tipStebraColors: Record<TipStebra, string> = {
+   436→  KONCNI: 'bg-roksal-amber/10 text-roksal-amber border-roksal-amber/30',
+   437→  VMESNI: 'bg-roksal-navy/10 text-roksal-navy border-roksal-navy/20',
+   438→  VOGALNI: 'bg-teal-50 text-teal-700 border-teal-200',
+   439→}
+   440→
+   441→const materialStebraLabels: Record<MaterialStebra, string> = {
+   442→  ALU: 'ALU',
+   443→  INOX: 'INOX',
+   444→  WPC: 'WPC',
+   445→  DRUGO: 'Drugo',
+   446→}
+   447→
+   448→const materialStebraColors: Record<MaterialStebra, string> = {
+   449→  ALU: 'bg-slate-100 text-slate-700 border-slate-300',
+   450→  INOX: 'bg-cyan-50 text-cyan-700 border-cyan-200',
+   451→  WPC: 'bg-amber-50 text-amber-700 border-amber-200',
+   452→  DRUGO: 'bg-gray-50 text-gray-600 border-gray-200',
+   453→}
+   454→
+   455→// P3 — konstante za WPC
+   456→const WPC_SIRINE_PALIC = [140, 180] as const
+   457→const WPC_DEBELINA_DEFAULT = 23
+   458→const WPC_RAZMAK_DEFAULT = 110 // standardni Roksal razmik med palicami
+   459→const WPC_KOT_POSEVNIH_DEFAULT = 45
+   460→
+   461→interface StairTemplate {
+   462→  id: string
+   463→  naziv: string
+   464→  skupnaVisinaMm: number
+   465→  stStopnic: number
+   466→  globinaStopniceMm: number
+   467→  sirinaStopniceMm?: number
+   468→  createdAt: string
+   469→}
+   470→
+   471→interface StairCalc {
+   472→  visinaPosamezne: number
+   473→  kotStopinje: number
+   474→  dolzinaKosa: number
+   475→  skupnaDolzina: number
+   476→  priporocilo: string
+   477→  priporociloColor: string
+   478→  valid: boolean
+   479→}
+   480→
+   481→interface MeasurementsTabProps {
+   482→  onNavigateToCalculator?: (dolzinaMm: number, visinaMm: number, locationName: string) => void
+   483→}
+   484→
+   485→// ============================================
+   486→// POMOŽNE FUNKCIJE
+   487→// ============================================
+   488→
+   489→function parseArMetadata(raw: string | null | undefined): ArMetadata {
+   490→  if (!raw) return {}
+   491→  try {
+   492→    return JSON.parse(raw) as ArMetadata
+   493→  } catch {
+   494→    return {}
+   495→  }
+   496→}
+   497→
+   498→function parseGPS(gpsStr: string | null): { lat: number; lng: number } | null {
+   499→  if (!gpsStr) return null
+   500→  try {
+   501→    return JSON.parse(gpsStr)
+   502→  } catch {
+   503→    return null
+   504→  }
+   505→}
+   506→
+   507→function formatDimension(mm: number): string {
+   508→  if (mm >= 1000) return `${(mm / 1000).toFixed(2)}m`
+   509→  return `${mm}mm`
+   510→}
+   511→
+   512→function formatM2(mm2: number): string {
+   513→  return `${(mm2 / 1_000_000).toFixed(2)}m²`
+   514→}
+   515→
+   516→// P1 — multi-unit prikaz mer
+   517→function formatMultiUnit(mm: number): string {
+   518→  return `${mm}mm · ${Math.round(mm / 10)}cm · ${(mm / 1000).toFixed(2)}m`
+   519→}
+   520→
+   521→function formatAngleMulti(deg: number): string {
+   522→  const rad = (deg * Math.PI) / 180
+   523→  return `${deg}° · ${rad.toFixed(2)}rad`
+   524→}
+   525→
+   526→function formatSlopeMulti(deg: number): string {
+   527→  const pct = Math.tan((deg * Math.PI) / 180) * 100
+   528→  return `${deg.toFixed(1)}° · ${pct.toFixed(1)}%`
+   529→}
+   530→
+   531→function loadAudit(projectId: string): AuditEntry[] {
+   532→  try {
+   533→    const raw = localStorage.getItem(`roksal_audit_${projectId}`)
+   534→    return raw ? (JSON.parse(raw) as AuditEntry[]) : []
+   535→  } catch {
+   536→    return []
+   537→  }
+   538→}
+   539→
+   540→// P3 — pretvorba enot (mm/cm/m) v mm
+   541→function convertToMm(value: number, unit: EnotaTip): number {
+   542→  if (!Number.isFinite(value)) return 0
+   543→  switch (unit) {
+   544→    case 'mm':
+   545→      return value
+   546→    case 'cm':
+   547→      return value * 10
+   548→    case 'm':
+   549→      return value * 1000
+   550→  }
+   551→}
+   552→
+   553→// P3 — prikaz v primarni enoti (default mm)
+   554→function formatInPrimaryUnit(mm: number, primary: EnotaTip): string {
+   555→  if (!Number.isFinite(mm)) return '—'
+   556→  switch (primary) {
+   557→    case 'mm':
+   558→      return `${Math.round(mm)}mm`
+   559→    case 'cm':
+   560→      return `${(mm / 10).toFixed(1)}cm`
+   561→    case 'm':
+   562→      return `${(mm / 1000).toFixed(2)}m`
+   563→  }
+   564→}
+   565→
+   566→// P3 — izračun stopniščnih dimenzij
+   567→function calculateStairDimensions(
+   568→  skupnaVisinaMm: number,
+   569→  stStopnic: number,
+   570→  globinaStopniceMm: number,
+   571→  sirinaStopniceMm?: number
+   572→): StairCalc {
+   573→  if (
+   574→    skupnaVisinaMm <= 0 ||
+   575→    stStopnic <= 0 ||
+   576→    globinaStopniceMm <= 0 ||
+   577→    !Number.isFinite(skupnaVisinaMm) ||
+   578→    !Number.isFinite(stStopnic) ||
+   579→    !Number.isFinite(globinaStopniceMm)
+   580→  ) {
+   581→    return {
+   582→      visinaPosamezne: 0,
+   583→      kotStopinje: 0,
+   584→      dolzinaKosa: 0,
+   585→      skupnaDolzina: 0,
+   586→      priporocilo: 'Vnesite veljavne vhodne podatke',
+   587→      priporociloColor: 'text-muted-foreground',
+   588→      valid: false,
+   589→    }
+   590→  }
+   591→  const visinaPosamezne = skupnaVisinaMm / stStopnic
+   592→  const kotRad = Math.atan(visinaPosamezne / globinaStopniceMm)
+   593→  const kotStopinje = (kotRad * 180) / Math.PI
+   594→  const dolzinaKosa = Math.sqrt(visinaPosamezne ** 2 + globinaStopniceMm ** 2) * stStopnic
+   595→  const rezerva = sirinaStopniceMm ? sirinaStopniceMm * 0.5 : 200 // dodaten rob
+   596→  const skupnaDolzina = dolzinaKosa + rezerva
+   597→  let priporocilo = 'Standardni kot 30–35°'
+   598→  let priporociloColor = 'text-green-700'
+   599→  if (kotStopinje > 40) {
+   600→    priporocilo = 'Nevarno: >40° (prestrmo!)'
+   601→    priporociloColor = 'text-red-600'
+   602→  } else if (kotStopinje > 37) {
+   603→    priporocilo = 'Prestrmo: >37°'
+   604→    priporociloColor = 'text-orange-600'
+   605→  } else if (kotStopinje < 25) {
+   606→    priporocilo = 'Ploščato: <25°'
+   607→    priporociloColor = 'text-amber-600'
+   608→  }
+   609→  return {
+   610→    visinaPosamezne,
+   611→    kotStopinje,
+   612→    dolzinaKosa,
+   613→    skupnaDolzina,
+   614→    priporocilo,
+   615→    priporociloColor,
+   616→    valid: true,
+   617→  }
+   618→}
+   619→
+   620→// P3 — avto-številčenje stebrov v segmentu (S1, S2, ...)
+   621→function getNextStebriNumber(measurements: Measurement[], segmentId?: string): number {
+   622→  const stebri = measurements.filter(
+   623→    (m) => m.tipMeritve === 'STEBR' && (!segmentId || m.segmentId === segmentId)
+   624→  )
+   625→  return stebri.length + 1
+   626→}
+   627→
+   628→// P3 — izračun števila WPC palic za dano orientacijo
+   629→function calcWpcPalice(
+   630→  orientacija: Segment['type'],
+   631→  dolzinaMm: number,
+   632→  visinaMm: number,
+   633→  sirinaPalice: number,
+   634→  razmikPalic: number
+   635→): number {
+   636→  if (sirinaPalice <= 0 || razmikPalic <= 0) return 0
+   637→  const korak = sirinaPalice + razmikPalic
+   638→  if (
+   639→    orientacija === 'WPC_POKOCNE' ||
+   640→    orientacija === 'WPC_VODORAVNE'
+   641→  ) {
+   642→    const relevantnaDim = orientacija === 'WPC_POKOCNE' ? dolzinaMm : visinaMm
+   643→    if (relevantnaDim <= 0) return 0
+   644→    return Math.max(0, Math.floor((relevantnaDim - sirinaPalice) / korak) + 1)
+   645→  }
+   646→  if (orientacija === 'WPC_POSEVNE') {
+   647→    // mreža: (dolžina / korak) × (višina / korak) — približno
+   648→    if (dolzinaMm <= 0 || visinaMm <= 0) return 0
+   649→    const nDolzina = Math.max(0, Math.floor((dolzinaMm - sirinaPalice) / korak) + 1)
+   650→    const nVisina = Math.max(0, Math.floor((visinaMm - sirinaPalice) / korak) + 1)
+   651→    return nDolzina * nVisina
+   652→  }
+   653→  return 0
+   654→}
+   655→
+   656→// P3 — nalaganje/shranjevanje stopniških predlog
+   657→function loadStairTemplates(): StairTemplate[] {
+   658→  try {
+   659→    const raw = localStorage.getItem('roksal_stair_templates')
+   660→    return raw ? (JSON.parse(raw) as StairTemplate[]) : []
+   661→  } catch {
+   662→    return []
+   663→  }
+   664→}
+   665→
+   666→function saveStairTemplates(templates: StairTemplate[]) {
+   667→  try {
+   668→    localStorage.setItem('roksal_stair_templates', JSON.stringify(templates))
+   669→  } catch {
+   670→    // ignore
+   671→  }
+   672→}
+   673→
+   674→// P3 — nalaganje primarne enote
+   675→function loadPrimaryUnit(): EnotaTip {
+   676→  try {
+   677→    const raw = localStorage.getItem('roksal_primary_unit')
+   678→    if (raw === 'mm' || raw === 'cm' || raw === 'm') return raw
+   679→  } catch {
+   680→    // ignore
+   681→  }
+   682→  return 'mm'
+   683→}
+   684→
+   685→// ============================================
+   686→// GLAVNA KOMPONENTA
+   687→// ============================================
+   688→
+   689→export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps) {
+   690→  const [measurements, setMeasurements] = useState<Measurement[]>([])
+   691→  const [projects, setProjects] = useState<Project[]>([])
+   692→  const [loading, setLoading] = useState(true)
+   693→  const [selectedProject, setSelectedProject] = useState<string>('')
+   694→  const [formOpen, setFormOpen] = useState(false)
+   695→
+   696→  // Obstoječa polja obrazca
+   697→  const [formLength, setFormLength] = useState('')
+   698→  const [formHeight, setFormHeight] = useState('')
+   699→  const [formLocation, setFormLocation] = useState('')
+   700→  const [formPosts, setFormPosts] = useState('')
+   701→  const [formGround, setFormGround] = useState<GroundType>('beton')
+   702→  const [formAngle, setFormAngle] = useState('')
+   703→  const [formNotes, setFormNotes] = useState('')
+   704→
+   705→  // NOVA polja obrazca
+   706→  const [formTipMeritve, setFormTipMeritve] = useState<TipMeritve>('RAZDALJA')
+   707→  const [formOznaka, setFormOznaka] = useState('')
+   708→  const [formSegmentId, setFormSegmentId] = useState('')
+   709→  const [formOpomba, setFormOpomba] = useState('')
+   710→  const [submitting, setSubmitting] = useState(false)
+   711→
+   712→  // Segmenti
+   713→  const [segments, setSegments] = useState<Segment[]>([])
+   714→  const [newSegmentName, setNewSegmentName] = useState('')
+   715→  const [newSegmentType, setNewSegmentType] = useState<Segment['type']>('ravni')
+   716→  const [addSegmentOpen, setAddSegmentOpen] = useState(false)
+   717→
+   718→  // Kalibracija
+   719→  const [calibration, setCalibration] = useState<CalibrationState>({
+   720→    realMm: '',
+   721→    pixelDistance: '',
+   722→    pixelsPerMm: null,
+   723→    note: '',
+   724→  })
+   725→  const [calibrationOpen, setCalibrationOpen] = useState(false)
+   726→
+   727→  // Inline inclinometer
+   728→  const [inclinometerOpen, setInclinometerOpen] = useState(false)
+   729→  const [inclinometerMode, setInclinometerMode] = useState<'KOT' | 'NAGIB'>('KOT')
+   730→
+   731→  // Razširjeni segmenti (kateri so odprti)
+   732→  const [expandedSegments, setExpandedSegments] = useState<Set<string>>(new Set())
+   733→
+   734→  // P1 — Skupinske akcije
+   735→  const [bulkMode, setBulkMode] = useState(false)
+   736→  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+   737→  const [bulkCopyTarget, setBulkCopyTarget] = useState('')
+   738→  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
+   739→
+   740→  // P1 — Status filter
+   741→  const [statusFilter, setStatusFilter] = useState<StatusFilter>('VSE')
+   742→
+   743→  // P1 — Zgodovina sprememb (audit)
+   744→  const [auditEntries, setAuditEntries] = useState<AuditEntry[]>([])
+   745→  const [auditOpen, setAuditOpen] = useState(false)
+   746→  const [auditExpanded, setAuditExpanded] = useState(false)
+   747→
+   748→  // P1 — Glasovni vnos opomb
+   749→  const [voiceListening, setVoiceListening] = useState(false)
+   750→  const [voiceSupported, setVoiceSupported] = useState(false)
+   751→  const [interimText, setInterimText] = useState('')
+   752→  const recognitionRef = useRef<SpeechRecognitionLike | null>(null)
+   753→
+   754→  // P3 — Primarna enota za prikaz (mm / cm / m) — globalna nastavitev
+   755→  const [primaryUnit, setPrimaryUnit] = useState<EnotaTip>('mm')
+   756→
+   757→  // P3 — Enota v formi (ločena za dolžino in višino)
+   758→  const [formLengthUnit, setFormLengthUnit] = useState<EnotaTip>('mm')
+   759→  const [formHeightUnit, setFormHeightUnit] = useState<EnotaTip>('mm')
+   760→
+   761→  // P3 — Stopniščni čarovnik (stair wizard)
+   762→  const [stairWizardOpen, setStairWizardOpen] = useState(false)
+   763→  const [stairSkupnaVisina, setStairSkupnaVisina] = useState('')
+   764→  const [stairStStopnic, setStairStStopnic] = useState('')
+   765→  const [stairGlobina, setStairGlobina] = useState('')
+   766→  const [stairSirina, setStairSirina] = useState('')
+   767→  const [stairSegmentId, setStairSegmentId] = useState('')
+   768→  const [stairTemplates, setStairTemplates] = useState<StairTemplate[]>([])
+   769→
+   770→  // P3 — Inline kotomer (za KOT, KOT_VOGAL, KOT_STOPNISCE)
+   771→  const [kotomerOpen, setKotomerOpen] = useState(false)
+   772→  const [kotomerMode, setKotomerMode] = useState<'KOT' | 'KOT_VOGAL' | 'KOT_STOPNISCE'>('KOT')
+   773→
+   774→  // P3 — Štebricki (STEBR) — forma znotraj meritev
+   775→  const [stebriFormOpen, setStebriFormOpen] = useState(false)
+   776→  const [stebriTipStebra, setStebriTipStebra] = useState<TipStebra>('VMESNI')
+   777→  const [stebriMaterial, setStebriMaterial] = useState<MaterialStebra>('ALU')
+   778→  const [stebriVisina, setStebriVisina] = useState('1100')
+   779→  const [stebriPozicija, setStebriPozicija] = useState('')
+   780→  const [stebriPozicijaUnit, setStebriPozicijaUnit] = useState<EnotaTip>('mm')
+   781→  const [stebriRazmik, setStebriRazmik] = useState('') // auto-calc from previous
+   782→  const [stebriSegmentId, setStebriSegmentId] = useState('')
+   783→
+   784→  // P3 — WPC konfiguracija (porabljenih pri izbiri WPC segmenta)
+   785→  const [wpcSirinaPalice, setWpcSirinaPalice] = useState<number>(140)
+   786→  const [wpcDebelinaPalice, setWpcDebelinaPalice] = useState<number>(WPC_DEBELINA_DEFAULT)
+   787→  const [wpcRazmikPalic, setWpcRazmikPalic] = useState<number>(WPC_RAZMAK_DEFAULT)
+   788→  const [wpcKotPosevnih, setWpcKotPosevnih] = useState<number>(WPC_KOT_POSEVNIH_DEFAULT)
+   789→  const [wpcConfigOpen, setWpcConfigOpen] = useState(false)
+   790→
+   791→  // ============================================
+   792→  // NALAGANJE PODATKOV
+   793→  // ============================================
+   794→
+   795→  useEffect(() => {
+   796→    async function fetchData() {
+   797→      try {
+   798→        const projRes = await fetch('/api/projects')
+   799→        if (projRes.ok) {
+   800→          const projData = await projRes.json()
+   801→          setProjects(projData)
+   802→          if (projData.length > 0) {
+   803→            const firstProjectId = projData[0].id
+   804→            setSelectedProject(firstProjectId)
+   805→            const measRes = await fetch(`/api/measurements?projectId=${firstProjectId}`)
+   806→            if (measRes.ok) {
+   807→              const measData = await measRes.json()
+   808→              if (measData.length > 0) {
+   809→                setMeasurements(normalizeMeasurements(measData))
+   810→              } else {
+   811→                setMeasurements(demoMeasurements)
+   812→              }
+   813→            } else {
+   814→              setMeasurements(demoMeasurements)
+   815→            }
+   816→          } else {
+   817→            setMeasurements(demoMeasurements)
+   818→          }
+   819→        } else {
+   820→          setMeasurements(demoMeasurements)
+   821→          setProjects(demoProjects)
+   822→        }
+   823→      } catch {
+   824→        setMeasurements(demoMeasurements)
+   825→        setProjects(demoProjects)
+   826→      } finally {
+   827→        setLoading(false)
+   828→      }
+   829→    }
+   830→    fetchData()
+   831→  }, [])
+   832→
+   833→  // Re-fetch pri spremembi projekta
+   834→  useEffect(() => {
+   835→    if (!selectedProject || loading) return
+   836→    async function fetchMeasurements() {
+   837→      try {
+   838→        const measRes = await fetch(`/api/measurements?projectId=${selectedProject}`)
+   839→        if (measRes.ok) {
+   840→          const measData = await measRes.json()
+   841→          setMeasurements(
+   842→            measData.length > 0
+   843→              ? normalizeMeasurements(measData)
+   844→              : demoMeasurements.filter((m) => m.projectId === selectedProject)
+   845→          )
+   846→        }
+   847→      } catch {
+   848→        // keep existing
+   849→      }
+   850→    }
+   851→    fetchMeasurements()
+   852→  }, [selectedProject, loading])
+   853→
+   854→  // Naloži segmente iz localStorage
+   855→  useEffect(() => {
+   856→    if (!selectedProject) return
+   857→    try {
+   858→      const raw = localStorage.getItem(`roksal_segments_${selectedProject}`)
+   859→      if (raw) {
+   860→        setSegments(JSON.parse(raw) as Segment[])
+   861→      } else {
+   862→        // privzeti demo segmenti (P3 — vključuje WPC_POKOCNE za demonstracijo)
+   863→        setSegments([
+   864→          { id: 'severni', name: 'Severni del', type: 'ravni' },
+   865→          { id: 'vzhodni', name: 'Vzhodni del', type: 'kotni' },
+   866→          { id: 'stopniscje', name: 'Stopnišče', type: 'stopniscje' },
+   867→          { id: 'wpc-terasa', name: 'WPC terasa', type: 'WPC_POKOCNE' },
+   868→        ])
+   869→      }
+   870→    } catch {
+   871→      setSegments([])
+   872→    }
+   873→  }, [selectedProject])
+   874→
+   875→  // Shrani segmente v localStorage
+   876→  useEffect(() => {
+   877→    if (!selectedProject || segments.length === 0) return
+   878→    try {
+   879→      localStorage.setItem(`roksal_segments_${selectedProject}`, JSON.stringify(segments))
+   880→    } catch {
+   881→      // ignore
+   882→    }
+   883→  }, [segments, selectedProject])
+   884→
+   885→  // Naloži kalibracijo iz localStorage
+   886→  useEffect(() => {
+   887→    if (!selectedProject) return
+   888→    try {
+   889→      const raw = localStorage.getItem(`roksal_calibration_${selectedProject}`)
+   890→      if (raw) {
+   891→        setCalibration(JSON.parse(raw) as CalibrationState)
+   892→      }
+   893→    } catch {
+   894→      // ignore
+   895→    }
+   896→  }, [selectedProject])
+   897→
+   898→  // P1 — Naloži zgodovino sprememb ob spremembi projekta
+   899→  useEffect(() => {
+   900→    if (!selectedProject) return
+   901→    setAuditEntries(loadAudit(selectedProject))
+   902→  }, [selectedProject])
+   903→
+   904→  // P1 — Zaznaj podporo Web Speech API
+   905→  useEffect(() => {
+   906→    if (typeof window === 'undefined') return
+   907→    const w = window as unknown as {
+   908→      SpeechRecognition?: SpeechRecognitionCtor
+   909→      webkitSpeechRecognition?: SpeechRecognitionCtor
+   910→    }
+   911→    setVoiceSupported(!!(w.SpeechRecognition || w.webkitSpeechRecognition))
+   912→  }, [])
+   913→
+   914→  // P1 — počisti voice recognition ob unmountu
+   915→  useEffect(() => {
+   916→    return () => {
+   917→      try {
+   918→        recognitionRef.current?.abort()
+   919→      } catch {
+   920→        // ignore
+   921→      }
+   922→    }
+   923→  }, [])
+   924→
+   925→  // P3 — naloži primarno enoto + stopniške predloge ob mountu
+   926→  useEffect(() => {
+   927→    setPrimaryUnit(loadPrimaryUnit())
+   928→    setStairTemplates(loadStairTemplates())
+   929→  }, [])
+   930→
+   931→  // P3 — shrani primarno enoto ob spremembi
+   932→  useEffect(() => {
+   933→    try {
+   934→      localStorage.setItem('roksal_primary_unit', primaryUnit)
+   935→    } catch {
+   936→      // ignore
+   937→    }
+   938→  }, [primaryUnit])
+   939→
+   940→  // P3 — auto-calc razmika stebra od prejšnjega stebra v segmentu
+   941→  useEffect(() => {
+   942→    if (!stebriFormOpen) return
+   943→    if (!stebriPozicija || !stebriSegmentId) {
+   944→      setStebriRazmik('')
+   945→      return
+   946→    }
+   947→    const pozicijaMm = convertToMm(parseFloat(stebriPozicija) || 0, stebriPozicijaUnit)
+   948→    if (!Number.isFinite(pozicijaMm) || pozicijaMm <= 0) {
+   949→      setStebriRazmik('')
+   950→      return
+   951→    }
+   952→    const stebri = measurements
+   953→      .filter((m) => m.tipMeritve === 'STEBR' && m.segmentId === stebriSegmentId)
+   954→      .sort((a, b) => (a.pozicijaMm || 0) - (b.pozicijaMm || 0))
+   955→    if (stebri.length === 0) {
+   956→      setStebriRazmik('—')
+   957→      return
+   958→    }
+   959→    const prev = stebri[stebri.length - 1]
+   960→    const prevPozicija = prev.pozicijaMm || 0
+   961→    const razmik = pozicijaMm - prevPozicija
+   962→    setStebriRazmik(razmik > 0 ? String(Math.round(razmik)) : '—')
+   963→  }, [stebriPozicija, stebriPozicijaUnit, stebriSegmentId, stebriFormOpen, measurements])
+   964→
+   965→  // ============================================
+   966→  // NORMALIZACIJA MERITEV IZ API-ja
+   967→  // ============================================
+   968→
+   969→  function normalizeMeasurements(raw: unknown[]): Measurement[] {
+   970→    return raw.map((item) => {
+   971→      const m = item as Measurement
+   972→      const ar = parseArMetadata(m.arMetadata)
+   973→      return {
+   974→        ...m,
+   975→        lokacija: m.lokacija ?? ar.lokacija ?? null,
+   976→        steviloStebrov: m.steviloStebrov ?? ar.steviloStebrov ?? null,
+   977→        tipPodlage: m.tipPodlage ?? ar.tipPodlage ?? null,
+   978→        kot: m.kot ?? ar.kot ?? null,
+   979→        opombe: m.opombe ?? ar.opombe ?? null,
+   980→        tipMeritve: ar.tipMeritve,
+   981→        oznaka: ar.oznaka,
+   982→        segmentId: ar.segmentId,
+   983→        opomba: ar.opomba,
+   984→        status: ar.status ?? m.status ?? 'OSNUTEK',
+   985→        kotStopinje: m.kotStopinje ?? ar.kotStopinje ?? null,
+   986→        // P3 — enote
+   987→        enota: ar.enota ?? m.enota,
+   988→        originalnaVrednost: ar.originalnaVrednost ?? m.originalnaVrednost,
+   989→        // P3 — kotomer
+   990→        notranjiKot: ar.notranjiKot ?? m.notranjiKot ?? null,
+   991→        zunanjiKot: ar.zunanjiKot ?? m.zunanjiKot ?? null,
+   992→        // P3 — štebricki
+   993→        tipStebra: ar.tipStebra ?? m.tipStebra,
+   994→        materialStebra: ar.materialStebra ?? m.materialStebra,
+   995→        visinaStebraMm: ar.visinaStebraMm ?? m.visinaStebraMm ?? null,
+   996→        pozicijaMm: ar.pozicijaMm ?? m.pozicijaMm ?? null,
+   997→        razmikMm: ar.razmikMm ?? m.razmikMm ?? null,
+   998→        steberOznaka: ar.steberOznaka ?? m.steberOznaka,
+   999→        // P3 — WPC palice
+  1000→        orientacijaPalic: ar.orientacijaPalic ?? m.orientacijaPalic,
+  1001→        sirinaPalice: ar.sirinaPalice ?? m.sirinaPalice,
+  1002→        debelinaPalice: ar.debelinaPalice ?? m.debelinaPalice,
+  1003→        razmikPalic: ar.razmikPalic ?? m.razmikPalic,
+  1004→        kotPosevnih: ar.kotPosevnih ?? m.kotPosevnih,
+  1005→        stPalic: ar.stPalic ?? m.stPalic,
+  1006→      }
+  1007→    })
+  1008→  }
+  1009→
+  1010→  // ============================================
+  1011→  // OBRAZEC — RESET / SUBMIT
+  1012→  // ============================================
+  1013→
+  1014→  function resetForm() {
+  1015→    setFormLength('')
+  1016→    setFormHeight('')
+  1017→    setFormLocation('')
+  1018→    setFormPosts('')
+  1019→    setFormGround('beton')
+  1020→    setFormAngle('')
+  1021→    setFormNotes('')
+  1022→    setFormTipMeritve('RAZDALJA')
+  1023→    setFormOznaka('')
+  1024→    setFormSegmentId('')
+  1025→    setFormOpomba('')
+  1026→    // P3 — reset enot
+  1027→    setFormLengthUnit('mm')
+  1028→    setFormHeightUnit('mm')
+  1029→  }
+  1030→
+  1031→  // P1 — zapiši v zgodovino sprememb (audit)
+  1032→  const pushAudit = useCallback(
+  1033→    (entry: Omit<AuditEntry, 'timestamp'>) => {
+  1034→      if (!selectedProject) return
+  1035→      const full: AuditEntry = { ...entry, timestamp: new Date().toISOString() }
+  1036→      setAuditEntries((prev) => {
+  1037→        const updated = [full, ...prev].slice(0, 200)
+  1038→        try {
+  1039→          localStorage.setItem(`roksal_audit_${selectedProject}`, JSON.stringify(updated))
+  1040→        } catch {
+  1041→          // ignore
+  1042→        }
+  1043→        return updated
+  1044→      })
+  1045→    },
+  1046→    [selectedProject]
+  1047→  )
+  1048→
+  1049→  async function handleSubmitMeasurement() {
+  1050→    if (!selectedProject || !formLength || !formHeight) {
+  1051→      toast.error('Vnesite dolžino in višino!')
+  1052→      return
+  1053→    }
+  1054→    if (parseFloat(formLength) < 0.001 || parseFloat(formHeight) < 0.001) {
+  1055→      toast.error('Meritve morajo biti pozitivne!')
+  1056→      return
+  1057→    }
+  1058→    setSubmitting(true)
+  1059→
+  1060→    // P3 — pretvorba izbrane enote v mm
+  1061→    const rawLength = parseFloat(formLength) || 0
+  1062→    const rawHeight = parseFloat(formHeight) || 0
+  1063→    const dolzinaMm = Math.max(1, Math.round(convertToMm(rawLength, formLengthUnit)))
+  1064→    const visinaMm = Math.max(1, Math.round(convertToMm(rawHeight, formHeightUnit)))
+  1065→
+  1066→    const arMetadata: ArMetadata = {
+  1067→      tipMeritve: formTipMeritve,
+  1068→      oznaka: formOznaka || undefined,
+  1069→      segmentId: formSegmentId || undefined,
+  1070→      opomba: formOpomba || undefined,
+  1071→      status: 'OSNUTEK',
+  1072→      lokacija: formLocation || undefined,
+  1073→      steviloStebrov: formPosts ? parseInt(formPosts) : undefined,
+  1074→      tipPodlage: formGround,
+  1075→      kot: formAngle ? parseFloat(formAngle) : undefined,
+  1076→      opombe: formNotes || undefined,
+  1077→      // P3 — audit: originalna enota + vrednost
+  1078→      enota: formLengthUnit,
+  1079→      originalnaVrednost: rawLength,
+  1080→    }
+  1081→
+  1082→    try {
+  1083→      const res = await fetch('/api/measurements', {
+  1084→        method: 'POST',
+  1085→        headers: { 'Content-Type': 'application/json' },
+  1086→        body: JSON.stringify({
+  1087→          projectId: selectedProject,
+  1088→          dolzinaMm,
+  1089→          visinaMm,
+  1090→          arMetadata,
+  1091→          gpsLokacija: { lat: 46.2397, lng: 14.3556 },
+  1092→        }),
+  1093→      })
+  1094→      if (res.ok) {
+  1095→        const data = await res.json()
+  1096→        const newMeasurement: Measurement = {
+  1097→          ...data,
+  1098→          lokacija: formLocation || null,
+  1099→          steviloStebrov: formPosts ? parseInt(formPosts) : null,
+  1100→          tipPodlage: formGround,
+  1101→          kot: formAngle ? parseFloat(formAngle) : null,
+  1102→          opombe: formNotes || null,
+  1103→          tipMeritve: formTipMeritve,
+  1104→          oznaka: formOznaka || undefined,
+  1105→          segmentId: formSegmentId || undefined,
+  1106→          opomba: formOpomba || undefined,
+  1107→          status: 'OSNUTEK',
+  1108→          // P3
+  1109→          enota: formLengthUnit,
+  1110→          originalnaVrednost: rawLength,
+  1111→        }
+  1112→        setMeasurements((prev) => [newMeasurement, ...prev])
+  1113→        pushAudit({
+  1114→          akcija: 'ADD',
+  1115→          meritevId: newMeasurement.id,
+  1116→          opis: `Nova meritev \"${formOznaka || formLocation || newMeasurement.id.slice(-4)}\" dodana — ${formatMultiUnit(dolzinaMm)}`,
+  1117→        })
+  1118→        resetForm()
+  1119→        setFormOpen(false)
+  1120→        toast.success('Meritev dodana!')
+  1121→      } else {
+  1122→        // Server error — save locally as fallback
+  1123→        saveLocalMeasurement(arMetadata, dolzinaMm, visinaMm, rawLength)
+  1124→        toast.error('Napaka strežnika — meritev shranjena lokalno')
+  1125→      }
+  1126→    } catch {
+  1127→      saveLocalMeasurement(arMetadata, dolzinaMm, visinaMm, rawLength)
+  1128→      toast.success('Meritev dodana (lokalno)!')
+  1129→    } finally {
+  1130→      setSubmitting(false)
+  1131→    }
+  1132→  }
+  1133→
+  1134→  function saveLocalMeasurement(ar: ArMetadata, dolzinaMm: number, visinaMm: number, originalnaVrednost: number) {
+  1135→    const newMeasurement: Measurement = {
+  1136→      id: `local_${Date.now()}`,
+  1137→      dolzinaMm,
+  1138→      visinaMm,
+  1139→      lidarScanUrl: null,
+  1140→      gpsLokacija: JSON.stringify({ lat: 46.2397, lng: 14.3556 }),
+  1141→      createdAt: new Date().toISOString(),
+  1142→      projectId: selectedProject,
+  1143→      lokacija: formLocation || null,
+  1144→      steviloStebrov: formPosts ? parseInt(formPosts) : null,
+  1145→      tipPodlage: formGround,
+  1146→      kot: formAngle ? parseFloat(formAngle) : null,
+  1147→      opombe: formNotes || null,
+  1148→      arMetadata: JSON.stringify({ ...ar, status: 'OSNUTEK' }),
+  1149→      tipMeritve: formTipMeritve,
+  1150→      oznaka: formOznaka || undefined,
+  1151→      segmentId: formSegmentId || undefined,
+  1152→      opomba: formOpomba || undefined,
+  1153→      status: 'OSNUTEK',
+  1154→      // P3
+  1155→      enota: ar.enota,
+  1156→      originalnaVrednost,
+  1157→    }
+  1158→    setMeasurements((prev) => [newMeasurement, ...prev])
+  1159→    pushAudit({
+  1160→      akcija: 'ADD',
+  1161→      meritevId: newMeasurement.id,
+  1162→      opis: `Nova meritev \"${formOznaka || formLocation || newMeasurement.id.slice(-4)}\" dodana (lokalno) — ${formatMultiUnit(dolzinaMm)}`,
+  1163→    })
+  1164→    resetForm()
+  1165→    setFormOpen(false)
+  1166→  }
+  1167→
+  1168→  function handleDeleteMeasurement(id: string) {
+  1169→    const m = measurements.find((x) => x.id === id)
+  1170→    setMeasurements((prev) => prev.filter((m) => m.id !== id))
+  1171→    if (m) {
+  1172→      pushAudit({
+  1173→        akcija: 'DELETE',
+  1174→        meritevId: id,
+  1175→        opis: `Meritev \"${m.oznaka || m.lokacija || id.slice(-4)}\" izbrisana`,
+  1176→      })
+  1177→    }
+  1178→    toast.success('Meritev izbrisana')
+  1179→  }
+  1180→
+  1181→  function handleDuplicateMeasurement(m: Measurement) {
+  1182→    const duplicate: Measurement = {
+  1183→      ...m,
+  1184→      id: `local_${Date.now()}`,
+  1185→      createdAt: new Date().toISOString(),
+  1186→      lokacija: m.lokacija ? `${m.lokacija} (kopija)` : 'Kopija',
+  1187→      oznaka: m.oznaka ? `${m.oznaka} (kopija)` : undefined,
+  1188→      status: 'OSNUTEK',
+  1189→    }
+  1190→    setMeasurements((prev) => [duplicate, ...prev])
+  1191→    pushAudit({
+  1192→      akcija: 'ADD',
+  1193→      meritevId: duplicate.id,
+  1194→      opis: `Meritev \"${m.oznaka || m.lokacija || m.id.slice(-4)}\" podvojena`,
+  1195→    })
+  1196→    toast.success('Meritev podvojena!')
+  1197→  }
+  1198→
+  1199→  // P1 — cikliranje statusa meritve (OSNUTEK → POTRJENA → ARHIVIRANA → OSNUTEK)
+  1200→  function handleStatusCycle(m: Measurement) {
+  1201→    const currentStatus: MeasurementStatus = m.status || 'OSNUTEK'
+  1202→    const nextStatus = statusCycle[currentStatus]
+  1203→    const updated: Measurement = { ...m, status: nextStatus }
+  1204→    setMeasurements((prev) => prev.map((x) => (x.id === m.id ? updated : x)))
+  1205→    pushAudit({
+  1206→      akcija: 'STATUS',
+  1207→      meritevId: m.id,
+  1208→      opis: `Status meritve \"${m.oznaka || m.lokacija || m.id.slice(-4)}\" spremenjen`,
+  1209→      staraVrednost: statusLabels[currentStatus],
+  1210→      novaVrednost: statusLabels[nextStatus],
+  1211→    })
+  1212→    toast.info(`Status: ${statusLabels[currentStatus]} → ${statusLabels[nextStatus]}`)
+  1213→  }
+  1214→
+  1215→  // Hitri izračun razmikov
+  1216→  function getQuickSpacing(dolzinaMm: number, visinaMm: number, slatWidth = 80, maxGap = 100) {
+  1217→    const n = Math.ceil((dolzinaMm - maxGap) / (maxGap + slatWidth))
+  1218→    const actualGap = (dolzinaMm - n * slatWidth) / (n + 1)
+  1219→    return {
+  1220→      slatCount: n,
+  1221→      gap: Math.round(actualGap * 10) / 10,
+  1222→      compliant: actualGap <= 100,
+  1223→      postSpacing: dolzinaMm / Math.max(1, n > 5 ? Math.ceil(n / 5) : 2),
+  1224→    }
+  1225→  }
+  1226→
+  1227→  // ============================================
+  1228→  // POVZETKI / STATISTIKA
+  1229→  // ============================================
+  1230→
+  1231→  const razdaljeMeasurements = measurements.filter((m) => !m.tipMeritve || m.tipMeritve === 'RAZDALJA')
+  1232→  const visineMeasurements = measurements.filter((m) => m.tipMeritve === 'VISINA')
+  1233→
+  1234→  const totalLength = razdaljeMeasurements.reduce((sum, m) => sum + m.dolzinaMm, 0)
+  1235→  const avgLength = razdaljeMeasurements.length > 0
+  1236→    ? razdaljeMeasurements.reduce((s, m) => s + m.dolzinaMm, 0) / razdaljeMeasurements.length
+  1237→    : 0
+  1238→  const avgHeight = visineMeasurements.length > 0
+  1239→    ? visineMeasurements.reduce((s, m) => s + m.visinaMm, 0) / visineMeasurements.length
+  1240→    : measurements.length > 0
+  1241→      ? measurements.reduce((s, m) => s + m.visinaMm, 0) / measurements.length
+  1242→      : 0
+  1243→  const totalPosts = measurements.reduce((sum, m) => sum + (m.steviloStebrov || 0), 0)
+  1244→  const lidarScans = measurements.filter((m) => m.lidarScanUrl).length
+  1245→
+  1246→  const longestMeasurement = measurements.reduce(
+  1247→    (max, m) => (m.dolzinaMm > max.dolzinaMm ? m : max),
+  1248→    measurements[0]
+  1249→  )
+  1250→
+  1251→  const totalArea = measurements.reduce((sum, m) => sum + m.dolzinaMm * m.visinaMm, 0)
+  1252→
+  1253→  // Vsi uporabljeni segmentId-ji (vključno s tistimi, ki niso v segments state)
+  1254→  const usedSegmentIds = useMemo(() => {
+  1255→    const ids = new Set<string>()
+  1256→    measurements.forEach((m) => {
+  1257→      if (m.segmentId) ids.add(m.segmentId)
+  1258→    })
+  1259→    return ids
+  1260→  }, [measurements])
+  1261→
+  1262→  const allSegments: Segment[] = useMemo(() => {
+  1263→    const known = new Map(segments.map((s) => [s.id, s]))
+  1264→    // dodaj segmente iz meritev, ki niso definirani
+  1265→    usedSegmentIds.forEach((id) => {
+  1266→      if (!known.has(id)) {
+  1267→        known.set(id, { id, name: id, type: 'ravni' })
+  1268→      }
+  1269→    })
+  1270→    return Array.from(known.values())
+  1271→  }, [segments, usedSegmentIds])
+  1272→
+  1273→  const segmentStats = useMemo(() => {
+  1274→    const stats = new Map<string, { totalLength: number; avgHeight: number; count: number }>()
+  1275→    allSegments.forEach((seg) => {
+  1276→      const segMeas = measurements.filter((m) => m.segmentId === seg.id)
+  1277→      const razdalje = segMeas.filter((m) => !m.tipMeritve || m.tipMeritve === 'RAZDALJA')
+  1278→      const visine = segMeas.filter((m) => m.tipMeritve === 'VISINA')
+  1279→      stats.set(seg.id, {
+  1280→        totalLength: razdalje.reduce((s, m) => s + m.dolzinaMm, 0),
+  1281→        avgHeight:
+  1282→          visine.length > 0
+  1283→            ? visine.reduce((s, m) => s + m.visinaMm, 0) / visine.length
+  1284→            : segMeas.length > 0
+  1285→              ? segMeas.reduce((s, m) => s + m.visinaMm, 0) / segMeas.length
+  1286→              : 0,
+  1287→        count: segMeas.length,
+  1288→      })
+  1289→    })
+  1290→    return stats
+  1291→  }, [allSegments, measurements])
+  1292→
+  1293→  // P1 — števci statusov
+  1294→  const statusCounts = useMemo(() => {
+  1295→    const counts: Record<MeasurementStatus, number> = { OSNUTEK: 0, POTRJENA: 0, ARHIVIRANA: 0 }
+  1296→    measurements.forEach((m) => {
+  1297→      const s: MeasurementStatus = m.status || 'OSNUTEK'
+  1298→      counts[s]++
+  1299→    })
+  1300→    return counts
+  1301→  }, [measurements])
+  1302→
+  1303→  // P1 — filtrirane meritve glede na status filter
+  1304→  const filteredMeasurements = useMemo(() => {
+  1305→    if (statusFilter === 'VSE') return measurements
+  1306→    return measurements.filter((m) => (m.status || 'OSNUTEK') === statusFilter)
+  1307→  }, [measurements, statusFilter])
+  1308→
+  1309→  // Grupiranje po datumu (obstoječa logika) — uporablja filtrirane meritve
+  1310→  const groupedMeasurements = useMemo((): MeasurementGroup[] => {
+  1311→    const now = new Date()
+  1312→    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  1313→    const yesterday = new Date(today.getTime() - 86400000)
+  1314→
+  1315→    const groups: MeasurementGroup[] = []
+  1316→    const grouped = new Map<string, Measurement[]>()
+  1317→
+  1318→    const sorted = [...filteredMeasurements].sort(
+  1319→      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  1320→    )
+  1321→
+  1322→    for (const m of sorted) {
+  1323→      const mDate = new Date(m.createdAt)
+  1324→      const mDay = new Date(mDate.getFullYear(), mDate.getMonth(), mDate.getDate())
+  1325→
+  1326→      let label: string
+  1327→      if (mDay.getTime() === today.getTime()) {
+  1328→        label = 'Danes'
+  1329→      } else if (mDay.getTime() === yesterday.getTime()) {
+  1330→        label = 'Včeraj'
+  1331→      } else {
+  1332→        label = mDate.toLocaleDateString('sl-SI', { day: 'numeric', month: 'long' })
+  1333→      }
+  1334→
+  1335→      if (!grouped.has(label)) grouped.set(label, [])
+  1336→      grouped.get(label)!.push(m)
+  1337→    }
+  1338→
+  1339→    for (const [label, meas] of grouped) {
+  1340→      groups.push({ label, date: new Date(meas[0].createdAt), measurements: meas })
+  1341→    }
+  1342→
+  1343→    return groups
+  1344→  }, [filteredMeasurements])
+  1345→
+  1346→  // ============================================
+  1347→  // UKREPI ZA SEGMENTE
+  1348→  // ============================================
+  1349→
+  1350→  function handleAddSegment() {
+  1351→    if (!newSegmentName.trim()) {
+  1352→      toast.error('Vnesite ime segmenta')
+  1353→      return
+  1354→    }
+  1355→    const id = newSegmentName
+  1356→      .toLowerCase()
+  1357→      .trim()
+  1358→      .replace(/\s+/g, '-')
+  1359→      .replace(/[^a-z0-9čšž-]/g, '')
+  1360→      .slice(0, 30)
+  1361→    if (segments.some((s) => s.id === id)) {
+  1362→      toast.error('Segment s tem imenom že obstaja')
+  1363→      return
+  1364→    }
+  1365→    setSegments((prev) => [...prev, { id, name: newSegmentName.trim(), type: newSegmentType }])
+  1366→    setNewSegmentName('')
+  1367→    setNewSegmentType('ravni')
+  1368→    setAddSegmentOpen(false)
+  1369→    toast.success(`Segment "${newSegmentName.trim()}" dodan`)
+  1370→  }
+  1371→
+  1372→  function handleDeleteSegment(segId: string) {
+  1373→    setSegments((prev) => prev.filter((s) => s.id !== segId))
+  1374→    setExpandedSegments((prev) => {
+  1375→      const next = new Set(prev)
+  1376→      next.delete(segId)
+  1377→      return next
+  1378→    })
+  1379→    toast.success('Segment izbrisan')
+  1380→  }
+  1381→
+  1382→  function toggleSegment(id: string) {
+  1383→    setExpandedSegments((prev) => {
+  1384→      const next = new Set(prev)
+  1385→      if (next.has(id)) next.delete(id)
+  1386→      else next.add(id)
+  1387→      return next
+  1388→    })
+  1389→  }
+  1390→
+  1391→  // ============================================
+  1392→  // KALIBRACIJA
+  1393→  // ============================================
+  1394→
+  1395→  function handleComputeCalibration() {
+  1396→    const realMm = parseFloat(calibration.realMm)
+  1397→    const px = parseFloat(calibration.pixelDistance)
+  1398→    if (!realMm || realMm <= 0 || !px || px <= 0) {
+  1399→      toast.error('Vnesite veljavno realno dolžino in piksel razdaljo')
+  1400→      return
+  1401→    }
+  1402→    const pxPerMm = px / realMm
+  1403→    const newCal = { ...calibration, pixelsPerMm: pxPerMm }
+  1404→    setCalibration(newCal)
+  1405→    try {
+  1406→      localStorage.setItem(`roksal_calibration_${selectedProject}`, JSON.stringify(newCal))
+  1407→    } catch {
+  1408→      // ignore
+  1409→    }
+  1410→    toast.success(`Umeritev shranjena: ${pxPerMm.toFixed(2)} px/mm`)
+  1411→  }
+  1412→
+  1413→  function handleClearCalibration() {
+  1414→    const cleared: CalibrationState = { realMm: '', pixelDistance: '', pixelsPerMm: null, note: '' }
+  1415→    setCalibration(cleared)
+  1416→    try {
+  1417→      localStorage.removeItem(`roksal_calibration_${selectedProject}`)
+  1418→    } catch {
+  1419→      // ignore
+  1420→    }
+  1421→    toast.info('Umeritev izbrisana')
+  1422→  }
+  1423→
+  1424→  // ============================================
+  1425→  // HITRI ZAČETEK (quick-add)
+  1426→  // ============================================
+  1427→
+  1428→  function handleQuickAdd(tip: TipMeritve) {
+  1429→    setFormOpen(true)
+  1430→    setFormTipMeritve(tip)
+  1431→    if (tip === 'KOT' || tip === 'NAGIB') {
+  1432→      setInclinometerMode(tip)
+  1433→      setInclinometerOpen(true)
+  1434→    }
+  1435→    // P3 — za nove kotne tipe odpri kotomer
+  1436→    if (tip === 'KOT_VOGAL' || tip === 'KOT_STOPNISCE') {
+  1437→      setKotomerMode(tip)
+  1438→      setKotomerOpen(true)
+  1439→    }
+  1440→  }
+  1441→
+  1442→  // Shrani inclinometer meritev
+  1443→  async function saveInclinometerReading(kotStopinje: number, smer: string, lokacija: string) {
+  1444→    if (!selectedProject) {
+  1445→      toast.error('Izberite projekt!')
+  1446→      return
+  1447→    }
+  1448→    const arMetadata: ArMetadata = {
+  1449→      tipMeritve: inclinometerMode,
+  1450→      oznaka: `${inclinometerMode === 'KOT' ? 'Kot' : 'Nagib'} — ${lokacija}`,
+  1451→      segmentId: formSegmentId || undefined,
+  1452→      opomba: `${inclinometerMode === 'KOT' ? 'Kot' : 'Nagib'} ${kotStopinje}° (${smer === 'Y' ? 'levo-desno' : 'naprej-nazaj'})`,
+  1453→      kotStopinje,
+  1454→      smer,
+  1455→      lokacija,
+  1456→    }
+  1457→
+  1458→    try {
+  1459→      const res = await fetch('/api/measurements', {
+  1460→        method: 'POST',
+  1461→        headers: { 'Content-Type': 'application/json' },
+  1462→        body: JSON.stringify({
+  1463→          projectId: selectedProject,
+  1464→          dolzinaMm: 1,
+  1465→          visinaMm: 1,
+  1466→          arMetadata,
+  1467→          gpsLokacija: { lat: 46.2397, lng: 14.3556 },
+  1468→        }),
+  1469→      })
+  1470→      if (res.ok) {
+  1471→        const data = await res.json()
+  1472→        const newMeasurement: Measurement = {
+  1473→          ...data,
+  1474→          lokacija,
+  1475→          tipMeritve: inclinometerMode,
+  1476→          oznaka: arMetadata.oznaka,
+  1477→          opomba: arMetadata.opomba,
+  1478→          status: 'OSNUTEK',
+  1479→          kotStopinje,
+  1480→        }
+  1481→        setMeasurements((prev) => [newMeasurement, ...prev])
+  1482→        pushAudit({
+  1483→          akcija: 'ADD',
+  1484→          meritevId: newMeasurement.id,
+  1485→          opis: `${inclinometerMode === 'KOT' ? 'Kot' : 'Nagib'} ${kotStopinje}° shranjen (${lokacija})`,
+  1486→        })
+  1487→        toast.success(`${inclinometerMode === 'KOT' ? 'Kot' : 'Nagib'} ${kotStopinje}° shranjen`)
+  1488→        setInclinometerOpen(false)
+  1489→      } else {
+  1490→        // fallback lokalno
+  1491→        const newMeasurement: Measurement = {
+  1492→          id: `local_${Date.now()}`,
+  1493→          dolzinaMm: 1,
+  1494→          visinaMm: 1,
+  1495→          createdAt: new Date().toISOString(),
+  1496→          projectId: selectedProject,
+  1497→          lokacija,
+  1498→          arMetadata: JSON.stringify({ ...arMetadata, status: 'OSNUTEK' }),
+  1499→          tipMeritve: inclinometerMode,
+  1500→          oznaka: arMetadata.oznaka,
+  1501→          opomba: arMetadata.opomba,
+  1502→          status: 'OSNUTEK',
+  1503→          kotStopinje,
+  1504→        }
+  1505→        setMeasurements((prev) => [newMeasurement, ...prev])
+  1506→        pushAudit({
+  1507→          akcija: 'ADD',
+  1508→          meritevId: newMeasurement.id,
+  1509→          opis: `${inclinometerMode === 'KOT' ? 'Kot' : 'Nagib'} ${kotStopinje}° shranjen (lokalno) — ${lokacija}`,
+  1510→        })
+  1511→        toast.success(`${inclinometerMode === 'KOT' ? 'Kot' : 'Nagib'} ${kotStopinje}° shranjen (lokalno)`)
+  1512→        setInclinometerOpen(false)
+  1513→      }
+  1514→    } catch {
+  1515→      toast.error('Napaka pri shranjevanju')
+  1516→    }
+  1517→  }
+  1518→
+  1519→  // ============================================
+  1520→  // P3 — STOPNIŠČNI ČAROVNIK (stair wizard)
+  1521→  // ============================================
+  1522→
+  1523→  const stairCalc = useMemo(() => {
+  1524→    return calculateStairDimensions(
+  1525→      parseFloat(stairSkupnaVisina) || 0,
+  1526→      parseInt(stairStStopnic) || 0,
+  1527→      parseFloat(stairGlobina) || 0,
+  1528→      stairSirina ? parseFloat(stairSirina) : undefined
+  1529→    )
+  1530→  }, [stairSkupnaVisina, stairStStopnic, stairGlobina, stairSirina])
+  1531→
+  1532→  async function handleStairCreateMeasurements() {
+  1533→    if (!selectedProject) {
+  1534→      toast.error('Izberite projekt!')
+  1535→      return
+  1536→    }
+  1537→    if (!stairCalc.valid) {
+  1538→      toast.error('Vnesite veljavne podatke za stopnišče!')
+  1539→      return
+  1540→    }
+  1541→    const skupnaVisinaMm = parseFloat(stairSkupnaVisina) || 0
+  1542→    const stStopnic = parseInt(stairStStopnic) || 0
+  1543→    const globinaStopniceMm = parseFloat(stairGlobina) || 0
+  1544→    const targetSegment = stairSegmentId || 'stopniscje'
+  1545→    // zagotovi, da segment obstaja
+  1546→    if (!segments.some((s) => s.id === targetSegment)) {
+  1547→      setSegments((prev) => [
+  1548→        ...prev,
+  1549→        { id: targetSegment, name: 'Stopnišče', type: 'stopniscje' },
+  1550→      ])
+  1551→    }
+  1552→
+  1553→    const newMeas: Array<{ dolzinaMm: number; visinaMm: number; ar: ArMetadata }> = [
+  1554→      {
+  1555→        dolzinaMm: 1,
+  1556→        visinaMm: Math.round(skupnaVisinaMm),
+  1557→        ar: {
+  1558→          tipMeritve: 'VISINA',
+  1559→          oznaka: 'skupna višina stopnišča',
+  1560→          segmentId: targetSegment,
+  1561→          opomba: `Skupna višina: ${Math.round(skupnaVisinaMm)}mm`,
+  1562→          status: 'OSNUTEK',
+  1563→          enota: 'mm',
+  1564→        },
+  1565→      },
+  1566→      {
+  1567→        dolzinaMm: Math.round(globinaStopniceMm),
+  1568→        visinaMm: 1,
+  1569→        ar: {
+  1570→          tipMeritve: 'GLOBINA',
+  1571→          oznaka: 'globina posamezne stopnice',
+  1572→          segmentId: targetSegment,
+  1573→          opomba: `Globina/vertikalna: ${Math.round(globinaStopniceMm)}mm`,
+  1574→          status: 'OSNUTEK',
+  1575→          enota: 'mm',
+  1576→        },
+  1577→      },
+  1578→      {
+  1579→        dolzinaMm: 1,
+  1580→        visinaMm: 1,
+  1581→        ar: {
+  1582→          tipMeritve: 'KOT_STOPNISCE',
+  1583→          oznaka: 'kot stopnice (rake)',
+  1584→          segmentId: targetSegment,
+  1585→          opomba: `Kot stopnice: ${stairCalc.kotStopinje.toFixed(1)}° (atan(${Math.round(stairCalc.visinaPosamezne)}/${Math.round(globinaStopniceMm)}))`,
+  1586→          kotStopinje: Number(stairCalc.kotStopinje.toFixed(1)),
+  1587→          status: 'OSNUTEK',
+  1588→          enota: 'mm',
+  1589→        },
+  1590→      },
+  1591→      {
+  1592→        dolzinaMm: Math.round(stairCalc.dolzinaKosa),
+  1593→        visinaMm: 1,
+  1594→        ar: {
+  1595→          tipMeritve: 'RAZDALJA',
+  1596→          oznaka: 'dolžina kosa (stringer)',
+  1597→          segmentId: targetSegment,
+  1598→          opomba: `sqrt(${Math.round(stairCalc.visinaPosamezne)}² + ${Math.round(globinaStopniceMm)}²) × ${stStopnic} = ${Math.round(stairCalc.dolzinaKosa)}mm`,
+  1599→          status: 'OSNUTEK',
+  1600→          enota: 'mm',
+  1601→        },
+  1602→      },
+  1603→      {
+  1604→        dolzinaMm: stStopnic,
+  1605→        visinaMm: 1,
+  1606→        ar: {
+  1607→          tipMeritve: 'SEGMENT',
+  1608→          oznaka: `št. stopnic: ${stStopnic}`,
+  1609→          segmentId: targetSegment,
+  1610→          opomba: `Skupno število stopnic: ${stStopnic}`,
+  1611→          status: 'OSNUTEK',
+  1612→          enota: 'mm',
+  1613→        },
+  1614→      },
+  1615→    ]
+  1616→
+  1617→    let okCount = 0
+  1618→    let localCount = 0
+  1619→    for (const item of newMeas) {
+  1620→      try {
+  1621→        const res = await fetch('/api/measurements', {
+  1622→          method: 'POST',
+  1623→          headers: { 'Content-Type': 'application/json' },
+  1624→          body: JSON.stringify({
+  1625→            projectId: selectedProject,
+  1626→            dolzinaMm: item.dolzinaMm,
+  1627→            visinaMm: item.visinaMm,
+  1628→            arMetadata: item.ar,
+  1629→            gpsLokacija: { lat: 46.2397, lng: 14.3556 },
+  1630→          }),
+  1631→        })
+  1632→        if (res.ok) {
+  1633→          const data = await res.json()
+  1634→          const newM: Measurement = {
+  1635→            ...data,
+  1636→            lokacija: null,
+  1637→            steviloStebrov: null,
+  1638→            tipPodlage: null,
+  1639→            kot: null,
+  1640→            opombe: null,
+  1641→            tipMeritve: item.ar.tipMeritve,
+  1642→            oznaka: item.ar.oznaka,
+  1643→            segmentId: item.ar.segmentId,
+  1644→            opomba: item.ar.opomba,
+  1645→            status: 'OSNUTEK',
+  1646→            enota: 'mm',
+  1647→            kotStopinje: item.ar.kotStopinje ?? null,
+  1648→          }
+  1649→          setMeasurements((prev) => [newM, ...prev])
+  1650→          okCount++
+  1651→        } else {
+  1652→          const localM: Measurement = {
+  1653→            id: `local_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+  1654→            dolzinaMm: item.dolzinaMm,
+  1655→            visinaMm: item.visinaMm,
+  1656→            lidarScanUrl: null,
+  1657→            gpsLokacija: JSON.stringify({ lat: 46.2397, lng: 14.3556 }),
+  1658→            createdAt: new Date().toISOString(),
+  1659→            projectId: selectedProject,
+  1660→            lokacija: null,
+  1661→            steviloStebrov: null,
+  1662→            tipPodlage: null,
+  1663→            kot: null,
+  1664→            opombe: null,
+  1665→            arMetadata: JSON.stringify(item.ar),
+  1666→            tipMeritve: item.ar.tipMeritve,
+  1667→            oznaka: item.ar.oznaka,
+  1668→            segmentId: item.ar.segmentId,
+  1669→            opomba: item.ar.opomba,
+  1670→            status: 'OSNUTEK',
+  1671→            enota: 'mm',
+  1672→            kotStopinje: item.ar.kotStopinje ?? null,
+  1673→          }
+  1674→          setMeasurements((prev) => [localM, ...prev])
+  1675→          localCount++
+  1676→        }
+  1677→      } catch {
+  1678→        const localM: Measurement = {
+  1679→          id: `local_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+  1680→          dolzinaMm: item.dolzinaMm,
+  1681→          visinaMm: item.visinaMm,
+  1682→          lidarScanUrl: null,
+  1683→          gpsLokacija: JSON.stringify({ lat: 46.2397, lng: 14.3556 }),
+  1684→          createdAt: new Date().toISOString(),
+  1685→          projectId: selectedProject,
+  1686→          lokacija: null,
+  1687→          steviloStebrov: null,
+  1688→          tipPodlage: null,
+  1689→          kot: null,
+  1690→          opombe: null,
+  1691→          arMetadata: JSON.stringify(item.ar),
+  1692→          tipMeritve: item.ar.tipMeritve,
+  1693→          oznaka: item.ar.oznaka,
+  1694→          segmentId: item.ar.segmentId,
+  1695→          opomba: item.ar.opomba,
+  1696→          status: 'OSNUTEK',
+  1697→          enota: 'mm',
+  1698→          kotStopinje: item.ar.kotStopinje ?? null,
+  1699→        }
+  1700→        setMeasurements((prev) => [localM, ...prev])
+  1701→        localCount++
+  1702→      }
+  1703→    }
+  1704→
+  1705→    pushAudit({
+  1706→      akcija: 'ADD',
+  1707→      meritevId: 'stair-wizard',
+  1708→      opis: `Stopniščni čarovnik: ${stStopnic} stopnic, ${Math.round(skupnaVisinaMm)}mm višine, kot ${stairCalc.kotStopinje.toFixed(1)}° — ${newMeas.length} meritev kreiranih`,
+  1709→    })
+  1710→    toast.success(
+  1711→      `Ustvarjeno ${newMeas.length} meritev${localCount > 0 ? ` (${okCount} sinhroniziranih, ${localCount} lokalno)` : ''}`
+  1712→    )
+  1713→    setStairWizardOpen(false)
+  1714→  }
+  1715→
+  1716→  function handleSaveStairTemplate() {
+  1717→    if (!stairCalc.valid) {
+  1718→      toast.error('Vnesite veljavne podatke za shranjevanje predloge!')
+  1719→      return
+  1720→    }
+  1721→    const naziv = window.prompt('Ime predloge za stopnišče:', `Stopnišče ${stairStStopnic} stopnic`)
+  1722→    if (!naziv) return
+  1723→    const template: StairTemplate = {
+  1724→      id: `stair_${Date.now()}`,
+  1725→      naziv,
+  1726→      skupnaVisinaMm: parseFloat(stairSkupnaVisina) || 0,
+  1727→      stStopnic: parseInt(stairStStopnic) || 0,
+  1728→      globinaStopniceMm: parseFloat(stairGlobina) || 0,
+  1729→      sirinaStopniceMm: stairSirina ? parseFloat(stairSirina) : undefined,
+  1730→      createdAt: new Date().toISOString(),
+  1731→    }
+  1732→    const updated = [template, ...stairTemplates].slice(0, 30)
+  1733→    setStairTemplates(updated)
+  1734→    saveStairTemplates(updated)
+  1735→    toast.success(`Predloga "${naziv}" shranjena`)
+  1736→  }
+  1737→
+  1738→  function handleLoadStairTemplate(t: StairTemplate) {
+  1739→    setStairSkupnaVisina(String(t.skupnaVisinaMm))
+  1740→    setStairStStopnic(String(t.stStopnic))
+  1741→    setStairGlobina(String(t.globinaStopniceMm))
+  1742→    setStairSirina(t.sirinaStopniceMm ? String(t.sirinaStopniceMm) : '')
+  1743→    toast.info(`Predloga "${t.naziv}" naložena`)
+  1744→  }
+  1745→
+  1746→  function handleDeleteStairTemplate(id: string) {
+  1747→    const updated = stairTemplates.filter((t) => t.id !== id)
+  1748→    setStairTemplates(updated)
+  1749→    saveStairTemplates(updated)
+  1750→    toast.success('Predloga izbrisana')
+  1751→  }
+  1752→
+  1753→  // ============================================
+  1754→  // P3 — KOTOMER (save callback)
+  1755→  // ============================================
+  1756→
+  1757→  async function saveKotomerReading(
+  1758→    kotStopinje: number,
+  1759→    notranjiKot: number | null,
+  1760→    zunanjiKot: number | null,
+  1761→    lokacija: string
+  1762→  ) {
+  1763→    if (!selectedProject) {
+  1764→      toast.error('Izberite projekt!')
+  1765→      return
+  1766→    }
+  1767→    const isVogal = kotomerMode === 'KOT_VOGAL'
+  1768→    const oznaka = isVogal
+  1769→      ? `Vogal — ${lokacija}`
+  1770→      : kotomerMode === 'KOT_STOPNISCE'
+  1771→        ? `Kot stopnice — ${lokacija}`
+  1772→        : `Kot — ${lokacija}`
+  1773→    const arMetadata: ArMetadata = {
+  1774→      tipMeritve: kotomerMode,
+  1775→      oznaka,
+  1776→      segmentId: formSegmentId || undefined,
+  1777→      opomba: isVogal
+  1778→        ? `Notranji kot: ${notranjiKot ?? '—'}°, Zunanji kot: ${zunanjiKot ?? '—'}°`
+  1779→        : `Kot: ${kotStopinje}° (${lokacija})`,
+  1780→      kotStopinje,
+  1781→      notranjiKot: notranjiKot ?? undefined,
+  1782→      zunanjiKot: zunanjiKot ?? undefined,
+  1783→      lokacija,
+  1784→      status: 'OSNUTEK',
+  1785→    }
+  1786→
+  1787→    try {
+  1788→      const res = await fetch('/api/measurements', {
+  1789→        method: 'POST',
+  1790→        headers: { 'Content-Type': 'application/json' },
+  1791→        body: JSON.stringify({
+  1792→          projectId: selectedProject,
+  1793→          dolzinaMm: 1,
+  1794→          visinaMm: 1,
+  1795→          arMetadata,
+  1796→          gpsLokacija: { lat: 46.2397, lng: 14.3556 },
+  1797→        }),
+  1798→      })
+  1799→      if (res.ok) {
+  1800→        const data = await res.json()
+  1801→        const newM: Measurement = {
+  1802→          ...data,
+  1803→          lokacija,
+  1804→          tipMeritve: kotomerMode,
+  1805→          oznaka,
+  1806→          opomba: arMetadata.opomba,
+  1807→          status: 'OSNUTEK',
+  1808→          kotStopinje,
+  1809→          notranjiKot: notranjiKot ?? null,
+  1810→          zunanjiKot: zunanjiKot ?? null,
+  1811→        }
+  1812→        setMeasurements((prev) => [newM, ...prev])
+  1813→        pushAudit({
+  1814→          akcija: 'ADD',
+  1815→          meritevId: newM.id,
+  1816→          opis: `${oznaka} shranjen — ${kotStopinje}°`,
+  1817→        })
+  1818→        toast.success(`${oznaka} shranjen`)
+  1819→        setKotomerOpen(false)
+  1820→      } else {
+  1821→        const newM: Measurement = {
+  1822→          id: `local_${Date.now()}`,
+  1823→          dolzinaMm: 1,
+  1824→          visinaMm: 1,
+  1825→          createdAt: new Date().toISOString(),
+  1826→          projectId: selectedProject,
+  1827→          lokacija,
+  1828→          arMetadata: JSON.stringify({ ...arMetadata, status: 'OSNUTEK' }),
+  1829→          tipMeritve: kotomerMode,
+  1830→          oznaka,
+  1831→          opomba: arMetadata.opomba,
+  1832→          status: 'OSNUTEK',
+  1833→          kotStopinje,
+  1834→          notranjiKot: notranjiKot ?? null,
+  1835→          zunanjiKot: zunanjiKot ?? null,
+  1836→        }
+  1837→        setMeasurements((prev) => [newM, ...prev])
+  1838→        pushAudit({
+  1839→          akcija: 'ADD',
+  1840→          meritevId: newM.id,
+  1841→          opis: `${oznaka} shranjen (lokalno) — ${kotStopinje}°`,
+  1842→        })
+  1843→        toast.success(`${oznaka} shranjen (lokalno)`)
+  1844→        setKotomerOpen(false)
+  1845→      }
+  1846→    } catch {
+  1847→      toast.error('Napaka pri shranjevanju')
+  1848→    }
+  1849→  }
+  1850→
+  1851→  // ============================================
+  1852→  // P3 — ŠTEBRICKI (STEBR) — dodajanje
+  1853→  // ============================================
+  1854→
+  1855→  async function handleAddSteber() {
+  1856→    if (!selectedProject) {
+  1857→      toast.error('Izberite projekt!')
+  1858→      return
+  1859→    }
+  1860→    if (!stebriSegmentId) {
+  1861→      toast.error('Izberite segment za steber!')
+  1862→      return
+  1863→    }
+  1864→    const pozicijaMm = convertToMm(parseFloat(stebriPozicija) || 0, stebriPozicijaUnit)
+  1865→    if (!Number.isFinite(pozicijaMm) || pozicijaMm <= 0) {
+  1866→      toast.error('Vnesite veljavno pozicijo stebra!')
+  1867→      return
+  1868→    }
+  1869→    const visinaStebra = parseInt(stebriVisina) || 1100
+  1870→    const steberNum = getNextStebriNumber(measurements, stebriSegmentId)
+  1871→    const oznaka = `S${steberNum}`
+  1872→    const razmikMm = stebriRazmik && stebriRazmik !== '—' ? parseInt(stebriRazmik) : 0
+  1873→    const arMetadata: ArMetadata = {
+  1874→      tipMeritve: 'STEBR',
+  1875→      oznaka,
+  1876→      segmentId: stebriSegmentId,
+  1877→      opomba: `Stebriček S${steberNum} — ${tipStebraLabels[stebriTipStebra]} (${materialStebraLabels[stebriMaterial]}), višina ${visinaStebra}mm, pozicija ${Math.round(pozicijaMm)}mm`,
+  1878→      status: 'OSNUTEK',
+  1879→      tipStebra: stebriTipStebra,
+  1880→      materialStebra: stebriMaterial,
+  1881→      visinaStebraMm: visinaStebra,
+  1882→      pozicijaMm: Math.round(pozicijaMm),
+  1883→      razmikMm: razmikMm || undefined,
+  1884→      steberOznaka: oznaka,
+  1885→      enota: stebriPozicijaUnit,
+  1886→      originalnaVrednost: parseFloat(stebriPozicija) || 0,
+  1887→    }
+  1888→
+  1889→    try {
+  1890→      const res = await fetch('/api/measurements', {
+  1891→        method: 'POST',
+  1892→        headers: { 'Content-Type': 'application/json' },
+  1893→        body: JSON.stringify({
+  1894→          projectId: selectedProject,
+  1895→          dolzinaMm: Math.max(1, Math.round(pozicijaMm)),
+  1896→          visinaMm: visinaStebra,
+  1897→          arMetadata,
+  1898→          gpsLokacija: { lat: 46.2397, lng: 14.3556 },
+  1899→        }),
+  1900→      })
+  1901→      if (res.ok) {
+  1902→        const data = await res.json()
+  1903→        const newM: Measurement = {
+  1904→          ...data,
+  1905→          lokacija: null,
+  1906→          tipMeritve: 'STEBR',
+  1907→          oznaka,
+  1908→          segmentId: stebriSegmentId,
+  1909→          opomba: arMetadata.opomba,
+  1910→          status: 'OSNUTEK',
+  1911→          tipStebra: stebriTipStebra,
+  1912→          materialStebra: stebriMaterial,
+  1913→          visinaStebraMm: visinaStebra,
+  1914→          pozicijaMm: Math.round(pozicijaMm),
+  1915→          razmikMm: razmikMm || null,
+  1916→          steberOznaka: oznaka,
+  1917→          enota: stebriPozicijaUnit,
+  1918→          originalnaVrednost: parseFloat(stebriPozicija) || 0,
+  1919→        }
+  1920→        setMeasurements((prev) => [newM, ...prev])
+  1921→        pushAudit({
+  1922→          akcija: 'ADD',
+  1923→          meritevId: newM.id,
+  1924→          opis: `Stebriček ${oznaka} dodan — ${tipStebraLabels[stebriTipStebra]}, pozicija ${Math.round(pozicijaMm)}mm`,
+  1925→        })
+  1926→        toast.success(`Stebriček ${oznaka} dodan!`)
+  1927→      } else {
+  1928→        const newM: Measurement = {
+  1929→          id: `local_${Date.now()}`,
+  1930→          dolzinaMm: Math.max(1, Math.round(pozicijaMm)),
+  1931→          visinaMm: visinaStebra,
+  1932→          lidarScanUrl: null,
+  1933→          gpsLokacija: JSON.stringify({ lat: 46.2397, lng: 14.3556 }),
+  1934→          createdAt: new Date().toISOString(),
+  1935→          projectId: selectedProject,
+  1936→          lokacija: null,
+  1937→          arMetadata: JSON.stringify({ ...arMetadata, status: 'OSNUTEK' }),
+  1938→          tipMeritve: 'STEBR',
+  1939→          oznaka,
+  1940→          segmentId: stebriSegmentId,
+  1941→          opomba: arMetadata.opomba,
+  1942→          status: 'OSNUTEK',
+  1943→          tipStebra: stebriTipStebra,
+  1944→          materialStebra: stebriMaterial,
+  1945→          visinaStebraMm: visinaStebra,
+  1946→          pozicijaMm: Math.round(pozicijaMm),
+  1947→          razmikMm: razmikMm || null,
+  1948→          steberOznaka: oznaka,
+  1949→          enota: stebriPozicijaUnit,
+  1950→          originalnaVrednost: parseFloat(stebriPozicija) || 0,
+  1951→        }
+  1952→        setMeasurements((prev) => [newM, ...prev])
+  1953→        pushAudit({
+  1954→          akcija: 'ADD',
+  1955→          meritevId: newM.id,
+  1956→          opis: `Stebriček ${oznaka} dodan (lokalno) — pozicija ${Math.round(pozicijaMm)}mm`,
+  1957→        })
+  1958→        toast.success(`Stebriček ${oznaka} dodan (lokalno)!`)
+  1959→      }
+  1960→    } catch {
+  1961→      toast.error('Napaka pri shranjevanju stebra')
+  1962→    }
+  1963→    // reset forme
+  1964→    setStebriPozicija('')
+  1965→    setStebriRazmik('')
+  1966→    setStebriTipStebra('VMESNI')
+  1967→    setStebriMaterial('ALU')
+  1968→    setStebriVisina('1100')
+  1969→    setStebriPozicijaUnit('mm')
+  1970→  }
+  1971→
+  1972→  function handleExportStebriCSV(segmentId: string) {
+  1973→    const stebri = measurements
+  1974→      .filter((m) => m.tipMeritve === 'STEBR' && m.segmentId === segmentId)
+  1975→      .sort((a, b) => (a.pozicijaMm || 0) - (b.pozicijaMm || 0))
+  1976→    if (stebri.length === 0) {
+  1977→      toast.error('Ni stebrov za izvoz')
+  1978→      return
+  1979→    }
+  1980→    const header = 'Oznaka,Tip,Pozicija(mm),Razmik(mm),Visina(mm),Material,Opomba'
+  1981→    const rows = stebri.map((m) => {
+  1982→      const o = (m.steberOznaka || m.oznaka || '').replace(/"/g, '""')
+  1983→      const t = m.tipStebra ? tipStebraLabels[m.tipStebra] : ''
+  1984→      const poz = m.pozicijaMm ? String(Math.round(m.pozicijaMm)) : ''
+  1985→      const raz = m.razmikMm ? String(Math.round(m.razmikMm)) : '—'
+  1986→      const vis = m.visinaStebraMm ? String(Math.round(m.visinaStebraMm)) : ''
+  1987→      const mat = m.materialStebra ? materialStebraLabels[m.materialStebra] : ''
+  1988→      const op = (m.opomba || '').replace(/"/g, '""')
+  1989→      return `"${o}","${t}",${poz},${raz},${vis},"${mat}","${op}"`
+  1990→    })
+  1991→    const csvContent = '\uFEFF' + header + '\n' + rows.join('\n')
+  1992→    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+  1993→    const url = URL.createObjectURL(blob)
+  1994→    const link = document.createElement('a')
+  1995→    link.href = url
+  1996→    link.download = `stebri_${segmentId}_${new Date().toISOString().slice(0, 10)}.csv`
+  1997→    document.body.appendChild(link)
+  1998→    link.click()
+  1999→    document.body.removeChild(link)
+  2000→    URL.revokeObjectURL(url)
+
+[showing lines 1-2000 of 6391; use offset=2001 with limit to continue reading]
