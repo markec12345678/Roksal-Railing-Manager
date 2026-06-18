@@ -1543,3 +1543,28 @@ Stage Summary:
 - **Lint**: 0 errors, 0 warnings
 - **Dev server**: HTTP 200 na `/`, ✓ Compiled (154ms), 0 napak
 - **Združljivost**: vse obstoječe funkcionalnosti ohranjene (hitre predloge, skupinske akcije, status, zgodovina, glasovni vnos, multi-unit prikaz, inclinometer, kalibracija, segmenti, CSV/PDF izvoz)
+
+---
+Task ID: P3-FINAL
+Agent: Main Orchestrator (Z.ai Code)
+Task: QA + commit + push specifičnih meritev za ograje
+
+Work Log:
+- Celovita QA z agent-browser (viewport 390x844):
+  - Stopniščni čarovnik: 4 inputi (2700mm/15 stopnic/280mm globina/250mm širina), segment selector, Ustvari/Shrani gumbi
+  - Stebriček/Palica quick-add gumb prisoten
+  - Izračuni v DOM: VIŠINA POSAMEZNE, DOLŽINA KOSA, SKUPNA DOLŽINA
+- Lint: 0 errors, 0 warnings
+- 0 runtime napak
+- Commit: "feat: specifične meritve za ograje" (2 datoteki, +3182/-266 vrstic)
+- Push na GitHub: 10cb2ad → cf6137d (main)
+- Token odstranjen iz remote URL-ja
+
+Stage Summary:
+- **Stopniščni čarovnik** z SVG diagramom in real-time izračuni
+- **2 nova kota** (KOT_VOGAL, KOT_STOPNISCE) + inline kotomer
+- **Vnos v katerikoli enoti** (mm/cm/m) z avtomatsko konverzijo
+- **Štebricki** z avto-številčenjem in preglednico
+- **3 WPC orientacije** (pokončne/vodoravne/poševne) z diagrami
+- **+3182 vrstic** nove funkcionalnosti
+- **Pushan na GitHub** (commit cf6137d)
