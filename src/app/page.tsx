@@ -16,6 +16,7 @@ import { SketchCanvas } from '@/components/roksal/sketch-canvas'
 import { ArScannerLauncher } from '@/components/roksal/ar-scanner-launcher'
 import { PhotoTab } from '@/components/roksal/photo-tab'
 import { PdfExport } from '@/components/roksal/pdf-export'
+import { FloorPlanTab } from '@/components/roksal/floor-plan-tab'
 import { RefreshCw, Camera, ChevronLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -141,7 +142,9 @@ export default function Home() {
             ? 'Skice'
             : moreTab === 'documents'
               ? 'Dokumenti'
-              : 'Varnost'
+              : moreTab === 'floorplan'
+                ? 'Tloris'
+                : 'Varnost'
     : ''
 
   return (
@@ -228,6 +231,7 @@ export default function Home() {
             {moreTab === 'catalog' && <RoksalCatalog />}
             {moreTab === 'documents' && <DocumentsTab />}
             {moreTab === 'safety' && <SafetyTab />}
+            {moreTab === 'floorplan' && <FloorPlanTab projectId={selectedProjectId} />}
           </div>
         )}
         {activeTab === 'more' && !moreTab && (

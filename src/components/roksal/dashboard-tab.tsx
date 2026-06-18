@@ -52,6 +52,14 @@ import {
   ChevronDown,
   ChevronUp,
   UserPlus,
+  Globe,
+  Copy,
+  MessageSquare,
+  RefreshCw,
+  Link2,
+  Eye,
+  EyeOff,
+  ShieldCheck,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -265,6 +273,21 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
   }>>([])
   const [detailMeasurementsLoading, setDetailMeasurementsLoading] = useState(false)
   const [detailMeasurementsExpanded, setDetailMeasurementsExpanded] = useState(false)
+
+  // Portal stranke (client portal management)
+  interface PortalInfo {
+    enabled: boolean
+    token: string | null
+    url: string | null
+    clientNotes: string | null
+    estimatedPrice: number | null
+  }
+  const [portalInfo, setPortalInfo] = useState<PortalInfo | null>(null)
+  const [portalLoading, setPortalLoading] = useState(false)
+  const [portalActionLoading, setPortalActionLoading] = useState(false)
+  const [portalNotesInput, setPortalNotesInput] = useState('')
+  const [portalPriceInput, setPortalPriceInput] = useState('')
+  const [portalShowPrice, setPortalShowPrice] = useState(false)
 
   const fetchProjects = useCallback(async () => {
     try {
@@ -518,6 +541,11 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
     setDetailOpen(true)
     setDetailMeasurementsExpanded(false)
     setStatusDropdownId(null)
+    // Reset portal state
+    setPortalInfo(null)
+    setPortalNotesInput('')
+    setPortalPriceInput('')
+    setPortalShowPrice(false)
     // Fetch measurements for this project
     setDetailMeasurementsLoading(true)
     setDetailMeasurements([])
@@ -529,6 +557,132 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
       .then(data => setDetailMeasurements(Array.isArray(data) ? data : []))
       .catch(() => setDetailMeasurements([]))
       .finally(() => setDetailMeasurementsLoading(false))
+    // Fetch portal info
+    setPortalLoading(true)
+    fetch(`/api/portal?projectId=${project.id}`)
+      .then(res => {
+        if (res.ok) return res.json()
+        return null
+      })
+      .then(data => {
+        if (data) {
+          setPortalInfo(data)
+          setPortalNotesInput(data.clientNotes ?? '')
+          setPortalPriceInput(data.estimatedPrice != null ? String(data.estimatedPrice) : '')
+          setPortalShowPrice(data.estimatedPrice != null)
+        }
+      })
+      .catch(() => setPortalInfo(null))
+      .finally(() => setPortalLoading(false))
+  }
+
+  async function portalAction(action: 'enable' | 'disable' | 'regenerate') {
+    if (!detailProject) return
+    setPortalActionLoading(true)
+    try {
+      const res = await fetch('/api/portal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectId: detailProject.id, action }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setPortalInfo(data)
+        if (action === 'enable') toast.success('Portal stranke omogočen')
+        else if (action === 'disable') toast.success('Portal stranke onemogočen')
+        else if (action === 'regenerate') toast.success('Povezava ponovno generirana')
+      } else {
+        const err = await res.json().catch(() => null)
+        toast.error(err?.error || 'Napaka pri upravljanju portala')
+      }
+    } catch {
+      toast.error('Napaka pri povezavi s strežnikom')
+    } finally {
+      setPortalActionLoading(false)
+    }
+  }
+
+  async function savePortalSettings() {
+    if (!detailProject) return
+    setPortalActionLoading(true)
+    try {
+      const priceValue = portalShowPrice
+        ? portalPriceInput.trim()
+          ? Number(portalPriceInput.replace(',', '.'))
+          : null
+        : null
+      const res = await fetch('/api/portal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId: detailProject.id,
+          action: 'update',
+          clientNotes: portalNotesInput.trim() || null,
+          estimatedPrice: priceValue,
+        }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setPortalInfo(data)
+        toast.success('Nastavitve portala shranjene')
+      } else {
+        const err = await res.json().catch(() => null)
+        toast.error(err?.error || 'Napaka pri shranjevanju')
+      }
+    } catch {
+      toast.error('Napaka pri povezavi s strežnikom')
+    } finally {
+      setPortalActionLoading(false)
+    }
+  }
+
+  function getPortalUrl(): string {
+    if (!portalInfo?.token) return ''
+    return `${window.location.origin}/portal/${portalInfo.token}`
+  }
+
+  async function copyPortalUrl() {
+    const url = getPortalUrl()
+    if (!url) return
+    try {
+      await navigator.clipboard.writeText(url)
+      toast.success('Povezava kopirana')
+    } catch {
+      // Fallback
+      const ta = document.createElement('textarea')
+      ta.value = url
+      document.body.appendChild(ta)
+      ta.select()
+      try {
+        document.execCommand('copy')
+        toast.success('Povezava kopirana')
+      } catch {
+        toast.error('Kopiranje ni uspelo')
+      }
+      document.body.removeChild(ta)
+    }
+  }
+
+  function sendSmsPortal() {
+    const url = getPortalUrl()
+    if (!url || !detailProject?.customer?.telefon) {
+      toast.error('Stranka nima telefonske številke')
+      return
+    }
+    const phone = detailProject.customer.telefon.replace(/\s+/g, '')
+    const body = `Pozdravljeni, sledite napredku vašega projekta: ${url}`
+    window.location.href = `sms:${phone}?body=${encodeURIComponent(body)}`
+  }
+
+  function sendEmailPortal() {
+    const url = getPortalUrl()
+    if (!url || !detailProject?.customer?.email) {
+      toast.error('Stranka nima e-pošte')
+      return
+    }
+    const subject = `Napredek vašega projekta: ${detailProject?.nazivProjekta ?? ''}`
+    const body = `Pozdravljeni,\n\nSledite napredku vašega projekta preko portala stranke:\n${url}\n\nLep pozdrav,\nRoksal d.o.o.`
+    window.location.href = `mailto:${detailProject.customer.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
   }
 
   async function handleStatusChange(projectId: string, newStatus: string) {
@@ -1422,6 +1576,218 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                     <p className="text-sm text-roksal-navy">{detailProject.opombe}</p>
                   </div>
                 )}
+
+                {/* Portal stranke */}
+                <Card className="overflow-hidden border-l-4 border-l-roksal-navy/40">
+                  <div className="flex w-full items-center justify-between p-3 bg-roksal-navy/5">
+                    <div className="flex items-center gap-2">
+                      <Globe className="h-4 w-4 text-roksal-navy" />
+                      <span className="text-xs font-semibold text-roksal-navy">Portal stranke</span>
+                    </div>
+                    {portalLoading ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                    ) : portalInfo?.enabled ? (
+                      <Badge className="bg-roksal-green/15 text-roksal-green hover:bg-roksal-green/20 text-[10px]">
+                        <ShieldCheck className="mr-1 h-3 w-3" />
+                        Omogočen
+                      </Badge>
+                    ) : (
+                      <Badge variant="secondary" className="text-[10px]">Onemogočen</Badge>
+                    )}
+                  </div>
+
+                  <div className="px-3 pb-3 pt-2 space-y-3">
+                    {!portalLoading && !portalInfo?.enabled && (
+                      <div className="space-y-2">
+                        <p className="text-[11px] text-muted-foreground leading-relaxed">
+                          Omogočite javno stran, kjer stranka v realnem času spremlja status, slike
+                          in sporočila monterja. Dobiva manj klicev &laquo;kdaj boste prišli?&raquo;.
+                        </p>
+                        <Button
+                          type="button"
+                          onClick={() => portalAction('enable')}
+                          disabled={portalActionLoading}
+                          className="w-full bg-roksal-navy hover:bg-roksal-navy/90 text-white h-9"
+                          size="sm"
+                        >
+                          {portalActionLoading ? (
+                            <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Globe className="mr-2 h-3.5 w-3.5" />
+                          )}
+                          Omogoči portal stranke
+                        </Button>
+                      </div>
+                    )}
+
+                    {portalInfo?.enabled && portalInfo.token && (
+                      <>
+                        {/* URL with copy */}
+                        <div className="space-y-1.5">
+                          <Label className="text-[11px] text-muted-foreground">Povezava portala</Label>
+                          <div className="flex items-center gap-1.5">
+                            <div className="flex-1 min-w-0 flex items-center gap-1.5 rounded-md border border-border bg-secondary/40 px-2 py-1.5">
+                              <Link2 className="h-3 w-3 shrink-0 text-roksal-amber" />
+                              <span className="text-[11px] font-mono text-roksal-navy truncate">
+                                /portal/{portalInfo.token.slice(0, 12)}…
+                              </span>
+                            </div>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={copyPortalUrl}
+                              className="h-8 px-2.5 shrink-0"
+                            >
+                              <Copy className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+
+                        {/* Share buttons */}
+                        <div className="grid grid-cols-3 gap-1.5">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={sendSmsPortal}
+                            disabled={!detailProject?.customer?.telefon}
+                            className="h-8 text-[11px]"
+                          >
+                            <MessageSquare className="mr-1 h-3.5 w-3.5" />
+                            SMS
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={sendEmailPortal}
+                            disabled={!detailProject?.customer?.email}
+                            className="h-8 text-[11px]"
+                          >
+                            <Mail className="mr-1 h-3.5 w-3.5" />
+                            Email
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={copyPortalUrl}
+                            className="h-8 text-[11px]"
+                          >
+                            <Copy className="mr-1 h-3.5 w-3.5" />
+                            Kopiraj
+                          </Button>
+                        </div>
+                        {(!detailProject?.customer?.telefon || !detailProject?.customer?.email) && (
+                          <p className="text-[10px] text-amber-600 leading-tight">
+                            {!detailProject?.customer?.telefon && 'Stranka nima telefona. '}
+                            {!detailProject?.customer?.email && 'Stranka nima e-pošte.'}
+                          </p>
+                        )}
+
+                        {/* Sporočilo stranki */}
+                        <div className="space-y-1.5">
+                          <Label htmlFor="portal-notes" className="text-[11px]">
+                            Sporočilo stranki
+                          </Label>
+                          <Textarea
+                            id="portal-notes"
+                            value={portalNotesInput}
+                            onChange={(e) => setPortalNotesInput(e.target.value)}
+                            placeholder="npr. Prihajamo v ponedeljek ob 8h"
+                            rows={2}
+                            className="text-xs resize-none"
+                          />
+                        </div>
+
+                        {/* Cena */}
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <Label htmlFor="portal-price" className="text-[11px]">
+                              Predvidena cena
+                            </Label>
+                            <button
+                              type="button"
+                              onClick={() => setPortalShowPrice(!portalShowPrice)}
+                              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                                portalShowPrice
+                                  ? 'bg-roksal-green/15 text-roksal-green'
+                                  : 'bg-secondary text-muted-foreground'
+                              }`}
+                            >
+                              {portalShowPrice ? (
+                                <Eye className="h-3 w-3" />
+                              ) : (
+                                <EyeOff className="h-3 w-3" />
+                              )}
+                              {portalShowPrice ? 'Pokaži stranki' : 'Skrito'}
+                            </button>
+                          </div>
+                          {portalShowPrice && (
+                            <div className="relative">
+                              <Input
+                                id="portal-price"
+                                type="text"
+                                inputMode="decimal"
+                                value={portalPriceInput}
+                                onChange={(e) => setPortalPriceInput(e.target.value)}
+                                placeholder="npr. 2500"
+                                className="pr-8 text-xs h-8"
+                              />
+                              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                                €
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Save settings */}
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={savePortalSettings}
+                          disabled={portalActionLoading}
+                          className="w-full h-8 text-[11px] border-roksal-amber/40 text-roksal-navy hover:bg-roksal-amber/10"
+                        >
+                          {portalActionLoading ? (
+                            <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
+                          ) : (
+                            <CheckCircle2 className="mr-1.5 h-3 w-3" />
+                          )}
+                          Shrani sporočilo in ceno
+                        </Button>
+
+                        {/* Admin actions */}
+                        <div className="grid grid-cols-2 gap-1.5 pt-1 border-t border-border">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => portalAction('regenerate')}
+                            disabled={portalActionLoading}
+                            className="h-8 text-[11px] text-roksal-navy hover:bg-roksal-navy/10"
+                          >
+                            <RefreshCw className="mr-1 h-3 w-3" />
+                            Nova povezava
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => portalAction('disable')}
+                            disabled={portalActionLoading}
+                            className="h-8 text-[11px] text-roksal-red hover:bg-roksal-red/10"
+                          >
+                            <X className="mr-1 h-3 w-3" />
+                            Onemogoči
+                          </Button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </Card>
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setDetailOpen(false)}>

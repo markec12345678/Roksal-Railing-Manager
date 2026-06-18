@@ -1726,3 +1726,81 @@ Stage Summary:
 - **Vsa obstoječa funkcionalnost ohranjena**: 8 orodij, 5 barv, 3 debeline, CameraCapture, BeforeAfterSlider, PairCreatorDialog, galerija, filtri, pare
 - **Ničen vpliv na druge datoteke** — samo photo-tab.tsx spremenjen
 - **Vsebimo**: vse gumbi type="button", slovenski UI, navy/amber/green tema, shadcn/ui komponente (Card, Button, Input, Label, Select, Badge, Separator, Table, Collapsible, Dialog, Progress), mobile-first (touch-none canvas, scrollable tabela, collapsible kartica)
+
+---
+Task ID: TLORIS
+Agent: full-stack-developer (Tloris z elementi)
+Task: Canvas tloris z stenami, stebri, vrati, okni, merami, izvoz PDF/DXF
+
+Work Log:
+- Prebral delovne dnevnike (Tasks 1–P3, FIX-CUSTOMER, AR-OVERLAY, FOTO-MERA) za kontekst
+- Analiziral obstoječe komponente: sketch-canvas.tsx (risanje), measurements-tab.tsx (STEBR/RAZDALJA/KOT_VOGAL tipi), bottom-nav.tsx (MoreTabId union), page.tsx (render moreTabs)
+- Prebral Prisma schema (Sketch model) in /api/sketches/route.ts za vzorec shranjevanja
+- Preveril pakete: jspdf 4.2.1, jspdf-autotable 5.0.8 — obe že nameščeni
+- Preveril toast vzorec: useToast iz @/hooks/use-toast (uporabljen v pdf-export, photo-tab, sketch-canvas)
+
+NAREJENO — `src/components/roksal/floor-plan-tab.tsx` (NEW, ~1950 vrstic):
+- Tipi: WallElement, PostElement (KONCNI/VMESNI/VOGALNI, ALU/INOX/WPC), DoorElement (single/double swing), WindowElement, DimensionElement, TextElement, FloorElement union
+- Canvas editor: HTML5 Canvas z useRef, ResizeObserver za responsive (min-h-[400px] h-[55vh])
+- Grid 500mm (subtle siva), močnejša črta vsakih 5 kvadratkov, X os (amber) + Y os (green) + izhodišče "0,0"
+- Koordinatni sistem: world (mm) → screen = world × zoom + pan; default zoom 0.3
+- Pan: srednji/desni klik ali levi klik v prazno (tool "select"); pinch (2 prsti) na mobile
+- Zoom: kolesce (wheel), pinch, gumbi +/−, zoom % indikator
+- Reset view gumb, "pobriši vse" gumb (z confirm)
+- 9 orodij (select, wall, post, door, window, dimension, text, eraser, move) — horizontalni toolbar
+- Wall: klik A → klik B, debela navy črta z debelino (default 100mm), višina (default 1100mm), prikaz dolžine na sredini
+- Post: klik za postavitev, auto-numbered S1/S2..., amber krog z material fillom + tip indicator + oznaka pod krogom
+- Door: klik na steno, gap v steni (overpaint z bg) + lok swing (single/double), cyan #0ea5e9
+- Window: klik na steno, dve vzporedni črti z robnimi povezavami, cyan #06b6d4
+- Dimension: klik A → klik B → dialog za realno dolžino, zamaknjena zelena črta z end-ticks in label
+- Text: klik → dialog za vnos besedila, ozadje z navy tekstom
+- Eraser: klik elementa za izbris (hit testing)
+- Move: drag elementa (wall/post/text/dimension)
+- Select: klik za izbiro (amber dashed outline), pan v prazno
+- Hit testing: dist do segmenta za wall/dimension, dist do centra za post, bounding box za text, position+width za door/window
+- Predogled med risanjem (wall/dimension): amber dashed line + točki A/B + label dolžine
+- Hover križec za post/text/eraser orodja
+- Lastnosti panel: Sheet (bottom) s polji za vsak tip elementa (višina, debelina, material, tip, širina, pozicija, oznaka) + delete button
+- Statistike (top): 6 kartic (dolžina sten, stebri, vrata, okna, površina m², obseg m) — izračunano z useMemo
+- Uvozi iz meritev: fetch /api/measurements?projectId=X, za STEBR → postavi stebriček (1.5m razmik), za RAZDALJA/VISINA → dimenzija, za KOT_VOGAL → besedilo z vogalom; auto-fit pogled; toast "Uvoženih: X stebrov, Y mer"
+- Izvozi:
+  - PDF: jsPDF z Roksal glavo (navy pas + amber R), slika tlorisa, statistike, legenda (5 elementov z barvami), tabela dimenzij, noga
+  - DXF: text-based format z HEADER/ENTITIES sekcijami — LINE za stene, CIRCLE za stebre, TEXT za oznake, LINE za vrata/okna/mere
+  - PNG: canvas.toDataURL + download link
+  - Shrani kot skico: POST /api/sketches z pngData + naziv "Tloris {datum}" + povzetek s statistikami
+- Plasti (Layers): Sheet z 6 switchi (Stene, Stebri, Vrata, Okna, Mere, Besedila) z barvnimi indikatorji
+- Undo/Redo: zgodovina do 50 korakov, gumbi v glavi
+- localStorage persist: ključ `roksal_floorplan_{projectId}`
+- Vse gumbe `type="button"`, vsa besedila slovensko, navy/amber/green/cyan teme (brez indigo/blue)
+
+NAREJENO — `src/components/roksal/bottom-nav.tsx` (spremembe):
+- Dodan import `Frame` iz lucide-react
+- MoreTabId union razširjen z `'floorplan'`
+- moreTabs array: dodan `{ id: 'floorplan', label: 'Tloris', icon: Frame, description: 'Tloris balkona z stebri, vrati, okni' }` na prvo mesto
+
+NAREJENO — `src/app/page.tsx` (spremembe):
+- Import `FloorPlanTab` iz `@/components/roksal/floor-plan-tab`
+- moreLabel ternary razširjen z `moreTab === 'floorplan' ? 'Tloris' : ...`
+- Render blok: `{moreTab === 'floorplan' && <FloorPlanTab projectId={selectedProjectId} />}`
+
+VERIFIKACIJA:
+- `bun run lint` → 0 errors, 0 warnings ✓
+- `tail -25 dev.log` → ✓ Compiled, GET / 200 (samo nerelevanten /api/portal error iz druge naloge)
+- agent-browser: open / → click "Več" → "Tloris" gumb viden → click → Tloris rendera z vsemi orodji (Stena, Stebriček, Vrata, Okno, Mera, Besedilo, Briši, Premakni) + Uvozi/Plasti/PDF/DXF/PNG/Skica gumbi
+- Test risanja stene: klik A → premik → klik B = izrisana stena brez napak
+- Console: brez errorjev (samo aria-describedby warning iz DialogContent — ne vpliva)
+
+Stage Summary:
+- **3 datoteke** spremenjene (floor-plan-tab.tsx NEW, bottom-nav.tsx, page.tsx)
+- **~1950 vrstic** nove kode v floor-plan-tab.tsx
+- **9 orodij** za risanje (select, wall, post, door, window, dimension, text, eraser, move)
+- **6 tipov elementov** z lastnostmi panelom (Sheet bottom)
+- **4 izvozi** (PDF z Roksal branding, DXF za CAD, PNG, Shrani kot skico)
+- **Uvoz iz meritev** (STEBR → post, RAZDALJA → dim, KOT_VOGAL → text)
+- **Plasti** s 6 swit-chi za vidnost
+- **Undo/Redo** zgodovina (50 korakov)
+- **localStorage** persist per projekt
+- **Mobile-first** touch (pinch zoom, pan z drag, touch-action: none)
+- **Teme**: navy #1d2b3e (stene), amber #f59e0b (stebri, selected), green #22c55e (mere), cyan #0ea5e9/#06b6d4 (vrata/okna)
+- **Lint clean** (0 errors), **dev server OK** (200, no compile errors), **agent-browser verified**
+

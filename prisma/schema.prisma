@@ -82,6 +82,12 @@ model Project {
   longitude         Float?
   projectData       String?
 
+  // PORTAL STRANKE — javna stran za sledenje napredku
+  clientToken          String   @unique @default(cuid())
+  clientPortalEnabled  Boolean  @default(false)
+  clientNotes          String?  // sporočilo monterja, vidno stranki
+  estimatedPrice       Float?   // predvidena cena, vidna stranki
+
   customer      Customer       @relation(fields: [customerId], references: [id])
   monter        Profile?       @relation("InstallerProjects", fields: [monterId], references: [id])
   vodja         Profile?       @relation("ManagerProjects", fields: [vodjaId], references: [id])
