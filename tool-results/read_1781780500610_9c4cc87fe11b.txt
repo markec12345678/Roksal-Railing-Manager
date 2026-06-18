@@ -1,0 +1,1275 @@
+     1→     1→'use client'
+     2→     2→
+     3→     3→import { useEffect, useState, useCallback, useMemo } from 'react'
+     4→     4→import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+     5→     5→import { Badge } from '@/components/ui/badge'
+     6→     6→import { Button } from '@/components/ui/button'
+     7→     7→import { Input } from '@/components/ui/input'
+     8→     8→import { Label } from '@/components/ui/label'
+     9→     9→import { Textarea } from '@/components/ui/textarea'
+    10→    10→import { Skeleton } from '@/components/ui/skeleton'
+    11→    11→import {
+    12→    12→  Dialog,
+    13→    13→  DialogContent,
+    14→    14→  DialogHeader,
+    15→    15→  DialogTitle,
+    16→    16→  DialogFooter,
+    17→    17→  DialogDescription,
+    18→    18→} from '@/components/ui/dialog'
+    19→    19→import {
+    20→    20→  Select,
+    21→    21→  SelectContent,
+    22→    22→  SelectItem,
+    23→    23→  SelectTrigger,
+    24→    24→  SelectValue,
+    25→    25→} from '@/components/ui/select'
+    26→    26→import {
+    27→    27→  MapPin,
+    28→    28→  CalendarDays,
+    29→    29→  BatteryMedium,
+    30→    30→  Wifi,
+    31→    31→  TrendingUp,
+    32→    32→  Clock,
+    33→    33→  ChevronRight,
+    34→    34→  AlertTriangle,
+    35→    35→  CheckCircle2,
+    36→    36→  Wrench,
+    37→    37→  Plus,
+    38→    38→  FileText,
+    39→    39→  Ruler,
+    40→    40→  Package,
+    41→    41→  Loader2,
+    42→    42→  X,
+    43→    43→  Search,
+    44→    44→  Activity,
+    45→    45→  PackageX,
+    46→    46→  Filter,
+    47→    47→  Phone,
+    48→    48→  Pencil,
+    49→    49→  Archive,
+    50→    50→  Mail,
+    51→    51→  Calculator,
+    52→    52→  ChevronDown,
+    53→    53→  ChevronUp,
+    54→    54→} from 'lucide-react'
+    55→    55→import { toast } from 'sonner'
+    56→    56→
+    57→    57→interface Project {
+    58→    58→  id: string
+    59→    59→  nazivProjekta: string
+    60→    60→  status: string
+    61→    61→  datumMontaze: string | null
+    62→    62→  customer?: { id?: string; ime: string; naslov: string; telefon?: string; email?: string }
+    63→    63→  monter?: { id: string; ime: string; vloga: string }
+    64→    64→  _count?: { documents: number; auditLogs: number; measurements?: number }
+    65→    65→  opombe?: string | null
+    66→    66→  createdAt?: string
+    67→    67→  updatedAt?: string
+    68→    68→}
+    69→    69→
+    70→    70→interface InventoryItem {
+    71→    71→  id: string
+    72→    72→  naziv: string
+    73→    73→  sifraMateriala: string
+    74→    74→  kolicinaZaloga: number
+    75→    75→  minimalnaZaloga: number
+    76→    76→  enota: string
+    77→    77→  tip: string
+    78→    78→}
+    79→    79→
+    80→    80→interface Customer {
+    81→    81→  id: string
+    82→    82→  ime: string
+    83→    83→  naslov: string
+    84→    84→}
+    85→    85→
+    86→    86→const statusLabels: Record<string, string> = {
+    87→    87→  NACRTOVANO: 'Načrtovano',
+    88→    88→  V_TEKU: 'V teku',
+    89→    89→  ZAKLJUCENO: 'Zaključeno',
+    90→    90→  USTAVLJENO: 'Ustavljeno',
+    91→    91→}
+    92→    92→
+    93→    93→const statusColors: Record<string, string> = {
+    94→    94→  NACRTOVANO: 'bg-blue-100 text-blue-800',
+    95→    95→  V_TEKU: 'bg-roksal-amber/20 text-roksal-navy',
+    96→    96→  ZAKLJUCENO: 'bg-roksal-green/20 text-roksal-green',
+    97→    97→  USTAVLJENO: 'bg-roksal-red/20 text-roksal-red',
+    98→    98→}
+    99→    99→
+   100→   100→const statusFilterTabs = [
+   101→   101→  { id: 'ALL', label: 'Vsi' },
+   102→   102→  { id: 'V_TEKU', label: 'V teku' },
+   103→   103→  { id: 'NACRTOVANO', label: 'Načrtovano' },
+   104→   104→  { id: 'ZAKLJUCENO', label: 'Zaključeni' },
+   105→   105→]
+   106→   106→
+   107→   107→function formatDate(dateStr: string): string {
+   108→   108→  const d = new Date(dateStr)
+   109→   109→  return d.toLocaleDateString('sl-SI', {
+   110→   110→    day: 'numeric',
+   111→   111→    month: 'short',
+   112→   112→  })
+   113→   113→}
+   114→   114→
+   115→   115→function formatDateNice(dateStr: string): string {
+   116→   116→  const d = new Date(dateStr)
+   117→   117→  const now = new Date()
+   118→   118→  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+   119→   119→  const date = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+   120→   120→  const diffDays = Math.round((today.getTime() - date.getTime()) / 86400000)
+   121→   121→
+   122→   122→  if (diffDays === 0) return 'danes'
+   123→   123→  if (diffDays === 1) return 'včeraj'
+   124→   124→  if (diffDays === -1) return 'jutri'
+   125→   125→  if (diffDays === -2) return 'pjutri'
+   126→   126→  if (diffDays > 1 && diffDays <= 7) return `pred ${diffDays} dnevi`
+   127→   127→  if (diffDays > 7 && diffDays <= 30) return `pred ${Math.floor(diffDays / 7)} tedni`
+   128→   128→  if (diffDays < -2 && diffDays >= -7) return `čez ${Math.abs(diffDays)} dni`
+   129→   129→  return formatDate(dateStr)
+   130→   130→}
+   131→   131→
+   132→   132→function formatRelativeTime(dateStr: string): string {
+   133→   133→  const now = new Date()
+   134→   134→  const date = new Date(dateStr)
+   135→   135→  const diffMs = now.getTime() - date.getTime()
+   136→   136→  const diffMin = Math.floor(diffMs / 60000)
+   137→   137→  const diffH = Math.floor(diffMs / 3600000)
+   138→   138→  const diffD = Math.floor(diffMs / 86400000)
+   139→   139→
+   140→   140→  if (diffMin < 1) return 'Pravkar'
+   141→   141→  if (diffMin < 60) return `pred ${diffMin} min`
+   142→   142→  if (diffH < 24) return `pred ${diffH} ur`
+   143→   143→  if (diffD < 7) return `pred ${diffD} dni`
+   144→   144→  return formatDate(dateStr)
+   145→   145→}
+   146→   146→
+   147→   147→function getGreeting(): string {
+   148→   148→  const h = new Date().getHours()
+   149→   149→  if (h < 6) return 'Dobro jutro'
+   150→   150→  if (h < 12) return 'Dobro jutro'
+   151→   151→  if (h < 18) return 'Dober dan'
+   152→   152→  return 'Dobro večer'
+   153→   153→}
+   154→   154→
+   155→   155→function getTodayString(): string {
+   156→   156→  return new Date().toLocaleDateString('sl-SI', {
+   157→   157→    weekday: 'long',
+   158→   158→    day: 'numeric',
+   159→   159→    month: 'long',
+   160→   160→    year: 'numeric',
+   161→   161→  })
+   162→   162→}
+   163→   163→
+   164→   164→interface ActivityItem {
+   165→   165→  id: string
+   166→   166→  type: 'project_created' | 'status_change' | 'completed' | 'low_stock' | 'measurement'
+   167→   167→  icon: React.ElementType
+   168→   168→  iconColor: string
+   169→   169→  title: string
+   170→   170→  description: string
+   171→   171→  time: string
+   172→   172→}
+   173→   173→
+   174→   174→function estimateSlats(measurements: Array<{ dolzinaMm: number }>, slatWidth: number = 80, maxGap: number = 100): number {
+   175→   175→  return measurements.reduce((total, m) => {
+   176→   176→    const n = Math.ceil((m.dolzinaMm - maxGap) / (maxGap + slatWidth))
+   177→   177→    return total + n
+   178→   178→  }, 0)
+   179→   179→}
+   180→   180→
+   181→   181→function MiniRailingDiagram({ dolzina, visina }: { dolzina: number; visina: number }) {
+   182→   182→  const maxDim = Math.max(dolzina, visina)
+   183→   183→  const heightPct = Math.min((visina / maxDim) * 30, 30)
+   184→   184→  const n = Math.ceil((dolzina - 100) / (100 + 80))
+   185→   185→  const actualGap = (dolzina - n * 80) / (n + 1)
+   186→   186→  const numSlats = Math.min(n, 12)
+   187→   187→  const gapPct = actualGap / dolzina * 100
+   188→   188→
+   189→   189→  return (
+   190→   190→    <div className="relative rounded-md border border-roksal-navy/15 bg-gradient-to-b from-roksal-navy/3 to-roksal-navy/6 p-2" style={{ minHeight: `${Math.max(heightPct, 14)}px` }}>
+   191→   191→      <div className="flex items-end h-full gap-0" style={{ height: `${Math.max(heightPct, 14)}px` }}>
+   192→   192→        <div className="w-[3px] h-full bg-roksal-navy rounded-full" />
+   193→   193→        <div className="flex-1 flex items-end h-full gap-0">
+   194→   194→          <div className="h-full bg-transparent" style={{ width: `${gapPct}%` }} />
+   195→   195→          {Array.from({ length: numSlats }).map((_, i) => (
+   196→   196→            <div key={i} className="flex h-full">
+   197→   197→              <div className="h-[85%] bg-roksal-navy/70 rounded-[1px]" style={{ width: `${(80 / dolzina) * 100}%`, minWidth: '1px' }} />
+   198→   198→              {i < numSlats - 1 && (
+   199→   199→                <div className="h-full bg-roksal-amber/25" style={{ width: `${gapPct}%`, minWidth: '1px' }} />
+   200→   200→              )}
+   201→   201→            </div>
+   202→   202→          ))}
+   203→   203→          <div className="h-full bg-transparent" style={{ width: `${gapPct}%` }} />
+   204→   204→        </div>
+   205→   205→        <div className="w-[3px] h-full bg-roksal-navy rounded-full" />
+   206→   206→      </div>
+   207→   207→      <div className="mt-0.5 flex">
+   208→   208→        <div className="w-[3px] bg-roksal-navy rounded-full" />
+   209→   209→        <div className="flex-1 h-[2px] bg-roksal-navy/30 rounded" />
+   210→   210→        <div className="w-[3px] bg-roksal-navy rounded-full" />
+   211→   211→      </div>
+   212→   212→    </div>
+   213→   213→  )
+   214→   214→}
+   215→   215→
+   216→   216→interface DashboardTabProps {
+   217→   217→  selectedProjectId?: string | null
+   218→   218→  onSelectProject?: (id: string) => void
+   219→   219→}
+   220→   220→
+   221→   221→export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTabProps) {
+   222→   222→  const [projects, setProjects] = useState<Project[]>([])
+   223→   223→  const [inventory, setInventory] = useState<InventoryItem[]>([])
+   224→   224→  const [customers, setCustomers] = useState<Customer[]>([])
+   225→   225→  const [loading, setLoading] = useState(true)
+   226→   226→  const [invLoading, setInvLoading] = useState(true)
+   227→   227→
+   228→   228→  // Search & Filter
+   229→   229→  const [searchQuery, setSearchQuery] = useState('')
+   230→   230→  const [statusFilter, setStatusFilter] = useState('ALL')
+   231→   231→
+   232→   232→  // New project dialog
+   233→   233→  const [newProjectOpen, setNewProjectOpen] = useState(false)
+   234→   234→  const [newProjectName, setNewProjectName] = useState('')
+   235→   235→  const [newProjectCustomer, setNewProjectCustomer] = useState('')
+   236→   236→  const [newProjectDate, setNewProjectDate] = useState('')
+   237→   237→  const [newProjectNotes, setNewProjectNotes] = useState('')
+   238→   238→  const [creating, setCreating] = useState(false)
+   239→   239→
+   240→   240→  // Project detail dialog
+   241→   241→  const [detailProject, setDetailProject] = useState<Project | null>(null)
+   242→   242→  const [detailOpen, setDetailOpen] = useState(false)
+   243→   243→  const [statusUpdating, setStatusUpdating] = useState(false)
+   244→   244→
+   245→   245→  // Status change dropdown
+   246→   246→  const [statusDropdownId, setStatusDropdownId] = useState<string | null>(null)
+   247→   247→
+   248→   248→  // Project detail measurements
+   249→   249→  const [detailMeasurements, setDetailMeasurements] = useState<Array<{
+   250→   250→    id: string; dolzinaMm: number; visinaMm: number; lokacija?: string | null; createdAt: string; tipPodlage?: string | null
+   251→   251→  }>>([])
+   252→   252→  const [detailMeasurementsLoading, setDetailMeasurementsLoading] = useState(false)
+   253→   253→  const [detailMeasurementsExpanded, setDetailMeasurementsExpanded] = useState(false)
+   254→   254→
+   255→   255→  const fetchProjects = useCallback(async () => {
+   256→   256→    try {
+   257→   257→      const res = await fetch('/api/projects')
+   258→   258→      if (res.ok) {
+   259→   259→        const data = await res.json()
+   260→   260→        setProjects(data)
+   261→   261→      }
+   262→   262→    } catch {
+   263→   263→      setProjects(demoProjects)
+   264→   264→    }
+   265→   265→  }, [])
+   266→   266→
+   267→   267→  const fetchInventory = useCallback(async () => {
+   268→   268→    setInvLoading(true)
+   269→   269→    try {
+   270→   270→      const res = await fetch('/api/inventory')
+   271→   271→      if (res.ok) {
+   272→   272→        const data = await res.json()
+   273→   273→        setInventory(data)
+   274→   274→      }
+   275→   275→    } catch {
+   276→   276→      // keep empty
+   277→   277→    } finally {
+   278→   278→      setInvLoading(false)
+   279→   279→    }
+   280→   280→  }, [])
+   281→   281→
+   282→   282→  const fetchCustomers = useCallback(async () => {
+   283→   283→    try {
+   284→   284→      const res = await fetch('/api/projects')
+   285→   285→      if (res.ok) {
+   286→   286→        const data: Project[] = await res.json()
+   287→   287→        const uniqueCustomers = new Map<string, Customer>()
+   288→   288→        for (const p of data) {
+   289→   289→          if (p.customer?.id && p.customer.ime) {
+   290→   290→            uniqueCustomers.set(p.customer.id, {
+   291→   291→              id: p.customer.id,
+   292→   292→              ime: p.customer.ime,
+   293→   293→              naslov: p.customer.naslov,
+   294→   294→            })
+   295→   295→          }
+   296→   296→        }
+   297→   297→        if (uniqueCustomers.size > 0) {
+   298→   298→          setCustomers(Array.from(uniqueCustomers.values()))
+   299→   299→        } else {
+   300→   300→          setCustomers([
+   301→   301→            { id: 'cust1', ime: 'Janez Novak', naslov: 'Horjul 12, 4224 Horjul' },
+   302→   302→            { id: 'cust2', ime: 'Ana Kovačič', naslov: 'Slovenski trg 5, 4000 Kranj' },
+   303→   303→            { id: 'cust3', ime: 'Petra Zupan', naslov: 'Cankarjeva 8, 4227 Železniki' },
+   304→   304→          ])
+   305→   305→        }
+   306→   306→      }
+   307→   307→    } catch {
+   308→   308→      setCustomers([
+   309→   309→        { id: 'cust1', ime: 'Janez Novak', naslov: 'Horjul 12, 4224 Horjul' },
+   310→   310→        { id: 'cust2', ime: 'Ana Kovačič', naslov: 'Slovenski trg 5, 4000 Kranj' },
+   311→   311→      ])
+   312→   312→    }
+   313→   313→  }, [])
+   314→   314→
+   315→   315→  useEffect(() => {
+   316→   316→    async function fetchAll() {
+   317→   317→      try {
+   318→   318→        await Promise.all([fetchProjects(), fetchInventory(), fetchCustomers()])
+   319→   319→      } catch {
+   320→   320→        setProjects(demoProjects)
+   321→   321→      } finally {
+   322→   322→        setLoading(false)
+   323→   323→      }
+   324→   324→    }
+   325→   325→    fetchAll()
+   326→   326→  }, [fetchProjects, fetchInventory, fetchCustomers])
+   327→   327→
+   328→   328→  // Filtered & searched projects
+   329→   329→  const filteredProjects = useMemo(() => {
+   330→   330→    let result = projects
+   331→   331→    if (statusFilter !== 'ALL') {
+   332→   332→      result = result.filter((p) => p.status === statusFilter)
+   333→   333→    }
+   334→   334→    if (searchQuery.trim()) {
+   335→   335→      const q = searchQuery.toLowerCase()
+   336→   336→      result = result.filter(
+   337→   337→        (p) =>
+   338→   338→          p.nazivProjekta.toLowerCase().includes(q) ||
+   339→   339→          p.customer?.ime.toLowerCase().includes(q) ||
+   340→   340→          p.customer?.naslov?.toLowerCase().includes(q)
+   341→   341→      )
+   342→   342→    }
+   343→   343→    return result
+   344→   344→  }, [projects, statusFilter, searchQuery])
+   345→   345→
+   346→   346→  const activeProjects = filteredProjects.filter((p) => p.status === 'V_TEKU')
+   347→   347→  const activeCount = projects.filter((p) => p.status === 'V_TEKU').length
+   348→   348→  const pendingCount = projects.filter((p) => p.status === 'NACRTOVANO').length
+   349→   349→  const completedCount = projects.filter((p) => p.status === 'ZAKLJUCENO').length
+   350→   350→  const totalProjects = projects.length
+   351→   351→  const totalInventoryItems = inventory.length
+   352→   352→
+   353→   353→  const nextInstallation = projects.find((p) => p.status === 'V_TEKU') || projects.find((p) => p.status === 'NACRTOVANO')
+   354→   354→
+   355→   355→  const lowStockItems = inventory.filter(
+   356→   356→    (i) => i.kolicinaZaloga <= i.minimalnaZaloga
+   357→   357→  )
+   358→   358→  const lowStockCount = lowStockItems.length
+   359→   359→
+   360→   360→  // Generate activity timeline
+   361→   361→  const activities: ActivityItem[] = useMemo(() => {
+   362→   362→    const items: ActivityItem[] = []
+   363→   363→
+   364→   364→    // Low stock alerts
+   365→   365→    for (const item of lowStockItems.slice(0, 2)) {
+   366→   366→      items.push({
+   367→   367→        id: `low_${item.id}`,
+   368→   368→        type: 'low_stock',
+   369→   369→        icon: PackageX,
+   370→   370→        iconColor: 'text-roksal-red',
+   371→   371→        title: 'Nizka zaloga',
+   372→   372→        description: `${item.naziv} — ${item.kolicinaZaloga} ${item.enota} (min: ${item.minimalnaZaloga})`,
+   373→   373→        time: 'Aktualno',
+   374→   374→      })
+   375→   375→    }
+   376→   376→
+   377→   377→    // Recent projects (use updatedAt or createdAt)
+   378→   378→    const sortedProjects = [...projects].sort((a, b) => {
+   379→   379→      const dateA = a.updatedAt || a.createdAt || ''
+   380→   380→      const dateB = b.updatedAt || b.createdAt || ''
+   381→   381→      return new Date(dateB).getTime() - new Date(dateA).getTime()
+   382→   382→    })
+   383→   383→
+   384→   384→    for (const p of sortedProjects.slice(0, 4)) {
+   385→   385→      const dateStr = p.updatedAt || p.createdAt || new Date().toISOString()
+   386→   386→      if (p.status === 'ZAKLJUCENO') {
+   387→   387→        items.push({
+   388→   388→          id: `done_${p.id}`,
+   389→   389→          type: 'completed',
+   390→   390→          icon: CheckCircle2,
+   391→   391→          iconColor: 'text-roksal-green',
+   392→   392→          title: 'Projekt zaključen',
+   393→   393→          description: p.nazivProjekta,
+   394→   394→          time: formatRelativeTime(dateStr),
+   395→   395→        })
+   396→   396→      } else if (p.status === 'V_TEKU') {
+   397→   397→        items.push({
+   398→   398→          id: `active_${p.id}`,
+   399→   399→          type: 'status_change',
+   400→   400→          icon: Activity,
+   401→   401→          iconColor: 'text-roksal-amber',
+   402→   402→          title: 'Projekt v teku',
+   403→   403→          description: p.nazivProjekta,
+   404→   404→          time: formatRelativeTime(dateStr),
+   405→   405→        })
+   406→   406→      } else {
+   407→   407→        items.push({
+   408→   408→          id: `plan_${p.id}`,
+   409→   409→          type: 'project_created',
+   410→   410→          icon: Wrench,
+   411→   411→          iconColor: 'text-roksal-navy',
+   412→   412→          title: 'Nov projekt načrtovan',
+   413→   413→          description: p.nazivProjekta,
+   414→   414→          time: formatRelativeTime(dateStr),
+   415→   415→        })
+   416→   416→      }
+   417→   417→    }
+   418→   418→
+   419→   419→    return items.slice(0, 6)
+   420→   420→  }, [projects, lowStockItems])
+   421→   421→
+   422→   422→  async function handleCreateProject() {
+   423→   423→    if (!newProjectName.trim() || !newProjectCustomer) {
+   424→   424→      toast.error('Izpolnite naziv projekta in izberite stranko')
+   425→   425→      return
+   426→   426→    }
+   427→   427→    setCreating(true)
+   428→   428→    try {
+   429→   429→      const res = await fetch('/api/projects', {
+   430→   430→        method: 'POST',
+   431→   431→        headers: { 'Content-Type': 'application/json' },
+   432→   432→        body: JSON.stringify({
+   433→   433→          nazivProjekta: newProjectName,
+   434→   434→          customerId: newProjectCustomer,
+   435→   435→          datumMontaze: newProjectDate ? new Date(newProjectDate).toISOString() : undefined,
+   436→   436→          opombe: newProjectNotes || undefined,
+   437→   437→        }),
+   438→   438→      })
+   439→   439→      if (res.ok) {
+   440→   440→        const data = await res.json()
+   441→   441→        setProjects((prev) => [data, ...prev])
+   442→   442→        toast.success('Projekt ustvarjen')
+   443→   443→        setNewProjectOpen(false)
+   444→   444→        setNewProjectName('')
+   445→   445→        setNewProjectCustomer('')
+   446→   446→        setNewProjectDate('')
+   447→   447→        setNewProjectNotes('')
+   448→   448→      } else {
+   449→   449→        toast.error('Napaka pri ustvarjanju projekta')
+   450→   450→      }
+   451→   451→    } catch {
+   452→   452→      toast.error('Napaka pri povezavi s strežnikom')
+   453→   453→    } finally {
+   454→   454→      setCreating(false)
+   455→   455→    }
+   456→   456→  }
+   457→   457→
+   458→   458→  function openProjectDetail(project: Project) {
+   459→   459→    setDetailProject(project)
+   460→   460→    setDetailOpen(true)
+   461→   461→    setDetailMeasurementsExpanded(false)
+   462→   462→    setStatusDropdownId(null)
+   463→   463→    // Fetch measurements for this project
+   464→   464→    setDetailMeasurementsLoading(true)
+   465→   465→    setDetailMeasurements([])
+   466→   466→    fetch(`/api/measurements?projectId=${project.id}`)
+   467→   467→      .then(res => {
+   468→   468→        if (res.ok) return res.json()
+   469→   469→        return []
+   470→   470→      })
+   471→   471→      .then(data => setDetailMeasurements(Array.isArray(data) ? data : []))
+   472→   472→      .catch(() => setDetailMeasurements([]))
+   473→   473→      .finally(() => setDetailMeasurementsLoading(false))
+   474→   474→  }
+   475→   475→
+   476→   476→  async function handleStatusChange(projectId: string, newStatus: string) {
+   477→   477→    setStatusUpdating(true)
+   478→   478→    try {
+   479→   479→      const res = await fetch('/api/projects', {
+   480→   480→        method: 'PATCH',
+   481→   481→        headers: { 'Content-Type': 'application/json' },
+   482→   482→        body: JSON.stringify({ id: projectId, status: newStatus }),
+   483→   483→      })
+   484→   484→      if (res.ok) {
+   485→   485→        const updated = await res.json()
+   486→   486→        setProjects((prev) => prev.map((p) => (p.id === projectId ? updated : p)))
+   487→   487→        if (detailProject?.id === projectId) {
+   488→   488→          setDetailProject(updated)
+   489→   489→        }
+   490→   490→        if (newStatus === 'ZAKLJUCENO') {
+   491→   491→          toast.success('Projekt zaključen! 🎉')
+   492→   492→        } else {
+   493→   493→          toast.success(`Status posodobljen: ${statusLabels[newStatus]}`)
+   494→   494→        }
+   495→   495→        setStatusDropdownId(null)
+   496→   496→      }
+   497→   497→    } catch {
+   498→   498→      toast.error('Napaka pri posodabljanju statusa')
+   499→   499→    } finally {
+   500→   500→      setStatusUpdating(false)
+   501→   501→    }
+   502→   502→  }
+   503→   503→
+   504→   504→  return (
+   505→   505→    <div className="space-y-4 px-4 pb-4 pt-2">
+   506→   506→      {/* Greeting */}
+   507→   507→      <div className="animate-fade-in-up">
+   508→   508→        <h2 className="text-xl font-bold text-roksal-navy">
+   509→   509→          {getGreeting()}, Monter!
+   510→   510→        </h2>
+   511→   511→        <p className="text-sm text-muted-foreground">{getTodayString()}</p>
+   512→   512→      </div>
+   513→   513→
+   514→   514→      {/* Quick Stats Row */}
+   515→   515→      <div className="flex items-center gap-2 overflow-x-auto pb-0.5 scrollbar-thin animate-fade-in-up" style={{ animationDelay: '30ms' }}>
+   516→   516→        <Badge className="shrink-0 bg-roksal-navy/10 text-roksal-navy hover:bg-roksal-navy/15 text-[11px] px-2.5 py-1">
+   517→   517→          <span className="font-bold mr-0.5">{activeCount}</span> aktivnih
+   518→   518→        </Badge>
+   519→   519→        <Badge className="shrink-0 bg-roksal-amber/15 text-roksal-navy hover:bg-roksal-amber/20 text-[11px] px-2.5 py-1">
+   520→   520→          <span className="font-bold mr-0.5">{pendingCount}</span> načrtovanih
+   521→   521→        </Badge>
+   522→   522→        <Badge className="shrink-0 bg-roksal-green/15 text-roksal-green hover:bg-roksal-green/20 text-[11px] px-2.5 py-1">
+   523→   523→          <span className="font-bold mr-0.5">{completedCount}</span> končanih
+   524→   524→        </Badge>
+   525→   525→        {!invLoading && totalInventoryItems > 0 && (
+   526→   526→          <Badge className={`shrink-0 text-[11px] px-2.5 py-1 ${
+   527→   527→            lowStockCount > 0
+   528→   528→              ? 'bg-roksal-red/15 text-roksal-red hover:bg-roksal-red/20'
+   529→   529→              : 'bg-roksal-green/15 text-roksal-green hover:bg-roksal-green/20'
+   530→   530→          }`}>
+   531→   531→            <span className="font-bold mr-0.5">{totalInventoryItems}</span> artiklov
+   532→   532→          </Badge>
+   533→   533→        )}
+   534→   534→      </div>
+   535→   535→
+   536→   536→      {/* Next Installation Card */}
+   537→   537→      <Card className="card-accent-top overflow-hidden border-l-4 border-l-roksal-amber card-hover transition-all duration-200">
+   538→   538→        <CardHeader className="pb-2 pt-4 px-4">
+   539→   539→          <div className="flex items-center justify-between">
+   540→   540→            <CardTitle className="text-sm font-semibold text-roksal-navy">
+   541→   541→              Naslednja montaža
+   542→   542→            </CardTitle>
+   543→   543→            <Badge className={statusColors[nextInstallation?.status || 'NACRTOVANO']}>
+   544→   544→              {statusLabels[nextInstallation?.status || 'NACRTOVANO']}
+   545→   545→            </Badge>
+   546→   546→          </div>
+   547→   547→        </CardHeader>
+   548→   548→        <CardContent className="px-4 pb-4">
+   549→   549→          {loading ? (
+   550→   550→            <Skeleton className="h-20 w-full" />
+   551→   551→          ) : nextInstallation ? (
+   552→   552→            <div className="space-y-2">
+   553→   553→              <h3 className="font-bold text-base text-roksal-navy">
+   554→   554→                {nextInstallation.nazivProjekta}
+   555→   555→              </h3>
+   556→   556→              <div className="flex flex-col gap-1.5 text-sm text-muted-foreground">
+   557→   557→                <div className="flex items-center gap-2">
+   558→   558→                  <MapPin className="h-3.5 w-3.5 text-roksal-amber" />
+   559→   559→                  <span>{nextInstallation.customer?.naslov || 'Ni naslova'}</span>
+   560→   560→                </div>
+   561→   561→                <div className="flex items-center gap-2">
+   562→   562→                  <CalendarDays className="h-3.5 w-3.5 text-roksal-amber" />
+   563→   563→                  <span>
+   564→   564→                    {nextInstallation.datumMontaze
+   565→   565→                      ? formatDateNice(nextInstallation.datumMontaze)
+   566→   566→                      : 'Ni datuma'}
+   567→   567→                  </span>
+   568→   568→                </div>
+   569→   569→                <div className="flex items-center gap-2">
+   570→   570→                  <Wrench className="h-3.5 w-3.5 text-roksal-amber" />
+   571→   571→                  <span>
+   572→   572→                    {nextInstallation.customer?.ime || 'Ni stranke'}
+   573→   573→                  </span>
+   574→   574→                </div>
+   575→   575→              </div>
+   576→   576→            </div>
+   577→   577→          ) : (
+   578→   578→            <div className="flex items-center gap-2 py-4 text-muted-foreground">
+   579→   579→              <CheckCircle2 className="h-5 w-5 text-roksal-green" />
+   580→   580→              <span className="text-sm">Ni načrtovanih montaž</span>
+   581→   581→            </div>
+   582→   582→          )}
+   583→   583→        </CardContent>
+   584→   584→      </Card>
+   585→   585→
+   586→   586→      {/* Stats Row */}
+   587→   587→      <div className="grid grid-cols-3 gap-3 animate-fade-in-up" style={{ animationDelay: '50ms' }}>
+   588→   588→        <Card className="px-3 py-3 card-hover transition-all duration-200">
+   589→   589→          <div className="flex items-center gap-2">
+   590→   590→            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-roksal-navy/10">
+   591→   591→              <TrendingUp className="h-4 w-4 text-roksal-navy" />
+   592→   592→            </div>
+   593→   593→            <div>
+   594→   594→              <p className="text-lg font-bold text-roksal-navy">{totalProjects}</p>
+   595→   595→              <p className="text-[10px] text-muted-foreground leading-tight">Projekti</p>
+   596→   596→            </div>
+   597→   597→          </div>
+   598→   598→        </Card>
+   599→   599→        <Card className="px-3 py-3 card-hover transition-all duration-200">
+   600→   600→          <div className="flex items-center gap-2">
+   601→   601→            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-roksal-amber/10">
+   602→   602→              <Clock className="h-4 w-4 text-roksal-amber" />
+   603→   603→            </div>
+   604→   604→            <div>
+   605→   605→              <p className="text-lg font-bold text-roksal-navy">{projects.filter(p => p.status === 'V_TEKU').length}</p>
+   606→   606→              <p className="text-[10px] text-muted-foreground leading-tight">V teku</p>
+   607→   607→            </div>
+   608→   608→          </div>
+   609→   609→        </Card>
+   610→   610→        <Card className="px-3 py-3 card-hover transition-all duration-200">
+   611→   611→          <div className="flex items-center gap-2">
+   612→   612→            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-roksal-green/10">
+   613→   613→              <CheckCircle2 className="h-4 w-4 text-roksal-green" />
+   614→   614→            </div>
+   615→   615→            <div>
+   616→   616→              <p className="text-lg font-bold text-roksal-navy">{completedCount}</p>
+   617→   617→              <p className="text-[10px] text-muted-foreground leading-tight">Končani</p>
+   618→   618→            </div>
+   619→   619→          </div>
+   620→   620→        </Card>
+   621→   621→      </div>
+   622→   622→
+   623→   623→      {/* Project Overview — horizontal bar chart */}
+   624→   624→      {totalProjects > 0 && (
+   625→   625→        <Card className="card-hover transition-all duration-200 animate-fade-in-up" style={{ animationDelay: '70ms' }}>
+   626→   626→          <CardHeader className="pb-2 pt-4 px-4">
+   627→   627→            <CardTitle className="text-sm font-semibold text-roksal-navy">
+   628→   628→              Pregled projekta
+   629→   629→            </CardTitle>
+   630→   630→          </CardHeader>
+   631→   631→          <CardContent className="px-4 pb-4">
+   632→   632→            {(() => {
+   633→   633→              const vTeku = projects.filter(p => p.status === 'V_TEKU').length
+   634→   634→              const nacrtovano = projects.filter(p => p.status === 'NACRTOVANO').length
+   635→   635→              const zakljuceno = projects.filter(p => p.status === 'ZAKLJUCENO').length
+   636→   636→              const ustavljeno = projects.filter(p => p.status === 'USTAVLJENO').length
+   637→   637→              const total = totalProjects
+   638→   638→              const bars = [
+   639→   639→                { label: 'V teku', count: vTeku, color: 'bg-roksal-amber', textColor: 'text-roksal-amber' },
+   640→   640→                { label: 'Načrtovano', count: nacrtovano, color: 'bg-gray-300 dark:bg-gray-500', textColor: 'text-muted-foreground' },
+   641→   641→                { label: 'Zaključeno', count: zakljuceno, color: 'bg-roksal-green', textColor: 'text-roksal-green' },
+   642→   642→                { label: 'Ustavljeno', count: ustavljeno, color: 'bg-roksal-red', textColor: 'text-roksal-red' },
+   643→   643→              ].filter(b => b.count > 0)
+   644→   644→              return (
+   645→   645→                <div className="space-y-2.5">
+   646→   646→                  {/* Bar row */}
+   647→   647→                  <div className="flex rounded-lg overflow-hidden h-5 bg-secondary/60">
+   648→   648→                    {bars.map((bar) => (
+   649→   649→                      <div
+   650→   650→                        key={bar.label}
+   651→   651→                        className={`${bar.color} transition-all duration-500 flex items-center justify-center`}
+   652→   652→                        style={{ width: `${(bar.count / total) * 100}%`, minWidth: bar.count > 0 ? '18px' : '0' }}
+   653→   653→                        title={`${bar.label}: ${bar.count}`}
+   654→   654→                      />
+   655→   655→                    ))}
+   656→   656→                  </div>
+   657→   657→                  {/* Labels row */}
+   658→   658→                  <div className="flex items-center justify-between gap-1">
+   659→   659→                    {bars.map((bar) => (
+   660→   660→                      <div key={bar.label} className="flex flex-col items-center gap-0.5 flex-1 min-w-0">
+   661→   661→                        <span className={`text-xs font-bold ${bar.textColor}`}>{bar.count}</span>
+   662→   662→                        <span className="text-[9px] text-muted-foreground leading-tight text-center truncate w-full">{bar.label}</span>
+   663→   663→                      </div>
+   664→   664→                    ))}
+   665→   665→                  </div>
+   666→   666→                </div>
+   667→   667→              )
+   668→   668→            })()}
+   669→   669→          </CardContent>
+   670→   670→        </Card>
+   671→   671→      )}
+   672→   672→
+   673→   673→      {/* New Project Button */}
+   674→   674→      <Button
+   675→   675→        type="button"
+   676→   676→        onClick={() => setNewProjectOpen(true)}
+   677→   677→        className="w-full bg-roksal-amber hover:bg-roksal-amber/90 text-roksal-navy h-11 shadow-sm transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98] btn-shine"
+   678→   678→      >
+   679→   679→        <Plus className="mr-2 h-4 w-4" />
+   680→   680→        Nov projekt
+   681→   681→      </Button>
+   682→   682→
+   683→   683→      {/* Equipment Status */}
+   684→   684→      <Card className="card-hover transition-all duration-200">
+   685→   685→        <CardHeader className="pb-2 pt-4 px-4">
+   686→   686→          <CardTitle className="text-sm font-semibold text-roksal-navy">
+   687→   687→            Stanje opreme
+   688→   688→          </CardTitle>
+   689→   689→        </CardHeader>
+   690→   690→        <CardContent className="px-4 pb-4">
+   691→   691→          <div className="grid grid-cols-2 gap-3">
+   692→   692→            <div className="flex items-center gap-2.5 rounded-lg bg-secondary/50 p-2.5">
+   693→   693→              <BatteryMedium className="h-5 w-5 text-roksal-green" />
+   694→   694→              <div>
+   695→   695→                <p className="text-xs font-medium text-roksal-navy">Baterija</p>
+   696→   696→                <p className="text-[11px] text-muted-foreground">87% — polna</p>
+   697→   697→              </div>
+   698→   698→            </div>
+   699→   699→            <div className="flex items-center gap-2.5 rounded-lg bg-secondary/50 p-2.5">
+   700→   700→              <Wifi className="h-5 w-5 text-roksal-green animate-pulse-soft" />
+   701→   701→              <div>
+   702→   702→                <p className="text-xs font-medium text-roksal-navy">Povezava</p>
+   703→   703→                <p className="text-[11px] text-muted-foreground">Online — sinhron.</p>
+   704→   704→              </div>
+   705→   705→            </div>
+   706→   706→          </div>
+   707→   707→          {inventory.length > 0 && (
+   708→   708→            <div className="mt-3 rounded-lg bg-secondary/30 p-2.5">
+   709→   709→              <div className="flex items-center justify-between text-xs">
+   710→   710→                <span className="text-muted-foreground">
+   711→   711→                  Skupna zaloga: {inventory.length} artiklov
+   712→   712→                </span>
+   713→   713→                <span className={lowStockCount > 0 ? 'text-roksal-red font-medium' : 'text-roksal-green font-medium'}>
+   714→   714→                  {lowStockCount > 0
+   715→   715→                    ? `${lowStockCount} pod min. zalogo`
+   716→   716→                    : 'Zaloga v redu'}
+   717→   717→                </span>
+   718→   718→              </div>
+   719→   719→              {lowStockCount > 0 && (
+   720→   720→                <p className="mt-1 text-[10px] text-muted-foreground truncate">
+   721→   721→                  {lowStockItems.slice(0, 3).map((i) => i.naziv).join(', ')}
+   722→   722→                  {lowStockItems.length > 3 && ` +${lowStockItems.length - 3}`}
+   723→   723→                </p>
+   724→   724→              )}
+   725→   725→            </div>
+   726→   726→          )}
+   727→   727→        </CardContent>
+   728→   728→      </Card>
+   729→   729→
+   730→   730→      {/* Search & Filter Bar */}
+   731→   731→      <div className="space-y-2">
+   732→   732→        <div className="relative">
+   733→   733→          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+   734→   734→          <Input
+   735→   735→            value={searchQuery}
+   736→   736→            onChange={(e) => setSearchQuery(e.target.value)}
+   737→   737→            placeholder="Išči projekte, stranke..."
+   738→   738→            className="pl-9 h-10 bg-white"
+   739→   739→          />
+   740→   740→          {searchQuery && (
+   741→   741→            <button
+   742→   742→              onClick={() => setSearchQuery('')}
+   743→   743→              className="absolute right-3 top-1/2 -translate-y-1/2"
+   744→   744→            >
+   745→   745→              <X className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
+   746→   746→            </button>
+   747→   747→          )}
+   748→   748→        </div>
+   749→   749→        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
+   750→   750→          <Filter className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+   751→   751→          {statusFilterTabs.map((tab) => (
+   752→   752→            <button
+   753→   753→              key={tab.id}
+   754→   754→              onClick={() => setStatusFilter(tab.id)}
+   755→   755→              className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-medium transition-colors ${
+   756→   756→                statusFilter === tab.id
+   757→   757→                  ? 'bg-roksal-navy text-white border-b-2 border-white/30'
+   758→   758→                  : 'bg-secondary text-muted-foreground hover:text-foreground'
+   759→   759→              }`}
+   760→   760→            >
+   761→   761→              {tab.label}
+   762→   762→            </button>
+   763→   763→          ))}
+   764→   764→        </div>
+   765→   765→      </div>
+   766→   766→
+   767→   767→      {/* Projects List */}
+   768→   768→      <Card>
+   769→   769→        <CardHeader className="pb-2 pt-4 px-4">
+   770→   770→          <div className="flex items-center justify-between">
+   771→   771→            <CardTitle className="text-sm font-semibold text-roksal-navy">
+   772→   772→              Projekti
+   773→   773→            </CardTitle>
+   774→   774→            <Badge variant="secondary">{filteredProjects.length}</Badge>
+   775→   775→          </div>
+   776→   776→        </CardHeader>
+   777→   777→        <CardContent className="px-4 pb-4">
+   778→   778→          {loading ? (
+   779→   779→            <div className="space-y-3">
+   780→   780→              {[1, 2, 3].map((i) => (
+   781→   781→                <Skeleton key={i} className="h-14 w-full" />
+   782→   782→              ))}
+   783→   783→            </div>
+   784→   784→          ) : filteredProjects.length > 0 ? (
+   785→   785→            <div className="space-y-2 max-h-72 overflow-y-auto scrollbar-thin">
+   786→   786→              {filteredProjects.map((project) => {
+   787→   787→                const daysRemaining = project.datumMontaze
+   788→   788→                  ? Math.ceil((new Date(project.datumMontaze).getTime() - new Date().getTime()) / 86400000)
+   789→   789→                  : null
+   790→   790→                return (
+   791→   791→                <div
+   792→   792→                  key={project.id}
+   793→   793→                  className={`relative flex items-center justify-between rounded-lg border p-3 transition-all duration-200 hover:bg-secondary/30 cursor-pointer card-hover ${selectedProjectId === project.id ? 'border-roksal-amber bg-roksal-amber/5 ring-1 ring-roksal-amber/30' : 'border-border/50'}`}
+   794→   794→                  onClick={() => {
+   795→   795→                    onSelectProject?.(project.id)
+   796→   796→                    openProjectDetail(project)
+   797→   797→                  }}
+   798→   798→                >
+   799→   799→                  <div className="min-w-0 flex-1">
+   800→   800→                    <div className="flex items-center gap-2">
+   801→   801→                      <p className="truncate text-sm font-medium text-roksal-navy">
+   802→   802→                        {project.nazivProjekta}
+   803→   803→                      </p>
+   804→   804→                      {daysRemaining !== null && (
+   805→   805→                        <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+   806→   806→                          daysRemaining < 0
+   807→   807→                            ? 'bg-roksal-red/15 text-roksal-red'
+   808→   808→                            : daysRemaining === 0
+   809→   809→                              ? 'bg-roksal-amber/15 text-roksal-navy'
+   810→   810→                              : daysRemaining <= 3
+   811→   811→                                ? 'bg-roksal-amber/15 text-roksal-navy'
+   812→   812→                                : 'bg-roksal-green/15 text-roksal-green'
+   813→   813→                        }`}>
+   814→   814→                          {daysRemaining < 0
+   815→   815→                            ? `Preteklo ${Math.abs(daysRemaining)} ${Math.abs(daysRemaining) === 1 ? 'dan' : Math.abs(daysRemaining) < 5 ? 'dni' : 'dni'}`
+   816→   816→                            : daysRemaining === 0
+   817→   817→                              ? 'Danes'
+   818→   818→                              : `${daysRemaining} ${daysRemaining === 1 ? 'dan' : daysRemaining < 5 ? 'dni' : 'dni'}`}
+   819→   819→                        </span>
+   820→   820→                      )}
+   821→   821→                    </div>
+   822→   822→                    <p className="truncate text-xs text-muted-foreground">
+   823→   823→                      {project.customer?.ime || '—'} · {project.customer?.naslov || '—'}
+   824→   824→                    </p>
+   825→   825→                  </div>
+   826→   826→                  <div className="flex items-center gap-1.5 ml-2">
+   827→   827→                    {/* Swipe action icons */}
+   828→   828→                    <button
+   829→   829→                      onClick={(e) => { e.stopPropagation(); toast.info(`Klic stranke: ${project.customer?.ime || '—'}`) }}
+   830→   830→                      className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:text-roksal-green hover:bg-roksal-green/10 transition-colors"
+   831→   831→                      aria-label="Pokliči stranko"
+   832→   832→                    >
+   833→   833→                      <Phone className="h-3.5 w-3.5" />
+   834→   834→                    </button>
+   835→   835→                    <button
+   836→   836→                      onClick={(e) => { e.stopPropagation(); toast.info(`Urejanje: ${project.nazivProjekta}`) }}
+   837→   837→                      className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:text-roksal-amber hover:bg-roksal-amber/10 transition-colors"
+   838→   838→                      aria-label="Uredi projekt"
+   839→   839→                    >
+   840→   840→                      <Pencil className="h-3.5 w-3.5" />
+   841→   841→                    </button>
+   842→   842→                    <button
+   843→   843→                      onClick={(e) => { e.stopPropagation(); toast.info(`Arhiviranje: ${project.nazivProjekta}`) }}
+   844→   844→                      className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:text-roksal-navy hover:bg-roksal-navy/10 transition-colors"
+   845→   845→                      aria-label="Arhiviraj projekt"
+   846→   846→                    >
+   847→   847→                      <Archive className="h-3.5 w-3.5" />
+   848→   848→                    </button>
+   849→   849→                    <div
+   850→   850→                      onClick={(e) => {
+   851→   851→                        e.stopPropagation()
+   852→   852→                        setStatusDropdownId(statusDropdownId === project.id ? null : project.id)
+   853→   853→                      }}
+   854→   854→                    >
+   855→   855→                      <Badge className={`cursor-pointer text-[10px] h-6 px-2 ${statusColors[project.status]}`}>
+   856→   856→                        {statusLabels[project.status]}
+   857→   857→                      </Badge>
+   858→   858→                    </div>
+   859→   859→                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+   860→   860→                  </div>
+   861→   861→                  {statusDropdownId === project.id && (
+   862→   862→                    <div
+   863→   863→                      className="absolute right-3 top-12 z-20 rounded-lg border border-border bg-white shadow-lg p-1 min-w-[140px]"
+   864→   864→                      onClick={(e) => e.stopPropagation()}
+   865→   865→                    >
+   866→   866→                      {Object.entries(statusLabels).map(([key, label]) => (
+   867→   867→                        <button
+   868→   868→                          key={key}
+   869→   869→                          disabled={key === project.status || statusUpdating}
+   870→   870→                          className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs hover:bg-secondary transition-colors disabled:opacity-50"
+   871→   871→                          onClick={() => handleStatusChange(project.id, key)}
+   872→   872→                        >
+   873→   873→                          <span className={`inline-block h-2 w-2 rounded-full ${statusColors[key]?.split(' ')[0]}`} />
+   874→   874→                          {label}
+   875→   875→                          {key === project.status && <X className="ml-auto h-3 w-3 text-muted-foreground" />}
+   876→   876→                        </button>
+   877→   877→                      ))}
+   878→   878→                    </div>
+   879→   879→                  )}
+   880→   880→                </div>
+   881→   881→                )
+   882→   882→              })}
+   883→   883→            </div>
+   884→   884→          ) : (
+   885→   885→            <p className="py-6 text-center text-sm text-muted-foreground">
+   886→   886→              {searchQuery ? 'Ni rezultatov za "' + searchQuery + '"' : 'Ni aktivnih projektov'}
+   887→   887→            </p>
+   888→   888→          )}
+   889→   889→        </CardContent>
+   890→   890→      </Card>
+   891→   891→
+   892→   892→      {/* Low Stock Alert */}
+   893→   893→      {lowStockCount > 0 ? (
+   894→   894→        <div className="flex items-center gap-3 rounded-xl border border-roksal-red/20 bg-roksal-red/5 p-3 animate-fade-in-up">
+   895→   895→          <AlertTriangle className="h-5 w-5 shrink-0 text-roksal-red badge-pulse" />
+   896→   896→          <div>
+   897→   897→            <p className="text-sm font-medium text-roksal-navy">
+   898→   898→              Nizka zaloga materiala
+   899→   899→            </p>
+   900→   900→            <p className="text-xs text-muted-foreground">
+   901→   901→              {lowStockCount} {lowStockCount === 1 ? 'artikel je' : lowStockCount < 5 ? 'artikli so' : 'artiklov je'} pod minimalno zalogo. Preverite zalogo.
+   902→   902→            </p>
+   903→   903→          </div>
+   904→   904→        </div>
+   905→   905→      ) : !invLoading && inventory.length > 0 ? (
+   906→   906→        <div className="flex items-center gap-3 rounded-xl border border-roksal-green/20 bg-roksal-green/5 p-3">
+   907→   907→          <CheckCircle2 className="h-5 w-5 shrink-0 text-roksal-green" />
+   908→   908→          <div>
+   909→   909→            <p className="text-sm font-medium text-roksal-navy">
+   910→   910→              Zaloga v redu
+   911→   911→            </p>
+   912→   912→            <p className="text-xs text-muted-foreground">
+   913→   913→              Vsi artikli so nad minimalno zalogo.
+   914→   914→            </p>
+   915→   915→          </div>
+   916→   916→        </div>
+   917→   917→      ) : null}
+   918→   918→
+   919→   919→      {/* Activity Timeline */}
+   920→   920→      {activities.length > 0 && (
+   921→   921→        <Card className="card-hover transition-all duration-200">
+   922→   922→          <CardHeader className="pb-2 pt-4 px-4">
+   923→   923→            <div className="flex items-center justify-between">
+   924→   924→              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+   925→   925→                <Activity className="h-4 w-4" />
+   926→   926→                Aktivnosti
+   927→   927→              </CardTitle>
+   928→   928→              <Badge variant="secondary" className="text-[10px]">{activities.length}</Badge>
+   929→   929→            </div>
+   930→   930→          </CardHeader>
+   931→   931→          <CardContent className="px-4 pb-4">
+   932→   932→            <div className="relative space-y-0">
+   933→   933→              {/* Timeline line */}
+   934→   934→              <div className="absolute left-[15px] top-2 bottom-2 w-px bg-border" />
+   935→   935→              {activities.map((activity, i) => {
+   936→   936→                const Icon = activity.icon
+   937→   937→                return (
+   938→   938→                  <div
+   939→   939→                    key={activity.id}
+   940→   940→                    className="flex items-start gap-3 py-2 animate-fade-in-up"
+   941→   941→                    style={{ animationDelay: `${i * 60}ms` }}
+   942→   942→                  >
+   943→   943→                    <div className="relative z-10 flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full bg-secondary">
+   944→   944→                      <Icon className={`h-3.5 w-3.5 ${activity.iconColor}`} />
+   945→   945→                    </div>
+   946→   946→                    <div className="min-w-0 flex-1 pt-0.5">
+   947→   947→                      <div className="flex items-center justify-between gap-2">
+   948→   948→                        <p className="text-xs font-medium text-roksal-navy">{activity.title}</p>
+   949→   949→                        <span className="text-[10px] text-muted-foreground whitespace-nowrap">{activity.time}</span>
+   950→   950→                      </div>
+   951→   951→                      <p className="text-[11px] text-muted-foreground truncate">{activity.description}</p>
+   952→   952→                    </div>
+   953→   953→                  </div>
+   954→   954→                )
+   955→   955→              })}
+   956→   956→            </div>
+   957→   957→          </CardContent>
+   958→   958→        </Card>
+   959→   959→      )}
+   960→   960→
+   961→   961→      {/* New Project Dialog */}
+   962→   962→      <Dialog open={newProjectOpen} onOpenChange={setNewProjectOpen}>
+   963→   963→        <DialogContent className="sm:max-w-[425px]">
+   964→   964→          <DialogHeader>
+   965→   965→            <DialogTitle className="text-roksal-navy">Nov projekt</DialogTitle>
+   966→   966→            <DialogDescription>
+   967→   967→              Ustvarite nov projekt montaže ograje.
+   968→   968→            </DialogDescription>
+   969→   969→          </DialogHeader>
+   970→   970→          <div className="space-y-4 py-2">
+   971→   971→            <div className="space-y-1.5">
+   972→   972→              <Label htmlFor="proj-name" className="text-xs">
+   973→   973→                Naziv projekta
+   974→   974→              </Label>
+   975→   975→              <Input
+   976→   976→                id="proj-name"
+   977→   977→                value={newProjectName}
+   978→   978→                onChange={(e) => setNewProjectName(e.target.value)}
+   979→   979→                placeholder="npr. Ograja Ljubljana - WPC"
+   980→   980→              />
+   981→   981→            </div>
+   982→   982→            <div className="space-y-1.5">
+   983→   983→              <Label className="text-xs">Stranka</Label>
+   984→   984→              <Select value={newProjectCustomer} onValueChange={setNewProjectCustomer}>
+   985→   985→                <SelectTrigger className="w-full">
+   986→   986→                  <SelectValue placeholder="Izberi stranko" />
+   987→   987→                </SelectTrigger>
+   988→   988→                <SelectContent>
+   989→   989→                  {customers.map((c) => (
+   990→   990→                    <SelectItem key={c.id} value={c.id}>
+   991→   991→                      {c.ime} — {c.naslov}
+   992→   992→                    </SelectItem>
+   993→   993→                  ))}
+   994→   994→                </SelectContent>
+   995→   995→              </Select>
+   996→   996→            </div>
+   997→   997→            <div className="space-y-1.5">
+   998→   998→              <Label htmlFor="proj-date" className="text-xs">
+   999→   999→                Datum montaže
+  1000→  1000→              </Label>
+  1001→  1001→              <Input
+  1002→  1002→                id="proj-date"
+  1003→  1003→                type="date"
+  1004→  1004→                value={newProjectDate}
+  1005→  1005→                onChange={(e) => setNewProjectDate(e.target.value)}
+  1006→  1006→              />
+  1007→  1007→            </div>
+  1008→  1008→            <div className="space-y-1.5">
+  1009→  1009→              <Label htmlFor="proj-notes" className="text-xs">
+  1010→  1010→                Opombe
+  1011→  1011→              </Label>
+  1012→  1012→              <Textarea
+  1013→  1013→                id="proj-notes"
+  1014→  1014→                value={newProjectNotes}
+  1015→  1015→                onChange={(e) => setNewProjectNotes(e.target.value)}
+  1016→  1016→                placeholder="Dodatne opombe o projektu..."
+  1017→  1017→                rows={3}
+  1018→  1018→              />
+  1019→  1019→            </div>
+  1020→  1020→          </div>
+  1021→  1021→          <DialogFooter>
+  1022→  1022→            <Button
+  1023→  1023→              variant="outline"
+  1024→  1024→              onClick={() => setNewProjectOpen(false)}
+  1025→  1025→            >
+  1026→  1026→              Prekliči
+  1027→  1027→            </Button>
+  1028→  1028→            <Button
+  1029→  1029→              onClick={handleCreateProject}
+  1030→  1030→              disabled={creating || !newProjectName.trim() || !newProjectCustomer}
+  1031→  1031→              className="bg-roksal-navy hover:bg-roksal-navy/90 text-white"
+  1032→  1032→            >
+  1033→  1033→              {creating ? (
+  1034→  1034→                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+  1035→  1035→              ) : (
+  1036→  1036→                <Plus className="mr-2 h-4 w-4" />
+  1037→  1037→              )}
+  1038→  1038→              Ustvari
+  1039→  1039→            </Button>
+  1040→  1040→          </DialogFooter>
+  1041→  1041→        </DialogContent>
+  1042→  1042→      </Dialog>
+  1043→  1043→
+  1044→  1044→      {/* Project Detail Dialog */}
+  1045→  1045→      <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
+  1046→  1046→        <DialogContent className="sm:max-w-[425px]">
+  1047→  1047→          {detailProject && (
+  1048→  1048→            <>
+  1049→  1049→              <DialogHeader>
+  1050→  1050→                <DialogTitle className="text-roksal-navy">
+  1051→  1051→                  {detailProject.nazivProjekta}
+  1052→  1052→                </DialogTitle>
+  1053→  1053→                <DialogDescription>
+  1054→  1054→                  Podrobnosti projekta
+  1055→  1055→                </DialogDescription>
+  1056→  1056→              </DialogHeader>
+  1057→  1057→              <div className="space-y-4 py-2">
+  1058→  1058→                <div className="space-y-1.5">
+  1059→  1059→                  <Label className="text-xs">Status</Label>
+  1060→  1060→                  <Select
+  1061→  1061→                    value={detailProject.status}
+  1062→  1062→                    onValueChange={(v) => handleStatusChange(detailProject.id, v)}
+  1063→  1063→                    disabled={statusUpdating}
+  1064→  1064→                  >
+  1065→  1065→                    <SelectTrigger className="w-full">
+  1066→  1066→                      <SelectValue />
+  1067→  1067→                    </SelectTrigger>
+  1068→  1068→                    <SelectContent>
+  1069→  1069→                      {Object.entries(statusLabels).map(([key, label]) => (
+  1070→  1070→                        <SelectItem key={key} value={key}>
+  1071→  1071→                          {label}
+  1072→  1072→                        </SelectItem>
+  1073→  1073→                      ))}
+  1074→  1074→                    </SelectContent>
+  1075→  1075→                  </Select>
+  1076→  1076→                </div>
+  1077→  1077→
+  1078→  1078→                <Card className="px-3 py-3">
+  1079→  1079→                  <div className="flex items-center gap-2 mb-2">
+  1080→  1080→                    <Wrench className="h-3.5 w-3.5 text-roksal-amber" />
+  1081→  1081→                    <span className="text-xs font-medium text-roksal-navy">Stranka</span>
+  1082→  1082→                  </div>
+  1083→  1083→                  <p className="text-sm font-medium text-roksal-navy">
+  1084→  1084→                    {detailProject.customer?.ime || 'Ni stranke'}
+  1085→  1085→                  </p>
+  1086→  1086→                  <p className="text-xs text-muted-foreground">
+  1087→  1087→                    {detailProject.customer?.naslov || '—'}
+  1088→  1088→                  </p>
+  1089→  1089→                  {/* Contact buttons */}
+  1090→  1090→                  <div className="flex items-center gap-2 mt-2.5">
+  1091→  1091→                    {detailProject.customer?.telefon && (
+  1092→  1092→                      <a
+  1093→  1093→                        href={`tel:${detailProject.customer.telefon}`}
+  1094→  1094→                        className="flex items-center gap-1.5 rounded-lg bg-roksal-green/10 border border-roksal-green/20 px-2.5 py-1.5 text-[11px] font-medium text-roksal-green hover:bg-roksal-green/20 active:scale-[0.96] transition-all duration-150 press-scale"
+  1095→  1095→                      >
+  1096→  1096→                        <Phone className="h-3.5 w-3.5" />
+  1097→  1097→                        <span>Kliči</span>
+  1098→  1098→                      </a>
+  1099→  1099→                    )}
+  1100→  1100→                    {detailProject.customer?.email && (
+  1101→  1101→                      <a
+  1102→  1102→                        href={`mailto:${detailProject.customer.email}`}
+  1103→  1103→                        className="flex items-center gap-1.5 rounded-lg bg-roksal-navy/10 border border-roksal-navy/20 px-2.5 py-1.5 text-[11px] font-medium text-roksal-navy hover:bg-roksal-navy/15 active:scale-[0.96] transition-all duration-150 press-scale"
+  1104→  1104→                      >
+  1105→  1105→                        <Mail className="h-3.5 w-3.5" />
+  1106→  1106→                        <span>E-pošta</span>
+  1107→  1107→                      </a>
+  1108→  1108→                    )}
+  1109→  1109→                    {!detailProject.customer?.telefon && !detailProject.customer?.email && (
+  1110→  1110→                      <span className="text-[11px] text-muted-foreground italic">Ni kontaktnih podatkov</span>
+  1111→  1111→                    )}
+  1112→  1112→                  </div>
+  1113→  1113→                </Card>
+  1114→  1114→
+  1115→  1115→                {/* Measurements section */}
+  1116→  1116→                <Card className="overflow-hidden">
+  1117→  1117→                  <div
+  1118→  1118→                    className="flex w-full items-center justify-between p-3 cursor-pointer select-none hover:bg-secondary/30 transition-colors"
+  1119→  1119→                    onClick={() => setDetailMeasurementsExpanded(!detailMeasurementsExpanded)}
+  1120→  1120→                  >
+  1121→  1121→                    <div className="flex items-center gap-2">
+  1122→  1122→                      <Ruler className="h-4 w-4 text-roksal-navy" />
+  1123→  1123→                      <span className="text-xs font-medium text-roksal-navy">Meritve tega projekta</span>
+  1124→  1124→                    </div>
+  1125→  1125→                    <div className="flex items-center gap-2">
+  1126→  1126→                      <Badge variant="secondary" className="text-[11px]">{detailMeasurements.length}</Badge>
+  1127→  1127→                      {detailMeasurementsExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+  1128→  1128→                    </div>
+  1129→  1129→                  </div>
+  1130→  1130→
+  1131→  1131→                  {detailMeasurementsExpanded && (
+  1132→  1132→                    <div className="border-t border-border/50 px-3 pb-3 pt-2 space-y-2.5 max-h-[260px] overflow-y-auto scrollbar-thin">
+  1133→  1133→                      {detailMeasurementsLoading ? (
+  1134→  1134→                        <div className="flex items-center justify-center py-4">
+  1135→  1135→                          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+  1136→  1136→                        </div>
+  1137→  1137→                      ) : detailMeasurements.length > 0 ? (
+  1138→  1138→                        detailMeasurements.map((m) => (
+  1139→  1139→                          <div key={m.id} className="rounded-lg border border-border/40 overflow-hidden">
+  1140→  1140→                            <div className="flex items-center justify-between px-2.5 py-1.5">
+  1141→  1141→                              <span className="text-[11px] font-medium text-roksal-navy truncate">
+  1142→  1142→                                {m.lokacija || ("Meritev #" + m.id.slice(-4))}
+  1143→  1143→                              </span>
+  1144→  1144→                              <span className="text-[11px] font-mono text-muted-foreground shrink-0 ml-2">
+  1145→  1145→                                {(m.dolzinaMm >= 1000 ? (m.dolzinaMm / 1000).toFixed(2) + "m" : m.dolzinaMm + "mm")} x {(m.visinaMm >= 1000 ? (m.visinaMm / 1000).toFixed(2) + "m" : m.visinaMm + "mm")}
+  1146→  1146→                              </span>
+  1147→  1147→                            </div>
+  1148→  1148→                            <div className="px-2.5 pb-2">
+  1149→  1149→                              <MiniRailingDiagram dolzina={m.dolzinaMm} visina={m.visinaMm} />
+  1150→  1150→                            </div>
+  1151→  1151→                          </div>
+  1152→  1152→                        ))
+  1153→  1153→                      ) : (
+  1154→  1154→                        <p className="text-[11px] text-muted-foreground text-center py-3">Ni meritev za ta projekt</p>
+  1155→  1155→                      )}
+  1156→  1156→                    </div>
+  1157→  1157→                  )}
+  1158→  1158→
+  1159→  1159→                  {detailMeasurements.length > 0 && (
+  1160→  1160→                    <div className="border-t border-border/30 px-3 py-2.5 bg-secondary/10 flex items-center justify-between">
+  1161→  1161→                      <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+  1162→  1162→                        <span>Skupna dolzina:</span>
+  1163→  1163→                        <span className="font-semibold text-roksal-navy">
+  1164→  1164→                          {(detailMeasurements.reduce((s, m) => s + m.dolzinaMm, 0) / 1000).toFixed(1)}m
+  1165→  1165→                        </span>
+  1166→  1166→                      </div>
+  1167→  1167→                      <div className="flex items-center gap-1.5">
+  1168→  1168→                        <Calculator className="h-3 w-3 text-roksal-amber" />
+  1169→  1169→                        <span className="text-[11px] text-muted-foreground">
+  1170→  1170→                          ~{estimateSlats(detailMeasurements)} letvev
+  1171→  1171→                        </span>
+  1172→  1172→                      </div>
+  1173→  1173→                    </div>
+  1174→  1174→                  )}
+  1175→  1175→                </Card>
+  1176→  1176→
+  1177→  1177→                <div className="grid grid-cols-3 gap-3">
+  1178→  1178→                  <Card className="px-3 py-3 text-center">
+  1179→  1179→                    <Ruler className="mx-auto mb-1 h-4 w-4 text-roksal-navy" />
+  1180→  1180→                    <p className="text-lg font-bold text-roksal-navy">
+  1181→  1181→                      {detailProject._count?.measurements || 0}
+  1182→  1182→                    </p>
+  1183→  1183→                    <p className="text-[10px] text-muted-foreground">Meritve</p>
+  1184→  1184→                  </Card>
+  1185→  1185→                  <Card className="px-3 py-3 text-center">
+  1186→  1186→                    <FileText className="mx-auto mb-1 h-4 w-4 text-roksal-navy" />
+  1187→  1187→                    <p className="text-lg font-bold text-roksal-navy">
+  1188→  1188→                      {detailProject._count?.documents || 0}
+  1189→  1189→                    </p>
+  1190→  1190→                    <p className="text-[10px] text-muted-foreground">Dokumenti</p>
+  1191→  1191→                  </Card>
+  1192→  1192→                  <Card className="px-3 py-3 text-center">
+  1193→  1193→                    <Package className="mx-auto mb-1 h-4 w-4 text-roksal-navy" />
+  1194→  1194→                    <p className="text-lg font-bold text-roksal-navy">
+  1195→  1195→                      {detailProject._count?.auditLogs || 0}
+  1196→  1196→                    </p>
+  1197→  1197→                    <p className="text-[10px] text-muted-foreground">Dnevniki</p>
+  1198→  1198→                  </Card>
+  1199→  1199→                </div>
+  1200→  1200→
+  1201→  1201→                <div className="flex items-center gap-2 text-sm">
+  1202→  1202→                  <CalendarDays className="h-4 w-4 text-muted-foreground" />
+  1203→  1203→                  <span className="text-muted-foreground">Datum montaže:</span>
+  1204→  1204→                  <span className="font-medium text-roksal-navy">
+  1205→  1205→                    {detailProject.datumMontaze
+  1206→  1206→                      ? new Date(detailProject.datumMontaze).toLocaleDateString('sl-SI', {
+  1207→  1207→                          day: 'numeric',
+  1208→  1208→                          month: 'long',
+  1209→  1209→                          year: 'numeric',
+  1210→  1210→                        })
+  1211→  1211→                      : 'Ni določen'}
+  1212→  1212→                  </span>
+  1213→  1213→                </div>
+  1214→  1214→
+  1215→  1215→                {detailProject.monter && (
+  1216→  1216→                  <div className="flex items-center gap-2 text-sm">
+  1217→  1217→                    <Wrench className="h-4 w-4 text-muted-foreground" />
+  1218→  1218→                    <span className="text-muted-foreground">Monter:</span>
+  1219→  1219→                    <span className="font-medium text-roksal-navy">
+  1220→  1220→                      {detailProject.monter.ime}
+  1221→  1221→                    </span>
+  1222→  1222→                  </div>
+  1223→  1223→                )}
+  1224→  1224→
+  1225→  1225→                {detailProject.opombe && (
+  1226→  1226→                  <div className="rounded-lg bg-secondary/50 p-3">
+  1227→  1227→                    <p className="text-xs text-muted-foreground mb-1">Opombe</p>
+  1228→  1228→                    <p className="text-sm text-roksal-navy">{detailProject.opombe}</p>
+  1229→  1229→                  </div>
+  1230→  1230→                )}
+  1231→  1231→              </div>
+  1232→  1232→              <DialogFooter>
+  1233→  1233→                <Button variant="outline" onClick={() => setDetailOpen(false)}>
+  1234→  1234→                  Zapri
+  1235→  1235→                </Button>
+  1236→  1236→              </DialogFooter>
+  1237→  1237→            </>
+  1238→  1238→          )}
+  1239→  1239→        </DialogContent>
+  1240→  1240→      </Dialog>
+  1241→  1241→    </div>
+  1242→  1242→  )
+  1243→  1243→}
+  1244→  1244→
+  1245→  1245→// Demo data for when API is not available
+  1246→  1246→const demoProjects: Project[] = [
+  1247→  1247→  {
+  1248→  1248→    id: 'demo1',
+  1249→  1249→    nazivProjekta: 'Ograja Horjul - WPC Classic',
+  1250→  1250→    status: 'V_TEKU',
+  1251→  1251→    datumMontaze: new Date().toISOString(),
+  1252→  1252→    customer: { id: 'cust1', ime: 'Janez Novak', naslov: 'Horjul 12, 4224 Horjul' },
+  1253→  1253→    monter: { id: 'm1', ime: 'Marko Horvat', vloga: 'MONTER' },
+  1254→  1254→    _count: { documents: 2, auditLogs: 5 },
+  1255→  1255→  },
+  1256→  1256→  {
+  1257→  1257→    id: 'demo2',
+  1258→  1258→    nazivProjekta: 'Terasa Kranj - Inox Z-line',
+  1259→  1259→    status: 'V_TEKU',
+  1260→  1260→    datumMontaze: new Date(Date.now() + 86400000).toISOString(),
+  1261→  1261→    customer: { id: 'cust2', ime: 'Ana Kovačič', naslov: 'Slovenski trg 5, 4000 Kranj' },
+  1262→  1262→    monter: { id: 'm2', ime: 'Luka Bizjak', vloga: 'MONTER' },
+  1263→  1263→    _count: { documents: 1, auditLogs: 3 },
+  1264→  1264→  },
+  1265→  1265→  {
+  1266→  1266→    id: 'demo3',
+  1267→  1267→    nazivProjekta: 'Balkon Železniki - WPC Vertical',
+  1268→  1268→    status: 'NACRTOVANO',
+  1269→  1269→    datumMontaze: new Date(Date.now() + 172800000).toISOString(),
+  1270→  1270→    customer: { id: 'cust3', ime: 'Petra Zupan', naslov: 'Cankarjeva 8, 4227 Železniki' },
+  1271→  1271→    monter: { id: 'm1', ime: 'Marko Horvat', vloga: 'MONTER' },
+  1272→  1272→    _count: { documents: 0, auditLogs: 1 },
+  1273→  1273→  },
+  1274→  1274→]
+  1275→  1275→
