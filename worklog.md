@@ -1425,3 +1425,24 @@ Stage Summary:
 - **Lint**: 0 errors, 0 warnings
 - **Dev server**: HTTP 200 na `/`, 0 compile errorjev
 - **Združljivost**: vsi obstoječi 7 načini (Vetrna, Razmak palic, Kotni, Skupni material, Predpisi, Razmiki letev, Kemično sidranje) ohranjeni in delujejo
+
+---
+Task ID: P3
+Agent: Main Orchestrator (Z.ai Code)
+Task: QA + commit + push izpolnitve meritev/kalkulatorja
+
+Work Log:
+- Celovita QA z agent-browser (viewport 390x844):
+  - Meritve: 4 predloge (Standardni balkon 3m/Stopnišče/L-oblika/Terasa), Skupinsko toggle, filter Vse, Zgodovina sprememb (collapsible)
+  - Kalkulator: Skupni material z urna postavka/št. monterjev/transport, Shrani predlogo gumb, Zgodovina izračunov (collapsible), PDF izvoz
+- Lint: 0 errors, 0 warnings
+- 0 runtime napak
+- Commit: "feat: izpolnitev meritev in kalkulatorja (polishing)" (4 datoteke, +2453/-87 vrstic)
+- Push na GitHub: d45975c → 10cb2ad (main)
+- Token odstranjen iz remote URL-ja
+
+Stage Summary:
+- **Meritve**: 6 novih funkcij (predloge, skupinsko, status, zgodovina, glasovni vnos, multi-unit)
+- **Kalkulator**: 6 novih funkcij (predloge, delo, rezerva, DDV, akontacija, zgodovina) + 6 lib funkcij
+- **+2453 vrstic** nove funkcionalnosti
+- **Pushan na GitHub** (commit 10cb2ad)

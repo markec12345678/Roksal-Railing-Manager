@@ -1,0 +1,2002 @@
+     1→'use client'
+     2→
+     3→import { useEffect, useState, useMemo, useRef, useCallback } from 'react'
+     4→import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+     5→import { Button } from '@/components/ui/button'
+     6→import { Input } from '@/components/ui/input'
+     7→import { Label } from '@/components/ui/label'
+     8→import { Textarea } from '@/components/ui/textarea'
+     9→import { toast } from 'sonner'
+    10→import { Badge } from '@/components/ui/badge'
+    11→import { Skeleton } from '@/components/ui/skeleton'
+    12→import { Separator } from '@/components/ui/separator'
+    13→import {
+    14→  Collapsible,
+    15→  CollapsibleContent,
+    16→  CollapsibleTrigger,
+    17→} from '@/components/ui/collapsible'
+    18→import {
+    19→  Select,
+    20→  SelectContent,
+    21→  SelectItem,
+    22→  SelectTrigger,
+    23→  SelectValue,
+    24→} from '@/components/ui/select'
+    25→import {
+    26→  Dialog,
+    27→  DialogContent,
+    28→  DialogHeader,
+    29→  DialogTitle,
+    30→  DialogFooter,
+    31→} from '@/components/ui/dialog'
+    32→import {
+    33→  Ruler,
+    34→  Plus,
+    35→  MapPin,
+    36→  ScanLine,
+    37→  Calendar,
+    38→  FolderOpen,
+    39→  TrendingUp,
+    40→  Scan,
+    41→  Trash2,
+    42→  ChevronDown,
+    43→  ChevronUp,
+    44→  Hammer,
+    45→  AlertCircle,
+    46→  Copy,
+    47→  Calculator,
+    48→  Download,
+    49→  FileText,
+    50→  Crosshair,
+    51→  Layers,
+    52→  Gauge,
+    53→  Triangle,
+    54→  Mountain,
+    55→  CheckCircle2,
+    56→  RefreshCw,
+    57→  Camera,
+    58→  X,
+    59→  Save,
+    60→  Tag,
+    61→} from 'lucide-react'
+    62→import jsPDF from 'jspdf'
+    63→import autoTable from 'jspdf-autotable'
+    64→
+    65→// ============================================
+    66→// TIPI
+    67→// ============================================
+    68→
+    69→type TipMeritve = 'RAZDALJA' | 'VISINA' | 'KOT' | 'NAGIB' | 'GLOBINA' | 'PREMER' | 'SEGMENT'
+    70→
+    71→type GroundType = 'beton' | 'les' | 'plosca' | 'gramoz' | 'metal'
+    72→
+    73→interface ArMetadata {
+    74→  tipMeritve?: TipMeritve
+    75→  oznaka?: string
+    76→  segmentId?: string
+    77→  opomba?: string
+    78→  // starejše polje (združljivost)
+    79→  lokacija?: string
+    80→  steviloStebrov?: number
+    81→  tipPodlage?: string
+    82→  kot?: number
+    83→  opombe?: string
+    84→  // kalibracija
+    85→  pixelsPerMm?: number
+    86→  calibrationNote?: string
+    87→  // inclinometer
+    88→  kotStopinje?: number
+    89→  smer?: string
+    90→}
+    91→
+    92→interface Measurement {
+    93→  id: string
+    94→  dolzinaMm: number
+    95→  visinaMm: number
+    96→  lidarScanUrl?: string | null
+    97→  gpsLokacija?: string | null
+    98→  createdAt: string
+    99→  projectId: string
+   100→  // odjemanje iz arMetadata (za prikaz)
+   101→  lokacija?: string | null
+   102→  steviloStebrov?: number | null
+   103→  tipPodlage?: string | null
+   104→  kot?: number | null
+   105→  opombe?: string | null
+   106→  arMetadata?: string | null
+   107→  // razčlenjena polja (za prikaz)
+   108→  tipMeritve?: TipMeritve
+   109→  oznaka?: string
+   110→  segmentId?: string
+   111→  opomba?: string
+   112→}
+   113→
+   114→interface Project {
+   115→  id: string
+   116→  nazivProjekta: string
+   117→}
+   118→
+   119→interface MeasurementGroup {
+   120→  label: string
+   121→  date: Date
+   122→  measurements: Measurement[]
+   123→}
+   124→
+   125→interface Segment {
+   126→  id: string
+   127→  name: string
+   128→  type: 'ravni' | 'kotni' | 'stopniscje' | 'lokan'
+   129→}
+   130→
+   131→interface CalibrationState {
+   132→  realMm: string
+   133→  pixelDistance: string
+   134→  pixelsPerMm: number | null
+   135→  note: string
+   136→}
+   137→
+   138→interface SlopeReading {
+   139→  beta: number
+   140→  gamma: number
+   141→}
+   142→
+   143→// ============================================
+   144→// KONSTANTE
+   145→// ============================================
+   146→
+   147→const tipMeritveLabels: Record<TipMeritve, string> = {
+   148→  RAZDALJA: 'Razdalja',
+   149→  VISINA: 'Višina',
+   150→  KOT: 'Kot',
+   151→  NAGIB: 'Nagib',
+   152→  GLOBINA: 'Globina',
+   153→  PREMER: 'Premer',
+   154→  SEGMENT: 'Segment',
+   155→}
+   156→
+   157→const tipMeritveIcons: Record<TipMeritve, typeof Ruler> = {
+   158→  RAZDALJA: Ruler,
+   159→  VISINA: Gauge,
+   160→  KOT: Triangle,
+   161→  NAGIB: Mountain,
+   162→  GLOBINA: Crosshair,
+   163→  PREMER: Crosshair,
+   164→  SEGMENT: Layers,
+   165→}
+   166→
+   167→const tipMeritveColors: Record<TipMeritve, string> = {
+   168→  RAZDALJA: 'bg-roksal-navy/10 text-roksal-navy border-roksal-navy/20',
+   169→  VISINA: 'bg-roksal-amber/10 text-roksal-amber border-roksal-amber/30',
+   170→  KOT: 'bg-purple-50 text-purple-700 border-purple-200',
+   171→  NAGIB: 'bg-orange-50 text-orange-700 border-orange-200',
+   172→  GLOBINA: 'bg-cyan-50 text-cyan-700 border-cyan-200',
+   173→  PREMER: 'bg-teal-50 text-teal-700 border-teal-200',
+   174→  SEGMENT: 'bg-gray-50 text-gray-700 border-gray-200',
+   175→}
+   176→
+   177→const groundTypeLabels: Record<GroundType, string> = {
+   178→  beton: 'Beton',
+   179→  les: 'Lesena podlaga',
+   180→  plosca: 'Plošča (kompozit)',
+   181→  gramoz: 'Gramoz',
+   182→  metal: 'Kovinska podlaga',
+   183→}
+   184→
+   185→const groundTypeColors: Record<GroundType, string> = {
+   186→  beton: 'bg-gray-100 text-gray-700 border-gray-300',
+   187→  les: 'bg-amber-50 text-amber-700 border-amber-300',
+   188→  plosca: 'bg-green-50 text-green-700 border-green-300',
+   189→  gramoz: 'bg-orange-50 text-orange-700 border-orange-300',
+   190→  metal: 'bg-slate-100 text-slate-700 border-slate-300',
+   191→}
+   192→
+   193→const segmentTypeLabels: Record<Segment['type'], string> = {
+   194→  ravni: 'Ravni odsek',
+   195→  kotni: 'Kotni odsek',
+   196→  stopniscje: 'Stopnišče',
+   197→  lokan: 'Lokan / ukrivljen',
+   198→}
+   199→
+   200→const LOKACIJE_INCLINOMETER = [
+   201→  'Talna plošča balkona',
+   202→  'Podkonstrukcija',
+   203→  'Rob balkona',
+   204→  'Stopnišče',
+   205→  'Terasa',
+   206→  'Drugo',
+   207→]
+   208→
+   209→interface MeasurementsTabProps {
+   210→  onNavigateToCalculator?: (dolzinaMm: number, visinaMm: number, locationName: string) => void
+   211→}
+   212→
+   213→// ============================================
+   214→// POMOŽNE FUNKCIJE
+   215→// ============================================
+   216→
+   217→function parseArMetadata(raw: string | null | undefined): ArMetadata {
+   218→  if (!raw) return {}
+   219→  try {
+   220→    return JSON.parse(raw) as ArMetadata
+   221→  } catch {
+   222→    return {}
+   223→  }
+   224→}
+   225→
+   226→function parseGPS(gpsStr: string | null): { lat: number; lng: number } | null {
+   227→  if (!gpsStr) return null
+   228→  try {
+   229→    return JSON.parse(gpsStr)
+   230→  } catch {
+   231→    return null
+   232→  }
+   233→}
+   234→
+   235→function formatDimension(mm: number): string {
+   236→  if (mm >= 1000) return `${(mm / 1000).toFixed(2)}m`
+   237→  return `${mm}mm`
+   238→}
+   239→
+   240→function formatM2(mm2: number): string {
+   241→  return `${(mm2 / 1_000_000).toFixed(2)}m²`
+   242→}
+   243→
+   244→// ============================================
+   245→// GLAVNA KOMPONENTA
+   246→// ============================================
+   247→
+   248→export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps) {
+   249→  const [measurements, setMeasurements] = useState<Measurement[]>([])
+   250→  const [projects, setProjects] = useState<Project[]>([])
+   251→  const [loading, setLoading] = useState(true)
+   252→  const [selectedProject, setSelectedProject] = useState<string>('')
+   253→  const [formOpen, setFormOpen] = useState(false)
+   254→
+   255→  // Obstoječa polja obrazca
+   256→  const [formLength, setFormLength] = useState('')
+   257→  const [formHeight, setFormHeight] = useState('')
+   258→  const [formLocation, setFormLocation] = useState('')
+   259→  const [formPosts, setFormPosts] = useState('')
+   260→  const [formGround, setFormGround] = useState<GroundType>('beton')
+   261→  const [formAngle, setFormAngle] = useState('')
+   262→  const [formNotes, setFormNotes] = useState('')
+   263→
+   264→  // NOVA polja obrazca
+   265→  const [formTipMeritve, setFormTipMeritve] = useState<TipMeritve>('RAZDALJA')
+   266→  const [formOznaka, setFormOznaka] = useState('')
+   267→  const [formSegmentId, setFormSegmentId] = useState('')
+   268→  const [formOpomba, setFormOpomba] = useState('')
+   269→  const [submitting, setSubmitting] = useState(false)
+   270→
+   271→  // Segmenti
+   272→  const [segments, setSegments] = useState<Segment[]>([])
+   273→  const [newSegmentName, setNewSegmentName] = useState('')
+   274→  const [newSegmentType, setNewSegmentType] = useState<Segment['type']>('ravni')
+   275→  const [addSegmentOpen, setAddSegmentOpen] = useState(false)
+   276→
+   277→  // Kalibracija
+   278→  const [calibration, setCalibration] = useState<CalibrationState>({
+   279→    realMm: '',
+   280→    pixelDistance: '',
+   281→    pixelsPerMm: null,
+   282→    note: '',
+   283→  })
+   284→  const [calibrationOpen, setCalibrationOpen] = useState(false)
+   285→
+   286→  // Inline inclinometer
+   287→  const [inclinometerOpen, setInclinometerOpen] = useState(false)
+   288→  const [inclinometerMode, setInclinometerMode] = useState<'KOT' | 'NAGIB'>('KOT')
+   289→
+   290→  // Razširjeni segmenti (kateri so odprti)
+   291→  const [expandedSegments, setExpandedSegments] = useState<Set<string>>(new Set())
+   292→
+   293→  // ============================================
+   294→  // NALAGANJE PODATKOV
+   295→  // ============================================
+   296→
+   297→  useEffect(() => {
+   298→    async function fetchData() {
+   299→      try {
+   300→        const projRes = await fetch('/api/projects')
+   301→        if (projRes.ok) {
+   302→          const projData = await projRes.json()
+   303→          setProjects(projData)
+   304→          if (projData.length > 0) {
+   305→            const firstProjectId = projData[0].id
+   306→            setSelectedProject(firstProjectId)
+   307→            const measRes = await fetch(`/api/measurements?projectId=${firstProjectId}`)
+   308→            if (measRes.ok) {
+   309→              const measData = await measRes.json()
+   310→              if (measData.length > 0) {
+   311→                setMeasurements(normalizeMeasurements(measData))
+   312→              } else {
+   313→                setMeasurements(demoMeasurements)
+   314→              }
+   315→            } else {
+   316→              setMeasurements(demoMeasurements)
+   317→            }
+   318→          } else {
+   319→            setMeasurements(demoMeasurements)
+   320→          }
+   321→        } else {
+   322→          setMeasurements(demoMeasurements)
+   323→          setProjects(demoProjects)
+   324→        }
+   325→      } catch {
+   326→        setMeasurements(demoMeasurements)
+   327→        setProjects(demoProjects)
+   328→      } finally {
+   329→        setLoading(false)
+   330→      }
+   331→    }
+   332→    fetchData()
+   333→  }, [])
+   334→
+   335→  // Re-fetch pri spremembi projekta
+   336→  useEffect(() => {
+   337→    if (!selectedProject || loading) return
+   338→    async function fetchMeasurements() {
+   339→      try {
+   340→        const measRes = await fetch(`/api/measurements?projectId=${selectedProject}`)
+   341→        if (measRes.ok) {
+   342→          const measData = await measRes.json()
+   343→          setMeasurements(
+   344→            measData.length > 0
+   345→              ? normalizeMeasurements(measData)
+   346→              : demoMeasurements.filter((m) => m.projectId === selectedProject)
+   347→          )
+   348→        }
+   349→      } catch {
+   350→        // keep existing
+   351→      }
+   352→    }
+   353→    fetchMeasurements()
+   354→  }, [selectedProject, loading])
+   355→
+   356→  // Naloži segmente iz localStorage
+   357→  useEffect(() => {
+   358→    if (!selectedProject) return
+   359→    try {
+   360→      const raw = localStorage.getItem(`roksal_segments_${selectedProject}`)
+   361→      if (raw) {
+   362→        setSegments(JSON.parse(raw) as Segment[])
+   363→      } else {
+   364→        // privzeti demo segmenti
+   365→        setSegments([
+   366→          { id: 'severni', name: 'Severni del', type: 'ravni' },
+   367→          { id: 'vzhodni', name: 'Vzhodni del', type: 'kotni' },
+   368→          { id: 'stopniscje', name: 'Stopnišče', type: 'stopniscje' },
+   369→        ])
+   370→      }
+   371→    } catch {
+   372→      setSegments([])
+   373→    }
+   374→  }, [selectedProject])
+   375→
+   376→  // Shrani segmente v localStorage
+   377→  useEffect(() => {
+   378→    if (!selectedProject || segments.length === 0) return
+   379→    try {
+   380→      localStorage.setItem(`roksal_segments_${selectedProject}`, JSON.stringify(segments))
+   381→    } catch {
+   382→      // ignore
+   383→    }
+   384→  }, [segments, selectedProject])
+   385→
+   386→  // Naloži kalibracijo iz localStorage
+   387→  useEffect(() => {
+   388→    if (!selectedProject) return
+   389→    try {
+   390→      const raw = localStorage.getItem(`roksal_calibration_${selectedProject}`)
+   391→      if (raw) {
+   392→        setCalibration(JSON.parse(raw) as CalibrationState)
+   393→      }
+   394→    } catch {
+   395→      // ignore
+   396→    }
+   397→  }, [selectedProject])
+   398→
+   399→  // ============================================
+   400→  // NORMALIZACIJA MERITEV IZ API-ja
+   401→  // ============================================
+   402→
+   403→  function normalizeMeasurements(raw: unknown[]): Measurement[] {
+   404→    return raw.map((item) => {
+   405→      const m = item as Measurement
+   406→      const ar = parseArMetadata(m.arMetadata)
+   407→      return {
+   408→        ...m,
+   409→        lokacija: m.lokacija ?? ar.lokacija ?? null,
+   410→        steviloStebrov: m.steviloStebrov ?? ar.steviloStebrov ?? null,
+   411→        tipPodlage: m.tipPodlage ?? ar.tipPodlage ?? null,
+   412→        kot: m.kot ?? ar.kot ?? null,
+   413→        opombe: m.opombe ?? ar.opombe ?? null,
+   414→        tipMeritve: ar.tipMeritve,
+   415→        oznaka: ar.oznaka,
+   416→        segmentId: ar.segmentId,
+   417→        opomba: ar.opomba,
+   418→      }
+   419→    })
+   420→  }
+   421→
+   422→  // ============================================
+   423→  // OBRAZEC — RESET / SUBMIT
+   424→  // ============================================
+   425→
+   426→  function resetForm() {
+   427→    setFormLength('')
+   428→    setFormHeight('')
+   429→    setFormLocation('')
+   430→    setFormPosts('')
+   431→    setFormGround('beton')
+   432→    setFormAngle('')
+   433→    setFormNotes('')
+   434→    setFormTipMeritve('RAZDALJA')
+   435→    setFormOznaka('')
+   436→    setFormSegmentId('')
+   437→    setFormOpomba('')
+   438→  }
+   439→
+   440→  async function handleSubmitMeasurement() {
+   441→    if (!selectedProject || !formLength || !formHeight) {
+   442→      toast.error('Vnesite dolžino in višino!')
+   443→      return
+   444→    }
+   445→    if (parseFloat(formLength) < 1 || parseFloat(formHeight) < 1) {
+   446→      toast.error('Meritve morajo biti pozitivne!')
+   447→      return
+   448→    }
+   449→    setSubmitting(true)
+   450→
+   451→    const arMetadata: ArMetadata = {
+   452→      tipMeritve: formTipMeritve,
+   453→      oznaka: formOznaka || undefined,
+   454→      segmentId: formSegmentId || undefined,
+   455→      opomba: formOpomba || undefined,
+   456→      lokacija: formLocation || undefined,
+   457→      steviloStebrov: formPosts ? parseInt(formPosts) : undefined,
+   458→      tipPodlage: formGround,
+   459→      kot: formAngle ? parseFloat(formAngle) : undefined,
+   460→      opombe: formNotes || undefined,
+   461→    }
+   462→
+   463→    try {
+   464→      const res = await fetch('/api/measurements', {
+   465→        method: 'POST',
+   466→        headers: { 'Content-Type': 'application/json' },
+   467→        body: JSON.stringify({
+   468→          projectId: selectedProject,
+   469→          dolzinaMm: parseInt(formLength),
+   470→          visinaMm: parseInt(formHeight),
+   471→          arMetadata,
+   472→          gpsLokacija: { lat: 46.2397, lng: 14.3556 },
+   473→        }),
+   474→      })
+   475→      if (res.ok) {
+   476→        const data = await res.json()
+   477→        const newMeasurement: Measurement = {
+   478→          ...data,
+   479→          lokacija: formLocation || null,
+   480→          steviloStebrov: formPosts ? parseInt(formPosts) : null,
+   481→          tipPodlage: formGround,
+   482→          kot: formAngle ? parseFloat(formAngle) : null,
+   483→          opombe: formNotes || null,
+   484→          tipMeritve: formTipMeritve,
+   485→          oznaka: formOznaka || undefined,
+   486→          segmentId: formSegmentId || undefined,
+   487→          opomba: formOpomba || undefined,
+   488→        }
+   489→        setMeasurements((prev) => [newMeasurement, ...prev])
+   490→        resetForm()
+   491→        setFormOpen(false)
+   492→        toast.success('Meritev dodana!')
+   493→      } else {
+   494→        // Server error — save locally as fallback
+   495→        saveLocalMeasurement(arMetadata)
+   496→        toast.error('Napaka strežnika — meritev shranjena lokalno')
+   497→      }
+   498→    } catch {
+   499→      saveLocalMeasurement(arMetadata)
+   500→      toast.success('Meritev dodana (lokalno)!')
+   501→    } finally {
+   502→      setSubmitting(false)
+   503→    }
+   504→  }
+   505→
+   506→  function saveLocalMeasurement(ar: ArMetadata) {
+   507→    const newMeasurement: Measurement = {
+   508→      id: `local_${Date.now()}`,
+   509→      dolzinaMm: parseInt(formLength),
+   510→      visinaMm: parseInt(formHeight),
+   511→      lidarScanUrl: null,
+   512→      gpsLokacija: JSON.stringify({ lat: 46.2397, lng: 14.3556 }),
+   513→      createdAt: new Date().toISOString(),
+   514→      projectId: selectedProject,
+   515→      lokacija: formLocation || null,
+   516→      steviloStebrov: formPosts ? parseInt(formPosts) : null,
+   517→      tipPodlage: formGround,
+   518→      kot: formAngle ? parseFloat(formAngle) : null,
+   519→      opombe: formNotes || null,
+   520→      arMetadata: JSON.stringify(ar),
+   521→      tipMeritve: formTipMeritve,
+   522→      oznaka: formOznaka || undefined,
+   523→      segmentId: formSegmentId || undefined,
+   524→      opomba: formOpomba || undefined,
+   525→    }
+   526→    setMeasurements((prev) => [newMeasurement, ...prev])
+   527→    resetForm()
+   528→    setFormOpen(false)
+   529→  }
+   530→
+   531→  function handleDeleteMeasurement(id: string) {
+   532→    setMeasurements((prev) => prev.filter((m) => m.id !== id))
+   533→    toast.success('Meritev izbrisana')
+   534→  }
+   535→
+   536→  function handleDuplicateMeasurement(m: Measurement) {
+   537→    const duplicate: Measurement = {
+   538→      ...m,
+   539→      id: `local_${Date.now()}`,
+   540→      createdAt: new Date().toISOString(),
+   541→      lokacija: m.lokacija ? `${m.lokacija} (kopija)` : 'Kopija',
+   542→      oznaka: m.oznaka ? `${m.oznaka} (kopija)` : undefined,
+   543→    }
+   544→    setMeasurements((prev) => [duplicate, ...prev])
+   545→    toast.success('Meritev podvojena!')
+   546→  }
+   547→
+   548→  // Hitri izračun razmikov
+   549→  function getQuickSpacing(dolzinaMm: number, visinaMm: number, slatWidth = 80, maxGap = 100) {
+   550→    const n = Math.ceil((dolzinaMm - maxGap) / (maxGap + slatWidth))
+   551→    const actualGap = (dolzinaMm - n * slatWidth) / (n + 1)
+   552→    return {
+   553→      slatCount: n,
+   554→      gap: Math.round(actualGap * 10) / 10,
+   555→      compliant: actualGap <= 100,
+   556→      postSpacing: dolzinaMm / Math.max(1, n > 5 ? Math.ceil(n / 5) : 2),
+   557→    }
+   558→  }
+   559→
+   560→  // ============================================
+   561→  // POVZETKI / STATISTIKA
+   562→  // ============================================
+   563→
+   564→  const razdaljeMeasurements = measurements.filter((m) => !m.tipMeritve || m.tipMeritve === 'RAZDALJA')
+   565→  const visineMeasurements = measurements.filter((m) => m.tipMeritve === 'VISINA')
+   566→
+   567→  const totalLength = razdaljeMeasurements.reduce((sum, m) => sum + m.dolzinaMm, 0)
+   568→  const avgLength = razdaljeMeasurements.length > 0
+   569→    ? razdaljeMeasurements.reduce((s, m) => s + m.dolzinaMm, 0) / razdaljeMeasurements.length
+   570→    : 0
+   571→  const avgHeight = visineMeasurements.length > 0
+   572→    ? visineMeasurements.reduce((s, m) => s + m.visinaMm, 0) / visineMeasurements.length
+   573→    : measurements.length > 0
+   574→      ? measurements.reduce((s, m) => s + m.visinaMm, 0) / measurements.length
+   575→      : 0
+   576→  const totalPosts = measurements.reduce((sum, m) => sum + (m.steviloStebrov || 0), 0)
+   577→  const lidarScans = measurements.filter((m) => m.lidarScanUrl).length
+   578→
+   579→  const longestMeasurement = measurements.reduce(
+   580→    (max, m) => (m.dolzinaMm > max.dolzinaMm ? m : max),
+   581→    measurements[0]
+   582→  )
+   583→
+   584→  const totalArea = measurements.reduce((sum, m) => sum + m.dolzinaMm * m.visinaMm, 0)
+   585→
+   586→  // Vsi uporabljeni segmentId-ji (vključno s tistimi, ki niso v segments state)
+   587→  const usedSegmentIds = useMemo(() => {
+   588→    const ids = new Set<string>()
+   589→    measurements.forEach((m) => {
+   590→      if (m.segmentId) ids.add(m.segmentId)
+   591→    })
+   592→    return ids
+   593→  }, [measurements])
+   594→
+   595→  const allSegments: Segment[] = useMemo(() => {
+   596→    const known = new Map(segments.map((s) => [s.id, s]))
+   597→    // dodaj segmente iz meritev, ki niso definirani
+   598→    usedSegmentIds.forEach((id) => {
+   599→      if (!known.has(id)) {
+   600→        known.set(id, { id, name: id, type: 'ravni' })
+   601→      }
+   602→    })
+   603→    return Array.from(known.values())
+   604→  }, [segments, usedSegmentIds])
+   605→
+   606→  const segmentStats = useMemo(() => {
+   607→    const stats = new Map<string, { totalLength: number; avgHeight: number; count: number }>()
+   608→    allSegments.forEach((seg) => {
+   609→      const segMeas = measurements.filter((m) => m.segmentId === seg.id)
+   610→      const razdalje = segMeas.filter((m) => !m.tipMeritve || m.tipMeritve === 'RAZDALJA')
+   611→      const visine = segMeas.filter((m) => m.tipMeritve === 'VISINA')
+   612→      stats.set(seg.id, {
+   613→        totalLength: razdalje.reduce((s, m) => s + m.dolzinaMm, 0),
+   614→        avgHeight:
+   615→          visine.length > 0
+   616→            ? visine.reduce((s, m) => s + m.visinaMm, 0) / visine.length
+   617→            : segMeas.length > 0
+   618→              ? segMeas.reduce((s, m) => s + m.visinaMm, 0) / segMeas.length
+   619→              : 0,
+   620→        count: segMeas.length,
+   621→      })
+   622→    })
+   623→    return stats
+   624→  }, [allSegments, measurements])
+   625→
+   626→  // Grupiranje po datumu (obstoječa logika)
+   627→  const groupedMeasurements = useMemo((): MeasurementGroup[] => {
+   628→    const now = new Date()
+   629→    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+   630→    const yesterday = new Date(today.getTime() - 86400000)
+   631→
+   632→    const groups: MeasurementGroup[] = []
+   633→    const grouped = new Map<string, Measurement[]>()
+   634→
+   635→    const sorted = [...measurements].sort(
+   636→      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+   637→    )
+   638→
+   639→    for (const m of sorted) {
+   640→      const mDate = new Date(m.createdAt)
+   641→      const mDay = new Date(mDate.getFullYear(), mDate.getMonth(), mDate.getDate())
+   642→
+   643→      let label: string
+   644→      if (mDay.getTime() === today.getTime()) {
+   645→        label = 'Danes'
+   646→      } else if (mDay.getTime() === yesterday.getTime()) {
+   647→        label = 'Včeraj'
+   648→      } else {
+   649→        label = mDate.toLocaleDateString('sl-SI', { day: 'numeric', month: 'long' })
+   650→      }
+   651→
+   652→      if (!grouped.has(label)) grouped.set(label, [])
+   653→      grouped.get(label)!.push(m)
+   654→    }
+   655→
+   656→    for (const [label, meas] of grouped) {
+   657→      groups.push({ label, date: new Date(meas[0].createdAt), measurements: meas })
+   658→    }
+   659→
+   660→    return groups
+   661→  }, [measurements])
+   662→
+   663→  // ============================================
+   664→  // UKREPI ZA SEGMENTE
+   665→  // ============================================
+   666→
+   667→  function handleAddSegment() {
+   668→    if (!newSegmentName.trim()) {
+   669→      toast.error('Vnesite ime segmenta')
+   670→      return
+   671→    }
+   672→    const id = newSegmentName
+   673→      .toLowerCase()
+   674→      .trim()
+   675→      .replace(/\s+/g, '-')
+   676→      .replace(/[^a-z0-9čšž-]/g, '')
+   677→      .slice(0, 30)
+   678→    if (segments.some((s) => s.id === id)) {
+   679→      toast.error('Segment s tem imenom že obstaja')
+   680→      return
+   681→    }
+   682→    setSegments((prev) => [...prev, { id, name: newSegmentName.trim(), type: newSegmentType }])
+   683→    setNewSegmentName('')
+   684→    setNewSegmentType('ravni')
+   685→    setAddSegmentOpen(false)
+   686→    toast.success(`Segment "${newSegmentName.trim()}" dodan`)
+   687→  }
+   688→
+   689→  function handleDeleteSegment(segId: string) {
+   690→    setSegments((prev) => prev.filter((s) => s.id !== segId))
+   691→    setExpandedSegments((prev) => {
+   692→      const next = new Set(prev)
+   693→      next.delete(segId)
+   694→      return next
+   695→    })
+   696→    toast.success('Segment izbrisan')
+   697→  }
+   698→
+   699→  function toggleSegment(id: string) {
+   700→    setExpandedSegments((prev) => {
+   701→      const next = new Set(prev)
+   702→      if (next.has(id)) next.delete(id)
+   703→      else next.add(id)
+   704→      return next
+   705→    })
+   706→  }
+   707→
+   708→  // ============================================
+   709→  // KALIBRACIJA
+   710→  // ============================================
+   711→
+   712→  function handleComputeCalibration() {
+   713→    const realMm = parseFloat(calibration.realMm)
+   714→    const px = parseFloat(calibration.pixelDistance)
+   715→    if (!realMm || realMm <= 0 || !px || px <= 0) {
+   716→      toast.error('Vnesite veljavno realno dolžino in piksel razdaljo')
+   717→      return
+   718→    }
+   719→    const pxPerMm = px / realMm
+   720→    const newCal = { ...calibration, pixelsPerMm: pxPerMm }
+   721→    setCalibration(newCal)
+   722→    try {
+   723→      localStorage.setItem(`roksal_calibration_${selectedProject}`, JSON.stringify(newCal))
+   724→    } catch {
+   725→      // ignore
+   726→    }
+   727→    toast.success(`Umeritev shranjena: ${pxPerMm.toFixed(2)} px/mm`)
+   728→  }
+   729→
+   730→  function handleClearCalibration() {
+   731→    const cleared: CalibrationState = { realMm: '', pixelDistance: '', pixelsPerMm: null, note: '' }
+   732→    setCalibration(cleared)
+   733→    try {
+   734→      localStorage.removeItem(`roksal_calibration_${selectedProject}`)
+   735→    } catch {
+   736→      // ignore
+   737→    }
+   738→    toast.info('Umeritev izbrisana')
+   739→  }
+   740→
+   741→  // ============================================
+   742→  // HITRI ZAČETEK (quick-add)
+   743→  // ============================================
+   744→
+   745→  function handleQuickAdd(tip: TipMeritve) {
+   746→    setFormOpen(true)
+   747→    setFormTipMeritve(tip)
+   748→    if (tip === 'KOT' || tip === 'NAGIB') {
+   749→      setInclinometerMode(tip)
+   750→      setInclinometerOpen(true)
+   751→    }
+   752→  }
+   753→
+   754→  // Shrani inclinometer meritev
+   755→  async function saveInclinometerReading(kotStopinje: number, smer: string, lokacija: string) {
+   756→    if (!selectedProject) {
+   757→      toast.error('Izberite projekt!')
+   758→      return
+   759→    }
+   760→    const arMetadata: ArMetadata = {
+   761→      tipMeritve: inclinometerMode,
+   762→      oznaka: `${inclinometerMode === 'KOT' ? 'Kot' : 'Nagib'} — ${lokacija}`,
+   763→      segmentId: formSegmentId || undefined,
+   764→      opomba: `${inclinometerMode === 'KOT' ? 'Kot' : 'Nagib'} ${kotStopinje}° (${smer === 'Y' ? 'levo-desno' : 'naprej-nazaj'})`,
+   765→      kotStopinje,
+   766→      smer,
+   767→      lokacija,
+   768→    }
+   769→
+   770→    try {
+   771→      const res = await fetch('/api/measurements', {
+   772→        method: 'POST',
+   773→        headers: { 'Content-Type': 'application/json' },
+   774→        body: JSON.stringify({
+   775→          projectId: selectedProject,
+   776→          dolzinaMm: 1,
+   777→          visinaMm: 1,
+   778→          arMetadata,
+   779→          gpsLokacija: { lat: 46.2397, lng: 14.3556 },
+   780→        }),
+   781→      })
+   782→      if (res.ok) {
+   783→        const data = await res.json()
+   784→        const newMeasurement: Measurement = {
+   785→          ...data,
+   786→          lokacija,
+   787→          tipMeritve: inclinometerMode,
+   788→          oznaka: arMetadata.oznaka,
+   789→          opomba: arMetadata.opomba,
+   790→        }
+   791→        setMeasurements((prev) => [newMeasurement, ...prev])
+   792→        toast.success(`${inclinometerMode === 'KOT' ? 'Kot' : 'Nagib'} ${kotStopinje}° shranjen`)
+   793→        setInclinometerOpen(false)
+   794→      } else {
+   795→        // fallback lokalno
+   796→        const newMeasurement: Measurement = {
+   797→          id: `local_${Date.now()}`,
+   798→          dolzinaMm: 1,
+   799→          visinaMm: 1,
+   800→          createdAt: new Date().toISOString(),
+   801→          projectId: selectedProject,
+   802→          lokacija,
+   803→          arMetadata: JSON.stringify(arMetadata),
+   804→          tipMeritve: inclinometerMode,
+   805→          oznaka: arMetadata.oznaka,
+   806→          opomba: arMetadata.opomba,
+   807→        }
+   808→        setMeasurements((prev) => [newMeasurement, ...prev])
+   809→        toast.success(`${inclinometerMode === 'KOT' ? 'Kot' : 'Nagib'} ${kotStopinje}° shranjen (lokalno)`)
+   810→        setInclinometerOpen(false)
+   811→      }
+   812→    } catch {
+   813→      toast.error('Napaka pri shranjevanju')
+   814→    }
+   815→  }
+   816→
+   817→  // ============================================
+   818→  // IZVOZ CSV
+   819→  // ============================================
+   820→
+   821→  function handleExportCSV() {
+   822→    if (measurements.length === 0) {
+   823→      toast.error('Ni meritev za izvoz')
+   824→      return
+   825→    }
+   826→    const header = 'Oznaka,Tip,Lokacija,Segment,Dolzina(mm),Visina(mm),Stebri,Podlaga,Kot,Opomba,Opombe,Datum'
+   827→    const rows = measurements.map((m) => {
+   828→      const oznaka = (m.oznaka || '').replace(/"/g, '""')
+   829→      const tip = m.tipMeritve ? tipMeritveLabels[m.tipMeritve] : 'Razdalja'
+   830→      const lokacija = (m.lokacija || '').replace(/"/g, '""')
+   831→      const segment = (m.segmentId || '').replace(/"/g, '""')
+   832→      const dolzina = String(m.dolzinaMm)
+   833→      const visina = String(m.visinaMm)
+   834→      const stebri = m.steviloStebrov ? String(m.steviloStebrov) : ''
+   835→      const podlaga = m.tipPodlage ? (groundTypeLabels[m.tipPodlage as GroundType] || m.tipPodlage) : ''
+   836→      const kot = m.kot ? String(m.kot) : ''
+   837→      const opomba = (m.opomba || '').replace(/"/g, '""')
+   838→      const opombe = (m.opombe || '').replace(/"/g, '""')
+   839→      const datum = new Date(m.createdAt).toLocaleDateString('sl-SI')
+   840→      return `"${oznaka}","${tip}","${lokacija}","${segment}",${dolzina},${visina},${stebri},"${podlaga}",${kot},"${opomba}","${opombe}",${datum}`
+   841→    })
+   842→    const csvContent = '\uFEFF' + header + '\n' + rows.join('\n')
+   843→    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+   844→    const url = URL.createObjectURL(blob)
+   845→    const link = document.createElement('a')
+   846→    link.href = url
+   847→    link.download = `meritve_${selectedProject}_${new Date().toISOString().slice(0, 10)}.csv`
+   848→    document.body.appendChild(link)
+   849→    link.click()
+   850→    document.body.removeChild(link)
+   851→    URL.revokeObjectURL(url)
+   852→    toast.success('CSV izvožen!')
+   853→  }
+   854→
+   855→  // ============================================
+   856→  // IZVOZ PDF
+   857→  // ============================================
+   858→
+   859→  function handleExportPDF() {
+   860→    if (measurements.length === 0) {
+   861→      toast.error('Ni meritev za izvoz')
+   862→      return
+   863→    }
+   864→
+   865→    const doc = new jsPDF({ unit: 'mm', format: 'a4' })
+   866→    const pageW = doc.internal.pageSize.getWidth()
+   867→    const projectName = projects.find((p) => p.id === selectedProject)?.nazivProjekta || 'Brez projekta'
+   868→
+   869→    // Glava
+   870→    doc.setFillColor(29, 43, 62) // roksal-navy
+   871→    doc.rect(0, 0, pageW, 22, 'F')
+   872→    doc.setTextColor(255, 255, 255)
+   873→    doc.setFontSize(16)
+   874→    doc.setFont('helvetica', 'bold')
+   875→    doc.text('ROKSAL — Seznam meritev', 14, 14)
+   876→    doc.setFontSize(9)
+   877→    doc.setFont('helvetica', 'normal')
+   878→    doc.text(`Projekt: ${projectName}`, 14, 19)
+   879→
+   880→    // Povzetek
+   881→    doc.setTextColor(40, 40, 40)
+   882→    doc.setFontSize(10)
+   883→    doc.setFont('helvetica', 'bold')
+   884→    doc.text('Povzetek', 14, 32)
+   885→
+   886→    doc.setFont('helvetica', 'normal')
+   887→    doc.setFontSize(9)
+   888→    const summary = [
+   889→      `Skupna dolžina: ${formatDimension(totalLength)}`,
+   890→      `Povprečna višina: ${formatDimension(Math.round(avgHeight))}`,
+   891→      `Število meritev: ${measurements.length}`,
+   892→      `Število segmentov: ${allSegments.length}`,
+   893→      `Najdaljša meritev: ${longestMeasurement ? formatDimension(longestMeasurement.dolzinaMm) : '—'}`,
+   894→      `Skupna površina: ${formatM2(totalArea)}`,
+   895→    ]
+   896→    summary.forEach((s, i) => {
+   897→      const x = 14 + (i % 2) * (pageW / 2 - 14)
+   898→      const y = 38 + Math.floor(i / 2) * 5
+   899→      doc.text(s, x, y)
+   900→    })
+   901→
+   902→    // Tabela meritev
+   903→    autoTable(doc, {
+   904→      startY: 56,
+   905→      head: [['#', 'Oznaka', 'Tip', 'Segment', 'Dolžina', 'Višina', 'Kot', 'Datum']],
+   906→      body: measurements.map((m, i) => [
+   907→        String(i + 1),
+   908→        m.oznaka || m.lokacija || `Meritev #${m.id.slice(-4)}`,
+   909→        m.tipMeritve ? tipMeritveLabels[m.tipMeritve] : 'Razdalja',
+   910→        m.segmentId || '—',
+   911→        formatDimension(m.dolzinaMm),
+   912→        formatDimension(m.visinaMm),
+   913→        m.kot ? `${m.kot}°` : '—',
+   914→        new Date(m.createdAt).toLocaleDateString('sl-SI'),
+   915→      ]),
+   916→      theme: 'grid',
+   917→      headStyles: { fillColor: [29, 43, 62], textColor: 255, fontSize: 8 },
+   918→      bodyStyles: { fontSize: 8 },
+   919→      alternateRowStyles: { fillColor: [245, 245, 245] },
+   920→      columnStyles: {
+   921→        0: { cellWidth: 8 },
+   922→        4: { halign: 'right' },
+   923→        5: { halign: 'right' },
+   924→        6: { halign: 'right' },
+   925→      },
+   926→      margin: { left: 14, right: 14 },
+   927→    })
+   928→
+   929→    // Noga
+   930→    const finalY = (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 56
+   931→    doc.setFontSize(8)
+   932→    doc.setTextColor(120, 120, 120)
+   933→    doc.text(
+   934→      `Izvozeno ${new Date().toLocaleString('sl-SI')} • Roksal Kranj`,
+   935→      14,
+   936→      Math.min(finalY + 10, doc.internal.pageSize.getHeight() - 10)
+   937→    )
+   938→
+   939→    doc.save(`meritve_${selectedProject}_${new Date().toISOString().slice(0, 10)}.pdf`)
+   940→    toast.success('PDF izvožen!')
+   941→  }
+   942→
+   943→  // ============================================
+   944→  // RENDERS — RAILING DIAGRAM (obstoječa logika)
+   945→  // ============================================
+   946→
+   947→  function renderRailingDiagram(dolzina: number, visina: number) {
+   948→    const maxDim = Math.max(dolzina, visina)
+   949→    const heightPct = Math.min((visina / maxDim) * 40, 40)
+   950→    const calc = getQuickSpacing(dolzina, visina)
+   951→    const numSlats = Math.min(calc.slatCount, 15)
+   952→    const gapWidth = numSlats > 0 ? (dolzina - numSlats * 80) / (numSlats + 1) : 0
+   953→    const gapPct = (gapWidth / dolzina) * 100
+   954→
+   955→    return (
+   956→      <div className="w-full">
+   957→        <div className="relative rounded-lg border border-roksal-navy/20 bg-gradient-to-b from-roksal-navy/3 to-roksal-navy/8 p-3">
+   958→          <div className="flex items-center justify-between mb-1">
+   959→            <span className="text-[9px] font-mono text-muted-foreground">0</span>
+   960→            <span className="text-[9px] font-mono text-muted-foreground">{formatDimension(dolzina)}</span>
+   961→          </div>
+   962→          <div className="relative flex items-end gap-0" style={{ height: `${Math.max(heightPct, 20)}px` }}>
+   963→            <div className="w-[4px] h-full bg-roksal-navy rounded-full" />
+   964→            <div className="flex-1 flex items-end h-full gap-0">
+   965→              {numSlats > 0 ? (
+   966→                <div className="flex-1 h-full flex items-end gap-0">
+   967→                  <div className="h-full bg-transparent" style={{ width: `${gapPct}%` }} />
+   968→                  {Array.from({ length: numSlats }).map((_, i) => (
+   969→                    <div key={i} className="flex h-full">
+   970→                      <div
+   971→                        className="h-[85%] bg-roksal-navy/70 rounded-[1px]"
+   972→                        style={{ width: `${(80 / dolzina) * 100}%`, minWidth: '2px' }}
+   973→                      />
+   974→                      {i < numSlats - 1 && (
+   975→                        <div
+   976→                          className="h-full bg-roksal-amber/30"
+   977→                          style={{ width: `${gapPct}%`, minWidth: '1px' }}
+   978→                        />
+   979→                      )}
+   980→                    </div>
+   981→                  ))}
+   982→                  <div className="h-full bg-transparent" style={{ width: `${gapPct}%` }} />
+   983→                </div>
+   984→              ) : (
+   985→                <div className="flex-1 h-full border-t-2 border-dashed border-roksal-navy/30" />
+   986→              )}
+   987→            </div>
+   988→            <div className="w-[4px] h-full bg-roksal-navy rounded-full" />
+   989→          </div>
+   990→          <div className="mt-0.5 flex">
+   991→            <div className="w-[4px] bg-roksal-navy rounded-full" />
+   992→            <div className="flex-1 h-[3px] bg-roksal-navy/40 rounded" />
+   993→            <div className="w-[4px] bg-roksal-navy rounded-full" />
+   994→          </div>
+   995→          <div className="absolute -right-1 top-2 flex items-center gap-0.5">
+   996→            <div className="w-[1px] h-4 border-l border-dashed border-muted-foreground/40" />
+   997→            <span className="text-[8px] font-mono text-muted-foreground">{formatDimension(visina)}</span>
+   998→          </div>
+   999→        </div>
+  1000→
+  1001→        {numSlats > 0 && (
+  1002→          <div
+  1003→            className={`mt-1.5 flex items-center justify-between rounded-lg px-2.5 py-1.5 text-[10px] border ${
+  1004→              calc.compliant
+  1005→                ? 'bg-roksal-green/8 border-roksal-green/20 text-roksal-green'
+  1006→                : 'bg-roksal-red/8 border-roksal-red/20 text-roksal-red'
+  1007→            }`}
+  1008→          >
+  1009→            <span className="font-medium">
+  1010→              {calc.slatCount} letvev × 80mm = razmik {calc.gap}mm
+  1011→            </span>
+  1012→            <span className="font-bold">{calc.compliant ? '✓ SKLADNO' : '✗ NESKLADNO'}</span>
+  1013→          </div>
+  1014→        )}
+  1015→      </div>
+  1016→    )
+  1017→  }
+  1018→
+  1019→  // ============================================
+  1020→  // RENDER — MERITVE LIST (ena kartica)
+  1021→  // ============================================
+  1022→
+  1023→  function renderMeasurementCard(m: Measurement) {
+  1024→    const gps = parseGPS(m.gpsLokacija ?? null)
+  1025→    const TipIcon = m.tipMeritve ? tipMeritveIcons[m.tipMeritve] : Ruler
+  1026→    return (
+  1027→      <div
+  1028→        key={m.id}
+  1029→        className="rounded-xl border border-border/50 overflow-hidden transition-colors hover:border-roksal-navy/20 slide-in-right"
+  1030→      >
+  1031→        {/* Glava meritve */}
+  1032→        <div className="flex items-center justify-between p-3 pb-2">
+  1033→          <div className="flex items-center gap-2 min-w-0 flex-1">
+  1034→            <div className="min-w-0 flex-1">
+  1035→              <div className="flex items-center gap-2 flex-wrap">
+  1036→                <p className="text-sm font-semibold text-roksal-navy truncate">
+  1037→                  {m.oznaka || m.lokacija || `Meritev #${m.id.slice(-4)}`}
+  1038→                </p>
+  1039→                {m.tipMeritve && m.tipMeritve !== 'RAZDALJA' && (
+  1040→                  <span
+  1041→                    className={`inline-flex items-center gap-0.5 rounded px-1 py-0 text-[8px] font-medium border ${
+  1042→                      tipMeritveColors[m.tipMeritve]
+  1043→                    }`}
+  1044→                  >
+  1045→                    <TipIcon className="h-2.5 w-2.5" />
+  1046→                    {tipMeritveLabels[m.tipMeritve]}
+  1047→                  </span>
+  1048→                )}
+  1049→                {m.segmentId && (
+  1050→                  <Badge variant="outline" className="text-[9px] h-4 px-1 shrink-0">
+  1051→                    <Layers className="h-2.5 w-2.5 mr-0.5" />
+  1052→                    {allSegments.find((s) => s.id === m.segmentId)?.name || m.segmentId}
+  1053→                  </Badge>
+  1054→                )}
+  1055→                {m.kot && m.kot !== 90 && (
+  1056→                  <Badge variant="outline" className="text-[9px] h-4 px-1 shrink-0">
+  1057→                    {m.kot}°
+  1058→                  </Badge>
+  1059→                )}
+  1060→              </div>
+  1061→              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+  1062→                {m.tipMeritve !== 'KOT' && m.tipMeritve !== 'NAGIB' && (
+  1063→                  <span className="text-xs text-muted-foreground font-mono">
+  1064→                    ↔ {formatDimension(m.dolzinaMm)} × ↕ {formatDimension(m.visinaMm)}
+  1065→                  </span>
+  1066→                )}
+  1067→                {(m.tipMeritve === 'KOT' || m.tipMeritve === 'NAGIB') && m.opomba && (
+  1068→                  <span className="text-xs text-roksal-amber font-mono">{m.opomba}</span>
+  1069→                )}
+  1070→                {m.steviloStebrov && (
+  1071→                  <Badge variant="secondary" className="text-[9px] h-4 px-1.5 shrink-0">
+  1072→                    {m.steviloStebrov} stebrov
+  1073→                  </Badge>
+  1074→                )}
+  1075→                {m.tipPodlage && (
+  1076→                  <span
+  1077→                    className={`inline-flex items-center rounded px-1 py-0 text-[8px] font-medium border ${
+  1078→                      groundTypeColors[m.tipPodlage as GroundType] ||
+  1079→                      'bg-gray-50 text-gray-600 border-gray-200'
+  1080→                    }`}
+  1081→                  >
+  1082→                    {groundTypeLabels[m.tipPodlage as GroundType] || m.tipPodlage}
+  1083→                  </span>
+  1084→                )}
+  1085→              </div>
+  1086→            </div>
+  1087→          </div>
+  1088→          <div className="flex items-center gap-0.5 shrink-0 ml-2">
+  1089→            <button
+  1090→              type="button"
+  1091→              onClick={() => handleDuplicateMeasurement(m)}
+  1092→              className="p-1.5 rounded-lg hover:bg-secondary/60 transition-colors"
+  1093→              title="Podvoji meritev"
+  1094→            >
+  1095→              <Copy className="h-3.5 w-3.5 text-muted-foreground" />
+  1096→            </button>
+  1097→            <button
+  1098→              type="button"
+  1099→              onClick={() => handleDeleteMeasurement(m.id)}
+  1100→              className="p-1.5 rounded-lg hover:bg-roksal-red/10 transition-colors"
+  1101→              title="Izbriši meritev"
+  1102→            >
+  1103→              <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-roksal-red" />
+  1104→            </button>
+  1105→          </div>
+  1106→        </div>
+  1107→
+  1108→        {/* Diagram (samo za RAZDALJA / VISINA / SEGMENT) */}
+  1109→        {(!m.tipMeritve ||
+  1110→          m.tipMeritve === 'RAZDALJA' ||
+  1111→          m.tipMeritve === 'VISINA' ||
+  1112→          m.tipMeritve === 'SEGMENT') && (
+  1113→          <div className="px-3 pb-2">{renderRailingDiagram(m.dolzinaMm, m.visinaMm)}</div>
+  1114→        )}
+  1115→
+  1116→        {/* Noga */}
+  1117→        <div className="flex items-center justify-between border-t border-border/30 px-3 py-2 bg-secondary/10">
+  1118→          <div className="flex items-center gap-3 text-[11px] text-muted-foreground min-w-0">
+  1119→            <span className="flex items-center gap-1 shrink-0">
+  1120→              <Calendar className="h-3 w-3" />
+  1121→              {new Date(m.createdAt).toLocaleDateString('sl-SI')}
+  1122→            </span>
+  1123→            {gps && (
+  1124→              <span className="flex items-center gap-1 shrink-0">
+  1125→                <MapPin className="h-3 w-3" />
+  1126→                GPS
+  1127→              </span>
+  1128→            )}
+  1129→          </div>
+  1130→          <div className="flex items-center gap-1.5 shrink-0">
+  1131→            {(m.opomba || m.opombe) && (
+  1132→              <div className="flex items-center gap-1 text-[11px] text-muted-foreground max-w-[30%] truncate">
+  1133→                <AlertCircle className="h-3 w-3 shrink-0" />
+  1134→                <span className="truncate hidden sm:inline">{m.opomba || m.opombe}</span>
+  1135→              </div>
+  1136→            )}
+  1137→            {onNavigateToCalculator && (
+  1138→              <button
+  1139→                type="button"
+  1140→                onClick={() =>
+  1141→                  onNavigateToCalculator(
+  1142→                    m.dolzinaMm,
+  1143→                    m.visinaMm,
+  1144→                    m.oznaka || m.lokacija || `Meritev #${m.id.slice(-4)}`
+  1145→                  )
+  1146→                }
+  1147→                className="flex items-center gap-1 rounded-lg bg-roksal-navy text-white px-2.5 py-1 text-[11px] font-medium hover:bg-roksal-navy/90 active:scale-[0.96] transition-all duration-150 press-scale"
+  1148→                title="Izračunaj razmike v kalkulatorju"
+  1149→              >
+  1150→                <Calculator className="h-3.5 w-3.5" />
+  1151→                <span>Razmiki</span>
+  1152→              </button>
+  1153→            )}
+  1154→          </div>
+  1155→        </div>
+  1156→      </div>
+  1157→    )
+  1158→  }
+  1159→
+  1160→  // ============================================
+  1161→  // RENDER
+  1162→  // ============================================
+  1163→
+  1164→  return (
+  1165→    <div className="space-y-4 px-4 pb-4 pt-2">
+  1166→      <div>
+  1167→        <h2 className="text-xl font-bold text-roksal-navy">Meritve</h2>
+  1168→        <p className="text-sm text-muted-foreground">
+  1169→          Meritve ograj, dimenzije, kotovi in nagibi — z umeritvijo in segmenti
+  1170→        </p>
+  1171→      </div>
+  1172→
+  1173→      {/* Project Selector */}
+  1174→      <Card className="card-hover transition-all duration-200 animate-fade-in-up" style={{ animationDelay: '0ms' }}>
+  1175→        <CardContent className="p-4">
+  1176→          <div className="flex items-center gap-3">
+  1177→            <FolderOpen className="h-4 w-4 text-roksal-navy" />
+  1178→            <div className="flex-1">
+  1179→              <Select value={selectedProject} onValueChange={setSelectedProject}>
+  1180→                <SelectTrigger className="w-full">
+  1181→                  <SelectValue placeholder="Izberi projekt" />
+  1182→                </SelectTrigger>
+  1183→                <SelectContent>
+  1184→                  {projects.map((p) => (
+  1185→                    <SelectItem key={p.id} value={p.id}>
+  1186→                      {p.nazivProjekta}
+  1187→                    </SelectItem>
+  1188→                  ))}
+  1189→                </SelectContent>
+  1190→              </Select>
+  1191→            </div>
+  1192→            {calibration.pixelsPerMm && (
+  1193→              <Badge className="bg-roksal-amber/15 text-roksal-amber border border-roksal-amber/30">
+  1194→                <Crosshair className="h-3 w-3 mr-1" />
+  1195→                {calibration.pixelsPerMm.toFixed(2)} px/mm
+  1196→              </Badge>
+  1197→            )}
+  1198→          </div>
+  1199→        </CardContent>
+  1200→      </Card>
+  1201→
+  1202→      {/* POVZETEK PROEKTA (NEW) */}
+  1203→      <Card className="card-hover transition-all duration-200 animate-fade-in-up" style={{ animationDelay: '30ms' }}>
+  1204→        <CardHeader className="pb-2 pt-4 px-4">
+  1205→          <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+  1206→            <TrendingUp className="h-4 w-4" />
+  1207→            Povzetek meritev
+  1208→          </CardTitle>
+  1209→        </CardHeader>
+  1210→        <CardContent className="px-4 pb-4">
+  1211→          <div className="grid grid-cols-3 gap-2">
+  1212→            <div className="rounded-lg bg-secondary/50 p-2.5 text-center">
+  1213→              <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Skupna dolžina</p>
+  1214→              <p className="text-sm font-bold text-roksal-navy">{formatDimension(totalLength)}</p>
+  1215→            </div>
+  1216→            <div className="rounded-lg bg-secondary/50 p-2.5 text-center">
+  1217→              <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Povpr. višina</p>
+  1218→              <p className="text-sm font-bold text-roksal-navy">{formatDimension(Math.round(avgHeight))}</p>
+  1219→            </div>
+  1220→            <div className="rounded-lg bg-secondary/50 p-2.5 text-center">
+  1221→              <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Meritev</p>
+  1222→              <p className="text-sm font-bold text-roksal-navy">{measurements.length}</p>
+  1223→            </div>
+  1224→            <div className="rounded-lg bg-secondary/50 p-2.5 text-center">
+  1225→              <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Segmentov</p>
+  1226→              <p className="text-sm font-bold text-roksal-navy">{allSegments.length}</p>
+  1227→            </div>
+  1228→            <div className="rounded-lg bg-secondary/50 p-2.5 text-center">
+  1229→              <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Najdaljša</p>
+  1230→              <p className="text-sm font-bold text-roksal-navy">
+  1231→                {longestMeasurement ? formatDimension(longestMeasurement.dolzinaMm) : '—'}
+  1232→              </p>
+  1233→            </div>
+  1234→            <div className="rounded-lg bg-secondary/50 p-2.5 text-center">
+  1235→              <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Površina</p>
+  1236→              <p className="text-sm font-bold text-roksal-navy">{formatM2(totalArea)}</p>
+  1237→            </div>
+  1238→          </div>
+  1239→        </CardContent>
+  1240→      </Card>
+  1241→
+  1242→      {/* HITRI ZAČETEK — quick-add tipi meritev (NEW) */}
+  1243→      <Card className="card-hover transition-all duration-200 animate-fade-in-up" style={{ animationDelay: '60ms' }}>
+  1244→        <CardContent className="p-3">
+  1245→          <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-2 px-1">
+  1246→            Hitra meritev
+  1247→          </p>
+  1248→          <div className="grid grid-cols-4 gap-2">
+  1249→            {(['RAZDALJA', 'VISINA', 'KOT', 'NAGIB'] as TipMeritve[]).map((tip) => {
+  1250→              const Icon = tipMeritveIcons[tip]
+  1251→              return (
+  1252→                <button
+  1253→                  key={tip}
+  1254→                  type="button"
+  1255→                  onClick={() => handleQuickAdd(tip)}
+  1256→                  className={`flex flex-col items-center justify-center gap-1 rounded-lg border p-2.5 transition-all duration-150 active:scale-[0.96] hover:border-roksal-navy/40 ${tipMeritveColors[tip]}`}
+  1257→                >
+  1258→                  <Icon className="h-4 w-4" />
+  1259→                  <span className="text-[10px] font-medium">{tipMeritveLabels[tip]}</span>
+  1260→                </button>
+  1261→              )
+  1262→            })}
+  1263→          </div>
+  1264→        </CardContent>
+  1265→      </Card>
+  1266→
+  1267→      {/* UMERITEV REFERENCE (NEW) */}
+  1268→      <Card className="card-hover transition-all duration-200 animate-fade-in-up" style={{ animationDelay: '90ms' }}>
+  1269→        <Collapsible open={calibrationOpen} onOpenChange={setCalibrationOpen}>
+  1270→          <CollapsibleTrigger asChild>
+  1271→            <button
+  1272→              type="button"
+  1273→              className="flex w-full items-center justify-between p-4 text-left hover:bg-secondary/30 transition-colors"
+  1274→            >
+  1275→              <div className="flex items-center gap-2">
+  1276→                <div
+  1277→                  className={`flex h-8 w-8 items-center justify-center rounded-lg ${
+  1278→                    calibration.pixelsPerMm
+  1279→                      ? 'bg-roksal-amber text-white'
+  1280→                      : 'bg-roksal-navy/10 text-roksal-navy'
+  1281→                  }`}
+  1282→                >
+  1283→                  <Crosshair className="h-4 w-4" />
+  1284→                </div>
+  1285→                <div>
+  1286→                  <span className="text-sm font-medium text-roksal-navy">Umeritev reference</span>
+  1287→                  <p className="text-[10px] text-muted-foreground">
+  1288→                    {calibration.pixelsPerMm
+  1289→                      ? `Umerjeno: ${calibration.pixelsPerMm.toFixed(2)} px/mm`
+  1290→                      : 'A4 list, ploščica ali znana dolžina'}
+  1291→                  </p>
+  1292→                </div>
+  1293→              </div>
+  1294→              {calibrationOpen ? (
+  1295→                <ChevronUp className="h-4 w-4 text-muted-foreground" />
+  1296→              ) : (
+  1297→                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+  1298→              )}
+  1299→            </button>
+  1300→          </CollapsibleTrigger>
+  1301→          <CollapsibleContent>
+  1302→            <div className="border-t border-border/50 px-4 pb-4 pt-3 space-y-3 slide-in-right">
+  1303→              <p className="text-[11px] text-muted-foreground">
+  1304→                Umeritev omogoča pretvorbo pikslov v milimetre za AR module. Vnesite znano dolžino
+  1305→                (npr. A4 = 297mm) in pripadajočo piksel razdaljo na sliki.
+  1306→              </p>
+  1307→
+  1308→              <div className="grid grid-cols-2 gap-3">
+  1309→                <div className="space-y-1.5">
+  1310→                  <Label className="text-xs font-medium">Realna dolžina (mm)</Label>
+  1311→                  <Input
+  1312→                    type="number"
+  1313→                    value={calibration.realMm}
+  1314→                    onChange={(e) =>
+  1315→                      setCalibration((prev) => ({ ...prev, realMm: e.target.value }))
+  1316→                    }
+  1317→                    placeholder="297"
+  1318→                    className="h-10 font-mono"
+  1319→                  />
+  1320→                  <p className="text-[9px] text-muted-foreground">npr. A4 = 297, ploščica = 600</p>
+  1321→                </div>
+  1322→                <div className="space-y-1.5">
+  1323→                  <Label className="text-xs font-medium">Piksel razdalja (px)</Label>
+  1324→                  <Input
+  1325→                    type="number"
+  1326→                    value={calibration.pixelDistance}
+  1327→                    onChange={(e) =>
+  1328→                      setCalibration((prev) => ({ ...prev, pixelDistance: e.target.value }))
+  1329→                    }
+  1330→                    placeholder="700"
+  1331→                    className="h-10 font-mono"
+  1332→                  />
+  1333→                  <p className="text-[9px] text-muted-foreground">ali preko točk na sliki</p>
+  1334→                </div>
+  1335→              </div>
+  1336→
+  1337→              <CalibrationPhotoPicker
+  1338→                onPixelDistance={(px) =>
+  1339→                  setCalibration((prev) => ({ ...prev, pixelDistance: String(Math.round(px)) }))
+  1340→                }
+  1341→              />
+  1342→
+  1343→              <Input
+  1344→                value={calibration.note}
+  1345→                onChange={(e) => setCalibration((prev) => ({ ...prev, note: e.target.value }))}
+  1346→                placeholder="Opomba k umeritvi (npr. A4 na balkonski plošči)"
+  1347→                className="h-9 text-xs"
+  1348→              />
+  1349→
+  1350→              <div className="flex items-center gap-2 pt-1">
+  1351→                <Button
+  1352→                  type="button"
+  1353→                  onClick={handleComputeCalibration}
+  1354→                  className="flex-1 h-9 bg-roksal-amber hover:bg-roksal-amber/90 text-white"
+  1355→                  disabled={!calibration.realMm || !calibration.pixelDistance}
+  1356→                >
+  1357→                  <Crosshair className="mr-1.5 h-4 w-4" />
+  1358→                  Izračunaj umeritev
+  1359→                </Button>
+  1360→                {calibration.pixelsPerMm && (
+  1361→                  <Button
+  1362→                    type="button"
+  1363→                    variant="outline"
+  1364→                    onClick={handleClearCalibration}
+  1365→                    className="h-9 px-3"
+  1366→                  >
+  1367→                    <Trash2 className="h-3.5 w-3.5" />
+  1368→                  </Button>
+  1369→                )}
+  1370→              </div>
+  1371→
+  1372→              {calibration.pixelsPerMm && (
+  1373→                <div className="rounded-lg border border-roksal-amber/30 bg-roksal-amber/8 p-2.5 text-center">
+  1374→                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+  1375→                    Aktivna umeritev
+  1376→                  </p>
+  1377→                  <p className="text-lg font-bold text-roksal-amber">
+  1378→                    {calibration.pixelsPerMm.toFixed(2)} px/mm
+  1379→                  </p>
+  1380→                  <p className="text-[10px] text-muted-foreground">
+  1381→                    1mm = {calibration.pixelsPerMm.toFixed(2)} pikslov
+  1382→                  </p>
+  1383→                </div>
+  1384→              )}
+  1385→            </div>
+  1386→          </CollapsibleContent>
+  1387→        </Collapsible>
+  1388→      </Card>
+  1389→
+  1390→      {/* INLINE INCLINOMETER (NEW) */}
+  1391→      {inclinometerOpen && (
+  1392→        <InlineInclinometer
+  1393→          mode={inclinometerMode}
+  1394→          onClose={() => setInclinometerOpen(false)}
+  1395→          onSave={saveInclinometerReading}
+  1396→        />
+  1397→      )}
+  1398→
+  1399→      {/* OBRAZEC — Nova meritev (ENHANCED) */}
+  1400→      <Card className="card-hover transition-all duration-200 overflow-hidden">
+  1401→        <button
+  1402→          type="button"
+  1403→          onClick={() => setFormOpen(!formOpen)}
+  1404→          className="flex w-full items-center justify-between p-4 text-left hover:bg-secondary/30 transition-colors"
+  1405→        >
+  1406→          <div className="flex items-center gap-2">
+  1407→            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-roksal-navy text-white">
+  1408→              <Plus className="h-4 w-4" />
+  1409→            </div>
+  1410→            <div>
+  1411→              <span className="text-sm font-medium text-roksal-navy">Nova meritev</span>
+  1412→              <p className="text-[10px] text-muted-foreground">
+  1413→                Tip, oznaka, segment, dolžina, višina, opombe...
+  1414→              </p>
+  1415→            </div>
+  1416→          </div>
+  1417→          {formOpen ? (
+  1418→            <ChevronUp className="h-4 w-4 text-muted-foreground" />
+  1419→          ) : (
+  1420→            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+  1421→          )}
+  1422→        </button>
+  1423→
+  1424→        {formOpen && (
+  1425→          <div className="border-t border-border/50 px-4 pb-4 pt-3 space-y-3 slide-in-right">
+  1426→            {/* Tip meritve + oznaka */}
+  1427→            <div className="grid grid-cols-2 gap-3">
+  1428→              <div className="space-y-1.5">
+  1429→                <Label className="text-xs font-medium">Tip meritve</Label>
+  1430→                <Select
+  1431→                  value={formTipMeritve}
+  1432→                  onValueChange={(v) => setFormTipMeritve(v as TipMeritve)}
+  1433→                >
+  1434→                  <SelectTrigger className="h-10">
+  1435→                    <SelectValue />
+  1436→                  </SelectTrigger>
+  1437→                  <SelectContent>
+  1438→                    {(Object.keys(tipMeritveLabels) as TipMeritve[]).map((tip) => {
+  1439→                      const Icon = tipMeritveIcons[tip]
+  1440→                      return (
+  1441→                        <SelectItem key={tip} value={tip}>
+  1442→                          <span className="flex items-center gap-2">
+  1443→                            <Icon className="h-3.5 w-3.5" />
+  1444→                            {tipMeritveLabels[tip]}
+  1445→                          </span>
+  1446→                        </SelectItem>
+  1447→                      )
+  1448→                    })}
+  1449→                  </SelectContent>
+  1450→                </Select>
+  1451→              </div>
+  1452→              <div className="space-y-1.5">
+  1453→                <Label className="text-xs font-medium">
+  1454→                  <Tag className="inline h-3 w-3 mr-1" />
+  1455→                  Oznaka
+  1456→                </Label>
+  1457→                <Input
+  1458→                  value={formOznaka}
+  1459→                  onChange={(e) => setFormOznaka(e.target.value)}
+  1460→                  placeholder="dolžina balkona"
+  1461→                  className="h-10"
+  1462→                />
+  1463→              </div>
+  1464→            </div>
+  1465→
+  1466→            {/* Segment */}
+  1467→            <div className="space-y-1.5">
+  1468→              <Label className="text-xs font-medium">
+  1469→                <Layers className="inline h-3 w-3 mr-1" />
+  1470→                Segment
+  1471→              </Label>
+  1472→              <Input
+  1473→                value={formSegmentId}
+  1474→                onChange={(e) => setFormSegmentId(e.target.value)}
+  1475→                placeholder="severni del"
+  1476→                list="segment-list"
+  1477→                className="h-10"
+  1478→              />
+  1479→              <datalist id="segment-list">
+  1480→                {allSegments.map((s) => (
+  1481→                  <option key={s.id} value={s.id}>
+  1482→                    {s.name}
+  1483→                  </option>
+  1484→                ))}
+  1485→              </datalist>
+  1486→              <p className="text-[9px] text-muted-foreground">
+  1487→                Grupiranje meritev (npr. severni del, stopnišče)
+  1488→              </p>
+  1489→            </div>
+  1490→
+  1491→            {/* Location */}
+  1492→            <div className="space-y-1.5">
+  1493→              <Label className="text-xs font-medium">
+  1494→                <MapPin className="inline h-3 w-3 mr-1" />
+  1495→                Lokacija / Opis
+  1496→              </Label>
+  1497→              <Input
+  1498→                value={formLocation}
+  1499→                onChange={(e) => setFormLocation(e.target.value)}
+  1500→                placeholder="npr. Balkon leva stran, Terasa spredaj..."
+  1501→                className="h-10"
+  1502→              />
+  1503→            </div>
+  1504→
+  1505→            {/* Length + Height */}
+  1506→            <div className="grid grid-cols-2 gap-3">
+  1507→              <div className="space-y-1.5">
+  1508→                <Label className="text-xs font-medium">
+  1509→                  <Ruler className="inline h-3 w-3 mr-1" />
+  1510→                  Dolžina (mm)
+  1511→                </Label>
+  1512→                <Input
+  1513→                  type="number"
+  1514→                  value={formLength}
+  1515→                  onChange={(e) => setFormLength(e.target.value)}
+  1516→                  placeholder="3000"
+  1517→                  className="h-10 font-mono"
+  1518→                />
+  1519→              </div>
+  1520→              <div className="space-y-1.5">
+  1521→                <Label className="text-xs font-medium">
+  1522→                  <Ruler className="inline h-3 w-3 mr-1 rotate-90" />
+  1523→                  Višina (mm)
+  1524→                </Label>
+  1525→                <Input
+  1526→                  type="number"
+  1527→                  value={formHeight}
+  1528→                  onChange={(e) => setFormHeight(e.target.value)}
+  1529→                  placeholder="900"
+  1530→                  className="h-10 font-mono"
+  1531→                />
+  1532→              </div>
+  1533→            </div>
+  1534→
+  1535→            {/* Posts + Ground Type */}
+  1536→            <div className="grid grid-cols-2 gap-3">
+  1537→              <div className="space-y-1.5">
+  1538→                <Label className="text-xs font-medium">
+  1539→                  <Hammer className="inline h-3 w-3 mr-1" />
+  1540→                  Število stebrov
+  1541→                </Label>
+  1542→                <Input
+  1543→                  type="number"
+  1544→                  value={formPosts}
+  1545→                  onChange={(e) => setFormPosts(e.target.value)}
+  1546→                  placeholder="3"
+  1547→                  className="h-10 font-mono"
+  1548→                />
+  1549→              </div>
+  1550→              <div className="space-y-1.5">
+  1551→                <Label className="text-xs font-medium">Tip podlage</Label>
+  1552→                <Select
+  1553→                  value={formGround}
+  1554→                  onValueChange={(v) => setFormGround(v as GroundType)}
+  1555→                >
+  1556→                  <SelectTrigger className="h-10">
+  1557→                    <SelectValue />
+  1558→                  </SelectTrigger>
+  1559→                  <SelectContent>
+  1560→                    {Object.entries(groundTypeLabels).map(([key, label]) => (
+  1561→                      <SelectItem key={key} value={key}>
+  1562→                        {label}
+  1563→                      </SelectItem>
+  1564→                    ))}
+  1565→                  </SelectContent>
+  1566→                </Select>
+  1567→              </div>
+  1568→            </div>
+  1569→
+  1570→            {/* Angle + quick spacing */}
+  1571→            <div className="grid grid-cols-2 gap-3">
+  1572→              <div className="space-y-1.5">
+  1573→                <Label className="text-xs font-medium">Kot (°)</Label>
+  1574→                <Input
+  1575→                  type="number"
+  1576→                  value={formAngle}
+  1577→                  onChange={(e) => setFormAngle(e.target.value)}
+  1578→                  placeholder="90"
+  1579→                  className="h-10 font-mono"
+  1580→                />
+  1581→                <p className="text-[9px] text-muted-foreground">Pustite prazno za ravne odseke</p>
+  1582→              </div>
+  1583→              <div className="flex items-end">
+  1584→                <div className="w-full rounded-lg border border-border/50 bg-secondary/30 p-2.5 text-center">
+  1585→                  {formLength && formHeight ? (() => {
+  1586→                    const calc = getQuickSpacing(parseInt(formLength), parseInt(formHeight))
+  1587→                    return (
+  1588→                      <div>
+  1589→                        <p
+  1590→                          className={`text-lg font-bold ${
+  1591→                            calc.compliant ? 'text-roksal-green' : 'text-roksal-red'
+  1592→                          }`}
+  1593→                        >
+  1594→                          {calc.slatCount} letvev
+  1595→                        </p>
+  1596→                        <p className="text-[9px] text-muted-foreground">razmik {calc.gap}mm</p>
+  1597→                      </div>
+  1598→                    )
+  1599→                  })() : (
+  1600→                    <p className="text-[10px] text-muted-foreground">
+  1601→                      Vnesite meritve za
+  1602→                      <br />
+  1603→                      hitri izračun razmikov
+  1604→                    </p>
+  1605→                  )}
+  1606→                </div>
+  1607→              </div>
+  1608→            </div>
+  1609→
+  1610→            {/* Opomba (textarea) */}
+  1611→            <div className="space-y-1.5">
+  1612→              <Label className="text-xs font-medium">Opomba</Label>
+  1613→              <Textarea
+  1614→                value={formOpomba}
+  1615→                onChange={(e) => setFormOpomba(e.target.value)}
+  1616→                placeholder="Podrobnejši opis, posebnosti, opozorila..."
+  1617→                className="min-h-[60px] text-sm"
+  1618→              />
+  1619→            </div>
+  1620→
+  1621→            {/* Notes (kratko) */}
+  1622→            <div className="space-y-1.5">
+  1623→              <Label className="text-xs font-medium">Kratke opombe</Label>
+  1624→              <Input
+  1625→                value={formNotes}
+  1626→                onChange={(e) => setFormNotes(e.target.value)}
+  1627→                placeholder="Posebnosti, opazke..."
+  1628→                className="h-10"
+  1629→              />
+  1630→            </div>
+  1631→
+  1632→            <Separator />
+  1633→
+  1634→            {/* Scan + Submit */}
+  1635→            <div className="flex items-center gap-2 pt-1">
+  1636→              <Button
+  1637→                type="button"
+  1638→                variant="outline"
+  1639→                className="h-9 px-3 text-[11px] gap-1.5 shrink-0 transition-colors"
+  1640→                onClick={() => toast.info('LiDAR skeniranje bo kmalu na voljo')}
+  1641→              >
+  1642→                <Scan className="h-3.5 w-3.5" />
+  1643→                Scaniraj
+  1644→              </Button>
+  1645→              <Button
+  1646→                type="button"
+  1647→                onClick={handleSubmitMeasurement}
+  1648→                className="flex-1 h-9 bg-roksal-navy hover:bg-roksal-navy/90 text-white transition-transform duration-200 active:scale-[0.98]"
+  1649→                disabled={submitting || !formLength || !formHeight}
+  1650→              >
+  1651→                {submitting ? (
+  1652→                  <span className="flex items-center gap-1.5">
+  1653→                    <span className="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+  1654→                    Shranjujem...
+  1655→                  </span>
+  1656→                ) : (
+  1657→                  <>
+  1658→                    <Plus className="mr-1.5 h-4 w-4" />
+  1659→                    Shrani meritev
+  1660→                  </>
+  1661→                )}
+  1662→              </Button>
+  1663→            </div>
+  1664→          </div>
+  1665→        )}
+  1666→      </Card>
+  1667→
+  1668→      {/* SEgmenti (NEW) */}
+  1669→      <Card className="card-hover animate-fade-in-up" style={{ animationDelay: '120ms' }}>
+  1670→        <CardHeader className="pb-2 pt-4 px-4">
+  1671→          <div className="flex items-center justify-between">
+  1672→            <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+  1673→              <Layers className="h-4 w-4" />
+  1674→              Segmenti
+  1675→              <Badge variant="secondary" className="text-[10px] h-5 px-1.5">
+  1676→                {allSegments.length}
+  1677→              </Badge>
+  1678→            </CardTitle>
+  1679→            <Button
+  1680→              type="button"
+  1681→              variant="outline"
+  1682→              size="sm"
+  1683→              className="h-7 px-2 text-[11px] gap-1"
+  1684→              onClick={() => setAddSegmentOpen(!addSegmentOpen)}
+  1685→            >
+  1686→              <Plus className="h-3 w-3" />
+  1687→              Dodaj segment
+  1688→            </Button>
+  1689→          </div>
+  1690→        </CardHeader>
+  1691→        <CardContent className="px-4 pb-4">
+  1692→          {/* Forma za nov segment */}
+  1693→          {addSegmentOpen && (
+  1694→            <div className="mb-3 rounded-lg border border-border/50 bg-secondary/30 p-3 space-y-2 slide-in-right">
+  1695→              <Input
+  1696→                value={newSegmentName}
+  1697→                onChange={(e) => setNewSegmentName(e.target.value)}
+  1698→                placeholder="Ime segmenta (npr. Severni del)"
+  1699→                className="h-9"
+  1700→              />
+  1701→              <Select
+  1702→                value={newSegmentType}
+  1703→                onValueChange={(v) => setNewSegmentType(v as Segment['type'])}
+  1704→              >
+  1705→                <SelectTrigger className="h-9">
+  1706→                  <SelectValue />
+  1707→                </SelectTrigger>
+  1708→                <SelectContent>
+  1709→                  {(Object.keys(segmentTypeLabels) as Segment['type'][]).map((t) => (
+  1710→                    <SelectItem key={t} value={t}>
+  1711→                      {segmentTypeLabels[t]}
+  1712→                    </SelectItem>
+  1713→                  ))}
+  1714→                </SelectContent>
+  1715→              </Select>
+  1716→              <div className="flex gap-2">
+  1717→                <Button
+  1718→                  type="button"
+  1719→                  onClick={handleAddSegment}
+  1720→                  className="flex-1 h-8 bg-roksal-navy text-white hover:bg-roksal-navy/90 text-xs"
+  1721→                >
+  1722→                  <Save className="mr-1 h-3 w-3" />
+  1723→                  Shrani
+  1724→                </Button>
+  1725→                <Button
+  1726→                  type="button"
+  1727→                  variant="outline"
+  1728→                  className="h-8 px-3"
+  1729→                  onClick={() => setAddSegmentOpen(false)}
+  1730→                >
+  1731→                  <X className="h-3.5 w-3.5" />
+  1732→                </Button>
+  1733→              </div>
+  1734→            </div>
+  1735→          )}
+  1736→
+  1737→          {allSegments.length === 0 ? (
+  1738→            <div className="py-6 text-center">
+  1739→              <Layers className="mx-auto h-7 w-7 text-muted-foreground/30" />
+  1740→              <p className="mt-2 text-xs text-muted-foreground">Brez segmentov</p>
+  1741→              <p className="text-[10px] text-muted-foreground/60 mt-1">
+  1742→                Dodajte segment za grupiranje meritev
+  1743→              </p>
+  1744→            </div>
+  1745→          ) : (
+  1746→            <div className="space-y-2 max-h-[400px] overflow-y-auto scrollbar-thin">
+  1747→              {allSegments.map((seg) => {
+  1748→                const stats = segmentStats.get(seg.id)
+  1749→                const segMeas = measurements.filter((m) => m.segmentId === seg.id)
+  1750→                const isOpen = expandedSegments.has(seg.id)
+  1751→                return (
+  1752→                  <Collapsible key={seg.id} open={isOpen} onOpenChange={() => toggleSegment(seg.id)}>
+  1753→                    <div className="rounded-lg border border-border/50 overflow-hidden">
+  1754→                      <CollapsibleTrigger asChild>
+  1755→                        <button
+  1756→                          type="button"
+  1757→                          className="flex w-full items-center justify-between p-3 text-left hover:bg-secondary/30 transition-colors"
+  1758→                        >
+  1759→                          <div className="flex items-center gap-2 min-w-0">
+  1760→                            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-roksal-navy/10 text-roksal-navy">
+  1761→                              <Layers className="h-3.5 w-3.5" />
+  1762→                            </div>
+  1763→                            <div className="min-w-0">
+  1764→                              <p className="text-sm font-medium text-roksal-navy truncate">{seg.name}</p>
+  1765→                              <p className="text-[10px] text-muted-foreground">
+  1766→                                {segmentTypeLabels[seg.type]} • {stats?.count || 0} meritev
+  1767→                              </p>
+  1768→                            </div>
+  1769→                          </div>
+  1770→                          <div className="flex items-center gap-2 shrink-0">
+  1771→                            <div className="text-right">
+  1772→                              <p className="text-xs font-mono font-bold text-roksal-navy">
+  1773→                                {formatDimension(stats?.totalLength || 0)}
+  1774→                              </p>
+  1775→                              <p className="text-[9px] text-muted-foreground">
+  1776→                                povpr. {formatDimension(Math.round(stats?.avgHeight || 0))}
+  1777→                              </p>
+  1778→                            </div>
+  1779→                            {isOpen ? (
+  1780→                              <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" />
+  1781→                            ) : (
+  1782→                              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+  1783→                            )}
+  1784→                          </div>
+  1785→                        </button>
+  1786→                      </CollapsibleTrigger>
+  1787→                      <CollapsibleContent>
+  1788→                        <div className="border-t border-border/30 p-2 space-y-2 bg-secondary/5">
+  1789→                          {segMeas.length === 0 ? (
+  1790→                            <p className="text-[11px] text-muted-foreground text-center py-3">
+  1791→                              V tem segmentu ni meritev
+  1792→                            </p>
+  1793→                          ) : (
+  1794→                            segMeas.map((m) => (
+  1795→                              <div key={m.id} className="text-xs">
+  1796→                                {renderMeasurementCard(m)}
+  1797→                              </div>
+  1798→                            ))
+  1799→                          )}
+  1800→                          <button
+  1801→                            type="button"
+  1802→                            onClick={() => {
+  1803→                              setFormSegmentId(seg.id)
+  1804→                              setFormOpen(true)
+  1805→                              setAddSegmentOpen(false)
+  1806→                            }}
+  1807→                            className="w-full rounded-lg border border-dashed border-roksal-navy/30 py-1.5 text-[10px] text-roksal-navy hover:bg-roksal-navy/5 transition-colors"
+  1808→                          >
+  1809→                            <Plus className="inline h-3 w-3 mr-1" />
+  1810→                            Dodaj meritev v ta segment
+  1811→                          </button>
+  1812→                          <button
+  1813→                            type="button"
+  1814→                            onClick={() => handleDeleteSegment(seg.id)}
+  1815→                            className="w-full rounded-lg border border-dashed border-roksal-red/30 py-1 text-[10px] text-roksal-red hover:bg-roksal-red/5 transition-colors"
+  1816→                          >
+  1817→                            <Trash2 className="inline h-3 w-3 mr-1" />
+  1818→                            Izbriši segment
+  1819→                          </button>
+  1820→                        </div>
+  1821→                      </CollapsibleContent>
+  1822→                    </div>
+  1823→                  </Collapsible>
+  1824→                )
+  1825→              })}
+  1826→            </div>
+  1827→          )}
+  1828→        </CardContent>
+  1829→      </Card>
+  1830→
+  1831→      {/* Stats Header (existing) */}
+  1832→      <div className="grid grid-cols-4 gap-2">
+  1833→        <Card className="px-2 py-2.5 card-hover animate-fade-in-up" style={{ animationDelay: '150ms' }}>
+  1834→          <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Meritve</p>
+  1835→          <p className="text-lg font-bold text-roksal-navy">{measurements.length}</p>
+  1836→        </Card>
+  1837→        <Card className="px-2 py-2.5 card-hover transition-all duration-200 animate-fade-in-up" style={{ animationDelay: '180ms' }}>
+  1838→          <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Stebri</p>
+  1839→          <p className="text-lg font-bold text-roksal-navy">{totalPosts || '—'}</p>
+  1840→        </Card>
+  1841→        <Card className="px-2 py-2.5 card-hover transition-all duration-200 animate-fade-in-up" style={{ animationDelay: '210ms' }}>
+  1842→          <p className="text-[9px] text-muted-foreground uppercase tracking-wide">LiDAR</p>
+  1843→          <p className="text-lg font-bold text-roksal-navy">{lidarScans}</p>
+  1844→        </Card>
+  1845→        <Card className="px-2 py-2.5 card-hover transition-all duration-200 animate-fade-in-up" style={{ animationDelay: '240ms' }}>
+  1846→          <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Skupaj</p>
+  1847→          <p className="text-lg font-bold text-roksal-navy">{(totalLength / 1000).toFixed(1)}m</p>
+  1848→        </Card>
+  1849→      </div>
+  1850→
+  1851→      {/* Average Dimensions Card (existing) */}
+  1852→      {measurements.length > 0 && (
+  1853→        <Card className="card-hover transition-all duration-200 animate-fade-in-up" style={{ animationDelay: '270ms' }}>
+  1854→          <CardHeader className="pb-2 pt-4 px-4">
+  1855→            <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+  1856→              <TrendingUp className="h-4 w-4" />
+  1857→              Povprečne dimenzije
+  1858→            </CardTitle>
+  1859→          </CardHeader>
+  1860→          <CardContent className="px-4 pb-4">
+  1861→            <div className="grid grid-cols-2 gap-3">
+  1862→              <div className="flex items-center gap-3 rounded-lg bg-secondary/50 p-3">
+  1863→                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-roksal-navy/10">
+  1864→                  <Ruler className="h-4 w-4 text-roksal-navy" />
+  1865→                </div>
+  1866→                <div>
+  1867→                  <p className="text-xs font-medium text-roksal-navy">
+  1868→                    {formatDimension(Math.round(avgLength))}
+  1869→                  </p>
+  1870→                  <p className="text-[10px] text-muted-foreground">Povpr. dolžina</p>
+  1871→                </div>
+  1872→              </div>
+  1873→              <div className="flex items-center gap-3 rounded-lg bg-secondary/50 p-3">
+  1874→                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-roksal-navy/10">
+  1875→                  <Ruler className="h-4 w-4 text-roksal-amber rotate-90" />
+  1876→                </div>
+  1877→                <div>
+  1878→                  <p className="text-xs font-medium text-roksal-navy">
+  1879→                    {formatDimension(Math.round(avgHeight))}
+  1880→                  </p>
+  1881→                  <p className="text-[10px] text-muted-foreground">Povpr. višina</p>
+  1882→                </div>
+  1883→              </div>
+  1884→            </div>
+  1885→          </CardContent>
+  1886→        </Card>
+  1887→      )}
+  1888→
+  1889→      {/* Measurements List */}
+  1890→      <Card className="card-hover animate-fade-in-up" style={{ animationDelay: '300ms' }}>
+  1891→        <CardHeader className="pb-2 pt-4 px-4">
+  1892→          <div className="flex items-center justify-between">
+  1893→            <CardTitle className="text-sm font-semibold text-roksal-navy">Seznam meritev</CardTitle>
+  1894→            <div className="flex items-center gap-1.5">
+  1895→              <button
+  1896→                type="button"
+  1897→                onClick={handleExportCSV}
+  1898→                className="flex items-center gap-1 rounded-lg border border-roksal-navy/20 bg-roksal-navy/5 px-2 py-1 text-[10px] font-medium text-roksal-navy hover:bg-roksal-navy/10 active:scale-[0.96] transition-all duration-150"
+  1899→                disabled={loading || measurements.length === 0}
+  1900→              >
+  1901→                <Download className="h-3 w-3" />
+  1902→                CSV
+  1903→              </button>
+  1904→              <button
+  1905→                type="button"
+  1906→                onClick={handleExportPDF}
+  1907→                className="flex items-center gap-1 rounded-lg border border-roksal-amber/30 bg-roksal-amber/10 px-2 py-1 text-[10px] font-medium text-roksal-amber hover:bg-roksal-amber/20 active:scale-[0.96] transition-all duration-150"
+  1908→                disabled={loading || measurements.length === 0}
+  1909→              >
+  1910→                <FileText className="h-3 w-3" />
+  1911→                PDF
+  1912→              </button>
+  1913→              <Badge variant="secondary">{measurements.length}</Badge>
+  1914→            </div>
+  1915→          </div>
+  1916→        </CardHeader>
+  1917→        <CardContent className="px-4 pb-4">
+  1918→          {loading ? (
+  1919→            <div className="space-y-3">
+  1920→              {[1, 2, 3].map((i) => (
+  1921→                <Skeleton key={i} className="h-32 w-full" />
+  1922→              ))}
+  1923→            </div>
+  1924→          ) : measurements.length > 0 ? (
+  1925→            <div className="space-y-4 max-h-[600px] overflow-y-auto scrollbar-thin">
+  1926→              {groupedMeasurements.map((group) => (
+  1927→                <div key={group.label}>
+  1928→                  <div className="flex items-center gap-2 mb-2 mt-1 first:mt-0">
+  1929→                    <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+  1930→                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+  1931→                      {group.label}
+  1932→                    </span>
+  1933→                    <div className="flex-1 h-px bg-border/50" />
+  1934→                    <Badge variant="secondary" className="text-[10px] h-5 px-1.5">
+  1935→                      {group.measurements.length}
+  1936→                    </Badge>
+  1937→                  </div>
+  1938→                  <div className="space-y-3">
+  1939→                    {group.measurements.map((m) => renderMeasurementCard(m))}
+  1940→                  </div>
+  1941→                </div>
+  1942→              ))}
+  1943→            </div>
+  1944→          ) : (
+  1945→            <div className="py-8 text-center">
+  1946→              <Ruler className="mx-auto h-8 w-8 text-muted-foreground/30" />
+  1947→              <p className="mt-2 text-sm text-muted-foreground">Še ni meritev</p>
+  1948→              <p className="text-[11px] text-muted-foreground/60 mt-1">
+  1949→                Dodajte novo meritev za ogrodje
+  1950→              </p>
+  1951→            </div>
+  1952→          )}
+  1953→        </CardContent>
+  1954→      </Card>
+  1955→    </div>
+  1956→  )
+  1957→}
+  1958→
+  1959→// ============================================
+  1960→// KOMPONENTA: CalibrationPhotoPicker
+  1961→// Naloži sliko in omogoči tap dveh točk za izračun piksel razdalje
+  1962→// ============================================
+  1963→
+  1964→function CalibrationPhotoPicker({ onPixelDistance }: { onPixelDistance: (px: number) => void }) {
+  1965→  const [imageUrl, setImageUrl] = useState<string | null>(null)
+  1966→  const [points, setPoints] = useState<{ x: number; y: number }[]>([])
+  1967→  const containerRef = useRef<HTMLDivElement>(null)
+  1968→  const fileRef = useRef<HTMLInputElement>(null)
+  1969→
+  1970→  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+  1971→    const file = e.target.files?.[0]
+  1972→    if (!file) return
+  1973→    const url = URL.createObjectURL(file)
+  1974→    setImageUrl(url)
+  1975→    setPoints([])
+  1976→  }
+  1977→
+  1978→  function handleImageClick(e: React.MouseEvent<HTMLImageElement>) {
+  1979→    if (!imageUrl) return
+  1980→    const rect = e.currentTarget.getBoundingClientRect()
+  1981→    const x = e.clientX - rect.left
+  1982→    const y = e.clientY - rect.top
+  1983→    setPoints((prev) => {
+  1984→      const next = [...prev, { x, y }]
+  1985→      if (next.length > 2) return [next[next.length - 1]]
+  1986→      if (next.length === 2) {
+  1987→        const dx = next[1].x - next[0].x
+  1988→        const dy = next[1].y - next[0].y
+  1989→        const dist = Math.sqrt(dx * dx + dy * dy)
+  1990→        onPixelDistance(dist)
+  1991→      }
+  1992→      return next
+  1993→    })
+  1994→  }
+  1995→
+  1996→  function clearPoints() {
+  1997→    setPoints([])
+  1998→  }
+  1999→
+  2000→  return (
+
+[showing lines 1-2000 of 2487; use offset=2001 with limit to continue reading]
