@@ -755,3 +755,417 @@ export function calculateAkontacija(total: number, akontacijaPct: number): Akont
     preostanek: Math.round((t - akontacija) * 100) / 100,
   }
 }
+
+// ============================================
+// 14. CNC RAZREZNI NAČRT (1D bin packing)
+// ============================================
+// First-Fit Decreasing (FFD) algoritem za optimizacijo razreza profilov.
+// Standardne dolžine: alu 6000mm, WPC 2200/4000mm.
+
+export interface CncCutInput {
+  // Zahtevane dolžine (odseki za rezanje)
+  segments: Array<{ lengthMm: number; count: number; label?: string }>
+  // Standardna dolžina profila (navadno 6000mm za alu, 2200/4000mm za WPC)
+  stockLengthMm: number
+  // Širina reza (žagin disk, default 3mm)
+  sawBladeWidthMm?: number
+}
+
+export interface CncCutResult {
+  // Število kupljenih profilov
+  stockCount: number
+  // Razrezni načrt za vsak profil
+  plans: Array<{
+    stockIndex: number
+    cuts: Array<{ lengthMm: number; label?: string; fromSegmentIndex: number }>
+    remainingMm: number
+    utilizationPct: number
+  }>
+  // Skupna dolžina zahtevanih odsekov
+  totalRequiredMm: number
+  // Skupna dolžina kupljenih profilov
+  totalStockMm: number
+  // Skupni ostanki (vključno z žaginimi rezi)
+  totalWasteMm: number
+  // Skupni izkoristek %
+  overallUtilizationPct: number
+  warnings: string[]
+}
+
+export function calculateCncCutting(input: CncCutInput): CncCutResult {
+  const warnings: string[] = []
+  const sawBladeWidthMm = input.sawBladeWidthMm && input.sawBladeWidthMm > 0 ? input.sawBladeWidthMm : 3
+  const stockLengthMm = input.stockLengthMm
+
+  if (!isFinite(stockLengthMm) || stockLengthMm <= 0) {
+    return {
+      stockCount: 0,
+      plans: [],
+      totalRequiredMm: 0,
+      totalStockMm: 0,
+      totalWasteMm: 0,
+      overallUtilizationPct: 0,
+      warnings: ['Neveljavna dolžina profila.'],
+    }
+  }
+
+  // Preveri segmente — če kateri presega stock
+  for (const seg of input.segments) {
+    if (seg.lengthMm > stockLengthMm) {
+      warnings.push(`Odsek ${seg.lengthMm}mm presega dolžino profila ${stockLengthMm}mm!`)
+    }
+    if (seg.count <= 0) {
+      warnings.push(`Odsek z ${seg.count} kosi je neveljaven (sprejeto 0).`)
+    }
+  }
+
+  // Razširi segmente v posamezne odseke
+  type CutItem = { lengthMm: number; label?: string; fromSegmentIndex: number }
+  const cuts: CutItem[] = []
+  input.segments.forEach((seg, idx) => {
+    const count = Math.max(0, Math.floor(seg.count))
+    for (let i = 0; i < count; i++) {
+      if (seg.lengthMm > 0 && seg.lengthMm <= stockLengthMm) {
+        cuts.push({
+          lengthMm: Math.round(seg.lengthMm * 10) / 10,
+          label: seg.label,
+          fromSegmentIndex: idx,
+        })
+      }
+    }
+  })
+
+  if (cuts.length === 0) {
+    return {
+      stockCount: 0,
+      plans: [],
+      totalRequiredMm: 0,
+      totalStockMm: 0,
+      totalWasteMm: 0,
+      overallUtilizationPct: 0,
+      warnings: ['Ni veljavnih odsekov za razrez.'],
+    }
+  }
+
+  // First-Fit Decreasing: sortiraj po dolžini padajoče
+  cuts.sort((a, b) => b.lengthMm - a.lengthMm)
+
+  // Pakiranje
+  type Stock = { cuts: CutItem[]; usedMm: number }
+  const stocks: Stock[] = []
+
+  for (const cut of cuts) {
+    let placed = false
+    for (const stock of stocks) {
+      // Dodajanje v obstoječ profil: potrebujemo rezilo + dolžino
+      const needed = (stock.cuts.length > 0 ? sawBladeWidthMm : 0) + cut.lengthMm
+      if (stock.usedMm + needed <= stockLengthMm) {
+        stock.cuts.push(cut)
+        stock.usedMm += needed
+        placed = true
+        break
+      }
+    }
+    if (!placed) {
+      // Odpri nov profil
+      stocks.push({ cuts: [cut], usedMm: cut.lengthMm })
+    }
+  }
+
+  const plans = stocks.map((stock, idx) => {
+    const usedMm = stock.usedMm
+    const remainingMm = Math.max(0, stockLengthMm - usedMm)
+    const utilizationPct = (usedMm / stockLengthMm) * 100
+    return {
+      stockIndex: idx + 1,
+      cuts: stock.cuts.map((c) => ({
+        lengthMm: c.lengthMm,
+        label: c.label,
+        fromSegmentIndex: c.fromSegmentIndex,
+      })),
+      remainingMm: Math.round(remainingMm * 10) / 10,
+      utilizationPct: Math.round(utilizationPct * 10) / 10,
+    }
+  })
+
+  const totalRequiredMm = cuts.reduce((sum, c) => sum + c.lengthMm, 0)
+  const totalStockMm = stocks.length * stockLengthMm
+  const totalWasteMm = totalStockMm - totalRequiredMm
+  const overallUtilizationPct = totalStockMm > 0 ? (totalRequiredMm / totalStockMm) * 100 : 0
+
+  if (overallUtilizationPct < 70) {
+    warnings.push(`Izkoristek ${overallUtilizationPct.toFixed(1)}% je nizak. Razmislite o ponovni uporabi ostankov.`)
+  }
+
+  return {
+    stockCount: stocks.length,
+    plans,
+    totalRequiredMm: Math.round(totalRequiredMm),
+    totalStockMm,
+    totalWasteMm: Math.round(totalWasteMm),
+    overallUtilizationPct: Math.round(overallUtilizationPct * 10) / 10,
+    warnings,
+  }
+}
+
+// ============================================
+// 15. VETRNI IZRAČUN PO LOKACIJI (SIST EN 1991-1-4 NA Slovenija)
+// ============================================
+// Določi vetrno cono iz GPS koordinat in izračuna obremenitev.
+
+export interface WindLocationInput {
+  latitude: number
+  longitude: number
+  heightAboveGround: number // m
+  terrainCategory: 'I' | 'II' | 'III' | 'IV'
+  railingAreaM2: number
+  railingType: 'solid' | 'slatted' | 'z-line'
+}
+
+export interface WindLocationResult {
+  windZone: 1 | 2 | 3
+  basicWindSpeedMs: number
+  basicPressureKpa: number
+  designPressureKpa: number
+  totalForceKn: number
+  forcePerMeterNm: number
+  riskLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
+  locationDescription: string
+  recommendations: string[]
+}
+
+/** Pomožna funkcija: določi približno ime mesta iz GPS (poenostavljeno za Slovenijo). */
+function describeSlovenianLocation(lat: number, lon: number): string {
+  if (lat >= 46.20 && lat <= 46.45 && lon >= 14.20 && lon <= 14.45) return 'Kranj'
+  if (lat >= 46.00 && lat <= 46.15 && lon >= 14.40 && lon <= 14.65) return 'Ljubljana'
+  if (lat >= 46.50 && lat <= 46.70 && lon >= 15.55 && lon <= 15.75) return 'Maribor'
+  if (lat >= 46.18 && lat <= 46.30 && lon >= 15.20 && lon <= 15.35) return 'Celje'
+  if (lat >= 45.45 && lat <= 45.60 && lon >= 13.65 && lon <= 13.85) return 'Koper'
+  if (lat >= 46.30 && lat <= 46.50 && lon >= 13.50 && lon <= 14.20) return 'Julijske Alpe / Bled'
+  if (lat >= 46.45 && lat <= 46.75 && lon >= 13.50 && lon <= 14.10) return 'Karavanke'
+  if (lat >= 45.95 && lat <= 46.10 && lon >= 13.60 && lon <= 13.80) return 'Nova Gorica'
+  if (lat >= 46.20 && lat <= 46.30 && lon >= 13.80 && lon <= 14.00) return 'Tolmin / Bovec'
+  if (lat >= 46.20 && lat <= 46.30 && lon >= 15.65 && lon <= 15.85) return 'Ptuj'
+  return 'Lokacija (Slovenija)'
+}
+
+export function calculateWindByLocation(input: WindLocationInput): WindLocationResult {
+  const { latitude, longitude, heightAboveGround, terrainCategory, railingAreaM2, railingType } = input
+  const recommendations: string[] = []
+
+  // Določanje cone (poenostavljeno za Slovenijo)
+  let windZone: 1 | 2 | 3
+  let zoneDescription: string
+  if (latitude > 46.5 && longitude > 13.8) {
+    windZone = 3
+    zoneDescription = 'gore (Julijske/Karavanke)'
+  } else if (latitude < 45.7 && longitude > 13.5) {
+    windZone = 2
+    zoneDescription = 'obala (Primorska)'
+  } else {
+    windZone = 1
+    zoneDescription = 'celina'
+  }
+
+  const basicWindSpeedMs = windZone === 1 ? 22 : windZone === 2 ? 24 : 28
+  // basicPressureKpa = 0.5 * 1.25 * v² / 1000
+  const basicPressureKpa = (0.5 * 1.25 * Math.pow(basicWindSpeedMs, 2)) / 1000
+
+  // Faktorji (enako kot calculateWindLoad)
+  const terrainFactors: Record<string, number> = { I: 1.0, II: 0.91, III: 0.82, IV: 0.73 }
+  const kTerrain = terrainFactors[terrainCategory] || 0.91
+  const safeHeight = Math.max(heightAboveGround, 1)
+  const heightFactor = Math.pow(safeHeight / 10, 0.2)
+  const aeroFactors: Record<string, number> = { solid: 1.3, slatted: 0.8, 'z-line': 0.6 }
+  const cAero = aeroFactors[railingType] || 0.8
+
+  const designPressureKpa = basicPressureKpa * kTerrain * heightFactor * cAero
+  const totalForceKn = designPressureKpa * railingAreaM2 // kPa × m² = kN
+  const railingLengthM = Math.sqrt(railingAreaM2)
+  const forcePerMeterNm = railingLengthM > 0 ? (totalForceKn / railingLengthM) * 1000 : 0
+
+  let riskLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
+  if (designPressureKpa < 0.5) {
+    riskLevel = 'LOW'
+  } else if (designPressureKpa < 1.0) {
+    riskLevel = 'MEDIUM'
+    recommendations.push('Preverite pritrdilne elemente. Uporabite A4 Inox vijake.')
+  } else if (designPressureKpa < 1.5) {
+    riskLevel = 'HIGH'
+    recommendations.push('Visoka vetrna obremenitev! Uporabite kemično sidranje in dodatne stebre.')
+    recommendations.push('Priporočljivo: Z-line profil za zmanjšanje vetrenega upora.')
+  } else {
+    riskLevel = 'CRITICAL'
+    recommendations.push('KRITIČNA vetrna obremenitev! Potrebna statična analiza.')
+    recommendations.push('Obvezno: Kemično sidranje vseh stebrov, zmanjšan razmik med stebri.')
+  }
+
+  if (railingType === 'solid' && heightAboveGround > 20) {
+    recommendations.push('Polna ograja nad 20m: Tveganje harmoničnih vibracij. Vgradite dušilna tesnila.')
+  }
+  if (windZone === 3) {
+    recommendations.push(`Cona 3 (gore): burja in vetrovi visokih hitrosti. Obvezna ojačana pritrditev.`)
+  }
+  if (windZone === 2) {
+    recommendations.push(`Cona 2 (obala): burja. Priporočamo Z-line profil in Inox A4 vijake.`)
+  }
+
+  const cityName = describeSlovenianLocation(latitude, longitude)
+  const locationDescription = `${cityName} — ${zoneDescription} (cona ${windZone})`
+
+  return {
+    windZone,
+    basicWindSpeedMs,
+    basicPressureKpa: Math.round(basicPressureKpa * 1000) / 1000,
+    designPressureKpa: Math.round(designPressureKpa * 1000) / 1000,
+    totalForceKn: Math.round(totalForceKn * 100) / 100,
+    forcePerMeterNm: Math.round(forcePerMeterNm * 10) / 10,
+    riskLevel,
+    locationDescription,
+    recommendations,
+  }
+}
+
+// ============================================
+// 16. STEKLENA BALUSTRADA (poenostavljena metoda po SIST EN)
+// ============================================
+// Poenostavljen izračun napetosti v steklu za steklene balustrade.
+
+export interface GlassCalcInput {
+  // Razpon med stebri (mm)
+  spanMm: number
+  // Višina stekla (mm), navadno 1000-1100
+  heightMm: number
+  // Obremenitev (kN/m) — horizontal load
+  loadKnPerM: number
+  // Tip stekla
+  glassType: 'single' | 'laminated' | 'tempered'
+}
+
+export interface GlassCalcResult {
+  // Priporočena debelina stekla (mm)
+  recommendedThicknessMm: number
+  // Alternativne debeline
+  alternativeThicknesses: Array<{ mm: number; safe: boolean; reason: string }>
+  // Maksimalni dovoljen razpon za izbrano debelino
+  maxSpanForThicknessMm: number
+  // Napetost v steklu (MPa)
+  stressMpa: number
+  // Dovoljena napetost (MPa) glede na tip stekla
+  allowableStressMpa: number
+  // Ali je izbira varna
+  isSafe: boolean
+  // Število slojev za laminirano
+  layers?: number
+  warnings: string[]
+  recommendations: string[]
+}
+
+export function calculateGlassBalustrade(input: GlassCalcInput): GlassCalcResult {
+  const { spanMm, heightMm, loadKnPerM, glassType } = input
+  const warnings: string[] = []
+  const recommendations: string[] = []
+
+  const allowableStressMap: Record<GlassCalcInput['glassType'], number> = {
+    single: 40,
+    laminated: 50,
+    tempered: 120,
+  }
+  const allowableStressMpa = allowableStressMap[glassType]
+
+  // Kandidati (skupna debelina v mm)
+  const candidates: Array<{ mm: number; layers?: number; baseMm?: number }> =
+    glassType === 'laminated'
+      ? [
+          { mm: 12, layers: 2, baseMm: 6 },
+          { mm: 16, layers: 2, baseMm: 8 },
+          { mm: 20, layers: 2, baseMm: 10 },
+          { mm: 24, layers: 2, baseMm: 12 },
+        ]
+      : [
+          { mm: 8 },
+          { mm: 10 },
+          { mm: 12 },
+          { mm: 15 },
+          { mm: 19 },
+          { mm: 22 },
+          { mm: 25 },
+        ]
+
+  // 1 kN/m = 1 N/mm (simplified — load is line load on horizontal beam)
+  const loadNPerMm = loadKnPerM
+  const spanM = Math.max(spanMm, 1)
+
+  const stressFor = (thicknessMm: number) =>
+    (loadNPerMm * Math.pow(spanM, 2) * 6) / (Math.pow(thicknessMm, 2) * 8)
+
+  const alternativeThicknesses = candidates.map((c) => {
+    const stress = stressFor(c.mm)
+    const safe = stress <= allowableStressMpa
+    const reason = safe
+      ? `Napetost ${stress.toFixed(1)} MPa ≤ ${allowableStressMpa} MPa — varno`
+      : `Napetost ${stress.toFixed(1)} MPa > ${allowableStressMpa} MPa — preseženo`
+    return { mm: c.mm, safe, reason }
+  })
+
+  const firstSafe = alternativeThicknesses.find((a) => a.safe)
+  const recommendedThicknessMm = firstSafe?.mm ?? candidates[candidates.length - 1].mm
+
+  const stressMpa = stressFor(recommendedThicknessMm)
+  const isSafe = stressMpa <= allowableStressMpa
+
+  // Max razpon za izbrano debelino: span = sqrt(allowable × t² × 8 / (load × 6))
+  const maxSpanForThicknessMm = Math.sqrt(
+    (allowableStressMpa * Math.pow(recommendedThicknessMm, 2) * 8) / (Math.max(loadNPerMm, 0.001) * 6),
+  )
+
+  // Opozorila
+  if (!isSafe) {
+    warnings.push(
+      `Priporočena debelina ${recommendedThicknessMm}mm ne zadošča! Izberite večjo debelino ali zmanjšajte razpon.`,
+    )
+  }
+  if (spanMm > 1500) {
+    warnings.push('Razpon > 1500mm — priporočamo dodaten steber za varnost.')
+  }
+  if (heightMm < 1000) {
+    warnings.push(`Višina stekla ${heightMm}mm je pod standardom (min 1000mm za balkone).`)
+  }
+  if (heightMm > 1200) {
+    warnings.push(`Višina stekla ${heightMm}mm — preverite statiko za povečano obremenitev.`)
+  }
+  if (loadKnPerM >= 2.0) {
+    warnings.push('Visoka obremenitev (2,0 kN/m) — balkon z višinskim padcem. Obvezna statična analiza.')
+  }
+
+  // Priporočila
+  if (glassType === 'laminated') {
+    const baseMm = candidates.find((c) => c.mm === recommendedThicknessMm)?.baseMm ?? recommendedThicknessMm / 2
+    recommendations.push(
+      `Laminirano steklo: 2× ${baseMm}mm + PVB folija = ${recommendedThicknessMm}mm`,
+    )
+    recommendations.push('Laminirano steklo ob razbitju ostane skupaj (varnostna folija PVB).')
+  } else if (glassType === 'tempered') {
+    recommendations.push('Kaljeno steklo je 4-5× odpornejše od navadnega.')
+    recommendations.push('Pri razbitju se drobi v drobne koščke (varnostno).')
+  } else {
+    recommendations.push('Enojno steklo ni primerno za javne prostore — razmislite o laminiranem ali kaljenem.')
+  }
+  if (spanMm > 1200) {
+    recommendations.push(`Pri razponu ${spanMm}mm priporočamo dodaten stebro na vsakih 1200mm.`)
+  }
+  recommendations.push('Uporabite A4 (Inox 316) vijake in kemično sidranje stebrov.')
+  recommendations.push('Robovi stekla morajo biti bruseni (poliranje za preprečitev loma).')
+
+  return {
+    recommendedThicknessMm,
+    alternativeThicknesses,
+    maxSpanForThicknessMm: Math.round(maxSpanForThicknessMm),
+    stressMpa: Math.round(stressMpa * 10) / 10,
+    allowableStressMpa,
+    isSafe,
+    layers: glassType === 'laminated' ? 2 : undefined,
+    warnings,
+    recommendations,
+  }
+}

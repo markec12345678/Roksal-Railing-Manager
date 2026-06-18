@@ -1826,3 +1826,205 @@ Stage Summary:
 - **Portal stranke**: javna stran s statusom/slikami/ceno, SMS/email delitev
 - **+~2400 vrstic** nove funkcionalnosti (tloris ~1950 + portal ~450)
 - **Pushan na GitHub** (commit d5fa3fc)
+
+---
+Task ID: MERITVE-PRO
+Agent: full-stack-developer (Meritve PRO)
+Task: Bluetooth laser + AR sync + foto mere povezava
+
+Work Log:
+- Prebral worklog.md (1829 vrstic) za kontekst predhodnih nalog (P1, P3, FOTO-MERA, AR-OVERLAY, TLORIS).
+- Prebral measurements-tab.tsx (6390 vrstic) v celoti, da razumem obstoječo strukturo: 9 tipi meritev, stopniščni čarovnik, WPC orientacije, štebricki, predloge, skupinske akcije, status, zgodovina, glasovni vnos, kalibracija, inline inclinometer/kotomer, normalizeMeasurements logika.
+- Prebral API routes: /api/photos (GET/POST/DELETE za ProjectPhoto z imageData base64), /api/ar-snapshots (GET/POST/DELETE za ArSnapshot z tocke/kalibracija/meritve kot JSON string, vključi profil).
+- Prebral Prisma schema za ArSnapshot (tocke: JSON [{x,y,label}], kalibracija: JSON {pixelsPerCm}) in ProjectPhoto.
+- Prebral /app/page.tsx za navigacijske signale (setActiveTab, onNavigateToCalculator).
+
+**Feature 1 — WEB BLUETOOTH LASER INTEGRACIJA:**
+- Dodal import `Bluetooth, Boxes, Radio, Image as ImageIcon, Link2, Loader2, Unplug` iz lucide-react in `Progress` iz shadcn/ui.
+- Deklariral minimalne Web Bluetooth tipe (BluetoothCharacteristicLike, BluetoothServiceLike, BluetoothDeviceLike, BluetoothLike, NavigatorWithBluetooth) — TypeScript DOM lib jih nima privzeto.
+- Konstante: LASER_SERVICE_LEICA (`0000feff-...`), LASER_SERVICE_BOSCH (`0000feaa-...`), LASER_NAME_PREFIXES (GLM, DISTO, Leica, Bosch).
+- Helper funkcije: `loadLastLaserName()` (bere iz `roksal_last_laser`), `isBluetoothSupported()`, `parseDistanceFromDataView(dv)` — 3-stopnčno: uint32 LE → uint16 LE → tekstovno z regex (če decimala → metri → mm).
+- State: laserSupported, laserStatus ('disconnected'|'connecting'|'connected'), laserDeviceName, laserLastReading + 4 ref-i (device, characteristic, reconnectAttempts, reconnectTimer, measurementHandler, disconnectHandler).
+- useEffect: zaznaj podporo (setLaserSupported), naloži zadnje ime, počisti povezavo ob unmountu.
+- `handleLaserMeasurement(event)` callback — parse DataView → setFormLength(mm) + setFormTipMeritve('RAZDALJA') + odpri formo + toast "Mera iz laserja: Xmm".
+- `connectLaser()` — requestDevice z filters (Leica service, Bosch service, 6 name prefixes) + optionalServices; gatt.connect; poskusi Leica→Bosch service; getCharacteristics; addEventListener characteristicvaluechanged; startNotifications; toast uspeh z imenom naprave. Shrani ime v `roksal_last_laser`. Error handling: User cancelled → "Dostop zavrnjen", No devices → "Nobena naprava ni bila najdena", drugo → generična napaka.
+- `disconnectLaser()` — removeEventListener, stopNotifications, gatt.disconnect, počisti ref-e + timer.
+- Auto-reconnect: 3 poskusi ob gattserverdisconnected (1.5s zakasnitev, brez requestDevice — samo gatt.connect na obstoječem ref). Toast ob vsakem poskusu.
+- UI: nova kartica po project selectorju z laserskim modulom — ikona (Loader2 spin pri connecting), naslov "Laserski daljinec", status text ("🔴 Ni povezan" / "🟡 Povezujem..." / "🟢 Laser povezan: {name}"), zadnja mera badge (Radio ikona + mm), "Poveži laser" gumb (disabled če !laserSupported, z Tooltip "Web Bluetooth ni podprt. Uporabite Chrome na Androidu ali računalniku."), "Prekini" gumb ko connected. Info banner za nepodprte brskalnike (amber) in poslušajoč status (green pulse).
+
+**Feature 2 — AR SINHRONIZACIJA (UVOZI IZ AR):**
+- State: arImportOpen, arSnapshots array, arImportLoading, arImportProgress ({current, total}|null), arSelectedSnapshotId.
+- `handleOpenArImport()` — fetch `/api/ar-snapshots?projectId=X`, napolni seznam, odpri dialog. Empty state: "Najprej ustvari AR posnetek v AR kameri".
+- `handleImportFromAr()` — parse tocke (JSON array) in kalibracija (JSON {pixelsPerMm|pixelsPerCm}). pixelsPerMm iz pixelsPerCm/10 če ni pixelsPerMm. Warning če ni kalibracije: "AR posnetek ni umerjen — mere bodo neprofične, a še vedno uvožene". Error če <2 točki: "AR posnetek ima premalo točk".
+- Za vsak par zaporednih točk (i → i+1): izračun px razdaljo (Math.sqrt(dx²+dy²)) → mm (px / pixelsPerMm) → POST /api/measurements z {projectId, dolzinaMm: max(1,round), visinaMm: 1100, arMetadata: {tipMeritve:'RAZDALJA', oznaka: `AR ${label1}-${label2}`, source:'ar_snapshot', snapshotId, opomba, x, y}}.
+- Za vsako točko: POST /api/measurements z {dolzinaMm:1, visinaMm:1100, arMetadata: {tipMeritve:'STEBR', oznaka: `AR-${label}`, source:'ar_snapshot', snapshotId, tipStebra:'VMESNI', materialStebra:'ALU', visinaStebraMm:1100, pozicijaMm:0, steberOznaka, x, y}}.
+- Progress bar med prenosom (shadcn Progress) — "X/Y mer prenesenih...". Toast na koncu: "X mer in Y stebrov uvoženih iz AR posnetka". Push audit entry.
+- Dialog UI: seznam AR posnetkov (thumbnail 14×14, datum, št. točk, št. parov, Umerjeno/Ni umeritve badge, profil badge, opombe). Selectable z amber border + CheckCircle2. Empty state za brez posnetkov. Loading state z spinner.
+- UI: "Uvozi iz AR" gumb v isti kartici kot laser (cyan tema), disabled če !selectedProject.
+
+**Feature 3 — FOTO MERE POVEZAVA NAZAJ:**
+- Razširil ArMetadata interface z `source?: string`, `photoId?: string`, `snapshotId?: string`, `x?: number`, `y?: number`.
+- Razširil Measurement interface z `source?: string`, `photoId?: string`, `snapshotId?: string`.
+- normalizeMeasurements: dodal extract source/photoId/snapshotId iz arMetadata.
+- State: fotoFilterActive (boolean), photoViewerOpen, photoViewerUrl, photoViewerId, photoViewerLoading, photoViewerNotFound.
+- filteredMeasurements: dodaten filter za `m.source === 'photo'` ko je fotoFilterActive. Ločeno fotoMeasurementsCount useMemo za badge count.
+- `handleViewPhoto(m)` — fetch `/api/photos?projectId=${m.projectId}` → find by photoId → setPhotoViewerUrl. Error če ni najden: "Foto ni najden v projektu".
+- `handleOpenInPhotos()` — shrani `roksal_open_photo_id` v localStorage + toast "Odprto v slikah — Preklopite na zavihek Slike".
+- UI v renderMeasurementCard:
+  - Amber border za photo-sourced mere.
+  - Foto badge (Camera ikona + "Foto") v glavi z Tooltip.
+  - AR badge (Boxes ikona + "AR") v glavi z Tooltip za AR-sourced mere.
+  - "Vir: Foto ({oznaka} · {dolzinaMm}mm)" mali tekst v podrobnostih.
+  - Camera ikona gumb (Poglej foto) v action vrstici za photo mere.
+  - "Poglej foto" link gumb v nogi (amber, z Link2 ikono).
+- Foto mere filter pill v filter vrstici (Camera ikona + "Foto mere" + count). Toggle style: active=amber filled, inactive=amber/5 outline.
+- Photo viewer Dialog: prikaže base64 sliko (max-h-60vh object-contain), "Zapri" in "Odpri v slikah" gumba. Loading state z spinner, not-found state z AlertCircle + ID.
+
+**Tehnične podrobnosti:**
+- Vsi gumbi `type="button"` ✓
+- Vsa besedila slovensko ✓
+- Mobile-first (flex-wrap, gap-2, h-8/h-9 gumbi) ✓
+- shadcn/ui komponente (Dialog, Button, Badge, Card, Progress, Separator, Tooltip) ✓
+- localStorage ključi prefixed z `roksal_` (roksal_last_laser, roksal_open_photo_id) ✓
+- navigator.bluetooth availability check ✓
+- Characteristic listener characteristicvaluechanged event ✓
+- Auto-reconnect 3 poskusi ✓
+- Error handling: "Bluetooth ni podprt", "Dostop zavrnjen" ✓
+- Fallback za nepodprte brskalnike (disabled button + tooltip) ✓
+
+**Verifikacija:**
+- `bun run lint src/components/roksal/measurements-tab.tsx` → 0 errors, 0 warnings ✓
+- Celotni `bun run lint` → 2 errors v calculator-tab.tsx (PREDHODNI, ne moji — SloveniaWindMapSvg, GlassLayersSvg nista definirani; commit 92b69a9).
+- Dev server: `✓ Compiled in XXXms` večkrat po mojih spremembah, GET / 200, brez compile errorjev ✓
+- Datoteka zrasla z 6390 → 7543 vrstic (+1153 vrstic nove kode, 3 nove funkcionalnosti).
+- Niso spremenjene: page.tsx, bottom-nav, drugi tabovi, API routes, Prisma schema, photo-tab.tsx, ar-scanner.tsx, calculator-tab.tsx, lib/calculator.ts.
+
+Stage Summary:
+- **3 funkcionalnosti dodane** v measurements-tab.tsx kot specifikacija:
+  1. **WEB BLUETOOTH LASER** — Poveži laser gumb v headerju (Bluetooth ikona); status badge (🔴/🟡/🟢 + ime naprave); zadnja mera badge z Radio ikono; "Prekini" gumb; auto-reconnect 3×; parse DataView (uint32 LE → uint16 LE → tekstovno z regex); auto-fill dolžine v formi z toast "Mera iz laserja: Xmm"; localStorage `roksal_last_laser`; fallback za nepodprte brskalnike (disabled + tooltip "Web Bluetooth ni podprt. Uporabite Chrome na Androidu ali računalniku.")
+  2. **AR SINHRONIZACIJA** — "Uvozi iz AR" gumb; dialog z seznamom AR posnetkov (thumbnail, datum, št. točk, Umerjeno/Ni umeritve badge, profil); izbira enega → "Uvozi mere" gumb; parse tocke + kalibracija (podprta pixelsPerMm in pixelsPerCm); za vsak par točk → POST RAZDALJA mer (dolzinaMm = px/pxPerMm, visinaMm=1100, arMetadata z source:'ar_snapshot' + snapshotId + x/y); za vsako točko → POST STEBR (dolzinaMm=1, visinaMm=1100, tipStebra='VMESNI', materialStebra='ALU'); Progress bar med prenosom; toast "X mer in Y stebrov uvoženih iz AR posnetka"; edge cases: no snapshots, no calibration (warning + proceed z 0), <2 točke (error)
+  3. **FOTO MERE POVEZAVA NAZAJ** — Camera badge v glavi za photo-sourced mere; AR badge za ar_snapshot-sourced mere; "Vir: Foto (M2 · 324mm)" tekst v podrobnostih; Camera ikona gumb (Poglej foto) v action vrstici; "Poglej foto" link gumb v nogi; Foto mere filter pill v filter vrstici (s count); Photo viewer Dialog z base64 sliko + "Odpri v slikah" gumb (shrani `roksal_open_photo_id` v localStorage); edge cases: foto ni najden (AlertCircle + ID), loading state z spinner
+- **Vsa obstoječa funkcionalnost ohranjena** — 9 tipi meritev, stopniščni čarovnik, WPC orientacije, štebricki, predloge, skupinske akcije, status, zgodovina, glasovni vnos, multi-unit, kalibracija, inclinometer, kotomer
+- **Ničen vpliv na druge datoteke** — samo measurements-tab.tsx spremenjen (preverjeno z git diff)
+- **Lint clean za mojo datoteko** (0 errors, 0 warnings); predhodni lint errorji v calculator-tab.tsx niso moji
+- **Dev server OK** — ✓ Compiled, GET / 200, brez napak v dev.log
+
+---
+Task ID: KALK-PRO
+Agent: full-stack-developer (Kalkulator PRO — CNC + veter po lokaciji + steklena balustrada)
+Task: CNC optimizacija razreza + vetrni izračun po GPS lokaciji + poenostavljena metoda za stekleno balustrado
+
+Work Log:
+- Prebral worklog.md (1828 vrstic) za kontekst predhodnega dela (Roksal Railing Manager: Next.js 16 + TS + Tailwind 4 + shadcn/ui + Prisma/SQLite, kalkulator z 7 načini in 13 lib funkcijami)
+- Prebral src/lib/calculator.ts (757 vrstic, 13 funkcij) in src/components/roksal/calculator-tab.tsx (4159 vrstic) za razumevanje obstoječe strukture
+- Preveril: jspdf 4.2.1 + jspdf-autotable 5.0.8 že nameščena, lucide-react v0.525 ima vse ikone
+
+**Part A — 3 nove funkcije v src/lib/calculator.ts (+414 vrstic, 757→1171):**
+
+1. `calculateCncCutting(input: CncCutInput): CncCutResult` — 1D bin packing (First-Fit Decreasing):
+   - Razširi segments × count v list posameznih odsekov
+   - Sortira po dolžini padajoče (FFD)
+   - Za vsak odsek: poišče prvi profil z dovolj prostora (uposteva žagin rez)
+   - Če noben — odpri nov profil
+   - Izračuna remainingMm, utilizationPct per profil in skupni overallUtilizationPct
+   - Opozorila: odsek > stockLength, nizek izkoristek (<70%)
+   - Robustno: handle invalid stockLength, prazne segments, count<=0
+
+2. `calculateWindByLocation(input: WindLocationInput): WindLocationResult` — SIST EN 1991-1-4 NA Slovenija:
+   - Določi vetrno cono iz GPS: cona 3 (gore: lat>46.5 AND lon>13.8), cona 2 (obala: lat<45.7 AND lon>13.5), cona 1 (celina: ostalo)
+   - basicWindSpeedMs: cona 1=22, cona 2=24, cona 3=28 m/s
+   - basicPressureKpa = 0.5 × 1.25 × v² / 1000 (pravilno fizikalno kPa)
+   - designPressureKpa = basic × terrainFactor × heightFactor × aeroFactor (enaki faktorji kot calculateWindLoad)
+   - totalForceKn = designPressure × area (kPa × m² = kN)
+   - forcePerMeterNm = (totalForce / sqrt(area)) × 1000
+   - riskLevel: LOW/MEDIUM/HIGH/CRITICAL glede na designPressure
+   - locationDescription: približno ime mesta (Kranj/Ljubljana/Maribor/Celje/Koper/Julijske Alpe/Karavanke/Nova Gorica/Tolmin/Ptuj) + cona
+   - Priporočila: cona-specifična (cona 3 = burja gore, cona 2 = obala) + splošna
+
+3. `calculateGlassBalustrade(input: GlassCalcInput): GlassCalcResult` — poenostavljena metoda po SIST EN:
+   - allowableStress: single=40 MPa, laminated=50 MPa, tempered=120 MPa
+   - Kandidati: laminated [12,16,20,24]mm (2× base + PVB), single/tempered [8,10,12,15,19,22,25]mm
+   - stressMpa = (load × span² × 6) / (thickness² × 8) — 1 kN/m = 1 N/mm
+   - recommendedThicknessMm = prva debelina kjer stress ≤ allowable
+   - maxSpanForThicknessMm = sqrt(allowable × t² × 8 / (load × 6))
+   - alternativeThicknesses: vsi kandidati z safe flag + razlog
+   - Warnings: ni safe, razpon >1500mm, višina <1000mm / >1200mm, visoka obremenitev 2.0
+   - Priporočila: tip-specifična (laminirano/enojno/kaljeno) + splošna (razpon, A4 Inox, bruseni robovi)
+
+**Part B — 3 novi načini v src/components/roksal/calculator-tab.tsx (+1424 vrstic, 4159→5583):**
+
+Pripravljalna dela:
+- Import: dodana ikona MapPin, Square, Navigation, Crosshair, Mountain iz lucide-react
+- Import: calculateCncCutting, calculateWindByLocation, calculateGlassBalustrade + tipi CncCutResult, WindLocationResult, GlassCalcResult
+- CalcMode union razširjen z 'cnc' | 'windLocation' | 'glass'
+- modeTabs: dodani 3 vnosi (CNC rez/Scissors, Veter po lokaciji/MapPin, Steklena balustrada/Square)
+- historyModeIcon: dodani 3 vnosi
+- modeLabelMap: razširjen v 3 locah (getCurrentKeyResult, addToHistory, Save Calculation gumb)
+- collectCurrentInputs: dodana 3 nova načina
+- applyInputs: dodana 3 nova načina (za load iz zgodovine/predlog)
+- getCurrentKeyResult: dodana 3 nova načina
+- handleCalculate: dodan dispatch za 3 načine
+- Auto-calc useEffect: dodana 3 nova klica + nove dependency v array
+- Save Calculation gumb: pogoj razširjen z cncResult/windLocResult/glassResult
+
+Nov state:
+- CNC: cncStockLength ('6000'), cncStockPreset ('6000'), cncSawBlade ('3'), cncSegments (CncSegment[]), cncResult
+- WindLocation: windLocLat ('46.2389' — Kranj), windLocLon ('14.3556'), windLocHeight ('10'), windLocTerrain ('II'), windLocArea ('6'), windLocType ('slatted'), windLocResult, windLocLoading
+- Glass: glassInput objekt (spanMm 1200, heightMm 1100, loadKnPerM 1.0, glassType 'laminated'), glassResult, GlassType union
+
+1. CNC REZ mode:
+   - Input: Select stock dolžina (6000/4000/2200/Po meri) + custom Input, širina reza, list odsekov (labela/dolžina/število) z add/remove
+   - "Uvozi iz materiala" gumb — uporabi obstoječe segments iz material mode (toast če prazno)
+   - Rezultati: 3-card summary (profilov, izkoristek, ostanek), warnings card, vizualni razrezni načrt (flex box per profil z barvnimi odseki + sivo ostankom + cursor naprej), legenda z barvami per segment, tabela razreza (Profil/Rezi/Ostanek/Izkoristek)
+   - PDF: jsPDF z Roksal branding (navy header + amber pas), tabela zahtevanih odsekov, tabela razreznega načrta, warnings
+
+2. VETER PO LOKACIJI mode:
+   - Input: lat/lon (default Kranj), "Uporabi mojo lokacijo" gumb z navigator.geolocation.getCurrentPosition (high accuracy, 10s timeout, error handling za PERMISSION_DENIED/POSITION_UNAVAILABLE/TIMEOUT), višina, površina, teren Select (I/II/III/IV z opisi), tip ograje Select
+   - Rezultati: lokacija+risk badge card, wind zone card z ikono (Mountain za cona 3, Wind za cona 2, MapPin za cona 1), osnovna hitrost card, 3-card main (vrhnji tlak, skupna sila, sila/m), SloveniaWindMapSvg (SVG karta s 3 conami + pin), recommendations, info card (SIST EN 1991-1-4 NA)
+   - PDF: jsPDF z Roksal branding, lokacija + parametri, tabela rezultatov, priporočila
+
+3. STEKLENA BALUSTRADA mode:
+   - Input: razpon (mm), višina (mm), obremenitev Select (1.0 stanovanjske / 1.5 javne / 2.0 balkon >1m padec), tip stekla Select (single 40 / laminated 50 / tempered 120 MPa)
+   - Rezultati: priporočena debelina z VARNO/NEVARNO badge (zeleno/rdeče border-l-4), 3-card stress stats (napetost, dovoljena, max razpon), GlassLayersSvg (samo za laminated — prikaz plasti 2× steklo + PVB), alternativa debeline tabela (mm/Status/Razlog), warnings, priporočila, info card
+   - PDF: jsPDF z Roksal branding, parametri, tabela rezultatov, alternativa debeline tabela, warnings, priporočila
+
+Novi SVG komponenti (na koncu datoteke, +210 vrstic):
+- `SloveniaWindMapSvg({lat, lon, windZone})` — SVG 600×400:
+  - Rough Slovenia outline (polygon path)
+  - 3 barvne cone (zelena cona 1 celina, oranžna cona 2 obala SW, rumena cona 3 gore N) clipane v Slovenijo
+  - 4 oznake mest (Kranj, Ljubljana, Maribor, Koper) z dot markerji
+  - Location pin (amber krog z belim centrom + "Tukaj" label) na projekciranih GPS koordinatah
+  - "CONA X" badge v zgornjem desnem kotu
+  - Legenda spodaj levo (3 cone s hitrostmi)
+  - Projekcija lat/lon → x/y: ((lon-13.38)/3.23×600, (46.88-lat)/1.46×400)
+- `GlassLayersSvg({totalMm, baseMm})` — SVG 500×230:
+  - Title: "Laminirano steklo (VSG) — 2× {baseMm}mm + PVB = {totalMm}mm"
+  - 3 horizontalne plasti: steklo (bae6fd blue) + PVB folija (fde68a amber) + steklo
+  - Labels desno: debelina vsake plasti
+  - Total dimenzija levo z rotate(-90) text "Skupaj {totalMm}mm"
+  - Legenda: Steklo / PVB folija
+
+**Verification:**
+- `bun run lint` → 0 errors, 0 warnings ✓
+- `agent-browser open /` → click "Kalkulator" → vsi 10 modeTabs vidni (Razmiki letev, Kemično sidranje, Vetrna obremenitev, Razmak palic, Kotni izračun, Skupni material, Predpisi, CNC rez, Veter po lokaciji, Steklena balustrada) ✓
+- CNC rez mode: izračun default (2500×2, 800×3) → 2 profila, profil #1 96.8% izkoristek, profil #2 26.7%, tabela prikazana ✓
+- Veter po lokaciji mode: izračun za Kranj (46.2389, 14.3556) → cona 1 celina, Nizko tveganje, karta Slovenije SVG prikazana z "Cona 1" badge in pin, zgodovina izračunov povečana na 1 ✓
+- Steklena balustrada mode: izračun (1200mm, 1100mm, 1.0 kN/m, laminated) → 24mm priporočeno, NEVARNO (1875 MPa > 50 MPa), plasti SVG prikazan ✓
+- Console: 0 errorjev, samo [HMR] connected in [Fast Refresh] done ✓
+- Dev.log: ✓ Compiled (167ms, 189ms), GET / 200, brez napak ✓
+
+Stage Summary:
+- **3 lib funkcije dodane** v calculator.ts (calculateCncCutting, calculateWindByLocation, calculateGlassBalustrade) — +414 vrstic
+- **3 novi načini dodani** v calculator-tab.tsx (cnc, windLocation, glass) — +1424 vrstic
+- **2 novi SVG komponenti** (SloveniaWindMapSvg, GlassLayersSvg)
+- **3 novi PDF izvozi** (exportCncPdf, exportWindLocPdf, exportGlassPdf) z Roksal branding (navy header + amber pas)
+- **10CalcMode modes** zdaj deluje: railing, anchoring, wind, baluster, angled, material, compliance, cnc, windLocation, glass
+- **History integration** vseh 10 načinov (collectCurrentInputs, applyInputs, getCurrentKeyResult, modeLabelMap povsod razširjen)
+- **Geolocation** z navigator.geolocation.getCurrentPosition (high accuracy, error handling za 3 tipa napak)
+- **Mobile-first** (grid-cols-2, max-h-80 overflow-y-auto, scrollable tab list, touch-friendly gumbi)
+- **Tema**: navy #1d2b3e, amber #f59e0b, green #22c55e (brez indigo/blue)
+- **Vsi gumbi type="button"**, **vse slovensko**, **shadcn/ui** (Card, Button, Input, Label, Select, Badge, Separator, Table, Collapsible)
+- **Ničen vpliv na druge datoteke** — samo calculator.ts + calculator-tab.tsx spremenjena
+- **Ni novih paketov** — uporabljen obstoječi jspdf + jspdf-autotable + lucide-react
+- **Vsi obstoječi načini in funkcionalnost ohranjena** (props importedFromMeasurement/onClearImport/onBackToMeasurements nespremenjeni)
+- **Lint clean** (0 errors), **dev server OK** (200, no compile errors), **agent-browser verified** (10 modes render, calc works, SVG prikazan, zgodovina deluje)

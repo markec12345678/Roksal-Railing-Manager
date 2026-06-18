@@ -28,7 +28,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
-import { Calculator, AlertTriangle, CheckCircle2, Info, Thermometer, Wind, Anchor, Package, Save, Trash2, Clock, RotateCcw, Ruler, Scissors, ArrowLeft, ArrowDownToLine, Euro, AlignJustify, Triangle, ShieldCheck, Plus, X, FileDown, Hammer, Drill, History, BookmarkPlus, FileSpreadsheet, ChevronDown, ChevronUp, Calendar, Percent, Wallet, Truck, Users, Timer, Layers } from 'lucide-react'
+import { Calculator, AlertTriangle, CheckCircle2, Info, Thermometer, Wind, Anchor, Package, Save, Trash2, Clock, RotateCcw, Ruler, Scissors, ArrowLeft, ArrowDownToLine, Euro, AlignJustify, Triangle, ShieldCheck, Plus, X, FileDown, Hammer, Drill, History, BookmarkPlus, FileSpreadsheet, ChevronDown, ChevronUp, Calendar, Percent, Wallet, Truck, Users, Timer, Layers, MapPin, Square, Navigation, Crosshair, Mountain } from 'lucide-react'
 import {
   calculateEqualSpacing,
   calculateAngledSpacing,
@@ -39,19 +39,25 @@ import {
   calculateDDV,
   calculateAkontacija,
   applyReserve,
+  calculateCncCutting,
+  calculateWindByLocation,
+  calculateGlassBalustrade,
   formatEUR,
   formatSI,
   type EqualSpacingResult,
   type AngledSpacingResult,
   type MaterialTotalResult,
   type ComplianceResult,
+  type CncCutResult,
+  type WindLocationResult,
+  type GlassCalcResult,
   type Profil as LibProfil,
   type MaterialSegment,
 } from '@/lib/calculator'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 
-type CalcMode = 'railing' | 'anchoring' | 'wind' | 'baluster' | 'angled' | 'material' | 'compliance'
+type CalcMode = 'railing' | 'anchoring' | 'wind' | 'baluster' | 'angled' | 'material' | 'compliance' | 'cnc' | 'windLocation' | 'glass'
 type ProfileType = 'classic' | 'z-line' | 'vertical'
 type AnchorType = 'hilti-hit' | 'fischer-fis' | 'generic'
 type TerrainCategory = 'I' | 'II' | 'III' | 'IV'
@@ -90,6 +96,9 @@ const modeTabs: { id: CalcMode; label: string; icon: React.ElementType }[] = [
   { id: 'angled', label: 'Kotni izračun', icon: Triangle },
   { id: 'material', label: 'Skupni material', icon: Package },
   { id: 'compliance', label: 'Predpisi', icon: ShieldCheck },
+  { id: 'cnc', label: 'CNC rez', icon: Scissors },
+  { id: 'windLocation', label: 'Veter po lokaciji', icon: MapPin },
+  { id: 'glass', label: 'Steklena balustrada', icon: Square },
 ]
 
 const anchorTypeLabels: Record<AnchorType, string> = {
@@ -170,6 +179,9 @@ const historyModeIcon: Record<CalcMode, React.ElementType> = {
   angled: Triangle,
   material: Package,
   compliance: ShieldCheck,
+  cnc: Scissors,
+  windLocation: MapPin,
+  glass: Square,
 }
 
 const reserveOptions = [0, 5, 10, 15, 20]
@@ -244,6 +256,42 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
   const [compLoadCategory, setCompLoadCategory] = useState<'A' | 'B' | 'C'>('A')
   const [compDropHeight, setCompDropHeight] = useState('0')
   const [complianceResult, setComplianceResult] = useState<ComplianceResult | null>(null)
+
+  // ===== CNC REZ state =====
+  type CncSegment = { lengthMm: string; count: string; label: string }
+  const [cncStockLength, setCncStockLength] = useState('6000')
+  const [cncStockPreset, setCncStockPreset] = useState('6000')
+  const [cncSawBlade, setCncSawBlade] = useState('3')
+  const [cncSegments, setCncSegments] = useState<CncSegment[]>([
+    { lengthMm: '2500', count: '2', label: 'Zgornja letev' },
+    { lengthMm: '800', count: '3', label: 'Stranski' },
+  ])
+  const [cncResult, setCncResult] = useState<CncCutResult | null>(null)
+
+  // ===== VETER PO LOKACIJI state =====
+  const [windLocLat, setWindLocLat] = useState('46.2389') // Kranj
+  const [windLocLon, setWindLocLon] = useState('14.3556')
+  const [windLocHeight, setWindLocHeight] = useState('10')
+  const [windLocTerrain, setWindLocTerrain] = useState<TerrainCategory>('II')
+  const [windLocArea, setWindLocArea] = useState('6')
+  const [windLocType, setWindLocType] = useState<RailingType>('slatted')
+  const [windLocResult, setWindLocResult] = useState<WindLocationResult | null>(null)
+  const [windLocLoading, setWindLocLoading] = useState(false)
+
+  // ===== STEKLENA BALUSTRADA state =====
+  type GlassType = 'single' | 'laminated' | 'tempered'
+  const [glassInput, setGlassInput] = useState<{
+    spanMm: number
+    heightMm: number
+    loadKnPerM: number
+    glassType: GlassType
+  }>({
+    spanMm: 1200,
+    heightMm: 1100,
+    loadKnPerM: 1.0,
+    glassType: 'laminated',
+  })
+  const [glassResult, setGlassResult] = useState<GlassCalcResult | null>(null)
 
   // Compute imported length for display
   const importedLength = useMemo(() => {
@@ -347,6 +395,12 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
       calculateMaterialClientSide()
     } else if (mode === 'compliance') {
       calculateComplianceClientSide()
+    } else if (mode === 'cnc') {
+      calculateCncClientSide()
+    } else if (mode === 'windLocation') {
+      calculateWindLocClientSide()
+    } else if (mode === 'glass') {
+      calculateGlassClientSide()
     }
     // P2: Povečaj nonce — effect ga opazuje in zapiše v zgodovino,
     // ko se bodo rezultati posodobili (re-render).
@@ -379,8 +433,25 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
         ddvPct: String(ddvPct),
         akontacijaPct: String(akontacijaPct),
       }
-    } else {
+    } else if (mode === 'compliance') {
       return { compGap, compHeight, compPostSpacing, compLoadCategory, compDropHeight }
+    } else if (mode === 'cnc') {
+      return {
+        cncStockLength, cncSawBlade,
+        cncSegments: JSON.stringify(cncSegments),
+      }
+    } else if (mode === 'windLocation') {
+      return {
+        windLocLat, windLocLon, windLocHeight,
+        windLocTerrain, windLocArea, windLocType,
+      }
+    } else {
+      return {
+        glassSpan: String(glassInput.spanMm),
+        glassHeight: String(glassInput.heightMm),
+        glassLoad: String(glassInput.loadKnPerM),
+        glassType: glassInput.glassType,
+      }
     }
   }
 
@@ -394,6 +465,9 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
       angled: 'Kotni izračun',
       material: 'Skupni material',
       compliance: 'Predpisi',
+      cnc: 'CNC rez',
+      windLocation: 'Veter po lokaciji',
+      glass: 'Steklena balustrada',
     }
     if (mode === 'railing' && railingResult) {
       return `${railingResult.slatCount} letvev, razmik ${railingResult.actualGapMm.toFixed(1)}mm`
@@ -412,6 +486,12 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
     } else if (mode === 'compliance' && complianceResult) {
       const ok = complianceResult.checks.filter((c) => c.passed).length
       return `${ok}/${complianceResult.checks.length} preverb uspešnih`
+    } else if (mode === 'cnc' && cncResult) {
+      return `${cncResult.stockCount} profilov, izkoristek ${cncResult.overallUtilizationPct.toFixed(1)}%, ostanek ${cncResult.totalWasteMm}mm`
+    } else if (mode === 'windLocation' && windLocResult) {
+      return `${windLocResult.locationDescription} — cona ${windLocResult.windZone}, ${riskLabels[windLocResult.riskLevel]}`
+    } else if (mode === 'glass' && glassResult) {
+      return `${glassResult.recommendedThicknessMm}mm ${glassResult.layers ? `laminirano (${glassResult.layers} sloje)` : glassInput.glassType === 'tempered' ? 'kaljeno' : 'enojno'}${glassResult.isSafe ? ' — VARNO' : ' — NEVARNO'}`
     }
     return modeLabelMap[mode]
   }
@@ -480,6 +560,36 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
       if (inputs.compPostSpacing) setCompPostSpacing(inputs.compPostSpacing)
       if (inputs.compLoadCategory) setCompLoadCategory(inputs.compLoadCategory as 'A' | 'B' | 'C')
       if (inputs.compDropHeight) setCompDropHeight(inputs.compDropHeight)
+    } else if (targetMode === 'cnc') {
+      if (inputs.cncStockLength) {
+        setCncStockLength(inputs.cncStockLength)
+        setCncStockPreset(['6000', '4000', '2200'].includes(inputs.cncStockLength) ? inputs.cncStockLength : 'custom')
+      }
+      if (inputs.cncSawBlade) setCncSawBlade(inputs.cncSawBlade)
+      if (inputs.cncSegments) {
+        try {
+          const parsed = JSON.parse(inputs.cncSegments)
+          if (Array.isArray(parsed) && parsed.length > 0) setCncSegments(parsed)
+        } catch { /* ignore */ }
+      }
+    } else if (targetMode === 'windLocation') {
+      if (inputs.windLocLat) setWindLocLat(inputs.windLocLat)
+      if (inputs.windLocLon) setWindLocLon(inputs.windLocLon)
+      if (inputs.windLocHeight) setWindLocHeight(inputs.windLocHeight)
+      if (inputs.windLocTerrain) setWindLocTerrain(inputs.windLocTerrain as TerrainCategory)
+      if (inputs.windLocArea) setWindLocArea(inputs.windLocArea)
+      if (inputs.windLocType) setWindLocType(inputs.windLocType as RailingType)
+    } else if (targetMode === 'glass') {
+      const span = parseFloat(inputs.glassSpan)
+      const height = parseFloat(inputs.glassHeight)
+      const load = parseFloat(inputs.glassLoad)
+      const gType = inputs.glassType as GlassType
+      setGlassInput({
+        spanMm: isFinite(span) ? span : 1200,
+        heightMm: isFinite(height) ? height : 1100,
+        loadKnPerM: isFinite(load) ? load : 1.0,
+        glassType: gType || 'laminated',
+      })
     }
   }
 
@@ -541,6 +651,9 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
       angled: 'Kotni izračun',
       material: 'Skupni material',
       compliance: 'Predpisi',
+      cnc: 'CNC rez',
+      windLocation: 'Veter po lokaciji',
+      glass: 'Steklena balustrada',
     }
     const hasResult =
       (mode === 'railing' && railingResult) ||
@@ -549,7 +662,10 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
       (mode === 'baluster' && balusterResult) ||
       (mode === 'angled' && angledResult) ||
       (mode === 'material' && materialResult) ||
-      (mode === 'compliance' && complianceResult)
+      (mode === 'compliance' && complianceResult) ||
+      (mode === 'cnc' && cncResult) ||
+      (mode === 'windLocation' && windLocResult) ||
+      (mode === 'glass' && glassResult)
     if (!hasResult) return
 
     const entry: HistoryEntry = {
@@ -823,6 +939,70 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
     setComplianceResult(result)
   }
 
+  // ===== CNC cutting calculation =====
+  function calculateCncClientSide() {
+    const stock = parseFloat(cncStockLength)
+    const blade = parseFloat(cncSawBlade)
+    if (!isFinite(stock) || stock <= 0) {
+      setCncResult(null)
+      return
+    }
+    const segments = cncSegments
+      .filter((s) => s.lengthMm && s.count)
+      .map((s) => ({
+        lengthMm: parseFloat(s.lengthMm) || 0,
+        count: parseInt(s.count) || 0,
+        label: s.label || undefined,
+      }))
+      .filter((s) => s.lengthMm > 0 && s.count > 0)
+    if (segments.length === 0) {
+      setCncResult(null)
+      return
+    }
+    const result = calculateCncCutting({
+      segments,
+      stockLengthMm: stock,
+      sawBladeWidthMm: isFinite(blade) ? blade : 3,
+    })
+    setCncResult(result)
+  }
+
+  // ===== Wind by location calculation =====
+  function calculateWindLocClientSide() {
+    const lat = parseFloat(windLocLat)
+    const lon = parseFloat(windLocLon)
+    const h = parseFloat(windLocHeight)
+    const area = parseFloat(windLocArea)
+    if (!isFinite(lat) || !isFinite(lon) || !isFinite(h) || !isFinite(area)) {
+      setWindLocResult(null)
+      return
+    }
+    const result = calculateWindByLocation({
+      latitude: lat,
+      longitude: lon,
+      heightAboveGround: h,
+      terrainCategory: windLocTerrain,
+      railingAreaM2: area,
+      railingType: windLocType,
+    })
+    setWindLocResult(result)
+  }
+
+  // ===== Glass balustrade calculation =====
+  function calculateGlassClientSide() {
+    if (
+      !isFinite(glassInput.spanMm) ||
+      !isFinite(glassInput.heightMm) ||
+      !isFinite(glassInput.loadKnPerM) ||
+      glassInput.spanMm <= 0
+    ) {
+      setGlassResult(null)
+      return
+    }
+    const result = calculateGlassBalustrade(glassInput)
+    setGlassResult(result)
+  }
+
   // Auto-calculate on input change
   useEffect(() => {
     if (mode === 'railing') {
@@ -839,8 +1019,14 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
       calculateMaterialClientSide()
     } else if (mode === 'compliance') {
       calculateComplianceClientSide()
+    } else if (mode === 'cnc') {
+      calculateCncClientSide()
+    } else if (mode === 'windLocation') {
+      calculateWindLocClientSide()
+    } else if (mode === 'glass') {
+      calculateGlassClientSide()
     }
-  }, [mode, profileType, effectiveTotalLength, slatWidth, maxGap, postCount, holeCount, holeDepthMm, holeDiameterMm, temperature, anchorType, heightAboveGround, terrainCategory, windSpeedMs, railingAreaM2, railingType, balTotalLength, balWidth, balMaxGap, balPostSpacing, angHorizontalLength, angRakeAngle, angWidth, angMaxGap, segments, selectedProfileSifra, compGap, compHeight, compPostSpacing, compLoadCategory, compDropHeight])
+  }, [mode, profileType, effectiveTotalLength, slatWidth, maxGap, postCount, holeCount, holeDepthMm, holeDiameterMm, temperature, anchorType, heightAboveGround, terrainCategory, windSpeedMs, railingAreaM2, railingType, balTotalLength, balWidth, balMaxGap, balPostSpacing, angHorizontalLength, angRakeAngle, angWidth, angMaxGap, segments, selectedProfileSifra, compGap, compHeight, compPostSpacing, compLoadCategory, compDropHeight, cncStockLength, cncSawBlade, cncSegments, windLocLat, windLocLon, windLocHeight, windLocTerrain, windLocArea, windLocType, glassInput])
 
   // Fetch profili when material mode is selected
   useEffect(() => {
@@ -1072,6 +1258,320 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
     doc.text('Roksal Railing Manager — orientacijska cena. Končno ponudbo pripravi vodja projekta.', 14, afterY + 10)
     doc.save(`roksal-materialni-list-${Date.now()}.pdf`)
     toast.success('Materialni list PDF izvožen')
+  }
+
+  // ===== PDF: CNC razrezni list =====
+  function exportCncPdf() {
+    if (!cncResult) return
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' })
+    const pageW = doc.internal.pageSize.getWidth()
+
+    // Navy header
+    doc.setFillColor(29, 43, 62)
+    doc.rect(0, 0, pageW, 22, 'F')
+    doc.setTextColor(255, 255, 255)
+    doc.setFontSize(15)
+    doc.setFont('helvetica', 'bold')
+    doc.text('ROKSAL — Razrezni list CNC', 14, 12)
+    doc.setFontSize(9)
+    doc.setFont('helvetica', 'normal')
+    doc.text('Kranj, Slovenija', 14, 18)
+    doc.setFillColor(245, 158, 11)
+    doc.rect(0, 22, pageW, 1.5, 'F')
+
+    let y = 30
+    doc.setTextColor(20, 20, 20)
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'normal')
+    doc.text(`Dolžina profila: ${cncStockLength}mm`, 14, y)
+    y += 5
+    doc.text(`Širina reza: ${cncSawBlade}mm`, 14, y)
+    y += 5
+    if (projectName.trim()) {
+      doc.text(`Projekt: ${projectName.trim()}`, 14, y)
+      y += 5
+    }
+    doc.text(`Datum: ${new Date().toLocaleDateString('sl-SI')}`, 14, y)
+    y += 5
+    doc.text(`Število profilov: ${cncResult.stockCount}  ·  Izkoristek: ${cncResult.overallUtilizationPct.toFixed(1)}%  ·  Ostanek: ${cncResult.totalWasteMm}mm`, 14, y)
+    y += 7
+
+    // Seznam odsekov
+    doc.setFontSize(11)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(29, 43, 62)
+    doc.text('Zahtevani odseki', 14, y)
+    y += 4
+
+    autoTable(doc, {
+      startY: y,
+      head: [['#', 'Labela', 'Dolžina (mm)', 'Število']],
+      body: cncSegments
+        .filter((s) => s.lengthMm && s.count)
+        .map((s, i) => [String(i + 1), s.label || '—', s.lengthMm, s.count]),
+      theme: 'grid',
+      headStyles: { fillColor: [29, 43, 62], fontSize: 9 },
+      bodyStyles: { fontSize: 9 },
+      alternateRowStyles: { fillColor: [247, 249, 255] },
+      margin: { left: 14, right: 14 },
+    })
+
+    let y2 = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8
+    doc.setFontSize(11)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(29, 43, 62)
+    doc.text('Razrezni načrt', 14, y2)
+    y2 += 4
+
+    const planRows: [string, string, string][] = []
+    cncResult.plans.forEach((plan) => {
+      const cutsStr = plan.cuts.map((c) => `${c.lengthMm}mm${c.label ? ` (${c.label})` : ''}`).join(', ')
+      planRows.push([
+        `Profil #${plan.stockIndex}`,
+        cutsStr || '—',
+        `Ostanek: ${plan.remainingMm}mm (${plan.utilizationPct.toFixed(1)}%)`,
+      ])
+    })
+    autoTable(doc, {
+      startY: y2,
+      head: [['Profil', 'Rezi', 'Ostanek / Izkoristek']],
+      body: planRows,
+      theme: 'grid',
+      headStyles: { fillColor: [245, 158, 11], textColor: [29, 43, 62], fontSize: 9 },
+      bodyStyles: { fontSize: 8, textColor: [40, 40, 40] },
+      alternateRowStyles: { fillColor: [247, 249, 255] },
+      margin: { left: 14, right: 14 },
+    })
+
+    // Warnings
+    if (cncResult.warnings.length > 0) {
+      const y3 = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8
+      doc.setFontSize(10)
+      doc.setFont('helvetica', 'bold')
+      doc.setTextColor(245, 158, 11)
+      doc.text('Opozorila', 14, y3)
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(8)
+      doc.setTextColor(80, 80, 80)
+      cncResult.warnings.forEach((w, i) => {
+        doc.text(`• ${w}`, 14, y3 + 5 + i * 4)
+      })
+    }
+
+    doc.setFontSize(8)
+    doc.setTextColor(120, 120, 120)
+    const finalY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY
+    doc.text('Roksal Railing Manager — razrezni list za CNC operaterja.', 14, finalY + 20)
+    doc.save(`roksal-razrezni-list-${Date.now()}.pdf`)
+    toast.success('Razrezni list PDF izvožen')
+  }
+
+  // ===== PDF: Veter po lokaciji =====
+  function exportWindLocPdf() {
+    if (!windLocResult) return
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' })
+    const pageW = doc.internal.pageSize.getWidth()
+
+    // Navy header
+    doc.setFillColor(29, 43, 62)
+    doc.rect(0, 0, pageW, 22, 'F')
+    doc.setTextColor(255, 255, 255)
+    doc.setFontSize(15)
+    doc.setFont('helvetica', 'bold')
+    doc.text('ROKSAL — Vetrno poročilo', 14, 12)
+    doc.setFontSize(9)
+    doc.setFont('helvetica', 'normal')
+    doc.text('Kranj, Slovenija', 14, 18)
+    doc.setFillColor(245, 158, 11)
+    doc.rect(0, 22, pageW, 1.5, 'F')
+
+    let y = 30
+    doc.setTextColor(20, 20, 20)
+    doc.setFontSize(11)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Lokacija', 14, y)
+    y += 5
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(10)
+    doc.text(`${windLocResult.locationDescription}`, 14, y)
+    y += 5
+    doc.text(`GPS: ${windLocLat}, ${windLocLon}`, 14, y)
+    y += 5
+    doc.text(`Višina nad tlemi: ${windLocHeight}m  ·  Teren: ${windLocTerrain}  ·  Tip: ${railingTypeLabels[windLocType]}  ·  Površina: ${windLocArea}m²`, 14, y)
+    y += 8
+
+    autoTable(doc, {
+      startY: y,
+      head: [['Parameter', 'Vrednost']],
+      body: [
+        ['Vetrna cona', `Cona ${windLocResult.windZone}`],
+        ['Osnovna hitrost vetra', `${windLocResult.basicWindSpeedMs} m/s`],
+        ['Osnovni vetrni tlak', `${windLocResult.basicPressureKpa.toFixed(3)} kPa`],
+        ['Vrhnji vetrni tlak', `${windLocResult.designPressureKpa.toFixed(3)} kPa`],
+        ['Skupna sila na ograjo', `${windLocResult.totalForceKn.toFixed(2)} kN`],
+        ['Sila na meter', `${windLocResult.forcePerMeterNm.toFixed(0)} N/m`],
+        ['Stopnja tveganja', riskLabels[windLocResult.riskLevel]],
+      ],
+      theme: 'grid',
+      headStyles: { fillColor: [29, 43, 62], fontSize: 9 },
+      bodyStyles: { fontSize: 9 },
+      alternateRowStyles: { fillColor: [247, 249, 255] },
+      margin: { left: 14, right: 14 },
+    })
+
+    let y2 = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8
+    if (windLocResult.recommendations.length > 0) {
+      doc.setFontSize(11)
+      doc.setFont('helvetica', 'bold')
+      doc.setTextColor(245, 158, 11)
+      doc.text('Priporočila', 14, y2)
+      y2 += 5
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(9)
+      doc.setTextColor(60, 60, 60)
+      windLocResult.recommendations.forEach((r, i) => {
+        const lines = doc.splitTextToSize(`• ${r}`, pageW - 28)
+        doc.text(lines, 14, y2 + i * 5)
+        y2 += lines.length * 5 - 5
+      })
+    }
+
+    if (projectName.trim()) {
+      y2 += 8
+      doc.setFontSize(9)
+      doc.setTextColor(120, 120, 120)
+      doc.text(`Projekt: ${projectName.trim()}`, 14, y2)
+    }
+
+    doc.setFontSize(8)
+    doc.setTextColor(120, 120, 120)
+    doc.text(`Datum: ${new Date().toLocaleDateString('sl-SI')} — Roksal Railing Manager (SIST EN 1991-1-4 NA)`, 14, 280)
+    doc.save(`roksal-vetrno-porocilo-${Date.now()}.pdf`)
+    toast.success('Vetrno poročilo PDF izvoženo')
+  }
+
+  // ===== PDF: Steklena balustrada specifikacija =====
+  function exportGlassPdf() {
+    if (!glassResult) return
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' })
+    const pageW = doc.internal.pageSize.getWidth()
+
+    // Navy header
+    doc.setFillColor(29, 43, 62)
+    doc.rect(0, 0, pageW, 22, 'F')
+    doc.setTextColor(255, 255, 255)
+    doc.setFontSize(15)
+    doc.setFont('helvetica', 'bold')
+    doc.text('ROKSAL — Steklena balustrada specifikacija', 14, 12)
+    doc.setFontSize(9)
+    doc.setFont('helvetica', 'normal')
+    doc.text('Kranj, Slovenija', 14, 18)
+    doc.setFillColor(245, 158, 11)
+    doc.rect(0, 22, pageW, 1.5, 'F')
+
+    let y = 30
+    doc.setTextColor(20, 20, 20)
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'normal')
+    const glassTypeLabelsLocal: Record<GlassType, string> = {
+      single: 'Enojno steklo',
+      laminated: 'Laminirano steklo',
+      tempered: 'Kaljeno steklo',
+    }
+    doc.text(`Tip stekla: ${glassTypeLabelsLocal[glassInput.glassType]}`, 14, y)
+    y += 5
+    doc.text(`Razpon med stebri: ${glassInput.spanMm}mm`, 14, y)
+    y += 5
+    doc.text(`Višina stekla: ${glassInput.heightMm}mm`, 14, y)
+    y += 5
+    doc.text(`Horizontalna obremenitev: ${glassInput.loadKnPerM.toFixed(1)} kN/m`, 14, y)
+    y += 8
+
+    autoTable(doc, {
+      startY: y,
+      head: [['Parameter', 'Vrednost']],
+      body: [
+        ['Priporočena debelina', `${glassResult.recommendedThicknessMm}mm`],
+        ['Napetost v steklu', `${glassResult.stressMpa.toFixed(1)} MPa`],
+        ['Dovoljena napetost', `${glassResult.allowableStressMpa} MPa`],
+        ['Max razpon za debelino', `${glassResult.maxSpanForThicknessMm}mm`],
+        ['Število slojev', glassResult.layers ? `${glassResult.layers}` : '1'],
+        ['Varnost', glassResult.isSafe ? 'VARNO ✓' : 'NEVARNO ✗'],
+      ],
+      theme: 'grid',
+      headStyles: { fillColor: [29, 43, 62], fontSize: 9 },
+      bodyStyles: { fontSize: 9 },
+      alternateRowStyles: { fillColor: [247, 249, 255] },
+      margin: { left: 14, right: 14 },
+    })
+
+    let y2 = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8
+    doc.setFontSize(11)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(29, 43, 62)
+    doc.text('Alternativne debeline', 14, y2)
+    y2 += 4
+    autoTable(doc, {
+      startY: y2,
+      head: [['Debelina (mm)', 'Status', 'Razlog']],
+      body: glassResult.alternativeThicknesses.map((a) => [
+        `${a.mm}`,
+        a.safe ? 'VARNO' : 'Tveganje',
+        a.reason,
+      ]),
+      theme: 'grid',
+      headStyles: { fillColor: [245, 158, 11], textColor: [29, 43, 62], fontSize: 9 },
+      bodyStyles: { fontSize: 8 },
+      alternateRowStyles: { fillColor: [247, 249, 255] },
+      margin: { left: 14, right: 14 },
+    })
+
+    let y3 = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8
+    if (glassResult.warnings.length > 0) {
+      doc.setFontSize(11)
+      doc.setFont('helvetica', 'bold')
+      doc.setTextColor(245, 158, 11)
+      doc.text('Opozorila', 14, y3)
+      y3 += 5
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(8)
+      doc.setTextColor(80, 80, 80)
+      glassResult.warnings.forEach((w, i) => {
+        const lines = doc.splitTextToSize(`• ${w}`, pageW - 28)
+        doc.text(lines, 14, y3 + i * 4)
+        y3 += lines.length * 4 - 4
+      })
+      y3 += 6
+    }
+
+    if (glassResult.recommendations.length > 0) {
+      doc.setFontSize(11)
+      doc.setFont('helvetica', 'bold')
+      doc.setTextColor(29, 43, 62)
+      doc.text('Priporočila', 14, y3)
+      y3 += 5
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(8)
+      doc.setTextColor(60, 60, 60)
+      glassResult.recommendations.forEach((r, i) => {
+        const lines = doc.splitTextToSize(`• ${r}`, pageW - 28)
+        doc.text(lines, 14, y3 + i * 4)
+        y3 += lines.length * 4 - 4
+      })
+    }
+
+    if (projectName.trim()) {
+      y3 += 8
+      doc.setFontSize(9)
+      doc.setTextColor(120, 120, 120)
+      doc.text(`Projekt: ${projectName.trim()}`, 14, y3)
+    }
+
+    doc.setFontSize(8)
+    doc.setTextColor(120, 120, 120)
+    doc.text(`Datum: ${new Date().toLocaleDateString('sl-SI')} — Roksal Railing Manager (poenostavljena metoda po SIST EN)`, 14, 280)
+    doc.save(`roksal-steklena-balustrada-${Date.now()}.pdf`)
+    toast.success('Specifikacija stekla PDF izvožena')
   }
 
   // Generate cut list positions
@@ -3561,8 +4061,919 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
         </>
       )}
 
+      {/* ===== CNC REZ CALCULATOR ===== */}
+      {mode === 'cnc' && (
+        <>
+          <Card>
+            <CardHeader className="pb-3 pt-4 px-4">
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+                <Scissors className="h-4 w-4" />
+                CNC razrezni načrt — 1D bin packing
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 px-4 pb-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Dolžina profila</Label>
+                  <Select
+                    value={cncStockPreset}
+                    onValueChange={(v) => {
+                      setCncStockPreset(v)
+                      if (v !== 'custom') setCncStockLength(v)
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="6000">6000mm (aluminij)</SelectItem>
+                      <SelectItem value="4000">4000mm (WPC dolg)</SelectItem>
+                      <SelectItem value="2200">2200mm (WPC standard)</SelectItem>
+                      <SelectItem value="custom">Po meri</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="cncStockLength" className="text-xs">Dolžina (mm)</Label>
+                  <Input
+                    id="cncStockLength"
+                    type="number"
+                    value={cncStockLength}
+                    onChange={(e) => {
+                      setCncStockLength(e.target.value)
+                      setCncStockPreset('custom')
+                    }}
+                    placeholder="6000"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="cncSawBlade" className="text-xs">Širina reza (mm) — žagin disk</Label>
+                <Input
+                  id="cncSawBlade"
+                  type="number"
+                  value={cncSawBlade}
+                  onChange={(e) => setCncSawBlade(e.target.value)}
+                  placeholder="3"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2 pt-4 px-4">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+                  <AlignJustify className="h-4 w-4" />
+                  Zahtevani odseki
+                  <Badge variant="secondary" className="text-[10px] h-5 px-1.5">{cncSegments.length}</Badge>
+                </CardTitle>
+                <div className="flex gap-1.5">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-7 px-2 text-[10px] border-roksal-amber/40 text-roksal-navy hover:bg-roksal-amber/10"
+                    onClick={() => {
+                      // Uvozi iz materiala — uporabi trenutne segments iz material mode
+                      if (segments.length === 0) {
+                        toast.error('V načinu "Skupni material" najprej dodajte segmente.')
+                        return
+                      }
+                      const newSegs: CncSegment[] = segments.map((s) => ({
+                        lengthMm: String(s.lengthMm),
+                        count: '1',
+                        label: s.type === 'angled' ? `Kos (kot ${s.rakeAngleDeg ?? 0}°)` : s.type === 'stair' ? 'Stopnišče' : 'Letev',
+                      }))
+                      setCncSegments(newSegs)
+                      toast.success(`Uvoženo ${newSegs.length} odsekov iz materiala`)
+                    }}
+                  >
+                    <ArrowDownToLine className="mr-1 h-3 w-3" />
+                    Uvozi iz materiala
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-7 px-2 text-[10px]"
+                    onClick={() => setCncSegments([...cncSegments, { lengthMm: '', count: '1', label: '' }])}
+                  >
+                    <Plus className="mr-1 h-3 w-3" />
+                    Dodaj
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="px-4 pb-4">
+              <div className="space-y-2 max-h-80 overflow-y-auto scrollbar-thin">
+                {cncSegments.map((seg, idx) => (
+                  <div key={idx} className="grid grid-cols-12 gap-1.5 items-end rounded-lg border border-border/50 p-2">
+                    <div className="col-span-4 space-y-1">
+                      <Label className="text-[9px] text-muted-foreground">Labela</Label>
+                      <Input
+                        type="text"
+                        value={seg.label}
+                        onChange={(e) => {
+                          const copy = [...cncSegments]
+                          copy[idx] = { ...copy[idx], label: e.target.value }
+                          setCncSegments(copy)
+                        }}
+                        placeholder="npr. Zgornja letev"
+                        className="h-8 text-xs"
+                      />
+                    </div>
+                    <div className="col-span-3 space-y-1">
+                      <Label className="text-[9px] text-muted-foreground">Dolžina (mm)</Label>
+                      <Input
+                        type="number"
+                        value={seg.lengthMm}
+                        onChange={(e) => {
+                          const copy = [...cncSegments]
+                          copy[idx] = { ...copy[idx], lengthMm: e.target.value }
+                          setCncSegments(copy)
+                        }}
+                        placeholder="2500"
+                        className="h-8 text-xs"
+                      />
+                    </div>
+                    <div className="col-span-3 space-y-1">
+                      <Label className="text-[9px] text-muted-foreground">Število</Label>
+                      <Input
+                        type="number"
+                        value={seg.count}
+                        onChange={(e) => {
+                          const copy = [...cncSegments]
+                          copy[idx] = { ...copy[idx], count: e.target.value }
+                          setCncSegments(copy)
+                        }}
+                        placeholder="2"
+                        className="h-8 text-xs"
+                      />
+                    </div>
+                    <div className="col-span-2 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => setCncSegments(cncSegments.filter((_, i) => i !== idx))}
+                        className="p-1.5 rounded-md text-roksal-red hover:bg-roksal-red/10 transition-colors"
+                        aria-label="Odstrani odsek"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {cncSegments.length === 0 && (
+                  <div className="text-center py-4 text-xs text-muted-foreground">
+                    Dodajte odseke za rezanje ali uvozite iz materiala.
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <Button
+              type="button"
+              onClick={handleCalculate}
+              className="w-full bg-roksal-navy hover:bg-roksal-navy/90 text-white h-11"
+            >
+              <Scissors className="mr-2 h-4 w-4" />
+              Izračunaj razrez
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={exportCncPdf}
+              disabled={!cncResult}
+              className="w-full h-11 border-roksal-amber/40 text-roksal-navy hover:bg-roksal-amber/10 disabled:opacity-40"
+            >
+              <FileDown className="mr-2 h-4 w-4" />
+              Izvozi PDF
+            </Button>
+          </div>
+
+          {cncResult && (
+            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
+              {/* Summary */}
+              <div className="grid grid-cols-3 gap-3">
+                <Card className="px-3 py-3">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Profilov</p>
+                  <p className="text-2xl font-bold text-roksal-navy">{cncResult.stockCount}</p>
+                  <p className="text-[10px] text-muted-foreground">kos × {cncStockLength}mm</p>
+                </Card>
+                <Card className="px-3 py-3">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Izkoristek</p>
+                  <p className="text-2xl font-bold text-roksal-green">{cncResult.overallUtilizationPct.toFixed(1)}<span className="text-sm font-normal ml-0.5">%</span></p>
+                  <p className="text-[10px] text-muted-foreground">{(cncResult.totalRequiredMm / 1000).toFixed(2)}m / {(cncResult.totalStockMm / 1000).toFixed(2)}m</p>
+                </Card>
+                <Card className="px-3 py-3">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Ostanek</p>
+                  <p className="text-2xl font-bold text-roksal-amber">{cncResult.totalWasteMm}<span className="text-sm font-normal ml-0.5">mm</span></p>
+                  <p className="text-[10px] text-muted-foreground">{(cncResult.totalWasteMm / 1000).toFixed(2)}m</p>
+                </Card>
+              </div>
+
+              {/* Warnings */}
+              {cncResult.warnings.length > 0 && (
+                <Card className="border-roksal-amber/30">
+                  <CardHeader className="pb-2 pt-4 px-4">
+                    <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-amber">
+                      <AlertTriangle className="h-4 w-4" />
+                      Opozorila
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="px-4 pb-4">
+                    <ul className="space-y-1.5">
+                      {cncResult.warnings.map((w, i) => (
+                        <li key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
+                          <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-roksal-amber" />
+                          {w}
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Razrezni načrt — visual */}
+              <Card>
+                <CardHeader className="pb-2 pt-4 px-4">
+                  <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+                    <Scissors className="h-4 w-4" />
+                    Razrezni načrt (vizualno)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="px-4 pb-4 space-y-3">
+                  {cncResult.plans.map((plan) => {
+                    const stockLen = parseFloat(cncStockLength) || 1
+                    const colors = ['#1d2b3e', '#f59e0b', '#22c55e', '#0ea5e9', '#a855f7', '#ef4444', '#14b8a6', '#f97316']
+                    let cursor = 0
+                    return (
+                      <div key={plan.stockIndex} className="space-y-1">
+                        <div className="flex items-center justify-between text-[10px]">
+                          <span className="font-mono font-semibold text-roksal-navy">Profil #{plan.stockIndex}</span>
+                          <span className="text-muted-foreground">
+                            {plan.cuts.length} rezov · ostanek {plan.remainingMm}mm · izkoristek {plan.utilizationPct.toFixed(1)}%
+                          </span>
+                        </div>
+                        <div className="flex h-6 rounded-md overflow-hidden border border-border">
+                          {plan.cuts.map((c, ci) => {
+                            const widthPct = (c.lengthMm / stockLen) * 100
+                            cursor += c.lengthMm + (parseFloat(cncSawBlade) || 3)
+                            const color = colors[c.fromSegmentIndex % colors.length]
+                            return (
+                              <div
+                                key={ci}
+                                className="h-full flex items-center justify-center text-[8px] font-mono text-white"
+                                style={{ width: `${widthPct}%`, backgroundColor: color }}
+                                title={`${c.label || 'Odsek'}: ${c.lengthMm}mm`}
+                              >
+                                {widthPct > 8 ? c.lengthMm : ''}
+                              </div>
+                            )
+                          })}
+                          {plan.remainingMm > 0 && (
+                            <div
+                              className="h-full bg-muted border-l border-dashed border-border flex items-center justify-center text-[8px] text-muted-foreground"
+                              style={{ width: `${(plan.remainingMm / stockLen) * 100}%` }}
+                            >
+                              {plan.remainingMm > 50 ? `${plan.remainingMm}` : ''}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                  {/* Legend */}
+                  <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border/30">
+                    {Array.from(new Set(cncResult.plans.flatMap(p => p.cuts.map(c => c.fromSegmentIndex)))).map((idx) => {
+                      const seg = cncSegments[idx]
+                      const colors = ['#1d2b3e', '#f59e0b', '#22c55e', '#0ea5e9', '#a855f7', '#ef4444', '#14b8a6', '#f97316']
+                      return (
+                        <span key={idx} className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                          <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: colors[idx % colors.length] }} />
+                          {seg?.label || `Odsek ${idx + 1}`} ({seg?.lengthMm}mm × {seg?.count})
+                        </span>
+                      )
+                    })}
+                    <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                      <span className="inline-block h-2.5 w-3 rounded-sm bg-muted border border-dashed border-border" />
+                      Ostanek
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Tabela razreza */}
+              <Card>
+                <CardHeader className="pb-2 pt-4 px-4">
+                  <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+                    <AlignJustify className="h-4 w-4" />
+                    Tabela razreza
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="px-4 pb-4">
+                  <div className="overflow-x-auto scrollbar-thin">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="text-[10px]">Profil</TableHead>
+                          <TableHead className="text-[10px]">Rezi</TableHead>
+                          <TableHead className="text-[10px] text-right">Ostanek</TableHead>
+                          <TableHead className="text-[10px] text-right">Izkoristek</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {cncResult.plans.map((plan) => (
+                          <TableRow key={plan.stockIndex}>
+                            <TableCell className="text-xs font-mono font-semibold text-roksal-navy">#{plan.stockIndex}</TableCell>
+                            <TableCell className="text-xs">
+                              {plan.cuts.map((c, i) => (
+                                <span key={i} className="inline-block mr-1 mb-0.5 px-1.5 py-0.5 rounded bg-secondary text-[10px] font-mono">
+                                  {c.lengthMm}mm{c.label ? ` · ${c.label}` : ''}
+                                </span>
+                              ))}
+                            </TableCell>
+                            <TableCell className="text-xs text-right font-mono text-roksal-amber">{plan.remainingMm}mm</TableCell>
+                            <TableCell className="text-xs text-right font-mono font-semibold">{plan.utilizationPct.toFixed(1)}%</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ===== VETER PO LOKACIJI CALCULATOR ===== */}
+      {mode === 'windLocation' && (
+        <>
+          <Card>
+            <CardHeader className="pb-3 pt-4 px-4">
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+                <MapPin className="h-4 w-4" />
+                Lokacija
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 px-4 pb-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="windLocLat" className="text-xs">Latitude (°N)</Label>
+                  <Input
+                    id="windLocLat"
+                    type="number"
+                    value={windLocLat}
+                    onChange={(e) => setWindLocLat(e.target.value)}
+                    placeholder="46.2389"
+                    step="0.0001"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="windLocLon" className="text-xs">Longitude (°E)</Label>
+                  <Input
+                    id="windLocLon"
+                    type="number"
+                    value={windLocLon}
+                    onChange={(e) => setWindLocLon(e.target.value)}
+                    placeholder="14.3556"
+                    step="0.0001"
+                  />
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full border-roksal-amber/40 text-roksal-navy hover:bg-roksal-amber/10 h-10"
+                onClick={() => {
+                  if (typeof navigator === 'undefined' || !navigator.geolocation) {
+                    toast.error('Geolokacija ni podprta v tem brskalniku.')
+                    return
+                  }
+                  setWindLocLoading(true)
+                  navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                      setWindLocLat(pos.coords.latitude.toFixed(4))
+                      setWindLocLon(pos.coords.longitude.toFixed(4))
+                      setWindLocLoading(false)
+                      toast.success(`Lokacija pridobljena: ${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`)
+                    },
+                    (err) => {
+                      setWindLocLoading(false)
+                      const msg = err.code === err.PERMISSION_DENIED
+                        ? 'Dostop do lokacije zavrnjen. Vnesite GPS ročno.'
+                        : err.code === err.POSITION_UNAVAILABLE
+                        ? 'Lokacija ni na voljo.'
+                        : err.code === err.TIMEOUT
+                        ? 'Časovna omejitev za lokacijo potekla.'
+                        : 'Napaka pri pridobivanju lokacije.'
+                      toast.error(msg)
+                    },
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
+                  )
+                }}
+                disabled={windLocLoading}
+              >
+                {windLocLoading ? (
+                  <>
+                    <Crosshair className="mr-2 h-4 w-4 animate-spin" />
+                    Pridobivanje...
+                  </>
+                ) : (
+                  <>
+                    <Navigation className="mr-2 h-4 w-4" />
+                    Uporabi mojo lokacijo
+                  </>
+                )}
+              </Button>
+              <p className="text-[10px] text-muted-foreground text-center">
+                Privzeto: Kranj (46,2389°N, 14,3556°E)
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3 pt-4 px-4">
+              <CardTitle className="text-sm font-semibold text-roksal-navy">
+                Parametri
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 px-4 pb-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="windLocHeight" className="text-xs">Višina nad tlemi (m)</Label>
+                  <Input
+                    id="windLocHeight"
+                    type="number"
+                    value={windLocHeight}
+                    onChange={(e) => setWindLocHeight(e.target.value)}
+                    placeholder="10"
+                    step="0.5"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="windLocArea" className="text-xs">Površina ograje (m²)</Label>
+                  <Input
+                    id="windLocArea"
+                    type="number"
+                    value={windLocArea}
+                    onChange={(e) => setWindLocArea(e.target.value)}
+                    placeholder="6"
+                    step="0.5"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Kategorija terena</Label>
+                <Select
+                  value={windLocTerrain}
+                  onValueChange={(v) => setWindLocTerrain(v as TerrainCategory)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="I">I — Odprto morje, jezera</SelectItem>
+                    <SelectItem value="II">II — Ravninsko, nizka vegetacija</SelectItem>
+                    <SelectItem value="III">III — Primestno, gozdovi</SelectItem>
+                    <SelectItem value="IV">IV — Urbano, visoke stavbe</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Tip ograje</Label>
+                <Select
+                  value={windLocType}
+                  onValueChange={(v) => setWindLocType(v as RailingType)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(railingTypeLabels).map(([key, label]) => (
+                      <SelectItem key={key} value={key}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <Button
+              type="button"
+              onClick={handleCalculate}
+              className="w-full bg-roksal-navy hover:bg-roksal-navy/90 text-white h-11"
+            >
+              <Wind className="mr-2 h-4 w-4" />
+              Izračunaj vetrno obremenitev
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={exportWindLocPdf}
+              disabled={!windLocResult}
+              className="w-full h-11 border-roksal-amber/40 text-roksal-navy hover:bg-roksal-amber/10 disabled:opacity-40"
+            >
+              <FileDown className="mr-2 h-4 w-4" />
+              Izvozi PDF
+            </Button>
+          </div>
+
+          {windLocResult && (
+            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
+              {/* Location & Risk badge */}
+              <Card className={`overflow-hidden border ${riskColors[windLocResult.riskLevel]}`}>
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Lokacija</p>
+                      <p className="text-sm font-bold text-roksal-navy truncate">{windLocResult.locationDescription}</p>
+                      <p className="text-[10px] text-muted-foreground font-mono">
+                        {windLocLat}°N, {windLocLon}°E
+                      </p>
+                    </div>
+                    <Badge className={`${riskColors[windLocResult.riskLevel]} border`}>
+                      {riskLabels[windLocResult.riskLevel]}
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Wind zone visual + key stats */}
+              <div className="grid grid-cols-2 gap-3">
+                <Card className="px-3 py-3 flex items-center gap-3">
+                  {windLocResult.windZone === 3 ? (
+                    <Mountain className="h-8 w-8 text-roksal-amber shrink-0" />
+                  ) : windLocResult.windZone === 2 ? (
+                    <Wind className="h-8 w-8 text-roksal-amber shrink-0" />
+                  ) : (
+                    <MapPin className="h-8 w-8 text-roksal-green shrink-0" />
+                  )}
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Vetrna cona</p>
+                    <p className="text-2xl font-bold text-roksal-navy">{windLocResult.windZone}</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {windLocResult.windZone === 3 ? 'gore' : windLocResult.windZone === 2 ? 'obala' : 'celina'}
+                    </p>
+                  </div>
+                </Card>
+                <Card className="px-3 py-3">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Osnovna hitrost</p>
+                  <p className="text-2xl font-bold text-roksal-navy">{windLocResult.basicWindSpeedMs}<span className="text-sm font-normal ml-0.5">m/s</span></p>
+                  <p className="text-[10px] text-muted-foreground">{windLocResult.basicPressureKpa.toFixed(3)} kPa</p>
+                </Card>
+              </div>
+
+              {/* Main results */}
+              <div className="grid grid-cols-3 gap-3">
+                <Card className="px-3 py-3">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Vrhnji tlak</p>
+                  <p className="text-xl font-bold text-roksal-navy">{windLocResult.designPressureKpa.toFixed(2)}</p>
+                  <p className="text-[10px] text-muted-foreground">kPa</p>
+                </Card>
+                <Card className="px-3 py-3">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Skupna sila</p>
+                  <p className="text-xl font-bold text-roksal-navy">{windLocResult.totalForceKn.toFixed(2)}</p>
+                  <p className="text-[10px] text-muted-foreground">kN</p>
+                </Card>
+                <Card className="px-3 py-3">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Sila/m</p>
+                  <p className="text-xl font-bold text-roksal-navy">{windLocResult.forcePerMeterNm.toFixed(0)}</p>
+                  <p className="text-[10px] text-muted-foreground">N/m</p>
+                </Card>
+              </div>
+
+              {/* Slovenia map SVG */}
+              <Card>
+                <CardHeader className="pb-2 pt-4 px-4">
+                  <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+                    <MapPin className="h-4 w-4" />
+                    Karta vetrnih con Slovenije
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="px-4 pb-4">
+                  <SloveniaWindMapSvg
+                    lat={parseFloat(windLocLat) || 46.2}
+                    lon={parseFloat(windLocLon) || 14.5}
+                    windZone={windLocResult.windZone}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Recommendations */}
+              {windLocResult.recommendations.length > 0 && (
+                <Card className="border-roksal-amber/30">
+                  <CardHeader className="pb-2 pt-4 px-4">
+                    <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-amber">
+                      <Info className="h-4 w-4" />
+                      Priporočila
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="px-4 pb-4">
+                    <ul className="space-y-1.5">
+                      {windLocResult.recommendations.map((r, i) => (
+                        <li key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
+                          <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-roksal-amber" />
+                          {r}
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+              )}
+
+              <Card className="bg-roksal-navy/5">
+                <CardContent className="flex gap-3 p-4">
+                  <Info className="h-5 w-5 shrink-0 text-roksal-navy" />
+                  <div className="text-xs text-muted-foreground">
+                    <p className="font-medium text-roksal-navy">
+                      SIST EN 1991-1-4 NA (Slovenija)
+                    </p>
+                    <p className="mt-1">
+                      Vetrne cone Slovenije: cona 1 (celina — 22 m/s), cona 2 (obala — 24 m/s),
+                      cona 3 (gore &gt; 1000 m — 28 m/s). Izračun vključuje terenski faktor,
+                      višinski faktor in aerodinamični koeficient. Za natančno določitev cone
+                      uporabite uradno kartno podlago ZGS.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ===== STEKLENA BALUSTRADA CALCULATOR ===== */}
+      {mode === 'glass' && (
+        <>
+          <Card>
+            <CardHeader className="pb-3 pt-4 px-4">
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+                <Square className="h-4 w-4" />
+                Steklena balustrada — poenostavljena metoda
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 px-4 pb-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="glassSpan" className="text-xs">Razpon med stebri (mm)</Label>
+                  <Input
+                    id="glassSpan"
+                    type="number"
+                    value={String(glassInput.spanMm)}
+                    onChange={(e) => {
+                      const v = parseFloat(e.target.value)
+                      setGlassInput({ ...glassInput, spanMm: isFinite(v) ? v : 0 })
+                    }}
+                    placeholder="1200"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="glassHeight" className="text-xs">Višina stekla (mm)</Label>
+                  <Input
+                    id="glassHeight"
+                    type="number"
+                    value={String(glassInput.heightMm)}
+                    onChange={(e) => {
+                      const v = parseFloat(e.target.value)
+                      setGlassInput({ ...glassInput, heightMm: isFinite(v) ? v : 0 })
+                    }}
+                    placeholder="1100"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Horizontalna obremenitev (kN/m)</Label>
+                <Select
+                  value={String(glassInput.loadKnPerM)}
+                  onValueChange={(v) => setGlassInput({ ...glassInput, loadKnPerM: parseFloat(v) })}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1.0">1,0 kN/m — Stanovanjske</SelectItem>
+                    <SelectItem value="1.5">1,5 kN/m — Javne</SelectItem>
+                    <SelectItem value="2.0">2,0 kN/m — Balkon &gt; 1m padec</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Tip stekla</Label>
+                <Select
+                  value={glassInput.glassType}
+                  onValueChange={(v) => setGlassInput({ ...glassInput, glassType: v as GlassType })}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="single">Enojno (float) — 40 MPa</SelectItem>
+                    <SelectItem value="laminated">Laminirano (VSG) — 50 MPa</SelectItem>
+                    <SelectItem value="tempered">Kaljeno (ESG) — 120 MPa</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <Button
+              type="button"
+              onClick={handleCalculate}
+              className="w-full bg-roksal-navy hover:bg-roksal-navy/90 text-white h-11"
+            >
+              <Square className="mr-2 h-4 w-4" />
+              Izračunaj steklo
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={exportGlassPdf}
+              disabled={!glassResult}
+              className="w-full h-11 border-roksal-amber/40 text-roksal-navy hover:bg-roksal-amber/10 disabled:opacity-40"
+            >
+              <FileDown className="mr-2 h-4 w-4" />
+              Izvozi PDF
+            </Button>
+          </div>
+
+          {glassResult && (
+            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
+              {/* Recommended thickness */}
+              <Card className={`overflow-hidden border-l-4 ${glassResult.isSafe ? 'border-l-roksal-green bg-roksal-green/5' : 'border-l-roksal-red bg-roksal-red/5'}`}>
+                <CardContent className="flex items-center gap-3 p-4">
+                  {glassResult.isSafe ? (
+                    <CheckCircle2 className="h-8 w-8 shrink-0 text-roksal-green" />
+                  ) : (
+                    <AlertTriangle className="h-8 w-8 shrink-0 text-roksal-red" />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Priporočena debelina</p>
+                    <p className="text-3xl font-bold text-roksal-navy">
+                      {glassResult.recommendedThicknessMm}<span className="text-base font-normal ml-1">mm</span>
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {glassResult.layers
+                        ? `Laminirano: 2× ${glassResult.recommendedThicknessMm / 2}mm + PVB`
+                        : glassInput.glassType === 'tempered'
+                        ? 'Kaljeno steklo (ESG)'
+                        : 'Enojno steklo (float)'}
+                    </p>
+                  </div>
+                  <Badge className={`${glassResult.isSafe ? 'bg-roksal-green/15 text-roksal-green border-roksal-green/30' : 'bg-roksal-red/15 text-roksal-red border-roksal-red/30'} border`}>
+                    {glassResult.isSafe ? 'VARNO' : 'NEVARNO'}
+                  </Badge>
+                </CardContent>
+              </Card>
+
+              {/* Stress stats */}
+              <div className="grid grid-cols-3 gap-3">
+                <Card className="px-3 py-3">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Napetost</p>
+                  <p className="text-xl font-bold text-roksal-navy">{glassResult.stressMpa.toFixed(1)}</p>
+                  <p className="text-[10px] text-muted-foreground">MPa</p>
+                </Card>
+                <Card className="px-3 py-3">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Dovoljena</p>
+                  <p className="text-xl font-bold text-roksal-navy">{glassResult.allowableStressMpa}</p>
+                  <p className="text-[10px] text-muted-foreground">MPa</p>
+                </Card>
+                <Card className="px-3 py-3">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Max razpon</p>
+                  <p className="text-xl font-bold text-roksal-navy">{glassResult.maxSpanForThicknessMm}</p>
+                  <p className="text-[10px] text-muted-foreground">mm</p>
+                </Card>
+              </div>
+
+              {/* Glass layers SVG (only for laminated) */}
+              {glassResult.layers === 2 && (
+                <Card>
+                  <CardHeader className="pb-2 pt-4 px-4">
+                    <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+                      <Layers className="h-4 w-4" />
+                      Plasti laminiranega stekla
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="px-4 pb-4">
+                    <GlassLayersSvg
+                      totalMm={glassResult.recommendedThicknessMm}
+                      baseMm={glassResult.recommendedThicknessMm / 2}
+                    />
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Alternative thicknesses table */}
+              <Card>
+                <CardHeader className="pb-2 pt-4 px-4">
+                  <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+                    <AlignJustify className="h-4 w-4" />
+                    Alternativne debeline
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="px-4 pb-4">
+                  <div className="overflow-x-auto scrollbar-thin">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="text-[10px]">Debelina</TableHead>
+                          <TableHead className="text-[10px]">Status</TableHead>
+                          <TableHead className="text-[10px]">Razlog</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {glassResult.alternativeThicknesses.map((a) => (
+                          <TableRow key={a.mm}>
+                            <TableCell className="text-xs font-mono font-semibold">{a.mm}mm</TableCell>
+                            <TableCell>
+                              {a.safe ? (
+                                <Badge className="bg-roksal-green/15 text-roksal-green border-roksal-green/30 border text-[9px]">VARNO</Badge>
+                              ) : (
+                                <Badge className="bg-roksal-amber/15 text-roksal-navy border-roksal-amber/30 border text-[9px]">Tveganje</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-[10px] text-muted-foreground">{a.reason}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Warnings */}
+              {glassResult.warnings.length > 0 && (
+                <Card className="border-roksal-amber/30">
+                  <CardHeader className="pb-2 pt-4 px-4">
+                    <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-amber">
+                      <AlertTriangle className="h-4 w-4" />
+                      Opozorila
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="px-4 pb-4">
+                    <ul className="space-y-1.5">
+                      {glassResult.warnings.map((w, i) => (
+                        <li key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
+                          <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-roksal-amber" />
+                          {w}
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Recommendations */}
+              {glassResult.recommendations.length > 0 && (
+                <Card className="border-roksal-navy/20">
+                  <CardHeader className="pb-2 pt-4 px-4">
+                    <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+                      <Info className="h-4 w-4" />
+                      Priporočila
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="px-4 pb-4">
+                    <ul className="space-y-1.5">
+                      {glassResult.recommendations.map((r, i) => (
+                        <li key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
+                          <CheckCircle2 className="mt-0.5 h-3 w-3 shrink-0 text-roksal-green" />
+                          {r}
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+              )}
+
+              <Card className="bg-roksal-navy/5">
+                <CardContent className="flex gap-3 p-4">
+                  <Info className="h-5 w-5 shrink-0 text-roksal-navy" />
+                  <div className="text-xs text-muted-foreground">
+                    <p className="font-medium text-roksal-navy">
+                      Poenostavljena metoda (SIST EN)
+                    </p>
+                    <p className="mt-1">
+                      Napetost ≈ (obremenitev × razpon² × 6) / (debelina² × 8). Dovoljene napetosti:
+                      enojno 40 MPa, laminirano (VSG) 50 MPa, kaljeno (ESG) 120 MPa. Za končno
+                      dimenzioniranje je obvezna statična analiza z certifikatom proizvajalca stekla.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        </>
+      )}
+
       {/* Save Calculation Button */}
-      {(railingResult || anchoringResult || windResult || balusterResult || angledResult || materialResult || complianceResult) && (
+      {(railingResult || anchoringResult || windResult || balusterResult || angledResult || materialResult || complianceResult || cncResult || windLocResult || glassResult) && (
         <Button
           type="button"
           onClick={() => {
@@ -3574,6 +4985,9 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               angled: 'Kotni izračun',
               material: 'Skupni material',
               compliance: 'Predpisi',
+              cnc: 'CNC rez',
+              windLocation: 'Veter po lokaciji',
+              glass: 'Steklena balustrada',
             }
             let keyResult = ''
             let inputs: Record<string, string> = {}
@@ -3599,6 +5013,15 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               const ok = complianceResult.checks.filter((c) => c.passed).length
               keyResult = `${ok}/${complianceResult.checks.length} preverb uspešnih`
               inputs = { compGap, compHeight, compPostSpacing, compLoadCategory, compDropHeight }
+            } else if (mode === 'cnc' && cncResult) {
+              keyResult = `${cncResult.stockCount} profilov, izkoristek ${cncResult.overallUtilizationPct.toFixed(1)}%`
+              inputs = { cncStockLength: String(cncStockLength), cncSawBlade: String(cncSawBlade), cncSegments: JSON.stringify(cncSegments) }
+            } else if (mode === 'windLocation' && windLocResult) {
+              keyResult = `${windLocResult.locationDescription}, ${riskLabels[windLocResult.riskLevel]}`
+              inputs = { windLocLat: String(windLocLat), windLocLon: String(windLocLon), windLocHeight: String(windLocHeight), windLocTerrain: windLocTerrain, windLocArea: String(windLocArea), windLocType: windLocType }
+            } else if (mode === 'glass' && glassResult) {
+              keyResult = `${glassResult.recommendedThicknessMm}mm ${glassResult.isSafe ? 'VARNO' : 'NEVARNO'}`
+              inputs = { glassSpan: String(glassInput.spanMm), glassHeight: String(glassInput.heightMm), glassLoad: String(glassInput.loadKnPerM), glassType: glassInput.glassType }
             }
             const newCalc: SavedCalculation = {
               id: `calc_${Date.now()}`,
@@ -4155,5 +5578,214 @@ function AngledSvg({
         </span>
       </div>
     </div>
+  )
+}
+
+// ============================================
+// SVG: Karta vetrnih con Slovenije
+// ============================================
+function SloveniaWindMapSvg({
+  lat,
+  lon,
+  windZone,
+}: {
+  lat: number
+  lon: number
+  windZone: 1 | 2 | 3
+}) {
+  // Slovenia bounds: lat 45.42-46.88, lon 13.38-16.61
+  const minLat = 45.42
+  const maxLat = 46.88
+  const minLon = 13.38
+  const maxLon = 16.61
+  const vbW = 600
+  const vbH = 400
+  const projX = (lon: number) => ((lon - minLon) / (maxLon - minLon)) * vbW
+  const projY = (lat: number) => ((maxLat - lat) / (maxLat - minLat)) * vbH
+
+  // Rough Slovenia outline
+  const sloPath =
+    'M 110,90 L 200,40 L 290,30 L 410,55 L 520,75 L 580,110 L 575,180 L 530,260 L 470,320 L 380,375 L 290,370 L 220,335 L 110,310 L 65,250 L 50,180 L 75,130 Z'
+
+  // Clamp pin within Slovenia
+  const pinX = Math.max(30, Math.min(vbW - 30, projX(lon)))
+  const pinY = Math.max(20, Math.min(vbH - 90, projY(lat)))
+
+  return (
+    <svg
+      viewBox={`0 0 ${vbW} ${vbH}`}
+      className="w-full h-auto"
+      preserveAspectRatio="xMidYMid meet"
+      role="img"
+      aria-label={`Karta vetrnih con Slovenije — lokacija cona ${windZone}`}
+    >
+      <defs>
+        <clipPath id="sloClip">
+          <path d={sloPath} />
+        </clipPath>
+      </defs>
+
+      {/* Background Slovenia (zone 1 — celina, light green) */}
+      <path d={sloPath} fill="#dcfce7" stroke="#1d2b3e" strokeWidth="2" />
+
+      {/* Zone 3 (gore) — top portion, lat > 46.5 */}
+      <rect
+        x="0"
+        y="0"
+        width={vbW}
+        height={projY(46.5)}
+        fill="#fef3c7"
+        clipPath="url(#sloClip)"
+      />
+
+      {/* Zone 2 (obala) — bottom-left, lat < 45.7 AND lon > 13.5 */}
+      <rect
+        x={projX(13.5)}
+        y={projY(45.7)}
+        width={vbW - projX(13.5)}
+        height={vbH - projY(45.7)}
+        fill="#fed7aa"
+        clipPath="url(#sloClip)"
+      />
+
+      {/* Slovenia outline on top */}
+      <path d={sloPath} fill="none" stroke="#1d2b3e" strokeWidth="2.5" />
+
+      {/* City labels */}
+      <text x={projX(14.3556)} y={projY(46.2389) - 6} fontSize="9" fill="#1d2b3e" fontWeight="bold" textAnchor="middle">
+        Kranj
+      </text>
+      <circle cx={projX(14.3556)} cy={projY(46.2389)} r="2" fill="#1d2b3e" />
+
+      <text x={projX(14.5050)} y={projY(46.0569) - 6} fontSize="9" fill="#1d2b3e" textAnchor="middle">
+        Ljubljana
+      </text>
+      <circle cx={projX(14.5050)} cy={projY(46.0569)} r="2" fill="#1d2b3e" />
+
+      <text x={projX(15.6467)} y={projY(46.5547) - 6} fontSize="9" fill="#1d2b3e" textAnchor="middle">
+        Maribor
+      </text>
+      <circle cx={projX(15.6467)} cy={projY(46.5547)} r="2" fill="#1d2b3e" />
+
+      <text x={projX(13.7297)} y={projY(45.5481) - 6} fontSize="9" fill="#1d2b3e" textAnchor="middle">
+        Koper
+      </text>
+      <circle cx={projX(13.7297)} cy={projY(45.5481)} r="2" fill="#1d2b3e" />
+
+      {/* Location pin (amber with white center) */}
+      <circle cx={pinX} cy={pinY} r="10" fill="#f59e0b" stroke="#1d2b3e" strokeWidth="2" />
+      <circle cx={pinX} cy={pinY} r="3.5" fill="#ffffff" />
+      <text x={pinX} y={pinY - 16} fontSize="10" fill="#1d2b3e" fontWeight="bold" textAnchor="middle">
+        Tukaj
+      </text>
+
+      {/* Highlighted zone label */}
+      <g>
+        <rect x={vbW - 110} y={10} width={100} height={26} fill="#1d2b3e" rx="4" />
+        <text x={vbW - 60} y={28} fontSize="13" fill="#ffffff" fontWeight="bold" textAnchor="middle">
+          CONA {windZone}
+        </text>
+      </g>
+
+      {/* Legend */}
+      <g>
+        <rect x="14" y={vbH - 78} width="13" height="13" fill="#dcfce7" stroke="#1d2b3e" strokeWidth="1" />
+        <text x="32" y={vbH - 67} fontSize="9" fill="#1d2b3e">
+          Cona 1 — celina (22 m/s)
+        </text>
+        <rect x="14" y={vbH - 60} width="13" height="13" fill="#fed7aa" stroke="#1d2b3e" strokeWidth="1" />
+        <text x="32" y={vbH - 49} fontSize="9" fill="#1d2b3e">
+          Cona 2 — obala (24 m/s)
+        </text>
+        <rect x="14" y={vbH - 42} width="13" height="13" fill="#fef3c7" stroke="#1d2b3e" strokeWidth="1" />
+        <text x="32" y={vbH - 31} fontSize="9" fill="#1d2b3e">
+          Cona 3 — gore (28 m/s)
+        </text>
+      </g>
+    </svg>
+  )
+}
+
+// ============================================
+// SVG: Plasti laminiranega stekla (VSG)
+// ============================================
+function GlassLayersSvg({ totalMm, baseMm }: { totalMm: number; baseMm: number }) {
+  const vbW = 500
+  const vbH = 230
+  const startX = 100
+  const endX = 380
+  const layerW = endX - startX
+  const paneH = 50
+  const pvbH = 8
+  const startY = 60
+  const totalH = 2 * paneH + pvbH
+
+  return (
+    <svg
+      viewBox={`0 0 ${vbW} ${vbH}`}
+      className="w-full h-auto"
+      preserveAspectRatio="xMidYMid meet"
+      role="img"
+      aria-label={`Laminirano steklo: 2× ${baseMm}mm + PVB folija = ${totalMm}mm`}
+    >
+      {/* Title */}
+      <text x={vbW / 2} y={26} textAnchor="middle" fontSize="13" fill="#1d2b3e" fontWeight="bold">
+        Laminirano steklo (VSG) — 2× {baseMm}mm + PVB = {totalMm}mm
+      </text>
+
+      {/* Pane 1 */}
+      <rect x={startX} y={startY} width={layerW} height={paneH} fill="#bae6fd" stroke="#1d2b3e" strokeWidth="1.5" />
+      <text x={startX + layerW / 2} y={startY + paneH / 2 + 4} textAnchor="middle" fontSize="12" fill="#1d2b3e" fontWeight="bold">
+        Steklo {baseMm}mm
+      </text>
+
+      {/* PVB interlayer */}
+      <rect x={startX} y={startY + paneH} width={layerW} height={pvbH} fill="#fde68a" stroke="#1d2b3e" strokeWidth="1" />
+
+      {/* Pane 2 */}
+      <rect x={startX} y={startY + paneH + pvbH} width={layerW} height={paneH} fill="#bae6fd" stroke="#1d2b3e" strokeWidth="1.5" />
+      <text x={startX + layerW / 2} y={startY + paneH + pvbH + paneH / 2 + 4} textAnchor="middle" fontSize="12" fill="#1d2b3e" fontWeight="bold">
+        Steklo {baseMm}mm
+      </text>
+
+      {/* Right side labels */}
+      <text x={endX + 14} y={startY + paneH / 2 + 4} fontSize="11" fill="#1d2b3e" fontWeight="bold">
+        {baseMm}mm
+      </text>
+      <text x={endX + 14} y={startY + paneH + pvbH / 2 + 3} fontSize="9" fill="#666666">
+        PVB 0,76mm
+      </text>
+      <text x={endX + 14} y={startY + paneH + pvbH + paneH / 2 + 4} fontSize="11" fill="#1d2b3e" fontWeight="bold">
+        {baseMm}mm
+      </text>
+
+      {/* Total dimension (left) */}
+      <line x1={startX - 35} y1={startY} x2={startX - 35} y2={startY + totalH} stroke="#1d2b3e" strokeWidth="1.5" />
+      <line x1={startX - 39} y1={startY} x2={startX - 31} y2={startY} stroke="#1d2b3e" strokeWidth="1.5" />
+      <line x1={startX - 39} y1={startY + totalH} x2={startX - 31} y2={startY + totalH} stroke="#1d2b3e" strokeWidth="1.5" />
+      <text
+        x={startX - 50}
+        y={startY + totalH / 2}
+        textAnchor="middle"
+        fontSize="11"
+        fill="#1d2b3e"
+        fontWeight="bold"
+        transform={`rotate(-90 ${startX - 50} ${startY + totalH / 2})`}
+      >
+        Skupaj {totalMm}mm
+      </text>
+
+      {/* Legend */}
+      <g transform="translate(30, 185)">
+        <rect x="0" y="0" width="11" height="11" fill="#bae6fd" stroke="#1d2b3e" strokeWidth="1" />
+        <text x="16" y="9" fontSize="9" fill="#1d2b3e">
+          Steklo (float/kaljeno)
+        </text>
+        <rect x="130" y="0" width="11" height="11" fill="#fde68a" stroke="#1d2b3e" strokeWidth="1" />
+        <text x="146" y="9" fontSize="9" fill="#1d2b3e">
+          PVB folija (varnostna)
+        </text>
+      </g>
+    </svg>
   )
 }

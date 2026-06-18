@@ -89,6 +89,14 @@ import {
   ArrowRightLeft,
   Grid3x3,
   TrendingDown,
+  // MERITVE-PRO — novi ikoni (Bluetooth laser, AR sync, Foto mere)
+  Bluetooth,
+  Boxes,
+  Radio,
+  Image as ImageIcon,
+  Link2,
+  Loader2,
+  Unplug,
 } from 'lucide-react'
 import {
   Table,
@@ -98,6 +106,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { Progress } from '@/components/ui/progress'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 
@@ -158,6 +167,13 @@ interface ArMetadata {
   razmikPalic?: number
   kotPosevnih?: number
   stPalic?: number
+  // MERITVE-PRO — vir meritve (photo / ar_snapshot / laser / manual)
+  source?: 'photo' | 'ar_snapshot' | 'laser' | 'manual' | string
+  photoId?: string
+  snapshotId?: string
+  // MERITVE-PRO — AR točke (x, y) za AR-sourced mere
+  x?: number
+  y?: number
 }
 
 interface Measurement {
@@ -202,6 +218,10 @@ interface Measurement {
   razmikPalic?: number
   kotPosevnih?: number
   stPalic?: number
+  // MERITVE-PRO — vir meritve + povezave (foto / AR / laser)
+  source?: string
+  photoId?: string
+  snapshotId?: string
 }
 
 interface Project {
@@ -283,6 +303,48 @@ interface SpeechRecognitionLike {
 interface SpeechRecognitionCtor {
   new (): SpeechRecognitionLike
 }
+
+// ============================================
+// MERITVE-PRO — Web Bluetooth tipi (laserski daljinec)
+// ============================================
+interface BluetoothCharacteristicLike {
+  startNotifications: () => Promise<unknown>
+  stopNotifications: () => Promise<unknown>
+  uuid: string
+  value?: DataView
+  addEventListener: (type: string, listener: (event: unknown) => void) => void
+  removeEventListener: (type: string, listener: (event: unknown) => void) => void
+}
+interface BluetoothServiceLike {
+  getCharacteristics: () => Promise<BluetoothCharacteristicLike[]>
+}
+interface BluetoothDeviceLike {
+  name?: string
+  id?: string
+  gatt?: {
+    connected?: boolean
+    connect: () => Promise<unknown>
+    disconnect: () => void
+    getPrimaryService: (uuid: string) => Promise<BluetoothServiceLike>
+  }
+  addEventListener: (type: string, listener: (event: unknown) => void) => void
+  removeEventListener: (type: string, listener: (event: unknown) => void) => void
+  watchAdvertisements?: () => Promise<void>
+}
+interface BluetoothLike {
+  requestDevice: (options: unknown) => Promise<BluetoothDeviceLike>
+  getAvailability?: () => Promise<boolean>
+}
+interface NavigatorWithBluetooth extends Navigator {
+  bluetooth?: BluetoothLike
+}
+
+// Leica DISTO service UUID (custom service)
+const LASER_SERVICE_LEICA = '0000feff-0000-1000-8000-00805f9b34fb'
+// Bosch GLM service UUID
+const LASER_SERVICE_BOSCH = '0000feaa-0000-1000-8000-00805f9b34fb'
+// Laserski proizvajalci — ime prefixi
+const LASER_NAME_PREFIXES = ['GLM', 'DISTO', 'Leica', 'Bosch', 'BOSCH', 'LEICA']
 
 // ============================================
 // KONSTANTE
@@ -683,6 +745,67 @@ function loadPrimaryUnit(): EnotaTip {
 }
 
 // ============================================
+// MERITVE-PRO — Web Bluetooth helper funkcije
+// ============================================
+
+// Zadnji povezani laserski daljinec (ime) — beremo iz localStorage
+function loadLastLaserName(): string | null {
+  try {
+    return localStorage.getItem('roksal_last_laser')
+  } catch {
+    return null
+  }
+}
+
+// Preveri ali brskalnik podpira Web Bluetooth
+function isBluetoothSupported(): boolean {
+  if (typeof navigator === 'undefined') return false
+  return !!(navigator as NavigatorWithBluetooth).bluetooth
+}
+
+// Razčleni razdaljo iz DataView (različni proizvajalci pošiljajo različno)
+function parseDistanceFromDataView(dv: DataView): number | null {
+  // 1. Poskusi uint32 little-endian kot mm (običajni format za daljince)
+  if (dv.byteLength >= 4) {
+    try {
+      const val = dv.getUint32(0, true) // little-endian
+      if (val > 0 && val < 1_000_000) return val // 0-1000m razpon
+    } catch {
+      // ignore
+    }
+  }
+  // 2. Poskusi uint16 little-endian (starejši daljinci)
+  if (dv.byteLength >= 2) {
+    try {
+      const val = dv.getUint16(0, true)
+      if (val > 0 && val < 65_535) return val
+    } catch {
+      // ignore
+    }
+  }
+  // 3. Poskusi tekstovno razčlenitev (ASCII / UTF-8)
+  try {
+    const text = new TextDecoder('utf-8').decode(dv).trim()
+    // Poišči prvo število (z možno decimalno vejico/piko)
+    const match = text.match(/(-?\d+(?:[.,]\d+)?)/)
+    if (match) {
+      const numStr = match[1].replace(',', '.')
+      const num = parseFloat(numStr)
+      if (Number.isFinite(num) && num > 0 && num < 1_000_000) {
+        // Če vsebuje decimalo, predvidevamo metre → mm
+        if (match[1].includes('.') || match[1].includes(',')) {
+          return Math.round(num * 1000)
+        }
+        return Math.round(num)
+      }
+    }
+  } catch {
+    // ignore
+  }
+  return null
+}
+
+// ============================================
 // GLAVNA KOMPONENTA
 // ============================================
 
@@ -787,6 +910,45 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
   const [wpcRazmikPalic, setWpcRazmikPalic] = useState<number>(WPC_RAZMAK_DEFAULT)
   const [wpcKotPosevnih, setWpcKotPosevnih] = useState<number>(WPC_KOT_POSEVNIH_DEFAULT)
   const [wpcConfigOpen, setWpcConfigOpen] = useState(false)
+
+  // ============================================
+  // MERITVE-PRO — stanje za nove funkcije
+  // ============================================
+
+  // 1. Web Bluetooth laser
+  const [laserSupported, setLaserSupported] = useState(false)
+  const [laserStatus, setLaserStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected')
+  const [laserDeviceName, setLaserDeviceName] = useState<string | null>(null)
+  const [laserLastReading, setLaserLastReading] = useState<number | null>(null)
+  const laserDeviceRef = useRef<BluetoothDeviceLike | null>(null)
+  const laserCharacteristicRef = useRef<BluetoothCharacteristicLike | null>(null)
+  const laserReconnectAttemptsRef = useRef(0)
+  const laserReconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const laserMeasurementHandlerRef = useRef<((event: unknown) => void) | null>(null)
+  const laserDisconnectHandlerRef = useRef<((event: unknown) => void) | null>(null)
+
+  // 2. AR sync (prenašanje točk iz AR posnetka v mere)
+  const [arImportOpen, setArImportOpen] = useState(false)
+  const [arSnapshots, setArSnapshots] = useState<Array<{
+    id: string
+    imageUrl: string
+    tocke: string
+    kalibracija: string | null
+    opombe: string | null
+    createdAt: string
+    profil?: { naziv: string } | null
+  }>>([])
+  const [arImportLoading, setArImportLoading] = useState(false)
+  const [arImportProgress, setArImportProgress] = useState<{ current: number; total: number } | null>(null)
+  const [arSelectedSnapshotId, setArSelectedSnapshotId] = useState<string | null>(null)
+
+  // 3. Foto mere povezava nazaj
+  const [fotoFilterActive, setFotoFilterActive] = useState(false)
+  const [photoViewerOpen, setPhotoViewerOpen] = useState(false)
+  const [photoViewerUrl, setPhotoViewerUrl] = useState<string | null>(null)
+  const [photoViewerId, setPhotoViewerId] = useState<string | null>(null)
+  const [photoViewerLoading, setPhotoViewerLoading] = useState(false)
+  const [photoViewerNotFound, setPhotoViewerNotFound] = useState(false)
 
   // ============================================
   // NALAGANJE PODATKOV
@@ -911,6 +1073,45 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
     setVoiceSupported(!!(w.SpeechRecognition || w.webkitSpeechRecognition))
   }, [])
 
+  // MERITVE-PRO — zaznaj podporo Web Bluetooth API
+  useEffect(() => {
+    setLaserSupported(isBluetoothSupported())
+  }, [])
+
+  // MERITVE-PRO — naloži zadnje povezani lasersko ime (prikaz v badge-u)
+  useEffect(() => {
+    if (!laserDeviceName) {
+      const last = loadLastLaserName()
+      if (last) setLaserDeviceName(last)
+    }
+  }, [laserDeviceName])
+
+  // MERITVE-PRO — počisti laser povezavo ob unmountu
+  useEffect(() => {
+    return () => {
+      try {
+        if (laserReconnectTimerRef.current) {
+          clearTimeout(laserReconnectTimerRef.current)
+          laserReconnectTimerRef.current = null
+        }
+        const ch = laserCharacteristicRef.current
+        const dev = laserDeviceRef.current
+        const handler = laserMeasurementHandlerRef.current
+        const dHandler = laserDisconnectHandlerRef.current
+        if (ch && handler) {
+          try { ch.removeEventListener('characteristicvaluechanged', handler) } catch { /* ignore */ }
+          try { ch.stopNotifications() } catch { /* ignore */ }
+        }
+        if (dev && dHandler) {
+          try { dev.removeEventListener('gattserverdisconnected', dHandler) } catch { /* ignore */ }
+        }
+        try { dev?.gatt?.disconnect() } catch { /* ignore */ }
+      } catch {
+        // ignore
+      }
+    }
+  }, [])
+
   // P1 — počisti voice recognition ob unmountu
   useEffect(() => {
     return () => {
@@ -1003,6 +1204,10 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
         razmikPalic: ar.razmikPalic ?? m.razmikPalic,
         kotPosevnih: ar.kotPosevnih ?? m.kotPosevnih,
         stPalic: ar.stPalic ?? m.stPalic,
+        // MERITVE-PRO — vir meritve + povezave
+        source: ar.source ?? m.source,
+        photoId: ar.photoId ?? m.photoId,
+        snapshotId: ar.snapshotId ?? m.snapshotId,
       }
     })
   }
@@ -1302,9 +1507,22 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
 
   // P1 — filtrirane meritve glede na status filter
   const filteredMeasurements = useMemo(() => {
-    if (statusFilter === 'VSE') return measurements
-    return measurements.filter((m) => (m.status || 'OSNUTEK') === statusFilter)
-  }, [measurements, statusFilter])
+    let list = measurements
+    if (statusFilter !== 'VSE') {
+      list = list.filter((m) => (m.status || 'OSNUTEK') === statusFilter)
+    }
+    // MERITVE-PRO — Foto mere filter (dodatno nad status filtrom)
+    if (fotoFilterActive) {
+      list = list.filter((m) => m.source === 'photo')
+    }
+    return list
+  }, [measurements, statusFilter, fotoFilterActive])
+
+  // MERITVE-PRO — število foto mer (za filter pill badge)
+  const fotoMeasurementsCount = useMemo(
+    () => measurements.filter((m) => m.source === 'photo').length,
+    [measurements]
+  )
 
   // Grupiranje po datumu (obstoječa logika) — uporablja filtrirane meritve
   const groupedMeasurements = useMemo((): MeasurementGroup[] => {
@@ -2694,6 +2912,529 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
   }
 
   // ============================================
+  // MERITVE-PRO — WEB BLUETOOTH LASER
+  // ============================================
+
+  // Obdelaj prejeto mero iz laserja
+  const handleLaserMeasurement = useCallback((event: unknown) => {
+    try {
+      const e = event as { target?: { value?: DataView } }
+      const dv = e.target?.value
+      if (!dv) return
+      const mm = parseDistanceFromDataView(dv)
+      if (mm == null) return
+      setLaserLastReading(mm)
+      // Auto-izpolni dolžino v formi (v mm enoti)
+      setFormLength(String(mm))
+      setFormLengthUnit('mm')
+      setFormTipMeritve('RAZDALJA')
+      if (!formOpen) setFormOpen(true)
+      toast.success(`Mera iz laserja: ${mm}mm`)
+    } catch {
+      // ignore
+    }
+  }, [formOpen])
+
+  // Poveži se z laserskim daljincem preko Web Bluetooth
+  async function connectLaser() {
+    const nav = navigator as NavigatorWithBluetooth
+    if (!nav.bluetooth) {
+      toast.error('Bluetooth ni podprt v tem brskalniku', {
+        description: 'Uporabite Chrome na Androidu ali računalniku.',
+      })
+      return
+    }
+    setLaserStatus('connecting')
+    try {
+      const filters = [
+        // Leica DISTO
+        { services: [LASER_SERVICE_LEICA] },
+        // Bosch GLM
+        { services: [LASER_SERVICE_BOSCH] },
+        // Generični filter po imenu
+        ...LASER_NAME_PREFIXES.map((prefix) => ({ namePrefix: prefix })),
+      ]
+      const device = await nav.bluetooth.requestDevice({
+        filters,
+        optionalServices: [LASER_SERVICE_LEICA, LASER_SERVICE_BOSCH],
+      })
+      laserDeviceRef.current = device
+      const name = device.name || 'Laserski daljinec'
+      setLaserDeviceName(name)
+      try {
+        localStorage.setItem('roksal_last_laser', name)
+      } catch {
+        // ignore
+      }
+
+      // Odpri GATT povezavo
+      if (!device.gatt) {
+        toast.error('Naprava ne podpira GATT strežnika')
+        setLaserStatus('disconnected')
+        return
+      }
+      await device.gatt.connect()
+
+      // Poskusi najti znano storitev (Leica → Bosch → katerakoli)
+      let service: BluetoothServiceLike | null = null
+      let usedServiceUuid: string | null = null
+      for (const uuid of [LASER_SERVICE_LEICA, LASER_SERVICE_BOSCH]) {
+        try {
+          service = await device.gatt.getPrimaryService(uuid)
+          usedServiceUuid = uuid
+          break
+        } catch {
+          // ignore — poskusi naslednjo
+        }
+      }
+      if (!service) {
+        toast.error('Storitev laserja ni najdena na napravi', {
+          description: `${name} — preverite skladnost z Leica DISTO / Bosch GLM.`,
+        })
+        setLaserStatus('disconnected')
+        try { device.gatt.disconnect() } catch { /* ignore */ }
+        return
+      }
+
+      const characteristics = await service.getCharacteristics()
+      if (!characteristics || characteristics.length === 0) {
+        toast.error('Karakteristika laserja ni najdena')
+        setLaserStatus('disconnected')
+        try { device.gatt.disconnect() } catch { /* ignore */ }
+        return
+      }
+
+      // Prijavi se na obvestila prve karakteristike (običajno je to meritvena)
+      const ch = characteristics[0]
+      laserCharacteristicRef.current = ch
+      // Odstrani stare handlerje če obstajajo
+      const oldHandler = laserMeasurementHandlerRef.current
+      const oldDisconnect = laserDisconnectHandlerRef.current
+      if (oldHandler) {
+        try { ch.removeEventListener('characteristicvaluechanged', oldHandler) } catch { /* ignore */ }
+      }
+      if (oldDisconnect && laserDeviceRef.current) {
+        try { laserDeviceRef.current.removeEventListener('gattserverdisconnected', oldDisconnect) } catch { /* ignore */ }
+      }
+      // Dodaj nove handler
+      ch.addEventListener('characteristicvaluechanged', handleLaserMeasurement)
+      laserMeasurementHandlerRef.current = handleLaserMeasurement
+
+      const disconnectHandler = () => {
+        toast.info(`Laser ${name} je bil odklopljen`, {
+          description: 'Poskušam ponovno povezati...',
+        })
+        setLaserStatus('disconnected')
+        // Auto-reconnect (3 poskusi)
+        laserReconnectAttemptsRef.current += 1
+        if (laserReconnectAttemptsRef.current <= 3) {
+          if (laserReconnectTimerRef.current) clearTimeout(laserReconnectTimerRef.current)
+          laserReconnectTimerRef.current = setTimeout(() => {
+            // Poskusi ponovno povezati brez requestDevice (samo gatt.connect)
+            void (async () => {
+              try {
+                const dev = laserDeviceRef.current
+                if (!dev?.gatt) return
+                await dev.gatt.connect()
+                const svc = await dev.gatt.getPrimaryService(usedServiceUuid || LASER_SERVICE_LEICA)
+                const chars = await svc.getCharacteristics()
+                if (chars.length > 0) {
+                  const newCh = chars[0]
+                  laserCharacteristicRef.current = newCh
+                  newCh.addEventListener('characteristicvaluechanged', handleLaserMeasurement)
+                  await newCh.startNotifications()
+                  setLaserStatus('connected')
+                  laserReconnectAttemptsRef.current = 0
+                  toast.success(`Ponovno povezan: ${name}`)
+                }
+              } catch {
+                toast.error(`Ponovna povezava ni uspela (poskus ${laserReconnectAttemptsRef.current}/3)`)
+              }
+            })()
+          }, 1500)
+        } else {
+          toast.error('Ponovna povezava po 3 poskusih ni uspela')
+          laserReconnectAttemptsRef.current = 0
+        }
+      }
+      device.addEventListener('gattserverdisconnected', disconnectHandler)
+      laserDisconnectHandlerRef.current = disconnectHandler
+
+      try {
+        await ch.startNotifications()
+      } catch {
+        // nekatere karakteristike morda ne podpirajo notifikacij — ignoriiramo
+      }
+      setLaserStatus('connected')
+      laserReconnectAttemptsRef.current = 0
+      toast.success(`Laser povezan: ${name}`, {
+        description: 'Pošljite mero z gumbom na daljincu.',
+      })
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      if (/User cancelled|User Cancel|cancelled/i.test(msg)) {
+        toast.info('Dostop zavrnjen — povezava preklicana')
+      } else if (/No devices found|no device/i.test(msg)) {
+        toast.error('Nobena naprava ni bila najdena')
+      } else {
+        toast.error('Napaka pri povezovanju laserja', { description: msg })
+      }
+      setLaserStatus('disconnected')
+    }
+  }
+
+  // Prekini povezavo z laserjem
+  function disconnectLaser() {
+    try {
+      const ch = laserCharacteristicRef.current
+      const dev = laserDeviceRef.current
+      const handler = laserMeasurementHandlerRef.current
+      const dHandler = laserDisconnectHandlerRef.current
+      if (ch && handler) {
+        try { ch.removeEventListener('characteristicvaluechanged', handler) } catch { /* ignore */ }
+        try { ch.stopNotifications() } catch { /* ignore */ }
+      }
+      if (dev && dHandler) {
+        try { dev.removeEventListener('gattserverdisconnected', dHandler) } catch { /* ignore */ }
+      }
+      try { dev?.gatt?.disconnect() } catch { /* ignore */ }
+      laserCharacteristicRef.current = null
+      laserDeviceRef.current = null
+      laserMeasurementHandlerRef.current = null
+      laserDisconnectHandlerRef.current = null
+      if (laserReconnectTimerRef.current) {
+        clearTimeout(laserReconnectTimerRef.current)
+        laserReconnectTimerRef.current = null
+      }
+      laserReconnectAttemptsRef.current = 0
+      setLaserStatus('disconnected')
+      setLaserLastReading(null)
+      toast.info('Povezava z laserjem prekinjena')
+    } catch {
+      toast.error('Napaka pri prekinjanju povezave')
+    }
+  }
+
+  // ============================================
+  // MERITVE-PRO — AR SINHRONIZACIJA (uvaz tock v mere)
+  // ============================================
+
+  async function handleOpenArImport() {
+    if (!selectedProject) {
+      toast.error('Izberite projekt!')
+      return
+    }
+    setArImportOpen(true)
+    setArImportLoading(true)
+    setArSelectedSnapshotId(null)
+    setArSnapshots([])
+    try {
+      const res = await fetch(`/api/ar-snapshots?projectId=${selectedProject}`)
+      if (res.ok) {
+        const data = await res.json()
+        setArSnapshots(data || [])
+        if ((data || []).length === 0) {
+          toast.info('Najprej ustvari AR posnetek v AR kameri')
+        }
+      } else {
+        toast.error('Napaka pri pridobivanju AR posnetkov')
+      }
+    } catch {
+      toast.error('Napaka pri povezavi s strežnikom')
+    } finally {
+      setArImportLoading(false)
+    }
+  }
+
+  async function handleImportFromAr() {
+    if (!selectedProject || !arSelectedSnapshotId) {
+      toast.error('Izberite AR posnetek za uvoz')
+      return
+    }
+    const snapshot = arSnapshots.find((s) => s.id === arSelectedSnapshotId)
+    if (!snapshot) {
+      toast.error('AR posnetek ni najden')
+      return
+    }
+
+    // Razčleni točke in kalibracijo
+    let tocke: Array<{ x: number; y: number; label?: string }> = []
+    let kalibracija: { pixelsPerMm?: number; pixelsPerCm?: number } | null = null
+    let noCalibration = false
+    try {
+      tocke = JSON.parse(snapshot.tocke || '[]')
+    } catch {
+      toast.error('Napaka pri razčlenjevanju točk AR posnetka')
+      return
+    }
+    try {
+      kalibracija = snapshot.kalibracija ? JSON.parse(snapshot.kalibracija) : null
+    } catch {
+      kalibracija = null
+    }
+    // Podprta tako pixelsPerMm kot pixelsPerCm (Prisma schema omenja pixelsPerCm)
+    let pixelsPerMm: number | null = null
+    if (kalibracija?.pixelsPerMm && kalibracija.pixelsPerMm > 0) {
+      pixelsPerMm = kalibracija.pixelsPerMm
+    } else if (kalibracija?.pixelsPerCm && kalibracija.pixelsPerCm > 0) {
+      pixelsPerMm = kalibracija.pixelsPerCm / 10
+    }
+    if (!pixelsPerMm) {
+      noCalibration = true
+      toast.warning('AR posnetek ni umerjen — mere bodo neprofične, a še vedno uvožene', {
+        description: 'Umeri AR posnetek v AR kameri za pravilne mere.',
+      })
+    }
+
+    if (tocke.length < 2) {
+      toast.error('AR posnetek ima premalo točk (potrebni vsaj 2)')
+      return
+    }
+
+    // Pripravi seznam parov (zaporedne točke) in posamezne točke (stebri)
+    const pairs: Array<{ a: typeof tocke[0]; b: typeof tocke[0]; dolzinaMm: number }> = []
+    for (let i = 0; i < tocke.length - 1; i++) {
+      const a = tocke[i]
+      const b = tocke[i + 1]
+      const dx = b.x - a.x
+      const dy = b.y - a.y
+      const px = Math.sqrt(dx * dx + dy * dy)
+      const mm = pixelsPerMm ? px / pixelsPerMm : 0
+      pairs.push({ a, b, dolzinaMm: Math.max(0, Math.round(mm)) })
+    }
+
+    const total = pairs.length + tocke.length
+    setArImportProgress({ current: 0, total })
+
+    let okCount = 0
+    let localCount = 0
+    let created = 0
+
+    // 1. Ustvari RAZDALJA mere za vsak par
+    for (let i = 0; i < pairs.length; i++) {
+      const p = pairs[i]
+      const label1 = p.a.label || `T${i + 1}`
+      const label2 = p.b.label || `T${i + 2}`
+      const arMetadata: ArMetadata = {
+        tipMeritve: 'RAZDALJA',
+        oznaka: `AR ${label1}-${label2}`,
+        source: 'ar_snapshot',
+        snapshotId: snapshot.id,
+        opomba: noCalibration
+          ? `AR uvoz (brez umeritve) — par ${label1}→${label2}`
+          : `AR uvoz — par ${label1}→${label2}, ${p.dolzinaMm}mm`,
+        status: 'OSNUTEK',
+        enota: 'mm',
+        x: p.a.x,
+        y: p.a.y,
+      }
+      try {
+        const res = await fetch('/api/measurements', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            projectId: selectedProject,
+            dolzinaMm: Math.max(1, p.dolzinaMm),
+            visinaMm: 1100,
+            arMetadata,
+            gpsLokacija: { lat: 46.2397, lng: 14.3556 },
+          }),
+        })
+        if (res.ok) {
+          const data = await res.json()
+          const newM: Measurement = {
+            ...data,
+            lokacija: null,
+            tipMeritve: 'RAZDALJA',
+            oznaka: arMetadata.oznaka,
+            opomba: arMetadata.opomba,
+            status: 'OSNUTEK',
+            source: 'ar_snapshot',
+            snapshotId: snapshot.id,
+            enota: 'mm',
+          }
+          setMeasurements((prev) => [newM, ...prev])
+          okCount++
+        } else {
+          const localM: Measurement = {
+            id: `local_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            dolzinaMm: Math.max(1, p.dolzinaMm),
+            visinaMm: 1100,
+            lidarScanUrl: null,
+            gpsLokacija: JSON.stringify({ lat: 46.2397, lng: 14.3556 }),
+            createdAt: new Date().toISOString(),
+            projectId: selectedProject,
+            lokacija: null,
+            arMetadata: JSON.stringify({ ...arMetadata, status: 'OSNUTEK' }),
+            tipMeritve: 'RAZDALJA',
+            oznaka: arMetadata.oznaka,
+            opomba: arMetadata.opomba,
+            status: 'OSNUTEK',
+            source: 'ar_snapshot',
+            snapshotId: snapshot.id,
+            enota: 'mm',
+          }
+          setMeasurements((prev) => [localM, ...prev])
+          localCount++
+        }
+      } catch {
+        localCount++
+      }
+      created++
+      setArImportProgress({ current: created, total })
+    }
+
+    // 2. Ustvari STEBR mero za vsako točko
+    for (let i = 0; i < tocke.length; i++) {
+      const t = tocke[i]
+      const label = t.label || `T${i + 1}`
+      const arMetadata: ArMetadata = {
+        tipMeritve: 'STEBR',
+        oznaka: `AR-${label}`,
+        source: 'ar_snapshot',
+        snapshotId: snapshot.id,
+        opomba: `AR točka ${label} (x=${Math.round(t.x)}, y=${Math.round(t.y)})`,
+        status: 'OSNUTEK',
+        enota: 'mm',
+        tipStebra: 'VMESNI',
+        materialStebra: 'ALU',
+        visinaStebraMm: 1100,
+        pozicijaMm: 0,
+        steberOznaka: `AR-${label}`,
+        x: t.x,
+        y: t.y,
+      }
+      try {
+        const res = await fetch('/api/measurements', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            projectId: selectedProject,
+            dolzinaMm: 1,
+            visinaMm: 1100,
+            arMetadata,
+            gpsLokacija: { lat: 46.2397, lng: 14.3556 },
+          }),
+        })
+        if (res.ok) {
+          const data = await res.json()
+          const newM: Measurement = {
+            ...data,
+            lokacija: null,
+            tipMeritve: 'STEBR',
+            oznaka: arMetadata.oznaka,
+            opomba: arMetadata.opomba,
+            status: 'OSNUTEK',
+            source: 'ar_snapshot',
+            snapshotId: snapshot.id,
+            enota: 'mm',
+            tipStebra: 'VMESNI',
+            materialStebra: 'ALU',
+            visinaStebraMm: 1100,
+            pozicijaMm: 0,
+            steberOznaka: `AR-${label}`,
+          }
+          setMeasurements((prev) => [newM, ...prev])
+          okCount++
+        } else {
+          const localM: Measurement = {
+            id: `local_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            dolzinaMm: 1,
+            visinaMm: 1100,
+            lidarScanUrl: null,
+            gpsLokacija: JSON.stringify({ lat: 46.2397, lng: 14.3556 }),
+            createdAt: new Date().toISOString(),
+            projectId: selectedProject,
+            lokacija: null,
+            arMetadata: JSON.stringify({ ...arMetadata, status: 'OSNUTEK' }),
+            tipMeritve: 'STEBR',
+            oznaka: arMetadata.oznaka,
+            opomba: arMetadata.opomba,
+            status: 'OSNUTEK',
+            source: 'ar_snapshot',
+            snapshotId: snapshot.id,
+            enota: 'mm',
+            tipStebra: 'VMESNI',
+            materialStebra: 'ALU',
+            visinaStebraMm: 1100,
+            pozicijaMm: 0,
+            steberOznaka: `AR-${label}`,
+          }
+          setMeasurements((prev) => [localM, ...prev])
+          localCount++
+        }
+      } catch {
+        localCount++
+      }
+      created++
+      setArImportProgress({ current: created, total })
+    }
+
+    pushAudit({
+      akcija: 'ADD',
+      meritevId: 'ar-import',
+      opis: `AR uvoz: ${pairs.length} mer + ${tocke.length} stebrov iz AR posnetka ${snapshot.id.slice(-6)}${noCalibration ? ' (brez umeritve)' : ''}`,
+    })
+    toast.success(`${pairs.length} mer in ${tocke.length} stebrov uvoženih iz AR posnetka`, {
+      description: localCount > 0 ? `${okCount} sinhroniziranih, ${localCount} lokalno` : undefined,
+    })
+    setArImportProgress(null)
+    setArImportOpen(false)
+  }
+
+  // ============================================
+  // MERITVE-PRO — FOTO MERE POVEZAVA NAZAJ
+  // ============================================
+
+  // Odpri pregledovalnik foto za določeno meritev (ki ima photoId v arMetadata)
+  async function handleViewPhoto(m: Measurement) {
+    if (!m.photoId) {
+      toast.error('Foto povezava manjka')
+      return
+    }
+    setPhotoViewerOpen(true)
+    setPhotoViewerLoading(true)
+    setPhotoViewerNotFound(false)
+    setPhotoViewerUrl(null)
+    setPhotoViewerId(m.photoId)
+    try {
+      const res = await fetch(`/api/photos?projectId=${m.projectId}`)
+      if (res.ok) {
+        const data = await res.json() as Array<{ id: string; imageData: string; opomba?: string | null; createdAt: string }>
+        const photo = data.find((p) => p.id === m.photoId)
+        if (photo) {
+          setPhotoViewerUrl(photo.imageData)
+        } else {
+          setPhotoViewerNotFound(true)
+          toast.error('Foto ni najden v projektu')
+        }
+      } else {
+        setPhotoViewerNotFound(true)
+        toast.error('Napaka pri pridobivanju slik')
+      }
+    } catch {
+      setPhotoViewerNotFound(true)
+      toast.error('Napaka pri povezavi s strežnikom')
+    } finally {
+      setPhotoViewerLoading(false)
+    }
+  }
+
+  // Preklopi v Slike zavihek (signal prek localStorage)
+  function handleOpenInPhotos() {
+    if (!photoViewerId) return
+    try {
+      localStorage.setItem('roksal_open_photo_id', photoViewerId)
+    } catch {
+      // ignore
+    }
+    setPhotoViewerOpen(false)
+    toast.info('Odprto v slikah', {
+      description: 'Preklopite na zavihek "Slike" za urejanje.',
+    })
+  }
+
+  // ============================================
   // RENDERS — RAILING DIAGRAM (obstoječa logika)
   // ============================================
 
@@ -2779,12 +3520,15 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
     const mStatus: MeasurementStatus = m.status || 'OSNUTEK'
     const isArchived = mStatus === 'ARHIVIRANA'
     const angleDeg = m.kotStopinje ?? m.kot ?? null
+    // MERITVE-PRO — vir meritve
+    const isPhoto = m.source === 'photo'
+    const isArSnapshot = m.source === 'ar_snapshot'
     return (
       <div
         key={m.id}
         className={`rounded-xl border border-border/50 overflow-hidden transition-colors hover:border-roksal-navy/20 slide-in-right ${
           isArchived ? 'opacity-60' : ''
-        }`}
+        } ${isPhoto ? 'border-roksal-amber/30' : ''}`}
       >
         {/* Glava meritve */}
         <div className="flex items-center justify-between p-3 pb-2">
@@ -2812,6 +3556,29 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
                     <TipIcon className="h-2.5 w-2.5" />
                     {tipMeritveLabels[m.tipMeritve]}
                   </span>
+                )}
+                {/* MERITVE-PRO — Vir badge (Foto / AR / Laser) */}
+                {isPhoto && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="inline-flex items-center gap-0.5 rounded px-1 py-0 text-[8px] font-medium border bg-roksal-amber/10 text-roksal-amber border-roksal-amber/30">
+                        <Camera className="h-2.5 w-2.5" />
+                        Foto
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>Vir: Foto mera</TooltipContent>
+                  </Tooltip>
+                )}
+                {isArSnapshot && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="inline-flex items-center gap-0.5 rounded px-1 py-0 text-[8px] font-medium border bg-cyan-50 text-cyan-700 border-cyan-200">
+                        <Boxes className="h-2.5 w-2.5" />
+                        AR
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>Vir: AR posnetek</TooltipContent>
+                  </Tooltip>
                 )}
                 {/* P1 — status badge (clickable) */}
                 <Tooltip>
@@ -2888,10 +3655,33 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
                     {groundTypeLabels[m.tipPodlage as GroundType] || m.tipPodlage}
                   </span>
                 )}
+                {/* MERITVE-PRO — podrobnosti vira */}
+                {isPhoto && m.oznaka && (
+                  <span className="inline-flex items-center gap-0.5 text-[9px] text-roksal-amber/80 font-mono">
+                    <ImageIcon className="h-2.5 w-2.5" />
+                    Vir: Foto ({m.oznaka} · {m.dolzinaMm}mm)
+                  </span>
+                )}
               </div>
             </div>
           </div>
           <div className="flex items-center gap-0.5 shrink-0 ml-2">
+            {/* MERITVE-PRO — Poglej foto gumb za photo-sourced mere */}
+            {isPhoto && m.photoId && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => handleViewPhoto(m)}
+                    className="p-1.5 rounded-lg hover:bg-roksal-amber/10 transition-colors"
+                    title="Poglej foto"
+                  >
+                    <Camera className="h-3.5 w-3.5 text-roksal-amber" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>Poglej pripadajočo foto mero</TooltipContent>
+              </Tooltip>
+            )}
             <button
               type="button"
               onClick={() => handleDuplicateMeasurement(m)}
@@ -2939,6 +3729,18 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
                 <AlertCircle className="h-3 w-3 shrink-0" />
                 <span className="truncate hidden sm:inline">{m.opomba || m.opombe}</span>
               </div>
+            )}
+            {/* MERITVE-PRO — Poglej foto link gumb */}
+            {isPhoto && m.photoId && (
+              <button
+                type="button"
+                onClick={() => handleViewPhoto(m)}
+                className="flex items-center gap-1 rounded-lg border border-roksal-amber/30 bg-roksal-amber/5 px-2 py-1 text-[11px] font-medium text-roksal-amber hover:bg-roksal-amber/10 active:scale-[0.96] transition-all duration-150"
+                title="Poglej pripadajočo foto mero"
+              >
+                <Link2 className="h-3 w-3" />
+                <span>Poglej foto</span>
+              </button>
             )}
             {onNavigateToCalculator && (
               <button
@@ -3001,6 +3803,122 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
                 {calibration.pixelsPerMm.toFixed(2)} px/mm
               </Badge>
             )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* MERITVE-PRO — LASER + AR SINHRONIZACIJA orodna vrstica */}
+      <Card className="card-hover transition-all duration-200 animate-fade-in-up border-roksal-navy/15">
+        <CardContent className="p-3 space-y-2.5">
+          {/* Laser povezava */}
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2 min-w-0">
+              <div
+                className={`flex h-8 w-8 items-center justify-center rounded-lg shrink-0 ${
+                  laserStatus === 'connected'
+                    ? 'bg-roksal-green text-white'
+                    : laserStatus === 'connecting'
+                      ? 'bg-roksal-amber text-white'
+                      : 'bg-roksal-navy/10 text-roksal-navy'
+                }`}
+              >
+                {laserStatus === 'connecting' ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Bluetooth className="h-4 w-4" />
+                )}
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-roksal-navy">Laserski daljinec</p>
+                <p className="text-[10px] text-muted-foreground truncate">
+                  {laserStatus === 'connected'
+                    ? `🟢 Laser povezan: ${laserDeviceName || 'naprava'}`
+                    : laserStatus === 'connecting'
+                      ? '🟡 Povezujem...'
+                      : '🔴 Ni povezan'}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              {laserLastReading != null && laserStatus === 'connected' && (
+                <Badge className="bg-roksal-green/15 text-roksal-green border border-roksal-green/30 text-[10px] h-6 px-2">
+                  <Radio className="h-3 w-3 mr-1" />
+                  {laserLastReading}mm
+                </Badge>
+              )}
+              {laserStatus !== 'connected' ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      onClick={connectLaser}
+                      disabled={!laserSupported || laserStatus === 'connecting'}
+                      className="h-8 px-3 text-[11px] bg-roksal-navy text-white hover:bg-roksal-navy/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Bluetooth className="mr-1 h-3.5 w-3.5" />
+                      Poveži laser
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {laserSupported
+                      ? 'Poveži laserski daljinec preko Web Bluetooth'
+                      : 'Web Bluetooth ni podprt. Uporabite Chrome na Androidu ali računalniku.'}
+                  </TooltipContent>
+                </Tooltip>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={disconnectLaser}
+                  className="h-8 px-3 text-[11px] border-roksal-red/30 text-roksal-red hover:bg-roksal-red/10"
+                >
+                  <Unplug className="mr-1 h-3.5 w-3.5" />
+                  Prekini
+                </Button>
+              )}
+            </div>
+          </div>
+          {!laserSupported && (
+            <div className="rounded-md bg-amber-50 border border-amber-200 p-2 text-[10px] text-amber-700 flex items-start gap-1.5">
+              <AlertCircle className="h-3 w-3 mt-0.5 shrink-0" />
+              <span>
+                Web Bluetooth ni podprt v tem brskalniku. Uporabite Chrome na Androidu ali računalniku.
+                Ročni vnos še vedno deluje.
+              </span>
+            </div>
+          )}
+          {laserStatus === 'connected' && (
+            <div className="rounded-md bg-roksal-green/5 border border-roksal-green/20 p-2 text-[10px] text-roksal-green/90 flex items-start gap-1.5">
+              <Radio className="h-3 w-3 mt-0.5 shrink-0 animate-pulse" />
+              <span>
+                Poslušam meritve... Pošlji mero z gumbom na daljincu — samodejno se izpolni dolžina v formi.
+              </span>
+            </div>
+          )}
+          <Separator />
+          {/* AR sinhronizacija */}
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-50 text-cyan-700 shrink-0 border border-cyan-200">
+                <Boxes className="h-4 w-4" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-roksal-navy">Uvozi iz AR posnetka</p>
+                <p className="text-[10px] text-muted-foreground truncate">
+                  Prenesi točke iz AR kamere v mere
+                </p>
+              </div>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleOpenArImport}
+              disabled={!selectedProject}
+              className="h-8 px-3 text-[11px] border-cyan-300 text-cyan-700 hover:bg-cyan-50"
+            >
+              <Boxes className="mr-1 h-3.5 w-3.5" />
+              Uvozi iz AR
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -4438,6 +5356,21 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
                 </button>
               )
             })}
+            {/* MERITVE-PRO — Foto mere filter pill */}
+            <button
+              type="button"
+              onClick={() => setFotoFilterActive(!fotoFilterActive)}
+              className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium transition-all duration-150 active:scale-[0.96] ${
+                fotoFilterActive
+                  ? 'bg-roksal-amber text-white border-roksal-amber'
+                  : 'bg-roksal-amber/5 text-roksal-amber border-roksal-amber/30 hover:bg-roksal-amber/10'
+              }`}
+              title="Filtriraj samo mere iz foto zavihka"
+            >
+              <Camera className="h-3 w-3" />
+              Foto mere
+              <span className="rounded-full bg-black/10 px-1 text-[9px]">{fotoMeasurementsCount}</span>
+            </button>
             <div className="flex-1" />
             {/* Bulk mode toggle */}
             <button
@@ -4735,6 +5668,226 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
             >
               <Archive className="mr-1.5 h-4 w-4" />
               Arhiviraj ({selectedIds.size})
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* MERITVE-PRO — DIALOG: Uvozi iz AR posnetka */}
+      <Dialog open={arImportOpen} onOpenChange={(o) => !arImportProgress && setArImportOpen(o)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Boxes className="h-4 w-4 text-cyan-600" />
+              Uvozi mere iz AR posnetka
+            </DialogTitle>
+            <DialogDescription>
+              Izberite AR posnetek — točke bodo pretvorjene v RAZDALJA mere in STEBR točke.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 max-h-[60vh] overflow-y-auto scrollbar-thin">
+            {arImportLoading ? (
+              <div className="py-8 text-center">
+                <Loader2 className="h-6 w-6 animate-spin text-roksal-navy mx-auto" />
+                <p className="text-xs text-muted-foreground mt-2">Nalagam AR posnetke...</p>
+              </div>
+            ) : arSnapshots.length === 0 ? (
+              <div className="py-8 text-center">
+                <Boxes className="mx-auto h-8 w-8 text-muted-foreground/30" />
+                <p className="mt-2 text-xs text-muted-foreground">Ni AR posnetkov za ta projekt</p>
+                <p className="text-[10px] text-muted-foreground/60 mt-1">
+                  Najprej ustvari AR posnetek v AR kameri
+                </p>
+              </div>
+            ) : (
+              arSnapshots.map((snap) => {
+                let stTock = 0
+                let hasKalibracija = false
+                try {
+                  const parsed = JSON.parse(snap.tocke || '[]')
+                  stTock = Array.isArray(parsed) ? parsed.length : 0
+                } catch { /* ignore */ }
+                try {
+                  if (snap.kalibracija) {
+                    const k = JSON.parse(snap.kalibracija)
+                    hasKalibracija = !!(k?.pixelsPerMm || k?.pixelsPerCm)
+                  }
+                } catch { /* ignore */ }
+                const isSelected = arSelectedSnapshotId === snap.id
+                return (
+                  <button
+                    key={snap.id}
+                    type="button"
+                    onClick={() => setArSelectedSnapshotId(snap.id)}
+                    className={`flex w-full items-start gap-3 rounded-lg border p-2.5 text-left transition-all duration-150 ${
+                      isSelected
+                        ? 'border-cyan-400 bg-cyan-50'
+                        : 'border-border/50 bg-secondary/30 hover:border-cyan-300'
+                    }`}
+                  >
+                    <div className="h-14 w-14 shrink-0 rounded-md overflow-hidden border border-border/50 bg-secondary/50">
+                      {snap.imageUrl ? (
+                        <img
+                          src={snap.imageUrl}
+                          alt="AR posnetek"
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center">
+                          <Boxes className="h-5 w-5 text-muted-foreground/40" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <p className="text-xs font-semibold text-roksal-navy truncate">
+                          AR posnetek #{snap.id.slice(-6)}
+                        </p>
+                        {snap.profil?.naziv && (
+                          <Badge variant="outline" className="text-[8px] h-3.5 px-1">
+                            {snap.profil.naziv}
+                          </Badge>
+                        )}
+                        {hasKalibracija ? (
+                          <Badge className="text-[8px] h-3.5 px-1 bg-roksal-green/15 text-roksal-green border border-roksal-green/30">
+                            Umerjeno
+                          </Badge>
+                        ) : (
+                          <Badge className="text-[8px] h-3.5 px-1 bg-amber-50 text-amber-700 border border-amber-200">
+                            Ni umeritve
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        {new Date(snap.createdAt).toLocaleString('sl-SI')}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground font-mono mt-0.5">
+                        {stTock} točk · {stTock >= 2 ? stTock - 1 : 0} parov
+                      </p>
+                      {snap.opombe && (
+                        <p className="text-[9px] text-muted-foreground/80 mt-0.5 truncate italic">
+                          {snap.opombe}
+                        </p>
+                      )}
+                    </div>
+                    {isSelected && (
+                      <CheckCircle2 className="h-4 w-4 text-cyan-600 shrink-0" />
+                    )}
+                  </button>
+                )
+              })
+            )}
+          </div>
+          {arImportProgress && (
+            <div className="space-y-1.5 rounded-lg border border-cyan-200 bg-cyan-50 p-2.5">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="text-cyan-800 font-medium">Prenašam...</span>
+                <span className="font-mono text-cyan-700">
+                  {arImportProgress.current}/{arImportProgress.total}
+                </span>
+              </div>
+              <Progress
+                value={(arImportProgress.current / Math.max(1, arImportProgress.total)) * 100}
+                className="h-2"
+              />
+              <p className="text-[10px] text-cyan-700 text-center">
+                {arImportProgress.current} mer prenesenih...
+              </p>
+            </div>
+          )}
+          <DialogFooter className="gap-2 flex-col sm:flex-row">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setArImportOpen(false)}
+              disabled={!!arImportProgress}
+              className="sm:flex-1"
+            >
+              Prekliči
+            </Button>
+            <Button
+              type="button"
+              onClick={handleImportFromAr}
+              disabled={!arSelectedSnapshotId || !!arImportProgress}
+              className="sm:flex-1 bg-cyan-600 text-white hover:bg-cyan-700"
+            >
+              {arImportProgress ? (
+                <>
+                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                  Prenašam...
+                </>
+              ) : (
+                <>
+                  <Boxes className="mr-1.5 h-4 w-4" />
+                  Uvozi mere
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* MERITVE-PRO — DIALOG: Pregledovalnik foto (za photo-sourced mere) */}
+      <Dialog open={photoViewerOpen} onOpenChange={(o) => setPhotoViewerOpen(o)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Camera className="h-4 w-4 text-roksal-amber" />
+              Foto mera
+            </DialogTitle>
+            <DialogDescription>
+              Pregled pripadajoče fotografije z narisano merno črto.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            {photoViewerLoading ? (
+              <div className="py-12 text-center">
+                <Loader2 className="h-6 w-6 animate-spin text-roksal-amber mx-auto" />
+                <p className="text-xs text-muted-foreground mt-2">Nalagam foto...</p>
+              </div>
+            ) : photoViewerNotFound ? (
+              <div className="py-8 text-center">
+                <AlertCircle className="mx-auto h-8 w-8 text-roksal-red/40" />
+                <p className="mt-2 text-xs text-muted-foreground">Foto ni najden v projektu</p>
+                <p className="text-[10px] text-muted-foreground/60 mt-1">
+                  Morda je bila izbrisana. ID: {photoViewerId?.slice(-6)}
+                </p>
+              </div>
+            ) : photoViewerUrl ? (
+              <div className="rounded-lg overflow-hidden border border-border/50 bg-secondary/20">
+                <img
+                  src={photoViewerUrl}
+                  alt="Foto mera"
+                  className="w-full max-h-[60vh] object-contain"
+                />
+              </div>
+            ) : null}
+            {photoViewerUrl && !photoViewerLoading && (
+              <div className="rounded-md bg-roksal-amber/5 border border-roksal-amber/20 p-2 text-[10px] text-roksal-amber/90 flex items-start gap-1.5">
+                <ImageIcon className="h-3 w-3 mt-0.5 shrink-0" />
+                <span>
+                  To je fotografija z narisano merno črto. Za urejanje anotacij odpri v slikah.
+                </span>
+              </div>
+            )}
+          </div>
+          <DialogFooter className="gap-2 flex-col sm:flex-row">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setPhotoViewerOpen(false)}
+              className="sm:flex-1"
+            >
+              Zapri
+            </Button>
+            <Button
+              type="button"
+              onClick={handleOpenInPhotos}
+              disabled={!photoViewerUrl || photoViewerLoading}
+              className="sm:flex-1 bg-roksal-amber text-white hover:bg-roksal-amber/90"
+            >
+              <ImageIcon className="mr-1.5 h-4 w-4" />
+              Odpri v slikah
             </Button>
           </DialogFooter>
         </DialogContent>
