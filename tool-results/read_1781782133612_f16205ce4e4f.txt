@@ -1,0 +1,1707 @@
+     1→'use client'
+     2→
+     3→/**
+     4→ * Roksal AR Scanner
+     5→ * -----------------------------------------------------------------------------
+     6→ * Full-screen camera + canvas overlay component for balcony railing installers.
+     7→ *
+     8→ * Features:
+     9→ *   - Rear camera (getUserMedia facingMode: 'environment')
+    10→ *   - Anchor points (ADD / REMOVE / MOVE / MEASURE modes)
+    11→ *   - Railing visualization based on selected profile's category
+    12→ *       · WPC vodoravno  → horizontal slats (~110mm apart)
+    13→ *       · WPC pokončno    → vertical balusters (~110mm apart)
+    14→ *       · Inox            → vertical balusters (silver)
+    15→ *       · Steklo          → translucent glass panel
+    16→ *       · Alu klasično    → top + bottom rail + vertical pickets
+    17→ *   - Calibration (px → mm) using a known reference distance
+    18→ *   - Real-world measurements between two tapped points
+    19→ *   - Capture (composite of video frame + overlay) → POST /api/ar-snapshots
+    20→ *   - History sheet listing saved snapshots for the project
+    21→ *
+    22→ * All UI text is in Slovenian. Color theme: navy #1d2b3e, amber #f59e0b,
+    23→ * green #10b981, red #ef4444 — NO indigo/blue.
+    24→ */
+    25→
+    26→import * as React from 'react'
+    27→import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+    28→import { Button } from '@/components/ui/button'
+    29→import { Badge } from '@/components/ui/badge'
+    30→import { Input } from '@/components/ui/input'
+    31→import { Label } from '@/components/ui/label'
+    32→import { Separator } from '@/components/ui/separator'
+    33→import {
+    34→  Select,
+    35→  SelectContent,
+    36→  SelectItem,
+    37→  SelectTrigger,
+    38→  SelectValue,
+    39→} from '@/components/ui/select'
+    40→import {
+    41→  Sheet,
+    42→  SheetContent,
+    43→  SheetHeader,
+    44→  SheetTitle,
+    45→  SheetDescription,
+    46→} from '@/components/ui/sheet'
+    47→import {
+    48→  Dialog,
+    49→  DialogContent,
+    50→  DialogHeader,
+    51→  DialogTitle,
+    52→  DialogFooter,
+    53→  DialogDescription,
+    54→} from '@/components/ui/dialog'
+    55→import {
+    56→  Tooltip,
+    57→  TooltipTrigger,
+    58→  TooltipContent,
+    59→} from '@/components/ui/tooltip'
+    60→import {
+    61→  Camera,
+    62→  Plus,
+    63→  Trash2,
+    64→  Move,
+    65→  Ruler,
+    66→  Crosshair,
+    67→  History,
+    68→  X,
+    69→  Check,
+    70→  Loader2,
+    71→  RotateCcw,
+    72→  AlertTriangle,
+    73→} from 'lucide-react'
+    74→import { useToast } from '@/hooks/use-toast'
+    75→import { cn } from '@/lib/utils'
+    76→
+    77→// ============================================================================
+    78→// Types
+    79→// ============================================================================
+    80→
+    81→interface XY {
+    82→  x: number
+    83→  y: number
+    84→}
+    85→
+    86→interface Tocka extends XY {
+    87→  label: string
+    88→}
+    89→
+    90→interface Meritev {
+    91→  id: string
+    92→  a: XY
+    93→  b: XY
+    94→  dolzinaMm: number
+    95→  oznaka: string
+    96→}
+    97→
+    98→interface Kalibracija {
+    99→  pixelsPerMm: number
+   100→  referencnaMm: number
+   101→  createdAt: string
+   102→}
+   103→
+   104→interface Profil {
+   105→  id: string
+   106→  sifra: string
+   107→  naziv: string
+   108→  material: string
+   109→  kategorija: string
+   110→  visinaMm: number
+   111→  sirinaMm: number
+   112→  cenaM: number
+   113→  barvaRal: string | null
+   114→  slikaUrl: string | null
+   115→  aktivna: boolean
+   116→}
+   117→
+   118→interface ArSnapshot {
+   119→  id: string
+   120→  projectId: string
+   121→  profilId: string | null
+   122→  imageUrl: string
+   123→  tocke: string
+   124→  meritve: string | null
+   125→  kalibracija: string | null
+   126→  opombe: string | null
+   127→  createdAt: string
+   128→  profil?: Profil
+   129→}
+   130→
+   131→type Mode = 'ADD' | 'REMOVE' | 'MOVE' | 'MEASURE'
+   132→
+   133→interface ArScannerProps {
+   134→  projectId: string
+   135→  onClose: () => void
+   136→}
+   137→
+   138→// ============================================================================
+   139→// Constants
+   140→// ============================================================================
+   141→
+   142→const NAVY = '#1d2b3e'
+   143→const AMBER = '#f59e0b'
+   144→const GREEN = '#10b981'
+   145→const RED = '#ef4444'
+   146→
+   147→const HIT_RADIUS = 30 // px — tap near existing point within this radius
+   148→const DEFAULT_POST_HEIGHT_PX = 200 // fallback post height when not calibrated
+   149→const DEFAULT_SLAT_SPACING_PX = 18 // fallback infill spacing when not calibrated
+   150→const POST_HEIGHT_CAP_PX = 600 // never draw posts taller than this
+   151→
+   152→// ============================================================================
+   153→// Helpers
+   154→// ============================================================================
+   155→
+   156→function dist(a: XY, b: XY): number {
+   157→  const dx = b.x - a.x
+   158→  const dy = b.y - a.y
+   159→  return Math.sqrt(dx * dx + dy * dy)
+   160→}
+   161→
+   162→function formatDistance(mm: number): string {
+   163→  if (!Number.isFinite(mm) || mm <= 0) return '—'
+   164→  if (mm >= 1000) return `${(mm / 1000).toFixed(2)} m`
+   165→  if (mm >= 100) return `${(mm / 10).toFixed(1)} cm`
+   166→  return `${Math.round(mm)} mm`
+   167→}
+   168→
+   169→function findNearestPoint(points: Tocka[], p: XY): number {
+   170→  let best = -1
+   171→  let bestD = HIT_RADIUS
+   172→  for (let i = 0; i < points.length; i++) {
+   173→    const d = dist(points[i], p)
+   174→    if (d < bestD) {
+   175→      bestD = d
+   176→      best = i
+   177→    }
+   178→  }
+   179→  return best
+   180→}
+   181→
+   182→function makeId(): string {
+   183→  return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+   184→}
+   185→
+   186→// ============================================================================
+   187→// Drawing helpers (pure, operate on a 2D context in CSS pixels)
+   188→// ============================================================================
+   189→
+   190→function drawAnchorPoint(
+   191→  ctx: CanvasRenderingContext2D,
+   192→  p: Tocka,
+   193→  index: number,
+   194→  total: number,
+   195→): void {
+   196→  const isEnd = total <= 2 || index === 0 || index === total - 1
+   197→  const r = isEnd ? 14 : 10
+   198→  // Outer halo for end posts
+   199→  if (isEnd) {
+   200→    ctx.beginPath()
+   201→    ctx.arc(p.x, p.y, r + 4, 0, Math.PI * 2)
+   202→    ctx.fillStyle = 'rgba(29, 43, 62, 0.18)'
+   203→    ctx.fill()
+   204→  }
+   205→  // Filled circle
+   206→  ctx.beginPath()
+   207→  ctx.arc(p.x, p.y, r, 0, Math.PI * 2)
+   208→  ctx.fillStyle = isEnd ? NAVY : AMBER
+   209→  ctx.fill()
+   210→  ctx.strokeStyle = '#ffffff'
+   211→  ctx.lineWidth = 2.5
+   212→  ctx.stroke()
+   213→  // Number label
+   214→  ctx.fillStyle = '#ffffff'
+   215→  ctx.font = `bold ${isEnd ? 13 : 11}px ui-sans-serif, system-ui, sans-serif`
+   216→  ctx.textAlign = 'center'
+   217→  ctx.textBaseline = 'middle'
+   218→  ctx.fillText(String(index + 1), p.x, p.y)
+   219→}
+   220→
+   221→function drawInfill(
+   222→  ctx: CanvasRenderingContext2D,
+   223→  a: XY, // bottom-left (anchor i)
+   224→  b: XY, // bottom-right (anchor i+1)
+   225→  ta: XY, // top-left (post top i)
+   226→  tb: XY, // top-right (post top i+1)
+   227→  profil: Profil,
+   228→  slatSpacingPx: number,
+   229→): void {
+   230→  const kat = profil.kategorija.toLowerCase()
+   231→  const isWpcVodoravno = kat.includes('vodoravno')
+   232→  const isWpcPokoncno =
+   233→    kat.includes('pokončno') || kat.includes('pokoncno')
+   234→  const isInox = kat.includes('inox')
+   235→  const isSteklo = kat.includes('steklo')
+   236→  const isAluKlasicno =
+   237→    kat.includes('klasično') || kat.includes('klasicno')
+   238→
+   239→  // --- Steklo: translucent panel ---
+   240→  if (isSteklo) {
+   241→    ctx.save()
+   242→    ctx.fillStyle = 'rgba(186, 230, 253, 0.35)'
+   243→    ctx.strokeStyle = 'rgba(125, 211, 252, 0.7)'
+   244→    ctx.lineWidth = 2
+   245→    ctx.beginPath()
+   246→    ctx.moveTo(a.x, a.y)
+   247→    ctx.lineTo(b.x, b.y)
+   248→    ctx.lineTo(tb.x, tb.y)
+   249→    ctx.lineTo(ta.x, ta.y)
+   250→    ctx.closePath()
+   251→    ctx.fill()
+   252→    ctx.stroke()
+   253→    // Subtle highlight
+   254→    ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)'
+   255→    ctx.lineWidth = 1
+   256→    ctx.beginPath()
+   257→    ctx.moveTo(ta.x + 4, ta.y + 4)
+   258→    ctx.lineTo(tb.x - 4, tb.y + 4)
+   259→    ctx.stroke()
+   260→    ctx.restore()
+   261→    return
+   262→  }
+   263→
+   264→  // --- WPC vodoravno: horizontal slats from bottom up ---
+   265→  if (isWpcVodoravno) {
+   266→    const segHeight = Math.max(
+   267→      Math.abs(ta.y - a.y),
+   268→      Math.abs(tb.y - b.y),
+   269→    )
+   270→    const numSlats = Math.max(1, Math.floor(segHeight / slatSpacingPx))
+   271→    const actualSpacing = segHeight / numSlats
+   272→    ctx.strokeStyle = '#8b5a2b'
+   273→    ctx.lineWidth = 5
+   274→    ctx.lineCap = 'round'
+   275→    for (let s = 1; s <= numSlats; s++) {
+   276→      const offset = s * actualSpacing
+   277→      const ly = a.y - offset
+   278→      const ry = b.y - offset
+   279→      // Stop if both endpoints rise above the top rail
+   280→      if (ly < ta.y && ry < tb.y) break
+   281→      const clampedLy = Math.max(ly, ta.y)
+   282→      const clampedRy = Math.max(ry, tb.y)
+   283→      ctx.beginPath()
+   284→      ctx.moveTo(a.x, clampedLy)
+   285→      ctx.lineTo(b.x, clampedRy)
+   286→      ctx.stroke()
+   287→    }
+   288→    return
+   289→  }
+   290→
+   291→  // --- WPC pokončno / Inox: vertical balusters ---
+   292→  if (isWpcPokoncno || isInox) {
+   293→    const segLen = dist(a, b)
+   294→    const numBal = Math.max(1, Math.floor(segLen / slatSpacingPx))
+   295→    ctx.strokeStyle = isInox ? '#c0c4cc' : '#8b5a2b'
+   296→    ctx.lineWidth = isInox ? 2.5 : 3.5
+   297→    ctx.lineCap = 'round'
+   298→    for (let s = 1; s < numBal; s++) {
+   299→      const t = s / numBal
+   300→      const bx = a.x + (b.x - a.x) * t
+   301→      const by = a.y + (b.y - a.y) * t
+   302→      const tx = ta.x + (tb.x - ta.x) * t
+   303→      const ty = ta.y + (tb.y - ta.y) * t
+   304→      ctx.beginPath()
+   305→      ctx.moveTo(bx, by)
+   306→      ctx.lineTo(tx, ty)
+   307→      ctx.stroke()
+   308→    }
+   309→    return
+   310→  }
+   311→
+   312→  // --- Alu klasično: bottom rail + vertical pickets ---
+   313→  if (isAluKlasicno) {
+   314→    // Bottom rail
+   315→    ctx.strokeStyle = NAVY
+   316→    ctx.lineWidth = 5
+   317→    ctx.lineCap = 'round'
+   318→    ctx.beginPath()
+   319→    ctx.moveTo(a.x, a.y)
+   320→    ctx.lineTo(b.x, b.y)
+   321→    ctx.stroke()
+   322→    // Vertical pickets
+   323→    const segLen = dist(a, b)
+   324→    const numPick = Math.max(1, Math.floor(segLen / slatSpacingPx))
+   325→    ctx.strokeStyle = '#6b7280'
+   326→    ctx.lineWidth = 2
+   327→    for (let s = 1; s < numPick; s++) {
+   328→      const t = s / numPick
+   329→      const bx = a.x + (b.x - a.x) * t
+   330→      const by = a.y + (b.y - a.y) * t
+   331→      const tx = ta.x + (tb.x - ta.x) * t
+   332→      const ty = ta.y + (tb.y - ta.y) * t
+   333→      ctx.beginPath()
+   334→      ctx.moveTo(bx, by)
+   335→      ctx.lineTo(tx, ty)
+   336→      ctx.stroke()
+   337→    }
+   338→    return
+   339→  }
+   340→
+   341→  // Fallback: no infill
+   342→}
+   343→
+   344→function drawRailing(
+   345→  ctx: CanvasRenderingContext2D,
+   346→  tocke: Tocka[],
+   347→  profil: Profil,
+   348→  postHeightPx: number,
+   349→  slatSpacingPx: number,
+   350→): void {
+   351→  if (tocke.length < 2) return
+   352→  const cappedHeight = Math.min(postHeightPx, POST_HEIGHT_CAP_PX)
+   353→  const tops: XY[] = tocke.map((p) => ({
+   354→    x: p.x,
+   355→    y: p.y - cappedHeight,
+   356→  }))
+   357→
+   358→  // 1. Infill between consecutive posts (drawn first so posts/rails overlay)
+   359→  for (let i = 0; i < tocke.length - 1; i++) {
+   360→    drawInfill(ctx, tocke[i], tocke[i + 1], tops[i], tops[i + 1], profil, slatSpacingPx)
+   361→  }
+   362→
+   363→  // 2. Vertical posts at each anchor (navy)
+   364→  ctx.strokeStyle = NAVY
+   365→  ctx.lineWidth = 6
+   366→  ctx.lineCap = 'round'
+   367→  for (let i = 0; i < tocke.length; i++) {
+   368→    ctx.beginPath()
+   369→    ctx.moveTo(tocke[i].x, tocke[i].y)
+   370→    ctx.lineTo(tops[i].x, tops[i].y)
+   371→    ctx.stroke()
+   372→  }
+   373→
+   374→  // 3. Top rail — thick navy line connecting tops of consecutive posts
+   375→  ctx.strokeStyle = NAVY
+   376→  ctx.lineWidth = 8
+   377→  ctx.lineCap = 'round'
+   378→  ctx.lineJoin = 'round'
+   379→  ctx.beginPath()
+   380→  ctx.moveTo(tops[0].x, tops[0].y)
+   381→  for (let i = 1; i < tops.length; i++) {
+   382→    ctx.lineTo(tops[i].x, tops[i].y)
+   383→  }
+   384→  ctx.stroke()
+   385→}
+   386→
+   387→function drawMeasurement(ctx: CanvasRenderingContext2D, m: Meritev): void {
+   388→  // Dashed line
+   389→  ctx.save()
+   390→  ctx.strokeStyle = GREEN
+   391→  ctx.lineWidth = 2.5
+   392→  ctx.setLineDash([8, 4])
+   393→  ctx.beginPath()
+   394→  ctx.moveTo(m.a.x, m.a.y)
+   395→  ctx.lineTo(m.b.x, m.b.y)
+   396→  ctx.stroke()
+   397→  ctx.setLineDash([])
+   398→  // End markers
+   399→  for (const pt of [m.a, m.b]) {
+   400→    ctx.beginPath()
+   401→    ctx.arc(pt.x, pt.y, 6, 0, Math.PI * 2)
+   402→    ctx.fillStyle = GREEN
+   403→    ctx.fill()
+   404→    ctx.strokeStyle = '#ffffff'
+   405→    ctx.lineWidth = 2
+   406→    ctx.stroke()
+   407→  }
+   408→  // Label badge at midpoint
+   409→  const mx = (m.a.x + m.b.x) / 2
+   410→  const my = (m.a.y + m.b.y) / 2
+   411→  const label = `${m.oznaka}: ${formatDistance(m.dolzinaMm)}`
+   412→  ctx.font = 'bold 12px ui-sans-serif, system-ui, sans-serif'
+   413→  const metrics = ctx.measureText(label)
+   414→  const pad = 6
+   415→  const w = metrics.width + pad * 2
+   416→  const h = 20
+   417→  // Background pill
+   418→  ctx.fillStyle = 'rgba(29, 43, 62, 0.92)'
+   419→  if (typeof ctx.roundRect === 'function') {
+   420→    ctx.beginPath()
+   421→    ctx.roundRect(mx - w / 2, my - h / 2, w, h, 4)
+   422→    ctx.fill()
+   423→  } else {
+   424→    ctx.fillRect(mx - w / 2, my - h / 2, w, h)
+   425→  }
+   426→  // Text
+   427→  ctx.fillStyle = '#ffffff'
+   428→  ctx.textAlign = 'center'
+   429→  ctx.textBaseline = 'middle'
+   430→  ctx.fillText(label, mx, my)
+   431→  ctx.restore()
+   432→}
+   433→
+   434→// ============================================================================
+   435→// Main component
+   436→// ============================================================================
+   437→
+   438→export function ArScanner({ projectId, onClose }: ArScannerProps) {
+   439→  const videoRef = useRef<HTMLVideoElement>(null)
+   440→  const canvasRef = useRef<HTMLCanvasElement>(null)
+   441→  const containerRef = useRef<HTMLDivElement>(null)
+   442→  const streamRef = useRef<MediaStream | null>(null)
+   443→  const draggingRef = useRef<number | null>(null)
+   444→
+   445→  const { toast } = useToast()
+   446→
+   447→  // Camera state
+   448→  const [streamReady, setStreamReady] = useState(false)
+   449→  const [cameraError, setCameraError] = useState<string | null>(null)
+   450→
+   451→  // Mode + drawing state
+   452→  const [mode, setMode] = useState<Mode>('ADD')
+   453→  const [tocke, setTocke] = useState<Tocka[]>([])
+   454→  const [meritve, setMeritve] = useState<Meritev[]>([])
+   455→
+   456→  // Profile selection
+   457→  const [profili, setProfili] = useState<Profil[]>([])
+   458→  const [profiliLoading, setProfiliLoading] = useState(true)
+   459→  const [selectedProfilId, setSelectedProfilId] = useState<string | null>(null)
+   460→
+   461→  // Calibration state
+   462→  const [kalibracija, setKalibracija] = useState<Kalibracija | null>(null)
+   463→  const [calibrateDialogOpen, setCalibrateDialogOpen] = useState(false)
+   464→  const [calRealMm, setCalRealMm] = useState('600')
+   465→  const [calibrateActive, setCalibrateActive] = useState(false)
+   466→  const [calFirstPoint, setCalFirstPoint] = useState<XY | null>(null)
+   467→
+   468→  // Measurement state
+   469→  const [measureFirstPoint, setMeasureFirstPoint] = useState<XY | null>(null)
+   470→  const [labelDialogOpen, setLabelDialogOpen] = useState(false)
+   471→  const [pendingMeritev, setPendingMeritev] = useState<{
+   472→    a: XY
+   473→    b: XY
+   474→    dolzinaMm: number
+   475→  } | null>(null)
+   476→  const [meritevLabel, setMeritevLabel] = useState('')
+   477→
+   478→  // History sheet
+   479→  const [historyOpen, setHistoryOpen] = useState(false)
+   480→  const [snapshots, setSnapshots] = useState<ArSnapshot[]>([])
+   481→  const [snapshotsLoading, setSnapshotsLoading] = useState(false)
+   482→  const [saving, setSaving] = useState(false)
+   483→
+   484→  // --- Fetch profili on mount ---
+   485→  useEffect(() => {
+   486→    let cancelled = false
+   487→    setProfiliLoading(true)
+   488→    fetch('/api/profili')
+   489→      .then((r) => (r.ok ? r.json() : Promise.reject(new Error('fetch failed'))))
+   490→      .then((data: Profil[]) => {
+   491→        if (cancelled) return
+   492→        setProfili(data)
+   493→        if (data.length > 0) setSelectedProfilId(data[0].id)
+   494→      })
+   495→      .catch(() => {
+   496→        if (cancelled) return
+   497→        toast({
+   498→          title: 'Napaka',
+   499→          description: 'Katalog profilov ni na voljo.',
+   500→          variant: 'destructive',
+   501→        })
+   502→      })
+   503→      .finally(() => {
+   504→        if (!cancelled) setProfiliLoading(false)
+   505→      })
+   506→    return () => {
+   507→      cancelled = true
+   508→    }
+   509→  }, [toast])
+   510→
+   511→  // --- Camera init (getUserMedia rear camera) ---
+   512→  useEffect(() => {
+   513→    let active = true
+   514→    async function startCamera() {
+   515→      try {
+   516→        if (!navigator.mediaDevices?.getUserMedia) {
+   517→          if (active) {
+   518→            setCameraError(
+   519→              'Vaša naprava ali brskalnik ne podpira dostopa do kamere.',
+   520→            )
+   521→          }
+   522→          return
+   523→        }
+   524→        const stream = await navigator.mediaDevices.getUserMedia({
+   525→          video: { facingMode: { ideal: 'environment' } },
+   526→          audio: false,
+   527→        })
+   528→        if (!active) {
+   529→          stream.getTracks().forEach((t) => t.stop())
+   530→          return
+   531→        }
+   532→        streamRef.current = stream
+   533→        if (videoRef.current) {
+   534→          videoRef.current.srcObject = stream
+   535→          await videoRef.current.play().catch(() => {
+   536→            // Autoplay can fail; user gesture (button click) is needed
+   537→          })
+   538→        }
+   539→        setStreamReady(true)
+   540→        setCameraError(null)
+   541→      } catch (err) {
+   542→        if (!active) return
+   543→        const e = err as DOMException
+   544→        if (e.name === 'NotAllowedError' || e.name === 'SecurityError') {
+   545→          setCameraError(
+   546→            'Dostop do kamere je zavrnjen. V nastavitvah brskalnika omogočite kamero in poskusite znova.',
+   547→          )
+   548→        } else if (e.name === 'NotFoundError' || e.name === 'OverconstrainedError') {
+   549→          setCameraError('Kamera ni najdena. Preverite, da je priklopljena in aktivna.')
+   550→        } else if (e.name === 'NotReadableError') {
+   551→          setCameraError(
+   552→            'Kamera je v uporabi v drugem programu. Zaprite ga in poskusite znova.',
+   553→          )
+   554→        } else {
+   555→          setCameraError(`Napaka kamere: ${e.message || e.name}`)
+   556→        }
+   557→      }
+   558→    }
+   559→    startCamera()
+   560→    return () => {
+   561→      active = false
+   562→      if (streamRef.current) {
+   563→        streamRef.current.getTracks().forEach((t) => t.stop())
+   564→        streamRef.current = null
+   565→      }
+   566→    }
+   567→  }, [])
+   568→
+   569→  // --- Resize canvas to match the displayed video element ---
+   570→  const resizeCanvas = useCallback(() => {
+   571→    const video = videoRef.current
+   572→    const canvas = canvasRef.current
+   573→    if (!video || !canvas) return
+   574→    const rect = video.getBoundingClientRect()
+   575→    if (rect.width === 0 || rect.height === 0) return
+   576→    const dpr = window.devicePixelRatio || 1
+   577→    canvas.style.width = `${rect.width}px`
+   578→    canvas.style.height = `${rect.height}px`
+   579→    const targetW = Math.round(rect.width * dpr)
+   580→    const targetH = Math.round(rect.height * dpr)
+   581→    if (canvas.width !== targetW || canvas.height !== targetH) {
+   582→      canvas.width = targetW
+   583→      canvas.height = targetH
+   584→    }
+   585→    const ctx = canvas.getContext('2d')
+   586→    if (ctx) {
+   587→      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+   588→    }
+   589→  }, [])
+   590→
+   591→  // --- ResizeObserver + window resize + polling ---
+   592→  useEffect(() => {
+   593→    if (!streamReady) return
+   594→    resizeCanvas()
+   595→    const ro = new ResizeObserver(() => resizeCanvas())
+   596→    if (containerRef.current) ro.observe(containerRef.current)
+   597→    window.addEventListener('resize', resizeCanvas)
+   598→    window.addEventListener('orientationchange', resizeCanvas)
+   599→    const interval = setInterval(resizeCanvas, 500)
+   600→    return () => {
+   601→      ro.disconnect()
+   602→      window.removeEventListener('resize', resizeCanvas)
+   603→      window.removeEventListener('orientationchange', resizeCanvas)
+   604→      clearInterval(interval)
+   605→    }
+   606→  }, [streamReady, resizeCanvas])
+   607→
+   608→  // --- Selected profile ---
+   609→  const selectedProfil = useMemo(
+   610→    () => profili.find((p) => p.id === selectedProfilId) ?? null,
+   611→    [profili, selectedProfilId],
+   612→  )
+   613→
+   614→  // --- Redraw canvas whenever state changes ---
+   615→  useEffect(() => {
+   616→    const canvas = canvasRef.current
+   617→    if (!canvas) return
+   618→    const ctx = canvas.getContext('2d')
+   619→    if (!ctx) return
+   620→    const cssW = canvas.clientWidth
+   621→    const cssH = canvas.clientHeight
+   622→    ctx.clearRect(0, 0, cssW, cssH)
+   623→
+   624→    const ppm = kalibracija?.pixelsPerMm ?? null
+   625→    const postHeightPx =
+   626→      ppm && selectedProfil
+   627→        ? selectedProfil.visinaMm * ppm
+   628→        : DEFAULT_POST_HEIGHT_PX
+   629→    const slatSpacingPx = ppm ? 110 * ppm : DEFAULT_SLAT_SPACING_PX
+   630→
+   631→    // Railing visualization
+   632→    if (tocke.length >= 2 && selectedProfil) {
+   633→      drawRailing(ctx, tocke, selectedProfil, postHeightPx, slatSpacingPx)
+   634→    } else if (tocke.length >= 2) {
+   635→      // No profile — just a navy line between anchors
+   636→      ctx.strokeStyle = NAVY
+   637→      ctx.lineWidth = 4
+   638→      ctx.lineCap = 'round'
+   639→      ctx.beginPath()
+   640→      ctx.moveTo(tocke[0].x, tocke[0].y)
+   641→      for (let i = 1; i < tocke.length; i++) {
+   642→        ctx.lineTo(tocke[i].x, tocke[i].y)
+   643→      }
+   644→      ctx.stroke()
+   645→    }
+   646→
+   647→    // Saved measurements
+   648→    for (const m of meritve) {
+   649→      drawMeasurement(ctx, m)
+   650→    }
+   651→
+   652→    // Pending measurement: first point marker
+   653→    if (mode === 'MEASURE' && measureFirstPoint) {
+   654→      ctx.save()
+   655→      ctx.fillStyle = GREEN
+   656→      ctx.beginPath()
+   657→      ctx.arc(measureFirstPoint.x, measureFirstPoint.y, 8, 0, Math.PI * 2)
+   658→      ctx.fill()
+   659→      ctx.strokeStyle = '#ffffff'
+   660→      ctx.lineWidth = 2.5
+   661→      ctx.stroke()
+   662→      // Pulsing ring
+   663→      ctx.strokeStyle = 'rgba(16, 185, 129, 0.5)'
+   664→      ctx.lineWidth = 2
+   665→      ctx.beginPath()
+   666→      ctx.arc(measureFirstPoint.x, measureFirstPoint.y, 16, 0, Math.PI * 2)
+   667→      ctx.stroke()
+   668→      ctx.restore()
+   669→    }
+   670→
+   671→    // Pending calibration: first point marker
+   672→    if (calibrateActive && calFirstPoint) {
+   673→      ctx.save()
+   674→      ctx.fillStyle = AMBER
+   675→      ctx.beginPath()
+   676→      ctx.arc(calFirstPoint.x, calFirstPoint.y, 8, 0, Math.PI * 2)
+   677→      ctx.fill()
+   678→      ctx.strokeStyle = '#ffffff'
+   679→      ctx.lineWidth = 2.5
+   680→      ctx.stroke()
+   681→      ctx.strokeStyle = 'rgba(245, 158, 11, 0.5)'
+   682→      ctx.lineWidth = 2
+   683→      ctx.beginPath()
+   684→      ctx.arc(calFirstPoint.x, calFirstPoint.y, 16, 0, Math.PI * 2)
+   685→      ctx.stroke()
+   686→      ctx.restore()
+   687→    }
+   688→
+   689→    // Anchor points on top
+   690→    for (let i = 0; i < tocke.length; i++) {
+   691→      drawAnchorPoint(ctx, tocke[i], i, tocke.length)
+   692→    }
+   693→  }, [
+   694→    tocke,
+   695→    meritve,
+   696→    selectedProfil,
+   697→    kalibracija,
+   698→    mode,
+   699→    measureFirstPoint,
+   700→    calibrateActive,
+   701→    calFirstPoint,
+   702→  ])
+   703→
+   704→  // --- Convert a pointer event to canvas CSS-pixel coordinates ---
+   705→  const getCanvasPoint = useCallback((e: React.PointerEvent<HTMLCanvasElement>): XY => {
+   706→    const canvas = canvasRef.current
+   707→    if (!canvas) return { x: 0, y: 0 }
+   708→    const rect = canvas.getBoundingClientRect()
+   709→    return {
+   710→      x: e.clientX - rect.left,
+   711→      y: e.clientY - rect.top,
+   712→    }
+   713→  }, [])
+   714→
+   715→  // --- Pointer down handler ---
+   716→  const handlePointerDown = useCallback(
+   717→    (e: React.PointerEvent<HTMLCanvasElement>) => {
+   718→      const p = getCanvasPoint(e)
+   719→      // Calibration has priority over modes
+   720→      if (calibrateActive) {
+   721→        if (!calFirstPoint) {
+   722→          setCalFirstPoint(p)
+   723→          toast({
+   724→            title: 'Umeritev',
+   725→            description: 'Sedaj tapnite drugo točko.',
+   726→          })
+   727→        } else {
+   728→          const pixelDist = dist(calFirstPoint, p)
+   729→          const realMm = parseFloat(calRealMm)
+   730→          if (!Number.isFinite(realMm) || realMm <= 0 || pixelDist < 5) {
+   731→            toast({
+   732→              title: 'Napaka',
+   733→              description: 'Neveljavna razdalja ali premajhen razmik med točkama.',
+   734→              variant: 'destructive',
+   735→            })
+   736→            setCalFirstPoint(null)
+   737→            setCalibrateActive(false)
+   738→            return
+   739→          }
+   740→          const ppm = pixelDist / realMm
+   741→          setKalibracija({
+   742→            pixelsPerMm: ppm,
+   743→            referencnaMm: realMm,
+   744→            createdAt: new Date().toISOString(),
+   745→          })
+   746→          setCalFirstPoint(null)
+   747→          setCalibrateActive(false)
+   748→          toast({
+   749→            title: 'Umeritev končana',
+   750→            description: `1 mm = ${ppm.toFixed(3)} px (referenca ${realMm} mm).`,
+   751→          })
+   752→        }
+   753→        return
+   754→      }
+   755→
+   756→      // MEASURE mode
+   757→      if (mode === 'MEASURE') {
+   758→        if (!measureFirstPoint) {
+   759→          setMeasureFirstPoint(p)
+   760→        } else {
+   761→          const pixelDist = dist(measureFirstPoint, p)
+   762→          const dolzinaMm = kalibracija
+   763→            ? pixelDist / kalibracija.pixelsPerMm
+   764→            : 0
+   765→          setPendingMeritev({
+   766→            a: measureFirstPoint,
+   767→            b: p,
+   768→            dolzinaMm,
+   769→          })
+   770→          setMeritevLabel(`Meritev ${meritve.length + 1}`)
+   771→          setLabelDialogOpen(true)
+   772→          setMeasureFirstPoint(null)
+   773→        }
+   774→        return
+   775→      }
+   776→
+   777→      // ADD mode
+   778→      if (mode === 'ADD') {
+   779→        setTocke((prev) => [
+   780→          ...prev,
+   781→          { x: p.x, y: p.y, label: String(prev.length + 1) },
+   782→        ])
+   783→        return
+   784→      }
+   785→
+   786→      // REMOVE mode
+   787→      if (mode === 'REMOVE') {
+   788→        setTocke((prev) => {
+   789→          const idx = findNearestPoint(prev, p)
+   790→          if (idx === -1) return prev
+   791→          const next = prev.filter((_, i) => i !== idx)
+   792→          // Re-number labels
+   793→          return next.map((t, i) => ({ ...t, label: String(i + 1) }))
+   794→        })
+   795→        return
+   796→      }
+   797→
+   798→      // MOVE mode — start drag if near an existing point
+   799→      if (mode === 'MOVE') {
+   800→        const idx = findNearestPoint(tocke, p)
+   801→        if (idx !== -1) {
+   802→          draggingRef.current = idx
+   803→          try {
+   804→            canvasRef.current?.setPointerCapture(e.pointerId)
+   805→          } catch {
+   806→            // ignore
+   807→          }
+   808→        }
+   809→      }
+   810→    },
+   811→    [
+   812→      calibrateActive,
+   813→      calFirstPoint,
+   814→      calRealMm,
+   815→      mode,
+   816→      measureFirstPoint,
+   817→      meritve.length,
+   818→      kalibracija,
+   819→      tocke,
+   820→      getCanvasPoint,
+   821→      toast,
+   822→    ],
+   823→  )
+   824→
+   825→  // --- Pointer move handler (for MOVE mode drag) ---
+   826→  const handlePointerMove = useCallback(
+   827→    (e: React.PointerEvent<HTMLCanvasElement>) => {
+   828→      if (draggingRef.current === null) return
+   829→      const p = getCanvasPoint(e)
+   830→      setTocke((prev) => {
+   831→        const idx = draggingRef.current
+   832→        if (idx === null) return prev
+   833→        const next = [...prev]
+   834→        next[idx] = { ...next[idx], x: p.x, y: p.y }
+   835→        return next
+   836→      })
+   837→    },
+   838→    [getCanvasPoint],
+   839→  )
+   840→
+   841→  // --- Pointer up / cancel: end drag ---
+   842→  const handlePointerUp = useCallback(
+   843→    (e: React.PointerEvent<HTMLCanvasElement>) => {
+   844→      if (draggingRef.current !== null) {
+   845→        try {
+   846→          canvasRef.current?.releasePointerCapture(e.pointerId)
+   847→        } catch {
+   848→          // ignore
+   849→        }
+   850→        draggingRef.current = null
+   851→      }
+   852→    },
+   853→    [],
+   854→  )
+   855→
+   856→  // --- Open calibrate dialog ---
+   857→  const openCalibrate = useCallback(() => {
+   858→    setCalFirstPoint(null)
+   859→    setCalibrateActive(false)
+   860→    setCalibrateDialogOpen(true)
+   861→  }, [])
+   862→
+   863→  // --- Confirm calibrate dialog → enter "tap two points" mode ---
+   864→  const confirmCalibrateStart = useCallback(() => {
+   865→    const mm = parseFloat(calRealMm)
+   866→    if (!Number.isFinite(mm) || mm <= 0) {
+   867→      toast({
+   868→        title: 'Napaka',
+   869→        description: 'Vnesite veljavno razdaljo v mm.',
+   870→        variant: 'destructive',
+   871→      })
+   872→      return
+   873→    }
+   874→    setCalibrateDialogOpen(false)
+   875→    setCalibrateActive(true)
+   876→    setCalFirstPoint(null)
+   877→    toast({
+   878→      title: 'Umeritev',
+   879→      description: 'Tapnite prvo točko na znani razdalji.',
+   880→    })
+   881→  }, [calRealMm, toast])
+   882→
+   883→  // --- Cancel calibration ---
+   884→  const cancelCalibrate = useCallback(() => {
+   885→    setCalibrateActive(false)
+   886→    setCalFirstPoint(null)
+   887→  }, [])
+   888→
+   889→  // --- Confirm measurement label dialog ---
+   890→  const confirmMeritev = useCallback(() => {
+   891→    if (!pendingMeritev) return
+   892→    const finalLabel = meritevLabel.trim() || `Meritev ${meritve.length + 1}`
+   893→    setMeritve((prev) => [
+   894→      ...prev,
+   895→      {
+   896→        id: makeId(),
+   897→        a: pendingMeritev.a,
+   898→        b: pendingMeritev.b,
+   899→        dolzinaMm: pendingMeritev.dolzinaMm,
+   900→        oznaka: finalLabel,
+   901→      },
+   902→    ])
+   903→    setPendingMeritev(null)
+   904→    setMeritevLabel('')
+   905→    setLabelDialogOpen(false)
+   906→    toast({
+   907→      title: 'Meritev shranjena',
+   908→      description: `${finalLabel}: ${formatDistance(pendingMeritev.dolzinaMm)}`,
+   909→    })
+   910→  }, [pendingMeritev, meritevLabel, meritve.length, toast])
+   911→
+   912→  // --- Cancel measurement label dialog ---
+   913→  const cancelMeritev = useCallback(() => {
+   914→    setPendingMeritev(null)
+   915→    setMeritevLabel('')
+   916→    setLabelDialogOpen(false)
+   917→  }, [])
+   918→
+   919→  // --- Clear all points ---
+   920→  const clearAll = useCallback(() => {
+   921→    setTocke([])
+   922→    setMeritve([])
+   923→    setMeasureFirstPoint(null)
+   924→    toast({ title: 'Počiščeno', description: 'Vse točke in meritve so odstranjene.' })
+   925→  }, [])
+   926→
+   927→  // --- Reset calibration ---
+   928→  const resetCalibration = useCallback(() => {
+   929→    setKalibracija(null)
+   930→    setCalibrateActive(false)
+   931→    setCalFirstPoint(null)
+   932→    toast({ title: 'Umeritev ponastavljena' })
+   933→  }, [])
+   934→
+   935→  // --- Fetch snapshots for history sheet ---
+   936→  const fetchSnapshots = useCallback(async () => {
+   937→    setSnapshotsLoading(true)
+   938→    try {
+   939→      const res = await fetch(`/api/ar-snapshots?projectId=${encodeURIComponent(projectId)}`)
+   940→      if (!res.ok) throw new Error('fetch failed')
+   941→      const data: ArSnapshot[] = await res.json()
+   942→      setSnapshots(data)
+   943→    } catch {
+   944→      toast({
+   945→        title: 'Napaka',
+   946→        description: 'Posnetkov ni mogoče naložiti.',
+   947→        variant: 'destructive',
+   948→      })
+   949→    } finally {
+   950→      setSnapshotsLoading(false)
+   951→    }
+   952→  }, [projectId, toast])
+   953→
+   954→  // --- Open history sheet ---
+   955→  const openHistory = useCallback(() => {
+   956→    setHistoryOpen(true)
+   957→    void fetchSnapshots()
+   958→  }, [fetchSnapshots])
+   959→
+   960→  // --- Delete a snapshot ---
+   961→  const deleteSnapshot = useCallback(
+   962→    async (id: string) => {
+   963→      try {
+   964→        const res = await fetch(`/api/ar-snapshots?id=${encodeURIComponent(id)}`, {
+   965→          method: 'DELETE',
+   966→        })
+   967→        if (!res.ok) throw new Error('delete failed')
+   968→        setSnapshots((prev) => prev.filter((s) => s.id !== id))
+   969→        toast({ title: 'Posnetek izbrisan' })
+   970→      } catch {
+   971→        toast({
+   972→          title: 'Napaka',
+   973→          description: 'Posnetka ni mogoče izbrisati.',
+   974→          variant: 'destructive',
+   975→        })
+   976→      }
+   977→    },
+   978→    [toast],
+   979→  )
+   980→
+   981→  // --- Capture composite (video frame + canvas overlay) → POST ---
+   982→  const handleCapture = useCallback(async () => {
+   983→    const video = videoRef.current
+   984→    const canvas = canvasRef.current
+   985→    if (!video || !canvas) {
+   986→      toast({
+   987→        title: 'Napaka',
+   988→        description: 'Kamera ali platno ni na voljo.',
+   989→        variant: 'destructive',
+   990→      })
+   991→      return
+   992→    }
+   993→    if (video.videoWidth === 0 || video.videoHeight === 0) {
+   994→      toast({
+   995→        title: 'Kamera ni pripravljena',
+   996→        description: 'Počakajte, da se video naloži.',
+   997→        variant: 'destructive',
+   998→      })
+   999→      return
+  1000→    }
+  1001→    if (tocke.length === 0) {
+  1002→      toast({
+  1003→        title: 'Brez točk',
+  1004→        description: 'Dodajte vsaj eno točko pred zajem.',
+  1005→        variant: 'destructive',
+  1006→      })
+  1007→      return
+  1008→    }
+  1009→
+  1010→    setSaving(true)
+  1011→    try {
+  1012→      // Composite at displayed canvas size (CSS pixels)
+  1013→      const rect = canvas.getBoundingClientRect()
+  1014→      const cw = Math.max(1, Math.round(rect.width))
+  1015→      const ch = Math.max(1, Math.round(rect.height))
+  1016→      const comp = document.createElement('canvas')
+  1017→      comp.width = cw
+  1018→      comp.height = ch
+  1019→      const cctx = comp.getContext('2d')
+  1020→      if (!cctx) throw new Error('no 2d context')
+  1021→
+  1022→      // Background (in case video frame is transparent)
+  1023→      cctx.fillStyle = '#000000'
+  1024→      cctx.fillRect(0, 0, cw, ch)
+  1025→
+  1026→      // Draw video frame with object-cover semantics
+  1027→      const vw = video.videoWidth
+  1028→      const vh = video.videoHeight
+  1029→      const scale = Math.max(cw / vw, ch / vh)
+  1030→      const scaledW = vw * scale
+  1031→      const scaledH = vh * scale
+  1032→      const offsetX = (cw - scaledW) / 2
+  1033→      const offsetY = (ch - scaledH) / 2
+  1034→      cctx.drawImage(video, 0, 0, vw, vh, offsetX, offsetY, scaledW, scaledH)
+  1035→
+  1036→      // Draw overlay canvas (canvas internal px scaled down to cw×ch)
+  1037→      cctx.drawImage(canvas, 0, 0, cw, ch)
+  1038→
+  1039→      const dataUrl = comp.toDataURL('image/png')
+  1040→
+  1041→      // Build payload
+  1042→      const payload: {
+  1043→        projectId: string
+  1044→        profilId: string | null
+  1045→        imageUrl: string
+  1046→        tocke: Tocka[]
+  1047→        meritve: Meritev[]
+  1048→        kalibracija: Kalibracija | null
+  1049→        opombe: string | null
+  1050→      } = {
+  1051→        projectId,
+  1052→        profilId: selectedProfilId,
+  1053→        imageUrl: dataUrl,
+  1054→        tocke,
+  1055→        meritve,
+  1056→        kalibracija,
+  1057→        opombe: null,
+  1058→      }
+  1059→
+  1060→      const res = await fetch('/api/ar-snapshots', {
+  1061→        method: 'POST',
+  1062→        headers: { 'Content-Type': 'application/json' },
+  1063→        body: JSON.stringify(payload),
+  1064→      })
+  1065→      if (!res.ok) throw new Error('save failed')
+  1066→      toast({
+  1067→        title: 'Posnetek shranjen',
+  1068→        description: `${tocke.length} točk · ${meritve.length} meritev`,
+  1069→      })
+  1070→    } catch (err) {
+  1071→      const e = err as Error
+  1072→      toast({
+  1073→        title: 'Napaka pri shranjevanju',
+  1074→        description: e.message || 'Neznana napaka.',
+  1075→        variant: 'destructive',
+  1076→      })
+  1077→    } finally {
+  1078→      setSaving(false)
+  1079→    }
+  1080→  }, [projectId, selectedProfilId, tocke, meritve, kalibracija, toast])
+  1081→
+  1082→  // --- Retry camera (after error) ---
+  1083→  const retryCamera = useCallback(() => {
+  1084→    setCameraError(null)
+  1085→    setStreamReady(false)
+  1086→    // Stop any old stream
+  1087→    if (streamRef.current) {
+  1088→      streamRef.current.getTracks().forEach((t) => t.stop())
+  1089→      streamRef.current = null
+  1090→    }
+  1091→    // Trigger re-init by reloading video element
+  1092→    if (videoRef.current) {
+  1093→      videoRef.current.srcObject = null
+  1094→    }
+  1095→    // The camera init effect runs once on mount, so to retry we reload the page
+  1096→    // — but to avoid that, we manually re-request here:
+  1097→    void (async () => {
+  1098→      try {
+  1099→        const stream = await navigator.mediaDevices.getUserMedia({
+  1100→          video: { facingMode: { ideal: 'environment' } },
+  1101→          audio: false,
+  1102→        })
+  1103→        streamRef.current = stream
+  1104→        if (videoRef.current) {
+  1105→          videoRef.current.srcObject = stream
+  1106→          await videoRef.current.play().catch(() => {})
+  1107→        }
+  1108→        setStreamReady(true)
+  1109→        setCameraError(null)
+  1110→      } catch (err) {
+  1111→        const e = err as DOMException
+  1112→        if (e.name === 'NotAllowedError' || e.name === 'SecurityError') {
+  1113→          setCameraError(
+  1114→            'Dostop do kamere je zavrnjen. V nastavitvah brskalnika omogočite kamero in poskusite znova.',
+  1115→          )
+  1116→        } else if (e.name === 'NotFoundError' || e.name === 'OverconstrainedError') {
+  1117→          setCameraError('Kamera ni najdena. Preverite, da je priklopljena in aktivna.')
+  1118→        } else {
+  1119→          setCameraError(`Napaka kamere: ${e.message || e.name}`)
+  1120→        }
+  1121→      }
+  1122→    })()
+  1123→  }, [])
+  1124→
+  1125→  // --- Status banner text ---
+  1126→  const statusText = useMemo(() => {
+  1127→    if (calibrateActive) {
+  1128→      return calFirstPoint
+  1129→        ? 'Umeritev: tapnite drugo točko'
+  1130→        : 'Umeritev: tapnite prvo točko'
+  1131→    }
+  1132→    switch (mode) {
+  1133→      case 'ADD':
+  1134→        return 'Tapnite za dodajanje stebra'
+  1135→      case 'REMOVE':
+  1136→        return 'Tapnite steber za izbris'
+  1137→      case 'MOVE':
+  1138→        return 'Povlecite steber za premik'
+  1139→      case 'MEASURE':
+  1140→        return measureFirstPoint
+  1141→          ? 'Tapnite drugo točko za meritev'
+  1142→          : 'Tapnite prvo točko za meritev'
+  1143→      default:
+  1144→        return ''
+  1145→    }
+  1146→  }, [mode, measureFirstPoint, calibrateActive, calFirstPoint])
+  1147→
+  1148→  // --- Mode toggle button class ---
+  1149→  const modeButtonClass = useCallback(
+  1150→    (m: Mode) =>
+  1151→      cn(
+  1152→        'flex-1 flex flex-col items-center justify-center gap-0.5 py-2 px-1 rounded-md text-[11px] font-medium transition-colors',
+  1153→        mode === m && !calibrateActive
+  1154→          ? 'bg-roksal-navy text-white'
+  1155→          : 'bg-white/10 text-white hover:bg-white/20',
+  1156→      ),
+  1157→    [mode, calibrateActive],
+  1158→  )
+  1159→
+  1160→  return (
+  1161→    <div className="fixed inset-0 z-50 bg-black flex flex-col select-none">
+  1162→      {/* === TOP BAR === */}
+  1163→      <header className="bg-roksal-navy/95 backdrop-blur-sm px-3 py-2 flex items-center gap-2 border-b border-white/10">
+  1164→        <Button
+  1165→          type="button"
+  1166→          variant="ghost"
+  1167→          size="icon"
+  1168→          className="text-white hover:bg-white/10 shrink-0"
+  1169→          onClick={onClose}
+  1170→          aria-label="Zapri AR"
+  1171→        >
+  1172→          <X className="h-5 w-5" />
+  1173→        </Button>
+  1174→
+  1175→        <div className="flex-1 min-w-0">
+  1176→          <Select
+  1177→            value={selectedProfilId ?? undefined}
+  1178→            onValueChange={(v) => setSelectedProfilId(v)}
+  1179→          >
+  1180→            <SelectTrigger
+  1181→              className="h-9 bg-white/10 border-white/20 text-white text-xs w-full max-w-[260px]"
+  1182→              aria-label="Izberi profil"
+  1183→            >
+  1184→              <SelectValue
+  1185→                placeholder={
+  1186→                  profiliLoading ? 'Nalagam profile…' : 'Izberi profil'
+  1187→                }
+  1188→              />
+  1189→            </SelectTrigger>
+  1190→            <SelectContent>
+  1191→              {profili.map((p) => (
+  1192→                <SelectItem key={p.id} value={p.id}>
+  1193→                  <span className="flex flex-col">
+  1194→                    <span className="font-medium">{p.naziv}</span>
+  1195→                    <span className="text-[10px] text-muted-foreground">
+  1196→                      {p.kategorija} · {p.visinaMm} mm
+  1197→                    </span>
+  1198→                  </span>
+  1199→                </SelectItem>
+  1200→              ))}
+  1201→            </SelectContent>
+  1202→          </Select>
+  1203→        </div>
+  1204→
+  1205→        {/* Calibration button + status */}
+  1206→        <Tooltip>
+  1207→          <TooltipTrigger asChild>
+  1208→            <Button
+  1209→              type="button"
+  1210→              variant="ghost"
+  1211→              size="icon"
+  1212→              className={cn(
+  1213→                'shrink-0',
+  1214→                kalibracija
+  1215→                  ? 'text-roksal-green hover:bg-white/10'
+  1216→                  : 'text-white hover:bg-white/10',
+  1217→              )}
+  1218→              onClick={kalibracija ? resetCalibration : openCalibrate}
+  1219→              aria-label="Umeri"
+  1220→            >
+  1221→              <Crosshair className="h-5 w-5" />
+  1222→            </Button>
+  1223→          </TooltipTrigger>
+  1224→          <TooltipContent side="bottom">
+  1225→            {kalibracija
+  1226→              ? `Umerjeno (${kalibracija.pixelsPerMm.toFixed(3)} px/mm) — klik za ponastavitev`
+  1227→              : 'Umeri kamero'}
+  1228→          </TooltipContent>
+  1229→        </Tooltip>
+  1230→
+  1231→        {/* Capture button */}
+  1232→        <Tooltip>
+  1233→          <TooltipTrigger asChild>
+  1234→            <Button
+  1235→              type="button"
+  1236→              variant="ghost"
+  1237→              size="icon"
+  1238→              className="text-white hover:bg-white/10 shrink-0"
+  1239→              onClick={handleCapture}
+  1240→              disabled={saving || tocke.length === 0}
+  1241→              aria-label="Posnetek"
+  1242→            >
+  1243→              {saving ? (
+  1244→                <Loader2 className="h-5 w-5 animate-spin" />
+  1245→              ) : (
+  1246→                <Camera className="h-5 w-5" />
+  1247→              )}
+  1248→            </Button>
+  1249→          </TooltipTrigger>
+  1250→          <TooltipContent side="bottom">Zajemi posnetek</TooltipContent>
+  1251→        </Tooltip>
+  1252→
+  1253→        {/* History button */}
+  1254→        <Tooltip>
+  1255→          <TooltipTrigger asChild>
+  1256→            <Button
+  1257→              type="button"
+  1258→              variant="ghost"
+  1259→              size="icon"
+  1260→              className="text-white hover:bg-white/10 shrink-0"
+  1261→              onClick={openHistory}
+  1262→              aria-label="Zgodovina"
+  1263→            >
+  1264→              <History className="h-5 w-5" />
+  1265→            </Button>
+  1266→          </TooltipTrigger>
+  1267→          <TooltipContent side="bottom">Zgodovina posnetkov</TooltipContent>
+  1268→        </Tooltip>
+  1269→      </header>
+  1270→
+  1271→      {/* Calibration / mode status badge (top-right of video) */}
+  1272→      <div className="absolute top-16 right-3 z-10 flex flex-col items-end gap-1.5 pointer-events-none">
+  1273→        {kalibracija && (
+  1274→          <Badge className="bg-roksal-green/90 text-white border-transparent shadow-md">
+  1275→            <Check className="h-3 w-3" />
+  1276→            {kalibracija.pixelsPerMm.toFixed(3)} px/mm
+  1277→          </Badge>
+  1278→        )}
+  1279→        {selectedProfil && (
+  1280→          <Badge className="bg-roksal-navy/90 text-white border-transparent shadow-md">
+  1281→            {selectedProfil.kategorija}
+  1282→          </Badge>
+  1283→        )}
+  1284→        {tocke.length > 0 && (
+  1285→          <Badge className="bg-roksal-amber/90 text-white border-transparent shadow-md">
+  1286→            {tocke.length} {tocke.length === 1 ? 'točka' : tocke.length < 5 ? 'točke' : 'točk'}
+  1287→          </Badge>
+  1288→        )}
+  1289→        {meritve.length > 0 && (
+  1290→          <Badge className="bg-roksal-green/90 text-white border-transparent shadow-md">
+  1291→            <Ruler className="h-3 w-3" />
+  1292→            {meritve.length}
+  1293→          </Badge>
+  1294→        )}
+  1295→      </div>
+  1296→
+  1297→      {/* === VIDEO + CANVAS === */}
+  1298→      <div ref={containerRef} className="relative flex-1 overflow-hidden bg-black">
+  1299→        {cameraError ? (
+  1300→          <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-roksal-navy">
+  1301→            <AlertTriangle className="h-12 w-12 text-roksal-amber mb-3" />
+  1302→            <p className="text-white text-base font-semibold mb-2">Kamera ni na voljo</p>
+  1303→            <p className="text-white/70 text-sm max-w-xs mb-4">{cameraError}</p>
+  1304→            <Button
+  1305→              type="button"
+  1306→              variant="default"
+  1307→              className="bg-roksal-amber text-white hover:bg-roksal-amber/90"
+  1308→              onClick={retryCamera}
+  1309→            >
+  1310→              <RotateCcw className="h-4 w-4" />
+  1311→              Poskusi znova
+  1312→            </Button>
+  1313→          </div>
+  1314→        ) : (
+  1315→          <>
+  1316→            <video
+  1317→              ref={videoRef}
+  1318→              autoPlay
+  1319→              muted
+  1320→              playsInline
+  1321→              className="absolute inset-0 w-full h-full object-cover"
+  1322→            />
+  1323→            <canvas
+  1324→              ref={canvasRef}
+  1325→              onPointerDown={handlePointerDown}
+  1326→              onPointerMove={handlePointerMove}
+  1327→              onPointerUp={handlePointerUp}
+  1328→              onPointerCancel={handlePointerUp}
+  1329→              className="absolute inset-0 w-full h-full touch-none cursor-crosshair"
+  1330→              style={{ touchAction: 'none' }}
+  1331→            />
+  1332→
+  1333→            {/* Empty-state hint */}
+  1334→            {tocke.length === 0 && !calibrateActive && (
+  1335→              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+  1336→                <div className="bg-roksal-navy/80 text-white/90 text-sm px-4 py-2.5 rounded-lg backdrop-blur-sm text-center max-w-[280px]">
+  1337→                  <Plus className="h-5 w-5 mx-auto mb-1 text-roksal-amber" />
+  1338→                  Tapnite na tla za dodajanje stebrov ograje
+  1339→                </div>
+  1340→              </div>
+  1341→            )}
+  1342→
+  1343→            {/* Status banner */}
+  1344→            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
+  1345→              <div className="bg-roksal-navy/85 text-white text-xs font-medium px-3 py-1.5 rounded-full backdrop-blur-sm shadow-md whitespace-nowrap">
+  1346→                {statusText}
+  1347→              </div>
+  1348→            </div>
+  1349→          </>
+  1350→        )}
+  1351→      </div>
+  1352→
+  1353→      {/* === MODE BAR (bottom) === */}
+  1354→      <footer className="bg-roksal-navy/95 backdrop-blur-sm border-t border-white/10 px-2 py-2">
+  1355→        <div className="flex gap-1.5 mb-1.5">
+  1356→          <Button
+  1357→            type="button"
+  1358→            variant="ghost"
+  1359→            className={modeButtonClass('ADD')}
+  1360→            onClick={() => {
+  1361→              setMode('ADD')
+  1362→              setMeasureFirstPoint(null)
+  1363→            }}
+  1364→            disabled={calibrateActive}
+  1365→          >
+  1366→            <Plus className="h-4 w-4" />
+  1367→            Točke
+  1368→          </Button>
+  1369→          <Button
+  1370→            type="button"
+  1371→            variant="ghost"
+  1372→            className={modeButtonClass('REMOVE')}
+  1373→            onClick={() => {
+  1374→              setMode('REMOVE')
+  1375→              setMeasureFirstPoint(null)
+  1376→            }}
+  1377→            disabled={calibrateActive || tocke.length === 0}
+  1378→          >
+  1379→            <Trash2 className="h-4 w-4" />
+  1380→            Izbriši
+  1381→          </Button>
+  1382→          <Button
+  1383→            type="button"
+  1384→            variant="ghost"
+  1385→            className={modeButtonClass('MOVE')}
+  1386→            onClick={() => {
+  1387→              setMode('MOVE')
+  1388→              setMeasureFirstPoint(null)
+  1389→            }}
+  1390→            disabled={calibrateActive || tocke.length === 0}
+  1391→          >
+  1392→            <Move className="h-4 w-4" />
+  1393→            Premakni
+  1394→          </Button>
+  1395→          <Button
+  1396→            type="button"
+  1397→            variant="ghost"
+  1398→            className={modeButtonClass('MEASURE')}
+  1399→            onClick={() => {
+  1400→              setMode('MEASURE')
+  1401→              setMeasureFirstPoint(null)
+  1402→            }}
+  1403→            disabled={calibrateActive}
+  1404→          >
+  1405→            <Ruler className="h-4 w-4" />
+  1406→            Meri
+  1407→          </Button>
+  1408→        </div>
+  1409→        <div className="flex items-center gap-2">
+  1410→          <Button
+  1411→            type="button"
+  1412→            variant="outline"
+  1413→            size="sm"
+  1414→            className="bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white text-xs flex-1"
+  1415→            onClick={clearAll}
+  1416→            disabled={tocke.length === 0 && meritve.length === 0}
+  1417→          >
+  1418→            <Trash2 className="h-3.5 w-3.5" />
+  1419→            Počisti vse
+  1420→          </Button>
+  1421→          {calibrateActive && (
+  1422→            <Button
+  1423→              type="button"
+  1424→              variant="outline"
+  1425→              size="sm"
+  1426→              className="bg-roksal-amber/20 border-roksal-amber/40 text-roksal-amber hover:bg-roksal-amber/30 text-xs"
+  1427→              onClick={cancelCalibrate}
+  1428→            >
+  1429→              Prekliči umeritev
+  1430→            </Button>
+  1431→          )}
+  1432→          {mode === 'MEASURE' && measureFirstPoint && (
+  1433→            <Button
+  1434→              type="button"
+  1435→              variant="outline"
+  1436→              size="sm"
+  1437→              className="bg-roksal-green/20 border-roksal-green/40 text-roksal-green hover:bg-roksal-green/30 text-xs"
+  1438→              onClick={() => setMeasureFirstPoint(null)}
+  1439→            >
+  1440→              Prekliči meritev
+  1441→            </Button>
+  1442→          )}
+  1443→        </div>
+  1444→      </footer>
+  1445→
+  1446→      {/* === CALIBRATION DIALOG === */}
+  1447→      <Dialog
+  1448→        open={calibrateDialogOpen}
+  1449→        onOpenChange={(o) => {
+  1450→          setCalibrateDialogOpen(o)
+  1451→          if (!o) {
+  1452→            setCalibrateActive(false)
+  1453→            setCalFirstPoint(null)
+  1454→          }
+  1455→        }}
+  1456→      >
+  1457→        <DialogContent className="max-w-sm">
+  1458→          <DialogHeader>
+  1459→            <DialogTitle className="flex items-center gap-2 text-roksal-navy">
+  1460→              <Crosshair className="h-5 w-5 text-roksal-amber" />
+  1461→              Umeritev kamere
+  1462→            </DialogTitle>
+  1463→            <DialogDescription>
+  1464→              Vnesite znano razdaljo v milimetrih (npr. širina ploščice 600 mm),
+  1465→              nato tapnite dve točki na zaslonu, ki ustrezata tej razdalji.
+  1466→            </DialogDescription>
+  1467→          </DialogHeader>
+  1468→          <div className="grid gap-3 py-2">
+  1469→            <div className="grid gap-1.5">
+  1470→              <Label htmlFor="cal-mm">Razdalja (mm)</Label>
+  1471→              <Input
+  1472→                id="cal-mm"
+  1473→                type="number"
+  1474→                inputMode="numeric"
+  1475→                min={1}
+  1476→                value={calRealMm}
+  1477→                onChange={(e) => setCalRealMm(e.target.value)}
+  1478→                placeholder="npr. 600"
+  1479→              />
+  1480→            </div>
+  1481→            <p className="text-xs text-muted-foreground">
+  1482→              Namig: uporabite rob ploščice, širino vrat ali drugo znano merilo na lokaciji.
+  1483→            </p>
+  1484→          </div>
+  1485→          <DialogFooter>
+  1486→            <Button
+  1487→              type="button"
+  1488→              variant="outline"
+  1489→              onClick={() => setCalibrateDialogOpen(false)}
+  1490→            >
+  1491→              Prekliči
+  1492→            </Button>
+  1493→            <Button
+  1494→              type="button"
+  1495→              className="bg-roksal-amber text-white hover:bg-roksal-amber/90"
+  1496→              onClick={confirmCalibrateStart}
+  1497→            >
+  1498→              <Crosshair className="h-4 w-4" />
+  1499→              Izberi 2 točki
+  1500→            </Button>
+  1501→          </DialogFooter>
+  1502→        </DialogContent>
+  1503→      </Dialog>
+  1504→
+  1505→      {/* === MEASUREMENT LABEL DIALOG === */}
+  1506→      <Dialog open={labelDialogOpen} onOpenChange={(o) => { if (!o) cancelMeritev() }}>
+  1507→        <DialogContent className="max-w-sm">
+  1508→          <DialogHeader>
+  1509→            <DialogTitle className="flex items-center gap-2 text-roksal-navy">
+  1510→              <Ruler className="h-5 w-5 text-roksal-green" />
+  1511→              Označi meritev
+  1512→            </DialogTitle>
+  1513→            <DialogDescription>
+  1514→              {pendingMeritev && (
+  1515→                <>
+  1516→                  Izmerjena razdalja:{' '}
+  1517→                  <span className="font-semibold text-roksal-navy">
+  1518→                    {formatDistance(pendingMeritev.dolzinaMm)}
+  1519→                  </span>
+  1520→                </>
+  1521→              )}
+  1522→            </DialogDescription>
+  1523→          </DialogHeader>
+  1524→          <div className="grid gap-3 py-2">
+  1525→            <div className="grid gap-1.5">
+  1526→              <Label htmlFor="mer-label">Oznaka meritve</Label>
+  1527→              <Input
+  1528→                id="mer-label"
+  1529→                value={meritevLabel}
+  1530→                onChange={(e) => setMeritevLabel(e.target.value)}
+  1531→                placeholder="npr. dolžina balkona"
+  1532→                autoFocus
+  1533→              />
+  1534→            </div>
+  1535→            {!kalibracija && (
+  1536→              <p className="text-xs text-roksal-amber bg-roksal-amber/10 border border-roksal-amber/20 rounded-md p-2">
+  1537→                Umeritev kamere ni aktivna — razdalja je samo orientacijska (0 mm).
+  1538→                Najprej umerite kamero z gumbom za umeritev.
+  1539→              </p>
+  1540→            )}
+  1541→          </div>
+  1542→          <DialogFooter>
+  1543→            <Button type="button" variant="outline" onClick={cancelMeritev}>
+  1544→              Prekliči
+  1545→            </Button>
+  1546→            <Button
+  1547→              type="button"
+  1548→              className="bg-roksal-green text-white hover:bg-roksal-green/90"
+  1549→              onClick={confirmMeritev}
+  1550→            >
+  1551→              <Check className="h-4 w-4" />
+  1552→              Shrani
+  1553→            </Button>
+  1554→          </DialogFooter>
+  1555→        </DialogContent>
+  1556→      </Dialog>
+  1557→
+  1558→      {/* === HISTORY SHEET === */}
+  1559→      <Sheet open={historyOpen} onOpenChange={setHistoryOpen}>
+  1560→        <SheetContent side="right" className="w-full sm:max-w-md p-0 flex flex-col">
+  1561→          <SheetHeader className="px-4 pt-5 pb-3 border-b">
+  1562→            <SheetTitle className="flex items-center gap-2 text-roksal-navy">
+  1563→              <History className="h-5 w-5 text-roksal-amber" />
+  1564→              Zgodovina AR posnetkov
+  1565→            </SheetTitle>
+  1566→            <SheetDescription>
+  1567→              Shranjeni posnetki za ta projekt.
+  1568→            </SheetDescription>
+  1569→          </SheetHeader>
+  1570→          <div className="flex-1 overflow-y-auto p-3 scrollbar-thin">
+  1571→            {snapshotsLoading ? (
+  1572→              <div className="flex items-center justify-center py-12">
+  1573→                <Loader2 className="h-6 w-6 animate-spin text-roksal-navy" />
+  1574→              </div>
+  1575→            ) : snapshots.length === 0 ? (
+  1576→              <div className="flex flex-col items-center justify-center py-12 text-center">
+  1577→                <Camera className="h-10 w-10 text-muted-foreground mb-2" />
+  1578→                <p className="text-sm text-muted-foreground">
+  1579→                  Še ni shranjenih posnetkov.
+  1580→                </p>
+  1581→              </div>
+  1582→            ) : (
+  1583→              <div className="grid gap-2.5">
+  1584→                {snapshots.map((s) => (
+  1585→                  <SnapshotCard
+  1586→                    key={s.id}
+  1587→                    snapshot={s}
+  1588→                    onDelete={() => deleteSnapshot(s.id)}
+  1589→                  />
+  1590→                ))}
+  1591→              </div>
+  1592→            )}
+  1593→          </div>
+  1594→          <Separator />
+  1595→          <div className="p-3">
+  1596→            <Button
+  1597→              type="button"
+  1598→              variant="outline"
+  1599→              size="sm"
+  1600→              className="w-full"
+  1601→              onClick={() => void fetchSnapshots()}
+  1602→            >
+  1603→              <RotateCcw className="h-3.5 w-3.5" />
+  1604→              Osveži
+  1605→            </Button>
+  1606→          </div>
+  1607→        </SheetContent>
+  1608→      </Sheet>
+  1609→    </div>
+  1610→  )
+  1611→}
+  1612→
+  1613→// ============================================================================
+  1614→// SnapshotCard — subcomponent for history list
+  1615→// ============================================================================
+  1616→
+  1617→function SnapshotCard({
+  1618→  snapshot,
+  1619→  onDelete,
+  1620→}: {
+  1621→  snapshot: ArSnapshot
+  1622→  onDelete: () => void
+  1623→}) {
+  1624→  const date = useMemo(() => {
+  1625→    try {
+  1626→      return new Date(snapshot.createdAt).toLocaleString('sl-SI', {
+  1627→        day: '2-digit',
+  1628→        month: '2-digit',
+  1629→        year: 'numeric',
+  1630→        hour: '2-digit',
+  1631→        minute: '2-digit',
+  1632→      })
+  1633→    } catch {
+  1634→      return snapshot.createdAt
+  1635→    }
+  1636→  }, [snapshot.createdAt])
+  1637→
+  1638→  const [expanded, setExpanded] = useState(false)
+  1639→
+  1640→  return (
+  1641→    <div className="rounded-lg border border-border bg-card overflow-hidden card-hover">
+  1642→      <button
+  1643→        type="button"
+  1644→        onClick={() => setExpanded((v) => !v)}
+  1645→        className="w-full text-left"
+  1646→        aria-label="Razširi posnetek"
+  1647→      >
+  1648→        {/* Thumbnail */}
+  1649→        <div className="relative w-full aspect-video bg-muted overflow-hidden">
+  1650→          <img
+  1651→            src={snapshot.imageUrl}
+  1652→            alt="AR posnetek"
+  1653→            className="w-full h-full object-cover"
+  1654→          />
+  1655→        </div>
+  1656→      </button>
+  1657→      <div className="p-2.5">
+  1658→        <div className="flex items-start justify-between gap-2">
+  1659→          <div className="min-w-0 flex-1">
+  1660→            <p className="text-xs font-semibold text-roksal-navy truncate">
+  1661→              {snapshot.profil?.naziv ?? 'Brez profila'}
+  1662→            </p>
+  1663→            <p className="text-[10px] text-muted-foreground">{date}</p>
+  1664→          </div>
+  1665→          <Button
+  1666→            type="button"
+  1667→            variant="ghost"
+  1668→            size="icon"
+  1669→            className="h-7 w-7 text-roksal-red hover:bg-roksal-red/10 shrink-0"
+  1670→            onClick={onDelete}
+  1671→            aria-label="Izbriši posnetek"
+  1672→          >
+  1673→            <Trash2 className="h-3.5 w-3.5" />
+  1674→          </Button>
+  1675→        </div>
+  1676→        {expanded && (
+  1677→          <div className="mt-2 pt-2 border-t border-border text-[11px] text-muted-foreground space-y-0.5">
+  1678→            <SnapshotMeta json={snapshot.tocke} label="Točke" />
+  1679→            {snapshot.meritve && (
+  1680→              <SnapshotMeta json={snapshot.meritve} label="Meritve" />
+  1681→            )}
+  1682→            {snapshot.kalibracija && (
+  1683→              <SnapshotMeta json={snapshot.kalibracija} label="Kalibracija" />
+  1684→            )}
+  1685→          </div>
+  1686→        )}
+  1687→      </div>
+  1688→    </div>
+  1689→  )
+  1690→}
+  1691→
+  1692→function SnapshotMeta({ json, label }: { json: string; label: string }) {
+  1693→  let count = 0
+  1694→  try {
+  1695→    const parsed = JSON.parse(json)
+  1696→    if (Array.isArray(parsed)) count = parsed.length
+  1697→    else if (parsed && typeof parsed === 'object') count = 1
+  1698→  } catch {
+  1699→    // ignore
+  1700→  }
+  1701→  return (
+  1702→    <p>
+  1703→      <span className="font-medium text-foreground">{label}:</span> {count}
+  1704→    </p>
+  1705→  )
+  1706→}
+  1707→
