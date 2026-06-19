@@ -17,6 +17,7 @@ import { ArScannerLauncher } from '@/components/roksal/ar-scanner-launcher'
 import { PhotoTab } from '@/components/roksal/photo-tab'
 import { PdfExport } from '@/components/roksal/pdf-export'
 import { FloorPlanTab } from '@/components/roksal/floor-plan-tab'
+import { AiTakeoff } from '@/components/roksal/ai-takeoff'
 import { RefreshCw, Camera, ChevronLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -132,8 +133,10 @@ export default function Home() {
 
   // Ime aktivnega "več" zavihka za nazaj
   const moreLabel = moreTab
-    ? moreTab === 'pdf'
-      ? 'Izvoz PDF'
+    ? moreTab === 'ai'
+      ? 'AI Takeoff'
+      : moreTab === 'pdf'
+        ? 'Izvoz PDF'
       : moreTab === 'gallery'
         ? 'Galerija realizacij'
         : moreTab === 'catalog'
@@ -226,6 +229,7 @@ export default function Home() {
               Nazaj
             </Button>
             <h2 className="mb-3 text-lg font-bold text-roksal-navy">{moreLabel}</h2>
+            {moreTab === 'ai' && <AiTakeoff projectId={selectedProjectId} />}
             {moreTab === 'pdf' && <PdfExport project={selectedProject} />}
             {moreTab === 'gallery' && <ReferenceGallery />}
             {moreTab === 'catalog' && <RoksalCatalog />}
