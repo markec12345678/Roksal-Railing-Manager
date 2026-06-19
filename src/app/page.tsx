@@ -19,6 +19,7 @@ import { PdfExport } from '@/components/roksal/pdf-export'
 import { FloorPlanTab } from '@/components/roksal/floor-plan-tab'
 import { AiTakeoff } from '@/components/roksal/ai-takeoff'
 import { SignatureQuote } from '@/components/roksal/signature-quote'
+import { PostSignaturePanel } from '@/components/roksal/post-signature-panel'
 import { RefreshCw, Camera, ChevronLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -33,6 +34,14 @@ interface Project {
   nazivProjekta: string
   status: string
   customer?: { ime: string; naslov: string }
+  monter?: { ime: string }
+  // V4.1 — post-signature fields
+  dealLocked?: boolean
+  dealLockedAt?: string | null
+  dealSignedBy?: string | null
+  dealSignedByMonter?: string | null
+  marginLocked?: number | null
+  estimatedPrice?: number | null
 }
 
 export default function Home() {
@@ -138,7 +147,9 @@ export default function Home() {
       ? 'AI Takeoff'
       : moreTab === 'signature'
         ? 'Ponudba s podpisom'
-        : moreTab === 'pdf'
+        : moreTab === 'postsig'
+          ? 'Post-Signature (V4.1)'
+          : moreTab === 'pdf'
           ? 'Izvoz PDF'
       : moreTab === 'gallery'
         ? 'Galerija realizacij'
@@ -250,6 +261,9 @@ export default function Home() {
                 }}
                 monterName={selectedProject.monter?.ime || 'Monter Roksal'}
               />
+            )}
+            {moreTab === 'postsig' && selectedProject && (
+              <PostSignaturePanel project={selectedProject} />
             )}
             {moreTab === 'pdf' && <PdfExport project={selectedProject} />}
             {moreTab === 'gallery' && <ReferenceGallery />}

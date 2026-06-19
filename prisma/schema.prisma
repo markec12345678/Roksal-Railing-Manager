@@ -60,6 +60,7 @@ enum ProjectStatus {
   V_TEKU
   ZAKLJUCENO
   USTAVLJENO
+  ZA_MONTAZO   // V4.1 — podpisano, čaka na montažo
 }
 
 model Project {
@@ -88,6 +89,16 @@ model Project {
   clientNotes          String?  // sporočilo monterja, vidno stranki
   estimatedPrice       Float?   // predvidena cena, vidna stranki
 
+  // V4.1 — POST-SIGNATURE AUTOMATION LAYER
+  dealLocked          Boolean   @default(false)  // true po podpisu — nič več editanja
+  dealLockedAt        DateTime?
+  dealSignedBy        String?   // ime/podpis stranke
+  dealSignedByMonter  String?   // ime monterja
+  dealSignatureIp     String?   // IP naslov ob podpisu
+  dealSignatureDevice String?   // User-Agent ob podpisu
+  bomDraftJson        String?   // BOM (Bill of Materials) draft JSON — ne naročilo še
+  marginLocked        Float?    // zaklenjena marža ob podpisu
+
   customer      Customer       @relation(fields: [customerId], references: [id])
   monter        Profile?       @relation("InstallerProjects", fields: [monterId], references: [id])
   vodja         Profile?       @relation("ManagerProjects", fields: [vodjaId], references: [id])
@@ -101,6 +112,7 @@ model Project {
   slopes        Slope[]
   galleryItems  GalleryItem[]
   photos        ProjectPhoto[]
+  signatureAudits SignatureAudit[]
 }
 
 // ============================================
@@ -335,4 +347,31 @@ model ProjectPhoto {
   createdAt   DateTime @default(now())
 
   project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+// ============================================
+// 17. V4.1 — SIGNATURE AUDIT TRAIL (pravno sledenje)
+// ============================================
+
+model SignatureAudit {
+  id              String   @id @default(cuid())
+  projectId       String
+  signatureType   String   // "CUSTOMER" | "MONTER"
+  signedByName    String   // ime podpisnika
+  signedByRole    String?  // "stranka" | "monter" | "vodja"
+  signatureImage  String   // base64 PNG podpisa
+  ipAddress       String?
+  userAgent       String?
+  deviceFingerprint String? // poenostavljen fingerprint (IP + UA hash)
+  geoLatitude     Float?
+  geoLongitude    Float?
+  pdfUrl          String?  // povezava do generiranega PDF (če shranjen)
+  pdfHash         String?  // SHA-256 hash PDF vsebine za pravno integriteto
+  isValid         Boolean  @default(true)
+  createdAt       DateTime @default(now())
+
+  project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([createdAt])
 }
