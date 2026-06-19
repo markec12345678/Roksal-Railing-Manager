@@ -18,6 +18,7 @@ import { PhotoTab } from '@/components/roksal/photo-tab'
 import { PdfExport } from '@/components/roksal/pdf-export'
 import { FloorPlanTab } from '@/components/roksal/floor-plan-tab'
 import { AiTakeoff } from '@/components/roksal/ai-takeoff'
+import { SignatureQuote } from '@/components/roksal/signature-quote'
 import { RefreshCw, Camera, ChevronLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -135,8 +136,10 @@ export default function Home() {
   const moreLabel = moreTab
     ? moreTab === 'ai'
       ? 'AI Takeoff'
-      : moreTab === 'pdf'
-        ? 'Izvoz PDF'
+      : moreTab === 'signature'
+        ? 'Ponudba s podpisom'
+        : moreTab === 'pdf'
+          ? 'Izvoz PDF'
       : moreTab === 'gallery'
         ? 'Galerija realizacij'
         : moreTab === 'catalog'
@@ -230,6 +233,24 @@ export default function Home() {
             </Button>
             <h2 className="mb-3 text-lg font-bold text-roksal-navy">{moreLabel}</h2>
             {moreTab === 'ai' && <AiTakeoff projectId={selectedProjectId} />}
+            {moreTab === 'signature' && selectedProject && (
+              <SignatureQuote
+                quoteData={{
+                  projectName: selectedProject.nazivProjekta,
+                  customerName: selectedProject.customer?.ime || '—',
+                  customerAddress: selectedProject.customer?.naslov || '—',
+                  customerPhone: selectedProject.customer?.telefon,
+                  items: [
+                    { opis: 'Ograja WPC H-Line (po meri)', kolicina: '1', enota: 'kos', cena: '0', skupaj: '0' },
+                  ],
+                  skupajBrezDDV: 0,
+                  ddv: 0,
+                  skupajZDDV: 0,
+                  datum: new Date().toLocaleDateString('sl-SI'),
+                }}
+                monterName={selectedProject.monter?.ime || 'Monter Roksal'}
+              />
+            )}
             {moreTab === 'pdf' && <PdfExport project={selectedProject} />}
             {moreTab === 'gallery' && <ReferenceGallery />}
             {moreTab === 'catalog' && <RoksalCatalog />}
