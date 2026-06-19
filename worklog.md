@@ -2055,3 +2055,34 @@ Stage Summary:
 - 10 meritev, 4 slike, 3 nagibi, 1 AR posnetek — vse shranjeno in prikazano
 - Portal stranke deluje — stranka vidi status, slike, kontakt
 - Aplikacija pripravljena za realno uporabo na terenu
+
+---
+Task ID: V4-PODPIS
+Agent: Main Orchestrator (Z.ai Code)
+Task: V4 — digitalni podpis na PDF ponudbi
+
+Work Log:
+- Namestil react-signature-canvas (1.1.0-alpha.2)
+- Ustvaril src/components/roksal/signature-quote.tsx (~520 vrstic):
+  - Dva podpisna dialoga (stranka navy + monter amber)
+  - SignatureCanvas z touch-none za mobilne
+  - Počisti/Prekliči/Shrani gumbi z validacijo
+  - Pregled podatkov (projekt, stranka, cena)
+  - Vnos imena stranke + kraj podpisa
+  - PDF generacija z jsPDF:
+    · Roksal glava
+    · Stranka/projekt/postavke tabela
+    · Skupaj z DDV
+    · Pogoji
+    · PRIMOPREDAJA S PODPISOM: dve črti, podpisi PNG, imena, datum, kraj
+    · Noga 'Veljaven pravni dokument'
+- Integriral v Več meni kot 'Ponudba s podpisom' (Pen ikona, 2. mesto)
+- page.tsx: SignatureQuote render z selectedProject podatki
+- bottom-nav.tsx: dodan 'signature' v MoreTabId + moreTabs
+- QA z agent-browser: Več meni prikazuje opcijo, dialog se odpre z gumbi
+
+Stage Summary:
+- **V4 implementirano**: Material → Ponudba → PDF → Podpis
+- **Digitalni podpis** stranke + monterja na PDF ponudbi
+- **Pravno veljaven dokument** z obema podpisoma
+- **Pushano na GitHub** (commit 88f32ff)
