@@ -21,6 +21,7 @@ import { AiTakeoff } from '@/components/roksal/ai-takeoff'
 import { SignatureQuote } from '@/components/roksal/signature-quote'
 import { PostSignaturePanel } from '@/components/roksal/post-signature-panel'
 import { CrmTab } from '@/components/roksal/crm-tab'
+import { MaterialIntelligenceTab } from '@/components/roksal/material-intelligence-tab'
 import { RefreshCw, Camera, ChevronLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -152,7 +153,9 @@ export default function Home() {
           ? 'Post-Signature (V4.1)'
           : moreTab === 'crm'
             ? 'CRM stranke (V4.2)'
-            : moreTab === 'pdf'
+            : moreTab === 'material'
+              ? 'Material Intelligence (V5)'
+              : moreTab === 'pdf'
           ? 'Izvoz PDF'
       : moreTab === 'gallery'
         ? 'Galerija realizacij'
@@ -274,6 +277,7 @@ export default function Home() {
               <PostSignaturePanel project={selectedProject} />
             )}
             {moreTab === 'crm' && <CrmTab />}
+            {moreTab === 'material' && <MaterialIntelligenceTab projectId={selectedProjectId} />}
             {moreTab === 'pdf' && <PdfExport project={selectedProject} />}
             {moreTab === 'gallery' && <ReferenceGallery />}
             {moreTab === 'catalog' && <RoksalCatalog />}

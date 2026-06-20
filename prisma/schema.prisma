@@ -122,6 +122,7 @@ model Project {
   galleryItems  GalleryItem[]
   photos        ProjectPhoto[]
   signatureAudits SignatureAudit[]
+  materialOrders MaterialOrder[]
 }
 
 // ============================================
@@ -159,6 +160,8 @@ model Inventory {
 
   usages          MaterialUsage[]
   movements       InventoryMovement[]
+  prices          MaterialPrice[]
+  orderItems      MaterialOrderItem[]
 }
 
 // ============================================
@@ -383,4 +386,79 @@ model SignatureAudit {
 
   @@index([projectId])
   @@index([createdAt])
+}
+
+// ============================================
+// 18. V5 — MATERIAL INTELLIGENCE (dobavitelji, cene, optimizacija)
+// ============================================
+
+model Supplier {
+  id            String   @id @default(cuid())
+  naziv         String   @unique
+  kontakt       String?
+  email         String?
+  telefon       String?
+  naslov        String?
+  iban          String?
+  dobavniRok    Int      @default(7)  // dni
+  popust       Float    @default(0)   // % popust za Roksal
+  aktivna       Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  materialPrices MaterialPrice[]
+  orders         MaterialOrder[]
+}
+
+// Cena materiala pri posameznem dobavitelju (zgodovina cen)
+model MaterialPrice {
+  id            String   @id @default(cuid())
+  inventoryId   String
+  supplierId    String
+  cena          Float    // EUR na enoto
+  veljavnostOd  DateTime @default(now())
+  veljavnostDo  DateTime?
+  opomba        String?  // npr. "akcijska cena", "letni okvir"
+  createdAt     DateTime @default(now())
+
+  inventory     Inventory @relation(fields: [inventoryId], references: [id])
+  supplier      Supplier  @relation(fields: [supplierId], references: [id])
+
+  @@index([inventoryId, supplierId])
+  @@index([veljavnostOd])
+}
+
+// Naročilo materiala (V5 — iz BOM draft v naročilo)
+model MaterialOrder {
+  id            String   @id @default(cuid())
+  projectId     String?
+  supplierId    String
+  status        String   @default("OSNUTEK")  // OSNUTEK | POSLANO | POTRJENO | DOBLJENO | PREKlicANO
+  skupajCena    Float    @default(0)
+  datumNarocila DateTime @default(now())
+  datumDobave   DateTime?
+  opombe        String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  project       Project?  @relation(fields: [projectId], references: [id])
+  supplier      Supplier  @relation(fields: [supplierId], references: [id])
+  items         MaterialOrderItem[]
+}
+
+// Posamezna postavka naročila
+model MaterialOrderItem {
+  id            String   @id @default(cuid())
+  orderId       String
+  inventoryId   String
+  kolicina      Float
+  cena          Float    // cena na enoto ob naročilu
+  naziv         String   // snapshot naziva
+  enota         String   // snapshot enote
+  createdAt     DateTime @default(now())
+
+  order         MaterialOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  inventory     Inventory    @relation(fields: [inventoryId], references: [id])
+
+  @@index([orderId])
 }
