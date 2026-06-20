@@ -2086,3 +2086,33 @@ Stage Summary:
 - **Digitalni podpis** stranke + monterja na PDF ponudbi
 - **Pravno veljaven dokument** z obema podpisoma
 - **Pushano na GitHub** (commit 88f32ff)
+
+---
+Task ID: V4.1-INT + V4.2-CRM
+Agent: Main Orchestrator (Z.ai Code)
+Task: V4.1 integracija v V4 (deal-lock ob podpisu) + V4.2 CRM modul
+
+Work Log:
+- V4.1 integracija v V4:
+  - SignatureQuote dobi projectId + onDealLocked props
+  - Po PDF generaciji → avtomatski POST /api/deal-lock
+  - Geolocation (GPS) ob podpisu z 3s timeout
+  - Toast '✓ Deal zaklenjen (V4.1)' z BOM/marža info
+  - 409 handling (deal že zaklenjen)
+  - onDealLocked callback → osveži projekte v dashboardu
+- V4.2 CRM modul:
+  - Prisma Customer razširitev (status, kontaktnaOseba, opomnik, kategorija, opombeCRM)
+  - Nov API /api/crm (GET seznam z LTV, GET podrobnosti, PATCH update)
+  - Nova komponenta crm-tab.tsx (~520 vrstic):
+    · 4 statistike (aktivni, opomniki, LTV, skupno)
+    · Iskalnik + filter pills
+    · Seznam strank z LTV, št. projektov, status badge, opomnik badge
+    · Detail Sheet z kontakt info, zgodovina, opomniki
+    · Edit Dialog za CRM polja
+  - Dodan v Več meni (Users ikona, 4. mesto)
+
+Stage Summary:
+- **V4.1 = "signature = system trigger"** — popolnoma integrirano, deal-lock se sproži avtomatsko ob podpisu PDF-ja
+- **V4.2 CRM** — LTV, opomniki, kontaktna oseba, kategorija, interne opombe
+- **+789 vrstic** nove funkcionalnosti
+- **Pushano na GitHub** (commit 8a9eded)
