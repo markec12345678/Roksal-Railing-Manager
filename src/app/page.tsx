@@ -14,6 +14,7 @@ import { ReferenceGallery } from '@/components/roksal/reference-gallery'
 import { RoksalCatalog } from '@/components/roksal/roksal-catalog'
 import { SketchCanvas } from '@/components/roksal/sketch-canvas'
 import { ArScannerLauncher } from '@/components/roksal/ar-scanner-launcher'
+import { WebXrLauncher } from '@/components/roksal/webxr-scanner'
 import { PhotoTab } from '@/components/roksal/photo-tab'
 import { PdfExport } from '@/components/roksal/pdf-export'
 import { FloorPlanTab } from '@/components/roksal/floor-plan-tab'
@@ -214,7 +215,8 @@ export default function Home() {
           />
         )}
         {activeTab === 'ar' && (
-          <div className="p-4">
+          <div className="p-4 space-y-3">
+            <WebXrLauncher projectId={selectedProjectId} />
             <ArScannerLauncher projectId={selectedProjectId} />
           </div>
         )}
