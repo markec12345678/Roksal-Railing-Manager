@@ -34,6 +34,9 @@ model Profile {
   projects   Project[] @relation("InstallerProjects")
   leads      Project[] @relation("ManagerProjects")
   auditLogs  AuditLog[]
+  crew       Crew?     @relation(fields: [ekipaId], references: [id])
+  leadsCrew  Crew[]    @relation("CrewLeader")
+  schedules  InstallationSchedule[] @relation("MonterSchedules")
 }
 
 // ============================================
@@ -70,6 +73,8 @@ enum ProjectStatus {
   ZAKLJUCENO
   USTAVLJENO
   ZA_MONTAZO   // V4.1 — podpisano, čaka na montažo
+  V_IZDELAVI   // V6 — material v izdelavi/dobavi
+  MONTIRANO    // V6 — montaža zaključena
 }
 
 model Project {
@@ -123,6 +128,7 @@ model Project {
   photos        ProjectPhoto[]
   signatureAudits SignatureAudit[]
   materialOrders MaterialOrder[]
+  schedules     InstallationSchedule[]
 }
 
 // ============================================
@@ -461,4 +467,86 @@ model MaterialOrderItem {
   inventory     Inventory    @relation(fields: [inventoryId], references: [id])
 
   @@index([orderId])
+}
+
+// ============================================
+// 19. V6 — LOGISTICS / ERP (ekipe, oprema, koledar montaže)
+// ============================================
+
+model Crew {
+  id          String   @id @default(cuid())
+  naziv       String   @unique  // npr. "Ekipa A", "Ekipa Kranj"
+  vodjaId     String?  // Profile.id vodje ekipe
+  aktivna     Boolean  @default(true)
+  barva       String   @default("#1d2b3e")  // za prikaz v koledarju
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  vodja       Profile?  @relation("CrewLeader", fields: [vodjaId], references: [id])
+  members     Profile[]
+  schedules   InstallationSchedule[]
+
+  @@index([aktivna])
+}
+
+model Equipment {
+  id            String   @id @default(cuid())
+  naziv         String   @unique  // npr. "Laser Bosch GLM 50C", "Vijačnik", "Avtomobil A"
+  tip           String   // "MERSKA_OPREMA" | "ROČNO_ORODJE" | "PREVOZ" | "VARNOSTNA_OPREMA" | "OSTALO"
+  sifra         String?
+  status        String   @default("NA_VOLJO")  // NA_VOLJO | V_UPORABI | V_SERVISU | IZGUBLJENO
+  lokacija      String?  // npr. "Skladišče Kranj", "Avto A"
+  zadnjiServis  DateTime?
+  opomba        String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  assignments   EquipmentAssignment[]
+
+  @@index([status])
+}
+
+// Termin montaže v koledarju
+model InstallationSchedule {
+  id            String    @id @default(cuid())
+  projectId     String
+  crewId        String?
+  monterId      String?   // glavni monter (Profile.id)
+  datumZacetka  DateTime
+  datumKonca    DateTime
+  status        String    @default("NAVRTENO")  // NAVRTENO | V_TEKU | ZAKLJUCENO | PREKlicANO | PRELOZENO
+  predvideneUre Int       @default(8)
+  dejanskeUre   Int?
+  opombe        String?
+  lokacija      String?   // naslov montaže
+  gpsLat        Float?
+  gpsLon        Float?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  project       Project   @relation(fields: [projectId], references: [id])
+  crew          Crew?     @relation(fields: [crewId], references: [id])
+  monter        Profile?  @relation("MonterSchedules", fields: [monterId], references: [id])
+  equipment     EquipmentAssignment[]
+
+  @@index([datumZacetka])
+  @@index([crewId])
+  @@index([status])
+}
+
+// Oprema dodeljena terminu montaže
+model EquipmentAssignment {
+  id            String   @id @default(cuid())
+  scheduleId    String
+  equipmentId   String
+  datumOd       DateTime
+  datumDo       DateTime
+  opomba        String?
+  createdAt     DateTime @default(now())
+
+  schedule      InstallationSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  equipment     Equipment            @relation(fields: [equipmentId], references: [id])
+
+  @@index([scheduleId])
+  @@index([equipmentId])
 }

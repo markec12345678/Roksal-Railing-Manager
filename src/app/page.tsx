@@ -23,6 +23,7 @@ import { SignatureQuote } from '@/components/roksal/signature-quote'
 import { PostSignaturePanel } from '@/components/roksal/post-signature-panel'
 import { CrmTab } from '@/components/roksal/crm-tab'
 import { MaterialIntelligenceTab } from '@/components/roksal/material-intelligence-tab'
+import { LogisticsTab } from '@/components/roksal/logistics-tab'
 import { RefreshCw, Camera, ChevronLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -156,7 +157,9 @@ export default function Home() {
             ? 'CRM stranke (V4.2)'
             : moreTab === 'material'
               ? 'Material Intelligence (V5)'
-              : moreTab === 'pdf'
+              : moreTab === 'logistics'
+                ? 'Logistika (V6)'
+                : moreTab === 'pdf'
           ? 'Izvoz PDF'
       : moreTab === 'gallery'
         ? 'Galerija realizacij'
@@ -280,6 +283,7 @@ export default function Home() {
             )}
             {moreTab === 'crm' && <CrmTab />}
             {moreTab === 'material' && <MaterialIntelligenceTab projectId={selectedProjectId} />}
+            {moreTab === 'logistics' && <LogisticsTab projectId={selectedProjectId} />}
             {moreTab === 'pdf' && <PdfExport project={selectedProject} />}
             {moreTab === 'gallery' && <ReferenceGallery />}
             {moreTab === 'catalog' && <RoksalCatalog />}
