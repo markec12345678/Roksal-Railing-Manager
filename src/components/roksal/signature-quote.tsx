@@ -37,10 +37,12 @@ interface PodpisaniPdfAkcija {
 interface SignatureQuoteProps {
   quoteData: SignedQuoteData
   monterName?: string
+  projectId?: string | null
   onClose?: () => void
+  onDealLocked?: () => void
 }
 
-export function SignatureQuote({ quoteData, monterName = 'Monter Roksal', onClose }: SignatureQuoteProps) {
+export function SignatureQuote({ quoteData, monterName = 'Monter Roksal', projectId, onClose, onDealLocked }: SignatureQuoteProps) {
   const [customerSigOpen, setCustomerSigOpen] = useState(false)
   const [monterSigOpen, setMonterSigOpen] = useState(false)
   const [customerSig, setCustomerSig] = useState<string | null>(null)
@@ -279,13 +281,64 @@ export function SignatureQuote({ quoteData, monterName = 'Monter Roksal', onClos
       const filename = `Roksal-ponudba-podpisana-${(quoteData.projectName || 'projekt').replace(/\s+/g, '-')}.pdf`
       doc.save(filename)
       toast({ title: 'PDF s podpisom generiran', description: filename })
+
+      // V4.1 — avtomatski deal-lock ob podpisu PDF-ja
+      if (projectId && customerSig && monterSig) {
+        try {
+          const geo = await new Promise<{ lat?: number; lon?: number }>((resolve) => {
+            if (!navigator.geolocation) return resolve({})
+            navigator.geolocation.getCurrentPosition(
+              (pos) => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
+              () => resolve({}),
+              { timeout: 3000, enableHighAccuracy: true }
+            )
+          })
+          const dealRes = await fetch('/api/deal-lock', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              projectId,
+              customerName: customerName || quoteData.customerName,
+              monterName,
+              customerSignature: customerSig,
+              monterSignature: monterSig,
+              quoteData: {
+                items: quoteData.items,
+                skupajBrezDDV: quoteData.skupajBrezDDV,
+                ddv: quoteData.ddv,
+                skupajZDDV: quoteData.skupajZDDV,
+              },
+              geoLatitude: geo.lat,
+              geoLongitude: geo.lon,
+            }),
+          })
+          if (dealRes.ok) {
+            const deal = await dealRes.json()
+            toast({
+              title: '✓ Deal zaklenjen (V4.1)',
+              description: `Status → ZA_MONTAZO · BOM draft: ${deal.bomDraft?.items?.length || 0} art. · Marža: ${deal.marginLocked?.toFixed(0) || 0} €`,
+            })
+            onDealLocked?.()
+          } else {
+            const err = await dealRes.json().catch(() => ({}))
+            if (dealRes.status === 409) {
+              toast({ title: 'Deal je že zaklenjen', variant: 'default' })
+            } else {
+              toast({ title: 'Deal-lock ni uspel', description: err.error || 'Napaka', variant: 'destructive' })
+            }
+          }
+        } catch (e) {
+          console.error('Deal-lock error:', e)
+          toast({ title: 'Deal-lock omrežna napaka', variant: 'destructive' })
+        }
+      }
     } catch (e) {
       console.error(e)
       toast({ title: 'Napaka pri PDF', variant: 'destructive' })
     } finally {
       setGenerating(false)
     }
-  }, [customerSig, monterSig, customerName, customerLocation, quoteData, monterName, toast])
+  }, [customerSig, monterSig, customerName, customerLocation, quoteData, monterName, projectId, onDealLocked, toast])
 
   return (
     <Card className="border-roksal-amber/30">

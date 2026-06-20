@@ -14,6 +14,7 @@ import {
   Sparkles,
   Pen,
   ShieldCheck,
+  Users,
 } from 'lucide-react'
 import { useState } from 'react'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
@@ -47,7 +48,7 @@ const mainTabs: TabItem[] = [
   { id: 'more', label: 'Več', icon: MoreHorizontal },
 ]
 
-export type MoreTabId = 'documents' | 'safety' | 'catalog' | 'sketches' | 'gallery' | 'pdf' | 'ai' | 'floorplan' | 'signature' | 'postsig'
+export type MoreTabId = 'documents' | 'safety' | 'catalog' | 'sketches' | 'gallery' | 'pdf' | 'ai' | 'floorplan' | 'signature' | 'postsig' | 'crm'
 
 interface MoreTabItem {
   id: MoreTabId
@@ -60,6 +61,7 @@ const moreTabs: MoreTabItem[] = [
   { id: 'ai', label: 'AI Takeoff', icon: Sparkles, description: 'Foto → AI → Material → Ponudba' },
   { id: 'signature', label: 'Ponudba s podpisom', icon: Pen, description: 'Podpisana PDF ponudba (V4)' },
   { id: 'postsig', label: 'Post-Signature', icon: ShieldCheck, description: 'Deal Lock + BOM Draft + Audit (V4.1)' },
+  { id: 'crm', label: 'CRM stranke', icon: Users, description: 'LTV, opomniki, kontaktna oseba (V4.2)' },
   { id: 'floorplan', label: 'Tloris', icon: Frame, description: 'Tloris balkona z stebri, vrati, okni' },
   { id: 'pdf', label: 'Izvoz PDF', icon: FileDown, description: 'Delovni list in ponudba' },
   { id: 'gallery', label: 'Galerija realizacij', icon: Images, description: 'Pred/po montaži, reference' },

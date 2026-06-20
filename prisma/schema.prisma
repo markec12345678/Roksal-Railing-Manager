@@ -48,6 +48,15 @@ model Customer {
   email     String?
   createdAt DateTime  @default(now())
 
+  // V4.2 — CRM razširitev
+  status            String  @default("AKTIVEN")  // AKTIVEN | NEAKTIVEN | POTENCIALEN | ARHIVIRAN
+  kontaktnaOseba    String?  // npr. "Janez Novak (predsednik uprave)"
+  opomnikDatum      DateTime?  // opomnik za ponovni kontakt
+  opomnikOpis       String?  // "Letni pregled balkonov"
+  zadnjiKontakt     DateTime?
+  opombeCRM         String?  // interne opombe (ne za stranko)
+  kategorija        String?  // "Stanovanjska skupnost" | "Posameznik" | "Podjetje"
+
   projects  Project[]
 }
 

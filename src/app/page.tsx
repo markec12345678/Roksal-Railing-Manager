@@ -20,6 +20,7 @@ import { FloorPlanTab } from '@/components/roksal/floor-plan-tab'
 import { AiTakeoff } from '@/components/roksal/ai-takeoff'
 import { SignatureQuote } from '@/components/roksal/signature-quote'
 import { PostSignaturePanel } from '@/components/roksal/post-signature-panel'
+import { CrmTab } from '@/components/roksal/crm-tab'
 import { RefreshCw, Camera, ChevronLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -149,7 +150,9 @@ export default function Home() {
         ? 'Ponudba s podpisom'
         : moreTab === 'postsig'
           ? 'Post-Signature (V4.1)'
-          : moreTab === 'pdf'
+          : moreTab === 'crm'
+            ? 'CRM stranke (V4.2)'
+            : moreTab === 'pdf'
           ? 'Izvoz PDF'
       : moreTab === 'gallery'
         ? 'Galerija realizacij'
@@ -246,6 +249,7 @@ export default function Home() {
             {moreTab === 'ai' && <AiTakeoff projectId={selectedProjectId} />}
             {moreTab === 'signature' && selectedProject && (
               <SignatureQuote
+                projectId={selectedProject.id}
                 quoteData={{
                   projectName: selectedProject.nazivProjekta,
                   customerName: selectedProject.customer?.ime || '—',
@@ -260,11 +264,16 @@ export default function Home() {
                   datum: new Date().toLocaleDateString('sl-SI'),
                 }}
                 monterName={selectedProject.monter?.ime || 'Monter Roksal'}
+                onDealLocked={() => {
+                  // Po deal-locku osveži projekte da se status posodobi
+                  fetch('/api/projects').then(r => r.json()).then(data => setProjects(data)).catch(() => {})
+                }}
               />
             )}
             {moreTab === 'postsig' && selectedProject && (
               <PostSignaturePanel project={selectedProject} />
             )}
+            {moreTab === 'crm' && <CrmTab />}
             {moreTab === 'pdf' && <PdfExport project={selectedProject} />}
             {moreTab === 'gallery' && <ReferenceGallery />}
             {moreTab === 'catalog' && <RoksalCatalog />}
