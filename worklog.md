@@ -2116,3 +2116,28 @@ Stage Summary:
 - **V4.2 CRM** — LTV, opomniki, kontaktna oseba, kategorija, interne opombe
 - **+789 vrstic** nove funkcionalnosti
 - **Pushano na GitHub** (commit 8a9eded)
+
+---
+Task ID: V5-MATERIAL
+Agent: Main Orchestrator (Z.ai Code)
+Task: V5 — Material Intelligence (BOM refine + naročila + dobavitelji)
+
+Work Log:
+- Prisma shema: +3 novi modeli (Supplier, MaterialPrice, MaterialOrder, MaterialOrderItem)
+- 4 novi API-ji:
+  · /api/suppliers (CRUD)
+  · /api/material-prices (cene z primerjavo, bestPerMaterial)
+  · /api/material-orders (status workflow, DOBLJENO → vnos v zalogo)
+  · /api/bom-refine (GET optimizacija, POST pretvori v naročilo)
+- Nova komponenta material-intelligence-tab.tsx (~550 vrstic):
+  · 3 zavihki: BOM Refine / Naročila / Dobavitelji
+  · BOM Refine: 3 statistike, optimalni dobavitelji, refined items, pretvorba
+  · Naročila: status workflow (OSNUTEK → POSLANO → POTRJENO → DOBLJENO)
+  · Dobavitelji: CRUD + dodajanje cen
+- Integrirano v Več meni (Boxes ikona, 5. mesto)
+
+Stage Summary:
+- **V5 implementirano**: BOM auto refinement + supplier logic + pricing optimization
+- **Celovit delovni tok**: Lead → AI → Ponudba → Podpis → Deal Lock → BOM → Refine → Naročilo → Dobava → Zaloga → Montaža
+- **+4 API-ji, +1 komponenta, +4 Prisma modeli**
+- **Pushano na GitHub** (commit 92c6d8c)
