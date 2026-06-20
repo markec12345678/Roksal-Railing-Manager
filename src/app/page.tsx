@@ -24,6 +24,8 @@ import { PostSignaturePanel } from '@/components/roksal/post-signature-panel'
 import { CrmTab } from '@/components/roksal/crm-tab'
 import { MaterialIntelligenceTab } from '@/components/roksal/material-intelligence-tab'
 import { LogisticsTab } from '@/components/roksal/logistics-tab'
+import { VodjaDashboard } from '@/components/roksal/vodja-dashboard'
+import { OnboardingWrapper } from '@/components/roksal/onboarding-tour'
 import { RefreshCw, Camera, ChevronLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -147,7 +149,9 @@ export default function Home() {
 
   // Ime aktivnega "več" zavihka za nazaj
   const moreLabel = moreTab
-    ? moreTab === 'ai'
+    ? moreTab === 'vodja'
+      ? 'Pregled za vodjo'
+      : moreTab === 'ai'
       ? 'AI Takeoff'
       : moreTab === 'signature'
         ? 'Ponudba s podpisom'
@@ -254,6 +258,7 @@ export default function Home() {
               Nazaj
             </Button>
             <h2 className="mb-3 text-lg font-bold text-roksal-navy">{moreLabel}</h2>
+            {moreTab === 'vodja' && <VodjaDashboard />}
             {moreTab === 'ai' && <AiTakeoff projectId={selectedProjectId} />}
             {moreTab === 'signature' && selectedProject && (
               <SignatureQuote
@@ -313,6 +318,15 @@ export default function Home() {
         moreActive={moreTab}
         onMoreSelect={handleMoreSelect}
       />
+
+      <OnboardingWrapper onNavigate={(tab) => {
+        if (tab === 'ai' || tab === 'signature' || tab === 'logistics') {
+          setMoreTab(tab as MoreTabId)
+          setActiveTab('more')
+        } else {
+          handleTabChange(tab as TabId)
+        }
+      }} />
     </div>
   )
 }

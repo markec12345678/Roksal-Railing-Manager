@@ -17,6 +17,7 @@ import {
   Users,
   Boxes,
   Truck,
+  BarChart3,
 } from 'lucide-react'
 import { useState } from 'react'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
@@ -50,7 +51,7 @@ const mainTabs: TabItem[] = [
   { id: 'more', label: 'Več', icon: MoreHorizontal },
 ]
 
-export type MoreTabId = 'documents' | 'safety' | 'catalog' | 'sketches' | 'gallery' | 'pdf' | 'ai' | 'floorplan' | 'signature' | 'postsig' | 'crm' | 'material' | 'logistics'
+export type MoreTabId = 'documents' | 'safety' | 'catalog' | 'sketches' | 'gallery' | 'pdf' | 'ai' | 'floorplan' | 'signature' | 'postsig' | 'crm' | 'material' | 'logistics' | 'vodja'
 
 interface MoreTabItem {
   id: MoreTabId
@@ -60,6 +61,7 @@ interface MoreTabItem {
 }
 
 const moreTabs: MoreTabItem[] = [
+  { id: 'vodja', label: 'Pregled za vodjo', icon: BarChart3, description: 'Statistika, opozorila, današnji termini' },
   { id: 'ai', label: 'AI Takeoff', icon: Sparkles, description: 'Foto → AI → Material → Ponudba' },
   { id: 'signature', label: 'Ponudba s podpisom', icon: Pen, description: 'Podpisana PDF ponudba (V4)' },
   { id: 'postsig', label: 'Post-Signature', icon: ShieldCheck, description: 'Deal Lock + BOM Draft + Audit (V4.1)' },
