@@ -2164,3 +2164,27 @@ Stage Summary:
 - **Plane detection** (horizontalne + vertikalne ravnine)
 - **Brez kalibracije** (Depth API sam izračuna globino)
 - **Pushano na GitHub** (commit 3f2fcb9)
+
+---
+Task ID: V6-LOGISTICS
+Agent: Main Orchestrator (Z.ai Code)
+Task: V6 — Logistics / ERP (koledar montaže + ekipe + oprema)
+
+Work Log:
+- Prisma shema: +4 novi modeli (Crew, Equipment, InstallationSchedule, EquipmentAssignment)
+- ProjectStatus: +V_IZDELAVI, +MONTIRANO
+- 2 nova API-ja:
+  · /api/schedules (GET/POST/PATCH/DELETE) z konflikt detekcijo, status workflow
+  · /api/crews (GET/POST) za ekipe + opremo
+- PATCH ZAKLJUCENO: avtomatsko Project→MONTIRANO + BOM material odšteje iz zaloge
+- Nova komponenta logistics-tab.tsx (~400 vrstic):
+  · 3 zavihki: Koledar / Ekipe / Oprema
+  · Koledar: termini z barvno kodo ekipe, status workflow, nov termin dialog
+  · Ekipe: CRUD z barvo, vodja, št. članov
+  · Oprema: CRUD z tipom, statusom, lokacijo
+- Integrirano v Več meni (Truck ikona, 6. mesto)
+
+Stage Summary:
+- **V6 implementirano**: Koledar montaže + ekipe + oprema + avtomatski odštej material
+- **Celoviti delovni tok popoln**: Lead → AI → Ponudba → Podpis → Deal Lock → BOM → Naročilo → Dobava → Zaloga → Načrtovanje montaže → Montaža → Material odšteje → MONTIRANO
+- **Pushano na GitHub** (commit 029a0fe)
