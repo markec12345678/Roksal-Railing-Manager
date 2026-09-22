@@ -84,3 +84,27 @@ Stage Summary:
 - "Vstop brez prijave" deluje lokalno in bo po pushu deloval tudi na Vercelu (demo ruta ustvari račun sama)
 - Ključni konkurenti za meritve: googlesamples/arcore-depth-lab (⭐871, Depth API), TapeScan-iOS (LiDAR + RoomPlan tlorisi), MeasureXR (WebXR), Depth-Anything-3 (⭐6.4k AI globina za običajne fotke), pmndrs/xr (⭐2.6k WebXR v Reactu)
 - Priporočilo: Depth-Anything-3 backend za merjenje iz navadnih fotografij (brez LiDAR/ARCore)
+
+---
+Task ID: AR-CAMERA-BOOST
+Agent: Main Orchestrator (Z.ai Code)
+Task: Raziskuj in izboljšaj AR kamera analizo — čimbolj lahkotnejše merjenje ("razsici"/razširi).
+
+Work Log:
+- Analiza obstoječe kode: webxr-scanner.tsx (494 vrstic, deloma simulacija), ar-scanner.tsx (2213 vrstic, prava kamera z anchor točkami, kalibracijo, overlay vizualizacijo, capture + zgodovino)
+- Ugotovljene vrzeli: brez torch/zoom/fokusa, brez haptike, brez undo, brez AI analize, brez indikatorjev stabilnosti/osvetlitve
+- Implementiran backend POST /api/ar/analyze: VLM glm-4.6v (z-ai-web-dev-sdk, samo backend) → strukturirana analiza (tipOgraje, stanje, material, predlaganaBarva, tipMontaze, ovire, priporoceneMere[3-5], opombe, zaupanje)
+- Robustnost: normalizacija camelCase/snake_case ključev, validacija tipOgraje, fallback 4 standardnih mer (dolžina, višina, razmik stebrov, odmik), 2 poskusa ob odrezanem JSON, rate-limit 20/10 min, audit AR_AI_ANALIZA
+- Frontend ar-scanner.tsx (+~740 vrstic):
+  · gumb AI analiza (Sparkles) + Sheet z rezultatom, "Uporabi priporočila" samodejno izbere profil iz kataloga, AI povzetek gre v opombe posnetka
+  · torch toggle (če track podpira), zoom drsnik (getCapabilities), tap-to-focus (pointsOfInterest), ideal 1920×1080
+  · haptika zibaj() ob dodajanju točke/meritvi/kalibraciji/capture
+  · Undo gumb (v teku → meritev → točka)
+  · "Stabilno — zajemi zdaj" badge (DeviceMotion rotationRate < 12°/s za 700 ms)
+  · "Temno — prižgi bliskavico" badge (luma sampling 32×32 vsake 2,5 s, prag 42)
+- Verifikacija: tsc --noEmit 0 napak, eslint čist; E2E API test z generirano foto ograje → TIP/MATERIAL/STANJE izpolnjeni + 4 mere; agent-browser: AR scanner renderira z novimi gumbi, AI gumb pravilno disabled brez kamere, ni page errors
+- Commit 9b829c8 pushan na main
+
+Stage Summary:
+- AR kamera zdaj: en klik AI analiza fotografije → samodejni izbor profila + priporočene mere; kamera kontrola (torch/zoom/fokus/HD) odpravlja najpogostejše vzroke slabih meritev; haptika + stabilnost + osvetlitev vodijo monterja do pravega trenutka zajema
+- Naslednji koraki (predlog): realni XRFrame hit-test v webxr-scanner (namesto simulacije), posodobitev README, foto-receipt (kompozit + AI overlay ob shranjevanju)
