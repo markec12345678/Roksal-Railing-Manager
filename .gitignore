@@ -56,3 +56,6 @@ prompt
 server.log
 # Skills directory
 /skills/
+
+# Ostanki AI graditelja (2,9 MB dnevnikov orodij) — ne sodijo v repo
+/tool-results/
