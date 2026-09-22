@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast'
 import { FileDown, Loader2, FileText, FileCheck2 } from 'lucide-react'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import { registerSloPdfFonts } from '@/lib/pdf-sl-font'
 
 import type { Project } from '@/lib/types'
 
@@ -58,6 +59,7 @@ export function PdfExport({ project }: { project: Project | null }) {
     try {
       const { measurements, photos } = await fetchProjectData(project.id)
       const doc = new jsPDF({ unit: 'mm', format: 'a4' })
+      registerSloPdfFonts(doc)
       const pageW = doc.internal.pageSize.getWidth()
       let y = 0
 
@@ -69,13 +71,13 @@ export function PdfExport({ project }: { project: Project | null }) {
       doc.rect(14, 8, 12, 12, 'F')
       doc.setTextColor(...COLORS.white)
       doc.setFontSize(16)
-      doc.setFont('helvetica', 'bold')
+      doc.setFont('Roboto', 'bold')
       doc.text('R', 18, 17)
       // Naslov
       doc.setFontSize(14)
       doc.text('ROKSAL d.o.o. Kranj', 30, 14)
       doc.setFontSize(9)
-      doc.setFont('helvetica', 'normal')
+      doc.setFont('Roboto', 'normal')
       doc.text('Delovni list monterja', 30, 20)
 
       // Datum desno
@@ -87,7 +89,7 @@ export function PdfExport({ project }: { project: Project | null }) {
       // Podatki o projektu
       doc.setTextColor(...COLORS.dark)
       doc.setFontSize(11)
-      doc.setFont('helvetica', 'bold')
+      doc.setFont('Roboto', 'bold')
       doc.text('PODATKI O PROJEKTU', 14, y)
       doc.setDrawColor(...COLORS.amber)
       doc.setLineWidth(0.5)
@@ -95,7 +97,7 @@ export function PdfExport({ project }: { project: Project | null }) {
       y += 6
 
       doc.setFontSize(9)
-      doc.setFont('helvetica', 'normal')
+      doc.setFont('Roboto', 'normal')
       const left = [
         `Naziv: ${project.nazivProjekta}`,
         `Stranka: ${project.customer?.ime ?? '—'}`,
@@ -114,7 +116,7 @@ export function PdfExport({ project }: { project: Project | null }) {
 
       //Meritve
       if (measurements.length > 0) {
-        doc.setFont('helvetica', 'bold')
+        doc.setFont('Roboto', 'bold')
         doc.setFontSize(11)
         doc.text('MERITVE', 14, y)
         doc.setDrawColor(...COLORS.amber)
@@ -130,8 +132,8 @@ export function PdfExport({ project }: { project: Project | null }) {
             new Date(m.createdAt).toLocaleDateString('sl-SI'),
           ]),
           theme: 'grid',
-          headStyles: { fillColor: COLORS.navy, fontSize: 9 },
-          bodyStyles: { fontSize: 9 },
+          headStyles: { fillColor: COLORS.navy, fontSize: 9, font: "Roboto" },
+          bodyStyles: { fontSize: 9, font: "Roboto" },
           margin: { left: 14, right: 14 },
         })
          
@@ -149,7 +151,7 @@ export function PdfExport({ project }: { project: Project | null }) {
             doc.addPage()
             y = 20
           }
-          doc.setFont('helvetica', 'bold')
+          doc.setFont('Roboto', 'bold')
           doc.setFontSize(11)
           doc.setTextColor(...COLORS.dark)
           doc.text(katLabels[group.kat], 14, y)
@@ -171,7 +173,7 @@ export function PdfExport({ project }: { project: Project | null }) {
               /* skip corrupt */
             }
             doc.setFontSize(7)
-            doc.setFont('helvetica', 'normal')
+            doc.setFont('Roboto', 'normal')
             doc.setTextColor(...COLORS.gray)
             doc.text(new Date(imgs[i].createdAt).toLocaleString('sl-SI'), x, imgY + 44)
           }
@@ -185,14 +187,14 @@ export function PdfExport({ project }: { project: Project | null }) {
           doc.addPage()
           y = 20
         }
-        doc.setFont('helvetica', 'bold')
+        doc.setFont('Roboto', 'bold')
         doc.setFontSize(11)
         doc.setTextColor(...COLORS.dark)
         doc.text('OPOMBE', 14, y)
         doc.setDrawColor(...COLORS.amber)
         doc.line(14, y + 1.5, pageW - 14, y + 1.5)
         y += 6
-        doc.setFont('helvetica', 'normal')
+        doc.setFont('Roboto', 'normal')
         doc.setFontSize(9)
         const lines = doc.splitTextToSize(project.opombe, pageW - 28)
         doc.text(lines, 14, y)
@@ -241,6 +243,7 @@ export function PdfExport({ project }: { project: Project | null }) {
     try {
       const { measurements } = await fetchProjectData(project.id)
       const doc = new jsPDF({ unit: 'mm', format: 'a4' })
+      registerSloPdfFonts(doc)
       const pageW = doc.internal.pageSize.getWidth()
       let y = 0
 
@@ -251,12 +254,12 @@ export function PdfExport({ project }: { project: Project | null }) {
       doc.rect(14, 8, 14, 14, 'F')
       doc.setTextColor(...COLORS.white)
       doc.setFontSize(18)
-      doc.setFont('helvetica', 'bold')
+      doc.setFont('Roboto', 'bold')
       doc.text('R', 19, 19)
       doc.setFontSize(15)
       doc.text('ROKSAL d.o.o.', 32, 15)
       doc.setFontSize(9)
-      doc.setFont('helvetica', 'normal')
+      doc.setFont('Roboto', 'normal')
       doc.text('Kranj, Slovenija · Ograje in terase po meri', 32, 21)
       doc.text('PONUDBA', pageW - 14, 15, { align: 'right' })
       doc.setFontSize(8)
@@ -266,18 +269,18 @@ export function PdfExport({ project }: { project: Project | null }) {
       // Za & dobivalnik
       doc.setTextColor(...COLORS.dark)
       doc.setFontSize(9)
-      doc.setFont('helvetica', 'bold')
+      doc.setFont('Roboto', 'bold')
       doc.text('ZA:', 14, y)
-      doc.setFont('helvetica', 'normal')
+      doc.setFont('Roboto', 'normal')
       doc.text(project.customer?.ime ?? '—', 30, y)
       doc.text(project.customer?.naslov ?? '—', 30, y + 5)
-      doc.setFont('helvetica', 'bold')
+      doc.setFont('Roboto', 'bold')
       doc.text('DATUM:', pageW - 60, y)
-      doc.setFont('helvetica', 'normal')
+      doc.setFont('Roboto', 'normal')
       doc.text(new Date().toLocaleDateString('sl-SI'), pageW - 14, y, { align: 'right' })
-      doc.setFont('helvetica', 'bold')
+      doc.setFont('Roboto', 'bold')
       doc.text('ŠT. PONUDBE:', pageW - 60, y + 5)
-      doc.setFont('helvetica', 'normal')
+      doc.setFont('Roboto', 'normal')
       doc.text(`ROK-${project.id.slice(-6).toUpperCase()}`, pageW - 14, y + 5, { align: 'right' })
 
       y += 16
@@ -286,7 +289,7 @@ export function PdfExport({ project }: { project: Project | null }) {
       doc.line(14, y, pageW - 14, y)
       y += 8
 
-      doc.setFont('helvetica', 'bold')
+      doc.setFont('Roboto', 'bold')
       doc.setFontSize(12)
       doc.text(project.nazivProjekta, 14, y)
       y += 8
@@ -322,8 +325,8 @@ export function PdfExport({ project }: { project: Project | null }) {
           it.skupaj,
         ]),
         theme: 'striped',
-        headStyles: { fillColor: COLORS.navy, fontSize: 9 },
-        bodyStyles: { fontSize: 9 },
+        headStyles: { fillColor: COLORS.navy, fontSize: 9, font: "Roboto" },
+        bodyStyles: { fontSize: 9, font: "Roboto" },
         columnStyles: { 0: { cellWidth: 8 }, 2: { cellWidth: 22, halign: 'right' }, 3: { cellWidth: 14, halign: 'center' }, 4: { cellWidth: 22, halign: 'right' }, 5: { cellWidth: 26, halign: 'right' } },
         margin: { left: 14, right: 14 },
       })
@@ -339,12 +342,12 @@ export function PdfExport({ project }: { project: Project | null }) {
       doc.rect(pageW - 80, y, 66, 22, 'F')
       doc.setTextColor(...COLORS.white)
       doc.setFontSize(9)
-      doc.setFont('helvetica', 'normal')
+      doc.setFont('Roboto', 'normal')
       doc.text('Vrednost:', pageW - 76, y + 6)
       doc.text(`${skupaj.toFixed(2)} €`, pageW - 18, y + 6, { align: 'right' })
       doc.text('DDV (22%):', pageW - 76, y + 12)
       doc.text(`${ddv.toFixed(2)} €`, pageW - 18, y + 12, { align: 'right' })
-      doc.setFont('helvetica', 'bold')
+      doc.setFont('Roboto', 'bold')
       doc.setFontSize(11)
       doc.text('SKUPAJ:', pageW - 76, y + 19)
       doc.text(`${total.toFixed(2)} €`, pageW - 18, y + 19, { align: 'right' })
@@ -352,7 +355,7 @@ export function PdfExport({ project }: { project: Project | null }) {
       y += 30
       // Opomba
       doc.setTextColor(...COLORS.gray)
-      doc.setFont('helvetica', 'normal')
+      doc.setFont('Roboto', 'normal')
       doc.setFontSize(8)
       const note =
         'Ponudba velja 30 dni. Cena vključuje material in montažo. Garancija 15 let na WPC komponente. Plačilo: 50% akontacija ob naročilu, 50% ob prevzemu.'

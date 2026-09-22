@@ -9,6 +9,7 @@
  *  2. 📅 današnje montaže (kdo, kje, status)
  *  3. 🌩️ vremensko opozorilo (vetrní duši / nevarno za montažo)
  *  4. 📞 zapadli follow-upi ponudb (stranka še ni odgovorila)
+ *  5. 💶 zapadli računi (izdan + rok plačila pretekel) — FURS layer
  *
  * Podatki se poberejo le ob odprtju panela + ob dogodku 'roksal:refresh'
  * (ki ga sproži sync v page.tsx) — ni dodatnih intervalov.
@@ -20,12 +21,12 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { Button } from '@/components/ui/button'
 import {
   Bell, Package, CalendarDays, CloudLightning, CheckCheck,
-  ChevronRight, RefreshCw, AlertTriangle, Loader2, FileClock,
+  ChevronRight, RefreshCw, AlertTriangle, Loader2, FileClock, Receipt,
 } from 'lucide-react'
 
 interface NotificationItem {
   id: string
-  kind: 'stock' | 'install' | 'weather' | 'followup'
+  kind: 'stock' | 'install' | 'weather' | 'followup' | 'invoice'
   title: string
   subtitle: string
   meta?: string
@@ -58,6 +59,7 @@ export function NotificationCenter() {
     const out: NotificationItem[] = []
     try {
       const [invRes, projRes] = await Promise.all([fetch('/api/inventory'), fetch('/api/projects')])
+      const today = new Date()
 
       // 1) Nizka zaloga
       if (invRes.ok) {
@@ -83,7 +85,6 @@ export function NotificationCenter() {
           dealLocked: boolean; followUpDate: string | null;
           customer?: { ime: string } | null
         }[]
-        const today = new Date()
         const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
         const todays = (projects || []).filter((p) => p.datumMontaze?.slice(0, 10) === todayStr)
         for (const p of todays.slice(0, 8)) {
@@ -116,6 +117,36 @@ export function NotificationCenter() {
           })
         }
       }
+
+      // 5) Zapadli računi (izdan + rok plačila pretekel)
+      try {
+        const invRes2 = await fetch('/api/invoices')
+        if (invRes2.ok) {
+          const invoices = (await invRes2.json()) as {
+            id: string; stevilka: string; status: string; znesek: number;
+            datumIzdaje: string; rokPlacilaDni: number;
+            project?: { nazivProjekta: string } | null
+          }[]
+          const dueInvoices = (invoices || []).filter((r) => {
+            if (r.status !== 'IZDAN') return false
+            const due = new Date(r.datumIzdaje)
+            due.setDate(due.getDate() + (r.rokPlacilaDni || 0))
+            return due.getTime() <= today.getTime()
+          })
+          for (const r of dueInvoices.slice(0, 6)) {
+            const due = new Date(r.datumIzdaje)
+            due.setDate(due.getDate() + (r.rokPlacilaDni || 0))
+            const days = Math.floor((today.getTime() - due.getTime()) / 86400000)
+            out.push({
+              id: `invoice-${r.id}`,
+              kind: 'invoice',
+              title: `Račun ${r.stevilka}`,
+              subtitle: `${r.project?.nazivProjekta ?? '—'} · ${r.znesek.toFixed(2)} € zapadli`,
+              meta: days > 0 ? `zapadlo ${days} dni` : 'rok danes',
+            })
+          }
+        }
+      } catch { /* računi so opcijski za obvestila */ }
 
       // 3) Vremensko opozorilo (samo če ni "low")
       try {
@@ -163,7 +194,7 @@ export function NotificationCenter() {
     } else if (item.kind === 'install') {
       window.dispatchEvent(new CustomEvent('roksal:navigate', { detail: { tab: 'dashboard' } }))
       window.dispatchEvent(new CustomEvent('roksal:select-project', { detail: item.id.replace('install-', '') }))
-    } else if (item.kind === 'followup') {
+    } else if (item.kind === 'followup' || item.kind === 'invoice') {
       window.dispatchEvent(new CustomEvent('roksal:navigate', { detail: { tab: 'more', more: 'crm' } }))
     } else {
       window.dispatchEvent(new CustomEvent('roksal:navigate', { detail: { tab: 'dashboard' } }))
@@ -175,6 +206,7 @@ export function NotificationCenter() {
     install: { icon: CalendarDays, bg: 'bg-roksal-amber/15', fg: 'text-roksal-amber' },
     weather: { icon: CloudLightning, bg: 'bg-sky-100', fg: 'text-sky-700' },
     followup: { icon: FileClock, bg: 'bg-orange-100', fg: 'text-orange-700' },
+    invoice: { icon: Receipt, bg: 'bg-red-100', fg: 'text-red-700' },
   }
 
   return (

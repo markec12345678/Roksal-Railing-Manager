@@ -1,0 +1,234 @@
+// Roksal Field - API: Računi (FURS layer)
+// PREDRACUN | RACUN | PREDPLACILNI — slovenski zakonski podatki (ZDDV-1, 37. člen):
+// zaporedna številka "2026-NNN", datum izdaje, DDV 22 % (oz. 9,5 % / 0 %),
+// rok plačila, snapshot kupca in postavk (račun je pravno-aktiven dokument,
+// zato se postavke zaradi kasnejših sprememb projekta ne spreminjajo).
+import { NextResponse } from 'next/server'
+import { db } from '@/lib/db'
+import { z } from 'zod'
+import { authenticate, unauthorized } from '@/lib/auth'
+
+const DDV_STOPLNJE = [22, 9.5, 0] as const
+const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100
+
+const postavkaSchema = z.object({
+  opis: z.string().min(1, 'Opis postavke je obvezen').max(300),
+  kolicina: z.number().positive('Količina mora biti pozitivna').max(100000),
+  enota: z.string().min(1).max(20).default('kos'),
+  cenaNaEnoto: z.number().min(0).max(1000000),
+  ddvStopnja: z
+    .number()
+    .refine((v) => (DDV_STOPLNJE as readonly number[]).includes(v), {
+      message: 'DDV stopnja mora biti 22, 9.5 ali 0',
+    })
+    .default(22),
+})
+
+const kupecSchema = z.object({
+  ime: z.string().min(1).max(200),
+  naslov: z.string().max(300).default(''),
+  telefon: z.string().max(50).optional().nullable(),
+  email: z.string().max(200).optional().nullable(),
+  davcnaSt: z.string().max(20).optional().nullable(),
+})
+
+const createInvoiceSchema = z.object({
+  projectId: z.string().min(1, 'ID projekta je obvezen'),
+  tip: z.enum(['PREDRACUN', 'RACUN', 'PREDPLACILNI']).default('RACUN'),
+  postavke: z.array(postavkaSchema).min(1, 'Račun potrebuje vsaj eno postavko').max(100),
+  rokPlacilaDni: z.number().int().min(0).max(365).default(8),
+  datumStoritve: z.string().datetime().optional().nullable(),
+  opombe: z.string().max(1000).optional().nullable(),
+})
+
+const updateInvoiceSchema = z.object({
+  id: z.string().min(1),
+  status: z.enum(['OSNUTEK', 'IZDAN', 'PLACAN', 'STORNIRAN']).optional(),
+  postavke: z.array(postavkaSchema).min(1).max(100).optional(),
+  rokPlacilaDni: z.number().int().min(0).max(365).optional(),
+  opombe: z.string().max(1000).optional().nullable(),
+  datumStoritve: z.string().datetime().optional().nullable(),
+})
+
+/** Izračun vsot iz postavk — edini vir resnice (zaupanje klientu ne velja pri DDV). */
+function computeTotals(postavke: Array<{ kolicina: number; cenaNaEnoto: number; ddvStopnja: number }>) {
+  let osnova = 0
+  let ddv = 0
+  for (const p of postavke) {
+    const vrstica = round2(p.kolicina * p.cenaNaEnoto)
+    osnova += vrstica
+    ddv += round2(vrstica * (p.ddvStopnja / 100))
+  }
+  osnova = round2(osnova)
+  ddv = round2(ddv)
+  return { osnova, ddv, znesek: round2(osnova + ddv) }
+}
+
+/** Zaporedna številka "2026-001" — šteje obstoječe račune istega leta (samo RACUN tipe). */
+async function nextStevilka(tip: string): Promise<string> {
+  const year = new Date().getFullYear()
+  // Predračuni in predplačilni računi imajo ločeno številčenje od računov
+  const prefix = tip === 'RACUN' ? '' : `${tip === 'PREDRACUN' ? 'PR' : 'PP'}-`
+  const base = `${year}-${prefix}`
+  const last = await db.invoice.findFirst({
+    where: { stevilka: { startsWith: base } },
+    orderBy: { stevilka: 'desc' },
+  })
+  const lastNum = last ? parseInt(last.stevilka.slice(base.length), 10) || 0 : 0
+  return `${base}${String(lastNum + 1).padStart(3, '0')}`
+}
+
+export async function GET(request: Request) {
+  const auth = await authenticate(request)
+  if (!auth) return unauthorized()
+  try {
+    const { searchParams } = new URL(request.url)
+    const projectId = searchParams.get('projectId')
+
+    const invoices = await db.invoice.findMany({
+      where: projectId ? { projectId } : undefined,
+      include: {
+        project: {
+          select: { nazivProjekta: true, clientToken: true, customer: { select: { ime: true, naslov: true } } },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    })
+    return NextResponse.json(invoices)
+  } catch (error) {
+    console.error('Invoices GET error:', error)
+    return NextResponse.json({ error: 'Napaka pri branju računov' }, { status: 500 })
+  }
+}
+
+export async function POST(request: Request) {
+  const auth = await authenticate(request)
+  if (!auth) return unauthorized()
+  try {
+    const body = await request.json()
+    const validated = createInvoiceSchema.parse(body)
+
+    // Projekt + kupec (snapshot za račun)
+    const project = await db.project.findUnique({
+      where: { id: validated.projectId },
+      select: {
+        nazivProjekta: true,
+        customer: { select: { ime: true, naslov: true, telefon: true, email: true } },
+      },
+    })
+    if (!project) {
+      return NextResponse.json({ error: 'Projekt ni najden' }, { status: 404 })
+    }
+
+    const totals = computeTotals(validated.postavke)
+    const stevilka = await nextStevilka(validated.tip)
+
+    const invoice = await db.invoice.create({
+      data: {
+        projectId: validated.projectId,
+        tip: validated.tip,
+        stevilka,
+        rokPlacilaDni: validated.rokPlacilaDni,
+        datumStoritve: validated.datumStoritve ? new Date(validated.datumStoritve) : null,
+        postavke: JSON.stringify(validated.postavke),
+        kupec: JSON.stringify({
+          ime: project.customer.ime,
+          naslov: project.customer.naslov,
+          telefon: project.customer.telefon,
+          email: project.customer.email,
+        }),
+        osnova: totals.osnova,
+        ddv: totals.ddv,
+        znesek: totals.znesek,
+        opombe: validated.opombe ?? null,
+        status: 'OSNUTEK',
+      },
+    })
+    return NextResponse.json(invoice, { status: 201 })
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: error.issues[0]?.message ?? 'Neveljavni podatki' }, { status: 400 })
+    }
+    console.error('Invoices POST error:', error)
+    return NextResponse.json({ error: 'Napaka pri shranjevanju računa' }, { status: 500 })
+  }
+}
+
+export async function PATCH(request: Request) {
+  const auth = await authenticate(request)
+  if (!auth) return unauthorized()
+  try {
+    const body = await request.json()
+    const validated = updateInvoiceSchema.parse(body)
+    const { id, ...data } = validated
+
+    const existing = await db.invoice.findUnique({ where: { id } })
+    if (!existing) {
+      return NextResponse.json({ error: 'Račun ni najden' }, { status: 404 })
+    }
+
+    // IZDAN/PLACAN/STORNIRAN račun je pravno-aktiven → postavke se več ne spreminjajo
+    if (existing.status !== 'OSNUTEK' && (data.postavke || data.rokPlacilaDni !== undefined)) {
+      return NextResponse.json(
+        { error: 'Izdanega računa ni mogoče urejati — uporabi storno in izstavi novega' },
+        { status: 409 }
+      )
+    }
+
+    const updateData: Record<string, unknown> = {}
+    if (data.status) {
+      updateData.status = data.status
+      if (data.status === 'PLACAN') updateData.placanoAt = new Date()
+      if (data.status === 'STORNIRAN' || data.status === 'IZDAN') updateData.placanoAt = null
+    }
+    if (data.postavke) {
+      const totals = computeTotals(data.postavke)
+      updateData.postavke = JSON.stringify(data.postavke)
+      updateData.osnova = totals.osnova
+      updateData.ddv = totals.ddv
+      updateData.znesek = totals.znesek
+    }
+    if (data.rokPlacilaDni !== undefined) updateData.rokPlacilaDni = data.rokPlacilaDni
+    if (data.opombe !== undefined) updateData.opombe = data.opombe
+    if (data.datumStoritve !== undefined) {
+      updateData.datumStoritve = data.datumStoritve ? new Date(data.datumStoritve) : null
+    }
+
+    const invoice = await db.invoice.update({ where: { id }, data: updateData })
+    return NextResponse.json(invoice)
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: error.issues[0]?.message ?? 'Neveljavni podatki' }, { status: 400 })
+    }
+    console.error('Invoices PATCH error:', error)
+    return NextResponse.json({ error: 'Napaka pri posodabljanju računa' }, { status: 500 })
+  }
+}
+
+export async function DELETE(request: Request) {
+  const auth = await authenticate(request)
+  if (!auth) return unauthorized()
+  try {
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+    if (!id) {
+      return NextResponse.json({ error: 'id je obvezen' }, { status: 400 })
+    }
+    const existing = await db.invoice.findUnique({ where: { id } })
+    if (!existing) {
+      return NextResponse.json({ error: 'Račun ni najden' }, { status: 404 })
+    }
+    // FURS: izdanega računa ne brišemo — samo storno (pravna sled)
+    if (existing.status !== 'OSNUTEK') {
+      return NextResponse.json(
+        { error: 'Izdanega računa ni mogoče brisati — uporabi storno' },
+        { status: 409 }
+      )
+    }
+    await db.invoice.delete({ where: { id } })
+    return NextResponse.json({ ok: true })
+  } catch (error) {
+    console.error('Invoices DELETE error:', error)
+    return NextResponse.json({ error: 'Napaka pri brisanju računa' }, { status: 500 })
+  }
+}

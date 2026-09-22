@@ -15,6 +15,7 @@ import { Separator } from '@/components/ui/separator'
 import { useToast } from '@/hooks/use-toast'
 import { EmptyState } from '@/components/ui/empty-state'
 import { QuoteFollowUp } from '@/components/roksal/quote-followup'
+import { InvoiceManager } from '@/components/roksal/invoice-manager'
 import {
   Users,
   Search,
@@ -195,6 +196,9 @@ export function CrmTab() {
     <div className="space-y-4">
       {/* Sledenje ponudbam (follow-up spomniki) */}
       <QuoteFollowUp />
+
+      {/* Računi — FURS layer (ponudba → račun → plačilo) */}
+      <InvoiceManager />
 
       {/* Statistike */}
       {stats && (

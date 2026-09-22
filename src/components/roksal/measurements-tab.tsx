@@ -546,6 +546,8 @@ interface StairCalc {
 
 interface MeasurementsTabProps {
   onNavigateToCalculator?: (dolzinaMm: number, visinaMm: number, locationName: string) => void
+  /** Združi izbrnik projekta z glavno aplikacijo (runda H — QA popravek iz runde G) */
+  selectedProjectId?: string | null
 }
 
 // ============================================
@@ -813,7 +815,7 @@ function parseDistanceFromDataView(dv: DataView): number | null {
 // GLAVNA KOMPONENTA
 // ============================================
 
-export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps) {
+export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: MeasurementsTabProps) {
   const [measurements, setMeasurements] = useState<Measurement[]>([])
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
@@ -1009,6 +1011,10 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
   // NALAGANJE PODATKOV
   // ============================================
 
+  // Ref drži zadnjo vrednost propsa za bootstrap brez stale-closure / lint težav
+  const selectedProjectIdRef = useRef(selectedProjectId)
+  selectedProjectIdRef.current = selectedProjectId
+
   useEffect(() => {
     async function fetchData() {
       try {
@@ -1017,7 +1023,14 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
           const projData = await projRes.json()
           setProjects(projData)
           if (projData.length > 0) {
-            const firstProjectId = projData[0].id
+            // Sinhronizirano z glavno aplikacijo: če je v glavni app izbran
+            // projekt, uporabi tega, sicer prvi (prej je ta izbrnik vedno
+            // ignoriral izbiro glavne app — bug odkrit v rundi G)
+            const wanted = selectedProjectIdRef.current
+            const firstProjectId =
+              wanted && projData.some((p: { id: string }) => p.id === wanted)
+                ? wanted
+                : projData[0].id
             setSelectedProject(firstProjectId)
             const measRes = await fetch(`/api/measurements?projectId=${firstProjectId}`)
             if (measRes.ok) {
@@ -1046,6 +1059,15 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
     }
     fetchData()
   }, [])
+
+  // Sinhronizacija iz glavne aplikacije: uporabnik zamenja projekt v headeru
+  // → Meritve izbrnik sledi (in re-fetch useEffect zgoraj pritegne meritve)
+  useEffect(() => {
+    if (loading) return
+    if (selectedProjectId && selectedProjectId !== selectedProject) {
+      setSelectedProject(selectedProjectId)
+    }
+  }, [selectedProjectId, loading])
 
   // Re-fetch pri spremembi projekta
   useEffect(() => {

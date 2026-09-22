@@ -407,7 +407,10 @@ export default function Home() {
           />
         )}
         {activeTab === 'measurements' && (
-          <MeasurementsTab onNavigateToCalculator={handleNavigateToCalculator} />
+          <MeasurementsTab
+            onNavigateToCalculator={handleNavigateToCalculator}
+            selectedProjectId={selectedProjectId}
+          />
         )}
         {activeTab === 'inclinometer' && <InclinometerTab projectId={selectedProjectId} />}
         {activeTab === 'inventory' && <InventoryTab />}

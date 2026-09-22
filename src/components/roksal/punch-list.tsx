@@ -25,6 +25,7 @@ import {
 } from 'lucide-react'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import { registerSloPdfFonts } from '@/lib/pdf-sl-font'
 import type { Project } from '@/lib/types'
 
 interface PunchItem {
@@ -167,6 +168,7 @@ export function PunchList({ project }: { project: Project | null }) {
     setGenerating(true)
     try {
       const doc = new jsPDF({ unit: 'mm', format: 'a4' })
+      registerSloPdfFonts(doc)
       const pageWidth = doc.internal.pageSize.getWidth()
 
       // Glava
@@ -174,21 +176,21 @@ export function PunchList({ project }: { project: Project | null }) {
       doc.rect(0, 0, pageWidth, 26, 'F')
       doc.setTextColor(245, 158, 11)
       doc.setFontSize(16)
-      doc.setFont('helvetica', 'bold')
+      doc.setFont('Roboto', 'bold')
       doc.text('ROKSAL d.o.o.', 14, 11)
       doc.setTextColor(255, 255, 255)
       doc.setFontSize(10)
-      doc.setFont('helvetica', 'normal')
+      doc.setFont('Roboto', 'normal')
       doc.text('Prejemni zapisnik — kontrola pred predajo', 14, 19)
       doc.text(new Date().toLocaleDateString('sl-SI'), pageWidth - 14, 19, { align: 'right' })
 
       // Podatki o projektu
       doc.setTextColor(17, 24, 39)
       doc.setFontSize(12)
-      doc.setFont('helvetica', 'bold')
+      doc.setFont('Roboto', 'bold')
       doc.text(project.nazivProjekta, 14, 36)
       doc.setFontSize(9)
-      doc.setFont('helvetica', 'normal')
+      doc.setFont('Roboto', 'normal')
       doc.setTextColor(107, 114, 128)
       const customerName = project.customer?.ime ?? '—'
       const monterName = project.monter?.ime ?? '—'
@@ -206,7 +208,7 @@ export function PunchList({ project }: { project: Project | null }) {
         head: [['#', 'Točka kontrole', 'Status', 'Opomba']],
         body: rows,
         theme: 'grid',
-        styles: { fontSize: 9, cellPadding: 2.2, textColor: [17, 24, 39] },
+        styles: { fontSize: 9, cellPadding: 2.2, textColor: [17, 24, 39], font: "Roboto" },
         headStyles: { fillColor: [29, 43, 62], textColor: [255, 255, 255], fontStyle: 'bold' },
         columnStyles: { 0: { cellWidth: 8 }, 2: { cellWidth: 24 }, 3: { cellWidth: 60 } },
         didParseCell: (data) => {
@@ -227,7 +229,7 @@ export function PunchList({ project }: { project: Project | null }) {
       let y = Math.min(finalY + 12, 235)
       doc.setFontSize(9)
       doc.setTextColor(17, 24, 39)
-      doc.setFont('helvetica', 'normal')
+      doc.setFont('Roboto', 'normal')
       doc.text(
         `Povzetek: ${doneCount}/${items.length} rešenih, ${issueCount} odprtih napak. Progress: ${progress} %.`,
         14,

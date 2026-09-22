@@ -341,3 +341,56 @@ Stage Summary:
   /api/projects) — ne sledi selectedProjectId glavne app; duplikati imen
   otežijo testiranje (3× Kokalj, 3× Novak). Priporočam sinhronizacijo v naslednji rundi
 - commit a6f47b6 (runda F) + to runda: proxy + layout fix + samomeritev
+
+---
+Task ID: 7 (runda H — cron webDevReview)
+Agent: Main Orchestrator (Z.ai Code)
+Task: FURS račun layer (računi s šumniki v PDF) + popravek sinhronizacije Meritve izbrnika + font fix za vse PDF-e
+
+Work Log:
+- QA: login ✓, dashboard ✓, dev.log čist; potrjen bug iz runde G (Meritve
+  izbrnik ne sledi glavni app) → POPRAVLJENO v tej rundi
+- H-1 Sinhronizacija Meritve izbrnika (measurements-tab.tsx):
+  · MeasurementsTabProps + selectedProjectId prop; page.tsx ga poda naprej
+  · bootstrap: ref (selectedProjectIdRef) prepreči stale-closure, izbere glavni
+    projekt namesto vedno prvega; sync useEffect sledi zunanji izbiri
+  · E2E: klik Ograja Novak kartica → Meritve izbrnik kaže Novak ✓
+- H-2 FURS računi (nova funkcija — vir raziskave ZDDV-1 37. člen):
+  · Prisma model Invoice (tip PREDRACUN/RACUN/PREDPLACILNI, stevilka unique
+    "2026-NNN" samodejno per leto+tip, postavke+kupec JSON snapshot, osnova/ddv/
+    znesek strežniško izračunani, status OSNUTEK→IZDAN→PLACAN|STORNIRAN,
+    rokPlacilaDni); Project.invoices; db:push + RESTART dev strežnika
+  · API /api/invoices (GET/POST/PATCH/DELETE): zod validacija, DDV stopnje
+    22/9.5/0, round2 vsote strežniško, IZDAN zaklenjen (409 na urejanje),
+    brisanje samo OSNUTEK (storno namesto delete — pravna sled)
+  · UI InvoiceManager (invoice-manager.tsx) v CRM tabu pod follow-upi:
+    povzetek PLAČANO/ODPRTO/ZAPADLO, kartice z status badge + zapadlo X dni,
+    živi izračun DDV po stopnjah v dialogu, "Iz BOM" uvoz postavk, dvostopenjska
+    storno potrditev (3 s), scrollbar-thin, bg-card dark-aware
+  · FURS PDF (jsPDF): navy glava, izdajatelj z davčno/mat. št. + TRR, naročnik
+    snapshot, datumi + rok, postavke tabela, DDV skupine, "Za plačilo" poudarek
+  · Obvestila: nova vrsta 'invoice' (Receipt, rdeča) — zapadli IZDAN računi do
+    6, meta "zapadlo X dni", klik → {tab:'more', more:'crm'}
+- H-3 ŠUMNIKI V PDF-ih POPRAVLJENI (globalno):
+  · jsPDF core Helvetica NE podpira ŠČŽ ("NAROČNIK"→"NARONIK") — prizadeto vse
+    dosedanje PDF generacije
+  · Roboto subset TTF (latin+latin-ext+€, 23 KB/varianta, fontTools subset):
+    src/lib/pdf-sl-font-data.ts (base64) + src/lib/pdf-sl-font.ts
+    (registerSloPdfFonts(doc)) — NE poimenuj z "use*" prefixom (rules-of-hooks!)
+  · Uveljavljeno v: invoice-manager, punch-list, pdf-export (delovni list +
+    ponudba, tudi autoTable styles font:"Roboto")
+  · E2E: pdftotext → "RAČUN", "NAROČNIK", "Davčna št." ✓
+- E2E celoten tok: dialog Nov račun → 12 m × 85,50 € = 1026,00 + 225,72 DDV =
+  1251,72 ✓ → Osnutek 2026-001 → Izdaj → Plačan (plačano 22. 9.) ✓; seed
+  2026-TEST (20 dni star) → obvestilo "ZAPADLO 12 DNI" ✓ → klik → CRM ✓;
+  povzetek: PLAČANO 1251,72 / ODPRTTO 732,00 / ZAPADLO 732,00 (1) ✓; mobilni
+  390px brez overflow ✓; tsc + lint čisti ✓
+
+Stage Summary:
+- FURS račun layer produkcijsko uporaben: številčenje, DDV, zaklenjeni izdani,
+  storno sled, zapadlosti v obvestilih; vse PDF-je zdaj pravilno tiska šumnike
+- KRITIČNO: helperji v src/lib NE smejo imeti "use" prefixa (eslint
+  rules-of-hooks tretira kot hook) — zato registerSloPdfFonts/applySloFont
+- Naslednje runde: LiDAR iOS (potreben realen iPhone), UPN QR koda na računu
+  (ISO 20022), eSlog XML izvoz za eRačun, FURS davčni blagajni režim (prostor/
+  naprava), Meritve "Stranka" značka + izbrnik — nadaljnja dodelava

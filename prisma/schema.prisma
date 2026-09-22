@@ -137,6 +137,7 @@ model Project {
   materialOrders MaterialOrder[]
   schedules     InstallationSchedule[]
   punchItems    PunchItem[]
+  invoices      Invoice[]
 }
 
 // ============================================
@@ -603,4 +604,43 @@ model PunchItem {
   updatedAt DateTime @updatedAt
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+// ============================================
+// RAČUNI (FURS layer — predračun / račun / predplačilni račun)
+// ============================================
+// Slovenski zakonski obvezni podatki računa (ZDDV-1, 37. člen):
+// zaporedna številka, datum izdaje, podatek o prostoru/napravi,
+// izdajatelj (davčna št.), naročnik, postavke, DDV 22 %, rok plačila.
+// Postavke in kupec so JSON snapshot — račun se ne spreminja, če se
+// kasneje spremenita projekt ali BOM (račun je pravnok act dokument).
+model Invoice {
+  id            String    @id @default(cuid())
+  projectId     String
+  tip           String    @default("RACUN") // PREDRACUN | RACUN | PREDPLACILNI
+  /// Zaporedna številka oblike "2026-001" (per leto, enota: Roksal d.o.o.)
+  stevilka      String    @unique
+  datumIzdaje   DateTime  @default(now())
+  datumStoritve DateTime?
+  rokPlacilaDni Int       @default(8)
+  status        String    @default("OSNUTEK") // OSNUTEK | IZDAN | PLACAN | STORNIRAN
+  placanoAt     DateTime?
+  /// Postavke JSON: [{opis, kolicina, enota, cenaNaEnoto, ddvStopnja}]
+  postavke      String
+  /// Snapshot kupca ob izdaji: {ime, naslov, telefon?, email?, davcnaSt?}
+  kupec         String?
+  /// Skupaj brez DDV (EUR)
+  osnova        Float     @default(0)
+  /// DDV 22 % (EUR)
+  ddv           Float     @default(0)
+  /// Za plačilo (EUR)
+  znesek        Float     @default(0)
+  opombe        String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([status])
 }
