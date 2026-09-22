@@ -2,9 +2,11 @@
 /**
  * Generator 3D modelov ograje — Roksal Railing Manager (runda O)
  * -----------------------------------------------------------------------------
- * Izdela dva parametrična modela balkonske ograje v DVEH formatih:
- *   • public/models/ograjca-klasika.glb  (+ .usdz) — palice (balusters)
- *   • public/models/ograjca-steklo.glb   (+ .usdz) — stekleni panel
+ * Izdela parametrične modele balkonske ograje v DVEH formatih × 5 RAL barv:
+ *   • public/models/ograjca-klasika-{RAL}.glb (+ .usdz) — palice (balusters)
+ *   • public/models/ograjca-steklo-{RAL}.glb  (+ .usdz) — stekleni panel
+ *   • public/models/ograjca-{klasika,steklo}.glb (+ .usdz) — alias RAL 7016
+ *     (zgodovinske poti ostanejo veljavne za stare povezave/QR)
  *
  * Zakaj brez three.js/GLTFExporter?
  *   Sandbox ima 4 GB RAM + OOM ograjevanje (glej worklog runda M) — lažja
@@ -18,7 +20,16 @@
  *   USDZ → #usda 1.0 (Y up, meter) + UsdGeomMesh prims + UsdPreviewSurface;
  *          ZIP method 0 (stored), CRC32, extra-field padding na 64 B.
  *
- * Zagon: node tools/generate-fence-models.mjs  (idempotentno, ~30 ms)
+ * Runda P: RAL palete — prave RAL klasik barve (kovinska prahobarva):
+ *   • kovina (stebra + letvi) in palice dobijo izbrano RAL barvo
+ *   • metallic/roughness skala po svetlosti (temna = bolj kovinska,
+ *     svetla prahobarva = matira aluminij)
+ *   • steklo ostane prosojno (panel 8 mm, BLEND, double-sided)
+ *   • barve so pretvorjene sRGB → LINEAR (glTF baseColorFactor je linearen;
+ *     prej so bile vrednosti zapisane kot suhe sRGB — 7016 je bil zato nekoliko
+ *     pretemen v PBR renderju)
+ *
+ * Zagon: node tools/generate-fence-models.mjs  (idempotentno, ~50 ms)
  */
 
 import { mkdirSync, writeFileSync } from 'node:fs'
@@ -100,17 +111,48 @@ function stekloBoxes() {
   return boxes
 }
 
-// ── Materiali (RLA 7016 antracit ≈ #383E42) ──────────────────────────────────
+// ── Materiali — RAL klasik paleta (kovinska prahobarva) ──────────────────────
 
-const MATERIALS = {
-  kovina: { color: [0.16, 0.175, 0.19], metallic: 0.65, roughness: 0.42 },
-  palice: { color: [0.27, 0.29, 0.31], metallic: 0.7, roughness: 0.38 },
-  steklo: { color: [0.72, 0.82, 0.83, 0.3], metallic: 0.1, roughness: 0.05, blend: true },
+/** RAL klasik paleta — prave RAL barve s PBR zaključkom prahobarve. */
+const RAL_COLORS = [
+  { code: '7016', name: 'antracit',  hex: '#383E42', metallic: 0.65, roughness: 0.42 },
+  { code: '9005', name: 'črna',      hex: '#0A0A0C', metallic: 0.70, roughness: 0.38 },
+  { code: '9016', name: 'bela',      hex: '#F1F0EA', metallic: 0.25, roughness: 0.55 },
+  { code: '6005', name: 'zelena',    hex: '#114232', metallic: 0.55, roughness: 0.45 },
+  { code: '8017', name: 'rjava',     hex: '#45322E', metallic: 0.55, roughness: 0.45 },
+]
+
+/** sRGB (#rrggbb) → linearni RGB triplet (glTF/USD pričakujeta linearne vrednosti). */
+function hexToLinear(hex) {
+  const n = parseInt(hex.slice(1), 16)
+  const srgb = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => v / 255)
+  return srgb.map((c) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)))
+}
+
+/** Svetlost (luma) linearnega tripleta — za hevristiko prahobarve. */
+const luma = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+
+/** Mešanje z belo (tint) — palice so rahlo svetlejše od profilev. */
+const tintWhite = (c, t) => c.map((v) => v * (1 - t) + t)
+
+/** Materiali za posamezno RAL barvo. */
+function materialsFor(ral) {
+  const base = hexToLinear(ral.hex)
+  const dark = luma(base) < 0.08
+  return {
+    kovina: { color: base, metallic: ral.metallic, roughness: ral.roughness },
+    palice: {
+      color: tintWhite(base, dark ? 0.16 : 0.1),
+      metallic: Math.min(0.8, ral.metallic + 0.05),
+      roughness: Math.max(0.3, ral.roughness - 0.04),
+    },
+    steklo: { color: [0.72, 0.82, 0.83, 0.3], metallic: 0.1, roughness: 0.05, blend: true },
+  }
 }
 
 // ── GLB zapisovalnik (glTF 2.0 binary, brez odvisnosti) ──────────────────────
 
-function buildGlb(groups) {
+function buildGlb(groups, MATERIALS) {
   // groups: { materialName: boxes[] } → vsak material = 1 mesh + 1 node
   const materialNames = Object.keys(groups)
   const buffers = [] // {positions, normals, indices}
@@ -189,7 +231,7 @@ function buildGlb(groups) {
   // Binarni buffer (pad na 4)
   const totalBin = offset
   const gltf = {
-    asset: { version: '2.0', generator: 'Roksal fence generator (runda O)' },
+    asset: { version: '2.0', generator: 'Roksal fence generator (runda P, RAL)' },
     scene: 0,
     scenes: [{ nodes: nodes.map((_, i) => i), name: 'Ograja' }],
     nodes,
@@ -228,7 +270,7 @@ function buildGlb(groups) {
 
 const f3 = (x) => (Math.abs(x) < 1e-6 ? 0 : +x.toFixed(6))
 
-function buildUsda(groups) {
+function buildUsda(groups, MATERIALS) {
   const mats = Object.keys(groups)
   const body = []
   body.push(`def Xform "Root" (\n    kind = "component"\n)\n{`)
@@ -288,7 +330,7 @@ function buildUsda(groups) {
     defaultPrim = "Root"
     metersPerUnit = 1
     upAxis = "Y"
-    doc = "Roksal ograja — parametricni model (runda O)"
+    doc = "Roksal ograja — parametricni model (runda P, RAL palete)"
 )
 
 ${body.join('\n\n')}
@@ -365,23 +407,44 @@ function buildZip(entries) {
   return Buffer.concat(chunks.map((c) => Buffer.from(c)))
 }
 
-// ── Zagon ────────────────────────────────────────────────────────────────────
+// ── Zagon: 2 modeli × 5 RAL barv (+ zgodovinski alias brez kode) ─────────────
+
+/** Hitra strukturna validacija GLB: magic, verzija, JSON chunk parsabil. */
+function assertGlb(buf) {
+  const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength)
+  if (dv.getUint32(0, true) !== 0x46546c67) throw new Error('GLB magic pokvarjen')
+  if (dv.getUint32(4, true) !== 2) throw new Error('GLB verzija ≠ 2')
+  if (dv.getUint32(8, true) !== buf.length) throw new Error('GLB dolžina ≠ header')
+  const jsonLen = dv.getUint32(12, true)
+  const json = new TextDecoder().decode(buf.subarray(20, 20 + jsonLen))
+  const gltf = JSON.parse(json)
+  if (!gltf.materials?.length || !gltf.meshes?.length) throw new Error('GLB brez materialov/meshev')
+}
 
 const models = [
   { name: 'ograjca-klasika', boxes: klasikaBoxes() },
   { name: 'ograjca-steklo', boxes: stekloBoxes() },
 ]
 
+let written = 0
 for (const model of models) {
   const groups = {}
   for (const { mat, box } of model.boxes) (groups[mat] ??= []).push({ box })
-  const glb = buildGlb(groups)
-  const usda = buildUsda(groups)
-  const usdz = buildZip([
-    { name: 'model.usda', data: usda },
-  ])
-  writeFileSync(join(OUT, `${model.name}.glb`), glb)
-  writeFileSync(join(OUT, `${model.name}.usdz`), usdz)
-  console.log(`✓ ${model.name}: GLB ${glb.length} B (${model.boxes.length} boxov) · USDZ ${usdz.length} B`)
+  for (const ral of RAL_COLORS) {
+    const materials = materialsFor(ral)
+    const glb = buildGlb(groups, materials)
+    assertGlb(glb)
+    const usdz = buildZip([{ name: 'model.usda', data: buildUsda(groups, materials) }])
+    writeFileSync(join(OUT, `${model.name}-${ral.code}.glb`), glb)
+    writeFileSync(join(OUT, `${model.name}-${ral.code}.usdz`), usdz)
+    written++
+    console.log(`✓ ${model.name}-${ral.code} (${ral.name}): GLB ${glb.length} B · USDZ ${usdz.length} B`)
+  }
+  // Zgodovinski alias = RAL 7016 (stare povezave/QR ostanejo delujoči)
+  const def = materialsFor(RAL_COLORS[0])
+  const glbDef = buildGlb(groups, def)
+  assertGlb(glbDef)
+  writeFileSync(join(OUT, `${model.name}.glb`), glbDef)
+  writeFileSync(join(OUT, `${model.name}.usdz`), buildZip([{ name: 'model.usda', data: buildUsda(groups, def) }]))
 }
-console.log(`Zapisano v ${OUT}`)
+console.log(`Zapisanih ${written} RAL variant + 2 aliasa → ${OUT}`)

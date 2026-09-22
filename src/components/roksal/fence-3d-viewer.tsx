@@ -10,7 +10,8 @@
  *   • quick-look  → Apple AR Quick Look (iOS Safari, potreben USDZ = ios-src)
  *
  * Modeli so izdelani z tools/generate-fence-models.mjs (GLB + USDZ, brez
- * zunanjih odvisnosti) — prava velikost segmenta 2,0 × 1,1 m, RAL 7016.
+ * zunanjih odvisnosti) — prava velikost segmenta 2,0 × 1,1 m, 5 RAL prahobarv
+ * (7016/9005/9016/6005/8017); izbira je trajna (localStorage).
  *
  * Zakaj imperativno (document.createElement)?
  *   Custom element ne gre skozi React JSX tipiziranje brez hackov; imperativna
@@ -28,15 +29,28 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import {
   Box, Loader2, AlertTriangle, CheckCircle2, RotateCw,
-  Move3d, Smartphone, Layers, PanelTop, Info,
+  Move3d, Smartphone, Layers, PanelTop, Info, Palette,
 } from 'lucide-react'
 
 type FenceVariant = 'klasika' | 'steklo'
 type Placement = 'wall' | 'floor'
 
+type Ral = { code: string; name: string; hex: string }
+
+/** Isti seznam kot tools/generate-fence-models.mjs (RAL_COLORS) — runda P. */
+const RAL_COLORS: Ral[] = [
+  { code: '7016', name: 'antracit', hex: '#383E42' },
+  { code: '9005', name: 'črna', hex: '#0A0A0C' },
+  { code: '9016', name: 'bela', hex: '#F1F0EA' },
+  { code: '6005', name: 'zelena', hex: '#114232' },
+  { code: '8017', name: 'rjava', hex: '#45322E' },
+]
+const DEFAULT_RAL = '7016'
+const RAL_STORAGE_KEY = 'roksal-ar-ral'
+
 const VARIANTS: { id: FenceVariant; label: string; opis: string }[] = [
-  { id: 'klasika', label: 'Klasika', opis: 'antracit palice 25×25 · letvi 40×60' },
-  { id: 'steklo', label: 'Steklo', opis: 'panel 8 mm · ročaji RAL 7016' },
+  { id: 'klasika', label: 'Klasika', opis: 'palice 25×25 · letvi 40×60 · po izbranem RAL' },
+  { id: 'steklo', label: 'Steklo', opis: 'panel 8 mm · ročaji po izbranem RAL' },
 ]
 
 interface ArStatusDetail { status: string }
@@ -47,6 +61,7 @@ export function Fence3dViewer() {
   const [visible, setVisible] = useState(false)
   const [mvReady, setMvReady] = useState(false)
   const [variant, setVariant] = useState<FenceVariant>('klasika')
+  const [ral, setRal] = useState<string>(DEFAULT_RAL)
   const [placement, setPlacement] = useState<Placement>('wall')
   const [loaded, setLoaded] = useState<Record<string, boolean>>({})
   const [loadError, setLoadError] = useState('')
@@ -54,6 +69,21 @@ export function Fence3dViewer() {
   const [arActive, setArActive] = useState(false)
   const variantRef = useRef(variant)
   variantRef.current = variant
+  const ralRef = useRef(ral)
+  ralRef.current = ral
+
+  // 0) Ral izbira — trajna (localStorage, piškotki niso potrebni)
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(RAL_STORAGE_KEY)
+      if (stored && RAL_COLORS.some((r) => r.code === stored)) setRal(stored)
+    } catch { /* localStorage nedostopen (privatni način) — tiho */ }
+  }, [])
+
+  const selectRal = useCallback((code: string) => {
+    setRal(code)
+    try { window.localStorage.setItem(RAL_STORAGE_KEY, code) } catch { /* tiho */ }
+  }, [])
 
   // 1) Lazy-load @google/model-viewer šele, ko je kartica blizu viewporta
   useEffect(() => {
@@ -117,7 +147,7 @@ export function Fence3dViewer() {
     ].join(';')
     el.appendChild(arBtn)
 
-    const onLoad = () => setLoaded((prev) => ({ ...prev, [variantRef.current]: true }))
+    const onLoad = () => setLoaded((prev) => ({ ...prev, [`${variantRef.current}-${ralRef.current}`]: true }))
     const onError = () => setLoadError('Model se ni naložil — osveži stran ali preveri povezavo')
     const onArStatus = (e: Event) => {
       const status = (e as CustomEvent<ArStatusDetail>).detail?.status
@@ -140,17 +170,17 @@ export function Fence3dViewer() {
     }
   }, [mvReady])
 
-  // 3) Spremembe atributov (varianta / postavitev)
+  // 3) Spremembe atributov (varianta / RAL / postavitev)
   useEffect(() => {
     const el = mvRef.current
     if (!el) return
-    el.setAttribute('src', `/models/ograjca-${variant}.glb`)
-    el.setAttribute('ios-src', `/models/ograjca-${variant}.usdz`)
+    el.setAttribute('src', `/models/ograjca-${variant}-${ral}.glb`)
+    el.setAttribute('ios-src', `/models/ograjca-${variant}-${ral}.usdz`)
     el.setAttribute('ar', '')
     el.setAttribute('ar-modes', 'webxr scene-viewer quick-look')
     el.setAttribute('ar-placement', placement)
     el.setAttribute('ar-scale', 'auto')
-  }, [variant, placement, mvReady])
+  }, [variant, ral, placement, mvReady])
 
   // 4) Ali je AR sploh na voljo (WebXR immersive-ar ALI Scene Viewer/Quick Look)?
   useEffect(() => {
@@ -174,7 +204,8 @@ export function Fence3dViewer() {
     }
   }, [])
 
-  const isLoaded = loaded[variant]
+  const isLoaded = loaded[`${variant}-${ral}`]
+  const activeRal = RAL_COLORS.find((r) => r.code === ral) ?? RAL_COLORS[0]
 
   return (
     <Card className="overflow-hidden border-roksal-navy/15 transition-all hover:border-roksal-navy/25 hover:shadow-md">
@@ -190,11 +221,12 @@ export function Fence3dViewer() {
               <span className="rounded-full bg-roksal-amber/10 px-1.5 py-0.5 text-[8px] font-bold text-roksal-amber">model-viewer</span>
               <span className="rounded-full bg-roksal-navy/5 px-1.5 py-0.5 text-[8px] font-bold text-roksal-navy">GLB</span>
               <span className="rounded-full bg-roksal-navy/5 px-1.5 py-0.5 text-[8px] font-bold text-roksal-navy">USDZ · Quick Look</span>
+              <span className="rounded-full bg-roksal-amber/10 px-1.5 py-0.5 text-[8px] font-bold text-roksal-amber">5× RAL</span>
             </div>
             <p className="text-[11px] leading-relaxed text-muted-foreground">
               Oddelek 2,0 × 1,1 m v pravi velikosti: Android → Scene Viewer/WebXR,
-              iPhone → AR Quick Look. Stranka vidi ograjo <em>na svojem balkonu</em>,
-              preden jo naroči.
+              iPhone → AR Quick Look. Barva prahu po RAL klasik — stranka vidi
+              ograjo <em>v svoji barvi, na svojem balkonu</em>, preden jo naroči.
             </p>
           </div>
         </div>
@@ -265,6 +297,42 @@ export function Fence3dViewer() {
                 <span className="mt-0.5 block text-[9px] leading-tight text-muted-foreground">{v.opis}</span>
               </button>
             ))}
+          </div>
+
+          <div className="flex items-center gap-2" role="group" aria-label="Izbira RAL barve prahu">
+            <span className="flex shrink-0 items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              <Palette className="h-3 w-3" /> RAL:
+            </span>
+            <div className="flex flex-1 items-center gap-1.5">
+              {RAL_COLORS.map((r) => (
+                <button
+                  key={r.code}
+                  type="button"
+                  onClick={() => selectRal(r.code)}
+                  aria-pressed={ral === r.code}
+                  aria-label={`RAL ${r.code} ${r.name}`}
+                  title={`RAL ${r.code} · ${r.name}`}
+                  className={`relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-all ${
+                    ral === r.code
+                      ? 'ring-2 ring-roksal-amber ring-offset-2 ring-offset-white'
+                      : 'ring-1 ring-roksal-navy/15 hover:scale-110 hover:ring-roksal-navy/40'
+                  }`}
+                  style={{ backgroundColor: r.hex }}
+                >
+                  {r.code === '9016' && <span className="sr-only">bela</span>}
+                  {ral === r.code && (
+                    <CheckCircle2
+                      className={`h-4 w-4 ${r.code === '9016' ? 'text-roksal-navy' : 'text-white'}`}
+                      strokeWidth={3}
+                    />
+                  )}
+                </button>
+              ))}
+              <span className="ml-auto rounded-md bg-roksal-navy/[0.06] px-2 py-1 text-right text-[9px] font-bold leading-tight text-roksal-navy">
+                {activeRal.code}
+                <span className="block font-medium text-muted-foreground">{activeRal.name}</span>
+              </span>
+            </div>
           </div>
 
           <div className="flex items-center gap-2" role="group" aria-label="Postavitev v AR">
