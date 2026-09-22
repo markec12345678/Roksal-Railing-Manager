@@ -11,6 +11,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -28,6 +35,10 @@ import {
   Satellite,
   LocateFixed,
   Ruler,
+  Share2,
+  Copy,
+  Check,
+  MessageCircle,
 } from 'lucide-react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -35,6 +46,9 @@ import type { Map as LeafletMap, LayerGroup, Polyline as LeafletPolyline } from 
 
 interface MapMeasureProps {
   projectId: string | null
+  /** Za javno merilno povezavo stranke (/m/[token]) */
+  clientToken?: string | null
+  nazivProjekta?: string | null
 }
 
 interface Pt {
@@ -76,7 +90,7 @@ function pinIcon(n: number, first: boolean) {
   })
 }
 
-export function MapMeasure({ projectId }: MapMeasureProps) {
+export function MapMeasure({ projectId, clientToken, nazivProjekta }: MapMeasureProps) {
   const mapElRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<LeafletMap | null>(null)
   const markersRef = useRef<LayerGroup | null>(null)
@@ -87,7 +101,14 @@ export function MapMeasure({ projectId }: MapMeasureProps) {
   const [centeredOn, setCenteredOn] = useState<'projekt' | 'gps' | 'slovenija' | null>(null)
   const [saving, setSaving] = useState(false)
   const [visina, setVisina] = useState('1800')
+  const [shareOpen, setShareOpen] = useState(false)
+  const [copied, setCopied] = useState(false)
   const { toast } = useToast()
+
+  const shareUrl = useMemo(
+    () => (clientToken && typeof window !== 'undefined' ? `${window.location.origin}/m/${clientToken}` : null),
+    [clientToken],
+  )
 
   const segmentsM = useMemo(() => {
     const out: number[] = []
@@ -184,6 +205,37 @@ export function MapMeasure({ projectId }: MapMeasureProps) {
 
   function undo() {
     setPoints((prev) => prev.slice(0, -1))
+  }
+
+  // ── Deli merilno povezavo stranke (/m/[token]) ───────────────────────────
+  function copyShareLink() {
+    if (!shareUrl) return
+    navigator.clipboard
+      ?.writeText(shareUrl)
+      .then(() => {
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+        toast({ title: 'Povezava kopirana', description: 'Prilepite jo v SMS/e-pošto.' })
+      })
+      .catch(() => toast({ title: 'Kopiranje ni uspelo', variant: 'destructive' }))
+  }
+
+  function shareNative() {
+    if (!shareUrl) return
+    const text = 'Pozdravljeni! Izmerite svojo ograjo na karti — traja 2 minuti:'
+    if (navigator.share) {
+      navigator.share({ title: 'Roksal — merjenje ograje', text, url: shareUrl }).catch(() => undefined)
+    } else {
+      copyShareLink()
+    }
+  }
+
+  function shareWhatsApp() {
+    if (!shareUrl) return
+    window.open(
+      `https://wa.me/?text=${encodeURIComponent('Pozdravljeni! Izmerite svojo ograjo na karti — traja 2 minuti: ' + shareUrl)}`,
+      '_blank',
+    )
   }
 
   function clearAll() {
@@ -351,6 +403,18 @@ export function MapMeasure({ projectId }: MapMeasureProps) {
           </Button>
           <Button
             type="button"
+            variant="outline"
+            size="sm"
+            className="h-10 border-roksal-amber/50 text-roksal-amber hover:bg-amber-50"
+            disabled={!clientToken}
+            onClick={() => setShareOpen(true)}
+            title="Stranka sama izmeri prek povezave"
+          >
+            <Share2 className="mr-1.5 h-4 w-4" />
+            Pošlji stranki
+          </Button>
+          <Button
+            type="button"
             size="sm"
             className="ml-auto h-10 bg-roksal-navy hover:bg-roksal-navy/90"
             disabled={points.length < 2 || saving}
@@ -360,6 +424,41 @@ export function MapMeasure({ projectId }: MapMeasureProps) {
             Shrani v meritve
           </Button>
         </div>
+
+        {/* Pogovorno okno za deljenje povezave */}
+        <Dialog open={shareOpen} onOpenChange={setShareOpen}>
+          <DialogContent className="max-w-sm rounded-2xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-roksal-navy">
+                <Share2 className="h-5 w-5 text-roksal-amber" />
+                Merilna povezava stranke
+              </DialogTitle>
+              <DialogDescription>
+                Pošljite povezavo naročniku — sam poišče parcelo, nariše črto ograje
+                in pošlje meritev. Rezultat se prikaže v zavihku Meritve (vir: Stranka).
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3">
+              <div className="break-all rounded-lg border border-stone-200 bg-stone-50 p-3 text-xs text-stone-700">
+                {shareUrl ?? 'Projekt nima žetona — izberite projekt.'}
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <Button type="button" className="h-11 bg-roksal-navy hover:bg-roksal-navy/90" onClick={copyShareLink} disabled={!shareUrl}>
+                  {copied ? <Check className="mr-1.5 h-4 w-4" /> : <Copy className="mr-1.5 h-4 w-4" />}
+                  {copied ? 'Kopirano' : 'Kopiraj'}
+                </Button>
+                <Button type="button" className="h-11 bg-emerald-600 hover:bg-emerald-700" onClick={shareWhatsApp} disabled={!shareUrl}>
+                  <MessageCircle className="mr-1.5 h-4 w-4" />
+                  WhatsApp
+                </Button>
+              </div>
+              <Button type="button" variant="outline" className="h-11 w-full" onClick={shareNative} disabled={!shareUrl}>
+                <Share2 className="mr-1.5 h-4 w-4" />
+                Deli prek telefona
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         <p className="text-[11px] leading-snug text-muted-foreground">
           <MapPin className="mr-1 inline h-3 w-3" />

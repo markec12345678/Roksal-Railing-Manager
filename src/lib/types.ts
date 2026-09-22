@@ -53,6 +53,11 @@ export interface Project {
   marginLocked?: number | null
   estimatedPrice?: number | null
 
+  // Javna povezava stranke: portal (/portal/[token]) + samomeritev (/m/[token])
+  clientToken?: string | null
+  followUpDate?: string | null
+  followUpOpomba?: string | null
+
   measurements?: ProjectMeasurementLite[]
 }
 

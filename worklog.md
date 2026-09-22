@@ -299,3 +299,45 @@ Stage Summary:
   `bun run dev` (Turbopack keša star Prisma Client → "Unknown argument")
 - Naslednje: strankina samomeritvena povezava (share map link → javna stran),
   FURS račun layer, LiDAR iOS; opcijsko accuracy coach še v photo-measure
+
+---
+Task ID: 6 (runda G — cron webDevReview)
+Agent: Main Orchestrator (Z.ai Code)
+Task: Samomeritev stranke prek javne povezave (/m/[token]) — ProFence lead-gen model iz raziskave + QA popravki
+
+Work Log:
+- QA: dev.log čist, tsc/lint čisti; Edina opozorila: Next dev overlay "scroll-behavior
+  smooth" → POPRAVLJENO z data-scroll-behavior="smooth" na <html> (layout.tsx)
+- G-1 Javni API (src/app/api/public/measure/route.ts, novo):
+  · GET ?token → {nazivProjekta, stranka} (najmanj podatkov), POST shrani meritev
+  · varnost: clientToken lookup (isti token kot portal), zod validacija (2–300
+    točk, lat/lng meje, skupajM 0.1–100000), in-memory rate limit 6/uro/token+IP,
+    max body implicitno skozi zod; NE razkrije nič drugega
+  · meritev: dolzinaMm=skupajM, visinaMm default 1800, arMetadata {source:
+    'customer-map', tocke, opombaStranke, imeStranke, telefonStranke}
+  · MIDDLEWARE FIX: src/proxy.ts PUBLIC_PREFIXES += '/m/', '/api/public'
+    (sicer "Neavtoriziran dostop" na vse javne rute!)
+- G-2 Javna stran /m/[token] (novo):
+  · page.tsx (server): token lookup → "Povezava ni veljavna" ali MeasureClient
+  · measure-client.tsx (klient): Leaflet + Esri satelit, tap → številčeni pini
+    (30px, večji za dotik), rumena črta, haversine dolžina, Nazaj/Počisti, GPS
+  · obrazec: ime (obvezno), telefon, opomba; 52px pošlji gumb; zahvala ekran
+    "Hvala, {ime}!" z povzetkom in kontaktom Roksal
+  · personaliziran pozdrav "Pozdravljeni, {ime stranke}!" + 3-koračna navodila
+  · mobilni-first: max-w-xl, 44px+ tipki, brez overflow (390px preverjeno)
+- G-3 Deli povezavo v aplikaciji (map-measure.tsx):
+  · gumb "Pošlji stranki" (amber) → dialog: URL /m/{token}, Kopiraj (clipboard
+    + fallback toast), WhatsApp (wa.me pre-generirano sporočilo), Deli prek
+    telefona (navigator.share); clientToken + nazivProjekta nov props iz page.tsx
+- G-4 Meritve: oranžna "Stranka" značka (UserRound ikona) za source='customer-map'
+  + types.ts: Project + clientToken/followUpDate/followUpOpomba tipi
+
+Stage Summary:
+- E2E (realni CDP klik — Leaflet ignorira sintetične): javna stran 3 točke →
+  946.6 m → submit → "Hvala, Mojca!" ✓; DB: 3 meritve source=customer-map ✓;
+  Stranka značka v Meritvah ✓; share dialog z URL/WhatsApp ✓; mobilni javna
+  stran brez overflow ✓
+- Odkritje: Meritve tab ima VLASTEN izbrnik projekta (default prvi projekt iz
+  /api/projects) — ne sledi selectedProjectId glavne app; duplikati imen
+  otežijo testiranje (3× Kokalj, 3× Novak). Priporočam sinhronizacijo v naslednji rundi
+- commit a6f47b6 (runda F) + to runda: proxy + layout fix + samomeritev

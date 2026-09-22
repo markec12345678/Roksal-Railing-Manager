@@ -390,7 +390,11 @@ export default function Home() {
               <ArScannerLauncher projectId={selectedProjectId} />
             </div>
             <div className="p-4">
-              <MapMeasure projectId={selectedProjectId} />
+              <MapMeasure
+                projectId={selectedProjectId}
+                clientToken={selectedProject?.clientToken ?? null}
+                nazivProjekta={selectedProject?.nazivProjekta ?? null}
+              />
             </div>
           </>
         )}

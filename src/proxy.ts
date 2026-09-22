@@ -31,7 +31,7 @@ const PUBLIC_EXACT = new Set<string>([
 ])
 
 /** Predpone, ki so javne: portal stranke je dostopen s sposobnostnim URL-jem (clientToken). */
-const PUBLIC_PREFIXES = ['/portal/', '/api/portal']
+const PUBLIC_PREFIXES = ['/portal/', '/api/portal', '/m/', '/api/public']
 
 /**
  * API ključi: poti, kjer se namesto seje sprejme `Authorization: Bearer rkm_…`.

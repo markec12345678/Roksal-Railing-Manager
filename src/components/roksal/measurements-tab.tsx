@@ -100,6 +100,7 @@ import {
   Link2,
   Loader2,
   Unplug,
+  UserRound,
 } from 'lucide-react'
 import {
   Table,
@@ -3632,6 +3633,17 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
                       </span>
                     </TooltipTrigger>
                     <TooltipContent>Vir: AR posnetek</TooltipContent>
+                  </Tooltip>
+                )}
+                {m.source === 'customer-map' && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="inline-flex items-center gap-0.5 rounded px-1 py-0 text-[8px] font-medium border bg-orange-50 text-orange-700 border-orange-200">
+                        <UserRound className="h-2.5 w-2.5" />
+                        Stranka
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>Vir: samomeritev stranke prek povezave</TooltipContent>
                   </Tooltip>
                 )}
                 {/* P1 — status badge (clickable) */}
