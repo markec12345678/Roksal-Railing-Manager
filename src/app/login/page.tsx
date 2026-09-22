@@ -7,6 +7,7 @@
 // brez veljavne seje sem.
 
 import * as React from 'react'
+import { Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -14,7 +15,14 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Loader2, Lock, ShieldAlert } from 'lucide-react'
 
-export default function LoginPage() {
+// `useSearchParams()` brez <Suspense> pade samo v produkcijski gradnji:
+//   ⨯ useSearchParams() should be wrapped in a suspense boundary at page "/login"
+//   Error occurred prerendering page "/login"
+// Next med `next build` statično predizriše /login, dostop do iskalnih parametrov
+// pa je CSR-bailout, ki mora biti razmejen. Zato je obrazec v notranji komponenti,
+// privzeti izvoz pa ga ovije v Suspense. V `next dev` te napake ni — ujame jo
+// šele gradnja, kar je razlog, da je CI korak 'Gradnja' obvezen.
+function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [email, setEmail] = React.useState('')
@@ -115,5 +123,19 @@ export default function LoginPage() {
         </CardContent>
       </Card>
     </main>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-dvh flex items-center justify-center bg-roksal-navy/5 p-4">
+          <div className="text-sm text-muted-foreground">Nalagam prijavo…</div>
+        </main>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   )
 }
