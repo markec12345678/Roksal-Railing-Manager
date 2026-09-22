@@ -235,6 +235,23 @@ export function MapMeasure({ projectId }: MapMeasureProps) {
 
   return (
     <Card className="overflow-hidden">
+      {/* Mikro-animacije pina (vstop + pritisk) */}
+      <style>{`
+        @keyframes roksal-pin-in {
+          from { transform: translateY(-8px) scale(.6); opacity: 0 }
+        }
+        .roksal-map-pin {
+          animation: roksal-pin-in .22s ease-out;
+          filter: drop-shadow(0 2px 3px rgba(0,0,0,.35));
+          transition: transform .15s ease;
+        }
+        .roksal-map-pin:active { transform: scale(.9); }
+        @keyframes roksal-hint-pulse {
+          0%, 100% { opacity: 1 }
+          50% { opacity: .75 }
+        }
+        .roksal-map-hint { animation: roksal-hint-pulse 2.4s ease-in-out infinite; }
+      `}</style>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base text-roksal-navy">
           <Satellite className="h-5 w-5 text-roksal-amber" />
@@ -248,7 +265,7 @@ export function MapMeasure({ projectId }: MapMeasureProps) {
         {/* Zemljevid */}
         <div className="relative h-[280px] w-full overflow-hidden rounded-lg border border-stone-200 sm:h-[340px]">
           <div ref={mapElRef} className="h-full w-full" aria-label="Satelitski zemljevid za merjenje" />
-          <div className="pointer-events-none absolute left-2 top-2 z-[500] rounded-md bg-roksal-navy/90 px-2.5 py-1.5 text-xs font-medium text-white shadow">
+          <div className="roksal-map-hint pointer-events-none absolute left-2 top-2 z-[500] rounded-md bg-roksal-navy/90 px-2.5 py-1.5 text-xs font-medium text-white shadow">
             {points.length === 0
               ? 'Kliknite na zemljevid za prvo točko'
               : points.length === 1

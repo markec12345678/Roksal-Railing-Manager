@@ -89,9 +89,18 @@ export async function PATCH(request: Request) {
 
     const validated = updateProjectSchema.parse(updateData)
 
+    // followUpDate prihaja kot ISO string — Prisma želi Date ali null
+    const { followUpDate, followUpOpomba, ...rest } = validated
+    const data: Record<string, unknown> = { ...rest }
+    if (followUpDate !== undefined) {
+      data.followUpDate =
+        followUpDate === null || followUpDate === '' ? null : new Date(followUpDate)
+    }
+    if (followUpOpomba !== undefined) data.followUpOpomba = followUpOpomba
+
     const updated = await db.project.update({
       where: { id },
-      data: validated,
+      data,
       include: {
         customer: true,
         monter: { select: { id: true, ime: true } },

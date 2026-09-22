@@ -251,3 +251,51 @@ Stage Summary:
   (Deal + followUpDate + obvestilo), AR accuracy coach (3× merjenje + povprečje),
   beton/zmrzovalna globina v kalkulatorju, strankina samomeritvena povezava
   (share map link), FURS račun layer
+
+---
+Task ID: 5 (runda F — cron webDevReview)
+Agent: Main Orchestrator (Z.ai Code)
+Task: QA ocena + follow-up spomniki ponudb (F-1) + AR accuracy coach (F-2) + betoniranje stebrov (F-3) + styling dodelava
+
+Work Log:
+- QA: dev.log brez runtime napak; git čist (8e8b0e8); tsc/lint čisti
+- F-1 QuoteFollowUp (src/components/roksal/quote-followup.tsx, novo):
+  · Prisma Project: + followUpDate DateTime?, followUpOpomba String? (db:push)
+  · updateProjectSchema: + followUpDate (string|null) + followUpOpomba;
+    /api/projects PATCH pretvori ISO string → Date (Prisma ne sprejme stringa)
+  · CRM zavihek: kartica "Ponudbe — sledenje" na vrhu — seznam nepodpisanih
+    projektov, hitri gumbi Pokliči (danes)/+3 dni/+7 dni, date input, X briši;
+    POTEKEL (rok ≤ danes) = rdeč poudarek + badge, ≤3 dni = amber
+  · NotificationCenter: nova vrsta 'followup' (FileClock, oranžna) — zapadli
+    spomniki (!dealLocked, ≠ZAKLJUCENO) do 6, meta "zapadlo X dni"/"danes",
+    klik → navigacija {tab:'more', more:'crm'}
+  · NASTAVLJANJE DELUJE ŠELE PO RESTARTU dev strežnika — Turbopack keša star
+    @prisma/client; po db:push z novimi polji MORA dev server restartati!
+  · E2E: +3 dni → DB followUpDate=2026-09-25 ✓; Pokliči → obvestilo "DANES" ✓;
+    mobilni 390px: rdeč "1 zapadel" badge, brez overflow ✓
+- F-2 AR accuracy coach (webxr-scanner.tsx):
+  · analyzeSpread(lens): count/avg/min/max/spreadPct; verdicti: ≤2 % zanesljivo,
+    ≤5 % sprejemljivo, >5 % razhajajoce (drift = #1 pritožba AR merilnikov)
+  · summarize() vrne še accuracy {horiz, vert}; shrani se v arMetadata.accuracy
+  · toast ob shranjevanju: "✓ kontrola natančnosti OK" / "⚠️ meritve se
+    razlikujejo — priporočamo ponovno merjenje"
+  · živi chip v session panelu (measurementsView @4Hz): razpon min–max mm + %
+  · UNIT TEST logike (node replikacija): 6/6 PASS (enaka meritvi, 2 %, 3–5 %,
+    drift >5 %, ena meritev → null, cm-drift 80 mm)
+- F-3 Betoniranje stebrov (calculator-tab.tsx, material način):
+  · nova kartica za "Rezerva materiala": št. stebrov iz materialResult (+rezerva),
+    premer luknje select 200–400 mm (default 300), globina input (default 800 mm)
+  · volumen: π·r²·h − profil 60×60 mm; 25 kg vreča ≈ 12 L; E2E: 4 stebra @300/600
+    → 161 L, 14 vreč (matematika ✓)
+  · opozorilo pod 800 mm: zmrzovalna globina SI ≈ 80 cm — zmrzal dviguje stebre
+- Styling dodelava: mikro-animacije pina na satelitski karti (vstop .22s,
+  pritisk scale .9, drop-shadow), pulzirajoči hint overlay, focus-visible ring
+  na status gumbih zapisnika
+
+Stage Summary:
+- 3 nove funkcije pushane; E2E: follow-up DB+UI+obvestila ✓, betonska kartica
+  matematika ✓ (161 L/14 vreč), accuracy logika 6/6 testov ✓
+- KRITIČNO znanje: po vsaki prisma db:push z NOVIMI polji je obvezen restart
+  `bun run dev` (Turbopack keša star Prisma Client → "Unknown argument")
+- Naslednje: strankina samomeritvena povezava (share map link → javna stran),
+  FURS račun layer, LiDAR iOS; opcijsko accuracy coach še v photo-measure

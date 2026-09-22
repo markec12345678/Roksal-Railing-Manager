@@ -23,7 +23,7 @@
  * world→NDC z lastnim mat4 računom).
  */
 
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
@@ -132,6 +132,40 @@ interface XrMeasurement {
   aPos: XRVec3Like
   bPos: XRVec3Like
   distanceMm: number
+}
+
+// ── Accuracy coach (raziskava: drift je #1 pritožba AR merilnikov) ─────────
+// Če je ista os (vodoravno/navpično) izmerjena ≥2×, se meritve primerjajo.
+// majhen razpon = zanesljivo, velik = opozorilo pred shranjevanjem.
+type AccuracyVerdict = 'zanesljivo' | 'sprejemljivo' | 'razhajajoce'
+interface AccuracyInfo {
+  count: number
+  avgMm: number
+  minMm: number
+  maxMm: number
+  spreadMm: number
+  spreadPct: number
+  verdict: AccuracyVerdict
+}
+
+function analyzeSpread(lens: number[]): AccuracyInfo | null {
+  if (lens.length < 2) return null
+  const avg = lens.reduce((s, x) => s + x, 0) / lens.length
+  const min = Math.min(...lens)
+  const max = Math.max(...lens)
+  const spreadMm = max - min
+  const spreadPct = avg > 0 ? (spreadMm / avg) * 100 : 100
+  const verdict: AccuracyVerdict =
+    spreadPct <= 2 ? 'zanesljivo' : spreadPct <= 5 ? 'sprejemljivo' : 'razhajajoce'
+  return {
+    count: lens.length,
+    avgMm: Math.round(avg),
+    minMm: min,
+    maxMm: max,
+    spreadMm: Math.round(spreadMm),
+    spreadPct: Math.round(spreadPct * 10) / 10,
+    verdict,
+  }
 }
 
 interface HudData {
@@ -659,8 +693,24 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
     const longest = Math.max(...segs.map((s) => s.dolzinaMm))
     const dolzinaMm = horizontalLens.length ? Math.max(...horizontalLens) : longest
     const visinaMm = verticalLens.length ? Math.max(...verticalLens) : longest
-    return { segs, dolzinaMm, visinaMm }
+    const accuracy = { horiz: analyzeSpread(horizontalLens), vert: analyzeSpread(verticalLens) }
+    return { segs, dolzinaMm, visinaMm, accuracy }
   }, [])
+
+  // Živi accuracy nadzor iz trenutnih meritev (render v panelu med sejo)
+  const accuracyView = useMemo<AccuracyInfo | null>(() => {
+    if (measurementsView.length < 2) return null
+    const lensH: number[] = []
+    const lensV: number[] = []
+    for (const m of measurementsView) {
+      const dy = Math.abs(m.aPos.y - m.bPos.y)
+      const horiz = Math.sqrt((m.aPos.x - m.bPos.x) ** 2 + (m.aPos.z - m.bPos.z) ** 2)
+      const mm = Math.max(1, Math.round(m.distanceMm))
+      if (dy <= 0.5 * Math.max(horiz, 0.001)) lensH.push(mm)
+      else lensV.push(mm)
+    }
+    return analyzeSpread(lensH) ?? analyzeSpread(lensV)
+  }, [measurementsView])
 
   // ── Shrani v Meritve (pravi POST /api/measurements) ───────────────────────
   const saveMeasurements = useCallback(async () => {
@@ -669,7 +719,7 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
     try {
       const summary = summarize()
       if (!summary) return
-      const { segs, dolzinaMm, visinaMm } = summary
+      const { segs, dolzinaMm, visinaMm, accuracy } = summary
 
       // fetchWithQueue: brez povezave se zapis vrsti in pošlje samodejno ob povezavi
       const res = await fetchWithQueue('/api/measurements', {
@@ -683,6 +733,7 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
             features,
             planeCount: hud.planeCount,
             fps: hud.fps,
+            accuracy,
             savedAt: new Date().toISOString(),
           },
         },
@@ -698,9 +749,22 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
           description: 'Samodejno se pošlje, ko povezava pride nazaj.',
         })
       } else {
+        const worst = accuracy.horiz?.verdict === 'razhajajoce' || accuracy.vert?.verdict === 'razhajajoce'
+          ? 'razhajajoce'
+          : accuracy.horiz?.verdict === 'sprejemljivo' || accuracy.vert?.verdict === 'sprejemljivo'
+            ? 'sprejemljivo'
+            : accuracy.horiz?.verdict === 'zanesljivo' || accuracy.vert?.verdict === 'zanesljivo'
+              ? 'zanesljivo'
+              : null
         toast({
           title: '✓ Mere shranjene v Meritve',
-          description: `Dolžina ${fmtMm(dolzinaMm)} · višina ${fmtMm(visinaMm)} (${segs.length} segmentov)`,
+          description:
+            `Dolžina ${fmtMm(dolzinaMm)} · višina ${fmtMm(visinaMm)} (${segs.length} segmentov)` +
+            (worst === 'razhajajoce'
+              ? ' · ⚠️ meritve se razlikujejo — priporočamo ponovno merjenje'
+              : worst === 'zanesljivo'
+                ? ' · ✓ kontrola natančnosti OK'
+                : ''),
         })
       }
     } catch (err) {
@@ -1030,6 +1094,36 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
                         <span className="font-bold tabular-nums text-roksal-amber">{fmtMm(m.distanceMm)}</span>
                       </div>
                     ))}
+                  </div>
+                )}
+
+                {/* Accuracy coach — živi nadzor razpona meritev */}
+                {accuracyView && (
+                  <div
+                    className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs ${
+                      accuracyView.verdict === 'zanesljivo'
+                        ? 'border-green-500/40 bg-green-500/10 text-green-300'
+                        : accuracyView.verdict === 'sprejemljivo'
+                          ? 'border-amber-500/40 bg-amber-500/10 text-amber-300'
+                          : 'border-red-500/40 bg-red-500/10 text-red-300'
+                    }`}
+                    data-xr-ui
+                  >
+                    {accuracyView.verdict === 'razhajajoce' ? (
+                      <AlertTriangle className="h-4 w-4 shrink-0" />
+                    ) : (
+                      <CheckCircle2 className="h-4 w-4 shrink-0" />
+                    )}
+                    <span>
+                      Kontrola natančnosti ({accuracyView.count}×):
+                      {' '}{accuracyView.minMm}–{accuracyView.maxMm} mm
+                      {' '}(razpon {accuracyView.spreadPct}%) —{' '}
+                      {accuracyView.verdict === 'zanesljivo'
+                        ? 'zanesljivo ✓'
+                        : accuracyView.verdict === 'sprejemljivo'
+                          ? 'sprejemljivo'
+                          : 'prevelik razpon — ponovno izmeri!'}
+                    </span>
                   </div>
                 )}
 

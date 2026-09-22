@@ -19,6 +19,9 @@ export const updateProjectSchema = z.object({
   status: z.enum(['NACRTOVANO', 'V_TEKU', 'ZAKLJUCENO', 'USTAVLJENO']).optional(),
   opombe: z.string().optional(),
   monterId: z.string().optional(),
+  // FOLLOW-UP PONUDBE — ISO datum ali null za brisanje spomnika
+  followUpDate: z.string().optional().nullable(),
+  followUpOpomba: z.string().max(300).optional().nullable(),
 })
 
 // ============================================

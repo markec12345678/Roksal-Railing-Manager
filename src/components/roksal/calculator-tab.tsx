@@ -215,6 +215,9 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
   const [holeCount, setHoleCount] = useState('8')
   const [holeDepthMm, setHoleDepthMm] = useState('120')
   const [holeDiameterMm, setHoleDiameterMm] = useState('14')
+  // F-3: betoniranje stebrov (zmrzovalna globina v SI je cca. 80 cm)
+  const [concreteHoleDiaMm, setConcreteHoleDiaMm] = useState('300')
+  const [concreteHoleDepthMm, setConcreteHoleDepthMm] = useState('800')
   const [temperature, setTemperature] = useState('20')
   const [anchorType, setAnchorType] = useState<AnchorType>('hilti-hit')
   const [anchoringResult, setAnchoringResult] = useState<AnchoringResult | null>(null)
@@ -3647,6 +3650,89 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                   </CardContent>
                 </Card>
               )}
+
+              {/* F-3: Betoniranje stebrov — količine betona (raziskava: ToolGrit/Hoover
+                  fence kalkulatorji; zmrzovalna globina SI ≈ 80 cm) */}
+              {(() => {
+                const posts = applyReserve(materialResult.postCount, rezervaPctMaterial)
+                const dia = parseFloat(concreteHoleDiaMm) / 1000
+                const depth = parseFloat(concreteHoleDepthMm) / 1000
+                if (!isFinite(dia) || !isFinite(depth) || dia <= 0 || depth <= 0 || posts <= 0) return null
+                const holeL = Math.PI * (dia / 2) ** 2 * depth * 1000
+                const postL = 0.06 * 0.06 * depth * 1000 // profil 60×60 mm v luknji
+                const perPostL = Math.max(holeL - postL, 0)
+                const totalL = Math.round(perPostL * posts)
+                const bags25 = Math.ceil(totalL / 12) // 25 kg vreča suhe zmesi ≈ 12 L betona
+                return (
+                  <Card className="border-stone-300 bg-stone-50/60">
+                    <CardHeader className="pb-2 pt-4 px-4">
+                      <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+                        <Hammer className="h-4 w-4 text-roksal-amber" />
+                        Betoniranje stebrov
+                        <Badge variant="outline" className="ml-auto text-[10px]">
+                          {posts} stebrov
+                        </Badge>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="px-4 pb-4 space-y-3">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label htmlFor="concreteDia" className="text-xs text-muted-foreground">
+                            Premer luknje (mm)
+                          </Label>
+                          <Select value={concreteHoleDiaMm} onValueChange={setConcreteHoleDiaMm}>
+                            <SelectTrigger id="concreteDia" className="mt-1 h-9">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {['200', '250', '300', '350', '400'].map((v) => (
+                                <SelectItem key={v} value={v}>{v} mm</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="concreteDepth" className="text-xs text-muted-foreground">
+                            Globina luknje (mm)
+                          </Label>
+                          <Input
+                            id="concreteDepth"
+                            type="number"
+                            inputMode="numeric"
+                            min={400}
+                            max={1500}
+                            step={50}
+                            className="mt-1 h-9"
+                            value={concreteHoleDepthMm}
+                            onChange={(e) => setConcreteHoleDepthMm(e.target.value)}
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Card className="px-3 py-2.5 bg-white">
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Betona skupaj</p>
+                          <p className="text-xl font-bold text-roksal-navy">
+                            {totalL.toLocaleString('sl-SI')} <span className="text-sm font-medium">L</span>
+                          </p>
+                          <p className="text-[10px] text-muted-foreground">{Math.round(perPostL)} L / steber</p>
+                        </Card>
+                        <Card className="px-3 py-2.5 bg-white">
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Vreče 25 kg</p>
+                          <p className="text-xl font-bold text-roksal-amber">{bags25}</p>
+                          <p className="text-[10px] text-muted-foreground">≈ 12 L / vreča</p>
+                        </Card>
+                      </div>
+                      {parseInt(concreteHoleDepthMm) < 800 && (
+                        <p className="flex items-start gap-1.5 text-[11px] leading-snug text-amber-700">
+                          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                          Globina pod 800 mm — v Sloveniji je priporočena zmrzovalna globina ≈ 80 cm,
+                          sicer lahko zmrzal dviguje stebre.
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+                )
+              })()}
 
               {/* Per-segment breakdown */}
               <Card>

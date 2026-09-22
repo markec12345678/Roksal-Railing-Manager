@@ -3,11 +3,12 @@
 /**
  * Obvestilni center — zvonek v TopBaru.
  *
- * Združi tri najpomembnejše signale za monterja, ki so prej raztreseni
+ * Združi štiri najpomembnejše signale za monterja, ki so prej raztreseni
  * po zavihkih:
  *  1. ⚠️ nizka zaloga (material pod minimalno stanje)
  *  2. 📅 današnje montaže (kdo, kje, status)
  *  3. 🌩️ vremensko opozorilo (vetrní duši / nevarno za montažo)
+ *  4. 📞 zapadli follow-upi ponudb (stranka še ni odgovorila)
  *
  * Podatki se poberejo le ob odprtju panela + ob dogodku 'roksal:refresh'
  * (ki ga sproži sync v page.tsx) — ni dodatnih intervalov.
@@ -19,12 +20,12 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { Button } from '@/components/ui/button'
 import {
   Bell, Package, CalendarDays, CloudLightning, CheckCheck,
-  ChevronRight, RefreshCw, AlertTriangle, Loader2,
+  ChevronRight, RefreshCw, AlertTriangle, Loader2, FileClock,
 } from 'lucide-react'
 
 interface NotificationItem {
   id: string
-  kind: 'stock' | 'install' | 'weather'
+  kind: 'stock' | 'install' | 'weather' | 'followup'
   title: string
   subtitle: string
   meta?: string
@@ -78,7 +79,9 @@ export function NotificationCenter() {
       // 2) Današnje montaže
       if (projRes.ok) {
         const projects = (await projRes.json()) as {
-          id: string; nazivProjekta: string; datumMontaze: string | null; status: string; customer?: { ime: string } | null
+          id: string; nazivProjekta: string; datumMontaze: string | null; status: string;
+          dealLocked: boolean; followUpDate: string | null;
+          customer?: { ime: string } | null
         }[]
         const today = new Date()
         const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
@@ -90,6 +93,26 @@ export function NotificationCenter() {
             title: p.nazivProjekta,
             subtitle: p.customer?.ime ?? 'Stranka ni določena',
             meta: p.status === 'V_TEKU' ? 'V teku' : 'Načrtovana',
+          })
+        }
+
+        // 2b) Zapadli follow-upi ponudb (ponudba poslana, stranka še ni odgovorila)
+        const dueFollowUps = (projects || []).filter(
+          (p) =>
+            !p.dealLocked &&
+            p.followUpDate &&
+            p.status !== 'ZAKLJUCENO' &&
+            new Date(p.followUpDate).getTime() <= today.getTime(),
+        )
+        for (const p of dueFollowUps.slice(0, 6)) {
+          const d = new Date(p.followUpDate as string)
+          const days = Math.floor((today.getTime() - d.getTime()) / 86400000)
+          out.push({
+            id: `followup-${p.id}`,
+            kind: 'followup',
+            title: p.nazivProjekta,
+            subtitle: `Ponudba čaka odziv · spomnik ${d.toLocaleDateString('sl-SI')}`,
+            meta: days > 0 ? `zapadlo ${days} dni` : 'danes',
           })
         }
       }
@@ -140,6 +163,8 @@ export function NotificationCenter() {
     } else if (item.kind === 'install') {
       window.dispatchEvent(new CustomEvent('roksal:navigate', { detail: { tab: 'dashboard' } }))
       window.dispatchEvent(new CustomEvent('roksal:select-project', { detail: item.id.replace('install-', '') }))
+    } else if (item.kind === 'followup') {
+      window.dispatchEvent(new CustomEvent('roksal:navigate', { detail: { tab: 'more', more: 'crm' } }))
     } else {
       window.dispatchEvent(new CustomEvent('roksal:navigate', { detail: { tab: 'dashboard' } }))
     }
@@ -149,6 +174,7 @@ export function NotificationCenter() {
     stock: { icon: Package, bg: 'bg-red-100', fg: 'text-red-600' },
     install: { icon: CalendarDays, bg: 'bg-roksal-amber/15', fg: 'text-roksal-amber' },
     weather: { icon: CloudLightning, bg: 'bg-sky-100', fg: 'text-sky-700' },
+    followup: { icon: FileClock, bg: 'bg-orange-100', fg: 'text-orange-700' },
   }
 
   return (

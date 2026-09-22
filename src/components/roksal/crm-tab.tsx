@@ -14,6 +14,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { useToast } from '@/hooks/use-toast'
 import { EmptyState } from '@/components/ui/empty-state'
+import { QuoteFollowUp } from '@/components/roksal/quote-followup'
 import {
   Users,
   Search,
@@ -192,6 +193,9 @@ export function CrmTab() {
 
   return (
     <div className="space-y-4">
+      {/* Sledenje ponudbam (follow-up spomniki) */}
+      <QuoteFollowUp />
+
       {/* Statistike */}
       {stats && (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">

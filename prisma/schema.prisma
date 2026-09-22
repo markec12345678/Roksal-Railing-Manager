@@ -116,6 +116,10 @@ model Project {
   bomDraftJson        String?   // BOM (Bill of Materials) draft JSON — ne naročilo še
   marginLocked        Float?    // zaklenjena marža ob podpisu
 
+  // FOLLOW-UP PONUDBE — sledenje odzivu stranke na poslano ponudbo
+  followUpDate        DateTime? // kdaj poslati/narediti spomnik
+  followUpOpomba      String?   // kratka opomba k spomniku
+
   customer      Customer       @relation(fields: [customerId], references: [id])
   monter        Profile?       @relation("InstallerProjects", fields: [monterId], references: [id])
   vodja         Profile?       @relation("ManagerProjects", fields: [vodjaId], references: [id])
