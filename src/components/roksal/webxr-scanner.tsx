@@ -16,8 +16,18 @@
  *    preventDefault, da klik na gumb NE postavi točke
  *  • Shranjevanje: POST /api/measurements (dolžina/višina + arMetadata s segmenti)
  *
+ * Združeni vzorci iz odprtokodnih repojev (runda N):
+ *  • immersive-web/webxr-samples (Apache-2.0) + immersive-web/raw-camera-access
+ *    explainer → Raw Camera Access ('camera-access', Chrome 107+):
+ *    XRWebGLBinding.getCameraImage(frame, view) → prava AR fotografia z
+ *    narisanimi merami (readPixels → canvas → overlay) — shrani v AR posnetke
+ *  • jeromeetienne/AR.js · three.js/examples/measure-it.html (MIT) → verižni
+ *    (polilinija) način: zaporedni vogali, Σ obrisperimeter, zapiranje tlorisa,
+ *    površina (shoelace) in število stebrov za ograjo
+ *
  * Degradacija: brez dom-overlay je HUD neviden med sejo (tap vseeno meri prek
- * 'select'), brez sidra so točke enkratne pozicije, brez globine ni žive razdalje.
+ * 'select'), brez sidra so točke enkratne pozicije, brez globine ni žive razdalje,
+ * brez camera-access foto gumb zajame sintetično shemo namesto kamere.
  * Za render ne potrebujemo three.js — kompozitor ARCore prikaže kamero, mi le
  * počistimo framebuffer (alpha 0) in retiklo pozicioniramo prek DOM (projekcija
  * world→NDC z lastnim mat4 računom).
@@ -31,7 +41,7 @@ import { fetchWithQueue } from '@/lib/offline-queue'
 import {
   X, Loader2, AlertTriangle, CheckCircle2, Box, Layers, Zap,
   Smartphone, Anchor, ScanLine, Undo2, Save, Crosshair, Gauge, Ruler,
-  Calculator, Image as ImageIcon,
+  Calculator, Image as ImageIcon, Camera, Route, Download,
 } from 'lucide-react'
 
 // ── WebXR tipi (še niso v TS lib.dom — minimalni lokalni opisi) ──────────────
@@ -44,9 +54,12 @@ interface XRRigidTransformLike {
   inverse: XRRigidTransformLike
 }
 
+interface XRCameraLike { width: number; height: number }
+
 interface XRViewLike {
   projectionMatrix: Float32Array
   transform: XRRigidTransformLike
+  camera?: XRCameraLike | null
 }
 
 interface XRViewerPoseLike { views: XRViewLike[] }
@@ -103,6 +116,17 @@ type XRWebGLLayerCtor = new (
   gl: WebGL2RenderingContext | WebGLRenderingContext,
 ) => XRWebGLLayerLike
 
+// Raw Camera Access (immersive-web/raw-camera-access): getCameraImage(frame, view)
+// spec; starejši Chrome 93–106 je imel getCameraImage(view) — klicemo oboje try/catch
+interface XRWebGLBindingLike {
+  getCameraImage(a: unknown, b?: unknown): WebGLTexture | null
+}
+
+type XRWebGLBindingCtor = new (
+  session: XRSessionLike,
+  gl: WebGL2RenderingContext | WebGLRenderingContext,
+) => XRWebGLBindingLike
+
 declare global {
   interface Navigator {
     xr?: {
@@ -112,6 +136,7 @@ declare global {
   }
   interface Window {
     XRWebGLLayer?: XRWebGLLayerCtor
+    XRWebGLBinding?: XRWebGLBindingCtor
   }
 }
 
@@ -168,6 +193,81 @@ function analyzeSpread(lens: number[]): AccuracyInfo | null {
   }
 }
 
+// ── Verižni način (vzorec: AR.js measure-it) ────────────────────────────────
+// Zaporedni vogali ograje → segmenti V1..Vn; tap blizu prvega vogala (< 0.6 m)
+// zapre tloris → površina (shoelace po XZ) + število stebrov (razmak 2.5 m).
+interface ChainStats {
+  corners: number
+  perimeterMm: number
+  closed: boolean
+  areaM2: number | null
+  posts: number
+}
+
+function shoelaceAreaM2(pts: { x: number; z: number }[]): number {
+  if (pts.length < 3) return 0
+  let s = 0
+  for (let i = 0; i < pts.length; i++) {
+    const a = pts[i]
+    const b = pts[(i + 1) % pts.length]
+    s += a.x * b.z - b.x * a.z
+  }
+  return Math.abs(s) / 2
+}
+
+function computeChainStats(pts: XrPoint[], closed: boolean): ChainStats {
+  const n = pts.length
+  if (n < 2) {
+    return { corners: n, perimeterMm: 0, closed: false, areaM2: null, posts: 0 }
+  }
+  let total = 0
+  for (let i = 1; i < n; i++) total += dist3(pts[i - 1].pos, pts[i].pos) * 1000
+  if (closed && n >= 3) total += dist3(pts[n - 1].pos, pts[0].pos) * 1000
+  const perimeterMm = Math.round(total)
+  const areaM2 =
+    closed && n >= 3
+      ? Math.round(shoelaceAreaM2(pts.map((p) => ({ x: p.pos.x, z: p.pos.z }))) * 100) / 100
+      : null
+  const posts = Math.max(2, Math.ceil(total / POST_SPACING_MM) + 1)
+  return { corners: n, perimeterMm, closed, areaM2, posts }
+}
+
+interface ChainSegment {
+  aId: string
+  bId: string
+  aPos: XRVec3Like
+  bPos: XRVec3Like
+  label: string
+  distanceMm: number
+}
+
+/** Zaporedni segmenti verige (V1..Vn) + zapirjalni segment pri zaprtem tlorisu. */
+function chainSegments(pts: XrPoint[], closed: boolean): ChainSegment[] {
+  const out: ChainSegment[] = []
+  for (let i = 1; i < pts.length; i++) {
+    out.push({
+      aId: pts[i - 1].id,
+      bId: pts[i].id,
+      aPos: pts[i - 1].pos,
+      bPos: pts[i].pos,
+      label: `V${i}`,
+      distanceMm: dist3(pts[i - 1].pos, pts[i].pos) * 1000,
+    })
+  }
+  if (closed && pts.length >= 3) {
+    const last = pts[pts.length - 1]
+    out.push({
+      aId: last.id,
+      bId: pts[0].id,
+      aPos: last.pos,
+      bPos: pts[0].pos,
+      label: `V${pts.length}`,
+      distanceMm: dist3(last.pos, pts[0].pos) * 1000,
+    })
+  }
+  return out
+}
+
 interface HudData {
   frameCount: number
   fps: number
@@ -186,9 +286,12 @@ interface FeatureFlags {
   depth: boolean
   planes: boolean
   overlay: boolean
+  camera: boolean
 }
 
-const NO_FEATURES: FeatureFlags = { anchors: false, depth: false, planes: false, overlay: false }
+const NO_FEATURES: FeatureFlags = { anchors: false, depth: false, planes: false, overlay: false, camera: false }
+
+const POST_SPACING_MM = 2500 // standardni razmak stebrov ograje
 
 // ── Pomožne funkcije ─────────────────────────────────────────────────────────
 
@@ -250,6 +353,15 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
   const [savingSchema, setSavingSchema] = useState(false)
   const [schemaSaved, setSchemaSaved] = useState(false)
 
+  // Verižni način + foto zajem (runda N: AR.js measure-it + raw-camera-access)
+  const [chainMode, setChainMode] = useState(false)
+  const [chainPointsView, setChainPointsView] = useState<{ id: string; label: string }[]>([])
+  const [chainClosed, setChainClosed] = useState(false)
+  const [chainStats, setChainStats] = useState<ChainStats | null>(null)
+  const [chainMeasurementsView, setChainMeasurementsView] = useState<{ id: string; label: string; distanceMm: number }[]>([])
+  const [capturing, setCapturing] = useState(false)
+  const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null)
+
   // Refs — vse, kar XRFrame zanka bere/pise (brez re-renderjev pri 60 fps)
   const sessionRef = useRef<XRSessionLike | null>(null)
   const glRef = useRef<WebGL2RenderingContext | WebGLRenderingContext | null>(null)
@@ -269,6 +381,17 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
   const fpsRef = useRef({ t: 0, count: 0 })
   const screenRef = useRef({ w: 1, h: 1 })
   const pointSeqRef = useRef(0)
+  const frameRef = useRef<XRFrameLike | null>(null)
+  const latestViewRef = useRef<XRViewLike | null>(null)
+  const bindingRef = useRef<XRWebGLBindingLike | null>(null)
+  const photoRequestRef = useRef(false)
+  const photoBusyRef = useRef(false)
+  const chainModeRef = useRef(false)
+  const chainPointsRef = useRef<XrPoint[]>([])
+  const chainClosedRef = useRef(false)
+  // Foto zajem se nastavlja v efektu (dovostop do najnovejšega state-a brez
+  // re-kreacije XR frame zanke — ta mora ostati stabilna)
+  const capturePhotoCbRef = useRef<(frame: XRFrameLike, view: XRViewLike, planeCount: number) => void>(() => { /* nastavi efekt */ })
 
   // DOM refi za direktno pozicioniranje/besedilo (60 fps brez Reacta)
   const reticleRef = useRef<HTMLDivElement | null>(null)
@@ -314,7 +437,66 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
   }, [updateScreenSize])
 
   // ── Postavitev točke (klic iz 'select' dogodka) ───────────────────────────
+
+  // Verižni način: vsak tap doda vogal; tap blizu prvega vogala (< 0.6 m) zapre tloris
+  const placeChainPoint = useCallback(async () => {
+    const reticle = reticlePosRef.current
+    if (!reticle) {
+      toast({ title: 'Ploskev ni zaznana', description: 'Telefon usmeri proti tlem ali steni in počakaj retiklo.' })
+      return
+    }
+    const pts = chainPointsRef.current
+
+    // Zapiranje tlorisa (AR.js measure-it pattern: tap na prvo točko zaključi poligon)
+    if (!chainClosedRef.current && pts.length >= 3) {
+      if (dist3(pts[0].pos, reticle) * 1000 < 600) {
+        chainClosedRef.current = true
+        setChainClosed(true)
+        const st = computeChainStats(pts, true)
+        setChainStats(st)
+        try { navigator.vibrate?.([50, 40, 50, 40, 90]) } catch { /* ignore */ }
+        toast({
+          title: 'Tloris zaprt ✓',
+          description: `Obris ${fmtMm(st.perimeterMm)} · ${st.areaM2 !== null ? `${st.areaM2.toFixed(2)} m²` : 'površina n/a'} · ${st.posts} stebrov (2,5 m)`,
+        })
+        return
+      }
+    }
+
+    let anchor: XRAnchorLike | null = null
+    try {
+      const hit = latestHitRef.current
+      if (hit?.createAnchor) anchor = await hit.createAnchor()
+    } catch { /* sidro ni ključno */ }
+
+    pointSeqRef.current += 1
+    const point: XrPoint = {
+      id: `c${Date.now()}_${pointSeqRef.current}`,
+      label: String(pts.length + 1),
+      anchor,
+      pos: { x: reticle.x, y: reticle.y, z: reticle.z },
+    }
+    chainPointsRef.current = [...chainPointsRef.current, point]
+    setChainPointsView((p) => [...p, { id: point.id, label: point.label }])
+    setChainStats(computeChainStats(chainPointsRef.current, chainClosedRef.current))
+    setSavedToProject(false)
+    setSchemaSaved(false)
+    try { navigator.vibrate?.(25) } catch { /* ignore */ }
+    const st = computeChainStats(chainPointsRef.current, chainClosedRef.current)
+    toast({
+      title: `Vogal ${point.label} — obris ${fmtMm(st.perimeterMm)}`,
+      description:
+        !chainClosedRef.current && pts.length >= 3
+          ? 'Tapni prvi vogal (ali ploskev < 0,6 m od njega) za zaprtje tlorisa'
+          : 'Tapni naslednji vogal ograje',
+    })
+  }, [toast])
+
   const placePoint = useCallback(async () => {
+    if (chainModeRef.current) {
+      await placeChainPoint()
+      return
+    }
     const hit = latestHitRef.current
     const reticle = reticlePosRef.current
     if (!hit || !reticle) {
@@ -422,10 +604,29 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
         }
       }
     }
+    for (const pt of chainPointsRef.current) {
+      if (pt.anchor && refSpace) {
+        const pp = frame.getPose(pt.anchor.anchorSpace, refSpace)
+        if (pp) {
+          const p = pp.transform.position
+          pt.pos = { x: p.x, y: p.y, z: p.z }
+        }
+      }
+    }
+    frameRef.current = frame
+    latestViewRef.current = view
 
-    // 3) Žive razdalje
+    // 3) Žive razdalje — verižni način: zadnji vogal → retikla; dvo-točkovni: A → retikla
     const pending = pendingRef.current
-    const liveMm = reticle && pending ? dist3(pending.pos, reticle) * 1000 : null
+    const chainPts = chainPointsRef.current
+    const chainLast = chainModeRef.current && !chainClosedRef.current && chainPts.length > 0
+      ? chainPts[chainPts.length - 1]
+      : null
+    const liveMm = chainLast && reticle
+      ? dist3(chainLast.pos, reticle) * 1000
+      : reticle && pending
+        ? dist3(pending.pos, reticle) * 1000
+        : null
     const reticleMm = reticle ? dist3(reticle, head) * 1000 : null
 
     // 4) Ravnine
@@ -437,6 +638,12 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
         planeCount = set.size
         for (const pl of set) if (pl.orientation === 'vertical') planesVertical += 1
       } catch { /* plane-detection brez podpore */ }
+    }
+
+    // 4b) Foto zajem — getCameraImage mora biti klican ZNOTRAJ XRFrame callbacka
+    if (photoRequestRef.current) {
+      photoRequestRef.current = false
+      capturePhotoCbRef.current(frame, view, planeCount)
     }
 
     // 5) Globina v središču zaslona (Depth API, CPU)
@@ -460,6 +667,13 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
       }
     }
     for (const pt of pointsRef.current) {
+      const el = markerElsRef.current.get(pt.id)
+      if (!el) continue
+      const sp = projectToScreen(pt.pos, view, w, h)
+      el.style.opacity = sp.visible ? '1' : '0.3'
+      el.style.transform = `translate3d(${sp.x - 7}px, ${sp.y - 7}px, 0)`
+    }
+    for (const pt of chainPointsRef.current) {
       const el = markerElsRef.current.get(pt.id)
       if (!el) continue
       const sp = projectToScreen(pt.pos, view, w, h)
@@ -492,6 +706,12 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
         }
         return m
       }))
+      // Verižni segmenti (zdravim tudi zapirjalni) — za seznam + accuracy coach
+      if (chainModeRef.current) {
+        const segs = chainSegments(chainPointsRef.current, chainClosedRef.current)
+        setChainMeasurementsView(segs.map((s, i) => ({ id: `v${i}_${s.aId}_${s.bId}`, label: s.label, distanceMm: s.distanceMm })))
+        setChainStats(computeChainStats(chainPointsRef.current, chainClosedRef.current))
+      }
     }
   }, [])
 
@@ -508,6 +728,10 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
     glRef.current = null
     refSpaceRef.current = null
     viewerSpaceRef.current = null
+    bindingRef.current = null
+    frameRef.current = null
+    latestViewRef.current = null
+    photoRequestRef.current = false
     // Sidra pobrišemo na napravi; mere/točke ostanejo v state-u za "Shrani"
     for (const pt of pointsRef.current) {
       try { pt.anchor?.delete() } catch { /* ignore */ }
@@ -527,8 +751,8 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
         const opts: Record<string, unknown> = {
           requiredFeatures: ['hit-test'],
           optionalFeatures: withExtras
-            ? ['anchors', 'depth-sensing', 'plane-detection', 'dom-overlay']
-            : ['dom-overlay'],
+            ? ['anchors', 'depth-sensing', 'plane-detection', 'dom-overlay', 'camera-access']
+            : ['dom-overlay', 'camera-access'],
         }
         if (withExtras) {
           opts.depthSensing = {
@@ -556,6 +780,7 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
         depth: granted.includes('depth-sensing'),
         planes: granted.includes('plane-detection'),
         overlay: granted.includes('dom-overlay'),
+        camera: granted.includes('camera-access'),
       }
       setFeatures(flags)
 
@@ -575,6 +800,18 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
       const baseLayer = new LayerCtor(session, gl)
       await session.updateRenderState({ baseLayer })
       glRef.current = gl
+
+      // Raw Camera Access binding (Chrome 107+, 'camera-access' podeljen)
+      const BindingCtor = window.XRWebGLBinding
+      if (flags.camera && BindingCtor) {
+        try {
+          bindingRef.current = new BindingCtor(session, gl)
+        } catch {
+          bindingRef.current = null
+        }
+      } else {
+        bindingRef.current = null
+      }
 
       // Prostori + hit-test vir
       refSpaceRef.current = await session.requestReferenceSpace('local')
@@ -645,6 +882,27 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
 
   // ── Undo ────────────────────────────────────────────────────────────────────
   const undo = useCallback(() => {
+    // Verižni način: zaprtje razpre, sicer odstrani zadnji vogal
+    if (chainModeRef.current) {
+      if (chainClosedRef.current) {
+        chainClosedRef.current = false
+        setChainClosed(false)
+        setChainStats(computeChainStats(chainPointsRef.current, false))
+        setSavedToProject(false)
+        setSchemaSaved(false)
+        return
+      }
+      const lastC = chainPointsRef.current[chainPointsRef.current.length - 1]
+      if (!lastC) return
+      try { lastC.anchor?.delete() } catch { /* ignore */ }
+      chainPointsRef.current = chainPointsRef.current.slice(0, -1)
+      setChainPointsView((arr) => arr.slice(0, -1))
+      markerElsRef.current.delete(lastC.id)
+      setChainStats(computeChainStats(chainPointsRef.current, false))
+      setSavedToProject(false)
+      setSchemaSaved(false)
+      return
+    }
     if (pendingRef.current) {
       const p = pendingRef.current
       try { p.anchor?.delete() } catch { /* ignore */ }
@@ -672,8 +930,34 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
     setSchemaSaved(false)
   }, [])
 
-  // ── Povzetek mer (skupno za Shrani / Kalkulator / Shema) ─────────────────
+  // ── Povzetek mer (skupno za Shrani / Kalkulator / Shema / Foto) ──────────
   const summarize = useCallback(() => {
+    // Verižni način → obrisperimeter (Σ segmentov + zapirjalni)
+    if (chainModeRef.current && chainPointsRef.current.length >= 2) {
+      const pts = chainPointsRef.current
+      const chainSt = computeChainStats(pts, chainClosedRef.current)
+      const rawSegs = chainSegments(pts, chainClosedRef.current)
+      const segs = rawSegs.map((s, i) => ({
+        oznaka: i === rawSegs.length - 1 && chainClosedRef.current && pts.length >= 3 ? `${s.label} (zaprtje)` : s.label,
+        dolzinaMm: Math.max(1, Math.round(s.distanceMm)),
+        a: { x: +s.aPos.x.toFixed(4), y: +s.aPos.y.toFixed(4), z: +s.aPos.z.toFixed(4) },
+        b: { x: +s.bPos.x.toFixed(4), y: +s.bPos.y.toFixed(4), z: +s.bPos.z.toFixed(4) },
+      }))
+      const verticalLens = segs
+        .filter((s) => Math.abs(s.a.y - s.b.y) > 0.5 * Math.max(Math.hypot(s.a.x - s.b.x, s.a.z - s.b.z), 0.001))
+        .map((s) => s.dolzinaMm)
+      // Višina: najdaljši navpični segment; če ni izmerjena → standardna ocena 1200 mm
+      const visinaOcena = verticalLens.length === 0
+      const visinaMm = visinaOcena ? 1200 : Math.max(...verticalLens)
+      return {
+        segs,
+        dolzinaMm: Math.max(1, chainSt.perimeterMm || Math.max(...segs.map((s) => s.dolzinaMm))),
+        visinaMm,
+        accuracy: { horiz: analyzeSpread(segs.map((s) => s.dolzinaMm)), vert: analyzeSpread(verticalLens) },
+        chain: chainSt,
+        visinaOcena,
+      }
+    }
     const segs = measurementsRef.current.map((m) => ({
       oznaka: m.label,
       dolzinaMm: Math.max(1, Math.round(m.distanceMm)),
@@ -694,11 +978,17 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
     const dolzinaMm = horizontalLens.length ? Math.max(...horizontalLens) : longest
     const visinaMm = verticalLens.length ? Math.max(...verticalLens) : longest
     const accuracy = { horiz: analyzeSpread(horizontalLens), vert: analyzeSpread(verticalLens) }
-    return { segs, dolzinaMm, visinaMm, accuracy }
+    return { segs, dolzinaMm, visinaMm, accuracy, chain: undefined as ChainStats | undefined, visinaOcena: false }
   }, [])
 
   // Živi accuracy nadzor iz trenutnih meritev (render v panelu med sejo)
   const accuracyView = useMemo<AccuracyInfo | null>(() => {
+    // Verižni način: dolžine zaporednih segmentov (V1..Vn) — sprejemljivo,
+    // ker so po naravi različno dolgi; coach uporabniku pokaže razpon
+    if (chainMode) {
+      if (chainMeasurementsView.length < 2) return null
+      return analyzeSpread(chainMeasurementsView.map((m) => Math.max(1, Math.round(m.distanceMm))))
+    }
     if (measurementsView.length < 2) return null
     const lensH: number[] = []
     const lensV: number[] = []
@@ -710,16 +1000,19 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
       else lensV.push(mm)
     }
     return analyzeSpread(lensH) ?? analyzeSpread(lensV)
-  }, [measurementsView])
+  }, [measurementsView, chainMeasurementsView, chainMode])
 
   // ── Shrani v Meritve (pravi POST /api/measurements) ───────────────────────
   const saveMeasurements = useCallback(async () => {
-    if (!projectId || measurementsRef.current.length === 0) return
+    if (!projectId) return
+    // Verižni način nima par meritev — testiraj summary, ne measurementsRef
+    const testSummary = summarize()
+    if (!testSummary || testSummary.segs.length === 0) return
     setSaving(true)
     try {
       const summary = summarize()
       if (!summary) return
-      const { segs, dolzinaMm, visinaMm, accuracy } = summary
+      const { segs, dolzinaMm, visinaMm, accuracy, chain, visinaOcena } = summary
 
       // fetchWithQueue: brez povezave se zapis vrsti in pošlje samodejno ob povezavi
       const res = await fetchWithQueue('/api/measurements', {
@@ -728,16 +1021,18 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
           dolzinaMm,
           visinaMm,
           arMetadata: {
-            source: 'webxr-hit-test',
+            source: chain ? 'webxr-chain-perimeter' : 'webxr-hit-test',
             segments: segs,
             features,
             planeCount: hud.planeCount,
             fps: hud.fps,
             accuracy,
+            chain: chain ?? undefined,
+            visinaOcena: visinaOcena || undefined,
             savedAt: new Date().toISOString(),
           },
         },
-        label: `WebXR meritev ${dolzinaMm}×${visinaMm} mm`,
+        label: chain ? `WebXR obris ${fmtMm(dolzinaMm)}` : `WebXR meritev ${dolzinaMm}×${visinaMm} mm`,
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data = (await res.json()) as { queued?: boolean }
@@ -759,7 +1054,10 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
         toast({
           title: '✓ Mere shranjene v Meritve',
           description:
-            `Dolžina ${fmtMm(dolzinaMm)} · višina ${fmtMm(visinaMm)} (${segs.length} segmentov)` +
+            (chain
+              ? `Obris ${fmtMm(dolzinaMm)} · ${chain.closed && chain.areaM2 !== null ? `${chain.areaM2.toFixed(2)} m² · ` : ''}${chain.posts} stebrov (${chain.corners} vogalov)`
+              : `Dolžina ${fmtMm(dolzinaMm)} · višina ${fmtMm(visinaMm)} (${segs.length} segmentov)`) +
+            (visinaOcena ? ' · višina ocenjena (1200 mm)' : '') +
             (worst === 'razhajajoce'
               ? ' · ⚠️ meritve se razlikujejo — priporočamo ponovno merjenje'
               : worst === 'zanesljivo'
@@ -786,23 +1084,44 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
       detail: {
         dolzinaMm: summary.dolzinaMm,
         visinaMm: summary.visinaMm,
-        locationName: `AR WebXR (${summary.segs.length} segmentov)`,
+        locationName: summary.chain
+          ? `AR verižni obris (${summary.segs.length} segmentov)`
+          : `AR WebXR (${summary.segs.length} segmentov)`,
       },
     }))
     try { navigator.vibrate?.([30, 20, 30]) } catch { /* ignore */ }
     toast({
       title: '→ Kalkulator odprt',
-      description: `Dolžina ${fmtMm(summary.dolzinaMm)} · višina ${fmtMm(summary.visinaMm)} prenešeni.`,
+      description: summary.chain
+        ? `Obris ${fmtMm(summary.dolzinaMm)} prenešen kot dolžina ograje.`
+        : `Dolžina ${fmtMm(summary.dolzinaMm)} · višina ${fmtMm(summary.visinaMm)} prenešeni.`,
     })
   }, [summarize, toast])
+
+  // ── Način merjenja: dvo-točkovni ↔ verižni ───────────────────────────────
+  const switchMode = useCallback((toChain: boolean) => {
+    if (chainModeRef.current === toChain) return
+    chainModeRef.current = toChain
+    setChainMode(toChain)
+    setSavedToProject(false)
+    setSchemaSaved(false)
+    toast({
+      title: toChain ? 'Verižni način (obris)' : 'Dvo-točkovni način',
+      description: toChain
+        ? 'Tapni vogale ograje po vrsti — Σ obris, površina in stebri se računajo sami.'
+        : 'Tapni A, nato B — ena mera na par točk.',
+    })
+  }, [toast])
 
   // ── AR shema (tloris) → AR posnetki ─────────────────────────────────────────
   // Iz pozicij točk/sider nariše ploskovni tloris (pogled zgoraj: x→X, z→Y)
   // z izmerjenimi segmenti v mm in ga shrani kot base64 PNG v AR posnetke.
   const generateSchemaCanvas = useCallback((): { dataUrl: string; summary: NonNullable<ReturnType<typeof summarize>> } | null => {
     const summary = summarize()
-    const pts = pointsRef.current
-    if (!summary || pts.length === 0) return null
+    if (!summary) return null
+    const chain = chainModeRef.current
+    const pts = chain ? chainPointsRef.current : pointsRef.current
+    if (pts.length === 0) return null
     const W = 1080
     const H = 1400
     const canvas = document.createElement('canvas')
@@ -828,7 +1147,7 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
     ctx.fillRect(0, 0, W, H)
     ctx.fillStyle = '#f59e0b'
     ctx.font = 'bold 44px system-ui, sans-serif'
-    ctx.fillText('WEBXR AR — SHEMA MERITEV', 60, 96)
+    ctx.fillText(chain ? 'WEBXR AR — VERIŽNI OBRIS' : 'WEBXR AR — SHEMA MERITEV', 60, 96)
     ctx.fillStyle = 'rgba(255,255,255,0.65)'
     ctx.font = '26px system-ui, sans-serif'
     ctx.fillText(`Tloris (pogled zgoraj) · ${new Date().toLocaleString('sl-SI')}`, 60, 140)
@@ -843,13 +1162,19 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
       ctx.beginPath(); ctx.moveTo(40, gy); ctx.lineTo(W - 40, gy); ctx.stroke()
     }
 
-    // Segmenti + oznake
-    for (const m of measurementsRef.current) {
-      const a = pts.find((p) => p.id === m.aId)
-      const b = pts.find((p) => p.id === m.bId)
-      if (!a || !b) continue
-      const pa = map({ x: a.pos.x, z: a.pos.z })
-      const pb = map({ x: b.pos.x, z: b.pos.z })
+    // Segmenti + oznake (dvo-točkovni: par meritev; verižni: zaporedni V-seg)
+    const drawSegs: { aPos: XRVec3Like; bPos: XRVec3Like; distanceMm: number }[] = chain
+      ? chainSegments(pts, chainClosedRef.current)
+      : measurementsRef.current
+          .map((m) => {
+            const a = pts.find((p) => p.id === m.aId)
+            const b = pts.find((p) => p.id === m.bId)
+            return a && b ? { aPos: a.pos, bPos: b.pos, distanceMm: m.distanceMm } : null
+          })
+          .filter((s): s is { aPos: XRVec3Like; bPos: XRVec3Like; distanceMm: number } => s !== null)
+    for (const m of drawSegs) {
+      const pa = map({ x: m.aPos.x, z: m.aPos.z })
+      const pb = map({ x: m.bPos.x, z: m.bPos.z })
       ctx.strokeStyle = '#f59e0b'
       ctx.lineWidth = 5
       ctx.beginPath(); ctx.moveTo(pa.x, pa.y); ctx.lineTo(pb.x, pb.y); ctx.stroke()
@@ -883,7 +1208,7 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
     ctx.fillStyle = 'rgba(255,255,255,0.55)'
     ctx.font = '24px system-ui, sans-serif'
     const feet = [
-      `Vir: pravi XRFrame hit-test${features.anchors ? ' + sidra' : ''}`,
+      `Vir: pravi XRFrame hit-test${features.anchors ? ' + sidra' : ''}${chain ? ' · verižni način' : ''}`,
       `Segmenti: ${summary.segs.length} · skupna dolžina ${fmtMm(summary.segs.reduce((a, s) => a + s.dolzinaMm, 0))}`,
       `Ravnine: ${hud.planeCount} · Roksal Railing Manager`,
     ]
@@ -908,9 +1233,11 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
         body: {
           projectId,
           imageUrl: gen.dataUrl,
-          tocke: pointsRef.current.map((p) => ({ label: p.label, x: +p.pos.x.toFixed(3), y: +p.pos.y.toFixed(3), z: +p.pos.z.toFixed(3) })),
+          tocke: (chainModeRef.current ? chainPointsRef.current : pointsRef.current).map((p) => ({ label: p.label, x: +p.pos.x.toFixed(3), y: +p.pos.y.toFixed(3), z: +p.pos.z.toFixed(3) })),
           meritve: gen.summary.segs.map((s) => ({ a: s.a, b: s.b, dolzinaMm: s.dolzinaMm, oznaka: s.oznaka })),
-          opombe: `WebXR hit-test shema · dolžina ${fmtMm(gen.summary.dolzinaMm)} · višina ${fmtMm(gen.summary.visinaMm)}`,
+          opombe: gen.summary.chain
+            ? `WebXR verižni obris · ${fmtMm(gen.summary.dolzinaMm)} · ${gen.summary.chain.closed && gen.summary.chain.areaM2 !== null ? `${gen.summary.chain.areaM2.toFixed(2)} m² · ` : ''}${gen.summary.chain.posts} stebrov`
+            : `WebXR hit-test shema · dolžina ${fmtMm(gen.summary.dolzinaMm)} · višina ${fmtMm(gen.summary.visinaMm)}`,
         },
         label: 'AR shema (WebXR)',
       })
@@ -920,7 +1247,9 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
       try { navigator.vibrate?.([40, 30, 40]) } catch { /* ignore */ }
       toast({
         title: data?.queued ? '📴 Shema je v offline vrsti' : '✓ Shema shranjena v AR posnetke',
-        description: `Tloris z ${gen.summary.segs.length} segmenti (dolžina ${fmtMm(gen.summary.dolzinaMm)}).`,
+        description: gen.summary.chain
+          ? `Obris z ${gen.summary.segs.length} segmenti (${fmtMm(gen.summary.dolzinaMm)}).`
+          : `Tloris z ${gen.summary.segs.length} segmenti (dolžina ${fmtMm(gen.summary.dolzinaMm)}).`,
       })
     } catch (err) {
       toast({
@@ -932,6 +1261,264 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
       setSavingSchema(false)
     }
   }, [projectId, generateSchemaCanvas, toast])
+
+  // ── AR foto zajem (Raw Camera Access, vzorec: immersive-web/webxr-samples) ─
+  // getCameraImage mora biti klican znotraj XRFrame callbacka → gumb samo
+  // zastavi photoRequestRef; zajem GL + canvas kompozicija se zgodi v naslednjem
+  // frame-u, shranjevanje pa asinhrono.
+  useEffect(() => {
+    capturePhotoCbRef.current = (frame, view, planeCount) => {
+      const gl = glRef.current
+      if (!gl || photoBusyRef.current) return
+      const camW = view.camera?.width ?? 0
+      const camH = view.camera?.height ?? 0
+
+      if (!view.camera || !camW || !camH) {
+        // Fallback: ni camera-access → sintetični posnetek (navy ozadje + mere)
+        setCapturing(true)
+        const ok = captureSyntheticPhoto()
+        setCapturing(false)
+        toast({
+          title: ok ? '📸 Posnetek (brez kamere)' : 'Foto zajem ni mogoč',
+          description: ok
+            ? 'camera-access ni podeljen — shranjena je sintetična shema z merami.'
+            : 'Ni mer za posnetek.',
+        })
+        return
+      }
+
+      photoBusyRef.current = true
+      setCapturing(true)
+      try {
+        const binding = bindingRef.current
+        let tex: WebGLTexture | null = null
+        if (binding) {
+          try {
+            tex = binding.getCameraImage(frame, view)
+          } catch {
+            try { tex = binding.getCameraImage(view) } catch { tex = null }
+          }
+        }
+        if (!tex) {
+          photoBusyRef.current = false
+          setCapturing(false)
+          toast({ title: 'Foto zajem ni uspel', description: 'Kamera tekstura ni na voljo (Chrome 107+ za camera-access).', variant: 'destructive' })
+          return
+        }
+        const fbo = gl.createFramebuffer()
+        let raw: Uint8Array | null = null
+        if (fbo) {
+          gl.bindFramebuffer(gl.FRAMEBUFFER, fbo)
+          gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0)
+          if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE) {
+            raw = new Uint8Array(camW * camH * 4)
+            gl.readPixels(0, 0, camW, camH, gl.RGBA, gl.UNSIGNED_BYTE, raw)
+          }
+          gl.bindFramebuffer(gl.FRAMEBUFFER, null)
+          gl.deleteFramebuffer(fbo)
+        }
+        if (!raw) {
+          photoBusyRef.current = false
+          setCapturing(false)
+          toast({ title: 'Foto zajem ni uspel', description: 'Branje kamera pikslov ni mogoče na tej napravi.', variant: 'destructive' })
+          return
+        }
+        // Težje canvas delo izven frame callbacka
+        void composePhoto(raw, camW, camH, view, planeCount).finally(() => {
+          photoBusyRef.current = false
+          setCapturing(false)
+        })
+      } catch (err) {
+        photoBusyRef.current = false
+        setCapturing(false)
+        toast({
+          title: 'Foto zajem ni uspel',
+          description: err instanceof Error ? err.message : 'Neznana napaka',
+          variant: 'destructive',
+        })
+      }
+    }
+  })
+
+  // Sintetični fallback: navy ozadje + segmenti + metapodatki (brez kamere)
+  const captureSyntheticPhoto = useCallback((): boolean => {
+    const summary = summarize()
+    if (!summary) return false
+    const W = 1080
+    const H = 1400
+    const canvas = document.createElement('canvas')
+    canvas.width = W
+    canvas.height = H
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return false
+    ctx.fillStyle = '#1d2b3e'
+    ctx.fillRect(0, 0, W, H)
+    ctx.strokeStyle = 'rgba(255,255,255,0.07)'
+    ctx.lineWidth = 1
+    for (let gy = 0; gy < H; gy += 64) {
+      ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke()
+    }
+    ctx.fillStyle = '#f59e0b'
+    ctx.font = 'bold 40px system-ui, sans-serif'
+    ctx.fillText('ROKSAL · AR POSNETEK', 60, 100)
+    ctx.fillStyle = 'rgba(255,255,255,0.75)'
+    ctx.font = '24px system-ui, sans-serif'
+    ctx.fillText('(camera-access ni podeljen — sintetični zajem)', 60, 140)
+    ctx.fillStyle = 'rgba(255,255,255,0.9)'
+    ctx.font = '28px system-ui, sans-serif'
+    const lines = [
+      summary.chain
+        ? `Obris: ${fmtMm(summary.dolzinaMm)} · ${summary.chain.posts} stebrov`
+        : `Dolžina ${fmtMm(summary.dolzinaMm)} · višina ${fmtMm(summary.visinaMm)}`,
+      `Ravnine: ${hud.planeCount} · ${new Date().toLocaleString('sl-SI')}`,
+    ]
+    lines.forEach((t, i) => ctx.fillText(t, 60, H - 140 + i * 44))
+    // Mini tloris
+    const pts = chainModeRef.current ? chainPointsRef.current : pointsRef.current
+    if (pts.length >= 2) {
+      const xs = pts.map((p) => p.pos.x)
+      const zs = pts.map((p) => p.pos.z)
+      const spanX = Math.max(Math.max(...xs) - Math.min(...xs), 0.4)
+      const spanZ = Math.max(Math.max(...zs) - Math.min(...zs), 0.4)
+      const scale = Math.min(600 / spanX, 600 / spanZ, 200)
+      const cx = W / 2
+      const cy = H / 2
+      const map = (p: { x: number; z: number }) => ({
+        x: cx + (p.x - (Math.min(...xs) + Math.max(...xs)) / 2) * scale,
+        y: cy + (p.z - (Math.min(...zs) + Math.max(...zs)) / 2) * scale,
+      })
+      const segs = chainModeRef.current ? chainSegments(pts, chainClosedRef.current) : summary.segs.map((s) => ({ aPos: s.a, bPos: s.b, distanceMm: s.dolzinaMm }))
+      ctx.strokeStyle = '#f59e0b'
+      ctx.lineWidth = 6
+      for (const s of segs) {
+        const pa = map({ x: s.aPos.x, z: s.aPos.z })
+        const pb = map({ x: s.bPos.x, z: s.bPos.z })
+        ctx.beginPath(); ctx.moveTo(pa.x, pa.y); ctx.lineTo(pb.x, pb.y); ctx.stroke()
+      }
+      for (const pt of pts) {
+        const pp = map({ x: pt.pos.x, z: pt.pos.z })
+        ctx.beginPath(); ctx.arc(pp.x, pp.y, 14, 0, Math.PI * 2)
+        ctx.fillStyle = '#ffffff'
+        ctx.fill()
+      }
+    }
+    setCapturedPhoto(canvas.toDataURL('image/jpeg', 0.85))
+    return true
+  }, [summarize, hud.planeCount])
+
+  // Kompozicija: kamera piksli (readPixels, spodaj-navzgor) + overlay mer
+  const composePhoto = useCallback(async (raw: Uint8Array, camW: number, camH: number, view: XRViewLike, planeCount: number) => {
+    const scale = Math.min(1, 1440 / camW)
+    const W = Math.round(camW * scale)
+    const H = Math.round(camH * scale)
+    const canvas = document.createElement('canvas')
+    canvas.width = W
+    canvas.height = H
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    // readPixels je bottom-up → preobrni vrstice
+    const tmp = document.createElement('canvas')
+    tmp.width = camW
+    tmp.height = camH
+    const tctx = tmp.getContext('2d')
+    if (!tctx) return
+    const img = tctx.createImageData(camW, camH)
+    const rowBytes = camW * 4
+    for (let y = 0; y < camH; y++) {
+      const src = (camH - 1 - y) * rowBytes
+      img.data.set(raw.subarray(src, src + rowBytes), y * rowBytes)
+    }
+    tctx.putImageData(img, 0, 0)
+    ctx.drawImage(tmp, 0, 0, W, H)
+
+    // Glava + noga (berljivost nad kamero)
+    ctx.fillStyle = 'rgba(29,43,62,0.85)'
+    ctx.fillRect(0, 0, W, Math.round(H * 0.075))
+    ctx.fillRect(0, Math.round(H * 0.9), W, Math.round(H * 0.1))
+    ctx.fillStyle = '#f59e0b'
+    ctx.font = `bold ${Math.round(H * 0.035)}px system-ui, sans-serif`
+    ctx.fillText('ROKSAL · AR POSNETEK', Math.round(W * 0.04), Math.round(H * 0.05))
+    ctx.fillStyle = 'rgba(255,255,255,0.92)'
+    ctx.font = `${Math.round(H * 0.024)}px system-ui, sans-serif`
+    const summary = summarize()
+    const foot = [
+      summary?.chain
+        ? `Obris ${fmtMm(summary.dolzinaMm)}${summary.chain.closed && summary.chain.areaM2 !== null ? ` · ${summary.chain.areaM2.toFixed(2)} m²` : ''} · ${summary.chain.posts} stebrov (2,5 m)`
+        : summary
+          ? `Dolžina ${fmtMm(summary.dolzinaMm)} · višina ${fmtMm(summary.visinaMm)}`
+          : 'AR posnetek',
+      `${new Date().toLocaleString('sl-SI')} · ravnine ${planeCount} · poravnava približna`,
+    ]
+    foot.forEach((t, i) => ctx.fillText(t, Math.round(W * 0.04), Math.round(H * 0.935 + i * H * 0.032)))
+
+    // Overlay mer — projekcija world→canvas (isti view kot med sejo)
+    const pts = chainModeRef.current ? chainPointsRef.current : pointsRef.current
+    const segs: { aPos: XRVec3Like; bPos: XRVec3Like; distanceMm: number; label: string }[] = chainModeRef.current
+      ? chainSegments(pts, chainClosedRef.current)
+      : measurementsRef.current.map((m) => ({ aPos: m.aPos, bPos: m.bPos, distanceMm: m.distanceMm, label: m.label }))
+    ctx.lineWidth = Math.max(3, Math.round(H * 0.004))
+    ctx.strokeStyle = '#f59e0b'
+    for (const s of segs) {
+      const pa = projectToScreen(s.aPos, view, W, H)
+      const pb = projectToScreen(s.bPos, view, W, H)
+      if (!pa.visible && !pb.visible) continue
+      ctx.beginPath(); ctx.moveTo(pa.x, pa.y); ctx.lineTo(pb.x, pb.y); ctx.stroke()
+      const mm = `${s.label}: ${fmtMm(s.distanceMm)}`
+      ctx.font = `bold ${Math.round(H * 0.026)}px system-ui, sans-serif`
+      const tw = ctx.measureText(mm).width
+      const mx = (pa.x + pb.x) / 2
+      const my = (pa.y + pb.y) / 2
+      ctx.fillStyle = 'rgba(255,255,255,0.95)'
+      ctx.fillRect(mx - tw / 2 - 8, my - H * 0.035, tw + 16, H * 0.032)
+      ctx.fillStyle = '#1d2b3e'
+      ctx.fillText(mm, mx - tw / 2, my - H * 0.012)
+    }
+    for (const pt of pts) {
+      const pp = projectToScreen(pt.pos, view, W, H)
+      if (!pp.visible) continue
+      ctx.beginPath(); ctx.arc(pp.x, pp.y, Math.max(5, H * 0.006), 0, Math.PI * 2)
+      ctx.fillStyle = '#ffffff'
+      ctx.fill()
+      ctx.strokeStyle = '#f59e0b'
+      ctx.lineWidth = 2
+      ctx.stroke()
+    }
+
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.85)
+    setCapturedPhoto(dataUrl)
+    try { navigator.vibrate?.([30, 30, 30]) } catch { /* ignore */ }
+
+    // Samodejno shrani v AR posnetke projekta (offline queue)
+    if (projectId) {
+      try {
+        const res = await fetchWithQueue('/api/ar-snapshots', {
+          body: {
+            projectId,
+            imageUrl: dataUrl,
+            tocke: pts.map((p) => ({ label: p.label, x: +p.pos.x.toFixed(3), y: +p.pos.y.toFixed(3), z: +p.pos.z.toFixed(3) })),
+            meritve: summary?.segs.map((s) => ({ a: s.a, b: s.b, dolzinaMm: s.dolzinaMm, oznaka: s.oznaka })) ?? [],
+            opombe: `AR foto posnetek (camera-access) · ${new Date().toLocaleString('sl-SI')}`,
+          },
+          label: 'AR foto posnetek',
+        })
+        if (res.ok) {
+          toast({ title: '📸 AR foto shranjen v posnetke', description: 'Odpri zavihek AR → AR posnetki za pregled.' })
+        } else {
+          toast({ title: '📸 Posnetek zajet', description: 'Shranjevanje v projekt ni uspelo — posnetek je v predogledu.' })
+        }
+      } catch {
+        toast({ title: '📸 Posnetek zajet', description: 'Shranjevanje ni uspelo (offline vrsta).' })
+      }
+    } else {
+      toast({ title: '📸 AR foto zajet', description: 'Za shranjevanje izberi projekt (Domov).' })
+    }
+  }, [projectId, summarize, toast])
+
+  const requestPhoto = useCallback(() => {
+    if (photoBusyRef.current) return
+    photoRequestRef.current = true
+  }, [])
 
   // ── Cleanup ob unmountu ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -952,8 +1539,14 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
     { label: 'Sidra', ok: features.anchors, value: features.anchors ? 'drift ✓' : '—' },
     { label: 'Globina', ok: features.depth, value: hud.centerDistM !== null ? `${hud.centerDistM.toFixed(2)} m` : '—' },
     { label: 'Ravnine', ok: features.planes, value: features.planes ? `${hud.planeCount}` : '—' },
+    { label: 'Kamera', ok: features.camera, value: features.camera ? 'foto ✓' : '—' },
     { label: 'Overlay', ok: features.overlay, value: features.overlay ? 'HUD' : '—' },
   ]
+
+  // Seznam mer v HUD-u — odvisno od načina
+  const hudMeasurements = chainMode
+    ? chainMeasurementsView
+    : measurementsView.map((m) => ({ id: m.id, label: m.label, distanceMm: m.distanceMm }))
 
   return (
     <div className="fixed inset-0 z-[60] bg-black" role="dialog" aria-label="WebXR AR merjenje">
@@ -1037,6 +1630,18 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
                   {p.label}
                 </div>
               ))}
+              {chainPointsView.map((p) => (
+                <div
+                  key={p.id}
+                  ref={(el) => {
+                    if (el) markerElsRef.current.set(p.id, el)
+                    else markerElsRef.current.delete(p.id)
+                  }}
+                  className="absolute left-0 top-0 flex h-4 w-4 items-center justify-center rounded-full border-2 border-roksal-amber bg-white text-[8px] font-black text-roksal-navy opacity-0 shadow"
+                >
+                  {p.label}
+                </div>
+              ))}
             </div>
 
             {/* Namigi sledenja */}
@@ -1054,12 +1659,47 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
               )}
             </div>
 
-            {/* Spodnja paluba: živa razdalja + mere + kontrole */}
+            {/* Spodnja paluba: način + živa razdalja + mere + kontrole */}
             <div className="absolute bottom-0 left-0 right-0 z-20 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
               <div className="mx-auto w-full max-w-md space-y-2 rounded-2xl bg-roksal-navy/92 p-3 backdrop-blur-md shadow-xl">
+                {/* Način merjenja: dvo-točkovni ↔ verižni (AR.js measure-it vzorec) */}
+                <div className="flex gap-1 rounded-xl bg-black/30 p-1" data-xr-ui role="group" aria-label="Način merjenja">
+                  <button
+                    type="button"
+                    onClick={() => switchMode(false)}
+                    className={`min-h-[36px] flex-1 rounded-lg px-2 text-[11px] font-semibold transition-all ${
+                      !chainMode ? 'bg-roksal-amber text-white shadow' : 'text-white/60 hover:bg-white/10'
+                    }`}
+                  >
+                    <Ruler className="mr-1 inline h-3.5 w-3.5" /> Dvo-točkovno
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => switchMode(true)}
+                    className={`min-h-[36px] flex-1 rounded-lg px-2 text-[11px] font-semibold transition-all ${
+                      chainMode ? 'bg-roksal-amber text-white shadow' : 'text-white/60 hover:bg-white/10'
+                    }`}
+                  >
+                    <Route className="mr-1 inline h-3.5 w-3.5" /> Verižno (obris)
+                  </button>
+                </div>
+
                 {/* Živa razdalja A→retikla (tape-measure način) */}
                 <div className="min-h-[44px] rounded-xl bg-black/30 px-3 py-2 text-center" data-xr-ui>
-                  {pendingView ? (
+                  {chainMode && chainPointsView.length > 0 && !chainClosed ? (
+                    <div>
+                      <div className="text-[9px] font-semibold uppercase tracking-wide text-white/50">
+                        Vogal {chainPointsView.length} postavljen — živa razdalja do naslednjega
+                      </div>
+                      <div className="text-3xl font-black tabular-nums text-roksal-amber">
+                        <span ref={liveDistElRef}>—</span>
+                      </div>
+                    </div>
+                  ) : chainMode && chainClosed ? (
+                    <div className="flex items-center justify-center gap-2 text-[11px] font-semibold text-green-300">
+                      <CheckCircle2 className="h-4 w-4" /> Tloris zaprt — shrani obris ali slikaj
+                    </div>
+                  ) : pendingView ? (
                     <div>
                       <div className="text-[9px] font-semibold uppercase tracking-wide text-white/50">
                         Točka A postavljena — živa razdalja do B
@@ -1080,15 +1720,39 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
                   ) : (
                     <div className="flex items-center justify-center gap-2 text-[11px] text-white/60">
                       <Crosshair className="h-4 w-4 text-roksal-amber" />
-                      {hud.tracking ? 'Tapni zaslon → točka A' : 'Usmeri telefon proti ploskvi'}
+                      {hud.tracking ? (chainMode ? 'Tapni zaslon → vogal 1' : 'Tapni zaslon → točka A') : 'Usmeri telefon proti ploskvi'}
                     </div>
                   )}
                 </div>
 
+                {/* Verižna statistika: obris · stebri · vogali · površina */}
+                {chainMode && chainStats && chainStats.corners >= 2 && (
+                  <div className="grid grid-cols-2 gap-1.5 rounded-xl bg-roksal-amber/10 p-2 sm:grid-cols-4" data-xr-ui>
+                    <div className="rounded-lg bg-black/25 px-2 py-1.5 text-center">
+                      <div className="text-[8px] font-semibold uppercase tracking-wide text-white/50">Obris</div>
+                      <div className="text-xs font-black tabular-nums text-roksal-amber">{fmtMm(chainStats.perimeterMm)}</div>
+                    </div>
+                    <div className="rounded-lg bg-black/25 px-2 py-1.5 text-center">
+                      <div className="text-[8px] font-semibold uppercase tracking-wide text-white/50">Stebri (2,5 m)</div>
+                      <div className="text-xs font-black tabular-nums text-white">{chainStats.posts}</div>
+                    </div>
+                    <div className="rounded-lg bg-black/25 px-2 py-1.5 text-center">
+                      <div className="text-[8px] font-semibold uppercase tracking-wide text-white/50">Vogali</div>
+                      <div className="text-xs font-black tabular-nums text-white">{chainStats.corners}{chainClosed ? ' · zaprt ✓' : ''}</div>
+                    </div>
+                    <div className="rounded-lg bg-black/25 px-2 py-1.5 text-center">
+                      <div className="text-[8px] font-semibold uppercase tracking-wide text-white/50">Površina</div>
+                      <div className={`text-xs font-black tabular-nums ${chainStats.areaM2 !== null ? 'text-green-300' : 'text-white/40'}`}>
+                        {chainStats.areaM2 !== null ? `${chainStats.areaM2.toFixed(2)} m²` : 'zapri tloris'}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Seznam mer */}
-                {measurementsView.length > 0 && (
+                {hudMeasurements.length > 0 && (
                   <div className="max-h-24 overflow-y-auto rounded-xl bg-black/25 px-3 py-1.5" data-xr-ui>
-                    {measurementsView.map((m) => (
+                    {hudMeasurements.map((m) => (
                       <div key={m.id} className="flex items-center justify-between py-0.5 text-[11px] text-white">
                         <span className="text-white/70">{m.label}</span>
                         <span className="font-bold tabular-nums text-roksal-amber">{fmtMm(m.distanceMm)}</span>
@@ -1127,38 +1791,52 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
                   </div>
                 )}
 
-                {/* Kontrole */}
+                {/* AR foto predogled (camera-access) */}
+                {capturedPhoto && (
+                  <div className="flex items-center gap-2 rounded-xl bg-black/25 p-2" data-xr-ui>
+                    <img
+                      src={capturedPhoto}
+                      alt="AR foto posnetek z merami"
+                      className="h-14 w-20 shrink-0 rounded-lg object-cover ring-1 ring-roksal-amber/40"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[10px] font-semibold text-white">AR foto posnetek</div>
+                      <div className="text-[9px] text-white/60">Z merami · shrani v AR posnetke</div>
+                    </div>
+                    <a
+                      href={capturedPhoto}
+                      download={`roksal-ar-${Date.now()}.jpg`}
+                      className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg bg-white/10 px-2 text-[10px] font-semibold text-white transition-colors hover:bg-white/20"
+                      aria-label="Prenesi AR posnetek"
+                    >
+                      <Download className="h-4 w-4" />
+                    </a>
+                  </div>
+                )}
+
+                {/* Kontrole — vrsta 1: Undo · Foto · Konec */}
                 <div className="flex gap-2" data-xr-ui>
                   <Button
                     type="button"
                     onClick={undo}
                     variant="outline"
                     size="sm"
-                    disabled={pointsView.length === 0}
+                    disabled={pointsView.length === 0 && chainPointsView.length === 0 && !chainClosed}
                     className="min-h-[44px] flex-1 border-white/20 bg-transparent text-white hover:bg-white/10"
                   >
                     <Undo2 className="mr-1 h-4 w-4" /> Undo
                   </Button>
                   <Button
                     type="button"
-                    onClick={() => void saveMeasurements()}
-                    disabled={saving || !projectId || measurementsView.length === 0 || savedToProject}
+                    onClick={requestPhoto}
+                    disabled={capturing}
                     size="sm"
-                    className="min-h-[44px] flex-1 bg-roksal-amber text-white hover:bg-roksal-amber/90"
+                    aria-label="Zajemi AR fotografijo z merami"
+                    title={features.camera ? 'AR fotografija s kamero + merami' : 'Brez camera-access — sintetična shema'}
+                    className="min-h-[44px] flex-1 border-roksal-amber/50 bg-roksal-amber/15 text-white hover:bg-roksal-amber/25"
                   >
-                    {saving ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Save className="mr-1 h-4 w-4" />}
-                    {savedToProject ? 'Shranjeno ✓' : 'Shrani'}
-                  </Button>
-                  <Button
-                    type="button"
-                    onClick={() => void saveSchema()}
-                    disabled={savingSchema || measurementsView.length === 0 || schemaSaved}
-                    size="sm"
-                    variant="outline"
-                    aria-label="Shrani AR shemo v posnetke"
-                    className="min-h-[44px] w-[52px] shrink-0 border-white/20 bg-transparent px-0 text-white hover:bg-white/10"
-                  >
-                    {savingSchema ? <Loader2 className="h-4 w-4 animate-spin" /> : schemaSaved ? <CheckCircle2 className="h-4 w-4 text-green-400" /> : <ImageIcon className="h-4 w-4" />}
+                    {capturing ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Camera className="mr-1 h-4 w-4 text-roksal-amber" />}
+                    {capturing ? 'Zajem…' : 'Foto'}
                   </Button>
                   <Button
                     type="button"
@@ -1168,6 +1846,41 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
                     className="min-h-[44px] flex-1 border-white/20 bg-transparent text-white hover:bg-white/10"
                   >
                     <X className="mr-1 h-4 w-4" /> Konec
+                  </Button>
+                </div>
+                {/* Kontrole — vrsta 2: Shrani · Shema */}
+                <div className="flex gap-2" data-xr-ui>
+                  <Button
+                    type="button"
+                    onClick={() => void saveMeasurements()}
+                    disabled={saving || !projectId || hudMeasurements.length === 0 || savedToProject}
+                    size="sm"
+                    className="min-h-[44px] flex-1 bg-roksal-amber text-white hover:bg-roksal-amber/90"
+                  >
+                    {saving ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Save className="mr-1 h-4 w-4" />}
+                    {savedToProject ? 'Shranjeno ✓' : 'Shrani'}
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={() => void saveSchema()}
+                    disabled={savingSchema || hudMeasurements.length === 0 || schemaSaved}
+                    size="sm"
+                    variant="outline"
+                    aria-label="Shrani AR shemo v posnetke"
+                    className="min-h-[44px] w-[52px] shrink-0 border-white/20 bg-transparent px-0 text-white hover:bg-white/10"
+                  >
+                    {savingSchema ? <Loader2 className="h-4 w-4 animate-spin" /> : schemaSaved ? <CheckCircle2 className="h-4 w-4 text-green-400" /> : <ImageIcon className="h-4 w-4" />}
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={useInCalculator}
+                    disabled={hudMeasurements.length === 0}
+                    size="sm"
+                    variant="outline"
+                    aria-label="Uporabi mere v kalkulatorju"
+                    className="min-h-[44px] flex-1 border-white/20 bg-transparent text-white hover:bg-white/10"
+                  >
+                    <Calculator className="mr-1 h-4 w-4" /> Kalkulator
                   </Button>
                 </div>
                 {!projectId && (
@@ -1227,24 +1940,29 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
                         <div className="text-[9px] font-semibold text-green-400">obvezen</div>
                       </div>
                       <div className="rounded-lg bg-white/5 p-2">
-                        <Anchor className="mx-auto mb-1 h-4 w-4 text-roksal-amber" />
-                        <div className="text-[9px] text-white">Sidra</div>
-                        <div className="text-[9px] text-white/50">samodejno</div>
+                        <Route className="mx-auto mb-1 h-4 w-4 text-roksal-amber" />
+                        <div className="text-[9px] text-white">Verižno</div>
+                        <div className="text-[9px] text-white/50">obris + m²</div>
                       </div>
                       <div className="rounded-lg bg-white/5 p-2">
-                        <Layers className="mx-auto mb-1 h-4 w-4 text-roksal-amber" />
-                        <div className="text-[9px] text-white">Ravnine</div>
-                        <div className="text-[9px] text-white/50">samodejno</div>
+                        <Camera className="mx-auto mb-1 h-4 w-4 text-roksal-amber" />
+                        <div className="text-[9px] text-white">Foto</div>
+                        <div className="text-[9px] text-white/50">AR + mere</div>
                       </div>
                     </div>
 
-                    {measurementsView.length > 0 && (
+                    <div className="rounded-lg bg-white/5 p-2.5 text-[10px] leading-relaxed text-white/70">
+                      <p><span className="font-semibold text-white/90">Verižni način:</span> tapni vogale ograje po vrsti — obris Σ, št. stebrov (2,5 m) in površina se računajo sami; tap na prvi vogal zapre tloris.</p>
+                      <p className="mt-1"><span className="font-semibold text-white/90">Foto:</span> zajame AR sliko s kamere (Chrome 107+) z narisanimi merami — shrani v AR posnetke.</p>
+                    </div>
+
+                    {(measurementsView.length > 0 || chainPointsView.length > 0) && (
                       <div className="rounded-lg bg-roksal-amber/10 p-2.5">
                         <div className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase text-roksal-amber">
-                          <Ruler className="h-3 w-3" /> Zadnja seja: {measurementsView.length} mer
+                          <Ruler className="h-3 w-3" /> Zadnja seja: {measurementsView.length + chainPointsView.length} točk
                         </div>
                         <div className="max-h-24 space-y-0.5 overflow-y-auto">
-                          {measurementsView.map((m) => (
+                          {[...measurementsView.map((m) => ({ id: m.id, label: m.label, distanceMm: m.distanceMm })), ...chainMeasurementsView].map((m) => (
                             <div key={m.id} className="flex justify-between text-[11px] text-white/85">
                               <span>{m.label}</span>
                               <span className="font-bold tabular-nums text-roksal-amber">{fmtMm(m.distanceMm)}</span>
@@ -1259,33 +1977,31 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
                             size="sm"
                             className="mt-2 min-h-[40px] w-full bg-roksal-amber text-white"
                           >
-                            <Save className="mr-1 h-3.5 w-3.5" /> Shrani {measurementsView.length} mer v Meritve
+                            <Save className="mr-1 h-3.5 w-3.5" /> Shrani v Meritve
                           </Button>
                         )}
-                        {measurementsView.length > 0 && (
-                          <div className="mt-2 grid grid-cols-2 gap-2">
-                            <Button
-                              type="button"
-                              onClick={useInCalculator}
-                              size="sm"
-                              variant="outline"
-                              className="min-h-[40px] border-white/20 bg-transparent text-white hover:bg-white/10"
-                            >
-                              <Calculator className="mr-1 h-3.5 w-3.5" /> V kalkulator
-                            </Button>
-                            <Button
-                              type="button"
-                              onClick={() => void saveSchema()}
-                              disabled={savingSchema || schemaSaved}
-                              size="sm"
-                              variant="outline"
-                              className="min-h-[40px] border-white/20 bg-transparent text-white hover:bg-white/10"
-                            >
-                              {savingSchema ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : schemaSaved ? <CheckCircle2 className="mr-1 h-3.5 w-3.5 text-green-400" /> : <ImageIcon className="mr-1 h-3.5 w-3.5" />}
-                              {schemaSaved ? 'Shema ✓' : 'Shema'}
-                            </Button>
-                          </div>
-                        )}
+                        <div className="mt-2 grid grid-cols-2 gap-2">
+                          <Button
+                            type="button"
+                            onClick={useInCalculator}
+                            size="sm"
+                            variant="outline"
+                            className="min-h-[40px] border-white/20 bg-transparent text-white hover:bg-white/10"
+                          >
+                            <Calculator className="mr-1 h-3.5 w-3.5" /> V kalkulator
+                          </Button>
+                          <Button
+                            type="button"
+                            onClick={() => void saveSchema()}
+                            disabled={savingSchema || schemaSaved}
+                            size="sm"
+                            variant="outline"
+                            className="min-h-[40px] border-white/20 bg-transparent text-white hover:bg-white/10"
+                          >
+                            {savingSchema ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : schemaSaved ? <CheckCircle2 className="mr-1 h-3.5 w-3.5 text-green-400" /> : <ImageIcon className="mr-1 h-3.5 w-3.5" />}
+                            {schemaSaved ? 'Shema ✓' : 'Shema'}
+                          </Button>
+                        </div>
                       </div>
                     )}
 
@@ -1373,11 +2089,32 @@ export function WebXrLauncher({ projectId }: { projectId: string | null }) {
                 <span className="rounded-full bg-roksal-amber/10 px-1.5 py-0.5 text-[8px] font-bold text-roksal-amber">
                   XRFrame
                 </span>
+                <span className="rounded-full bg-roksal-navy/5 px-1.5 py-0.5 text-[8px] font-bold text-roksal-navy">
+                  Verižno
+                </span>
+                <span className="rounded-full bg-roksal-navy/5 px-1.5 py-0.5 text-[8px] font-bold text-roksal-navy">
+                  AR foto
+                </span>
               </div>
               <p className="mb-2 text-[11px] text-muted-foreground">
-                Pravi XRFrame hit-test v realnem času + sidra (samokalibracija) + Depth API.
-                Tapni točko A → točko B → mera v mm. ±1–2 cm, brez kalibracije.
+                Pravi XRFrame hit-test + sidra (samokalibracija) + Depth API.
+                Dvo-točkovno: A → B → mera v mm. <span className="font-medium text-roksal-navy">Verižno:</span> vogali ograje → obris Σ, št. stebrov (2,5 m), površina m².
+                <span className="font-medium text-roksal-navy"> Foto:</span> AR slika kamere z merami (Chrome 107+).
               </p>
+              <div className="mb-2 grid grid-cols-3 gap-1.5 text-center">
+                <div className="rounded-md bg-roksal-navy/[0.04] px-1 py-1.5 ring-1 ring-roksal-navy/10">
+                  <div className="text-[9px] font-bold text-roksal-navy">±1–2 cm</div>
+                  <div className="text-[8px] text-muted-foreground">natančnost</div>
+                </div>
+                <div className="rounded-md bg-roksal-navy/[0.04] px-1 py-1.5 ring-1 ring-roksal-navy/10">
+                  <div className="text-[9px] font-bold text-roksal-navy">obris + m²</div>
+                  <div className="text-[8px] text-muted-foreground">verižno</div>
+                </div>
+                <div className="rounded-md bg-roksal-navy/[0.04] px-1 py-1.5 ring-1 ring-roksal-navy/10">
+                  <div className="text-[9px] font-bold text-roksal-navy">foto + mere</div>
+                  <div className="text-[8px] text-muted-foreground">AR posnetki</div>
+                </div>
+              </div>
               <div className="mb-2 flex flex-wrap items-center gap-2 text-[10px]">
                 <span className={`flex items-center gap-1 ${supported ? 'text-green-600' : 'text-amber-600'}`}>
                   {supported ? <CheckCircle2 className="h-3 w-3" /> : <AlertTriangle className="h-3 w-3" />}
@@ -1389,7 +2126,7 @@ export function WebXrLauncher({ projectId }: { projectId: string | null }) {
                 onClick={() => setOpen(true)}
                 disabled={!supported || !projectId}
                 size="sm"
-                className="min-h-[44px] w-full bg-roksal-navy text-white"
+                className="min-h-[44px] w-full bg-roksal-navy text-white shadow-sm transition-all hover:bg-roksal-navy/90 hover:shadow-md active:scale-[0.99]"
               >
                 <Box className="mr-2 h-4 w-4" />
                 {supported ? 'Odpri WebXR AR' : 'Ni podprto'}

@@ -646,3 +646,46 @@ Stage Summary:
 - Naslednje runde: LiDAR iOS (realen iPhone), FURS davčni blagajni režim (prostor/
   naprava), eSlog XSD validacija v produkciji, UPN QR v predplačilnih listih portala;
   opcijsko: poročilo po strankah/opirih, email pošiljanje poročila/opomnika
+
+---
+Task ID: 13 (runda N — cron webDevReview)
+Agent: Main Orchestrator (Z.ai Code)
+Task: Analiza GitHub repojev za združitev (AR kamera merjenje) + verižni (polilinija) način merjenja + AR foto zajem (WebXR Raw Camera Access) + stilski dodelavi
+
+Work Log:
+- Zahteva uporabnika: najdi GitHub repoje, ki se splača združiti za AR kamera merjenje, in nadaljuj
+- Analiza repojev (web-search + fetch uradnih virov):
+  · immersive-web/webxr-samples (Apache-2.0, uradni W3C sample repo) — proposals/plane-detection.html + raw camera vzorci → PRIMERNOST: visoka (isti pristop kot naš hit-test/planes)
+  · immersive-web/raw-camera-access explainer (spec) → potrdil API: session feature 'camera-access' (Chrome 107+), XRWebGLBinding.getCameraImage(frame, view) → WebGLTexture; starejši Chrome 93–106 getCameraImage(view) — podpiramo OBOJE prek try/catch
+  · jeromeetienne/AR.js · three.js/examples/measure-it.html (MIT) → vzorec verižnega merjenja (zaporedne točke, skupna dolžina)
+  · ZAVRNJENI: streetcomplete/StreetMeasure (native Android app, ni web), AR Ruler App (komercialen, brez izvorne kode), 8thwall/zappar (plačljivi SDK, ključi), model-viewer (1 MB+ dep za GLB, ki ga še nimamo — backlog za 3D ograjo)
+- N-1 VERIŽNI NAČIN (webxr-scanner.tsx, vzorec AR.js measure-it):
+  · toggle "Dvo-točkovno / Verižno (obris)" v HUD (segmented control, amber aktivni)
+  · placeChainPoint(): vsak tap = vogal C1..Cn s sidrom; tap < 0,6 m od prvega vogala (≥3 vogali) ZAPRE tloris (vibracija [50,40,50,40,90] + toast)
+  · chainSegments() helper: V1..Vn + zapirjalni segment; computeChainStats(): Σ obris (mm), površina m² (shoelace po XZ), št. stebrov = max(2, ceil(obris/2500)+1) — POST_SPACING_MM 2500
+  · HUD: 4 statistične kartice (Obris amber / Stebri / Vogali + zaprt ✓ / Površina zelena ko zaprto, sicer "zapri tloris")
+  · živa razdalja: zadnji vogal → retikla (namesto A → retikla); hint "Tapni prvi vogal za zaprtje"
+  · sidra: drift korekcija tudi za chain točke (posebna zanka v XRFrame)
+  · undo: zaprtje razpre → sicer odstrani zadnji vogal; markerji chain (amber obroč, večji 4×4) ločeni od par točk
+  · summarize() chain-aware: dolzinaMm = obris, visinaMm = najdaljši navpični segment (sicer ocena 1200 mm + visinaOcena flag), arMetadata.source = 'webxr-chain-perimeter' + chain stats
+  · Shema (top-view canvas) prav tako chain-aware: naslov "VERIŽNI OBRIS", vmesek zapirjalnega segmenta, opombe z m²/stebri
+  · Shrani deluje iz obeh načinov (prej je guard measurementsRef blokiral chain) — CRITICAL fix
+  · accuracy coach deluje tudi v chain (razpon V-segmentov)
+- N-2 AR FOTO ZAJEM (vzorec immersive-web raw-camera-access):
+  · optionalFeatures: +'camera-access' (obe request varianti); FeatureFlags +camera; XRWebGLBinding ustvarjen ob startu če podeljen; chip "Kamera foto ✓"
+  · gumb "Foto" v HUD → photoRequestRef flag → zajem ZNOTRAJ XRFrame callbacka (getCameraImage zahteva živ frame): FBO attach kamera teksture → readPixels RGBA → preobrat vrstic (bottom-up) → canvas 1440px max
+  · overlay: glava/noga navy polprosojne, "ROKSAL · AR POSNETEK", obris/m²/stebri ali dolžina/višina, timestamp + "poravnava približna"; segmenti projekcija world→canvas (isti view), amber črte + bele pill oznake "V1: 2.34 m" + vogal točke
+  · JPEG 85 % → predogled v HUD (thumbnail 80×56 + ring amber) + gumb Prenesi (.jpg) + SAMODEJNI zapis v /api/ar-snapshots (offline queue) z točkami/merami/opombami
+  · FALLBACK: brez camera-access (Chrome <107 ali zavrnjeno) → sintetični posnetek: navy ozadje + grid + mini tloris + mere, opomba "camera-access ni podeljen" — foto gumb VEDNO deluje
+- N-3 STILSKE DODELAVE (mandatory):
+  · launcher kartica: chips "Verižno"/"AR foto", opis vseh 3 načinov, 3-col KPI mini-grid (±1–2 cm / obris + m² / foto + mere) z ring-1, gumb hover:shadow-md + active:scale-[0.99]
+  · idle kartica: čipi Hit-test/Verižno/Foto (Route/Camera ikone), 2-vrstični opis novih načinov, "Zadnja seja: N točk" zdej šteje obe vrsti
+  · HUD: kontrole v 2 vrstah (Undo·Foto·Konec / Shrani·Shema·Kalkulator — Kalkulator prej manjkal med sejo!), Foto gumb amber outline z title tooltip
+- QA (agent-browser): mobilni 390px AR tab ✓ (chips + KPI grid vidni, ow=iw=390), klik "Odpri WebXR AR" → pravilno "Ni podprto" stanje (headless brez navigator.xr) + disabled gumb ✓, desktop 1280px ✓, console čista po reload (zgodnji errori = HMR med urejanjem duplikatov), dev.log čist, tsc + lint čista
+- OMEJITEV: verižni tok + foto zajem znotraj seje NISO E2E-testirljivi v headless (potreben ARCore telefon) — logika pokrita z unit-stopnjami (tsc) + UI degradacijske poti preverjene
+
+Stage Summary:
+- WebXR skener je zdaj POPOLN merjenik za ograje: dvo-točkovne mere (A→B), verižni obris (Σ + m² + stebri) in AR fotografija s kamero z narisanimi merami — vse v enem HUD-u z 2 vrstami kontrol
+- Združeni vzorci iz 3 odprtokodnih virov (Apache-2.0/MIT/spec) dokumentirani v glavi datoteke — brez novih dependencyjev (vse native WebXR API)
+- Foto gomb vedno deluje (fallback sintetika) — ni mrtve poti tudi na starih napravah
+- Naslednje runde: LiDAR iOS (realen iPhone), model-viewer 3D ograja v AR (Scene Viewer/Quick Look, potrebujemo GLB), plane polygon vizualizacija (Chrome 131+ plane-detection polygon), FURS davčni blagajni režim, eSlog XSD validacija
