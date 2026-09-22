@@ -129,3 +129,30 @@ Stage Summary:
 - Samo additive sm:/md:/lg: Tailwind klase — privzeti (telefon) razredi so ostali 1:1, zato mobile-first izgled nespremenjen; na md 768+/lg 1024+ vsebina izkoristi širino (2–3 stolpca, 4-col masonry, širše preglednice)
 - Ključne odločitve: (1) dashboard graf kartici skupaj v en md:grid-cols-2 wrapper (isti pogoj totalProjects>0, brez dupliranja pogojev); (2) seznam meritev/artiklov 2-col preko md:grid + md:space-y-0 (nevtralizacija marginov), brez preurejanja DOM-a kartic; (3) inventory vrstice na md+ dobijo border/rounded, da delujejo kot kartice v gridu; (4) kalkulator "Skupaj material"+"Ocena stroškov" stransko po sebi na md+ (dopolnitev "two-column summary")
 - Namerno puščeno / tveganja: weather-card.tsx ni bil v scope-u (lastna komponenta, ostane full-width); ostali kalkulator mode-i (wind, gate, …) imajo že 2-col vhodne gride in niso dirjani; data-prazni demo (ni meritev/slik) onemogoča vizualni check 2-col meritev in md:columns-4 galerije — klasi so v kodi in vezani na enake pogoje kot obstoječi izris; page.tsx, scannerji, API, prisma, config: nedotaknjeni
+
+---
+Task ID: 2-a
+Agent: Main Orchestrator (Z.ai Code)
+Task: PRAVI XRFrame hit-test v WebXR scannerju (zamenjava simulacije) — "da tudi WebXR meri zares"
+
+Work Log:
+- webxr-scanner.tsx popolnoma prepisan (494 → ~860 vrstic), simulacija odstranjena:
+  · seja: requiredFeatures ['hit-test'] (brez hit-testa ne starta) + optional ['anchors','depth-sensing','plane-detection','dom-overlay']; 1. poskus z vsemi, fallback brez extras; brez probe sej ob mountu (samo isSessionSupported)
+  · prava zanka: session.requestAnimationFrame(onXRFrame) — XRFrame API; prozoren WebGL2 framebuffer (ARCore kompozitor prikaže kamero); XRWebGLLayer baseLayer
+  · hit-test: session.requestHitTestSource({space: viewerSpace}) + frame.getHitTestResults() vsak frame → retikla drži realno ploskev
+  · sidra: XRHitTestResult.createAnchor() → točke imajo XRAnchor; frame.getPose(anchorSpace) vsak frame → mere se samodejno kalibrirajo (ARCore drift korekcija)
+  · Depth API: frame.getDepthInformation(view).getDepthInMeters(0.5,0.5) → živa razdalja do objekta na sredini zaslona
+  · plane-detection: frame.getDetectedPlanes() → števec + ločeno navpične
+  · dom-overlay HUD: statusni čipi (Hit-test/Sidra/Globina/Ravnine/Overlay/FPS), retikla + markerji točk pozicionirana prek lastne mat4 projekcije world→NDC→px (brez three.js), direktni DOM update pri 60 fps, React sync le 4 Hz
+  · 'select' dogodek = tap → postavi točko; gumbi z 'beforexrselect' preventDefault + suppress flag (klik na UI ne postavi točke)
+  · živa razdalja A→retikla (tape-measure način, velika številka), undo (točka→meritev z brisanjem sider), haptika
+  · Shrani: PRAVI POST /api/measurements — dolžina = najdaljši vodoravni segment, višina = najdaljši navpični (fallback najdaljši), arMetadata {source:'webxr-hit-test', segments[], features, planeCount, fps}
+  · po koncu seje mere ostanejo → "Zadnja seja: N mer" + Shrani tudi iz idle kartice
+- Verifikacija: tsc --noEmit 0 napak, lint čist; agent-browser E2E: demo prijava → AR zavihek → kartica "WebXR AR — pravi hit-test" z XRFrame badge; na namizju pravilno "Ni podprto" (brez navigator.xr) — prava meritev potrebuje ARCore telefon (Chrome Android)
+- page.tsx: main/sync/indikator max-w-lg → md:max-w-3xl lg:max-w-5xl; AR zavihek grid sm:grid-cols-2
+- Commit 0957954 pushan na origin/main (Vercel avtomatsko deploya); 11 datotek, +1000/−363
+
+Stage Summary:
+- WebXR zdaj MERI ZARES: retikla = frame.getHitTestResults, mere = razdalja med XRAnchor pozicijami, shranjevanje = pravi API klic. Brez three.js (lastna projekcija, DOM overlay HUD)
+- Prenosljivost: hit-test = obvezen (Chrome Android + ARCore); sidra/globina/ravnine = opcijski z elegantno degradacijo; iOS Safari ostaja "ni podprto"
+- Naslednji koraki (predlog): WebXR posnetek ozadja (preserveDrawingBuffer) → AR snapshot slika; Depth-Anything-3 backend za meritve iz navadnih fotk (brez ARCore); test na pravem ARCore telefonu
