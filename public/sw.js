@@ -1,7 +1,14 @@
-// Roksal Railing Manager — Service Worker
-// Minimal offline cache za PWA
-const CACHE_NAME = 'roksal-v1';
-const PRECACHE_URLS = ['/', '/manifest.json', '/icon-192.png', '/icon-512.png', '/logo.svg'];
+// Roksal Railing Manager — Service Worker v2
+// Strategije:
+//  • navigacije (HTML): network-first, ob offline → /offline.html
+//  • /api/ GET: network-first, ob offline → zadnji uspešen odgovor (cache)
+//  • /_next/static + ikone: cache-first (nespremenljivi hash fajli)
+//  • POST/PUT/DELETE: nikoli ne prestreži (offline vrsta je v aplikaciji)
+// V dev načinu se SW sploh ne registrira (glej sw-register.tsx).
+
+const CACHE_NAME = 'roksal-v2';
+const OFFLINE_URL = '/offline.html';
+const PRECACHE_URLS = ['/', OFFLINE_URL, '/manifest.json', '/icon-192.png', '/icon-512.png', '/logo.svg'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -21,32 +28,60 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const { request } = event;
-  // Samo GET
   if (request.method !== 'GET') return;
   const url = new URL(request.url);
-  // Skip chrome-extension in cross-origin
   if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
+  if (url.origin !== self.location.origin) return;
 
-  // API zahteve — vedno network (sveži podatki)
+  // Dev artefakti in HMR — nikoli iz cache-a
+  if (url.pathname.includes('webpack-hmr') || url.pathname.startsWith('/_next/webpack')) return;
+
+  // 1) API — sveži podatki, offline pa zadnji dober odgovor
   if (url.pathname.startsWith('/api/')) {
-    event.respondWith(fetch(request).catch(() => caches.match(request)));
-    return;
-  }
-
-  // Statični resursi in navigacije — cache first, nato network
-  event.respondWith(
-    caches.match(request).then((cached) => {
-      if (cached) return cached;
-      return fetch(request)
+    event.respondWith(
+      fetch(request)
         .then((response) => {
-          // Cache samo uspešne odgovore
-          if (response && response.status === 200 && response.type === 'basic') {
+          if (response && response.status === 200 && request.method === 'GET') {
             const clone = response.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
           }
           return response;
         })
-        .catch(() => cached);
-    })
+        .catch(() => caches.match(request))
+    );
+    return;
+  }
+
+  // 2) Statični hash fajli — cache-first
+  if (url.pathname.startsWith('/_next/static') || url.pathname === '/logo.svg' ||
+      url.pathname === '/icon-192.png' || url.pathname === '/icon-512.png') {
+    event.respondWith(
+      caches.match(request).then((cached) => cached || fetch(request))
+    );
+    return;
+  }
+
+  // 3) Navigacije — network-first, offline → /offline.html
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response && response.status === 200) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          }
+          return response;
+        })
+        .catch(async () => {
+          const cached = await caches.match(request);
+          return cached || caches.match(OFFLINE_URL);
+        })
+    );
+    return;
+  }
+
+  // 4) Ostalo (slike jsdelivr/twitter ipd. ni več, ampak varnost) — network s cache fallback
+  event.respondWith(
+    caches.match(request).then((cached) => cached || fetch(request).catch(() => cached))
   );
 });

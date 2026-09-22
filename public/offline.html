@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Offline — Roksal Railing Manager</title>
+  <link rel="icon" href="/icon-192.png">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+      min-height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f7f9ff;
+      padding: 24px;
+      color: #1d2b3e;
+    }
+    .card {
+      max-width: 360px;
+      width: 100%;
+      background: #fff;
+      border-radius: 20px;
+      padding: 32px 24px;
+      text-align: center;
+      box-shadow: 0 10px 40px rgba(29, 43, 62, .08);
+      border: 1px solid rgba(29, 43, 62, .06);
+    }
+    .icon {
+      width: 64px; height: 64px;
+      margin: 0 auto 16px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #f59e0b, #fbbf24);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 30px;
+    }
+    h1 { font-size: 18px; margin-bottom: 8px; }
+    p { font-size: 13px; color: #64748b; line-height: 1.5; margin-bottom: 20px; }
+    button {
+      min-height: 44px;
+      padding: 0 22px;
+      border: 0;
+      border-radius: 12px;
+      background: #1d2b3e;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    button:active { transform: scale(.97); }
+    .hint { margin-top: 14px; font-size: 11px; color: #94a3b8; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">📡</div>
+    <h1>Ni povezave</h1>
+    <p>Strani trenutno ni mogoče naložiti. Merjenje z AR kamero deluje naprej — zapisi se samodejno pošljejo, ko povezava pride nazaj.</p>
+    <button onclick="location.reload()">Poskusi znova</button>
+    <p class="hint">Roksal Railing Manager · PWA</p>
+  </div>
+</body>
+</html>

@@ -9,6 +9,24 @@
   "theme_color": "#1d2b3e",
   "categories": ["productivity", "business", "utilities"],
   "lang": "sl",
+  "shortcuts": [
+    {
+      "name": "AR meritev",
+      "short_name": "AR",
+      "description": "WebXR merjenje z kameri",
+      "url": "/?tab=ar"
+    },
+    {
+      "name": "Kalkulator ograj",
+      "short_name": "Kalkulator",
+      "url": "/?tab=calculator"
+    },
+    {
+      "name": "Meritve",
+      "short_name": "Meritve",
+      "url": "/?tab=measurements"
+    }
+  ],
   "icons": [
     {
       "src": "/icon-192.png",

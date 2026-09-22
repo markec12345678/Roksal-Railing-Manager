@@ -7,6 +7,7 @@ import { TopBar } from '@/components/roksal/top-bar'
 import { BottomNav, type TabId, type MoreTabId } from '@/components/roksal/bottom-nav'
 import { CommandPalette } from '@/components/roksal/command-palette'
 import { QuickActionsFab } from '@/components/roksal/quick-actions-fab'
+import { PwaStatus } from '@/components/roksal/pwa-status'
 import { RefreshCw, Camera, ChevronLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -134,6 +135,11 @@ export default function Home() {
 
   useEffect(() => {
     void fetchData(true)
+    // PWA bližnjice (/?tab=ar …) iz manifest.json — odpre zavihek ob zagonu
+    const tabParam = new URLSearchParams(window.location.search).get('tab')
+    if (tabParam && MAIN_TAB_IDS.includes(tabParam as TabId)) {
+      setActiveTab(tabParam as TabId)
+    }
     const syncTimer = setInterval(() => void fetchData(true), 300000)
     return () => clearInterval(syncTimer)
   }, [fetchData])
@@ -303,6 +309,9 @@ export default function Home() {
       </div>
 
       <TopBar onSync={handleSync} syncing={syncing} onOpenPalette={() => setPaletteOpen(true)} />
+
+      {/* PWA status — offline pas + namestitev app */}
+      <PwaStatus />
 
       {/* Sync status indicator */}
       <div className="mx-auto w-full max-w-lg md:max-w-3xl lg:max-w-5xl relative">

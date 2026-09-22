@@ -27,6 +27,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
+import { fetchWithQueue } from '@/lib/offline-queue'
 import {
   X, Loader2, AlertTriangle, CheckCircle2, Box, Layers, Zap,
   Smartphone, Anchor, ScanLine, Undo2, Save, Crosshair, Gauge, Ruler,
@@ -657,10 +658,9 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
       const dolzinaMm = horizontalLens.length ? Math.max(...horizontalLens) : longest
       const visinaMm = verticalLens.length ? Math.max(...verticalLens) : longest
 
-      const res = await fetch('/api/measurements', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      // fetchWithQueue: brez povezave se zapis vrsti in pošlje samodejno ob povezavi
+      const res = await fetchWithQueue('/api/measurements', {
+        body: {
           projectId,
           dolzinaMm,
           visinaMm,
@@ -672,15 +672,24 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
             fps: hud.fps,
             savedAt: new Date().toISOString(),
           },
-        }),
+        },
+        label: `WebXR meritev ${dolzinaMm}×${visinaMm} mm`,
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data = (await res.json()) as { queued?: boolean }
       setSavedToProject(true)
       try { navigator.vibrate?.([40, 30, 40]) } catch { /* ignore */ }
-      toast({
-        title: '✓ Mere shranjene v Meritve',
-        description: `Dolžina ${fmtMm(dolzinaMm)} · višina ${fmtMm(visinaMm)} (${segs.length} segmentov)`,
-      })
+      if (data?.queued) {
+        toast({
+          title: '📴 Meritev je v offline vrsti',
+          description: 'Samodejno se pošlje, ko povezava pride nazaj.',
+        })
+      } else {
+        toast({
+          title: '✓ Mere shranjene v Meritve',
+          description: `Dolžina ${fmtMm(dolzinaMm)} · višina ${fmtMm(visinaMm)} (${segs.length} segmentov)`,
+        })
+      }
     } catch (err) {
       toast({
         title: 'Shranjevanje ni uspelo',
