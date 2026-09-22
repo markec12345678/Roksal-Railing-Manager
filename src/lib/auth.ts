@@ -47,6 +47,29 @@ export function hasRole(session: SessionPayload, roles: string[]): boolean {
   return roles.includes(session.vloga)
 }
 
+/**
+ * Vrže `NextResponse`, če dostop ni dovoljen, sicer `null`.
+ *
+ * Uporaba v ruti (dvakrat preverjeno namerno — proxy je prva plast, ne zadnja):
+ *
+ *     const denied = await denyUnless(request, MANAGER_ROLES)
+ *     if (denied) return denied
+ *
+ * API ključ (mobilni klient) ne sme v poslovne rute: ključ je namenjen samo
+ * sinhronizaciji izmere, ne urejanju cen ali zalog.
+ */
+export async function denyUnless(request: Request, roles: string[]): Promise<NextResponse | null> {
+  const context = await authenticate(request)
+  if (!context) return unauthorized()
+  if (context.kind !== 'user') {
+    return forbidden('API ključ nima dostopa do te poti — potrebna je prijava uporabnika.')
+  }
+  if (!hasRole(context.session, roles)) {
+    return forbidden(`Za to dejanje je potrebna vloga ${roles.join(' ali ')}. Tvoja vloga: ${context.session.vloga}.`)
+  }
+  return null
+}
+
 export function unauthorized(detail = 'Prijava je obvezna.'): NextResponse {
   return NextResponse.json({ error: 'Neavtoriziran dostop', detail }, { status: 401 })
 }

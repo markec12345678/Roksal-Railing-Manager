@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { authenticate, unauthorized } from '@/lib/auth'
+import { MANAGER_ROLES, denyUnless } from '@/lib/auth'
 
 // GET — vsi dobavitelji (z številom cen in naročil)
 export async function GET(request: Request) {
@@ -28,6 +29,10 @@ export async function GET(request: Request) {
 
 // POST — ustvari dobavitelja
 export async function POST(request: Request) {
+  // Spreminjanje cen, zalog, naročil in razporedov je vodstveno opravilo.
+  // Monter bere (za delo na terenu), pisati pa ne sme.
+  const denied = await denyUnless(request, MANAGER_ROLES)
+  if (denied) return denied
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
@@ -54,6 +59,10 @@ export async function POST(request: Request) {
 
 // PATCH — posodobi dobavitelja
 export async function PATCH(request: Request) {
+  // Spreminjanje cen, zalog, naročil in razporedov je vodstveno opravilo.
+  // Monter bere (za delo na terenu), pisati pa ne sme.
+  const denied = await denyUnless(request, MANAGER_ROLES)
+  if (denied) return denied
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
@@ -71,6 +80,10 @@ export async function PATCH(request: Request) {
 
 // DELETE — izklopi dobavitelja (ne izbriše)
 export async function DELETE(request: Request) {
+  // Spreminjanje cen, zalog, naročil in razporedov je vodstveno opravilo.
+  // Monter bere (za delo na terenu), pisati pa ne sme.
+  const denied = await denyUnless(request, MANAGER_ROLES)
+  if (denied) return denied
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
   const auth = await authenticate(request)
   if (!auth) return unauthorized()

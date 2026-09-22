@@ -16,6 +16,8 @@ import { db } from '@/lib/db'
 import { verifyPassword } from '@/lib/password'
 import { SESSION_COOKIE, isSecureRequest, sessionCookieAttributes, signSession } from '@/lib/session'
 import { authenticate } from '@/lib/auth'
+import { audit } from '@/lib/audit'
+import { LOGIN_LIMIT, checkRate, clientIp, releaseRate } from '@/lib/rate-limit'
 
 const loginSchema = z.object({
   email: z.string().trim().min(3).max(254),
@@ -31,18 +33,39 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Neveljavni podatki za prijavo.' }, { status: 400 })
     }
     const { email, password } = parsed.data
+    const normalizedEmail = email.toLowerCase()
 
-    const profile = await db.profile.findUnique({ where: { email: email.toLowerCase() } })
+    // Omejevanje hitrosti po (IP + e-naslov): brez tega je brute-force neomejen.
+    // Žeton se ob USPEŠNI prijavi vrne, da se uporabnik, ki se desetkrat pravilno
+    // prijavi, ne zaklene — kaznovan je samo tisti, ki zgreši.
+    const limitKey = `login:${clientIp(request)}:${normalizedEmail}`
+    const limit = checkRate(limitKey, LOGIN_LIMIT)
+    if (!limit.ok) {
+      await audit({ request, akcija: 'LOGIN_RATE_LIMITED', newValue: { email: normalizedEmail } })
+      return NextResponse.json(
+        { error: 'Preveč poskusov prijave.', detail: `Poskusi znova čez ${limit.retryAfterSeconds} s.` },
+        { status: 429, headers: { 'Retry-After': String(limit.retryAfterSeconds) } },
+      )
+    }
+
+    const profile = await db.profile.findUnique({ where: { email: normalizedEmail } })
 
     // Enako sporočilo in podoben čas za "ni računa" in "napačno geslo":
     // razlika bi napadalcu povedala, kateri e-naslovi so registrirani.
     const invalid = NextResponse.json({ error: 'Napačen e-naslov ali geslo.' }, { status: 401 })
     if (!profile?.passwordHash) {
       await verifyPassword(password, null) // porabi enak čas kot prava preverba
+      // Profila ni (ali nima gesla) → v AuditLog ne moremo, ker je userId obvezen
+      // tuji ključ. Zato v dnevnik strežnika: tam je vidno in ne laže o lastništvu.
+      console.warn('[auth] neuspešna prijava, neznan račun:', { email: normalizedEmail, ip: clientIp(request) })
       return invalid
     }
     const ok = await verifyPassword(password, profile.passwordHash)
-    if (!ok) return invalid
+    if (!ok) {
+      await audit({ request, userId: profile.id, akcija: 'LOGIN_FAILED', newValue: { email: normalizedEmail } })
+      return invalid
+    }
+    releaseRate(limitKey)
 
     const token = await signSession({
       sub: profile.id,
@@ -54,6 +77,7 @@ export async function POST(request: Request) {
     await db.profile
       .update({ where: { id: profile.id }, data: { lastActive: new Date() } })
       .catch(() => undefined)
+    await audit({ request, userId: profile.id, akcija: 'LOGIN', newValue: { vloga: profile.vloga } })
 
     const response = NextResponse.json({
       user: { id: profile.id, email: profile.email, ime: profile.ime, vloga: profile.vloga },

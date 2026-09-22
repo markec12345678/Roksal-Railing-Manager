@@ -3,6 +3,7 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { authenticate, unauthorized } from '@/lib/auth'
+import { MANAGER_ROLES, denyUnless } from '@/lib/auth'
 
 // GET — cene materiala (z option za primerjavo dobaviteljev)
 export async function GET(request: Request) {
@@ -70,6 +71,10 @@ export async function GET(request: Request) {
 
 // POST — dodaj/posodobi ceno materiala pri dobavitelju
 export async function POST(request: Request) {
+  // Spreminjanje cen, zalog, naročil in razporedov je vodstveno opravilo.
+  // Monter bere (za delo na terenu), pisati pa ne sme.
+  const denied = await denyUnless(request, MANAGER_ROLES)
+  if (denied) return denied
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
