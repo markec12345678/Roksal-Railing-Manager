@@ -1,0 +1,85 @@
+name: CI
+
+# Zakaj ta workflow obstaja
+# -------------------------
+# Projekt je imel `typescript.ignoreBuildErrors: true` v next.config.ts in vsa
+# smiselna ESLint pravila izklopljena, zato se 15 tipskih napak ni nikoli pokazalo.
+# Pod njimi so bili trije pravi izračunski hrošči (razmik stebrov čez maksimum
+# sistema, statika stekla, ki je za vsak vhod vrnila "nevarno", in 900 mm
+# minimalna višina ograje). Nobenega ni bilo mogoče opaziti brez avtomatskega
+# preverjanja — vsi trije vrnejo veljavno številko, ki je samo napačna.
+#
+# Vrstni red korakov je namenoma od najhitrejšega proti najpočasnejšemu:
+# tipi (30 s) → testi (1 s) → gradnja (minute).
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Tipi, testi, gradnja
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    env:
+      # .env ni več v gitu, zato mora CI podati svojo pot do baze.
+      # Prisma rešuje relativne SQLite poti glede na prisma/schema.prisma.
+      DATABASE_URL: 'file:../db/custom.db'
+      NEXT_TELEMETRY_DISABLED: '1'
+      # Gradnja je pomnilniško zahtevna zaradi velikih komponent
+      # (measurements-tab.tsx 7.543 vrstic, calculator-tab.tsx 5.791).
+      NODE_OPTIONS: '--max-old-space-size=4096'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Predpomnjenje bun
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: ${{ runner.os }}-bun-
+
+      - name: Namestitev odvisnosti
+        run: bun install --frozen-lockfile
+
+      - name: Prisma Client
+        run: bunx prisma generate
+
+      # 0 napak je trenutno stanje. Če ta korak pade, je napaka resnična —
+      # ne dodajaj nazaj ignoreBuildErrors, popravi kodo.
+      - name: Tipska kontrola
+        run: bunx tsc --noEmit
+
+      - name: Testi izračunskega jedra (78)
+        run: bun run test
+
+      - name: Gradnja
+        run: bun run build
+
+      - name: Naloži gradbene artefakte
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: |
+            .next/trace
+            dev.log
+            server.log
+          if-no-files-found: ignore
+          retention-days: 7
