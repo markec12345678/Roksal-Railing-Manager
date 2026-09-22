@@ -2,8 +2,12 @@
 import { NextResponse } from 'next/server'
 import { calculateRailingSpacing, calculateAnchoring, calculateWindLoad } from '@/lib/calculator'
 import { railingCalcSchema, anchoringCalcSchema, windLoadCalcSchema } from '@/lib/validations'
+import { authenticate, unauthorized } from '@/lib/auth'
 
 export async function POST(request: Request) {
+  // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
+  const auth = await authenticate(request)
+  if (!auth) return unauthorized()
   try {
     const body = await request.json()
     const { type } = body

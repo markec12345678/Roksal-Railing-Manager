@@ -1,9 +1,13 @@
 // Roksal Field - API: Skice (ročno risanje)
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { authenticate, unauthorized } from '@/lib/auth'
 
 // GET - Skice za projekt
 export async function GET(request: Request) {
+  // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
+  const auth = await authenticate(request)
+  if (!auth) return unauthorized()
   try {
     const { searchParams } = new URL(request.url)
     const projectId = searchParams.get('projectId')
@@ -23,6 +27,9 @@ export async function GET(request: Request) {
 
 // POST - Shrani skico
 export async function POST(request: Request) {
+  // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
+  const auth = await authenticate(request)
+  if (!auth) return unauthorized()
   try {
     const body = await request.json()
     const sketch = await db.sketch.create({
@@ -42,6 +49,9 @@ export async function POST(request: Request) {
 
 // DELETE - Izbriši skico
 export async function DELETE(request: Request) {
+  // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
+  const auth = await authenticate(request)
+  if (!auth) return unauthorized()
   try {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')

@@ -2,9 +2,13 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { createInventorySchema, inventoryMovementSchema } from '@/lib/validations'
+import { authenticate, unauthorized } from '@/lib/auth'
 
 // GET - Pridobi celotno zalogo s statusi
-export async function GET() {
+export async function GET(request: Request) {
+  // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
+  const auth = await authenticate(request)
+  if (!auth) return unauthorized()
   try {
     const inventory = await db.inventory.findMany({
       include: {
@@ -24,6 +28,9 @@ export async function GET() {
 
 // POST - Ustvari novo inventarno postavko ali zabeleži premik
 export async function POST(request: Request) {
+  // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
+  const auth = await authenticate(request)
+  if (!auth) return unauthorized()
   try {
     const body = await request.json()
 

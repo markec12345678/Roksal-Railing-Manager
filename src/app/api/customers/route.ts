@@ -2,9 +2,13 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { createCustomerSchema } from '@/lib/validations'
+import { authenticate, unauthorized } from '@/lib/auth'
 
 // GET - Pridobi vse stranke (opcionalno s search queryjem)
 export async function GET(request: Request) {
+  // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
+  const auth = await authenticate(request)
+  if (!auth) return unauthorized()
   try {
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('search')?.trim() ?? ''
@@ -37,6 +41,9 @@ export async function GET(request: Request) {
 
 // POST - Ustvari novo stranko
 export async function POST(request: Request) {
+  // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
+  const auth = await authenticate(request)
+  if (!auth) return unauthorized()
   try {
     const body = await request.json()
     const validated = createCustomerSchema.parse(body)

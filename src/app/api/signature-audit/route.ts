@@ -2,8 +2,12 @@
 // GET /api/signature-audit?projectId=X — pridobi audit trail podpisov za projekt
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { authenticate, unauthorized } from '@/lib/auth'
 
 export async function GET(request: Request) {
+  // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
+  const auth = await authenticate(request)
+  if (!auth) return unauthorized()
   try {
     const { searchParams } = new URL(request.url)
     const projectId = searchParams.get('projectId')
@@ -52,6 +56,9 @@ export async function GET(request: Request) {
 
 // GET s ?id=X&full=true — pridobi posamezni podpis (s sliko)
 export async function POST(request: Request) {
+  // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
+  const auth = await authenticate(request)
+  if (!auth) return unauthorized()
   try {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')

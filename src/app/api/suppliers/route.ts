@@ -1,9 +1,13 @@
 // Roksal Field - API: Dobavitelji (V5)
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { authenticate, unauthorized } from '@/lib/auth'
 
 // GET — vsi dobavitelji (z številom cen in naročil)
 export async function GET(request: Request) {
+  // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
+  const auth = await authenticate(request)
+  if (!auth) return unauthorized()
   try {
     const { searchParams } = new URL(request.url)
     const aktivni = searchParams.get('aktivne') !== 'false'
@@ -24,6 +28,9 @@ export async function GET(request: Request) {
 
 // POST — ustvari dobavitelja
 export async function POST(request: Request) {
+  // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
+  const auth = await authenticate(request)
+  if (!auth) return unauthorized()
   try {
     const body = await request.json()
     const supplier = await db.supplier.create({
@@ -47,6 +54,9 @@ export async function POST(request: Request) {
 
 // PATCH — posodobi dobavitelja
 export async function PATCH(request: Request) {
+  // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
+  const auth = await authenticate(request)
+  if (!auth) return unauthorized()
   try {
     const body = await request.json()
     const { id, ...data } = body
@@ -61,6 +71,9 @@ export async function PATCH(request: Request) {
 
 // DELETE — izklopi dobavitelja (ne izbriše)
 export async function DELETE(request: Request) {
+  // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
+  const auth = await authenticate(request)
+  if (!auth) return unauthorized()
   try {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')

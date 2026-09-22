@@ -1,9 +1,13 @@
 // Roksal Field - API: Slike projekta (pred/med/po montaži)
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { authenticate, unauthorized } from '@/lib/auth'
 
 // GET - Slike za projekt (opcionalno filter po kategoriji)
 export async function GET(request: Request) {
+  // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
+  const auth = await authenticate(request)
+  if (!auth) return unauthorized()
   try {
     const { searchParams } = new URL(request.url)
     const projectId = searchParams.get('projectId')
@@ -29,6 +33,9 @@ export async function GET(request: Request) {
 
 // POST - Shrani sliko (base64 + kategorija + GPS)
 export async function POST(request: Request) {
+  // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
+  const auth = await authenticate(request)
+  if (!auth) return unauthorized()
   try {
     const body = await request.json()
     const kat = body.kategorija ?? 'MED'
@@ -55,6 +62,9 @@ export async function POST(request: Request) {
 
 // DELETE - Izbriši sliko
 export async function DELETE(request: Request) {
+  // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
+  const auth = await authenticate(request)
+  if (!auth) return unauthorized()
   try {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')

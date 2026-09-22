@@ -25,6 +25,9 @@ model Profile {
   ime        String
   email      String    @unique
   vloga      UserRole  @default(MONTER)
+  /// scrypt hash gesla: `scrypt$N$r$p$salt$hash`. Null = račun brez gesla
+  /// (še ne more se prijaviti) — nastavi ga s `bunx tsx tools/create-admin.ts`.
+  passwordHash String?
   telefon    String?
   ekipaId    String?
   lastActive DateTime  @default(now())
@@ -556,4 +559,26 @@ model EquipmentAssignment {
 
   @@index([scheduleId])
   @@index([equipmentId])
+}
+
+// ============================================
+// API KLJUCI (mobilni klient: BalkonAR)
+// ============================================
+//
+// Prej je /api/sync "avtenticiral" s preverjanjem predpone
+// `key.startsWith('ROKSAL_MOBILE_') && key.length >= 20` — oblika je bila v javnem
+// repu, torej je bil vsak, ki jo je poznal, pooblaščen za pisanje v bazo.
+// Zdaj se hrani samo SHA-256 ključa, ključ je viden enkrat ob ustvarjanju,
+// posamezen ključ pa je mogoče preklicati brez menjave ostalih.
+model ApiKey {
+  id         String    @id @default(cuid())
+  /// Človeško berljivo ime ("Marko - telefon", "BalkonAR test").
+  name       String
+  keyHash    String    @unique
+  /// Prvih 12 znakov za prepoznavo v seznamu (brez razkritja ključa).
+  keyPrefix  String
+  createdBy  String?
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
 }

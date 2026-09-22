@@ -1,9 +1,13 @@
 // Roksal Field - API: Katalog profilov ograj
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { authenticate, unauthorized } from '@/lib/auth'
 
 // GET - Vsi profili (ali samo aktivni)
 export async function GET(request: Request) {
+  // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
+  const auth = await authenticate(request)
+  if (!auth) return unauthorized()
   try {
     const { searchParams } = new URL(request.url)
     const samoAktivne = searchParams.get('aktivne') !== 'false'
@@ -25,6 +29,9 @@ export async function GET(request: Request) {
 
 // POST - Ustvari nov profil (admin)
 export async function POST(request: Request) {
+  // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
+  const auth = await authenticate(request)
+  if (!auth) return unauthorized()
   try {
     const body = await request.json()
     const profil = await db.profil.create({

@@ -2,27 +2,27 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { createProjectSchema } from '@/lib/validations'
+import { authenticate, unauthorized } from '@/lib/auth'
 
-// Simple API key authentication for mobile sync
-const isValidApiKey = (key: string | null): boolean => {
-  if (!key) return false
-  // In production, validate against a database or environment variable
-  return key.startsWith('ROKSAL_MOBILE_') && key.length >= 20
-}
+// Avtentikacija: API ključ (mobilni klient) ali veljavna seja (brskalnik).
+//
+// POPRAVEK: prej je bilo preverjanje `key.startsWith('ROKSAL_MOBILE_') &&
+// key.length >= 20`. Oblika ključa je bila v javnem repozitoriju, torej je bil
+// vsak, ki jo je prebral, pooblaščen za pisanje v bazo. Zdaj se ključi ustvarijo
+// z `bunx tsx tools/create-api-key.ts`, v bazi je samo njihov hash, posamezen
+// ključ pa se da preklicati.
 
 // POST - Sprejme podatke iz mobilne aplikacije in ustvari/posodobi projekte
 export async function POST(request: Request) {
   try {
     const body = await request.json()
 
-    const authHeader = request.headers.get('Authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Neveljavna avtentikacija' }, { status: 401 })
-    }
-
-    const token = authHeader.substring(7)
-    if (!isValidApiKey(token)) {
-      return NextResponse.json({ error: 'Neveljaven token' }, { status: 401 })
+    const auth = await authenticate(request)
+    if (!auth) {
+      return NextResponse.json(
+        { error: 'Neveljavna avtentikacija', detail: 'Pričakujem `Authorization: Bearer rkm_…` ali veljavno sejo.' },
+        { status: 401 },
+      )
     }
 
     const mobileProjects = Array.isArray(body) ? body : [body]
@@ -53,23 +53,35 @@ export async function POST(request: Request) {
         })
         syncedProjects.push(updated)
       } else {
-        let customer = await db.customer.findFirst({
-          where: {
-            OR: [
-              { email: mobileProject.customerEmail },
-              { telefon: mobileProject.phone }
-            ]
-          }
-        })
+        // POPRAVEK podvajanja: `OR: [{ email: null }, { telefon: null }]` se je
+        // ujemal s PRVO stranko, ki nima e-pošte oziroma telefona, zato je vsaka
+        // sinhronizacija brez teh podatkov našla napačno obstoječo stranko — ali pa
+        // ustvarila novo in podvojila pravo. Pogoja zdaj dodamo samo, kadar imamo
+        // dejansko vrednost, in iščemo po obeh ločeno (e-pošta je močnejši ključ).
+        const email = (mobileProject.customerEmail ?? '').trim().toLowerCase() || null
+        const phone = (mobileProject.phone ?? '').trim() || null
+
+        let customer = email
+          ? await db.customer.findFirst({ where: { email } })
+          : null
+        if (!customer && phone) {
+          customer = await db.customer.findFirst({ where: { telefon: phone } })
+        }
+        if (!customer && mobileProject.id) {
+          // Isti mobilni projekt že ima stranko — ne ustvarjaj dvojnikov.
+          customer = await db.customer.findFirst({
+            where: { projects: { some: { mobileProjectId: mobileProject.id } } },
+          })
+        }
 
         if (!customer) {
           customer = await db.customer.create({
             data: {
-              ime: mobileProject.customerName,
-              naslov: mobileProject.address,
-              telefon: mobileProject.phone || null,
-              email: mobileProject.customerEmail || null,
-            }
+              ime: mobileProject.customerName || 'Neznana stranka',
+              naslov: mobileProject.address || '',
+              telefon: phone,
+              email,
+            },
           })
         }
 
@@ -116,6 +128,9 @@ export async function POST(request: Request) {
 
 // GET - Vrne projekte za sinhronizacijo v mobilno aplikacijo
 export async function GET(request: Request) {
+  // Tudi branje projektov za sinhronizacijo je zaščiteno: seznam razkrije stranke in naslove.
+  const auth = await authenticate(request)
+  if (!auth) return unauthorized()
   try {
     const { searchParams } = new URL(request.url)
     const lastSync = searchParams.get('lastSync')

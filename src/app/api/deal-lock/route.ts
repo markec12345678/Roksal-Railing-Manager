@@ -9,6 +9,7 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import crypto from 'crypto'
+import { authenticate, unauthorized } from '@/lib/auth'
 
 interface DealLockRequest {
   projectId: string
@@ -28,6 +29,9 @@ interface DealLockRequest {
 }
 
 export async function POST(request: Request) {
+  // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
+  const auth = await authenticate(request)
+  if (!auth) return unauthorized()
   try {
     const body = (await request.json()) as DealLockRequest
     const { projectId, customerName, monterName, customerSignature, monterSignature, quoteData } = body
@@ -153,6 +157,9 @@ export async function POST(request: Request) {
 
 // GET — preveri stanje deal lock-a za projekt
 export async function GET(request: Request) {
+  // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
+  const auth = await authenticate(request)
+  if (!auth) return unauthorized()
   try {
     const { searchParams } = new URL(request.url)
     const projectId = searchParams.get('projectId')

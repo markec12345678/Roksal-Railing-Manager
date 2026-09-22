@@ -11,6 +11,7 @@ import {
   calculateDDV,
   formatEUR,
 } from '@/lib/calculator'
+import { authenticate, unauthorized } from '@/lib/auth'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -101,6 +102,9 @@ Pravila:
 - Če nisi prepričan, confidence < 0.5`
 
 export async function POST(request: Request) {
+  // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
+  const auth = await authenticate(request)
+  if (!auth) return unauthorized()
   try {
     const body = (await request.json()) as AiTakeoffRequest
     const { imageData, hint } = body

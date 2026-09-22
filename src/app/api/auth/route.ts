@@ -1,55 +1,80 @@
-// Roksal Field - API: Simple Auth
-import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+// Roksal — prijava in trenutni uporabnik
+// ---------------------------------------------------------------------------
+// POPRAVEK: prejšnja različica te rute NI bila prijava. Za poljuben e-mail,
+// ki ga ni poznala, je ustvarila profil z vlogo ADMIN:
+//
+//   if (!profile) { db.profile.create({ data: { email, vloga: 'ADMIN' } }) }
+//
+// in gesla sploh ni preverjala (`body.password` je bil prebran in opuščen).
+// Kdorkoli je lahko z enim POST postal administrator. Zdaj: geslo se preveri
+// proti scrypt hashu, računov se ne ustvarja preko API-ja (glej
+// `tools/create-admin.ts`), in uspešna prijava izda podpisan sejni žeton.
 
-// Simple email/password auth (no external auth provider needed)
+import { NextResponse } from 'next/server'
+import { z } from 'zod'
+import { db } from '@/lib/db'
+import { verifyPassword } from '@/lib/password'
+import { SESSION_COOKIE, isSecureRequest, sessionCookieAttributes, signSession } from '@/lib/session'
+import { authenticate } from '@/lib/auth'
+
+const loginSchema = z.object({
+  email: z.string().trim().min(3).max(254),
+  password: z.string().min(1).max(256),
+})
+
+// POST — prijava
 export async function POST(request: Request) {
   try {
-    const body = await request.json()
-    const { email, password } = body
-
-    // Simple auth check against database
-    // For demo purposes, we use a simple lookup
-    const profile = await db.profile.findFirst({
-      where: { email }
-    })
-
-    if (!profile) {
-      // Auto-create demo profile for convenience
-      const newProfile = await db.profile.create({
-        data: {
-          email,
-          ime: email.split('@')[0],
-          vloga: 'ADMIN',
-        }
-      })
-      return NextResponse.json({
-        user: { id: newProfile.id, email: newProfile.email, ime: newProfile.ime, vloga: newProfile.vloga },
-        message: 'Račun ustvarjen'
-      })
+    const body = await request.json().catch(() => null)
+    const parsed = loginSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Neveljavni podatki za prijavo.' }, { status: 400 })
     }
+    const { email, password } = parsed.data
 
-    // In production, use proper password hashing with bcrypt
-    return NextResponse.json({
-      user: { id: profile.id, email: profile.email, ime: profile.ime, vloga: profile.vloga },
-      message: 'Prijava uspešna'
+    const profile = await db.profile.findUnique({ where: { email: email.toLowerCase() } })
+
+    // Enako sporočilo in podoben čas za "ni računa" in "napačno geslo":
+    // razlika bi napadalcu povedala, kateri e-naslovi so registrirani.
+    const invalid = NextResponse.json({ error: 'Napačen e-naslov ali geslo.' }, { status: 401 })
+    if (!profile?.passwordHash) {
+      await verifyPassword(password, null) // porabi enak čas kot prava preverba
+      return invalid
+    }
+    const ok = await verifyPassword(password, profile.passwordHash)
+    if (!ok) return invalid
+
+    const token = await signSession({
+      sub: profile.id,
+      email: profile.email,
+      ime: profile.ime,
+      vloga: profile.vloga,
     })
-  } catch (err) {
-    console.error('Auth error:', err)
-    return NextResponse.json({ error: 'Napaka pri prijavi' }, { status: 400 })
+
+    await db.profile
+      .update({ where: { id: profile.id }, data: { lastActive: new Date() } })
+      .catch(() => undefined)
+
+    const response = NextResponse.json({
+      user: { id: profile.id, email: profile.email, ime: profile.ime, vloga: profile.vloga },
+    })
+    response.headers.set('Set-Cookie', `${SESSION_COOKIE}=${token}; ${sessionCookieAttributes(isSecureRequest(request))}`)
+    return response
+  } catch (error) {
+    console.error('Auth login error:', error)
+    return NextResponse.json({ error: 'Napaka pri prijavi.' }, { status: 500 })
   }
 }
 
-// GET - Check auth status / seed demo data
-export async function GET() {
-  try {
-    const profiles = await db.profile.findMany({
-      orderBy: { createdAt: 'desc' },
-      take: 10
-    })
-    return NextResponse.json({ profiles })
-  } catch (err) {
-    console.error('Auth GET Error:', err)
-    return NextResponse.json({ error: 'Napaka' }, { status: 500 })
+// GET — kdo sem (za inicializacijo vmesnika)
+export async function GET(request: Request) {
+  const context = await authenticate(request)
+  if (context?.kind !== 'user') {
+    return NextResponse.json({ error: 'Neavtoriziran dostop' }, { status: 401 })
   }
+  const { session } = context
+  return NextResponse.json({
+    user: { id: session.sub, email: session.email, ime: session.ime, vloga: session.vloga },
+    expiresAt: session.exp * 1000,
+  })
 }

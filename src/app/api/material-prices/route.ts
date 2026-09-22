@@ -2,9 +2,13 @@
 // Pricing intelligence — primerjava cen, najcenejši dobavitelj
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { authenticate, unauthorized } from '@/lib/auth'
 
 // GET — cene materiala (z option za primerjavo dobaviteljev)
 export async function GET(request: Request) {
+  // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
+  const auth = await authenticate(request)
+  if (!auth) return unauthorized()
   try {
     const { searchParams } = new URL(request.url)
     const inventoryId = searchParams.get('inventoryId')
@@ -66,6 +70,9 @@ export async function GET(request: Request) {
 
 // POST — dodaj/posodobi ceno materiala pri dobavitelju
 export async function POST(request: Request) {
+  // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
+  const auth = await authenticate(request)
+  if (!auth) return unauthorized()
   try {
     const body = await request.json()
     const { inventoryId, supplierId, cena, opomba } = body

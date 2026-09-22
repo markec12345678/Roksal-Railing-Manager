@@ -4,9 +4,13 @@
 // PATCH /api/crm          — posodobi CRM polja (status, opomnik, kontaktna oseba, opombe)
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { authenticate, unauthorized } from '@/lib/auth'
 
 // GET — seznam strank z CRM podatki
 export async function GET(request: Request) {
+  // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
+  const auth = await authenticate(request)
+  if (!auth) return unauthorized()
   try {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
@@ -131,6 +135,9 @@ export async function GET(request: Request) {
 
 // PATCH — posodobi CRM polja stranke
 export async function PATCH(request: Request) {
+  // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
+  const auth = await authenticate(request)
+  if (!auth) return unauthorized()
   try {
     const body = await request.json()
     const { id, ...updateData } = body as {

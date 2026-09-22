@@ -2,9 +2,13 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { createProjectSchema, updateProjectSchema } from '@/lib/validations'
+import { authenticate, unauthorized } from '@/lib/auth'
 
 // GET - Pridobi vse projekte s podatki o strankah in meritvah
-export async function GET() {
+export async function GET(request: Request) {
+  // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
+  const auth = await authenticate(request)
+  if (!auth) return unauthorized()
   try {
     const projects = await db.project.findMany({
       include: {
@@ -28,6 +32,9 @@ export async function GET() {
 
 // POST - Ustvari nov projekt
 export async function POST(request: Request) {
+  // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
+  const auth = await authenticate(request)
+  if (!auth) return unauthorized()
   try {
     const body = await request.json()
     const validated = createProjectSchema.parse(body)
@@ -69,6 +76,9 @@ export async function POST(request: Request) {
 
 // PATCH - Posodobi projekt
 export async function PATCH(request: Request) {
+  // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
+  const auth = await authenticate(request)
+  if (!auth) return unauthorized()
   try {
     const body = await request.json()
     const { id, ...updateData } = body
