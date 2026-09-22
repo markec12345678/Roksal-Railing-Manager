@@ -31,6 +31,7 @@ import { fetchWithQueue } from '@/lib/offline-queue'
 import {
   X, Loader2, AlertTriangle, CheckCircle2, Box, Layers, Zap,
   Smartphone, Anchor, ScanLine, Undo2, Save, Crosshair, Gauge, Ruler,
+  Calculator, Image as ImageIcon,
 } from 'lucide-react'
 
 // ── WebXR tipi (še niso v TS lib.dom — minimalni lokalni opisi) ──────────────
@@ -212,6 +213,8 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
   const [pendingView, setPendingView] = useState(false)
   const [saving, setSaving] = useState(false)
   const [savedToProject, setSavedToProject] = useState(false)
+  const [savingSchema, setSavingSchema] = useState(false)
+  const [schemaSaved, setSchemaSaved] = useState(false)
 
   // Refs — vse, kar XRFrame zanka bere/pise (brez re-renderjev pri 60 fps)
   const sessionRef = useRef<XRSessionLike | null>(null)
@@ -632,6 +635,31 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
     pointsRef.current = pointsRef.current.filter((p) => p.id !== last.aId && p.id !== last.bId)
     setPointsView((arr) => arr.filter((x) => x.id !== last.aId && x.id !== last.bId))
     setSavedToProject(false)
+    setSchemaSaved(false)
+  }, [])
+
+  // ── Povzetek mer (skupno za Shrani / Kalkulator / Shema) ─────────────────
+  const summarize = useCallback(() => {
+    const segs = measurementsRef.current.map((m) => ({
+      oznaka: m.label,
+      dolzinaMm: Math.max(1, Math.round(m.distanceMm)),
+      a: { x: +m.aPos.x.toFixed(4), y: +m.aPos.y.toFixed(4), z: +m.aPos.z.toFixed(4) },
+      b: { x: +m.bPos.x.toFixed(4), y: +m.bPos.y.toFixed(4), z: +m.bPos.z.toFixed(4) },
+    }))
+    if (segs.length === 0) return null
+    // Najboljša ocena za kalkulator: najdaljši "vodoravni" segment (|dy| ≤ 50 %)
+    // je dolžina ograje, "navpični" (|dy| > 50 %) pa višina. Fallback: najdaljši.
+    const withAxis = segs.map((s) => ({
+      ...s,
+      dy: Math.abs(s.a.y - s.b.y),
+      horiz: Math.sqrt((s.a.x - s.b.x) ** 2 + (s.a.z - s.b.z) ** 2),
+    }))
+    const horizontalLens = withAxis.filter((s) => s.dy <= 0.5 * Math.max(s.horiz, 0.001)).map((s) => s.dolzinaMm)
+    const verticalLens = withAxis.filter((s) => s.dy > 0.5 * Math.max(s.horiz, 0.001)).map((s) => s.dolzinaMm)
+    const longest = Math.max(...segs.map((s) => s.dolzinaMm))
+    const dolzinaMm = horizontalLens.length ? Math.max(...horizontalLens) : longest
+    const visinaMm = verticalLens.length ? Math.max(...verticalLens) : longest
+    return { segs, dolzinaMm, visinaMm }
   }, [])
 
   // ── Shrani v Meritve (pravi POST /api/measurements) ───────────────────────
@@ -639,24 +667,9 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
     if (!projectId || measurementsRef.current.length === 0) return
     setSaving(true)
     try {
-      const segs = measurementsRef.current.map((m) => ({
-        oznaka: m.label,
-        dolzinaMm: Math.max(1, Math.round(m.distanceMm)),
-        a: { x: +m.aPos.x.toFixed(4), y: +m.aPos.y.toFixed(4), z: +m.aPos.z.toFixed(4) },
-        b: { x: +m.bPos.x.toFixed(4), y: +m.bPos.y.toFixed(4), z: +m.bPos.z.toFixed(4) },
-      }))
-      // Najboljša ocena za kalkulator: najdaljši "vodoravni" segment (|dy| ≤ 50 %)
-      // je dolžina ograje, "navpični" (|dy| > 50 %) pa višina. Fallback: najdaljši.
-      const withAxis = segs.map((s) => ({
-        ...s,
-        dy: Math.abs(s.a.y - s.b.y),
-        horiz: Math.sqrt((s.a.x - s.b.x) ** 2 + (s.a.z - s.b.z) ** 2),
-      }))
-      const horizontalLens = withAxis.filter((s) => s.dy <= 0.5 * Math.max(s.horiz, 0.001)).map((s) => s.dolzinaMm)
-      const verticalLens = withAxis.filter((s) => s.dy > 0.5 * Math.max(s.horiz, 0.001)).map((s) => s.dolzinaMm)
-      const longest = Math.max(...segs.map((s) => s.dolzinaMm))
-      const dolzinaMm = horizontalLens.length ? Math.max(...horizontalLens) : longest
-      const visinaMm = verticalLens.length ? Math.max(...verticalLens) : longest
+      const summary = summarize()
+      if (!summary) return
+      const { segs, dolzinaMm, visinaMm } = summary
 
       // fetchWithQueue: brez povezave se zapis vrsti in pošlje samodejno ob povezavi
       const res = await fetchWithQueue('/api/measurements', {
@@ -700,6 +713,161 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
       setSaving(false)
     }
   }, [projectId, features, hud.planeCount, hud.fps, toast])
+
+  // ── Uporabi mere v Kalkulatorju (dogodek → page.tsx preklopi zavihek) ─────
+  const useInCalculator = useCallback(() => {
+    const summary = summarize()
+    if (!summary) return
+    window.dispatchEvent(new CustomEvent('roksal:calc-import', {
+      detail: {
+        dolzinaMm: summary.dolzinaMm,
+        visinaMm: summary.visinaMm,
+        locationName: `AR WebXR (${summary.segs.length} segmentov)`,
+      },
+    }))
+    try { navigator.vibrate?.([30, 20, 30]) } catch { /* ignore */ }
+    toast({
+      title: '→ Kalkulator odprt',
+      description: `Dolžina ${fmtMm(summary.dolzinaMm)} · višina ${fmtMm(summary.visinaMm)} prenešeni.`,
+    })
+  }, [summarize, toast])
+
+  // ── AR shema (tloris) → AR posnetki ─────────────────────────────────────────
+  // Iz pozicij točk/sider nariše ploskovni tloris (pogled zgoraj: x→X, z→Y)
+  // z izmerjenimi segmenti v mm in ga shrani kot base64 PNG v AR posnetke.
+  const generateSchemaCanvas = useCallback((): { dataUrl: string; summary: NonNullable<ReturnType<typeof summarize>> } | null => {
+    const summary = summarize()
+    const pts = pointsRef.current
+    if (!summary || pts.length === 0) return null
+    const W = 1080
+    const H = 1400
+    const canvas = document.createElement('canvas')
+    canvas.width = W
+    canvas.height = H
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return null
+
+    const xs = pts.map((p) => p.pos.x)
+    const zs = pts.map((p) => p.pos.z)
+    const minX = Math.min(...xs), maxX = Math.max(...xs)
+    const minZ = Math.min(...zs), maxZ = Math.max(...zs)
+    const spanX = Math.max(maxX - minX, 0.4)
+    const spanZ = Math.max(maxZ - minZ, 0.4)
+    const scale = Math.min((W - 200) / spanX, (H - 420) / spanZ, 320)
+    const map = (p: { x: number; z: number }) => ({
+      x: W / 2 + (p.x - (minX + maxX) / 2) * scale,
+      y: H / 2 + 40 + (p.z - (minZ + maxZ) / 2) * scale,
+    })
+
+    // Ozadje + glava
+    ctx.fillStyle = '#1d2b3e'
+    ctx.fillRect(0, 0, W, H)
+    ctx.fillStyle = '#f59e0b'
+    ctx.font = 'bold 44px system-ui, sans-serif'
+    ctx.fillText('WEBXR AR — SHEMA MERITEV', 60, 96)
+    ctx.fillStyle = 'rgba(255,255,255,0.65)'
+    ctx.font = '26px system-ui, sans-serif'
+    ctx.fillText(`Tloris (pogled zgoraj) · ${new Date().toLocaleString('sl-SI')}`, 60, 140)
+
+    // Ravninski grid
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)'
+    ctx.lineWidth = 1
+    for (let gx = 0; gx < W; gx += 90) {
+      ctx.beginPath(); ctx.moveTo(gx, 180); ctx.lineTo(gx, H - 180); ctx.stroke()
+    }
+    for (let gy = 180; gy < H - 160; gy += 90) {
+      ctx.beginPath(); ctx.moveTo(40, gy); ctx.lineTo(W - 40, gy); ctx.stroke()
+    }
+
+    // Segmenti + oznake
+    for (const m of measurementsRef.current) {
+      const a = pts.find((p) => p.id === m.aId)
+      const b = pts.find((p) => p.id === m.bId)
+      if (!a || !b) continue
+      const pa = map({ x: a.pos.x, z: a.pos.z })
+      const pb = map({ x: b.pos.x, z: b.pos.z })
+      ctx.strokeStyle = '#f59e0b'
+      ctx.lineWidth = 5
+      ctx.beginPath(); ctx.moveTo(pa.x, pa.y); ctx.lineTo(pb.x, pb.y); ctx.stroke()
+      // oznaka mm na sredini
+      const mm = fmtMm(m.distanceMm)
+      ctx.font = 'bold 30px system-ui, sans-serif'
+      const tw = ctx.measureText(mm).width
+      const mx = (pa.x + pb.x) / 2, my = (pa.y + pb.y) / 2
+      ctx.fillStyle = '#ffffff'
+      ctx.fillRect(mx - tw / 2 - 14, my - 44, tw + 28, 42)
+      ctx.fillStyle = '#1d2b3e'
+      ctx.fillText(mm, mx - tw / 2, my - 13)
+    }
+
+    // Točke
+    for (const pt of pts) {
+      const pp = map({ x: pt.pos.x, z: pt.pos.z })
+      ctx.beginPath()
+      ctx.arc(pp.x, pp.y, 17, 0, Math.PI * 2)
+      ctx.fillStyle = '#f59e0b'
+      ctx.fill()
+      ctx.strokeStyle = '#ffffff'
+      ctx.lineWidth = 3
+      ctx.stroke()
+      ctx.fillStyle = '#ffffff'
+      ctx.font = 'bold 20px system-ui, sans-serif'
+      ctx.fillText(pt.label, pp.x - 6, pp.y + 7)
+    }
+
+    // Noga
+    ctx.fillStyle = 'rgba(255,255,255,0.55)'
+    ctx.font = '24px system-ui, sans-serif'
+    const feet = [
+      `Vir: pravi XRFrame hit-test${features.anchors ? ' + sidra' : ''}`,
+      `Segmenti: ${summary.segs.length} · skupna dolžina ${fmtMm(summary.segs.reduce((a, s) => a + s.dolzinaMm, 0))}`,
+      `Ravnine: ${hud.planeCount} · Roksal Railing Manager`,
+    ]
+    feet.forEach((t, i) => ctx.fillText(t, 60, H - 110 + i * 34))
+
+    return { dataUrl: canvas.toDataURL('image/png'), summary }
+  }, [summarize, features.anchors, hud.planeCount])
+
+  const saveSchema = useCallback(async () => {
+    if (!projectId) {
+      toast({ title: 'Izberi projekt', description: 'Shema se shrani v AR posnetke projekta.', variant: 'destructive' })
+      return
+    }
+    const gen = generateSchemaCanvas()
+    if (!gen) {
+      toast({ title: 'Ni mer za shemo', variant: 'destructive' })
+      return
+    }
+    setSavingSchema(true)
+    try {
+      const res = await fetchWithQueue('/api/ar-snapshots', {
+        body: {
+          projectId,
+          imageUrl: gen.dataUrl,
+          tocke: pointsRef.current.map((p) => ({ label: p.label, x: +p.pos.x.toFixed(3), y: +p.pos.y.toFixed(3), z: +p.pos.z.toFixed(3) })),
+          meritve: gen.summary.segs.map((s) => ({ a: s.a, b: s.b, dolzinaMm: s.dolzinaMm, oznaka: s.oznaka })),
+          opombe: `WebXR hit-test shema · dolžina ${fmtMm(gen.summary.dolzinaMm)} · višina ${fmtMm(gen.summary.visinaMm)}`,
+        },
+        label: 'AR shema (WebXR)',
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data = (await res.json()) as { queued?: boolean }
+      setSchemaSaved(true)
+      try { navigator.vibrate?.([40, 30, 40]) } catch { /* ignore */ }
+      toast({
+        title: data?.queued ? '📴 Shema je v offline vrsti' : '✓ Shema shranjena v AR posnetke',
+        description: `Tloris z ${gen.summary.segs.length} segmenti (dolžina ${fmtMm(gen.summary.dolzinaMm)}).`,
+      })
+    } catch (err) {
+      toast({
+        title: 'Shema ni shranjena',
+        description: err instanceof Error ? err.message : 'Neznana napaka',
+        variant: 'destructive',
+      })
+    } finally {
+      setSavingSchema(false)
+    }
+  }, [projectId, generateSchemaCanvas, toast])
 
   // ── Cleanup ob unmountu ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -889,6 +1057,17 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
                   </Button>
                   <Button
                     type="button"
+                    onClick={() => void saveSchema()}
+                    disabled={savingSchema || measurementsView.length === 0 || schemaSaved}
+                    size="sm"
+                    variant="outline"
+                    aria-label="Shrani AR shemo v posnetke"
+                    className="min-h-[44px] w-[52px] shrink-0 border-white/20 bg-transparent px-0 text-white hover:bg-white/10"
+                  >
+                    {savingSchema ? <Loader2 className="h-4 w-4 animate-spin" /> : schemaSaved ? <CheckCircle2 className="h-4 w-4 text-green-400" /> : <ImageIcon className="h-4 w-4" />}
+                  </Button>
+                  <Button
+                    type="button"
                     onClick={() => void endSession()}
                     variant="outline"
                     size="sm"
@@ -988,6 +1167,30 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
                           >
                             <Save className="mr-1 h-3.5 w-3.5" /> Shrani {measurementsView.length} mer v Meritve
                           </Button>
+                        )}
+                        {measurementsView.length > 0 && (
+                          <div className="mt-2 grid grid-cols-2 gap-2">
+                            <Button
+                              type="button"
+                              onClick={useInCalculator}
+                              size="sm"
+                              variant="outline"
+                              className="min-h-[40px] border-white/20 bg-transparent text-white hover:bg-white/10"
+                            >
+                              <Calculator className="mr-1 h-3.5 w-3.5" /> V kalkulator
+                            </Button>
+                            <Button
+                              type="button"
+                              onClick={() => void saveSchema()}
+                              disabled={savingSchema || schemaSaved}
+                              size="sm"
+                              variant="outline"
+                              className="min-h-[40px] border-white/20 bg-transparent text-white hover:bg-white/10"
+                            >
+                              {savingSchema ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : schemaSaved ? <CheckCircle2 className="mr-1 h-3.5 w-3.5 text-green-400" /> : <ImageIcon className="mr-1 h-3.5 w-3.5" />}
+                              {schemaSaved ? 'Shema ✓' : 'Shema'}
+                            </Button>
+                          </div>
                         )}
                       </div>
                     )}

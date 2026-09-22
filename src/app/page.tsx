@@ -219,6 +219,22 @@ export default function Home() {
     return () => window.removeEventListener('roksal:navigate', onNavigate)
   }, [handleMoreSelect, handleTabChange])
 
+  // AR WebXR → Kalkulator ("Uporabi v kalkulatorju" iz WebXR HUD)
+  useEffect(() => {
+    function onCalcImport(e: Event) {
+      const d = (e as CustomEvent<{ dolzinaMm?: number; visinaMm?: number; locationName?: string }>).detail
+      if (!d?.dolzinaMm || !d?.visinaMm) return
+      setCalculatorImport({
+        dolzinaMm: d.dolzinaMm,
+        visinaMm: d.visinaMm,
+        locationName: d.locationName ?? 'AR meritev (WebXR)',
+      })
+      handleTabChange('calculator')
+    }
+    window.addEventListener('roksal:calc-import', onCalcImport)
+    return () => window.removeEventListener('roksal:calc-import', onCalcImport)
+  }, [handleTabChange])
+
   // ── Pull-to-refresh (PWA občutek na telefonu) ───────────────────────────
   const onPullStart = useCallback((e: React.TouchEvent) => {
     if (window.scrollY <= 0 && e.touches.length === 1 && !syncing) {

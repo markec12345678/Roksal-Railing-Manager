@@ -10,6 +10,7 @@ import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
+import { parseSlDimension, useSpeechRecognition } from '@/lib/sl-speech'
 import { Separator } from '@/components/ui/separator'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -881,6 +882,57 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
   // P3 — Enota v formi (ločena za dolžino in višino)
   const [formLengthUnit, setFormLengthUnit] = useState<EnotaTip>('mm')
   const [formHeightUnit, setFormHeightUnit] = useState<EnotaTip>('mm')
+
+  // ── Glasovni vnos meritev (sl-SI, Web Speech API) ─────────────────────
+  // "dva metra štirideset" → 2400 mm. Klik na mikrofon zapene cilj
+  // (dolžina/višina), prepis pa razčleni parseSlDimension.
+  const [voiceTarget, setVoiceTarget] = useState<'length' | 'height'>('length')
+  const voiceTargetRef = useRef<'length' | 'height'>('length')
+  const fromMm = useCallback((mm: number, unit: EnotaTip) =>
+    unit === 'm' ? String(+(mm / 1000).toFixed(2)) : unit === 'cm' ? String(+(mm / 10).toFixed(1)) : String(Math.round(mm)), [])
+  const applyVoice = useCallback((transcript: string) => {
+    const isLength = voiceTargetRef.current === 'length'
+    const unit = isLength ? formLengthUnit : formHeightUnit
+    const mm = parseSlDimension(transcript, unit)
+    if (mm === null || mm <= 0) {
+      toast.error(`Ni razumel: „${transcript}“`)
+      return
+    }
+    const val = fromMm(mm, unit)
+    try { navigator.vibrate?.([20, 30, 20]) } catch { /* ignore */ }
+    if (isLength) {
+      setFormLength(val)
+      toast.success(`🎤 Dolžina: ${val} ${unit}`)
+    } else {
+      setFormHeight(val)
+      toast.success(`🎤 Višina: ${val} ${unit}`)
+    }
+  }, [formLengthUnit, formHeightUnit, fromMm])
+  const voice = useSpeechRecognition(applyVoice)
+  const micFor = (target: 'length' | 'height') => {
+    const active = voice.listening && voiceTarget === target
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          if (active) { voice.stop(); return }
+          setVoiceTarget(target)
+          voiceTargetRef.current = target
+          voice.start()
+        }}
+        disabled={!voice.supported}
+        aria-label={`Glasovni vnos ${target === 'length' ? 'dolžine' : 'višine'}`}
+        title={voice.supported ? 'Glasovni vnos (slovenščina)' : 'Glasovni vnos ni podprt v tem brskalniku (Chrome/Edge)'}
+        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-md border transition-colors ${
+          active
+            ? 'border-red-300 bg-red-50 text-red-600 animate-pulse'
+            : 'border-border bg-background text-muted-foreground hover:bg-secondary'
+        } ${voice.supported ? '' : 'opacity-40'}`}
+      >
+        <Mic className="h-4 w-4" />
+      </button>
+    )
+  }
 
   // P3 — Stopniščni čarovnik (stair wizard)
   const [stairWizardOpen, setStairWizardOpen] = useState(false)
@@ -4564,6 +4616,7 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
                     placeholder="3000"
                     className="h-10 font-mono flex-1"
                   />
+                  {micFor('length')}
                   <Select
                     value={formLengthUnit}
                     onValueChange={(v) => setFormLengthUnit(v as EnotaTip)}
@@ -4597,6 +4650,7 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
                     placeholder="900"
                     className="h-10 font-mono flex-1"
                   />
+                  {micFor('height')}
                   <Select
                     value={formHeightUnit}
                     onValueChange={(v) => setFormHeightUnit(v as EnotaTip)}
