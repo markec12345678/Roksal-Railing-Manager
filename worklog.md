@@ -442,3 +442,47 @@ Stage Summary:
 - Oznake/kartice: statusna letvica + progress bar izboljšata hitrost branja na terenu
 - Naslednja runda: LiDAR iOS (realen iPhone), FURS davčni blagajni režim, UPN QR tudi v
   predplačilnih listih strankam prek portal, eSlog validacija proti MJU XSD v produkciji
+
+---
+Task ID: 9 (runda J — cron webDevReview)
+Agent: Main Orchestrator (Z.ai Code)
+Task: QA ocena + prodajna plošča (kanban drag & drop, dnd-kit) + KML izvoz meritev + popravek manjkajočih statusov v PATCH API
+
+Work Log:
+- QA start: dev strežnik bil ugasnjen (nov sandbox zagon) → restart bun run dev; tsc/lint čisti;
+  login ✓, dashboard ✓, obvestila ✓, CRM (follow-upi + računi) ✓, dev.log čist — brez bugov, nadaljevanje z novimi funkcijami
+- BUG FIX (najden med analizo): zod updateProjectSchema je dovoljal samo 4 od 7 ProjectStatus
+  vrednosti — ZA_MONTAZO, V_IZDELAVI, MONTIRANO ni bilo mogoče nastaviti prek PATCH /api/projects!
+  → validations.ts dopolnjen z vsemi 7 (E2E potrdil: PATCH ZA_MONTAZO prej 400, zdaj 200)
+- J-1 Prodajna plošča (novo, src/components/roksal/deal-pipeline.tsx):
+  · 7 stolpcev: Načrtovano / V teku / Za montažo / V izdelavi / Montirano / Zaključeno / Ustavljeno
+  · @dnd-kit/core (prva uporaba dnd-kit v projektu — PointerSensor distance 6 + KeyboardSensor),
+    useDraggable kartice + useDroppable stolpci + DragOverlay (rotacija + sence)
+  · optimistični premik + PATCH /api/projects {status} + rollback + destruktivni toast ob napaki
+  · vsaka sprememba statusa → strežnik zapiše AuditLog STATUS_SPREMENJEN (oldValue/newValue/userId,
+    auth.kind user→session.sub) — revija za vodjo; 404 če projekt ne obstaja
+  · kartice: ime, stranka, cena (€), deal-lock značka, datum montaže, SPOMNIK značka (zapadel
+    rdeča/DANES amber/≤3 dni mehka); stolpci: števec + Σ vrednost €, drop-highlight obroč,
+    prazno stanje "Povlecite sem"; flash ring po uspešnem premiku
+  · dostopnost: dropdown meni "⋮" na kartici (stopPropagation, da dnd ne zajame klika) kot
+    alternativа vlečenju + tipkovnica (KeyboardSensor) + aria-labeli; branjje vsot "v obdelavi"
+  · vgrajen v CRM tab nad follow-upi (self-fetch /api/projects, enak vzorec kot ostali CRM deli)
+- J-2 KML izvoz meritev (map-measure.tsx):
+  · gumb "KML" (≥2 točki) → prava .kml datoteka (Blob download): LineString črte ograje
+    (amber, aabbggrr ff0b9ef5) + numerirani Placemark T1..Tn + ime projekta v Document.name
+  · za geodeta/vodjo — izmerjeno črto odpri v Google Earth/QGIS brez pretipavanja koordinat
+- E2E (agent-browser, mobilni 390 + tablica 820):
+  · vlečenje Kokalj Načrtovano→V teku: UI stolpec ✓, DB status V_TEKU ✓, AuditLog zapis ✓
+  · meni ⋮ Terasa Zupan → Za montažo: DB ZA_MONTAZO ✓ + AuditLog ✓ (dokaz, da zod fix deluje)
+  · KML: gumb disabled pri 0 točk → 2 CDP klika na zemljevid → download 840 B → minidom XML
+    VALID ✓, vsebina (črta 3186.0 m, T1/T2, ime projekta) ✓
+  · 390px in 820px: brez horizontalnega overflowa dokumenta (stolpci scrollajo interno)
+
+Stage Summary:
+- CRM ima zdaj vizualno prodajno ploščo po Pipedrive vzorcu — vodja vidi celoten cevovod
+  in vrednost v obdelavi; vsak premik je revizijsko sledljiv (AuditLog)
+- POPRAVLJEN tih bug: 3 statusi (ZA_MONTAZO/V_IZDELAVI/MONTIRANO) prej sploh niso bili
+  nastavljivi prek API-ja — logistika V6 je zato delno mrla pri spreminjanju statusa
+- Naslednje runde: LiDAR iOS (realen iPhone), FURS davčni blagajni režim (prostor/naprava),
+  eSlog XSD validacija v produkciji, UPN QR v predplačilnih listih portala; opcijsko:
+  filter stranke na plošči, prilagodljivi stolpci (skrij Ustavljeno), undo premika

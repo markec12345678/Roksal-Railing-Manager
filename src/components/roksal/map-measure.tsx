@@ -39,6 +39,7 @@ import {
   Copy,
   Check,
   MessageCircle,
+  Download,
 } from 'lucide-react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -242,6 +243,42 @@ export function MapMeasure({ projectId, clientToken, nazivProjekta }: MapMeasure
     setPoints([])
   }
 
+  // ── Izvoz meritev kot KML (Google Earth / QGIS) ─────────────────────────
+  // Geodet ali vodja odpre izmerjeno črto v Google Earth — brez ponovnega
+  // vnašanja koordinat. KML barva je format aabbggrr (amber = ff0b9ef5).
+  function exportKml() {
+    if (points.length < 2) return
+    const ime = (nazivProjekta || 'Meritev ograje').replace(/[<>&'"]/g, '')
+    const slug = ime.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'meritev'
+    const coords = points.map((p) => `${p.lng.toFixed(7)},${p.lat.toFixed(7)},0`).join(' ')
+    const tocke = points
+      .map(
+        (p, i) =>
+          `    <Placemark><name>T${i + 1}</name><styleUrl>#pin</styleUrl><Point><coordinates>${p.lng.toFixed(7)},${p.lat.toFixed(7)},0</coordinates></Point></Placemark>`,
+      )
+      .join('\n')
+    const kml = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>${ime} — meritev ograje</name>
+    <Style id="crta"><LineStyle><color>ff0b9ef5</color><width>4</width></LineStyle></Style>
+    <Style id="pin"><IconStyle><color>ff0b9ef5</color><scale>1.1</scale></IconStyle></Style>
+    <Placemark><name>Ograja (${totalM.toFixed(1)} m)</name><styleUrl>#crta</styleUrl><LineString><tessellate>1</tessellate><coordinates>${coords}</coordinates></LineString></Placemark>
+${tocke}
+  </Document>
+</kml>`
+    const blob = new Blob([kml], { type: 'application/vnd.google-earth.kml+xml;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `meritev-${slug}.kml`
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
+    toast({ title: 'KML izvožen', description: `${points.length} točk, ${totalM.toFixed(1)} m — odpri v Google Earth ali QGIS.` })
+  }
+
   async function saveMeasurement() {
     if (!projectId) {
       toast({ title: 'Brez projekta', description: 'Izberite projekt v zavihku Domov.', variant: 'destructive' })
@@ -412,6 +449,18 @@ export function MapMeasure({ projectId, clientToken, nazivProjekta }: MapMeasure
           >
             <Share2 className="mr-1.5 h-4 w-4" />
             Pošlji stranki
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-10"
+            disabled={points.length < 2}
+            onClick={exportKml}
+            title="Izvozi točke kot KML za Google Earth / QGIS"
+          >
+            <Download className="mr-1.5 h-4 w-4" />
+            KML
           </Button>
           <Button
             type="button"

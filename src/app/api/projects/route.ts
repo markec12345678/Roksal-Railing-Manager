@@ -98,6 +98,15 @@ export async function PATCH(request: Request) {
     }
     if (followUpOpomba !== undefined) data.followUpOpomba = followUpOpomba
 
+    // Stara vrednost statusa — za revijo sprememb (AuditLog)
+    const existing = await db.project.findUnique({
+      where: { id },
+      select: { status: true, nazivProjekta: true },
+    })
+    if (!existing) {
+      return NextResponse.json({ error: 'Projekt ne obstaja' }, { status: 404 })
+    }
+
     const updated = await db.project.update({
       where: { id },
       data,
@@ -106,6 +115,24 @@ export async function PATCH(request: Request) {
         monter: { select: { id: true, ime: true } },
       }
     })
+
+    // SPREMEMBA STATUSA → revija (AuditLog), da vodja vidi kdo/kdaj je premaknil projekt
+    if (data.status !== undefined && data.status !== existing.status) {
+      try {
+        await db.auditLog.create({
+          data: {
+            userId: auth.kind === 'user' ? auth.session.sub : 'system',
+            projectId: id,
+            akcija: 'STATUS_SPREMENJEN',
+            oldValue: existing.status,
+            newValue: String(data.status),
+          },
+        })
+      } catch (auditError) {
+        // Revija ne sme pokvariti glavne operacije
+        console.error('Audit log (status) napaka:', auditError)
+      }
+    }
 
     return NextResponse.json(updated)
   } catch (error: unknown) {

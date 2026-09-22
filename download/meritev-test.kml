@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Ograja Kokalj - Balustrada — meritev ograje</name>
+    <Style id="crta"><LineStyle><color>ff0b9ef5</color><width>4</width></LineStyle></Style>
+    <Style id="pin"><IconStyle><color>ff0b9ef5</color><scale>1.1</scale></IconStyle></Style>
+    <Placemark><name>Ograja (3186.0 m)</name><styleUrl>#crta</styleUrl><LineString><tessellate>1</tessellate><coordinates>14.7999573,46.1360733,0 14.8308563,46.1170376,0</coordinates></LineString></Placemark>
+    <Placemark><name>T1</name><styleUrl>#pin</styleUrl><Point><coordinates>14.7999573,46.1360733,0</coordinates></Point></Placemark>
+    <Placemark><name>T2</name><styleUrl>#pin</styleUrl><Point><coordinates>14.8308563,46.1170376,0</coordinates></Point></Placemark>
+  </Document>
+</kml>

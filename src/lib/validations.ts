@@ -16,7 +16,9 @@ export const createProjectSchema = z.object({
 })
 
 export const updateProjectSchema = z.object({
-  status: z.enum(['NACRTOVANO', 'V_TEKU', 'ZAKLJUCENO', 'USTAVLJENO']).optional(),
+  status: z
+    .enum(['NACRTOVANO', 'V_TEKU', 'ZA_MONTAZO', 'V_IZDELAVI', 'MONTIRANO', 'ZAKLJUCENO', 'USTAVLJENO'])
+    .optional(),
   opombe: z.string().optional(),
   monterId: z.string().optional(),
   // FOLLOW-UP PONUDBE — ISO datum ali null za brisanje spomnika

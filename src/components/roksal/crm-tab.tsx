@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast'
 import { EmptyState } from '@/components/ui/empty-state'
 import { QuoteFollowUp } from '@/components/roksal/quote-followup'
 import { InvoiceManager } from '@/components/roksal/invoice-manager'
+import { DealPipeline } from '@/components/roksal/deal-pipeline'
 import {
   Users,
   Search,
@@ -194,6 +195,9 @@ export function CrmTab() {
 
   return (
     <div className="space-y-4">
+      {/* Prodajna plošča — drag & drop statusi (kanban) */}
+      <DealPipeline />
+
       {/* Sledenje ponudbam (follow-up spomniki) */}
       <QuoteFollowUp />
 
