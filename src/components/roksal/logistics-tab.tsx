@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Separator } from '@/components/ui/separator'
 import { useToast } from '@/hooks/use-toast'
 import {
-  Calendar, Users, Wrench, Plus, Clock, MapPin, CheckCircle2,
+  Calendar, Download, Users, Wrench, Plus, Clock, MapPin, CheckCircle2,
   Loader2, AlertTriangle, Truck, Package,
 } from 'lucide-react'
 
@@ -83,6 +83,94 @@ function formatDate(d: string): string {
 
 function formatTime(d: string): string {
   return new Date(d).toLocaleTimeString('sl-SI', { hour: '2-digit', minute: '2-digit' })
+}
+
+// ---------------------------------------------------------------------------
+// ICS izvoz (RFC 5545) — termine montaže v telefonov koledar (Google/Apple/
+// Outlook jih vsi uvozijo). Časi v UTC (Z), kar pomeni pravilen prikaz tudi
+// po časovnih pasovih; STATUS premeša Preklicano/Preloženo.
+// ---------------------------------------------------------------------------
+
+function icsEscape(text: string): string {
+  return text.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n')
+}
+
+/** RFC 5545: vrstice največ 75 oktetov — nadaljevanje z začetnim presledkom. */
+function icsFold(line: string): string {
+  const out: string[] = []
+  let rest = line
+  while (rest.length > 73) {
+    out.push(rest.slice(0, 73))
+    rest = ' ' + rest.slice(73)
+  }
+  out.push(rest)
+  return out.join('\r\n')
+}
+
+function icsUtc(d: string | Date): string {
+  const t = new Date(d)
+  return (
+    t.getUTCFullYear().toString().padStart(4, '0') +
+    String(t.getUTCMonth() + 1).padStart(2, '0') +
+    String(t.getUTCDate()).padStart(2, '0') +
+    'T' +
+    String(t.getUTCHours()).padStart(2, '0') +
+    String(t.getUTCMinutes()).padStart(2, '0') +
+    String(t.getUTCSeconds()).padStart(2, '0') +
+    'Z'
+  )
+}
+
+export function buildIcs(schedules: Schedule[]): string {
+  const lines: string[] = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Roksal Railing Manager//Logistika//SL',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'X-WR-CALNAME:Roksal montaže',
+  ]
+  const now = icsUtc(new Date())
+  for (const s of schedules) {
+    const status = s.status === 'PREKlicANO' ? 'CANCELLED' : s.status === 'PRELOZENO' ? 'TENTATIVE' : 'CONFIRMED'
+    const opis = [
+      `Stranka: ${s.project.customer.ime}`,
+      s.crew ? `Ekipa: ${s.crew.naziv}` : null,
+      s.monter ? `Monter: ${s.monter.ime}` : null,
+      `Predvidene ure: ${s.predvideneUre}`,
+      s.opombe ?? null,
+    ]
+      .filter(Boolean)
+      .join('\n')
+    lines.push(
+      'BEGIN:VEVENT',
+      `UID:schedule-${s.id}@roksal`,
+      `DTSTAMP:${now}`,
+      `DTSTART:${icsUtc(s.datumZacetka)}`,
+      `DTEND:${icsUtc(s.datumKonca || s.datumZacetka)}`,
+      `SUMMARY:${icsEscape(`Montaža: ${s.project.nazivProjekta}`)}`,
+      `LOCATION:${icsEscape(s.lokacija || s.project.customer.naslov || '')}`,
+      `DESCRIPTION:${icsEscape(opis)}`,
+      `STATUS:${status}`,
+      'END:VEVENT',
+    )
+  }
+  lines.push('END:VCALENDAR')
+  return lines.map(icsFold).join('\r\n') + '\r\n'
+}
+
+export function downloadIcs(schedules: Schedule[]): number {
+  if (schedules.length === 0) return 0
+  const blob = new Blob([buildIcs(schedules)], { type: 'text/calendar;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `roksal-montaze-${new Date().toISOString().slice(0, 10)}.ics`
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  setTimeout(() => URL.revokeObjectURL(url), 2000)
+  return schedules.length
 }
 
 export function LogisticsTab({ projectId }: { projectId: string | null }) {
@@ -198,9 +286,25 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
       {/* Calendar tab */}
       {subtab === 'calendar' && (
         <div className="space-y-3">
-          <Button type="button" onClick={() => setNewScheduleOpen(true)} className="w-full bg-roksal-navy text-white">
-            <Plus className="h-4 w-4 mr-2" /> Nov termin montaže
-          </Button>
+          <div className="flex gap-2">
+            <Button type="button" onClick={() => setNewScheduleOpen(true)} className="flex-1 bg-roksal-navy text-white">
+              <Plus className="h-4 w-4 mr-2" /> Nov termin montaže
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={schedules.length === 0}
+              aria-label="Izvozi termine montaže kot koledarsko datoteko (.ics)"
+              title="Termine odpri v Google/Apple/Outlook koledarju"
+              className="shrink-0"
+              onClick={() => {
+                const n = downloadIcs(schedules)
+                if (n > 0) toast({ title: `Koledar izvožen (${n} terminov)`, description: 'Datoteko odpri v telefonu — dogodki se dodajo v koledar.' })
+              }}
+            >
+              <Download className="h-4 w-4 mr-1" aria-hidden /> .ics
+            </Button>
+          </div>
 
           {loading ? (
             <Card><CardContent className="py-8 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto text-roksal-amber" /></CardContent></Card>

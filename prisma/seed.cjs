@@ -59,63 +59,67 @@ async function main() {
   })
 
   // ── stranke ──
-  const customer1 = await db.customer.create({
-    data: {
-      ime: 'Janez Novak',
-      naslov: 'Ljubljanska cesta 142, 4000 Kranj',
-      telefon: '+386 41 555 666',
-      email: 'janez.novak@email.si',
-    },
+  // Idempotentno: findFirst po imenu, sicer create (prej je `create()` vsak
+  // zagon naselil nov nabor → podvojeni projekti/stranke v demo bazi).
+  async function upsertCustomer(data) {
+    const existing = await db.customer.findFirst({ where: { ime: data.ime } })
+    if (existing) return existing
+    return db.customer.create({ data })
+  }
+  const customer1 = await upsertCustomer({
+    ime: 'Janez Novak',
+    naslov: 'Ljubljanska cesta 142, 4000 Kranj',
+    telefon: '+386 41 555 666',
+    email: 'janez.novak@email.si',
   })
-  const customer2 = await db.customer.create({
-    data: {
-      ime: 'Maja Zupan',
-      naslov: 'Prešernova 22, 4220 Škofja Loka',
-      telefon: '+386 41 777 888',
-      email: 'maja.zupan@email.si',
-    },
+  const customer2 = await upsertCustomer({
+    ime: 'Maja Zupan',
+    naslov: 'Prešernova 22, 4220 Škofja Loka',
+    telefon: '+386 41 777 888',
+    email: 'maja.zupan@email.si',
   })
-  const customer3 = await db.customer.create({
-    data: {
-      ime: 'Andrej Kokalj',
-      naslov: 'Cankarjeva 15, 4000 Kranj',
-      telefon: '+386 41 999 000',
-    },
+  const customer3 = await upsertCustomer({
+    ime: 'Andrej Kokalj',
+    naslov: 'Cankarjeva 15, 4000 Kranj',
+    telefon: '+386 41 999 000',
   })
 
-  // ── projekti ──
-  await db.project.create({
-    data: {
-      nazivProjekta: 'Ograja Novak - Balkon 3.nadstropje',
-      status: 'V_TEKU',
-      customerId: customer1.id,
-      monterId: marko.id,
-      vodjaId: admin.id,
-      datumMontaze: new Date(),
-      opombe: 'Alu ograja - Model A (Anodizirana). Kemično sidranje v betonsko podlago.',
-      latitude: 46.2397,
-      longitude: 14.3556,
-    },
+  // ── projekti (prav tako idempotentno po nazivu) ──
+  async function upsertProject(data) {
+    const existing = await db.project.findFirst({ where: { nazivProjekta: data.nazivProjekta } })
+    if (existing) return existing
+    return db.project.create({ data })
+  }
+  await upsertProject({
+    nazivProjekta: 'Ograja Novak - Balkon 3.nadstropje',
+    status: 'V_TEKU',
+    customerId: customer1.id,
+    monterId: marko.id,
+    vodjaId: admin.id,
+    datumMontaze: new Date(),
+    estimatedPrice: 2850,
+    opombe: 'Alu ograja - Model A (Anodizirana). Kemično sidranje v betonsko podlago.',
+    latitude: 46.2397,
+    longitude: 14.3556,
   })
-  await db.project.create({
-    data: {
-      nazivProjekta: 'Terasa Zupan - WPC deske',
-      status: 'NACRTOVANO',
-      customerId: customer2.id,
-      monterId: marko.id,
-      datumMontaze: new Date(Date.now() + 3 * 86400000),
-      opombe: 'WoodCore WPC deske, Anthracite. Montaža na jeklen okvir.',
-    },
+  await upsertProject({
+    nazivProjekta: 'Terasa Zupan - WPC deske',
+    status: 'NACRTOVANO',
+    customerId: customer2.id,
+    monterId: marko.id,
+    datumMontaze: new Date(Date.now() + 3 * 86400000),
+    estimatedPrice: 4320,
+    dealLocked: true,
+    opombe: 'WoodCore WPC deske, Anthracite. Montaža na jeklen okvir.',
   })
-  await db.project.create({
-    data: {
-      nazivProjekta: 'Ograja Kokalj - Balustrada',
-      status: 'NACRTOVANO',
-      customerId: customer3.id,
-      monterId: marko.id,
-      datumMontaze: new Date(Date.now() + 7 * 86400000),
-      opombe: 'Stainless steel kabelska ograja. 12 točk sidranja.',
-    },
+  await upsertProject({
+    nazivProjekta: 'Ograja Kokalj - Balustrada',
+    status: 'NACRTOVANO',
+    customerId: customer3.id,
+    monterId: marko.id,
+    datumMontaze: new Date(Date.now() + 7 * 86400000),
+    estimatedPrice: 1980,
+    opombe: 'Stainless steel kabelska ograja. 12 točk sidranja.',
   })
 
   // ── meritve ──

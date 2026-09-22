@@ -71,3 +71,4 @@ server.log
 /backups/
 *.db
 !.env.example
+download/

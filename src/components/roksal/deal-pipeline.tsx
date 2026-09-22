@@ -32,6 +32,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { ToastAction } from '@/components/ui/toast'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import {
@@ -49,6 +51,7 @@ import {
   Lock,
   MoreVertical,
   Trello,
+  Users,
   Wrench,
   type LucideIcon,
 } from 'lucide-react'
@@ -136,7 +139,8 @@ function PipelineCardVisual({
   return (
     <div
       className={cn(
-        'relative rounded-lg border border-border/70 border-l-4 bg-card p-2.5 pr-6 text-left shadow-sm transition-shadow',
+        'relative rounded-lg border border-border/70 border-l-4 bg-card p-2.5 pr-6 text-left shadow-sm transition-all duration-200',
+        'hover:-translate-y-px hover:shadow-md hover:border-border',
         col.bar,
         flash && 'ring-2 ring-emerald-400 ring-offset-1',
       )}
@@ -308,6 +312,7 @@ export function DealPipeline() {
   const [activeId, setActiveId] = useState<string | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
   const [flashId, setFlashId] = useState<string | null>(null)
+  const [customerFilter, setCustomerFilter] = useState<string>('ALL')
   const itemsRef = useRef<PipeProject[]>([])
   const { toast } = useToast()
 
@@ -356,7 +361,19 @@ export function DealPipeline() {
         })
         if (!res.ok) throw new Error('strežnik')
         const col = PIPELINE.find((c) => c.id === next)
-        toast({ title: `Premaknjeno: ${col?.label ?? next}`, description: 'Sprememba zabeležena v reviji sprememb.' })
+        const prevCol = PIPELINE.find((c) => c.id === current.status)
+        toast({
+          title: `Premaknjeno: ${col?.label ?? next}`,
+          description: 'Sprememba zabeležena v revijo sprememb.',
+          action: (
+            <ToastAction
+              altText={`Razveljavi premik nazaj na ${prevCol?.label ?? current.status}`}
+              onClick={() => void handleMove(projectId, current.status as PipeStatus)}
+            >
+              Razveljaví
+            </ToastAction>
+          ),
+        })
         setFlashId(projectId)
         setTimeout(() => setFlashId(null), 1800)
       } catch {
@@ -391,49 +408,83 @@ export function DealPipeline() {
   const activeProject = activeId ? items.find((p) => p.id === activeId) : null
   const activeCol = activeProject ? PIPELINE.find((c) => c.id === activeProject.status) : null
 
+  // Unikatne stranke za filter plošče (urejeno po imenu, brez duplikatov)
+  const stranke = useMemo(
+    () =>
+      Array.from(
+        new Set(items.map((p) => p.customer?.ime).filter((x): x is string => !!x)),
+      ).sort((a, b) => a.localeCompare(b, 'sl')),
+    [items],
+  )
+
+  const vidni = useMemo(
+    () =>
+      customerFilter === 'ALL' ? items : items.filter((p) => (p.customer?.ime ?? '') === customerFilter),
+    [items, customerFilter],
+  )
+
   const grouped = useMemo(() => {
     const map = new Map<PipeStatus, PipeProject[]>()
     for (const col of PIPELINE) map.set(col.id, [])
-    for (const p of items) {
+    for (const p of vidni) {
       const list = map.get(p.status as PipeStatus)
       if (list) list.push(p)
     }
     return map
-  }, [items])
+  }, [vidni])
 
   const vrednostPonudb = useMemo(
     () =>
-      items
+      vidni
         .filter((p) => p.status !== 'ZAKLJUCENO' && p.status !== 'USTAVLJENO')
         .reduce((s, p) => s + (p.estimatedPrice ?? 0), 0),
-    [items],
+    [vidni],
   )
 
   return (
     <Card>
       <CardHeader className="pb-2">
-        <div className="flex items-start justify-between gap-2">
-          <div>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
             <CardTitle className="flex items-center gap-2 text-base">
-              <Trello className="h-4 w-4 text-roksal-amber" aria-hidden />
+              <Trello className="h-4 w-4 shrink-0 text-roksal-amber" aria-hidden />
               Prodajna plošča
             </CardTitle>
             <p className="mt-1 text-xs text-muted-foreground">
-              Povlecite projekt na novo stopnjo — sprememba se zabeleži v revijo.
+              Povlecite projekt na novo stopnjo — sprememba se zabeleži v revijo. Nespremišnjen premik lahko takoj razveljavite.
             </p>
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-1.5 sm:justify-end">
             {vrednostPonudb > 0 && (
               <Badge variant="outline" className="gap-1 border-roksal-navy/30 text-[11px] text-roksal-navy dark:text-roksal-amber">
                 <Euro className="h-3 w-3" aria-hidden />
                 {fmtEur(vrednostPonudb)} v obdelavi
               </Badge>
             )}
+            {stranke.length > 1 && (
+              <Select value={customerFilter} onValueChange={setCustomerFilter}>
+                <SelectTrigger
+                  aria-label="Filtriraj ploščo po stranki"
+                  className="h-8 w-full min-w-0 text-xs sm:w-[170px] sm:flex-none"
+                >
+                  <Users className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">Vse stranke</SelectItem>
+                  {stranke.map((s) => (
+                    <SelectItem key={s} value={s} className="text-xs">
+                      {s}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
             <Button
               type="button"
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-8 w-8 shrink-0"
               onClick={() => setOpen((v) => !v)}
               aria-expanded={open}
               aria-label={open ? 'Skrči prodajno ploščo' : 'Razpri prodajno ploščo'}

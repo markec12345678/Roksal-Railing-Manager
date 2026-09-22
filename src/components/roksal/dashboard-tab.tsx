@@ -426,6 +426,31 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
     return Math.max(1, Math.round((start.getTime() - new Date(p.datumMontaze).getTime()) / 86400000))
   }
 
+  // Projekti z enakim imenom (in isto stranko) se v seznamu združijo v eno
+  // vrstico z značko ×N — enak vzorec kot dedup obvestil. Klik odpre prvi
+  // (najstarejši) zadetek; xN opozori vodjo, da je zapisa več.
+  const groupedToday = useMemo(() => {
+    const map = new Map<string, { p: Project; n: number }>()
+    for (const p of todayInstallations) {
+      const key = `${p.nazivProjekta}|${p.customer?.ime ?? ''}`
+      const e = map.get(key)
+      if (e) e.n++
+      else map.set(key, { p, n: 1 })
+    }
+    return [...map.values()]
+  }, [todayInstallations])
+
+  const groupedOverdue = useMemo(() => {
+    const map = new Map<string, { p: Project; n: number }>()
+    for (const p of overdueProjects) {
+      const key = `${p.nazivProjekta}|${p.customer?.ime ?? ''}`
+      const e = map.get(key)
+      if (e) e.n++
+      else map.set(key, { p, n: 1 })
+    }
+    return [...map.values()]
+  }, [overdueProjects])
+
   // ── Trend aktivnosti (zadnjih 6 mesecev) ─────────────────────────────────
   // Novi projekti po mesecu nastanka (createdAt) in zaključeni po mesecu
   // posodobitve (updatedAt) — čist SVG/DOM, brez odvisnosti od graf knjižnic.
@@ -900,7 +925,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
             </div>
           </CardHeader>
           <CardContent className="space-y-2 px-4 pb-4">
-            {todayInstallations.map((p) => (
+            {groupedToday.map(({ p, n }) => (
               <button
                 key={p.id}
                 type="button"
@@ -911,7 +936,14 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                   <Wrench className="h-4 w-4 text-roksal-amber" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs font-semibold text-roksal-navy">{p.nazivProjekta}</p>
+                  <p className="flex items-center gap-1.5 text-xs font-semibold text-roksal-navy">
+                    <span className="truncate">{p.nazivProjekta}</span>
+                    {n > 1 && (
+                      <Badge variant="secondary" className="h-4 shrink-0 rounded-full px-1.5 text-[9px] font-bold">
+                        ×{n}
+                      </Badge>
+                    )}
+                  </p>
                   <p className="truncate text-[11px] text-muted-foreground">
                     Montaža danes · {p.customer?.ime || 'Ni stranke'}
                   </p>
@@ -919,7 +951,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                 <ChevronRight className="h-4 w-4 shrink-0 text-roksal-amber" />
               </button>
             ))}
-            {overdueProjects.map((p) => (
+            {groupedOverdue.map(({ p, n }) => (
               <button
                 key={p.id}
                 type="button"
@@ -930,7 +962,14 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                   <AlertTriangle className="h-4 w-4 text-roksal-red" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs font-semibold text-roksal-navy">{p.nazivProjekta}</p>
+                  <p className="flex items-center gap-1.5 text-xs font-semibold text-roksal-navy">
+                    <span className="truncate">{p.nazivProjekta}</span>
+                    {n > 1 && (
+                      <Badge variant="secondary" className="h-4 shrink-0 rounded-full px-1.5 text-[9px] font-bold">
+                        ×{n}
+                      </Badge>
+                    )}
+                  </p>
                   <p className="truncate text-[11px] text-muted-foreground">
                     Zapadlo: {formatDate(p.datumMontaze ?? '')} · {overdueDays(p)} dni čez termin
                   </p>

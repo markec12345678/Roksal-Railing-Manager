@@ -100,15 +100,29 @@ export async function POST(request: Request) {
       data: { status: 'V_IZDELAVI' },
     })
 
-    // AuditLog
-    await db.auditLog.create({
-      data: {
-        userId: 'system',
-        projectId,
-        akcija: 'SCHEDULE_CREATED',
-        newValue: JSON.stringify({ scheduleId: schedule.id, datumZacetka, crewId }),
-      },
-    })
+    // AuditLog — userId mora obstajati v Profile (FK!), zato seje uporabimo
+    // pravi id, API-ključ pa pade nazaj na demo profil. Zavito v try/catch:
+    // revija ne sme pokvariti glavne operacije (prej je FK kršitev na
+    // 'system' vrgla 500 in ustvarjanje termina je bilo pokvarjeno).
+    try {
+      let auditUserId = 'system'
+      if (auth.kind === 'user') {
+        auditUserId = auth.session.sub
+      } else {
+        const fallback = await db.profile.findFirst({ where: { vloga: 'ADMIN' }, select: { id: true } })
+        if (fallback) auditUserId = fallback.id
+      }
+      await db.auditLog.create({
+        data: {
+          userId: auditUserId,
+          projectId,
+          akcija: 'SCHEDULE_CREATED',
+          newValue: JSON.stringify({ scheduleId: schedule.id, datumZacetka, crewId }),
+        },
+      })
+    } catch (auditError) {
+      console.error('Audit log (schedule) napaka:', auditError)
+    }
 
     return NextResponse.json(schedule, { status: 201 })
   } catch (error) {

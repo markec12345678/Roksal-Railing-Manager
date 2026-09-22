@@ -12,7 +12,8 @@ const eslintConfig = [
   {
     // prisma/seed.cjs je namenoma CommonJS — poganja ga `node` v produkcijskem
     // buildu (glej package.json), kjer ESM/CJS mešanje ne pride v poštev.
-    ignores: ["prisma/seed.cjs"],
+    // Enako velja za tools/*.cjs (enkratne vzdrževalne skripte, npr. cleanup-demo-data).
+    ignores: ["prisma/seed.cjs", "tools/**/*.cjs"],
   },
   {
   rules: {
