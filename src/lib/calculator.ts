@@ -455,6 +455,8 @@ export interface MaterialTotalResult {
     balusterCount: number
     postCount: number
     type: string
+    /** Dejanski razmik stebrov po tem segmentu — vedno <= postSpacingMm. */
+    actualPostSpacingMm: number
   }>
 }
 
@@ -497,7 +499,13 @@ export function calculateMaterialTotal(input: MaterialTotalInput): MaterialTotal
     balusterLinearMm += bal.balusterCount * seg.heightMm
 
     // Stebri: na vsakih postSpacingMm + 1 na koncu
-    const posts = Math.max(2, Math.floor(seg.lengthMm / postSpacingMm) + 1)
+    // FIX: `Math.floor(L/S)+1` undercounts posts whenever L is not an exact
+    // multiple of S — L=4000, S=1500 gave 3 posts, i.e. 2000 mm spans, 33 %
+    // over the system maximum. Count SPANS with ceil, then posts = spans + 1,
+    // so the resulting spacing is always <= the maximum.
+    const spans = Math.max(1, Math.ceil(seg.lengthMm / postSpacingMm - 1e-9))
+    const posts = spans + 1
+    const actualPostSpacingMm = seg.lengthMm / spans
     postCount += posts
 
     perSegment.push({
@@ -505,6 +513,7 @@ export function calculateMaterialTotal(input: MaterialTotalInput): MaterialTotal
       balusterCount: bal.balusterCount,
       postCount: posts,
       type: seg.type,
+      actualPostSpacingMm: Math.round(actualPostSpacingMm * 10) / 10,
     })
   }
 
@@ -582,11 +591,17 @@ export function checkCompliance(input: ComplianceInput): ComplianceResult {
         : `RAZMIK PRESEGA ${maxGapAllowed}mm! Nevarnost za otroke (lestveni učinek).`,
   })
 
-  // 2. Višina ograje (od padca odvisna)
-  const minHeight = dropHeightMm > 1000 ? 1000 : 900
+  // 2. Višina ograje
+  // FIX: stara koda je pri padcu <= 1 m dovoljevala 900 mm. Slovenski Pravilnik o
+  // minimalnih tehničnih zahtevah za graditev stanovanjskih stavb zahteva za balkone,
+  // lože, terase in podobno nad okolico dvignjene površine ograjo **najmanj 1000 mm**,
+  // neodvisno od višine padca (ograja je obvezna nad 45 cm razlike). Za zelo visoke
+  // objekte se v praksi uporablja 1100 mm. Vrednost je namenoma konservativna —
+  // preveri jo z veljavno zakonodajo in projektnimi pogoji.
+  const minHeight = dropHeightMm > 20_000 ? 1100 : 1000
   checks.push({
     name: 'Višina ograje',
-    required: `≥ ${minHeight}mm${dropHeightMm > 1000 ? ' (padec > 1m)' : ' (balkon)'}`,
+    required: `≥ ${minHeight}mm${dropHeightMm > 20_000 ? ' (objekt nad 20 m)' : ' (predpisani minimum)'}`,
     actual: `${heightMm.toFixed(0)}mm`,
     passed: heightMm >= minHeight,
     message:
@@ -1027,145 +1042,11 @@ export function calculateWindByLocation(input: WindLocationInput): WindLocationR
 }
 
 // ============================================
-// 16. STEKLENA BALUSTRADA (poenostavljena metoda po SIST EN)
+// 12. STEKLENA OGRAJA — preverba napetosti in deformacije
 // ============================================
-// Poenostavljen izračun napetosti v steklu za steklene balustrade.
-
-export interface GlassCalcInput {
-  // Razpon med stebri (mm)
-  spanMm: number
-  // Višina stekla (mm), navadno 1000-1100
-  heightMm: number
-  // Obremenitev (kN/m) — horizontal load
-  loadKnPerM: number
-  // Tip stekla
-  glassType: 'single' | 'laminated' | 'tempered'
-}
-
-export interface GlassCalcResult {
-  // Priporočena debelina stekla (mm)
-  recommendedThicknessMm: number
-  // Alternativne debeline
-  alternativeThicknesses: Array<{ mm: number; safe: boolean; reason: string }>
-  // Maksimalni dovoljen razpon za izbrano debelino
-  maxSpanForThicknessMm: number
-  // Napetost v steklu (MPa)
-  stressMpa: number
-  // Dovoljena napetost (MPa) glede na tip stekla
-  allowableStressMpa: number
-  // Ali je izbira varna
-  isSafe: boolean
-  // Število slojev za laminirano
-  layers?: number
-  warnings: string[]
-  recommendations: string[]
-}
-
-export function calculateGlassBalustrade(input: GlassCalcInput): GlassCalcResult {
-  const { spanMm, heightMm, loadKnPerM, glassType } = input
-  const warnings: string[] = []
-  const recommendations: string[] = []
-
-  const allowableStressMap: Record<GlassCalcInput['glassType'], number> = {
-    single: 40,
-    laminated: 50,
-    tempered: 120,
-  }
-  const allowableStressMpa = allowableStressMap[glassType]
-
-  // Kandidati (skupna debelina v mm)
-  const candidates: Array<{ mm: number; layers?: number; baseMm?: number }> =
-    glassType === 'laminated'
-      ? [
-          { mm: 12, layers: 2, baseMm: 6 },
-          { mm: 16, layers: 2, baseMm: 8 },
-          { mm: 20, layers: 2, baseMm: 10 },
-          { mm: 24, layers: 2, baseMm: 12 },
-        ]
-      : [
-          { mm: 8 },
-          { mm: 10 },
-          { mm: 12 },
-          { mm: 15 },
-          { mm: 19 },
-          { mm: 22 },
-          { mm: 25 },
-        ]
-
-  // 1 kN/m = 1 N/mm (simplified — load is line load on horizontal beam)
-  const loadNPerMm = loadKnPerM
-  const spanM = Math.max(spanMm, 1)
-
-  const stressFor = (thicknessMm: number) =>
-    (loadNPerMm * Math.pow(spanM, 2) * 6) / (Math.pow(thicknessMm, 2) * 8)
-
-  const alternativeThicknesses = candidates.map((c) => {
-    const stress = stressFor(c.mm)
-    const safe = stress <= allowableStressMpa
-    const reason = safe
-      ? `Napetost ${stress.toFixed(1)} MPa ≤ ${allowableStressMpa} MPa — varno`
-      : `Napetost ${stress.toFixed(1)} MPa > ${allowableStressMpa} MPa — preseženo`
-    return { mm: c.mm, safe, reason }
-  })
-
-  const firstSafe = alternativeThicknesses.find((a) => a.safe)
-  const recommendedThicknessMm = firstSafe?.mm ?? candidates[candidates.length - 1].mm
-
-  const stressMpa = stressFor(recommendedThicknessMm)
-  const isSafe = stressMpa <= allowableStressMpa
-
-  // Max razpon za izbrano debelino: span = sqrt(allowable × t² × 8 / (load × 6))
-  const maxSpanForThicknessMm = Math.sqrt(
-    (allowableStressMpa * Math.pow(recommendedThicknessMm, 2) * 8) / (Math.max(loadNPerMm, 0.001) * 6),
-  )
-
-  // Opozorila
-  if (!isSafe) {
-    warnings.push(
-      `Priporočena debelina ${recommendedThicknessMm}mm ne zadošča! Izberite večjo debelino ali zmanjšajte razpon.`,
-    )
-  }
-  if (spanMm > 1500) {
-    warnings.push('Razpon > 1500mm — priporočamo dodaten steber za varnost.')
-  }
-  if (heightMm < 1000) {
-    warnings.push(`Višina stekla ${heightMm}mm je pod standardom (min 1000mm za balkone).`)
-  }
-  if (heightMm > 1200) {
-    warnings.push(`Višina stekla ${heightMm}mm — preverite statiko za povečano obremenitev.`)
-  }
-  if (loadKnPerM >= 2.0) {
-    warnings.push('Visoka obremenitev (2,0 kN/m) — balkon z višinskim padcem. Obvezna statična analiza.')
-  }
-
-  // Priporočila
-  if (glassType === 'laminated') {
-    const baseMm = candidates.find((c) => c.mm === recommendedThicknessMm)?.baseMm ?? recommendedThicknessMm / 2
-    recommendations.push(
-      `Laminirano steklo: 2× ${baseMm}mm + PVB folija = ${recommendedThicknessMm}mm`,
-    )
-    recommendations.push('Laminirano steklo ob razbitju ostane skupaj (varnostna folija PVB).')
-  } else if (glassType === 'tempered') {
-    recommendations.push('Kaljeno steklo je 4-5× odpornejše od navadnega.')
-    recommendations.push('Pri razbitju se drobi v drobne koščke (varnostno).')
-  } else {
-    recommendations.push('Enojno steklo ni primerno za javne prostore — razmislite o laminiranem ali kaljenem.')
-  }
-  if (spanMm > 1200) {
-    recommendations.push(`Pri razponu ${spanMm}mm priporočamo dodaten stebro na vsakih 1200mm.`)
-  }
-  recommendations.push('Uporabite A4 (Inox 316) vijake in kemično sidranje stebrov.')
-  recommendations.push('Robovi stekla morajo biti bruseni (poliranje za preprečitev loma).')
-
-  return {
-    recommendedThicknessMm,
-    alternativeThicknesses,
-    maxSpanForThicknessMm: Math.round(maxSpanForThicknessMm),
-    stressMpa: Math.round(stressMpa * 10) / 10,
-    allowableStressMpa,
-    isSafe,
-    layers: glassType === 'laminated' ? 2 : undefined,
-    warnings,
-    recommendations,
-  }
-}
+// Preseljeno v src/lib/glass-model.ts (s testi). Re-izvoz ohranja obstoječe uvoze:
+//   import { calculateGlassBalustrade } from '@/lib/calculator'
+// Stara formula σ = 6·w·L²/(8·t²) je bila fizikalno napačna in je za vsak vhod
+// vrnila "ni varno" ter priporočilo 24/25 mm — podrobnosti v glass-model.ts.
+export { calculateGlassBalustrade } from './glass-model'
+export type { GlassCalcInput, GlassCalcResult, GlassSupport } from './glass-model'
