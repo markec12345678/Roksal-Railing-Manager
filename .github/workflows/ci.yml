@@ -61,12 +61,22 @@ jobs:
       - name: Prisma Client
         run: bunx prisma generate
 
+      # Baza NI več v gitu (v javnem repu bi bili sčasoma pravi podatki strank),
+      # zato jo mora CI ustvariti sam — enako kot svež klon na strežniku.
+      # Brez tega koraka gradnja pade, ker src/lib/db.ts ob statičnem
+      # predizrisu konstruira PrismaClient nad neobstoječo datoteko.
+      - name: Pripravi bazo (kot na svežem klonu)
+        run: |
+          mkdir -p db
+          bunx prisma db push
+          bunx tsx prisma/seed.ts
+
       # 0 napak je trenutno stanje. Če ta korak pade, je napaka resnična —
       # ne dodajaj nazaj ignoreBuildErrors, popravi kodo.
       - name: Tipska kontrola
         run: bunx tsc --noEmit
 
-      - name: Testi izračunskega jedra (78)
+      - name: Testi (104)
         run: bun run test
 
       - name: Gradnja
