@@ -25,6 +25,9 @@ const PUBLIC_EXACT = new Set<string>([
   // poskrbi, da POST preveri geslo, GET (»kdo sem«) pa vrne 401 brez seje.
   '/api/auth',
   '/api/auth/logout',
+  // Demo dostop ("vstop brez prijave") — javen po zasnovi, omejen s hitrostjo
+  // in izklopljiv z DEMO_ACCESS=off. Glej src/app/api/auth/demo/route.ts.
+  '/api/auth/demo',
 ])
 
 /** Predpone, ki so javne: portal stranke je dostopen s sposobnostnim URL-jem (clientToken). */

@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Loader2, ShieldAlert } from 'lucide-react'
+import { Loader2, ShieldAlert, Zap } from 'lucide-react'
 
 // `useSearchParams()` brez <Suspense> pade samo v produkcijski gradnji:
 //   ⨯ useSearchParams() should be wrapped in a suspense boundary at page "/login"
@@ -29,6 +29,7 @@ function LoginForm() {
   const [password, setPassword] = React.useState('')
   const [error, setError] = React.useState<string | null>(null)
   const [busy, setBusy] = React.useState(false)
+  const [demoBusy, setDemoBusy] = React.useState(false)
 
   // `/next` je lahko samo relativna pot — sicer bi `?next=https://zlobna.stran`
   // postal odprta preusmeritev takoj po prijavi.
@@ -58,6 +59,27 @@ function LoginForm() {
       setError('Omrežna napaka. Preveri povezavo.')
     } finally {
       setBusy(false)
+    }
+  }
+
+  // Vstop brez prijave: en klik ustvari/uporabi demo sejo. Gesla ni treba
+  // poznati — uporabno za lastnika na svežem deployu in za hitro demonstracijo.
+  async function onDemoAccess() {
+    setError(null)
+    setDemoBusy(true)
+    try {
+      const response = await fetch('/api/auth/demo', { method: 'POST' })
+      if (!response.ok) {
+        const data = (await response.json().catch(() => null)) as { error?: string } | null
+        setError(data?.error ?? 'Demo dostop ni uspel.')
+        return
+      }
+      router.replace(next)
+      router.refresh()
+    } catch {
+      setError('Omrežna napaka. Preveri povezavo.')
+    } finally {
+      setDemoBusy(false)
     }
   }
 
@@ -125,10 +147,28 @@ function LoginForm() {
             <Button
               type="submit"
               className="w-full bg-roksal-navy text-white transition-all hover:bg-roksal-navy/90 hover:shadow-md active:scale-[0.99]"
-              disabled={busy}
+              disabled={busy || demoBusy}
             >
               {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {busy ? 'Prijavljam…' : 'Prijava'}
+            </Button>
+
+            {/* Ločilna črta + vstop brez prijave */}
+            <div className="flex items-center gap-3 pt-1" aria-hidden>
+              <div className="h-px flex-1 bg-border" />
+              <span className="text-xs uppercase tracking-wide text-muted-foreground">ali</span>
+              <div className="h-px flex-1 bg-border" />
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full border-roksal-amber/60 bg-roksal-amber/10 text-roksal-navy transition-all hover:bg-roksal-amber/20 hover:shadow-md active:scale-[0.99]"
+              disabled={busy || demoBusy}
+              onClick={onDemoAccess}
+            >
+              {demoBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
+              {demoBusy ? 'Pripravljam demo…' : 'Vstop brez prijave (Demo)'}
             </Button>
 
             <p className="text-center text-xs leading-relaxed text-muted-foreground">
