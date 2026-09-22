@@ -47,6 +47,7 @@ const ReferenceGallery = dynamic(() => import('@/components/roksal/reference-gal
 const RoksalCatalog = dynamic(() => import('@/components/roksal/roksal-catalog').then((m) => m.RoksalCatalog), { ssr: false, loading: () => <TabLoading /> })
 const ArScannerLauncher = dynamic(() => import('@/components/roksal/ar-scanner-launcher').then((m) => m.ArScannerLauncher), { ssr: false, loading: () => <TabLoading /> })
 const WebXrLauncher = dynamic(() => import('@/components/roksal/webxr-scanner').then((m) => m.WebXrLauncher), { ssr: false, loading: () => <TabLoading /> })
+const Fence3dViewer = dynamic(() => import('@/components/roksal/fence-3d-viewer').then((m) => m.Fence3dViewer), { ssr: false, loading: () => <TabLoading /> })
 const PhotoTab = dynamic(() => import('@/components/roksal/photo-tab').then((m) => m.PhotoTab), { ssr: false, loading: () => <TabLoading /> })
 const PdfExport = dynamic(() => import('@/components/roksal/pdf-export').then((m) => m.PdfExport), { ssr: false, loading: () => <TabLoading /> })
 const FloorPlanTab = dynamic(() => import('@/components/roksal/floor-plan-tab').then((m) => m.FloorPlanTab), { ssr: false, loading: () => <TabLoading /> })
@@ -388,6 +389,9 @@ export default function Home() {
             <div className="grid gap-3 p-4 pb-0 sm:grid-cols-2 sm:items-start">
               <WebXrLauncher projectId={selectedProjectId} />
               <ArScannerLauncher projectId={selectedProjectId} />
+              <div className="sm:col-span-2">
+                <Fence3dViewer />
+              </div>
             </div>
             <div className="p-4">
               <MapMeasure

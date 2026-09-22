@@ -25,6 +25,15 @@
  *    (polilinija) način: zaporedni vogali, Σ obrisperimeter, zapiranje tlorisa,
  *    površina (shoelace) in število stebrov za ograjo
  *
+ * Runda O (plane-polygon + glajenje):
+ *  • immersive-web/plane-detection explainer + three.js XRPlanes (MIT) →
+ *    frame.detectedPlanes je ATRIBUT (Set<XRPlane>, Chrome 131+; stari
+ *    getDetectedPlanes() ostaja kot fallback). Za vsako ravnino preberemo
+ *    polygon (točke v planeSpace) × pose ravnine = world koordinate →
+ *    2D canvas overlay (amber = tla, emerald = stene) + površina (shoelace).
+ *  • Retikla: EMA glajenje (α = 0.4) — ARCore hit-test trese ±5–15 mm,
+ *    glajenje zmanjša smučenje mm odčitka brez čutnega zamika (~80 ms).
+ *
  * Degradacija: brez dom-overlay je HUD neviden med sejo (tap vseeno meri prek
  * 'select'), brez sidra so točke enkratne pozicije, brez globine ni žive razdalje,
  * brez camera-access foto gumb zajame sintetično shemo namesto kamere.
@@ -41,7 +50,7 @@ import { fetchWithQueue } from '@/lib/offline-queue'
 import {
   X, Loader2, AlertTriangle, CheckCircle2, Box, Layers, Zap,
   Smartphone, Anchor, ScanLine, Undo2, Save, Crosshair, Gauge, Ruler,
-  Calculator, Image as ImageIcon, Camera, Route, Download,
+  Calculator, Image as ImageIcon, Camera, Route, Download, Eye, EyeOff,
 } from 'lucide-react'
 
 // ── WebXR tipi (še niso v TS lib.dom — minimalni lokalni opisi) ──────────────
@@ -66,7 +75,12 @@ interface XRViewerPoseLike { views: XRViewLike[] }
 
 interface XRAnchorLike { anchorSpace: unknown; delete: () => void }
 
-interface XRPlaneLike { orientation?: string; planeSpace: unknown; lastChangedTime: number }
+interface XRPlaneLike {
+  orientation?: string
+  planeSpace: unknown
+  lastChangedTime: number
+  polygon?: ArrayLike<{ x: number; y: number; z: number }>
+}
 
 interface XRCPUDepthInformationLike { getDepthInMeters(x: number, y: number): number }
 
@@ -102,6 +116,8 @@ interface XRFrameLike {
   getPose(space: unknown, refSpace: unknown): { transform: XRRigidTransformLike } | null
   getHitTestResults(source: unknown): XRHitTestResultLike[]
   getDepthInformation?(view: XRViewLike): XRCPUDepthInformationLike
+  // Chrome 131+: detectedPlanes je ATRIBUT; stari proposal je imel metodo
+  detectedPlanes?: Set<XRPlaneLike>
   getDetectedPlanes?: () => Set<XRPlaneLike>
 }
 
@@ -215,6 +231,26 @@ function shoelaceAreaM2(pts: { x: number; z: number }[]): number {
   return Math.abs(s) / 2
 }
 
+// ── Ravnine (runda O — vzorec immersive-web/plane-detection + XRPlanes) ────
+// World-poligon detektirane ploskve + ocena površine (shoelace po projekciji).
+interface PlaneWorldData {
+  horizontal: boolean
+  verts: XRVec3Like[]
+  areaM2: number
+}
+
+/** Površina poligona v m² — horizontalne projektira na XZ, vertikalne na XY. */
+function polygonAreaM2(verts: XRVec3Like[], horizontal: boolean): number {
+  if (verts.length < 3) return 0
+  let s = 0
+  for (let i = 0; i < verts.length; i++) {
+    const a = verts[i]
+    const b = verts[(i + 1) % verts.length]
+    s += horizontal ? a.x * b.z - b.x * a.z : a.x * b.y - b.x * a.y
+  }
+  return Math.abs(s) / 2
+}
+
 function computeChainStats(pts: XrPoint[], closed: boolean): ChainStats {
   const n = pts.length
   if (n < 2) {
@@ -273,6 +309,8 @@ interface HudData {
   fps: number
   planeCount: number
   planesVertical: number
+  largestFloorM2: number | null
+  largestWallM2: number | null
   centerDistM: number | null
   tracking: boolean
   reticleDistMm: number | null
@@ -343,6 +381,7 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
   const [features, setFeatures] = useState<FeatureFlags>(NO_FEATURES)
   const [hud, setHud] = useState<HudData>({
     frameCount: 0, fps: 0, planeCount: 0, planesVertical: 0,
+    largestFloorM2: null, largestWallM2: null,
     centerDistM: null, tracking: false, reticleDistMm: null, liveDistMm: null,
   })
   const [pointsView, setPointsView] = useState<{ id: string; label: string }[]>([])
@@ -361,6 +400,9 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
   const [chainMeasurementsView, setChainMeasurementsView] = useState<{ id: string; label: string; distanceMm: number }[]>([])
   const [capturing, setCapturing] = useState(false)
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null)
+
+  // Ravnine (runda O): overlay poligonov — toggle z Eye gumbom v HUD-u
+  const [planesVisible, setPlanesVisible] = useState(true)
 
   // Refs — vse, kar XRFrame zanka bere/pise (brez re-renderjev pri 60 fps)
   const sessionRef = useRef<XRSessionLike | null>(null)
@@ -389,6 +431,10 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
   const chainModeRef = useRef(false)
   const chainPointsRef = useRef<XrPoint[]>([])
   const chainClosedRef = useRef(false)
+  // Ravnine + EMA retikla (runda O)
+  const planesDataRef = useRef<Map<unknown, PlaneWorldData>>(new Map())
+  const planesOnRef = useRef(true)
+  const reticleSmoothRef = useRef<XRVec3Like | null>(null)
   // Foto zajem se nastavlja v efektu (dovostop do najnovejšega state-a brez
   // re-kreacije XR frame zanke — ta mora ostati stabilna)
   const capturePhotoCbRef = useRef<(frame: XRFrameLike, view: XRViewLike, planeCount: number) => void>(() => { /* nastavi efekt */ })
@@ -397,6 +443,12 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
   const reticleRef = useRef<HTMLDivElement | null>(null)
   const markerElsRef = useRef<Map<string, HTMLDivElement>>(new Map())
   const liveDistElRef = useRef<HTMLSpanElement | null>(null)
+  const planesCanvasRef = useRef<HTMLCanvasElement | null>(null)
+
+  // planesVisible ↔ ref (XRFrame zanka bere ref)
+  useEffect(() => {
+    planesOnRef.current = planesVisible && features.planes
+  }, [planesVisible, features.planes])
 
   // ── Podpora ob mountu (samo isSessionSupported — brez probe sej) ──────────
   useEffect(() => {
@@ -576,7 +628,7 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
     const view = viewerPose.views[0]
     const head = view.transform.position
 
-    // 1) HIT-TEST iz središča zaslona (viewer space)
+    // 1) HIT-TEST iz središča zaslona (viewer space) + EMA glajenje (runda O)
     let reticle: XRVec3Like | null = null
     const src = hitSourceRef.current
     if (src && refSpace) {
@@ -585,7 +637,18 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
         const pose = results[0].getPose(refSpace)
         if (pose) {
           const p = pose.transform.position
-          reticle = { x: p.x, y: p.y, z: p.z }
+          const raw = { x: p.x, y: p.y, z: p.z }
+          // EMA glajenje: ARCore hit-test trese ±5–15 mm; α = 0.4 pri 60 fps
+          // konvergira v ~5 frameih (~80 ms) — stabilen odčitek brez zamika
+          const prev = reticleSmoothRef.current
+          reticle = prev
+            ? {
+                x: prev.x + (raw.x - prev.x) * 0.4,
+                y: prev.y + (raw.y - prev.y) * 0.4,
+                z: prev.z + (raw.z - prev.z) * 0.4,
+              }
+            : raw
+          reticleSmoothRef.current = reticle
           latestHitRef.current = results[0]
         }
       }
@@ -593,6 +656,7 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
     const tracking = reticle !== null
     trackingRef.current = tracking
     reticlePosRef.current = reticle
+    if (!tracking) reticleSmoothRef.current = null
 
     // 2) Sidra — popravljene pozicije točk (ARCore drift korekcija)
     for (const pt of pointsRef.current) {
@@ -629,15 +693,54 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
         : null
     const reticleMm = reticle ? dist3(reticle, head) * 1000 : null
 
-    // 4) Ravnine
+    // 4) Ravnine — Chrome 131+ (vzorec immersive-web/plane-detection +
+    //    three.js XRPlanes): frame.detectedPlanes je ATRIBUT (Set<XRPlane>);
+    //    stari getDetectedPlanes() klic ostane kot fallback. Za vsako ravnino:
+    //    pose ravnine × polygon točke = world koordinate → overlay + površina.
     let planeCount = 0
     let planesVertical = 0
-    if (frame.getDetectedPlanes && refSpace) {
+    let largestFloorM2: number | null = null
+    let largestWallM2: number | null = null
+    const planeSet: Iterable<XRPlaneLike> | null =
+      frame.detectedPlanes ?? (frame.getDetectedPlanes ? frame.getDetectedPlanes() : null)
+    if (planeSet && refSpace) {
       try {
-        const set = frame.getDetectedPlanes()
-        planeCount = set.size
-        for (const pl of set) if (pl.orientation === 'vertical') planesVertical += 1
+        const seen = new Set<unknown>()
+        let bestFloor = 0
+        let bestWall = 0
+        for (const pl of planeSet) {
+          seen.add(pl)
+          const horizontal = pl.orientation !== 'vertical'
+          if (!horizontal) planesVertical += 1
+          const pose = frame.getPose(pl.planeSpace, refSpace)
+          if (pose && pl.polygon) {
+            const m = pose.transform.matrix
+            const verts: XRVec3Like[] = []
+            const poly = pl.polygon
+            for (let i = 0; i < poly.length; i++) {
+              const p = poly[i]
+              verts.push({
+                x: m[0] * p.x + m[4] * p.y + m[8] * p.z + m[12],
+                y: m[1] * p.x + m[5] * p.y + m[9] * p.z + m[13],
+                z: m[2] * p.x + m[6] * p.y + m[10] * p.z + m[14],
+              })
+            }
+            const areaM2 = polygonAreaM2(verts, horizontal)
+            planesDataRef.current.set(pl, { horizontal, verts, areaM2 })
+            if (horizontal && areaM2 > bestFloor) bestFloor = areaM2
+            if (!horizontal && areaM2 > bestWall) bestWall = areaM2
+          }
+        }
+        // Ravnine, ki jih ta frame ni več — pobriši (njeni atributi niso veljavni)
+        for (const key of [...planesDataRef.current.keys()]) {
+          if (!seen.has(key)) planesDataRef.current.delete(key)
+        }
+        planeCount = seen.size
+        if (bestFloor > 0) largestFloorM2 = Math.round(bestFloor * 10) / 10
+        if (bestWall > 0) largestWallM2 = Math.round(bestWall * 10) / 10
       } catch { /* plane-detection brez podpore */ }
+    } else {
+      planesDataRef.current.clear()
     }
 
     // 4b) Foto zajem — getCameraImage mora biti klican ZNOTRAJ XRFrame callbacka
@@ -684,6 +787,57 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
       liveDistElRef.current.textContent = liveMm !== null ? fmtMm(liveMm) : ''
     }
 
+    // 6b) Ravnine — poligon overlay na 2D canvas ZNOTRAJ dom-overlay roota
+    //     (canvas je del HUD-a, zato viden čez kamero; amber = tla, emerald = stene)
+    const pcv = planesCanvasRef.current
+    if (pcv) {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2)
+      const cw = Math.max(1, Math.round(w * dpr))
+      const ch = Math.max(1, Math.round(h * dpr))
+      if (pcv.width !== cw || pcv.height !== ch) {
+        pcv.width = cw
+        pcv.height = ch
+      }
+      const pctx = pcv.getContext('2d')
+      if (pctx) {
+        pctx.setTransform(1, 0, 0, 1, 0, 0)
+        pctx.clearRect(0, 0, cw, ch)
+        if (planesOnRef.current && planesDataRef.current.size > 0) {
+          pctx.scale(dpr, dpr)
+          for (const pd of planesDataRef.current.values()) {
+            const pts = pd.verts.map((v) => projectToScreen(v, view, w, h))
+            if (pts.length < 3 || pts.every((p) => !p.visible)) continue
+            pctx.beginPath()
+            pctx.moveTo(pts[0].x, pts[0].y)
+            for (let i = 1; i < pts.length; i++) pctx.lineTo(pts[i].x, pts[i].y)
+            pctx.closePath()
+            pctx.fillStyle = pd.horizontal ? 'rgba(245,158,11,0.16)' : 'rgba(16,185,129,0.13)'
+            pctx.fill()
+            pctx.strokeStyle = pd.horizontal ? 'rgba(245,158,11,0.9)' : 'rgba(16,185,129,0.85)'
+            pctx.lineWidth = 1.5
+            pctx.stroke()
+            // Oznaka površine v centroidu (samo večje ravnine)
+            if (pd.areaM2 >= 0.5) {
+              let cx = 0
+              let cy = 0
+              for (const p of pts) { cx += p.x; cy += p.y }
+              cx /= pts.length
+              cy /= pts.length
+              const label = `≈ ${pd.areaM2.toFixed(1)} m²`
+              pctx.font = '600 11px system-ui, sans-serif'
+              const tw = pctx.measureText(label).width
+              pctx.fillStyle = 'rgba(0,0,0,0.55)'
+              pctx.fillRect(cx - tw / 2 - 5, cy - 9, tw + 10, 18)
+              pctx.fillStyle = pd.horizontal ? '#fbbf24' : '#6ee7b7'
+              pctx.textAlign = 'center'
+              pctx.textBaseline = 'middle'
+              pctx.fillText(label, cx, cy + 1)
+            }
+          }
+        }
+      }
+    }
+
     // 7) Throttled React sync (4 Hz) — številke za HUD in seznam mer
     if (time - lastSyncRef.current > 250) {
       lastSyncRef.current = time
@@ -692,6 +846,8 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
         fps: fpsRef.current.count,
         planeCount,
         planesVertical,
+        largestFloorM2,
+        largestWallM2,
         centerDistM: centerM,
         tracking,
         reticleDistMm: reticleMm,
@@ -732,6 +888,11 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
     frameRef.current = null
     latestViewRef.current = null
     photoRequestRef.current = false
+    planesDataRef.current.clear()
+    reticleSmoothRef.current = null
+    const pcv = planesCanvasRef.current
+    const pctx = pcv?.getContext('2d')
+    if (pcv && pctx) pctx.clearRect(0, 0, pcv.width, pcv.height)
     // Sidra pobrišemo na napravi; mere/točke ostanejo v state-u za "Shrani"
     for (const pt of pointsRef.current) {
       try { pt.anchor?.delete() } catch { /* ignore */ }
@@ -1025,6 +1186,12 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
             segments: segs,
             features,
             planeCount: hud.planeCount,
+            planes: {
+              vodoravne: Math.max(0, hud.planeCount - hud.planesVertical),
+              navpicne: hud.planesVertical,
+              najvecjaTlaM2: hud.largestFloorM2 ?? undefined,
+              najvecjaStenaM2: hud.largestWallM2 ?? undefined,
+            },
             fps: hud.fps,
             accuracy,
             chain: chain ?? undefined,
@@ -1538,7 +1705,13 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
     { label: 'Hit-test', ok: true, value: 'XRFrame' },
     { label: 'Sidra', ok: features.anchors, value: features.anchors ? 'drift ✓' : '—' },
     { label: 'Globina', ok: features.depth, value: hud.centerDistM !== null ? `${hud.centerDistM.toFixed(2)} m` : '—' },
-    { label: 'Ravnine', ok: features.planes, value: features.planes ? `${hud.planeCount}` : '—' },
+    {
+      label: 'Ravnine',
+      ok: features.planes,
+      value: features.planes
+        ? `${hud.planeCount}${hud.largestFloorM2 !== null ? ` · tla ${hud.largestFloorM2.toFixed(1)} m²` : ''}`
+        : '—',
+    },
     { label: 'Kamera', ok: features.camera, value: features.camera ? 'foto ✓' : '—' },
     { label: 'Overlay', ok: features.overlay, value: features.overlay ? 'HUD' : '—' },
   ]
@@ -1583,6 +1756,12 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
 
       {/* HUD root = dom-overlay root; MORA obstajati pred requestSession */}
       <div ref={hudRef} className="absolute inset-0">
+        {/* Ravnine overlay — poligoni detektiranih ploskev (Chrome 131+) */}
+        <canvas
+          ref={planesCanvasRef}
+          className="pointer-events-none absolute inset-0 z-[5] h-full w-full"
+          aria-hidden="true"
+        />
         {sessionState === 'active' && (
           <>
             {/* Statusni čipi (zgled, fullscreen, tapne se skoznje ne meri) */}
@@ -1603,6 +1782,12 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
                 <Gauge className="h-3 w-3 text-roksal-amber" />
                 {hud.fps} fps · f{hud.frameCount}
               </span>
+              {features.planes && planesVisible && (hud.largestFloorM2 !== null || hud.largestWallM2 !== null) && (
+                <span className="flex items-center gap-1.5 rounded-full bg-black/50 px-2 py-1 text-[10px] font-semibold text-white/80 backdrop-blur-sm">
+                  <span className="h-2 w-2 rounded-sm bg-roksal-amber" /> tla
+                  <span className="ml-1 h-2 w-2 rounded-sm bg-emerald-400" /> stene
+                </span>
+              )}
             </div>
 
             {/* Retikla — drži PRAVO realno ploskev (hit-test vsak frame) */}
@@ -1662,26 +1847,46 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
             {/* Spodnja paluba: način + živa razdalja + mere + kontrole */}
             <div className="absolute bottom-0 left-0 right-0 z-20 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
               <div className="mx-auto w-full max-w-md space-y-2 rounded-2xl bg-roksal-navy/92 p-3 backdrop-blur-md shadow-xl">
-                {/* Način merjenja: dvo-točkovni ↔ verižni (AR.js measure-it vzorec) */}
-                <div className="flex gap-1 rounded-xl bg-black/30 p-1" data-xr-ui role="group" aria-label="Način merjenja">
-                  <button
-                    type="button"
-                    onClick={() => switchMode(false)}
-                    className={`min-h-[36px] flex-1 rounded-lg px-2 text-[11px] font-semibold transition-all ${
-                      !chainMode ? 'bg-roksal-amber text-white shadow' : 'text-white/60 hover:bg-white/10'
-                    }`}
-                  >
-                    <Ruler className="mr-1 inline h-3.5 w-3.5" /> Dvo-točkovno
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => switchMode(true)}
-                    className={`min-h-[36px] flex-1 rounded-lg px-2 text-[11px] font-semibold transition-all ${
-                      chainMode ? 'bg-roksal-amber text-white shadow' : 'text-white/60 hover:bg-white/10'
-                    }`}
-                  >
-                    <Route className="mr-1 inline h-3.5 w-3.5" /> Verižno (obris)
-                  </button>
+                {/* Način merjenja: dvo-točkovni ↔ verižni (AR.js measure-it vzorec)
+                    + toggle ravnin (Chrome 131+ plane-detection overlay) */}
+                <div className="flex gap-2">
+                  <div className="flex flex-1 gap-1 rounded-xl bg-black/30 p-1" data-xr-ui role="group" aria-label="Način merjenja">
+                    <button
+                      type="button"
+                      onClick={() => switchMode(false)}
+                      className={`min-h-[36px] flex-1 rounded-lg px-2 text-[11px] font-semibold transition-all ${
+                        !chainMode ? 'bg-roksal-amber text-white shadow' : 'text-white/60 hover:bg-white/10'
+                      }`}
+                    >
+                      <Ruler className="mr-1 inline h-3.5 w-3.5" /> Dvo-točkovno
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => switchMode(true)}
+                      className={`min-h-[36px] flex-1 rounded-lg px-2 text-[11px] font-semibold transition-all ${
+                        chainMode ? 'bg-roksal-amber text-white shadow' : 'text-white/60 hover:bg-white/10'
+                      }`}
+                    >
+                      <Route className="mr-1 inline h-3.5 w-3.5" /> Verižno (obris)
+                    </button>
+                  </div>
+                  {features.planes && (
+                    <button
+                      type="button"
+                      onClick={() => setPlanesVisible((v) => !v)}
+                      aria-pressed={planesVisible}
+                      aria-label="Preklopi prikaz detektiranih ravnin"
+                      title={planesVisible ? 'Ravnine vidne (tla amber, stene zelene) — klik za skrij' : 'Ravnine skrite — klik za prikaži'}
+                      className={`flex min-h-[44px] w-[52px] shrink-0 items-center justify-center rounded-xl border transition-all ${
+                        planesVisible
+                          ? 'border-roksal-amber/50 bg-roksal-amber/15 text-roksal-amber shadow-inner'
+                          : 'border-white/20 bg-transparent text-white/50 hover:bg-white/10'
+                      }`}
+                      data-xr-ui
+                    >
+                      {planesVisible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                    </button>
+                  )}
                 </div>
 
                 {/* Živa razdalja A→retikla (tape-measure način) */}
@@ -1781,12 +1986,17 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
                     <span>
                       Kontrola natančnosti ({accuracyView.count}×):
                       {' '}{accuracyView.minMm}–{accuracyView.maxMm} mm
-                      {' '}(razpon {accuracyView.spreadPct}%) —{' '}
+                      {' '}(razpon {accuracyView.spreadPct}%, povprečje {fmtMm(accuracyView.avgMm)}) —{' '}
                       {accuracyView.verdict === 'zanesljivo'
                         ? 'zanesljivo ✓'
                         : accuracyView.verdict === 'sprejemljivo'
                           ? 'sprejemljivo'
                           : 'prevelik razpon — ponovno izmeri!'}
+                      {accuracyView.count < 3 && (
+                        <span className="mt-0.5 block text-[10px] opacity-80">
+                          Namig: izmeri vsaj 3× in shrani povprečje — najbolj natančen rezultat.
+                        </span>
+                      )}
                     </span>
                   </div>
                 )}
@@ -1950,10 +2160,23 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
                         <div className="text-[9px] text-white/50">AR + mere</div>
                       </div>
                     </div>
+                    <div className="grid grid-cols-2 gap-2 text-center">
+                      <div className="rounded-lg bg-emerald-500/10 p-2">
+                        <Layers className="mx-auto mb-1 h-4 w-4 text-emerald-400" />
+                        <div className="text-[9px] text-white">Ravnine</div>
+                        <div className="text-[9px] font-semibold text-emerald-300">Chrome 131+</div>
+                      </div>
+                      <div className="rounded-lg bg-white/5 p-2">
+                        <Box className="mx-auto mb-1 h-4 w-4 text-roksal-amber" />
+                        <div className="text-[9px] text-white">3D ograja</div>
+                        <div className="text-[9px] text-white/50">GLB + USDZ</div>
+                      </div>
+                    </div>
 
                     <div className="rounded-lg bg-white/5 p-2.5 text-[10px] leading-relaxed text-white/70">
                       <p><span className="font-semibold text-white/90">Verižni način:</span> tapni vogale ograje po vrsti — obris Σ, št. stebrov (2,5 m) in površina se računajo sami; tap na prvi vogal zapre tloris.</p>
                       <p className="mt-1"><span className="font-semibold text-white/90">Foto:</span> zajame AR sliko s kamere (Chrome 107+) z narisanimi merami — shrani v AR posnetke.</p>
+                      <p className="mt-1"><span className="font-semibold text-emerald-300">Ravnine (Chrome 131+):</span> tla in stene se pokažejo kot poligoni z oceno površine — hitra orientacija v prostoru.</p>
                     </div>
 
                     {(measurementsView.length > 0 || chainPointsView.length > 0) && (
@@ -2095,11 +2318,14 @@ export function WebXrLauncher({ projectId }: { projectId: string | null }) {
                 <span className="rounded-full bg-roksal-navy/5 px-1.5 py-0.5 text-[8px] font-bold text-roksal-navy">
                   AR foto
                 </span>
+                <span className="rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[8px] font-bold text-emerald-600">
+                  Ravnine 131+
+                </span>
               </div>
               <p className="mb-2 text-[11px] text-muted-foreground">
-                Pravi XRFrame hit-test + sidra (samokalibracija) + Depth API.
+                Pravi XRFrame hit-test + sidra (samokalibracija) + Depth API + glajena retikla.
                 Dvo-točkovno: A → B → mera v mm. <span className="font-medium text-roksal-navy">Verižno:</span> vogali ograje → obris Σ, št. stebrov (2,5 m), površina m².
-                <span className="font-medium text-roksal-navy"> Foto:</span> AR slika kamere z merami (Chrome 107+).
+                <span className="font-medium text-roksal-navy"> Ravnine:</span> tla/stene kot poligoni z m² (Chrome 131+).
               </p>
               <div className="mb-2 grid grid-cols-3 gap-1.5 text-center">
                 <div className="rounded-md bg-roksal-navy/[0.04] px-1 py-1.5 ring-1 ring-roksal-navy/10">

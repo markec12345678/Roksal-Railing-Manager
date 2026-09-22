@@ -689,3 +689,114 @@ Stage Summary:
 - Združeni vzorci iz 3 odprtokodnih virov (Apache-2.0/MIT/spec) dokumentirani v glavi datoteke — brez novih dependencyjev (vse native WebXR API)
 - Foto gomb vedno deluje (fallback sintetika) — ni mrtve poti tudi na starih napravah
 - Naslednje runde: LiDAR iOS (realen iPhone), model-viewer 3D ograja v AR (Scene Viewer/Quick Look, potrebujemo GLB), plane polygon vizualizacija (Chrome 131+ plane-detection polygon), FURS davčni blagajni režim, eSlog XSD validacija
+
+---
+Task ID: 14 (runda O — cron webDevReview + zahteva uporabnika)
+Agent: Main Orchestrator (Z.ai Code)
+Task: model-viewer 3D ograja v AR (Scene Viewer/Quick Look) + plane-polygon vizualizacija (Chrome 131+) + izboljšave kamere/meritev
+
+Work Log:
+- Zahteva uporabnika: nadaljuj, izboljšaj kamero/meritve, dodaj model-viewer 3D ograjo v AR
+  (Scene Viewer/Quick Look) ali plane-polygon vizualizacijo (Chrome 131+)
+- QA start: dev server teče, tsc/lint čisti, login demo ✓ — brez bugov → razvoj po backlogu runde N
+- RAZISKAVA (web-search + fetch specifikacij):
+  · immersive-web/plane-detection explainer + three.js examples/jsm/webxr/XRPlanes.js:
+    `frame.detectedPlanes` je ATRIBUT (Set<XRPlane>), NE metoda! Naša prejšnja koda je
+    klicala `frame.getDetectedPlanes()` — LATENTNI BUG (planeCount je bil na realnih
+    napravah verjetno vedno 0). Popravljeno: podpora ZA OBE obliki (attribute first).
+    XRPlane: orientation ('horizontal'|'vertical'), planeSpace, polygon (točke v
+    planeSpace), lastChangedTime; pose = frame.getPose(plane.planeSpace, refSpace);
+    world = poseMatrix × polygonPoint (column-major mat4)
+  · model-viewer 4.3.1 (npm @google/model-viewer, Apache-2.0): ar-modes="webxr
+    scene-viewer quick-look", ios-src (USDZ za iOS Quick Look), ar-placement
+    (floor|wall); model-viewer pokaže AR gumb samo če AR deluje (canActivateAR)
+- O-1 GENERATOR MODELOV (tools/generate-fence-models.mjs, nov — BREZ odvisnosti):
+  · parametrična ograja 2,0 × 1,1 m: 2 stebra 60×60, 2 letvi 40×60, 17 palic 25×25
+    (~108 mm razmak) — materiali RAL 7016 antracit (kovina/palice) + steklo 8 mm
+    (alphaMode BLEND, alpha 0.3, doubleSided)
+  · LASTEN GLB pisatelj (~120 vrstic): box z 24 verteksi + CCW winding, JSON chunk
+    (pad ' ') + BIN chunk (pad 0), accessors z min/max — validacija: header/chunks OK
+  · LASTEN USDZ pisatelj: #usda 1.0 (Y up, metersPerUnit 1, defaultPrim Root,
+    UsdGeomMesh prims + UsdPreviewSurface materiali) + STORED ZIP (method 0, CRC32,
+    64-bajtna poravnava podatkov z extra-field paddingom — Apple spec)
+  · izhod: public/models/ograjca-klasika.{glb,usdz} (15,4/26 KB),
+    ograjca-steklo.{glb,usdz} (5/6,4 KB) — GLB + ZIP + USDA strukturno validirani
+- O-2 Fence3dViewer (nov, src/components/roksal/fence-3d-viewer.tsx):
+  · <model-viewer> imperativno (document.createElement — čisto TS tipiziranje +
+    enkratno pripenjanje slot="ar-button" gumba "Poglej v prostoru" amber stila)
+  · code-splitting: dynamic import @google/model-viewer ŠELE ob vidnosti kartice
+    (IntersectionObserver rootMargin 160px) — ~1 MB dep ne obteži prve strani
+  · atributi: src/ios-src po varianti, ar-modes="webxr scene-viewer quick-look",
+    ar-placement (Stena/rob ↔ Tla preklopna stikala), camera-controls, auto-rotate,
+    shadow-intensity 1.1, environment-image neutral, amber progress bar
+  · dogodki: 'load' → zeleni ✓ na variantni kartici; 'error' → retry gumb; 'ar-status'
+    → "AR aktivna — postavi ograjo na rob" pill; canActivateAR polling → nasvet
+  · UI: temni studijski radialni gradient, chips (model-viewer/GLB/USDZ·Quick Look),
+    2 varianti (Klasika/Steklo z opis profila), namig "vrti s prstom · ščipni za
+    približek", statusni blok AR dostopnosti; vgrajen v AR zavihek čez polno širino
+- O-3 PLANE-POLYGON VIZUALIZACIJA (webxr-scanner.tsx):
+  · FIX: frame.detectedPlanes (atribut, Chrome 131+) če obstaja, sicer stari
+    getDetectedPlanes() fallback — ravnine zdaj DEJANSKO zaznane na realnih napravah
+  · vsak frame: pose ravnine × polygon → world verteksi (mat4 množenje); Map
+    <XRPlane, PlaneWorldData{horizontal, verts, areaM2}> + brisanje izgubljenih
+  · 2D canvas overlay ZNOTRAJ dom-overlay roota (z-[5], pointer-events-none):
+    poligoni projekcija world→screen (isti projectToScreen), fill amber 0.16 (tla) /
+    emerald 0.13 (stene) + obroba + oznaka "≈ X m²" v centroidu (≥0,5 m²); dpr cap 2
+  · površine: shoelace (tla po XZ, stene po XY) → largestFloorM2/largestWallM2 v HUD
+  · toggle Eye/EyeOff (52×44) ob načinu merjenja — samo če plane-detection podeljen;
+    legenda chip "tla/stene"; feature chip "Ravnine: N · tla X m²"
+  · arMetadata.planes: {vodoravne, navpicne, najvecjaTlaM2, najvecjaStenaM2} zapis
+- O-4 IZBOLJŠAVE KAMERE:
+  · EMA glajenje retikle (α = 0.4, reset ob izgubi sledenja) — ARCore hit-test trese
+    ±5–15 mm; konvergira ~5 frameov (~80 ms) → stabilen mm odčitek brez zamika
+  · accuracy coach: povprečje (fmtMm) + namig "izmeri vsaj 3×" ko je meritev < 3
+- O-5 STILSKE DODELAVE: launcher chips "Ravnine 131+" (emerald) + besedilo glajena
+  retikla/ravnine; idle kartica: 2×2 grid (Ravnine Chrome 131+ emerald / 3D ograja
+  GLB+USDZ) + odstavek o ravninah; 3D kartica gradient glava + ring hover
+- E2E (agent-browser): login ✓ → AR zavihek → model-viewer mounted (src/ios-src/
+  ar-modes/ar-placement ✓), GLB izrisan (klasika palice VIDLJIVE, steklo prosojno z
+  alpha blend ✓), preklop Klasika↔Steklo ✓ (src+ios-src se zamenjata), postavitev
+  wall↔floor ✓ (ar-placement atribut), "Ravnine 131+" chip ✓, mobilni 390px brez
+  overflowa (iw=ow=390) ✓, konzola čista (samo Lit dev-mode warningi) ✓, dev.log čist,
+  tsc + lint čista ✓
+- OMEJITVE: plane poligoni + AR session tok niso E2E-testirljivi v headless (treba
+  ARCore telefon); USDZ za iOS Quick Look je best-effort (usda brez tekstur) — če
+  Quick Look zavrne, model-viewer pokaže GLB/WebXR pot; test na iPhone priporočen
+
+Stage Summary:
+- AR zavihek zdaj pokriva celoten prodajni cikel: merjenje (WebXR hit-test + verižno
+  + ravnine + foto) IN predstavitev stranki (3D ograja v AR v pravi velikosti, 2
+  varianti, Android + iOS) — brez zunanjih CDN-jev, vse self-hosted (GLB+USDZ)
+- POPRAVLJEN latentni bug plane zaznavanja (metoda → atribut) — Chrome 131+ zdaj
+  tudi VIZUALIZIRA ravnine kot poligone z m², ne samo števec
+- GLB/USDZ generator je parametričen — prihodnje različice ograj (aluminij, WPC,
+  različni razmaki) = ena funkcija več v tools/generate-fence-models.mjs
+- Naslednje runde: USDZ validacija na realnem iPhone (Quick Look), LiDAR iOS, FURS
+  davčni blagajni režim, eSlog XSD validacija, izbira RAL barve za 3D model (material
+  per izbrana barva — GLB generator že podpira), 3D montažni pogled po segmentih
+
+---
+Task ID: 14-b (runda O — dopolnilo: javni 3D modeli)
+Agent: Main Orchestrator (Z.ai Code)
+Task: POPRAVEK varnostnega proxy-ja za Scene Viewer/Quick Look
+
+Work Log:
+- Končni zdravstveni pregled je odkril KRITIČNO pomanjkljivost integracije:
+  proxy.ts (Next 16 middleware) je preusmerjal /models/* na /login (307)
+- Zakaj je to problem: Scene Viewer (Android) in AR Quick Look (iOS) preneseta
+  GLB/USDZ z IZVEN brskalniške seje — sistemska aplikacija brez piškotkov →
+  AR na telefonu bi spodletel, čeprav v brskalniku vse deluje
+- FIX: PUBLIC_PREFIXES += '/models/' (modeli so generična geometrija ograje,
+  brez uporabniških podatkov) z razlagalnim komentarjem
+- Verifikacija: curl brez piškotkov → glb 200 (15 412 B), usdz 200 (6 486 B),
+  / še vedno 307 na prijavo ✓; ponovni E2E: login → AR → model-viewer
+  loaded=true ✓, brez stranskih napak ✓; tsc + lint čista ✓
+- Opomba okolja: dev strežnik je med E2E ugasnil (OOM vzorec iz runde M);
+  zanesljiv ponovni zagon = `timeout 8 bun -e "const p=Bun.spawn(['sh','-c',
+  'cd /home/z/my-project && exec bun run dev >> dev.log 2>&1'],{stdin:'ignore',
+  stdout:'ignore', stderr:'ignore'}); p.unref(); await Bun.sleep(300);
+  process.exit(0)"` — brez unref() se bun -e NE zaključi (event loop čaka na otroka)
+
+Stage Summary:
+- AR na telefonu je zdaj res delujoč navzkrižni tok: brskalnik (piškotki) →
+  UI + WebXR; Scene Viewer/Quick Look (brez piškotkov) → GLB/USDZ 200 javno

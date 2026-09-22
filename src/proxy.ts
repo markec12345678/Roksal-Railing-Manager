@@ -31,7 +31,17 @@ const PUBLIC_EXACT = new Set<string>([
 ])
 
 /** Predpone, ki so javne: portal stranke je dostopen s sposobnostnim URL-jem (clientToken). */
-const PUBLIC_PREFIXES = ['/portal/', '/api/portal', '/m/', '/api/public']
+const PUBLIC_PREFIXES = [
+  '/portal/',
+  '/api/portal',
+  '/m/',
+  '/api/public',
+  // 3D modeli ograj (runda O): Scene Viewer/Quick Look ju prenese IZVEN
+  // brskalniške seje (sistemska aplikacija brez piškotkov) — preusmeritev na
+  // prijavo bi pokvarila AR na telefonu. Modeli so generična geometrija
+  // (brez uporabniških podatkov), zato so javni po zasnovi.
+  '/models/',
+]
 
 /**
  * API ključi: poti, kjer se namesto seje sprejme `Authorization: Bearer rkm_…`.
