@@ -30,7 +30,9 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { useToast } from '@/hooks/use-toast'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import QRCode from 'qrcode'
 import { registerSloPdfFonts } from '@/lib/pdf-sl-font'
+import { buildUpnQrString, cleanIban, splitNaslov } from '@/lib/upn-qr'
 import {
   Receipt,
   Plus,
@@ -44,6 +46,10 @@ import {
   AlertTriangle,
   Euro,
   PackageOpen,
+  QrCode,
+  FileCode2,
+  Copy,
+  Banknote,
 } from 'lucide-react'
 
 // ---------- tipi ----------
@@ -89,6 +95,31 @@ const IZDAJATELJ = {
   davcna: 'SI 12345678',
   matična: '1234567000',
   trr: 'SI56 0201 0001 2345 678',
+}
+
+/** Datum zapadlosti (rok plačila) za izdani račun. */
+function rokPlacilaDatum(inv: Pick<Invoice, 'datumIzdaje' | 'rokPlacilaDni'>): Date {
+  const d = new Date(inv.datumIzdaje)
+  d.setDate(d.getDate() + inv.rokPlacilaDni)
+  return d
+}
+
+/** Zgradi UPN QR niz iz računa (vse izračune delaš na enem mestu). */
+function upnQrString(inv: Invoice, kupec: ReturnType<typeof parseKupec>): string {
+  const [ulicaP, krajP] = splitNaslov(kupec?.naslov ?? '')
+  return buildUpnQrString({
+    iban: cleanIban(IZDAJATELJ.trr),
+    znesek: inv.znesek,
+    rokPlacila: rokPlacilaDatum(inv),
+    imePrejemnika: IZDAJATELJ.naziv,
+    ulicaPrejemnika: IZDAJATELJ.naslov,
+    krajPrejemnika: IZDAJATELJ.posta,
+    referencaPrejemnika: `SI12 ${inv.stevilka}`,
+    namenPlacila: `Plačilo računa ${inv.stevilka}`,
+    imePlacnika: kupec?.ime ?? '',
+    ulicaPlacnika: ulicaP,
+    krajPlacnika: krajP,
+  })
 }
 
 const TIP_META: Record<Invoice['tip'], { label: string; short: string }> = {
@@ -163,6 +194,10 @@ export function InvoiceManager() {
   const [bomLoading, setBomLoading] = useState(false)
   // Storno je destruktivna pravna akcija — dvostopenjska potrditev (3 s)
   const [stornoId, setStornoId] = useState<string | null>(null)
+  // UPN QR dialog + slika
+  const [qrInvoice, setQrInvoice] = useState<Invoice | null>(null)
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
+  const [xmlLoading, setXmlLoading] = useState<string | null>(null)
 
   const loadInvoices = useCallback(async () => {
     try {
@@ -182,6 +217,30 @@ export function InvoiceManager() {
       .then((d) => setProjects(Array.isArray(d) ? d : []))
       .catch(() => {})
   }, [loadInvoices])
+
+  // QR slika se generira, ko uporabnik odpre dialog (asinhrono, brez blokade)
+  useEffect(() => {
+    if (!qrInvoice) {
+      setQrDataUrl(null)
+      return
+    }
+    let cancelled = false
+    QRCode.toDataURL(upnQrString(qrInvoice, parseKupec(qrInvoice.kupec)), {
+      errorCorrectionLevel: 'M',
+      margin: 2,
+      width: 512,
+      color: { dark: '#1d2b3e', light: '#ffffff' },
+    })
+      .then((url) => {
+        if (!cancelled) setQrDataUrl(url)
+      })
+      .catch(() => {
+        if (!cancelled) setQrDataUrl(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [qrInvoice])
 
   // ---------- izračuni obrazca (živi) ----------
   const formTotals = useMemo(() => {
@@ -312,6 +371,53 @@ export function InvoiceManager() {
     }
   }
 
+  /** Kopiranje v odložišče z fallbackom za WebView/PWA (brez varnostnih izjem). */
+  async function copyText(text: string, label: string) {
+    try {
+      await navigator.clipboard.writeText(text)
+      toast({ title: `${label} kopirano ✓` })
+    } catch {
+      try {
+        const ta = document.createElement('textarea')
+        ta.value = text
+        document.body.appendChild(ta)
+        ta.select()
+        document.execCommand('copy')
+        ta.remove()
+        toast({ title: `${label} kopirano ✓` })
+      } catch {
+        toast({ title: 'Kopiranje ni uspelo', variant: 'destructive' })
+      }
+    }
+  }
+
+  /** Prenos eRačun XML (eSlog 2.1 / UBL 2.1 / EN 16931) — za oddajo prek ponudnika. */
+  async function downloadXml(inv: Invoice) {
+    setXmlLoading(inv.id)
+    try {
+      const res = await fetch(`/api/invoices/eslog?id=${inv.id}`)
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        toast({ title: err.error ?? 'Napaka pri izvozu eRačuna', variant: 'destructive' })
+        return
+      }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `eracun-${inv.stevilka}.xml`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+      toast({ title: 'eRačun XML shranjen ✓' })
+    } catch {
+      toast({ title: 'Omrežna napaka', variant: 'destructive' })
+    } finally {
+      setXmlLoading(null)
+    }
+  }
+
   /** BOM draft → postavke (cena 0 — monter jo dopolni iz cenika) */
   async function importFromBom() {
     if (!formProject) {
@@ -345,13 +451,25 @@ export function InvoiceManager() {
     }
   }
 
-  // ---------- PDF (FURS oblika) ----------
+  // ---------- PDF (FURS oblika + UPN QR) ----------
 
-  function generatePdf(inv: Invoice) {
+  async function generatePdf(inv: Invoice) {
     const postavke = parsePostavke(inv.postavke)
     const kupec = parseKupec(inv.kupec)
     const doc = new jsPDF()
     registerSloPdfFonts(doc)
+    // UPN QR se generira ob generiranju PDF (niz je sinhroni, slika asinhrona)
+    let upnQrUrl: string | null = null
+    try {
+      upnQrUrl = await QRCode.toDataURL(upnQrString(inv, kupec), {
+        errorCorrectionLevel: 'M',
+        margin: 1,
+        width: 512,
+        color: { dark: '#1d2b3e', light: '#ffffff' },
+      })
+    } catch {
+      upnQrUrl = null // QR je priročna dodatna funkcija, ne pogoj — PDF ostane veljaven
+    }
 
     // Glava — izdajatelj (levo) + naslov dokumenta (desno)
     doc.setFillColor(29, 43, 62) // roksal-navy
@@ -458,13 +576,29 @@ export function InvoiceManager() {
       margin: { left: 120 },
     })
 
-    // Opombe + podpisni prostor
+    // Opombe + UPN QR + podpisni prostor
     const footY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 10
     if (inv.opombe) {
       doc.setFontSize(8)
       doc.setTextColor(80, 80, 80)
       doc.text(doc.splitTextToSize(`Opombe: ${inv.opombe}`, 180), 14, footY)
     }
+
+    // UPN QR — nalog se izpolni samodejno ob branju z mobilno banko
+    if (upnQrUrl) {
+      doc.setFont('Roboto', 'bold')
+      doc.setFontSize(8)
+      doc.setTextColor(0, 0, 0)
+      doc.text('UPN QR — plačilo z mobilno banko', 14, 243)
+      doc.addImage(upnQrUrl, 'PNG', 14, 247, 28, 28)
+      doc.setFont('Roboto', 'normal')
+      doc.setFontSize(7)
+      doc.setTextColor(90, 90, 90)
+      doc.text(`Preberi QR z aplikacijo banke — plačilo ${eur(inv.znesek)}`, 47, 251)
+      doc.text(`se izpolni samodejno (rok: ${rokPlacilaDatum(inv).toLocaleDateString('sl-SI')})`, 47, 255)
+      doc.text(`Referenca: SI12 ${inv.stevilka}`, 47, 259)
+    }
+
     doc.setFontSize(8)
     doc.setTextColor(120, 120, 120)
     doc.text(
@@ -498,28 +632,44 @@ export function InvoiceManager() {
       <CardContent className="space-y-3">
         {/* Povzetek */}
         {!loading && invoices.length > 0 && (
-          <div className="grid grid-cols-3 gap-2">
-            <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 p-2 text-center">
-              <div className="text-[10px] uppercase tracking-wide text-emerald-700">Plačano</div>
-              <div className="text-sm font-bold text-emerald-800">{eur(summary.placano)}</div>
-            </div>
-            <div className="rounded-lg border border-amber-200 bg-amber-50/60 p-2 text-center">
-              <div className="text-[10px] uppercase tracking-wide text-amber-700">Odprto</div>
-              <div className="text-sm font-bold text-amber-800">
-                {eur(Math.max(0, summary.izdano - summary.placano))}
+          <div className="space-y-2">
+            <div className="grid grid-cols-3 gap-2">
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 p-2 text-center">
+                <div className="text-[10px] uppercase tracking-wide text-emerald-700">Plačano</div>
+                <div className="text-sm font-bold text-emerald-800">{eur(summary.placano)}</div>
+              </div>
+              <div className="rounded-lg border border-amber-200 bg-amber-50/60 p-2 text-center">
+                <div className="text-[10px] uppercase tracking-wide text-amber-700">Odprto</div>
+                <div className="text-sm font-bold text-amber-800">
+                  {eur(Math.max(0, summary.izdano - summary.placano))}
+                </div>
+              </div>
+              <div className={`rounded-lg border p-2 text-center ${summary.zapadloN > 0 ? 'border-red-200 bg-red-50/60' : 'border-stone-200 bg-stone-50/60'}`}>
+                <div className={`text-[10px] uppercase tracking-wide ${summary.zapadloN > 0 ? 'text-red-700' : 'text-stone-500'}`}>
+                  Zapadlo
+                </div>
+                <div className={`text-sm font-bold ${summary.zapadloN > 0 ? 'text-red-800' : 'text-stone-600'}`}>
+                  {summary.zapadloN > 0 ? eur(summary.zapadlo) : '—'}
+                </div>
+                {summary.zapadloN > 0 && (
+                  <div className="text-[10px] text-red-600">{summary.zapadloN} račun(ov)</div>
+                )}
               </div>
             </div>
-            <div className={`rounded-lg border p-2 text-center ${summary.zapadloN > 0 ? 'border-red-200 bg-red-50/60' : 'border-stone-200 bg-stone-50/60'}`}>
-              <div className={`text-[10px] uppercase tracking-wide ${summary.zapadloN > 0 ? 'text-red-700' : 'text-stone-500'}`}>
-                Zapadlo
+            {/* Razmerje plačanega k izdanemu — hitri vpogled v cashflow */}
+            {summary.izdano > 0 && (
+              <div className="space-y-1">
+                <div className="h-1.5 overflow-hidden rounded-full bg-stone-200">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-500"
+                    style={{ width: `${Math.min(100, Math.max(0, (summary.placano / summary.izdano) * 100))}%` }}
+                  />
+                </div>
+                <div className="text-right text-[10px] text-muted-foreground">
+                  plačano {Math.round((summary.placano / summary.izdano) * 100)} % od izdanih {eur(summary.izdano)}
+                </div>
               </div>
-              <div className={`text-sm font-bold ${summary.zapadloN > 0 ? 'text-red-800' : 'text-stone-600'}`}>
-                {summary.zapadloN > 0 ? eur(summary.zapadlo) : '—'}
-              </div>
-              {summary.zapadloN > 0 && (
-                <div className="text-[10px] text-red-600">{summary.zapadloN} račun(ov)</div>
-              )}
-            </div>
+            )}
           </div>
         )}
 
@@ -538,10 +688,19 @@ export function InvoiceManager() {
             {invoices.map((inv) => {
               const zapadlo = zapadlaDni(inv)
               const meta = STATUS_META[inv.status]
+              // Levo letvica kartice pripoveduje status — hitro prepoznavanje brez branja
+              const rail =
+                zapadlo || inv.status === 'STORNIRAN'
+                  ? 'border-l-red-500'
+                  : inv.status === 'PLACAN'
+                    ? 'border-l-emerald-500'
+                    : inv.status === 'IZDAN'
+                      ? 'border-l-amber-500'
+                      : 'border-l-stone-300'
               return (
                 <div
                   key={inv.id}
-                  className={`rounded-xl border p-3 transition-shadow hover:shadow-sm ${
+                  className={`rounded-xl border border-l-4 p-3 transition-shadow hover:shadow-sm ${rail} ${
                     zapadlo ? 'border-red-300 bg-red-50/40' : 'border-border/70 bg-card'
                   }`}
                 >
@@ -642,6 +801,31 @@ export function InvoiceManager() {
                     <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => generatePdf(inv)}>
                       <FileDown className="h-3 w-3" /> PDF
                     </Button>
+                    {inv.status !== 'STORNIRAN' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs"
+                        onClick={() => setQrInvoice(inv)}
+                        title="UPN QR koda za plačilo"
+                        aria-label="UPN QR koda za plačilo"
+                      >
+                        <QrCode className="h-3 w-3" /> QR
+                      </Button>
+                    )}
+                    {inv.status !== 'STORNIRAN' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs"
+                        onClick={() => void downloadXml(inv)}
+                        disabled={xmlLoading === inv.id}
+                        title="eRačun XML (eSlog 2.1 / EN 16931)"
+                        aria-label="Prenesi eRačun XML"
+                      >
+                        {xmlLoading === inv.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileCode2 className="h-3 w-3" />} XML
+                      </Button>
+                    )}
                   </div>
                 </div>
               )
@@ -844,6 +1028,84 @@ export function InvoiceManager() {
               Shrani osnutek
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: UPN QR — plačilo z mobilno banko */}
+      <Dialog open={qrInvoice !== null} onOpenChange={(o) => !o && setQrInvoice(null)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <QrCode className="h-4 w-4 text-amber-500" />
+              UPN QR — {qrInvoice?.stevilka}
+            </DialogTitle>
+          </DialogHeader>
+
+          {qrInvoice && (
+            <div className="space-y-3">
+              <div className="flex flex-col items-center gap-2 rounded-xl border border-border/60 bg-white p-4">
+                {qrDataUrl ? (
+                  <img
+                    src={qrDataUrl}
+                    alt={`UPN QR koda za plačilo računa ${qrInvoice.stevilka}`}
+                    className="h-48 w-48"
+                  />
+                ) : (
+                  <div className="flex h-48 w-48 items-center justify-center">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                )}
+                <p className="flex items-center gap-1.5 text-[11px] font-medium text-roksal-navy">
+                  <Banknote className="h-3.5 w-3.5 text-emerald-600" />
+                  Skeniraj z aplikacijo svoje banke — nalog se izpolni samodejno
+                </p>
+              </div>
+
+              <div className="space-y-1.5 rounded-xl bg-muted/50 p-3 text-xs">
+                <div className="flex justify-between gap-2">
+                  <span className="text-muted-foreground">Prejemnik</span>
+                  <span className="font-semibold">{IZDAJATELJ.naziv}</span>
+                </div>
+                <div className="flex justify-between gap-2">
+                  <span className="shrink-0 text-muted-foreground">IBAN</span>
+                  <span className="font-mono font-semibold">{IZDAJATELJ.trr}</span>
+                </div>
+                <div className="flex justify-between gap-2">
+                  <span className="text-muted-foreground">Referenca</span>
+                  <span className="font-mono font-semibold">SI12 {qrInvoice.stevilka}</span>
+                </div>
+                <div className="flex justify-between gap-2">
+                  <span className="text-muted-foreground">Rok plačila</span>
+                  <span className="font-semibold">
+                    {rokPlacilaDatum(qrInvoice).toLocaleDateString('sl-SI')}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between border-t border-border/60 pt-1.5">
+                  <span className="text-muted-foreground">Za plačilo</span>
+                  <span className="text-base font-bold text-roksal-navy">{eur(qrInvoice.znesek)}</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-9"
+                  onClick={() => void copyText(cleanIban(IZDAJATELJ.trr), 'IBAN')}
+                >
+                  <Copy className="h-3.5 w-3.5" /> Kopiraj IBAN
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-9"
+                  onClick={() => void copyText(`SI12 ${qrInvoice.stevilka}`, 'Referenca')}
+                >
+                  <Copy className="h-3.5 w-3.5" /> Kopiraj referenco
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </Card>

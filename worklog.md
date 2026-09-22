@@ -394,3 +394,51 @@ Stage Summary:
 - Naslednje runde: LiDAR iOS (potreben realen iPhone), UPN QR koda na računu
   (ISO 20022), eSlog XML izvoz za eRačun, FURS davčni blagajni režim (prostor/
   naprava), Meritve "Stranka" značka + izbrnik — nadaljnja dodelava
+
+---
+Task ID: 8 (runda I — cron webDevReview)
+Agent: Main Orchestrator (Z.ai Code)
+Task: UPN QR koda na računih (ISO 20022/upn-qr.si spec) + eSlog 2.1 eRačun XML izvoz + obvestila dedup + stilski dodelavi
+
+Work Log:
+- QA start: dev.log čist, tsc/lint čisti, login ✓, dashboard ✓, obvestila ✓, CRM računi ✓;
+  potrjena drobnost — 4× enako obvestilo "Ograja Novak V TEKU" (projekti z istim imenom)
+- I-1 UPN QR (novo, src/lib/upn-qr.ts):
+  · format preverjen z web-search (upn-qr.si/ZBS) + primerjava z referenčno npm implementacijo
+    upnqr@1.2.2 (matjaz/upnqr) — NIZJE BAJTNO IDENTIČNO (21 polj, \n ločila, kontrolna vsota
+    = dolžina polj 1–19 + 19); šumniki ostanejo (spec dopušča ISO-8859-2), IBAN se čisti
+  · polja: UPNQR, plačnik (kupec snapshot), znesek v centih 11 števk, koda OTHR, rok
+    DD.MM.LLLL, IBAN prejemnika (max 19), referenca "SI12 {številka}", namen
+  · E2E DEKODIRANA QR s slik ekrana (jsQR + upnqr decode): dialog QR in QR v PDF oba
+    dekodirata → znesek 1251.72, IBAN SI56020100012345678, ref SI12 2026-001, rok 30.9 ✓
+- I-2 QR v UI (invoice-manager.tsx):
+  · gumb "QR" na kartici (vsi razen STORNIRAN) → dialog: QR slika (qrcode npm, navy
+    barve, 512px), plačilni podatki (mono IBAN/referenca, znesek, rok), Kopiraj IBAN /
+    Kopiraj referenco (clipboard + execCommand fallback); generiranje asinhrono z cancel
+- I-3 QR v PDF: blok levo spodaj (28 mm, naslov + 3 vrstice pojasnil), vsote/opombe
+  nedotaknjene; QR opcijski (napaka ne pokvari PDF); pdftoppm 150 dpi → decode ✓
+- I-4 eSlog 2.1 eRačun XML (novo, src/lib/eslog-xml.ts + /api/invoices/eslog):
+  · UBL 2.1 + CustomizationID urn:cen.eu:en16931:2017 + Peppol BIS ProfileID; InvoiceTypeCode
+    380/325/386 po tipu; Supplier (davčna schemeID SI, EndpointID 9957), Customer z davčno,
+    PaymentMeans 30 + PaymentID "SI12 …" + TRR, TaxTotal po stopnjah (S/E kategoriji),
+    LegalMonetaryTotal, InvoiceLine z unitCode; XML escapiran (Čšž, &, <) — minidom VALID ✓
+  · GET ?id → attachment "eracun-2026-001.xml", auth, STORNIRAN → 409; E2E v brskalniku:
+    200, Content-Disposition, 3950 B ✓; gumb "XML" (loader state) na kartici
+- I-5 Obvestila dedup (notification-center.tsx):
+  · enaki (kind+title+subtitle) se združijo v eno kartico z "×N" značko (amber); badge
+    šteje skupaj z counts (7 signalov → 4 kartice); E2E: "Ograja Novak" ×4 ✓
+- I-6 Stilske dodelave (mandatory styling):
+  · kartice računov z statusno letvico (border-l-4: kamen/amber/zelena/rdeča po statusu,
+    zapadlost = rdeča); povzetek + progress bar "plačano X % od izdanih" (gradient
+    emerald, animiran); QR dialog (belo ozadje, mono podatki, 2 kopir-gumba)
+- package.json: + qrcode@1.5.4, + @types/qrcode@1.5.6 (dev)
+
+Stage Summary:
+- Računi so zdaj plačljivi z enim skenom (UPN QR standard slovenskih bank) in
+  pripravljeni na eRačun kanal (eSlog 2.1 XML za javni sektor)
+- Verifikacijska veriga za QR je popolna: ts unit test bajtno identičen z referenčno
+  implementacijo → qrcode slika → jsQR iz browser screenshot-a in iz PDF → upnqr decode
+  brez napake (kontrolna vsota OK)
+- Oznake/kartice: statusna letvica + progress bar izboljšata hitrost branja na terenu
+- Naslednja runda: LiDAR iOS (realen iPhone), FURS davčni blagajni režim, UPN QR tudi v
+  predplačilnih listih strankam prek portal, eSlog validacija proti MJU XSD v produkciji

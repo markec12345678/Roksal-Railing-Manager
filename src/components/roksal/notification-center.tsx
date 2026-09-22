@@ -30,6 +30,8 @@ interface NotificationItem {
   title: string
   subtitle: string
   meta?: string
+  /** Koliko enakih obvestil je združenih (duplikati projektov z istim imenom) */
+  count?: number
 }
 
 interface WeatherSummary {
@@ -165,8 +167,23 @@ export function NotificationCenter() {
         }
       } catch { /* vreme je opcijsko */ }
 
-      setItems(out)
-      setBadge(out.length)
+      // Dedup: enaki kartici (isti kind+naslov+podnaslov) se združijo v eno
+      // s števcem "×N" — primer: več projektov z istim imenom "Ograja Novak"
+      const deduped: NotificationItem[] = []
+      const seen = new Map<string, NotificationItem>()
+      for (const item of out) {
+        const key = `${item.kind}|${item.title}|${item.subtitle}`
+        const existing = seen.get(key)
+        if (existing) {
+          existing.count = (existing.count ?? 1) + 1
+        } else {
+          seen.set(key, item)
+          deduped.push(item)
+        }
+      }
+
+      setItems(deduped)
+      setBadge(deduped.reduce((n, i) => n + (i.count ?? 1), 0))
       if (out.length > 0 && loadedOnce.current) {
         setPulse(true)
         setTimeout(() => setPulse(false), 1200)
@@ -284,6 +301,11 @@ export function NotificationCenter() {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
                           <p className="truncate text-[13px] font-semibold text-roksal-navy">{item.title}</p>
+                          {(item.count ?? 1) > 1 && (
+                            <span className="shrink-0 rounded-full bg-roksal-amber/15 px-1.5 text-[9px] font-bold text-roksal-amber">
+                              ×{item.count}
+                            </span>
+                          )}
                           {item.kind === 'weather' && (
                             <AlertTriangle className="h-3 w-3 shrink-0 text-amber-500" />
                           )}
