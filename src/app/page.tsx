@@ -2,8 +2,10 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import dynamic from 'next/dynamic'
+import { motion } from 'framer-motion'
 import { TopBar } from '@/components/roksal/top-bar'
 import { BottomNav, type TabId, type MoreTabId } from '@/components/roksal/bottom-nav'
+import { CommandPalette } from '@/components/roksal/command-palette'
 import { RefreshCw, Camera, ChevronLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -71,6 +73,7 @@ export default function Home() {
   const [projects, setProjects] = useState<Project[]>([])
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
   const [sketchOpen, setSketchOpen] = useState(false)
+  const [paletteOpen, setPaletteOpen] = useState(false)
 
   // Calculator import from measurements
   const [calculatorImport, setCalculatorImport] = useState<CalculatorImportData | null>(null)
@@ -117,6 +120,26 @@ export default function Home() {
     const syncTimer = setInterval(() => void fetchData(true), 300000)
     return () => clearInterval(syncTimer)
   }, [fetchData])
+
+  // ── Ukazna paleta (⌘K / Ctrl+K) + izbor projekta iz palete ─────────────
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setPaletteOpen((v) => !v)
+      }
+    }
+    function onSelectProject(e: Event) {
+      const id = (e as CustomEvent<string>).detail
+      if (typeof id === 'string' && id) setSelectedProjectId(id)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    window.addEventListener('roksal:select-project', onSelectProject)
+    return () => {
+      window.removeEventListener('keydown', onKeyDown)
+      window.removeEventListener('roksal:select-project', onSelectProject)
+    }
+  }, [])
 
   const badges = useMemo<Record<string, number>>(() => {
     const b: Record<string, number> = {}
@@ -199,7 +222,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#f7f9ff] roksal-bg-pattern roksal-texture">
-      <TopBar onSync={handleSync} syncing={syncing} />
+      <TopBar onSync={handleSync} syncing={syncing} onOpenPalette={() => setPaletteOpen(true)} />
 
       {/* Sync status indicator */}
       <div className="mx-auto max-w-lg relative">
@@ -235,6 +258,14 @@ export default function Home() {
       )}
 
       <main className="mx-auto max-w-lg pb-24">
+        {/* Mehek prehod med zavihki — ključ je kombinacija zavihka in modula,
+          da se animacija sproži tudi znotraj "Več" menija. */}
+        <motion.div
+          key={activeTab + (moreTab ?? '')}
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.18, ease: 'easeOut' }}
+        >
         {/* Glavni zavihki */}
         {activeTab === 'dashboard' && (
           <DashboardTab
@@ -323,7 +354,23 @@ export default function Home() {
             <p className="text-sm">Izberite funkcijo iz menija.</p>
           </div>
         )}
+        </motion.div>
       </main>
+
+      {/* Ukazna paleta — skok kamorkoli (⌘K) */}
+      <CommandPalette
+        open={paletteOpen}
+        onOpenChange={setPaletteOpen}
+        onNavigate={(tab, more) => {
+          if (more) {
+            setMoreTab(more)
+            setActiveTab('more')
+          } else {
+            handleTabChange(tab)
+          }
+        }}
+        onSync={handleSync}
+      />
 
       {/* Skica full-screen overlay */}
       {/* SketchCanvas needs a real project id; rendering it with null produced a

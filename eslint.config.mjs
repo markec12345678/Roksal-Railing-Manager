@@ -6,7 +6,15 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const eslintConfig = [...nextCoreWebVitals, ...nextTypescript, {
+const eslintConfig = [
+  ...nextCoreWebVitals,
+  ...nextTypescript,
+  {
+    // prisma/seed.cjs je namenoma CommonJS — poganja ga `node` v produkcijskem
+    // buildu (glej package.json), kjer ESM/CJS mešanje ne pride v poštev.
+    ignores: ["prisma/seed.cjs"],
+  },
+  {
   rules: {
     // TypeScript rules
     "@typescript-eslint/no-explicit-any": "off",

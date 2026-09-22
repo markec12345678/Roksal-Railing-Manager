@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Loader2, Lock, ShieldAlert } from 'lucide-react'
+import { Loader2, ShieldAlert } from 'lucide-react'
 
 // `useSearchParams()` brez <Suspense> pade samo v produkcijski gradnji:
 //   ⨯ useSearchParams() should be wrapped in a suspense boundary at page "/login"
@@ -62,14 +62,28 @@ function LoginForm() {
   }
 
   return (
-    <main className="min-h-dvh flex items-center justify-center bg-roksal-navy/5 p-4">
-      <Card className="w-full max-w-sm shadow-lg">
-        <CardHeader className="text-center space-y-2">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-roksal-navy text-white">
-            <Lock className="h-6 w-6" />
+    <main className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-[#0f1a2b] p-4">
+      {/* Ozadje: navy gradient + roksal vzorec + amber svetlobe */}
+      <div className="roksal-bg-pattern pointer-events-none absolute inset-0 opacity-40" aria-hidden />
+      <div
+        className="pointer-events-none absolute -top-24 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-roksal-amber/20 blur-3xl"
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute bottom-0 right-0 h-56 w-56 rounded-full bg-sky-500/10 blur-3xl"
+        aria-hidden
+      />
+
+      <Card className="relative w-full max-w-sm rounded-xl border-white/10 bg-white/95 shadow-2xl backdrop-blur">
+        <CardHeader className="space-y-3 text-center">
+          {/* Znamka — isti amber znak kot v aplikaciji */}
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-roksal-amber text-lg font-bold text-roksal-navy shadow-md">
+            R
           </div>
-          <CardTitle className="text-xl">Roksal Railing Manager</CardTitle>
-          <CardDescription>Prijava za monterje in pisarno</CardDescription>
+          <div className="space-y-1">
+            <CardTitle className="text-xl tracking-tight">Roksal Railing Manager</CardTitle>
+            <CardDescription>Prijava za monterje in pisarno</CardDescription>
+          </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={onSubmit} className="space-y-4">
@@ -108,12 +122,16 @@ function LoginForm() {
               </div>
             )}
 
-            <Button type="submit" className="w-full" disabled={busy}>
+            <Button
+              type="submit"
+              className="w-full bg-roksal-navy text-white transition-all hover:bg-roksal-navy/90 hover:shadow-md active:scale-[0.99]"
+              disabled={busy}
+            >
               {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {busy ? 'Prijavljam…' : 'Prijava'}
             </Button>
 
-            <p className="text-center text-xs text-muted-foreground">
+            <p className="text-center text-xs leading-relaxed text-muted-foreground">
               Račun ustvari administrator na strežniku:
               <code className="ml-1 rounded bg-muted px-1 py-0.5">
                 bunx tsx tools/create-admin.ts
@@ -130,8 +148,8 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <main className="min-h-dvh flex items-center justify-center bg-roksal-navy/5 p-4">
-          <div className="text-sm text-muted-foreground">Nalagam prijavo…</div>
+        <main className="flex min-h-dvh items-center justify-center bg-[#0f1a2b] p-4">
+          <div className="text-sm text-white/60">Nalagam prijavo…</div>
         </main>
       }
     >

@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Skeleton } from '@/components/ui/skeleton'
+import { WeatherCard } from '@/components/roksal/weather-card'
 import {
   Dialog,
   DialogContent,
@@ -74,6 +75,9 @@ interface Project {
   opombe?: string | null
   createdAt?: string
   updatedAt?: string
+  // GPS (API ju vrača iz Prisme; uporablja jih vremenska kartica za montažo)
+  latitude?: number | null
+  longitude?: number | null
 }
 
 interface InventoryItem {
@@ -794,6 +798,18 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
           )}
         </CardContent>
       </Card>
+
+      {/* Pogoji za montažo — veter, temperatura, ocena tveganja.
+          Koordinate vzamemo iz naslednje montaže, sicer Kranj (privzeto v API). */}
+      <WeatherCard
+        lat={nextInstallation?.latitude ?? null}
+        lon={nextInstallation?.longitude ?? null}
+        locationLabel={
+          nextInstallation?.latitude
+            ? nextInstallation.nazivProjekta
+            : 'Privzeto: Kranj'
+        }
+      />
 
       {/* Stats Row */}
       <div className="grid grid-cols-3 gap-3 animate-fade-in-up" style={{ animationDelay: '50ms' }}>

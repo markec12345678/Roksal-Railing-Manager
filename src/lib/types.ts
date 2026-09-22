@@ -40,6 +40,11 @@ export interface Project {
   customer?: ProjectCustomer | null
   monter?: ProjectMonter | null
 
+  // GPS lokacija projekta (npr. zajeta ob AR posnetku) — API ju vrača
+  // (Prisma stolpca latitude/longitude), tipe so prej pomanjkanje.
+  latitude?: number | null
+  longitude?: number | null
+
   // V4.1 — post-signature / deal-lock fields
   dealLocked?: boolean | null
   dealLockedAt?: string | null

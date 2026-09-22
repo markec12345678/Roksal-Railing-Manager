@@ -1,6 +1,6 @@
 'use client'
 
-import { RefreshCw, Moon, Sun, Clock } from 'lucide-react'
+import { RefreshCw, Moon, Sun, Clock, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useTheme } from 'next-themes'
 import { useSyncExternalStore, useCallback, useState, useEffect } from 'react'
@@ -8,6 +8,7 @@ import { useSyncExternalStore, useCallback, useState, useEffect } from 'react'
 interface TopBarProps {
   onSync?: () => void
   syncing?: boolean
+  onOpenPalette?: () => void
 }
 
 const emptySubscribe = () => () => {}
@@ -43,7 +44,7 @@ function useLiveClock() {
   return time
 }
 
-export function TopBar({ onSync, syncing }: TopBarProps) {
+export function TopBar({ onSync, syncing, onOpenPalette }: TopBarProps) {
   const { theme, setTheme, resolvedTheme } = useTheme()
   const hydrated = useHydrated()
   const liveClock = useLiveClock()
@@ -80,6 +81,19 @@ export function TopBar({ onSync, syncing }: TopBarProps) {
           </div>
         </div>
         <div className="flex items-center gap-1">
+          {/* Ukazna paleta (⌘K) — iskanje zavihkov, modulov in projektov */}
+          <Button
+            variant="ghost"
+            className="h-9 gap-1.5 rounded-md bg-white/10 px-2.5 text-white/70 hover:bg-white/15 hover:text-white"
+            onClick={onOpenPalette}
+            aria-label="Odpri iskalnik (Ctrl+K)"
+            title="Iskalnik — Ctrl+K"
+          >
+            <Search className="h-4 w-4" />
+            <kbd className="hidden rounded border border-white/20 bg-white/10 px-1 font-sans text-[10px] font-medium sm:inline-block">
+              Ctrl K
+            </kbd>
+          </Button>
           {/* Live Clock */}
           <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-white/10 text-white/70">
             <Clock className="h-3 w-3" />
