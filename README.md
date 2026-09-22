@@ -39,7 +39,12 @@
 
 ### Ključne prednosti
 
-- 📐 **AR vizualizacija ograj** — monter vidi ograjo v realnem času preko kamere, preden jo dejansko montira
+- 📐 **AR vizualizacija ograj** — Monter vidi ograjo preko kamere, preden jo montira.
+  Tehnično gre za **2D risbo na sliki kamere** (`getUserMedia` + Canvas 2D) z ročno
+  kalibracijo px→mm preko znane dolžine, plus poskus WebXR (`webxr-scanner.tsx`).
+  Risba ni prostorsko sidrana: premakneš telefon in ostane na istem mestu na sliki.
+  Za pravi 6DoF AR (ograja, sidrana na rob plošče, po kateri se sprehodiš) glej
+  [`docs/PRIMERJAVA.md`](docs/PRIMERJAVA.md) in Android aplikacijo BalkonAR.
 - 🧮 **Profesionalni kalkulatorji** — razmik palic, kotni izračuni stopnic, skupni material, skladnost s predpisi
 - 📏 **Specifične meritve za ograje** — stopniščni čarovnik, štebricki, WPC orientacije, koti
 - 📷 **Dokumentacija s kamero** — slike pred/med/po montaži z annotacijami in GPS
@@ -56,6 +61,7 @@
 | Prisma modelov | 16 |
 | Izračunske funkcije | 18 |
 | Katalog profilov | 10 (WPC, ALU, Inox, Steklo) |
+| Testi izračunskega jedra | 78 (vitest) |
 | Jezik vmesnika | Slovenščina |
 
 ---
@@ -344,7 +350,10 @@ cd Roksal-Railing-Manager
 bun install
 
 # 3. Pripravi okoljske spremenljivke
-cp .env.example .env  # ustvari .env z DATABASE_URL=file:./db/custom.db
+cp .env.example .env  # DATABASE_URL="file:../db/custom.db"
+#                       Prisma rešuje relativne SQLite poti glede na prisma/schema.prisma,
+#                       zato ../db in ne ./db — s ./db baza ni najdena (Error code 14)
+#                       in vsi API endpointi vrnejo 500. Nikoli ne commitaj strojne poti.
 
 # 4. Inicializiraj bazo
 bun run db:push        # sinhroniziraj Prisma shemo
@@ -362,6 +371,8 @@ bun run dev
 | `bun run dev` | Zažene Next.js dev server (port 3000) |
 | `bun run build` | Produkcijska build |
 | `bun run start` | Zažene produkcijski server |
+| `bun run test` | Testi izračunskega jedra (vitest, 78 testov, ~1 s) |
+| `bunx tsc --noEmit` | Tipska kontrola celotnega projekta (trenutno 0 napak) |
 | `bun run lint` | ESLint preverjanje |
 | `bun run db:push` | Sinhronizira Prisma shemo z bazo |
 | `bun run db:generate` | Generira Prisma Client |
