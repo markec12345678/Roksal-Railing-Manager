@@ -618,7 +618,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
   }
 
   return (
-    <div className="space-y-4 p-4">
+    <div className="space-y-4 p-4 md:space-y-5 md:p-6">
       {/* GLAVA — akcije */}
       <Card>
         <CardHeader className="pb-3">
@@ -829,7 +829,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
 
           {/* Galerija — masonry */}
           {loading ? (
-            <div className="columns-2 gap-2 sm:columns-3">
+            <div className="columns-2 gap-2 sm:columns-3 md:columns-4">
               {[1, 2, 3, 4, 5, 6].map((i) => (
                 <div key={i} className="mb-2 aspect-square animate-pulse rounded-lg bg-muted" />
               ))}
@@ -842,7 +842,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
               </p>
             </div>
           ) : (
-            <div className="columns-2 gap-2 sm:columns-3">
+            <div className="columns-2 gap-2 sm:columns-3 md:columns-4">
               {filteredPhotos.map((p) => {
                 const kat = KATEGORIJE.find((k) => k.id === p.kategorija)
                 return (
@@ -970,7 +970,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
 
       {/* Batch upload progress */}
       {batchProgress && (
-        <div className="fixed bottom-4 left-4 right-4 z-[70] rounded-lg border border-roksal-amber/40 bg-white p-3 shadow-lg">
+        <div className="fixed bottom-4 left-4 right-4 z-[70] rounded-lg border border-roksal-amber/40 bg-white p-3 shadow-lg md:left-auto md:w-96">
           <div className="mb-1.5 flex items-center justify-between text-xs">
             <span className="font-medium text-roksal-navy">Nalaganje slik...</span>
             <span className="text-muted-foreground">

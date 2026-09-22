@@ -96,7 +96,7 @@ export function BottomNav({ activeTab, onTabChange, badges = {}, moreActive = nu
   return (
     <>
       <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-white/95 backdrop-blur-md">
-        <div className="mx-auto flex max-w-lg items-center justify-around overflow-x-auto px-0.5 py-1 no-scrollbar">
+        <div className="mx-auto flex max-w-lg items-center justify-around overflow-x-auto px-0.5 py-1 no-scrollbar md:max-w-3xl md:px-4 md:py-1.5 lg:max-w-5xl">
           {mainTabs.map((tab) => {
             const isActive = activeTab === tab.id
             const Icon = tab.icon
@@ -113,7 +113,7 @@ export function BottomNav({ activeTab, onTabChange, badges = {}, moreActive = nu
                     onTabChange(tab.id)
                   }
                 }}
-                className={`relative flex flex-1 flex-col items-center gap-0.5 rounded-lg px-0.5 py-2 text-[9px] font-medium transition-all duration-200 min-h-[48px] ${
+                className={`relative flex flex-1 flex-col items-center gap-0.5 rounded-lg px-0.5 py-2 text-[9px] font-medium transition-all duration-200 min-h-[48px] md:gap-1 md:text-[11px] ${
                   isActive || isMoreActive
                     ? tab.highlight
                       ? 'bg-roksal-amber text-white'
@@ -123,7 +123,7 @@ export function BottomNav({ activeTab, onTabChange, badges = {}, moreActive = nu
                 aria-label={tab.label}
               >
                 <Icon
-                  className={`h-[18px] w-[18px] transition-transform duration-200 ${
+                  className={`h-[18px] w-[18px] transition-transform duration-200 md:h-5 md:w-5 ${
                     isActive ? 'scale-110' : ''
                   } ${tab.highlight && !isActive ? 'text-roksal-amber' : ''}`}
                 />
@@ -161,7 +161,7 @@ export function BottomNav({ activeTab, onTabChange, badges = {}, moreActive = nu
             <SheetTitle className="text-center text-roksal-navy">Več funkcij</SheetTitle>
           </SheetHeader>
           <div
-            className="grid grid-cols-2 gap-3 overflow-y-auto px-4 pt-1 pb-4 scrollbar-thin"
+            className="grid grid-cols-2 gap-3 overflow-y-auto px-4 pt-1 pb-4 scrollbar-thin sm:gap-4 md:grid-cols-3 md:px-6 md:pt-2 md:pb-6"
             role="menu"
             aria-label="Dodatne funkcije"
           >

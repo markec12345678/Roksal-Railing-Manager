@@ -1784,7 +1784,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
   }
 
   return (
-    <div className="space-y-4 px-4 pb-4 pt-2">
+    <div className="space-y-4 px-4 pb-4 pt-2 md:space-y-5 md:px-6 md:pb-6">
       <div className="flex items-start justify-between">
         <div>
           <h2 className="text-xl font-bold text-roksal-navy">Kalkulator ograj</h2>
@@ -1989,7 +1989,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                 Meritve
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4 px-4 pb-4">
+            <CardContent className="space-y-4 px-4 pb-4 md:grid md:grid-cols-2 md:gap-4 md:space-y-0">
               <div className="space-y-1.5">
                 <Label htmlFor="totalLength" className="text-xs">
                   Skupna dolžina (m)
@@ -2099,7 +2099,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               </Card>
 
               {/* Results Grid */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
                 <Card className="px-3 py-3">
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
                     Število letvev
@@ -2166,7 +2166,8 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               {/* Cut List */}
               {renderCutList()}
 
-              {/* Skupaj material summary */}
+              {/* Skupaj material + Ocena stroškov (md+: stransko po sebi) */}
+              <div className="grid gap-4 md:grid-cols-2 md:items-start">
               <Card className="overflow-hidden border-l-4 border-l-roksal-navy">
                 <CardHeader className="pb-2 pt-4 px-4">
                   <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
@@ -2253,6 +2254,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                   })()}
                 </CardContent>
               </Card>
+              </div>
 
               {/* Safety Info Box */}
               <Card className="bg-roksal-navy/5">
@@ -2393,7 +2395,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
           {anchoringResult && (
             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
               {/* Main Results */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
                 <Card className="px-3 py-3">
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
                     Smola na luknjo

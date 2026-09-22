@@ -225,7 +225,7 @@ export default function Home() {
       <TopBar onSync={handleSync} syncing={syncing} onOpenPalette={() => setPaletteOpen(true)} />
 
       {/* Sync status indicator */}
-      <div className="mx-auto max-w-lg relative">
+      <div className="mx-auto w-full max-w-lg md:max-w-3xl lg:max-w-5xl relative">
         {syncing && (
           <div className="absolute top-0 left-0 right-0 z-30 h-0.5 bg-roksal-amber overflow-hidden">
             <div className="h-full bg-roksal-amber animate-pulse" style={{ width: '100%' }} />
@@ -247,7 +247,7 @@ export default function Home() {
 
       {/* Aktivni projekt indikator (kompakten) */}
       {selectedProject && (activeTab === 'ar' || activeTab === 'photos' || activeTab === 'inclinometer' || moreTab === 'sketches') && (
-        <div className="mx-auto max-w-lg px-3 pb-1">
+        <div className="mx-auto w-full max-w-lg px-3 pb-1 md:max-w-3xl lg:max-w-5xl">
           <div className="flex items-center gap-2 rounded-lg border border-roksal-amber/30 bg-roksal-amber/5 px-3 py-1.5 text-[11px]">
             <Camera className="h-3 w-3 text-roksal-amber" />
             <span className="font-medium text-roksal-navy">{selectedProject.nazivProjekta}</span>
@@ -257,7 +257,7 @@ export default function Home() {
         </div>
       )}
 
-      <main className="mx-auto max-w-lg pb-24">
+      <main className="mx-auto w-full max-w-lg pb-24 md:max-w-3xl lg:max-w-5xl">
         {/* Mehek prehod med zavihki — ključ je kombinacija zavihka in modula,
           da se animacija sproži tudi znotraj "Več" menija. */}
         <motion.div
@@ -274,7 +274,7 @@ export default function Home() {
           />
         )}
         {activeTab === 'ar' && (
-          <div className="p-4 space-y-3">
+          <div className="grid gap-3 p-4 sm:grid-cols-2 sm:items-start">
             <WebXrLauncher projectId={selectedProjectId} />
             <ArScannerLauncher projectId={selectedProjectId} />
           </div>

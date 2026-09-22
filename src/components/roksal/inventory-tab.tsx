@@ -251,7 +251,7 @@ export function InventoryTab() {
   }
 
   return (
-    <div className="space-y-4 px-4 pb-4 pt-2">
+    <div className="space-y-4 px-4 pb-4 pt-2 md:space-y-5 md:px-6 md:pb-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold text-roksal-navy">Zaloga</h2>
@@ -328,7 +328,7 @@ export function InventoryTab() {
       </Card>
 
       {/* Stats Header */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-3 md:gap-4">
         <Card className="px-3 py-3 card-hover transition-all duration-200 animate-fade-in-up" style={{ animationDelay: '60ms' }}>
           <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
             Artikli
@@ -396,13 +396,13 @@ export function InventoryTab() {
               ))}
             </div>
           ) : filtered.length > 0 ? (
-            <div className="divide-y divide-border/50">
+            <div className="divide-y divide-border/50 md:grid md:grid-cols-2 md:gap-3 md:divide-y-0 md:p-3">
               {filtered.map((item) => {
                 const isLow = item.kolicinaZaloga <= item.minimalnaZaloga
                 return (
                   <div
                     key={item.id}
-                    className="flex flex-col gap-2 px-4 py-3 transition-colors hover:bg-secondary/20"
+                    className="flex flex-col gap-2 px-4 py-3 transition-colors hover:bg-secondary/20 md:rounded-lg md:border md:border-border/50"
                   >
                     <div className="flex items-center justify-between">
                       <div className="min-w-0 flex-1">

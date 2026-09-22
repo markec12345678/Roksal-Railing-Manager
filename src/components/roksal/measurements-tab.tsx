@@ -3770,7 +3770,7 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
   // ============================================
 
   return (
-    <div className="space-y-4 px-4 pb-4 pt-2">
+    <div className="space-y-4 px-4 pb-4 pt-2 md:space-y-5 md:px-6 md:pb-6">
       <div>
         <h2 className="text-xl font-bold text-roksal-navy">Meritve</h2>
         <p className="text-sm text-muted-foreground">
@@ -5513,7 +5513,7 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
                       {group.measurements.length}
                     </Badge>
                   </div>
-                  <div className="space-y-3">
+                  <div className="space-y-3 md:grid md:grid-cols-2 md:gap-3 md:space-y-0">
                     {group.measurements.map((m) => renderMeasurementCard(m))}
                   </div>
                 </div>
@@ -6939,7 +6939,7 @@ function SteberTable({
           CSV
         </button>
       </div>
-      <div className="max-h-64 overflow-y-auto scrollbar-thin">
+      <div className="max-h-64 overflow-x-auto overflow-y-auto scrollbar-thin">
         <Table className="text-[10px]">
           <TableHeader>
             <TableRow className="bg-secondary/40 hover:bg-secondary/40">

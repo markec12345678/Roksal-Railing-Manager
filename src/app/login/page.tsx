@@ -84,7 +84,7 @@ function LoginForm() {
   }
 
   return (
-    <main className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-[#0f1a2b] p-4">
+    <main className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-[#0f1a2b] p-4 md:p-8">
       {/* Ozadje: navy gradient + roksal vzorec + amber svetlobe */}
       <div className="roksal-bg-pattern pointer-events-none absolute inset-0 opacity-40" aria-hidden />
       <div
@@ -96,14 +96,14 @@ function LoginForm() {
         aria-hidden
       />
 
-      <Card className="relative w-full max-w-sm rounded-xl border-white/10 bg-white/95 shadow-2xl backdrop-blur">
+      <Card className="relative w-full max-w-sm rounded-xl border-white/10 bg-white/95 shadow-2xl backdrop-blur md:max-w-md">
         <CardHeader className="space-y-3 text-center">
           {/* Znamka — isti amber znak kot v aplikaciji */}
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-roksal-amber text-lg font-bold text-roksal-navy shadow-md">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-roksal-amber text-lg font-bold text-roksal-navy shadow-md md:h-14 md:w-14 md:text-xl">
             R
           </div>
           <div className="space-y-1">
-            <CardTitle className="text-xl tracking-tight">Roksal Railing Manager</CardTitle>
+            <CardTitle className="text-xl tracking-tight md:text-2xl">Roksal Railing Manager</CardTitle>
             <CardDescription>Prijava za monterje in pisarno</CardDescription>
           </div>
         </CardHeader>

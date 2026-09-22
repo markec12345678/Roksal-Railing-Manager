@@ -66,13 +66,13 @@ export function TopBar({ onSync, syncing, onOpenPalette }: TopBarProps) {
 
   return (
     <header className="sticky top-0 z-50 bg-gradient-to-r from-roksal-navy to-[#2a3f5f] text-white shine-effect">
-      <div className="mx-auto flex max-w-lg items-center justify-between px-4 py-3">
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-roksal-amber font-bold text-roksal-navy text-sm shadow-md">
+      <div className="mx-auto flex max-w-lg items-center justify-between px-4 py-3 md:max-w-3xl md:px-6 md:py-4 lg:max-w-5xl">
+        <div className="flex items-center gap-3 md:gap-4">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-roksal-amber font-bold text-roksal-navy text-sm shadow-md md:h-10 md:w-10 md:text-base">
             R
           </div>
           <div>
-            <h1 className="text-base font-bold leading-tight tracking-tight">
+            <h1 className="text-base font-bold leading-tight tracking-tight md:text-lg">
               ROKSAL
             </h1>
             <p className="text-[11px] text-white/60 leading-tight">
@@ -80,11 +80,11 @@ export function TopBar({ onSync, syncing, onOpenPalette }: TopBarProps) {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 md:gap-2">
           {/* Ukazna paleta (⌘K) — iskanje zavihkov, modulov in projektov */}
           <Button
             variant="ghost"
-            className="h-9 gap-1.5 rounded-md bg-white/10 px-2.5 text-white/70 hover:bg-white/15 hover:text-white"
+            className="h-9 gap-1.5 rounded-md bg-white/10 px-2.5 text-white/70 hover:bg-white/15 hover:text-white md:h-10 md:px-3"
             onClick={onOpenPalette}
             aria-label="Odpri iskalnik (Ctrl+K)"
             title="Iskalnik — Ctrl+K"
@@ -95,8 +95,8 @@ export function TopBar({ onSync, syncing, onOpenPalette }: TopBarProps) {
             </kbd>
           </Button>
           {/* Live Clock */}
-          <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-white/10 text-white/70">
-            <Clock className="h-3 w-3" />
+          <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-white/10 text-white/70 md:px-2.5">
+            <Clock className="h-3 w-3 md:h-3.5 md:w-3.5" />
             <span className="text-xs font-mono font-medium tabular-nums">
               {liveClock}
             </span>

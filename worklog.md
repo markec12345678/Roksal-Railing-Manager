@@ -108,3 +108,24 @@ Work Log:
 Stage Summary:
 - AR kamera zdaj: en klik AI analiza fotografije → samodejni izbor profila + priporočene mere; kamera kontrola (torch/zoom/fokus/HD) odpravlja najpogostejše vzroke slabih meritev; haptika + stabilnost + osvetlitev vodijo monterja do pravega trenutka zajema
 - Naslednji koraki (predlog): realni XRFrame hit-test v webxr-scanner (namesto simulacije), posodobitev README, foto-receipt (kompozit + AI overlay ob shranjevanju)
+
+---
+Task ID: 2-b
+Agent: frontend-styling-expert
+Task: Responsive pass za telefon in tablico (top-bar, bottom-nav, dashboard, measurements, calculator, inventory, photo, login)
+
+Work Log:
+- top-bar.tsx: notranji container `max-w-lg md:max-w-3xl lg:max-w-5xl` (usklajen s page.tsx), md+: px-6 py-4, večja znamka R (h-10/text-base), naslov md:text-lg, gap-2 med akcijami, iskalni gumb md:h-10; vse akcije ohranjene
+- bottom-nav.tsx: notranji container `md:max-w-3xl lg:max-w-5xl` + md:px-4; zavihki na md+ `md:text-[11px]`, ikone `md:h-5 md:w-5`, md:gap-1 (min-h-48px dotik ostane); "Več" sheet: `sm:gap-4 md:grid-cols-3 md:px-6 md:pb-6`; safe-area padding in obnašanje nespremenjena
+- dashboard-tab.tsx: root `md:space-y-5 md:px-6 md:pb-6`; "Pregled projekta" + "Aktivnost (6 mesecev)" zdaj v skupnem gridu `md:grid-cols-2` (telefon: isto kot prej, ena pod drugo); stats row md:gap-4; oprema md:gap-4; seznam projektov md:max-h-[32rem] (več vrstic brez scrolla); gumb "Nov projekt" md:w-auto md:px-8; truncation ostane (truncate + min-w-0)
+- measurements-tab.tsx: root `md:space-y-5 md:px-6 md:pb-6`; kartice meritev v skupinah po datumih: `md:grid md:grid-cols-2 md:gap-3 md:space-y-0` (telefon: en stolpec space-y-3); preglednica stebrov wrapal v `overflow-x-auto` (+ obstoječi overflow-y) — tabela ne more prekoračiti širine na telefonu
+- calculator-tab.tsx: root `md:space-y-5 md:px-6 md:pb-6`; Vhodna polja (railing) `md:grid md:grid-cols-2 md:gap-4 md:space-y-0` (4 meritve v 2 stolpcih); "Results Grid" (4 statistike) `md:grid-cols-4 md:gap-4`; enako za anchoring "Main Results"; "Skupaj material" + "Ocena stroškov" zavita v `grid gap-4 md:grid-cols-2 md:items-start` (telefon: gap-4 = prejšnji space-y-4, vizualno identično); cut list (grid-cols-12) nič slomljeno
+- inventory-tab.tsx: root `md:space-y-5 md:px-6 md:pb-6`; seznam artiklov `md:grid md:grid-cols-2 md:gap-3 md:divide-y-0 md:p-3` + vrstice `md:rounded-lg md:border` (kartice na tablici, delilne črte na telefonu); stats md:gap-4; Naroči gumb/progress bar nespremenjena
+- photo-tab.tsx: root `md:space-y-5 md:p-6`; masonry galerija + skeleton `md:columns-4` (telefon columns-2, sm columns-3 kot prej); batch-upload progress na md+ kot toast desno (`md:left-auto md:w-96`); anotacijski editor/kamera nista dirjana (fullscreen overlaya)
+- login/page.tsx: kartica `md:max-w-md`, main `md:p-8`, znamka `md:h-14 md:w-14 md:text-xl`, naslov `md:text-2xl`
+- Verifikacija: `bunx tsc --noEmit` — 0 napak; `bun run lint` — čisto; agent-browser spot-check: prijava (demo gumb) → / → zavihki; tablet 820×1180: top-bar/nav computed max-width 768px (md:max-w-3xl), dashboard graf e2 352px stolpca, kalkulator vhodi 335px × 2, zaloga 341px × 2, nav label 11px / ikona 20px; telefon 390×844: containerja 512px, label 9px / ikona 18px, vsi sklad 1-stolpčni (mobile-first ohranjen). Screenshoti: /tmp/roksal-2b-*.png
+
+Stage Summary:
+- Samo additive sm:/md:/lg: Tailwind klase — privzeti (telefon) razredi so ostali 1:1, zato mobile-first izgled nespremenjen; na md 768+/lg 1024+ vsebina izkoristi širino (2–3 stolpca, 4-col masonry, širše preglednice)
+- Ključne odločitve: (1) dashboard graf kartici skupaj v en md:grid-cols-2 wrapper (isti pogoj totalProjects>0, brez dupliranja pogojev); (2) seznam meritev/artiklov 2-col preko md:grid + md:space-y-0 (nevtralizacija marginov), brez preurejanja DOM-a kartic; (3) inventory vrstice na md+ dobijo border/rounded, da delujejo kot kartice v gridu; (4) kalkulator "Skupaj material"+"Ocena stroškov" stransko po sebi na md+ (dopolnitev "two-column summary")
+- Namerno puščeno / tveganja: weather-card.tsx ni bil v scope-u (lastna komponenta, ostane full-width); ostali kalkulator mode-i (wind, gate, …) imajo že 2-col vhodne gride in niso dirjani; data-prazni demo (ni meritev/slik) onemogoča vizualni check 2-col meritev in md:columns-4 galerije — klasi so v kodi in vezani na enake pogoje kot obstoječi izris; page.tsx, scannerji, API, prisma, config: nedotaknjeni

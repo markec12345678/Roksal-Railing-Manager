@@ -786,7 +786,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
   }
 
   return (
-    <div className="space-y-4 px-4 pb-4 pt-2">
+    <div className="space-y-4 px-4 pb-4 pt-2 md:space-y-5 md:px-6 md:pb-6">
       {/* Greeting */}
       <div className="animate-fade-in-up">
         <div className="flex items-end justify-between gap-2">
@@ -955,7 +955,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
       />
 
       {/* Stats Row */}
-      <div className="grid grid-cols-3 gap-3 animate-fade-in-up" style={{ animationDelay: '50ms' }}>
+      <div className="grid grid-cols-3 gap-3 animate-fade-in-up md:gap-4" style={{ animationDelay: '50ms' }}>
         <Card className="px-3 py-3 card-hover transition-all duration-200">
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-roksal-navy/10">
@@ -991,8 +991,9 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
         </Card>
       </div>
 
-      {/* Project Overview — horizontal bar chart */}
+      {/* Project Overview — horizontalni graf + trend (md+: dva stolpca) */}
       {totalProjects > 0 && (
+        <div className="grid gap-4 md:grid-cols-2 md:items-start">
         <Card className="card-hover transition-all duration-200 animate-fade-in-up" style={{ animationDelay: '70ms' }}>
           <CardHeader className="pb-2 pt-4 px-4">
             <CardTitle className="text-sm font-semibold text-roksal-navy">
@@ -1039,11 +1040,9 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
             })()}
           </CardContent>
         </Card>
-      )}
 
-      {/* Trend aktivnosti — novi in zaključeni projekti, zadnjih 6 mesecev.
-          Čisti DOM stolpci (brez graf knjižnice); višina relativna na max. */}
-      {totalProjects > 0 && (
+        {/* Trend aktivnosti — novi in zaključeni projekti, zadnjih 6 mesecev.
+            Čisti DOM stolpci (brez graf knjižnice); višina relativna na max. */}
         <Card
           className="card-hover transition-all duration-200 animate-fade-in-up"
           style={{ animationDelay: '80ms' }}
@@ -1108,13 +1107,14 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
             })()}
           </CardContent>
         </Card>
+        </div>
       )}
 
       {/* New Project Button */}
       <Button
         type="button"
         onClick={() => setNewProjectOpen(true)}
-        className="w-full bg-roksal-amber hover:bg-roksal-amber/90 text-roksal-navy h-11 shadow-sm transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98] btn-shine"
+        className="w-full bg-roksal-amber hover:bg-roksal-amber/90 text-roksal-navy h-11 shadow-sm transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98] btn-shine md:w-auto md:px-8"
       >
         <Plus className="mr-2 h-4 w-4" />
         Nov projekt
@@ -1128,7 +1128,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
           </CardTitle>
         </CardHeader>
         <CardContent className="px-4 pb-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 md:gap-4">
             <div className="flex items-center gap-2.5 rounded-lg bg-secondary/50 p-2.5">
               <BatteryMedium className="h-5 w-5 text-roksal-green" />
               <div>
@@ -1222,7 +1222,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
               ))}
             </div>
           ) : filteredProjects.length > 0 ? (
-            <div className="space-y-2 max-h-72 overflow-y-auto scrollbar-thin">
+            <div className="space-y-2 max-h-72 overflow-y-auto scrollbar-thin md:max-h-[32rem]">
               {filteredProjects.map((project) => {
                 const daysRemaining = project.datumMontaze
                   ? Math.ceil((new Date(project.datumMontaze).getTime() - new Date().getTime()) / 86400000)
