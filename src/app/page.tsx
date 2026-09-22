@@ -50,6 +50,8 @@ const WebXrLauncher = dynamic(() => import('@/components/roksal/webxr-scanner').
 const PhotoTab = dynamic(() => import('@/components/roksal/photo-tab').then((m) => m.PhotoTab), { ssr: false, loading: () => <TabLoading /> })
 const PdfExport = dynamic(() => import('@/components/roksal/pdf-export').then((m) => m.PdfExport), { ssr: false, loading: () => <TabLoading /> })
 const FloorPlanTab = dynamic(() => import('@/components/roksal/floor-plan-tab').then((m) => m.FloorPlanTab), { ssr: false, loading: () => <TabLoading /> })
+const MapMeasure = dynamic(() => import('@/components/roksal/map-measure').then((m) => m.MapMeasure), { ssr: false, loading: () => <TabLoading /> })
+const PunchList = dynamic(() => import('@/components/roksal/punch-list').then((m) => m.PunchList), { ssr: false, loading: () => <TabLoading /> })
 const AiTakeoff = dynamic(() => import('@/components/roksal/ai-takeoff').then((m) => m.AiTakeoff), { ssr: false, loading: () => <TabLoading /> })
 const SignatureQuote = dynamic(() => import('@/components/roksal/signature-quote').then((m) => m.SignatureQuote), { ssr: false, loading: () => <TabLoading /> })
 const PostSignaturePanel = dynamic(() => import('@/components/roksal/post-signature-panel').then((m) => m.PostSignaturePanel), { ssr: false, loading: () => <TabLoading /> })
@@ -382,10 +384,15 @@ export default function Home() {
           />
         )}
         {activeTab === 'ar' && (
-          <div className="grid gap-3 p-4 sm:grid-cols-2 sm:items-start">
-            <WebXrLauncher projectId={selectedProjectId} />
-            <ArScannerLauncher projectId={selectedProjectId} />
-          </div>
+          <>
+            <div className="grid gap-3 p-4 pb-0 sm:grid-cols-2 sm:items-start">
+              <WebXrLauncher projectId={selectedProjectId} />
+              <ArScannerLauncher projectId={selectedProjectId} />
+            </div>
+            <div className="p-4">
+              <MapMeasure projectId={selectedProjectId} />
+            </div>
+          </>
         )}
         {activeTab === 'photos' && <PhotoTab projectId={selectedProjectId} />}
         {activeTab === 'calculator' && (
@@ -452,7 +459,12 @@ export default function Home() {
             {moreTab === 'pdf' && <PdfExport project={selectedProject} />}
             {moreTab === 'gallery' && <ReferenceGallery />}
             {moreTab === 'catalog' && <RoksalCatalog />}
-            {moreTab === 'documents' && <DocumentsTab />}
+            {moreTab === 'documents' && (
+              <div className="space-y-4">
+                <PunchList project={selectedProject} />
+                <DocumentsTab />
+              </div>
+            )}
             {moreTab === 'safety' && <SafetyTab />}
             {moreTab === 'floorplan' && <FloorPlanTab projectId={selectedProjectId} />}
           </div>

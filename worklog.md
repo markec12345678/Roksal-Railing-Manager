@@ -202,3 +202,52 @@ Stage Summary:
   navigacija, iskanje 'inox'→Zaloga, mic gumba, AI API z realnim klicem
 - Za produkcijo: SW se aktivira šele na Vercelu (dev ga ne registrira);
   pravi WebXR/glas preveriti še na fizičnem telefonu
+
+---
+Task ID: 4 (runda E)
+Agent: Main Orchestrator (Z.ai Code)
+Task: Spletna raziskava forumov/konkurence (16 poizvedb) + implementacija top 2 najdbi: satelitsko merjenje in prejemni zapisnik
+
+Work Log:
+- RAZISKAVA (15 poizvedb prek web_search): QuoteIQ (satellite measuring $74.99/mo,
+  headline f. za ograjnike), ProFence (Measure Your Fence Line — stranka riše črto),
+  punch list orodja (Kraaft, GoAudits, SnaggingTrack — foto + snags + podpis → PDF),
+  quote follow-up (Jobber/OctopusPro/ServiceTrade — reminderji zvišajo approval),
+  AR natančnost (drift = #1 pritožba uporabnikov AR meril), slovenski ceniki ograj
+  (primerjam.si 19–180 €/tm), FURS davčno potrjevanje, geodetska ureditev meje
+  (moj-geodet.si, allgea.si — soglasje sosede pred montažo)
+- E-1 MapMeasure (src/components/roksal/map-measure.tsx, novo):
+  · Leaflet 1.9 + Esri World Imagery satelit + World Boundaries imena (brez API ključa)
+  · klik → točke (divIcon pin, številčeni), polyline črta, haversine razdalje,
+    segmenti po dolžini, Nazaj/Počisti, GPS centriranje, zoom kontrola
+  · višina ograje select (1000–2200 mm, default 1800), "Shrani v meritve" →
+    POST /api/measurements (fetchWithQueue — offline vrsta), arMetadata
+    {source:'satellite-map', provider, segmentiM, skupajM}, gpsLokacija
+  · nasvet natančnosti (±1–2 m, končna meritev AR na terenu)
+  · nameščen leaflet + @types/leaflet; CSS import v komponenti deluje
+- E-2 PunchList (src/components/roksal/punch-list.tsx, novo):
+  · Prisma model PunchItem {projectId, naslov, opomba, status open|done|issue}
+    + relacija project.punchItems; bun run db:push (FIX: Prisma zahteva dvojne
+    navedke @default("open") — enojni so P1012 validation error!)
+  · API /api/punch GET?projectId / POST / PATCH / DELETE (authenticate + zod)
+  · UI: progress bar (done/total), klik status open→done→issue cikel z optimističnim
+    update + rollback, dodajanje točk, brisanje, 8 STANDARDNIH TOČK za SI tržišče
+    (meja z sosedom/geodetski zaznam, soglasje sosede, komunale, dostop, montaža,
+    vodnost, čiščenje, predaja) — pokrije tudi punch-list raziskavo
+  · PDF zapisnik (jsPDF + autoTable): Roksal glava, projekt/naročnik/monter, tabela
+    z statusi (barvni tekst), povzetek, PODPISNA BLOKA izvajalec/naročnik, footer
+  · integracija: Več → Dokumenti (PunchList nad DocumentsTab)
+- page.tsx: MapMeasure v AR zavihku (pod WebXR/AR kartama, pb-0 + p-4 wrapper),
+  PunchList v Dokumentih; dynamic import ssr:false (Leaflet potrebuje window)
+
+Stage Summary:
+- E2E z agent-browserjem: 3 klik na satelitski karti → 270 m, Shrani → toast
+  "Meritev shranjena" + POST 201 + AuditLog v db.log; zapisnik: 8 standardnih
+  točk → 2 ciklana na done → 25 % progress → PDF "Zapisnik pripravljen"
+- tsc 0 napak, lint čist; mobilni 390×844 in tablični 820×1180 brez overflow,
+  map 306/684 px; pomembno: Leaflet ignorira sintetične klikove — testirati
+  z realnimi CDP kliki (mouse move/down/up)
+- Ostale raziskane ideje za naslednje runde: quote follow-up reminderji
+  (Deal + followUpDate + obvestilo), AR accuracy coach (3× merjenje + povprečje),
+  beton/zmrzovalna globina v kalkulatorju, strankina samomeritvena povezava
+  (share map link), FURS račun layer
