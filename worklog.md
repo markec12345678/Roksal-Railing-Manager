@@ -542,3 +542,52 @@ Stage Summary:
 - Naslednje runde: LiDAR iOS (realen iPhone), FURS davčni blagajni režim,
   eSlog XSD validacija, primerjava "Stranka vs merilec" v Meritvah, mesečni
   prihodek iz računov na vodja pregledu
+
+---
+Task ID: 11 (runda L — cron webDevReview)
+Agent: Main Orchestrator (Z.ai Code)
+Task: QA + "Stranka vs merilec" primerjava v Meritvah + prihodki iz računov na vodja pregledu + LTV fix + sanacija meritev
+
+Work Log:
+- QA start: dev strežnik teče (200), git čist; agent-browser: prijava ✓,
+  dashboard ✓, vodja pregled ✓ — brez kritičnih bugov → razvoj po backlogu
+- QA najdba (podatki): 8 merilčevih meritev = 4× duplikati (seed ×4 zagon —
+  rundni K cleanup je počistil projekte/stranke, ne pa meritev znotraj
+  ohranjenega projekta) + 2 nerealni strankini meritvi iz E2E (45 m / 946 m)
+- L-0 Sanacija meritev (cleanup-demo-data.cjs razširjen, idempotenten):
+  · dedup meritev po (projectId, dolzinaMm, visinaMm, source) → 10→3
+  · strankine samomeritve deterministično zamenjane z ENO realistično
+    (5.42 m, Janez Novak, +8.4 % do uradnih 5.0 m — scenarij "vključuje
+    stranska vrata"); seed.cjs: meritve zdaj upsert + demo strankina meritev
+- L-1 Primerjava "Stranka vs merilec" (measurements-tab.tsx):
+  · useMemo strankaPrimerjava: customer-map meritve vs uradne (skupaj,
+    delta mm, deltaPct); meta (imeStranke/telefon/opomba/točke) iz arMetadata
+  · verdikti: ≤5 % "V okviru" (emerald), ≤15 % "Orientacija" (amber),
+    >15 % "Obvezen obisk" (rdeča), brez uradnih → "n/a" (stone)
+  · kartica (nad Seznam meritev): Merilec ↔ delta % ↔ Stranka, 2
+    proporcionalna stolpca (navy/amber gradient, transition-all 500ms),
+    kontakt vrstica s tel: povezavo + "prejeto DD.MM.", opomba v navedkih
+  · E2E: Novak → 5.00 m vs 5.42 m, +8.4 %, "Orientacija — preveri na
+    terenu pred izdelavo" ✓; mobilni 390px grid-cols-[1fr_auto_1fr] brez
+    overflowa ✓
+- L-2 Prihodki iz računov (vodja-dashboard.tsx):
+  · fetch /api/invoices; Prihodek (plačano) = Σ PLACAN znesek po placanoAt
+    ta mesec — PREJ je gledal samo dealLockedAt projektov (plačan račun
+    2026-001 je bil "neviden", Prihodek 0 €) → zdaj 1 252 € + Marža 313 € ✓
+  · nov graf "Prihodki — zadnjih 6 mesecev": čisti DOM stolpci (brez
+    knjižnic), trenutni mesec amber gradient, znesek nad stolpcem, title tooltip
+  · Odprto (izdano) / Zapadlo (rok = izdaja + rokPlacilaDni) stevca —
+    zapadlo rdeče poudarjeno z (št.)
+  · BUG FIX Skupni LTV: customers API vrača samo _count.projects (brez cen)
+    → LTV bil vedno 0 €; zdaj Σ estimatedPrice iz /api/projects → 9 150 € ✓
+- Mobilni: vodja pregled (graf + kartice) in primerjava — overflow:false ✓
+
+Stage Summary:
+- Meritve tab zaključuje zgodbo samomeritve (runda G): stranka pošlje
+  približek → vodja vidi razliko do uradnih meritev in verdikt za obisk
+- Vodja pregled zdaj kaže realne prihodke iz računov (ne 0 €) + trend 6
+  mesecev + odprto/zapadlo — izhodišče za future FURS blagajno poročila
+- Demo baza popolnoma konsistentna (3/3/3 meritve, cene, računi)
+- Naslednje runde: FURS davčni blagajni režim, LiDAR iOS (realen iPhone),
+  eSlog XSD validacija v produkciji, mesečno poročilo PDF za vodjo,
+  opcijsko: filter strankine meritve po segmentih
