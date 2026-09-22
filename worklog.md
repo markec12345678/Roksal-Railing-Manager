@@ -156,3 +156,49 @@ Stage Summary:
 - WebXR zdaj MERI ZARES: retikla = frame.getHitTestResults, mere = razdalja med XRAnchor pozicijami, shranjevanje = pravi API klic. Brez three.js (lastna projekcija, DOM overlay HUD)
 - Prenosljivost: hit-test = obvezen (Chrome Android + ARCore); sidra/globina/ravnine = opcijski z elegantno degradacijo; iOS Safari ostaja "ni podprto"
 - Naslednji koraki (predlog): WebXR posnetek ozadja (preserveDrawingBuffer) → AR snapshot slika; Depth-Anything-3 backend za meritve iz navadnih fotk (brez ARCore); test na pravem ARCore telefonu
+
+---
+Task ID: 3 (runde A–D)
+Agent: Main Orchestrator (Z.ai Code) + frontend-styling-expert (3-b)
+Task: Implementacija vseh 9 predlogov izboljšav (UI/UX + PWA + glas + AI) po uporabnikovem "nadaljuj vse po vrsti"
+
+Work Log:
+- RUNDA A (commit d6d108e):
+  · NotificationCenter (novo): zvonek v TopBar z badge — nizka zaloga, današnje montaže
+    (FIX: polje je datumMontaze, ne datumMontaza — prej 0 montaž), vremensko opozorilo;
+    klik navigira prek 'roksal:navigate'; osveževanje ob 'roksal:refresh'
+  · QuickActionsFab (novo): amber FAB nad BottomNav — AR meritev/slika/meritev/skica/
+    kalkulator; framer-motion stagger meni; centralna navigacija
+  · Pull-to-refresh: upor (dy*0.45, max 96px), indikator z rotacijo, haptika, sync
+  · page.tsx: skeleton TabLoading; 'roksal:navigate' + 'roksal:calc-import' poslušalca
+  · 3-b subagent: api/search (auth, JS lowercase filter), paleta z debounced search
+    (Stranke/Material skupini), EmptyState komponenta v meritev/slike/zalogo/
+    dokumenti/CRM, skeletoni
+- RUNDA B (commit cfc141f):
+  · sw.js v2: network-first navigacije z /offline.html fallbackom, cache-first
+    _next/static, API GET cache fallback; offline.html (slovenska stran)
+  · lib/offline-queue: localStorage vrsta (max 50) + fetchWithQueue (202 queued)
+    + samodejni flush ob 'online'; integriran v WebXR Shrani
+  · pwa-status.tsx: offline pas s števcem + install prompt (beforeinstallprompt)
+  · manifest.json shortcuts (AR/Kalkulator/Meritve) + page.tsx ?tab= deep-link
+- RUNDA C (commit 02da4f9):
+  · lib/sl-speech: parser sl številk 0–9999 (sklanjatve metre/centimetre,
+    compound 'dvaindvajset', decimalki '2,4', 'dva metra štirideset'→2400mm)
+    — 13/13 testov; useSpeechRecognition hook (sl-SI)
+  · Meritve: mikrofon pri Dolžina/Višina (pulziranje, haptika, toast)
+  · WebXR: 'V kalkulator' gumb (roksal:calc-import) + AR shema — canvas tloris
+    (pogled zgoraj, grid, segmenti z mm, A/B točke, noga) → POST /api/ar-snapshots
+- RUNDA D (commit 3f70321):
+  · api/measure/photo: VLM ocena dolzinaMm/visinaMm/razmikStebrovMm iz fotke
+    (BUGFIX: SYSTEM_PROMPT prej NI bil poslan modelu → sedaj system message)
+  · photo-measure.tsx v Meritvah: fotografiraj → ocena → popravi → shrani
+    (zaupanje badge, izhodišče, offline vrsta); E2E 2400×1100mm zaupanje 0.6
+
+Stage Summary:
+- Vseh 9 predlogov implementiranih: FAB, pull-to-refresh, obvestila, prazna
+  stanja, globalno iskanje, offline PWA, glasovni vnos, AR→kalkulator+shema,
+  AI foto meritve; 4 commiti pushani (d6d108e, cfc141f, 02da4f9, 3f70321)
+- tsc 0 napak, lint čist po vsaki rundi; E2E: obvestila (6 items), FAB
+  navigacija, iskanje 'inox'→Zaloga, mic gumba, AI API z realnim klicem
+- Za produkcijo: SW se aktivira šele na Vercelu (dev ga ne registrira);
+  pravi WebXR/glas preveriti še na fizičnem telefonu
