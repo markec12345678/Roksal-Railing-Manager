@@ -800,3 +800,57 @@ Work Log:
 Stage Summary:
 - AR na telefonu je zdaj res delujoč navzkrižni tok: brskalnik (piškotki) →
   UI + WebXR; Scene Viewer/Quick Look (brez piškotkov) → GLB/USDZ 200 javno
+
+---
+Task ID: 15 (runda P — uporabniška zahteva: push GitHub + sinhronizacija + nadaljuj)
+Agent: Main Orchestrator (Z.ai Code)
+Task: GitHub/Vercel sinhronizacija + RAL barve za 3D/AR ograjo (model-viewer)
+
+Work Log:
+- SINHRONIZACIJA: lokalni main je bil 7 commitov pred origin (runde K–N niso bile
+  pushane) → `git push origin main` (8477605..c618eaa). Vercel GitHub integracija
+  avtomatsko deploya ob pushu (potrjeno v prejšnjih rundah); token ta seja ni na
+  voljo (nisi v env/.vercel/auth.json — bil je le v opisu cron naloge runde 1),
+  zato status deploya ni direktno preverjen — namesto tega: tsc + lint ČISTA
+  (glavni vzrok preteklih Vercel ERRORjev so bili type errori), build skripta že
+  vsebuje prisma generate/db push/seed. Pushan tudi commit runde P (c618eaa..1705889).
+- P-1 GENERATOR (tools/generate-fence-models.mjs):
+  · RAL_COLORS: 5 RAL klasik prahobarv — 7016 antracit, 9005 črna, 9016 bela,
+    6005 zelena, 8017 rjava (metallic/roughness po svetlosti: temna = kovinsko,
+    bela = matirana prahobarva)
+  · hexToLinear(): sRGB → LINEAR pretvorba (glTF baseColorFactor je linearen;
+    prej suhe sRGB vrednosti → 7016 pretemen v PBR); palice = tint bela +16/10 %
+    (temna/svetla), steklo nespremenjeno
+  · buildGlb/buildUsda zdaj prejmeta materials parameter; assertGlb() validacija
+    (magic/verzija/dolžina/JSON parsabil/materiali+meshi)
+  · izhod: 10 variant ograjca-{klasika,steklo}-{RAL}.{glb,usdz} + 2 zgodovinska
+    aliasa brez kode (= 7016) — stare povezave/QR ostanejo delujoči
+- P-2 Fence3dViewer:
+  · RAL izbirnik: 5 okroglih swatch (36 px, hover:scale-110, amber ring-offset
+    izbrani, CheckCircle2 kontra barva na beli), aria-pressed/aria-label,
+    badge z izbrano kodo + imenom; chip "5× RAL" v glavi kartice
+  · src/ios-src dinamično: /models/ograjca-{varianta}-{RAL}.{glb,usdz};
+    loaded ključ now "{varianta}-{RAL}"
+  · trajna izbira: localStorage 'roksal-ar-ral' (hydracija-varno: branje šele v
+    useEffect, validacija proti seznamu); opisi variant brez trdo kodirane barve
+- E2E (agent-browser): login demo → AR zavihek → 3D kartica ✓; model-viewer
+  src=/models/ograjca-klasika-7016.glb loaded=true ✓; klik RAL 9016 → src
+  preklopi + loaded ✓ + localStorage '9016' ✓; Steklo + RAL 6005 →
+  ograjca-steklo-6005.glb ✓; POLNI reload → AR zavihek → src=…klasika-6005.glb
+  (trajna izbira obnovljena) ✓; 3D model VIDLJIVO zelen (RAL 6005) na screenshotu
+  ✓; /models/* brez piškotkov → 200 (Scene Viewer/Quick Look tok) ✓; mobilni
+  390px brez overflowa ✓; console čista (samo $updateSource dev logi), page
+  errors PRAZNI, dev.log čist, tsc + lint čista ✓
+
+Stage Summary:
+- GitHub ↔ Vercel tok obnovljen: vse runde (K–P) zdaj na origin/main; Vercel
+  deploya avtomatsko, tveganje builda je minimalno (tsc/lint čista, build skripta
+  od runde 1 popravljena). Za direktno preverbo deploya rabi nov Vercel token
+  (v opisu cron naloge ali env VERCEL_TOKEN).
+- 3D/AR ograja zdaj podprala RAL izbiro — ključna prodajna funkcija: stranka
+  takoj vidi ograjo V SVOJI barvi prahu (5 RAL klasik), tudi v AR Scene Viewer/
+  Quick Look (USDZ per RAL). Generator je parametričen → nova barva = 1 vrstica.
+- Naslednje runde: RAL izbira povezati s kalkulatorjem/ponudbo (izbrana barva v
+  arMetadata/izračun), 3D montažni pogled po segmentih, USDZ validacija na
+  iPhone, LiDAR iOS, FURS davčna blagajna, eSlog XSD
+
