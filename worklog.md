@@ -35,3 +35,32 @@ Stage Summary:
 - Pomembno: fix commit je SAMO LOKALNO (peskovnik); GitHub repo razvija se naprej —
   potrebno je potisniti commit 1922dac na origin/main (manjka GitHub token)
 - SQLite na Vercelu = demo način (podatki kratkotrajni); produkcija: Turso/Postgres ali VPS
+
+---
+Task ID: 2
+Agent: webDevReview cron (runda 2)
+Task: QA + nova funkcionalnost + styling polish
+
+Work Log:
+- Preveril worklog + origin/main (nov docs-only commit 1857be3) → rebasa brez konfliktov
+- Stanje: 147/147 testov, tsc 0 napak, lint 0 napak (po izključitvi prisma/seed.cjs), dev strežnik OK
+- Brskalniški QA: prijava → dashboard → onboarding → vsi ključni tokovi delujejo; napak v konzoli ni
+- NOVO: ukazna paleta (Ctrl+K ali iskalni gumb v TopBar) — navigacija na vse zavihke/module,
+  iskanje in izbor projekta, akcije (sync, tema). shadcn cmdk, brez novih odvisnosti
+- NOVO: vremenska kartica "Pogoji za montažo" na dashboardu — temperatura, veter/suniki,
+  veterni kompas s smerjo, ocena tveganja (Varno/Previdno/Nevarno/NE montaža) + max varna
+  višina ograje; uporablja obstoječi /api/weather (demo fallback brez OpenWeather ključa);
+  koordinate vzame iz naslednje montaže, sicer Kranj
+- STYLING: login (temno navy ozadje, amber žarek, znamka R, polirana kartica), TopBar iskalni
+  gumb s Ctrl K kbd namigom, mehek fade/slide prehod med zavihki (framer-motion)
+- TIPS: Project.latitude/longitude dodana v kanonični tip + lokalni dashboard tip
+- Preverjanja po spremembah: tsc 0 napak, 147/147 testov, lint 0 napak, brskalniški E2E
+  (prijava → vremenska kartica izrisana → Ctrl+K paleta → skok na Kalkulator deluje)
+
+Stage Summary:
+- Aplikacija stabilna; dodani vrednosti: hitra navigacija (paleta) + domensko koristna
+  vremenska kartica (odločitev o montaži)
+- Commit lokalno: "feat(ui): ukazna paleta (Ctrl+K), vremenska kartica za montažo, styling polish"
+- Naslednji koraki (predlogi): (1) potisni obe lokalni commita na origin (manjka GitHub token),
+  (2) WebXR hit-test sidranje v ar-scanner, (3) Depth Anything V2 ONNX za avto-meritve,
+  (4) združi lokalni dashboard Project tip s kanoničnim @/lib/types
