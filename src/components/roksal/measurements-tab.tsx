@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { parseSlDimension, useSpeechRecognition } from '@/lib/sl-speech'
+import { PhotoMeasure } from '@/components/roksal/photo-measure'
 import { Separator } from '@/components/ui/separator'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -3975,6 +3976,9 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
           </div>
         </CardContent>
       </Card>
+
+      {/* AI — Meri iz fotke (ocene mer brez ARCore, tudi iPhone) */}
+      <PhotoMeasure projectId={selectedProject || null} />
 
       {/* P1 — HITRE PREDLOGE (templates) */}
       <Card className="card-hover transition-all duration-200 animate-fade-in-up border-roksal-amber/20" style={{ animationDelay: '15ms' }}>
