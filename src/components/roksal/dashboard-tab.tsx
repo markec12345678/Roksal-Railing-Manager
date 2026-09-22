@@ -389,6 +389,74 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
   )
   const lowStockCount = lowStockItems.length
 
+  // ── Danes & opozorila ────────────────────────────────────────────────────
+  // Termini z montažo danes + zapadli projekti (datum montaže je mimo,
+  // projekt pa še ni zaključen). Vodja/monter tako vidi takoj, kaj mora
+  // biti rešeno še danes — "Naslednja montaža" prikaže samo prvo.
+  const todayInstallations = useMemo(() => {
+    const now = new Date()
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const end = new Date(start)
+    end.setDate(end.getDate() + 1)
+    return projects
+      .filter((p) => {
+        if (!p.datumMontaze || p.status === 'ZAKLJUCENO') return false
+        const d = new Date(p.datumMontaze)
+        return d >= start && d < end
+      })
+      .sort((a, b) => a.nazivProjekta.localeCompare(b.nazivProjekta))
+  }, [projects])
+
+  const overdueProjects = useMemo(() => {
+    const start = new Date()
+    start.setHours(0, 0, 0, 0)
+    return projects
+      .filter((p) => {
+        if (!p.datumMontaze || p.status === 'ZAKLJUCENO' || p.status === 'USTAVLJENO') return false
+        return new Date(p.datumMontaze) < start
+      })
+      .sort((a, b) => new Date(a.datumMontaze ?? 0).getTime() - new Date(b.datumMontaze ?? 0).getTime())
+  }, [projects])
+
+  // Najstarejši zapadli dan (za oznako "X dni čez termin")
+  const overdueDays = (p: Project): number => {
+    if (!p.datumMontaze) return 0
+    const start = new Date()
+    start.setHours(0, 0, 0, 0)
+    return Math.max(1, Math.round((start.getTime() - new Date(p.datumMontaze).getTime()) / 86400000))
+  }
+
+  // ── Trend aktivnosti (zadnjih 6 mesecev) ─────────────────────────────────
+  // Novi projekti po mesecu nastanka (createdAt) in zaključeni po mesecu
+  // posodobitve (updatedAt) — čist SVG/DOM, brez odvisnosti od graf knjižnic.
+  const monthlyTrend = useMemo(() => {
+    const now = new Date()
+    const months: { key: string; label: string; newCount: number; doneCount: number }[] = []
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+      months.push({
+        key: `${d.getFullYear()}-${d.getMonth()}`,
+        label: d.toLocaleDateString('sl-SI', { month: 'short' }).replace('.', ''),
+        newCount: 0,
+        doneCount: 0,
+      })
+    }
+    const idx = new Map(months.map((m, i) => [m.key, i]))
+    for (const p of projects) {
+      if (p.createdAt) {
+        const d = new Date(p.createdAt)
+        const i = idx.get(`${d.getFullYear()}-${d.getMonth()}`)
+        if (i !== undefined) months[i].newCount++
+      }
+      if (p.status === 'ZAKLJUCENO' && p.updatedAt) {
+        const d = new Date(p.updatedAt)
+        const i = idx.get(`${d.getFullYear()}-${d.getMonth()}`)
+        if (i !== undefined) months[i].doneCount++
+      }
+    }
+    return months
+  }, [projects])
+
   // Generate activity timeline
   const activities: ActivityItem[] = useMemo(() => {
     const items: ActivityItem[] = []
@@ -721,21 +789,30 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
     <div className="space-y-4 px-4 pb-4 pt-2">
       {/* Greeting */}
       <div className="animate-fade-in-up">
-        <h2 className="text-xl font-bold text-roksal-navy">
-          {getGreeting()}, Monter!
-        </h2>
-        <p className="text-sm text-muted-foreground">{getTodayString()}</p>
+        <div className="flex items-end justify-between gap-2">
+          <div>
+            <h2 className="text-xl font-bold text-roksal-navy">
+              {getGreeting()}, Monter!
+            </h2>
+            <p className="text-sm text-muted-foreground">{getTodayString()}</p>
+          </div>
+          {/* Amber poudarek — vizualna povezava z znamko v TopBar */}
+          <div className="mb-1.5 h-1.5 w-12 rounded-full bg-gradient-to-r from-roksal-amber via-roksal-amber/60 to-transparent" aria-hidden="true" />
+        </div>
       </div>
 
       {/* Quick Stats Row */}
       <div className="flex items-center gap-2 overflow-x-auto pb-0.5 scrollbar-thin animate-fade-in-up" style={{ animationDelay: '30ms' }}>
         <Badge className="shrink-0 bg-roksal-navy/10 text-roksal-navy hover:bg-roksal-navy/15 text-[11px] px-2.5 py-1">
+          <TrendingUp className="mr-1 h-3 w-3" aria-hidden="true" />
           <span className="font-bold mr-0.5">{activeCount}</span> aktivnih
         </Badge>
         <Badge className="shrink-0 bg-roksal-amber/15 text-roksal-navy hover:bg-roksal-amber/20 text-[11px] px-2.5 py-1">
+          <Clock className="mr-1 h-3 w-3 text-roksal-amber" aria-hidden="true" />
           <span className="font-bold mr-0.5">{pendingCount}</span> načrtovanih
         </Badge>
         <Badge className="shrink-0 bg-roksal-green/15 text-roksal-green hover:bg-roksal-green/20 text-[11px] px-2.5 py-1">
+          <CheckCircle2 className="mr-1 h-3 w-3" aria-hidden="true" />
           <span className="font-bold mr-0.5">{completedCount}</span> končanih
         </Badge>
         {!invLoading && totalInventoryItems > 0 && (
@@ -744,6 +821,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
               ? 'bg-roksal-red/15 text-roksal-red hover:bg-roksal-red/20'
               : 'bg-roksal-green/15 text-roksal-green hover:bg-roksal-green/20'
           }`}>
+            <Package className="mr-1 h-3 w-3" aria-hidden="true" />
             <span className="font-bold mr-0.5">{totalInventoryItems}</span> artiklov
           </Badge>
         )}
@@ -798,6 +876,71 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
           )}
         </CardContent>
       </Card>
+
+      {/* Danes & opozorila — montaže danes + zapadli projekti.
+          Klik na vrstico odpre podrobnosti projekta. Kartica se izriše
+          samo, kadar kaj obstaja — nič nepotrebne šume na dashboardu. */}
+      {(todayInstallations.length > 0 || overdueProjects.length > 0) && (
+        <Card
+          className={`overflow-hidden border-l-4 card-hover transition-all duration-200 ${
+            overdueProjects.length > 0 ? 'border-l-roksal-red' : 'border-l-roksal-amber'
+          }`}
+        >
+          <CardHeader className="pb-2 pt-4 px-4">
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+                <CalendarDays className="h-4 w-4 text-roksal-amber" />
+                Danes & opozorila
+              </CardTitle>
+              {(todayInstallations.length + overdueProjects.length) > 0 && (
+                <Badge className="bg-roksal-navy/10 text-roksal-navy hover:bg-roksal-navy/15">
+                  {todayInstallations.length + overdueProjects.length}
+                </Badge>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-2 px-4 pb-4">
+            {todayInstallations.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => openProjectDetail(p)}
+                className="flex w-full items-center gap-2.5 rounded-lg bg-roksal-amber/10 px-3 py-2.5 text-left transition-all duration-150 hover:bg-roksal-amber/15 active:scale-[0.99]"
+              >
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-roksal-amber/20">
+                  <Wrench className="h-4 w-4 text-roksal-amber" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-xs font-semibold text-roksal-navy">{p.nazivProjekta}</p>
+                  <p className="truncate text-[11px] text-muted-foreground">
+                    Montaža danes · {p.customer?.ime || 'Ni stranke'}
+                  </p>
+                </div>
+                <ChevronRight className="h-4 w-4 shrink-0 text-roksal-amber" />
+              </button>
+            ))}
+            {overdueProjects.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => openProjectDetail(p)}
+                className="flex w-full items-center gap-2.5 rounded-lg bg-roksal-red/10 px-3 py-2.5 text-left transition-all duration-150 hover:bg-roksal-red/15 active:scale-[0.99]"
+              >
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-roksal-red/20">
+                  <AlertTriangle className="h-4 w-4 text-roksal-red" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-xs font-semibold text-roksal-navy">{p.nazivProjekta}</p>
+                  <p className="truncate text-[11px] text-muted-foreground">
+                    Zapadlo: {formatDate(p.datumMontaze ?? '')} · {overdueDays(p)} dni čez termin
+                  </p>
+                </div>
+                <ChevronRight className="h-4 w-4 shrink-0 text-roksal-red" />
+              </button>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Pogoji za montažo — veter, temperatura, ocena tveganja.
           Koordinate vzamemo iz naslednje montaže, sicer Kranj (privzeto v API). */}
@@ -891,6 +1034,75 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                       </div>
                     ))}
                   </div>
+                </div>
+              )
+            })()}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Trend aktivnosti — novi in zaključeni projekti, zadnjih 6 mesecev.
+          Čisti DOM stolpci (brez graf knjižnice); višina relativna na max. */}
+      {totalProjects > 0 && (
+        <Card
+          className="card-hover transition-all duration-200 animate-fade-in-up"
+          style={{ animationDelay: '80ms' }}
+        >
+          <CardHeader className="pb-2 pt-4 px-4">
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+                <TrendingUp className="h-4 w-4 text-roksal-navy" />
+                Aktivnost (6 mesecev)
+              </CardTitle>
+              {/* Legenda */}
+              <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <span className="h-2 w-2 rounded-sm bg-gradient-to-t from-roksal-amber/70 to-roksal-amber" />
+                  novi
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="h-2 w-2 rounded-sm bg-roksal-green" />
+                  zaključeni
+                </span>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
+            {(() => {
+              const max = Math.max(1, ...monthlyTrend.map((m) => Math.max(m.newCount, m.doneCount)))
+              return (
+                <div className="flex items-end justify-between gap-2" aria-hidden="false" role="img" aria-label="Stolpčni graf: novi in zaključeni projekti po mesecih">
+                  {monthlyTrend.map((m, i) => {
+                    const isCurrent = i === monthlyTrend.length - 1
+                    return (
+                      <div key={m.key} className="flex min-w-0 flex-1 flex-col items-center gap-1">
+                        <span className={`text-[10px] font-bold tabular-nums ${m.newCount > 0 ? 'text-roksal-navy' : 'text-muted-foreground/50'}`}>
+                          {m.newCount}
+                        </span>
+                        <div className="flex h-20 w-full items-end justify-center gap-1" title={`${m.label}: ${m.newCount} novih, ${m.doneCount} zaključenih`}>
+                          {/* Novi projekti */}
+                          <div
+                            className={`w-2.5 rounded-t-md transition-all duration-500 ${
+                              m.newCount > 0
+                                ? 'bg-gradient-to-t from-roksal-amber/70 to-roksal-amber'
+                                : 'bg-roksal-amber/20'
+                            } ${isCurrent ? 'ring-1 ring-roksal-amber/40' : ''}`}
+                            style={{ height: `${Math.max(6, (m.newCount / max) * 100)}%` }}
+                          />
+                          {/* Zaključeni projekti */}
+                          <div
+                            className={`w-2.5 rounded-t-md transition-all duration-500 ${
+                              m.doneCount > 0 ? 'bg-roksal-green' : 'bg-roksal-green/15'
+                            }`}
+                            style={{ height: `${Math.max(6, (m.doneCount / max) * 100)}%` }}
+                          />
+                        </div>
+                        <span className={`text-[9px] leading-none ${isCurrent ? 'font-bold text-roksal-amber' : 'text-muted-foreground'}`}>
+                          {m.label}
+                        </span>
+                      </div>
+                    )
+                  })}
                 </div>
               )
             })()}

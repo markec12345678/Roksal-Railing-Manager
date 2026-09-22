@@ -371,7 +371,6 @@ export function AiTakeoff({ projectId, imageData: initialImage, onClose }: AiTak
 
           {imageData && (
             <div className="space-y-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={imageData} alt="Za analizo" className="w-full rounded-lg border border-border max-h-48 object-cover" />
 
               <div className="grid grid-cols-2 gap-2">

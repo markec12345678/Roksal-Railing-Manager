@@ -1827,7 +1827,7 @@ export function FloorPlanTab({ projectId }: FloorPlanTabProps) {
 
       {/* Plasti Sheet */}
       <Sheet open={layersOpen} onOpenChange={setLayersOpen}>
-        <SheetContent side="bottom" className="rounded-t-2xl">
+        <SheetContent side="bottom" className="rounded-t-2xl max-h-[85dvh] overflow-y-auto scrollbar-thin">
           <SheetHeader>
             <SheetTitle className="text-roksal-navy">Plasti</SheetTitle>
             <SheetDescription>Vidnost slojev v tlorisu.</SheetDescription>

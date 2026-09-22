@@ -339,6 +339,27 @@
   .animate-fade-in-up {
     animation: fadeInUp 0.3s ease-out forwards;
   }
+  /* Več-meniju ploščice — mehak stagger ob odprtju lista */
+  @keyframes tilePopIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px) scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+  .more-tile {
+    opacity: 0;
+    animation: tilePopIn 0.28s cubic-bezier(0.2, 0.8, 0.3, 1.1) forwards;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .more-tile {
+      animation: none;
+      opacity: 1;
+    }
+  }
   @keyframes pulse-soft {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.7; }

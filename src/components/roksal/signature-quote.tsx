@@ -402,7 +402,6 @@ export function SignatureQuote({ quoteData, monterName = 'Monter Roksal', projec
             </div>
             {customerSig ? (
               <div className="space-y-2">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={customerSig} alt="Podpis stranke" className="h-16 w-full object-contain" />
                 <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300 text-[9px]">
                   <Check className="h-3 w-3 mr-1" /> Podpisano
@@ -426,7 +425,6 @@ export function SignatureQuote({ quoteData, monterName = 'Monter Roksal', projec
             </div>
             {monterSig ? (
               <div className="space-y-2">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={monterSig} alt="Podpis monterja" className="h-16 w-full object-contain" />
                 <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300 text-[9px]">
                   <Check className="h-3 w-3 mr-1" /> Podpisano

@@ -87,8 +87,36 @@ export function VodjaDashboard() {
         return d >= danas && d < jutri
       })
 
-      const danasZakljuceni = danasTermini.filter((s: TerminDanes) => s.status === 'ZAKLJUCENO').length
-      const danasVpripravi = danasTermini.filter((s: TerminDanes) => s.status === 'V_TEKU').length
+      // FIX: prej so se šteli SAMO vnosi iz koledarja (Logistika). Projekt z
+      // datumMontaze danes, za katerega še ni termina v koledarju, je izgledal
+      // kot "0 terminov" — zdaj ga sintetiziramo iz projekta (brez dvojkov).
+      const projectsToday = (Array.isArray(projects) ? projects : []).filter(
+        (p: { datumMontaze?: string | null; status: string; nazivProjekta: string }) => {
+          if (!p.datumMontaze || p.status === 'ZAKLJUCENO') return false
+          const d = new Date(p.datumMontaze)
+          return d >= danas && d < jutri
+        }
+      )
+      const scheduledNames = new Set(
+        danasTermini.map((s: TerminDanes) => s.project?.nazivProjekta)
+      )
+      const synthesized: TerminDanes[] = projectsToday
+        .filter((p: { nazivProjekta: string }) => !scheduledNames.has(p.nazivProjekta))
+        .map((p: { id: string; datumMontaze: string; status: string; nazivProjekta: string; customer?: { ime?: string; naslov?: string } }) => ({
+          id: `project-${p.id}`,
+          datumZacetka: p.datumMontaze,
+          status: p.status,
+          predvideneUre: 0,
+          project: {
+            nazivProjekta: p.nazivProjekta,
+            customer: { ime: p.customer?.ime || 'Ni stranke', naslov: p.customer?.naslov || 'Ni naslova' },
+          },
+          crew: null,
+        }))
+      const vsiTerminiDanes = [...danasTermini, ...synthesized]
+
+      const danasZakljuceni = vsiTerminiDanes.filter((s: TerminDanes) => s.status === 'ZAKLJUCENO').length
+      const danasVpripravi = vsiTerminiDanes.filter((s: TerminDanes) => s.status === 'V_TEKU').length
 
       // Mesečni projekti
       const mesecZacetek = new Date()
@@ -120,7 +148,7 @@ export function VodjaDashboard() {
         ['OSNUTEK', 'POSLANO', 'POTRJENO'].includes(o.status)).length
 
       setStats({
-        danasTermini: danasTermini.length,
+        danasTermini: vsiTerminiDanes.length,
         danasZakljuceni,
         danasVpripravi,
         mesecnoProjektov,
@@ -137,7 +165,7 @@ export function VodjaDashboard() {
         skupajStrank: customers.length,
         skupniLTV,
       })
-      setTermini(danasTermini)
+      setTermini(vsiTerminiDanes)
     } catch {
       /* ignore */
     } finally {

@@ -145,28 +145,43 @@ export function BottomNav({ activeTab, onTabChange, badges = {}, moreActive = nu
         <div className="h-[env(safe-area-inset-bottom)]" />
       </nav>
 
-      {/* Več meni */}
+      {/* Več meni
+          BUG-FIX: 14 ploščic je višjih od zaslona — prej Sheet ni imel
+          max-height/overflow, zato so zgornji elementi (Pregled za vodjo,
+          AI Takeoff, Ponudba …) padli IZVEN vidnega okna in jih ni bilo
+          mogoče klikniti. Zdaj je glava lepljiva, seznam pa se pomika. */}
       <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
-        <SheetContent side="bottom" className="rounded-t-2xl">
-          <SheetHeader>
+        <SheetContent
+          side="bottom"
+          className="rounded-t-3xl max-h-[85dvh] gap-0 px-0 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+        >
+          {/* Ročaj za povleci (vizualen namig, kot pri nativnih listih) */}
+          <div className="mx-auto mt-2.5 mb-1 h-1.5 w-10 shrink-0 rounded-full bg-roksal-navy/15" aria-hidden="true" />
+          <SheetHeader className="sticky top-0 z-10 shrink-0 rounded-t-3xl bg-background/95 pb-2 pt-1 backdrop-blur-sm">
             <SheetTitle className="text-center text-roksal-navy">Več funkcij</SheetTitle>
           </SheetHeader>
-          <div className="grid grid-cols-2 gap-3 p-4 pb-8">
-            {moreTabs.map((t) => {
+          <div
+            className="grid grid-cols-2 gap-3 overflow-y-auto px-4 pt-1 pb-4 scrollbar-thin"
+            role="menu"
+            aria-label="Dodatne funkcije"
+          >
+            {moreTabs.map((t, i) => {
               const Icon = t.icon
               const active = moreActive === t.id
               return (
                 <button
                   key={t.id}
                   type="button"
+                  role="menuitem"
                   onClick={() => handleMoreClick(t.id)}
-                  className={`flex flex-col items-center gap-2 rounded-xl border-2 p-4 text-center transition-all ${
+                  style={{ animationDelay: `${Math.min(i, 8) * 30}ms` }}
+                  className={`more-tile flex flex-col items-center gap-2 rounded-xl border-2 p-4 text-center transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm active:scale-[0.97] ${
                     active
-                      ? 'border-roksal-amber bg-roksal-amber/10'
+                      ? 'border-roksal-amber bg-roksal-amber/10 shadow-[0_0_0_3px] shadow-roksal-amber/10'
                       : 'border-roksal-navy/10 bg-white hover:border-roksal-navy/30'
                   }`}
                 >
-                  <div className={`flex h-12 w-12 items-center justify-center rounded-full ${active ? 'bg-roksal-amber text-white' : 'bg-roksal-navy/10 text-roksal-navy'}`}>
+                  <div className={`flex h-12 w-12 items-center justify-center rounded-full transition-colors duration-200 ${active ? 'bg-roksal-amber text-white' : 'bg-roksal-navy/10 text-roksal-navy'}`}>
                     <Icon className="h-6 w-6" />
                   </div>
                   <div>
