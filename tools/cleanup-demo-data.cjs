@@ -97,6 +97,58 @@ async function main() {
   }
   console.log(`[cleanup] projektov obogatenih s ceno: ${enriched}`)
 
+  // 9. meritve: dedup znotraj ohranjenih projektov (seed je tukaj tudi vedno
+  // ustvarjal nove → 4× iste meritve). Ključ: (projectId, dolzinaMm, visinaMm,
+  // source). Obdrži najstarejšo, ostale zbriši.
+  const measurements = await db.measurement.findMany({ orderBy: { createdAt: 'asc' } })
+  const keepM = new Map()
+  const dupM = []
+  for (const m of measurements) {
+    let src = 'merilec'
+    try {
+      const a = JSON.parse(m.arMetadata || '{}')
+      if (a.source) src = a.source
+    } catch { /* brez metapodatkov = merilec */ }
+    const key = `${m.projectId}|${m.dolzinaMm}|${m.visinaMm}|${src}`
+    if (!keepM.has(key)) keepM.set(key, m)
+    else dupM.push(m)
+  }
+  for (const m of dupM) await db.measurement.delete({ where: { id: m.id } })
+  if (dupM.length) console.log(`[cleanup] dup meritev zbrisanih: ${dupM.length}`)
+
+  // 10. strankine samomeritve → deterministično zamenjaj z ENO realistično.
+  // (Prejšnji E2E testi so po zemljevidu narisali 45 m / 946 m ograje, kar
+  // daje nesmiselno primerjavo "Stranka vs merilec" v demo.)
+  const cMap = await db.measurement.findMany({ where: { arMetadata: { contains: 'customer-map' } } })
+  const realistic = cMap.filter((m) => m.dolzinaMm === 5420)
+  const obsolete = cMap.filter((m) => m.dolzinaMm !== 5420)
+  if (obsolete.length > 0) {
+    for (const m of obsolete) await db.measurement.delete({ where: { id: m.id } })
+    console.log(`[cleanup] starih strankinih meritev zbrisanih: ${obsolete.length}`)
+  }
+  if (realistic.length === 0) {
+    const novak = keepProject.get('Ograja Novak - Balkon 3.nadstropje')
+    if (novak) {
+      // merilec: 3.2 + 1.8 = 5.0 m → stranka približno 5.42 m (+8.4 % —
+      // "orientacija", realen scenarij: stranka vključi tudi stranska vrata)
+      await db.measurement.create({
+        data: {
+          projectId: novak.id,
+          dolzinaMm: 5420,
+          visinaMm: 1050,
+          arMetadata: JSON.stringify({
+            source: 'customer-map',
+            imeStranke: 'Janez Novak',
+            telefonStranke: '+386 41 555 666',
+            opombaStranke: 'Približek po satelitskem zemljevidu — vključuje tudi stranska vrata.',
+            tocke: 4,
+          }),
+        },
+      })
+      console.log('[cleanup] dodana realistična strankina meritev (5.42 m)')
+    }
+  }
+
   // Povzetek
   const [nC, nP, nM, nI] = await Promise.all([
     db.customer.count(),

@@ -122,20 +122,44 @@ async function main() {
     opombe: 'Stainless steel kabelska ograja. 12 točk sidranja.',
   })
 
-  // ── meritve ──
+  // ── meritve (idempotentno: (projectId, dolzina, visina, source)) ──
   const proj1 = await db.project.findFirst({ where: { nazivProjekta: { contains: 'Novak' } } })
   if (proj1) {
-    await db.measurement.create({
-      data: {
-        projectId: proj1.id,
-        dolzinaMm: 3200,
-        visinaMm: 1050,
-        gpsLokacija: JSON.stringify({ lat: 46.2397, lng: 14.3556 }),
-      },
+    async function upsertMeasurement(data) {
+      const existing = await db.measurement.findFirst({
+        where: { projectId: data.projectId, dolzinaMm: data.dolzinaMm, visinaMm: data.visinaMm },
+      })
+      if (existing) return existing
+      return db.measurement.create({ data })
+    }
+    await upsertMeasurement({
+      projectId: proj1.id,
+      dolzinaMm: 3200,
+      visinaMm: 1050,
+      gpsLokacija: JSON.stringify({ lat: 46.2397, lng: 14.3556 }),
     })
-    await db.measurement.create({
-      data: { projectId: proj1.id, dolzinaMm: 1800, visinaMm: 1050 },
+    await upsertMeasurement({ projectId: proj1.id, dolzinaMm: 1800, visinaMm: 1050 })
+    // Strankina samomeritev prek javne povezave /m/[token] — za primerjavo
+    // "Stranka vs merilec" (5.42 m vs uradnih 5.0 m = +8 %, realen scenarij)
+    const strankaMeritev = await db.measurement.findFirst({
+      where: { projectId: proj1.id, arMetadata: { contains: 'customer-map' } },
     })
+    if (!strankaMeritev) {
+      await db.measurement.create({
+        data: {
+          projectId: proj1.id,
+          dolzinaMm: 5420,
+          visinaMm: 1050,
+          arMetadata: JSON.stringify({
+            source: 'customer-map',
+            imeStranke: 'Janez Novak',
+            telefonStranke: '+386 41 555 666',
+            opombaStranke: 'Približek po satelitskem zemljevidu — vključuje tudi stranska vrata.',
+            tocke: 4,
+          }),
+        },
+      })
+    }
   }
 
   // ── zaloga ──

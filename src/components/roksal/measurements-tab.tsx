@@ -101,7 +101,11 @@ import {
   Loader2,
   Unplug,
   UserRound,
+  AlertTriangle,
+  Info,
+  Phone,
 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import {
   Table,
   TableBody,
@@ -1600,6 +1604,55 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
     () => measurements.filter((m) => m.source === 'photo').length,
     [measurements]
   )
+
+  // ── Primerjava "Stranka vs merilec" ───────────────────────────────────────
+  // Stranka je prek javne povezave /m/[token] narisala svojo ograjo na karti
+  // (source='customer-map'). Vodja na enem mestu vidi razliko do uradnih meritev
+  // — pomaga pri pripravi ponudbe še pred obiskom na terenu (model ProFence).
+  const strankaPrimerjava = useMemo(() => {
+    const customerMap = measurements.filter((m) => m.source === 'customer-map')
+    if (customerMap.length === 0) return null
+    const merilec = measurements.filter((m) => m.source !== 'customer-map')
+
+    const strankaSkupajMm = customerMap.reduce((s, m) => s + (m.dolzinaMm || 0), 0)
+    const merilecSkupajMm = merilec.reduce((s, m) => s + (m.dolzinaMm || 0), 0)
+
+    let meta: {
+      imeStranke?: string
+      telefonStranke?: string
+      opombaStranke?: string
+      tocke?: number
+    } = {}
+    try {
+      meta = JSON.parse(customerMap[0].arMetadata || '{}')
+    } catch { /* brez metapodatkov */ }
+
+    const deltaMm = strankaSkupajMm - merilecSkupajMm
+    const deltaPct = merilecSkupajMm > 0 ? (deltaMm / merilecSkupajMm) * 100 : null
+
+    let verdict: { label: string; cls: string; icon: typeof CheckCircle2 }
+    if (deltaPct == null) {
+      verdict = { label: 'Ni uradnih meritev za primerjavo', cls: 'bg-stone-100 text-stone-700 border-stone-300', icon: Info }
+    } else if (Math.abs(deltaPct) <= 5) {
+      verdict = { label: 'V okviru — zanesljiva orientacija', cls: 'bg-emerald-50 text-emerald-700 border-emerald-300', icon: CheckCircle2 }
+    } else if (Math.abs(deltaPct) <= 15) {
+      verdict = { label: 'Orientacija — preveri na terenu pred izdelavo', cls: 'bg-amber-50 text-amber-800 border-amber-300', icon: AlertTriangle }
+    } else {
+      verdict = { label: 'Veliko odstopanje — obvezen obisk na terenu', cls: 'bg-red-50 text-red-700 border-red-300', icon: AlertTriangle }
+    }
+
+    return {
+      customerMap,
+      strankaSkupajMm,
+      merilecSkupajMm,
+      merilecCount: merilec.length,
+      deltaMm,
+      deltaPct,
+      meta,
+      verdict,
+      zadnja: customerMap.reduce((a, b) => (a.createdAt > b.createdAt ? a : b)).createdAt as string,
+    }
+  }, [measurements])
 
   // Grupiranje po datumu (obstoječa logika) — uporablja filtrirane meritve
   const groupedMeasurements = useMemo((): MeasurementGroup[] => {
@@ -5556,6 +5609,130 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
           )}
         </CardContent>
       </Card>
+
+      {/* ── Primerjava: Stranka vs merilec ──────────────────────────────
+          Vidna samo, kadar projekt ima strankino samomeritev (source=
+          'customer-map' iz javne povezave /m/[token]). Vodja takoj vidi,
+          kako zanesljiva je strankina ocena dolžine — pomaga pri pripravi
+          ponudbe še pred odhodom na teren. */}
+      {strankaPrimerjava && (
+        <Card
+          className="overflow-hidden card-hover animate-fade-in-up border-l-4 border-l-roksal-amber bg-gradient-to-br from-roksal-amber/5 to-transparent"
+          style={{ animationDelay: '250ms' }}
+        >
+          <CardHeader className="pb-2 pt-4 px-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-roksal-amber/15">
+                  <UserRound className="h-4 w-4 text-roksal-amber" aria-hidden />
+                </span>
+                Stranka vs merilec
+              </CardTitle>
+              <Badge variant="outline" className={cn('gap-1 text-[10px] font-medium', strankaPrimerjava.verdict.cls)}>
+                <strankaPrimerjava.verdict.icon className="h-3 w-3" aria-hidden />
+                {strankaPrimerjava.verdict.label}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3 px-4 pb-4">
+            {/* Glavni kazalniki: merilec ↔ delta ↔ stranka */}
+            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-3">
+              <div className="rounded-lg border border-roksal-navy/15 bg-card px-2.5 py-2 text-center">
+                <p className="text-[9px] font-medium uppercase tracking-wide text-muted-foreground">Merilec</p>
+                <p className="text-base font-bold text-roksal-navy sm:text-lg">
+                  {strankaPrimerjava.merilecSkupajMm > 0 ? formatMultiUnit(strankaPrimerjava.merilecSkupajMm) : '—'}
+                </p>
+                <p className="text-[9px] text-muted-foreground">
+                  {strankaPrimerjava.merilecCount > 0 ? `${strankaPrimerjava.merilecCount} meritev` : 'š ni uradnih meritev'}
+                </p>
+              </div>
+              <div className="flex flex-col items-center">
+                <span
+                  className={cn(
+                    'rounded-full px-2 py-0.5 text-[10px] font-bold',
+                    strankaPrimerjava.deltaPct == null
+                      ? 'bg-stone-100 text-stone-600'
+                      : Math.abs(strankaPrimerjava.deltaPct) <= 5
+                        ? 'bg-emerald-100 text-emerald-700'
+                        : Math.abs(strankaPrimerjava.deltaPct) <= 15
+                          ? 'bg-amber-100 text-amber-800'
+                          : 'bg-red-100 text-red-700',
+                  )}
+                >
+                  {strankaPrimerjava.deltaPct == null
+                    ? 'n/a'
+                    : `${strankaPrimerjava.deltaPct > 0 ? '+' : ''}${strankaPrimerjava.deltaPct.toFixed(1)} %`}
+                </span>
+                <span className="mt-0.5 text-[8px] text-muted-foreground">razlika</span>
+              </div>
+              <div className="rounded-lg border border-roksal-amber/30 bg-roksal-amber/10 px-2.5 py-2 text-center">
+                <p className="flex items-center justify-center gap-1 text-[9px] font-medium uppercase tracking-wide text-roksal-amber">
+                  <UserRound className="h-2.5 w-2.5" aria-hidden /> Stranka
+                </p>
+                <p className="text-base font-bold text-roksal-navy sm:text-lg">{formatMultiUnit(strankaPrimerjava.strankaSkupajMm)}</p>
+                <p className="text-[9px] text-muted-foreground">
+                  {strankaPrimerjava.customerMap.length} samomeritev{strankaPrimerjava.meta.tocke ? ` · ${strankaPrimerjava.meta.tocke} točk` : ''}
+                </p>
+              </div>
+            </div>
+
+            {/* Razproportionalni stolpci — vizualna primerjava dolžin */}
+            {strankaPrimerjava.merilecSkupajMm > 0 && strankaPrimerjava.strankaSkupajMm > 0 && (
+              <div className="space-y-1.5" aria-hidden>
+                {(() => {
+                  const max = Math.max(strankaPrimerjava.merilecSkupajMm, strankaPrimerjava.strankaSkupajMm)
+                  const wM = (strankaPrimerjava.merilecSkupajMm / max) * 100
+                  const wS = (strankaPrimerjava.strankaSkupajMm / max) * 100
+                  return (
+                    <>
+                      <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted">
+                        <div
+                          className="h-full rounded-full bg-roksal-navy/80 transition-all duration-500"
+                          style={{ width: `${wM}%` }}
+                        />
+                      </div>
+                      <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-roksal-amber to-roksal-amber/60 transition-all duration-500"
+                          style={{ width: `${wS}%` }}
+                        />
+                      </div>
+                    </>
+                  )
+                })()}
+              </div>
+            )}
+
+            {/* Kontakt + opomba stranke */}
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg bg-muted/50 px-2.5 py-1.5 text-[10px] text-muted-foreground">
+              {strankaPrimerjava.meta.imeStranke && (
+                <span className="inline-flex items-center gap-1 font-medium text-foreground">
+                  <UserRound className="h-3 w-3" aria-hidden />
+                  {strankaPrimerjava.meta.imeStranke}
+                </span>
+              )}
+              {strankaPrimerjava.meta.telefonStranke && (
+                <a
+                  href={`tel:${strankaPrimerjava.meta.telefonStranke.replace(/\s+/g, '')}`}
+                  className="inline-flex items-center gap-1 text-roksal-navy underline-offset-2 hover:underline"
+                >
+                  <Phone className="h-3 w-3" aria-hidden />
+                  {strankaPrimerjava.meta.telefonStranke}
+                </a>
+              )}
+              <span className="ml-auto inline-flex items-center gap-1">
+                <Clock className="h-3 w-3" aria-hidden />
+                prejeto {new Date(strankaPrimerjava.zadnja).toLocaleDateString('sl-SI', { day: '2-digit', month: '2-digit' })}
+              </span>
+            </div>
+            {strankaPrimerjava.meta.opombaStranke && (
+              <p className="rounded-lg border border-dashed border-roksal-amber/40 bg-card px-2.5 py-1.5 text-[11px] italic text-muted-foreground">
+                „{strankaPrimerjava.meta.opombaStranke}“
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Measurements List */}
       <Card className="card-hover animate-fade-in-up" style={{ animationDelay: '300ms' }}>
