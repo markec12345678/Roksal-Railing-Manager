@@ -35,6 +35,7 @@ PASSWORD = os.environ.get("PASSWORD", "Preizkusno123")
 API_KEY = os.environ.get("API_KEY", "")
 
 PROTECTED = [
+    "/api/railing-layout", "/api/quote", "/api/audit", "/api/auth/password",
     "/api/customers", "/api/projects", "/api/inventory", "/api/crm", "/api/suppliers",
     "/api/material-prices", "/api/material-orders", "/api/sync", "/api/sketches",
     "/api/slopes", "/api/photos", "/api/gallery", "/api/documents", "/api/crews",
@@ -70,9 +71,12 @@ def call(path, method="GET", body=None, headers=None, follow=False):
     opener = urllib.request.build_opener() if follow else urllib.request.build_opener(NoRedirect)
     try:
         r = opener.open(req, timeout=60)
-        return r.status, lower(r.headers), r.read()[:300]
+        # Celega telesa, ne prirezanega: prirejanje na 300 bajtov je prejšnjo
+        # različico te skripte zrušilo pri json.loads() na odzivu razporeda.
+        # Za izpis se reže šele v `check(detail=…)`.
+        return r.status, lower(r.headers), r.read()
     except urllib.error.HTTPError as e:
-        return e.code, lower(e.headers), e.read()[:300]
+        return e.code, lower(e.headers), e.read()[:500]
     except Exception as e:
         return f"ERR:{type(e).__name__}", {}, str(e)[:120].encode()
 
@@ -178,6 +182,83 @@ st, _, _ = call("/api/portal/neobstojec-token-12345")
 check("portal z napačnim tokenom → 404 (ne 401 in ne podatek)", st == 404, f"dobil {st}")
 st, _, _ = call("/portal/neobstojec-token-12345", follow=True)
 check("UI portala z napačnim tokenom ne razkrije podatkov", st in (200, 404), f"dobil {st}")
+
+print("\n[8] Nove rute: razpored ograje in ponudba")
+RECT = [
+    {"xM": 0, "yM": 0, "zM": 0},
+    {"xM": 4, "yM": 0, "zM": 0},
+    {"xM": 4, "yM": 0, "zM": -1.5},
+    {"xM": 0, "yM": 0, "zM": -1.5},
+]
+st, _, _ = call("/api/railing-layout", "POST", {"points": RECT, "closed": True})
+check("POST /api/railing-layout brez prijave → 401", st == 401, f"dobil {st}")
+st, _, _ = call("/api/quote", "POST", {"points": RECT, "closed": True})
+check("POST /api/quote brez prijave → 401", st == 401, f"dobil {st}")
+if auth:
+    st, _, b = call("/api/railing-layout", "POST", {"points": RECT, "closed": True}, headers=auth)
+    check("razpored s sejo → 200", st == 200, f"dobil {st} {str(b)[:80]}")
+    if st == 200:
+        d = json.loads(b)
+        check("razpored: 4 robovi", len(d["layout"]["edges"]) == 4, str(len(d["layout"]["edges"])))
+        check("razpored: 10 panelov", len(d["layout"]["panels"]) == 10, str(len(d["layout"]["panels"])))
+        check("razpored: skupaj 11.000 mm", abs(d["summary"]["totalRunMm"] - 11000) < 1, str(d["summary"]["totalRunMm"]))
+        check("razpored: rezalni seznam ni prazen", len(d["cutList"]) > 0)
+    st, _, b = call("/api/quote", "POST", {"points": RECT, "closed": True}, headers=auth)
+    check("ponudba s sejo → 200", st == 200, f"dobil {st} {str(b)[:80]}")
+    if st == 200:
+        q = json.loads(b)["quote"]
+        check("ponudba: skupaj > 0", q["total"] > 0, str(q["total"]))
+        check("ponudba: DDV 22 %", abs(q["vatAmount"] - q["netTotal"] * 0.22) < 0.05, str(q["vatAmount"]))
+        check("ponudba: vsota postavk = bruto",
+              abs(sum(i["total"] for i in q["items"]) - q["grossTotal"]) < 0.05,
+              f'{sum(i["total"] for i in q["items"])} vs {q["grossTotal"]}')
+    # Neveljaven vhod mora biti zavrnjen, ne izračunan
+    st, _, _ = call("/api/railing-layout", "POST", {"points": RECT, "closed": True,
+                                                    "spec": {"heightMm": "visoko"}}, headers=auth)
+    check("neveljavna konfiguracija (heightMm: niz) → 400", st == 400, f"dobil {st}")
+    st, _, _ = call("/api/railing-layout", "POST", {"points": RECT[:1], "closed": True}, headers=auth)
+    check("ena sama točka → 400", st == 400, f"dobil {st}")
+    st, _, b = call("/api/quote", "POST", {"points": RECT, "closed": True,
+                                           "prices": {"total": 1, "glassPerM2": 999}}, headers=auth)
+    check("podtaknjen 'total' v ceniku se ignorira", st == 200 and json.loads(b)["quote"]["total"] < 100000,
+          f"dobil {st}")
+else:
+    skip("nove rute s sejo", "prijava ni uspela")
+
+print("\n[9] Vloge")
+MONTER_EMAIL = os.environ.get("MONTER_EMAIL", "")
+MONTER_PASSWORD = os.environ.get("MONTER_PASSWORD", "")
+if MONTER_EMAIL and MONTER_PASSWORD:
+    st, h, _ = call("/api/auth", "POST", {"email": MONTER_EMAIL, "password": MONTER_PASSWORD})
+    mtok = cookie(h)
+    check(f"prijava monterja ({MONTER_EMAIL}) → 200", st == 200, f"dobil {st}")
+    if mtok:
+        mauth = {"Cookie": f"roksal_session={mtok}"}
+        st, _, _ = call("/api/customers", headers=mauth)
+        check("monter LAHKO bere stranke → 200", st == 200, f"dobil {st}")
+        st, _, _ = call("/api/material-prices", "POST", {"cena": 1}, headers=mauth)
+        check("monter NE sme pisati cen → 403", st == 403, f"dobil {st}")
+        st, _, _ = call("/api/suppliers", "POST", {"ime": "test"}, headers=mauth)
+        check("monter NE sme ustvarjati dobaviteljev → 403", st == 403, f"dobil {st}")
+        st, _, _ = call("/api/inventory", "POST", {"sifraMateriala": "X"}, headers=mauth)
+        check("monter NE sme dodajati zalog → 403", st == 403, f"dobil {st}")
+        if auth:
+            st, _, _ = call("/api/material-prices", "POST", {"cena": 1}, headers=auth)
+            check("admin sme pisati cene → ni 403", st != 403, f"dobil {st}")
+else:
+    skip("vloge", "MONTER_EMAIL/MONTER_PASSWORD nista nastavljena")
+
+print("\n[10] Omejevanje hitrosti prijave")
+probe = "ratelimit-probe@neobstaja.si"
+codes = [call("/api/auth", "POST", {"email": probe, "password": "napacno"})[0] for _ in range(13)]
+check("prvih 10 poskusov → 401", all(c == 401 for c in codes[:10]), str(codes[:10]))
+check("11. poskus → 429 (preveč poskusov)", codes[10] == 429, f"dobil {codes[10]}")
+check("12. in 13. poskus → 429", codes[11] == 429 and codes[12] == 429, str(codes[11:]))
+st2, h2, _ = call("/api/auth", "POST", {"email": probe, "password": "napacno"})
+check("429 vsebuje Retry-After", "retry-after" in {k.lower() for k in h2}, str(list(h2.keys())))
+# Drug e-naslov ni prizadet — omejitev je po (IP + e-naslov)
+st3, _, _ = call("/api/auth", "POST", {"email": "drug-probe@neobstaja.si", "password": "napacno"})
+check("omejitev je po e-naslovu, ne samo po IP", st3 == 401, f"dobil {st3}")
 
 print(f"\n{'=' * 60}")
 print(f"  {passed} uspešnih · {failed} neuspešnih · {skipped} preskočenih")
