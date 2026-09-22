@@ -75,6 +75,11 @@ import {
   ChevronDown,
   ChevronUp,
   CheckCircle2,
+  Zap,
+  Undo2,
+  Sparkles,
+  SunDim,
+  ZoomIn,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
@@ -136,6 +141,26 @@ interface ArSnapshot {
 
 type Mode = 'ADD' | 'REMOVE' | 'MOVE' | 'MEASURE'
 
+/** Posamezna priporočena meritev iz AI analize fotografije. */
+interface AiMera {
+  naziv: string
+  opis: string
+  prednost: string
+}
+
+/** Strukturiran rezultat AI analize fotografije ograje (glej /api/ar/analyze). */
+interface AiAnaliza {
+  tipOgraje: string
+  stanje: string
+  material: string
+  predlaganaBarva: string
+  tipMontaze: string
+  ovire: string
+  priporoceneMere: AiMera[]
+  opombe: string
+  zaupanje: number
+}
+
 interface ArScannerProps {
   projectId: string
   onClose: () => void
@@ -192,6 +217,20 @@ function findNearestPoint(points: Tocka[], p: XY): number {
 
 function makeId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+}
+
+/**
+ * Haptika — najlažji takojšen povratni učinek na telefonu (brez zvoka, brez UI).
+ * Tiho ignorira naprave brez vibratorja (desktop).
+ */
+function zibaj(pattern: number | number[]) {
+  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+    try {
+      navigator.vibrate(pattern)
+    } catch {
+      /* ignore */
+    }
+  }
 }
 
 // ============================================================================
@@ -563,6 +602,23 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
   const [calcPanelOpen, setCalcPanelOpen] = useState(false)
   const [liveCursor, setLiveCursor] = useState<XY | null>(null)
 
+  // --- Kamera kontrola (bliskavica / zoom / fokus) — lažje merjenje v hladnih
+  // hodnikih in z zasenčenih balkonov; vse best-effort, naprava bez podpore
+  // posamezne možnosti ne prikaže. ---
+  const trackRef = useRef<MediaStreamTrack | null>(null)
+  const [torchSupported, setTorchSupported] = useState(false)
+  const [torchOn, setTorchOn] = useState(false)
+  const [zoomCap, setZoomCap] = useState<{ min: number; max: number; step: number } | null>(null)
+  const [zoomValue, setZoomValue] = useState(1)
+
+  // --- AI analiza fotografije + pogoji scene ---
+  const [aiAnalyzing, setAiAnalyzing] = useState(false)
+  const [aiAnaliza, setAiAnaliza] = useState<AiAnaliza | null>(null)
+  const [aiSheetOpen, setAiSheetOpen] = useState(false)
+  const [lowLight, setLowLight] = useState(false)
+  const [steady, setSteady] = useState(false)
+  const steadyRef = useRef(false)
+
   // --- Fetch profili on mount ---
   useEffect(() => {
     let cancelled = false
@@ -590,6 +646,158 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
     }
   }, [toast])
 
+  // --- Detekcija zmožnosti video sledega (torch, zoom) ob zagonu toka ---
+  const setupTrack = useCallback((stream: MediaStream) => {
+    const track = stream.getVideoTracks()[0] ?? null
+    trackRef.current = track
+    setTorchOn(false)
+    if (!track) {
+      setTorchSupported(false)
+      setZoomCap(null)
+      return
+    }
+    type Caps = MediaTrackCapabilities & {
+      torch?: boolean
+      zoom?: { min: number; max: number; step?: number }
+    }
+    let caps: Caps = {}
+    try {
+      caps = (track.getCapabilities?.() ?? {}) as Caps
+    } catch {
+      caps = {}
+    }
+    setTorchSupported(Boolean(caps.torch))
+    if (caps.zoom && caps.zoom.max > caps.zoom.min) {
+      setZoomCap({
+        min: caps.zoom.min,
+        max: caps.zoom.max,
+        step: caps.zoom.step || 0.1,
+      })
+      const settings = track.getSettings() as MediaTrackSettings & { zoom?: number }
+      setZoomValue(typeof settings.zoom === 'number' ? settings.zoom : caps.zoom.min)
+    } else {
+      setZoomCap(null)
+    }
+  }, [])
+
+  // --- Bliskavica (torch) — ključna za temna stopnišča in podane balkone ---
+  const applyTorch = useCallback(
+    async (on: boolean) => {
+      const track = trackRef.current
+      if (!track) return
+      try {
+        await track.applyConstraints({
+          advanced: [{ torch: on }],
+        } as unknown as MediaTrackConstraints)
+        setTorchOn(on)
+        zibaj(on ? 15 : 8)
+      } catch {
+        toast({ title: 'Bliskavica ni na voljo', description: 'Naprava je ne podpira.' })
+      }
+    },
+    [toast],
+  )
+
+  // --- Optični/digitalni zoom — okvir ograde brez odhoda nazaj ---
+  const applyZoom = useCallback(async (value: number) => {
+    const track = trackRef.current
+    if (!track) return
+    try {
+      await track.applyConstraints({
+        advanced: [{ zoom: value }],
+      } as unknown as MediaTrackConstraints)
+    } catch {
+      /* ignore — slider se vseeno pomika */
+    }
+  }, [])
+
+  // --- Tap-to-focus: takojšnja ostrost tam, kamor monter kaže ---
+  const focusAt = useCallback((clientX: number, clientY: number) => {
+    const track = trackRef.current
+    const video = videoRef.current
+    if (!track || !video) return
+    const rect = video.getBoundingClientRect()
+    if (rect.width === 0 || rect.height === 0) return
+    const nx = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width))
+    const ny = Math.min(1, Math.max(0, (clientY - rect.top) / rect.height))
+    type Caps = MediaTrackCapabilities & {
+      focusMode?: string[]
+      pointsOfInterest?: boolean
+    }
+    let caps: Caps = {}
+    try {
+      caps = (track.getCapabilities?.() ?? {}) as Caps
+    } catch {
+      caps = {}
+    }
+    const constraints: Record<string, unknown> = {}
+    if (caps.focusMode?.includes('single-shot')) constraints.focusMode = 'single-shot'
+    if (caps.pointsOfInterest) {
+      constraints.pointsOfInterest = { x: nx, y: 1 - ny } // kamera ima obrnjen y
+    }
+    if (Object.keys(constraints).length === 0) return
+    track.applyConstraints(constraints as MediaTrackConstraints).catch(() => {})
+  }, [])
+
+  // --- Osvetlitev scene: vzorčenje svetlosti vsake 2,5 s (32×32 vzorec) ---
+  // Če je scena pretemna, monterju prikažemo opozorilo in vabimo k bliskavici —
+  // temne fotke so najpogostejši razlog za slabše meritve in AI analize.
+  useEffect(() => {
+    if (!streamReady) return
+    const c = document.createElement('canvas')
+    c.width = 32
+    c.height = 32
+    const ctx = c.getContext('2d', { willReadFrequently: true })
+    if (!ctx) return
+    const id = window.setInterval(() => {
+      const video = videoRef.current
+      if (!video || video.videoWidth === 0) return
+      try {
+        ctx.drawImage(video, 0, 0, 32, 32)
+        const { data } = ctx.getImageData(0, 0, 32, 32)
+        let sum = 0
+        for (let i = 0; i < data.length; i += 4) {
+          sum += 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2]
+        }
+        const avg = sum / (data.length / 4)
+        setLowLight(avg < 42)
+      } catch {
+        /* video še ni pripravljen za branje */
+      }
+    }, 2500)
+    return () => window.clearInterval(id)
+  }, [streamReady])
+
+  // --- Stabilnost roke (DeviceMotion): držite telefon pri miru ~0,7 s in se
+  // prikaže »Stabilno ✓« — pravi trenutek za kalibracijo/meritev. Best-effort:
+  // na iOS brez dovoljenja se senzor tiho ne vključi. ---
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('DeviceMotionEvent' in window)) return
+    let lastStableAt: number | null = null
+    const onMotion = (e: DeviceMotionEvent) => {
+      const r = e.rotationRate
+      if (!r) return
+      const rate = Math.max(Math.abs(r.alpha ?? 0), Math.abs(r.beta ?? 0), Math.abs(r.gamma ?? 0))
+      const now = performance.now()
+      if (rate < 12) {
+        if (lastStableAt === null) {
+          lastStableAt = now
+        } else if (now - lastStableAt > 700 && !steadyRef.current) {
+          steadyRef.current = true
+          setSteady(true)
+        }
+      } else {
+        lastStableAt = null
+        if (steadyRef.current) {
+          steadyRef.current = false
+          setSteady(false)
+        }
+      }
+    }
+    window.addEventListener('devicemotion', onMotion)
+    return () => window.removeEventListener('devicemotion', onMotion)
+  }, [])
+
   // --- Camera init (getUserMedia rear camera) ---
   useEffect(() => {
     let active = true
@@ -604,7 +812,13 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
           return
         }
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: 'environment' } },
+          video: {
+            facingMode: { ideal: 'environment' },
+            // Višja ločljivost → ostrejši robovi → natančnejša kalibracija in
+            // boljša AI analiza fotografije.
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
+          },
           audio: false,
         })
         if (!active) {
@@ -612,6 +826,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
           return
         }
         streamRef.current = stream
+        setupTrack(stream)
         if (videoRef.current) {
           videoRef.current.srcObject = stream
           await videoRef.current.play().catch(() => {
@@ -984,6 +1199,8 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
   // --- Pointer down handler ---
   const handlePointerDown = useCallback(
     (e: React.PointerEvent<HTMLCanvasElement>) => {
+      // Tap-to-focus: kadar naprava podpira, takoj ostro tam, kamor kaže monter.
+      focusAt(e.clientX, e.clientY)
       const p = getCanvasPoint(e)
       // Calibration has priority over modes
       if (calibrateActive) {
@@ -1014,6 +1231,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
           })
           setCalFirstPoint(null)
           setCalibrateActive(false)
+          zibaj([20, 30, 20])
           toast({
             title: 'Umeritev končana',
             description: `1 mm = ${ppm.toFixed(3)} px (referenca ${realMm} mm).`,
@@ -1040,6 +1258,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
           setMeritevLabel(`Meritev ${meritve.length + 1}`)
           setLabelDialogOpen(true)
           setMeasureFirstPoint(null)
+          zibaj(18)
         }
         return
       }
@@ -1050,6 +1269,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
           ...prev,
           { x: p.x, y: p.y, label: String(prev.length + 1) },
         ])
+        zibaj(12)
         return
       }
 
@@ -1062,6 +1282,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
           // Re-number labels
           return next.map((t, i) => ({ ...t, label: String(i + 1) }))
         })
+        zibaj(10)
         return
       }
 
@@ -1088,6 +1309,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
       kalibracija,
       tocke,
       getCanvasPoint,
+      focusAt,
       toast,
     ],
   )
@@ -1180,11 +1402,38 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
     setPendingMeritev(null)
     setMeritevLabel('')
     setLabelDialogOpen(false)
+    zibaj([25, 25, 25])
     toast({
       title: 'Meritev shranjena',
       description: `${finalLabel}: ${formatDistance(pendingMeritev.dolzinaMm)}`,
     })
   }, [pendingMeritev, meritevLabel, meritve.length, toast])
+
+  // --- Undo zadnjega dejanja (v teku → meritev → točka) ---
+  const undoLast = useCallback(() => {
+    if (measureFirstPoint) {
+      setMeasureFirstPoint(null)
+      zibaj(8)
+      return
+    }
+    if (calFirstPoint) {
+      setCalFirstPoint(null)
+      return
+    }
+    if (meritve.length > 0) {
+      setMeritve((prev) => prev.slice(0, -1))
+      zibaj(15)
+      toast({ title: 'Razveljavljeno', description: 'Zadnja meritev odstranjena.' })
+      return
+    }
+    if (tocke.length > 0) {
+      setTocke((prev) =>
+        prev.slice(0, -1).map((t, i) => ({ ...t, label: String(i + 1) })),
+      )
+      zibaj(15)
+      toast({ title: 'Razveljavljeno', description: 'Zadnja točka odstranjena.' })
+    }
+  }, [measureFirstPoint, calFirstPoint, meritve.length, tocke.length, toast])
 
   // --- Cancel measurement label dialog ---
   const cancelMeritev = useCallback(() => {
@@ -1286,6 +1535,90 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
     [toast],
   )
 
+  // --- Zajem čistega kadra za AI analizo (brez overlayja, maks. 1024 px) ---
+  const captureFrameForAI = useCallback((): string | null => {
+    const video = videoRef.current
+    if (!video || video.videoWidth === 0) return null
+    const maxW = 1024
+    const scale = Math.min(1, maxW / video.videoWidth)
+    const w = Math.round(video.videoWidth * scale)
+    const h = Math.round(video.videoHeight * scale)
+    const c = document.createElement('canvas')
+    c.width = w
+    c.height = h
+    const ctx = c.getContext('2d')
+    if (!ctx) return null
+    ctx.drawImage(video, 0, 0, w, h)
+    return c.toDataURL('image/jpeg', 0.85)
+  }, [])
+
+  // --- AI analiza fotografije ograje → /api/ar/analyze (VLM) ---
+  const handleAiAnalyze = useCallback(async () => {
+    const image = captureFrameForAI()
+    if (!image) {
+      toast({
+        title: 'Kamera ni pripravljena',
+        description: 'Počakajte trenutek in poskusite znova.',
+        variant: 'destructive',
+      })
+      return
+    }
+    setAiAnalyzing(true)
+    try {
+      const res = await fetch('/api/ar/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image, projectId }),
+      })
+      const data = (await res.json().catch(() => null)) as
+        | { ok?: boolean; analiza?: AiAnaliza; error?: string }
+        | null
+      if (!res.ok || !data?.ok || !data.analiza) {
+        throw new Error(data?.error || 'Analiza ni uspela.')
+      }
+      setAiAnaliza(data.analiza)
+      setAiSheetOpen(true)
+      zibaj([20, 40, 20])
+    } catch (err) {
+      toast({
+        title: 'AI analiza ni uspela',
+        description: (err as Error).message,
+        variant: 'destructive',
+      })
+    } finally {
+      setAiAnalyzing(false)
+    }
+  }, [captureFrameForAI, projectId, toast])
+
+  // --- Uporabi AI priporočila: samodejno izberi najbolj podoben profil iz kataloga ---
+  const applyAiSuggestions = useCallback(() => {
+    if (!aiAnaliza) return
+    const tip = aiAnaliza.tipOgraje.toLowerCase()
+    const rules: Array<{ re: RegExp; tag: string }> = [
+      { re: /inox|nerjave/, tag: 'inox' },
+      { re: /steklo/, tag: 'steklo' },
+      { re: /alu|aluminij/, tag: 'alu' },
+      { re: /wpc/, tag: 'wpc' },
+    ]
+    const rule = rules.find((r) => r.re.test(tip))
+    const match = rule
+      ? profili.find((p) => p.kategorija.toLowerCase().includes(rule.tag))
+      : undefined
+    if (match) {
+      setSelectedProfilId(match.id)
+      toast({
+        title: 'Priporočilo uporabljeno',
+        description: `Izbran profil: ${match.naziv}`,
+      })
+      zibaj(20)
+    } else {
+      toast({
+        title: 'Podobnega profila ni v katalogu',
+        description: `AI predlog: ${aiAnaliza.tipOgraje} — izberite ročno.`,
+      })
+    }
+  }, [aiAnaliza, profili, toast])
+
   // --- Capture composite (video frame + canvas overlay) → POST ---
   const handleCapture = useCallback(async () => {
     const video = videoRef.current
@@ -1362,7 +1695,13 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
         tocke,
         meritve,
         kalibracija,
-        opombe: null,
+        // AI analiza se shrani kot opomba — pride prav pri pisanju ponudbe.
+        opombe: aiAnaliza
+          ? `AI: ${aiAnaliza.tipOgraje}; ${aiAnaliza.stanje}` +
+            (aiAnaliza.ovire && aiAnaliza.ovire !== 'ni vidnih ovir'
+              ? `; ovire: ${aiAnaliza.ovire}`
+              : '')
+          : null,
       }
 
       const res = await fetch('/api/ar-snapshots', {
@@ -1371,6 +1710,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
         body: JSON.stringify(payload),
       })
       if (!res.ok) throw new Error('save failed')
+      zibaj(20)
       toast({
         title: 'Posnetek shranjen',
         description: `${tocke.length} točk · ${meritve.length} meritev`,
@@ -1385,7 +1725,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
     } finally {
       setSaving(false)
     }
-  }, [projectId, selectedProfilId, tocke, meritve, kalibracija, toast])
+  }, [projectId, selectedProfilId, tocke, meritve, kalibracija, aiAnaliza, toast])
 
   // --- Retry camera (after error) ---
   const retryCamera = useCallback(() => {
@@ -1405,10 +1745,15 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
     void (async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: 'environment' } },
+          video: {
+            facingMode: { ideal: 'environment' },
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
+          },
           audio: false,
         })
         streamRef.current = stream
+        setupTrack(stream)
         if (videoRef.current) {
           videoRef.current.srcObject = stream
           await videoRef.current.play().catch(() => {})
@@ -1534,6 +1879,50 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
           </TooltipContent>
         </Tooltip>
 
+        {/* Torch (bliskavica) — samo kadar naprava podpira */}
+        {torchSupported && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  'shrink-0',
+                  torchOn
+                    ? 'text-roksal-amber hover:bg-white/10'
+                    : 'text-white hover:bg-white/10',
+                )}
+                onClick={() => void applyTorch(!torchOn)}
+                aria-label="Bliskavica"
+                aria-pressed={torchOn}
+              >
+                <Zap className="h-5 w-5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              {torchOn ? 'Ugasni bliskavico' : 'Prižgi bliskavico (temna scena)'}
+            </TooltipContent>
+          </Tooltip>
+        )}
+
+        {/* Undo — hitro razveljavi zadnjo točko/meritev */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="text-white hover:bg-white/10 shrink-0"
+              onClick={undoLast}
+              aria-label="Razveljavi"
+            >
+              <Undo2 className="h-5 w-5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">Razveljavi zadnje dejanje</TooltipContent>
+        </Tooltip>
+
         {/* Calibration button + status */}
         <Tooltip>
           <TooltipTrigger asChild>
@@ -1557,6 +1946,35 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
             {kalibracija
               ? `Umerjeno (${kalibracija.pixelsPerMm.toFixed(3)} px/mm) — klik za ponastavitev`
               : 'Umeri kamero'}
+          </TooltipContent>
+        </Tooltip>
+
+        {/* AI analiza fotografije ograje */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className={cn(
+                'shrink-0',
+                aiAnaliza
+                  ? 'text-roksal-amber hover:bg-white/10'
+                  : 'text-white hover:bg-white/10',
+              )}
+              onClick={() => void handleAiAnalyze()}
+              disabled={aiAnalyzing || !streamReady}
+              aria-label="AI analiza ograje"
+            >
+              {aiAnalyzing ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Sparkles className="h-5 w-5" />
+              )}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            AI analiza fotografije (tip, stanje, mere)
           </TooltipContent>
         </Tooltip>
 
@@ -1602,6 +2020,18 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
 
       {/* Calibration / mode status badge (top-right of video) */}
       <div className="absolute top-16 right-3 z-10 flex flex-col items-end gap-1.5 pointer-events-none">
+        {lowLight && (
+          <Badge className="bg-amber-600/90 text-white border-transparent shadow-md animate-pulse">
+            <SunDim className="h-3 w-3" />
+            Temno — prižgi bliskavico
+          </Badge>
+        )}
+        {steady && (
+          <Badge className="bg-emerald-600/90 text-white border-transparent shadow-md">
+            <Check className="h-3 w-3" />
+            Stabilno — zajemi zdaj
+          </Badge>
+        )}
         {kalibracija && (
           <Badge className="bg-roksal-green/90 text-white border-transparent shadow-md">
             <Check className="h-3 w-3" />
@@ -1859,6 +2289,30 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
 
       {/* === MODE BAR (bottom) === */}
       <footer className="bg-roksal-navy/95 backdrop-blur-sm border-t border-white/10 px-2 py-2">
+        {/* Zoom drsnik — samo kadar kamera podpira zoom */}
+        {zoomCap && (
+          <div className="flex items-center gap-2 px-2 pb-2">
+            <ZoomIn className="h-4 w-4 shrink-0 text-white/70" aria-hidden />
+            <input
+              type="range"
+              min={zoomCap.min}
+              max={zoomCap.max}
+              step={zoomCap.step}
+              value={zoomValue}
+              onChange={(e) => {
+                const v = Number(e.target.value)
+                setZoomValue(v)
+                void applyZoom(v)
+              }}
+              className="flex-1 accent-amber-500"
+              aria-label="Zoom kamere"
+            />
+            <span className="w-10 text-right text-[10px] text-white/70" aria-hidden>
+              {zoomValue.toFixed(1)}×
+            </span>
+          </div>
+        )}
+
         <div className="flex gap-1.5 mb-1.5">
           <Button
             type="button"
@@ -2061,6 +2515,128 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* === AI ANALIZA SHEET === */}
+      <Sheet open={aiSheetOpen} onOpenChange={setAiSheetOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-md p-0 flex flex-col">
+          <SheetHeader className="px-4 pt-5 pb-3 border-b">
+            <SheetTitle className="flex items-center gap-2 text-roksal-navy">
+              <Sparkles className="h-5 w-5 text-roksal-amber" />
+              AI analiza ograje
+            </SheetTitle>
+            <SheetDescription>
+              Samodejna ocena fotografije: tip, stanje in katere mere vzeti.
+            </SheetDescription>
+          </SheetHeader>
+          {aiAnaliza && (
+            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+              {/* Tip + zaupanje */}
+              <div className="flex items-center justify-between rounded-lg border border-roksal-amber/30 bg-roksal-amber/5 p-3">
+                <div>
+                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                    Prepoznana ograja
+                  </p>
+                  <p className="text-sm font-bold text-roksal-navy">{aiAnaliza.tipOgraje}</p>
+                </div>
+                <Badge
+                  variant="secondary"
+                  className={cn(
+                    'text-[10px]',
+                    aiAnaliza.zaupanje >= 0.7
+                      ? 'bg-roksal-green/15 text-roksal-green'
+                      : 'bg-amber-100 text-amber-700',
+                  )}
+                >
+                  {Math.round(aiAnaliza.zaupanje * 100)} % gotovo
+                </Badge>
+              </div>
+
+              <dl className="space-y-3 text-sm">
+                {[
+                  ['Stanje', aiAnaliza.stanje],
+                  ['Material', aiAnaliza.material],
+                  ['Predlog barve', aiAnaliza.predlaganaBarva],
+                  ['Tip montaže', aiAnaliza.tipMontaze],
+                  ['Ovire', aiAnaliza.ovire],
+                ].map(([label, value]) => (
+                  <div key={label as string}>
+                    <dt className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      {label}
+                    </dt>
+                    <dd className="text-[13px] leading-relaxed text-roksal-navy">{value}</dd>
+                  </div>
+                ))}
+              </dl>
+
+              {/* Priporočene mere */}
+              <div className="space-y-2">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Priporočene mere
+                </p>
+                {aiAnaliza.priporoceneMere?.map((m, i) => (
+                  <div
+                    key={`${m.naziv}-${i}`}
+                    className="rounded-lg border bg-white p-2.5"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-[13px] font-semibold text-roksal-navy">{m.naziv}</p>
+                      <Badge
+                        variant="secondary"
+                        className={cn(
+                          'text-[9px]',
+                          m.prednost === 'visoka'
+                            ? 'bg-roksal-amber/15 text-roksal-amber'
+                            : 'bg-muted text-muted-foreground',
+                        )}
+                      >
+                        {m.prednost}
+                      </Badge>
+                    </div>
+                    <p className="mt-0.5 text-[12px] leading-relaxed text-muted-foreground">
+                      {m.opis}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              {aiAnaliza.opombe && (
+                <div className="rounded-lg bg-roksal-navy/5 p-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">
+                    Opombe za ponudbo
+                  </p>
+                  <p className="text-[12px] leading-relaxed text-roksal-navy">{aiAnaliza.opombe}</p>
+                </div>
+              )}
+
+              <p className="text-[10px] text-muted-foreground leading-relaxed">
+                AI ocena je pripomoček, ne zamenjava za merjenje na lokaciji. Mere vedno
+                preverite s kalibriranim merjenjem.
+              </p>
+            </div>
+          )}
+          <div className="border-t px-4 py-3 flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="flex-1"
+              onClick={() => setAiSheetOpen(false)}
+            >
+              Zapri
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              className="flex-1 bg-roksal-amber text-white hover:bg-roksal-amber/90"
+              onClick={applyAiSuggestions}
+              disabled={!aiAnaliza}
+            >
+              <CheckCircle2 className="h-4 w-4" />
+              Uporabi priporočila
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* === HISTORY SHEET === */}
       <Sheet open={historyOpen} onOpenChange={setHistoryOpen}>
