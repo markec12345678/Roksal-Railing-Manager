@@ -100,3 +100,111 @@ export const windLoadCalcSchema = z.object({
   railingAreaM2: z.number().positive(),
   railingType: z.enum(['solid', 'slatted', 'z-line']),
 })
+
+// ============================================
+// RAZPORED OGRAJE IN PONUDBA (railing-layout, quote)
+// ============================================
+//
+// API ne sme sprejeti poljubnega JSON kot konfiguracijo ograje ali cenik:
+// `{ heightMm: "visoko" }` ali `{ total: 1 }` bi sicer prišla do računanja.
+// Zato so sheme tu eksplicitne, z mejami, ki jih je mogoče preveriti
+// (`zod` v4 zahteva dvoparametrski `z.record`).
+
+const postShapeSchema = z.enum(['ROUND', 'SQUARE', 'RECT', 'FLAT'])
+
+/** Delna konfiguracija — klient pošlje samo tisto, kar je spremenil. */
+export const railingSpecSchema = z.object({
+  system: z
+    .enum(['GLASS_CHANNEL', 'GLASS_POSTS', 'POST_BARS', 'POST_MESH', 'POST_WOOD', 'FRENCH', 'CUSTOM'])
+    .optional(),
+  heightMm: z.number().min(300).max(3000).optional(),
+  mounting: z.enum(['SLAB_TOP', 'SLAB_SIDE', 'PARAPET_TOP']).optional(),
+  baseOffsetMm: z.number().min(0).max(500).optional(),
+  postSpacingMaxMm: z.number().min(200).max(4000).optional(),
+  postSection: z
+    .object({
+      shape: postShapeSchema.optional(),
+      widthMm: z.number().positive().max(500).optional(),
+      depthMm: z.number().positive().max(500).optional(),
+    })
+    .optional(),
+  postFixing: z.enum(['BASE_PLATE', 'SIDE_BRACKET', 'CORE_DRILLED']).optional(),
+  cornerPosts: z.boolean().optional(),
+  glass: z
+    .object({
+      type: z.enum(['ESG', 'VSG', 'ESG_VSG']).optional(),
+      thicknessMm: z.number().positive().max(60).optional(),
+      maxPanelWidthMm: z.number().positive().max(6000).optional(),
+      sideGapMm: z.number().min(0).max(50).optional(),
+      bottomGapMm: z.number().min(0).max(200).optional(),
+    })
+    .optional(),
+  baseProfile: z
+    .object({
+      enabled: z.boolean().optional(),
+      widthMm: z.number().positive().max(400).optional(),
+      heightMm: z.number().positive().max(600).optional(),
+      embedMm: z.number().min(0).max(300).optional(),
+      drainageSpacingMm: z.number().min(0).max(5000).optional(),
+    })
+    .optional(),
+  handrail: z
+    .object({
+      type: z.enum(['NONE', 'U_COVER_ALU', 'ROUND_42', 'ROUND_48', 'RECT', 'WOOD']).optional(),
+      widthMm: z.number().positive().max(300).optional(),
+      heightMm: z.number().positive().max(300).optional(),
+      returnsAtEnds: z.boolean().optional(),
+    })
+    .optional(),
+  bars: z
+    .object({
+      count: z.number().int().min(0).max(30).optional(),
+      diameterMm: z.number().positive().max(100).optional(),
+      shape: postShapeSchema.optional(),
+    })
+    .optional(),
+  mesh: z
+    .object({
+      openingMm: z.number().min(0).max(500).optional(),
+      heightMm: z.number().positive().max(3000).optional(),
+    })
+    .optional(),
+  custom: z
+    .object({
+      spacingMm: z.number().positive().max(5000).optional(),
+      heightMm: z.number().positive().max(3000).optional(),
+      repeatAsPost: z.boolean().optional(),
+      assetName: z.string().max(200).optional(),
+    })
+    .optional(),
+  wastePercent: z.number().min(0).max(50).optional(),
+  metalFinishLabel: z.string().max(120).optional(),
+  demolition: z.boolean().optional(),
+  mountingIncluded: z.boolean().optional(),
+})
+
+/** Točka obsega v metrih (lokalni koordinatni okvir: prva točka v izhodišču). */
+export const perimeterPointSchema = z.object({
+  xM: z.number().min(-1000).max(1000),
+  yM: z.number().min(-1000).max(1000).optional(),
+  zM: z.number().min(-1000).max(1000),
+})
+
+/** Popravki s trakom, po indeksu roba. Ključi so indeksi, zato number → number. */
+export const overridesSchema = z.record(
+  z.coerce.number().int().min(0).max(100),
+  z.coerce.number().positive().max(200000),
+)
+
+export const railingLayoutSchema = z.object({
+  points: z.array(perimeterPointSchema).min(2, 'Potrebni sta vsaj dve točki roba.').max(200),
+  closed: z.boolean().default(false),
+  overridesMm: overridesSchema.optional(),
+  spec: railingSpecSchema.optional(),
+})
+
+export const quoteSchema = railingLayoutSchema.extend({
+  /** Delni cenik — neznani ključi se ignorirajo, vrednosti morajo biti števila. */
+  prices: z.record(z.string(), z.union([z.number(), z.string()])).optional(),
+  projectId: z.string().max(64).optional(),
+})

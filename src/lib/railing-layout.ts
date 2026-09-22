@@ -317,13 +317,54 @@ export interface RailingSpec {
   bars: BarSpec
   mesh: MeshSpec
   custom: CustomSpec
+  /** Odstotek odpada pri razrezu profilov (steklo se naroča na točno mero). */
   wastePercent: number
+  /** Besedilo za ponudbo, npr. "Inox A2 (304) brušen". Geometrija ga ne potrebuje. */
+  metalFinishLabel: string
+  /** Ali je demontaža obstoječe ograje vključena v ponudbo. */
+  demolition: boolean
+  /** Ali je montaža vključena v ponudbo. */
+  mountingIncluded: boolean
 }
 
 export const ANCHORS_PER_POST: Record<PostFixing, number> = {
   BASE_PLATE: 3,
   SIDE_BRACKET: 2,
   CORE_DRILLED: 1,
+}
+
+/**
+ * Rekurzivno delni `RailingSpec` — klient pošlje samo tisto, kar je spremenil.
+ * Gnezdeni objekti (glass, handrail, bars, …) so delni, da ni treba vsakič
+ * pošiljati celotne konfiguracije.
+ */
+export type DeepPartialSpec = {
+  [K in keyof RailingSpec]?: RailingSpec[K] extends object
+    ? Partial<RailingSpec[K]>
+    : RailingSpec[K]
+}
+
+/**
+ * Zlije delno konfiguracijo s privzeto.
+ *
+ * Plitvo zlivanje (`{ ...base, ...over }`) bi gnezden objekt zamenjalo v celoti:
+ * klient, ki pošlje samo `{ glass: { thicknessMm: 12 } }`, bi s tem izbrisal
+ * tip stekla, največjo širino panela in reži. Zato se gnezdeni objekti zlivajo
+ * posebej.
+ */
+export function mergeSpec(over: DeepPartialSpec = {}): RailingSpec {
+  const base = defaultRailingSpec()
+  return {
+    ...base,
+    ...over,
+    postSection: { ...base.postSection, ...(over.postSection ?? {}) },
+    glass: { ...base.glass, ...(over.glass ?? {}) },
+    baseProfile: { ...base.baseProfile, ...(over.baseProfile ?? {}) },
+    handrail: { ...base.handrail, ...(over.handrail ?? {}) },
+    bars: { ...base.bars, ...(over.bars ?? {}) },
+    mesh: { ...base.mesh, ...(over.mesh ?? {}) },
+    custom: { ...base.custom, ...(over.custom ?? {}) },
+  }
 }
 
 /** Privzeta konfiguracija: steklo v U-profilu, 1000 mm, ESG/VSG 16,76. */
@@ -350,6 +391,9 @@ export function defaultRailingSpec(over: Partial<RailingSpec> = {}): RailingSpec
     mesh: { openingMm: 50, heightMm: 900 },
     custom: { spacingMm: 1000, heightMm: 1000, repeatAsPost: true, assetName: '' },
     wastePercent: 5,
+    metalFinishLabel: 'Inox A2 (304) brušen',
+    demolition: true,
+    mountingIncluded: true,
     ...over,
   }
 }
