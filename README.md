@@ -8,6 +8,10 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-38BDF8?logo=tailwind-css)](https://tailwindcss.com/)
 [![PWA](https://img.shields.io/badge/PWA-ready-5A0FC8?logo=pwa)](https://web.dev/progressive-web-apps/)
 [![License](https://img.shields.io/badge/License-Proprietary-red)](./LICENSE)
+[![CI](https://github.com/markec12345678/Roksal-Railing-Manager/actions/workflows/ci.yml/badge.svg)](https://github.com/markec12345678/Roksal-Railing-Manager/actions/workflows/ci.yml)
+
+> **Začetek v 5 minutah:** [`NAVODILA.md`](NAVODILA.md) — `bash tools/setup.sh` naredi vse
+> (odvisnosti, `.env` s skrivnostmi, baza, tvoj račun, API ključ, preverjanje).
 
 > Aplikacija za podjetje **Roksal d.o.o. Kranj** (izdelava in montaža alu/kovinskih/inox/WPC balkonskih in stopniščnih ograj po meri). Nadomešča ročne skice, papirne beležke in nepregledno dokumentacijo — od mere na terenu do arhivirane realizacije.
 
@@ -20,6 +24,7 @@
 - [Posnetki zaslona](#-posnetki-zaslona)
 - [Tehnološki sklad](#-tehnološki-sklad)
 - [Arhitektura](#-arhitektura)
+- [Navodila v 5 minutah](NAVODILA.md)
 - [Namestitev (lokalni razvoj)](#-namestitev-lokalni-razvoj)
 - [Podatkovni model (Prisma)](#-podatkovni-model-prisma)
 - [API končne točke](#-api-končne-točke)
@@ -62,6 +67,7 @@
 | Izračunske funkcije | 18 |
 | Katalog profilov | 10 (WPC, ALU, Inox, Steklo) |
 | Testi izračunskega jedra | 78 (vitest) |
+| Testi | 147 enotskih + 77 varnostnih preverjanj (CI) |
 | Jezik vmesnika | Slovenščina |
 
 ---

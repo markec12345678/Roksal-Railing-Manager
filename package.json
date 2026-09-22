@@ -10,12 +10,19 @@
     "build": "next build && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/",
     "start": "NODE_ENV=production bun .next/standalone/server.js 2>&1 | tee server.log",
     "lint": "eslint .",
+    "check": "tsc --noEmit && vitest run",
+    "check:types": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "smoke": "python3 tools/security-smoke.py",
+    "setup": "bash tools/setup.sh",
+    "admin": "tsx tools/create-admin.ts",
+    "apikey": "tsx tools/create-api-key.ts",
+    "backup": "tsx tools/backup-db.ts",
     "db:push": "prisma db push",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
-    "db:reset": "prisma migrate reset",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "db:reset": "prisma migrate reset"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
