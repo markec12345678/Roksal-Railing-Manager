@@ -1,0 +1,65 @@
+# Roksal Railing Manager — produkcijski Caddyfile
+# ---------------------------------------------------------------------------
+# KORENITA RAZLIKA od Caddyfile-a v korenu repozitorija: ta v korenu je bil
+# razvojno-preview orodje AI graditelja in je vseboval
+#
+#     reverse_proxy localhost:{query.XTransformPort}
+#
+# kar je ODRT PROXY: kdorkoli je z ?XTransformPort=<poljuben port> dobil dostop
+# do kateregakoli porta na strežniku (SSRF). Ta datoteka tega nima.
+#
+# Uporaba:
+#   sudo cp deploy/Caddyfile /etc/caddy/Caddyfile
+#   # uredi roksal.example.si in e-pošto
+#   sudo systemctl reload caddy
+#
+# Caddy sam pridobi in obnavlja Let's Encrypt certifikat — HTTPS je privzet.
+
+roksal.example.si {
+	# E-pošta za obvestila o poteku certifikata
+	email it@roksal.si
+
+	# Aplikacija teče lokalno na 3000 (systemd: deploy/roksal.service)
+	reverse_proxy 127.0.0.1:3000 {
+		header_up Host {host}
+		header_up X-Forwarded-For {remote_host}
+		header_up X-Forwarded-Proto {scheme}
+		header_up X-Real-IP {remote_host}
+	}
+
+	# Varnostne glave
+	header {
+		# PWA deluje brez povezave; CSP mora dovoliti 'self' in inline sloge
+		# (Tailwind/shadcn jih uporabljata), zato 'unsafe-inline' za sloge ostane.
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; font-src 'self' data:; manifest-src 'self'; worker-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(self), geolocation=(self), microphone=(self)"
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		# Nikoli ne razkrij tehnologije
+		-Server
+	}
+
+	# Fotografije ograj so lahko velike (pred kompresijo v aplikaciji)
+	request_body {
+		max_size 25MB
+	}
+
+	# Dnevniki
+	log {
+		output file /var/log/caddy/roksal.log {
+			roll_size 10mb
+			roll_keep 7
+		}
+		format json
+	}
+
+	# Stiskanje
+	encode zstd gzip
+
+	# Ne indeksiraj poslovnega sistema
+	header /robots.txt Content-Type text/plain
+	respond /robots.txt "User-agent: *
+Disallow: /" 200
+}

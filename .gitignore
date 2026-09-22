@@ -59,3 +59,15 @@ server.log
 
 # Ostanki AI graditelja (2,9 MB dnevnikov orodij) — ne sodijo v repo
 /tool-results/
+
+# Podatkovna baza in njene kopije — nikoli v git.
+# V zgodovini tega repozitorija je db/custom.db že bil (14 commitov) z demo
+# podatki. Ker je bil repo JAVEN, bi vsak vnos prave stranke ostal tam za vedno.
+# Baza se ustvari z: bunx prisma db push && bunx tsx prisma/seed.ts
+/db/*.db
+/db/*.db-journal
+/db/*.db-wal
+/db/*.db-shm
+/backups/
+*.db
+!.env.example

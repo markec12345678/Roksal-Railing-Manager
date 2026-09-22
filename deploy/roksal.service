@@ -1,0 +1,54 @@
+# systemd enota za Roksal Railing Manager
+# ---------------------------------------------------------------------------
+# Uporaba:
+#   sudo cp deploy/roksal.service /etc/systemd/system/roksal.service
+#   # uredi User, WorkingDirectory in EnvironmentFile
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now roksal
+#   systemctl status roksal && journalctl -u roksal -f
+
+[Unit]
+Description=Roksal Railing Manager (Next.js standalone)
+After=network.target
+
+[Service]
+Type=simple
+# Nikoli kot root: SQLite datoteka in dnevniki naj bodo v lasti navadnega uporabnika.
+User=roksal
+Group=roksal
+WorkingDirectory=/opt/roksal
+
+# Skrivnosti so v tej datoteki (pravice 600, lastnik roksal), ne v tej enoti:
+#   DATABASE_URL="file:/opt/roksal/db/custom.db"
+#   SESSION_SECRET="..."        ← openssl rand -base64 32
+#   API_KEY_PEPPER="..."        ← openssl rand -base64 24
+EnvironmentFile=/opt/roksal/.env.production
+Environment=NODE_ENV=production
+Environment=PORT=3000
+Environment=HOSTNAME=127.0.0.1
+Environment=NEXT_TELEMETRY_DISABLED=1
+
+# Standalone build: ena sama datoteka server.js s sledenimi odvisnostmi
+ExecStart=/usr/bin/bun /opt/roksal/.next/standalone/server.js
+ExecReload=/bin/kill -HUP $MAINPID
+
+Restart=always
+RestartSec=5
+
+# Omejitve — aplikacija ne rabi skoraj ničesar
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+# SQLite piše v /opt/roksal/db, Next v .next/cache
+ReadWritePaths=/opt/roksal
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+
+# SQLite je enoprocesna: omejimo pomnilnik, da en poizvedbeni pobeg ne podre strežnika
+MemoryMax=1500M
+
+[Install]
+WantedBy=multi-user.target

@@ -1,23 +1,26 @@
+# Razvojni Caddyfile — SAMO za lokalno uporabo.
+# ---------------------------------------------------------------------------
+# PRODUKCIJSKI Caddyfile je v deploy/Caddyfile (HTTPS, varnostne glave, CSP).
+#
+# Prejšnja različica te datoteke je vsebovala
+#     reverse_proxy localhost:{query.XTransformPort}
+# kar je bil ODRT PROXY na poljuben port strežnika (SSRF) — ostanek
+# preview-mehanizma AI graditelja. Uporabnik za to datoteko je bil
+# `localhost:81`, a datoteka je bila v javnem repu in bi jo kdo lahko
+# kopiral v produkcijo.
+#
+# Za produkcijo: cp deploy/Caddyfile /etc/caddy/Caddyfile
+
 :81 {
-	@transform_port_query {
-		query XTransformPort=*
+	bind 127.0.0.1
+
+	reverse_proxy 127.0.0.1:3000 {
+		header_up Host {host}
+		header_up X-Forwarded-For {remote_host}
+		header_up X-Forwarded-Proto {scheme}
+		header_up X-Real-IP {remote_host}
 	}
 
-	handle @transform_port_query {
-		reverse_proxy localhost:{query.XTransformPort} {
-			header_up Host {host}
-			header_up X-Forwarded-For {remote_host}
-			header_up X-Forwarded-Proto {scheme}
-			header_up X-Real-IP {remote_host}
-		}
-	}
-
-	handle {
-		reverse_proxy localhost:3000 {
-			header_up Host {host}
-			header_up X-Forwarded-For {remote_host}
-			header_up X-Forwarded-Proto {scheme}
-			header_up X-Real-IP {remote_host}
-		}
-	}
+	# Ne indeksiraj
+	respond /robots.txt "User-agent: *\nDisallow: /" 200
 }
