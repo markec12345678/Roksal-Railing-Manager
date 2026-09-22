@@ -320,10 +320,13 @@ describe('mergePriceBook — beli seznam in preverba tipov', () => {
   })
 
   it('neznani ključi se ignorirajo — stranka ne more podtakniti "total"', () => {
-    const p = mergePriceBook({ total: 1, netTotal: 0, skupaj: 999, __proto__: 1 })
+    const p = mergePriceBook({ total: 1, netTotal: 0, skupaj: 999 }) as unknown as Record<string, unknown>
     expect(p.total).toBeUndefined()
-    expect((p as Record<string, unknown>).skupaj).toBeUndefined()
+    expect(p.netTotal).toBeUndefined()
+    expect(p.skupaj).toBeUndefined()
     expect(p.vatPercent).toBe(22)
+    // Bela lista je izpeljana iz PriceBook, zato so pravi ključi še vedno tam.
+    expect(Object.keys(p).length).toBe(Object.keys(defaultPriceBook()).length)
   })
 
   it('negativna in neštevilska vrednost se zavrne', () => {
