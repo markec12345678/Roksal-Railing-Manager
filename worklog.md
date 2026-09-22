@@ -486,3 +486,59 @@ Stage Summary:
 - Naslednje runde: LiDAR iOS (realen iPhone), FURS davčni blagajni režim (prostor/naprava),
   eSlog XSD validacija v produkciji, UPN QR v predplačilnih listih portala; opcijsko:
   filter stranke na plošči, prilagodljivi stolpci (skrij Ustavljeno), undo premika
+
+---
+Task ID: 10 (runda K — cron webDevReview)
+Agent: Main Orchestrator (Z.ai Code)
+Task: QA ocena + sanacija demo podatkov (dedup + cene) + undo premika & filter strank na prodajni plošci + ICS izvoz koledarja montaž + fix: POST /api/schedules 500
+
+Work Log:
+- QA start: dev strežnik pognan (bil ugasnjen), tsc/lint čisti; agent-browser:
+  prijava demo ✓, dashboard ✓, CRM plošča ✓, follow-upi ✓, računi ✓, obvestila
+  z dedupom ✓, mobilni 390px ✓ — brez kritičnih bugov → nadaljevanje z razvojem
+- QA najdba #1 (korenina duplikatov): DB je vsebovala 4× isti nabor demo podatkov
+  (12 strank + 12 projektov, vsi estimatedPrice=null) — seed.cjs je uporabljal
+  create() namesto idempotentnega poisa; posledice: 4× "Ograja Novak" na
+  dashboardu, dup kartice na plošči, LTV 0 €, Σ plošče prazna
+- K-1 Sanacija (tools/cleanup-demo-data.cjs, novo — idempotentna):
+  · obdržan najstarejši nabor (meritve+dokumenti+galerija), 9 dup projektov +
+    9 dup strank zbrisanih; račun 2026-001 preusmerjen na ohranjeni projekt
+    (updateMany projectId), AuditLog odvezan (projectId=null, history ohranjen),
+    MaterialUsage/InventoryMovement ročno (brez cascade v shemi)
+  · končno stanje: 3 stranke, 3 projekti, 10 meritev, 1 račun
+  · cene: Novak 2 850 €, Zupan 4 320 € (+dealLocked "podpis"), Kokalj 1 980 €
+  · seed.cjs popravljen: upsertCustomer/upsertProject (findFirst po imenu/nazivu)
+    + cene v seed → sveži deployi takoj bogati demo
+- K-2 Prodajna plošča (deal-pipeline.tsx):
+  · UNDO premika: toast "Premaknjeno: X" z gumbom Razveljaví (ToastAction) →
+    PATCH nazaj; AuditLog zabeleži obe smeri (E2E: NACRTOVANO→V_TEKU + povratek)
+  · FILTER po stranki: Select "Vse stranke/Napr." — filtrira kartice + Σ
+    (E2E: Janez Novak → 1 kartica, "2 850 € v obdelavi")
+  · Σ zdaj vidna (cene obstajajo): stolpci 6 300 € / 2 850 €, skupaj 9 150 €
+  · styling: kartice hover lift (-translate-y-px + shadow-md), glava flex-col
+    na mobilnem (flex-wrap controls)
+- K-3 ICS izvoz (logistics-tab.tsx): gumb ".ics" (disabled če 0 terminov) →
+  RFC 5545 datoteka (VCALENDAR/VEVENT, UID, DTSTAMP, DTSTART/DTEND v UTC,
+  SUMMARY/LOCATION/DESCRIPTION z \, \; \n escapom, vrstice folded na 75 oktetov,
+  STATUS: CONFIRMED/TENTATIVE/CANCELLED) → E2E download + cat: validna struktura
+- K-4 Dashboard dedup: "Danes & opozorila" združi enako imenovane projekte
+  (naziv+stranka) v vrstico z značko ×N — robusten vzorec kot obvestila
+- BUG FIX (latentni, najden z E2E): POST /api/schedules je VEDNO vrgel 500 —
+  AuditLog userId:'system' ne obstaja v Profile (P2003 FK). Popravljeno:
+  auth.kind==='user' → session.sub, sicer fallback ADMIN profil, vse skupaj
+  v try/catch (revija ne sme pokvariti glavne operacije). E2E: termin 23. 9.
+  08:00 ustvarjen ✓ + SCHEDULE_CREATED v reviji
+- STYLING FIX: 390px CRM overflow (glava plošče) → flex-col/flex-wrap +
+  select w-full sm:w-[170px]; overflow:false na Home/CRM/Logistika 390px
+- eslint: tools/**/*.cjs ignorirani (CommonJS vzdrževalne skripte)
+
+Stage Summary:
+- Demo baza prvič konsistentna: en nabor realnih podatkov s cenami — plošča
+  kaže Σ in LTV, dashboard/obvestila brez duplikatov, računi vezani pravilno
+- Prodajna plošča: undo premika (revizijsko sledljivo v obe smeri) + filter
+  strank — hitrejše odločanje vodje brez strahu pred "nespremišnjenim premikom"
+- Logistika: ICS izvoz poveže koledar montaž s telefonom (Google/Apple/Outlook)
+- POPRAVLJEN pokvarjen POST /api/schedules (bil latenten od V6 naprej)
+- Naslednje runde: LiDAR iOS (realen iPhone), FURS davčni blagajni režim,
+  eSlog XSD validacija, primerjava "Stranka vs merilec" v Meritvah, mesečni
+  prihodek iz računov na vodja pregledu
