@@ -35,20 +35,8 @@ export interface CalculatorImportData {
   locationName: string
 }
 
-interface Project {
-  id: string
-  nazivProjekta: string
-  status: string
-  customer?: { ime: string; naslov: string }
-  monter?: { ime: string }
-  // V4.1 — post-signature fields
-  dealLocked?: boolean
-  dealLockedAt?: string | null
-  dealSignedBy?: string | null
-  dealSignedByMonter?: string | null
-  marginLocked?: number | null
-  estimatedPrice?: number | null
-}
+// One canonical Project type — see src/lib/types.ts for why this is not local.
+import type { Project } from '@/lib/types'
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<TabId>('dashboard')
@@ -267,7 +255,7 @@ export default function Home() {
                   projectName: selectedProject.nazivProjekta,
                   customerName: selectedProject.customer?.ime || '—',
                   customerAddress: selectedProject.customer?.naslov || '—',
-                  customerPhone: selectedProject.customer?.telefon,
+                  customerPhone: selectedProject.customer?.telefon ?? undefined,
                   items: [
                     { opis: 'Ograja WPC H-Line (po meri)', kolicina: '1', enota: 'kos', cena: '0', skupaj: '0' },
                   ],
@@ -305,7 +293,9 @@ export default function Home() {
       </main>
 
       {/* Skica full-screen overlay */}
-      {sketchOpen && (
+      {/* SketchCanvas needs a real project id; rendering it with null produced a
+          `string | null` type error and a save that could never resolve. */}
+      {sketchOpen && selectedProjectId && (
         <div className="fixed inset-0 z-50 bg-white">
           <SketchCanvas projectId={selectedProjectId} onClose={() => setSketchOpen(false)} />
         </div>

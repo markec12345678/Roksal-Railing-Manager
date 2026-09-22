@@ -26,7 +26,8 @@ export async function POST(request: Request) {
     }
 
     const mobileProjects = Array.isArray(body) ? body : [body]
-    const syncedProjects = []
+    // Untyped `[]` infers `never[]`, so every push below was a type error.
+    const syncedProjects: Array<Record<string, unknown>> = []
 
     for (const mobileProject of mobileProjects) {
       let existingProject = await db.project.findFirst({

@@ -9,16 +9,7 @@ import { FileDown, Loader2, FileText, FileCheck2 } from 'lucide-react'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 
-interface Project {
-  id: string
-  nazivProjekta: string
-  status: string
-  datumMontaze?: string | null
-  opombe?: string | null
-  customer?: { ime: string; naslov: string; telefon?: string | null }
-  monter?: { ime: string }
-  measurements?: Array<{ dolzinaMm: number; visinaMm: number; createdAt: string }>
-}
+import type { Project } from '@/lib/types'
 
 interface Photo {
   id: string

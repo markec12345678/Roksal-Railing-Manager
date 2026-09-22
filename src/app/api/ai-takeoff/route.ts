@@ -112,6 +112,10 @@ export async function POST(request: Request) {
     // 1. VLM analiza slike
     const zai = await ZAI.create()
     const completion = await zai.chat.completions.createVision({
+      // `model` is required by CreateChatCompletionVisionBody; without it the SDK
+      // call was a type error and the route 500'd at runtime. Override per
+      // deployment with ZAI_VISION_MODEL.
+      model: process.env.ZAI_VISION_MODEL || 'glm-4.5v',
       messages: [
         {
           role: 'user',

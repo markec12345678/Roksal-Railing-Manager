@@ -20,18 +20,7 @@ import {
 } from 'lucide-react'
 import jsPDF from 'jspdf'
 
-interface Project {
-  id: string
-  nazivProjekta: string
-  status: string
-  dealLocked: boolean
-  dealLockedAt: string | null
-  dealSignedBy: string | null
-  dealSignedByMonter: string | null
-  marginLocked: number | null
-  estimatedPrice: number | null
-  customer?: { ime: string; naslov: string }
-}
+import type { Project, SignatureAuditEntry } from '@/lib/types'
 
 interface BomItem {
   kategorija: string
@@ -50,18 +39,9 @@ interface BomDraft {
   notes?: string
 }
 
-interface SignatureAuditEntry {
-  id: string
-  signatureType: string
-  signedByName: string
-  signedByRole: string | null
-  hasSignature: boolean
-  ipAddress: string | null
-  userAgent: string | null
-  deviceFingerprint: string | null
-  pdfHash: string | null
-  createdAt: string
-}
+// SignatureAuditEntry moved to src/lib/types.ts — the API returns geoLatitude
+// and geoLongitude (signature-audit/route.ts) and this component reads both, so
+// the old local copy made six property accesses type-errors.
 
 export function PostSignaturePanel({ project }: { project: Project }) {
   const [loading, setLoading] = useState(true)
