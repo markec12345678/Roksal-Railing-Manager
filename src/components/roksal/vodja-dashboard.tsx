@@ -3,10 +3,13 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
+import { useToast } from '@/hooks/use-toast'
+import { generateMonthlyReport } from '@/lib/boss-report-pdf'
 import {
   TrendingUp, Clock, Users, Package, Euro, CheckCircle2,
-  AlertTriangle, Calendar, Truck, Bell,
+  AlertTriangle, Calendar, Truck, Bell, FileDown, Loader2,
 } from 'lucide-react'
 
 interface VodjaStats {
@@ -46,7 +49,26 @@ interface InvLite {
   datumIzdaje: string
   rokPlacilaDni: number
   placanoAt: string | null
+  kupec?: string | null // JSON snapshot { ime, naslov, ... } — za poročilo
   project?: { nazivProjekta: string } | null
+}
+
+interface ProjectFull {
+  id: string
+  nazivProjekta: string
+  status: string
+  estimatedPrice?: number | null
+  createdAt?: string
+  customer?: { ime?: string; naslov?: string } | null
+}
+
+/** Ime kupca iz JSON snapshot-a (poročilo). */
+function kupecIme(json?: string | null): string {
+  try {
+    return (JSON.parse(json ?? '') as { ime?: string })?.ime ?? ''
+  } catch {
+    return ''
+  }
 }
 
 /** Prihodki po mesecih (zadnjih 6) iz plačanih računov — za vrstični graf. */
@@ -89,9 +111,13 @@ function formatTime(d: string): string {
 }
 
 export function VodjaDashboard() {
+  const { toast } = useToast()
   const [stats, setStats] = useState<VodjaStats | null>(null)
   const [termini, setTermini] = useState<TerminDanes[]>([])
   const [prihodki, setPrihodki] = useState<{ label: string; eur: number }[]>([])
+  const [allProjects, setAllProjects] = useState<ProjectFull[]>([])
+  const [allInvoices, setAllInvoices] = useState<InvLite[]>([])
+  const [reportLoading, setReportLoading] = useState(false)
   const [loading, setLoading] = useState(true)
 
   const loadData = useCallback(async () => {
@@ -226,12 +252,80 @@ export function VodjaDashboard() {
       })
       setTermini(vsiTerminiDanes)
       setPrihodki(prihodkiPoMesecih(invoices))
+      // celotne vhodne podatke si zapomnimo za izvoz PDF poročila (runda M)
+      setAllProjects(Array.isArray(projects) ? projects : [])
+      setAllInvoices(Array.isArray(invoices) ? invoices : [])
     } catch {
       /* ignore */
     } finally {
       setLoading(false)
     }
   }, [])
+
+  /** Mesečno PDF poročilo — KPI + graf + računi + projekti + opozorila. */
+  function downloadReport() {
+    if (!stats) return
+    setReportLoading(true)
+    try {
+      const now = new Date()
+      const mesecZacetek = new Date(now.getFullYear(), now.getMonth(), 1)
+      const row = (inv: InvLite) => ({
+        stevilka: inv.stevilka,
+        kupec: kupecIme(inv.kupec),
+        projekt: inv.project?.nazivProjekta ?? '',
+        znesek: inv.znesek,
+        datumIzdaje: inv.datumIzdaje,
+        rokPlacilaDni: inv.rokPlacilaDni,
+        status: inv.status,
+        placanoAt: inv.placanoAt,
+      })
+      const placaniTaMesec = allInvoices
+        .filter((inv) => inv.status === 'PLACAN' && inv.placanoAt && new Date(inv.placanoAt) >= mesecZacetek)
+        .map(row)
+      const izdaniZapadli = allInvoices
+        .filter((inv) => {
+          if (inv.status !== 'IZDAN') return false
+          const rok = new Date(inv.datumIzdaje)
+          rok.setDate(rok.getDate() + (inv.rokPlacilaDni || 8))
+          return rok < now
+        })
+        .map(row)
+
+      generateMonthlyReport({
+        mesec: { year: now.getFullYear(), month: now.getMonth() },
+        generatedAt: now,
+        stats: {
+          prihodekMesec: stats.mesecniPrihodek,
+          marza: stats.mesecnaMarza,
+          odprtoZnesek: stats.odprtoZnesek,
+          zapadloZnesek: stats.zapadloZnesek,
+          zapadloSt: stats.zapadloSt,
+          projektovNovih: stats.mesecnoProjektov,
+          ureMesec: stats.mesecnoUr,
+          skupajProjektov: stats.skupajProjektov,
+          skupajStrank: stats.skupajStrank,
+          skupniLTV: stats.skupniLTV,
+          nizkaZaloga: stats.nizkaZaloga,
+          odprtaNarocila: stats.odprtaNarocila,
+          potekliOpomniki: stats.potekliOpomniki,
+        },
+        prihodki6: prihodki,
+        placaniTaMesec,
+        izdaniZapadli,
+        projekti: allProjects.map((p) => ({
+          naziv: p.nazivProjekta,
+          stranka: p.customer?.ime ?? '',
+          status: p.status,
+          cena: p.estimatedPrice ?? null,
+        })),
+      })
+      toast({ title: 'Poročilo shranjeno ✓', description: `Mesečno poročilo ${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')} PDF` })
+    } catch {
+      toast({ title: 'Napaka pri generiranju poročila', variant: 'destructive' })
+    } finally {
+      setReportLoading(false)
+    }
+  }
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -250,35 +344,47 @@ export function VodjaDashboard() {
   return (
     <div className="space-y-4 p-4">
       {/* Naslov */}
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <TrendingUp className="h-5 w-5 text-roksal-amber" />
         <h2 className="text-base font-bold text-roksal-navy">Pregled za vodjo</h2>
-        <Badge variant="outline" className="ml-auto text-[9px] bg-roksal-amber/10 text-roksal-amber">
+        <Badge variant="outline" className="text-[9px] bg-roksal-amber/10 text-roksal-amber">
           {new Date().toLocaleDateString('sl-SI', { weekday: 'long', day: '2-digit', month: 'long' })}
         </Badge>
+        {/* Mesečno poročilo PDF (runda M) — KPI + graf + računi + projekti */}
+        <Button
+          size="sm"
+          variant="outline"
+          className="ml-auto h-8 gap-1.5 border-roksal-navy/25 text-xs text-roksal-navy transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-navy focus-visible:ring-roksal-amber/50"
+          onClick={downloadReport}
+          disabled={reportLoading}
+          aria-label="Prenesi mesečno PDF poročilo"
+        >
+          {reportLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileDown className="h-3.5 w-3.5" />}
+          Poročilo PDF
+        </Button>
       </div>
 
       {/* Današnji pregled */}
       <div>
         <h3 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Danes</h3>
         <div className="grid grid-cols-3 gap-2">
-          <Card className="border-blue-200">
+          <Card className="group border-blue-200 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-blue-300">
             <CardContent className="p-3 text-center">
-              <Calendar className="h-4 w-4 mx-auto text-blue-600 mb-1" />
+              <Calendar className="h-4 w-4 mx-auto text-blue-600 mb-1 transition-transform duration-200 group-hover:scale-110" />
               <div className="text-xl font-bold text-roksal-navy">{stats.danasTermini}</div>
               <div className="text-[9px] text-muted-foreground">Termini</div>
             </CardContent>
           </Card>
-          <Card className="border-amber-200">
+          <Card className="group border-amber-200 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-amber-300">
             <CardContent className="p-3 text-center">
-              <Clock className="h-4 w-4 mx-auto text-amber-600 mb-1" />
+              <Clock className="h-4 w-4 mx-auto text-amber-600 mb-1 transition-transform duration-200 group-hover:scale-110" />
               <div className="text-xl font-bold text-amber-700">{stats.danasVpripravi}</div>
               <div className="text-[9px] text-muted-foreground">V teku</div>
             </CardContent>
           </Card>
-          <Card className="border-green-200">
+          <Card className="group border-green-200 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-green-300">
             <CardContent className="p-3 text-center">
-              <CheckCircle2 className="h-4 w-4 mx-auto text-green-600 mb-1" />
+              <CheckCircle2 className="h-4 w-4 mx-auto text-green-600 mb-1 transition-transform duration-200 group-hover:scale-110" />
               <div className="text-xl font-bold text-green-700">{stats.danasZakljuceni}</div>
               <div className="text-[9px] text-muted-foreground">Zaključeni</div>
             </CardContent>
@@ -322,7 +428,7 @@ export function VodjaDashboard() {
       <div>
         <h3 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Ta mesec</h3>
         <div className="grid grid-cols-2 gap-2">
-          <Card className="border-roksal-navy/20">
+          <Card className="border-roksal-navy/20 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
             <CardContent className="p-3">
               <div className="flex items-center gap-1 mb-1">
                 <Euro className="h-3 w-3 text-roksal-navy" />
@@ -332,7 +438,7 @@ export function VodjaDashboard() {
               <div className="text-[9px] text-muted-foreground">iz plačanih računov</div>
             </CardContent>
           </Card>
-          <Card className="border-green-200">
+          <Card className="border-green-200 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
             <CardContent className="p-3">
               <div className="flex items-center gap-1 mb-1">
                 <TrendingUp className="h-3 w-3 text-green-600" />
@@ -341,7 +447,7 @@ export function VodjaDashboard() {
               <div className="text-lg font-bold text-green-700">{formatEUR(stats.mesecnaMarza)}</div>
             </CardContent>
           </Card>
-          <Card className="border-purple-200">
+          <Card className="border-purple-200 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
             <CardContent className="p-3">
               <div className="flex items-center gap-1 mb-1">
                 <Package className="h-3 w-3 text-purple-600" />
@@ -350,7 +456,7 @@ export function VodjaDashboard() {
               <div className="text-lg font-bold text-roksal-navy">{stats.mesecnoProjektov}</div>
             </CardContent>
           </Card>
-          <Card className="border-amber-200">
+          <Card className="border-amber-200 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
             <CardContent className="p-3">
               <div className="flex items-center gap-1 mb-1">
                 <Clock className="h-3 w-3 text-amber-600" />
@@ -375,7 +481,11 @@ export function VodjaDashboard() {
                 const h = Math.max((m.eur / max) * 76, m.eur > 0 ? 6 : 2)
                 const isCurrent = m === prihodki[prihodki.length - 1]
                 return (
-                  <div key={m.label} className="flex flex-1 flex-col items-center justify-end gap-1" title={`${m.label}: ${formatEUR(m.eur)}`}>
+                  <div
+                    key={m.label}
+                    className="flex flex-1 flex-col items-center justify-end gap-1 transition-opacity duration-200 hover:opacity-80"
+                    title={`${m.label}: ${formatEUR(m.eur)}`}
+                  >
                     {m.eur > 0 && (
                       <span className="text-[8px] font-semibold text-roksal-navy">{formatEUR(m.eur)}</span>
                     )}

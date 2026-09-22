@@ -591,3 +591,58 @@ Stage Summary:
 - Naslednje runde: FURS davčni blagajni režim, LiDAR iOS (realen iPhone),
   eSlog XSD validacija v produkciji, mesečno poročilo PDF za vodjo,
   opcijsko: filter strankine meritve po segmentih
+
+---
+Task ID: 12 (runda M — cron webDevReview)
+Agent: Main Orchestrator (Z.ai Code)
+Task: QA ocena + mesečno PDF poročilo za vodjo + plačilni opomnik za zapadle račune + stilski dodelavi
+
+Work Log:
+- QA start: dev strežnik tekel (sistemski iz boot-a), agent-browser: prijava demo ✓,
+  dashboard ✓, Meritve (izbrnik sync, "Stranka vs merilec" +8.4 % Orientacija) ✓,
+  vodja pregled (1252 €, LTV 9150 €) ✓, CRM plošča + follow-upi + računi ✓,
+  mobilni 390px brez overflowa ✓, dev.log čist, tsc/lint čisti — brez bugov → razvoj po backlogu runde L
+- M-1 Mesečno poročilo PDF (novo, src/lib/boss-report-pdf.ts + gumb v vodja-dashboard.tsx):
+  · en A4: navy glava (mesec/leto), 6 KPI polij (prihodek, marža, odprto, zapadlo
+    rdeče z (št.), novih projektov, ure), stolpčni graf prihodkov 6 mesecev
+    (jsPDF primitivi, trenutni mesec amber), tabela plačanih računov meseca
+    (kupec iz JSON snapshot-a), tabela zapadlih (rdeča glava, dni zapadlo),
+    projekti po statusu (slovenske oznake, cene), opozorila (zapadli/nizka
+    zaloga/naročila/opomniki), sklepna vrstica + noga na vsaki strani (Stran X/Y)
+  · E2E: download ✓ → pdftotext šumniki ✓ (MESEČNO POROČILO, Plačani, Zapadlo),
+    vsebina ✓ (1252 €, 2026-001 1251,72 €, 2026-TEST 16 dni 893,04 €, 3 projekti,
+    opozorili) → prva verzija prelila na 2 strani → NATISKO za 1 stran (glava 30→26,
+    KPI 18→16, graf 42→34, razmiki 8→6) → pdfinfo Pages: 1 ✓ + vizualni pregled PNG ✓
+- M-2 Plačilni opomnik (invoice-manager.tsx, generateOpomnik):
+  · gumb "Opomnik" (BellRing, rdeč outline) SAMO na IZDAN + zapadlih računih
+    (med Plačan in Storno); aria-label + title z dnevi zapadlosti
+  · PDF: glava z rdečo letvico, PREJEMNIK + zadeva/projekt, rdeči box
+    "Račun je zapadel N dni" (izvirni rok + odprt znesek), vsote (navy Za
+    plačilo), vljudno besedilo + pravna klavzula obresti, PLAČILNI PODATKI blok
+    (TRR/referenca/znesek/rok), UPN QR (isti nalog), "ni račun po ZDDV-1" noga
+  · E2E: download opomnik-2026-TEST.pdf (820 KB, QR vgrajen) → pdftotext ✓,
+    vizualno ✓, 1 stran ✓
+- M-3 Seed: determinističen zapadli demo račun 2026-TEST (Zupan, IZDAN, izdan
+  −24 dni, rok 8 → ~16 dni zapadlo, 732 + 22 % = 893,04 €) → sveži deployi takoj
+  pokažejo Zapadlo značko, obvestilo in Opomnik gumb; idempotenten upsert po stevilka
+- M-4 STYLING (mandatory): vodja pregled — vse kartice (Danes 3×, Ta mesec 4×)
+  hover:-translate-y-0.5 + hover:shadow-md + border poudarek + ikona scale-110
+  (group-hover, 200 ms); graf hover:opacity-80; poročilo gumb z amber hover ring;
+  računi — Opomnik gumb hover:bg-red-100; vse z transition-all duration-200
+- KRITIČNO sandbox znanje (runda M): procesi zagnani iz Bash klica (tudi setsid+nohup)
+  UMREJO ob koncu klica; preživi SAMO pravilno daemoniziran proces:
+  `bun -e "Bun.spawn(['sh','-c','cd /home/z/my-project && exec bun run dev >> dev.log 2>&1'], {stdin:'ignore', stdout:'ignore', stderr:'ignore'}); await Bun.sleep(200)"`
+  (re-parent na init, kot agent-browser daemon). Poleg tega: sandbox ima 4 GB RAM —
+  chrome rendererji + Turbopack kompilacija + dodatni dev primerki → OOM killer ubije
+  next-server (~1,4 GB RSS); zato NE zaganjaj več dev strežnikov hkrati
+
+Stage Summary:
+- Vodja ima zdaj en klik do kompletnega mesečnega poročila (KPI + graf + računi +
+  projekti + opozorila na enem A4, šumniki pravilni) — prvi PDF izvoz iz vodja pregleda
+- Izterjava: zapadli računi imajo en klik do pripravljenega plačilnega opomnika s
+  UPN QR; demo baza vsebuje realen zapadli primer (2026-TEST)
+- Sandbox: rešena uganka ponavljajočih se "ugasnjenih" dev strežnikov (Bash-lifecycle
+  kill) + OOM ograjevanje — zapisano za naslednje runde
+- Naslednje runde: LiDAR iOS (realen iPhone), FURS davčni blagajni režim (prostor/
+  naprava), eSlog XSD validacija v produkciji, UPN QR v predplačilnih listih portala;
+  opcijsko: poročilo po strankah/opirih, email pošiljanje poročila/opomnika

@@ -162,6 +162,43 @@ async function main() {
     }
   }
 
+  // ── zapadli demo račun (runda M) ──
+  // IZDAN račun za projekt Zupan, izdan 24 dni nazaj z rokom 8 dni → ~16 dni
+  // zapadlo. Namen: demo "Zapadlo" značke, obvestila in gumba Plačilni
+  // opomnik. Idempotenten po unikatni številki.
+  const proj2 = await db.project.findFirst({ where: { nazivProjekta: { contains: 'Zupan' } } })
+  if (proj2) {
+    const opomnikOsnova = 732
+    const opomnikDdv = Math.round(opomnikOsnova * 0.22 * 100) / 100
+    await db.invoice.upsert({
+      where: { stevilka: '2026-TEST' },
+      update: {},
+      create: {
+        projectId: proj2.id,
+        tip: 'RACUN',
+        stevilka: '2026-TEST',
+        datumIzdaje: new Date(Date.now() - 24 * 86400000),
+        datumStoritve: new Date(Date.now() - 24 * 86400000),
+        rokPlacilaDni: 8,
+        status: 'IZDAN',
+        postavke: JSON.stringify([
+          { opis: 'WPC ograja — preddelava in dobava materiala', kolicina: 6, enota: 'm', cenaNaEnoto: 85.5, ddvStopnja: 22 },
+          { opis: 'Demontaža stare ograje', kolicina: 1, enota: 'kos', cenaNaEnoto: 220.8, ddvStopnja: 22 },
+        ]),
+        kupec: JSON.stringify({
+          ime: 'Maja Zupan',
+          naslov: 'Prešernova 22, 4220 Škofja Loka',
+          telefon: '+386 41 777 888',
+          email: 'maja.zupan@email.si',
+        }),
+        osnova: opomnikOsnova,
+        ddv: opomnikDdv,
+        znesek: Math.round((opomnikOsnova + opomnikDdv) * 100) / 100,
+        opombe: 'Demo račun za prikaz zapadlosti in plačilnega opomnika.',
+      },
+    })
+  }
+
   // ── zaloga ──
   const inventoryItems = [
     { sifra: 'WPC-120-A', naziv: 'WPC Deska 120mm Anthracite', tip: 'WPC_deska', zaloga: 450, enota: 'm', min: 100 },

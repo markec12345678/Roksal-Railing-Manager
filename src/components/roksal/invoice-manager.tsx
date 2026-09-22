@@ -50,6 +50,7 @@ import {
   FileCode2,
   Copy,
   Banknote,
+  BellRing,
 } from 'lucide-react'
 
 // ---------- tipi ----------
@@ -610,6 +611,169 @@ export function InvoiceManager() {
     toast({ title: 'PDF shranjen ✓' })
   }
 
+  /**
+   * Plačilni opomnik (runda M) — za zapadle izdane račune. Ni račun po
+   * ZDDV-1 — le vljudna/uradna spomnilna listina: povzetek računa, dni
+   * zapadlosti, plačilni podatki + UPN QR (isti nalog, rok = izvirni rok).
+   */
+  async function generateOpomnik(inv: Invoice) {
+    const kupec = parseKupec(inv.kupec)
+    const dniZapadlo = zapadlaDni(inv) ?? 0
+    const doc = new jsPDF()
+    registerSloPdfFonts(doc)
+
+    let upnQrUrl: string | null = null
+    try {
+      upnQrUrl = await QRCode.toDataURL(upnQrString(inv, kupec), {
+        errorCorrectionLevel: 'M',
+        margin: 1,
+        width: 512,
+        color: { dark: '#1d2b3e', light: '#ffffff' },
+      })
+    } catch {
+      upnQrUrl = null
+    }
+
+    // Glava (enaka identiteta kot račun, rdeč akcent letvice)
+    doc.setFillColor(29, 43, 62)
+    doc.rect(0, 0, 210, 34, 'F')
+    doc.setFillColor(220, 38, 38)
+    doc.rect(0, 34, 210, 1.4, 'F')
+    doc.setTextColor(250, 179, 32)
+    doc.setFont('Roboto', 'bold')
+    doc.setFontSize(18)
+    doc.text('ROKSAL', 14, 15)
+    doc.setTextColor(255, 255, 255)
+    doc.setFont('Roboto', 'normal')
+    doc.setFontSize(9)
+    doc.text(`${IZDAJATELJ.naziv} — ograje in balustrade`, 14, 21)
+    doc.text(`${IZDAJATELJ.naslov}, ${IZDAJATELJ.posta}`, 14, 26)
+
+    doc.setFont('Roboto', 'bold')
+    doc.setFontSize(16)
+    doc.text('PLAČILNI OPOMNIK', 196, 15, { align: 'right' })
+    doc.setFontSize(10)
+    doc.setFont('Roboto', 'normal')
+    doc.text(new Date().toLocaleDateString('sl-SI'), 196, 22, { align: 'right' })
+
+    // Zadeva + prejemnik
+    doc.setFontSize(9)
+    doc.setTextColor(80, 80, 80)
+    doc.text('PREJEMNIK:', 14, 45)
+    doc.setTextColor(0, 0, 0)
+    doc.setFont('Roboto', 'bold')
+    doc.setFontSize(11)
+    doc.text(kupec?.ime ?? '—', 14, 51)
+    doc.setFont('Roboto', 'normal')
+    doc.setFontSize(9)
+    if (kupec?.naslov) doc.text(kupec.naslov, 14, 56)
+
+    doc.setTextColor(80, 80, 80)
+    doc.text(`Zadeva: zapadel račun št. ${inv.stevilka}`, 196, 45, { align: 'right' })
+    doc.setTextColor(0, 0, 0)
+    doc.text(`Projekt: ${inv.project?.nazivProjekta ?? '—'}`, 196, 50, { align: 'right' })
+
+    // Rdeči povzetek zapadlosti
+    doc.setFillColor(254, 242, 242)
+    doc.setDrawColor(220, 38, 38)
+    doc.setLineWidth(0.4)
+    doc.roundedRect(14, 64, 182, 20, 2, 2, 'FD')
+    doc.setLineWidth(0.2)
+    doc.setFont('Roboto', 'bold')
+    doc.setFontSize(11)
+    doc.setTextColor(185, 28, 28)
+    doc.text(`Račun je zapadel ${dniZapadlo} dni`, 20, 72)
+    doc.setFont('Roboto', 'normal')
+    doc.setFontSize(9)
+    doc.setTextColor(80, 80, 80)
+    doc.text(
+      `Izvirni rok plačila: ${rokPlacilaDatum(inv).toLocaleDateString('sl-SI')}   ·   Odprt znesek: ${eur(inv.znesek)}`,
+      20,
+      79
+    )
+
+    // Vsote
+    autoTable(doc, {
+      startY: 92,
+      body: [
+        ['Osnova', eur(inv.osnova)],
+        ['DDV', eur(inv.ddv)],
+        ['Za plačilo', eur(inv.znesek)],
+      ],
+      theme: 'grid',
+      styles: { fontSize: 9, cellPadding: 2, font: 'Roboto' },
+      columnStyles: { 0: { cellWidth: 60, fontStyle: 'bold' }, 1: { halign: 'right' } },
+      didParseCell: (data) => {
+        if (data.section === 'body' && data.row.index === 2) {
+          data.cell.styles.fillColor = [29, 43, 62]
+          data.cell.styles.textColor = [255, 255, 255]
+          data.cell.styles.fontStyle = 'bold'
+        }
+      },
+      margin: { left: 120 },
+    })
+
+    // Besedilo opomnika
+    const besediloY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 10
+    doc.setFont('Roboto', 'normal')
+    doc.setFontSize(9)
+    doc.setTextColor(40, 40, 40)
+    const odstavek1 =
+      `Vljudno vas prosimo, da znesek ${eur(inv.znesek)} za račun št. ${inv.stevilka} ` +
+      `v najkrajšem možnem času poravnate na transakcijski račun ${IZDAJATELJ.trr} ` +
+      `(referenca: SI12 ${inv.stevilka}).`
+    const odstavek2 =
+      'Če je plačilo že opravljeno, sprejmite to sporočilo kot zahvalo in ga štejte za nič. ' +
+      'V primeru, da plačila ne uredite v naslednjih 8 dneh, si pridružujemo pravico, da ' +
+      'zaračunamo zakonske zamudne obresti in vstopimo v izterjevalni postopek.'
+    let by = besediloY
+    doc.text(doc.splitTextToSize(odstavek1, 180), 14, by)
+    by += doc.splitTextToSize(odstavek1, 180).length * 4.5 + 3
+    doc.text(doc.splitTextToSize(odstavek2, 180), 14, by)
+    by += doc.splitTextToSize(odstavek2, 180).length * 4.5 + 6
+
+    // Plačilni podatki (mono-ish blok)
+    doc.setFillColor(248, 250, 252)
+    doc.setDrawColor(226, 232, 240)
+    doc.roundedRect(14, by, 182, 24, 2, 2, 'FD')
+    doc.setFont('Roboto', 'bold')
+    doc.setFontSize(8)
+    doc.setTextColor(29, 43, 62)
+    doc.text('PLAČILNI PODATKI', 18, by + 6)
+    doc.setFont('Roboto', 'normal')
+    doc.setFontSize(8.5)
+    doc.setTextColor(60, 60, 60)
+    doc.text(`Prejemnik: ${IZDAJATELJ.naziv}`, 18, by + 12)
+    doc.text(`TRR: ${IZDAJATELJ.trr}   ·   Referenca: SI12 ${inv.stevilka}`, 18, by + 17)
+    doc.text(`Znesek: ${eur(inv.znesek)}   ·   Rok: takoj (izvirni rok ${rokPlacilaDatum(inv).toLocaleDateString('sl-SI')})`, 18, by + 22)
+
+    // UPN QR
+    if (upnQrUrl) {
+      doc.setFont('Roboto', 'bold')
+      doc.setFontSize(8)
+      doc.setTextColor(0, 0, 0)
+      doc.text('UPN QR — plačilo z mobilno banko', 14, 243)
+      doc.addImage(upnQrUrl, 'PNG', 14, 247, 28, 28)
+      doc.setFont('Roboto', 'normal')
+      doc.setFontSize(7)
+      doc.setTextColor(90, 90, 90)
+      doc.text(`Preberi QR z aplikacijo banke — plačilo ${eur(inv.znesek)}`, 47, 251)
+      doc.text('se izpolni samodejno (nalog za izvirni račun velja še).', 47, 255)
+      doc.text(`Referenca: SI12 ${inv.stevilka}`, 47, 259)
+    }
+
+    doc.setFontSize(7.5)
+    doc.setTextColor(120, 120, 120)
+    doc.text(
+      'Ta dokument ni račun po ZDDV-1 — upoštevati ga je treba skupaj s pripadajočim računom št. ' + inv.stevilka + '.',
+      14,
+      280
+    )
+
+    doc.save(`opomnik-${inv.stevilka}.pdf`)
+    toast({ title: 'Opomnik shranjen ✓', description: `Plačilni opomnik za račun ${inv.stevilka} (${dniZapadlo} dni zapadlo)` })
+  }
+
   // ---------- render ----------
 
   return (
@@ -761,6 +925,18 @@ export function InvoiceManager() {
                         >
                           <CheckCircle2 className="h-3 w-3" /> Plačan
                         </Button>
+                        {zapadlo && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs border-red-300 text-red-700 hover:bg-red-100 hover:text-red-800 transition-colors focus-visible:ring-red-400"
+                            onClick={() => generateOpomnik(inv)}
+                            title={`Plačilni opomnik — zapadlo ${zapadlo} dni`}
+                            aria-label={`Plačilni opomnik za račun ${inv.stevilka}`}
+                          >
+                            <BellRing className="h-3 w-3" /> Opomnik
+                          </Button>
+                        )}
                         <Button
                           size="sm"
                           variant="outline"
