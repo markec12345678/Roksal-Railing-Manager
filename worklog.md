@@ -854,3 +854,62 @@ Stage Summary:
   arMetadata/izračun), 3D montažni pogled po segmentih, USDZ validacija na
   iPhone, LiDAR iOS, FURS davčna blagajna, eSlog XSD
 
+
+---
+Task ID: 16 (runda Q — uporabniška zahteva: "v koži monterja, kaj pogrešaš?")
+Agent: Main Orchestrator (Z.ai Code)
+Task: Terenski pregled monterja — zapisnik pred montažo + pametni seznam "s seboj prinesti"
+
+Work Log:
+- ANALIZA "v koži monterja": na terenu monterja sprejme: kaj je objekt (balkon/
+  stopnišče/…), NA KAJ se vrtne (podlaga določa moznike — estrih+folija = KEMIJA,
+  NE ekspanzija!), ovire (cevi/vtičnice → detektor), dostop (dvigalo?) in DA NE
+  PREGREŠI: foto kontrolni seznam + orodje. Slike/kalkulator/AR so bili —
+  STRUKTURIRAN pregled pred montažo je manjkal.
+- Q-1 PRISMA: model SiteSurvey (en zapisnik na projekt, projectId @unique):
+  tipObjekta/oblika/pritrditev/podlaga (enum-string), razponNajdaljsiMm/
+  skupnaDolzinaMm/visinaMm/steviloStopnic/razhodMm, ovire (CSV), dvigalo,
+  dostopOpomba, fotoPosneto (CSV), opombe, zakljuceno. db push OK.
+- FIX (pomemben za prihodnost): po db pushu je Next dev držal ZASTAREL Prisma
+  client (db.siteSurvey undefined, 500). Vzrok: src/lib/db.ts cache na globalThis
+  s ključem SCHEMA_VERSION — treba je DVIGNETI ob vsaki spremembi sheme (tudi
+  Turbopack .next cache je držal star modul → rešitev: bump + rm -rf .next +
+  čist restart; dvakrat zapored zagnana dev procesa sta si tudi tekmévala za
+  cache — samo EN proces!). SCHEMA_VERSION → 'v2-portal-2026-09-q-sitesurvey'
+- Q-2 API /api/surveys: GET ?projectId, POST upsert (zod validacija, enaki
+  vzorci kot punch route; ovire/fotoPosneto kot pipe-CSV)
+- Q-3 UI site-survey-tab.tsx (Več → Terenski pregled, PRVI v seznamu):
+  · status kartica: completion % (mere + stopnice + dostop + 6 fotos) + Progress
+    + števec opozoril (top 2 v bannerju) + "zaključen" badge
+  · 1 tip objekta: 6 tile (Balkon/Stopnišče/Terasa/Loža/Friz/Nad prehodom) z
+    ikonami, 2 oblika (ravno/L/U/krožno) + pritrditev (obrobna/tloris/stena/
+    mešano) z opisi, 3 PODLAGA (6 chips, barvno: estrih/ploščice amber,
+    neznana rdeča) + rdeča opozorila pri estrihu (hidroizolacija!)
+  · mere (mm, "iz AR skenerja ali traku") + če stopnice: št. stopnic + razhod
+    (150–190 mm hint, povezava na Nagib zavihek) + živ izračun segmentov
+  · ovire: 8 toggle chips (cevi/vtičnice rdeče = detektor), dvigalo Switch +
+    dostop opomba, foto kontrolni seznam 6 točk ("slikat MORAŠ" — razpon s
+    trakom v kadiru, detajl podlage, ovire, …) z ✓ toggles
+  · DESNO (sticky lg): "S seboj prinesti" — ŽIVO iz zapisnika: orodje (vedno 5),
+    pritrdilni material po podlagi/pritrditvi/obliki (kemija za estrih! bimetal
+    za kovino, karbid za ploščice…), opozorila (detektor, dvig plan, zaščita
+    spodaj pri prehodu, NE vrtaj folije) — checkboxi za odštevanje + Kopiraj
+    seznam (clipboard) za ekipo
+- E2E (agent-browser): login demo → Več → Terenski pregled ✓; klik Stopnišče →
+  5 numeričnih inputov + razhod hint ✓; % se živo poveča (50 % z 1 foto) ✓;
+  pametni seznam 11 točk (kemija/detektor/kotomer živo) ✓; "Zaključi pregled" →
+  toast "Pregled zaključen ✓" ✓; DB verify: zakljuceno=true, podlaga=estrih,
+  ovire=cevi, fotoPosneto=tip1 ✓; mobilni 390px brez overflowa ✓; tsc+lint
+  čista ✓; desktop screenshot potrjuje stil (barvni chips, amber banneri,
+  sticky seznam, checkboxi)
+- Push: 1705889..9874c53 → origin/main (Vercel auto-deploy)
+
+Stage Summary:
+- Monter ima zdaj "first-visit" orodje: 5-minutni zapisnik, ki prepreči najdražje
+  napake (napačni mozniki na estrihu = reklamacija; pozabljeno orodje = odhod z
+  objekta; cev v podlagi = vrtanje v instalacijo) — foto checklist zagotavlja
+  dokazljivo dokumentacijo za ponudbo/reklamacijo
+- Seznam "s seboj prinesti" je čisto podatkovni (buildBringList) — enostavno
+  razširljiv (npr. JSON export, delitev na ekipo, material naročilo)
+- Naslednje runde: zapisnik → BOM predlog (podlaga → mozniki v materialni izračun),
+  PDF izvoz zapisnika, RAL iz zapisnika v kalkulator/3D, ekipna delitev seznama
