@@ -193,6 +193,11 @@ model InventoryMovement {
   id          String    @id @default(cuid())
   inventoryId String
   projectId   String?
+  /// Naročilo, ki je povzročilo premik (dobava). Nullable, ker so ročni
+  /// prevzemi/izdaje brez naročila. Dodano, ker je material-orders/route.ts
+  /// že ves čas pisal `orderId` — brez tega polja je bila vsaka dobava
+  /// tipkovna napaka in 500 ob prejemu naročila.
+  orderId     String?
   kolicina    Float
   tipPremika  String
   createdAt   DateTime  @default(now())
@@ -200,6 +205,8 @@ model InventoryMovement {
 
   inventory Inventory @relation(fields: [inventoryId], references: [id])
   project   Project?  @relation(fields: [projectId], references: [id])
+
+  @@index([orderId])
 }
 
 // ============================================
