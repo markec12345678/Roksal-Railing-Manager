@@ -355,14 +355,30 @@ cp .env.example .env  # DATABASE_URL="file:../db/custom.db"
 #                       zato ../db in ne ./db — s ./db baza ni najdena (Error code 14)
 #                       in vsi API endpointi vrnejo 500. Nikoli ne commitaj strojne poti.
 
-# 4. Inicializiraj bazo
-bun run db:push        # sinhroniziraj Prisma shemo
-bunx tsx prisma/seed.ts # sejaj demo podatke (10 profilov, 3 stranke, 4 projekti)
+# 4. Inicializiraj bazo (baza NI v gitu — ustvariš jo tukaj)
+bun run db:push         # sinhroniziraj Prisma shemo
+bunx tsx prisma/seed.ts # demo podatki (10 profilov, 3 stranke, 4 projekti)
 
-# 5. Zaženi razvojni server
+# 5. Ustvari svoj račun z geslom (prijava je obvezna)
+#    V .env mora biti SESSION_SECRET — brez njega prijava ne dela (fail closed).
+bunx tsx tools/create-admin.ts ti@roksal.si ADMIN 'TvojeGeslo'
+
+# 6. API ključ za mobilni klient (BalkonAR) — vidiš ga samo enkrat
+bunx tsx tools/create-api-key.ts "Moj telefon"
+
+# 7. Zaženi razvojni server
 bun run dev
-# → http://localhost:3000
+# → http://localhost:3000  (preusmeri na /login)
+
+# 8. Preveri, da varnost res deluje
+BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
+  python3 tools/security-smoke.py     # mora biti 48/48 zelenih
 ```
+
+> **Produkcijska namestitev** (VPS + Caddy + HTTPS + systemd + backup) je opisana
+> v [`deploy/README.md`](deploy/README.md). Korenski `Caddyfile` je samo za lokalni
+> razvoj — prejšnja različica je vsebovala odprt proxy (`?XTransformPort=`),
+> ki je bil ostanek preview-mehanizma AI graditelja.
 
 ### Skripte
 
@@ -577,6 +593,10 @@ CMD ["bun", "run", "start"]
 ---
 
 ## 🔒 Varnost
+
+> Od 2026-09-22: prijava s scrypt gesli in podpisanimi sejnimi žetoni, zaščitenih
+> vseh 24 podatkovnih API rut, API ključi s hashem v bazi. Preveri z
+> `python3 tools/security-smoke.py` (48 preverjanj). Podrobnosti v [`FIXES.md`](FIXES.md).
 
 ### Avtentikacija
 

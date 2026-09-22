@@ -10,6 +10,22 @@ Analiza in utemeljitev: [`docs/PRIMERJAVA.md`](docs/PRIMERJAVA.md).
 
 ---
 
+## 0. Varnost (dodano kasneje — glej [`docs/VARNOST.md`](docs/VARNOST.md))
+
+Pregled produkcijske pripravljenosti je našel, da aplikacija **ni bila varna za javno
+namestitev**: 27 od 28 API rut je bilo javnih, `/api/auth` je za poljuben e-mail ustvaril
+ADMIN račun (gesla sploh ni preverjal), `/api/sync` je "avtenticiral" s predpono ključa,
+ki je bila zapisana v javnem repu, `db/custom.db` je bila v git zgodovini, `Caddyfile`
+pa je vseboval odprt proxy (`?XTransformPort=` → SSRF).
+
+Narejeno: prijava s scrypt gesli in HMAC podpisanimi sejnimi žetoni, `src/proxy.ts`
+(Next 16 konvencija, ne zastareli `middleware.ts`), `authenticate()` v vseh 24
+podatkovnih rutah (57 handlerjev), API ključi s hashem v bazi in preklicem, stran
+`/login`, `tools/create-admin.ts`, `tools/create-api-key.ts`, `tools/backup-db.ts`
+(`VACUUM INTO` + preverba berljivosti), baza izven gita, produkcijski Caddyfile,
+systemd enota, 26 testov kriptografije in **`tools/security-smoke.py` (48 preverjanj
+na živem strežniku, 48/48 zelenih)**. Podrobnosti v `docs/VARNOST.md`.
+
 ## 1. Blokator: aplikacija se ni zagnala s podatki
 
 | Datoteka | Sprememba | Zakaj |
