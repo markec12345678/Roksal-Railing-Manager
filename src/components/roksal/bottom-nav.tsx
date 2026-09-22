@@ -21,7 +21,7 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
-import { FileText, BookOpen, Frame } from 'lucide-react'
+import { FileText, BookOpen, Frame, MapPinned } from 'lucide-react'
 
 export type TabId =
   | 'dashboard'
@@ -51,7 +51,7 @@ const mainTabs: TabItem[] = [
   { id: 'more', label: 'Več', icon: MoreHorizontal },
 ]
 
-export type MoreTabId = 'documents' | 'safety' | 'catalog' | 'sketches' | 'gallery' | 'pdf' | 'ai' | 'floorplan' | 'signature' | 'postsig' | 'crm' | 'material' | 'logistics' | 'vodja'
+export type MoreTabId = 'teren' | 'documents' | 'safety' | 'catalog' | 'sketches' | 'gallery' | 'pdf' | 'ai' | 'floorplan' | 'signature' | 'postsig' | 'crm' | 'material' | 'logistics' | 'vodja'
 
 interface MoreTabItem {
   id: MoreTabId
@@ -61,6 +61,7 @@ interface MoreTabItem {
 }
 
 const moreTabs: MoreTabItem[] = [
+  { id: 'teren', label: 'Terenski pregled', icon: MapPinned, description: 'Zapisnik pred montažo: podlaga, ovire, dvig + "s seboj prinesti"' },
   { id: 'vodja', label: 'Pregled za vodjo', icon: BarChart3, description: 'Statistika, opozorila, današnji termini' },
   { id: 'ai', label: 'AI Takeoff', icon: Sparkles, description: 'Foto → AI → Material → Ponudba' },
   { id: 'signature', label: 'Ponudba s podpisom', icon: Pen, description: 'Podpisana PDF ponudba (V4)' },

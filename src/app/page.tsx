@@ -42,6 +42,7 @@ const MeasurementsTab = dynamic(() => import('@/components/roksal/measurements-t
 const InventoryTab = dynamic(() => import('@/components/roksal/inventory-tab').then((m) => m.InventoryTab), { ssr: false, loading: () => <TabLoading /> })
 const DocumentsTab = dynamic(() => import('@/components/roksal/documents-tab').then((m) => m.DocumentsTab), { ssr: false, loading: () => <TabLoading /> })
 const SafetyTab = dynamic(() => import('@/components/roksal/safety-tab').then((m) => m.SafetyTab), { ssr: false, loading: () => <TabLoading /> })
+const SiteSurveyTab = dynamic(() => import('@/components/roksal/site-survey-tab').then((m) => m.SiteSurveyTab), { ssr: false, loading: () => <TabLoading /> })
 const InclinometerTab = dynamic(() => import('@/components/roksal/inclinometer-tab').then((m) => m.InclinometerTab), { ssr: false, loading: () => <TabLoading /> })
 const ReferenceGallery = dynamic(() => import('@/components/roksal/reference-gallery').then((m) => m.ReferenceGallery), { ssr: false, loading: () => <TabLoading /> })
 const RoksalCatalog = dynamic(() => import('@/components/roksal/roksal-catalog').then((m) => m.RoksalCatalog), { ssr: false, loading: () => <TabLoading /> })
@@ -274,7 +275,9 @@ export default function Home() {
 
   // Ime aktivnega "več" zavihka za nazaj
   const moreLabel = moreTab
-    ? moreTab === 'vodja'
+    ? moreTab === 'teren'
+      ? 'Terenski pregled'
+      : moreTab === 'vodja'
       ? 'Pregled za vodjo'
       : moreTab === 'ai'
       ? 'AI Takeoff'
@@ -437,6 +440,7 @@ export default function Home() {
             </Button>
             <h2 className="mb-3 text-lg font-bold text-roksal-navy">{moreLabel}</h2>
             {moreTab === 'vodja' && <VodjaDashboard />}
+            {moreTab === 'teren' && <SiteSurveyTab projectId={selectedProjectId} />}
             {moreTab === 'ai' && <AiTakeoff projectId={selectedProjectId} />}
             {moreTab === 'signature' && selectedProject && (
               <SignatureQuote

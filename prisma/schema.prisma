@@ -138,6 +138,7 @@ model Project {
   schedules     InstallationSchedule[]
   punchItems    PunchItem[]
   invoices      Invoice[]
+  siteSurvey    SiteSurvey?
 }
 
 // ============================================
@@ -643,4 +644,37 @@ model Invoice {
 
   @@index([projectId])
   @@index([status])
+}
+
+// ============================================
+// 20. TERENSKI PREGLED — zapisnik monterja pred montažo (runda Q)
+// En zapisnik na projekt (upsert): kaj monterja čaka na objektu + pametni
+// seznam "s seboj prinesti" (orodje/mozniki) glede na podlago, pritrditev, ovire.
+// ============================================
+model SiteSurvey {
+  id                  String   @id @default(cuid())
+  projectId           String   @unique
+  tipObjekta          String   @default("balkon")   // balkon|stopnice|terasa|loggia|friz|prehod
+  oblika              String   @default("ravno")    // ravno|L|U|krog
+  pritrditev          String   @default("obrobna")  // obrobna|tloris|stena|mesano
+  podlaga             String   @default("neznan")   // beton|estrih|les|kovina|plocice|neznan
+  razponNajdaljsiMm   Int?
+  skupnaDolzinaMm     Int?
+  visinaMm            Int?
+  steviloStopnic      Int?
+  razhodMm            Int?
+  /// CSV ovir: cevi|vticnice|podstavki|osvetlitev|okna|locnik|vlaga|druge
+  ovire               String?
+  dvigalo             Boolean  @default(false)
+  dostopOpomba        String?
+  /// CSV posnetih točk foto kontrolnega seznama: tip1|meritve|podlaga|pritrditev|ovire|celota
+  fotoPosneto         String?
+  opombe              String?
+  zakljuceno          Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([zakljuceno])
 }
