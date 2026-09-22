@@ -125,14 +125,26 @@ popolnoma ponarejen žeton → 401, naključen žeton → 401, **stara oblika kl
 `ROKSAL_MOBILE_…` → 401**, pravi ključ → 200, ključ ne sme brati CRM → 401, portal s
 tokenom ostane dostopen.
 
+## Dodano kasneje (2026-09-22)
+
+Tri vrzeli s seznama spodaj so zdaj zapolnjene:
+
+| | Kaj je narejeno |
+|---|---|
+| **Omejevanje hitrosti** | `src/lib/rate-limit.ts` — drseče okno, 10 poskusov prijave na 15 min po (IP + e-naslov), 429 z `Retry-After`. Uspešna prijava žetona ne porabi (`releaseRate`), zato pravilen uporabnik ne more biti zaklenjen. Tudi `/api/auth/password` je omejen. |
+| **Vloge** | `denyUnless(request, roles)` v `src/lib/auth.ts`; 12 handlerjev v 7 rutah zahteva `ADMIN`/`VODJA` za pisanje. `MONTER`/`SKLADISCE` bereta, pisati ne smeta (403). API ključ ne more v poslovne rute. |
+| **Revizijski dnevnik** | `src/lib/audit.ts` — enoten zapis, nikoli ne vrže in ne blokira zahtevka. `LOGIN`, `LOGIN_FAILED`, `PASSWORD_CHANGED`, `RAILING_LAYOUT`, `QUOTE_CALCULATED`. Branje prek `GET /api/audit?projectId=…` (VODJA/ADMIN ali dodeljeni monter). |
+
+Preverjeno v `tools/security-smoke.py`, razdelka [9] Vloge in [10] Omejevanje
+hitrosti — skupaj 77 preverjanj, tečejo v CI ob vsakem pushu.
+
 ## Kaj še NI narejeno
 
 | | Zakaj je pomembno |
 |---|---|
-| **Omejevanje hitrosti prijave** | Brez tega je brute-force na gesla neomejen. Najhitreje: `fail2ban` na `/api/auth` ali Caddy `rate_limit`. |
-| **Vloge v rutah** | `authenticate()` pove *kdo*, ne preverja pa *kaj sme*. `MANAGER_ROLES`/`ADMIN_ROLES` sta pripravljena, a še nista uporabljena — trenutno lahko MONTER bere cene in zaloge. |
-| **Revizijski dnevnik** | `AuditLog` je v shemi, a se ne piše. Za sistem s podpisom ponudbe je to pravno pomembno. |
 | **CSRF** | `SameSite=Lax` pokriva večino, ne pa vseh primerov (GET z vrhnje ravni). Za mutacije je `SameSite=Strict` ali dvojni žeton varnejši. |
+| **Omejevanje hitrosti na drugih rutah** | Zaščitena je prijava; pisanje po ostalih rutah ima pripravljen `WRITE_LIMIT`, a še ni vklopljen. |
+| **Revizijski dnevnik na vseh mutacijah** | Piše se na prijavi, geslu, razporedu in ponudbi; `deal-lock`, `measurements` in `projects` imajo svoje stare klice, ki jih velja poenotiti. |
 | **Rotacija `SESSION_SECRET`** | Menjava razveljavi vse seje naenkrat. To je v redu, a mora biti znano. |
 | **Šifriranje baze v mirovanju** | SQLite datoteka je v jasni besedi. Na VPS reši šifriran disk (LUKS). |
 | **Odvisnosti** | `bun audit` / Dependabot. `npm audit` trenutno javlja ranljivosti v posrednih odvisnostih. |

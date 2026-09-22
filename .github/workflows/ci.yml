@@ -76,7 +76,7 @@ jobs:
       - name: Tipska kontrola
         run: bunx tsc --noEmit
 
-      - name: Testi (104)
+      - name: Testi (147)
         run: bun run test
 
       - name: Gradnja
