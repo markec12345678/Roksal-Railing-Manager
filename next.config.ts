@@ -3,6 +3,15 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "standalone",
 
+  // SQLite baza mora biti v serverless bundle-u (Vercel), sicer Prisma
+  // ob hladnem startu ne najde datoteke (Error code 14). build jo ustvari in
+  // naseli (prisma db push + prisma/seed.cjs), db.ts pa jo ob hladnem startu
+  // prekopira v zapisljiv /tmp.
+  outputFileTracingIncludes: {
+    "/api/**/*": ["./db/**"],
+    "/**": ["./db/**"],
+  },
+
   // Tipske napake so zdaj NAPAKA GRADNJE.
   //
   // `ignoreBuildErrors: true` je bil vklopljen in pod njim je raslo 15 tipskih

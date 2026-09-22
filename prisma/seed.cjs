@@ -1,114 +1,112 @@
-// Roksal Field - Seed Demo Data
-import { db } from '@/lib/db'
+// Roksal — build-time seed (CommonJS, brez odvisnosti od tsx/aliasov)
+// ---------------------------------------------------------------------------
+// Ta seed požene `bun run build` (glej package.json → scripts.build), preden
+// se začne gradnja, in je zato primeren za Vercel:
+//   1. `prisma generate` regenerira Prisma Client (Vercelov `bun install` ne
+//      požene postinstall skript → tipi so brez tega zastareli, kar je bil
+//      vzrok ERROR deploymentov od commita 31a72e9 naprej).
+//   2. `prisma db push` ustvari datoteko db/custom.db v build kontejnerju —
+//      prek outputFileTracingIncludes v next.config.ts gre v serverless bundle.
+//   3. Ta skripta naseli demo podatke, da je deploy takoj uporaben.
+//
+// Idempotenten: upsert povsod, zato ga je varno pognati večkrat.
+//geslo demo uporabnika je javno (demo naprava) — v produkciji ga zamenjaj
+// prek `bunx tsx tools/create-admin.ts`.
 
-async function seed() {
-  console.log('Seeding Roksal Field database...')
+const { PrismaClient } = require('@prisma/client')
+const { randomBytes, scryptSync } = require('node:crypto')
 
-  // Create demo profiles
+const db = new PrismaClient({ log: [] })
+
+// Enaki parametri kot src/lib/password.ts — format `scrypt$N$r$p$salt$hash`.
+const SCRYPT = { N: 16384, r: 8, p: 1 }
+function hashPassword(password) {
+  const salt = randomBytes(16)
+  const derived = scryptSync(password.normalize('NFKC'), salt, 64, SCRYPT)
+  return ['scrypt', SCRYPT.N, SCRYPT.r, SCRYPT.p, salt.toString('base64'), derived.toString('base64')].join('$')
+}
+
+async function main() {
+  // ── uporabniki (brez ekipaId — FK na Crew, ki ga demo ne ustvarja) ──
   const marko = await db.profile.upsert({
     where: { email: 'marko@roksal.si' },
     update: {},
-    create: {
-      email: 'marko@roksal.si',
-      ime: 'Marko Kranjc',
-      vloga: 'MONTER',
-      telefon: '+386 41 234 567',
-
-    }
+    create: { email: 'marko@roksal.si', ime: 'Marko Kranjc', vloga: 'MONTER', telefon: '+386 41 234 567' },
   })
-
   const admin = await db.profile.upsert({
     where: { email: 'admin@roksal.si' },
     update: {},
-    create: {
-      email: 'admin@roksal.si',
-      ime: 'Admin Roksal',
-      vloga: 'ADMIN',
-      telefon: '+386 41 111 222',
-    }
+    create: { email: 'admin@roksal.si', ime: 'Admin Roksal', vloga: 'ADMIN', telefon: '+386 41 111 222' },
   })
-
-  const peter = await db.profile.upsert({
+  await db.profile.upsert({
     where: { email: 'peter@roksal.si' },
     update: {},
-    create: {
-      email: 'peter@roksal.si',
-      ime: 'Peter Horvat',
-      vloga: 'VODJA',
-      telefon: '+386 41 333 444',
-
-    }
+    create: { email: 'peter@roksal.si', ime: 'Peter Horvat', vloga: 'VODJA', telefon: '+386 41 333 444' },
   })
 
-  // Demo prijava za javni deploy — geslo je zavestno javno (piše v README).
-  // Hash format enak src/lib/password.ts: scrypt$N$r$p$salt$hash.
-  const { hashPassword } = await import('./password-helper')
+  // ── demo prijava za javni deploy (Vercel) ──
+  // Geslo je zavestno javno in piše v README; brez njega nihče ne more
+  // videti zaščitenega vmesnika na javnem URL-ju.
   await db.profile.upsert({
     where: { email: 'demo@roksal.si' },
-    update: { passwordHash: await hashPassword('RoksalDemo2026!') },
+    update: { passwordHash: hashPassword('RoksalDemo2026!') },
     create: {
       email: 'demo@roksal.si',
       ime: 'Demo Uporabnik',
       vloga: 'ADMIN',
-      passwordHash: await hashPassword('RoksalDemo2026!'),
+      passwordHash: hashPassword('RoksalDemo2026!'),
     },
   })
 
-  // Create demo customers
+  // ── stranke ──
   const customer1 = await db.customer.create({
     data: {
       ime: 'Janez Novak',
       naslov: 'Ljubljanska cesta 142, 4000 Kranj',
       telefon: '+386 41 555 666',
       email: 'janez.novak@email.si',
-    }
+    },
   })
-
   const customer2 = await db.customer.create({
     data: {
       ime: 'Maja Zupan',
       naslov: 'Prešernova 22, 4220 Škofja Loka',
       telefon: '+386 41 777 888',
       email: 'maja.zupan@email.si',
-    }
+    },
   })
-
   const customer3 = await db.customer.create({
     data: {
       ime: 'Andrej Kokalj',
       naslov: 'Cankarjeva 15, 4000 Kranj',
       telefon: '+386 41 999 000',
-    }
+    },
   })
 
-  // Create demo projects
+  // ── projekti ──
   await db.project.create({
     data: {
       nazivProjekta: 'Ograja Novak - Balkon 3.nadstropje',
       status: 'V_TEKU',
       customerId: customer1.id,
       monterId: marko.id,
-      vodjaId: peter.id,
-
+      vodjaId: admin.id,
       datumMontaze: new Date(),
       opombe: 'Alu ograja - Model A (Anodizirana). Kemično sidranje v betonsko podlago.',
       latitude: 46.2397,
       longitude: 14.3556,
-    }
+    },
   })
-
   await db.project.create({
     data: {
       nazivProjekta: 'Terasa Zupan - WPC deske',
       status: 'NACRTOVANO',
       customerId: customer2.id,
       monterId: marko.id,
-      vodjaId: peter.id,
       datumMontaze: new Date(Date.now() + 3 * 86400000),
       opombe: 'WoodCore WPC deske, Anthracite. Montaža na jeklen okvir.',
-    }
+    },
   })
-
   await db.project.create({
     data: {
       nazivProjekta: 'Ograja Kokalj - Balustrada',
@@ -117,10 +115,10 @@ async function seed() {
       monterId: marko.id,
       datumMontaze: new Date(Date.now() + 7 * 86400000),
       opombe: 'Stainless steel kabelska ograja. 12 točk sidranja.',
-    }
+    },
   })
 
-  // Create demo measurements
+  // ── meritve ──
   const proj1 = await db.project.findFirst({ where: { nazivProjekta: { contains: 'Novak' } } })
   if (proj1) {
     await db.measurement.create({
@@ -129,18 +127,14 @@ async function seed() {
         dolzinaMm: 3200,
         visinaMm: 1050,
         gpsLokacija: JSON.stringify({ lat: 46.2397, lng: 14.3556 }),
-      }
+      },
     })
     await db.measurement.create({
-      data: {
-        projectId: proj1.id,
-        dolzinaMm: 1800,
-        visinaMm: 1050,
-      }
+      data: { projectId: proj1.id, dolzinaMm: 1800, visinaMm: 1050 },
     })
   }
 
-  // Create demo inventory
+  // ── zaloga ──
   const inventoryItems = [
     { sifra: 'WPC-120-A', naziv: 'WPC Deska 120mm Anthracite', tip: 'WPC_deska', zaloga: 450, enota: 'm', min: 100 },
     { sifra: 'WPC-120-B', naziv: 'WPC Deska 120mm Brown', tip: 'WPC_deska', zaloga: 120, enota: 'm', min: 50 },
@@ -151,41 +145,28 @@ async function seed() {
     { sifra: 'ALU-PROF-60', naziv: 'Alu Profil 60x40', tip: 'Alu_profil', zaloga: 85, enota: 'm', min: 30 },
     { sifra: 'EPDM-TESNILO', naziv: 'EPDM Tesnilo 10mm', tip: 'Alu_profil', zaloga: 300, enota: 'm', min: 100 },
   ]
-
   for (const item of inventoryItems) {
-    await db.inventory.create({
-      data: {
+    await db.inventory.upsert({
+      where: { sifraMateriala: item.sifra },
+      update: {},
+      create: {
         sifraMateriala: item.sifra,
         naziv: item.naziv,
         tip: item.tip,
         kolicinaZaloga: item.zaloga,
         enota: item.enota,
         minimalnaZaloga: item.min,
-      }
+      },
     })
   }
 
-  // Create demo documents
+  // ── dokumenti ──
   if (proj1) {
-    await db.document.create({
-      data: {
-        projectId: proj1.id,
-        tipDokumenta: 'TEHNICNI_LIST',
-        status: 'GENERIRANO',
-      }
-    })
-    await db.document.create({
-      data: {
-        projectId: proj1.id,
-        tipDokumenta: 'PRIMOPREDAJA',
-        status: 'GENERIRANO',
-      }
-    })
+    await db.document.create({ data: { projectId: proj1.id, tipDokumenta: 'TEHNICNI_LIST', status: 'GENERIRANO' } })
+    await db.document.create({ data: { projectId: proj1.id, tipDokumenta: 'PRIMOPREDAJA', status: 'GENERIRANO' } })
   }
 
-  // ============================================
-  // KATALOG PROFILOV OGRAJ (Roksal)
-  // ============================================
+  // ── katalog profilov ──
   const profili = [
     { sifra: 'WPC-HLINE', naziv: 'ROKSAL WPC H-Line', material: 'WPC + ALU', kategorija: 'WPC vodoravno', visinaMm: 1100, sirinaMm: 140, cenaM: 145, barvaRal: '7016' },
     { sifra: 'WPC-VLINE', naziv: 'ROKSAL WPC V-Line', material: 'WPC + ALU', kategorija: 'WPC pokončno', visinaMm: 1100, sirinaMm: 140, cenaM: 155, barvaRal: '7016' },
@@ -198,35 +179,33 @@ async function seed() {
     { sifra: 'STEKLO-FULL', naziv: 'ROKSAL Steklo Full', material: 'Steklo', kategorija: 'Steklo', visinaMm: 1100, sirinaMm: 200, cenaM: 285, barvaRal: '7016' },
     { sifra: 'STEKLO-MINI', naziv: 'ROKSAL Steklo Mini', material: 'Steklo', kategorija: 'Steklo', visinaMm: 800, sirinaMm: 200, cenaM: 225, barvaRal: '7016' },
   ]
-
   for (const p of profili) {
-    await db.profil.upsert({
-      where: { sifra: p.sifra },
-      update: {},
-      create: p,
-    })
+    await db.profil.upsert({ where: { sifra: p.sifra }, update: {}, create: p })
   }
 
-  // ============================================
-  // GALERIJA - vzorčna realizacija
-  // ============================================
+  // ── galerija ──
   const galerijaProfila = await db.profil.findUnique({ where: { sifra: 'WPC-HLINE' } })
   if (galerijaProfila && proj1) {
-    await db.galleryItem.create({
-      data: {
-        projectId: proj1.id,
-        profilId: galerijaProfila.id,
-        naslov: 'Balkon Kokalj — WPC H-Line',
-        opis: 'Menjava starih kovinskih ograj z WPC H-Line sistemom v antracit sivi.',
-        lokacija: 'Kranj',
-        javno: true,
-      },
-    }).catch(() => {})
+    await db.galleryItem
+      .create({
+        data: {
+          projectId: proj1.id,
+          profilId: galerijaProfila.id,
+          naslov: 'Balkon Novak — WPC H-Line',
+          opis: 'Menjava starih kovinskih ograj z WPC H-Line sistemom v antracit sivi.',
+          lokacija: 'Kranj',
+          javno: true,
+        },
+      })
+      .catch(() => {})
   }
 
-  console.log('Seed completed successfully!')
+  console.log('[seed.cjs] demo podatki naseljeni (uporabniki, stranke, projekti, zaloga, profili)')
 }
 
-seed()
-  .catch(console.error)
-  .finally(() => process.exit(0))
+main()
+  .catch((e) => {
+    console.error('[seed.cjs] NAPAKA:', e)
+    process.exit(1)
+  })
+  .finally(() => db.$disconnect())

@@ -60,10 +60,10 @@
 
 | Metrika | Vrednost |
 |---------|----------|
-| Vrstic kode (src) | ~30.000 |
-| React komponent | 14 glavnih + 60+ UI primitivov |
-| API končne točke | 15 |
-| Prisma modelov | 16 |
+| Vrstic kode (src) | ~48.000 |
+| React komponent | 22 glavnih + 60+ UI primitivov |
+| API končne točke | 30 |
+| Prisma modelov | 26 |
 | Izračunske funkcije | 18 |
 | Katalog profilov | 10 (WPC, ALU, Inox, Steklo) |
 | Testi izračunskega jedra | 78 (vitest) |
@@ -403,17 +403,18 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 
 ### Privzeti uporabniki (po seed-u)
 
-| Email | Vloga |
-|-------|-------|
-| `marko@roksal.si` | MONTER |
-| `admin@roksal.si` | ADMIN |
-| `peter@roksal.si` | MONTER |
+| Email | Vloga | Geslo |
+|-------|-------|-------|
+| `marko@roksal.si` | MONTER | — (nastavi s `tools/create-admin.ts`) |
+| `admin@roksal.si` | ADMIN | — (nastavi s `tools/create-admin.ts`) |
+| `peter@roksal.si` | VODJA | — (nastavi s `tools/create-admin.ts`) |
+| `demo@roksal.si` | ADMIN | `RoksalDemo2026!` **(samo za javni deploy — pred produkcijo odstrani)** |
 
 ---
 
 ## 🗄️ Podatkovni model (Prisma)
 
-16 modelov v SQLite:
+26 modelov v SQLite:
 
 | Model | Namen |
 |-------|-------|
@@ -433,12 +434,20 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `GalleryItem` | Galerija realizacij (pred/po, javno/privatno) |
 | `Slope` |Meritve nagibov (kotStopinje, smer, lokacija) |
 | `ProjectPhoto` | Slike projektov (PRED/MED/PO, GPS) |
+| `SignatureAudit` | Pravno sledenje podpisov (IP, UA, hash PDF-a) |
+| `Supplier` / `MaterialPrice` | Dobavitelji in zgodovina cen |
+| `MaterialOrder` / `MaterialOrderItem` | Naročila materiala (BOM → naročilo) |
+| `Crew` | Ekipe monterjev (barva za koledar) |
+| `Equipment` / `EquipmentAssignment` | Oprema in dodelitve terminom |
+| `InstallationSchedule` | Koledar montaže (ekipa, ure, GPS) |
+| `ApiKey` | API ključi za mobilni klient (samo hash v bazi) |
 
 ---
 
 ## 🔌 API končne točke
 
-15 Route Handlerjev (Next.js App Router):
+30 Route Handlerjev (Next.js App Router). Vse podatkovne rute zahtevajo sejo
+ali API ključ — glej [Varnost](#-varnost).
 
 | Končna točka | Metode | Namen |
 |--------------|--------|-------|
@@ -559,14 +568,34 @@ EXPOSE 3000
 CMD ["bun", "run", "start"]
 ```
 
+### Na Vercel (demo)
+
+`bun run build` na Vercelu sam poskrbi za vse (glej `package.json`):
+
+1. `prisma generate` — Vercelov `bun install` ne požene postinstall, brez tega so tipi zastareli (to je bil vzrok ERROR deploymentov),
+2. `prisma db push` + `prisma/seed.cjs` — ustvari in naseli bazo v build kontejnerju,
+3. baza gre v serverless bundle prek `outputFileTracingIncludes` (next.config.ts),
+4. ob hladnem startu jo `src/lib/db.ts` prekopira v zapisljiv `/tmp`.
+
+**Pomembna omejitev:** SQLite na Vercelu je **demo način** — podatki so kratkotrajni
+(per-lambda instanca, hladni start jih ponastavi na demo stanje). Za produkcijo
+uporabi [Turso](https://turso.tech) (libSQL, kompatibilen s Prismo) ali Postgres,
+ali pa namesti aplikacijo na VPS (glej `deploy/README.md`).
+
+Potrebne env spremenljivke na Vercelu: `SESSION_SECRET`, `API_KEY_PEPPER`
+(oba generiraj z `openssl rand -base64 32`). `DATABASE_URL` ni potreben —
+db.ts ob hladnem startu uporabi vgrajeno bazo iz bundle-a.
+
 ### Environment spremenljivke
 
 | Spremenljivka | Opis | Privzeto |
 |---------------|------|----------|
-| `DATABASE_URL` | Pot do SQLite datoteke | `file:./db/custom.db` |
-| `NEXTAUTH_SECRET` | Skrivni ključ za NextAuth | (generiraj) |
+| `DATABASE_URL` | Pot do SQLite datoteke (relativna glede na `prisma/`) | `file:../db/custom.db` |
+| `SESSION_SECRET` | Skrivnost za podpisovanje sej (**obvezno**, min 16 znakov — fail closed) | (generiraj) |
+| `API_KEY_PEPPER` | Sol za hashe API ključev | (generiraj) |
 | `NEXTAUTH_URL` | URL aplikacije | `http://localhost:3000` |
 | `OPENWEATHER_API_KEY` | API ključ za vetrne podatke | (opcijsko) |
+| `ZAI_VISION_MODEL` | VLM model za AI material takeoff | `glm-4.5v` |
 
 ---
 
@@ -606,7 +635,11 @@ CMD ["bun", "run", "start"]
 
 ### Avtentikacija
 
-- NextAuth.js v4 (na voljo, trenutno enostavna API-key avtentikacija)
+- **Lastna seja** (namensko brez next-auth@4 — peer range `next ^12||^13||^14`, projekt teče na Next 16):
+  HMAC-SHA256 podpisan žeton, 12 h veljavnost, `HttpOnly` + `SameSite=Lax` piškotek
+- Gesla: **scrypt** (N=16384, r=8, p=1) z `timingSafeEqual` primerjavo
+- Brute-force zaščita: 10 poskusov / 15 min na (IP, e-mail) par — `src/lib/rate-limit.ts`
+- API ključi `rkm_…` samo s pepper-hashem v bazi, preklicljivi
 - Vloge: ADMIN, VODJA, MONTER, SKLADISCE
 - Audit log vseh sprememb (kdaj, kdo, stara/nova vrednost)
 

@@ -1,33 +1,56 @@
 'use client'
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
+import dynamic from 'next/dynamic'
 import { TopBar } from '@/components/roksal/top-bar'
 import { BottomNav, type TabId, type MoreTabId } from '@/components/roksal/bottom-nav'
-import { DashboardTab } from '@/components/roksal/dashboard-tab'
-import { CalculatorTab } from '@/components/roksal/calculator-tab'
-import { MeasurementsTab } from '@/components/roksal/measurements-tab'
-import { InventoryTab } from '@/components/roksal/inventory-tab'
-import { DocumentsTab } from '@/components/roksal/documents-tab'
-import { SafetyTab } from '@/components/roksal/safety-tab'
-import { InclinometerTab } from '@/components/roksal/inclinometer-tab'
-import { ReferenceGallery } from '@/components/roksal/reference-gallery'
-import { RoksalCatalog } from '@/components/roksal/roksal-catalog'
-import { SketchCanvas } from '@/components/roksal/sketch-canvas'
-import { ArScannerLauncher } from '@/components/roksal/ar-scanner-launcher'
-import { WebXrLauncher } from '@/components/roksal/webxr-scanner'
-import { PhotoTab } from '@/components/roksal/photo-tab'
-import { PdfExport } from '@/components/roksal/pdf-export'
-import { FloorPlanTab } from '@/components/roksal/floor-plan-tab'
-import { AiTakeoff } from '@/components/roksal/ai-takeoff'
-import { SignatureQuote } from '@/components/roksal/signature-quote'
-import { PostSignaturePanel } from '@/components/roksal/post-signature-panel'
-import { CrmTab } from '@/components/roksal/crm-tab'
-import { MaterialIntelligenceTab } from '@/components/roksal/material-intelligence-tab'
-import { LogisticsTab } from '@/components/roksal/logistics-tab'
-import { VodjaDashboard } from '@/components/roksal/vodja-dashboard'
-import { OnboardingWrapper } from '@/components/roksal/onboarding-tour'
 import { RefreshCw, Camera, ChevronLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+
+// ── Dinamični importi (code-splitting) ───────────────────────────────────────
+//
+// Vsi zavihki so težki (measurements-tab 7.5k vrstic, calculator-tab 5.8k).
+// Prej so bili vsi v initial bundle-u — uporabnik je moral prenesti VSE,
+// tudi če je hotel samo pogledati projekt. Z `dynamic()` se vsak zavihek
+// naloži šele ob prvi uporabi, kot ločen chunk.
+//
+// `ssr: false`, ker so zavihki vseeno renderjani šele po izbiri (client state)
+// in nekateri (AR, inclinometer) uporabljajo browser-only API-je.
+function TabLoading() {
+  return (
+    <div
+      className="flex flex-col items-center justify-center gap-2 p-10 text-muted-foreground"
+      aria-busy="true"
+    >
+      <RefreshCw className="h-5 w-5 animate-spin text-roksal-amber" />
+      <span className="text-xs">Nalagam…</span>
+    </div>
+  )
+}
+
+const DashboardTab = dynamic(() => import('@/components/roksal/dashboard-tab').then((m) => m.DashboardTab), { ssr: false, loading: () => <TabLoading /> })
+const CalculatorTab = dynamic(() => import('@/components/roksal/calculator-tab').then((m) => m.CalculatorTab), { ssr: false, loading: () => <TabLoading /> })
+const MeasurementsTab = dynamic(() => import('@/components/roksal/measurements-tab').then((m) => m.MeasurementsTab), { ssr: false, loading: () => <TabLoading /> })
+const InventoryTab = dynamic(() => import('@/components/roksal/inventory-tab').then((m) => m.InventoryTab), { ssr: false, loading: () => <TabLoading /> })
+const DocumentsTab = dynamic(() => import('@/components/roksal/documents-tab').then((m) => m.DocumentsTab), { ssr: false, loading: () => <TabLoading /> })
+const SafetyTab = dynamic(() => import('@/components/roksal/safety-tab').then((m) => m.SafetyTab), { ssr: false, loading: () => <TabLoading /> })
+const InclinometerTab = dynamic(() => import('@/components/roksal/inclinometer-tab').then((m) => m.InclinometerTab), { ssr: false, loading: () => <TabLoading /> })
+const ReferenceGallery = dynamic(() => import('@/components/roksal/reference-gallery').then((m) => m.ReferenceGallery), { ssr: false, loading: () => <TabLoading /> })
+const RoksalCatalog = dynamic(() => import('@/components/roksal/roksal-catalog').then((m) => m.RoksalCatalog), { ssr: false, loading: () => <TabLoading /> })
+const ArScannerLauncher = dynamic(() => import('@/components/roksal/ar-scanner-launcher').then((m) => m.ArScannerLauncher), { ssr: false, loading: () => <TabLoading /> })
+const WebXrLauncher = dynamic(() => import('@/components/roksal/webxr-scanner').then((m) => m.WebXrLauncher), { ssr: false, loading: () => <TabLoading /> })
+const PhotoTab = dynamic(() => import('@/components/roksal/photo-tab').then((m) => m.PhotoTab), { ssr: false, loading: () => <TabLoading /> })
+const PdfExport = dynamic(() => import('@/components/roksal/pdf-export').then((m) => m.PdfExport), { ssr: false, loading: () => <TabLoading /> })
+const FloorPlanTab = dynamic(() => import('@/components/roksal/floor-plan-tab').then((m) => m.FloorPlanTab), { ssr: false, loading: () => <TabLoading /> })
+const AiTakeoff = dynamic(() => import('@/components/roksal/ai-takeoff').then((m) => m.AiTakeoff), { ssr: false, loading: () => <TabLoading /> })
+const SignatureQuote = dynamic(() => import('@/components/roksal/signature-quote').then((m) => m.SignatureQuote), { ssr: false, loading: () => <TabLoading /> })
+const PostSignaturePanel = dynamic(() => import('@/components/roksal/post-signature-panel').then((m) => m.PostSignaturePanel), { ssr: false, loading: () => <TabLoading /> })
+const CrmTab = dynamic(() => import('@/components/roksal/crm-tab').then((m) => m.CrmTab), { ssr: false, loading: () => <TabLoading /> })
+const MaterialIntelligenceTab = dynamic(() => import('@/components/roksal/material-intelligence-tab').then((m) => m.MaterialIntelligenceTab), { ssr: false, loading: () => <TabLoading /> })
+const LogisticsTab = dynamic(() => import('@/components/roksal/logistics-tab').then((m) => m.LogisticsTab), { ssr: false, loading: () => <TabLoading /> })
+const VodjaDashboard = dynamic(() => import('@/components/roksal/vodja-dashboard').then((m) => m.VodjaDashboard), { ssr: false, loading: () => <TabLoading /> })
+const SketchCanvas = dynamic(() => import('@/components/roksal/sketch-canvas').then((m) => m.SketchCanvas), { ssr: false, loading: () => <TabLoading /> })
+const OnboardingWrapper = dynamic(() => import('@/components/roksal/onboarding-tour').then((m) => m.OnboardingWrapper), { ssr: false, loading: () => <TabLoading /> })
 
 export interface CalculatorImportData {
   dolzinaMm: number
@@ -44,6 +67,7 @@ export default function Home() {
   const [syncing, setSyncing] = useState(false)
   const [lowStockCount, setLowStockCount] = useState(0)
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null)
+  const [syncError, setSyncError] = useState<string | null>(null)
   const [projects, setProjects] = useState<Project[]>([])
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
   const [sketchOpen, setSketchOpen] = useState(false)
@@ -51,37 +75,48 @@ export default function Home() {
   // Calculator import from measurements
   const [calculatorImport, setCalculatorImport] = useState<CalculatorImportData | null>(null)
 
-  // Naloži projekte + low-stock
-  useEffect(() => {
-    let syncTimer: ReturnType<typeof setInterval>
-    async function fetchData() {
-      try {
-        const [projRes, invRes] = await Promise.all([fetch('/api/projects'), fetch('/api/inventory')])
-        if (projRes.ok) {
-          const data = (await projRes.json()) as Project[]
-          setProjects(data)
-          if (!selectedProjectId && data.length > 0) {
-            setSelectedProjectId(data[0].id)
-          }
-        }
-        if (invRes.ok) {
-          const data = await invRes.json()
-          const low = (data || []).filter(
-            (i: { kolicinaZaloga: number; minimalnaZaloga: number }) =>
-              i.kolicinaZaloga <= i.minimalnaZaloga
-          )
-          setLowStockCount(low.length)
-        }
-      } catch {
-        // ignore
+  // Naloži projekte + low-stock. Pravi klic API-ja — prej je bil "Sync" gumb
+  // samo 2-sekundni spinner brez funkcije (fake sync).
+  const fetchData = useCallback(async (silent = false) => {
+    if (!silent) setSyncing(true)
+    setSyncError(null)
+    try {
+      const [projRes, invRes] = await Promise.all([fetch('/api/projects'), fetch('/api/inventory')])
+      if (projRes.ok) {
+        const data = (await projRes.json()) as Project[]
+        setProjects(data)
+        setSelectedProjectId((current) => {
+          if (current && data.some((p) => p.id === current)) return current
+          return data.length > 0 ? data[0].id : null
+        })
+      } else if (projRes.status === 401) {
+        // Seja je potekla — proxy že preusmerja na /login ob navigaciji,
+        // tu pa pokažemo razumljivo napako namesto prazne strani.
+        setSyncError('Seja je potekla — osveži stran in se prijavi znova.')
       }
+      if (invRes.ok) {
+        const data = await invRes.json()
+        const low = (data || []).filter(
+          (i: { kolicinaZaloga: number; minimalnaZaloga: number }) =>
+            i.kolicinaZaloga <= i.minimalnaZaloga
+        )
+        setLowStockCount(low.length)
+      }
+    } catch (e) {
+      // Napaka ni več tiha — uporabnik vidi, da sinhronizacija ni uspela.
+      console.error('Sinhronizacija ni uspela:', e)
+      setSyncError('Ni povezave s strežnikom — podatki so lahko zastareli.')
+    } finally {
       setLastSyncTime(new Date())
+      if (!silent) setSyncing(false)
     }
-    fetchData()
-    syncTimer = setInterval(fetchData, 300000)
-    return () => clearInterval(syncTimer)
-     
   }, [])
+
+  useEffect(() => {
+    void fetchData(true)
+    const syncTimer = setInterval(() => void fetchData(true), 300000)
+    return () => clearInterval(syncTimer)
+  }, [fetchData])
 
   const badges = useMemo<Record<string, number>>(() => {
     const b: Record<string, number> = {}
@@ -90,11 +125,7 @@ export default function Home() {
   }, [lowStockCount])
 
   function handleSync() {
-    setSyncing(true)
-    setTimeout(() => {
-      setSyncing(false)
-      setLastSyncTime(new Date())
-    }, 2000)
+    void fetchData(false)
   }
 
   const handleNavigateToCalculator = useCallback((dolzinaMm: number, visinaMm: number, locationName: string) => {
@@ -182,9 +213,11 @@ export default function Home() {
           <span>
             {syncing
               ? 'Sinhronizacija...'
-              : lastSyncTime
-                ? `Zadnja sinhronizacija: ${formatSyncTime(lastSyncTime)}`
-                : 'Pridobivanje podatkov...'}
+              : syncError
+                ? syncError
+                : lastSyncTime
+                  ? `Zadnja sinhronizacija: ${formatSyncTime(lastSyncTime)}`
+                  : 'Pridobivanje podatkov...'}
           </span>
         </div>
       </div>
@@ -267,7 +300,7 @@ export default function Home() {
                 monterName={selectedProject.monter?.ime || 'Monter Roksal'}
                 onDealLocked={() => {
                   // Po deal-locku osveži projekte da se status posodobi
-                  fetch('/api/projects').then(r => r.json()).then(data => setProjects(data)).catch(() => {})
+                  void fetchData(true)
                 }}
               />
             )}
