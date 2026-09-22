@@ -13,9 +13,10 @@ import { Progress } from '@/components/ui/progress'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible'
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell, TableFooter } from '@/components/ui/table'
+import { EmptyState } from '@/components/ui/empty-state'
 import { useToast } from '@/hooks/use-toast'
 import {
-  Camera, Trash2, MapPin, Image as ImageIcon, X, Check, Loader2, AlertTriangle,
+  Camera, Trash2, MapPin, ImagePlus, X, Check, Loader2, AlertTriangle,
   ArrowRight, Minus, Square, Circle as CircleIcon, Type, Pencil, Ruler, Eraser,
   Upload, Copy, Download, ChevronLeft, ChevronRight, Images, Layers, Search,
   ExternalLink, Save, Undo2, Calendar, Sparkles, Columns, Trash,
@@ -835,12 +836,15 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
               ))}
             </div>
           ) : filteredPhotos.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
-              <ImageIcon className="mb-2 h-10 w-10 opacity-30" />
-              <p className="text-sm">
-                {photos.length === 0 ? 'Ni še slik za ta projekt.' : 'Ni slik, ki ustrezajo filtrom.'}
-              </p>
-            </div>
+            <EmptyState
+              icon={ImagePlus}
+              title="Ni slik"
+              description={
+                photos.length === 0
+                  ? 'Ujemi stanje pred/po montaži.'
+                  : 'Ni slik, ki ustrezajo filtrom.'
+              }
+            />
           ) : (
             <div className="columns-2 gap-2 sm:columns-3 md:columns-4">
               {filteredPhotos.map((p) => {

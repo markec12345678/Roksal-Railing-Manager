@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/ui/empty-state'
 import {
   FileText,
   PenLine,
@@ -33,7 +34,6 @@ import {
   FolderOpen,
   X,
   FileStack,
-  Inbox,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -404,19 +404,11 @@ export function DocumentsTab() {
               })}
             </div>
           ) : (
-            <div className="flex flex-col items-center gap-3 py-10 text-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-secondary/50">
-                <Inbox className="h-7 w-7 text-muted-foreground" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">
-                  Ni dokumentov za izbrani projekt
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground/70">
-                  Uporabite hitra dejanja za ustvarjanje novih dokumentov
-                </p>
-              </div>
-            </div>
+            <EmptyState
+              icon={FileText}
+              title="Ni dokumentov"
+              description="Ponudbe, primopredaja in računi bodo tukaj."
+            />
           )}
         </CardContent>
       </Card>

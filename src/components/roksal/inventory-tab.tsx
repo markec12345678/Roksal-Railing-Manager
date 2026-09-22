@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/ui/empty-state'
 import { Progress } from '@/components/ui/progress'
 import {
   Dialog,
@@ -468,6 +469,12 @@ export function InventoryTab() {
                 )
               })}
             </div>
+          ) : inventory.length === 0 ? (
+            <EmptyState
+              icon={Package}
+              title="Zaloga je prazna"
+              description="Dodaj material v zalogo."
+            />
           ) : (
             <p className="py-8 text-center text-sm text-muted-foreground">
               Ni artiklov za ta filter

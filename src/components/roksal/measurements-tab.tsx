@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/ui/empty-state'
 import { Separator } from '@/components/ui/separator'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -5519,17 +5520,18 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
                 </div>
               ))}
             </div>
+          ) : measurements.length === 0 ? (
+            <EmptyState
+              icon={Ruler}
+              title="Ni še meritev"
+              description="Zajemi z AR kamero ali dodaj ročno."
+              action={{ label: 'Dodaj meritev', onClick: () => setFormOpen(true) }}
+            />
           ) : (
             <div className="py-8 text-center">
               <Ruler className="mx-auto h-8 w-8 text-muted-foreground/30" />
-              <p className="mt-2 text-sm text-muted-foreground">
-                {measurements.length === 0 ? 'Še ni meritev' : 'Brez meritev v tem filtru'}
-              </p>
-              <p className="text-[11px] text-muted-foreground/60 mt-1">
-                {measurements.length === 0
-                  ? 'Dodajte novo meritev za ogrodje'
-                  : 'Spremenite filter statusa zgoraj'}
-              </p>
+              <p className="mt-2 text-sm text-muted-foreground">Brez meritev v tem filtru</p>
+              <p className="text-[11px] text-muted-foreground/60 mt-1">Spremenite filter statusa zgoraj</p>
             </div>
           )}
         </CardContent>
@@ -5687,9 +5689,16 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
           </DialogHeader>
           <div className="space-y-2 max-h-[60vh] overflow-y-auto scrollbar-thin">
             {arImportLoading ? (
-              <div className="py-8 text-center">
-                <Loader2 className="h-6 w-6 animate-spin text-roksal-navy mx-auto" />
-                <p className="text-xs text-muted-foreground mt-2">Nalagam AR posnetke...</p>
+              <div className="space-y-2">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="flex items-center gap-3 rounded-lg border border-border/50 p-2.5">
+                    <Skeleton className="h-14 w-14 shrink-0 rounded-md" />
+                    <div className="flex-1 space-y-1.5">
+                      <Skeleton className="h-3 w-3/4" />
+                      <Skeleton className="h-3 w-1/2" />
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : arSnapshots.length === 0 ? (
               <div className="py-8 text-center">
@@ -5841,10 +5850,7 @@ export function MeasurementsTab({ onNavigateToCalculator }: MeasurementsTabProps
           </DialogHeader>
           <div className="space-y-2">
             {photoViewerLoading ? (
-              <div className="py-12 text-center">
-                <Loader2 className="h-6 w-6 animate-spin text-roksal-amber mx-auto" />
-                <p className="text-xs text-muted-foreground mt-2">Nalagam foto...</p>
-              </div>
+              <Skeleton className="h-48 w-full rounded-lg" />
             ) : photoViewerNotFound ? (
               <div className="py-8 text-center">
                 <AlertCircle className="mx-auto h-8 w-8 text-roksal-red/40" />

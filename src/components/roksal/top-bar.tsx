@@ -2,6 +2,7 @@
 
 import { RefreshCw, Moon, Sun, Clock, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { NotificationCenter } from '@/components/roksal/notification-center'
 import { useTheme } from 'next-themes'
 import { useSyncExternalStore, useCallback, useState, useEffect } from 'react'
 
@@ -81,6 +82,8 @@ export function TopBar({ onSync, syncing, onOpenPalette }: TopBarProps) {
           </div>
         </div>
         <div className="flex items-center gap-1 md:gap-2">
+          {/* Obvestilni center — nizka zaloga, današnje montaže, vreme */}
+          <NotificationCenter />
           {/* Ukazna paleta (⌘K) — iskanje zavihkov, modulov in projektov */}
           <Button
             variant="ghost"

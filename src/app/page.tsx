@@ -1,13 +1,15 @@
 'use client'
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import { motion } from 'framer-motion'
 import { TopBar } from '@/components/roksal/top-bar'
 import { BottomNav, type TabId, type MoreTabId } from '@/components/roksal/bottom-nav'
 import { CommandPalette } from '@/components/roksal/command-palette'
+import { QuickActionsFab } from '@/components/roksal/quick-actions-fab'
 import { RefreshCw, Camera, ChevronLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
 
 // ── Dinamični importi (code-splitting) ───────────────────────────────────────
 //
@@ -19,13 +21,16 @@ import { Button } from '@/components/ui/button'
 // `ssr: false`, ker so zavihki vseeno renderjani šele po izbiri (client state)
 // in nekateri (AR, inclinometer) uporabljajo browser-only API-je.
 function TabLoading() {
+  // Skeleton namesto vrtečega se teksta — pogled je takoj "obenem vsebine"
   return (
-    <div
-      className="flex flex-col items-center justify-center gap-2 p-10 text-muted-foreground"
-      aria-busy="true"
-    >
-      <RefreshCw className="h-5 w-5 animate-spin text-roksal-amber" />
-      <span className="text-xs">Nalagam…</span>
+    <div className="space-y-3 p-4" aria-busy="true">
+      <Skeleton className="h-7 w-1/2" />
+      <Skeleton className="h-4 w-1/3" />
+      <div className="space-y-2 pt-2">
+        <Skeleton className="h-24 w-full rounded-xl" />
+        <Skeleton className="h-24 w-full rounded-xl" />
+        <Skeleton className="h-24 w-4/5 rounded-xl" />
+      </div>
     </div>
   )
 }
@@ -60,6 +65,11 @@ export interface CalculatorImportData {
   locationName: string
 }
 
+// Veljavni glavni zavihki za centralno navigacijo (FAB/obvestila/paleta)
+const MAIN_TAB_IDS: TabId[] = [
+  'dashboard', 'ar', 'photos', 'calculator', 'measurements', 'inclinometer', 'inventory',
+]
+
 // One canonical Project type — see src/lib/types.ts for why this is not local.
 import type { Project } from '@/lib/types'
 
@@ -74,6 +84,11 @@ export default function Home() {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
   const [sketchOpen, setSketchOpen] = useState(false)
   const [paletteOpen, setPaletteOpen] = useState(false)
+
+  // Pull-to-refresh (mobilni PWA občutek): potegni navzdol na vrhu strani
+  const [pullPx, setPullPx] = useState(0)
+  const pullStartRef = useRef<{ y: number; active: boolean }>({ y: 0, active: false })
+  const PTR_THRESHOLD = 68
 
   // Calculator import from measurements
   const [calculatorImport, setCalculatorImport] = useState<CalculatorImportData | null>(null)
@@ -112,6 +127,8 @@ export default function Home() {
     } finally {
       setLastSyncTime(new Date())
       if (!silent) setSyncing(false)
+      // Obvestilni center (zvonek) osveži badge ob vsakem syncu
+      window.dispatchEvent(new CustomEvent('roksal:refresh'))
     }
   }, [])
 
@@ -120,8 +137,6 @@ export default function Home() {
     const syncTimer = setInterval(() => void fetchData(true), 300000)
     return () => clearInterval(syncTimer)
   }, [fetchData])
-
-  // ── Ukazna paleta (⌘K / Ctrl+K) + izbor projekta iz palete ─────────────
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
@@ -182,6 +197,49 @@ export default function Home() {
     if (tab !== 'more') setMoreTab(null)
   }, [])
 
+  // ── Centralna navigacija (FAB, obvestilni center, kasneje tudi AR) ────────
+  // detail = { tab: TabId, more?: MoreTabId | null } — 'sketches' odpre overlay
+  useEffect(() => {
+    function onNavigate(e: Event) {
+      const d = (e as CustomEvent<{ tab?: string; more?: string | null }>).detail
+      if (!d?.tab) return
+      if (d.tab === 'more' && d.more) {
+        handleMoreSelect(d.more as MoreTabId)
+      } else if (MAIN_TAB_IDS.includes(d.tab as TabId)) {
+        handleTabChange(d.tab as TabId)
+      }
+    }
+    window.addEventListener('roksal:navigate', onNavigate)
+    return () => window.removeEventListener('roksal:navigate', onNavigate)
+  }, [handleMoreSelect, handleTabChange])
+
+  // ── Pull-to-refresh (PWA občutek na telefonu) ───────────────────────────
+  const onPullStart = useCallback((e: React.TouchEvent) => {
+    if (window.scrollY <= 0 && e.touches.length === 1 && !syncing) {
+      pullStartRef.current = { y: e.touches[0].clientY, active: true }
+    }
+  }, [syncing])
+
+  const onPullMove = useCallback((e: React.TouchEvent) => {
+    if (!pullStartRef.current.active || e.touches.length !== 1) return
+    const dy = e.touches[0].clientY - pullStartRef.current.y
+    if (dy > 0 && window.scrollY <= 0) {
+      // upor (resistance) — težje ko potegneš, manj se premakne
+      setPullPx(Math.min(96, dy * 0.45))
+    } else if (pullPx > 0) {
+      setPullPx(0)
+    }
+  }, [pullPx])
+
+  const onPullEnd = useCallback(() => {
+    pullStartRef.current.active = false
+    if (pullPx >= PTR_THRESHOLD) {
+      try { navigator.vibrate?.([20, 30, 20]) } catch { /* ignore */ }
+      handleSync()
+    }
+    setPullPx(0)
+  }, [pullPx])
+
   function formatSyncTime(date: Date | null): string {
     if (!date) return ''
     return date.toLocaleTimeString('sl-SI', { hour: '2-digit', minute: '2-digit' })
@@ -221,7 +279,29 @@ export default function Home() {
     : ''
 
   return (
-    <div className="min-h-screen bg-[#f7f9ff] roksal-bg-pattern roksal-texture">
+    <div
+      className="min-h-screen bg-[#f7f9ff] roksal-bg-pattern roksal-texture"
+      onTouchStart={onPullStart}
+      onTouchMove={onPullMove}
+      onTouchEnd={onPullEnd}
+      onTouchCancel={onPullEnd}
+    >
+      {/* Pull-to-refresh indikator — le prilikom vlečenja navzdol */}
+      <div
+        className="pointer-events-none fixed inset-x-0 top-14 z-40 flex justify-center transition-opacity"
+        style={{ opacity: pullPx > 0 || syncing ? 1 : 0 }}
+        aria-hidden="true"
+      >
+        <div
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-lg ring-1 ring-roksal-amber/30"
+          style={{ transform: `rotate(${pullPx * 3}deg)` }}
+        >
+          <RefreshCw
+            className={`h-4 w-4 text-roksal-amber ${pullPx >= PTR_THRESHOLD || syncing ? 'animate-spin' : ''}`}
+          />
+        </div>
+      </div>
+
       <TopBar onSync={handleSync} syncing={syncing} onOpenPalette={() => setPaletteOpen(true)} />
 
       {/* Sync status indicator */}
@@ -257,7 +337,10 @@ export default function Home() {
         </div>
       )}
 
-      <main className="mx-auto w-full max-w-lg pb-24 md:max-w-3xl lg:max-w-5xl">
+      <main
+        className="mx-auto w-full max-w-lg pb-24 md:max-w-3xl lg:max-w-5xl"
+        style={pullPx > 0 ? { transform: `translateY(${Math.round(pullPx)}px)`, transition: 'transform 80ms linear' } : { transition: 'transform 200ms ease-out' }}
+      >
         {/* Mehek prehod med zavihki — ključ je kombinacija zavihka in modula,
           da se animacija sproži tudi znotraj "Več" menija. */}
         <motion.div
@@ -380,6 +463,9 @@ export default function Home() {
           <SketchCanvas projectId={selectedProjectId} onClose={() => setSketchOpen(false)} />
         </div>
       )}
+
+      {/* Hitre akcije (FAB) — AR meritev, slika, meritev, skica, kalkulator */}
+      <QuickActionsFab />
 
       <BottomNav
         activeTab={activeTab}

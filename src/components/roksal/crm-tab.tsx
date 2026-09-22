@@ -13,6 +13,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { useToast } from '@/hooks/use-toast'
+import { EmptyState } from '@/components/ui/empty-state'
 import {
   Users,
   Search,
@@ -275,12 +276,16 @@ export function CrmTab() {
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <Card>
-          <CardContent className="py-8 text-center text-muted-foreground">
-            <Users className="h-10 w-10 mx-auto mb-2 opacity-30" />
-            <p className="text-sm">Ni strank ki ustrezajo iskanju.</p>
-          </CardContent>
-        </Card>
+        customers.length === 0 ? (
+          <EmptyState icon={Users} title="Ni strank" description="Dodaj prvo stranko v CRM." />
+        ) : (
+          <Card>
+            <CardContent className="py-8 text-center text-muted-foreground">
+              <Users className="h-10 w-10 mx-auto mb-2 opacity-30" />
+              <p className="text-sm">Ni strank ki ustrezajo iskanju.</p>
+            </CardContent>
+          </Card>
+        )
       ) : (
         <div className="space-y-2">
           {filtered.map((c) => (
