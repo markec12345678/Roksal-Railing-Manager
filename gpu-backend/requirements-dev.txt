@@ -1,0 +1,8 @@
+# Dev/CI zahtevane knjižnice — pogodbni testi v MOCK načinu (brez GPU/torch, spec §19).
+# Testni stroj (sandbox): ~200 MB, brez CUDA.
+fastapi>=0.115
+uvicorn[standard]>=0.32
+httpx>=0.27
+pillow>=10.4
+numpy>=1.26
+pytest>=8.3

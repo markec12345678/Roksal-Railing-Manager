@@ -1,0 +1,28 @@
+# Roksal GPU backend — docker-compose za GPU stroj (spec §1).
+# Uporaba: docker compose up -d --build   (ob prvem zagonu se ~40GB model prenese 1×)
+services:
+  qwen-edit:
+    build: .
+    container_name: roksal-qwen
+    ports: ["8000:8000"]
+    environment:
+      - QWEN_MODEL_ID=Qwen/Qwen-Image-Edit-2509   # Apache-2.0 (spec §3)
+      - QWEN_DEVICE=cuda
+      - QWEN_CPU_OFFLOAD=0        # spec §4: najprej NEoptimizirano + izmerjen vrh VRAM
+      - QWEN_OUTPUT_DIR=/data/jobs
+      # - QWEN_API_KEY=spremeni-me    # (S+7: auth pred javno izpostavitvijo)
+    volumes:
+      - hf-cache:/data/hf-cache
+      - jobs:/data/jobs
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+
+volumes:
+  hf-cache:
+  jobs:

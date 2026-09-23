@@ -1,0 +1,16 @@
+# Runtime zahtevane knjižnice — SAMO na stroju z NVIDIA GPU (spec §1/§15).
+# V Dockerju (pytorch/pytorch:2.6.0-cuda12.4-cudnn9-runtime) je torch že vključen;
+# na golo železo namesti torch po navodilih https://pytorch.org (CUDA wheel).
+#
+# NOTE: točne različice pripnite na deploymentu in poženi licenčni audit:
+#   pip install pip-licenses && pip-licenses --from=mixed --format=markdown > LICENSES-INSTALLED.md
+diffusers>=0.35.2          # QwenImageEditPlusPipeline — Qwen-Image-Edit-2509 (multi-image, §3)
+transformers>=4.51.0       # Qwen2.5-VL text encoder za Qwen-Image
+accelerate>=1.1.0          # (neobvezno) cpu-offload varianta QWEN_CPU_OFFLOAD=1
+safetensors>=0.4.5
+sentencepiece>=0.2.0
+protobuf>=4.25
+fastapi>=0.115
+uvicorn[standard]>=0.32
+pillow>=10.4
+numpy>=1.26
