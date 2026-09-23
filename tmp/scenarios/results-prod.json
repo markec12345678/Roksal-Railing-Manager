@@ -1,0 +1,57 @@
+[
+  {
+    "test_id": "T1-ravna",
+    "stage_balcony_ms": null,
+    "preview_request_ms": 3289,
+    "pipeline_ms": 2340,
+    "letvice": "13=13",
+    "outsideMax": 66,
+    "outsideMaxPreShadow": 0,
+    "deltaE": 0,
+    "previewUrl": "https://cidgcfdqpr3tvp7w.public.blob.vercel-storage.com/viz/staging/612dbe9f-5d86-4e87-91e4-216e694584fc/preview.jpg"
+  },
+  {
+    "test_id": "T2-perspektiva",
+    "stage_balcony_ms": null,
+    "preview_request_ms": 3398,
+    "pipeline_ms": 2402,
+    "letvice": "13=13",
+    "outsideMax": 52,
+    "outsideMaxPreShadow": 0,
+    "deltaE": 0,
+    "previewUrl": "https://cidgcfdqpr3tvp7w.public.blob.vercel-storage.com/viz/staging/4b5f3124-09da-42e1-a3ce-cfff8259e156/preview.jpg"
+  },
+  {
+    "test_id": "T3-sonce",
+    "stage_balcony_ms": null,
+    "preview_request_ms": 2802,
+    "pipeline_ms": 1963,
+    "letvice": "13=13",
+    "outsideMax": 65,
+    "outsideMaxPreShadow": 0,
+    "deltaE": 0,
+    "previewUrl": "https://cidgcfdqpr3tvp7w.public.blob.vercel-storage.com/viz/staging/08622b69-72b3-4f6d-856c-d305da5f8157/preview.jpg"
+  },
+  {
+    "test_id": "T4-temna",
+    "stage_balcony_ms": null,
+    "preview_request_ms": 3928,
+    "pipeline_ms": 2994,
+    "letvice": "13=13",
+    "outsideMax": 57,
+    "outsideMaxPreShadow": 0,
+    "deltaE": 0,
+    "previewUrl": "https://cidgcfdqpr3tvp7w.public.blob.vercel-storage.com/viz/staging/5b4abc97-9a31-4678-97c1-7b2fa94bc4aa/preview.jpg"
+  },
+  {
+    "test_id": "T5-zakrit",
+    "stage_balcony_ms": null,
+    "preview_request_ms": 3558,
+    "pipeline_ms": 2414,
+    "letvice": "13=13",
+    "outsideMax": 56,
+    "outsideMaxPreShadow": 0,
+    "deltaE": 0,
+    "previewUrl": "https://cidgcfdqpr3tvp7w.public.blob.vercel-storage.com/viz/staging/52a1695f-d654-45fe-bc3b-d5df806836c7/preview.jpg"
+  }
+]

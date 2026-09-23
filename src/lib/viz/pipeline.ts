@@ -111,6 +111,9 @@ export function cutoutProduct(
   return { alpha, w, h, bbox }
 }
 
+/** Debug: profil pokritosti zadnjega countLetvice klica (merilni orodji/testi). */
+export const countLetviceDebug: { lastProfile: number[] | null } = { lastProfile: null }
+
 /** Rektificiraj alpha v pravokotnik rw×rh in preštej letvice (python korak 8b). */
 export function countLetvice(
   alpha: Float32Array,
@@ -136,18 +139,24 @@ export function countLetvice(
   const cx0 = Math.floor(rw * 0.35)
   const cx1 = Math.ceil(rw * 0.65)
   const stripW = cx1 - cx0
-  const on: boolean[] = []
+  // Števec je 1:1 iz pythona (prag 0.5 na pokritosti vrstice). S+3 izpit:
+  // profili T1–T5 (countLetviceDebug.lastProfile) so čisti — 13 ločenih
+  // ON tekov; hystereza/median poskusi so ZAVRŽENI (zlivajo prave vrzeli,
+  // ker vrzeli lahko dosežejo pokritost 0.46–0.49).
+  const cover: number[] = []
   for (let y = 0; y < rh; y++) {
     let sum = 0
     const row = y * rw
     for (let x = cx0; x < cx1; x++) sum += rect[row + x] > 0.5 ? 1 : 0
-    on.push(sum / stripW > 0.5)
+    cover.push(sum / stripW)
   }
+  countLetviceDebug.lastProfile = cover
   let count = 0
   let prev = false
-  for (const v of on) {
-    if (v && !prev) count++
-    prev = v
+  for (const v of cover) {
+    const on = v > 0.5
+    if (on && !prev) count++
+    prev = on
   }
   return count
 }
