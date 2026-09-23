@@ -12,7 +12,7 @@ import { cornerToPx } from '@/lib/viz/types'
 import { toRawImageBuffer, placementSchema, stagedTokenSchema } from '@/lib/viz/validate'
 import { VIZ_FILE_NAMES, stagingKey, vizGet, vizPut } from '@/lib/viz/storage'
 import { z } from 'zod'
-import { authenticate, unauthorized } from '@/lib/auth'
+import { vizOwner } from '@/lib/viz/ownership'
 
 export const runtime = 'nodejs'
 
@@ -37,9 +37,9 @@ const previewSchema = z.object({
 })
 
 export async function POST(request: Request) {
-  // Aplikacijska konvencija: proxy je prva plast, ruta preveri sama (glej src/lib/auth.ts).
-  const auth = await authenticate(request)
-  if (!auth) return unauthorized()
+  // S+4: viz rute so vezane na prijavljenega uporabnika (API ključ = 403).
+  const ctx = await vizOwner(request)
+  if (ctx instanceof Response) return ctx
   try {
     const body = await request.json().catch(() => null)
     const parsed = previewSchema.safeParse(body)

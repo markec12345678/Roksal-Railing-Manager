@@ -9,7 +9,7 @@
 import { NextResponse } from 'next/server'
 import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
-import { authenticate, unauthorized } from '@/lib/auth'
+import { vizOwner } from '@/lib/viz/ownership'
 import {
   VizValidationError,
   kindToFileName,
@@ -23,9 +23,9 @@ export const runtime = 'nodejs'
 const kindSchema = z.enum(['balcony', 'product', 'productMask', 'mask'])
 
 export async function POST(request: Request) {
-  // Aplikacijska konvencija: proxy je prva plast, ruta preveri sama (glej src/lib/auth.ts).
-  const auth = await authenticate(request)
-  if (!auth) return unauthorized()
+  // S+4: viz rute so vezane na prijavljenega uporabnika (API ključ = 403).
+  const ctx = await vizOwner(request)
+  if (ctx instanceof Response) return ctx
   try {
     const form = await request.formData()
     const file = form.get('file')

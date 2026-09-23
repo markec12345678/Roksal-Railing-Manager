@@ -14,7 +14,7 @@
 import { NextResponse } from 'next/server'
 import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
-import { authenticate, unauthorized } from '@/lib/auth'
+import { vizOwner, type VizOwnerContext } from '@/lib/viz/ownership'
 import type { VizPlacement, VizVariant } from '@/lib/viz/types'
 import { placementSchema, stagedTokenSchema } from '@/lib/viz/validate'
 import {
@@ -27,7 +27,11 @@ import {
   vizHas,
   vizPut,
 } from '@/lib/viz/storage'
-import { createProject, listProjects } from '@/lib/viz/repository'
+import {
+  createProject,
+  findProjectByIdempotencyKey,
+  listProjectsForOwner,
+} from '@/lib/viz/repository'
 
 export const runtime = 'nodejs'
 
@@ -46,6 +50,8 @@ interface StagedResultJson {
 const createProjectSchema = z.object({
   name: z.string().trim().min(1, 'Ime projekta je obvezno').max(120, 'Ime je predolgo'),
   stagingToken: stagedTokenSchema,
+  // S+4 idempotenca: isti ključ + isti lastnik → isti projekt (brez podvajanja).
+  idempotencyKey: z.string().trim().min(8).max(120).optional(),
   // Izbirni izrecni tokeni (nadomestek, če result.json ni na voljo)
   originalToken: stagedTokenSchema.optional(),
   productToken: stagedTokenSchema.optional(),
@@ -72,13 +78,13 @@ function parseJsonOrNull<T>(raw: string | null): T | null {
   }
 }
 
-/** GET — seznam projektov, najnovejši prej, max 50. */
+/** GET — seznam projektov PRIJAVLJENEGA UPORABNIKA (S+4), najnovejši prej, max 50. */
 export async function GET(request: Request) {
   // Aplikacijska konvencija: proxy je prva plast, ruta preveri sama (glej src/lib/auth.ts).
-  const auth = await authenticate(request)
-  if (!auth) return unauthorized()
+  const ctx = await vizOwner(request)
+  if (ctx instanceof Response) return ctx
   try {
-    const records = await listProjects()
+    const records = await listProjectsForOwner(ctx)
     const projects = records.map((rec) => ({
       id: rec.id,
       name: rec.name,
@@ -108,9 +114,9 @@ async function copyIntoProject(
 
 /** POST — shrani staging v projekt (kopira datoteke + ustvari metadata zapis). */
 export async function POST(request: Request) {
-  // Aplikacijska konvencija: proxy je prva plast, ruta preveri sama (glej src/lib/auth.ts).
-  const auth = await authenticate(request)
-  if (!auth) return unauthorized()
+  // S+4: projekt je vezan na prijavljenega uporabnika (lastništvo na backendu).
+  const ctx: VizOwnerContext | Response = await vizOwner(request)
+  if (ctx instanceof Response) return ctx
   const createdId = randomUUID()
   try {
     const body = await request.json().catch(() => null)
@@ -121,7 +127,26 @@ export async function POST(request: Request) {
         { status: 400 }
       )
     }
-    const { name, stagingToken, variants } = parsed.data
+    const { name, stagingToken, variants, idempotencyKey } = parsed.data
+
+    // ── S+4 idempotenca: ponovljen save z istim ključem → isti projekt ──────
+    if (idempotencyKey) {
+      const existing = await findProjectByIdempotencyKey(ctx.ownerId, idempotencyKey)
+      if (existing) {
+        return NextResponse.json(
+          { projectId: existing.id, urls: {
+            original: existing.originalPath,
+            product: existing.productPath,
+            productMask: existing.productMaskPath,
+            mask: existing.maskPath,
+            preview: existing.previewPath,
+            placement: null,
+            result: existing.resultPath,
+          }, idempotent: true },
+          { status: 200 }
+        )
+      }
+    }
 
     // ── result.json → provenance (placement + tokeni) ───────────────────────
     const stagedResult = await vizGet(stagingKey(stagingToken, VIZ_FILE_NAMES.result))
@@ -255,8 +280,12 @@ export async function POST(request: Request) {
     }
 
     // ── Metadata zapis (local = Prisma, blob = project.json) ────────────────
+    // Metadata je COMMIT TOČKA: nastane ZADNJI, po uspešnem kopiranju vseh
+    // datotek (S+4 failure-safe — glej src/lib/viz/save-flow.ts + teste).
     const record = await createProject({
       id: createdId,
+      ownerId: ctx.ownerId,
+      idempotencyKey: idempotencyKey ?? null,
       name,
       originalPath: originalUrl,
       productPath: productUrl ?? '',

@@ -5,10 +5,15 @@
 // Metadata: local = Prisma, blob = project.json v Vercel Blob (repository).
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { authenticate, unauthorized } from '@/lib/auth'
+import { vizOwner } from '@/lib/viz/ownership'
 import type { VizPlacement, VizVariant } from '@/lib/viz/types'
 import { VIZ_FILE_NAMES, projectKey, vizDelPrefix } from '@/lib/viz/storage'
-import { deleteProject, getProject, renameProject } from '@/lib/viz/repository'
+import {
+  deleteProject,
+  getProjectForOwner,
+  renameProjectForOwner,
+  type VizProjectRecord,
+} from '@/lib/viz/repository'
 
 export const runtime = 'nodejs'
 
@@ -42,7 +47,7 @@ async function placementUrl(id: string): Promise<string> {
 }
 
 /** Sestavi odgovor z parsed placement/variants + urls map. */
-async function serializeProject(rec: NonNullable<Awaited<ReturnType<typeof getProject>>>) {
+async function serializeProject(rec: VizProjectRecord) {
   const urls = {
     original: rec.originalPath,
     product: rec.productPath,
@@ -75,11 +80,12 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await authenticate(request)
-  if (!auth) return unauthorized()
+  // S+4: tuj projekt = 404 (ne 403) — ne puščamo informacije o obstoju.
+  const ctx = await vizOwner(request)
+  if (ctx instanceof Response) return ctx
   try {
     const { id } = await params
-    const rec = await getProject(id)
+    const rec = await getProjectForOwner(id, ctx)
     if (!rec) {
       return NextResponse.json({ error: 'Projekt ne obstaja' }, { status: 404 })
     }
@@ -94,8 +100,9 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await authenticate(request)
-  if (!auth) return unauthorized()
+  // S+4: samo lastnik sme preimenovati; tuj projekt = 404.
+  const ctx = await vizOwner(request)
+  if (ctx instanceof Response) return ctx
   try {
     const { id } = await params
     const body = await request.json().catch(() => null)
@@ -106,7 +113,7 @@ export async function PATCH(
         { status: 400 }
       )
     }
-    const rec = await renameProject(id, parsed.data.name)
+    const rec = await renameProjectForOwner(id, parsed.data.name, ctx)
     if (!rec) {
       return NextResponse.json({ error: 'Projekt ne obstaja' }, { status: 404 })
     }
@@ -121,12 +128,14 @@ export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await authenticate(request)
-  if (!auth) return unauthorized()
+  // S+4: samo lastnik sme brisati; tuj projekt = 404.
+  const ctx = await vizOwner(request)
+  if (ctx instanceof Response) return ctx
   try {
     const { id } = await params
-    // Najprej metadata (404, če ne obstaja), nato datoteke iz shrambe.
-    const rec = await getProject(id)
+    // Najprej metadata z lastniško preverbo (404, če ne obstaja ALI ni tvoj),
+    // nato datoteke iz shrambe.
+    const rec = await getProjectForOwner(id, ctx)
     if (!rec) {
       return NextResponse.json({ error: 'Projekt ne obstaja' }, { status: 404 })
     }

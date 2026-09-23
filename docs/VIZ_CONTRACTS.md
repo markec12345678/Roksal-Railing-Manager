@@ -243,3 +243,22 @@ Style: use existing roksal design tokens (bg-white cards, rounded-2xl, roksal-na
 Conflict rules: each agent only touches its own files; shared imports only via
 `@/lib/viz/types` (orchestrator-written) and contracts above. If you need a
 change to a shared file, note it in worklog instead of editing.
+
+## S+4 — OWNERSHIP POLICY (P0, security)
+
+Vsak viz projekt in render job je vezan na **uporabniško sejo**, ki ga je ustvarila:
+
+- `ownerId = SessionPayload.sub` (Profile.id) — zapisan v Prisma (`VizProject.ownerId`,
+  `VizRenderJob.ownerId`) oziroma v `project.json`/job dokumentu (blob način).
+- **API ključi (rkm_…) NIMAJO dostopa do /api/viz/*** — 403. Viz je vezan na prijavo
+  (API ključi so namenjeni samo sinhronizaciji izmere, ne vizualizacijam).
+- **Tuj ali neobstoječ projekt → 404** (NE 403) — ena konsistentna politika, ne puščamo
+  informacije, ali projekt z danim id obstaja. Vsi /api/viz/* handlerji preverjajo
+  lastništvo na backendu (frontend je samo udobje, nikoli varnost).
+- **Zapuščinski zapisi** (`ownerId = null`, ustvarjeni pred S+4): vidni/administrirajo
+  samo uporabniki z vlogo ADMIN (demo račun). Vsak nov projekt vedno dobi ownerId.
+- Vrsta dostopov (matrica §1): user A vidi/odpre/preimenuje/zbriše SAMO svoje;
+  user B za A-jev projekt vedno dobi 404 — tudi za `POST /api/viz/render` in
+  `GET /api/viz/render/[jobId]` (jobi imajo svoj ownerId).
+- Implementacija: `src/lib/viz/ownership.ts` (`vizOwner`, `mayAccess`),
+  repozitorij `*ForOwner` funkcije, rute `src/app/api/viz/**`.

@@ -692,6 +692,9 @@ model SiteSurvey {
 
 model VizProject {
   id               String   @id @default(cuid())
+  // S+4 lastništvo: Profile.id seje, ki je projekt ustvarila. Null = zapuščina
+  // iz rund pred S+4 (vidijo jo samo ADMIN — glej docs/VIZ_CONTRACTS.md).
+  ownerId          String?
   name             String
   originalPath     String
   productPath      String
@@ -702,15 +705,20 @@ model VizProject {
   resultImagePath  String?
   placement        String
   variants         String?
+  idempotencyKey   String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
   renderJobs       VizRenderJob[]
+
+  @@index([ownerId])
 }
 
 // GPU render job stub (Qwen-Image-Edit-2509) — nikoli ne oznacimo 'completed',
 // dokler GPU backend ne obstaja. Statusi: queued | processing | completed | failed
 model VizRenderJob {
   id         String     @id @default(cuid())
+  // S+4: lastnik joba = seja, ki je job ustvarila (null = zapuščina, ADMIN only).
+  ownerId    String?
   projectId  String
   project    VizProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
   status     String     @default("queued")

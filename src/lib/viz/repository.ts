@@ -15,11 +15,22 @@
 import { randomUUID } from 'node:crypto'
 import { vizGetJson, vizPutJson, vizDel, vizList, projectKey, renderJobKey, storageMode } from './storage'
 import type { PrismaClient } from '@prisma/client'
+import { mayAccess, type VizOwnerContext } from './ownership'
+
+/** Kontekst lastništva (S+4) — null polja = zapuščinski zapisi (pred S+4). */
+export interface OwnershipFilter {
+  ownerId: string
+  isAdmin: boolean
+}
 
 // ── Zapis (normaliziran) ─────────────────────────────────────────────────────
 
 export interface VizProjectRecord {
   id: string
+  /** Lastnik (Profile.id seje). Null = zapuščina pred S+4 (vidna samo ADMIN). */
+  ownerId: string | null
+  /** Idempotenčni ključ klienta (S+4) — ista rešitev vrača isti projekt. */
+  idempotencyKey: string | null
   name: string
   originalPath: string
   productPath: string
@@ -38,6 +49,8 @@ export interface VizProjectRecord {
 
 export interface VizRenderJobRecord {
   id: string
+  /** Lastnik joba = seja, ki ga je ustvarila (null = zapuščina pred S+4). */
+  ownerId: string | null
   projectId: string
   status: 'queued' | 'processing' | 'completed' | 'failed'
   engine: string
@@ -51,6 +64,8 @@ export interface VizRenderJobRecord {
 
 export interface VizProjectInput {
   id: string
+  ownerId?: string | null
+  idempotencyKey?: string | null
   name: string
   originalPath: string
   productPath: string
@@ -64,6 +79,7 @@ export interface VizProjectInput {
 
 export interface VizRenderJobInput {
   projectId: string
+  ownerId?: string | null
   status: VizRenderJobRecord['status']
   engine: string
   inputJson: string
@@ -80,6 +96,8 @@ async function prisma(): Promise<PrismaClient> {
 function rowToProject(row: Awaited<ReturnType<PrismaClient['vizProject']['findUniqueOrThrow']>>): VizProjectRecord {
   return {
     id: row.id,
+    ownerId: row.ownerId,
+    idempotencyKey: row.idempotencyKey,
     name: row.name,
     originalPath: row.originalPath,
     productPath: row.productPath,
@@ -98,6 +116,7 @@ function rowToProject(row: Awaited<ReturnType<PrismaClient['vizProject']['findUn
 function rowToJob(row: Awaited<ReturnType<PrismaClient['vizRenderJob']['findUniqueOrThrow']>>): VizRenderJobRecord {
   return {
     id: row.id,
+    ownerId: row.ownerId,
     projectId: row.projectId,
     status: row.status as VizRenderJobRecord['status'],
     engine: row.engine,
@@ -115,7 +134,23 @@ function rowToJob(row: Awaited<ReturnType<PrismaClient['vizRenderJob']['findUniq
 export async function createProject(input: VizProjectInput): Promise<VizProjectRecord> {
   if (storageMode() === 'blob') {
     const now = new Date().toISOString()
-    const doc: VizProjectRecord = { ...input, resultImagePath: null, createdAt: now, updatedAt: now }
+    const doc: VizProjectRecord = {
+      id: input.id,
+      ownerId: input.ownerId ?? null,
+      idempotencyKey: input.idempotencyKey ?? null,
+      name: input.name,
+      originalPath: input.originalPath,
+      productPath: input.productPath,
+      productMaskPath: input.productMaskPath ?? null,
+      maskPath: input.maskPath,
+      previewPath: input.previewPath ?? null,
+      resultPath: input.resultPath ?? null,
+      resultImagePath: null,
+      placement: input.placement,
+      variants: input.variants ?? null,
+      createdAt: now,
+      updatedAt: now,
+    }
     await vizPutJson(projectKey(input.id, 'project.json'), doc)
     return doc
   }
@@ -123,6 +158,8 @@ export async function createProject(input: VizProjectInput): Promise<VizProjectR
   const row = await db.vizProject.create({
     data: {
       id: input.id,
+      ownerId: input.ownerId ?? null,
+      idempotencyKey: input.idempotencyKey ?? null,
       name: input.name,
       originalPath: input.originalPath,
       productPath: input.productPath,
@@ -138,7 +175,7 @@ export async function createProject(input: VizProjectInput): Promise<VizProjectR
   return rowToProject(row)
 }
 
-/** Seznam projektov, najnovejši prej, max 50. */
+/** Seznam projektov, najnovejši prej, max 50 (brez filtra = samo orodja/testi!). */
 export async function listProjects(): Promise<VizProjectRecord[]> {
   if (storageMode() === 'blob') {
     // Seznam = project.json pod viz/projects/<id>/project.json.
@@ -153,6 +190,38 @@ export async function listProjects(): Promise<VizProjectRecord[]> {
   const db = await prisma()
   const rows = await db.vizProject.findMany({ orderBy: { createdAt: 'desc' }, take: 50 })
   return rows.map(rowToProject)
+}
+
+/**
+ * S+4 — seznam projektov LASTNIKA (rute smejo uporabljati samo to).
+ * Vidi: svoje projekte; ADMIN pa dodatno zapuščinske brez ownerId.
+ */
+export async function listProjectsForOwner(ctx: OwnershipFilter): Promise<VizProjectRecord[]> {
+  const all = await listProjects()
+  return all.filter((p) => mayAccess({ ownerId: ctx.ownerId, isAdmin: ctx.isAdmin }, p.ownerId))
+}
+
+/**
+ * S+4 — projekt za lastnika ali null (tuj projekt = null; ruta javi 404,
+ * ne 403 — ne puščamo informacije o obstoju).
+ */
+export async function getProjectForOwner(
+  id: string,
+  ctx: OwnershipFilter
+): Promise<VizProjectRecord | null> {
+  const rec = await getProject(id)
+  if (!rec) return null
+  if (!mayAccess({ ownerId: ctx.ownerId, isAdmin: ctx.isAdmin }, rec.ownerId)) return null
+  return rec
+}
+
+/** Projekta po idempotenčnem ključu (S+4) ali null. */
+export async function findProjectByIdempotencyKey(
+  ownerId: string,
+  key: string
+): Promise<VizProjectRecord | null> {
+  const owned = await listProjectsForOwner({ ownerId, isAdmin: false })
+  return owned.find((p) => p.idempotencyKey === key) ?? null
 }
 
 /** Podrobnosti projekta ali null. */
@@ -181,6 +250,19 @@ export async function renameProject(id: string, name: string): Promise<VizProjec
   return rowToProject(row)
 }
 
+/**
+ * S+4 — preimenovanje z lastniško preverbo (null = tuj/neobstoječ → 404).
+ */
+export async function renameProjectForOwner(
+  id: string,
+  name: string,
+  ctx: OwnershipFilter
+): Promise<VizProjectRecord | null> {
+  const rec = await getProjectForOwner(id, ctx)
+  if (!rec) return null
+  return renameProject(id, name)
+}
+
 /** Zbriši metadata projekta (datoteke briše klicna koda). */
 export async function deleteProject(id: string): Promise<void> {
   if (storageMode() === 'blob') {
@@ -198,7 +280,11 @@ export async function createRenderJob(input: VizRenderJobInput): Promise<VizRend
     const now = new Date().toISOString()
     const doc: VizRenderJobRecord = {
       id: randomUUID(),
-      ...input,
+      ownerId: input.ownerId ?? null,
+      projectId: input.projectId,
+      status: input.status,
+      engine: input.engine,
+      inputJson: input.inputJson,
       resultPath: null,
       error: null,
       createdAt: now,
@@ -211,6 +297,7 @@ export async function createRenderJob(input: VizRenderJobInput): Promise<VizRend
   const row = await db.vizRenderJob.create({
     data: {
       projectId: input.projectId,
+      ownerId: input.ownerId ?? null,
       status: input.status,
       engine: input.engine,
       inputJson: input.inputJson,
@@ -244,4 +331,15 @@ export async function getRenderJob(id: string): Promise<VizRenderJobRecord | nul
   const db = await prisma()
   const row = await db.vizRenderJob.findUnique({ where: { id } })
   return row ? rowToJob(row) : null
+}
+
+/** S+4 — render job za lastnika ali null (tuj job → ruta javi 404). */
+export async function getRenderJobForOwner(
+  id: string,
+  ctx: OwnershipFilter
+): Promise<VizRenderJobRecord | null> {
+  const job = await getRenderJob(id)
+  if (!job) return null
+  if (!mayAccess({ ownerId: ctx.ownerId, isAdmin: ctx.isAdmin }, job.ownerId)) return null
+  return job
 }

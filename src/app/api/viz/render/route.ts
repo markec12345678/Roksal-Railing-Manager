@@ -7,8 +7,8 @@
 // v Vercel Blob) — iskrenost statusov se ne spremeni.
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { authenticate, unauthorized } from '@/lib/auth'
-import { createRenderJob, getProject, updateRenderJob } from '@/lib/viz/repository'
+import { vizOwner } from '@/lib/viz/ownership'
+import { createRenderJob, getProjectForOwner, updateRenderJob } from '@/lib/viz/repository'
 
 export const runtime = 'nodejs'
 
@@ -20,9 +20,9 @@ const renderSchema = z.object({
 const GPU_ERROR_UNSET = 'GPU backend ni nastavljen (VIZ_GPU_URL) — čaka na lasten GPU strežnik'
 
 export async function POST(request: Request) {
-  // Aplikacijska konvencija: proxy je prva plast, ruta preveri sama (glej src/lib/auth.ts).
-  const auth = await authenticate(request)
-  if (!auth) return unauthorized()
+  // S+4: render job je vezan na prijavljenega uporabnika; tuj projekt = 404.
+  const ctx = await vizOwner(request)
+  if (ctx instanceof Response) return ctx
   try {
     const body = await request.json().catch(() => null)
     const parsed = renderSchema.safeParse(body)
@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     }
     const { projectId, prompt } = parsed.data
 
-    const project = await getProject(projectId)
+    const project = await getProjectForOwner(projectId, ctx)
     if (!project) {
       return NextResponse.json({ error: 'Projekt ne obstaja' }, { status: 404 })
     }
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
       note: 'Qwen-Image-Edit-2509 — planirano, čaka na GPU strežnik',
     })
 
-    const job = await createRenderJob({ projectId, status: 'queued', engine, inputJson })
+    const job = await createRenderJob({ projectId, ownerId: ctx.ownerId, status: 'queued', engine, inputJson })
 
     let gpuError: string | null = GPU_ERROR_UNSET
     const gpuUrl = process.env.VIZ_GPU_URL
