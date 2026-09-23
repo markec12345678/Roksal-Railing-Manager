@@ -1,0 +1,111 @@
+{
+  "base": "https://roksal-railing-manager.vercel.app",
+  "ranAt": "2026-09-23T16:04:57.052Z",
+  "checks": [
+    {
+      "step": "registracija A + B",
+      "ok": true,
+      "detail": "obe seji izdani (MONTER)"
+    },
+    {
+      "step": "A: preview",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "step": "A: save",
+      "ok": true,
+      "detail": "HTTP 200, id=dc6e6c64-c7a5-4b56-92b4-5c4d18bea418"
+    },
+    {
+      "step": "idempotenca: save ×2 → isti projekt",
+      "ok": true,
+      "detail": "id=dc6e6c64-c7a5-4b56-92b4-5c4d18bea418, idempotent=true"
+    },
+    {
+      "step": "A: seznam vidi svoj projekt",
+      "ok": true,
+      "detail": "HTTP 200, št=1"
+    },
+    {
+      "step": "A: odpre svoj projekt",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "step": "A: preimenuje svoj projekt",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "step": "B: seznam NE vidi A projekta",
+      "ok": true,
+      "detail": "HTTP 200, št=0"
+    },
+    {
+      "step": "B: GET tuj projekt → 404",
+      "ok": true,
+      "detail": "HTTP 404"
+    },
+    {
+      "step": "B: PATCH tuj projekt → 404",
+      "ok": true,
+      "detail": "HTTP 404"
+    },
+    {
+      "step": "B: DELETE tuj projekt → 404",
+      "ok": true,
+      "detail": "HTTP 404"
+    },
+    {
+      "step": "B: POST render tuj projekt → 404",
+      "ok": true,
+      "detail": "HTTP 404"
+    },
+    {
+      "step": "B: files proxy tuj projekt → 404",
+      "ok": true,
+      "detail": "HTTP 404"
+    },
+    {
+      "step": "A: POST render svoj projekt (stub queued)",
+      "ok": true,
+      "detail": "HTTP 200, status=queued"
+    },
+    {
+      "step": "B: GET tuj render job → 404",
+      "ok": true,
+      "detail": "HTTP 404"
+    },
+    {
+      "step": "A: GET svoj render job → 200 (iskren queued)",
+      "ok": true,
+      "detail": "HTTP 200, queued"
+    },
+    {
+      "step": "save odgovor NE vsebuje surovih blob URL-jev",
+      "ok": true,
+      "detail": "{\"original\":\"/api/viz/files/viz/projects/dc6e6c64-c7a5-4b56-92b4-5c4d18bea418/or"
+    },
+    {
+      "step": "files proxy brez seje → 401",
+      "ok": true,
+      "detail": "HTTP 401"
+    },
+    {
+      "step": "files proxy z sejo lastnika → 200",
+      "ok": true,
+      "detail": "HTTP 200, image/jpeg"
+    },
+    {
+      "step": "GC brez auth → 401",
+      "ok": true,
+      "detail": "HTTP 401"
+    },
+    {
+      "step": "A: DELETE svoj projekt → 200; DELETE ×2 → 404; GET po brisanju → 404",
+      "ok": true,
+      "detail": "200/404/404"
+    }
+  ]
+}
