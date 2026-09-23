@@ -8,7 +8,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { vizOwner } from '@/lib/viz/ownership'
-import { createRenderJob, getProjectForOwner, updateRenderJob } from '@/lib/viz/repository'
+import { createRenderJob, getProjectForOwner, transitionRenderJob } from '@/lib/viz/repository'
 
 export const runtime = 'nodejs'
 
@@ -86,8 +86,13 @@ export async function POST(request: Request) {
           signal: AbortSignal.timeout(3000),
         })
         if (res.ok) {
-          const updated = await updateRenderJob(job.id, { status: 'processing', error: null })
-          return NextResponse.json({ jobId: updated?.id ?? job.id, status: 'processing' })
+          // S+4: sodobno varen prehod queued → processing (zaklep + državni stroj).
+          const outcome = await transitionRenderJob(job.id, { status: 'processing', error: null })
+          return NextResponse.json({
+            jobId: outcome.ok ? outcome.job.id : job.id,
+            status: outcome.ok ? outcome.job.status : 'queued',
+            duplicate: outcome.ok ? outcome.duplicate : false,
+          })
         }
         gpuError = `GPU strežnik je vrnil napako HTTP ${res.status} — job ostaja v vrsti`
       } catch {
@@ -96,7 +101,8 @@ export async function POST(request: Request) {
     }
 
     if (gpuError) {
-      await updateRenderJob(job.id, { error: gpuError })
+      // Patch brez statusa — samo opomba, ni prehoda (državni stroj ne prizadet).
+      await transitionRenderJob(job.id, { error: gpuError })
     }
 
     return NextResponse.json({ jobId: job.id, status: 'queued' })

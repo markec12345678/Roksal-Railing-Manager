@@ -13,7 +13,17 @@
  * VizRenderJobRecord) — datumska polja ISO nizi.
  */
 import { randomUUID } from 'node:crypto'
-import { vizGetJson, vizPutJson, vizDel, vizList, projectKey, renderJobKey, storageMode } from './storage'
+import {
+  vizGetJson,
+  vizPutJson,
+  vizDel,
+  vizList,
+  vizCreate,
+  vizGet,
+  projectKey,
+  renderJobKey,
+  storageMode,
+} from './storage'
 import type { PrismaClient } from '@prisma/client'
 import { mayAccess, type VizOwnerContext } from './ownership'
 
@@ -342,4 +352,130 @@ export async function getRenderJobForOwner(
   if (!job) return null
   if (!mayAccess({ ownerId: ctx.ownerId, isAdmin: ctx.isAdmin }, job.ownerId)) return null
   return job
+}
+
+// ── Render jobi — sodobno varni prehodi (S+4, P0) ────────────────────────────
+//
+// Problem: blob način je prej bil read → modify → overwrite. Dva sočasna
+// update-a (A: queued→processing, B: stale queued→failed) sta lahko izgubila
+// A-jev zapis (last-writer-wins brez konteksta) ALI regresirala stanje
+// (processing → nazaj queued).
+//
+// Mehanizem (dve neodvisni zaščiti):
+//   1. **Lease zaklep per job** prek ATOMARNEGA create-if-not-exists
+//      (vizCreate = put brez allowOverwrite / fs 'wx'). Zaklep poteče po
+//      RENDER_JOB_LOCK_TTL_MS (mrtev držalec ne blokira za vedno).
+//   2. **Državni stroj prehodov** — status ne sme regresirati in terminalna
+//      stanja (completed/failed) so nespremenljiva. Ponovljen isti update je
+//      idempotentna no-op uspeh.
+
+export type VizJobStatus = VizRenderJobRecord['status']
+
+/** Dovoljeni prehodi — vse ostalo je ZAVRNJENO (regresija/terminal = napaka). */
+const LEGAL_JOB_TRANSITIONS: Record<VizJobStatus, VizJobStatus[]> = {
+  queued: ['processing', 'failed'],
+  processing: ['completed', 'failed'],
+  completed: [],
+  failed: [],
+}
+
+export type VizJobTransitionResult =
+  | { ok: true; job: VizRenderJobRecord; duplicate: boolean }
+  | { ok: false; reason: 'not-found' | 'illegal-transition' | 'lock-timeout' }
+
+function validateJobTransition(current: VizJobStatus, target: VizJobStatus): 'ok' | 'duplicate' | 'illegal' {
+  if (current === target) return 'duplicate' // ponovno pošiljanje istega update-a
+  return LEGAL_JOB_TRANSITIONS[current].includes(target) ? 'ok' : 'illegal'
+}
+
+const RENDER_JOB_LOCK_TTL_MS = 30_000
+const RENDER_JOB_LOCK_RETRIES = 5
+const RENDER_JOB_LOCK_RETRY_DELAY_MS = 60
+
+function jobLockKey(jobId: string): string {
+  return `${renderJobKey(jobId)}.lock`
+}
+
+/** Poskusi pridobiti lease zaklep; vrne holder token ali null (zaseden/potečen retry). */
+async function acquireJobLock(jobId: string): Promise<string | null> {
+  const holder = randomUUID()
+  const key = jobLockKey(jobId)
+  for (let attempt = 0; attempt <= RENDER_JOB_LOCK_RETRIES; attempt++) {
+    try {
+      await vizCreate(key, Buffer.from(JSON.stringify({ holder, lockedAt: Date.now() }), 'utf8'), 'application/json')
+      return holder
+    } catch (error) {
+      // VizAlreadyExistsError → zaklep zaseden; ostalo = resnična napaka → odpovej
+      if (!(error instanceof Error) || error.name !== 'VizAlreadyExistsError') throw error
+      // Ali je držalec mrtev (lease potečen)? → prevzemi zaklep.
+      const lockDoc = await vizGetJson<{ holder: string; lockedAt: number }>(key)
+      if (lockDoc && Date.now() - lockDoc.lockedAt > RENDER_JOB_LOCK_TTL_MS) {
+        // Pogojno prevzemanje: prepisemo zaklep (last-writer-wins na lease —
+        // TTL je dovolj dolg, da je držalec v teku defintivno mrtev).
+        await vizPutJson(key, { holder, lockedAt: Date.now() })
+        return holder
+      }
+      if (attempt < RENDER_JOB_LOCK_RETRIES) {
+        await new Promise((r) => setTimeout(r, RENDER_JOB_LOCK_RETRY_DELAY_MS))
+      }
+    }
+  }
+  return null
+}
+
+/** Sprosti lease zaklep — SAMO, če je še naš (nikoli ne briši tujega). */
+async function releaseJobLock(jobId: string, holder: string): Promise<void> {
+  const key = jobLockKey(jobId)
+  const lockDoc = await vizGetJson<{ holder: string; lockedAt: number }>(key)
+  if (lockDoc?.holder === holder) {
+    await vizDel(key)
+  }
+}
+
+/**
+ * S+4 — sodobno VAREN update render joba z validacijo prehoda.
+ *
+ * Vrača:
+ *   { ok: true, job, duplicate }   — uspeh (duplicate = ponovljen isti update,
+ *                                    vrni trenutno stanje, NIČ ne spremeni)
+ *   { ok: false, reason }          — not-found | illegal-transition | lock-timeout
+ *
+ * Blob način: lease zaklep + read-modify-write pod zaklepom.
+ * Local (Prisma): isti prehodni stroj znotraj $transaction (SQLite seralizira).
+ */
+export async function transitionRenderJob(
+  id: string,
+  patch: Partial<Pick<VizRenderJobRecord, 'status' | 'error' | 'resultPath'>>
+): Promise<VizJobTransitionResult> {
+  if (storageMode() === 'blob') {
+    const holder = await acquireJobLock(id)
+    if (!holder) return { ok: false, reason: 'lock-timeout' }
+    try {
+      const doc = await vizGetJson<VizRenderJobRecord>(renderJobKey(id))
+      if (!doc) return { ok: false, reason: 'not-found' }
+      if (patch.status) {
+        const verdict = validateJobTransition(doc.status, patch.status)
+        if (verdict === 'duplicate') return { ok: true, job: doc, duplicate: true }
+        if (verdict === 'illegal') return { ok: false, reason: 'illegal-transition' }
+      }
+      const updated: VizRenderJobRecord = { ...doc, ...patch, updatedAt: new Date().toISOString() }
+      await vizPutJson(renderJobKey(id), updated)
+      return { ok: true, job: updated, duplicate: false }
+    } finally {
+      await releaseJobLock(id, holder)
+    }
+  }
+  const db = await prisma()
+  return db.$transaction(async (tx) => {
+    const existing = await tx.vizRenderJob.findUnique({ where: { id } })
+    if (!existing) return { ok: false, reason: 'not-found' as const }
+    const current = existing.status as VizJobStatus
+    if (patch.status) {
+      const verdict = validateJobTransition(current, patch.status)
+      if (verdict === 'duplicate') return { ok: true, job: rowToJob(existing), duplicate: true }
+      if (verdict === 'illegal') return { ok: false, reason: 'illegal-transition' as const }
+    }
+    const row = await tx.vizRenderJob.update({ where: { id }, data: patch })
+    return { ok: true, job: rowToJob(row), duplicate: false }
+  })
 }

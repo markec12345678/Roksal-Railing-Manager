@@ -184,8 +184,8 @@ describe('S+4 lastništvo — API rute (Bearer sejni žetoni)', () => {
 
   beforeEach(async () => {
     const { signSession } = await import('@/lib/session')
-    tokenA = await signSession({ sub: 'user-A', email: 'a@test.si', ime: 'Uporabnik A', vloga: 'MONTER', exp: Math.floor(Date.now() / 1000) + 600 })
-    tokenB = await signSession({ sub: 'user-B', email: 'b@test.si', ime: 'Uporabnik B', vloga: 'MONTER', exp: Math.floor(Date.now() / 1000) + 600 })
+    tokenA = await signSession({ sub: 'user-A', email: 'a@test.si', ime: 'Uporabnik A', vloga: 'MONTER' })
+    tokenB = await signSession({ sub: 'user-B', email: 'b@test.si', ime: 'Uporabnik B', vloga: 'MONTER' })
   })
 
   function req(method: string, url: string, token: string, body?: unknown): Request {
@@ -280,7 +280,7 @@ describe('S+4 lastništvo — API rute (Bearer sejni žetoni)', () => {
 
   it('ADMIN sme videti zapuščinski zapis skozi rutu (GET 200)', async () => {
     const { signSession } = await import('@/lib/session')
-    const admin = await signSession({ sub: 'user-ADMIN', email: 'admin@test.si', ime: 'Admin', vloga: 'ADMIN', exp: Math.floor(Date.now() / 1000) + 600 })
+    const admin = await signSession({ sub: 'user-ADMIN', email: 'admin@test.si', ime: 'Admin', vloga: 'ADMIN' })
     await createProject({ ...BASE, id: 'route-legacy', ownerId: null })
     created.push('route-legacy')
     const detailRoute = await import('@/app/api/viz/projects/[id]/route')

@@ -123,6 +123,59 @@ export interface VizListItem {
   url: string
 }
 
+/** Napaka, če vizCreate zapiše pod ključ, ki že obstaja (atomic test-and-set). */
+export class VizAlreadyExistsError extends Error {
+  constructor(key: string) {
+    super(`Ključ že obstaja: ${key}`)
+    this.name = 'VizAlreadyExistsError'
+  }
+}
+
+/**
+ * S+4 — USTVARI datoteko SAMO, če ključ še ne obstaja (atomic test-and-set).
+ *
+ * To je edini resnično atomarni primitiv, ki ga shrambi nudita:
+ *   • blob  — put BREZ allowOverwrite vrže napako "already exists", če ključ
+ *     obstaja (obnašanje dokazano na produkciji v S+3).
+ *   • local — writeFile s flag 'wx' (EEXIST, če datoteka obstaja).
+ *
+ * Uporaba: zaklepanje render jobov (sodobni update brez izgube zapisa).
+ * Vrže VizAlreadyExistsError, če ključ že obstaja; druge napake so neujete.
+ */
+export async function vizCreate(
+  key: string,
+  data: Buffer,
+  contentType?: string
+): Promise<VizPutResult> {
+  assertSafeKey(key)
+  if (storageMode() === 'blob') {
+    const { put } = await importBlob()
+    try {
+      const res = await put(key, data, {
+        access: 'public',
+        addRandomSuffix: false,
+        // NAMERNO brez allowOverwrite → atomic create-if-not-exists.
+        contentType: contentType ?? contentTypeForName(key),
+      })
+      return { key, url: res.url }
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error)
+      if (msg.toLowerCase().includes('already exists')) throw new VizAlreadyExistsError(key)
+      throw error
+    }
+  }
+  const p = localPath(key)
+  await mkdir(path.dirname(p), { recursive: true })
+  try {
+    await writeFile(p, data, { flag: 'wx' })
+  } catch (error) {
+    const code = (error as NodeJS.ErrnoException)?.code
+    if (code === 'EEXIST') throw new VizAlreadyExistsError(key)
+    throw error
+  }
+  return { key, url: `/${key}` }
+}
+
 /** Zapiši datoteko pod ključ; vrne javni URL (relativen ali absoluten blob URL). */
 export async function vizPut(
   key: string,
