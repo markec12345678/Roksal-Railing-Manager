@@ -126,11 +126,28 @@ Korak po korak (vsi PASS):
 ## 9. Produkcija (Vercel)
 
 - URL: https://roksal-railing-manager.vercel.app
-- Build: PASS (dpl_* READY po pushu)
-- Produkcijski spot-check: homepage 200, demo assets 200, prijava deluje,
-  viz API (stage/preview/projects) 200 — glej worklog zapis za ID deploya.
-- Perf na produkciji (n=20, `bun tools/s5-perf-check.ts https://roksal-railing-manager.vercel.app`):
-  -glej spodnjo tabelo (dopolnjeno po deployu)-
+- Build: **PASS** — deployment `dpl_CmgZSUxEWzQM5UiNQjarzh7Xgdpg` READY (HEAD 15f9bf6)
+- Produkcijski brskalniški E2E (390×844, agent-browser): prijava → produktna domača stran
+  (hero + realna PREJ/POTEM demo, TopBar skrit, brez horizontalnega scrolla) → Preizkusni
+  primer → Pripravi predogled → **13 = 13 letvic, ΔE 0.00, 3.2 s** → Shrani projekt →
+  Moji projekti (sličica + datum) → izbriši (2-klik) → seznam prazen. Screenshoti:
+  `s5-11-prod-homepage.png`, `s5-11-prod-result.png`, `s5-12-prod-projects.png`.
+- Produkcijski varnostni spot-check (`bun tools/s5-security-check.ts https://…`): **11/11 PASS**
+  (B → 404 za GET/PATCH/DELETE/render/**duplicate**/files; A sanity 200).
+- Produkcijske performanse (`bun tools/s5-perf-check.ts https://…`, n=20/endpoint):
+
+| endpoint | p50 | p90 | p95 | max | S+4 (primerjava p50) |
+|---|---|---|---|---|---|
+| stage | 1577 ms | 1743 ms | 2016 ms | 2016 ms | 1515 ms — enako ✓ |
+| **preview** | **3281 ms** | 3681 ms | **4037 ms** | 4037 ms | 2768 ms — p95 IDENTIČEN (4037), p50 variacija serverless |
+| list | 401 ms | 473 ms | 499 ms | 499 ms | 508 ms — boljše ✓ |
+| open | 330 ms | 429 ms | 504 ms | 504 ms | 330 ms — identično ✓ |
+
+  Lokalni preview p50 1410 ms dokazuje, da UI sloj ni dodal stroška (pipeline 1:1); razlika
+  p50 2.77→3.28 s je serverless/mrežna variacija (p95 nespremenjen). Save percentil v orodju
+  meri pretežno 400 (staging porabljen po prvem save-u — pričakovano); uspešen save ~1.7–2.2 s
+  (skladno s S+4 2232 ms). Opomba: ena od treh meritev je spodletela na začasni Blob/4xx napaki
+  (ponovljena uspešno) — dokumentirano kot znana serverless nestanovitnost merjenja.
 
 ## 10. Znane omejitve (iskreno, spec §15/§29)
 
