@@ -10,6 +10,8 @@ interface TopBarProps {
   onSync?: () => void
   syncing?: boolean
   onOpenPalette?: () => void
+  /** S+5: v produktnem načinu (viz) je TopBar skrit — produkt ima lastno minimalno navigacijo. */
+  hidden?: boolean
 }
 
 const emptySubscribe = () => () => {}
@@ -45,7 +47,7 @@ function useLiveClock() {
   return time
 }
 
-export function TopBar({ onSync, syncing, onOpenPalette }: TopBarProps) {
+export function TopBar({ onSync, syncing, onOpenPalette, hidden = false }: TopBarProps) {
   const { theme, setTheme, resolvedTheme } = useTheme()
   const hydrated = useHydrated()
   const liveClock = useLiveClock()
@@ -66,7 +68,11 @@ export function TopBar({ onSync, syncing, onOpenPalette }: TopBarProps) {
   const needsSyncPulse = Date.now() - lastSynced > 300000 && !syncing
 
   return (
-    <header className="sticky top-0 z-50 bg-gradient-to-r from-roksal-navy to-[#2a3f5f] text-white shine-effect">
+    <header
+      className="sticky top-0 z-50 bg-gradient-to-r from-roksal-navy to-[#2a3f5f] text-white shine-effect"
+      hidden={hidden}
+      aria-hidden={hidden || undefined}
+    >
       <div className="mx-auto flex max-w-lg items-center justify-between px-4 py-3 md:max-w-3xl md:px-6 md:py-4 lg:max-w-5xl">
         <div className="flex items-center gap-3 md:gap-4">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-roksal-amber font-bold text-roksal-navy text-sm shadow-md md:h-10 md:w-10 md:text-base">

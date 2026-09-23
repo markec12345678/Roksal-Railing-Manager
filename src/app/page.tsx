@@ -84,7 +84,10 @@ const MAIN_TAB_IDS: TabId[] = [
 import type { Project } from '@/lib/types'
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<TabId>('dashboard')
+  // S+5: produkt "Vizualizacija ograje" je PRIVZETI pogled (product-first).
+  // Notranja orodja (dashboard, kalkulator …) ostanejo dosegljiva prek ubežne
+  // lopice (Hammer gumb v ProductHeader → roksal:navigate).
+  const [activeTab, setActiveTab] = useState<TabId>('viz')
   const [moreTab, setMoreTab] = useState<MoreTabId | null>(null)
   const [syncing, setSyncing] = useState(false)
   const [lowStockCount, setLowStockCount] = useState(0)
@@ -338,12 +341,13 @@ export default function Home() {
         </div>
       </div>
 
-      <TopBar onSync={handleSync} syncing={syncing} onOpenPalette={() => setPaletteOpen(true)} />
+      <TopBar onSync={handleSync} syncing={syncing} onOpenPalette={() => setPaletteOpen(true)} hidden={activeTab === 'viz'} />
 
-      {/* PWA status — offline pas + namestitev app */}
-      <PwaStatus />
+      {/* PWA status — offline pas + namestitev app (skrit v produktnem načinu) */}
+      {activeTab !== 'viz' && <PwaStatus />}
 
       {/* Sync status indicator */}
+      {activeTab !== 'viz' && (
       <div className="mx-auto w-full max-w-lg md:max-w-3xl lg:max-w-5xl relative">
         {syncing && (
           <div className="absolute top-0 left-0 right-0 z-30 h-0.5 bg-roksal-amber overflow-hidden">
@@ -363,6 +367,7 @@ export default function Home() {
           </span>
         </div>
       </div>
+      )}
 
       {/* Aktivni projekt indikator (kompakten) */}
       {selectedProject && (activeTab === 'ar' || activeTab === 'photos' || activeTab === 'inclinometer' || moreTab === 'sketches') && (
@@ -380,22 +385,24 @@ export default function Home() {
         className="mx-auto w-full max-w-lg pb-24 md:max-w-3xl lg:max-w-5xl"
         style={pullPx > 0 ? { transform: `translateY(${Math.round(pullPx)}px)`, transition: 'transform 80ms linear' } : { transition: 'transform 200ms ease-out' }}
       >
-        {/* Mehek prehod med zavihki — ključ je kombinacija zavihka in modula,
-          da se animacija sproži tudi znotraj "Več" menija. */}
+        {/* S+5: produktni način — VizTab ima lastno lupino (header/footer, brez
+            notranjega chrome-a); max širina zato ni vezana na ta container. */}
+        {activeTab === 'viz' ? (
+          <VizTab />
+        ) : (
         <motion.div
           key={activeTab + (moreTab ?? '')}
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.18, ease: 'easeOut' }}
         >
-        {/* Glavni zavihki */}
+        {/* Glavni zavihki (viz je obravnavan zgoraj — produktna lupina) */}
         {activeTab === 'dashboard' && (
           <DashboardTab
             selectedProjectId={selectedProjectId}
             onSelectProject={(id) => setSelectedProjectId(id)}
           />
         )}
-        {activeTab === 'viz' && <VizTab />}
         {activeTab === 'ar' && (
           <>
             <div className="grid gap-3 p-4 pb-0 sm:grid-cols-2 sm:items-start">
@@ -499,6 +506,7 @@ export default function Home() {
           </div>
         )}
         </motion.div>
+        )}
       </main>
 
       {/* Ukazna paleta — skok kamorkoli (⌘K) */}
@@ -525,9 +533,11 @@ export default function Home() {
         </div>
       )}
 
-      {/* Hitre akcije (FAB) — AR meritev, slika, meritev, skica, kalkulator */}
-      <QuickActionsFab />
+      {/* Hitre akcije (FAB) — AR meritev, slika, meritev, skica, kalkulator
+          (skrite v produktnem načinu — produkt ima lastno minimalno navigacijo) */}
+      {activeTab !== 'viz' && <QuickActionsFab />}
 
+      {activeTab !== 'viz' && (
       <BottomNav
         activeTab={activeTab}
         onTabChange={handleTabChange}
@@ -535,7 +545,9 @@ export default function Home() {
         moreActive={moreTab}
         onMoreSelect={handleMoreSelect}
       />
+      )}
 
+      {activeTab !== 'viz' && (
       <OnboardingWrapper onNavigate={(tab) => {
         if (tab === 'ai' || tab === 'signature' || tab === 'logistics') {
           setMoreTab(tab as MoreTabId)
@@ -544,6 +556,7 @@ export default function Home() {
           handleTabChange(tab as TabId)
         }
       }} />
+      )}
     </div>
   )
 }
