@@ -83,3 +83,4 @@ gpu-backend/**/__pycache__/
 evaluation/output/
 evaluation/**/__pycache__/
 .pytest_cache/
+tmp/roksal-research/
