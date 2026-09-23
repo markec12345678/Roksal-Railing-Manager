@@ -273,6 +273,83 @@ export async function renameProjectForOwner(
   return renameProject(id, name)
 }
 
+/**
+ * S+5 — PODVOJITEV projekta (isti lastnik): nov id + ime " (kopija)",
+ * iste poti datotek so SESTAVLJENE na nov id (route kopira datoteke PRED
+ * klicem te funkcije, da metadata ne kaže na manjkajoče vire).
+ *
+ *   blob  = nov project.json dokument (viz/projects/<newId>/project.json)
+ *   local = nova Prisma vrstica
+ */
+/**
+ * S+5 — ime podvojenega projekta: "ime (kopija)", največ 120 znakov
+ * (pripona je VEDNO prisotna — name se po potrebi obreže).
+ */
+export function duplicateName(srcName: string): string {
+  const suffix = ' (kopija)'
+  const maxName = 120
+  if (srcName.length + suffix.length <= maxName) return srcName + suffix
+  return srcName.slice(0, maxName - suffix.length) + suffix
+}
+
+export async function duplicateProjectForOwner(
+  id: string,
+  ctx: OwnershipFilter
+): Promise<VizProjectRecord | null> {
+  const src = await getProjectForOwner(id, ctx)
+  if (!src) return null
+  const newId = randomUUID()
+  const now = new Date().toISOString()
+  const newPath = (p: string | null): string => {
+    if (!p) return p as never
+    // originalPath/maskPath/... so "/viz/projects/<id>/<ime>" (ali brez vodilnega
+    // poševnika v blob načinu) — zamenjaj id segment v obeh oblikah.
+    return p
+      .replace(`viz/projects/${src.id}/`, `viz/projects/${newId}/`)
+      .replace(`/viz/projects/${src.id}/`, `/viz/projects/${newId}/`)
+  }
+  const doc: VizProjectRecord = {
+    id: newId,
+    ownerId: src.ownerId,
+    idempotencyKey: null, // podvojitev je NOV projekt — idempotenca se ne deduje
+    name: duplicateName(src.name),
+    originalPath: newPath(src.originalPath),
+    productPath: newPath(src.productPath),
+    productMaskPath: src.productMaskPath ? newPath(src.productMaskPath) : null,
+    maskPath: newPath(src.maskPath),
+    previewPath: src.previewPath ? newPath(src.previewPath) : null,
+    resultPath: src.resultPath ? newPath(src.resultPath) : null,
+    resultImagePath: src.resultImagePath ? newPath(src.resultImagePath) : null,
+    placement: src.placement,
+    variants: src.variants,
+    createdAt: now,
+    updatedAt: now,
+  }
+  if (storageMode() === 'blob') {
+    await vizPutJson(projectKey(newId, 'project.json'), doc)
+    return doc
+  }
+  const db = await prisma()
+  const row = await db.vizProject.create({
+    data: {
+      id: newId,
+      ownerId: doc.ownerId,
+      idempotencyKey: null,
+      name: doc.name,
+      originalPath: doc.originalPath,
+      productPath: doc.productPath,
+      productMaskPath: doc.productMaskPath,
+      maskPath: doc.maskPath,
+      previewPath: doc.previewPath,
+      resultPath: doc.resultPath,
+      resultImagePath: null,
+      placement: doc.placement,
+      variants: doc.variants,
+    },
+  })
+  return rowToProject(row)
+}
+
 /** Zbriši metadata projekta (datoteke briše klicna koda). */
 export async function deleteProject(id: string): Promise<void> {
   if (storageMode() === 'blob') {
