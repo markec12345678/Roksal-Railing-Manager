@@ -57,6 +57,10 @@ function SheetContent({
       <SheetOverlay />
       <SheetPrimitive.Content
         data-slot="sheet-content"
+        // Radix warning "Missing Description or aria-describedby={undefined}" —
+        // isti vzorec kot dialog.tsx (runda S): sheeti brez opisa ne smejo
+        // onesnaževati konzole.
+        aria-describedby={undefined}
         className={cn(
           "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out fixed z-50 flex flex-col gap-4 shadow-lg transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500",
           side === "right" &&

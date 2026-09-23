@@ -28,7 +28,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
-import { Calculator, AlertTriangle, CheckCircle2, Info, Thermometer, Wind, Anchor, Package, Save, Trash2, Clock, RotateCcw, Ruler, Scissors, ArrowLeft, ArrowDownToLine, Euro, AlignJustify, Triangle, ShieldCheck, Plus, X, FileDown, Hammer, Drill, History, BookmarkPlus, FileSpreadsheet, ChevronDown, ChevronUp, Calendar, Percent, Wallet, Truck, Users, Timer, Layers, MapPin, Square, Navigation, Crosshair, Mountain } from 'lucide-react'
+import { Calculator, AlertTriangle, CheckCircle2, Info, Thermometer, Wind, Anchor, Package, Save, Trash2, Clock, RotateCcw, Ruler, Scissors, ArrowLeft, ArrowDownToLine, Euro, AlignJustify, Triangle, ShieldCheck, Plus, X, FileDown, Hammer, Drill, History, BookmarkPlus, FileSpreadsheet, ChevronDown, ChevronUp, Calendar, Percent, Wallet, Truck, Users, Timer, Layers, MapPin, Square, Navigation, Crosshair, Mountain, Palette } from 'lucide-react'
 import {
   calculateEqualSpacing,
   calculateAngledSpacing,
@@ -118,6 +118,19 @@ const podlagaAnchorAdvice: Record<string, string> = {
   kovina: 'Bimetal self-drilling vijaki — kemija ni potrebna.',
   plocice: 'Karbid vrti za ploščice + kemija. Zaščiti ploščice s trakom pri vrtanju.',
   neznan: 'Podlaga ni zabeležena — vzameš vzorec obojega (ekspanzija + kemija) in odločiš na terenu.',
+}
+// runda S — pravi tip sidra v BOM po podlagi (materialni način): "Sidra: kos (...)"
+const podlagaSidraLabel: Record<string, string> = {
+  beton: 'ekspanzija ali kemija',
+  estrih: 'KEMIJA obvezno!',
+  les: 'vijaki za les',
+  kovina: 'bimetal self-drilling',
+  plocice: 'karbid + kemija',
+  neznan: 'kemična (vzorec obojega)',
+}
+// runda S — RAL imena za naročilo profila (prašna barva)
+const ralNarociloNames: Record<string, string> = {
+  '7016': 'Antracit', '9005': 'Črna', '9016': 'Bela', '6005': 'Zelena', '8017': 'Rjava',
 }
 
 const terrainLabels: Record<TerrainCategory, string> = {
@@ -1192,7 +1205,17 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
     doc.text(`Datum: ${new Date().toLocaleDateString('sl-SI')}`, 14, y)
     y += 5
     doc.text(`Rezerva materiala: ${rezervaPctMaterial}%`, 14, y)
-    y += 7
+    y += 5
+    // runda S — kontekst terena v materialni list (prava pritrditev + barva)
+    if (importedFromMeasurement?.podlaga) {
+      doc.text(`Pritrditev (podlaga z terena: ${podlagaLabels[importedFromMeasurement.podlaga] ?? importedFromMeasurement.podlaga}): ${podlagaSidraLabel[importedFromMeasurement.podlaga] ?? 'po meri'}`, 14, y)
+      y += 5
+    }
+    if (importedFromMeasurement?.ralCode) {
+      doc.text(`Barva profila: RAL ${importedFromMeasurement.ralCode} (${ralNarociloNames[importedFromMeasurement.ralCode] ?? 'po meri'}) — prašno lakirano`, 14, y)
+      y += 5
+    }
+    y += 2
 
     // Summary table (z rezervo)
     autoTable(doc, {
@@ -3484,6 +3507,18 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                   </span>
                 </p>
               )}
+              {/* runda S — barva naročila z terena (pračni lak) */}
+              {importedFromMeasurement?.ralCode && (
+                <div className="mt-2 flex items-center gap-2 rounded-md bg-roksal-amber/10 px-2 py-1.5">
+                  <Palette className="h-3.5 w-3.5 shrink-0 text-roksal-amber" />
+                  <p className="text-[10px] font-medium text-roksal-navy">
+                    Naročilo: profil prašno lakiran v{' '}
+                    <span className="font-bold">RAL {importedFromMeasurement.ralCode}</span>
+                    {' '}
+                    ({ralNarociloNames[importedFromMeasurement.ralCode] ?? 'po meri'})
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -3700,9 +3735,34 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                   <p className="text-2xl font-bold text-roksal-navy">
                     {applyReserve(materialResult.anchorCount, rezervaPctMaterial)}
                   </p>
-                  <p className="text-[10px] text-muted-foreground">kos (kemična)</p>
+                  {/* runda S — pravi tip sidra po podlagi z terena */}
+                  <p className="text-[10px] text-muted-foreground">
+                    kos ({importedFromMeasurement?.podlaga
+                      ? podlagaSidraLabel[importedFromMeasurement.podlaga] ?? 'kemična'
+                      : 'kemična'})
+                  </p>
                 </Card>
               </div>
+
+              {/* runda S — pritrditev + barva z terena v BOM pogledu */}
+              {importedFromMeasurement?.podlaga && (
+                <Card className={importedFromMeasurement.podlaga === 'estrih' ? 'border-amber-300 bg-amber-50/60' : 'border-roksal-navy/15'}>
+                  <CardContent className="flex items-start gap-2.5 p-3">
+                    <Drill className={`mt-0.5 h-4 w-4 shrink-0 ${importedFromMeasurement.podlaga === 'estrih' ? 'text-amber-600' : 'text-roksal-navy/50'}`} />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] font-bold text-roksal-navy">
+                        Pritrditev: {podlagaSidraLabel[importedFromMeasurement.podlaga] ?? 'po meri'}
+                        <span className="ml-1 font-normal text-muted-foreground">
+                          (podlaga: {podlagaLabels[importedFromMeasurement.podlaga] ?? importedFromMeasurement.podlaga})
+                        </span>
+                      </p>
+                      <p className={`mt-0.5 text-[10px] leading-relaxed ${importedFromMeasurement.podlaga === 'estrih' ? 'font-medium text-amber-800' : 'text-muted-foreground'}`}>
+                        {podlagaAnchorAdvice[importedFromMeasurement.podlaga] ?? 'Preveri podlago na terenu.'}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* P2: Rezerva materiala info */}
               {rezervaPctMaterial > 0 && (
