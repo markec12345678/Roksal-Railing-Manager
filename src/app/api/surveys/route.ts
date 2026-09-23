@@ -10,6 +10,7 @@ const TIP_OBJEKTA = ['balkon', 'stopnice', 'terasa', 'loggia', 'friz', 'prehod']
 const OBLIKA = ['ravno', 'L', 'U', 'krog'] as const
 const PRITRDITEV = ['obrobna', 'tloris', 'stena', 'mesano'] as const
 const PODLAGA = ['beton', 'estrih', 'les', 'kovina', 'plocice', 'neznan'] as const
+const RAL_CODES = ['7016', '9005', '9016', '6005', '8017'] as const
 
 const surveySchema = z.object({
   projectId: z.string().min(1, 'ID projekta je obvezen'),
@@ -17,6 +18,7 @@ const surveySchema = z.object({
   oblika: z.enum(OBLIKA).default('ravno'),
   pritrditev: z.enum(PRITRDITEV).default('obrobna'),
   podlaga: z.enum(PODLAGA).default('neznan'),
+  ralCode: z.enum(RAL_CODES).nullable().optional(),
   razponNajdaljsiMm: z.number().int().min(0).max(20000).nullable().optional(),
   skupnaDolzinaMm: z.number().int().min(0).max(100000).nullable().optional(),
   visinaMm: z.number().int().min(0).max(10000).nullable().optional(),

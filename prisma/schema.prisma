@@ -669,6 +669,8 @@ model SiteSurvey {
   dostopOpomba        String?
   /// CSV posnetih točk foto kontrolnega seznama: tip1|meritve|podlaga|pritrditev|ovire|celota
   fotoPosneto         String?
+  /// RAL barva prahu izbrana na terenu (runda R): 7016|9005|9016|6005|8017
+  ralCode             String?
   opombe              String?
   zakljuceno          Boolean  @default(false)
   createdAt           DateTime @default(now())

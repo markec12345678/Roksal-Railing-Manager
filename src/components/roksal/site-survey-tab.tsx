@@ -14,6 +14,15 @@
  * Iz odgovorov se ŽIVO generira seznam "S seboj prinesti" (orodje + pritrdilni
  * material + opozorila) — zmanjša vračanje po pozabljeno (najdražji "dogodek" na
  * terenu = odhod z objekta, ko je že razstavljen).
+ *
+ * Runda R: ① RAL barva prahu — stranka izbere barvo NA TERENU, izbira se takoj
+ *             sinhronizira z 3D/AR predogledom (isti localStorage ključ kot
+ *             Fence3dViewer) — pokažeš ograjo v njeni barvi.
+ *           ② Orientacijski montažni izračun — segmenti / stebri / kotni spoji
+ *             iz mere (skupna dolžina ÷ najdaljši razpon).
+ *           ③ PDF zapisnik — en klik: uradni "Zapisnik o terenskem pregledu"
+ *             (glava, tabele, foto seznam, seznam orodja, podpisi) za vodjo/
+ *             arhiv — glej lib/survey-pdf.ts.
  */
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
@@ -29,8 +38,9 @@ import { useToast } from '@/hooks/use-toast'
 import {
   Building2, Footprints, Sun, DoorOpen, DoorClosed, RectangleHorizontal,
   Ruler, Wrench, Package, AlertTriangle, Camera, CheckCircle2, Loader2,
-  Save, ClipboardList, Copy, TriangleAlert, MapPinned,
+  Save, ClipboardList, Copy, TriangleAlert, MapPinned, FileDown, Palette,
 } from 'lucide-react'
+import type { Project } from '@/lib/types'
 
 // ── Konstante ────────────────────────────────────────────────────────────────
 
@@ -82,6 +92,27 @@ const OVIRE: { id: string; label: string }[] = [
   { id: 'druge', label: 'Druge' },
 ]
 
+// RAL klasik prahobarve (iste kode/hex kot generator modelov + Fence3dViewer)
+const RAL_BARVE: { code: string; ime: string; hex: string }[] = [
+  { code: '7016', ime: 'Antracit', hex: '#383E42' },
+  { code: '9005', ime: 'Črna', hex: '#0A0A0C' },
+  { code: '9016', ime: 'Bela', hex: '#F1F0EA' },
+  { code: '6005', ime: 'Zelena', hex: '#114232' },
+  { code: '8017', ime: 'Rjava', hex: '#45322E' },
+]
+// Ista ključa kot v Fence3dViewer — izbira na terenu = ista barva v 3D/AR predogledu
+const RAL_3D_STORAGE_KEY = 'roksal-ar-ral'
+
+// Podlaga določa moznike — en sam vir resnice za seznam + PDF zapisnik
+const PODLAGA_MOZNIKI: Record<Podlaga, string> = {
+  beton: 'Ekspanzijski mozniki 8×60 / 10×80',
+  estrih: 'KEMIJSKI mozniki + tesnilna masa (ekspanzija NE pride v poštev)',
+  les: 'Vijaki za les + podložke',
+  kovina: 'Bimetal self-drilling vijaki',
+  plocice: 'Karbid vrti za ploščice + kemija',
+  neznan: 'VZOREC obojega: ekspanzija + kemija',
+}
+
 const FOTO_CHECKLIST: { id: string; label: string; opis: string }[] = [
   { id: 'tip1', label: 'Celoten pogled', opis: 'širši kader — vsi segmenti objekta' },
   { id: 'meritve', label: 'Razpon s trakom', opis: 'merilni trak V kadiru (dokazljivo)' },
@@ -107,6 +138,7 @@ interface SurveyData {
   dvigalo: boolean
   dostopOpomba: string
   fotoPosneto: string[]
+  ralCode: string | null
   opombe: string
   zakljuceno: boolean
 }
@@ -125,6 +157,7 @@ const DEFAULTS: SurveyData = {
   dvigalo: false,
   dostopOpomba: '',
   fotoPosneto: [],
+  ralCode: null,
   opombe: '',
   zakljuceno: false,
 }
@@ -148,15 +181,12 @@ function buildBringList(s: SurveyData): BringItem[] {
     { id: 'phone', text: 'Telefon (Field Manager) + powerbank', reason: 'zapisnik + AR meritve', kind: 'base' },
   ]
 
-  const materials: Record<Podlaga, BringItem> = {
-    beton: { id: 'anchor-beton', text: 'Ekspanzijski mozniki 8×60 / 10×80', reason: 'podlaga: beton', kind: 'material' },
-    estrih: { id: 'anchor-estrih', text: 'KEMIJSKI mozniki + tesnilna masa', reason: 'estrih+folija — ekspanzija NE pride v poštev', kind: 'material' },
-    les: { id: 'anchor-les', text: 'Vijaki za les + podložke', reason: 'podlaga: les (preveri podkonstrukcijo!)', kind: 'material' },
-    kovina: { id: 'anchor-kovina', text: 'Bimetal self-drilling vijaki', reason: 'podlaga: kovina', kind: 'material' },
-    plocice: { id: 'anchor-plocice', text: 'Karbid vrti za ploščice + kemija', reason: 'podlaga: ploščice + zaščita trakov', kind: 'material' },
-    neznan: { id: 'anchor-neznan', text: 'VZOREC obojega: ekspanzija + kemija', reason: 'podlaga neznana — odločiš na terenu', kind: 'material' },
-  }
-  items.push(materials[s.podlaga])
+  items.push({
+    id: `anchor-${s.podlaga}`,
+    text: PODLAGA_MOZNIKI[s.podlaga],
+    reason: `podlaga: ${PODLAGA.find((p) => p.id === s.podlaga)?.label ?? s.podlaga}`,
+    kind: 'material',
+  })
 
   if (s.pritrditev === 'obrobna' || s.pritrditev === 'mesano') {
     items.push({ id: 'fascia', text: 'Obrobni nosilci + tesnilni trak', reason: 'pritrditev na rob plošče', kind: 'material' })
@@ -200,13 +230,15 @@ const mm = (v: number | null) => (v ? `${(v / 1000).toLocaleString('sl-SI')} m` 
 
 interface SiteSurveyTabProps {
   projectId: string | null
+  project?: Project | null
 }
 
-export function SiteSurveyTab({ projectId }: SiteSurveyTabProps) {
+export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
   const { toast } = useToast()
   const [data, setData] = useState<SurveyData>(DEFAULTS)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [generating, setGenerating] = useState(false)
   const [tools, setTools] = useState<Record<string, boolean>>({})
 
   const set = useCallback(<K extends keyof SurveyData>(key: K, value: SurveyData[K]) => {
@@ -236,6 +268,7 @@ export function SiteSurveyTab({ projectId }: SiteSurveyTabProps) {
           dvigalo: !!s.dvigalo,
           dostopOpomba: s.dostopOpomba ?? '',
           fotoPosneto: s.fotoPosneto ? s.fotoPosneto.split('|').filter(Boolean) : [],
+          ralCode: s.ralCode ?? null,
           opombe: s.opombe ?? '',
           zakljuceno: !!s.zakljuceno,
         })
@@ -246,6 +279,16 @@ export function SiteSurveyTab({ projectId }: SiteSurveyTabProps) {
   }, [projectId])
 
   const bringList = useMemo(() => buildBringList(data), [data])
+
+  // Orientacijski montažni izračun — segmenti/stebri/koti iz mere (runda R)
+  const izracun = useMemo(() => {
+    const raz = data.razponNajdaljsiMm
+    const sku = data.skupnaDolzinaMm
+    if (!sku || !raz || raz <= 0) return null
+    const segmentov = Math.ceil(sku / raz)
+    const koti = data.oblika === 'L' ? '1 (L)' : data.oblika === 'U' ? '2 (U)' : data.oblika === 'krog' ? 'po meri (lok)' : '0'
+    return { segmentov, stebri: segmentov + 1, koti }
+  }, [data.oblika, data.razponNajdaljsiMm, data.skupnaDolzinaMm])
 
   const completion = useMemo(() => {
     let total = 0
@@ -283,6 +326,7 @@ export function SiteSurveyTab({ projectId }: SiteSurveyTabProps) {
         dvigalo: data.dvigalo,
         dostopOpomba: data.dostopOpomba || null,
         fotoPosneto: data.fotoPosneto.join('|'),
+        ralCode: data.ralCode,
         opombe: data.opombe || null,
         zakljuceno: finish || data.zakljuceno,
       }
@@ -309,6 +353,58 @@ export function SiteSurveyTab({ projectId }: SiteSurveyTabProps) {
 
   const toggleFoto = (id: string) =>
     set('fotoPosneto', data.fotoPosneto.includes(id) ? data.fotoPosneto.filter((f) => f !== id) : [...data.fotoPosneto, id])
+
+  // RAL izbira na terenu — ista ključa kot Fence3dViewer → 3D/AR predogled takoj
+  // pokaže ograjo v barvi, ki jo je stranka izbrala. Ponoven klik = odizbor.
+  const pickRal = useCallback((code: string) => {
+    set('ralCode', data.ralCode === code ? null : code)
+    try { window.localStorage.setItem(RAL_3D_STORAGE_KEY, code) } catch { /* tiho */ }
+  }, [data.ralCode, set])
+
+  // PDF zapisnik — dinamični import (jspdf ne gre v začetni chunk zavihka)
+  const exportPdf = useCallback(async () => {
+    setGenerating(true)
+    try {
+      const { generateSurveyPdf } = await import('@/lib/survey-pdf')
+      const mere: { label: string; value: string }[] = [
+        { label: 'Najdaljši razpon', value: data.razponNajdaljsiMm != null ? `${data.razponNajdaljsiMm} mm` : '—' },
+        { label: 'Skupna dolžina', value: data.skupnaDolzinaMm != null ? `${data.skupnaDolzinaMm} mm` : '—' },
+        { label: 'Višina', value: data.visinaMm != null ? `${data.visinaMm} mm` : '—' },
+      ]
+      if (data.tipObjekta === 'stopnice') {
+        mere.push({ label: 'Št. stopnic', value: data.steviloStopnic != null ? String(data.steviloStopnic) : '—' })
+        mere.push({ label: 'Razhod', value: data.razhodMm != null ? `${data.razhodMm} mm` : '—' })
+      }
+      generateSurveyPdf({
+        projectNaziv: project?.nazivProjekta ?? 'Projekt',
+        customerName: project?.customer?.ime ?? null,
+        monterName: project?.monter?.ime ?? null,
+        datumMontaze: project?.datumMontaze ?? null,
+        tipObjekta: TIP_OBJEKTA.find((t) => t.id === data.tipObjekta)?.label ?? data.tipObjekta,
+        oblika: OBLIKE.find((o) => o.id === data.oblika)?.label ?? data.oblika,
+        pritrditev: PRITRDITVE.find((p) => p.id === data.pritrditev)?.label ?? data.pritrditev,
+        podlaga: PODLAGA.find((p) => p.id === data.podlaga)?.label ?? data.podlaga,
+        anchorText: PODLAGA_MOZNIKI[data.podlaga],
+        ralLabel: data.ralCode ? `RAL ${data.ralCode} (${RAL_BARVE.find((r) => r.code === data.ralCode)?.ime ?? ''})`.trim() : null,
+        mere,
+        izracun: izracun ? `~ ${izracun.segmentov} segmentov · ${izracun.stebri} stebrov · kotni spoji: ${izracun.koti}` : null,
+        ovireLabel: data.ovire.length > 0 ? data.ovire.map((o) => OVIRE.find((x) => x.id === o)?.label ?? o).join(', ') : 'Ni zaznanih ovir',
+        dvigalo: data.dvigalo,
+        dostopOpomba: data.dostopOpomba || null,
+        foto: FOTO_CHECKLIST.map((f) => ({ label: f.label, opis: f.opis, posneto: data.fotoPosneto.includes(f.id) })),
+        bringList,
+        opombe: data.opombe || null,
+        zakljuceno: data.zakljuceno,
+        completion,
+      })
+      toast({ title: 'PDF zapisnik shranjen', description: 'Zapisnik je pripravljen za pošiljanje vodji (WhatsApp/e-pošta).' })
+    } catch (err) {
+      console.error('PDF zapisnik export failed:', err)
+      toast({ title: 'Napaka pri izvozu PDF', description: 'Poskusi znova.', variant: 'destructive' })
+    } finally {
+      setGenerating(false)
+    }
+  }, [project, data, izracun, bringList, completion, toast])
 
   const copyBringList = () => {
     const text = ['S SEBOJ PRINESTI — Roksal montaža', ...bringList.map((i) => `☐ ${i.text} (${i.reason})`)].join('\n')
@@ -346,7 +442,19 @@ export function SiteSurveyTab({ projectId }: SiteSurveyTabProps) {
                   <Badge className="bg-green-100 text-green-700 hover:bg-green-100"><CheckCircle2 className="mr-1 h-3 w-3" /> zaključen</Badge>
                 )}
               </div>
-              <span className="text-[11px] font-bold text-roksal-navy">{completion}%</span>
+              <div className="flex shrink-0 items-center gap-2">
+                <span className="text-[11px] font-bold text-roksal-navy">{completion}%</span>
+                <Button
+                  type="button" size="sm" variant="outline"
+                  onClick={() => void exportPdf()}
+                  disabled={generating}
+                  className="h-8 gap-1.5 rounded-lg border-roksal-navy/20 px-2.5 text-[11px] font-bold text-roksal-navy hover:bg-roksal-amber/10 hover:text-roksal-navy"
+                  aria-label="Izvozi PDF zapisnik"
+                >
+                  {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileDown className="h-3.5 w-3.5 text-roksal-amber" />}
+                  PDF
+                </Button>
+              </div>
             </div>
             <Progress value={completion} className="h-2" />
             {warnings.length > 0 && (
@@ -528,13 +636,33 @@ export function SiteSurveyTab({ projectId }: SiteSurveyTabProps) {
               </div>
             )}
             {(data.razponNajdaljsiMm != null || data.skupnaDolzinaMm != null) && (
-              <p className="mt-2 text-[10px] text-muted-foreground">
-                Najdaljši razpon: <strong className="text-roksal-navy">{mm(data.razponNajdaljsiMm)}</strong>
-                {data.skupnaDolzinaMm != null && <> · skupaj: <strong className="text-roksal-navy">{mm(data.skupnaDolzinaMm)}</strong></>}
-                {data.skupnaDolzinaMm != null && data.razponNajdaljsiMm != null && data.razponNajdaljsiMm > 0 && (
-                  <> · ~<strong className="text-roksal-navy">{Math.ceil(data.skupnaDolzinaMm / data.razponNajdaljsiMm)}</strong> segmentov</>
+              <div className="mt-2">
+                <p className="text-[10px] text-muted-foreground">
+                  Najdaljši razpon: <strong className="text-roksal-navy">{mm(data.razponNajdaljsiMm)}</strong>
+                  {data.skupnaDolzinaMm != null && <> · skupaj: <strong className="text-roksal-navy">{mm(data.skupnaDolzinaMm)}</strong></>}
+                </p>
+                {izracun && (
+                  <>
+                    <div className="mt-2 grid grid-cols-3 gap-1.5">
+                      <div className="rounded-lg bg-roksal-navy/[0.04] px-2 py-1.5 text-center ring-1 ring-roksal-navy/5">
+                        <span className="block text-[8px] font-bold uppercase tracking-wide text-muted-foreground">Segmenti</span>
+                        <span className="block text-sm font-bold text-roksal-navy">~{izracun.segmentov}</span>
+                      </div>
+                      <div className="rounded-lg bg-roksal-navy/[0.04] px-2 py-1.5 text-center ring-1 ring-roksal-navy/5">
+                        <span className="block text-[8px] font-bold uppercase tracking-wide text-muted-foreground">Stebri</span>
+                        <span className="block text-sm font-bold text-roksal-navy">~{izracun.stebri}</span>
+                      </div>
+                      <div className="rounded-lg bg-roksal-navy/[0.04] px-2 py-1.5 text-center ring-1 ring-roksal-navy/5">
+                        <span className="block text-[8px] font-bold uppercase tracking-wide text-muted-foreground">Kotni spoji</span>
+                        <span className="block text-sm font-bold text-roksal-navy">{izracun.koti}</span>
+                      </div>
+                    </div>
+                    <p className="mt-1 text-[9px] text-muted-foreground">
+                      Orientacijsko (stebri = segmenti + 1) — končni izračun materiala v zavihku <strong>Kalkulator</strong>.
+                    </p>
+                  </>
                 )}
-              </p>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -591,12 +719,51 @@ export function SiteSurveyTab({ projectId }: SiteSurveyTabProps) {
           </CardContent>
         </Card>
 
+        {/* 6 · RAL barva — izbira stranke na terenu (runda R) */}
+        <Card className="border-roksal-navy/10">
+          <CardContent className="p-4">
+            <Label className="mb-2 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+              <Palette className="h-3 w-3" /> 6 · RAL barva prahu (izbira stranke)
+            </Label>
+            <div className="flex flex-wrap gap-2">
+              {RAL_BARVE.map((r) => {
+                const on = data.ralCode === r.code
+                return (
+                  <button
+                    key={r.code}
+                    type="button"
+                    onClick={() => pickRal(r.code)}
+                    aria-pressed={on}
+                    aria-label={`RAL ${r.code} ${r.ime}`}
+                    className={`flex items-center gap-2 rounded-full border py-1.5 pl-1.5 pr-3 transition-all ${
+                      on ? 'border-roksal-amber bg-roksal-amber/10 shadow-sm' : 'border-roksal-navy/10 bg-white hover:border-roksal-navy/30'
+                    }`}
+                  >
+                    <span
+                      className="h-7 w-7 rounded-full border border-black/10 shadow-inner"
+                      style={{ backgroundColor: r.hex }}
+                    />
+                    <span>
+                      <span className={`block text-[10px] font-bold leading-none ${on ? 'text-roksal-amber' : 'text-roksal-navy'}`}>RAL {r.code}</span>
+                      <span className="block text-[8px] text-muted-foreground">{r.ime}</span>
+                    </span>
+                    {on && <CheckCircle2 className="h-3.5 w-3.5 text-roksal-amber" />}
+                  </button>
+                )
+              })}
+            </div>
+            <p className="mt-2 text-[9px] leading-relaxed text-muted-foreground">
+              Izbira se takoj sinhronizira z <strong>3D/AR predogledom</strong> (zavihek AR) — pokaži stranki ograjo v njeni barvi, še pred montažo.
+            </p>
+          </CardContent>
+        </Card>
+
         {/* 7. Foto kontrolni seznam */}
         <Card className="border-roksal-navy/10">
           <CardContent className="p-4">
             <div className="mb-2 flex items-center justify-between">
               <Label className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-                <Camera className="h-3 w-3" /> 6 · Foto kontrolni seznam (slikat MORAŠ)
+                <Camera className="h-3 w-3" /> 7 · Foto kontrolni seznam (slikat MORAŠ)
               </Label>
               <Badge variant="secondary" className="text-[10px]">{data.fotoPosneto.length}/{FOTO_CHECKLIST.length}</Badge>
             </div>

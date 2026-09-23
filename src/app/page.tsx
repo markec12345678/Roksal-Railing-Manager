@@ -440,7 +440,7 @@ export default function Home() {
             </Button>
             <h2 className="mb-3 text-lg font-bold text-roksal-navy">{moreLabel}</h2>
             {moreTab === 'vodja' && <VodjaDashboard />}
-            {moreTab === 'teren' && <SiteSurveyTab projectId={selectedProjectId} />}
+            {moreTab === 'teren' && <SiteSurveyTab projectId={selectedProjectId} project={selectedProject} />}
             {moreTab === 'ai' && <AiTakeoff projectId={selectedProjectId} />}
             {moreTab === 'signature' && selectedProject && (
               <SignatureQuote
