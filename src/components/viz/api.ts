@@ -35,6 +35,46 @@ async function jsonOrError<T>(res: Response): Promise<T> {
   return data as T
 }
 
+/**
+ * §22 — PRIJAZNO sporočilo za uporabnika iz napake.
+ * Tehnične podrobnosti gredo v developer konzolo; uporabnik dobi
+ * razumljivost akcijo ("poskusite ponovno").
+ */
+export function friendlyError(e: unknown, context: 'stage' | 'preview' | 'save' | 'delete' | 'duplicate' | 'generic' = 'generic'): string {
+  if (e instanceof Error && e.message) {
+    // Znana uporabniška napaka (400 z razumljivim sporočilom iz API-ja) — pokaži neposredno.
+    if (/naloži|nariši|izvedi predogled|najprej|prevelika|Nepodprt format|obvezno|predolg/i.test(e.message)) {
+      return e.message
+    }
+  }
+  switch (context) {
+    case 'stage':
+      return 'Fotografije trenutno ni mogoče obdelati. Poskusite ponovno.'
+    case 'preview':
+      return 'Predogleda trenutno ni mogoče pripraviti. Poskusite ponovno.'
+    case 'save':
+      return 'Projekta trenutno ni mogoče shraniti. Poskusite ponovno.'
+    case 'delete':
+      return 'Projekta trenutno ni mogoče izbrisati. Poskusite ponovno.'
+    case 'duplicate':
+      return 'Projekta trenutno ni mogoče podvojiti. Poskusite ponovno.'
+    default:
+      return 'Prišlo je do napake. Poskusite ponovno.'
+  }
+}
+
+/**
+ * §23 — RAZLIKOVANA sporočila nalaganja (uporabnik ve, kaj se dogaja):
+ *   upload → "Pripravljam fotografijo …"
+ *   preview → "Pripravljam predogled …"
+ *   GPU finish → "Ustvarjam realistično končno vizualizacijo …"
+ */
+export const LOADING_TEXT = {
+  upload: 'Pripravljam fotografijo …',
+  preview: 'Pripravljam predogled …',
+  gpu: 'Ustvarjam realistično končno vizualizacijo …',
+} as const
+
 /** POST /api/viz/stage (multipart) — naloži sliko/masko v staging in vrne token + url. */
 export async function stageImage(file: Blob, kind: VizStageKind, filename?: string): Promise<StageResult> {
   const fd = new FormData()
@@ -87,6 +127,20 @@ export async function getProject(id: string): Promise<VizProjectDetail> {
 export async function deleteProject(id: string): Promise<void> {
   const res = await fetch(`/api/viz/projects/${encodeURIComponent(id)}`, { method: 'DELETE' })
   await jsonOrError<{ ok: boolean }>(res)
+}
+
+export interface DuplicateProjectResponse {
+  project: {
+    id: string
+    name: string
+    createdAt: string
+  }
+}
+
+/** POST /api/viz/projects/[id]/duplicate — S+5: podvoji projekt (isti lastnik). */
+export async function duplicateProject(id: string): Promise<DuplicateProjectResponse> {
+  const res = await fetch(`/api/viz/projects/${encodeURIComponent(id)}/duplicate`, { method: 'POST' })
+  return jsonOrError<DuplicateProjectResponse>(res)
 }
 
 export interface CreateVariantBody {

@@ -17,7 +17,7 @@ import {
   Camera, Images, RotateCw, Crop, Replace, Loader2, Sparkles, ImageUp, ArrowRight,
 } from 'lucide-react'
 import type { StageResult } from '@/lib/viz/types'
-import { stageImage } from './api'
+import { friendlyError, LOADING_TEXT, stageImage } from './api'
 import { loadDemoProject } from './demo-loader'
 import { toVizImage, useVizStore } from './viz-store'
 
@@ -95,9 +95,10 @@ export function StepBalcony() {
         setBalcony(toVizImage(res))
         setCropOpen(false)
       } catch (e) {
+        console.error('stage balcony failed:', e) // tehnične podrobnosti samo v developer log (§22)
         toast({
-          title: 'Nalaganje balkona ni uspelo',
-          description: e instanceof Error ? e.message : 'Poskusi znova.',
+          title: 'Nalaganje ni uspelo',
+          description: friendlyError(e, 'stage'),
           variant: 'destructive',
         })
       } finally {
@@ -125,9 +126,10 @@ export function StepBalcony() {
         await stageBalcony(blob)
       } catch (e) {
         setStaging(false)
+        console.error('balcony processing failed:', e)
         toast({
-          title: 'Obdelava slike ni uspela',
-          description: e instanceof Error ? e.message : 'Poskusi z drugo sliko.',
+          title: 'Obdelava ni uspela',
+          description: friendlyError(e, 'stage'),
           variant: 'destructive',
         })
       }
@@ -194,9 +196,9 @@ export function StepBalcony() {
       />
 
       <header className="px-1">
-        <h2 className="text-lg font-bold text-roksal-navy">1 · Balkon — fotografija</h2>
-        <p className="text-xs text-muted-foreground">
-          Fotografiraj svoj balkon ali izberi sliko iz galerije. Slika ostane tvoja — obdelamo jo le za predogled.
+        <h2 className="text-lg font-bold text-roksal-navy">Fotografirajte svoj balkon</h2>
+        <p className="text-xs leading-snug text-muted-foreground">
+          Fotografirajte balkon čim bolj naravnost in pri dobri svetlobi.
         </p>
       </header>
 
@@ -221,49 +223,49 @@ export function StepBalcony() {
                 void processFile(e.dataTransfer.files?.[0])
               }}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') galleryInputRef.current?.click()
+                if (e.key === 'Enter' || e.key === ' ') cameraInputRef.current?.click()
               }}
             >
               <ImageUp className="h-8 w-8 text-roksal-navy/50" aria-hidden="true" />
               <p className="text-sm font-semibold text-roksal-navy">Dodaj fotografijo balkona</p>
-              <p className="text-xs text-muted-foreground">JPG, PNG ali WebP · največ 12 MB</p>
+              <p className="text-xs text-muted-foreground">ali jo povleci sem</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
+            {/* VELIK primarni gumb (spec §8) + galerija */}
+            <div className="flex flex-col gap-2">
               <Button
                 type="button"
-                className="h-11 bg-roksal-navy hover:bg-roksal-navy/90"
+                className="h-14 bg-roksal-amber text-base font-bold text-white hover:bg-roksal-amber/90"
                 onClick={() => cameraInputRef.current?.click()}
                 disabled={staging}
                 aria-label="Fotografiraj balkon"
               >
-                {staging ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Camera className="mr-1 h-4 w-4" />}
-                Fotografiraj
+                {staging ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Camera className="mr-2 h-5 w-5" />}
+                {staging ? LOADING_TEXT.upload : 'Fotografiraj'}
               </Button>
               <Button
                 type="button"
                 variant="outline"
-                className="h-11"
+                className="h-12"
                 onClick={() => galleryInputRef.current?.click()}
                 disabled={staging}
                 aria-label="Izberi sliko iz galerije"
               >
-                <Images className="mr-1 h-4 w-4" />
-                Iz galerije
+                <Images className="mr-2 h-5 w-5" />
+                Izberi iz galerije
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                className="h-11 text-roksal-amber hover:text-roksal-amber"
+                onClick={() => void loadDemoProject()}
+                disabled={demoLoading || staging}
+                aria-label="Naloži preizkusni primer"
+              >
+                {demoLoading ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Sparkles className="mr-1 h-4 w-4" />}
+                Preizkusni primer
               </Button>
             </div>
-
-            <Button
-              type="button"
-              variant="ghost"
-              className="h-11 text-roksal-amber hover:text-roksal-amber"
-              onClick={() => void loadDemoProject()}
-              disabled={demoLoading || staging}
-              aria-label="Naloži preizkusni primer"
-            >
-              {demoLoading ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Sparkles className="mr-1 h-4 w-4" />}
-              Preizkusni primer
-            </Button>
           </CardContent>
         </Card>
       ) : (
@@ -280,7 +282,7 @@ export function StepBalcony() {
               {staging && (
                 <div className="absolute inset-0 flex items-center justify-center bg-white/70" aria-live="polite">
                   <span className="flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs font-medium text-roksal-navy shadow">
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Nalagam na strežnik …
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> {LOADING_TEXT.upload}
                   </span>
                 </div>
               )}
@@ -315,7 +317,7 @@ export function StepBalcony() {
 
       {/* Lepljiva akcija nad spodnjo navigacijo aplikacije */}
       <div className="sticky bottom-20 z-20 flex items-center gap-2 rounded-2xl border bg-background/95 p-2 shadow-sm backdrop-blur">
-        <Button type="button" variant="ghost" className="h-11 flex-1" onClick={() => setStep('start')} aria-label="Nazaj na začetni zaslon">
+        <Button type="button" variant="ghost" className="h-11 flex-1" onClick={() => setStep('home')} aria-label="Nazaj na domačo stran">
           ← Nazaj
         </Button>
         <Button

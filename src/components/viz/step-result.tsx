@@ -1,17 +1,18 @@
 'use client'
 
 /**
- * VIZ — korak 5: PREJ | POTEM + dokazila + shrani + varianti + AI finish.
- * Runda S+2. Spec: docs/VIZ_CONTRACTS.md (UI CONTRACT).
+ * VIZ — KORAK 5: REZULTAT (runda S+2, produktni UX runda S+5).
  *
- * - PREJ|POTEM drsnik (before-after.tsx) + celozaslonski način z zoomom
- * - kartica DOKAZILA iz metrik pipeline-a (identiteta letvic, ohranjenost
- *   originala izven maske, RAL kroma, čas) — vse iz numeričnih meritev
- * - SHRANI PROJEKT → POST /api/viz/projects (stagingToken = token balkona,
- *   ki drži preview.jpg + result.json z provenance)
- * - VARIANTI: Ograja A/B/C — ista balkon/maska/vogali, druga fotografia produkta
+ * - Headline: "Tako bi lahko izgledala vaša nova ograja." (spec §14)
+ * - PREJ | POTEM velik drsnik + Povečaj + Cel zaslon (spec §13)
+ * - Diskretna occlusion opomba (spec §15) — brez lažnega marketinga
+ * - DOKAZILA iz metrik pipeline-a (identiteta letvic, original izven maske,
+ *   RAL kroma, čas) — vse iz numeričnih meritev (spec §18)
+ * - PRIMERJAVA OGRAD: isti balkon/maska/perspektiva, samo izdelek se zamenja
+ *   (spec §17) — "Primerjaj drugo ograjo"
+ * - SHRANI PROJEKT → POST /api/viz/projects
  * - AI FINISH (Qwen-Image-Edit-2509): ISKRENO stanje — planirano, čaka na GPU
- *   strežnik; gumb ustvari job (status queued) in pokaže status brez pretvarjanja
+ *   strežnik; job status queued NI lažno "completed" (spec §29)
  */
 
 import { useRef, useState } from 'react'
@@ -24,7 +25,9 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from '@/hooks/use-toast'
 import {
   ArrowLeft,
+  Camera,
   CheckCircle2,
+  Info,
   Loader2,
   Maximize2,
   Plus,
@@ -35,7 +38,7 @@ import {
   XCircle,
 } from 'lucide-react'
 import type { PipelineMetrics } from '@/lib/viz/types'
-import { createProject, requestRender, runPreview, stageImage, getRenderJob } from './api'
+import { createProject, friendlyError, LOADING_TEXT, requestRender, runPreview, stageImage, getRenderJob } from './api'
 import { toVizImage, useVizStore } from './viz-store'
 import { BeforeAfter } from './before-after'
 
@@ -43,7 +46,7 @@ const VARIANT_LETTERS = 'ABCDEFGH'
 
 function defaultName(): string {
   const d = new Date()
-  return `Vizualizacija ${d.toLocaleDateString('sl-SI')}`
+  return `Balkon – vizualizacija ${d.toLocaleDateString('sl-SI')}`
 }
 
 function MetricsRow({
@@ -92,11 +95,11 @@ export function StepResult() {
       <div className="p-4">
         <Card>
           <CardContent className="p-4 text-sm text-muted-foreground">
-            Predogled ni na voljo — nazaj na vogale.
+            Predogled ni na voljo — nazaj na položaj.
           </CardContent>
         </Card>
         <Button className="mt-3 h-11" variant="outline" onClick={() => s.setStep(4)}>
-          <ArrowLeft className="mr-2 h-4 w-4" /> Nazaj na 4 vogale
+          <ArrowLeft className="mr-2 h-4 w-4" /> Nazaj na položaj
         </Button>
       </div>
     )
@@ -116,9 +119,10 @@ export function StepResult() {
       s.setProjectName(name.trim() || defaultName())
       s.setSavedProject(res.projectId)
       s.bumpProjectsReload()
-      toast({ title: 'Projekt shranjen ✓', description: 'Vidljiv je v seznamu projektov (zavihek Vizualizacija).' })
+      toast({ title: 'Projekt shranjen ✓', description: 'Vidljiv je v Mojih projektih.' })
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Shranjevanje ni uspelo.'
+      console.error('save project failed:', e)
+      const msg = friendlyError(e, 'save')
       s.setError(msg)
       toast({ title: 'Napaka pri shranjevanju', description: msg, variant: 'destructive' })
     } finally {
@@ -146,11 +150,12 @@ export function StepResult() {
         productMask,
         preview: { url: res.previewUrl, metrics: res.metrics },
       })
-      toast({ title: 'Varianta dodana ✓', description: 'Predogled uporablja isto balkon/maska/vogali.' })
+      toast({ title: 'Ograja dodana v primerjavo ✓', description: 'Isti balkon, ista maska, isti položaj — samo ograja je druga.' })
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Dodajanje variante ni uspelo.'
+      console.error('add variant failed:', e)
+      const msg = friendlyError(e, 'preview')
       s.setError(msg)
-      toast({ title: 'Napaka pri varianti', description: msg, variant: 'destructive' })
+      toast({ title: 'Primerjava ni uspela', description: msg, variant: 'destructive' })
     } finally {
       setAddingVariant(false)
       if (variantInputRef.current) variantInputRef.current.value = ''
@@ -159,7 +164,7 @@ export function StepResult() {
 
   async function handleRequestRender() {
     if (!savedProjectId) {
-      toast({ title: 'Najprej shrani projekt', description: 'AI finish potrebuje shranjen projekt.' })
+      toast({ title: 'Najprej shrani projekt', description: 'Končna vizualizacija potrebuje shranjen projekt.' })
       return
     }
     setRequestingRender(true)
@@ -172,10 +177,10 @@ export function StepResult() {
           .then((st) => setRenderJob({ jobId: st.jobId, status: st.status, error: st.error }))
           .catch(() => undefined)
       }, 1500)
-      toast({ title: 'AI job ustvarjen', description: `Status: ${job.status}` })
+      toast({ title: 'Zaporedje ustvarjeno', description: `Status: ${job.status}` })
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Zahteva ni uspela.'
-      toast({ title: 'AI finish ni na voljo', description: msg, variant: 'destructive' })
+      console.error('request render failed:', e)
+      toast({ title: 'Končna vizualizacija ni na voljo', description: friendlyError(e, 'generic'), variant: 'destructive' })
     } finally {
       setRequestingRender(false)
     }
@@ -183,38 +188,183 @@ export function StepResult() {
 
   return (
     <div className="space-y-4 p-4">
-      {/* PREJ | POTEM */}
+      {/* REZULTAT — headline (spec §14) */}
+      <header className="text-center">
+        <h2 className="text-xl font-bold leading-snug text-roksal-navy">
+          Tako bi lahko izgledala vaša nova ograja.
+        </h2>
+      </header>
+
+      {/* PREJ | POTEM — velika fotografija + Povečaj + Cel zaslon (spec §13) */}
       <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center justify-between text-base text-roksal-navy">
-            <span>PREJ | POTEM</span>
+        <CardContent className="pt-4">
+          <BeforeAfter beforeUrl={balcony.url} afterUrl={preview.url} className="h-80 sm:h-[26rem]" />
+
+          <div className="mt-2 flex items-center justify-center gap-2">
             <Dialog>
               <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="h-9 px-3 text-xs font-semibold" aria-label="Celozaslonski predogled">
-                  <Maximize2 className="mr-1 h-4 w-4" />
-                  Celozaslonsko
+                <Button variant="outline" size="sm" className="h-10 px-4 text-xs font-semibold" aria-label="Povečaj predogled">
+                  <Maximize2 className="mr-1.5 h-4 w-4" />
+                  Povečaj
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-h-[95dvh] w-[96vw] max-w-4xl p-4">
                 <DialogHeader>
-                  <DialogTitle className="text-roksal-navy">PREJ | POTEM — celozaslonsko</DialogTitle>
+                  <DialogTitle className="text-roksal-navy">PREJ | POTEM — povečano</DialogTitle>
                 </DialogHeader>
                 <div className="max-h-[80dvh] overflow-y-auto pb-2">
                   <BeforeAfter beforeUrl={balcony.url} afterUrl={preview.url} withZoom className="h-[60dvh]" />
                 </div>
               </DialogContent>
             </Dialog>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <BeforeAfter beforeUrl={balcony.url} afterUrl={preview.url} className="h-80 sm:h-[26rem]" />
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="h-10 px-4 text-xs font-semibold" aria-label="Celozaslonski predogled">
+                  Cel zaslon
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-h-[95dvh] w-[96vw] max-w-4xl p-4">
+                <DialogHeader>
+                  <DialogTitle className="text-roksal-navy">PREJ | POTEM — cel zaslon</DialogTitle>
+                </DialogHeader>
+                <div className="max-h-[80dvh] overflow-y-auto pb-2">
+                  <BeforeAfter beforeUrl={balcony.url} afterUrl={preview.url} withZoom className="h-[60dvh]" />
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
           <p className="mt-2 text-center text-[11px] text-muted-foreground">
-            Povleci drsnik za primerjavo · na telefonu vleci s prstom
+            Povlecite drsnik za primerjavo · na telefonu vlecite s prstom
           </p>
         </CardContent>
       </Card>
 
-      {/* DOKAZILA (numerike, ne mnenja) */}
+      {/* Diskretna occlusion opomba (spec §15) — poklicna iskrenost, ne lažni marketing */}
+      <p className="flex items-start justify-center gap-1.5 px-2 text-center text-[11px] leading-snug text-muted-foreground">
+        <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+        <span>Predogled je informativen. Pri rastlinah, stebrih ali drugih predmetih pred ograjo lahko pride do odstopanj.</span>
+      </p>
+
+      {/* AKCIJE (spec §14) — Shrani / Primerjaj drugo ograjo / Nova vizualizacija */}
+      <Card>
+        <CardHeader className="pb-1">
+          <CardTitle className="flex items-center gap-2 text-base text-roksal-navy">
+            <Save className="h-4 w-4" />
+            Shrani projekt
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {savedProjectId ? (
+            <div className="flex items-center gap-2 rounded-lg border border-green-600/30 bg-green-600/5 px-3 py-2.5 text-sm text-green-700">
+              <CheckCircle2 className="h-4 w-4 shrink-0" />
+              Projekt je shranjen — najdete ga v <strong>Moji projekti</strong>.
+            </div>
+          ) : (
+            <>
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Ime projekta"
+                aria-label="Ime projekta"
+                maxLength={120}
+                className="h-11"
+              />
+              <Button type="button" className="h-12 w-full bg-roksal-amber font-bold text-white hover:bg-roksal-amber/90" disabled={saving} onClick={() => void handleSave()}>
+                {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                {saving ? 'Shranjujem …' : 'Shrani projekt'}
+              </Button>
+            </>
+          )}
+
+          {/* Primerjava ograd (spec §17) */}
+          <input
+            ref={variantInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            aria-label="Naloži fotografijo druge ograje za primerjavo"
+            onChange={(e) => {
+              const f = e.target.files?.[0]
+              if (f) void handleAddVariantFile(f)
+            }}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            className="h-12 w-full font-semibold"
+            disabled={addingVariant}
+            onClick={() => variantInputRef.current?.click()}
+          >
+            {addingVariant ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
+            {addingVariant ? LOADING_TEXT.preview : 'Primerjaj drugo ograjo'}
+          </Button>
+          <p className="text-[11px] leading-relaxed text-muted-foreground">
+            Primerjava uporablja ISTO fotografijo balkona, masko in položaj — spremeni se samo ograja.
+          </p>
+
+          {/* Nova vizualizacija */}
+          <Button
+            type="button"
+            variant="ghost"
+            className="h-11 w-full text-muted-foreground"
+            onClick={() => {
+              s.resetAll()
+              s.setStep(1)
+            }}
+          >
+            <Camera className="mr-2 h-4 w-4" />
+            Nova vizualizacija
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* PRIMERJAVA OGRAD — grid variant (spec §17) */}
+      {variants.length > 1 && (
+        <Card>
+          <CardHeader className="pb-1">
+            <CardTitle className="text-base text-roksal-navy">Primerjava ograd</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div
+              className="grid grid-cols-2 gap-2 sm:grid-cols-3"
+              role="tablist"
+              aria-label="Primerjava ograd — izberite ograjo"
+            >
+              {variants.map((v, i) => (
+                <button
+                  key={v.label + i}
+                  type="button"
+                  role="tab"
+                  aria-selected={activeVariant === i}
+                  onClick={() => s.applyVariant(i)}
+                  className={`overflow-hidden rounded-xl border-2 transition-colors ${
+                    activeVariant === i ? 'border-roksal-amber' : 'border-transparent hover:border-roksal-navy/25'
+                  }`}
+                  aria-label={`Pokaži ${v.label}`}
+                >
+                  {v.preview ? (
+                    <img src={v.preview.url} alt={`${v.label} — predogled na vašem balkonu`} className="h-24 w-full object-cover" loading="lazy" />
+                  ) : (
+                    <span className="flex h-24 items-center justify-center bg-muted text-xs text-muted-foreground">Brez predogleda</span>
+                  )}
+                  <span
+                    className={`block py-1.5 text-center text-xs font-bold ${
+                      activeVariant === i ? 'bg-roksal-amber text-white' : 'bg-white text-roksal-navy'
+                    }`}
+                  >
+                    {v.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Tapnite ograjo, da jo pokažete veliko zgoraj. Vse uporabljajo isti balkon, masko in položaj.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* DOKAZILA (numerika, ne mnenje) — spec §18 */}
       <Card>
         <CardHeader className="pb-1">
           <CardTitle className="flex items-center gap-2 text-base text-roksal-navy">
@@ -226,7 +376,7 @@ export function StepResult() {
           {m ? (
             <>
               <MetricsRow ok={m.letviceIdentityOk}>
-                Letvice (identiteta ograje): <strong className="text-foreground">{m.letviceProduct}</strong> ={' '}
+                Število letvic (identiteta ograje): <strong className="text-foreground">{m.letviceProduct}</strong> ={' '}
                 <strong className="text-foreground">{m.letviceResult}</strong>
               </MetricsRow>
               <MetricsRow ok={m.outsideMaxPreShadow === 0}>
@@ -252,99 +402,13 @@ export function StepResult() {
         </CardContent>
       </Card>
 
-      {/* VARIANTI (A/B/C) */}
-      <Card>
-        <CardHeader className="pb-1">
-          <CardTitle className="text-base text-roksal-navy">Varianti ograje</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {variants.length > 0 && (
-            <div className="flex flex-wrap items-center gap-2" role="tablist" aria-label="Varianti ograje">
-              {variants.map((v, i) => (
-                <button
-                  key={v.label + i}
-                  type="button"
-                  role="tab"
-                  aria-selected={activeVariant === i}
-                  onClick={() => s.applyVariant(i)}
-                  className={`h-9 rounded-full border-2 px-4 text-xs font-bold transition-colors ${
-                    activeVariant === i
-                      ? 'border-roksal-amber bg-roksal-amber text-white'
-                      : 'border-roksal-navy/15 bg-white text-roksal-navy hover:border-roksal-navy/40'
-                  }`}
-                >
-                  {v.label}
-                </button>
-              ))}
-            </div>
-          )}
-          <input
-            ref={variantInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            className="hidden"
-            aria-label="Naloži fotografijo druge ograje"
-            onChange={(e) => {
-              const f = e.target.files?.[0]
-              if (f) void handleAddVariantFile(f)
-            }}
-          />
-          <Button
-            type="button"
-            variant="outline"
-            className="h-11 w-full"
-            disabled={addingVariant}
-            onClick={() => variantInputRef.current?.click()}
-          >
-            {addingVariant ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
-            {addingVariant ? 'Pripravljam predogled …' : 'Dodaj varianto (druga ograja)'}
-          </Button>
-          <p className="text-[11px] leading-relaxed text-muted-foreground">
-            Nova ograja uporabi ISTO fotografijo balkona, masko in 4 vogale — samo izdelek se zamenja.
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* SHRANI PROJEKT */}
-      <Card>
-        <CardHeader className="pb-1">
-          <CardTitle className="flex items-center gap-2 text-base text-roksal-navy">
-            <Save className="h-4 w-4" />
-            Shrani projekt
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {savedProjectId ? (
-            <div className="flex items-center gap-2 rounded-lg border border-green-600/30 bg-green-600/5 px-3 py-2.5 text-sm text-green-700">
-              <CheckCircle2 className="h-4 w-4 shrink-0" />
-              Projekt je shranjen ({savedProjectId.slice(0, 8)}…)
-            </div>
-          ) : (
-            <>
-              <Input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Ime projekta"
-                aria-label="Ime projekta"
-                maxLength={120}
-                className="h-11"
-              />
-              <Button type="button" className="h-11 w-full font-bold" disabled={saving} onClick={() => void handleSave()}>
-                {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                {saving ? 'Shranjujem …' : 'Shrani projekt'}
-              </Button>
-            </>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* AI FINISH (Qwen) — ISKRENO: planirano, čaka na GPU */}
+      {/* AI FINISH (Qwen) — ISKRENO: planirano, čaka na GPU (spec §29) */}
       <Card className="border-dashed">
         <CardHeader className="pb-1">
           <CardTitle className="flex items-center justify-between gap-2 text-base text-roksal-navy">
             <span className="flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-roksal-amber" />
-              AI finish — Qwen-Image-Edit-2509
+              Realistična končna vizualizacija
             </span>
             <Badge variant="outline" className="shrink-0 border-roksal-amber/50 text-[10px] text-roksal-amber">
               PLANIRANO — čaka na GPU strežnik
@@ -353,16 +417,23 @@ export function StepResult() {
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-[11px] leading-relaxed text-muted-foreground">
-            Fotorealistična izboljšava robov, senc in odsevov bo tekla na LASTNEM GPU strežniku (Apache-2.0
-            licenca). Strežnik še ni postavljen — instant predogled zgoraj je deterministični A-pipeline
+            Fotorealistična izboljšava robov, senc in odsevov bo tekla na LASTNEM GPU strežniku.
+            Strežnik še ni postavljen — instant predogled zgoraj je deterministični A-pipeline
             (brez AI) in deluje že zdaj.
           </p>
           {renderJob && (
             <div className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs">
-              <div className="font-semibold text-roksal-navy">Job {renderJob.jobId.slice(0, 8)}…</div>
-              <div className="text-muted-foreground">
-                status: <strong>{renderJob.status}</strong>
-                {renderJob.error ? ` — ${renderJob.error}` : ''}
+              <div className="font-semibold text-roksal-navy">Zaporedje {renderJob.jobId.slice(0, 8)}…</div>
+              <div className="text-muted-foreground" aria-live="polite">
+                {renderJob.status === 'processing'
+                  ? LOADING_TEXT.gpu
+                  : renderJob.status === 'queued'
+                    ? 'V vrsti — čakam na GPU strežnik …'
+                    : renderJob.status === 'completed'
+                      ? 'Končano ✓'
+                      : renderJob.status === 'failed'
+                        ? `Neuspešno — ${renderJob.error ?? 'neznan vzrok'}`
+                        : renderJob.status}
               </div>
             </div>
           )}
@@ -374,7 +445,7 @@ export function StepResult() {
             onClick={() => void handleRequestRender()}
           >
             {requestingRender ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-            {savedProjectId ? 'Zahtevaj AI finish (job v vrsto)' : 'Najprej shrani projekt'}
+            {savedProjectId ? 'Zahtevaj končno vizualizacijo (ko bo GPU na voljo)' : 'Najprej shrani projekt'}
           </Button>
         </CardContent>
       </Card>
@@ -382,7 +453,7 @@ export function StepResult() {
       {/* Navigacija */}
       <div className="flex items-center gap-2 pb-2">
         <Button type="button" variant="outline" className="h-11 flex-1" onClick={() => s.setStep(4)}>
-          <ArrowLeft className="mr-1 h-4 w-4" /> Vogali
+          <ArrowLeft className="mr-1 h-4 w-4" /> Položaj
         </Button>
         <Button
           type="button"
@@ -390,24 +461,24 @@ export function StepResult() {
           className="h-11 flex-1"
           onClick={() => {
             s.resetAll()
-            s.setStep('start')
+            s.setStep('home')
           }}
         >
-          <RotateCcw className="mr-1 h-4 w-4" /> Nova vizualizacija
+          <RotateCcw className="mr-1 h-4 w-4" /> Na domačo
         </Button>
       </div>
     </div>
   )
 }
 
-/** Skeleton med pripravo predogleda (loading.previewing) — vedenje čakanja. */
+/** Skeleton med pripravo predogleda (loading.previewing) — vedenje čakanja (spec §23). */
 export function StepResultLoading() {
   return (
     <div className="space-y-4 p-4" aria-busy="true">
       <Skeleton className="h-80 w-full rounded-xl" />
       <Skeleton className="h-24 w-full rounded-xl" />
       <Skeleton className="h-12 w-full rounded-xl" />
-      <p className="text-center text-sm font-medium text-roksal-navy">Pripravljam predogled …</p>
+      <p className="text-center text-sm font-medium text-roksal-navy">{LOADING_TEXT.preview}</p>
     </div>
   )
 }

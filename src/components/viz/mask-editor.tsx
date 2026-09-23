@@ -642,8 +642,8 @@ export function MaskEditor({
 
   const tools = useMemo(() => {
     const list: { id: MaskTool; icon: typeof Brush; label: string }[] = [
-      { id: 'brush', icon: Brush, label: 'Čopič — pobarvaj območje' },
-      { id: 'erase', icon: Eraser, label: 'Radirka — izbriši območje' },
+      { id: 'brush', icon: Brush, label: 'Dodaj — pobarvaj območje' },
+      { id: 'erase', icon: Eraser, label: 'Odstrani — izbriši območje' },
     ]
     if (polygonEnabled) list.push({ id: 'polygon', icon: Hexagon, label: 'Poligon — tapni točke' })
     list.push({ id: 'pan', icon: Hand, label: 'Premakni pogled' })
@@ -764,8 +764,8 @@ export function MaskEditor({
           className="h-11 w-11"
           onClick={redo}
           disabled={historyIndex >= historyLen - 1}
-          aria-label="Uveljavi znova"
-          title="Uveljavi znova"
+          aria-label="Uveljavi znova (ponovi)"
+          title="Ponovi"
         >
           <Redo2 className="h-5 w-5" />
         </Button>

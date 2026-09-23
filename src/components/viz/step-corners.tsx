@@ -332,9 +332,11 @@ export function StepCorners() {
       setPreview({ url: res.previewUrl, metrics: res.metrics })
       setStep(5)
     } catch (e) {
+      console.error('preview failed:', e)
+      const { friendlyError } = await import('./api')
       toast({
         title: 'Predogled ni uspel',
-        description: e instanceof Error ? e.message : 'Poskusi znova.',
+        description: friendlyError(e, 'preview'),
         variant: 'destructive',
       })
     } finally {
@@ -347,9 +349,9 @@ export function StepCorners() {
   return (
     <div className="space-y-4">
       <header className="px-1">
-        <h2 className="text-lg font-bold text-roksal-navy">4 · Nastavi 4 vogale ograje</h2>
+        <h2 className="text-lg font-bold text-roksal-navy">Prilagodite položaj nove ograje</h2>
         <p className="text-xs leading-snug text-muted-foreground">
-          Povleci vogale 1–4 na robove stare ograje (ali mesta, kjer naj bo nova). Geometrija — brez AI.
+          Povlecite štiri vogale, da se ograja prilega balkonu.
         </p>
       </header>
 
@@ -429,6 +431,13 @@ export function StepCorners() {
           ))}
         </div>
 
+        <Badge
+          variant="secondary"
+          className="pointer-events-none absolute left-2 top-2 bg-white/90 text-[10px] font-semibold text-roksal-navy"
+          aria-live="polite"
+        >
+          Predogled
+        </Badge>
         <Badge variant="secondary" className="pointer-events-none absolute bottom-2 right-2 bg-white/85 text-[10px] text-roksal-navy">
           {Math.round(zoom * 100)}%
         </Badge>
@@ -437,9 +446,9 @@ export function StepCorners() {
       {/* Kontrole: ponastavi + fini premik */}
       <div className="rounded-2xl border bg-white p-3 shadow-sm">
         <div className="flex items-center justify-between gap-2">
-          <Button type="button" variant="outline" className="h-11 text-xs" onClick={() => setCorners(defaultCorners())} disabled={previewing} aria-label="Ponastavi vogale na privzete">
+          <Button type="button" variant="outline" className="h-11 text-xs" onClick={() => setCorners(defaultCorners())} disabled={previewing} aria-label="Ponastavi položaj ograje">
             <RotateCcw className="mr-1 h-4 w-4" />
-            Ponastavi
+            Ponastavi položaj
           </Button>
           <Button
             type="button"

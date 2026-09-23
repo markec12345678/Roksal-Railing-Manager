@@ -15,10 +15,10 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { toast } from '@/hooks/use-toast'
-import { Check, Replace, Loader2, WandSparkles, ArrowRight, PenTool } from 'lucide-react'
+import { Check, Replace, Loader2, WandSparkles, ArrowRight, PenTool, Camera, Images } from 'lucide-react'
 import type { Corners, ImageBuffer } from '@/lib/viz/types'
 import { cornerToPx } from '@/lib/viz/types'
-import { stageImage } from './api'
+import { friendlyError, LOADING_TEXT, stageImage } from './api'
 import { MaskEditor } from './mask-editor'
 import { toVizImage, useVizStore } from './viz-store'
 
@@ -91,6 +91,7 @@ export function StepProduct() {
   const setProductMask = useVizStore((s) => s.setProductMask)
 
   const inputRef = useRef<HTMLInputElement | null>(null)
+  const cameraInputRef = useRef<HTMLInputElement | null>(null)
   const [stagingLocal, setStagingLocal] = useState(false)
   const [cutoutUrl, setCutoutUrl] = useState<string | null>(null)
   const [cutoutTried, setCutoutTried] = useState(false)
@@ -158,9 +159,10 @@ export function StepProduct() {
         setProduct(toVizImage(res))
         setProductMask(null) // nova fotografija → maska razveljavljena
       } catch (e) {
+        console.error('product staging failed:', e)
         toast({
-          title: 'Nalaganje izdelka ni uspelo',
-          description: e instanceof Error ? e.message : 'Poskusi znova.',
+          title: 'Nalaganje ni uspelo',
+          description: friendlyError(e, 'stage'),
           variant: 'destructive',
         })
       } finally {
@@ -210,10 +212,22 @@ export function StepProduct() {
         }}
       />
 
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        capture="environment"
+        className="hidden"
+        onChange={(e) => {
+          void processFile(e.target.files?.[0])
+          e.target.value = ''
+        }}
+      />
+
       <header className="px-1">
-        <h2 className="text-lg font-bold text-roksal-navy">2 · Izdelek — MOJA OGRAJA</h2>
-        <p className="text-xs text-muted-foreground">
-          Izberi fotografijo svoje ograje (katalog Roksal ali lastna produktna fotografija).
+        <h2 className="text-lg font-bold text-roksal-navy">Dodajte svojo ograjo</h2>
+        <p className="text-xs leading-snug text-muted-foreground">
+          Fotografirajte svojo ograjo ali izberite sliko — vzorec in barva izdelka ostajajo točno takšni, kot so.
         </p>
       </header>
 
@@ -223,25 +237,40 @@ export function StepProduct() {
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-roksal-navy/10" aria-hidden="true">
               <WandSparkles className="h-7 w-7 text-roksal-navy" />
             </div>
-            <p className="text-sm font-semibold text-roksal-navy">Naloži fotografijo ograje</p>
-            <p className="text-xs text-muted-foreground">Najbolje po primeru: ograja čim bolj zapolni kader, čim manj okoliških predmetov.</p>
-            <Button
-              type="button"
-              className="h-11 bg-roksal-navy hover:bg-roksal-navy/90"
-              onClick={() => inputRef.current?.click()}
-              disabled={busy}
-              aria-label="Izberi fotografijo izdelka"
-            >
-              {busy ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Replace className="mr-1 h-4 w-4" />}
-              Izberi fotografijo
-            </Button>
+            <p className="text-sm font-semibold text-roksal-navy">Naložite fotografijo ograje</p>
+            <p className="text-xs text-muted-foreground">
+              Najbolje po primeru: ograja čim bolj zapolni kader, čim manj okoliških predmetov.
+            </p>
+            <div className="mt-1 flex w-full flex-col gap-2">
+              <Button
+                type="button"
+                className="h-14 bg-roksal-amber text-base font-bold text-white hover:bg-roksal-amber/90"
+                onClick={() => cameraInputRef.current?.click()}
+                disabled={busy}
+                aria-label="Fotografiraj ograjo"
+              >
+                {busy ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Camera className="mr-2 h-5 w-5" />}
+                {busy ? LOADING_TEXT.upload : 'Fotografiraj'}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-12"
+                onClick={() => inputRef.current?.click()}
+                disabled={busy}
+                aria-label="Izberi fotografijo iz galerije"
+              >
+                <Images className="mr-2 h-5 w-5" />
+                Iz galerije
+              </Button>
+            </div>
           </CardContent>
         </Card>
       ) : (
         <Card className="rounded-2xl">
           <CardContent className="space-y-3 p-4">
             <div className="flex items-center justify-between gap-2">
-              <p className="text-sm font-bold text-roksal-navy">MOJA OGRAJA</p>
+              <p className="text-sm font-bold text-roksal-navy">VAŠA OGRAJA</p>
               {productMask?.edited ? (
                 <Badge className="bg-roksal-amber/15 text-[10px] font-semibold text-roksal-amber hover:bg-roksal-amber/15">
                   Maska urejena ročno
@@ -271,22 +300,30 @@ export function StepProduct() {
               />
             </div>
 
-            <p className="text-xs leading-snug text-muted-foreground">
-              Maska: pobarvaj deli ograje, ki naj bodo vidne. Samodejni izrez je predlog.
-              {!cutoutTried && ' Izračunam predogled izreza …'}
-              {cutoutTried && !cutoutUrl && !productMask?.edited && ' Predogled izreza ni na voljo — strežnik izreže samodejno.'}
-            </p>
+            {/* POTRDITEV (spec §9) — "Ali je to prava ograja?" */}
+            <div className="rounded-xl bg-roksal-navy/5 p-3 text-center">
+              <p className="text-sm font-semibold text-roksal-navy">Ali je to prava ograja?</p>
+              <p className="mt-0.5 text-[11px] text-muted-foreground">
+                To bo vizualizirano na vašem balkonu.
+              </p>
+            </div>
 
             <div className="grid grid-cols-2 gap-2">
-              <Button type="button" variant="outline" className="h-11 text-xs" onClick={() => inputRef.current?.click()} disabled={busy} aria-label="Zamenjaj fotografijo izdelka">
+              <Button type="button" variant="outline" className="h-11 text-xs" onClick={() => inputRef.current?.click()} disabled={busy} aria-label="Zamenjaj fotografijo ograje">
                 <Replace className="mr-1 h-4 w-4" />
-                Zamenjaj fotografijo
+                Zamenjaj
               </Button>
-              <Button type="button" variant="outline" className="h-11 text-xs" onClick={() => setEditorOpen(true)} disabled={busy} aria-label="Uredi masko izdelka">
+              <Button type="button" variant="outline" className="h-11 text-xs" onClick={() => setEditorOpen(true)} disabled={busy} aria-label="Uredi masko izdelka (napredno)">
                 <PenTool className="mr-1 h-4 w-4" />
                 Uredi masko
               </Button>
             </div>
+
+            <p className="text-[11px] leading-snug text-muted-foreground">
+              Maska: pobarvajte deli ograje, ki naj bodo vidne. Samodejni izrez je predlog —
+              po navadi je zadosten.
+              {cutoutTried && !cutoutUrl && !productMask?.edited && ' Predogled izreza ni na voljo — strežnik izreže samodejno.'}
+            </p>
           </CardContent>
         </Card>
       )}
@@ -325,10 +362,10 @@ export function StepProduct() {
           className="h-11 flex-1 bg-roksal-amber font-semibold text-white hover:bg-roksal-amber/90"
           onClick={() => setStep(3)}
           disabled={!product}
-          aria-label="Uporabi izdelek in naprej"
+          aria-label="Da, uporabi to ograjo in naprej"
         >
           <Check className="mr-1 h-4 w-4" />
-          Uporabi
+          Da, uporabi
           <ArrowRight className="ml-1 h-4 w-4" />
         </Button>
       </div>
