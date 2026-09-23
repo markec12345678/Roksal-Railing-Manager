@@ -968,3 +968,35 @@ Stage Summary:
   materialni izračun/kalkulator), RAL v kalkulator/ponudbo (arMetadata),
   3D montažni pogled po segmentih, ekipna delitev zapisnika (delitev povezava),
   USDZ validacija na iPhone, LiDAR iOS, FURS, eSlog XSD
+
+---
+Task ID: runda S
+Agent: Z.ai Code (glavni)
+Task: Nadaljevanje runde S (BOM iz terenskega zapisnika → kalkulator) — dokončanje implementacije iz prejšnje seje, E2E preverba, push + raziskava GitHub osnove za AR/AI vizualizacijo ograje (poročilo, brez implementacije)
+
+Work Log:
+- Preveril stanje: prejšnja seja je uveljavila komit 10fee8a (uvoz mer → kalkulator prek 'roksal:calc-import' s podlago/RAL/tipObjekta, fix brisanja uvoza ob mountu z prevImportedRef, podlaga kartica v Sidranje načinu s hitrim izborom Hilti/Fischer, delitev "S seboj prinesti" prek Web Share API, aria-describedby fix v dialog.tsx) — worklog vnosa takrat ni bilo
+- E2E (agent-browser): mere 2400/8600/1100 ohranjene ✓; "Uporabi mere v kalkulatorju" → toast + preklop + banner "Terenski pregled — Loža — 8600mm × 1100mm" z bedžema "Podlaga: Estrih + folija" in "RAL 6005" ✓; uvožena dolžina 8.6 ✓; Kemično sidranje način → kartica "Podlaga z terena" + KEMIJA opozorilo + Hilti HIT-RE 500 / Fischer FIS hitri izbor (aria-pressed preklop dela) ✓; "Deli seznam z ekipo" → fallback toast "Seznam kopiran" ✓
+- FIX konzola: Radix "Missing Description or aria-describedby" opozorila prihajajo iz sheet.tsx + alert-dialog.tsx (ne samo dialog.tsx) → dodan aria-describedby={undefined} v SheetContent in AlertDialogContent; po ponovnem nalaganju je konzola ČISTA ✓
+- Dopolnitev BOM (materialni način): podlagaSidraLabel + ralNarociloNames konstanti; Sidra kartica prikazuje PRAVI tip ("kos (KEMIJA obvezno!)" za estrih); Pritrditev svetovalna kartica z opozorilom; "Naročilo: profil prašno lakiran v RAL 6005 (Zelena)" pod izbiro profila; materialni PDF list vključi meta vrstici "Pritrditev (podlaga z terena ...)" in "Barva profila: RAL ..." ✓ (E2E potrjeno)
+- tsc + lint čista; konzola brez opozoril; push: 10fee8a + 2f1ca16 → origin/main (Vercel auto-deploy)
+
+Stage Summary:
+- Runda S zaključena: terenski zapisnik zdaj napaja kalkulator end-to-end — mere (dolžina/višina), podlaga (pravi tip sidra v Sidranje + materialnem načinu + PDF), RAL (bedž + naročilo praskanega profila). Fix: Radix aria opozorila, mount-brisanje uvoza.
+- Raziskava (zahteve uporabnika): GitHub analiza osnove za AI vizualizacijo ograje na fotografiji balkona (referenčna slika izdelka, ne generiranje) — poročilo spodaj v ločenem vnosu; IMPLEMENTACIJA PO UPORABNIKU: "ne delaj nič, samo raziskuj in poročaj"
+
+---
+Task ID: raziskava-github-vizualizacija
+Agent: Z.ai Code (glavni)
+Task: Analiza GitHub projektov/modelov za Android aplikacijo "vizualizacija dejanske ograje na fotografiji balkona" (referenčna fotografija izdelka = vir, ne generiranje) — SAMO poročilo, brez implementacije (uporabnik: "ne delaj nic, samo raziskuj in porocaj")
+
+Work Log:
+- POTRJENO: nazarpalamarenkoo-ui/AI-Photo-Object-Editor OBSTAJA (GitHub API): Python, MIT licenca, ustvarjen 2026-03-07, zadnji push 2026-08-15, 0★/0 fork (brez skupnostne validacije), Full-stack: Vue3+TS SPA, FastAPI, PostgreSQL, Redis, ARQ worker, S3/R2, MLflow, Prometheus/Grafana/OTEL; ML: YOLOv10m (Ultralytics) + MobileSAM + LaMa (prek iopaint lib!) + SD1.5-inpainting + IP-Adapter (h94), diffusion samo prek SAM maske, 6-18 min na regijo na njihovi GPU; feather-blend nazaj v original (ohranitev okolice ✓); JWT auth, versioning, asset library
+- Licenčne pasti ugotovljene: Ultralytics YOLO = AGPL-3.0 (komercialno → enterprise licenca ali LibreYOLO/YOLOX MIT); h94 IP-Adapter uteži = CC BY-NC-SA (NEKOMERCIELNO); FLUX.1 Kontext dev = Non-Commercial (izločen); RMBG-2.0 = BRIA komercialna licenca (alternativa BiRefNet MIT); SAM2/SAM3: Apache-2.0 / custom SAM licenca (komercialna z omejitvami); Qwen-Image-Edit-2509 = Apache-2.0 ✓ (20.4B, ~20-23GB VRAM bf16, <16GB z GGUF kvantizacijo); LaMa + IOPaint = Apache-2.0 ✓; BiRefNet = MIT ✓
+- Konkurenca: RealityFence (AR ograje), Betafence simulator, Trex AR deck — nihče ne dela "referenčno-fotografska AI zamenjava obstoječe ograje" kot zahtevano
+- Android on-device: SD 1-4GB modeli delujejo na flagshih (počasi), inpainting+reference NI realno on-device → 🟡 lasten strežnik obvezen za AI finalize; 🟢 on-device samo ročni pipeline (izrez/maska/perspektiva/blending)
+
+Stage Summary:
+- PRIOROČITEV: osnova = AI-Photo-Object-Editor (MIT) ZA ML BACKEND PIPELINE (SAM+LaMa+diffusion že povezan, obsežen, dobra dokumentacija) — NE pa celoten stack (Vue/Postgres/Redis/MLflow je pretežak za Roksal); Android app = NOV Kotlin+Compose client na njegov FastAPI (ali poenostavljen FastAPI izvod); model nadgradnja: SD1.5+IP-Adapter → Qwen-Image-Edit-2509 (Apache-2.0, bistveno boljša referenčna zvestoba); YOLO → zamenjati/izpustiti (AGPL); BiRefNet za izrez izdelka
+- Faze: 1) baseline test repoja na realnem primeru balkon+ograja; 2) poenostavljen backend (FastAPI + SAM2 + LaMa + Qwen-Edit, Docker, brez MLflow/Grafana); 3) Android Kotlin+Compose (6 korakov uporabnika); 4) testi 1-5 (kot, vzorec, aluminij, letvice)
+- Polno poročilo v pogovoru; implementacija ČAKA uporabnikovo zeleno luč
