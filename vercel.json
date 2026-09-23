@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/viz/gc",
+      "schedule": "0 4 * * *"
+    }
+  ]
+}

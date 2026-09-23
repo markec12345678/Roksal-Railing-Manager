@@ -28,6 +28,9 @@ const PUBLIC_EXACT = new Set<string>([
   // Demo dostop ("vstop brez prijave") — javen po zasnovi, omejen s hitrostjo
   // in izklopljiv z DEMO_ACCESS=off. Glej src/app/api/auth/demo/route.ts.
   '/api/auth/demo',
+  // Vercel Cron (GC staginga, S+4) pošilja Bearer CRON_SECRET, ne seje —
+  // ruta SAMA fail-closed preveri CRON_SECRET ali ADMIN sejo.
+  '/api/viz/gc',
 ])
 
 /** Predpone, ki so javne: portal stranke je dostopen s sposobnostnim URL-jem (clientToken). */

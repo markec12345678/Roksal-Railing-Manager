@@ -331,6 +331,42 @@ export async function vizList(prefix: string): Promise<VizListItem[]> {
   return out
 }
 
+export interface VizListItemWithTime extends VizListItem {
+  /** Čas nastanka (blob = uploadedAt, local = mtime). */
+  uploadedAt: Date
+}
+
+/**
+ * S+4 — naštej ključe s časom nastanka (za staging GC).
+ * Blob: list() vrača uploadedAt. Local: stat mtime.
+ */
+export async function vizListWithTimes(prefix: string): Promise<VizListItemWithTime[]> {
+  assertSafeKey(prefix.endsWith('/') ? prefix : `${prefix}/`)
+  if (storageMode() === 'blob') {
+    const { list } = await importBlob()
+    const out: VizListItemWithTime[] = []
+    let cursor: string | undefined
+    do {
+      const page = await list({ prefix, limit: 1000, cursor })
+      out.push(...page.blobs.map((b) => ({ key: b.pathname, url: b.url, uploadedAt: new Date(b.uploadedAt) })))
+      cursor = page.cursor
+    } while (cursor)
+    return out
+  }
+  const items = await vizList(prefix)
+  const { stat } = await import('node:fs/promises')
+  const out: VizListItemWithTime[] = []
+  for (const item of items) {
+    try {
+      const st = await stat(localPath(item.key))
+      out.push({ ...item, uploadedAt: st.mtime })
+    } catch {
+      // izgubljen med branjem — izpusti
+    }
+  }
+  return out
+}
+
 // ── Blob driver internals ────────────────────────────────────────────────────
 
 /** Dinamični import — lokalni način ne sme zahtevati @vercel/blob ob zagonu. */
