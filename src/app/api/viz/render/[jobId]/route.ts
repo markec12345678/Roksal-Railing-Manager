@@ -1,8 +1,8 @@
 // VIZ — GET /api/viz/render/[jobId] — status render joba.
 // Spec: docs/VIZ_CONTRACTS.md → { jobId, status, resultPath, error }
 import { NextResponse } from 'next/server'
-import { getVizDb } from '@/lib/viz/db'
 import { authenticate, unauthorized } from '@/lib/auth'
+import { getRenderJob } from '@/lib/viz/repository'
 
 export const runtime = 'nodejs'
 
@@ -12,10 +12,9 @@ export async function GET(
 ) {
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
-  const vizDb = getVizDb()
   try {
     const { jobId } = await params
-    const job = await vizDb.vizRenderJob.findUnique({ where: { id: jobId } })
+    const job = await getRenderJob(jobId)
     if (!job) {
       return NextResponse.json({ error: 'Render job ne obstaja' }, { status: 404 })
     }

@@ -2,12 +2,12 @@
 // Polji: `file` (Blob) + `kind` ∈ balcony | product | productMask | mask
 // Validira (magic bytes, ≤12 MB, ≤6000 px, sharp decode), normalizira
 // (EXIF rotate, dolga stran ≤1600 px; slike → JPEG q90, maske → grayscale PNG),
-// zapiše v public/viz/staging/<token>/ pod kanoničnim imenom in vrne
+// zapiše v staging shrambo pod kanoničnim imenom in vrne
 // { token, url, w, h, bytes } — spec: docs/VIZ_CONTRACTS.md
+// Runda S+3: zapis gre prek storage driverja (local FS ali Vercel Blob) —
+// na Vercelu je public/ bralen, zato produkcijski driver = Vercel Blob.
 import { NextResponse } from 'next/server'
 import { randomUUID } from 'node:crypto'
-import { mkdir, writeFile } from 'node:fs/promises'
-import path from 'node:path'
 import { z } from 'zod'
 import { authenticate, unauthorized } from '@/lib/auth'
 import {
@@ -15,11 +15,7 @@ import {
   kindToFileName,
   normalizeUpload,
 } from '@/lib/viz/validate'
-import {
-  ensureVizDirs,
-  publicStagingUrl,
-  stagingDir,
-} from '@/lib/viz/storage'
+import { stagingKey, vizPut } from '@/lib/viz/storage'
 import type { StageResult } from '@/lib/viz/types'
 
 export const runtime = 'nodejs'
@@ -52,16 +48,13 @@ export async function POST(request: Request) {
     // `inputBuf` pade iz dosega ob koncu zahtevka — GC ga sprosti (Buffer.length
     // je getter-only, ročnega "skrajšanja" ni).
 
-    await ensureVizDirs()
     const token = randomUUID()
-    const dir = stagingDir(token)
-    await mkdir(dir, { recursive: true })
     const name = kindToFileName(kind)
-    await writeFile(path.join(dir, name), normalized.data)
+    const { url } = await vizPut(stagingKey(token, name), normalized.data)
 
     const body: StageResult = {
       token,
-      url: publicStagingUrl(token, name),
+      url,
       w: normalized.w,
       h: normalized.h,
       bytes: normalized.bytes,

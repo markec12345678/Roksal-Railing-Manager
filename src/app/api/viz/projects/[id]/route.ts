@@ -1,19 +1,14 @@
-// VIZ — /api/viz/projects/[id] (runda S+2). Spec: docs/VIZ_CONTRACTS.md
+// VIZ — /api/viz/projects/[id] (runda S+2, storage driver runda S+3). Spec: docs/VIZ_CONTRACTS.md
 //   GET    — detail (placement + variants parsed, urls map)
 //   PATCH  — samo preimenovanje: { name }
-//   DELETE — zbriše mapo na disku + vrstico v bazi (render jobs cascade)
+//   DELETE — zbriše metadata zapis + projektne datoteke iz shrambe
+// Metadata: local = Prisma, blob = project.json v Vercel Blob (repository).
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { getVizDb } from '@/lib/viz/db'
 import { authenticate, unauthorized } from '@/lib/auth'
 import type { VizPlacement, VizVariant } from '@/lib/viz/types'
-import {
-  VIZ_FILE_NAMES,
-  pathExists,
-  projectDir,
-  publicProjectUrl,
-  removeDir,
-} from '@/lib/viz/storage'
+import { VIZ_FILE_NAMES, projectKey, vizDelPrefix } from '@/lib/viz/storage'
+import { deleteProject, getProject, renameProject } from '@/lib/viz/repository'
 
 export const runtime = 'nodejs'
 
@@ -31,45 +26,32 @@ function parseJsonOrNull<T>(raw: string | null): T | null {
 }
 
 /** Sestavi odgovor z parsed placement/variants + urls map. */
-function serializeProject(row: {
-  id: string
-  name: string
-  originalPath: string
-  productPath: string
-  productMaskPath: string | null
-  maskPath: string
-  previewPath: string | null
-  resultPath: string | null
-  resultImagePath: string | null
-  placement: string
-  variants: string | null
-  createdAt: Date
-  updatedAt: Date
-}) {
+function serializeProject(rec: Awaited<ReturnType<typeof getProject>>) {
+  if (!rec) return null
   const urls = {
-    original: row.originalPath,
-    product: row.productPath,
-    productMask: row.productMaskPath,
-    mask: row.maskPath,
-    placement: publicProjectUrl(row.id, VIZ_FILE_NAMES.placement),
-    preview: row.previewPath,
-    result: row.resultPath,
-    resultImage: row.resultImagePath,
+    original: rec.originalPath,
+    product: rec.productPath,
+    productMask: rec.productMaskPath,
+    mask: rec.maskPath,
+    placement: projectKey(rec.id, VIZ_FILE_NAMES.placement).replace(/^viz\//, '/viz/'),
+    preview: rec.previewPath,
+    result: rec.resultPath,
+    resultImage: rec.resultImagePath,
   }
   return {
-    id: row.id,
-    name: row.name,
-    originalPath: row.originalPath,
-    productPath: row.productPath,
-    productMaskPath: row.productMaskPath,
-    maskPath: row.maskPath,
-    previewPath: row.previewPath,
-    resultPath: row.resultPath,
-    resultImagePath: row.resultImagePath,
-    placement: parseJsonOrNull<VizPlacement>(row.placement),
-    variants: parseJsonOrNull<VizVariant[]>(row.variants) ?? [],
-    createdAt: row.createdAt.toISOString(),
-    updatedAt: row.updatedAt.toISOString(),
+    id: rec.id,
+    name: rec.name,
+    originalPath: rec.originalPath,
+    productPath: rec.productPath,
+    productMaskPath: rec.productMaskPath,
+    maskPath: rec.maskPath,
+    previewPath: rec.previewPath,
+    resultPath: rec.resultPath,
+    resultImagePath: rec.resultImagePath,
+    placement: parseJsonOrNull<VizPlacement>(rec.placement),
+    variants: parseJsonOrNull<VizVariant[]>(rec.variants) ?? [],
+    createdAt: rec.createdAt,
+    updatedAt: rec.updatedAt,
     urls,
   }
 }
@@ -80,14 +62,13 @@ export async function GET(
 ) {
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
-  const vizDb = getVizDb()
   try {
     const { id } = await params
-    const row = await vizDb.vizProject.findUnique({ where: { id } })
-    if (!row) {
+    const rec = await getProject(id)
+    if (!rec) {
       return NextResponse.json({ error: 'Projekt ne obstaja' }, { status: 404 })
     }
-    return NextResponse.json({ project: serializeProject(row) })
+    return NextResponse.json({ project: serializeProject(rec) })
   } catch (error) {
     console.error('Viz project GET error:', error)
     return NextResponse.json({ error: 'Napaka pri branju projekta' }, { status: 500 })
@@ -100,7 +81,6 @@ export async function PATCH(
 ) {
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
-  const vizDb = getVizDb()
   try {
     const { id } = await params
     const body = await request.json().catch(() => null)
@@ -111,15 +91,11 @@ export async function PATCH(
         { status: 400 }
       )
     }
-    const existing = await vizDb.vizProject.findUnique({ where: { id } })
-    if (!existing) {
+    const rec = await renameProject(id, parsed.data.name)
+    if (!rec) {
       return NextResponse.json({ error: 'Projekt ne obstaja' }, { status: 404 })
     }
-    const row = await vizDb.vizProject.update({
-      where: { id },
-      data: { name: parsed.data.name },
-    })
-    return NextResponse.json({ project: serializeProject(row) })
+    return NextResponse.json({ project: serializeProject(rec) })
   } catch (error) {
     console.error('Viz project PATCH error:', error)
     return NextResponse.json({ error: 'Napaka pri preimenovanju projekta' }, { status: 500 })
@@ -132,19 +108,15 @@ export async function DELETE(
 ) {
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
-  const vizDb = getVizDb()
   try {
     const { id } = await params
-    const existing = await vizDb.vizProject.findUnique({ where: { id } })
-    if (!existing) {
+    // Najprej metadata (404, če ne obstaja), nato datoteke iz shrambe.
+    const rec = await getProject(id)
+    if (!rec) {
       return NextResponse.json({ error: 'Projekt ne obstaja' }, { status: 404 })
     }
-    // Najprej baza (render jobs gredo s cascado), nato datoteke na disku.
-    await vizDb.vizProject.delete({ where: { id } })
-    const dir = projectDir(id)
-    if (await pathExists(dir)) {
-      await removeDir(dir)
-    }
+    await deleteProject(id)
+    await vizDelPrefix(`viz/projects/${id}/`)
     return NextResponse.json({ ok: true })
   } catch (error) {
     console.error('Viz project DELETE error:', error)

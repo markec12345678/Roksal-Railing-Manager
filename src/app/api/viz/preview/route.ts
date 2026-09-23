@@ -1,24 +1,16 @@
 // VIZ — POST /api/viz/preview (application/json)
 // Telo: { originalToken, productToken, productMaskToken|null, maskToken, placement }
-// Naloži staged datoteke, požene A-pipeline (runPipeline iz '@/lib/viz/pipeline',
-// port 1:1 iz baseline/variant_a.py — piše paralelni agent S2-a; če modul še ne
-// obstaja, vrne 503 'pipeline se nalaga'), normalizirane vogale denormalizira v
-// px in zapiše preview.jpg (q92) + result.json v staging mapo.
+// Naloži staged datoteke (prek storage driverja — local FS ali Vercel Blob),
+// požene A-pipeline (runPipeline iz '@/lib/viz/pipeline', port 1:1 iz
+// baseline/variant_a.py), normalizirane vogale denormalizira v px in zapiše
+// preview.jpg (q92) + result.json v staging mapo originalnega tokena.
 // Odgovor: { previewUrl, metrics } — spec: docs/VIZ_CONTRACTS.md
 import { NextResponse } from 'next/server'
-import { readFile, writeFile } from 'node:fs/promises'
-import path from 'node:path'
 import sharp from 'sharp'
 import type { Corners, ImageBuffer, PipelineMetrics, PipelineOptions } from '@/lib/viz/types'
 import { cornerToPx } from '@/lib/viz/types'
 import { toRawImageBuffer, placementSchema, stagedTokenSchema } from '@/lib/viz/validate'
-import {
-  VIZ_FILE_NAMES,
-  pathExists,
-  publicStagingUrl,
-  stagingDir,
-  writeJsonFile,
-} from '@/lib/viz/storage'
+import { VIZ_FILE_NAMES, stagingKey, vizGet, vizPut } from '@/lib/viz/storage'
 import { z } from 'zod'
 import { authenticate, unauthorized } from '@/lib/auth'
 
@@ -44,17 +36,6 @@ const previewSchema = z.object({
   placement: placementSchema,
 })
 
-/** Preberi staged datoteko; vrne null, če ne obstaja. */
-async function readStagedFile(token: string, name: string): Promise<Buffer | null> {
-  const p = path.join(stagingDir(token), name)
-  if (!(await pathExists(p))) return null
-  try {
-    return await readFile(p)
-  } catch {
-    return null
-  }
-}
-
 export async function POST(request: Request) {
   // Aplikacijska konvencija: proxy je prva plast, ruta preveri sama (glej src/lib/auth.ts).
   const auth = await authenticate(request)
@@ -70,10 +51,10 @@ export async function POST(request: Request) {
     }
     const { originalToken, productToken, productMaskToken, maskToken, placement } = parsed.data
 
-    // ── Naloži staged datoteke ──────────────────────────────────────────────
-    const originalFile = await readStagedFile(originalToken, VIZ_FILE_NAMES.original)
-    const productFile = await readStagedFile(productToken, VIZ_FILE_NAMES.product)
-    const maskFile = await readStagedFile(maskToken, VIZ_FILE_NAMES.mask)
+    // ── Naloži staged datoteke (driver-agnostično) ──────────────────────────
+    const originalFile = await vizGet(stagingKey(originalToken, VIZ_FILE_NAMES.original))
+    const productFile = await vizGet(stagingKey(productToken, VIZ_FILE_NAMES.product))
+    const maskFile = await vizGet(stagingKey(maskToken, VIZ_FILE_NAMES.mask))
     if (!originalFile) {
       return NextResponse.json(
         { error: 'Staged fotografija balkona ne obstaja — naloži sliko znova' },
@@ -93,7 +74,7 @@ export async function POST(request: Request) {
       )
     }
     const productMaskFile = productMaskToken
-      ? await readStagedFile(productMaskToken, VIZ_FILE_NAMES.productMask)
+      ? await vizGet(stagingKey(productMaskToken, VIZ_FILE_NAMES.productMask))
       : null
     if (productMaskToken && !productMaskFile) {
       return NextResponse.json(
@@ -140,15 +121,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Napaka v cevovodu predogleda' }, { status: 500 })
     }
 
-    // ── Zapiši preview.jpg + result.json v staging mapo ─────────────────────
-    const dir = stagingDir(originalToken)
+    // ── Zapiši preview.jpg + result.json v staging mapo (driver-agnostično) ─
     const previewJpg = await sharp(
       Buffer.from(result.preview.data.buffer, result.preview.data.byteOffset, result.preview.data.byteLength),
       { raw: { width: result.preview.w, height: result.preview.h, channels: 4 } }
     )
       .jpeg({ quality: 92 })
       .toBuffer()
-    await writeFile(path.join(dir, VIZ_FILE_NAMES.preview), previewJpg)
+    const previewPut = await vizPut(stagingKey(originalToken, VIZ_FILE_NAMES.preview), previewJpg)
 
     // result.json = metrike (dokazila) + provenance (placement + tokeni),
     // ki jih POST /api/viz/projects uporabi za sestavo projektne mape.
@@ -163,10 +143,10 @@ export async function POST(request: Request) {
       },
       createdAt: new Date().toISOString(),
     }
-    await writeJsonFile(path.join(dir, VIZ_FILE_NAMES.result), resultJson)
+    await vizPut(stagingKey(originalToken, VIZ_FILE_NAMES.result), Buffer.from(JSON.stringify(resultJson, null, 2), 'utf8'), 'application/json')
 
     const responseBody = {
-      previewUrl: publicStagingUrl(originalToken, VIZ_FILE_NAMES.preview),
+      previewUrl: previewPut.url,
       metrics: result.metrics,
     }
     return NextResponse.json(responseBody)

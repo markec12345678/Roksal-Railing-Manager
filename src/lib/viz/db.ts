@@ -50,11 +50,25 @@ function loadFreshPrismaClientCtor(): PrismaClientCtor {
 
 const globalForVizDb = globalThis as unknown as { vizPrisma?: PrismaClient }
 
-/** Prisma client za viz rute (VizProject, VizRenderJob) — lenobno ustvarjen. */
-export function getVizDb(): PrismaClient {
+/** Prisma client za viz rute (VizProject, VizRenderJob) — lenobno ustvarjen (async zaradi dinamičnega importa). */
+export async function getVizDb(): Promise<PrismaClient> {
   if (!globalForVizDb.vizPrisma) {
     const PrismaClient = loadFreshPrismaClientCtor()
-    globalForVizDb.vizPrisma = new PrismaClient({ log: ['error'] })
+    // Na Vercelu je filesystem bralen — uporabi ISTO /tmp kopijo baze kot
+    // glavni klient (src/lib/db.ts resolveServerlessDatabaseUrl). Brez tega bi
+    // viz rute pisale v bralno bundled datoteko (SQLite error 14).
+    let serverlessUrl: string | null = null
+    try {
+      // Dinamični import (bundler razreši @/ alias); izpusti, če modul ni dosegljiv.
+      const main = (await import('@/lib/db')) as { resolveServerlessDatabaseUrl?: () => string | null }
+      serverlessUrl = main.resolveServerlessDatabaseUrl?.() ?? null
+    } catch {
+      serverlessUrl = null
+    }
+    globalForVizDb.vizPrisma = new PrismaClient({
+      log: ['error'],
+      ...(serverlessUrl ? { datasources: { db: { url: serverlessUrl } } } : {}),
+    })
   }
   return globalForVizDb.vizPrisma
 }

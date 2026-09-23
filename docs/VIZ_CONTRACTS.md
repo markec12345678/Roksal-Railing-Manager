@@ -48,13 +48,27 @@ harmonization. **The A-pipeline algorithm must be ported 1:1, NOT redesigned.**
   normalized to product dims); `null` ⇒ auto: tight bbox of product cutout.
 - TS types in `src/lib/viz/types.ts` (already written — import from there).
 
-### Project folder layout on disk (MVP spec)
+### Project folder layout (MVP spec) — STORAGE DRIVER (runda S+3)
 
-`public/viz/projects/<id>/` → `original.jpg`, `product.jpg`, `product-mask.png`,
-`mask.png`, `placement.json`, `preview.jpg`, `result.json`.
-Staging: `public/viz/staging/<token>/` (same names). Runtime data dirs
-`public/viz/staging/` and `public/viz/projects/` are gitignored — do NOT commit
-runtime files. Demo assets in `public/viz-demo/` ARE committed.
+Kanonična datoteka projekta: `original.jpg`, `product.jpg`, `product-mask.png`,
+`mask.png`, `placement.json`, `preview.jpg`, `result.json` (+ `project.json`
+samo v blob načinu = metadata dokument). Shramba je DRIVER-AGNOSTIČNA
+(`src/lib/viz/storage.ts`):
+
+- **local** (dev/test, privzet brez tokenov): datoteke na disku pod
+  `public/viz/{staging,projects}/…`, javni URL-ji `/viz/…` (statično iz public/).
+  Metadata = Prisma (SQLite) — kot v S+2.
+- **blob** (produkcija na Vercelu; sproži ga `BLOB_READ_WRITE_TOKEN`,
+  preglas z `VIZ_STORAGE_DRIVER=local|blob`): datoteke v Vercel Blob pod
+  ključi `viz/staging/<token>/<ime>`, `viz/projects/<id>/<ime>`,
+  `viz/render-jobs/<jobId>.json`; javni URL-ji so ABSOLUTNI blob URL-ji
+  (CORS `*`, preverjeno). Metadata = `project.json` dokumenti v isti Blob
+  shrambi (SQLite na serverless ni trajen). Seznam = list prefix
+  `viz/projects/` + project.json (createdAt desc, max 50).
+
+API odgovori vračajo `url` iz driverja — klient NE SME sklepati na obliko
+(relativna `/viz/…` ali absolutna `https://….public.blob.vercel-storage.com/…`).
+Demo assets in `public/viz-demo/` ostajajo committed.
 
 ### Prisma (add to existing schema, do not modify existing models)
 

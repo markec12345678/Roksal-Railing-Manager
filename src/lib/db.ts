@@ -21,7 +21,11 @@ const globalForPrisma = globalThis as unknown as {
 // v zapisljiv `/tmp` in uporabimo kopijo. Posledica: pisanje deluje, a je
 // kratkotrajno (per-lambda instanca) — za trajne podatke uporabi Turso ali
 // Postgres (glej README → »Deploy na Vercel«).
-function resolveServerlessDatabaseUrl(): string | null {
+/**
+ * Vrni serverless (Vercel) URL kopije baze v /tmp ali null izven serverlessa.
+ * Izvoženo tudi za viz klienta (src/lib/viz/db.ts) — isti /tmp prototip.
+ */
+export function resolveServerlessDatabaseUrl(): string | null {
   const onVercel = process.env.VERCEL === '1' || Boolean(process.env.VERCEL_ENV)
   if (!onVercel) return null
 

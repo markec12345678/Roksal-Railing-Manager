@@ -1,12 +1,14 @@
 // VIZ — POST /api/viz/render — GPU job stub (Qwen-Image-Edit-2509).
-// Spec: docs/VIZ_CONTRACTS.md — Qwen NI production: ustvari VizRenderJob
+// Spec: docs/VIZ_CONTRACTS.md — Qwen NI production: ustvari render job
 // (status 'queued'). Če je VIZ_GPU_URL nastavljen, poskusi POST <url>/render
 // s 3s timeoutom in ob uspehu nastavi status 'processing'; ob napaki/neznanem
-// URL ostane 'queued' z iskrenim error zapiskom. Nikoli ne oznacimo 'completed'.
+// URL ostane 'queued' z iskrenim error zapiskom. Nikoli ne označimo 'completed'.
+// Runda S+3: job metadata gre prek repositoryja (local = Prisma, blob = JSON
+// v Vercel Blob) — iskrenost statusov se ne spremeni.
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { getVizDb } from '@/lib/viz/db'
 import { authenticate, unauthorized } from '@/lib/auth'
+import { createRenderJob, getProject, updateRenderJob } from '@/lib/viz/repository'
 
 export const runtime = 'nodejs'
 
@@ -15,13 +17,12 @@ const renderSchema = z.object({
   prompt: z.string().trim().max(1000, 'Prompt je predolg').optional(),
 })
 
-const GPU_ERROR_UNSET = 'GPU backend ni nastavljen (VIZ_GPU_URL) — caka na lasten GPU streznik'
+const GPU_ERROR_UNSET = 'GPU backend ni nastavljen (VIZ_GPU_URL) — čaka na lasten GPU strežnik'
 
 export async function POST(request: Request) {
   // Aplikacijska konvencija: proxy je prva plast, ruta preveri sama (glej src/lib/auth.ts).
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
-  const vizDb = getVizDb()
   try {
     const body = await request.json().catch(() => null)
     const parsed = renderSchema.safeParse(body)
@@ -33,7 +34,7 @@ export async function POST(request: Request) {
     }
     const { projectId, prompt } = parsed.data
 
-    const project = await vizDb.vizProject.findUnique({ where: { id: projectId } })
+    const project = await getProject(projectId)
     if (!project) {
       return NextResponse.json({ error: 'Projekt ne obstaja' }, { status: 404 })
     }
@@ -57,12 +58,10 @@ export async function POST(request: Request) {
         mask: project.maskPath,
         preview: project.previewPath,
       },
-      note: 'Qwen-Image-Edit-2509 — planirano, caka na GPU streznik',
+      note: 'Qwen-Image-Edit-2509 — planirano, čaka na GPU strežnik',
     })
 
-    const job = await vizDb.vizRenderJob.create({
-      data: { projectId, status: 'queued', engine, inputJson },
-    })
+    const job = await createRenderJob({ projectId, status: 'queued', engine, inputJson })
 
     let gpuError: string | null = GPU_ERROR_UNSET
     const gpuUrl = process.env.VIZ_GPU_URL
@@ -87,23 +86,17 @@ export async function POST(request: Request) {
           signal: AbortSignal.timeout(3000),
         })
         if (res.ok) {
-          const updated = await vizDb.vizRenderJob.update({
-            where: { id: job.id },
-            data: { status: 'processing', error: null },
-          })
-          return NextResponse.json({ jobId: updated.id, status: updated.status })
+          const updated = await updateRenderJob(job.id, { status: 'processing', error: null })
+          return NextResponse.json({ jobId: updated?.id ?? job.id, status: 'processing' })
         }
-        gpuError = `GPU streznik je vrnil napako HTTP ${res.status} — job ostaja v vrsti`
+        gpuError = `GPU strežnik je vrnil napako HTTP ${res.status} — job ostaja v vrsti`
       } catch {
-        gpuError = 'GPU streznik ni dosegljiv — job ostaja v vrsti'
+        gpuError = 'GPU strežnik ni dosegljiv — job ostaja v vrsti'
       }
     }
 
     if (gpuError) {
-      await vizDb.vizRenderJob.update({
-        where: { id: job.id },
-        data: { error: gpuError },
-      })
+      await updateRenderJob(job.id, { error: gpuError })
     }
 
     return NextResponse.json({ jobId: job.id, status: 'queued' })
