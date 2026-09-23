@@ -25,15 +25,30 @@ function parseJsonOrNull<T>(raw: string | null): T | null {
   }
 }
 
+/** Javni URL placement.json (driver-agnostično: local = /viz/..., blob = head). */
+async function placementUrl(id: string): Promise<string> {
+  // Zunaj POST-a datoteke ni obvezna — vrni razumen URL po driverju.
+  const { storageMode } = await import('@/lib/viz/storage')
+  if (storageMode() === 'local') {
+    return `/${projectKey(id, VIZ_FILE_NAMES.placement)}`
+  }
+  try {
+    const { head } = await import('@vercel/blob')
+    const meta = await head(projectKey(id, VIZ_FILE_NAMES.placement))
+    return meta.url
+  } catch {
+    return `/${projectKey(id, VIZ_FILE_NAMES.placement)}`
+  }
+}
+
 /** Sestavi odgovor z parsed placement/variants + urls map. */
-function serializeProject(rec: Awaited<ReturnType<typeof getProject>>) {
-  if (!rec) return null
+async function serializeProject(rec: NonNullable<Awaited<ReturnType<typeof getProject>>>) {
   const urls = {
     original: rec.originalPath,
     product: rec.productPath,
     productMask: rec.productMaskPath,
     mask: rec.maskPath,
-    placement: projectKey(rec.id, VIZ_FILE_NAMES.placement).replace(/^viz\//, '/viz/'),
+    placement: await placementUrl(rec.id),
     preview: rec.previewPath,
     result: rec.resultPath,
     resultImage: rec.resultImagePath,
@@ -68,7 +83,7 @@ export async function GET(
     if (!rec) {
       return NextResponse.json({ error: 'Projekt ne obstaja' }, { status: 404 })
     }
-    return NextResponse.json({ project: serializeProject(rec) })
+    return NextResponse.json({ project: await serializeProject(rec) })
   } catch (error) {
     console.error('Viz project GET error:', error)
     return NextResponse.json({ error: 'Napaka pri branju projekta' }, { status: 500 })
@@ -95,7 +110,7 @@ export async function PATCH(
     if (!rec) {
       return NextResponse.json({ error: 'Projekt ne obstaja' }, { status: 404 })
     }
-    return NextResponse.json({ project: serializeProject(rec) })
+    return NextResponse.json({ project: await serializeProject(rec) })
   } catch (error) {
     console.error('Viz project PATCH error:', error)
     return NextResponse.json({ error: 'Napaka pri preimenovanju projekta' }, { status: 500 })

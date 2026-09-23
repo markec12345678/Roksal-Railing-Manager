@@ -149,14 +149,14 @@ describe('viz storage — blob driver (mockan @vercel/blob)', () => {
     expect(s.storageMode()).toBe('local')
   })
 
-  it('vizPut pokliče SDK z access public, brez naključnega sufiksa in vrne blob URL', async () => {
+  it('vizPut pokliče SDK z access public, allowOverwrite in brez naključnega sufiksa', async () => {
     putMock.mockResolvedValue({ url: 'https://store.public.blob.vercel-storage.com/viz/staging/t1/original.jpg' })
     const s = await driver()
     const res = await s.vizPut(stagingKey('t1', 'original.jpg'), Buffer.from('img'))
     expect(putMock).toHaveBeenCalledWith(
       'viz/staging/t1/original.jpg',
       expect.any(Buffer),
-      expect.objectContaining({ access: 'public', addRandomSuffix: false, contentType: 'image/jpeg' })
+      expect.objectContaining({ access: 'public', addRandomSuffix: false, allowOverwrite: true, contentType: 'image/jpeg' })
     )
     expect(res.url).toBe('https://store.public.blob.vercel-storage.com/viz/staging/t1/original.jpg')
   })

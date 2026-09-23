@@ -135,6 +135,11 @@ export async function vizPut(
     const res = await put(key, data, {
       access: 'public',
       addRandomSuffix: false,
+      // Isti ključ se legalno prepisuje: result.json/preview.jpg ob ponovnem
+      // predogledu istega tokena, project.json ob preimenovanju, render job
+      // ob prehodu queued → processing. Brez tega bi posodobitev metadata
+      // vrgla "blob already exists" (najdeno na produkciji, S+3).
+      allowOverwrite: true,
       contentType: contentType ?? contentTypeForName(key),
     })
     return { key, url: res.url }

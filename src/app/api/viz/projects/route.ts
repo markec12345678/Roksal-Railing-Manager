@@ -223,7 +223,7 @@ export async function POST(request: Request) {
     const resultUrl = await copyIntoProject(createdId, stagingToken, VIZ_FILE_NAMES.result, VIZ_FILE_NAMES.result)
 
     // placement.json (normalizirane koordinate).
-    await vizPut(projectKey(createdId, VIZ_FILE_NAMES.placement), Buffer.from(JSON.stringify(placement, null, 2), 'utf8'), 'application/json')
+    const placementPut = await vizPut(projectKey(createdId, VIZ_FILE_NAMES.placement), Buffer.from(JSON.stringify(placement, null, 2), 'utf8'), 'application/json')
 
     // ── Variante: product-<i>.jpg / product-mask-<i>.png ────────────────────
     const variantRecords: VizVariant[] = []
@@ -289,7 +289,7 @@ export async function POST(request: Request) {
       productMask: record.productMaskPath,
       mask: record.maskPath,
       preview: record.previewPath,
-      placement: projectKey(createdId, VIZ_FILE_NAMES.placement).replace(/^viz\//, '/viz/'),
+      placement: placementPut.url,
       result: record.resultPath,
     }
     return NextResponse.json({ projectId: record.id, urls })
