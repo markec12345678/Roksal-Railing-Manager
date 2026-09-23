@@ -1,0 +1,66 @@
+{
+  "jobId": "b06a65f3e6ac4ceea10c1f9f97a9ca77",
+  "projectId": "S6-T2-perspektiva",
+  "status": "completed",
+  "createdAt": 1790189214.9273472,
+  "startedAt": 1790189214.9278095,
+  "finishedAt": 1790189215.4652708,
+  "error": null,
+  "generation_time_s": 0.2,
+  "vram_peak_mib": null,
+  "vram_total_mib": null,
+  "ram_peak_mib": null,
+  "gpu_name": null,
+  "seed": 250902,
+  "steps": 40,
+  "true_cfg_scale": 4.0,
+  "negative_prompt": " ",
+  "prompt": "Preserve the exact reference railing design, geometry, color and structure. Integrate it into the marked railing area while preserving the original architecture and surroundings.",
+  "width": 1296,
+  "height": 960,
+  "model_load_s": 0.0,
+  "mock": true,
+  "mock_note": "MOCK izhod — dokazuje pogodbo API-ja in determinizem, NE kakovosti Qwen-a (spec §19)",
+  "determinism_note": "mock: isti seed + isti vhodi = bajtno identičen izhod",
+  "model": "mock-composite",
+  "mode": "compose",
+  "resolution_label": "final",
+  "queue_wait_s": 0.0,
+  "total_job_s": 0.54,
+  "device": "cpu",
+  "backend_mode": "mock",
+  "api_contract": "S+6 §20",
+  "request": {
+    "projectId": "S6-T2-perspektiva",
+    "original": "<b64>",
+    "product": "<b64>",
+    "mask": "<b64>",
+    "aPreview": "<b64>",
+    "mode": "compose",
+    "placement": {
+      "corners": [
+        [
+          0.347,
+          0.588
+        ],
+        [
+          0.612,
+          0.58
+        ],
+        [
+          0.614,
+          0.748
+        ],
+        [
+          0.349,
+          0.756
+        ]
+      ]
+    },
+    "prompt": "Preserve the exact reference railing design, geometry, color and structure. Integrate it into the marked railing area while preserving the original architecture and surroundings.",
+    "seed": 250902,
+    "resolution": "final",
+    "steps": 40,
+    "trueCfg": 4.0
+  }
+}

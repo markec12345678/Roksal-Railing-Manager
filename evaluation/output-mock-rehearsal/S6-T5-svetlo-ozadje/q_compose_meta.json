@@ -1,0 +1,66 @@
+{
+  "jobId": "7efb729afe8d4b88bdec8a527bab6984",
+  "projectId": "S6-T5-svetlo-ozadje",
+  "status": "completed",
+  "createdAt": 1790189227.302049,
+  "startedAt": 1790189227.302484,
+  "finishedAt": 1790189227.6662638,
+  "error": null,
+  "generation_time_s": 0.11,
+  "vram_peak_mib": null,
+  "vram_total_mib": null,
+  "ram_peak_mib": null,
+  "gpu_name": null,
+  "seed": 250905,
+  "steps": 40,
+  "true_cfg_scale": 4.0,
+  "negative_prompt": " ",
+  "prompt": "Preserve the exact reference railing design, geometry, color and structure. Integrate it into the marked railing area while preserving the original architecture and surroundings.",
+  "width": 736,
+  "height": 1200,
+  "model_load_s": 0.0,
+  "mock": true,
+  "mock_note": "MOCK izhod — dokazuje pogodbo API-ja in determinizem, NE kakovosti Qwen-a (spec §19)",
+  "determinism_note": "mock: isti seed + isti vhodi = bajtno identičen izhod",
+  "model": "mock-composite",
+  "mode": "compose",
+  "resolution_label": "final",
+  "queue_wait_s": 0.0,
+  "total_job_s": 0.36,
+  "device": "cpu",
+  "backend_mode": "mock",
+  "api_contract": "S+6 §20",
+  "request": {
+    "projectId": "S6-T5-svetlo-ozadje",
+    "original": "<b64>",
+    "product": "<b64>",
+    "mask": "<b64>",
+    "aPreview": "<b64>",
+    "mode": "compose",
+    "placement": {
+      "corners": [
+        [
+          0.185,
+          0.25
+        ],
+        [
+          0.83,
+          0.25
+        ],
+        [
+          0.83,
+          0.605
+        ],
+        [
+          0.185,
+          0.605
+        ]
+      ]
+    },
+    "prompt": "Preserve the exact reference railing design, geometry, color and structure. Integrate it into the marked railing area while preserving the original architecture and surroundings.",
+    "seed": 250905,
+    "resolution": "final",
+    "steps": 40,
+    "trueCfg": 4.0
+  }
+}

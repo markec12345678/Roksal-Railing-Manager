@@ -1,0 +1,20 @@
+{
+  "test_id": "S6-T5-svetlo-ozadje",
+  "pipeline": "A (deterministic composite) — src/lib/viz/pipeline.ts, nespremenjen od S+1",
+  "letvice_product": 13,
+  "letvice_result": 13,
+  "letvice_identity_ok": true,
+  "outside_max_diff": 65,
+  "outside_mean_diff": 0.908,
+  "outside_max_pre_shadow": 0,
+  "deltaE": 0,
+  "harmonizeStrength": 1,
+  "alphaCoverage": 0.1748,
+  "processing_ms": 944,
+  "wall_ms": 977,
+  "original_size": [
+    731,
+    1200
+  ],
+  "note": "neposredno sonce na belem ometu za antracitnim produktom — najvišje barvno-drift tveganje. Iskreno: realna SVETLA ograja kot produkt ni na voljo (fence_1/5 = CGI, fence_7 = realna a z vodnim žigom in svetle letvice > CUTOUT_GRAY_THRESHOLD 115 → A cutout po zasnovi ključe TEMNE letvice). Zahtevan asset: prava svetla ograja iz Roksal kataloga."
+}

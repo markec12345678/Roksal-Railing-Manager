@@ -1,0 +1,66 @@
+{
+  "jobId": "ae820fb1e86a4f0fbfa8eeaf7365f338",
+  "projectId": "S6-T6-occlusion-drevo",
+  "status": "completed",
+  "createdAt": 1790189231.4463234,
+  "startedAt": 1790189231.4467833,
+  "finishedAt": 1790189231.8601844,
+  "error": null,
+  "generation_time_s": 0.15,
+  "vram_peak_mib": null,
+  "vram_total_mib": null,
+  "ram_peak_mib": null,
+  "gpu_name": null,
+  "seed": 250906,
+  "steps": 40,
+  "true_cfg_scale": 4.0,
+  "negative_prompt": " ",
+  "prompt": "Preserve the exact reference railing design, geometry, color and structure. Integrate it into the marked railing area while preserving the original architecture and surroundings.",
+  "width": 1408,
+  "height": 736,
+  "model_load_s": 0.0,
+  "mock": true,
+  "mock_note": "MOCK izhod — dokazuje pogodbo API-ja in determinizem, NE kakovosti Qwen-a (spec §19)",
+  "determinism_note": "mock: isti seed + isti vhodi = bajtno identičen izhod",
+  "model": "mock-composite",
+  "mode": "compose",
+  "resolution_label": "final",
+  "queue_wait_s": 0.0,
+  "total_job_s": 0.41,
+  "device": "cpu",
+  "backend_mode": "mock",
+  "api_contract": "S+6 §20",
+  "request": {
+    "projectId": "S6-T6-occlusion-drevo",
+    "original": "<b64>",
+    "product": "<b64>",
+    "mask": "<b64>",
+    "aPreview": "<b64>",
+    "mode": "compose",
+    "placement": {
+      "corners": [
+        [
+          0.262,
+          0.377
+        ],
+        [
+          0.618,
+          0.377
+        ],
+        [
+          0.618,
+          0.438
+        ],
+        [
+          0.262,
+          0.438
+        ]
+      ]
+    },
+    "prompt": "Preserve the exact reference railing design, geometry, color and structure. Integrate it into the marked railing area while preserving the original architecture and surroundings.",
+    "seed": 250906,
+    "resolution": "final",
+    "steps": 40,
+    "trueCfg": 4.0
+  }
+}

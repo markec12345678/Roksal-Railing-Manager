@@ -76,3 +76,10 @@ download/
 # VIZ runtime data (runda S+2) — nikoli v git; demo v public/viz-demo/ ostane.
 public/viz/staging/
 public/viz/projects/
+
+# S+6 — Python GPU backend + evalvacija
+gpu-backend/.venv/
+gpu-backend/**/__pycache__/
+evaluation/output/
+evaluation/**/__pycache__/
+.pytest_cache/

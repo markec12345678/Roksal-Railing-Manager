@@ -1,0 +1,20 @@
+{
+  "test_id": "S6-T1-ravna-antracit",
+  "pipeline": "A (deterministic composite) — src/lib/viz/pipeline.ts, nespremenjen od S+1",
+  "letvice_product": 13,
+  "letvice_result": 13,
+  "letvice_identity_ok": true,
+  "outside_max_diff": 66,
+  "outside_mean_diff": 1.158,
+  "outside_max_pre_shadow": 0,
+  "deltaE": 0,
+  "harmonizeStrength": 1,
+  "alphaCoverage": 0.1634,
+  "processing_ms": 1593,
+  "wall_ms": 1685,
+  "original_size": [
+    1024,
+    1024
+  ],
+  "note": "kvader = S+1 dokazani vogali (iz mask_C poligona)"
+}

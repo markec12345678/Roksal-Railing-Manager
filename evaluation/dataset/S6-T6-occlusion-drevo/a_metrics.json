@@ -1,0 +1,20 @@
+{
+  "test_id": "S6-T6-occlusion-drevo",
+  "pipeline": "A (deterministic composite) — src/lib/viz/pipeline.ts, nespremenjen od S+1",
+  "letvice_product": 13,
+  "letvice_result": 13,
+  "letvice_identity_ok": true,
+  "outside_max_diff": 62,
+  "outside_mean_diff": 0.5251,
+  "outside_max_pre_shadow": 0,
+  "deltaE": 0,
+  "harmonizeStrength": 1,
+  "alphaCoverage": 0.0166,
+  "processing_ms": 2365,
+  "wall_ms": 2453,
+  "original_size": [
+    2164,
+    1136
+  ],
+  "note": "desni rob kvadrata (x>0.565) prekriva deblo — S+4: 67 % debla prebarvanega = znana omejitev A"
+}

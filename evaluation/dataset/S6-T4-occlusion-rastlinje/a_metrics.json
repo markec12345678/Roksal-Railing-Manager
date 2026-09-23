@@ -1,0 +1,20 @@
+{
+  "test_id": "S6-T4-occlusion-rastlinje",
+  "pipeline": "A (deterministic composite) — src/lib/viz/pipeline.ts, nespremenjen od S+1",
+  "letvice_product": 13,
+  "letvice_result": 13,
+  "letvice_identity_ok": true,
+  "outside_max_diff": 56,
+  "outside_mean_diff": 0.1341,
+  "outside_max_pre_shadow": 0,
+  "deltaE": 0,
+  "harmonizeStrength": 1,
+  "alphaCoverage": 0.0971,
+  "processing_ms": 1182,
+  "wall_ms": 1228,
+  "original_size": [
+    866,
+    1390
+  ],
+  "note": "kaktus + lončnice prekrivajo del ograje (S+4: 94 % rastlin prebarvanih = znana omejitev A)"
+}

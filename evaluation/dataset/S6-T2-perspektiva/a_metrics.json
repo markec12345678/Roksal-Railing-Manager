@@ -1,0 +1,20 @@
+{
+  "test_id": "S6-T2-perspektiva",
+  "pipeline": "A (deterministic composite) — src/lib/viz/pipeline.ts, nespremenjen od S+1",
+  "letvice_product": 13,
+  "letvice_result": 13,
+  "letvice_identity_ok": true,
+  "outside_max_diff": 52,
+  "outside_mean_diff": 0.3686,
+  "outside_max_pre_shadow": 0,
+  "deltaE": 0,
+  "harmonizeStrength": 1,
+  "alphaCoverage": 0.0338,
+  "processing_ms": 744,
+  "wall_ms": 797,
+  "original_size": [
+    1300,
+    957
+  ],
+  "note": "spodaj-levo bližje, zgoraj-deso dlje — višinski raz 1,2 % širine"
+}
