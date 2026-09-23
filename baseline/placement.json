@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "corners_px": {
+    "top_left": [
+      238,
+      462
+    ],
+    "top_right": [
+      956,
+      302
+    ],
+    "bottom_right": [
+      952,
+      668
+    ],
+    "bottom_left": [
+      238,
+      726
+    ]
+  },
+  "product_source_quad_px": {
+    "top_left": [
+      540,
+      180
+    ],
+    "top_right": [
+      1000,
+      118
+    ],
+    "bottom_right": [
+      1000,
+      738
+    ],
+    "bottom_left": [
+      540,
+      700
+    ]
+  },
+  "scale": {
+    "estimated_railing_length_mm": 8600,
+    "estimated_height_mm": 1100,
+    "px_per_mm_hint": null
+  },
+  "rotation_deg": null,
+  "perspective": "4-point user draggable corners (geometric operation — no AI)",
+  "harmonization": {
+    "mode": "luminance_field_only",
+    "chroma_preserved": true,
+    "reason": "RAL identity protection"
+  },
+  "shadow": {
+    "contact_band_px": 26,
+    "opacity": 0.4
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "variant_A_classical": {
+    "status": "PASSED (baseline)",
+    "inputs": {
+      "A_balcony": "input/balcony_3.png (realna foto balkona, 1024px)",
+      "B_product": "input/fence_0.jpg (realna foto antracit letvice, bay 540-1000)",
+      "C_mask": "mask/mask_C_old_fence.png (poligon — kot monter oznaci)"
+    },
+    "identity": {
+      "letvice_count_product": 13,
+      "letvice_count_result": 13,
+      "letvice_identity_ok": true,
+      "barva": "RAL ohranjen (samo L modulacija, a/b nespremenjena)"
+    },
+    "original_preserved": {
+      "diff_outside_mask_pre_shadow_max": 0,
+      "senca": "rahel kontaktni pas pod ograjo (dovoljen robni ucinok)"
+    },
+    "timing_s": {
+      "cutout": 0.007,
+      "bg_column_lerp": 0.139,
+      "perspective_warp": 0.008,
+      "luminance_harmonize": 0.142,
+      "feather_blend_repo": 0.04,
+      "contact_shadow": 0.037
+    },
+    "total_time_s": 1.37,
+    "repo_code_reused": [
+      "EdgeBlender (feather)",
+      "ColorMatcher (primerjava — DOKAZANO nezvaren za RAL: dE=38.4)"
+    ],
+    "artifacts": [
+      "result/A_result.jpg",
+      "result/A_evidence_sheet.jpg",
+      "result/A_comparison_repo_colormatch.jpg",
+      "result/A_metrics.json",
+      "mask/mask_C_old_fence.png",
+      "work/product_rgba.png",
+      "work/background_filled.png",
+      "work/rect_product.png",
+      "work/rect_result.png"
+    ]
+  },
+  "variant_B_sd15_inpainting": {
+    "status": "TEST PENDING GPU (2x OOM kill v sandboxu)",
+    "evidence": "dva poskusa oba OOM-killed med fetch/load fazo (work/variant_b.log, PID 30303+30429 Killed); free RAM 2.0GB < min ~2.2GB potrebno za fp16 + seq offload load",
+    "script_ready": "variant_b_sd15.py — ista logika kot repo DiffusionReplacer, brez IP-Adapter (CC BY-NC-SA IZLOČEN)",
+    "ip_adapter": "IZLOČEN iz komercialne poti — uteži h94/IP-Adapter = CC BY-NC-SA (nekomerčno)",
+    "gpu_expectation": "device=cuda, 30 korakov, 640px → ~20-60s/slika; kriterij: text-only SD NE ohrani identitete letvic → dokaz, da je referenčna pot (A/C) obvezna",
+    "sandbox_verdict": "fizično nemogoče (brez GPU, 4GB RAM) — ni zaobišljivo"
+  },
+  "variant_C_qwen_image_edit_2509": {
+    "status": "TEST PENDING GPU STREŽNIK (deployment plan + servisna koda pripravljena)",
+    "license": "Apache-2.0 ✅ (edina referenčno-vodena pot, komercialno čista)",
+    "blocker": "20.4B parametri — GGUF Q4 ~12GB > 4GB RAM sandboxa; fizično nemogoče tukaj",
+    "plan": "QWEN_DEPLOY_PLAN.md — Docker + FastAPI servis, RTX 4090 24GB bf16 ali 16GB GGUF Q8/Q4",
+    "architecture_fit": "Vercel (frontend, mobile web) → lasten GPU Docker backend → rezultat nazaj; ni plačljivih AI API"
+  },
+  "environment": {
+    "gpu": false,
+    "ram_total_gb": 4.1,
+    "ram_free_gb": 2.0,
+    "cpu_cores": 2,
+    "disk_free_gb": 4.7
+  }
+}

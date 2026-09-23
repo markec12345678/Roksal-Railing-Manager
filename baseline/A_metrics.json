@@ -1,0 +1,17 @@
+{
+  "cutout": 0.007,
+  "bg_column_lerp": 0.139,
+  "perspective_warp": 0.008,
+  "luminance_harmonize": 0.142,
+  "feather_blend_repo": 0.04,
+  "contact_shadow": 0.037,
+  "outside_mask_max_abs_diff": 364,
+  "outside_mask_mean_abs_diff": 1.4665,
+  "letvice_count_product": 13,
+  "letvice_count_result": 13,
+  "letvice_identity_ok": true,
+  "repo_color_matcher_run": true,
+  "repo_color_matcher_mean_dE_product": 38.35,
+  "repo_color_matcher_comparison": 0.17,
+  "total_time_s": 1.37
+}
