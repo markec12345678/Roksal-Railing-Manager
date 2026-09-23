@@ -150,7 +150,7 @@ async function main() {
   check('B: files proxy tuj projekt → 404', fileB.status === 404, `HTTP ${fileB.status}`)
   // A ustvari render job; B ne sme prebrati
   const renderA = await api('/api/viz/render', { method: 'POST', cookie: cookieA, body: JSON.stringify({ projectId }) })
-  const renderAJson = (await renderA.json()) as { jobId: string }
+  const renderAJson = (await renderA.json()) as { jobId: string; status?: string }
   check('A: POST render svoj projekt (stub queued)', renderA.ok, `HTTP ${renderA.status}, status=${renderAJson.status ?? 'n/a'}`)
   const jobB = await api(`/api/viz/render/${renderAJson.jobId}`, { cookie: cookieB })
   check('B: GET tuj render job → 404', jobB.status === 404, `HTTP ${jobB.status}`)

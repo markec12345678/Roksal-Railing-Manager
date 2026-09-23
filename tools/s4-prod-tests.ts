@@ -114,7 +114,7 @@ async function main() {
     )
     if (!preview.ok) throw new Error(`preview → ${preview.status}: ${await preview.text()}`)
     const pj = (await preview.json()) as { metrics: Record<string, number | { dE: number }>; previewUrl: string }
-    const mm = pj.metrics as { letviceProduct: number; letviceResult: number; outsideMax: number; outsideMean: number; timeMs: number; chroma: { dE: number } }
+    const mm = pj.metrics as { letviceProduct: number; letviceResult: number; outsideMax: number; outsideMean: number; timeMs: number; chroma: { dE: number }; outsideMaxPreShadow?: number }
 
     // save
     const stamp = Date.now()
@@ -129,14 +129,14 @@ async function main() {
       stage_balcony_ms: latencies.stage.at(-3),
       stage_product_ms: latencies.stage.at(-2),
       stage_mask_ms: latencies.stage.at(-1),
-      preview_request_ms: Math.round(performance.now() - t0) && latencies.preview.at(-1),
+      preview_request_ms: latencies.preview.at(-1),
       pipeline_ms: mm.timeMs,
       letvice: `${mm.letviceProduct}=${mm.letviceResult}`,
       outside_max_diff: mm.outsideMax,
       outside_mean_diff: mm.outsideMean,
       deltaE: mm.chroma.dE,
       project_id: sj.projectId,
-      mask_bleed_detected: mm.outsideMaxPreShadow !== 0 ?? 'n/a',
+      mask_bleed_detected: (mm.outsideMaxPreShadow ?? 0) !== 0,
     })
     console.log(`  letvice ${mm.letviceProduct}=${mm.letviceResult} | ΔE=${mm.chroma.dE} | pipeline ${mm.timeMs}ms | save→${sj.projectId.slice(0, 8)}`)
   }

@@ -1078,3 +1078,29 @@ Stage Summary:
 - Qwen/GPU: NI implementiran (iskreno) — status queued → GPU forward ostaja; "PLANIRANO — čaka na GPU strežnik" v UI; POST /api/viz/render ne laže.
 - Znane omejitve: CDN rob lahko ~sekunde še vrača izbrisan javni blob URL (max-age=0 must-revalidate → konvergira v 404); staging ostanki po neshranjenih sejah čakajo na GC (max 12 MB/token); metadata v blob načinu brez transakcij (dokumentni model — za MVP dovolj); SQLite na Vercelu ostane demo (login, ostali portali — per-instanca /tmp kopija, izolirano od viz projektov).
 - Naslednje: GPU strežnik (Qwen po QWEN_DEPLOY_PLAN.md — 20.4B, ne teče v sandboxu), varianti B/C na GPU, 5 realnih primerov A/C primerjava; opcijsko: GC za staging, izvoz projekta (ZIP).
+
+---
+Task ID: runda S+4
+Agent: Z.ai Code (glavni orkestrator)
+Task: PRODUCTION HARDENING (spec GitHub issue #1 / S+4, 13 poglavij) — ownership, blob security, failure injection, concurrency, staging GC, idempotenca, multi-user produkcijski E2E, T6–T10 vizualni testi, perf percentili, regresija, poročilo.
+
+Work Log:
+- §0 DEJANSKO STANJE: HEAD 1a4c403 potrjen, 174/174 testov, delovno drevo čisto. Proti KODI ugotovljene P0 vrzeli: (1) NI ownership — listProjects/getProject/deleteProject/render delujejo čez TUJE projekte (authenticate preveri samo obstoj seje); (2) blob store javen — vse projektne datoteke HTTP 200 brez auth + CORS *; (3) updateRenderJob read→modify→overwrite race; (4) brez staging GC; (5) brez idempotence save (randomUUID vedno nov projekt).
+- §1 OWNERSHIP: schema ownerId (+idempotencyKey) na VizProject/VizRenderJob; vizOwner()/mayAccess(); *ForOwner repozitorij funkcije; vse /api/viz/* rute preverjajo lastništvo (tuj = 404, apikey = 403, zapuščina = samo ADMIN); 12 testov (Prisma + blob + pravi handlerji z Bearer žetoni). Commit 47764aa.
+- §4 CONCURRENCY: vizCreate() atomic create-if-not-exists (blob put brez allowOverwrite / fs 'wx'); transitionRenderJob() = lease zaklep (TTL 30 s + prevzem od mrtvega držalca) + državni stroj prehodov (terminal nespremenljiv, regresija zavrnjena, ponovljen update = duplicate no-op); render ruta preklopljena; 9 testov. Commit 0120b28.
+- §3 FAILURE INJECTION: save-flow.ts (izvleček POST save) — metadata = commit točka; 11 injekcijskih točk; pre-commit napaka → compensating cleanup (0 orphan/0 fake records), post-commit → projekt veljaven; 13 testov. + §6 idempotenca: idempotencyKey → isti projekt (4 testi rute). Commit e0758d7.
+- §5 GC: vizListWithTimes (uploadedAt/mtime); gcStaging (TTL 24 h = najnovejši uploadedAt tokena); /api/viz/gc fail-closed (CRON_SECRET Bearer ali ADMIN); vercel.json Vercel Cron dnevno 04:00 UTC; proxy javna pot samo za GC; 4 testi. Commit 8a87dc7.
+- §2 BLOB SECURITY: AUDIT na produkciji (HEAD 1a4c403) = vseh 7 datotek HTTP 200 BREZ auth, CORS * — NI namerna odločitev → proxy model: /api/viz/files/[...key] (seja+lastništvo, private cache-control, render-jobs zavrnjene), vizPut vrača /api/viz/files/… proxy poti, clientUrlForPath pretvori zapuščinske surove URL-je; rezidualno tveganje (znani surovi URL = 122-bit UUID) iskreno dokumentirano; 6 novih testov + 1 S+3 test posodobljen na nov kontrakt. Commit 34eeebc.
+- §7 MULTI-USER: nov /api/auth/register (MONTER, rate limit 5/uro/IP, scrypt, audit) — commit 639c394; tools/multiuser-e2e-prod.ts → PRODUKCIJA 21/21 PASS: registracija A+B, A celoten tok, B = 404 za GET/PATCH/DELETE/render/files/job, idempotenca, GC 401. Commit 480cc82.
+- DEPLOY: push 1a4c403..faca35b → dpl_CTK6DAE4fz8Aw8WAENXbKvPF68X9 READY.
+- §8/§9 VIZUALNI: tools/real-scenarios-s4.ts — T6 vogalna perspektiva (13→12; prvi poskus s sintetičnim shear kvadrom 13→5 = NErealen vhod, ponovljeno z realnim grid kvadrom; algoritem NI spremenjen), T7 sončno belo ozadje 13=13, T8 temni lok 13=13, T9 deblo 13=13, T10 ukrivljen kovani rob 13=13; vse ΔE=0.00, bleed=0; OCCLUSION dokaz: T5 94 % / T9 67 % rastlin/debła prebarvanih = ZNANA OMEJITEV (sliki s4_occlusion_T5/T9.jpg). Produkcija: T7/T10 13=13, T6 13=12, T8 13=11, T9 13=6 (staging ≤1600 px + JPEG = resolucijska omejitev, dokumentirano, algoritem nič). Commit faca35b.
+- §10 PERF (produkcija, tools/s4-prod-tests.ts): stage n=68 p50=1515/p95=2037/max=2554 ms; preview n=35 p50=2768/p95=4037/max=4611 ms; save n=20 p50=2232/max=2511 ms; list n=20 p50=508/max=999 ms; open n=20 p50=330/max=377 ms.
+- BRSKALNIŠKI E2E (agent-browser, produkcija): demo prijava → Vizualizacija → Preizkusni primer → preview 13=13, ΔE 0.00 → Shrani (b617a731) → reload → projekt v seznamu → odpri (restage prek proxy URL-jev!) → 13|13|nespremanjen|ΔE 0.00 → čiščenje vseh testnih projektov → projects: [] . Sliki: screenshots/s4-prod-e2e-preview.png, s4-prod-e2e-open-project.png.
+- §11 REGRESIJA: 222/222 (old 174 + 48 novih, 0 padel), tsc 0, eslint 0/0, Vercel build PASS, produkcijski E2E PASS.
+- §13 POROČILO: reports/S+4-REPORT.md — GO (vsaka trditev = koda + test + produkcija; znane omejitve iskreno).
+
+Stage Summary:
+- S+4 DOKAZANO: (1) dva različna uporabnika ne moreta dostopati do tujih projektov (pravi HTTP na produkciji, 21/21); (2) sistem preživi delne napake (11 injekcij → 0 orphan/0 fake/0 izguba), ponovljene requeste (idempotenca) in sočasne render-job posodobitve (zaklep + državni stroj).
+- Dodana vrednost: registracija uporabnikov (MONTER), staging GC z Vercel Cronom (brezplačno), proxy varnostni model za Blob (fotografije strank NISO več javne po URL-u iz API odgovorov).
+- Znane omejitve (dokazane, ne skrite): occlusion (objekti pred ograjo), resolucija staginga pri majhnih kvadrih, rezidualni javni blob store (znani URL), SQLite demo način na Vercelu.
+- Naslednje runde kandidati: GPU strežnik za Qwen (QWEN_DEPLOY_PLAN.md — PENDING GPU), izvoz projekta (ZIP), monterjeva navodila za masko (occlusion hint v UI), Rate limit na /api/viz/stage po uporabniku, CRON_SECRET env na Vercelu za produkcijski cron.
