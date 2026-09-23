@@ -913,3 +913,58 @@ Stage Summary:
   razširljiv (npr. JSON export, delitev na ekipo, material naročilo)
 - Naslednje runde: zapisnik → BOM predlog (podlaga → mozniki v materialni izračun),
   PDF izvoz zapisnika, RAL iz zapisnika v kalkulator/3D, ekipna delitev seznama
+
+---
+Task ID: 17 (runda R — nadaljevanje "monter na terenu": zapisnik → akcija)
+Agent: Main Orchestrator (Z.ai Code)
+Task: RAL barva na terenu + orientacijski montažni izračun + PDF zapisnik terenskega pregleda
+
+Work Log:
+- R-1 PRISMA: SiteSurvey.ralCode (String?, 7016|9005|9016|6005|8017); db push OK;
+  SCHEMA_VERSION → 'v2-portal-2026-09-r-survey-ral' (preventivno: čist restart
+  dev procesa — le EN proces, prejšnji pkill-ed)
+- R-2 API /api/surveys: ralCode v zod shemi (enum RAL_CODES, nullable)
+- R-3 UI site-survey-tab: nova sekcija "6 · RAL barva prahu (izbira stranke)" —
+  5 pills s barvnimi swatch (RAL_BARVE, iste kode/hex kot generator+Fence3dViewer);
+  pickRal: ponoven klik = odizbor, IN ISTI localStorage ključ 'roksal-ar-ral' kot
+  Fence3dViewer → monter izbere barvo na terenu, 3D/AR predogled takoj pokaže
+  ograjo v tej barvi (povezava zavisnost teren ↔ AR). Foto checklist → "7 ·".
+- R-4 UI: orientacijski montažni izračun — živo grid (segmenti = ceil(skupaj/
+  razpon), stebri = segmenti+1, kotni spoji po obliki ravno/L/U/krog) pod merami;
+  hint "končni izračun v Kalkulatorju"
+- R-5 PDF zapisnik (src/lib/survey-pdf.ts NOV + dinamični import v zavihku —
+  jspdf NE gre v začetni chunk): "Zapisnik o terenskem pregledu" — brand glava
+  (navy pas + amber logotip), meta (projekt/stranka/monter/status/datum montaže),
+  completion bar, OBJEKT IN PRITRDITEV (vključno s PRIOROČENI MOZNIKI po podlagi
+  — PODLAGA_MOZNIKI zdaj en sam vir resnice za UI seznam in PDF, RAL), MERE
+  (+ orientacijski izračun), OVIRE IN DOSTOP, FOTO kontrolni seznam (POSNETO/
+  MANJKA zeleno/rdeče), S SEBOJ PRINESTI (checkbox [  ], opozorila amber vrstice),
+  OPOMBE, podpisni polji monter/vodja, noga s številčenjem strani; ime datoteke
+  zapisnik-teren-{slug}-{datum}.pdf (brez šumnikov); gumb "PDF" v glavi status
+  kartice (aria-label="Izvozi PDF zapisnik")
+- FIX PDF: znaki ✓/✗/☐ niso v Roboto subsetu (latin-ext) → renderirali se PRAZNO
+  (pozazeno na prvi generirani PDF) → zamenjani z POSNETO/MANJKA (barvni) in
+  "[  ]" checkboxi; odstranjen neuporabljen groupLabels
+- E2E (agent-browser): demo login → Več → Terenski pregled ✓; klik RAL 6005 →
+  aria-pressed + localStorage 'roksal-ar-ral'='6005' ✓; mere 2400/8600/1100 →
+  grid "~4 segmenti · ~5 stebri · 0 kotni" ✓; oblika L → "1 (L)" ✓; podlaga
+  estrih → hidroizolacijsko opozorilo + KEMIJSKI mozniki v seznamu ✓; Shrani →
+  toast + DB (oblika=L, podlaga=estrih, ral=6005, mere, zakljuceno) ✓; PDF →
+  toast "PDF zapisnik shranjen" + PREVERJEN PDF na disku (2 strani, vse sekcije,
+  šumniki OK, checkboxi OK) ✓; RAL ostane izbran po polnem reloadu (server
+  podatki) ✓; mobilni 390px brez overflowa ✓; page errors PRAZNI, dev.log čist,
+  tsc + lint čista ✓
+- Push: ee64cf7 → origin/main (Vercel auto-deploy)
+
+Stage Summary:
+- Monter ima zdaj celoten "teren" cikel: zapisnik → izbira barve stranke
+  (sinhronizirana z 3D/AR) → orientacijski izračun montaže → EN KLIK uradni PDF
+  za vodjo/arhiv. PDF dokument je arhivsko-primeren (podpisna polja, foto
+  dokazljivost, mozniki-priporočilo).
+- Poučke za naslednje: Roboto subset NE vsebuje simbolov (✓✗☐⚠) — vedno ASCII/
+  besedne alternative v PDF-ih; dinamični import jsPDF dela chunk-split tudi za
+  prihodnje PDF generatorje.
+- Naslednje runde kandidati: BOM predlog iz zapisnika (podlaga → mozniki v
+  materialni izračun/kalkulator), RAL v kalkulator/ponudbo (arMetadata),
+  3D montažni pogled po segmentih, ekipna delitev zapisnika (delitev povezava),
+  USDZ validacija na iPhone, LiDAR iOS, FURS, eSlog XSD
