@@ -64,7 +64,7 @@ export function StepMask() {
             initialMaskUrl={mask?.url ?? null}
             polygonEnabled
             title="Označi staro ograjo"
-            hint="Poligon: tapni točke po obodu stare ograje (vsaj 3) in zapri poligon. Lahko tudi pobarvaš s čopičem; radirka popravi."
+            hint="Poligon: tapni točke po obodu stare ograje (vsaj 3) in zapri poligon. Lahko tudi pobarvaš z Dodaj (čopič); Odstrani (radirka) popravi."
             saveLabel={mask ? 'Posodobi masko' : 'Shrani masko'}
             saving={saving}
             onSave={(blob) => void saveMask(blob)}

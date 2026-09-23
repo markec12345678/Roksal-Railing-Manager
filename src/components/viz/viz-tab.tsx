@@ -104,12 +104,14 @@ function ProductHeader() {
       className="sticky top-0 z-30 border-b border-roksal-navy/10 bg-background/95 backdrop-blur"
       role="banner"
     >
-      <div className="mx-auto flex h-14 w-full max-w-lg items-center justify-between gap-2 px-4 sm:max-w-2xl">
+      {/* Spec §7: mobilna navigacija = Logo | Moji projekti | Nov projekt
+          (Montažna orodja = footer povezava na mobiteli, gumb od sm+). */}
+      <div className="mx-auto flex h-14 w-full max-w-lg items-center justify-between gap-1 px-3 sm:max-w-2xl sm:gap-2 sm:px-4">
         {/* LOGO */}
         <button
           type="button"
           onClick={() => setStep('home')}
-          className="flex items-center gap-2 rounded-md outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-amber"
+          className="flex shrink-0 items-center gap-2 rounded-md outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-amber"
           aria-label="Roksal — domača stran vizualizacije"
         >
           <span
@@ -123,24 +125,20 @@ function ProductHeader() {
           </span>
         </button>
 
-        <nav aria-label="Glavna navigacija" className="flex items-center gap-1">
-          {!inWizard && (
-            <Button
-              type="button"
-              variant="ghost"
-              className={`h-10 px-3 text-sm font-semibold ${
-                step === 'projects' ? 'text-roksal-navy' : 'text-muted-foreground hover:text-roksal-navy'
-              }`}
-              aria-current={step === 'projects' ? 'page' : undefined}
-              onClick={() => setStep('projects')}
-            >
-              <FolderOpen className="mr-1.5 h-4 w-4" aria-hidden="true" />
-              Moji projekti
-            </Button>
-          )}
+        <nav aria-label="Glavna navigacija" className="flex items-center gap-0.5 sm:gap-1">
           <Button
             type="button"
-            className="h-10 bg-roksal-amber px-4 text-sm font-bold text-white hover:bg-roksal-amber/90"
+            variant="ghost"
+            className="h-10 shrink-0 px-2.5 text-[13px] font-semibold text-muted-foreground hover:text-roksal-navy sm:px-3 sm:text-sm"
+            aria-current={step === 'projects' ? 'page' : undefined}
+            onClick={() => setStep('projects')}
+          >
+            <FolderOpen className="mr-1 h-4 w-4 sm:mr-1.5" aria-hidden="true" />
+            Moji projekti
+          </Button>
+          <Button
+            type="button"
+            className="h-10 shrink-0 bg-roksal-amber px-2.5 text-[13px] font-bold text-white hover:bg-roksal-amber/90 sm:px-4 sm:text-sm"
             onClick={() => {
               useVizStore.getState().resetAll()
               setStep(1)
@@ -152,7 +150,7 @@ function ProductHeader() {
             type="button"
             variant="ghost"
             size="icon"
-            className="h-10 w-10 shrink-0 text-muted-foreground hover:text-roksal-navy"
+            className="hidden h-10 w-10 shrink-0 text-muted-foreground hover:text-roksal-navy sm:inline-flex"
             aria-label="Montažna orodja (kalkulator, meritve, zaloga …)"
             title="Montažna orodja"
             onClick={openTools}
@@ -203,6 +201,9 @@ export async function openProjectById(id: string): Promise<void> {
         }
       }
       s.setPreview({ url: detail.previewPath, metrics })
+      // S+5 primerjava ograd: glavna ograja (A) je vedno prva varianta,
+      // da se pri primerjavi pokaže tudi A (balkon/maska/položaj enaka).
+      s.seedVariantA()
     }
     s.setStep(5)
     toast({ title: 'Projekt odprt ✓', description: detail.name })
@@ -287,17 +288,29 @@ export function VizTab() {
       <div className="flex-1">
         {step === 'home' && <ProductHome />}
         {step === 'projects' && <ProductProjects />}
-        {step === 1 && <StepBalcony />}
-        {step === 2 && <StepProduct />}
-        {step === 3 && <StepMask />}
-        {step === 4 && <StepCorners />}
-        {step === 5 && <StepResult />}
+        {inWizard && (
+          <div className="px-3 pb-2 pt-3 sm:px-4">
+            {step === 1 && <StepBalcony />}
+            {step === 2 && <StepProduct />}
+            {step === 3 && <StepMask />}
+            {step === 4 && <StepCorners />}
+            {step === 5 && <StepResult />}
+          </div>
+        )}
       </div>
 
       {/* Produktni footer — minimalen, drži se dna (sticky footer pravilo). */}
       <footer className="mt-auto border-t border-roksal-navy/10 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-4">
-        <div className="mx-auto flex w-full max-w-lg flex-col items-center gap-1 px-4 text-center sm:max-w-2xl">
-          <p className="text-[11px] text-muted-foreground">
+        <div className="mx-auto flex w-full max-w-lg flex-col items-center gap-2 px-4 text-center sm:max-w-2xl">
+          <button
+            type="button"
+            className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground hover:text-roksal-navy sm:hidden"
+            onClick={() => window.dispatchEvent(new CustomEvent('roksal:navigate', { detail: { tab: 'dashboard' } }))}
+          >
+            <Hammer className="h-3 w-3" aria-hidden="true" />
+            Montažna orodja (kalkulator, meritve, zaloga …)
+          </button>
+          <p className="text-[11px] leading-snug text-muted-foreground">
             Roksal — ograje po meri. Predogled je informativen; pri predmetih pred ograjo (rastline,
             stebri) lahko pride do odstopanj.
           </p>

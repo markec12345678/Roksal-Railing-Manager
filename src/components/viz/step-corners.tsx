@@ -330,6 +330,8 @@ export function StepCorners() {
         placement: { version: 2, corners, rotation: 0, scale: 1, productQuad },
       })
       setPreview({ url: res.previewUrl, metrics: res.metrics })
+      // S+5 primerjava ograd: glavna ograja (A) je vedno prva varianta.
+      useVizStore.getState().seedVariantA()
       setStep(5)
     } catch (e) {
       console.error('preview failed:', e)

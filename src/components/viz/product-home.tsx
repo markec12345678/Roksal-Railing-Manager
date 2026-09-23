@@ -136,9 +136,10 @@ export function ProductHome() {
             className="h-11 text-sm font-semibold text-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-amber"
             onClick={() => void loadDemoProject()}
             disabled={demoLoading}
+            title="Preizkusni primer uporabi demo fotografije — brez lastne fotografije"
           >
             {demoLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FlaskConical className="mr-2 h-4 w-4" aria-hidden="true" />}
-            Preizkusite na primeru (brez lastne fotografije)
+            Preizkusite na primeru
           </Button>
           <button
             type="button"
