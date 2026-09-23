@@ -1,0 +1,237 @@
+{
+  "schemaVersion": 1,
+  "round": "S+7 — ROKSAL PRODUCT ASSET LIBRARY + PROCEDURAL FENCE ENGINE",
+  "brand": "Roksal",
+  "manufacturer": "ROKSAL d.o.o.",
+  "manufacturerAddress": "Zgornje Bitnje 186, 4209 Žabnica, Slovenija",
+  "family": "WoodCore",
+  "material": "WPC lesni kompozit (bambusova vlakna + HDPE)",
+  "warranty": "15 let",
+  "officialSite": "https://roksal.com/",
+  "retrievedAt": "2026-09-23",
+  "retrievalMethod": "page_reader (roksal.com) + image-search (z-cdn OSS) + web-search; direkten HTTP iz peskovnika je blokiran (vzorec: evaluation/BLOCKED-SPACE-INFRA.md)",
+  "rightsPolicy": "Vse fotografije = rights: pending (avtor: Roksal d.o.o., dokazano dovoljenje NE obstaja). Uporaba SAMO interni development/evalvacija. Prepovedano: produkcijski katalog, trditve o komercialni uporabi. Glej evaluation/ROKSAL-ASSET-RIGHTS.md.",
+  "colorPalette": {
+    "note": "Imena barv potrjena iz uradnih virov (reference-wpc-deske + produktne strani + alt besedila). approxHex je IZMERJENA približka iz realnih fotografij (niso uradni Roksal/RAL podatki). Število odtenkov na profil je uradni podatek; točna kombinacija profil↔odtenek je vidna le v paletnih slikah (pravice pending) — zapisano kot evidence, ne kot trditev.",
+    "colors": [
+      { "id": "amazon-wood", "name": "Amazon Wood", "nameSl": "Amazon les", "approxHex": null, "evidence": "reference-wpc-deske: 'Ograja s terasnimi deskami Amazon Wood'; datoteka wpc-woodcore-romb-amazon-precna-ograja2.jpg" },
+      { "id": "ash-wood", "name": "Ash Wood", "nameSl": "Jesen", "approxHex": null, "evidence": "reference-wpc-deske: 'Pokončna ograja širine 10 cm v odtenku Ash Wood'; terasna-ash-precna-ograja-vir3.jpg" },
+      { "id": "burma-teak", "name": "Burma Teak", "nameSl": "Burma tik", "approxHex": null, "evidence": "reference-wpc-deske: 'Pokončna ograja ... profilom polna 100 v odtenku Burma Teak (Knezdol/Trotovnik, 2022)'; 'Terasa v odtenku Burma Teak'" },
+      { "id": "golden", "name": "Golden Teak", "nameSl": "Zlati tik", "approxHex": null, "evidence": "datoteka wpc-woodcore-romb-golden-precna-ograja-or1.jpg (točno uradno ime odtenka je v paletni sliki — pravice pending)" },
+      { "id": "rustic-oak", "name": "Rustic Oak", "nameSl": "Rustikni hrast", "approxHex": null, "evidence": "reference-wpc-deske: 'Fasada v odtenku Rustic Oak'; precna-okraja-rustik-oak2.jpg; večbarvni videz — odtenek variira med serijami" },
+      { "id": "rustic-walnut", "name": "Rustic Walnut", "nameSl": "Rustikni oreh", "approxHex": null, "evidence": "reference-wpc-deske: 'Terasa v odtenku Rustic Walnut (Pizzeria Olivia Trzin, 2026)'; večbarvni videz" },
+      { "id": "grey", "name": "Grey", "nameSl": "Siva", "approxHex": null, "evidence": "alt: 'WPC balkonska ograja v sivem odtenku'" },
+      { "id": "charcoal", "name": "Charcoal / Antracit", "nameSl": "Antracit", "approxHex": null, "evidence": "alt: 'WPC polna deska za ograjo v antracit odtenku'; obstoječi projekt roksal-catalog-data.ts: WOODCORE_CHARCOAL" },
+      { "id": "white", "name": "White", "nameSl": "Bela", "approxHex": null, "evidence": "alt: 'Dvoriščna ograja z WPC deskami v beli barvi'; 'Ročaj na zalogi samo še v WHITE odtenku'" }
+    ]
+  },
+  "profiles": [
+    {
+      "productId": "woodcore-romb-67",
+      "profile": "ROMB DESKA-67",
+      "category": "precna+pokoncna",
+      "orientation": ["horizontal", "vertical"],
+      "faceWidthMm": 67,
+      "thicknessMm": 26,
+      "standardLengthsMm": [5800],
+      "fixing": "RF (rostfrej) vijaki skozi L-kotnik na stebru v aluminijasto cev v sredini profila, pritrditev od zadnje strani",
+      "screwsVisible": false,
+      "specialFeatures": [
+        "OBVEZNA aluminijasta cev v sredini romba — montaža brez nje NI mogoča (deska se kupi samo z alu cevjo, vključena v ceno)",
+        "Skrito vijačenje je mogoče IZKLJUČNO zaradi alu cevi",
+        "Predvrtanje obvezno: v romb 4,2–4,5 mm (vijak 3,9), v aluminij 3,2 mm — večja luknja v kompozitu zaradi raztezanja",
+        "Zaključek: levi/desni čep ALI letvica",
+        "Pokončno: pri razmaku med deskami je vidna alu cev — vsako desko zapreti s čepi ali rešiti v detajlu"
+      ],
+      "maxPostSpacingMm": { "horizontal": 1450, "horizontalWithMidConnection": 1800 },
+      "maxRailSpacingMm": { "vertical": 1100 },
+      "recommendedGapMm": { "min": 2, "max": 30 },
+      "colorsCount": { "precna": 7, "pokoncna": 7 },
+      "colorsEvidence": "Barvna paleta odtenkov WPC desk za desko romb (slika, pravice pending) — 'sedem barv'",
+      "handle": { "available": false, "note": "Ročaj 92×45×5800 (notranja 55×30) se uporablja kot vrhnji zaključek; samostojna prodaja ni možna" },
+      "sourceUrls": [
+        "https://roksal.com/woodcore-wpc-deske/balkonske-ograje-in-dvoriscne-ograje/wpc-precna-ograja/",
+        "https://roksal.com/woodcore-wpc-deske/balkonske-ograje-in-dvoriscne-ograje/wpc-ograja-pokoncna/"
+      ],
+      "rights": "pending"
+    },
+    {
+      "productId": "woodcore-polna-128",
+      "profile": "POLNA DESKA-128",
+      "category": "precna+pokoncna",
+      "orientation": ["horizontal", "vertical"],
+      "faceWidthMm": 128,
+      "thicknessMm": 16.5,
+      "standardLengthsMm": [2200],
+      "fixing": "Vijačenje od spredaj — skozi desko v konstrukcijo (vidno na licu); vijak na sredini deske; predvrtanje obvezno (luknja 1 mm večja od vijaka)",
+      "screwsVisible": true,
+      "specialFeatures": [
+        "Polna deska za prečno IN pokončno ograjo",
+        "Desko se lahko zaokroži/obdeluje kot les",
+        "Priporočen razmak med deskami 0,5–3 cm; možno prekrivanje desk (montaža iz obeh strani)",
+        "V kovinsko cev: večja predvrtana luknja kot vijak (temperaturne razlike)"
+      ],
+      "maxPostSpacingMm": { "horizontal": 1100, "vertical": 1800, "verticalOver150Cm": 1500 },
+      "maxRailSpacingMm": { "vertical": 1000 },
+      "recommendedGapMm": { "min": 5, "max": 30 },
+      "colorsCount": { "precna": 6, "pokoncna": 6 },
+      "colorsEvidence": "Produktne strani: 'šest barv'; barvna stran omenja 5 odtenkov za 128 — razlika virov zapisana, ni skrita",
+      "handle": { "available": true, "dimensionMm": [92, 45, 5800], "innerMm": [55, 30], "screwsEveryMm": 500, "screwsVisible": true, "maxSpliceMm": 4000 },
+      "sourceUrls": [
+        "https://roksal.com/woodcore-wpc-deske/balkonske-ograje-in-dvoriscne-ograje/wpc-precna-ograja/",
+        "https://roksal.com/woodcore-wpc-deske/balkonske-ograje-in-dvoriscne-ograje/wpc-ograja-pokoncna/"
+      ],
+      "rights": "pending"
+    },
+    {
+      "productId": "woodcore-deska-150",
+      "profile": "DESKA-150 (terasna)",
+      "category": "precna",
+      "orientation": ["horizontal"],
+      "faceWidthMm": 150,
+      "thicknessMm": 25,
+      "standardLengthsMm": [4000, 2200],
+      "fixing": "Vijaki od spredaj — skozi desko v konstrukcijo (vidni na licu); vijak na sredini deske kjer je rebro; predvrtanje obvezno (luknja 1 mm večja)",
+      "screwsVisible": true,
+      "specialFeatures": [
+        "Terasna deska KLASIK (rebrasta: ena stran gosto rebro, druga široko) / RUSTIK (ena stran popolnoma gladka, druga gosto rebričena, izgled staran les)",
+        "3 površine / 7 barvnih odtenkov",
+        "Zaključni pokrovček na voljo"
+      ],
+      "maxPostSpacingMm": { "horizontal": 1330, "horizontalUpperBound": 1400 },
+      "maxRailSpacingMm": null,
+      "recommendedGapMm": { "min": 2, "max": 30 },
+      "colorsCount": { "precna": 7 },
+      "colorsEvidence": "Barvna paleta odtenkov WPC desk za desko 150 (slika, pravice pending) — 'sedmi barvnimi odtenki in tremi površinami'",
+      "handle": { "available": true, "dimensionMm": [92, 45, 5800], "innerMm": [55, 30], "screwsEveryMm": 500, "screwsVisible": true, "maxSpliceMm": 4000 },
+      "sourceUrls": [
+        "https://roksal.com/woodcore-wpc-deske/balkonske-ograje-in-dvoriscne-ograje/wpc-precna-ograja/"
+      ],
+      "rights": "pending"
+    },
+    {
+      "productId": "woodcore-polna-57-32",
+      "profile": "POLNA DESKA-57/32",
+      "category": "pokoncna",
+      "orientation": ["vertical"],
+      "faceWidthMm": 57,
+      "thicknessMm": 32,
+      "standardLengthsMm": [5800],
+      "fixing": "RF vijaki skozi cev iz zadnje strani — vijaki NISO vidni; vijak približno 2/3 globine profila; montirajo se na širino 57 mm ALI 32 mm (naleganje)",
+      "screwsVisible": false,
+      "specialFeatures": [
+        "Posebnost: luknja v kompozitnem materialu MANJŠA od vijaka, v konstrukciji VEČJA (raztezanje materiala)",
+        "Estetsko lepši večji razmak (FAQ) — za zasebnost priporočajo drug profil"
+      ],
+      "maxPostSpacingMm": { "vertical": 1500 },
+      "maxRailSpacingMm": { "vertical": 1000 },
+      "recommendedGapMm": { "min": 2, "max": 30 },
+      "colorsCount": { "pokoncna": 4 },
+      "colorsEvidence": "Produktne strani: 'štiri barve'; barvna stran: 'trenutno tri barve' — razlika zapisana (serija/čas)",
+      "handle": { "available": true, "dimensionMm": [92, 45, 5800], "innerMm": [55, 30], "screwsEveryMm": 500, "screwsVisible": true, "maxSpliceMm": 4000 },
+      "sourceUrls": [
+        "https://roksal.com/woodcore-wpc-deske/balkonske-ograje-in-dvoriscne-ograje/wpc-ograja-pokoncna/"
+      ],
+      "rights": "pending"
+    },
+    {
+      "productId": "woodcore-polna-100",
+      "profile": "POLNA DESKA-100",
+      "category": "pokoncna",
+      "orientation": ["vertical"],
+      "faceWidthMm": 100,
+      "thicknessMm": 12,
+      "standardLengthsMm": [5800],
+      "fixing": "Vijačenje iz lica — vijaki vidni; v WoodCore desko zvrtati 1 mm večjo luknjo od vijaka",
+      "screwsVisible": true,
+      "specialFeatures": [
+        "Primerne SAMO za pokončno ograjo (ne za teraso/prečno)",
+        "Deska se lahko zaokroži ali obdeluje kot les",
+        "Priporočen razmak med deskami 0,5–3 cm; možno prekrivanje desk (montaža iz obeh strani)"
+      ],
+      "maxPostSpacingMm": { "vertical": 1800, "verticalOver150Cm": 1500 },
+      "maxRailSpacingMm": { "vertical": 800 },
+      "recommendedGapMm": { "min": 5, "max": 30 },
+      "colorsCount": { "pokoncna": 8 },
+      "colorsEvidence": "Barvna paleta odtenkov WPC desk za desko polna 100 (slika, pravice pending) — 'osmimi barvami'; referenca Knezdol/Trotovnik: polna 100 v odtenku Burma Teak (2022)",
+      "handle": { "available": true, "dimensionMm": [92, 45, 5800], "innerMm": [55, 30], "screwsEveryMm": 500, "screwsVisible": true, "maxSpliceMm": 4000, "note": "Ročaj 95×45 na zalogi samo v WHITE; ostali v polnem profilu 92×45" },
+      "sourceUrls": [
+        "https://roksal.com/woodcore-wpc-deske/balkonske-ograje-in-dvoriscne-ograje/wpc-ograja-pokoncna/",
+        "https://roksal.com/reference-wpc-deske/"
+      ],
+      "rights": "pending"
+    },
+    {
+      "productId": "woodcore-polna-128-vertical",
+      "profile": "POLNA DESKA-128 (pokončno)",
+      "category": "pokoncna",
+      "orientation": ["vertical"],
+      "faceWidthMm": 128,
+      "thicknessMm": 16,
+      "standardLengthsMm": [2200],
+      "fixing": "Vijačenje iz lica — vijaki vidni; predvrtanje 1 mm večja luknja",
+      "screwsVisible": true,
+      "specialFeatures": [
+        "Isti fizični profil kot prečna varianta (16,5 mm debelina prečno / 16 mm pokončno po virih — toleranca zapisa)",
+        "Priporočen razmak 0,5–3 cm; možno prekrivanje"
+      ],
+      "maxPostSpacingMm": { "vertical": 1800, "verticalOver150Cm": 1500 },
+      "maxRailSpacingMm": { "vertical": 1000 },
+      "recommendedGapMm": { "min": 5, "max": 30 },
+      "colorsCount": { "pokoncna": 6 },
+      "colorsEvidence": "Barvna paleta 128 (slika, pravice pending)",
+      "handle": { "available": true, "dimensionMm": [92, 45, 5800], "innerMm": [55, 30], "screwsEveryMm": 500, "screwsVisible": true, "maxSpliceMm": 4000 },
+      "sourceUrls": [
+        "https://roksal.com/woodcore-wpc-deske/balkonske-ograje-in-dvoriscne-ograje/wpc-ograja-pokoncna/"
+      ],
+      "rights": "pending"
+    },
+    {
+      "productId": "woodcore-romb-67-vertical",
+      "profile": "ROMB DESKA-67 (pokončno)",
+      "category": "pokoncna",
+      "orientation": ["vertical"],
+      "faceWidthMm": 67,
+      "thicknessMm": 26,
+      "standardLengthsMm": [5800],
+      "fixing": "Kotnik na vodoravni cevi, pritrditev skozi kotnik v alu cev v sredini romba od zadaj — vijak NI viden",
+      "screwsVisible": false,
+      "specialFeatures": [
+        "Obvezna alu cev (kot prečna varianta)",
+        "Pokončno s razmaki: vidna alu cev — vsaka deska zaprta s čepi ali detajl konstrukcije"
+      ],
+      "maxPostSpacingMm": { "vertical": 1450 },
+      "maxRailSpacingMm": { "vertical": 1100 },
+      "recommendedGapMm": { "min": 2, "max": 30 },
+      "colorsCount": { "pokoncna": 7 },
+      "colorsEvidence": "Barvna paleta romb (slika, pravice pending)",
+      "handle": { "available": false },
+      "sourceUrls": [
+        "https://roksal.com/woodcore-wpc-deske/balkonske-ograje-in-dvoriscne-ograje/wpc-ograja-pokoncna/"
+      ],
+      "rights": "pending"
+    }
+  ],
+  "accessories": [
+    { "id": "rocaj-poln-92x45", "name": "Ročaj za ograjo – poln profil", "dimensionMm": [92, 45, 5800], "innerMm": [55, 30], "note": "Vijačenje vidno, razmak vijakov 50 cm, od zgoraj navzdol skozi ročaj v nosilno cev; zvrtati 1 mm večjo luknjo; pri spajanju max 4 m; v kotih 1 mm razmak, na sredini dilatacijska reža; samostojna prodaja ni možna" },
+    { "id": "cep-romb-levo-desno", "name": "Levi/desni čep za zaključek romb profila" },
+    { "id": "letvica-zakljucna", "name": "Zaključna letvica (opcija prečne romb ograje)" },
+    { "id": "pokrovcek-terasna", "name": "Zaključni pokrovček za terasno desko" },
+    { "id": "stebricek-alu", "name": "Aluminijasti steber (prašno barvan)", "note": "Kotnik levo+desno za romb; spodnji del za nevidno pritrjevanje" }
+  ],
+  "generalMountingRules": [
+    "Predvrtanje je obvezno pri VSEH profilih (luknja 1 mm večja od vijaka)",
+    "Minimalen odmik vijaka od roba reza: 3 cm",
+    "Konstrukcija na plošči (balkon/dvorišče): maksimalen odmik vijaka od roba reza 15 cm",
+    "Bočna montaža na ploč (balkon): maksimalen odmik vijaka od roba reza 10 cm",
+    "Obstoječi varjeni deli na stebrih se odstranijo (niso primerni za vijačenje)",
+    "Deske se spajajo na dolžino OBVEZNO na stebru",
+    "Stebri morajo biti v ravnini — deska se prilagodi ravnini konstrukcije",
+    "Priporočen razmak med deskami 0,2–3 cm (FAQ); možno prekrivanje desk — montaža iz obeh strani",
+    "WPC barvni odtenek s leti posvetli 5–10 % (sekundaren vir: montaze-mlakar.si)"
+  ],
+  "assetLibrary": {
+    "note": "Fotografski asseti so shranjeni v evaluation/roksal-assets/ (interna uporaba, rights pending). PRODUCT/PROFILE/MATERIAL/REFERENCE so ločeni koncepti (spec §6) — ne mešati. asset_quality: insufficient pomeni: ni čistega vira za 'uradno' produktno sliko.",
+    "assets": []
+  }
+}
