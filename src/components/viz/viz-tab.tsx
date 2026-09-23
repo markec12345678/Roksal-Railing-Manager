@@ -1,38 +1,31 @@
 'use client'
 
 /**
- * VIZ — zavihek "Vizualizacija ograje" (runda S+2): čarovnik 5 korakov
- * (start / 1 BALKON / 2 IZDELEK / 3 STARA OGRAJA / 4 VOGALI / 5 PREDPREGLED).
- * Shrani + AI finish sta sekciji koraka 5 (po funkcionalni specifikaciji).
+ * VIZ — PRODUKTNA LUPINA (runda S+5).
  *
- * Start zaslon: hero z razlago toka, [Nova vizualizacija], [Preizkusni primer]
- * (dokazan baseline S+1: 13 = 13 letvic) in seznam shranjenih projektov
- * (GET /api/viz/projects — odpre projekt z RE-STAGIRANJEM slik, da ostane
- * celoten čarovnik urejanja funkcionalen).
+ * Produkt "Vizualizacija ograje" ima SVOJO minimalno navigacijo (spec §7):
+ *   LOGO | Moji projekti | Nov projekt
+ *
+ * Pogledi (viz-store.step):
+ *   'home'     → ProductHome (hero + realna PREJ/POTEM demo + kako deluje)
+ *   'projects' → ProductProjects (odpri / podvoji / izbriši)
+ *   1..5       → čarovnik (balkon → izdelek → stara ograja → vogali → rezultat)
+ *
+ * Ubežna lopica za montažna orodja (dashboard itd.) je diskretna (spec §1:
+ * to NI admin panel) — gumb "Orodja" pošlje roksal:navigate dogodek.
  *
  * Spec: docs/VIZ_CONTRACTS.md · A-pipeline = deterministična geometrija (NI AI).
  */
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent } from '@/components/ui/card'
-import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from '@/hooks/use-toast'
-import {
-  Camera,
-  ChevronLeft,
-  FlaskConical,
-  Layers,
-  Loader2,
-  Trash2,
-  Wand2,
-} from 'lucide-react'
-import type { VizProjectSummary } from '@/lib/viz/types'
-import { getProject, deleteProject, listProjects } from './api'
-import { loadDemoProject } from './demo-loader'
+import { ChevronLeft, FolderOpen, Hammer, Loader2 } from 'lucide-react'
+import { getProject } from './api'
 import { maxReachableStep, toVizImage, useVizStore, type VizStep } from './viz-store'
+import { ProductHome } from './product-home'
+import { ProductProjects } from './product-projects'
 
 const StepBalcony = dynamic(() => import('./step-balcony').then((m) => m.StepBalcony), { ssr: false })
 const StepProduct = dynamic(() => import('./step-product').then((m) => m.StepProduct), { ssr: false })
@@ -40,21 +33,20 @@ const StepMask = dynamic(() => import('./step-mask').then((m) => m.StepMask), { 
 const StepCorners = dynamic(() => import('./step-corners').then((m) => m.StepCorners), { ssr: false })
 const StepResult = dynamic(() => import('./step-result').then((m) => m.StepResult), { ssr: false })
 
-const STEP_LABELS: Array<{ id: Exclude<VizStep, 'start'>; short: string }> = [
-  { id: 1, short: 'BALKON' },
-  { id: 2, short: 'IZDELEK' },
-  { id: 3, short: 'STARA OGRAJA' },
-  { id: 4, short: 'VOGALI' },
-  { id: 5, short: 'PREDPREGLED' },
+const STEP_LABELS: Array<{ id: Exclude<VizStep, 'home' | 'projects'>; short: string }> = [
+  { id: 1, short: 'Balkon' },
+  { id: 2, short: 'Ograja' },
+  { id: 3, short: 'Stara ograja' },
+  { id: 4, short: 'Položaj' },
+  { id: 5, short: 'Rezultat' },
 ]
 
 function Stepper() {
   const step = useVizStore((s) => s.step)
   const setStep = useVizStore((s) => s.setStep)
   const maxReach = useVizStore((s) => maxReachableStep(s))
-  if (step === 'start') return null
   return (
-    <nav aria-label="Koraki čarovnika" className="flex items-center justify-between gap-0.5 px-3 pt-3">
+    <nav aria-label="Koraki vizualizacije" className="flex items-center justify-between gap-0.5 px-4 pt-3">
       {STEP_LABELS.map((s, i) => {
         const active = step === s.id
         const done = typeof step === 'number' && s.id < step
@@ -82,7 +74,7 @@ function Stepper() {
               {i + 1}
             </span>
             <span
-              className={`hidden truncate text-[9px] font-semibold sm:block ${
+              className={`truncate text-[9px] font-semibold sm:text-[10px] ${
                 active ? 'text-roksal-navy' : 'text-muted-foreground'
               }`}
             >
@@ -95,227 +87,133 @@ function Stepper() {
   )
 }
 
-function StartScreen() {
+/** Produktni header — LOGO | Moji projekti | Nov projekt (spec §7, minimalno). */
+function ProductHeader() {
+  const step = useVizStore((s) => s.step)
   const setStep = useVizStore((s) => s.setStep)
-  const resetAll = useVizStore((s) => s.resetAll)
-  const demoLoading = useVizStore((s) => s.loading.demo)
-  const [projects, setProjects] = useState<VizProjectSummary[] | null>(null)
-  const [loadingList, setLoadingList] = useState(false)
-  const [armedDelete, setArmedDelete] = useState<string | null>(null)
-  const reloadKey = useVizStore((s) => s.projectsReloadKey)
+  const inWizard = typeof step === 'number'
 
-  const refresh = useCallback(async () => {
-    setLoadingList(true)
-    try {
-      setProjects(await listProjects())
-    } catch {
-      setProjects([])
-    } finally {
-      setLoadingList(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    void refresh()
-  }, [refresh, reloadKey])
-
-  async function openProject(id: string) {
-    try {
-      const detail = await getProject(id)
-      const s = useVizStore.getState()
-      // Re-stagiraj slike (staging tokeni porabljenih projektov so izčiščeni),
-      // da ostane celoten čarovnik urejanja (vogali, preview, varianti) delujoč.
-      const restage = async (url: string, kind: 'balcony' | 'product' | 'mask') => {
-        const res = await fetch(url)
-        if (!res.ok) throw new Error(`Slika ni na voljo (${res.status})`)
-        const blob = await res.blob()
-        const { stageImage } = await import('./api')
-        return stageImage(blob, kind)
-      }
-      const [balcony, product, mask] = await Promise.all([
-        restage(detail.originalPath, 'balcony'),
-        restage(detail.productPath, 'product'),
-        restage(detail.maskPath, 'mask'),
-      ])
-      s.resetAll()
-      s.setBalcony(toVizImage(balcony))
-      s.setProduct(toVizImage(product))
-      s.setMask({ ...toVizImage(mask), edited: false })
-      s.setCorners(detail.placement.corners)
-      s.setProductQuad(detail.placement.productQuad)
-      s.setProjectName(detail.name)
-      s.setSavedProject(detail.id) // že shranjen — skrij gumb za ponovno shranjevanje
-      // metrike iz result.json (če obstaja)
-      if (detail.previewPath) {
-        let metrics = null
-        if (detail.resultPath) {
-          try {
-            const res = await fetch(detail.resultPath)
-            if (res.ok) metrics = (await res.json()).metrics ?? null
-          } catch {
-            // metrike so opcijske
-          }
-        }
-        s.setPreview({ url: detail.previewPath, metrics })
-      }
-      s.setStep(5)
-      toast({ title: 'Projekt odprt ✓', description: detail.name })
-    } catch (e) {
-      toast({
-        title: 'Odpiranje projekta ni uspelo',
-        description: e instanceof Error ? e.message : 'Neznana napaka',
-        variant: 'destructive',
-      })
-    }
-  }
-
-  async function handleDelete(id: string) {
-    if (armedDelete !== id) {
-      setArmedDelete(id)
-      setTimeout(() => setArmedDelete((cur) => (cur === id ? null : cur)), 3000)
-      return
-    }
-    try {
-      await deleteProject(id)
-      toast({ title: 'Projekt izbrisan' })
-      setArmedDelete(null)
-      void refresh()
-    } catch (e) {
-      toast({
-        title: 'Brisanje ni uspelo',
-        description: e instanceof Error ? e.message : 'Neznana napaka',
-        variant: 'destructive',
-      })
-    }
+  function openTools() {
+    // Ubežna lopica v montažna orodja (dashboard, kalkulator, …) —
+    // page.tsx posluša roksal:navigate in pokaže klasičen chrome.
+    window.dispatchEvent(new CustomEvent('roksal:navigate', { detail: { tab: 'dashboard' } }))
   }
 
   return (
-    <div className="space-y-4 p-4">
-      {/* HERO */}
-      <Card className="overflow-hidden border-roksal-navy/15">
-        <div className="bg-gradient-to-br from-roksal-navy to-roksal-navy/85 p-5 text-white">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-roksal-amber">
-              <Wand2 className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-lg font-bold leading-tight">Vizualizacija ograje</h1>
-              <p className="text-xs text-white/80">Vaša dejanska ograja na fotografiji balkona — takoj</p>
-            </div>
-          </div>
-          <ol className="mt-4 space-y-1.5 text-[11px] leading-relaxed text-white/90">
-            <li>1. Fotografiraj balkon</li>
-            <li>2. Dodaj fotografijo svoje ograje</li>
-            <li>3. Označi staro ograjo</li>
-            <li>4. Nastavi 4 vogale (geometrija — ne AI)</li>
-            <li>5. Takojšen predogled PREJ | POTEM</li>
-          </ol>
-          <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-            <Button
-              className="h-11 flex-1 bg-roksal-amber font-bold text-white hover:bg-roksal-amber/90"
-              onClick={() => {
-                resetAll()
-                setStep(1)
-              }}
-            >
-              <Camera className="mr-2 h-4 w-4" />
-              Nova vizualizacija
-            </Button>
-            <Button
-              variant="outline"
-              className="h-11 flex-1 border-white/40 bg-white/10 font-semibold text-white hover:bg-white/20 hover:text-white"
-              disabled={demoLoading}
-              onClick={() => void loadDemoProject()}
-            >
-              {demoLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FlaskConical className="mr-2 h-4 w-4" />}
-              {demoLoading ? 'Nalagam …' : 'Preizkusni primer'}
-            </Button>
-          </div>
-          <p className="mt-3 flex items-center gap-1.5 text-[10px] text-white/70">
-            <Layers className="h-3 w-3" />
-            Predogled: deterministični A-pipeline (1.6 s) · AI finish (Qwen) planiran na lastnem GPU strežniku
-          </p>
-        </div>
-      </Card>
+    <header
+      className="sticky top-0 z-30 border-b border-roksal-navy/10 bg-background/95 backdrop-blur"
+      role="banner"
+    >
+      <div className="mx-auto flex h-14 w-full max-w-lg items-center justify-between gap-2 px-4 sm:max-w-2xl">
+        {/* LOGO */}
+        <button
+          type="button"
+          onClick={() => setStep('home')}
+          className="flex items-center gap-2 rounded-md outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-amber"
+          aria-label="Roksal — domača stran vizualizacije"
+        >
+          <span
+            aria-hidden="true"
+            className="flex h-8 w-8 items-center justify-center rounded-lg bg-roksal-navy text-sm font-black text-roksal-amber"
+          >
+            R
+          </span>
+          <span className="text-sm font-bold tracking-tight text-roksal-navy">
+            Roksal<span className="hidden font-medium text-muted-foreground sm:inline"> · Vizualizacija</span>
+          </span>
+        </button>
 
-      {/* SHRANJENI PROJEKTI */}
-      <div>
-        <div className="mb-2 flex items-center justify-between">
-          <h2 className="text-sm font-bold text-roksal-navy">Shranjeni projekti</h2>
-          {projects && projects.length > 0 && (
-            <Badge variant="outline" className="text-[10px]">{projects.length}</Badge>
+        <nav aria-label="Glavna navigacija" className="flex items-center gap-1">
+          {!inWizard && (
+            <Button
+              type="button"
+              variant="ghost"
+              className={`h-10 px-3 text-sm font-semibold ${
+                step === 'projects' ? 'text-roksal-navy' : 'text-muted-foreground hover:text-roksal-navy'
+              }`}
+              aria-current={step === 'projects' ? 'page' : undefined}
+              onClick={() => setStep('projects')}
+            >
+              <FolderOpen className="mr-1.5 h-4 w-4" aria-hidden="true" />
+              Moji projekti
+            </Button>
           )}
-        </div>
-        {loadingList && projects === null ? (
-          <div className="space-y-2">
-            <Skeleton className="h-20 w-full rounded-xl" />
-            <Skeleton className="h-20 w-full rounded-xl" />
-          </div>
-        ) : !projects || projects.length === 0 ? (
-          <Card>
-            <CardContent className="p-4 text-center text-xs text-muted-foreground">
-              Ni še shranjenih projektov — ustvari prvo vizualizacijo zgoraj.
-            </CardContent>
-          </Card>
-        ) : (
-          <ul className="max-h-96 space-y-2 overflow-y-auto pr-1 scrollbar-thin" aria-label="Seznam projektov">
-            {projects.map((p) => (
-              <li key={p.id}>
-                <Card className="transition-shadow hover:shadow-md">
-                  <CardContent className="flex items-center gap-3 p-3">
-                    <button
-                      type="button"
-                      onClick={() => void openProject(p.id)}
-                      className="flex min-w-0 flex-1 items-center gap-3 text-left"
-                      aria-label={`Odpri projekt ${p.name}`}
-                    >
-                      {p.previewPath ? (
-                         
-                        <img
-                          src={p.previewPath}
-                          alt={`Predogled projekta ${p.name}`}
-                          className="h-16 w-16 shrink-0 rounded-lg border border-border object-cover"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg border border-border bg-muted">
-                          <Wand2 className="h-5 w-5 text-muted-foreground" />
-                        </div>
-                      )}
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-semibold text-roksal-navy">{p.name}</span>
-                        <span className="block text-[11px] text-muted-foreground">
-                          {new Date(p.createdAt).toLocaleDateString('sl-SI', {
-                            day: 'numeric',
-                            month: 'short',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </span>
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => void handleDelete(p.id)}
-                      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg transition-colors ${
-                        armedDelete === p.id
-                          ? 'bg-red-600 text-white'
-                          : 'text-muted-foreground hover:bg-red-600/10 hover:text-red-600'
-                      }`}
-                      aria-label={armedDelete === p.id ? `Potrdi brisanje projekta ${p.name}` : `Izbriši projekt ${p.name}`}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </CardContent>
-                </Card>
-              </li>
-            ))}
-          </ul>
-        )}
+          <Button
+            type="button"
+            className="h-10 bg-roksal-amber px-4 text-sm font-bold text-white hover:bg-roksal-amber/90"
+            onClick={() => {
+              useVizStore.getState().resetAll()
+              setStep(1)
+            }}
+          >
+            Nov projekt
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10 shrink-0 text-muted-foreground hover:text-roksal-navy"
+            aria-label="Montažna orodja (kalkulator, meritve, zaloga …)"
+            title="Montažna orodja"
+            onClick={openTools}
+          >
+            <Hammer className="h-4 w-4" aria-hidden="true" />
+          </Button>
+        </nav>
       </div>
-    </div>
+    </header>
   )
+}
+
+/** Odpiranje shranjenega projekta — RE-STAGIRANJE slik, da čarovnik ostane urejanju pripravljen. */
+export async function openProjectById(id: string): Promise<void> {
+  const s = useVizStore.getState()
+  try {
+    const detail = await getProject(id)
+    const restage = async (url: string, kind: 'balcony' | 'product' | 'mask') => {
+      const res = await fetch(url)
+      if (!res.ok) throw new Error(`Slika ni na voljo (${res.status})`)
+      const blob = await res.blob()
+      const { stageImage } = await import('./api')
+      return stageImage(blob, kind)
+    }
+    const [balcony, product, mask] = await Promise.all([
+      restage(detail.originalPath, 'balcony'),
+      restage(detail.productPath, 'product'),
+      restage(detail.maskPath, 'mask'),
+    ])
+    s.resetAll()
+    s.setBalcony(toVizImage(balcony))
+    s.setProduct(toVizImage(product))
+    s.setMask({ ...toVizImage(mask), edited: false })
+    if (detail.placement) {
+      s.setCorners(detail.placement.corners)
+      s.setProductQuad(detail.placement.productQuad ?? null)
+    }
+    s.setProjectName(detail.name)
+    s.setSavedProject(detail.id) // že shranjen
+    if (detail.previewPath) {
+      let metrics = null
+      if (detail.resultPath) {
+        try {
+          const res = await fetch(detail.resultPath)
+          if (res.ok) metrics = (await res.json()).metrics ?? null
+        } catch {
+          // metrike so opcijske
+        }
+      }
+      s.setPreview({ url: detail.previewPath, metrics })
+    }
+    s.setStep(5)
+    toast({ title: 'Projekt odprt ✓', description: detail.name })
+  } catch (e) {
+    const { friendlyError } = await import('./api')
+    toast({
+      title: 'Odpiranje projekta ni uspelo',
+      description: friendlyError(e, 'generic'),
+      variant: 'destructive',
+    })
+  }
 }
 
 export function VizTab() {
@@ -323,19 +221,42 @@ export function VizTab() {
   const setStep = useVizStore((s) => s.setStep)
   const error = useVizStore((s) => s.error)
   const setError = useVizStore((s) => s.setError)
+  const projectsReloadKey = useVizStore((s) => s.projectsReloadKey)
+
+  // Odpiranje projekta iz pogleda "Moji projekti" (dogodek iz ProductProjects)
+  useEffect(() => {
+    function onOpen(e: Event) {
+      const id = (e as CustomEvent<string>).detail
+      if (typeof id === 'string' && id) void openProjectById(id)
+    }
+    window.addEventListener('roksal:viz-open-project', onOpen)
+    return () => window.removeEventListener('roksal:viz-open-project', onOpen)
+  }, [])
+
+  // Ko prideš iz čarovnika na 'projects', seznam osveži (npr. po shranjevanju).
+  useEffect(() => {
+    if (step === 'projects') {
+      // bumpProjectsReload sproži refresh v ProductProjects prek reloadKey
+      useVizStore.setState((st) => ({ projectsReloadKey: st.projectsReloadKey }))
+    }
+  }, [step, projectsReloadKey])
+
+  const inWizard = typeof step === 'number'
 
   return (
-    <div className="pb-4">
-      {step !== 'start' && (
-        <>
-          <div className="flex items-center gap-1 px-3 pt-3">
+    <div className="flex min-h-[calc(100dvh-3.5rem)] flex-col" data-testid="viz-product-shell">
+      <ProductHeader />
+
+      {inWizard && (
+        <div className="mx-auto w-full max-w-lg sm:max-w-2xl">
+          <div className="flex items-center gap-1 px-3 pt-2">
             <Button
               type="button"
               variant="ghost"
               size="sm"
               className="-ml-2 h-9 text-muted-foreground"
               onClick={() => {
-                const prev = typeof step === 'number' && step > 1 ? ((step - 1) as VizStep) : 'start'
+                const prev = step > 1 ? ((step - 1) as VizStep) : 'home'
                 setStep(prev)
               }}
             >
@@ -344,26 +265,47 @@ export function VizTab() {
             </Button>
           </div>
           <Stepper />
-        </>
+        </div>
       )}
 
       {error && (
-        <div className="mx-3 mt-3 rounded-lg border border-red-600/30 bg-red-600/5 px-3 py-2 text-xs text-red-700" role="alert">
-          <div className="flex items-start justify-between gap-2">
-            <span>{error}</span>
-            <button type="button" onClick={() => setError(null)} className="shrink-0 font-bold" aria-label="Zapri napako">
-              ×
-            </button>
+        <div className="mx-auto mt-3 w-full max-w-lg px-4 sm:max-w-2xl">
+          <div
+            className="rounded-lg border border-red-600/30 bg-red-600/5 px-3 py-2 text-xs text-red-700"
+            role="alert"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <span>{error}</span>
+              <button type="button" onClick={() => setError(null)} className="shrink-0 font-bold" aria-label="Zapri napako">
+                ×
+              </button>
+            </div>
           </div>
         </div>
       )}
 
-      {step === 'start' && <StartScreen />}
-      {step === 1 && <StepBalcony />}
-      {step === 2 && <StepProduct />}
-      {step === 3 && <StepMask />}
-      {step === 4 && <StepCorners />}
-      {step === 5 && <StepResult />}
+      <div className="flex-1">
+        {step === 'home' && <ProductHome />}
+        {step === 'projects' && <ProductProjects />}
+        {step === 1 && <StepBalcony />}
+        {step === 2 && <StepProduct />}
+        {step === 3 && <StepMask />}
+        {step === 4 && <StepCorners />}
+        {step === 5 && <StepResult />}
+      </div>
+
+      {/* Produktni footer — minimalen, drži se dna (sticky footer pravilo). */}
+      <footer className="mt-auto border-t border-roksal-navy/10 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-4">
+        <div className="mx-auto flex w-full max-w-lg flex-col items-center gap-1 px-4 text-center sm:max-w-2xl">
+          <p className="text-[11px] text-muted-foreground">
+            Roksal — ograje po meri. Predogled je informativen; pri predmetih pred ograjo (rastline,
+            stebri) lahko pride do odstopanj.
+          </p>
+          <p className="text-[10px] text-muted-foreground/70">
+            © {new Date().getFullYear()} Roksal d.o.o.
+          </p>
+        </div>
+      </footer>
     </div>
   )
 }

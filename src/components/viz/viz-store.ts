@@ -1,12 +1,13 @@
 'use client'
 
 /**
- * VIZ — zustand store za čarovnika "Vizualizacija ograje" (runda S+2).
+ * VIZ — zustand store za produktno izkušnjo "Vizualizacija ograje"
+ * (runda S+2, produktna lupina runda S+5).
  *
  * Opombe glede pogodbe (docs/VIZ_CONTRACTS.md):
- *  - step je 'start' | 1..5. Koraka 6 (Shrani) in 7 (AI finish) sta po
- *    funkcionalni specifikaciji SEKCIJI znotraj prikaza koraka 5 — korakov 6/7
- *    ni kot ločenih zaslonov; prikazovalnik (stepper) kljub temu kaže 7 pikic.
+ *  - step je 'home' | 'projects' | 1..5 (S+5: navigacijska pogleda + čarovnik).
+ *    Koraka 6 (Shrani) in 7 (AI finish) sta po funkcionalni specifikaciji
+ *    SEKCIJI znotraj prikaza koraka 5 — korakov 6/7 ni kot ločenih zaslonov.
  *  - NIČ se ne persista v localStorage — projekti živijo na strežniku
  *    (/api/viz/projects), staging pa v /api/viz/stage sejah (tokeni).
  */
@@ -14,8 +15,11 @@
 import { create } from 'zustand'
 import type { Corners, PipelineMetrics, StageResult } from '@/lib/viz/types'
 
-/** Korak čarovnika: 'start' ali 1..5 (6/7 sta sekciji koraka 5). */
-export type VizStep = 'start' | 1 | 2 | 3 | 4 | 5
+/**
+ * Pogled produkta: 'home' (domača stran), 'projects' (Moji projekti) ali
+ * 1..5 (čarovnik nove vizualizacije; 6/7 sta sekciji koraka 5).
+ */
+export type VizStep = 'home' | 'projects' | 1 | 2 | 3 | 4 | 5
 
 /** Staged slika (odgovor /api/viz/stage). w/h = 0 pomeni "ni znano" (npr. iz projekta) —
  *  komponente takrat merijo prek naturalWidth/naturalHeight. */
@@ -111,14 +115,14 @@ const initialData = {
 }
 
 export const useVizStore = create<VizState>((set) => ({
-  step: 'start',
+  step: 'home',
   ...initialData,
   loading: { staging: false, previewing: false, demo: false, saving: false },
   error: null,
   projectsReloadKey: 0,
 
   setStep: (s) => set({ step: s }),
-  resetAll: () => set({ step: 'start', ...initialData, error: null }),
+  resetAll: () => set({ step: 'home', ...initialData, error: null }),
   setBalcony: (img) => set({ balcony: img, preview: null, savedProjectId: null, corners: null }),
   setProduct: (img) => set({ product: img, preview: null }),
   setProductMask: (img) => set({ productMask: img, preview: null }),
@@ -178,6 +182,14 @@ export const useVizStore = create<VizState>((set) => ({
       return { variants }
     }),
 }))
+
+/**
+ * Ali je korak del čarovnika (1..5) — nasprotuje navigacijskim pogledom
+ * 'home' (domača stran) in 'projects' (Moji projekti).
+ */
+export function isWizardStep(step: VizStep): step is 1 | 2 | 3 | 4 | 5 {
+  return typeof step === 'number'
+}
 
 /** Najvišji korak, do katerega je uporabnik dejansko prišel (iz podatkov) —
  *  določa, katere pike v prikazovalniku so klikabilne. */
