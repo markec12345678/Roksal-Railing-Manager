@@ -1,0 +1,541 @@
+{
+  "productId": "roksal.woodcore.polna-57-32",
+  "catalogProductId": "woodcore-polna-57-32",
+  "profile": "POLNA DESKA-57/32",
+  "orientation": "vertical",
+  "faceWidthMm": 57,
+  "gapMm": 25,
+  "pitchMm": 82,
+  "fenceWidthMm": 1591,
+  "fenceHeightMm": 700,
+  "fieldHeightMm": 700,
+  "fieldSpanMm": 1591,
+  "boardCount": 20,
+  "boards": [
+    {
+      "index": 0,
+      "startMm": 0,
+      "visibleMm": 57,
+      "cut": false
+    },
+    {
+      "index": 1,
+      "startMm": 82,
+      "visibleMm": 57,
+      "cut": false
+    },
+    {
+      "index": 2,
+      "startMm": 164,
+      "visibleMm": 57,
+      "cut": false
+    },
+    {
+      "index": 3,
+      "startMm": 246,
+      "visibleMm": 57,
+      "cut": false
+    },
+    {
+      "index": 4,
+      "startMm": 328,
+      "visibleMm": 57,
+      "cut": false
+    },
+    {
+      "index": 5,
+      "startMm": 410,
+      "visibleMm": 57,
+      "cut": false
+    },
+    {
+      "index": 6,
+      "startMm": 492,
+      "visibleMm": 57,
+      "cut": false
+    },
+    {
+      "index": 7,
+      "startMm": 574,
+      "visibleMm": 57,
+      "cut": false
+    },
+    {
+      "index": 8,
+      "startMm": 656,
+      "visibleMm": 57,
+      "cut": false
+    },
+    {
+      "index": 9,
+      "startMm": 738,
+      "visibleMm": 57,
+      "cut": false
+    },
+    {
+      "index": 10,
+      "startMm": 820,
+      "visibleMm": 57,
+      "cut": false
+    },
+    {
+      "index": 11,
+      "startMm": 902,
+      "visibleMm": 57,
+      "cut": false
+    },
+    {
+      "index": 12,
+      "startMm": 984,
+      "visibleMm": 57,
+      "cut": false
+    },
+    {
+      "index": 13,
+      "startMm": 1066,
+      "visibleMm": 57,
+      "cut": false
+    },
+    {
+      "index": 14,
+      "startMm": 1148,
+      "visibleMm": 57,
+      "cut": false
+    },
+    {
+      "index": 15,
+      "startMm": 1230,
+      "visibleMm": 57,
+      "cut": false
+    },
+    {
+      "index": 16,
+      "startMm": 1312,
+      "visibleMm": 57,
+      "cut": false
+    },
+    {
+      "index": 17,
+      "startMm": 1394,
+      "visibleMm": 57,
+      "cut": false
+    },
+    {
+      "index": 18,
+      "startMm": 1476,
+      "visibleMm": 57,
+      "cut": false
+    },
+    {
+      "index": 19,
+      "startMm": 1558,
+      "visibleMm": 33,
+      "cut": true
+    }
+  ],
+  "posts": [
+    {
+      "index": 0,
+      "centerMm": 0,
+      "widthMm": 60,
+      "role": "terminal"
+    },
+    {
+      "index": 1,
+      "centerMm": 796,
+      "widthMm": 60,
+      "role": "intermediate"
+    },
+    {
+      "index": 2,
+      "centerMm": 1591,
+      "widthMm": 60,
+      "role": "terminal"
+    }
+  ],
+  "rails": [
+    {
+      "index": 0,
+      "centerMm": 0,
+      "crossSectionMm": null,
+      "role": "terminal"
+    },
+    {
+      "index": 1,
+      "centerMm": 700,
+      "crossSectionMm": null,
+      "role": "terminal"
+    }
+  ],
+  "caps": [],
+  "fasteners": [
+    {
+      "type": "board",
+      "atMm": [
+        28.5,
+        0
+      ],
+      "visible": false,
+      "ref": "board-0@rail-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        28.5,
+        700
+      ],
+      "visible": false,
+      "ref": "board-0@rail-1"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        110.5,
+        0
+      ],
+      "visible": false,
+      "ref": "board-1@rail-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        110.5,
+        700
+      ],
+      "visible": false,
+      "ref": "board-1@rail-1"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        192.5,
+        0
+      ],
+      "visible": false,
+      "ref": "board-2@rail-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        192.5,
+        700
+      ],
+      "visible": false,
+      "ref": "board-2@rail-1"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        274.5,
+        0
+      ],
+      "visible": false,
+      "ref": "board-3@rail-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        274.5,
+        700
+      ],
+      "visible": false,
+      "ref": "board-3@rail-1"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        356.5,
+        0
+      ],
+      "visible": false,
+      "ref": "board-4@rail-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        356.5,
+        700
+      ],
+      "visible": false,
+      "ref": "board-4@rail-1"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        438.5,
+        0
+      ],
+      "visible": false,
+      "ref": "board-5@rail-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        438.5,
+        700
+      ],
+      "visible": false,
+      "ref": "board-5@rail-1"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        520.5,
+        0
+      ],
+      "visible": false,
+      "ref": "board-6@rail-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        520.5,
+        700
+      ],
+      "visible": false,
+      "ref": "board-6@rail-1"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        602.5,
+        0
+      ],
+      "visible": false,
+      "ref": "board-7@rail-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        602.5,
+        700
+      ],
+      "visible": false,
+      "ref": "board-7@rail-1"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        684.5,
+        0
+      ],
+      "visible": false,
+      "ref": "board-8@rail-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        684.5,
+        700
+      ],
+      "visible": false,
+      "ref": "board-8@rail-1"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        766.5,
+        0
+      ],
+      "visible": false,
+      "ref": "board-9@rail-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        766.5,
+        700
+      ],
+      "visible": false,
+      "ref": "board-9@rail-1"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        848.5,
+        0
+      ],
+      "visible": false,
+      "ref": "board-10@rail-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        848.5,
+        700
+      ],
+      "visible": false,
+      "ref": "board-10@rail-1"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        930.5,
+        0
+      ],
+      "visible": false,
+      "ref": "board-11@rail-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        930.5,
+        700
+      ],
+      "visible": false,
+      "ref": "board-11@rail-1"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        1012.5,
+        0
+      ],
+      "visible": false,
+      "ref": "board-12@rail-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        1012.5,
+        700
+      ],
+      "visible": false,
+      "ref": "board-12@rail-1"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        1094.5,
+        0
+      ],
+      "visible": false,
+      "ref": "board-13@rail-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        1094.5,
+        700
+      ],
+      "visible": false,
+      "ref": "board-13@rail-1"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        1176.5,
+        0
+      ],
+      "visible": false,
+      "ref": "board-14@rail-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        1176.5,
+        700
+      ],
+      "visible": false,
+      "ref": "board-14@rail-1"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        1258.5,
+        0
+      ],
+      "visible": false,
+      "ref": "board-15@rail-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        1258.5,
+        700
+      ],
+      "visible": false,
+      "ref": "board-15@rail-1"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        1340.5,
+        0
+      ],
+      "visible": false,
+      "ref": "board-16@rail-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        1340.5,
+        700
+      ],
+      "visible": false,
+      "ref": "board-16@rail-1"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        1422.5,
+        0
+      ],
+      "visible": false,
+      "ref": "board-17@rail-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        1422.5,
+        700
+      ],
+      "visible": false,
+      "ref": "board-17@rail-1"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        1504.5,
+        0
+      ],
+      "visible": false,
+      "ref": "board-18@rail-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        1504.5,
+        700
+      ],
+      "visible": false,
+      "ref": "board-18@rail-1"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        1574.5,
+        0
+      ],
+      "visible": false,
+      "ref": "board-19@rail-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        1574.5,
+        700
+      ],
+      "visible": false,
+      "ref": "board-19@rail-1"
+    }
+  ],
+  "handlePresent": false,
+  "handleHeightMm": 0,
+  "bounds": {
+    "widthMm": 1591,
+    "heightMm": 700
+  },
+  "warnings": [],
+  "definitionId": "roksal.woodcore.polna-57-32"
+}

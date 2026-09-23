@@ -51,6 +51,8 @@ export interface PipelineMetrics {
   /** illumination field strength actually applied (0..1 modulation) */
   harmonizeStrength: number
   alphaCoverage: number
+  /** S+8: true = alfa iz geometry-derived productMask (svetli izdelki P0) */
+  productMaskUsed: boolean
 }
 
 export interface PipelineOptions {

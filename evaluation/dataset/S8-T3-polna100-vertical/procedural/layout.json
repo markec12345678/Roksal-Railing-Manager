@@ -1,0 +1,367 @@
+{
+  "productId": "roksal.woodcore.polna-100",
+  "catalogProductId": "woodcore-polna-100",
+  "profile": "POLNA DESKA-100",
+  "orientation": "vertical",
+  "faceWidthMm": 100,
+  "gapMm": 20,
+  "pitchMm": 120,
+  "fenceWidthMm": 1477,
+  "fenceHeightMm": 650,
+  "fieldHeightMm": 650,
+  "fieldSpanMm": 1477,
+  "boardCount": 13,
+  "boards": [
+    {
+      "index": 0,
+      "startMm": 0,
+      "visibleMm": 100,
+      "cut": false
+    },
+    {
+      "index": 1,
+      "startMm": 120,
+      "visibleMm": 100,
+      "cut": false
+    },
+    {
+      "index": 2,
+      "startMm": 240,
+      "visibleMm": 100,
+      "cut": false
+    },
+    {
+      "index": 3,
+      "startMm": 360,
+      "visibleMm": 100,
+      "cut": false
+    },
+    {
+      "index": 4,
+      "startMm": 480,
+      "visibleMm": 100,
+      "cut": false
+    },
+    {
+      "index": 5,
+      "startMm": 600,
+      "visibleMm": 100,
+      "cut": false
+    },
+    {
+      "index": 6,
+      "startMm": 720,
+      "visibleMm": 100,
+      "cut": false
+    },
+    {
+      "index": 7,
+      "startMm": 840,
+      "visibleMm": 100,
+      "cut": false
+    },
+    {
+      "index": 8,
+      "startMm": 960,
+      "visibleMm": 100,
+      "cut": false
+    },
+    {
+      "index": 9,
+      "startMm": 1080,
+      "visibleMm": 100,
+      "cut": false
+    },
+    {
+      "index": 10,
+      "startMm": 1200,
+      "visibleMm": 100,
+      "cut": false
+    },
+    {
+      "index": 11,
+      "startMm": 1320,
+      "visibleMm": 100,
+      "cut": false
+    },
+    {
+      "index": 12,
+      "startMm": 1440,
+      "visibleMm": 37,
+      "cut": true
+    }
+  ],
+  "posts": [
+    {
+      "index": 0,
+      "centerMm": 0,
+      "widthMm": 60,
+      "role": "terminal"
+    },
+    {
+      "index": 1,
+      "centerMm": 1477,
+      "widthMm": 60,
+      "role": "terminal"
+    }
+  ],
+  "rails": [
+    {
+      "index": 0,
+      "centerMm": 0,
+      "crossSectionMm": null,
+      "role": "terminal"
+    },
+    {
+      "index": 1,
+      "centerMm": 650,
+      "crossSectionMm": null,
+      "role": "terminal"
+    }
+  ],
+  "caps": [],
+  "fasteners": [
+    {
+      "type": "board",
+      "atMm": [
+        50,
+        0
+      ],
+      "visible": true,
+      "ref": "board-0@rail-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        50,
+        650
+      ],
+      "visible": true,
+      "ref": "board-0@rail-1"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        170,
+        0
+      ],
+      "visible": true,
+      "ref": "board-1@rail-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        170,
+        650
+      ],
+      "visible": true,
+      "ref": "board-1@rail-1"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        290,
+        0
+      ],
+      "visible": true,
+      "ref": "board-2@rail-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        290,
+        650
+      ],
+      "visible": true,
+      "ref": "board-2@rail-1"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        410,
+        0
+      ],
+      "visible": true,
+      "ref": "board-3@rail-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        410,
+        650
+      ],
+      "visible": true,
+      "ref": "board-3@rail-1"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        530,
+        0
+      ],
+      "visible": true,
+      "ref": "board-4@rail-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        530,
+        650
+      ],
+      "visible": true,
+      "ref": "board-4@rail-1"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        650,
+        0
+      ],
+      "visible": true,
+      "ref": "board-5@rail-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        650,
+        650
+      ],
+      "visible": true,
+      "ref": "board-5@rail-1"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        770,
+        0
+      ],
+      "visible": true,
+      "ref": "board-6@rail-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        770,
+        650
+      ],
+      "visible": true,
+      "ref": "board-6@rail-1"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        890,
+        0
+      ],
+      "visible": true,
+      "ref": "board-7@rail-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        890,
+        650
+      ],
+      "visible": true,
+      "ref": "board-7@rail-1"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        1010,
+        0
+      ],
+      "visible": true,
+      "ref": "board-8@rail-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        1010,
+        650
+      ],
+      "visible": true,
+      "ref": "board-8@rail-1"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        1130,
+        0
+      ],
+      "visible": true,
+      "ref": "board-9@rail-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        1130,
+        650
+      ],
+      "visible": true,
+      "ref": "board-9@rail-1"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        1250,
+        0
+      ],
+      "visible": true,
+      "ref": "board-10@rail-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        1250,
+        650
+      ],
+      "visible": true,
+      "ref": "board-10@rail-1"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        1370,
+        0
+      ],
+      "visible": true,
+      "ref": "board-11@rail-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        1370,
+        650
+      ],
+      "visible": true,
+      "ref": "board-11@rail-1"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        1458.5,
+        0
+      ],
+      "visible": true,
+      "ref": "board-12@rail-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        1458.5,
+        650
+      ],
+      "visible": true,
+      "ref": "board-12@rail-1"
+    }
+  ],
+  "handlePresent": false,
+  "handleHeightMm": 0,
+  "bounds": {
+    "widthMm": 1477,
+    "heightMm": 650
+  },
+  "warnings": [],
+  "definitionId": "roksal.woodcore.polna-100"
+}

@@ -47,6 +47,31 @@ import {
 const CUTOUT_GRAY_THRESHOLD = 115
 const CUTOUT_MIN_COMPONENT = 4000
 
+/**
+ * S+8 §11/§12: exact alpha iz geometry-derived maske (FenceLayout/mask-editor).
+ * Globalni prag gray<115 NE sme svetlih izdelkov (WHITE, svetli lesni odtenki)
+ * narediti prosojnih — maska opisuje KJE JE produkt, ne KAKŠNE BARVE je.
+ * Brez maske pipeline ostane bajtno identičen prejšnji izvedbi.
+ */
+function maskToCutout(
+  mask: ImageBuffer,
+  w: number,
+  h: number,
+): { alpha: Float32Array; w: number; h: number; bbox: { x0: number; y0: number; x1: number; y1: number } | null } {
+  const n = w * h
+  let alpha: Float32Array
+  if (mask.w !== w || mask.h !== h) {
+    const plane = new Float32Array(mask.w * mask.h)
+    for (let i = 0, p = 0; i < mask.w * mask.h; i++, p += 4) plane[i] = mask.data[p] / 255
+    alpha = resizeNearestF32(plane, mask.w, mask.h, w, h)
+  } else {
+    alpha = new Float32Array(n)
+    for (let i = 0, p = 0; i < n; i++, p += 4) alpha[i] = mask.data[p] / 255
+  }
+  const bbox = bboxAbove(alpha, w, h, 0.5)
+  return { alpha, w, h, bbox }
+}
+
 /** Polygons in pixel coords of an image. */
 type Poly = Array<[number, number]>
 
@@ -203,8 +228,14 @@ export function runPipeline(input: PipelineInput): PipelineResult {
 
   // ── 2. izrez produkta ────────────────────────────────────────────────────
   let t0 = now()
-  const cut = cutoutProduct(product, input.productQuadPx ?? null)
+  // S+8: če je podan productMask (exact alpha iz FenceLayout/renderFenceMask
+  // ali mask-editorja), je TO točen vir alfe — ne prag svetlosti. Brez maske:
+  // enako kot prej (bajtno identično — obstoječi determinism test ostaja).
+  const cut = input.productMask
+    ? maskToCutout(input.productMask, product.w, product.h)
+    : cutoutProduct(product, input.productQuadPx ?? null)
   steps['cutout'] = now() - t0
+  const productMaskUsed = input.productMask !== null
   // samodejni productQuad = tight bbox izreza (frontalni pravokotnik)
   const productQuadPx: Corners =
     input.productQuadPx ??
@@ -470,6 +501,7 @@ export function runPipeline(input: PipelineInput): PipelineResult {
     },
     harmonizeStrength,
     alphaCoverage: Math.round((alphaN / nOrig) * 10000) / 10000,
+    productMaskUsed,
   }
 
   return { preview: { data: comp, w: W, h: H }, metrics }

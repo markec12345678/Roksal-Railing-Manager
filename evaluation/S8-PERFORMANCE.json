@@ -1,0 +1,42 @@
+{
+  "round": "S+8 §24",
+  "environment": "sandbox 2 CPU / 4.1 GB RAM / brez GPU",
+  "scene": "1024×1024, produkt 540×380 px",
+  "catalogLookup": {
+    "runs": 5000,
+    "p50": 0.001,
+    "p95": 0.009,
+    "mean": 0.003,
+    "unit": "ms"
+  },
+  "layoutGeneration": {
+    "runs": 5000,
+    "p50": 0.003,
+    "p95": 0.013,
+    "mean": 0.008,
+    "unit": "ms"
+  },
+  "maskGeneration": {
+    "runs": 200,
+    "p50": 0.261,
+    "p95": 0.577,
+    "mean": 0.341,
+    "unit": "ms"
+  },
+  "proceduralRender": {
+    "runs": 200,
+    "p50": 47.976,
+    "p95": 50.33,
+    "mean": 48.268,
+    "unit": "ms"
+  },
+  "aPreviewEndToEnd": {
+    "runs": 10,
+    "p50": 915.404,
+    "p95": 1373.192,
+    "mean": 996.622,
+    "unit": "ms"
+  },
+  "instantPreviewCapable": true,
+  "gpuDependency": "BREZ — proceduralna geometrija je čista CPU aritmetika"
+}

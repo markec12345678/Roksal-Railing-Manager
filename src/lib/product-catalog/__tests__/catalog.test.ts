@@ -24,7 +24,7 @@ describe('roksal catalog (data-driven)', () => {
     expect(c.family).toBe('WoodCore')
   })
 
-  it('vsebuje vseh 7 zahtevanih profilov (spec §2)', () => {
+  it('vsebuje vseh 8 zahtevanih profilov (spec §2 + S+8 KUBO)', () => {
     const ids = listProfiles().map((p) => p.productId)
     // PREČNE: ROMB 67, POLNA 128, DESKA 150
     expect(ids).toContain('woodcore-romb-67')
@@ -35,7 +35,9 @@ describe('roksal catalog (data-driven)', () => {
     expect(ids).toContain('woodcore-polna-100')
     expect(ids).toContain('woodcore-polna-128-vertical')
     expect(ids).toContain('woodcore-romb-67-vertical')
-    expect(ids.length).toBe(7)
+    // S+8 §2: KUBO 80/42 — potrjen proti uradnemu viru (fasadna stran)
+    expect(ids).toContain('woodcore-kubo-80-42')
+    expect(ids.length).toBe(8)
   })
 
   it('vsak profil ima obvezne dimenzije, pritrditev, razmake in vire', () => {

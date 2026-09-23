@@ -1,4 +1,13 @@
 // Roksal Field - API: AI Material Takeoff
+// ⚠️ S+8 §19 STATUS: DEPRECATED ZA GEOMETRIJO — EKSPERIMENTALNO.
+// ---------------------------------------------------------------------------
+// Ta ruta uporablja VLM, ki UGIBA dimenzije/stebre/palice/RAL — po S+8 NI
+// (in ne sme biti) source-of-truth za geometrijo, BOM ali render. Rezultat
+// je NEZAVEZUJOČa ocena; deterministična geometrija pride IZKLJUČNO iz
+// Product SDK (src/lib/product-sdk, katalog) + merilnega toka.
+// Zahteva po odstranitvi VLM iz merilne kritične poti + zamenjava z
+// determinističnim Measurement/CV SDK: GitHub issue #2 (naslednja runda).
+//
 // Photo → AI (VLM) → Material Takeoff → Quote
 // V2 roadmap: Photo → AI segmentacija → Površina → Material → Ponudba
 import { NextResponse } from 'next/server'

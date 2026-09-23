@@ -1,0 +1,279 @@
+{
+  "productId": "roksal.woodcore.polna-128",
+  "catalogProductId": "woodcore-polna-128",
+  "profile": "POLNA DESKA-128",
+  "orientation": "horizontal",
+  "faceWidthMm": 128,
+  "gapMm": 20,
+  "pitchMm": 148,
+  "fenceWidthMm": 2046,
+  "fenceHeightMm": 900,
+  "fieldHeightMm": 900,
+  "fieldSpanMm": 900,
+  "boardCount": 7,
+  "boards": [
+    {
+      "index": 0,
+      "startMm": 0,
+      "visibleMm": 128,
+      "cut": false
+    },
+    {
+      "index": 1,
+      "startMm": 148,
+      "visibleMm": 128,
+      "cut": false
+    },
+    {
+      "index": 2,
+      "startMm": 296,
+      "visibleMm": 128,
+      "cut": false
+    },
+    {
+      "index": 3,
+      "startMm": 444,
+      "visibleMm": 128,
+      "cut": false
+    },
+    {
+      "index": 4,
+      "startMm": 592,
+      "visibleMm": 128,
+      "cut": false
+    },
+    {
+      "index": 5,
+      "startMm": 740,
+      "visibleMm": 128,
+      "cut": false
+    },
+    {
+      "index": 6,
+      "startMm": 888,
+      "visibleMm": 12,
+      "cut": true
+    }
+  ],
+  "posts": [
+    {
+      "index": 0,
+      "centerMm": 0,
+      "widthMm": 60,
+      "role": "terminal"
+    },
+    {
+      "index": 1,
+      "centerMm": 1023,
+      "widthMm": 60,
+      "role": "intermediate"
+    },
+    {
+      "index": 2,
+      "centerMm": 2046,
+      "widthMm": 60,
+      "role": "terminal"
+    }
+  ],
+  "rails": [],
+  "caps": [],
+  "fasteners": [
+    {
+      "type": "board",
+      "atMm": [
+        0,
+        836
+      ],
+      "visible": true,
+      "ref": "board-0@post-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        1023,
+        836
+      ],
+      "visible": true,
+      "ref": "board-0@post-1"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        2046,
+        836
+      ],
+      "visible": true,
+      "ref": "board-0@post-2"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        0,
+        688
+      ],
+      "visible": true,
+      "ref": "board-1@post-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        1023,
+        688
+      ],
+      "visible": true,
+      "ref": "board-1@post-1"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        2046,
+        688
+      ],
+      "visible": true,
+      "ref": "board-1@post-2"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        0,
+        540
+      ],
+      "visible": true,
+      "ref": "board-2@post-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        1023,
+        540
+      ],
+      "visible": true,
+      "ref": "board-2@post-1"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        2046,
+        540
+      ],
+      "visible": true,
+      "ref": "board-2@post-2"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        0,
+        392
+      ],
+      "visible": true,
+      "ref": "board-3@post-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        1023,
+        392
+      ],
+      "visible": true,
+      "ref": "board-3@post-1"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        2046,
+        392
+      ],
+      "visible": true,
+      "ref": "board-3@post-2"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        0,
+        244
+      ],
+      "visible": true,
+      "ref": "board-4@post-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        1023,
+        244
+      ],
+      "visible": true,
+      "ref": "board-4@post-1"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        2046,
+        244
+      ],
+      "visible": true,
+      "ref": "board-4@post-2"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        0,
+        96
+      ],
+      "visible": true,
+      "ref": "board-5@post-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        1023,
+        96
+      ],
+      "visible": true,
+      "ref": "board-5@post-1"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        2046,
+        96
+      ],
+      "visible": true,
+      "ref": "board-5@post-2"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        0,
+        6
+      ],
+      "visible": true,
+      "ref": "board-6@post-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        1023,
+        6
+      ],
+      "visible": true,
+      "ref": "board-6@post-1"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        2046,
+        6
+      ],
+      "visible": true,
+      "ref": "board-6@post-2"
+    }
+  ],
+  "handlePresent": false,
+  "handleHeightMm": 0,
+  "bounds": {
+    "widthMm": 2046,
+    "heightMm": 900
+  },
+  "warnings": [],
+  "definitionId": "roksal.woodcore.polna-128"
+}

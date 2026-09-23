@@ -1,0 +1,131 @@
+{
+  "productId": "roksal.woodcore.kubo-80-42",
+  "catalogProductId": "woodcore-kubo-80-42",
+  "profile": "KUBO DESKA-80/42",
+  "orientation": "vertical",
+  "faceWidthMm": 80,
+  "gapMm": 30,
+  "pitchMm": 110,
+  "fenceWidthMm": 1591,
+  "fenceHeightMm": 700,
+  "fieldHeightMm": 700,
+  "fieldSpanMm": 1591,
+  "boardCount": 15,
+  "boards": [
+    {
+      "index": 0,
+      "startMm": 0,
+      "visibleMm": 80,
+      "cut": false
+    },
+    {
+      "index": 1,
+      "startMm": 110,
+      "visibleMm": 80,
+      "cut": false
+    },
+    {
+      "index": 2,
+      "startMm": 220,
+      "visibleMm": 80,
+      "cut": false
+    },
+    {
+      "index": 3,
+      "startMm": 330,
+      "visibleMm": 80,
+      "cut": false
+    },
+    {
+      "index": 4,
+      "startMm": 440,
+      "visibleMm": 80,
+      "cut": false
+    },
+    {
+      "index": 5,
+      "startMm": 550,
+      "visibleMm": 80,
+      "cut": false
+    },
+    {
+      "index": 6,
+      "startMm": 660,
+      "visibleMm": 80,
+      "cut": false
+    },
+    {
+      "index": 7,
+      "startMm": 770,
+      "visibleMm": 80,
+      "cut": false
+    },
+    {
+      "index": 8,
+      "startMm": 880,
+      "visibleMm": 80,
+      "cut": false
+    },
+    {
+      "index": 9,
+      "startMm": 990,
+      "visibleMm": 80,
+      "cut": false
+    },
+    {
+      "index": 10,
+      "startMm": 1100,
+      "visibleMm": 80,
+      "cut": false
+    },
+    {
+      "index": 11,
+      "startMm": 1210,
+      "visibleMm": 80,
+      "cut": false
+    },
+    {
+      "index": 12,
+      "startMm": 1320,
+      "visibleMm": 80,
+      "cut": false
+    },
+    {
+      "index": 13,
+      "startMm": 1430,
+      "visibleMm": 80,
+      "cut": false
+    },
+    {
+      "index": 14,
+      "startMm": 1540,
+      "visibleMm": 51,
+      "cut": true
+    }
+  ],
+  "posts": [],
+  "rails": [
+    {
+      "index": 0,
+      "centerMm": 0,
+      "crossSectionMm": null,
+      "role": "terminal"
+    },
+    {
+      "index": 1,
+      "centerMm": 700,
+      "crossSectionMm": null,
+      "role": "terminal"
+    }
+  ],
+  "caps": [],
+  "fasteners": [],
+  "handlePresent": false,
+  "handleHeightMm": 0,
+  "bounds": {
+    "widthMm": 1591,
+    "heightMm": 700
+  },
+  "warnings": [],
+  "definitionId": "roksal.woodcore.kubo-80-42"
+}

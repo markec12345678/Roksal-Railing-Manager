@@ -1,5 +1,11 @@
 // Roksal — AI analiza fotografije ograje (VLM prek z-ai-web-dev-sdk)
 // ---------------------------------------------------------------------------
+// ⚠️ S+8 §19 STATUS: EKSPERIMENTALNO SUGESTIJSKO ORODJE — NI PRODUKCIJSKI
+// VIR GEOMETRIJE. Rezultat je SAMO predlog uporabniku (tip/barva/mere);
+// uporabnik ga izrecno POTRDI. Ta ruta NIKOLI ne hrani geometrije v
+// deterministični Product SDK / A-pipeline / BOM source-of-truth.
+// Polna deterministična zamenjava (CV + ročna meritev): GitHub issue #2.
+//
 // "Kamera naj analizira čimbolj lahkо": monter zajame en sam kader obstoječe
 // ograje, ta ruta pa z vizualnim modelom oceni:
 //   · tip ograje (WPC vodoravno / pokončno, Inox, Steklo, Alu, Drugo)

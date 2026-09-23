@@ -1,0 +1,15 @@
+{
+  "round": "S+8",
+  "scene": "S6-T1-ravna-antracit (čista scena, S+7 izbor — brez stock-žigov)",
+  "pipeline": "product-sdk (katalog → layout → render+mask) → A-pipeline homografija",
+  "determinism": " isti vhod → isti izhod (testi + renderFence byte-identical)",
+  "tests": [
+    "S8-T1-romb67-horizontal",
+    "S8-T2-polna128-horizontal",
+    "S8-T3-polna100-vertical",
+    "S8-T4-polna-57-32-vertical",
+    "S8-T5-kubo-80-42-vertical"
+  ],
+  "identity_ok": true,
+  "color_matrix_ok": true
+}

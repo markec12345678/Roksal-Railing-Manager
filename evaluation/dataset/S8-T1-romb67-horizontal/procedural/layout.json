@@ -1,0 +1,420 @@
+{
+  "productId": "roksal.woodcore.romb-67",
+  "catalogProductId": "woodcore-romb-67",
+  "profile": "ROMB DESKA-67",
+  "orientation": "horizontal",
+  "faceWidthMm": 67,
+  "gapMm": 20,
+  "pitchMm": 87,
+  "fenceWidthMm": 2046,
+  "fenceHeightMm": 900,
+  "fieldHeightMm": 900,
+  "fieldSpanMm": 900,
+  "boardCount": 11,
+  "boards": [
+    {
+      "index": 0,
+      "startMm": 0,
+      "visibleMm": 67,
+      "cut": false
+    },
+    {
+      "index": 1,
+      "startMm": 87,
+      "visibleMm": 67,
+      "cut": false
+    },
+    {
+      "index": 2,
+      "startMm": 174,
+      "visibleMm": 67,
+      "cut": false
+    },
+    {
+      "index": 3,
+      "startMm": 261,
+      "visibleMm": 67,
+      "cut": false
+    },
+    {
+      "index": 4,
+      "startMm": 348,
+      "visibleMm": 67,
+      "cut": false
+    },
+    {
+      "index": 5,
+      "startMm": 435,
+      "visibleMm": 67,
+      "cut": false
+    },
+    {
+      "index": 6,
+      "startMm": 522,
+      "visibleMm": 67,
+      "cut": false
+    },
+    {
+      "index": 7,
+      "startMm": 609,
+      "visibleMm": 67,
+      "cut": false
+    },
+    {
+      "index": 8,
+      "startMm": 696,
+      "visibleMm": 67,
+      "cut": false
+    },
+    {
+      "index": 9,
+      "startMm": 783,
+      "visibleMm": 67,
+      "cut": false
+    },
+    {
+      "index": 10,
+      "startMm": 870,
+      "visibleMm": 30,
+      "cut": true
+    }
+  ],
+  "posts": [
+    {
+      "index": 0,
+      "centerMm": 0,
+      "widthMm": 60,
+      "role": "terminal"
+    },
+    {
+      "index": 1,
+      "centerMm": 1023,
+      "widthMm": 60,
+      "role": "intermediate"
+    },
+    {
+      "index": 2,
+      "centerMm": 2046,
+      "widthMm": 60,
+      "role": "terminal"
+    }
+  ],
+  "rails": [],
+  "caps": [
+    {
+      "side": "left",
+      "kind": "cep-romb-levo"
+    },
+    {
+      "side": "right",
+      "kind": "cep-romb-desno"
+    }
+  ],
+  "fasteners": [
+    {
+      "type": "board",
+      "atMm": [
+        0,
+        866.5
+      ],
+      "visible": false,
+      "ref": "board-0@post-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        1023,
+        866.5
+      ],
+      "visible": false,
+      "ref": "board-0@post-1"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        2046,
+        866.5
+      ],
+      "visible": false,
+      "ref": "board-0@post-2"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        0,
+        779.5
+      ],
+      "visible": false,
+      "ref": "board-1@post-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        1023,
+        779.5
+      ],
+      "visible": false,
+      "ref": "board-1@post-1"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        2046,
+        779.5
+      ],
+      "visible": false,
+      "ref": "board-1@post-2"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        0,
+        692.5
+      ],
+      "visible": false,
+      "ref": "board-2@post-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        1023,
+        692.5
+      ],
+      "visible": false,
+      "ref": "board-2@post-1"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        2046,
+        692.5
+      ],
+      "visible": false,
+      "ref": "board-2@post-2"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        0,
+        605.5
+      ],
+      "visible": false,
+      "ref": "board-3@post-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        1023,
+        605.5
+      ],
+      "visible": false,
+      "ref": "board-3@post-1"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        2046,
+        605.5
+      ],
+      "visible": false,
+      "ref": "board-3@post-2"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        0,
+        518.5
+      ],
+      "visible": false,
+      "ref": "board-4@post-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        1023,
+        518.5
+      ],
+      "visible": false,
+      "ref": "board-4@post-1"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        2046,
+        518.5
+      ],
+      "visible": false,
+      "ref": "board-4@post-2"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        0,
+        431.5
+      ],
+      "visible": false,
+      "ref": "board-5@post-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        1023,
+        431.5
+      ],
+      "visible": false,
+      "ref": "board-5@post-1"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        2046,
+        431.5
+      ],
+      "visible": false,
+      "ref": "board-5@post-2"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        0,
+        344.5
+      ],
+      "visible": false,
+      "ref": "board-6@post-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        1023,
+        344.5
+      ],
+      "visible": false,
+      "ref": "board-6@post-1"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        2046,
+        344.5
+      ],
+      "visible": false,
+      "ref": "board-6@post-2"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        0,
+        257.5
+      ],
+      "visible": false,
+      "ref": "board-7@post-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        1023,
+        257.5
+      ],
+      "visible": false,
+      "ref": "board-7@post-1"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        2046,
+        257.5
+      ],
+      "visible": false,
+      "ref": "board-7@post-2"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        0,
+        170.5
+      ],
+      "visible": false,
+      "ref": "board-8@post-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        1023,
+        170.5
+      ],
+      "visible": false,
+      "ref": "board-8@post-1"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        2046,
+        170.5
+      ],
+      "visible": false,
+      "ref": "board-8@post-2"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        0,
+        83.5
+      ],
+      "visible": false,
+      "ref": "board-9@post-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        1023,
+        83.5
+      ],
+      "visible": false,
+      "ref": "board-9@post-1"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        2046,
+        83.5
+      ],
+      "visible": false,
+      "ref": "board-9@post-2"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        0,
+        15
+      ],
+      "visible": false,
+      "ref": "board-10@post-0"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        1023,
+        15
+      ],
+      "visible": false,
+      "ref": "board-10@post-1"
+    },
+    {
+      "type": "board",
+      "atMm": [
+        2046,
+        15
+      ],
+      "visible": false,
+      "ref": "board-10@post-2"
+    }
+  ],
+  "handlePresent": false,
+  "handleHeightMm": 0,
+  "bounds": {
+    "widthMm": 2046,
+    "heightMm": 900
+  },
+  "warnings": [],
+  "definitionId": "roksal.woodcore.romb-67"
+}

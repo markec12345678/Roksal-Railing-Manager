@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "round": "S+7 — ROKSAL PRODUCT ASSET LIBRARY + PROCEDURAL FENCE ENGINE",
+  "round": "S+8 — REMOVE GENERATIVE FENCE MODEL + DETERMINISTIC PRODUCT SDK (katalog = edini vir produktnih pravil)",
   "brand": "Roksal",
   "manufacturer": "ROKSAL d.o.o.",
   "manufacturerAddress": "Zgornje Bitnje 186, 4209 Žabnica, Slovenija",
@@ -116,7 +116,7 @@
       "maxRailSpacingMm": null,
       "recommendedGapMm": { "min": 2, "max": 30 },
       "colorsCount": { "precna": 7 },
-      "colorsEvidence": "Barvna paleta odtenkov WPC desk za desko 150 (slika, pravice pending) — 'sedmi barvnimi odtenki in tremi površinami'",
+      "colorsEvidence": "Barvna paleta odtenkov WPC desk za desko 150 (slika, pravice pending) — 'sedmi barvnimi odtenki in tremi površinami'. S+8 §2 ponovno preverjeno: uradna stran navaja DVE številki — 'Maksimalni razmak med stebrički je 130 cm' (produktni del) IN 'Stebrički za vodoravno postavitev desk morajo biti na maksimalni razdalji 133–140 cm' (montažni del). Katalog obdrži 1330/1400 z odkrito razliko — NI tiho popravljeno.",
       "handle": { "available": true, "dimensionMm": [92, 45, 5800], "innerMm": [55, 30], "screwsEveryMm": 500, "screwsVisible": true, "maxSpliceMm": 4000 },
       "sourceUrls": [
         "https://roksal.com/woodcore-wpc-deske/balkonske-ograje-in-dvoriscne-ograje/wpc-precna-ograja/"
@@ -141,7 +141,7 @@
       "maxRailSpacingMm": { "vertical": 1000 },
       "recommendedGapMm": { "min": 2, "max": 30 },
       "colorsCount": { "pokoncna": 4 },
-      "colorsEvidence": "Produktne strani: 'štiri barve'; barvna stran: 'trenutno tri barve' — razlika zapisana (serija/čas)",
+      "colorsEvidence": "Produktne strani: 'štiri barve'; barvna stran: 'trenutno tri barve' — razlika zapisana (serija/čas). S+8 §2: uradni FAQ navaja splošno pravilo — do 150 cm višine 180 cm, višje 150 cm; katalog za 57/32 obdrži konservativnih 1500 — razlika odkrita, NI tiho spremenjena.",
       "handle": { "available": true, "dimensionMm": [92, 45, 5800], "innerMm": [55, 30], "screwsEveryMm": 500, "screwsVisible": true, "maxSpliceMm": 4000 },
       "sourceUrls": [
         "https://roksal.com/woodcore-wpc-deske/balkonske-ograje-in-dvoriscne-ograje/wpc-ograja-pokoncna/"
@@ -231,6 +231,36 @@
         "https://roksal.com/woodcore-wpc-deske/balkonske-ograje-in-dvoriscne-ograje/wpc-ograja-pokoncna/"
       ],
       "rights": "pending"
+    },
+    {
+      "productId": "woodcore-kubo-80-42",
+      "profile": "KUBO DESKA-80/42",
+      "category": "pokoncna",
+      "orientation": ["vertical"],
+      "faceWidthMm": 80,
+      "thicknessMm": 42,
+      "standardLengthsMm": [5800, 5000],
+      "fixing": "Montažna ploščica privita z ZADNJE strani profila (vijaki NISO vidni); prva letvica pritrjena spodaj in zgoraj, naslednja se zadene za prejšnjo in se privije samo zgoraj; aluminijasta cev (surova ali eloksirana) v sredini profila",
+      "screwsVisible": false,
+      "specialFeatures": [
+        "S+8 §2 NOVO potrjen profil — uradni vir je FASADNA stran (proizvajalec dokumentira montažo SAMO vertikalno: 'Profil kubo se montira samo vertikalno'); uporaba kot balkonska ograja NI uradno dokumentirana — zabeleženo odkrito",
+        "Alu cev v notranjosti (od leve proti desni): 20×60×2 mm, 25×25×2 mm, 20×20×2 mm",
+        "Dolžina 5000 mm je na voljo SAMO za odtenka Amazon Wood in Rustic Walnut",
+        "Razmak med deskami pri fasadi: 'poljuben' (uradni vir); profil se lahko obrača po želji (80 mm ali 42 mm ploskvica)",
+        "Podkonstrukcija (alu cevi) razmak do 100 cm",
+        "Facebook Roksal (2021): 'Profil je dimenzij 80x42mm in v tem primeru nalega deska na 42mm s 60mm razmakom. Odtenek: Oak Wood (na voljo tudi Amazon Wood)'"
+      ],
+      "maxPostSpacingMm": { "vertical": null },
+      "maxRailSpacingMm": { "vertical": 1000 },
+      "recommendedGapMm": { "min": 2, "max": 60 },
+      "colorsCount": { "pokoncna": 4 },
+      "colorsEvidence": "Fasadna stran: 'Izbirate lahko med štirimi barvnimi odtenki' (paletna slika, pravice pending — imena NISO uradno potrdljiva iz besedila); Facebook primer omenja Oak Wood in Amazon Wood. approxHex ostaja null (ni uradnega podatka). Zgornja meja razmaka 60 mm = najširši uradno prikazan primer (Facebook), uradno pravilo pa je 'poljuben' — zabeleženo.",
+      "handle": { "available": false, "note": "Ročaj v fasadnem kontekstu ni omenjen; samostojna prodaja ni možna" },
+      "sourceUrls": [
+        "https://roksal.com/woodcore-wpc-deske/wpc-deske-za-fasado/"
+      ],
+      "rights": "pending",
+      "assetQuality": "insufficient"
     }
   ],
   "accessories": [
