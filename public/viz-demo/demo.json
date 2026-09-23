@@ -1,0 +1,60 @@
+{
+ "version": 2,
+ "balcony": {
+  "url": "/viz-demo/balcony.jpg",
+  "w": 1024,
+  "h": 1024
+ },
+ "product": {
+  "url": "/viz-demo/product.jpg",
+  "w": 1600,
+  "h": 1200
+ },
+ "mask": {
+  "url": "/viz-demo/mask.png",
+  "w": 1024,
+  "h": 1024
+ },
+ "placement": {
+  "version": 2,
+  "corners": [
+   [
+    0.232422,
+    0.451172
+   ],
+   [
+    0.933594,
+    0.294922
+   ],
+   [
+    0.929688,
+    0.652344
+   ],
+   [
+    0.232422,
+    0.708984
+   ]
+  ],
+  "rotation": 0,
+  "scale": 1,
+  "productQuad": [
+   [
+    0.3375,
+    0.15
+   ],
+   [
+    0.625,
+    0.098333
+   ],
+   [
+    0.625,
+    0.615
+   ],
+   [
+    0.3375,
+    0.583333
+   ]
+  ]
+ },
+ "source": "runda S+1 baseline (varianta A dokazana: 13=13 letvic, diff=0)"
+}

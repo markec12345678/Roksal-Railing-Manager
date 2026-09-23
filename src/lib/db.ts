@@ -6,7 +6,7 @@ import { PrismaClient } from '@prisma/client'
 // odpiranje preveč povezav ob hot-reloadih. Ker ob spremembi sheme Prisma
 // regenerira engine binary, moramo v tem primeru ustvariti nov client.
 // `SCHEMA_VERSION` ročno dvignemo ob vsaki spremembi prisma/schema.prisma.
-const SCHEMA_VERSION = 'v2-portal-2026-09-r-survey-ral'
+const SCHEMA_VERSION = 'v2-portal-2026-09-r-survey-ral-viz-s2b'
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined

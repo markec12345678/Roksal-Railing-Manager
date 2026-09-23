@@ -18,6 +18,7 @@ import {
   Boxes,
   Truck,
   BarChart3,
+  Wand2,
 } from 'lucide-react'
 import { useState } from 'react'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
@@ -25,6 +26,7 @@ import { FileText, BookOpen, Frame, MapPinned } from 'lucide-react'
 
 export type TabId =
   | 'dashboard'
+  | 'viz'
   | 'ar'
   | 'photos'
   | 'calculator'
@@ -42,6 +44,7 @@ interface TabItem {
 
 const mainTabs: TabItem[] = [
   { id: 'dashboard', label: 'Domov', icon: Home },
+  { id: 'viz', label: 'Vizualizacija', icon: Wand2, highlight: true },
   { id: 'ar', label: 'AR kamera', icon: Camera, highlight: true },
   { id: 'photos', label: 'Slike', icon: ImagePlus },
   { id: 'calculator', label: 'Kalkulator', icon: Calculator },

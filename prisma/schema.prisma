@@ -680,3 +680,47 @@ model SiteSurvey {
 
   @@index([zakljuceno])
 }
+
+// ============================================
+// 21. VIZ (Vizualizacija ograje) — runda S+2
+// Spec: docs/VIZ_CONTRACTS.md (single source of truth)
+// Datoteke na disku: public/viz/projects/<id>/ (original.jpg, product.jpg,
+// product-mask.png, mask.png, placement.json, preview.jpg, result.json)
+// — gitignore-ane runtime mape; poti v bazi so javni URL-ji (/viz/projects/...).
+// placement in variants sta JSON string (SQLite nima JSON tipa).
+// ============================================
+
+model VizProject {
+  id               String   @id @default(cuid())
+  name             String
+  originalPath     String
+  productPath      String
+  productMaskPath  String?
+  maskPath         String
+  previewPath      String?
+  resultPath       String?
+  resultImagePath  String?
+  placement        String
+  variants         String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  renderJobs       VizRenderJob[]
+}
+
+// GPU render job stub (Qwen-Image-Edit-2509) — nikoli ne oznacimo 'completed',
+// dokler GPU backend ne obstaja. Statusi: queued | processing | completed | failed
+model VizRenderJob {
+  id         String     @id @default(cuid())
+  projectId  String
+  project    VizProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  status     String     @default("queued")
+  engine     String     @default("qwen-image-edit-2509")
+  inputJson  String
+  resultPath String?
+  error      String?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  @@index([projectId])
+  @@index([status])
+}

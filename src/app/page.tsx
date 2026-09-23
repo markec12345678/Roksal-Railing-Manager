@@ -37,6 +37,7 @@ function TabLoading() {
 }
 
 const DashboardTab = dynamic(() => import('@/components/roksal/dashboard-tab').then((m) => m.DashboardTab), { ssr: false, loading: () => <TabLoading /> })
+const VizTab = dynamic(() => import('@/components/viz/viz-tab').then((m) => m.VizTab), { ssr: false, loading: () => <TabLoading /> })
 const CalculatorTab = dynamic(() => import('@/components/roksal/calculator-tab').then((m) => m.CalculatorTab), { ssr: false, loading: () => <TabLoading /> })
 const MeasurementsTab = dynamic(() => import('@/components/roksal/measurements-tab').then((m) => m.MeasurementsTab), { ssr: false, loading: () => <TabLoading /> })
 const InventoryTab = dynamic(() => import('@/components/roksal/inventory-tab').then((m) => m.InventoryTab), { ssr: false, loading: () => <TabLoading /> })
@@ -76,7 +77,7 @@ export interface CalculatorImportData {
 
 // Veljavni glavni zavihki za centralno navigacijo (FAB/obvestila/paleta)
 const MAIN_TAB_IDS: TabId[] = [
-  'dashboard', 'ar', 'photos', 'calculator', 'measurements', 'inclinometer', 'inventory',
+  'dashboard', 'viz', 'ar', 'photos', 'calculator', 'measurements', 'inclinometer', 'inventory',
 ]
 
 // One canonical Project type — see src/lib/types.ts for why this is not local.
@@ -394,6 +395,7 @@ export default function Home() {
             onSelectProject={(id) => setSelectedProjectId(id)}
           />
         )}
+        {activeTab === 'viz' && <VizTab />}
         {activeTab === 'ar' && (
           <>
             <div className="grid gap-3 p-4 pb-0 sm:grid-cols-2 sm:items-start">
