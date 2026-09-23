@@ -158,7 +158,9 @@ describe('viz storage — blob driver (mockan @vercel/blob)', () => {
       expect.any(Buffer),
       expect.objectContaining({ access: 'public', addRandomSuffix: false, allowOverwrite: true, contentType: 'image/jpeg' })
     )
-    expect(res.url).toBe('https://store.public.blob.vercel-storage.com/viz/staging/t1/original.jpg')
+    // S+4: klientu vračamo PROXY URL (avtorizacija na aplikaciji), ne surovega
+    // blob URL-ja (audit: prej so bile fotografije javno dostopne brez seje).
+    expect(res.url).toBe('/api/viz/files/viz/staging/t1/original.jpg')
   })
 
   it('vizGet naredi head + fetch in vrne null, če ne obstaja', async () => {

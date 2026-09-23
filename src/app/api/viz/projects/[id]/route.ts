@@ -7,7 +7,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { vizOwner } from '@/lib/viz/ownership'
 import type { VizPlacement, VizVariant } from '@/lib/viz/types'
-import { VIZ_FILE_NAMES, projectKey, vizDelPrefix } from '@/lib/viz/storage'
+import { VIZ_FILE_NAMES, clientUrlFor, clientUrlForPath, projectKey, vizDelPrefix } from '@/lib/viz/storage'
 import {
   deleteProject,
   getProjectForOwner,
@@ -30,20 +30,9 @@ function parseJsonOrNull<T>(raw: string | null): T | null {
   }
 }
 
-/** Javni URL placement.json (driver-agnostično: local = /viz/..., blob = head). */
+/** URL placement.json za klienta (S+4: vedno proxy, brez head klica). */
 async function placementUrl(id: string): Promise<string> {
-  // Zunaj POST-a datoteke ni obvezna — vrni razumen URL po driverju.
-  const { storageMode } = await import('@/lib/viz/storage')
-  if (storageMode() === 'local') {
-    return `/${projectKey(id, VIZ_FILE_NAMES.placement)}`
-  }
-  try {
-    const { head } = await import('@vercel/blob')
-    const meta = await head(projectKey(id, VIZ_FILE_NAMES.placement))
-    return meta.url
-  } catch {
-    return `/${projectKey(id, VIZ_FILE_NAMES.placement)}`
-  }
+  return clientUrlFor(projectKey(id, VIZ_FILE_NAMES.placement))
 }
 
 /** Sestavi odgovor z parsed placement/variants + urls map. */

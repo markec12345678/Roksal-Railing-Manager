@@ -123,6 +123,34 @@ export interface VizListItem {
   url: string
 }
 
+/**
+ * S+4 — URL za KLIENTE: vedno skozi aplikacijo (`/api/viz/files/…`), kjer
+ * ruta preveri sejo + lastništvo projekta. Surovi blob URL-ji nikoli ne gredo
+ * k klientu (audit S+4: prej so bile fotografije balkona javno dostopne brez
+ * avtentikacije — CORS `*`).
+ *
+ * Local način: `/viz/…` (statično iz public/, samo dev/test).
+ */
+export function clientUrlFor(key: string): string {
+  if (storageMode() === 'blob') return `/api/viz/files/${key}`
+  return `/${key}`
+}
+
+/**
+ * S+4 — pretvori POLJUBNO shranjeno pot (zapuščinski surovi blob URL,
+ * proxy pot ali local pot) v URL za kliente.
+ */
+export function clientUrlForPath(path: string | null | undefined): string {
+  if (!path) return ''
+  if (path.startsWith('/api/viz/files/')) return path
+  if (path.startsWith('http')) {
+    const idx = path.indexOf('/viz/')
+    if (idx >= 0) return `/api/viz/files${path.slice(idx)}`
+    return path
+  }
+  return path
+}
+
 /** Napaka, če vizCreate zapiše pod ključ, ki že obstaja (atomic test-and-set). */
 export class VizAlreadyExistsError extends Error {
   constructor(key: string) {
@@ -157,7 +185,7 @@ export async function vizCreate(
         // NAMERNO brez allowOverwrite → atomic create-if-not-exists.
         contentType: contentType ?? contentTypeForName(key),
       })
-      return { key, url: res.url }
+      return { key, url: clientUrlFor(key) }
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error)
       if (msg.toLowerCase().includes('already exists')) throw new VizAlreadyExistsError(key)
@@ -173,7 +201,7 @@ export async function vizCreate(
     if (code === 'EEXIST') throw new VizAlreadyExistsError(key)
     throw error
   }
-  return { key, url: `/${key}` }
+  return { key, url: clientUrlFor(key) }
 }
 
 /** Zapiši datoteko pod ključ; vrne javni URL (relativen ali absoluten blob URL). */
@@ -195,7 +223,9 @@ export async function vizPut(
       allowOverwrite: true,
       contentType: contentType ?? contentTypeForName(key),
     })
-    return { key, url: res.url }
+    // S+4: klientom damo vedno proxy URL (avtorizacija na aplikaciji), ne
+    // surovega blob URL-ja.
+    return { key, url: clientUrlFor(key) }
   }
   const p = localPath(key)
   await mkdir(path.dirname(p), { recursive: true })

@@ -17,7 +17,7 @@ import { z } from 'zod'
 import { vizOwner, type VizOwnerContext } from '@/lib/viz/ownership'
 import type { VizPlacement, VizVariant } from '@/lib/viz/types'
 import { placementSchema, stagedTokenSchema } from '@/lib/viz/validate'
-import { VIZ_FILE_NAMES, stagingKey, vizGet, vizHas } from '@/lib/viz/storage'
+import { VIZ_FILE_NAMES, clientUrlForPath, stagingKey, vizGet, vizHas } from '@/lib/viz/storage'
 import { findProjectByIdempotencyKey, listProjectsForOwner } from '@/lib/viz/repository'
 import { saveProjectFromStaging, type VizSaveVariantInput } from '@/lib/viz/save-flow'
 
@@ -76,7 +76,7 @@ export async function GET(request: Request) {
     const projects = records.map((rec) => ({
       id: rec.id,
       name: rec.name,
-      previewPath: rec.previewPath,
+      previewPath: rec.previewPath ? clientUrlForPath(rec.previewPath) : null,
       createdAt: rec.createdAt,
       placement: parseJsonOrNull<VizPlacement>(rec.placement),
     }))
