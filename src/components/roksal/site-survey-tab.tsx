@@ -39,6 +39,7 @@ import {
   Building2, Footprints, Sun, DoorOpen, DoorClosed, RectangleHorizontal,
   Ruler, Wrench, Package, AlertTriangle, Camera, CheckCircle2, Loader2,
   Save, ClipboardList, Copy, TriangleAlert, MapPinned, FileDown, Palette,
+  Calculator, Share2,
 } from 'lucide-react'
 import type { Project } from '@/lib/types'
 
@@ -406,6 +407,42 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
     }
   }, [project, data, izracun, bringList, completion, toast])
 
+  // Mere → kalkulator (runda S): isti kanal kot AR WebXR 'roksal:calc-import' —
+  // dolžina/višina se uvozita, podlaga/RAL potujeta sparam za priporočilo moznikov
+  const sendToCalculator = useCallback(() => {
+    if (!data.skupnaDolzinaMm || !data.visinaMm) return
+    window.dispatchEvent(new CustomEvent('roksal:calc-import', {
+      detail: {
+        dolzinaMm: data.skupnaDolzinaMm,
+        visinaMm: data.visinaMm,
+        locationName: `Terenski pregled — ${TIP_OBJEKTA.find((t) => t.id === data.tipObjekta)?.label ?? 'objekt'}`,
+        podlaga: data.podlaga,
+        ralCode: data.ralCode,
+        tipObjekta: data.tipObjekta,
+      },
+    }))
+    toast({
+      title: 'Mere poslane v kalkulator',
+      description: 'Dolžina in višina uvoženi — priporočilo moznikov te čaka v zavihku Sidranje.',
+    })
+  }, [data.skupnaDolzinaMm, data.visinaMm, data.tipObjekta, data.podlaga, data.ralCode, toast])
+
+  // Ekipna delitev (runda S): Web Share API, fallback = kopiraj
+  const shareBringList = useCallback(async () => {
+    const text = ['S SEBOJ PRINESTI — Roksal montaža', ...bringList.map((i) => `☐ ${i.text} (${i.reason})`)].join('\n')
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({ title: 'S seboj prinesti — Roksal montaža', text })
+        return
+      } catch (err) {
+        if ((err as Error)?.name === 'AbortError') return // uporabnik prekinil
+        // share ni uspel → kopiraj spodaj
+      }
+    }
+    void navigator.clipboard?.writeText(text)
+    toast({ title: 'Seznam kopiran', description: 'Deljenje ni na voljo — seznam je kopiran za ekipo.' })
+  }, [bringList, toast])
+
   const copyBringList = () => {
     const text = ['S SEBOJ PRINESTI — Roksal montaža', ...bringList.map((i) => `☐ ${i.text} (${i.reason})`)].join('\n')
     void navigator.clipboard?.writeText(text)
@@ -660,6 +697,16 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
                     <p className="mt-1 text-[9px] text-muted-foreground">
                       Orientacijsko (stebri = segmenti + 1) — končni izračun materiala v zavihku <strong>Kalkulator</strong>.
                     </p>
+                    {data.skupnaDolzinaMm != null && data.visinaMm != null && (
+                      <Button
+                        type="button" size="sm"
+                        onClick={sendToCalculator}
+                        className="mt-2 h-9 w-full gap-1.5 rounded-lg bg-roksal-navy text-[11px] font-bold text-white hover:bg-roksal-navy/90 active:scale-[0.98] transition-all"
+                      >
+                        <Calculator className="h-3.5 w-3.5 text-roksal-amber" />
+                        Uporabi mere v kalkulatorju
+                      </Button>
+                    )}
                   </>
                 )}
               </div>
@@ -835,6 +882,14 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
                 <p className="text-[9px] text-white/60">živo iz zapisnika — {bringList.length} točk</p>
               </div>
             </div>
+            <Button
+              type="button" size="sm" variant="ghost"
+              onClick={() => void shareBringList()}
+              className="h-8 px-2 text-white/80 hover:bg-white/10 hover:text-white"
+              aria-label="Deli seznam z ekipo"
+            >
+              <Share2 className="h-3.5 w-3.5" />
+            </Button>
             <Button
               type="button" size="sm" variant="ghost"
               onClick={copyBringList}

@@ -68,6 +68,10 @@ export interface CalculatorImportData {
   dolzinaMm: number
   visinaMm: number
   locationName: string
+  /** runda S — kontekst terenskega pregleda za priporočilo moznikov */
+  podlaga?: string | null
+  ralCode?: string | null
+  tipObjekta?: string | null
 }
 
 // Veljavni glavni zavihki za centralno navigacijo (FAB/obvestila/paleta)
@@ -223,15 +227,18 @@ export default function Home() {
     return () => window.removeEventListener('roksal:navigate', onNavigate)
   }, [handleMoreSelect, handleTabChange])
 
-  // AR WebXR → Kalkulator ("Uporabi v kalkulatorju" iz WebXR HUD)
+  // AR WebXR / Terenski pregled → Kalkulator ("Uporabi v kalkulatorju")
   useEffect(() => {
     function onCalcImport(e: Event) {
-      const d = (e as CustomEvent<{ dolzinaMm?: number; visinaMm?: number; locationName?: string }>).detail
+      const d = (e as CustomEvent<{ dolzinaMm?: number; visinaMm?: number; locationName?: string; podlaga?: string | null; ralCode?: string | null; tipObjekta?: string | null }>).detail
       if (!d?.dolzinaMm || !d?.visinaMm) return
       setCalculatorImport({
         dolzinaMm: d.dolzinaMm,
         visinaMm: d.visinaMm,
         locationName: d.locationName ?? 'AR meritev (WebXR)',
+        podlaga: d.podlaga ?? null,
+        ralCode: d.ralCode ?? null,
+        tipObjekta: d.tipObjekta ?? null,
       })
       handleTabChange('calculator')
     }

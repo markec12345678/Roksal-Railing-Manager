@@ -107,6 +107,19 @@ const anchorTypeLabels: Record<AnchorType, string> = {
   'generic': 'Splošno',
 }
 
+// runda S — podlaga z terena (Terenski pregled): oznake + priporočilo pritrditve
+const podlagaLabels: Record<string, string> = {
+  beton: 'Beton', estrih: 'Estrih + folija', les: 'Les', kovina: 'Kovina', plocice: 'Ploščice', neznan: 'Neznana',
+}
+const podlagaAnchorAdvice: Record<string, string> = {
+  beton: 'Ekspanzija ali kemija — oba delujeta. Kemija priporočena blizu roba plošče (< 100 mm).',
+  estrih: 'KEMIJA OBVEZNO + tesnilna masa! Ekspanzijski moznik vdre folijo → vlaga uniči ploščo (reklamacija).',
+  les: 'Vijaki za les — kemija ni potrebna. Preveri podkonstrukcijo (nosilnost).',
+  kovina: 'Bimetal self-drilling vijaki — kemija ni potrebna.',
+  plocice: 'Karbid vrti za ploščice + kemija. Zaščiti ploščice s trakom pri vrtanju.',
+  neznan: 'Podlaga ni zabeležena — vzameš vzorec obojega (ekspanzija + kemija) in odločiš na terenu.',
+}
+
 const terrainLabels: Record<TerrainCategory, string> = {
   I: 'I — Odprto morje',
   II: 'II — Ravninsko',
@@ -305,12 +318,18 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
   // Effective total length uses import when available, otherwise manual input
   const effectiveTotalLength = importedLength ?? totalLength
 
-  // Clear import when user manually changes totalLength
+  // Clear import ONLY when the user manually changes totalLength (runda S fix:
+  // prej se je uvoz počistil TUDI ob mountu, ker je default '3.0' ≠ uvoženi
+  // '8.6' — AR in terenski uvoz sta izginila v prvem renderju). Ref si zapomni
+  // zadnji uvoz; brisanje se sproži samo, ko uporabnik ročno spremeni dolžino.
+  const prevImportedRef = useRef<string | null>(null)
   useEffect(() => {
-    if (importedLength && totalLength) {
-      if (totalLength !== importedLength) {
-        onClearImport?.()
-      }
+    if (importedLength !== prevImportedRef.current) {
+      prevImportedRef.current = importedLength
+      return // nov uvoz (ali prvi mount) — ne počisti
+    }
+    if (importedLength && totalLength && totalLength !== importedLength) {
+      onClearImport?.()
     }
   }, [totalLength, importedLength, onClearImport])
 
@@ -1821,6 +1840,20 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
             <p className="text-[11px] text-muted-foreground truncate">
               {importedFromMeasurement.locationName} — {importedFromMeasurement.dolzinaMm}mm × {importedFromMeasurement.visinaMm}mm
             </p>
+            {(importedFromMeasurement.podlaga || importedFromMeasurement.ralCode) && (
+              <div className="mt-1 flex flex-wrap items-center gap-1">
+                {importedFromMeasurement.podlaga && (
+                  <span className="rounded-full bg-roksal-navy/10 px-2 py-0.5 text-[9px] font-bold text-roksal-navy">
+                    Podlaga: {podlagaLabels[importedFromMeasurement.podlaga] ?? importedFromMeasurement.podlaga}
+                  </span>
+                )}
+                {importedFromMeasurement.ralCode && (
+                  <span className="rounded-full bg-roksal-amber/20 px-2 py-0.5 text-[9px] font-bold text-roksal-amber">
+                    RAL {importedFromMeasurement.ralCode}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
           <button
             type="button"
@@ -2283,6 +2316,44 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
       {/* ANCHORING CALCULATOR */}
       {mode === 'anchoring' && (
         <>
+          {/* runda S — priporočilo pritrditve iz terenskega pregleda */}
+          {importedFromMeasurement?.podlaga && (
+            <Card className={importedFromMeasurement.podlaga === 'estrih' ? 'border-amber-300 bg-amber-50/60' : 'border-roksal-navy/15'}>
+              <CardContent className="p-4">
+                <div className="flex items-start gap-2.5">
+                  <AlertTriangle className={`mt-0.5 h-4 w-4 shrink-0 ${importedFromMeasurement.podlaga === 'estrih' ? 'text-amber-600' : 'text-roksal-navy/50'}`} />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[11px] font-bold text-roksal-navy">
+                      Podlaga z terena: {podlagaLabels[importedFromMeasurement.podlaga] ?? importedFromMeasurement.podlaga}
+                    </p>
+                    <p className={`mt-0.5 text-[10px] leading-relaxed ${importedFromMeasurement.podlaga === 'estrih' ? 'font-medium text-amber-800' : 'text-muted-foreground'}`}>
+                      {podlagaAnchorAdvice[importedFromMeasurement.podlaga] ?? 'Preveri podlago na terenu.'}
+                    </p>
+                    {importedFromMeasurement.podlaga === 'estrih' && (
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {(['hilti-hit', 'fischer-fis'] as const).map((t) => (
+                          <button
+                            key={t}
+                            type="button"
+                            onClick={() => setAnchorType(t)}
+                            aria-pressed={anchorType === t}
+                            className={`min-h-[32px] rounded-full border px-3 text-[10px] font-bold transition-all ${
+                              anchorType === t
+                                ? 'border-roksal-amber bg-roksal-amber/15 text-roksal-amber'
+                                : 'border-amber-300 bg-white text-amber-800 hover:border-amber-400'
+                            }`}
+                          >
+                            {anchorTypeLabels[t]}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Anchor Type */}
           <Card>
             <CardHeader className="pb-3 pt-4 px-4">
