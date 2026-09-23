@@ -1,0 +1,30 @@
+[
+  {
+    "test": "S7-T1-romb67-amazon-horizontal",
+    "A": "letvice 1→1 ✓; geometrija null ✓; ΔE 0.00; preshadow 0; 1504 ms",
+    "B": "letvice 11→11 ✓; geometrija 11 ✓; ΔE 0.00; preshadow 0; 1114 ms",
+    "C": "letvice 10→10 ✓; geometrija 11 ✓; ΔE 0.00; preshadow 0; 936 ms",
+    "A_ok": true,
+    "B_ok": true,
+    "C_ok": true
+  },
+  {
+    "test": "S7-T2-polna128-rustic-oak-horizontal",
+    "A": "letvice 1→1 ✓; geometrija null ✓; ΔE 0.00; preshadow 0; 891 ms",
+    "B": "letvice 7→7 ✓; geometrija 7 ✓; ΔE 0.00; preshadow 0; 899 ms",
+    "C": "letvice 7→7 ✓; geometrija null ✓; ΔE 0.00; preshadow 0; 979 ms",
+    "A_ok": true,
+    "B_ok": true,
+    "C_ok": true
+  },
+  {
+    "test": "S7-T3-polna100-burma-teak-vertical",
+    "A": "letvice 7→7 ✓; geometrija null ?; ΔE 0.00; preshadow 0; 851 ms",
+    "B": "letvice 0→0 ✓; geometrija 13 ✓; ΔE 0.00; preshadow 0; 847 ms",
+    "C": "letvice 0→0 ✓; geometrija 13 ✓; ΔE 0.00; preshadow 0; 853 ms",
+    "B2": "letvice 1→1 ✓; geometrija null ✓; ΔE 0.00; preshadow 0; 857 ms (sintetična temna — NI barva izdelka)",
+    "A_ok": true,
+    "B_ok": true,
+    "C_ok": true
+  }
+]

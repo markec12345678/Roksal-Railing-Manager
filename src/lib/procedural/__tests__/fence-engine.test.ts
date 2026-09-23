@@ -5,8 +5,9 @@
  * kataloško integracijo in ločitev geometrije od materiala.
  */
 import { describe, it, expect } from 'vitest'
-import { computeFenceLayout, renderFence, type FenceRequest } from '../fence-engine'
+import { computeFenceLayout, renderFence, renderFenceMask, type FenceRequest } from '../fence-engine'
 import { getProduct } from '../../product-catalog'
+import type { ImageBuffer } from '../../viz/types'
 
 function colorReq(over: Partial<FenceRequest> = {}): FenceRequest {
   return {
@@ -261,6 +262,23 @@ describe('renderFence — deterministična rasterizacija (spec §7)', () => {
 })
 
 describe('procedural + katalog integracija (spec §8 — geometrija NI AI)', () => {
+  it('renderFenceMask: belo = ploskvice/stebri, črno = vrzeli (deterministično)', () => {
+    const req = colorReq({ posts: { widthMm: 50, positionsMm: [550] }, outHeightPx: 320 })
+    const lay = computeFenceLayout(req)
+    const m = renderFenceMask(req, lay)
+    const m2 = renderFenceMask(req, lay)
+    // determinizem
+    let same = true
+    for (let i = 0; i < m.data.length; i++) if (m.data[i] !== m2.data[i]) { same = false; break }
+    expect(same).toBe(true)
+    // sredina ploskvice = belo, sredina vrzeli = črno, steber (v vrzeli) = belo
+    const px = (x: number, y: number): number => m.data[(y * 640 + x) * 4]
+    expect(px(100, 300)).toBe(255) // deska 0 sredina
+    const gapY = Math.round(((1000 - 132) / 1000) * 320)
+    expect(px(100, gapY)).toBe(0) // vrzel
+    expect(px(Math.round(640 * (550 / 1100)), gapY)).toBe(255) // steber v vrzeli
+  })
+
   it('samo ~10 desk pokončne POLNE 100 pri višini 1000 mm + razmak 8', () => {
     const lay = computeFenceLayout(
       colorReq({ productId: 'woodcore-polna-100', orientation: 'vertical', fenceWidthMm: 1000, fenceHeightMm: 1000 })

@@ -1,0 +1,92 @@
+{
+  "request": {
+    "productId": "woodcore-polna-128",
+    "orientation": "horizontal",
+    "fenceWidthMm": 2046,
+    "fenceHeightMm": 900,
+    "gapMm": 20,
+    "material": {
+      "kind": "color",
+      "rgb": [
+        116,
+        92,
+        74
+      ]
+    },
+    "outWidthPx": 896,
+    "outHeightPx": 394,
+    "posts": {
+      "widthMm": 60,
+      "positionsMm": [
+        1023
+      ]
+    }
+  },
+  "layout": {
+    "productId": "woodcore-polna-128",
+    "profile": "POLNA DESKA-128",
+    "orientation": "horizontal",
+    "faceWidthMm": 128,
+    "gapMm": 20,
+    "pitchMm": 148,
+    "fenceWidthMm": 2046,
+    "fenceHeightMm": 900,
+    "fieldHeightMm": 900,
+    "fieldSpanMm": 900,
+    "boardCount": 7,
+    "boards": [
+      {
+        "index": 0,
+        "startMm": 0,
+        "visibleMm": 128,
+        "cut": false
+      },
+      {
+        "index": 1,
+        "startMm": 148,
+        "visibleMm": 128,
+        "cut": false
+      },
+      {
+        "index": 2,
+        "startMm": 296,
+        "visibleMm": 128,
+        "cut": false
+      },
+      {
+        "index": 3,
+        "startMm": 444,
+        "visibleMm": 128,
+        "cut": false
+      },
+      {
+        "index": 4,
+        "startMm": 592,
+        "visibleMm": 128,
+        "cut": false
+      },
+      {
+        "index": 5,
+        "startMm": 740,
+        "visibleMm": 128,
+        "cut": false
+      },
+      {
+        "index": 6,
+        "startMm": 888,
+        "visibleMm": 12,
+        "cut": true
+      }
+    ],
+    "handleHeightMm": 0,
+    "handlePresent": false,
+    "warnings": []
+  },
+  "layoutMs": 0,
+  "bRenderMs": 86,
+  "nFields": 2,
+  "postPositionsMm": [
+    1023
+  ],
+  "quadAspect": 2.273015873015873
+}

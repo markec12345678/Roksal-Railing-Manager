@@ -1,0 +1,108 @@
+{
+  "version": 1,
+  "round": "S+7 — ROKSAL PRODUCT ASSET LIBRARY + PROCEDURAL FENCE ENGINE",
+  "generated": "2026-09-23T20:02:18.742Z",
+  "methods": {
+    "A": "realna produkt fotografija → NESPREMJEN A-pipeline (S+1 dokazan)",
+    "B": "proceduralni renderer (katalog geometrija + izmerjena barva) → isti A-pipeline",
+    "C": "proceduralna geometrija + realna tekstura iz fotografije → isti A-pipeline"
+  },
+  "rights": "vse fotografije pending — glej evaluation/ROKSAL-ASSET-RIGHTS.md",
+  "tests": [
+    {
+      "id": "S7-T1-romb67-amazon-horizontal",
+      "dir": "S7-T1-romb67-amazon-horizontal",
+      "s6Source": "S6-T1-ravna-antracit",
+      "productId": "woodcore-romb-67",
+      "orientation": "horizontal",
+      "gapMm": 20,
+      "fence": {
+        "fenceWidthMm": 2046,
+        "fenceHeightMm": 900
+      },
+      "files": {
+        "original": "S7-T1-romb67-amazon-horizontal/original.jpg",
+        "product": "S7-T1-romb67-amazon-horizontal/product/product.jpg",
+        "profile": "S7-T1-romb67-amazon-horizontal/profile/profile.jpg",
+        "mask": "S7-T1-romb67-amazon-horizontal/mask.png",
+        "placement": "S7-T1-romb67-amazon-horizontal/placement.json",
+        "proceduralB": "S7-T1-romb67-amazon-horizontal/procedural/generated_fence.png",
+        "proceduralC": "S7-T1-romb67-amazon-horizontal/procedural/generated_fence_texture.png",
+        "proceduralMask": "S7-T1-romb67-amazon-horizontal/procedural/generated_fence_mask.png",
+        "layout": "S7-T1-romb67-amazon-horizontal/procedural/layout.json",
+        "previews": [
+          "S7-T1-romb67-amazon-horizontal/preview/a_preview.jpg",
+          "S7-T1-romb67-amazon-horizontal/preview/b_preview.jpg",
+          "S7-T1-romb67-amazon-horizontal/preview/c_preview.jpg"
+        ],
+        "metrics": "S7-T1-romb67-amazon-horizontal/metrics.json"
+      },
+      "contactSheet": "evaluation/contact-sheets/s7-contact-S7-T1-romb67-amazon-horizontal.png",
+      "note": "raven balkon (S+1 dokazani vogali); referenčna fotografija vgrajene romb ograje, temen odtenek (domneva Amazon Wood); realne vrzeli TANKE (~5 mm) — števec 0,5-pokritosti j ne razreši (znana omejitev, zabeležena)"
+    },
+    {
+      "id": "S7-T2-polna128-rustic-oak-horizontal",
+      "dir": "S7-T2-polna128-rustic-oak-horizontal",
+      "s6Source": "S6-T1-ravna-antracit",
+      "productId": "woodcore-polna-128",
+      "orientation": "horizontal",
+      "gapMm": 20,
+      "fence": {
+        "fenceWidthMm": 2046,
+        "fenceHeightMm": 900
+      },
+      "files": {
+        "original": "S7-T2-polna128-rustic-oak-horizontal/original.jpg",
+        "product": "S7-T2-polna128-rustic-oak-horizontal/product/product.jpg",
+        "profile": "S7-T2-polna128-rustic-oak-horizontal/profile/profile.jpg",
+        "mask": "S7-T2-polna128-rustic-oak-horizontal/mask.png",
+        "placement": "S7-T2-polna128-rustic-oak-horizontal/placement.json",
+        "proceduralB": "S7-T2-polna128-rustic-oak-horizontal/procedural/generated_fence.png",
+        "proceduralC": "S7-T2-polna128-rustic-oak-horizontal/procedural/generated_fence_texture.png",
+        "proceduralMask": "S7-T2-polna128-rustic-oak-horizontal/procedural/generated_fence_mask.png",
+        "layout": "S7-T2-polna128-rustic-oak-horizontal/procedural/layout.json",
+        "previews": [
+          "S7-T2-polna128-rustic-oak-horizontal/preview/a_preview.jpg",
+          "S7-T2-polna128-rustic-oak-horizontal/preview/b_preview.jpg",
+          "S7-T2-polna128-rustic-oak-horizontal/preview/c_preview.jpg"
+        ],
+        "metrics": "S7-T2-polna128-rustic-oak-horizontal/metrics.json"
+      },
+      "contactSheet": "evaluation/contact-sheets/s7-contact-S7-T2-polna128-rustic-oak-horizontal.png",
+      "note": "ista čista scena kot T1 (S6-T1 — namenoma primerljivo); izrez levega zaslona (široke deske = POLNA 128 videz); razmerje izreza 0,96 vs kvader 2,66 → A RAZTEGNE ploskvice (dokumentirano), B/C regenerirata geometrijo na ciljno razmerje s pravim številom desk — to je glavna prednost proceduralnega pristopa; odtenek toplo rjava (NI potrjen Rustic Oak)"
+    },
+    {
+      "id": "S7-T3-polna100-burma-teak-vertical",
+      "dir": "S7-T3-polna100-burma-teak-vertical",
+      "s6Source": "S6-T1-ravna-antracit",
+      "productId": "woodcore-polna-100",
+      "orientation": "vertical",
+      "gapMm": 20,
+      "fence": {
+        "fenceWidthMm": 1477,
+        "fenceHeightMm": 650
+      },
+      "files": {
+        "original": "S7-T3-polna100-burma-teak-vertical/original.jpg",
+        "product": "S7-T3-polna100-burma-teak-vertical/product/product.jpg",
+        "profile": "S7-T3-polna100-burma-teak-vertical/profile/profile.jpg",
+        "mask": "S7-T3-polna100-burma-teak-vertical/mask.png",
+        "placement": "S7-T3-polna100-burma-teak-vertical/placement.json",
+        "proceduralB": "S7-T3-polna100-burma-teak-vertical/procedural/generated_fence.png",
+        "proceduralC": "S7-T3-polna100-burma-teak-vertical/procedural/generated_fence_texture.png",
+        "proceduralMask": "S7-T3-polna100-burma-teak-vertical/procedural/generated_fence_mask.png",
+        "proceduralB2": "S7-T3-polna100-burma-teak-vertical/procedural/generated_fence_dark_variant.png",
+        "layout": "S7-T3-polna100-burma-teak-vertical/procedural/layout.json",
+        "previews": [
+          "S7-T3-polna100-burma-teak-vertical/preview/a_preview.jpg",
+          "S7-T3-polna100-burma-teak-vertical/preview/b_preview.jpg",
+          "S7-T3-polna100-burma-teak-vertical/preview/c_preview.jpg",
+          "S7-T3-polna100-burma-teak-vertical/preview/b2_preview.jpg"
+        ],
+        "metrics": "S7-T3-polna100-burma-teak-vertical/metrics.json"
+      },
+      "contactSheet": "evaluation/contact-sheets/s7-contact-S7-T3-polna100-burma-teak-vertical.png",
+      "note": "ista čista scena kot T1; pokončna ograja — izrez MED stebri (brez konstrukcije); svetlejši odtenek kot Burma Teak referenca — zabeleženo, ne prikrito"
+    }
+  ]
+}

@@ -53,7 +53,14 @@
         "https://roksal.com/woodcore-wpc-deske/balkonske-ograje-in-dvoriscne-ograje/wpc-precna-ograja/",
         "https://roksal.com/woodcore-wpc-deske/balkonske-ograje-in-dvoriscne-ograje/wpc-ograja-pokoncna/"
       ],
-      "rights": "pending"
+      "rights": "pending",
+      "assets": {
+        "productImage": "evaluation/dataset/S7-T1-romb67-amazon-horizontal/product/product.jpg",
+        "profileImage": "evaluation/dataset/S7-T1-romb67-amazon-horizontal/profile/profile.jpg",
+        "textureImage": null,
+        "referenceImage": "evaluation/roksal-assets/t1-romb-amazon-reference.jpg"
+      },
+      "assetQuality": "insufficient"
     },
     {
       "productId": "woodcore-polna-128",
@@ -81,7 +88,14 @@
         "https://roksal.com/woodcore-wpc-deske/balkonske-ograje-in-dvoriscne-ograje/wpc-precna-ograja/",
         "https://roksal.com/woodcore-wpc-deske/balkonske-ograje-in-dvoriscne-ograje/wpc-ograja-pokoncna/"
       ],
-      "rights": "pending"
+      "rights": "pending",
+      "assets": {
+        "productImage": "evaluation/dataset/S7-T2-polna128-rustic-oak-horizontal/product/product.jpg",
+        "profileImage": "evaluation/dataset/S7-T2-polna128-rustic-oak-horizontal/profile/profile.jpg",
+        "textureImage": null,
+        "referenceImage": "evaluation/roksal-assets/t2-polna128-reference.jpg"
+      },
+      "assetQuality": "insufficient"
     },
     {
       "productId": "woodcore-deska-150",
@@ -159,7 +173,14 @@
         "https://roksal.com/woodcore-wpc-deske/balkonske-ograje-in-dvoriscne-ograje/wpc-ograja-pokoncna/",
         "https://roksal.com/reference-wpc-deske/"
       ],
-      "rights": "pending"
+      "rights": "pending",
+      "assets": {
+        "productImage": "evaluation/dataset/S7-T3-polna100-burma-teak-vertical/product/product.jpg",
+        "profileImage": "evaluation/dataset/S7-T3-polna100-burma-teak-vertical/profile/profile.jpg",
+        "textureImage": null,
+        "referenceImage": "evaluation/roksal-assets/t3-polna100-vertical-reference.jpg"
+      },
+      "assetQuality": "insufficient"
     },
     {
       "productId": "woodcore-polna-128-vertical",

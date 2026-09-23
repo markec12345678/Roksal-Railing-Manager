@@ -1,0 +1,116 @@
+{
+  "request": {
+    "productId": "woodcore-romb-67",
+    "orientation": "horizontal",
+    "fenceWidthMm": 2046,
+    "fenceHeightMm": 900,
+    "gapMm": 20,
+    "material": {
+      "kind": "color",
+      "rgb": [
+        65,
+        62,
+        62
+      ]
+    },
+    "outWidthPx": 896,
+    "outHeightPx": 394,
+    "posts": {
+      "widthMm": 60,
+      "positionsMm": [
+        1023
+      ]
+    }
+  },
+  "layout": {
+    "productId": "woodcore-romb-67",
+    "profile": "ROMB DESKA-67",
+    "orientation": "horizontal",
+    "faceWidthMm": 67,
+    "gapMm": 20,
+    "pitchMm": 87,
+    "fenceWidthMm": 2046,
+    "fenceHeightMm": 900,
+    "fieldHeightMm": 900,
+    "fieldSpanMm": 900,
+    "boardCount": 11,
+    "boards": [
+      {
+        "index": 0,
+        "startMm": 0,
+        "visibleMm": 67,
+        "cut": false
+      },
+      {
+        "index": 1,
+        "startMm": 87,
+        "visibleMm": 67,
+        "cut": false
+      },
+      {
+        "index": 2,
+        "startMm": 174,
+        "visibleMm": 67,
+        "cut": false
+      },
+      {
+        "index": 3,
+        "startMm": 261,
+        "visibleMm": 67,
+        "cut": false
+      },
+      {
+        "index": 4,
+        "startMm": 348,
+        "visibleMm": 67,
+        "cut": false
+      },
+      {
+        "index": 5,
+        "startMm": 435,
+        "visibleMm": 67,
+        "cut": false
+      },
+      {
+        "index": 6,
+        "startMm": 522,
+        "visibleMm": 67,
+        "cut": false
+      },
+      {
+        "index": 7,
+        "startMm": 609,
+        "visibleMm": 67,
+        "cut": false
+      },
+      {
+        "index": 8,
+        "startMm": 696,
+        "visibleMm": 67,
+        "cut": false
+      },
+      {
+        "index": 9,
+        "startMm": 783,
+        "visibleMm": 67,
+        "cut": false
+      },
+      {
+        "index": 10,
+        "startMm": 870,
+        "visibleMm": 30,
+        "cut": true
+      }
+    ],
+    "handleHeightMm": 0,
+    "handlePresent": false,
+    "warnings": []
+  },
+  "layoutMs": 0,
+  "bRenderMs": 61,
+  "nFields": 2,
+  "postPositionsMm": [
+    1023
+  ],
+  "quadAspect": 2.273015873015873
+}

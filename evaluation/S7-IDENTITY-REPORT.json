@@ -1,0 +1,53 @@
+[
+  {
+    "test_id": "S7-T1-romb67-amazon-horizontal",
+    "productId": "woodcore-romb-67",
+    "profil": "ROMB DESKA-67",
+    "sirinaMm": 67,
+    "debelinaMm": 26,
+    "steviloDesk_katalog": 11,
+    "razmakMm": 20,
+    "razmak_ok": true,
+    "orientacija": "horizontal",
+    "barva_izmerjena": "#413e3e",
+    "barva_opomba": "približek iz fotografije (ni uradni podatek)",
+    "tekstura": "C-metoda: realna fotografija (scan); B: determinističen profilni vzorec",
+    "vijaki": "skriti (render brez vijakov)",
+    "konstrukcija": "2 polj (max 1450 mm po katalogu), stebri na 1023 mm",
+    "pravice": "pending"
+  },
+  {
+    "test_id": "S7-T2-polna128-rustic-oak-horizontal",
+    "productId": "woodcore-polna-128",
+    "profil": "POLNA DESKA-128",
+    "sirinaMm": 128,
+    "debelinaMm": 16.5,
+    "steviloDesk_katalog": 7,
+    "razmakMm": 20,
+    "razmak_ok": true,
+    "orientacija": "horizontal",
+    "barva_izmerjena": "#745c4a",
+    "barva_opomba": "približek iz fotografije (ni uradni podatek)",
+    "tekstura": "C-metoda: realna fotografija (scan); B: determinističen profilni vzorec",
+    "vijaki": "vidni (render pri stebrih)",
+    "konstrukcija": "2 polj (max 1100 mm po katalogu), stebri na 1023 mm",
+    "pravice": "pending"
+  },
+  {
+    "test_id": "S7-T3-polna100-burma-teak-vertical",
+    "productId": "woodcore-polna-100",
+    "profil": "POLNA DESKA-100",
+    "sirinaMm": 100,
+    "debelinaMm": 12,
+    "steviloDesk_katalog": 13,
+    "razmakMm": 20,
+    "razmak_ok": true,
+    "orientacija": "vertical",
+    "barva_izmerjena": "#968371",
+    "barva_opomba": "približek iz fotografije (ni uradni podatek)",
+    "tekstura": "C-metoda: realna fotografija (scan); B: determinističen profilni vzorec",
+    "vijaki": "vidni (render pri stebrih)",
+    "konstrukcija": "2 polj (max 800 mm po katalogu), stebri na 739 mm",
+    "pravice": "pending"
+  }
+]

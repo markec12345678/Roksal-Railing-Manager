@@ -59,3 +59,27 @@ Datum preverjanja: **2026-09-23** · Metoda: page_reader + image-search (OSS zrc
 - Noben asset ni v produkcijski UI (spec S+7: brez novih UI funkcij).
 - Katalog (`data/roksal-catalog.json`) vsebuje FAKTE (dimenzije, montaža, viri) —
   dejstva o izdelku niso predmet avtorskih pravic fotografij.
+
+## NOVO odkritje S+7: vodni žigi na obstoječih S+1 fixturjih
+
+Pri vizualni QA S+7 je bilo odkrito, da sta DVA obstoječa testna originala iz
+S+1 baseline (`/home/z/baseline/input/`) Dejansko stock fotografiji z vodnimi
+žigi:
+
+| Fixture | Uporabljen od | Žig | S+7 odločitev |
+|---|---|---|---|
+| `balcony_2.jpg` (S6-T2-perspektiva) | S+3, S+6 | **Alamy** (jasno videno) | IZLOŽEN iz S+7 datasetov |
+| `balcony_4.jpg` (S6-T3-osvetlitev) | S+3, S+6 | **Dreamstime** (pečat, vidno ob povečavi) | IZLOŽEN iz S+7 datasetov |
+| `balcony_3.png` (S6-T1-ravna-antracit) | S+1–S+6 | ni zaznan | v uporabi za S7-T1/T2/T3 |
+
+- S+7 testi zato vsi uporabljajo čisto sceno `S6-T1-ravna-antracit` (balcony_3).
+- S+6 dataset ostane NESPREMENJEN (zamrznjen dokazni vhod S+6) — a za
+  produkcijsko/komercialno uporabo bodo ti fixturji morali biti zamenjani s
+  fotografijami lastnika projekta. Zabeleženo kot tveganje, ne kot blokada za
+  interno evalvacijo (uporabljeni po nalogi lastnika od S+1).
+
+## S+7 sintetične variante
+
+- `B2` temna varianta (T3) je SINTETIČNA (rgb 70,68,64) — NI fotografija in NI
+  trditev o barvi izdelka; uporabljena izključno za dokaz mehanike kompozita.
+  Ni predmet avtorskih pravic (programsko generirano).

@@ -20,6 +20,7 @@
  */
 
 import { getProduct, type CatalogProfile, type Orientation } from '../product-catalog'
+import type { ImageBuffer } from '../viz/types'
 
 // ---------- Vhodi ----------
 
@@ -384,4 +385,59 @@ function drawScrew(data: Uint8ClampedArray, W: number, H: number, cx: number, cy
       data[idx + 2] = clamp8(data[idx + 2] * 0.55)
     }
   }
+}
+
+/**
+ * Deterministična ALPHA maska proceduralne ograje (productMask vhod A-pipeline).
+ * Belo = ploskvica/steber/ročaj (neproduženo), črno = razmak/ozadje.
+ * Uporaba: ko je material svetel (gray > CUTOUT_GRAY_THRESHOLD 115), avtomatski
+ * cutout po zasnovi ne more ločiti ploskvic — maska iz konstrukcije je točen
+ * vir alfe (isto kot maska iz mask-editorja v produkcijskem toku).
+ */
+export function renderFenceMask(req: FenceRequest, layout?: FenceLayout): ImageBuffer {
+  const lay = layout ?? computeFenceLayout(req)
+  const W = Math.round(req.outWidthPx)
+  const H = Math.round(req.outHeightPx)
+  const data = new Uint8ClampedArray(W * H * 4) // črno (transparentno)
+  const pxPerMmX = W / lay.fenceWidthMm
+  const pxPerMmY = H / lay.fenceHeightMm
+  const horizontal = lay.orientation === 'horizontal'
+
+  const paintSpan = (x0: number, y0: number, x1: number, y1: number): void => {
+    for (let y = Math.max(0, y0); y < Math.min(H, y1); y++) {
+      for (let x = Math.max(0, x0); x < Math.min(W, x1); x++) {
+        const idx = (y * W + x) * 4
+        data[idx] = 255
+        data[idx + 1] = 255
+        data[idx + 2] = 255
+        data[idx + 3] = 255
+      }
+    }
+  }
+
+  // stebri (za deskami — maska enaka: so del konstrukcije, vedno neproduženi)
+  if (req.posts && req.posts.widthMm > 0) {
+    const halfW = Math.round((req.posts.widthMm / 2) * pxPerMmX)
+    for (const pMm of req.posts.positionsMm) {
+      const cx = Math.round(pMm * pxPerMmX)
+      paintSpan(cx - halfW, 0, cx + halfW + 1, H)
+    }
+  }
+  // deske
+  for (const b of lay.boards) {
+    if (horizontal) {
+      const y0 = Math.round((lay.fenceHeightMm - (b.startMm + b.visibleMm)) * pxPerMmY)
+      const y1 = Math.round((lay.fenceHeightMm - b.startMm) * pxPerMmY)
+      paintSpan(0, y0, W, y1)
+    } else {
+      const x0 = Math.round(b.startMm * pxPerMmX)
+      const x1 = Math.round((b.startMm + b.visibleMm) * pxPerMmX)
+      paintSpan(x0, 0, x1, H)
+    }
+  }
+  // ročaj
+  if (lay.handlePresent) {
+    paintSpan(0, 0, W, Math.round(lay.handleHeightMm * pxPerMmY))
+  }
+  return { data, w: W, h: H }
 }

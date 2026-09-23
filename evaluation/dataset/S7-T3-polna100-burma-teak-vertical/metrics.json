@@ -1,0 +1,128 @@
+{
+  "test_id": "S7-T3-polna100-burma-teak-vertical",
+  "title": "TEST 3 — POLNA 100 / Burma Teak / pokončno (vertical)",
+  "product": {
+    "productId": "woodcore-polna-100",
+    "profile": "POLNA DESKA-100",
+    "orientation": "vertical",
+    "faceWidthMm": 100,
+    "thicknessMm": 12,
+    "standardLengthsMm": [
+      5800
+    ],
+    "screwsVisible": true,
+    "fixing": "Vijačenje iz lica — vijaki vidni; v WoodCore desko zvrtati 1 mm večjo luknjo od vijaka",
+    "recommendedGapMm": {
+      "min": 5,
+      "max": 30
+    },
+    "usedGapMm": 20,
+    "colorsCount": {
+      "pokoncna": 8
+    },
+    "rights": "pending",
+    "assetQuality": "insufficient"
+  },
+  "measuredColor": {
+    "rgb": [
+      150,
+      131,
+      113
+    ],
+    "hex": "#968371",
+    "lab": {
+      "L": 142.79285946734856,
+      "a": 132.2630703940274,
+      "b": 140.39539506756034
+    },
+    "note": "izmerjeno iz referenčne fotografije — NI uradni Roksal/RAL podatek"
+  },
+  "fence": {
+    "fenceWidthMm": 1477,
+    "fenceHeightMm": 650,
+    "quadAspect": 2.273015873015873,
+    "nFields": 2,
+    "postPositionsMm": [
+      739
+    ]
+  },
+  "layout": {
+    "boardCount": 13,
+    "pitchMm": 120,
+    "cut": true,
+    "warnings": [],
+    "handlePresent": false
+  },
+  "methods": {
+    "A": {
+      "method": "A",
+      "letviceProduct": 7,
+      "letviceResult": 7,
+      "letviceIdentityOk": true,
+      "outsideMaxPreShadow": 0,
+      "outsideMean": 1.1579,
+      "deltaE": 0,
+      "alphaCoverage": 0.1244,
+      "timeMs": 851,
+      "geometryBoardCount": null,
+      "geometryOk": null,
+      "geometryMethod": "preWarp=n/a (realna foto) (pričakovano: dark=13, bright=12); result(dark=34,bright=25; best-effort); produkt(dark=53,bright=14)",
+      "honestyNotes": [
+        "števec (os Y) ni orientiran za pokončne ploskvice — identiteta preveri contact sheet (vizualno)"
+      ]
+    },
+    "B": {
+      "method": "B",
+      "letviceProduct": 0,
+      "letviceResult": 0,
+      "letviceIdentityOk": true,
+      "outsideMaxPreShadow": 0,
+      "outsideMean": 1.1579,
+      "deltaE": 0,
+      "alphaCoverage": 0.0021,
+      "timeMs": 847,
+      "geometryBoardCount": 13,
+      "geometryOk": true,
+      "geometryMethod": "preWarp=dark=25,bright=12 (pričakovano: dark=13, bright=12); result(dark=20,bright=21; best-effort); produkt(dark=25,bright=12)",
+      "honestyNotes": [
+        "izmerjena barva (gray=135) je NAD dokumentiranim cutout pragom 115 zamrznjenega A-pipeline → kompozit je delno prosojen (to je KVANTIFICIRANA znana omejitev, ne napaka S+7); rešitev: podpora productMask v pipeline (renderFenceMask že obstaja) — kandidat S+8"
+      ]
+    },
+    "C": {
+      "method": "C",
+      "letviceProduct": 0,
+      "letviceResult": 0,
+      "letviceIdentityOk": true,
+      "outsideMaxPreShadow": 0,
+      "outsideMean": 1.1579,
+      "deltaE": 0,
+      "alphaCoverage": 0.0128,
+      "timeMs": 853,
+      "geometryBoardCount": 13,
+      "geometryOk": true,
+      "geometryMethod": "preWarp=dark=12,bright=12 (pričakovano: dark=13, bright=12); result(dark=20,bright=21; best-effort); produkt(dark=12,bright=12)",
+      "honestyNotes": [
+        "material scan projicira lastne svetle vrzeli fotografije v ploskvice (artefakt C-metode) — geometrija je po konstrukciji ista layout instanca kot točno izmerjena B",
+        "izmerjena barva (gray=135) je NAD dokumentiranim cutout pragom 115 zamrznjenega A-pipeline → kompozit je delno prosojen (to je KVANTIFICIRANA znana omejitev, ne napaka S+7); rešitev: podpora productMask v pipeline (renderFenceMask že obstaja) — kandidat S+8"
+      ]
+    },
+    "B2": {
+      "method": "B2",
+      "letviceProduct": 1,
+      "letviceResult": 1,
+      "letviceIdentityOk": true,
+      "outsideMaxPreShadow": 0,
+      "outsideMean": 1.1579,
+      "deltaE": 0,
+      "alphaCoverage": 0.1823,
+      "timeMs": 857,
+      "geometryBoardCount": null,
+      "geometryOk": true,
+      "geometryMethod": "preWarp=n/a (realna foto) (pričakovano: dark=13, bright=12); result(dark=15,bright=17; best-effort); produkt(dark=18,bright=12)",
+      "honestyNotes": [
+        "B2 = SINTETIČNA temna varianta (rgb 70,68,64 — NI izmerjena barva izdelka!) — dokaz, da mehanika kompozita skozi nespremjenjen pipeline deluje; barvna identiteta B2 NI trditev o izdelku"
+      ]
+    }
+  },
+  "note": "ista čista scena kot T1; pokončna ograja — izrez MED stebri (brez konstrukcije); svetlejši odtenek kot Burma Teak referenca — zabeleženo, ne prikrito"
+}

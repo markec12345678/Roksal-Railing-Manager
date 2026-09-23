@@ -1,0 +1,109 @@
+{
+  "test_id": "S7-T2-polna128-rustic-oak-horizontal",
+  "title": "TEST 2 — POLNA 128 / Rustic Oak / prečno (horizontal)",
+  "product": {
+    "productId": "woodcore-polna-128",
+    "profile": "POLNA DESKA-128",
+    "orientation": "horizontal",
+    "faceWidthMm": 128,
+    "thicknessMm": 16.5,
+    "standardLengthsMm": [
+      2200
+    ],
+    "screwsVisible": true,
+    "fixing": "Vijačenje od spredaj — skozi desko v konstrukcijo (vidno na licu); vijak na sredini deske; predvrtanje obvezno (luknja 1 mm večja od vijaka)",
+    "recommendedGapMm": {
+      "min": 5,
+      "max": 30
+    },
+    "usedGapMm": 20,
+    "colorsCount": {
+      "precna": 6,
+      "pokoncna": 6
+    },
+    "rights": "pending",
+    "assetQuality": "insufficient"
+  },
+  "measuredColor": {
+    "rgb": [
+      116,
+      92,
+      74
+    ],
+    "hex": "#745c4a",
+    "lab": {
+      "L": 104.54091947167504,
+      "a": 134.99832271362004,
+      "b": 142.08295765675263
+    },
+    "note": "izmerjeno iz referenčne fotografije — NI uradni Roksal/RAL podatek"
+  },
+  "fence": {
+    "fenceWidthMm": 2046,
+    "fenceHeightMm": 900,
+    "quadAspect": 2.273015873015873,
+    "nFields": 2,
+    "postPositionsMm": [
+      1023
+    ]
+  },
+  "layout": {
+    "boardCount": 7,
+    "pitchMm": 148,
+    "cut": true,
+    "warnings": [],
+    "handlePresent": false
+  },
+  "methods": {
+    "A": {
+      "method": "A",
+      "letviceProduct": 1,
+      "letviceResult": 1,
+      "letviceIdentityOk": true,
+      "outsideMaxPreShadow": 0,
+      "outsideMean": 1.1579,
+      "deltaE": 0,
+      "alphaCoverage": 0.2101,
+      "timeMs": 891,
+      "geometryBoardCount": null,
+      "geometryOk": true,
+      "geometryMethod": "preWarp=n/a (realna foto) (pričakovano: dark=7, bright=6); result(dark=23,bright=14; best-effort); produkt(dark=24,bright=12)",
+      "honestyNotes": [
+        "letvice števec degenerira pri tankih vrzelih realne fotografije (pokritost > 0,5) — identiteta je sicer ohranjena (P=R), absolutno število ni merljivo s tem instrumentom"
+      ]
+    },
+    "B": {
+      "method": "B",
+      "letviceProduct": 7,
+      "letviceResult": 7,
+      "letviceIdentityOk": true,
+      "outsideMaxPreShadow": 0,
+      "outsideMean": 1.1579,
+      "deltaE": 0,
+      "alphaCoverage": 0.186,
+      "timeMs": 899,
+      "geometryBoardCount": 7,
+      "geometryOk": true,
+      "geometryMethod": "preWarp=dark=12,bright=6 (pričakovano: dark=7, bright=6); result(dark=7,bright=17; best-effort); produkt(dark=12,bright=6)",
+      "honestyNotes": []
+    },
+    "C": {
+      "method": "C",
+      "letviceProduct": 7,
+      "letviceResult": 7,
+      "letviceIdentityOk": true,
+      "outsideMaxPreShadow": 0,
+      "outsideMean": 1.1579,
+      "deltaE": 0,
+      "alphaCoverage": 0.1821,
+      "timeMs": 979,
+      "geometryBoardCount": null,
+      "geometryOk": true,
+      "geometryMethod": "preWarp=dark=18,bright=9 (pričakovano: dark=7, bright=6); result(dark=23,bright=20; best-effort); produkt(dark=18,bright=9)",
+      "honestyNotes": [
+        "material scan projicira lastne svetle vrzeli fotografije v ploskvice (artefakt C-metode) — geometrija je po konstrukciji ista layout instanca kot točno izmerjena B"
+      ]
+    }
+  },
+  "note": "ista čista scena kot T1 (S6-T1 — namenoma primerljivo); izrez levega zaslona (široke deske = POLNA 128 videz); razmerje izreza 0,96 vs kvader 2,66 → A RAZTEGNE ploskvice (dokumentirano), B/C regenerirata geometrijo na ciljno razmerje s pravim številom desk — to je glavna prednost proceduralnega pristopa; odtenek toplo rjava (NI potrjen Rustic Oak)"
+}

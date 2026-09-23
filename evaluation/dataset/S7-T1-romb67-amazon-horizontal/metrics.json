@@ -1,0 +1,109 @@
+{
+  "test_id": "S7-T1-romb67-amazon-horizontal",
+  "title": "TEST 1 — ROMB 67 / Amazon Wood / prečno (horizontal)",
+  "product": {
+    "productId": "woodcore-romb-67",
+    "profile": "ROMB DESKA-67",
+    "orientation": "horizontal",
+    "faceWidthMm": 67,
+    "thicknessMm": 26,
+    "standardLengthsMm": [
+      5800
+    ],
+    "screwsVisible": false,
+    "fixing": "RF (rostfrej) vijaki skozi L-kotnik na stebru v aluminijasto cev v sredini profila, pritrditev od zadnje strani",
+    "recommendedGapMm": {
+      "min": 2,
+      "max": 30
+    },
+    "usedGapMm": 20,
+    "colorsCount": {
+      "precna": 7,
+      "pokoncna": 7
+    },
+    "rights": "pending",
+    "assetQuality": "insufficient"
+  },
+  "measuredColor": {
+    "rgb": [
+      65,
+      62,
+      62
+    ],
+    "hex": "#413e3e",
+    "lab": {
+      "L": 67.56656252714949,
+      "a": 129.2794811847162,
+      "b": 128.456803824321
+    },
+    "note": "izmerjeno iz referenčne fotografije — NI uradni Roksal/RAL podatek"
+  },
+  "fence": {
+    "fenceWidthMm": 2046,
+    "fenceHeightMm": 900,
+    "quadAspect": 2.273015873015873,
+    "nFields": 2,
+    "postPositionsMm": [
+      1023
+    ]
+  },
+  "layout": {
+    "boardCount": 11,
+    "pitchMm": 87,
+    "cut": true,
+    "warnings": [],
+    "handlePresent": false
+  },
+  "methods": {
+    "A": {
+      "method": "A",
+      "letviceProduct": 1,
+      "letviceResult": 1,
+      "letviceIdentityOk": true,
+      "outsideMaxPreShadow": 0,
+      "outsideMean": 1.1579,
+      "deltaE": 0,
+      "alphaCoverage": 0.2044,
+      "timeMs": 1504,
+      "geometryBoardCount": null,
+      "geometryOk": true,
+      "geometryMethod": "preWarp=n/a (realna foto) (pričakovano: dark=11, bright=10); result(dark=19,bright=25; best-effort); produkt(dark=9,bright=8)",
+      "honestyNotes": [
+        "letvice števec degenerira pri tankih vrzelih realne fotografije (pokritost > 0,5) — identiteta je sicer ohranjena (P=R), absolutno število ni merljivo s tem instrumentom"
+      ]
+    },
+    "B": {
+      "method": "B",
+      "letviceProduct": 11,
+      "letviceResult": 11,
+      "letviceIdentityOk": true,
+      "outsideMaxPreShadow": 0,
+      "outsideMean": 1.1579,
+      "deltaE": 0,
+      "alphaCoverage": 0.1659,
+      "timeMs": 1114,
+      "geometryBoardCount": 11,
+      "geometryOk": true,
+      "geometryMethod": "preWarp=dark=20,bright=10 (pričakovano: dark=11, bright=10); result(dark=21,bright=21; best-effort); produkt(dark=20,bright=10)",
+      "honestyNotes": []
+    },
+    "C": {
+      "method": "C",
+      "letviceProduct": 10,
+      "letviceResult": 10,
+      "letviceIdentityOk": true,
+      "outsideMaxPreShadow": 0,
+      "outsideMean": 1.1579,
+      "deltaE": 0,
+      "alphaCoverage": 0.1584,
+      "timeMs": 936,
+      "geometryBoardCount": 11,
+      "geometryOk": true,
+      "geometryMethod": "preWarp=dark=20,bright=10 (pričakovano: dark=11, bright=10); result(dark=23,bright=21; best-effort); produkt(dark=20,bright=10)",
+      "honestyNotes": [
+        "material scan projicira lastne svetle vrzeli fotografije v ploskvice (artefakt C-metode) — geometrija je po konstrukciji ista layout instanca kot točno izmerjena B"
+      ]
+    }
+  },
+  "note": "raven balkon (S+1 dokazani vogali); referenčna fotografija vgrajene romb ograje, temen odtenek (domneva Amazon Wood); realne vrzeli TANKE (~5 mm) — števec 0,5-pokritosti j ne razreši (znana omejitev, zabeležena)"
+}

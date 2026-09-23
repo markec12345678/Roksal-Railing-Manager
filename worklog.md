@@ -1157,3 +1157,27 @@ Stage Summary:
 - GO/NO-GO (§23) NI izrečen v nobeno smer — to bi bilo ugibanje; vsi pogoji za izrekanje so pripravljeni: realni run = 1 ukaz na najeti GPU instanci (priporočeno: RunPod 4090/L40S, ~30 min) → evaluation/run_suite.py --backend URL --determinism → REPORT.md z zapolnjenim Qwen stolpcem.
 - Blokade (dokazane): peskovnik brez GPU/RAM/disk/Docker/poverilnic; ZeroGPU anonimna kvota=0 iz datacenter IP; vse skupnostne 2509 Space-i ZeroGPU; ModelScope zahteva račun.
 - Naslednji kandidati (odloči lastnik, spec §26): (1) realni run na najeti instanci → GO/NO-GO; (2) HF račun+token za javni demo; (3) prava svetla ograja foto iz Roksal kataloga za polni §5 TEST 5; (4) šele po GO: Vercel↔GPU integracija (S+7) z A-preview fail-safe.
+
+---
+Task ID: runda S+7
+Agent: Z.ai Code (glavni orkestrator)
+Task: ROKSAL PRODUCT ASSET LIBRARY + PROCEDURAL FENCE ENGINE — read-only audit, Roksal vir (roksal.com), pravicna vrata (pending), data-driven katalog 7 profilov, deterministični procedural fence engine (geometrija brez AI), 3 testni dataset-i (ROMB67/Amazon-H, POLNA128-H, POLNA100-V), identitetno poročilo, A|B|C primerjava, contact sheets, regresija. A-pipeline NI SPREMENJEN, brez novih UI funkcij, Qwen NI integriran (spec S+7 §16 STOP).
+
+Work Log:
+- §0 STANJE: HEAD f812758 (S+6), 228/228 testov ob startu; A-pipeline netaknjen celotno rundо.
+- §1 READ-ONLY AUDIT (Explore agent, brez sprememb): A-pipeline mejnica (pipeline/homography/color/imageops.ts zamrznjeni), vizStore drivers, placement v2, mask-editor, evalvacija S6 (6 testov + manifest), 228 testov, katalošni primitivi (Profil, roksal-catalog-data.ts = cene, ral-colors.ts). Ugotovljeno: podvajanja ni bilo treba; manjkal asset library + procedural engine.
+- §2/§5 KATALOG: data/roksal-catalog.json (7 profilov: ROMB 67, POLNA 128, DESKA 150, POLNA 57/32, POLNA 100, POLNA 128-V, ROMB 67-V — dimenzije, pritrditev, vijaki vidni/skriti, max razmaki po uradnih straneh, ročaj 92×45, čepi, montažna pravila, 9 potrjenih barvnih imen z viri; approxHex = null, ker uradni podatek ne obstaja) + src/lib/product-catalog/index.ts (zod validacija, getProduct/profilesForOrientation/maxSupportSpacingMm/assetStatus). Viri: page_reader na roksal.com (precna/pokoncna/barve/montaza/reference); direkten HTTP = challenge stran (blokada dokumentirana); fotografije prek image-search OSS zrcadla.
+- §3/§4 PRAVICE: evaluation/ROKSAL-ASSET-RIGHTS.md — vse pending, assetQuality insufficient (ni čistih profilnih slik); NOVO odkritje: balcony_2 = Alamy žig, balcony_4 = Dreamstime pečat (S+1 fixturji!) → izloženi iz S+7 datasetov, vsi testi na čisti sceni balcony_3 (S6-T1); tveganje zabeleženo za produkcijo.
+- §7/§8 ENGINE: src/lib/procedural/fence-engine.ts — computeFenceLayout (boardCount = ceil(span/pitch), rezi, opozorila, ročaj po katalogu), renderFence (belo ozadje, ROMB rebro, POLNA robovi + determinističen vzorec, stebri ZA deskami, vijaki samo pri screwsVisible+stebri, ročaj z vijaki 500 mm), renderFenceMask (deterministična alfa iz konstrukcije). Nič naključja; enak vhod → bajtno identičen izhod.
+- §9 DATASET: tools/s7-dataset.ts → evaluation/dataset/S7-T{1,2,3}*/ (original, product izrez, profile izrez ene deske, maska, placement, procedural/{generated_fence,generated_fence_texture,generated_fence_mask,generated_fence_dark_variant}.png, layout.json, preview/{a,b,c,b2}_preview.jpg, metrics.json) + S7-manifest.json.
+- §10/§11 POROČILA: evaluation/S7-IDENTITY-REPORT.{json,md}, evaluation/S7-ABC-COMPARISON.{json,md} — B pre-warp geometrija TOČNA (svetli teki = vrzeli = boardCount−1 za vse B/C rendere); T1 B 11→11 ✓, T2 B 7→7 ✓, T3 B/C pre-warp 13/13 ✓; A: letvice 1→1 (degenerirano pri tankih vrzelih — iskreno), preshadow 0 in ΔE 0.00 POVSEK.
+- §14 VISUAL QA: evaluation/contact-sheets/s7-contact-*.png — ORIGINAL | PRODUCT | PROCEDURAL | A | B | C (+B2) + 2× povečave.
+- KVANTIFICIRANA OMEJITEV: svetli Roksal produkti (gray > 115) = izven vhodne domene zamrznjenega cutouta (dokazano s POLNA 100, gray≈150) → kompozit delno prosojen; rešitev (productMask podpora v runPipeline; renderFenceMask že obstaja) = TOP kandidat S+8; B2 (sintetična temna, označena) dokazuje mehaniko vertikalnega kompozita (13/13).
+- TEHNIČNE IZBIRE: štetje ploskovic = detrendiran profil + temni/svetli teki (avtokorelacija zavrnjena — tekstura jo moti); barva merjena iz sredine 60 % izreza; perspektiva izključno iz 4-vogalnikov (homografija A-pipeline, nespremenjena).
+- §15 REGRESIJA: 260/260 vitest (228 starih + 32 novih), tsc 0, ESLint 0; src/lib/viz diff proti f812758 = prazno; UI datoteke nespremenjene.
+
+Stage Summary:
+- S+7 DEFINITION OF DONE IZPOLNJENA: katalog obstaja (7 profilov + viri), pravice evidentirane (pending + odkriti žigi), 3 realni produkti modelirani, procedural renderer deluje in je DETERMINISTIČEN, A-pipeline nespremenjen, produktna identiteta NI generirana naključno (vsa geometrija = katalog), avtomatski testi (260) + visual QA obstajajo.
+- Glavna vrednost: geometrija izdelka je sedaj PODATEK (katalog), ne fotografija — B/C metoda regenerira pravo število desk na ciljnem razmerju (T2: A raztegne, B/C ne).
+- Glavna omejitev (kvantificirana, ne skrita): svetli produkti skozi zamrznjen prag 115; rešitev pripravljena (renderFenceMask), implementacija = S+8.
+- Naslednji kandidati (odloči lastnik — STOP po S+7): (1) productMask podpora v pipeline, (2) Roksal dovoljenje + čisti asseti, (3) šele potem UI izbira iz kataloga.

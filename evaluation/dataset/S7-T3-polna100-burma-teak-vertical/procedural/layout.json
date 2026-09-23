@@ -1,0 +1,128 @@
+{
+  "request": {
+    "productId": "woodcore-polna-100",
+    "orientation": "vertical",
+    "fenceWidthMm": 1477,
+    "fenceHeightMm": 650,
+    "gapMm": 20,
+    "material": {
+      "kind": "color",
+      "rgb": [
+        150,
+        131,
+        113
+      ]
+    },
+    "outWidthPx": 896,
+    "outHeightPx": 394,
+    "posts": {
+      "widthMm": 60,
+      "positionsMm": [
+        739
+      ]
+    }
+  },
+  "layout": {
+    "productId": "woodcore-polna-100",
+    "profile": "POLNA DESKA-100",
+    "orientation": "vertical",
+    "faceWidthMm": 100,
+    "gapMm": 20,
+    "pitchMm": 120,
+    "fenceWidthMm": 1477,
+    "fenceHeightMm": 650,
+    "fieldHeightMm": 650,
+    "fieldSpanMm": 1477,
+    "boardCount": 13,
+    "boards": [
+      {
+        "index": 0,
+        "startMm": 0,
+        "visibleMm": 100,
+        "cut": false
+      },
+      {
+        "index": 1,
+        "startMm": 120,
+        "visibleMm": 100,
+        "cut": false
+      },
+      {
+        "index": 2,
+        "startMm": 240,
+        "visibleMm": 100,
+        "cut": false
+      },
+      {
+        "index": 3,
+        "startMm": 360,
+        "visibleMm": 100,
+        "cut": false
+      },
+      {
+        "index": 4,
+        "startMm": 480,
+        "visibleMm": 100,
+        "cut": false
+      },
+      {
+        "index": 5,
+        "startMm": 600,
+        "visibleMm": 100,
+        "cut": false
+      },
+      {
+        "index": 6,
+        "startMm": 720,
+        "visibleMm": 100,
+        "cut": false
+      },
+      {
+        "index": 7,
+        "startMm": 840,
+        "visibleMm": 100,
+        "cut": false
+      },
+      {
+        "index": 8,
+        "startMm": 960,
+        "visibleMm": 100,
+        "cut": false
+      },
+      {
+        "index": 9,
+        "startMm": 1080,
+        "visibleMm": 100,
+        "cut": false
+      },
+      {
+        "index": 10,
+        "startMm": 1200,
+        "visibleMm": 100,
+        "cut": false
+      },
+      {
+        "index": 11,
+        "startMm": 1320,
+        "visibleMm": 100,
+        "cut": false
+      },
+      {
+        "index": 12,
+        "startMm": 1440,
+        "visibleMm": 37,
+        "cut": true
+      }
+    ],
+    "handleHeightMm": 0,
+    "handlePresent": false,
+    "warnings": []
+  },
+  "layoutMs": 0,
+  "bRenderMs": 94,
+  "nFields": 2,
+  "postPositionsMm": [
+    739
+  ],
+  "quadAspect": 2.273015873015873
+}
