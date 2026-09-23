@@ -17,21 +17,9 @@ import { z } from 'zod'
 import { vizOwner, type VizOwnerContext } from '@/lib/viz/ownership'
 import type { VizPlacement, VizVariant } from '@/lib/viz/types'
 import { placementSchema, stagedTokenSchema } from '@/lib/viz/validate'
-import {
-  VIZ_FILE_NAMES,
-  projectKey,
-  stagingKey,
-  vizCopy,
-  vizDelPrefix,
-  vizGet,
-  vizHas,
-  vizPut,
-} from '@/lib/viz/storage'
-import {
-  createProject,
-  findProjectByIdempotencyKey,
-  listProjectsForOwner,
-} from '@/lib/viz/repository'
+import { VIZ_FILE_NAMES, stagingKey, vizGet, vizHas } from '@/lib/viz/storage'
+import { findProjectByIdempotencyKey, listProjectsForOwner } from '@/lib/viz/repository'
+import { saveProjectFromStaging, type VizSaveVariantInput } from '@/lib/viz/save-flow'
 
 export const runtime = 'nodejs'
 
@@ -97,19 +85,6 @@ export async function GET(request: Request) {
     console.error('Viz projects GET error:', error)
     return NextResponse.json({ error: 'Napaka pri branju viz projektov' }, { status: 500 })
   }
-}
-
-/** Kopiraj staged datoteko v projekt pod kanoničnim imenom; vrne javni URL. */
-async function copyIntoProject(
-  id: string,
-  srcToken: string,
-  srcName: string,
-  destName: string
-): Promise<string | null> {
-  const srcKey = stagingKey(srcToken, srcName)
-  if (!(await vizHas(srcKey))) return null
-  const { url } = await vizCopy(srcKey, projectKey(id, destName))
-  return url
 }
 
 /** POST — shrani staging v projekt (kopira datoteke + ustvari metadata zapis). */
@@ -192,11 +167,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Staged maska izdelka ne obstaja' }, { status: 400 })
     }
     // Variantne vire preverimo vnaprej — pred kopiranjem.
-    const variantSources: Array<{
-      label: string
-      productToken: string
-      productMaskToken: string | null
-    }> = []
+    const variantSources: VizSaveVariantInput[] = []
     if (variants && variants.length > 0) {
       for (const variant of variants) {
         const vProductSrc = stagingKey(variant.productToken, VIZ_FILE_NAMES.product)
@@ -223,108 +194,25 @@ export async function POST(request: Request) {
       }
     }
 
-    // ── Kopiraj staging → projects/<id>/ (kanonična imena) ─────────────────
-    // original (stagingToken ali izrecno), preview + result so v staging
-    // originalnega tokena; result.json pa ni javna datoteka projekta.
-    const originalUrl =
-      (await copyIntoProject(createdId, stagingToken, VIZ_FILE_NAMES.original, VIZ_FILE_NAMES.original)) ??
-      (await copyIntoProject(createdId, tokens.original, VIZ_FILE_NAMES.original, VIZ_FILE_NAMES.original))
-    if (!originalUrl) {
-      return NextResponse.json(
-        { error: 'Staged fotografija balkona ne obstaja — naloži sliko znova' },
-        { status: 400 }
-      )
-    }
-
-    const productUrl = await copyIntoProject(createdId, tokens.product, VIZ_FILE_NAMES.product, VIZ_FILE_NAMES.product)
-    const maskUrl = await copyIntoProject(createdId, tokens.mask, VIZ_FILE_NAMES.mask, VIZ_FILE_NAMES.mask)
-    const productMaskUrl = productMaskSrc
-      ? await copyIntoProject(createdId, tokens.productMask!, VIZ_FILE_NAMES.productMask, VIZ_FILE_NAMES.productMask)
-      : null
-
-    const previewUrl = await copyIntoProject(createdId, stagingToken, VIZ_FILE_NAMES.preview, VIZ_FILE_NAMES.preview)
-
-    // result.json (metrike + provenance) — javna datoteka projekta (kot v S+2).
-    const resultUrl = await copyIntoProject(createdId, stagingToken, VIZ_FILE_NAMES.result, VIZ_FILE_NAMES.result)
-
-    // placement.json (normalizirane koordinate).
-    const placementPut = await vizPut(projectKey(createdId, VIZ_FILE_NAMES.placement), Buffer.from(JSON.stringify(placement, null, 2), 'utf8'), 'application/json')
-
-    // ── Variante: product-<i>.jpg / product-mask-<i>.png ────────────────────
-    const variantRecords: VizVariant[] = []
-    for (let i = 0; i < variantSources.length; i++) {
-      const variant = variantSources[i]
-      const idx = i + 1
-      const vProductUrl = await copyIntoProject(
-        createdId,
-        variant.productToken,
-        VIZ_FILE_NAMES.product,
-        `product-${idx}.jpg`
-      )
-      let variantMaskPath: string | null = null
-      if (variant.productMaskToken) {
-        const vMaskUrl = await copyIntoProject(
-          createdId,
-          variant.productMaskToken,
-          VIZ_FILE_NAMES.productMask,
-          `product-mask-${idx}.png`
-        )
-        variantMaskPath = vMaskUrl
-      }
-      variantRecords.push({
-        label: variant.label,
-        productPath: vProductUrl ?? '',
-        productMaskPath: variantMaskPath,
-        previewPath: null,
-      })
-    }
-
-    // ── Metadata zapis (local = Prisma, blob = project.json) ────────────────
-    // Metadata je COMMIT TOČKA: nastane ZADNJI, po uspešnem kopiranju vseh
-    // datotek (S+4 failure-safe — glej src/lib/viz/save-flow.ts + teste).
-    const record = await createProject({
+    // ── Failure-safe save (S+4): kopiranje → COMMIT (metadata) → staging ────
+    // Vse kopiranje + commit + staging cleanup je v saveProjectFromStaging
+    // (compensating cleanup pri pre-commit napakah; testi z fault injection).
+    const { record, urls } = await saveProjectFromStaging({
       id: createdId,
       ownerId: ctx.ownerId,
       idempotencyKey: idempotencyKey ?? null,
       name,
-      originalPath: originalUrl,
-      productPath: productUrl ?? '',
-      productMaskPath: productMaskUrl,
-      maskPath: maskUrl ?? '',
-      previewPath: previewUrl,
-      resultPath: resultUrl,
-      placement: JSON.stringify(placement),
-      variants: variantRecords.length > 0 ? JSON.stringify(variantRecords) : null,
+      stagingToken,
+      tokens,
+      placement,
+      variants: variantSources,
     })
 
-    // ── Pobriši porabljene staging tokene ───────────────────────────────────
-    const consumedTokens = new Set<string>([
-      stagingToken,
-      tokens.original,
-      tokens.product,
-      tokens.mask,
-      tokens.productMask ?? '',
-      ...(variants?.map((v) => v.productToken) ?? []),
-      ...(variants?.map((v) => v.productMaskToken ?? '') ?? []),
-    ])
-    consumedTokens.delete('')
-    for (const token of consumedTokens) {
-      await vizDelPrefix(`viz/staging/${token}`).catch(() => undefined)
-    }
-
-    const urls = {
-      original: record.originalPath,
-      product: record.productPath,
-      productMask: record.productMaskPath,
-      mask: record.maskPath,
-      preview: record.previewPath,
-      placement: placementPut.url,
-      result: record.resultPath,
-    }
     return NextResponse.json({ projectId: record.id, urls })
   } catch (error) {
-    // Pospravi nedokončano projektno mapo (tolerantno).
-    await vizDelPrefix(`viz/projects/${createdId}`).catch(() => undefined)
+    // Pre-commit cleanup je naredil saveProjectFromStaging (compensating);
+    // tu samo tolerantno pospravimo morebitne ostanke brez metadata (GC pa
+    // pobere preostanek kasneje) — NE moremo poškodovati že commitanega projekta.
     console.error('Viz projects POST error:', error)
     return NextResponse.json({ error: 'Napaka pri shranjevanju projekta' }, { status: 500 })
   }
