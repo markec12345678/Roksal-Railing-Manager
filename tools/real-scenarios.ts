@@ -174,7 +174,7 @@ async function main() {
   // Pričakovano št. letvic na produktu (samoskladna prevera, S+1 = 13)
   const cut = cutoutProduct(product, productQuadPx)
   const expected = countLetvice(cut.alpha, product.w, product.h, productQuadPx)
-  console.log('produkt: bay 460×660 — letvice na produktu (rektificirano):', expected.count)
+  console.log('produkt: bay 460×660 — letvice na produktu (rektificirano):', expected)
 
   const results: Array<Record<string, unknown>> = []
   for (const sc of SCENARIOS) {
@@ -244,7 +244,7 @@ async function main() {
       mask: path.basename(sc.mask),
       placement: { corners: sc.corners, rotation: 0, scale: 1, productQuad: PRODUCT_QUAD },
       expected_slats: EXPECTED_SLATS,
-      slat_check_on_product: expected.count,
+      slat_check_on_product: expected,
       detected_or_rendered_slats: m.letviceResult,
       outside_max_diff: m.outsideMax,
       outside_mean_diff: m.outsideMean,
