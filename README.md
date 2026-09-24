@@ -77,7 +77,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 35 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **565** (36 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **586** (37 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 52 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -339,7 +339,7 @@ Sheet z 6 podzavihki:
 | **PWA** | Service Worker + Web Manifest |
 | **Temnitveni način** | [next-themes](https://github.com/pacocoursey/next-themes) |
 | **Validacija** | [Zod 4](https://zod.dev/) |
-| **Testiranje** | [Vitest 4](https://vitest.dev/) (565 testov + globalSetup embedded PG) |
+| **Testiranje** | [Vitest 4](https://vitest.dev/) (586 testov + globalSetup embedded PG) |
 | **Paketni upravitelj** | [Bun](https://bun.sh/) |
 | **Linting** | ESLint 9 + eslint-config-next |
 
@@ -395,10 +395,12 @@ roksal-railing-manager/
 
 ### Servisni principal (API ključ)
 
-`rkm_…` ključ = **MOBILE_SYNC** z najmanjšimi pravicami: sync projektov
-(branje zrcala + pisanje prek statusnega stroja), meritve, fotodokumentacija.
-NE sme cen/dobaviteljev/zaloge/brisanja/zaklepa. Glej
-[`docs/SECURITY-POLICY.md`](docs/SECURITY-POLICY.md).
+`rkm_…` ključ = **MOBILE_SYNC** z najmanjšimi pravicami, od R126 izrazno
+scopiran: `projects:read` / `projects:write` (sync prek statusnega stroja),
+`measurements:create`, `photos:read` / `photos:write`. Ključ nosi tudi namen,
+projektne omejitve (`--projects id1,id2`), potek (`--expires`) in per-key
+omejitev hitrosti; rotacija z `--rotate`. NE sme cen/dobaviteljev/zaloge/
+naročil/računov/brisanja/zaklepa. Glej [`docs/SECURITY-POLICY.md`](docs/SECURITY-POLICY.md).
 
 ---
 
@@ -434,7 +436,9 @@ bun run db:seed         # demo podatki (+ OPENING ledger vnosi)
 bunx tsx tools/create-admin.ts ti@roksal.si ADMIN 'TvojeGeslo'
 
 # 6. API ključ za mobilni klient (BalkonAR) — vidiš ga samo enkrat
-bunx tsx tools/create-api-key.ts "Moj telefon"
+#    Možnosti: --purpose --scopes --projects id1,id2 --expires 2027-06-30
+#              --expires-in-days 365 --rate-limit 120 · rotacija: --rotate <id>
+bunx tsx tools/create-api-key.ts "Moj telefon" --expires-in-days 365
 
 # 7. Zaženi razvojni server
 bun run dev
@@ -467,7 +471,7 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `bun run db:seed` | Demo podatki |
 | `bun run db:up` / `db:down` | Embedded PostgreSQL 18 na :5433 (lokalni razvoj) |
 | `bun run db:reset` | Ponastavi bazo (migrate reset) |
-| `bun run apikey` | Ustvari API ključ (MOBILE_SYNC) — vidiš ga samo enkrat |
+| `bun run apikey` | API ključi: ustvari (scope-i/potek/omejitev projektov), `--rotate`, `--revoke`, `--list` — poln ključ viden samo enkrat |
 | `bun run backup` | pg_dump backup (glej `tools/backup-db.ts`) |
 
 ### Privzeti uporabniki (po seed-u)
@@ -515,7 +519,7 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `PunchItem` | Prejemni zapisnik (closeout kontrolni seznam) |
 | `Invoice` | Računi (eslog e-računi, številčenje) |
 | `SiteSurvey` | Terenski pregled pred montažo |
-| `ApiKey` | API ključi (MOBILE_SYNC) — samo SHA-256 hash v bazi |
+| `ApiKey` | API ključi (MOBILE_SYNC) — pepper+SHA-256 hash, scope-i, projectScope, potek, rotacija |
 | `UserSession` | Sejni register (R125): jti/naprava/potek/revoke — revokacija žetonov |
 | `VizProject` / `VizRenderJob` | Vizualizacijska plast (render jobi) |
 

@@ -1,6 +1,6 @@
-# Varnostna politika — resource-level avtorizacija (issue #4, §3; R120)
+# Varnostna politika — resource-level avtorizacija (issue #4, §3; R120; R125; R126)
 
-Velja od: **S+9**, razširjeno **R120** (security pass). Modul: `src/lib/access.ts` (+ `src/lib/project-state.ts`).
+Velja od: **S+9**, razširjeno **R120** (security pass), **R125** (session revocation), **R126** (API-key lifecycle). Modul: `src/lib/access.ts` (+ `src/lib/project-state.ts`, `src/lib/api-keys.ts`).
 
 ## Načelo
 
@@ -26,29 +26,52 @@ Avtentikacija brez avtorizacije vira je IDOR ranljivost, ne varnost.
 | MONTER | svoje | svoje (brez deal-lock) | ne | ustvari/uredi | svojih projektov (read) | read | dovoljeni prehodi |
 | SKLADISCE | vse | ne | ne | read | read | vse (prejem, premiki) | ne |
 
-## Servisni principal MOBILE_SYNC (R120 — API ključ, najmanjše pravice)
+## Servisni principal MOBILE_SYNC (R120; R126 — scope model)
 
 API ključ (`rkm_…`) NI več "manager na ravni VODJA" (to je bil R120 najdeni
 problem: en ključ je lahko bral vse, spreminjal projekte, ustvarjal projekte z
 poljubnim statusom, vplival na stranke). Je **namenski servisni principal**:
 
-| Pravica | Dovoljeno? | Opomba |
+| Pravica (scope) | Dovoljeno? | Opomba |
 |---|---|---|
-| read projektov (sync zrcalo) | ✅ | dokumentirana servisna pogodba (`projectWhereForPrincipal → {}` SAMO v `/api/sync`) |
-| sync update projektov (polja + status) | ✅ | status SAMO prek statusnega stroja, nikoli čez deal-lock |
-| sync create projekt | ✅ | IZKLJUČNO z začetnim statusom `NACRTOVANO` (korekcija se javi v `results`) |
-| ustvarjanje meritev (measurement) | ✅ | `assertProjectAccess` velja tudi tu |
-| nalaganje fotodokumentacije | ✅ | `/api/photos` POST zahteva 'read' na projektu (terenško dejanje); DELETE zahteva 'update' |
+| `projects:read` — read projektov (sync zrcalo) | ✅ z scope-om | dokumentirana servisna pogodba (`projectWhereForPrincipal`); brez scope-a → 403 |
+| `projects:write` — sync update/create projektov | ✅ z scope-om | status SAMO prek statusnega stroja, nikoli čez deal-lock; nov projekt IZKLJUČNO `NACRTOVANO` |
+| `measurements:create` — ustvarjanje meritev | ✅ z scope-om | `assertProjectAccess` velja tudi tu |
+| `photos:write` — nalaganje fotodokumentacije | ✅ z scope-om | POST zahteva 'read' na projektu; DELETE zahteva 'update' (= `projects:write`) |
+| `photos:read` — branje fotodokumentacije | ✅ z scope-om | GET zahteva 'read' na projektu |
+| brez scope-a (nič od zgoraj) | ❌ | 403 na vsaki sodelujoči ruti |
 | brisanje projektov/strank | ❌ | 403 |
 | zaklep/odklep (lock) | ❌ | 403 |
-| urejanje cen / dobaviteljev / zaloge | ❌ | 403 (in `denyUnless` blokira že na vstopu) |
+| računi (uradni dokumenti) | ❌ | **401 na proxy + 403 v ruti** — R126 je popravil pukljavo: prej je `invoices` spustil apikey kot "manager" |
+| naročila / zaloga / dobavitelji | ❌ | **401 na proxy + 403 v ruti** — R126: prej je `material-orders` GET/PATCH smel apikey (bral naročila s cenami, spreminjal status) |
 | obhod statusnega stroja | ❌ | `assertTransition`: servis NI manager |
+
+### Lifecycle ključa (R126 — issue #5 §3)
+
+Vsak ključ v bazi nosi:
+
+| Polje | Pomen |
+|---|---|
+| `purpose` | namenska raba (samo oznaka, ne vpliva na pravice) |
+| `scopes` | izrazna scope lista (katalog: `src/lib/api-keys.ts`); neznane vrednosti se spustijo (fail-closed) |
+| `projectScope` | omejitev na projekte (ID-ji); null = vsi (sync zrcalo podjetja); z listi → samo ti (tako v `assertProjectAccess` kot v `projectWhereForPrincipal` — seznami in asserti) |
+| `expiresAt` | po poteku preverba zavrne (`expired`) — fail-closed |
+| `rateLimitPerMin` | per-key proračun zahtevkov/min (privzeto 120); čez → `rate_limited` |
+| `rotatedFrom` | povezava na predhodnika pri rotaciji |
+| `lastUsedAt` | osveženo ob vsaki uspešni preverbi |
+
+- **Ustvarjanje**: `bun run apikey "ime" [--purpose …] [--scopes …] [--projects id1,id2] [--expires 2027-06-30 | --expires-in-days 365] [--rate-limit 120]`. Poln ključ je viden SAMO ob izpisu (one-time display secret); v bazi je pepper+HMAC-SHA-256.
+- **Rotacija**: `bun run apikey -- --rotate <id>` — nov ključ z ISTIMI pravicami (name, purpose, scopes, projectScope, expiry, rate limit), predhodnik se prekliče, `rotatedFrom` poveže. Poln novi ključ je viden samo tokrat. Preglasitev poteka: `--expires`.
+- **Preklic**: `bun run apikey -- --revoke <id>`.
+- **Pregled**: `bun run apikey -- --list` (stanja: ŽIV / PREKLICAN / POTEKEL + scope-i, projectScope, rotacija).
+- **Audit**: `APIKEY_*` življenjski dogodki so v dnevniku lastnika; vsaka neuspešna preverba piše `AUTH_APIKEY_FAIL` z razlogom (`unknown` / `revoked` / `expired` / `rate_limited`) — vmejeno na 30/min/IP, da brute-force ne napolni dnevnika.
+- **Plasti**: proxy (Edge) preveri samo OBLIKO žetona za `/api/sync`, `/api/measurement/confirm`, `/api/photos`; ruta je avtoriteta (hash, scope-i, projectScope, potek, rate limit). Vse ostale rute so za API ključe na proxy sploh nedosegljive (401).
 
 - "svoje" = `Project.monterId === session.sub || Project.vodjaId === session.sub`.
 - API ključ = strojni servisni principal MOBILE_SYNC. Ni uporabniške pripisnosti:
   `audit.userId = null`; akcije v sync so kljub temu auditirane
   (`SYNC_PROJECT_CREATED` / `SYNC_PROJECT_UPDATED` v ISTI transakciji kot posel).
-  Ustvari se z `bun run apikey`, hrani se samo SHA-256 hash, preklic = `revokedAt`.
+  Lifecycle (scope-i, projectScope, potek, rotacija, rate limit) — zgoraj.
 - `dealLocked` projekt: monter IN servis ne moreta več urejati/spreminjati statusa
   (izključno vodstvo prek eksplicitnih workflow korakov).
 
@@ -60,7 +83,7 @@ poljubnim statusom, vplival na stranke). Je **namenski servisni principal**:
 - `api/invoices` — POST/PATCH/DELETE: samo vodstvo (uradni dokumenti);
   GET: monter samo svoji projekti.
 - `api/material-orders` — POST: vodstvo; PATCH (prejem DOBLJENO): vodstvo +
-  skladišče; GET: vsi poslovni principalci.
+  skladišče; GET: uporabniški principalci (R126: API ključ → 403).
 - `api/inventory` — premiki: vodstvo + skladišče; novo artikel: vodstvo.
 - `api/customers` — POST: uporabniki (teren); API ključ ne (niti brisanje).
 - `api/sync` (R120) — GET: `projectWhereForPrincipal` skoping (monter = svoje);
@@ -106,6 +129,20 @@ profila. UI: gumb Odjava v TopBar (Ta naprava / Vse naprave).
 Testi: `src/lib/__tests__/session-revocation.test.ts` (9 primerov čez prave
 route handlerje: legacy žeton, logout, logout-all, menjava gesla + ponovna
 prijava, pregled, DELETE tuje seje, potekla vrstica).
+
+## API-key lifecycle (R126, issue #5 §3)
+
+Testi: `src/lib/__tests__/api-key-lifecycle.test.ts` (21 primerov: unknown/
+revoked/expired/rate_limited, authenticate context s scope-i, AUTH_APIKEY_FAIL
+audit, rotacija (podeduje pravice, predhodnik mrtv, preglasitev poteka),
+scope vrata na pravih handlerjih (sync/measurement/photos), projektne omejitve
+na ravni vrstic in seznamov, regresiji pukljav: invoices in material-orders
+za API ključ → 403).
+
+E2E (dev, HTTP): read-only ključ — sync GET 200 / sync POST 403 /
+measurement+photos 403; polni scope — sync POST 200, measurement 400 (zod =
+vrata prehojena), photos 404 (vir ne obstaja); neznani ključ 401; rotacija —
+stari 401, novi 200; audit vidi `unknown` in `revoked` razloge.
 
 ## Še ni pokrito (iskreno, naslednje runde)
 
