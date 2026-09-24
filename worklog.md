@@ -1554,3 +1554,4 @@ DODATEK R126 (CI + produkcija):
 - PRODUKCIJA SPOT-CHECK (https://roksal-railing-manager.vercel.app): login 200 · anon sync 401 · napačen rkm_ 401 · auth sync 200 · auth projects 200 · auth invoices 200 (leak fix NI pokvaril legitimnih poti) · auth material-orders 200 · photos brez projectId 400 (ruta dosežena) · measurement/confirm {} 400 (ruta dosežena).
 - agent-browser produkcija: prijava → dashboard (Roksal Vizualizacija + TopBar) rendera, konzola čista.
 - Naslednja runda (kandidati iz #5): §4 offline queue IndexedDB, §5 PWA/cache izolacija, §6 CSRF/Origin, §9 user lifecycle, §10 permission matrix. Lastniška koraka ostajata: #7 Neon backfill --commit, #8 prave fotke.
+DODATEK R126 (issue #5 komentar): 5822409836 — R126 §3 tabela zahtev + pukljavi + uskladitev proxy + verifikacija.
