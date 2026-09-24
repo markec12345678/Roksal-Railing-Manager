@@ -11,8 +11,12 @@
 //   → render v produktnih koordinatah + exact maska iz layout-a
 //   → A-pipeline homografija (4-točkovni placement) → balkonska slika.
 //
-// Pravice (spec §3): rights=rejected → 403; rights=pending → dovoljeno SAMO
-// za interno development/evalvacijo (odgovor to odkrito označi).
+// Pravice (S+8.1 §11): EKSPPLICITEN gate — rights=rejected → 403 VEDNO;
+// rights=pending → blokiran v production načinu (ROKSAL_RIGHTS_MODE=production),
+// dovoljen IZKLJUČNO v evaluation načinu za interno development/evalvacijo
+// (odgovor to odkrito označi). Privzeti način = evaluation (trenutni deployment
+// je razvojni — dokumentirano v evaluation/S81-AUDIT.md §F9). NI NODE_ENV kot
+// poslovno pravilo.
 import { NextResponse } from 'next/server'
 import sharp from 'sharp'
 import { z } from 'zod'
@@ -24,6 +28,9 @@ import { vizOwner } from '@/lib/viz/ownership'
 import { productSdk } from '@/lib/product-sdk'
 
 export const runtime = 'nodejs'
+
+/** S+8.1: lokalni validation error — loči 400 (vhod) od 500 (strežniška napaka). */
+class ProductPreviewValidationError extends Error {}
 
 const rgbSchema = z.tuple([
   z.number().finite().min(0).max(255),
@@ -89,6 +96,16 @@ export async function POST(request: Request) {
     if (definition.rights === 'rejected') {
       return NextResponse.json({ error: `Produkt "${definition.id}" ima pravice zavrnjene — render NI dovoljen` }, { status: 403 })
     }
+    // S+8.1 §11: pending je dovoljen IZKLJUČNO v evaluation načinu (privzeti,
+    // razvojni deployment); production način ga blokira — ekspliciten gate.
+    const rightsMode = productSdk.rights.mode()
+    const gate = productSdk.rights.gate(definition, rightsMode)
+    if (!gate.allowed) {
+      return NextResponse.json(
+        { error: gate.reason, rights: { status: gate.rights, mode: gate.mode } },
+        { status: gate.httpStatus }
+      )
+    }
 
     // ── 2. Naloži staged vhode (balkon + maska stare ograje) ────────────────
     const originalFile = await vizGet(stagingKey(originalToken, VIZ_FILE_NAMES.original))
@@ -132,14 +149,21 @@ export async function POST(request: Request) {
     const outW = Math.max(4, Math.min(1600, Math.round(quadW)))
     const outH = Math.max(4, Math.min(1600, Math.round(quadH)))
 
-    const { render, mask: productMask } = productSdk.renderWithMask({
-      definition,
-      config,
-      layout,
-      material: { colorId, measuredRgb },
-      outWidthPx: outW,
-      outHeightPx: outH,
-    })
+    const { render, mask: productMask } = (() => {
+      try {
+        return productSdk.renderWithMask({
+          definition,
+          config,
+          layout,
+          material: { colorId, measuredRgb },
+          outWidthPx: outW,
+          outHeightPx: outH,
+        })
+      } catch (error) {
+        // S+8.1 §12: neznana/nezrešljiva barva = neveljavna zahteva (400, ne 500).
+        throw new ProductPreviewValidationError(error instanceof Error ? error.message : 'Material ni razrešen')
+      }
+    })()
     if (!render.renderValid) {
       // spec §8: padla invarianta → rezultat NI validen produkt (odkrito).
       return NextResponse.json(
@@ -188,6 +212,8 @@ export async function POST(request: Request) {
         catalogProductId: definition.catalogProductId,
         profile: definition.profile.name,
         rights: definition.rights,
+        rightsMode,
+        rightsReason: gate.reason,
         layout: {
           boardCount: layout.boardCount,
           gapMm: layout.gapMm,
@@ -217,6 +243,13 @@ export async function POST(request: Request) {
       product: resultJson.product,
     })
   } catch (error) {
+    if (error instanceof ProductPreviewValidationError) {
+      return NextResponse.json({ error: 'Neveljavna konfiguracija produkta', details: error.message }, { status: 400 })
+    }
+    if (error instanceof Error && error.name === 'SdkValidationError') {
+      // S+8.1: SDK validation napake (layout konflikti, neveljavna geometrija) = 400.
+      return NextResponse.json({ error: 'Neveljavna konfiguracija ograje', details: error.message }, { status: 400 })
+    }
     console.error('Viz product-preview POST error:', error)
     return NextResponse.json({ error: 'Napaka pri pripravi predogleda produkta' }, { status: 500 })
   }

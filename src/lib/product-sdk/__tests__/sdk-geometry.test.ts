@@ -63,10 +63,11 @@ describe('geometry: board aritmetika (source-of-truth)', () => {
     expect(lay.warnings.some((w) => w.includes('izven priporočila'))).toBe(true)
   })
 
-  it('nepodprta orientacija → odkrito opozorilo', () => {
+  it('nepodprta orientacija → ZAVRNJENA (S+8.1 §13: hard fail, ne warning)', () => {
     const def = defOf('roksal.woodcore.polna-100') // samo vertical
-    const lay = buildFenceLayout(config({ productId: def.id, orientation: 'horizontal' }), { definition: def })
-    expect(lay.warnings.some((w) => w.includes('NE podpira orientacije'))).toBe(true)
+    expect(() =>
+      buildFenceLayout(config({ productId: def.id, orientation: 'horizontal' }), { definition: def }),
+    ).toThrow(/NE podpira orientacije/)
   })
 
   it('neveljavna konfiguracija → javna napaka (ni tišega popravljanja)', () => {
@@ -84,20 +85,24 @@ describe('geometry: board aritmetika (source-of-truth)', () => {
 })
 
 describe('geometry: konstrukcija iz katalogovih pravil', () => {
-  it('stebri: eksplicitne pozicije + opozorilo, če presegajo max razmak', () => {
-    const def = defOf('roksal.woodcore.romb-67') // maxPostSpacingMm 1450
-    const lay = buildFenceLayout(
-      config({ posts: { widthMm: 60, positionsMm: [0, 1600, 3200] } }),
+  it('stebri: eksplicitne pozicije, ki presegajo max razmak → ZAVRNJENE (S+8.1 §5 hard)', () => {
+    const def = defOf('roksal.woodcore.romb-67') // maxPostSpacing H=1450
+    expect(() =>
+      buildFenceLayout(
+        config({ posts: { widthMm: 60, positionsMm: [0, 1600, 3200] } }),
+        { definition: def },
+      ),
+    ).toThrow(/presega katalog max/)
+    // natančno na max = dovoljeno (exact max spacing)
+    const okLay = buildFenceLayout(
+      config({ posts: { widthMm: 60, positionsMm: [0, 1450, 2900, 3200] } }),
       { definition: def },
     )
-    expect(lay.posts.map((p) => p.centerMm)).toEqual([0, 1600, 3200])
-    expect(lay.posts[0].role).toBe('terminal')
-    expect(lay.posts[1].role).toBe('intermediate')
-    expect(lay.warnings.some((w) => w.includes('presega katalog max'))).toBe(true)
+    expect(okLay.posts.map((p) => p.centerMm)).toEqual([0, 1450, 2900, 3200])
   })
 
-  it('stebri: izpeljava iz maxPostSpacingMm (deterministično)', () => {
-    const def = defOf('roksal.woodcore.romb-67')
+  it('stebri: izpeljava iz orientacijsko-specifičnega max razmaka (deterministično)', () => {
+    const def = defOf('roksal.woodcore.romb-67') // H=1450
     const lay = buildFenceLayout(config({ posts: { widthMm: 60 } }), { definition: def })
     // 3200/1450 → 3 intervali
     expect(lay.posts.length).toBe(4)
@@ -118,6 +123,18 @@ describe('geometry: konstrukcija iz katalogovih pravil', () => {
     expect(lay.warnings.some((w) => w.includes('NISO izpeljani'))).toBe(true)
   })
 
+  it('KUBO horizontal → ZAVRNJEN (S+8.1 §13: vertical only, hard fail)', () => {
+    const def = defOf('roksal.woodcore.kubo-80-42')
+    expect(() =>
+      buildFenceLayout(config({ productId: def.id, orientation: 'horizontal' }), { definition: def }),
+    ).toThrow(/NE podpira orientacije/)
+  })
+
+  it('ročaj brez katalog podpore → ZAVRJEN (S+8.1 §10: ni tihe ignorance)', () => {
+    const romb = defOf('roksal.woodcore.romb-67') // handle.available=false
+    expect(() => buildFenceLayout(config({ handle: true }), { definition: romb })).toThrow(/ročaj/)
+  })
+
   it('vertical: rails iz maxRailSpacingMm; horizontal: brez rails', () => {
     const def = defOf('roksal.woodcore.polna-100') // maxRail 800
     const vLay = buildFenceLayout(
@@ -131,9 +148,11 @@ describe('geometry: konstrukcija iz katalogovih pravil', () => {
     // presek cevi NI v katalogu — ni izmišljen
     expect(vLay.rails[0].crossSectionMm).toBeNull()
 
+    // horizontalna ograja (profil, ki podpira obe): brez cevi
+    const hDef = defOf('roksal.woodcore.polna-128')
     const hLay = buildFenceLayout(
-      config({ productId: def.id, orientation: 'horizontal' }),
-      { definition: def },
+      config({ productId: hDef.id, orientation: 'horizontal' }),
+      { definition: hDef },
     )
     expect(hLay.rails.length).toBe(0)
   })
@@ -174,10 +193,6 @@ describe('geometry: konstrukcija iz katalogovih pravil', () => {
     // 3200/500 → središča 250, 750, ... 2750 → 6
     expect(handleScrews.length).toBe(6)
     expect(handleScrews[0].atMm[0]).toBe(250)
-
-    const romb = defOf('roksal.woodcore.romb-67') // handle.available=false
-    const rombLay = buildFenceLayout(config({ handle: true }), { definition: romb })
-    expect(rombLay.handlePresent).toBe(false)
   })
 })
 

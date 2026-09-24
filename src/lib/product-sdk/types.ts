@@ -38,12 +38,48 @@ export interface ProductColor {
   evidence: string
 }
 
+/**
+ * Max razmak konstrukcije za ENO orientacijo (S+8.1 §2 — P0).
+ * null = katalog za to orientacijo NE dokumentira pravila → SDK zahteva
+ * eksplicitne pozicije in NE ugiba (tudi NE s fallbackom druge orientacije).
+ */
+export interface OrientationSpacingRule {
+  orientation: Orientation
+  maxSpacingMm: number | null
+}
+
+/**
+ * Kvalifikacijsko pravilo IZ kataloga (S+8.1 §2/§3) — ohranjeno 1:1, NIČ izmišljenega.
+ * Samodejno se uporabi SAMO pravilo s strukturiranim pogojem (trenutno izključno
+ * verticalOver150Cm: višina polja > 1500 mm); ostali so ohranjeni kot PODATKI
+ * (npr. horizontalWithMidConnection — pogoj ni modeliran v konfiguraciji).
+ */
+export interface PostSpacingQualifier {
+  /** Ključ TOČNO kot v katalogu (npr. "verticalOver150Cm"). */
+  key: string
+  orientation: Orientation
+  maxSpacingMm: number
+  /** Katalog pogoj (besedilo iz vira — sledljivost). */
+  condition: string
+  /** true = SDK ga uporablja ob izpolnjenem strukturiranem pogoju. */
+  autoApplied: boolean
+  /** Strukturiran pogoj: velja, ko je višina polja > prag (mm). */
+  appliesWhenFieldHeightAboveMm?: number
+}
+
 /** Pravila pritrditve (katalog: fixing/screwsVisible/max razmaki). */
 export interface ProductMounting {
   screwVisibility: ScrewVisibility
   fixing: string
-  /** Max razmak stebrov za orientacijo (mm) — null, če katalog ne navaja. */
-  maxPostSpacingMm: number | null
+  /**
+   * S+8.1 §2 (P0): orientacijsko-specifična max razmaka stebrov — NI več ene
+   * številke (prej: H vrednost zrušena čez V = izguba podatkov + izmišljen
+   * fallback smeri H→V). null = za to orientacijo NI dokumentirano → eksplicitne
+   * pozicije so OBVEZNE za izpeljavo stebrov.
+   */
+  maxPostSpacingByOrientation: { horizontal: OrientationSpacingRule; vertical: OrientationSpacingRule }
+  /** Kvalifikatorji 1:1 iz kataloga (brez izgube podatkov; glej PostSpacingQualifier). */
+  postSpacingQualifiers: PostSpacingQualifier[]
   /** Max razmak vodoravnih cevi pri pokončni ograji (mm) — null = ni dokumentirano. */
   maxRailSpacingMm: number | null
   /** Pravilo zaključkov (čepi/letvica/pokrovček) — sprotno iz kataloga. */
@@ -119,7 +155,10 @@ export interface FenceConfiguration {
   /** Vrhnji ročaj — samo če definicija dovoljuje. */
   handle?: boolean
   /** Stebri: širina + pozicije (mm). Če pozicije niso podane, se izpeljejo
-   *  deterministično iz maxPostSpacingMm (samo če katalog navaja vrednost). */
+   *  deterministično iz orientacijsko-specifičnega maxPostSpacing (S+8.1 —
+   *  samo če katalog pravilo dokumentira; sicer eksplicitne pozicije OBVEZNE).
+   *  Pozicije morajo biti končne, unikatne, strogo naraščajoče in znotraj
+   *  polja — kršitev = validation error (NI tišega popravljanja, S+8.1 §4/§5). */
   posts?: { widthMm: number; positionsMm?: number[] } | null
 }
 

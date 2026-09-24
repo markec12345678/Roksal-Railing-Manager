@@ -9,7 +9,7 @@
  */
 import { getProduct, getCatalog, type CatalogProfile, type Orientation } from '@/lib/product-catalog'
 import { createHash } from 'node:crypto'
-import type { ProductDefinition, ProfileShape } from './types'
+import type { PostSpacingQualifier, ProductDefinition, ProfileShape } from './types'
 
 /**
  * woodcore-romb-67 → roksal.woodcore.romb-67 (deterministično).
@@ -48,6 +48,36 @@ function capRuleOf(p: CatalogProfile): string {
   return 'ni dokumentirano v katalogu'
 }
 
+/**
+ * S+8.1 §2 (P0): kvalifikatorji 1:1 iz katalogovih ključev — NIČ izgubljenega,
+ * NIČ izmišljenega. Samodejno se uporabi SAMO verticalOver150Cm (edini pravilo
+ * s popolnoma strukturiranim pogojem: višina polja > 1500 mm). Ostali
+ * (horizontalWithMidConnection, horizontalUpperBound, …) ostanejo PODATKI.
+ */
+const AUTO_APPLIED_QUALIFIERS: Record<string, { thresholdMm: number; condition: string }> = {
+  verticalOver150Cm: { thresholdMm: 1500, condition: 'velja za višino ograje nad 150 cm (katalog FAQ)' },
+}
+
+function qualifiersOf(p: CatalogProfile): PostSpacingQualifier[] {
+  const out: PostSpacingQualifier[] = []
+  for (const [key, value] of Object.entries(p.maxPostSpacingMm)) {
+    if (key === 'horizontal' || key === 'vertical') continue
+    if (value === null) continue // katalog: ključ obstaja, vrednost ni dokumentirana
+    const auto = AUTO_APPLIED_QUALIFIERS[key]
+    out.push({
+      key,
+      orientation: key.startsWith('vertical') ? 'vertical' : 'horizontal',
+      maxSpacingMm: value,
+      condition: auto ? auto.condition : `katalog ključ "${key}" — pogoj NI strukturiran v konfiguraciji, NI samodejno uporabljen`,
+      autoApplied: Boolean(auto),
+      appliesWhenFieldHeightAboveMm: auto ? auto.thresholdMm : undefined,
+    })
+  }
+  // Determinističen vrstni red (isti katalog → ista definicija → isti hash).
+  out.sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0))
+  return out
+}
+
 export function toProductDefinition(p: CatalogProfile): ProductDefinition {
   return {
     id: canonicalProductId(p.productId),
@@ -65,7 +95,13 @@ export function toProductDefinition(p: CatalogProfile): ProductDefinition {
     mounting: {
       screwVisibility: p.screwsVisible ? 'visible' : 'hidden',
       fixing: p.fixing,
-      maxPostSpacingMm: p.maxPostSpacingMm.horizontal ?? p.maxPostSpacingMm.vertical ?? null,
+      // S+8.1 §2 (P0): orientacijsko-specifična pravila — NI fallbacka
+      // (prej: horizontal ?? vertical = izguba podatkov + izmišljen H→V fallback).
+      maxPostSpacingByOrientation: {
+        horizontal: { orientation: 'horizontal', maxSpacingMm: p.maxPostSpacingMm.horizontal ?? null },
+        vertical: { orientation: 'vertical', maxSpacingMm: p.maxPostSpacingMm.vertical ?? null },
+      },
+      postSpacingQualifiers: qualifiersOf(p),
       maxRailSpacingMm: p.maxRailSpacingMm?.vertical ?? null,
       capRule: capRuleOf(p),
       handle: {

@@ -88,7 +88,7 @@ describe('maska: neodvisna od barve (P0 — svetli izdelki)', () => {
 
   it('maska vsebuje stebre (konstrukcija je del produkta)', () => {
     const def = defOf('roksal.woodcore.polna-128')
-    const lay = buildFenceLayout(config({ posts: { widthMm: 80, positionsMm: [0, 1600] } }), { definition: def })
+    const lay = buildFenceLayout(config({ posts: { widthMm: 80, positionsMm: [0, 1100, 1600] } }), { definition: def })
     const m = layoutMask(lay, { outWidthPx: 320, outHeightPx: 200 })
     // pri stebru x=0 (središče 0, širina 80) je maska bela do ~80mm → ~16 px
     let col0 = 0

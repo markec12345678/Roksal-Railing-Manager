@@ -514,7 +514,7 @@ async function main(): Promise<void> {
     if (!definition) throw new Error(`neznan productId ${t.productId}`)
 
     const spanMm = Math.round(t.fenceHeightMm * quadAspect)
-    const maxPost = definition.mounting.maxPostSpacingMm
+    const maxPost = definition.mounting.maxPostSpacingByOrientation[t.orientation].maxSpacingMm
     const config = {
       productId: definition.id,
       orientation: t.orientation,
@@ -699,7 +699,7 @@ async function main(): Promise<void> {
       gapMm: 20,
       colorId: cm.colorId,
       handle: false,
-      posts: definition.mounting.maxPostSpacingMm ? { widthMm: 60 } : null,
+      posts: definition.mounting.maxPostSpacingByOrientation[cm.orientation].maxSpacingMm ? { widthMm: 60 } : null,
     }
     const layout = productSdk.layout(config, { definition })
     const { render, mask: productMask } = productSdk.renderWithMask({
@@ -758,7 +758,7 @@ async function main(): Promise<void> {
       heightMm: 900,
       gapMm: 20,
       colorId: cm.colorId,
-      posts: definition.mounting.maxPostSpacingMm ? { widthMm: 60 } : null,
+      posts: definition.mounting.maxPostSpacingByOrientation[cm.orientation].maxSpacingMm ? { widthMm: 60 } : null,
     }
     const layout = productSdk.layout(config, { definition })
     const { render } = productSdk.renderWithMask({

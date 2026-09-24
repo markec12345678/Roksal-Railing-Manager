@@ -415,7 +415,9 @@ export function renderFenceMask(req: FenceRequest, layout?: FenceLayout): ImageB
     }
   }
 
-  // stebri (za deskami — maska enaka: so del konstrukcije, vedno neproduženi)
+  // stebri (za deskami — maska enaka: so del konstrukcije, vedno neproduženi).
+  // S+8.1 §9: mejniki so izračunani z ISTIM roundingom kot v renderFence —
+  // maska in render morata biti pikslično skladna iz istega layouta.
   if (req.posts && req.posts.widthMm > 0) {
     const halfW = Math.round((req.posts.widthMm / 2) * pxPerMmX)
     for (const pMm of req.posts.positionsMm) {
@@ -423,16 +425,16 @@ export function renderFenceMask(req: FenceRequest, layout?: FenceLayout): ImageB
       paintSpan(cx - halfW, 0, cx + halfW + 1, H)
     }
   }
-  // deske
+  // deske — IDENTIČNA mejnika kot renderFence (startPx + round(size)) — NI divergence
   for (const b of lay.boards) {
     if (horizontal) {
-      const y0 = Math.round((lay.fenceHeightMm - (b.startMm + b.visibleMm)) * pxPerMmY)
-      const y1 = Math.round((lay.fenceHeightMm - b.startMm) * pxPerMmY)
-      paintSpan(0, y0, W, y1)
+      const startPx = Math.round((lay.fenceHeightMm - (b.startMm + b.visibleMm)) * pxPerMmY)
+      const sizePx = Math.round(b.visibleMm * pxPerMmY)
+      paintSpan(0, startPx, W, Math.min(H, startPx + sizePx))
     } else {
-      const x0 = Math.round(b.startMm * pxPerMmX)
-      const x1 = Math.round((b.startMm + b.visibleMm) * pxPerMmX)
-      paintSpan(x0, 0, x1, H)
+      const startPx = Math.round(b.startMm * pxPerMmX)
+      const sizePx = Math.round(b.visibleMm * pxPerMmX)
+      paintSpan(startPx, 0, Math.min(W, startPx + sizePx), H)
     }
   }
   // ročaj

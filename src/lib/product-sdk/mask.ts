@@ -1,5 +1,5 @@
 /**
- * PRODUCT SDK — MASKA IZ FENCELAYOUT (runda S+8 §11, §12 — kritično za SVETLE izdelke).
+ * PRODUCT SDK — MASKA IZ FENCELAYOUT (runda S+8 §11/§12; S+8.1 §9 — EN vir).
  *
  * PRAVILA:
  *  - maska je izdelana IZ FenceLayout (board geometry → exact alpha) — NE iz
@@ -7,14 +7,15 @@
  *    zamrznjenega cutouta NE more ločiti svetlih produktov — S+7 dokazano);
  *  - maska opisuje KJE JE PRODUKT, ne KAKŠNE BARVE je — za isti layout je
  *    maska IDENTIČNA ne glede na material (WHITE/temna/tekstura);
- *  - deterministično: enak layout → bajtno identična maska.
- *
- * Implementacija ponovno uporablja DOKAZANO renderFenceMask (S+7) — maska
- * je preslikava konstrukcije (deske + stebri + ročaj) v alfo.
+ *  - deterministično: enak layout → bajtno identična maska;
+ *  - S+8.1 §9 (P0): renderFenceMask dobi EKSPPLICITEN layout (engineLayoutOf)
+ *    — geometrija se NE izračuna ponovno iz rekonstruiranega requesta.
+ *    render in maska zdaj uporabljata ISTI deterministični FenceLayout.
  */
 import { renderFenceMask, type FenceRequest } from '@/lib/procedural/fence-engine'
 import { getProduct } from '@/lib/product-catalog'
-import type { FenceLayout, FenceConfiguration } from './types'
+import type { FenceLayout } from './types'
+import { engineLayoutOf } from './engine'
 
 export interface LayoutMaskOptions {
   outWidthPx: number
@@ -44,11 +45,12 @@ export function layoutMask(layout: FenceLayout, options: LayoutMaskOptions): { d
     handle: layout.handlePresent,
     profileOverride: profile,
   }
-  return renderFenceMask(req)
+  // S+8.1 §9: EKSPPLICITEN layout — brez ponovnega geometrijskega izračuna.
+  return renderFenceMask(req, engineLayoutOf(layout))
 }
 
-/** Pogojni vhod za renderFence iz layout-a (isti stebri kot maska). */
-export function postsOf(layout: FenceLayout, config: FenceConfiguration | null): FenceRequest['posts'] {
+/** Post vhod za engine iz layout-a (isti stebri kot maska in render). */
+export function postsOf(layout: FenceLayout): FenceRequest['posts'] {
   if (layout.posts.length === 0) return null
   return {
     widthMm: layout.posts[0].widthMm,

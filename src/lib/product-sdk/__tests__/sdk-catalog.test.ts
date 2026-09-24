@@ -55,17 +55,45 @@ describe('catalog: produktna pravila so PODATKI (iz kataloga)', () => {
     expect(kubo.orientations).toEqual(['vertical'])
     expect(kubo.mounting.screwVisibility).toBe('hidden')
     expect(kubo.rights).toBe('pending')
-    // uradni vir ne navaja max razmaka stebrov — NI izmišljen
-    expect(kubo.mounting.maxPostSpacingMm).toBeNull()
+    // uradni vir ne navaja max razmaka stebrov — NI izmišljen (S+8.1: null za vertical)
+    expect(kubo.mounting.maxPostSpacingByOrientation.vertical.maxSpacingMm).toBeNull()
+    expect(kubo.mounting.maxPostSpacingByOrientation.horizontal.maxSpacingMm).toBeNull()
     expect(kubo.mounting.maxRailSpacingMm).toBe(1000)
   })
 
-  it('ROMB 67: rhombus, skrito vijačenje (alu cev), max post 1450 mm', () => {
+  it('S+8.1 §2: orientacijska pravila so OHRANJENA (brez izgube podatkov kataloga)', () => {
+    // POLNA 128: H=1100, V=1800, verticalOver150Cm=1500 (katalog 1:1)
+    const polna = getProductDefinition('woodcore-polna-128')!
+    expect(polna.mounting.maxPostSpacingByOrientation.horizontal.maxSpacingMm).toBe(1100)
+    expect(polna.mounting.maxPostSpacingByOrientation.vertical.maxSpacingMm).toBe(1800)
+    const over150 = polna.mounting.postSpacingQualifiers.find((q) => q.key === 'verticalOver150Cm')
+    expect(over150).toBeDefined()
+    expect(over150!.maxSpacingMm).toBe(1500)
+    expect(over150!.autoApplied).toBe(true)
+    expect(over150!.appliesWhenFieldHeightAboveMm).toBe(1500)
+    // ROMB 67: H=1450, horizontalWithMidConnection=1800; V NE dokumentiran → null (NI fallbacka)
+    const romb = getProductDefinition('woodcore-romb-67')!
+    expect(romb.mounting.maxPostSpacingByOrientation.horizontal.maxSpacingMm).toBe(1450)
+    expect(romb.mounting.maxPostSpacingByOrientation.vertical.maxSpacingMm).toBeNull()
+    const mid = romb.mounting.postSpacingQualifiers.find((q) => q.key === 'horizontalWithMidConnection')
+    expect(mid).toBeDefined()
+    expect(mid!.maxSpacingMm).toBe(1800)
+    expect(mid!.autoApplied).toBe(false) // pogoj ni strukturiran — NI samodejen
+    // DESKA 150: horizontalUpperBound ohranjen kot podatek
+    const deska = getProductDefinition('woodcore-deska-150')!
+    expect(deska.mounting.postSpacingQualifiers.find((q) => q.key === 'horizontalUpperBound')!.maxSpacingMm).toBe(1400)
+    // POLNA 100: V=1800 + over150Cm; H NE obstaja → null (NI V→H fallbacka)
+    const polna100 = getProductDefinition('woodcore-polna-100')!
+    expect(polna100.mounting.maxPostSpacingByOrientation.vertical.maxSpacingMm).toBe(1800)
+    expect(polna100.mounting.maxPostSpacingByOrientation.horizontal.maxSpacingMm).toBeNull()
+  })
+
+  it('ROMB 67: rhombus, skrito vijačenje (alu cev), max post H=1450 (V ni dokumentiran)', () => {
     const def = getProductDefinition('woodcore-romb-67')!
     expect(def.profile.shape).toBe('rhombus')
     expect(def.profile.faceWidthMm).toBe(67)
     expect(def.mounting.screwVisibility).toBe('hidden')
-    expect(def.mounting.maxPostSpacingMm).toBe(1450)
+    expect(def.mounting.maxPostSpacingByOrientation.horizontal.maxSpacingMm).toBe(1450)
     expect(def.orientations).toEqual(['horizontal', 'vertical'])
   })
 

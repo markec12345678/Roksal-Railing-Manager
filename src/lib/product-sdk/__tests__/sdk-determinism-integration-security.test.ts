@@ -74,9 +74,24 @@ describe('determinizem: bajtno identičen render (§9)', () => {
   })
 })
 
-describe('guard: brez generativnih klicev v deterministični poti (§19)', () => {
-  const FORBIDDEN = ['z-ai-web-dev-sdk', 'createVision', 'chat.completions', 'Math.random']
-  it('product-sdk + pipeline + fence-engine so čisti', () => {
+describe('guard: brez generativnih klicev v deterministični poti (§19; S+8.1 §14 razširjeno)', () => {
+  // S+8.1 §14: SDK/jedro = STROGO čisto (tudi urini žiggi/UUID/omrežje).
+  const FORBIDDEN_CORE = [
+    'z-ai-web-dev-sdk',
+    'createVision',
+    'chat.completions',
+    'Math.random',
+    'Date.now',
+    'randomUUID',
+    'randomBytes',
+    'XMLHttpRequest',
+    'fetch(',
+  ]
+  // pipeline.ts: Date.now() je SAMO fallback v merilnem pomočniku ms() (metrike,
+  // ne izhod) — bajtna determinizacija izhoda je dokazana s testi. Zato za
+  // pipeline velja osnovni seznam (AI + naključje).
+  const FORBIDDEN_PIPELINE = ['z-ai-web-dev-sdk', 'createVision', 'chat.completions', 'Math.random', 'randomUUID', 'randomBytes', 'XMLHttpRequest']
+  it('product-sdk + fence-engine so čisti (razširjen seznam)', () => {
     const dirs = [
       join(process.cwd(), 'src/lib/product-sdk'),
       join(process.cwd(), 'src/lib/procedural'),
@@ -87,12 +102,17 @@ describe('guard: brez generativnih klicev v deterministični poti (§19)', () =>
         if (f.endsWith('.ts') && !f.includes('__tests__')) files.push(join(d, f))
       }
     }
-    files.push(join(process.cwd(), 'src/lib/viz/pipeline.ts'))
     for (const file of files) {
       const src = readFileSync(file, 'utf8')
-      for (const bad of FORBIDDEN) {
+      for (const bad of FORBIDDEN_CORE) {
         expect({ file, hit: src.includes(bad) }).toEqual({ file, hit: false })
       }
+    }
+  })
+  it('pipeline je čist (osnovni seznam; ms() timing je izključen z utemeljitvijo)', () => {
+    const src = readFileSync(join(process.cwd(), 'src/lib/viz/pipeline.ts'), 'utf8')
+    for (const bad of FORBIDDEN_PIPELINE) {
+      expect({ file: 'pipeline.ts', hit: src.includes(bad) }).toEqual({ file: 'pipeline.ts', hit: false })
     }
   })
 })
