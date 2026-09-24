@@ -30,9 +30,13 @@ const projectRequire = createRequire(path.join(process.cwd(), 'package.json'))
 const GENERATED_DIR = path.join(process.cwd(), 'node_modules', '.prisma', 'client')
 const GENERATED_FILES = ['default.js', 'client.js', 'index.js'] as const
 
-type PrismaClientCtor = new (options?: {
+type PrismaClientOptions = {
   log?: Array<'query' | 'error' | 'warn' | 'info' | 'event'>
-}) => PrismaClient
+  /** S+9: razrešen URL (postgres prod/dev ali prehodni sqlite /tmp demo). */
+  datasourceUrl?: string
+}
+
+type PrismaClientCtor = new (options?: PrismaClientOptions) => PrismaClient
 
 /** Naloži SVEŽ generiran PrismaClient konstruktor (bust require cache-a). */
 function loadFreshPrismaClientCtor(): PrismaClientCtor {
@@ -74,18 +78,16 @@ export async function getVizDb(): Promise<PrismaClient> {
         serverlessUrl = null
       }
     }
-    const ctorOptions: Record<string, unknown> = { log: ['error'] }
+    const ctorOptions: PrismaClientOptions = { log: ['error'] }
     if (serverlessUrl) {
       // Prehodni SQLite demo (/tmp kopija na Vercelu).
-      ;(ctorOptions as { datasourceUrl?: string }).datasourceUrl = serverlessUrl
+      ctorOptions.datasourceUrl = serverlessUrl
     } else if (resolvedUrl) {
       // S+9: peskovnikov file: env senči .env — vsili razrešen URL
       // (postgresql produkcija/dev; glej src/lib/db-url.ts).
-      ;(ctorOptions as { datasourceUrl?: string }).datasourceUrl = resolvedUrl
+      ctorOptions.datasourceUrl = resolvedUrl
     }
-    globalForVizDb.vizPrisma = new PrismaClient(
-      ctorOptions as unknown as Parameters<PrismaClientCtor>[0]
-    )
+    globalForVizDb.vizPrisma = new PrismaClient(ctorOptions)
   }
   return globalForVizDb.vizPrisma
 }
