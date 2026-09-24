@@ -9,8 +9,13 @@ name: CI
 # minimalna višina ograje). Nobenega ni bilo mogoče opaziti brez avtomatskega
 # preverjanja — vsi trije vrnejo veljavno številko, ki je samo napačna.
 #
+# S+9 (issue #4, korak 1): CI teče proti REALNEMU PostgreSQL (service
+# container) — ista arhitektura kot produkcija. `prisma migrate deploy`
+# v CI je hkrati regresijsko varovanje verige verzioniranih migracij.
+# Vitesti sami zagotovijo svojo embedded PG instanco za roksal_test.
+#
 # Vrstni red korakov je namenoma od najhitrejšega proti najpočasnejšemu:
-# tipi (30 s) → testi (1 s) → gradnja (minute).
+# tipi (30 s) → testi (min) → gradnja (minute).
 
 on:
   push:
@@ -28,10 +33,24 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
 
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: roksal
+          POSTGRES_PASSWORD: roksal
+          POSTGRES_DB: roksal_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U roksal"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
     env:
-      # .env ni več v gitu, zato mora CI podati svojo pot do baze.
-      # Prisma rešuje relativne SQLite poti glede na prisma/schema.prisma.
-      DATABASE_URL: 'file:../db/custom.db'
+      # Produkcija in CI = isti vir: zunanji PostgreSQL (issue #4).
+      DATABASE_URL: 'postgresql://roksal:roksal@localhost:5432/roksal_ci'
       NEXT_TELEMETRY_DISABLED: '1'
       # Gradnja je pomnilniško zahtevna zaradi velikih komponent
       # (measurements-tab.tsx 7.543 vrstic, calculator-tab.tsx 5.791).
@@ -58,25 +77,20 @@ jobs:
       - name: Namestitev odvisnosti
         run: bun install --frozen-lockfile
 
-      - name: Prisma Client
+      - name: Prisma Client (PostgreSQL)
         run: bunx prisma generate
 
-      # Baza NI več v gitu (v javnem repu bi bili sčasoma pravi podatki strank),
-      # zato jo mora CI ustvariti sam — enako kot svež klon na strežniku.
-      # Brez tega koraka gradnja pade, ker src/lib/db.ts ob statičnem
-      # predizrisu konstruira PrismaClient nad neobstoječo datoteko.
-      - name: Pripravi bazo (kot na svežem klonu)
-        run: |
-          mkdir -p db
-          bunx prisma db push
-          bunx tsx prisma/seed.ts
+      # Verzionirane migracije (prisma/migrations) — reproducible build baze.
+      # Če ta korak pade, je migracijska veriga pokvarjena — popravi SQL.
+      - name: Migracije (kot na produkciji)
+        run: bunx prisma migrate deploy
 
       # 0 napak je trenutno stanje. Če ta korak pade, je napaka resnična —
       # ne dodajaj nazaj ignoreBuildErrors, popravi kodo.
       - name: Tipska kontrola
         run: bunx tsc --noEmit
 
-      - name: Testi (147)
+      - name: Testi (428, proti embedded PG roksal_test)
         run: bun run test
 
       - name: Gradnja
@@ -106,8 +120,23 @@ jobs:
     needs: verify
     timeout-minutes: 15
 
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: roksal
+          POSTGRES_PASSWORD: roksal
+          POSTGRES_DB: roksal_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U roksal"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
     env:
-      DATABASE_URL: 'file:../db/custom.db'
+      DATABASE_URL: 'postgresql://roksal:roksal@localhost:5432/roksal_ci'
       SESSION_SECRET: 'ci-only-secret-32-chars-minimum-xyz'
       API_KEY_PEPPER: 'ci-only-pepper'
       NEXT_TELEMETRY_DISABLED: '1'
@@ -134,9 +163,8 @@ jobs:
 
       - name: Pripravi bazo, profile in administratorja
         run: |
-          mkdir -p db
           bunx prisma generate
-          bunx prisma db push
+          bunx prisma migrate deploy
           bunx tsx prisma/seed.ts
           bunx tsx tools/create-admin.ts ci@roksal.si 'CiGeslo12345' ADMIN 'CI Admin'
           # Monter za preizkus vlog: brati sme, pisati cen/zalog/naročil ne.
