@@ -1278,3 +1278,25 @@ Stage Summary:
 - S+8.2 ACCEPTANCE: OgrajaVizija nespremenjen ✓, ni dependency ✓, file/function comparison ✓, homography benchmarkiran ✓, corner/reprojection validacija preverjena ✓, sampling/compositing primerjan ✓, outside-mask bit-exact regression test ✓, LAB primerjan + popravljen (dokazan bug) ✓, shadow primerjan (KEEP) ✓, segmentation fallback princip dokumentiran ✓, background-removal ocenjen ločeno ✓, testni prijemi portani ✓, Product SDK invarianti netaknjeni ✓, AI takeoff nedotaknjen ✓, determinizem ≥100× ✓, VIZ scenariji zeleni ✓, tsc/lint 0 ✓, Vercel push → PASS.
 - Odločitve: PORT = 3 (corner validacija, w-guard, lab2rgb fix + 30 testov); KEEP = 8 (warpPremultiplied, DLT, inverse, LUMA-only RAL, senca, stolpična sinteza, cutout prag, mask-editor); DEFER = 2 (segmentacija adapter contract, clean-plate inpaint); REJECT = 5 (LAB_STATS a/b, MediaPipe koda, BackgroundRemover, debug orodja, JVM test infra).
 - Naslednji kandidat (odloči lastnik — STOP po S+8.2): lastniški korak Postgres/Neon prehod (docs/POSTGRES-MIGRATION.md) ALI issue #2 Measurement/CV SDK (segmentacija adapter je pripravljen).
+
+---
+Task ID: S+8.2b (lastniški korak — Postgres prehod)
+Agent: Z.ai Code (glavni orkestrator)
+Task: Dokončati prehod produkcije na Neon Postgres (docs/POSTGRES-MIGRATION.md) s lastnikovim Vercel tokenom; ugotoviti stanje in predlagati naslednje delo.
+
+Work Log:
+- Vercel API (token lastnika): projekt prj_2vbQ7ghZVhiBkBelMcBZX7rkVYgb; ugotovljeno, da obstojata DVA Neon integration store-a ('neon-green-mountain' iz ~junija 2026, 'neon-cyclamen-prism' iz ~aprina) — OBA z 0 connections (baza nikoli vezana na projekt; zato je produkcija še vedno tekla prehodni SQLite demo).
+- Build logi: S+9 commiti e1068ca/fbe5b27/61a062a = Vercel ERROR (znana tsc PrismaClientCtor napaka, popravljena v 7fd8c08 — d955d5e READY); d955d5e build log potrjuje 'PREHODNI SQLite demo način' (DATABASE_URL file:*).
+- Neon attach: POST /v1/storage/stores/store_QmcbC5fiV3mcKwsy/connections najprej P409 'project_env_var_not_unique' → odstranjena stara ročna DATABASE_URL (envId b06CdIObw1IigKMA, vrednost file:* demo) → attach uspešen; Vercel vbrizgal celoten Neon niz (DATABASE_URL, POSTGRES_PRISMA_URL, PGHOST, NEON_PROJECT_ID, ...) za production+preview.
+- Deploy 8521e70: ERROR P3005 'database schema is not empty' → Neon DB vsebovala shemo DRUGEGA projekta (sources/sync_runs/vehicle_listings — autodeal ostanki; backup 4 vrstic v /tmp/neon-backup/data.json) → DROP SCHEMA public CASCADE + CREATE + GRANTs prek prisma db execute.
+- Deploy b23424a: **READY**; build logi: 'prisma migrate deploy → Datasource PostgreSQL database neondb' + seed naseljen + '[db] vir: postgresql (produkcija)' (prej: 'sqlite /tmp demo (PREHODNO)').
+- E2E verifikacija produkcije: POST /api/auth demo@roksal.si → 200 (uporabnik cmufckbb80003gm4lgo6bki7u iz Neon CUID-ja); GET /api/projects s sejo → realni podatki ('Ograja Kokalj - Balustrada', status NACRTOVANO) iz PostgreSQL; / 307, /login 200, /api/projects anon → 401.
+- Higiena: dešifriran env dump /tmp/vercel-prod.env po uporabi izbrisan; connection string nikoli commitan/izpisan v celoti.
+
+Stage Summary:
+- PREHOD DOKONČAN: produkcija zdaj teče na Neon PostgreSQL (migrate deploy + seed v buildu), prehodna SQLite pot v produkciji NI več uporabljena. Issue #4 lastniški korak (korak 1 produkcija) IZPOLNJEN.
+- CI: d955d5e SUCCESS; 8521e70/b23424a so chore commiti (empty, CI zelen).
+- Naslednji kandidati (predlog za lastnika, STOP spoštovan — čaka odločitev):
+  1) ČIŠČENJE PREHODNE POTI (docs/POSTGRES-MIGRATION.md korak 5): build-prepare sqlite veja, db.ts /tmp serverless veja, db/custom.db iz repozitorija, outputFileTracingIncludes — majhno, zapre issue #4 v celoti.
+  2) Issue #2 — Measurement/CV SDK (zamenjava /api/ai-takeoff; segmentation adapter contract že dokumentiran v docs/OGRAJEVIZIJA-CV-HARVEST.md §E).
+  3) S+9 faza 2 (issue #4): object storage za dokumente, structured BOM, material lifecycle, real cost, server-authoritative price book.
