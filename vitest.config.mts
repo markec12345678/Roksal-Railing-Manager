@@ -15,6 +15,11 @@ export default defineConfig({
     environment: 'node',
     include: ['src/**/*.test.ts'],
     globalSetup: ['./tools/vitest-global-setup.ts'],
+    // Integracijski testi (viz, inventory, numbering) si delijo testno bazo —
+    // vzporedne datoteke se tekmujejo za iste vrstice (delete race). Zaporedno.
+    fileParallelism: false,
+    // Determinizem/SDK testi ob hladnem PG presežejo privzetih 5 s.
+    testTimeout: 15000,
     env: {
       // Sejni žetoni so fail-closed: brez skrivnosti sessionSecret() vrže.
       // Testi jo nastavijo tudi sami, tu je zaradi uvoza modulov ob zagonu.

@@ -30,8 +30,31 @@ function portOpen(port: number, host = '127.0.0.1'): Promise<boolean> {
   })
 }
 
+function ensureHydrated() {
+  // Bun blokira postinstall skripte brez trustedDependencies (package.json jih
+  // od S+9 vsebuje). Obramba v globino: če lib symlinks manjkajo, jih hidriraj
+  // ročno — sicer initdb/postgres na sveži instalaciji ne najdejo knjižnic.
+  const symlinkFile = path.join(process.cwd(), 'node_modules', '@embedded-postgres', 'linux-x64', 'native', 'pg-symlinks.json')
+  const binPostgres = path.join(process.cwd(), 'node_modules', '@embedded-postgres', 'linux-x64', 'native', 'bin', 'postgres')
+  try {
+    if (fs.existsSync(symlinkFile) && fs.existsSync(binPostgres)) {
+      const links = JSON.parse(fs.readFileSync(symlinkFile, 'utf8')) as Array<{ source: string; target: string }>
+      const libDir = path.join(process.cwd(), 'node_modules', '@embedded-postgres', 'linux-x64')
+      for (const { source, target } of links) {
+        const t = path.join(libDir, target)
+        if (!fs.existsSync(t)) {
+          fs.symlinkSync(path.relative(path.dirname(t), path.join(libDir, source)), t)
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('[pg] symlink hidracija ni uspela (nadaljujem):', e)
+  }
+}
+
 async function main() {
   const cmd = process.argv[2] ?? 'status'
+  ensureHydrated()
   const running = await portOpen(PORT)
 
   if (cmd === 'status') {

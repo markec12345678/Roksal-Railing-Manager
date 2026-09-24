@@ -118,5 +118,11 @@
     "tw-animate-css": "^1.3.5",
     "typescript": "^5",
     "vitest": "^4.1.11"
-  }
+  },
+  "trustedDependencies": [
+    "embedded-postgres",
+    "@embedded-postgres/linux-x64",
+    "@embedded-postgres/darwin-x64",
+    "@embedded-postgres/windows-x64"
+  ]
 }
