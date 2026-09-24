@@ -1493,3 +1493,7 @@ Stage Summary:
 - Neon račun (key napi_4ebs…) POPOLNOMAPORIZAN: 5 projektov, noben NI Roksal produkcija — nič ni bilo spremenjeno/izbrisano (vse operacije GET/SELECT).
 - Produkcija na HEAD 286d90d: Vercel=success; CV Studio (#10/#11) + R122 + sync varnost živi; 3 projekti v DB.
 - Neon backfill ostaja edini realen lastniški korak za zaključek R121/R122 na EXISTING podatkih; točen ukaz dokumentiran tu in v issue #7 komentarju.
+DODATEK NEON-INV (lokalna potrditev orodij + CI):
+- Lokalna dry-run backfill orodja proti dev bazi: našla 6 legacy SignatureAudit vrstic (70 B, stari E2E zagoni) → `--commit` na DEV: 6/6 migrirano (local driver: put → metadata → legacy NULL) → ponovni dry-run `{}` (idempotenca dokazana) → GC dry-run: 12 objektov, 0 sirot, 0 manjkajočih (integriteta shramba↔DB SKLADNA).
+- CI na 407680d: "Tipi, testi, gradnja" = SUCCESS · "Varnost (77 preverjanj)" = SUCCESS · Vercel = success (produkcija že na najnovejšem).
+- Zaključek runde: (1) Neon inventarizacija dokazana in dokumentirana (issue #7 komentar 5821139319), (2) produkcija spot-check zelen, (3) dev backfill/GC preverjen, (4) ostanka: #8 fotke (lastnik), Neon backfill --commit (lastnik — ukazi v issue #7), Vercel kvota REŠENA.
