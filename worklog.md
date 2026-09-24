@@ -1497,3 +1497,30 @@ DODATEK NEON-INV (lokalna potrditev orodij + CI):
 - Lokalna dry-run backfill orodja proti dev bazi: našla 6 legacy SignatureAudit vrstic (70 B, stari E2E zagoni) → `--commit` na DEV: 6/6 migrirano (local driver: put → metadata → legacy NULL) → ponovni dry-run `{}` (idempotenca dokazana) → GC dry-run: 12 objektov, 0 sirot, 0 manjkajočih (integriteta shramba↔DB SKLADNA).
 - CI na 407680d: "Tipi, testi, gradnja" = SUCCESS · "Varnost (77 preverjanj)" = SUCCESS · Vercel = success (produkcija že na najnovejšem).
 - Zaključek runde: (1) Neon inventarizacija dokazana in dokumentirana (issue #7 komentar 5821139319), (2) produkcija spot-check zelen, (3) dev backfill/GC preverjen, (4) ostanka: #8 fotke (lastnik), Neon backfill --commit (lastnik — ukazi v issue #7), Vercel kvota REŠENA.
+---
+Task ID: R125 (#5 §2 — session revocation + issue higiena + README drift)
+Agent: Z.ai Code (glavni orkestrator)
+Task: Nadaljevanje po NEON-INV — "odlicno nadaljuj". Higiena issues, nato naslednja P0 varnostna postavka iz #5.
+
+Work Log:
+- ISSUES HIGIENA: #9 (E2E veriga), #10 (CV Studio), #11 (Scene Understanding) ZAPRTI kot completed z zaključnimi komentarji (dokazi: commiti, testi, produkcija spot-check). #7 ostane odprt (Neon backfill = lastniški korak, komentar 5821139319), #8 ostane odprt (fotke).
+- NAPAKA PRIZNANA + REŠENA: `bun test` (bun runner) javlja 44 fail (vi.setSystemTime ni v bun shimu) — NI regresija; pravi ukaz je `bun run test` (vitest) → 556/556.
+- README DRIFT (R122 navodila): 495→565 testov, 31→36 datotek, 33→35 modelov, 56→61 rut/38→41 skupin, ~83.5k→~91.4k vrstic (usklajeno z dejanskim stanjem).
+- R125 SESSION REVOCATION (#5 §2, commit e1af120, 22 datotek +710/−61):
+  · schema: model UserSession (jti=id, profileId FK cascade, expiresAt, revokedAt, ip, userAgent; indeksa profileId+revokedAt, expiresAt) + migracija 20260924210000_r125_session_revocation (shadow diff, samodejno na Neon prek builda);
+  · session.ts: jti v SessionPayload; verifySession ostane ČISTA kriptografija (Edge/proxy nespremenjen);
+  · session-registry.ts (nov): createUserSession (register + lenobno čiščenje poteklih istega profila), assertSessionAlive (obstaja/nije revoked/nije potekel/profileId===sub), revokeSession, revokeAllForUser(exceptJti?), listActiveSessions;
+  · auth.ts: authenticate za user seje zahteva ŽIVO vrsto registra — fail-closed: brez jti → 401 (žetoni izdani pred registrom iztečejo), DB napaka → 401 (ni tihega odobriti);
+  · login/demo/register rute: izdaja prek registra (namesto golih signSession);
+  · logout: POST /api/auth/logout — privzeto revoke TE seje; {all:true} revoke ostalih naprav (trenutna ostane); {all,current} vse; audit LOGOUT/LOGOUT_ALL_DEVICES/LOGOUT_ALL_INCLUDING_CURRENT;
+  · NOVI RUTI: GET /api/auth/sessions (active-session pregled z current oznako, ip, UA) + DELETE /api/auth/sessions/[id] (revoke ene naprave; tuja → 404, ne razkriva);
+  · password: menjava gesla revoke-a VSE žive seje v ISTI $transaction (ukraden žeton ne preživi) + odgovor relogin:true;
+  · TopBar: gumb Odjava (DropdownMenu: "Ta naprava" / "Vse naprave (tudi ta)") — prej odjave v UI sploh ni bilo;
+  · testi: +9 (session-revocation.test.ts čez prave handlerje: legacy→401, logout→401, logout-all matrika, menjava gesla→vse 401+nova prijava, pregled, DELETE tuje→404, potekla vrstica→401) + helper test-session.ts; 4 viz suite-i preurejeni s registriranimi sejami.
+- VERIFIKACIJA: 565/565 testov · tsc 0 · eslint 0 · dev HTTP E2E (login→sessions→logout-all matrika→relogin) · agent-browser E2E (prijava → TopBar Odjava → "Ta naprava" → /login) · CI tipi/testi/gradnja ✅ + Varnost 77 ✅ + Vercel ✅ na e1af120 · PRODUKCIJA: login 200 → sessions 200 (1 živa, current) → logout 200 → isti žeton 401 (revokacija živa na Neon+Blob deployu).
+- Issue #5 komentar 5821837914 (R125 §2 tabela zahtev + verifikacija + opomba o izteku starih sej).
+
+Stage Summary:
+- #5 §2 (P0 SECURITY) DOKONČAN in ŽIV na produkciji: ukraden žeton ne preživi več odjave, odjave vseh naprav ali menjave gesla; active-session pregled + per-device revoke; fail-closed po celotni verigi.
+- Issues #9/#10/#11 zaprti; README/NAVODILA usklajeni (R125).
+- Naslednji kandidati iz #5 P0: API-key lifecycle (owner/purpose/scopes/expiry/rotation/last-used), CSRF/Origin, offline queue IndexedDB, demo production-safe; iz #4: GDPR lifecycle, produkc. restore test. Neon backfill (#7) in #8 fotke ostajata lastniška koraka.
