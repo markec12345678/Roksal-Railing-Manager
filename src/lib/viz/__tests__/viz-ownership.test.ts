@@ -183,9 +183,10 @@ describe('S+4 lastništvo — API rute (Bearer sejni žetoni)', () => {
   let tokenB = ''
 
   beforeEach(async () => {
-    const { signSession } = await import('@/lib/session')
-    tokenA = await signSession({ sub: 'user-A', email: 'a@test.si', ime: 'Uporabnik A', vloga: 'MONTER' })
-    tokenB = await signSession({ sub: 'user-B', email: 'b@test.si', ime: 'Uporabnik B', vloga: 'MONTER' })
+    // #5 §2: authenticate zahteva registrirano (živo) sejo — Profile + UserSession.
+    const { createTestUserWithSession } = await import('@/lib/__tests__/helpers/test-session')
+    tokenA = await createTestUserWithSession('user-A').then((r) => r.token)
+    tokenB = await createTestUserWithSession('user-B').then((r) => r.token)
   })
 
   function req(method: string, url: string, token: string, body?: unknown): Request {
@@ -279,8 +280,8 @@ describe('S+4 lastništvo — API rute (Bearer sejni žetoni)', () => {
   })
 
   it('ADMIN sme videti zapuščinski zapis skozi rutu (GET 200)', async () => {
-    const { signSession } = await import('@/lib/session')
-    const admin = await signSession({ sub: 'user-ADMIN', email: 'admin@test.si', ime: 'Admin', vloga: 'ADMIN' })
+    const { createTestUserWithSession } = await import('@/lib/__tests__/helpers/test-session')
+    const admin = await createTestUserWithSession('user-ADMIN', 'ADMIN').then((r) => r.token)
     await createProject({ ...BASE, id: 'route-legacy', ownerId: null })
     created.push('route-legacy')
     const detailRoute = await import('@/app/api/viz/projects/[id]/route')

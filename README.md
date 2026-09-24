@@ -68,16 +68,16 @@
 - 📴 **Deluje offline** — PWA s service workerjem, sinhronizacija ko je povezava
 - 🗄️ **PostgreSQL** — verzionirane migracije (`migrate deploy`), produkcija Neon
 
-### Statistika projekta (usklajeno z HEAD, R122)
+### Statistika projekta (usklajeno z HEAD, R125)
 
 | Metrika | Vrednost |
 |---------|----------|
-| Vrstic kode (src) | ~83.500 |
+| Vrstic kode (src) | ~91.400 |
 | React komponent | 41 roksal modulov + 60+ UI primitivov |
-| API končne točke | 56 route handlerjev v 38 skupinah |
-| Prisma modelov | 33 (PostgreSQL) |
+| API končne točke | 61 route handlerjev v 41 skupinah |
+| Prisma modelov | 35 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **495** (31 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **565** (36 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 52 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -339,7 +339,7 @@ Sheet z 6 podzavihki:
 | **PWA** | Service Worker + Web Manifest |
 | **Temnitveni način** | [next-themes](https://github.com/pacocoursey/next-themes) |
 | **Validacija** | [Zod 4](https://zod.dev/) |
-| **Testiranje** | [Vitest 4](https://vitest.dev/) (495 testov + globalSetup embedded PG) |
+| **Testiranje** | [Vitest 4](https://vitest.dev/) (565 testov + globalSetup embedded PG) |
 | **Paketni upravitelj** | [Bun](https://bun.sh/) |
 | **Linting** | ESLint 9 + eslint-config-next |
 
@@ -350,14 +350,14 @@ Sheet z 6 podzavihki:
 ```
 roksal-railing-manager/
 ├── prisma/
-│   ├── schema.prisma          # 33 modelov (PostgreSQL)
+│   ├── schema.prisma          # 35 modelov (PostgreSQL)
 │   ├── migrations/            # verzionirane migracije (migrate deploy)
 │   ├── build-prepare.cjs      # build: generate + migrate deploy + seed (fail-closed)
 │   └── seed.cjs               # Demo podatki (profili, stranke, projekti)
 ├── src/
 │   ├── app/
 │   │   ├── page.tsx           # Glavna SPA (9 zavihkov + Več meni)
-│   │   └── api/               # 56 route handlerjev v 38 skupinah
+│   │   └── api/               # 61 route handlerjev v 41 skupinah
 │   │       ├── measurement/   # deterministični Merilni SDK API (detect/confirm/products)
 │   │       ├── sync/          # mobilna sinhronizacija (SERVICE principal MOBILE_SYNC)
 │   │       ├── quote/         # ponudba iz layouta (BOM + cena)
@@ -457,7 +457,7 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `bun run dev` | Zažene Next.js dev server (port 3000) |
 | `bun run build` | Produkcijska build (build-prepare: generate + migrate deploy + seed) |
 | `bun run start` | Zažene produkcijski server |
-| `bun run test` | Vsi testi (vitest, 495, embedded PG prek globalSetup) |
+| `bun run test` | Vsi testi (vitest, 565, embedded PG prek globalSetup) |
 | `bun run check` | tsc --noEmit + vitest run (en ukaz za vse) |
 | `bunx tsc --noEmit` | Tipska kontrola celotnega projekta (trenutno 0 napak) |
 | `bun run lint` | ESLint preverjanje |
@@ -483,7 +483,7 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 
 ## 🗄️ Podatkovni model (Prisma)
 
-33 modelov v PostgreSQL (verzionirane migracije):
+35 modelov v PostgreSQL (verzionirane migracije):
 
 | Model | Namen |
 |-------|-------|
@@ -516,6 +516,7 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `Invoice` | Računi (eslog e-računi, številčenje) |
 | `SiteSurvey` | Terenski pregled pred montažo |
 | `ApiKey` | API ključi (MOBILE_SYNC) — samo SHA-256 hash v bazi |
+| `UserSession` | Sejni register (R125): jti/naprava/potek/revoke — revokacija žetonov |
 | `VizProject` / `VizRenderJob` | Vizualizacijska plast (render jobi) |
 
 > R121: bajti slik/AR/skic/PDF živijo v **object storage** (`files/…` — local
@@ -712,6 +713,10 @@ Potrebne env spremenljivke na Vercelu: `DATABASE_URL` (postgres:// URL,
 
 - **Lastna seja** (namensko brez next-auth@4 — peer range `next ^12||^13||^14`, projekt teče na Next 16):
   HMAC-SHA256 podpisan žeton, 12 h veljavnost, `HttpOnly` + `SameSite=Lax` piškotek
+- **Sejni register + revokacija** (R125, issue #5 §2): vsak žeton nosi `jti` = vrstica v
+  `UserSession`; odjava / odjava vseh naprav / menjava gesla / brisanje profila prekličejo
+  žeton TAKOJ (ukraden žeton ne preživi). Active-session pregled + revoke posamezne naprave
+  prek `/api/auth/sessions`; UI gumb Odjava v TopBar. Fail-closed: žeton brez `jti` ni veljaven.
 - Gesla: **scrypt** (N=16384, r=8, p=1) z `timingSafeEqual` primerjavo
 - Brute-force zaščita: 10 poskusov / 15 min na (IP, e-mail) par — `src/lib/rate-limit.ts`
 - API ključi `rkm_…` samo s pepper-hashem v bazi, preklicljivi

@@ -82,6 +82,31 @@ poljubnim statusom, vplival na stranke). Je **namenski servisni principal**:
 - `numbering.test.ts` — 10 vzporednih računov = 10 unikatnih zaporednih številk.
 - `audit-durability.test.ts` — audit v isti transakciji, rollback brez fantomov.
 
+## Seje — registracija in revokacija (R125, issue #5 §2)
+
+Žeton ostane brezstanjski HMAC (middleware/Edge preveri samo podpis + potek),
+ampak `authenticate()` v rutah zahteva ŽIVO vrstico v tabeli `UserSession`
+("sejni register"). Fail-closed:
+
+| Scenarij | Rezultat |
+|---|---|
+| Žeton brez `jti` (izdan pred registrom) | neveljaven → 401 |
+| Odjava ene naprave (`POST /api/auth/logout`) | `revokedAt` te seje → isti žeton 401 |
+| Odjava vseh ostalih naprava (`{ all: true }`) | ostale žive seje revoke, trenutna ostane |
+| Odjava vseh naprava (`{ all: true, current: true }`) | vse žive seje revoke |
+| Menjava gesla (`POST /api/auth/password`) | VSE žive seje revoke v isti transakciji (ukraden žeton ne preživi); odgovor `relogin: true` |
+| Brisanje profila | cascade briše seje → vsi žetoni mrtvi |
+| Potekla vrstica registra | neveljavno (četudi žeton še ni potekel) |
+
+Active-session pregled: `GET /api/auth/sessions` (žive seje lastnika, `current`
+oznaka); posamezna naprava: `DELETE /api/auth/sessions/[id]` (tuj `jti` → 404,
+ne razkriva obstoja). Lenobno čiščenje poteklih vrstic ob novi prijavi istega
+profila. UI: gumb Odjava v TopBar (Ta naprava / Vse naprave).
+
+Testi: `src/lib/__tests__/session-revocation.test.ts` (9 primerov čez prave
+route handlerje: legacy žeton, logout, logout-all, menjava gesla + ponovna
+prijava, pregled, DELETE tuje seje, potekla vrstica).
+
 ## Še ni pokrito (iskreno, naslednje runde)
 
 - customers/measurements/documents/inventory posamezne IDOR rute imajo guard na

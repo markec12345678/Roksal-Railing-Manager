@@ -1,10 +1,19 @@
 'use client'
 
-import { RefreshCw, Moon, Sun, Clock, Search } from 'lucide-react'
+import { RefreshCw, Moon, Sun, Clock, Search, LogOut } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { NotificationCenter } from '@/components/roksal/notification-center'
 import { useTheme } from 'next-themes'
 import { useSyncExternalStore, useCallback, useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 interface TopBarProps {
   onSync?: () => void
@@ -51,7 +60,9 @@ export function TopBar({ onSync, syncing, onOpenPalette, hidden = false }: TopBa
   const { theme, setTheme, resolvedTheme } = useTheme()
   const hydrated = useHydrated()
   const liveClock = useLiveClock()
+  const router = useRouter()
   const [lastSynced, setLastSynced] = useState<number>(0)
+  const [loggingOut, setLoggingOut] = useState(false)
 
   const toggleTheme = useCallback(() => {
     setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')
@@ -63,6 +74,28 @@ export function TopBar({ onSync, syncing, onOpenPalette, hidden = false }: TopBa
     }
     setLastSynced(Date.now())
   }, [onSync])
+
+  // #5 §2: odjava prekliče sejo v registru (UserSession) — ukraden žeton
+  // ne preživi odjave. `all` odjavi tudi ostale naprave.
+  const handleLogout = useCallback(
+    async (all: boolean) => {
+      setLoggingOut(true)
+      try {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(all ? { all: true, current: true } : {}),
+        })
+      } catch {
+        // Omrežna napaka: piškotek počistimo z vseeno — seja poteče,
+        // uporabnik gre na prijavo (fail-closed počutje je ohranjeno).
+      } finally {
+        router.replace('/login')
+        router.refresh()
+      }
+    },
+    [router],
+  )
 
   // Check if synced recently (within 5 minutes)
   const needsSyncPulse = Date.now() - lastSynced > 300000 && !syncing
@@ -135,6 +168,33 @@ export function TopBar({ onSync, syncing, onOpenPalette, hidden = false }: TopBa
           >
             <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
           </Button>
+          {/* Odjava (#5 §2) — seja se prekliče v registru, ne le piškotek */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 text-white/70 hover:bg-white/10 hover:text-white"
+                aria-label="Odjava"
+                title="Odjava"
+                disabled={loggingOut}
+              >
+                <LogOut className={`h-4 w-4 ${loggingOut ? 'animate-pulse' : ''}`} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>Odjava</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => void handleLogout(false)}>
+                <LogOut className="h-4 w-4" />
+                Ta naprava
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => void handleLogout(true)}>
+                <LogOut className="h-4 w-4" />
+                Vse naprave (tudi ta)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>

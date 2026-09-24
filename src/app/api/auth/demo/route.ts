@@ -17,7 +17,8 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { hashPassword } from '@/lib/password'
-import { SESSION_COOKIE, isSecureRequest, sessionCookieAttributes, signSession } from '@/lib/session'
+import { SESSION_COOKIE, isSecureRequest, sessionCookieAttributes } from '@/lib/session'
+import { createUserSession } from '@/lib/session-registry'
 import { audit } from '@/lib/audit'
 import { checkRate, clientIp } from '@/lib/rate-limit'
 
@@ -59,12 +60,8 @@ export async function POST(request: Request) {
       },
     })
 
-    const token = await signSession({
-      sub: profile.id,
-      email: profile.email,
-      ime: profile.ime,
-      vloga: profile.vloga,
-    })
+    // #5 §2: tudi demo seja gre v register — preklicljiva (logout-all/geslo).
+    const issued = await createUserSession(profile, request)
 
     await db.profile
       .update({ where: { id: profile.id }, data: { lastActive: new Date() } })
@@ -75,7 +72,7 @@ export async function POST(request: Request) {
       user: { id: profile.id, email: profile.email, ime: profile.ime, vloga: profile.vloga },
       demo: true,
     })
-    response.headers.set('Set-Cookie', `${SESSION_COOKIE}=${token}; ${sessionCookieAttributes(isSecureRequest(request))}`)
+    response.headers.set('Set-Cookie', `${SESSION_COOKIE}=${issued.token}; ${sessionCookieAttributes(isSecureRequest(request))}`)
     return response
   } catch (error) {
     console.error('Demo login error:', error)

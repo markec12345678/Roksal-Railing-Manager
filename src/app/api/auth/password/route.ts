@@ -62,13 +62,22 @@ export async function POST(request: Request) {
       )
     }
 
-    await db.profile.update({
-      where: { id: profile.id },
-      data: { passwordHash: await hashPassword(parsed.data.newPassword) },
-    })
+    // Menjava gesla = fail-closed revoke VSEH sej (tudi trenutne): ukraden
+    // žeton preživi menjavo gesla le, če ga ne prekličemo. Uporabnik se
+    // ponovno prijavi z novim geslom (klient dobi `relogin: true`).
+    const [, revokedSessions] = await db.$transaction([
+      db.profile.update({
+        where: { id: profile.id },
+        data: { passwordHash: await hashPassword(parsed.data.newPassword) },
+      }),
+      db.userSession.updateMany({
+        where: { profileId: profile.id, revokedAt: null },
+        data: { revokedAt: new Date() },
+      }),
+    ])
     releaseOnFailure(limitKey)
-    await audit({ request, session: auth.session, akcija: 'PASSWORD_CHANGED' })
-    return NextResponse.json({ ok: true })
+    await audit({ request, session: auth.session, akcija: 'PASSWORD_CHANGED', newValue: { revokedSessions: revokedSessions.count } })
+    return NextResponse.json({ ok: true, relogin: true })
   } catch (error) {
     console.error('Password change error:', error)
     return NextResponse.json({ error: 'Napaka pri spremembi gesla.' }, { status: 500 })

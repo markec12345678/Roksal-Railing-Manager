@@ -26,6 +26,13 @@ export interface SessionPayload {
   vloga: string
   /** Unix sekunde — potek veljavnosti */
   exp: number
+  /**
+   * #5 §2 — Session revocation: id vrstice v tabeli UserSession. Brez nje je
+   * žeton na ravni RUT (authenticate) neveljaven — fail-closed: žetoni izdani
+   * pred uvedbo registra ne prenesejo preverjanja živosti in morajo znova
+   * pridobiti prijavo. Sama overitev podpisa (verifySession) ostane čista.
+   */
+  jti?: string
 }
 
 /**
@@ -101,15 +108,21 @@ export async function verify(data: string, signatureB64: string, secret: string)
 
 export type NewSession = Omit<SessionPayload, 'exp'>
 
-/** Ustvari podpisan žeton z vgrajenim potekom veljavnosti. */
+/**
+ * Ustvari podpisan žeton z vgrajenim potekom veljavnosti.
+ * `jti` (id UserSession vrstice) je izbiren na nivoju kriptografije — rute ga
+ * VSAKICAKOR zahtevajo (authenticate: fail-closed brez registra seje).
+ */
 export async function signSession(
   payload: NewSession,
   ttlSeconds: number = SESSION_TTL_SECONDS,
+  jti?: string,
 ): Promise<string> {
   const secret = sessionSecret()
   const full: SessionPayload = {
     ...payload,
     exp: Math.floor(Date.now() / 1000) + ttlSeconds,
+    ...(jti ? { jti } : {}),
   }
   const body = b64urlEncode(encoder.encode(JSON.stringify(full)))
   const signature = await sign(body, secret)
@@ -145,6 +158,7 @@ export async function verifySession(token: string | null | undefined): Promise<S
     return null
   }
   if (!payload?.sub || typeof payload.exp !== 'number') return null
+  if (payload.jti !== undefined && typeof payload.jti !== 'string') return null
   if (payload.exp * 1000 <= Date.now()) return null
   return payload
 }

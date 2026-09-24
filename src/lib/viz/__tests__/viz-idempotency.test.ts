@@ -26,8 +26,9 @@ beforeEach(async () => {
   delete process.env.BLOB_READ_WRITE_TOKEN
   delete process.env.VIZ_STORAGE_DRIVER
   process.env.SESSION_SECRET = 'test-secret-0123456789abcdef'
-  const { signSession } = await import('@/lib/session')
-  tokenA = await signSession({ sub: 'user-A', email: 'a@test.si', ime: 'A', vloga: 'MONTER' })
+  // #5 §2: authenticate zahteva registrirano (živo) sejo.
+  const { createTestUserWithSession } = await import('@/lib/__tests__/helpers/test-session')
+  tokenA = await createTestUserWithSession('user-A').then((r) => r.token)
 })
 
 const cleanupKeys: string[] = []

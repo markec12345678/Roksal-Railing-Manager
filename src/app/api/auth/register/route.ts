@@ -15,7 +15,8 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { db } from '@/lib/db'
 import { hashPassword } from '@/lib/password'
-import { SESSION_COOKIE, isSecureRequest, sessionCookieAttributes, signSession } from '@/lib/session'
+import { SESSION_COOKIE, isSecureRequest, sessionCookieAttributes } from '@/lib/session'
+import { createUserSession } from '@/lib/session-registry'
 import { audit } from '@/lib/audit'
 import { checkRate, clientIp } from '@/lib/rate-limit'
 
@@ -62,18 +63,14 @@ export async function POST(request: Request) {
       },
     })
 
-    const token = await signSession({
-      sub: profile.id,
-      email: profile.email,
-      ime: profile.ime,
-      vloga: profile.vloga,
-    })
+    // #5 §2: seja gre v register — preklicljiva.
+    const issued = await createUserSession(profile, request)
     await audit({ request, userId: profile.id, akcija: 'REGISTER', newValue: { vloga: profile.vloga } })
 
     const response = NextResponse.json({
       user: { id: profile.id, email: profile.email, ime: profile.ime, vloga: profile.vloga },
     })
-    response.headers.set('Set-Cookie', `${SESSION_COOKIE}=${token}; ${sessionCookieAttributes(isSecureRequest(request))}`)
+    response.headers.set('Set-Cookie', `${SESSION_COOKIE}=${issued.token}; ${sessionCookieAttributes(isSecureRequest(request))}`)
     return response
   } catch (error) {
     console.error('Register error:', error)

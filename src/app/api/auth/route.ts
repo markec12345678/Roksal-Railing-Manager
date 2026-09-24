@@ -14,7 +14,8 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { db } from '@/lib/db'
 import { verifyPassword } from '@/lib/password'
-import { SESSION_COOKIE, isSecureRequest, sessionCookieAttributes, signSession } from '@/lib/session'
+import { SESSION_COOKIE, isSecureRequest, sessionCookieAttributes } from '@/lib/session'
+import { createUserSession } from '@/lib/session-registry'
 import { authenticate } from '@/lib/auth'
 import { audit } from '@/lib/audit'
 import { LOGIN_LIMIT, checkRate, clientIp, releaseRate } from '@/lib/rate-limit'
@@ -67,12 +68,8 @@ export async function POST(request: Request) {
     }
     releaseRate(limitKey)
 
-    const token = await signSession({
-      sub: profile.id,
-      email: profile.email,
-      ime: profile.ime,
-      vloga: profile.vloga,
-    })
+    // #5 §2: seja gre v register (UserSession) — žeton dobi jti in je preklicljiv.
+    const issued = await createUserSession(profile, request)
 
     await db.profile
       .update({ where: { id: profile.id }, data: { lastActive: new Date() } })
@@ -82,7 +79,7 @@ export async function POST(request: Request) {
     const response = NextResponse.json({
       user: { id: profile.id, email: profile.email, ime: profile.ime, vloga: profile.vloga },
     })
-    response.headers.set('Set-Cookie', `${SESSION_COOKIE}=${token}; ${sessionCookieAttributes(isSecureRequest(request))}`)
+    response.headers.set('Set-Cookie', `${SESSION_COOKIE}=${issued.token}; ${sessionCookieAttributes(isSecureRequest(request))}`)
     return response
   } catch (error) {
     console.error('Auth login error:', error)

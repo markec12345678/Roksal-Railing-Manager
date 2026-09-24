@@ -29,7 +29,7 @@ bun run dev          # ali: npm run dev
 | Kaj | Ukaz |
 |---|---|
 | Zaženi razvojno različico | `bun run dev` |
-| Preveri vse (tipi + 495 testov) | `bun run check` |
+| Preveri vse (tipi + 565 testov) | `bun run check` |
 | Samo testi | `bun run test` |
 | Merilni SDK benchmark | `bun run bench:measurement` (12 terenskih scenarijev) |
 | Varnostni test na živem strežniku | `bun run smoke` (glej spodaj za spremenljivke) |

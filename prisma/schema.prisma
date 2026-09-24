@@ -44,6 +44,30 @@ model Profile {
   crew       Crew?     @relation(fields: [ekipaId], references: [id])
   leadsCrew  Crew[]    @relation("CrewLeader")
   schedules  InstallationSchedule[] @relation("MonterSchedules")
+  sessions   UserSession[]
+}
+
+/// #5 §2 — Session revocation: registracija izdanih sejnih žetonov.
+///
+/// Žeton sam je še vedno brezstanjski HMAC (middleware ga preveri brez baze),
+/// ampak ruta (authenticate) zahteva ŽIV vnos v tej tabeli:
+///   • jti v žetonu = id vrstice — brez njega je žeton NEVELJAVEN (fail-closed);
+///   • revokedAt != null → revoke ene naprave (logout te naprave) ali vseh
+///     (odjava vseh naprav, menjava gesla, deaktivacija);
+///   • expiresAt = ista vrednost kot exp v žetonu — pregone napihnjenih vrstic
+///     omogoča lenobno čiščenje ob novi prijavi istega profila.
+model UserSession {
+  id        String    @id @default(cuid())
+  profileId String
+  profile   Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  userAgent String?
+  ip        String?
+  createdAt DateTime  @default(now())
+  expiresAt DateTime
+  revokedAt DateTime?
+
+  @@index([profileId, revokedAt])
+  @@index([expiresAt])
 }
 
 // ============================================

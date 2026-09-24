@@ -92,9 +92,10 @@ describe('S+4 blob security — proxy ruta /api/viz/files/[...key]', () => {
   let tokenB = ''
 
   beforeEach(async () => {
-    const { signSession } = await import('@/lib/session')
-    tokenA = await signSession({ sub: 'user-A', email: 'a@test.si', ime: 'A', vloga: 'MONTER' })
-    tokenB = await signSession({ sub: 'user-B', email: 'b@test.si', ime: 'B', vloga: 'MONTER' })
+    // #5 §2: authenticate zahteva registrirano (živo) sejo — Profile + UserSession.
+    const { createTestUserWithSession } = await import('@/lib/__tests__/helpers/test-session')
+    tokenA = await createTestUserWithSession('user-A').then((r) => r.token)
+    tokenB = await createTestUserWithSession('user-B').then((r) => r.token)
   })
 
   function req(url: string, token?: string): Request {

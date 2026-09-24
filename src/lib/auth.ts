@@ -20,6 +20,7 @@
 import { NextResponse } from 'next/server'
 import { extractToken, verifySession, type SessionPayload } from './session'
 import { verifyApiKey } from './password'
+import { assertSessionAlive } from './session-registry'
 
 export type AuthContext =
   | { kind: 'user'; session: SessionPayload }
@@ -38,11 +39,31 @@ export async function authenticate(request: Request): Promise<AuthContext | null
     }
     // Bearer z sejim žetonom (uporabno za skripte in testiranje)
     const session = await verifySession(token)
-    return session ? { kind: 'user', session } : null
+    return (await isLiveUserSession(session)) ? { kind: 'user', session: session! } : null
   }
 
   const session = await verifySession(extractToken(request))
-  return session ? { kind: 'user', session } : null
+  return (await isLiveUserSession(session)) ? { kind: 'user', session: session! } : null
+}
+
+/**
+ * #5 §2 — Session revocation: podpis in potek (verifySession) nista dovolj.
+ * Seja mora biti ŽIVO registrirana (UserSession: obstaja, ni revoke, ni
+ * potekla, pripada pravemu profilu). Fail-closed:
+ *   • žeton brez jti (izdan pred registrom) → neveljaven;
+ *   • logout ene naprave / odjava vseh / menjava gesla → revoke vrstice;
+ *   • izbrisan profil → vrstica cascade briše → neveljavno.
+ * Middleware ostane čista kriptografija (Edge, brez baze) — to je avtoritativna
+ * plast: poglej komentar v glavi datoteke.
+ */
+async function isLiveUserSession(session: SessionPayload | null): Promise<boolean> {
+  if (!session) return false
+  try {
+    return await assertSessionAlive(session)
+  } catch {
+    // Baza nedosegljiva → fail-closed (isti vzorec kot SESSION_SECRET manjka).
+    return false
+  }
 }
 
 /** Samo uporabniška seja (API ključi ne morejo brati CRM, cen, zalog …). */
