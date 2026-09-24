@@ -1435,3 +1435,9 @@ Work Log:
 Stage Summary:
 - Issue #7 (R121) DOKONČAN: bajti izven baze (metadata-only DB), pravi verzionirani PDF artefakti z sha256 integriteto, idempotenten sync podprt z DB constraintom, restore drill DOKAŽE obnovljivost backupa — vse brez novih funkcij, z auditi v transakcijah in fail-closed politikami.
 - Naslednji koraki: (1) potrditi Vercel deploy na HEAD po retriggerju, (2) proizvodnja: pognati migrate deploy + migrate-base64-to-storage --commit na Neon (lastnik/terminal), (3) #8 R118-real (prave fotografije, ročna sprejemba), (4) candidate: GC orodje za artefakte + SignatureAudit.signatureImage migracija, (5) reactStrictMode sinh baton ostaja (dev-only opazovanje).
+
+DODATEK R121 (produkcija potrjena):
+- Push worklog commita a9fd415 = retrigger Vercel deploy → **status SUCCESS** (kvota se je resetirala/prestavila). HEAD deploy vsebuje R121 kodo.
+- PRODUKCIJSKI E2E (https://roksal-railing-manager.vercel.app, živi Neon + Vercel Blob): login → foto POST → odgovor z metadata-only (storageKey files/photos/<id>/slika.png, sha256 bbcd4a32…, sizeBytes 79, imageData NULL) → serving: anon 401 / seja 200 / ETag = sha256 → DELETE {"success":true} → artefakt 404. Vercel Blob driver POTRJEN na produkciji (docs/STORAGE.md §8 točka izpadla).
+- Neon schema: Vercel build (prisma generate + push/deploy) je uspešen → migracija 20260924170000_r121_object_storage je na Neonu (photo POST s storageKey bi sicer padel).
+- Issue #7: dokončalni komentar objavljen (id 5818634808). Ostanki za naslednjo rundо: (a) na Neon pognati backfill migracijo nad EXISTING podatki (`bun tools/migrate-base64-to-storage.ts --commit` z Neon URL — lokalni run je bil na dev bazi), (b) #8 R118-real prave fotografije (ročna sprejemba lastnika), (c) GC orodje za artefakte pobrisanih projektov, (d) SignatureAudit.signatureImage migracija (isti vzorec), (e) reactStrictMode sinh baton.
