@@ -1,21 +1,36 @@
-// Roksal — resource-level avtorizacija (issue #4, §3)
+// Roksal — resource-level avtorizacija (issue #4, §3; R120 — security pass)
 // ---------------------------------------------------------------------------
 // authenticate() pove SAMO, kdo si. Ta modul pove, ali smeš do KONKRETNEGA
 // vira (projekt, stranka, račun, …). Vsak business API mora poleg
 // authenticate() preveriti tudi dostop do vira — glej docs/SECURITY-POLICY.md.
 //
-// MATRIKA (prilagojena dejanskim rolam: ADMIN, VODJA, MONTER, SKLADISCE):
+// MATRIKA PRINCIPALOV (R120):
 //
-// | Vloga     | Project                      | Customer            | Invoice/Račun         | Zaloga/naročila        |
-// |-----------|------------------------------|---------------------|-----------------------|------------------------|
-// | ADMIN     | vse (read/write/lock/delete) | vse                 | vse                   | vse                    |
-// | VODJA     | vse (read/write/lock/delete) | vse                 | vse                   | vse                    |
-// | MONTER    | svoje: read/write (brez lock)| read + ustvari/uredi| read svojih projektov | read                   |
-// | SKLADISCE | read vseh (material kontekst)| read                | read                  | vse (prejem, premiki)  |
+//   USER (seja) — vloge: ADMIN, VODJA, MONTER, SKLADISCE
+//   | Vloga     | Project                      | Customer            | Invoice/Račun         | Zaloga/naročila        |
+//   |-----------|------------------------------|---------------------|-----------------------|------------------------|
+//   | ADMIN     | vse (read/write/lock/delete) | vse                 | vse                   | vse                    |
+//   | VODJA     | vse (read/write/lock/delete) | vse                 | vse                   | vse                    |
+//   | MONTER    | svoje: read/write (brez lock)| read + ustvari/uredi| read svojih projektov | read                   |
+//   | SKLADISCE | read vseh (material kontekst)| read                | read                  | vse (prejem, premiki)  |
 //
-// API ključ (`kind: 'apikey'`) = servisni račun (mobilni klient/BalkonAR):
-// strojni dostop na ravni VODJA, a dejanja NE nosijo uporabniške pripisnosti
-// (audit userId = null). Ključi so pepper+SHA-256, ustvari jih admin orodje.
+//   SERVICE (API ključ `rkm_…`) — servisni principal MOBILE_SYNC (mobilni
+//   klient), IZRAZNO omejene pravice:
+//   | Dovoljeno                                  | Nedovoljeno                        |
+//   |--------------------------------------------|------------------------------------|
+//   | read projektov (sync zrcalo podjetja)      | brisanje/ustvarjanje strank        |
+//   | update projektov (sync polja + status SAMO | zaklep/odklep projekta (lock)      |
+//   | prek statusnega stroja, brez preskokov)    | brisanje projektov                 |
+//   | ustvarjanje meritev (measurement confirm)  | urejanje cen / dobaviteljev        |
+//   | nalaganje fotodokumentacije (photos)       | administracija zaloge              |
+//   |                                            | obhod deal-lock statusnega stroja  |
+//
+//   Razlika do prej (R120): apikey NI več avtomatsko "manager" — prej je
+//   `isManager()` vrnil `true` in je en ključ lahko brisal stranke, urejal
+//   zaloge in preskakoval statusni stroj. Zdaj velja načelo najmanjših
+//   pravic; servis je namenski, ne vseveden. Ključi so pepper+SHA-256,
+//   ustvari jih admin orodje (`bun run apikey`), posamezen ključ se da
+//   preklicati (revokedAt).
 //
 // POLITIKA ODGOVOROV (dokumentirana, konsistentna):
 //   - vir NE obstaja → 404 (ne razkrivamo obstoja),
@@ -46,14 +61,23 @@ export type ProjectRef = {
 
 export type ProjectAccess = 'read' | 'update' | 'delete' | 'lock' | 'changeStatus'
 
+/**
+ * Vodstvene pravice ima SAMO uporabnik z vlogo ADMIN/VODJA.
+ * API ključ (MOBILE_SYNC) NI manager — glej matriko zgoraj (R120).
+ */
 function isManager(principal: AuthContext): boolean {
-  return principal.kind === 'apikey' || hasRole(principal.session, MANAGER_ROLES)
+  return principal.kind === 'user' && hasRole(principal.session, MANAGER_ROLES)
 }
 
-/** Zaloga/naročila: SKLADISCE in vodstvo imajo pisni dostop. */
+/** Servisni principal MOBILE_SYNC (API ključ). */
+export function isServicePrincipal(principal: AuthContext): boolean {
+  return principal.kind === 'apikey'
+}
+
+/** Zaloga/naročila: SKLADISCE in vodstvo imajo pisni dostop; servis NE (R120). */
 export function canManageInventory(principal: AuthContext): boolean {
-  if (principal.kind === 'apikey') return true
-  return hasRole(principal.session, [...MANAGER_ROLES, 'SKLADISCE'])
+  return isManager(principal) ||
+    (principal.kind === 'user' && hasRole(principal.session, ['SKLADISCE']))
 }
 
 /** Stranke: ustvarjanje/urejanje = vsa uporabniška vloga (teren), brisanje = vodstvo. */
@@ -68,6 +92,10 @@ export function canDeleteCustomer(principal: AuthContext): boolean {
 /**
  * Ali sme principal dostopati do projekta z dano pravico?
  * Vrne true/false — za branje pri filtriranju seznamov (brez metanja).
+ *
+ * MOBILE_SYNC (apikey): read vedno (sync zrcalo podjetja je namen ključa);
+ * update/changeStatus veljaven, razen na dealLocked projektu (isti pravilnik
+ * kot monter — zaklenjen dogovor spreminja samo vodstvo); delete/lock NIKOLI.
  */
 export function projectAccessAllowed(
   principal: AuthContext,
@@ -75,6 +103,21 @@ export function projectAccessAllowed(
   access: ProjectAccess
 ): boolean {
   if (isManager(principal)) return true
+
+  if (principal.kind === 'apikey') {
+    switch (access) {
+      case 'read':
+        return true
+      case 'update':
+      case 'changeStatus':
+        return !project.dealLocked
+      case 'delete':
+      case 'lock':
+        return false
+      default:
+        return false
+    }
+  }
 
   const uid = principal.kind === 'user' ? principal.session.sub : null
   const isMine = uid !== null && (project.monterId === uid || project.vodjaId === uid)
@@ -116,8 +159,16 @@ export function assertProjectAccess(
   }
 }
 
-/** Filter WHERE pogoja za sezname projektov po vlogi. */
+/**
+ * Filter WHERE pogoja za sezname projektov po vlogi.
+ *
+ * MOBILE_SYNC (apikey) → `{}` je NAMERNO in je del servisne pogodbe (R120):
+ * mobilni klient podjetja zrcali projekte podjetja za terensko delo. To je
+ * edina ruta z takim pogledom; vse ostale business rute za servis vrnejo
+ * 403 ali so prek `denyUnless`/`requireUser` sploh nedosegljive.
+ */
 export function projectWhereForPrincipal(principal: AuthContext) {
+  if (principal.kind === 'apikey') return {}
   if (isManager(principal)) return {}
   if (principal.kind === 'user' && hasRole(principal.session, ['SKLADISCE'])) return {}
   const uid = principal.kind === 'user' ? principal.session.sub : null
@@ -137,7 +188,12 @@ export function assertOwnsProject(
   assertProjectAccess(principal, project, access)
 }
 
-/** Uporabniški id za audit; API ključi nimajo uporabniške pripisnosti (null). */
+/** Uporabniški id za audit; servisni principal nima uporabniške pripisnosti (null). */
 export function actorIdOf(principal: AuthContext): string | null {
   return principal.kind === 'user' ? principal.session.sub : null
+}
+
+/** Oznaka akterja za audit dnevnik (user sub ali servisno ime ključa). */
+export function actorLabelOf(principal: AuthContext): string {
+  return principal.kind === 'user' ? principal.session.sub : `service:${principal.name}`
 }

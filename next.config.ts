@@ -18,7 +18,13 @@ const nextConfig: NextConfig = {
   // Če te gradnja kdaj blokira sredi dela na terenu, jo lahko ZAČASNO spet
   // izklopiš — a takoj nato popravi kodo, ne pusti vklopljenega:
   //   typescript: { ignoreBuildErrors: true },
-  reactStrictMode: false,
+  // R120 (Problem 8): StrictMode je PONOVNO VKLOPLJEN. Prej je bil izklopljen
+  // (dvakratni render v dev načinu je zmedel žive preglede kamere/canvas).
+  // Dev-only učinek (produkcija ga ne uporablja): namerno pokaže probleme
+  // lifecycle/hook dvakratnega izvajanja. Merilni studio in AR skenerja
+  // uporabljata useEffect cleanup (stream/canvas sprostitev), zato dvakratni
+  // mount oboje pravilno očisti — preverjeno z agent-browser E2E.
+  reactStrictMode: true,
 };
 
 export default nextConfig;

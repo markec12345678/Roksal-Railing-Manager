@@ -48,6 +48,33 @@ export function isProjectStatus(v: string): v is ProjectStatusValue {
   return v in ALLOWED_TRANSITIONS
 }
 
+/**
+ * Dovoljeni ZAČETNI statusi (R120 — Problem 3): nov projekt se rodi IZKLJUČNO
+ * na vhodu življenjskega cikla. Mobilni payload ne sme ustvariti projekt
+ * neposredno v MONTIRANO/ZAKLJUCENO — to bi bil obhod statusnega stroja.
+ */
+export const INITIAL_PROJECT_STATUSES: readonly ProjectStatusValue[] = ['NACRTOVANO']
+
+export function isInitialProjectStatus(v: string): v is ProjectStatusValue {
+  return (INITIAL_PROJECT_STATUSES as readonly string[]).includes(v)
+}
+
+/**
+ * Razreši zahtevani začetni status za NOV projekt.
+ * - dovoljen začetni status → uporabljen,
+ * - karkoli drugega (neznan ali nedovoljen začetek) → NACRTOVANO + `clampedFrom`
+ *   (klicatelj MORA javiti korekcijo — nič tiho, glej zakon "brez tihe degradacije").
+ */
+export function initialStatusFor(requested: string | null | undefined): {
+  status: ProjectStatusValue
+  clampedFrom: string | null
+} {
+  if (requested && isInitialProjectStatus(requested)) {
+    return { status: requested, clampedFrom: null }
+  }
+  return { status: 'NACRTOVANO', clampedFrom: requested ?? null }
+}
+
 export type TransitionContext = {
   from: string
   to: string
@@ -61,6 +88,11 @@ export type TransitionContext = {
  * - neveljaven prehod → 409
  * - ZAKLJUCENO → karkoli in USTAVLJENO → V_TEKU = samo ADMIN/VODJA
  * - dealLocked projekt iz ZA_MONTAZO = samo ADMIN/VODJA
+ *
+ * R120: servisni principal (API ključ, MOBILE_SYNC) NI več manager — mobilni
+ * klient sme premikati status SAMO po dovoljenih prehodih (nikoli preskok,
+ * nikoli iz končnih stanj, nikoli čez deal-lock). Vodstveni obhod ima samo
+ * uporabnik ADMIN/VODJA.
  */
 export function assertTransition(ctx: TransitionContext): void {
   const { from, to, principal, dealLocked } = ctx
@@ -68,7 +100,7 @@ export function assertTransition(ctx: TransitionContext): void {
     throw new InvalidTransitionError(`Neznan status: ${!isProjectStatus(from) ? from : to}`)
   }
   const isManager =
-    principal.kind === 'apikey' || hasRole(principal.session, MANAGER_ROLES)
+    principal.kind === 'user' && hasRole(principal.session, MANAGER_ROLES)
   const role = principal.kind === 'user' ? principal.session.vloga : null
 
   // Vodstvo sme vse (tudi iz končnih stanj — korekcija napake z auditom).

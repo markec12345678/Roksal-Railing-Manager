@@ -7,6 +7,29 @@
  * S projectId se meritev trajno shrani (Measurement + audit, ENA transakcija).
  *
  * Zakon: brez veljavnega merila se vrne SCALE_REQUIRED z geometry=null.
+ *
+ * ── MEJE ZAUPANJA (R120/item 17 — eksplicitni model) ──────────────────────
+ *
+ *   | Podatek                      | Status                    | Razlaga            |
+ *   |------------------------------|---------------------------|--------------------|
+ *   | klientski mm izračuni        | NE ZAUPAVAJO SE           | sploh ne sprejememo |
+ *   |                              |                           | (ni polja v shemi) |
+ *   | klientska detekcija          | NEZAUPAN PREDLOG          | server jo znova    |
+ *   | (features/metrics echo)      | (untrusted proposal)      | validira (zod) in  |
+ *   |                              |                           | ovrednoti prek     |
+ *   |                              |                           | engine stanj       |
+ *   | ročne točke (manual)         | uporabniški VHOD          | uporabnik sme      |
+ *   |                              |                           | popraviti meritev  |
+ *   |                              |                           | (fail-safe način)  |
+ *   | merilo (scale)               | SERVER-AVTORITATIVNO      | izračun izključno  |
+ *   |                              |                           | iz reference       |
+ *   | končna geometrija/mm         | SERVER-AVTORITATIVNO      | buildSession()     |
+ *   | (totalLength, height, segm.) |                           | na strežniku       |
+ *
+ * To NI varnostna luknja v smislu zaupanja med uporabniki: uporabnik meri
+ * svoj balkon in lahko meritve tudi ročno popravi — detekcija je le predlog.
+ * Pomembno je, da AVTORITATIVNE vrednosti (merilo, mm, geometrija) nastanejo
+ * na strežniku in nosijo provenance, klient pa jih ne more "uglasiti".
  */
 import { NextResponse } from 'next/server'
 import { z } from 'zod'

@@ -29,8 +29,9 @@ bun run dev          # ali: npm run dev
 | Kaj | Ukaz |
 |---|---|
 | Zaženi razvojno različico | `bun run dev` |
-| Preveri vse (tipi + 147 testov) | `bun run check` |
+| Preveri vse (tipi + 495 testov) | `bun run check` |
 | Samo testi | `bun run test` |
+| Merilni SDK benchmark | `bun run bench:measurement` (12 terenskih scenarijev) |
 | Varnostni test na živem strežniku | `bun run smoke` (glej spodaj za spremenljivke) |
 | Produkcijska gradnja | `bun run build && bun run start` |
 | Nov uporabnik / novo geslo | `bun run admin ti@roksal.si` |
@@ -48,7 +49,7 @@ API_KEY=rkm_… \
   python3 tools/security-smoke.py
 ```
 
-Pričakovano: **77/77 zelenih**, exit code 0. V CI teče samodejno ob vsakem pushu.
+Pričakovano: **vsa preverjanja zelena** (52 definiranih, del pogojnih), exit code 0. V CI teče samodejno ob vsakem pushu.
 
 ## Kako je aplikacija zavarovana
 
@@ -104,10 +105,10 @@ in [`src/lib/quote.ts`](src/lib/quote.ts), oba s testi.
 
 | Simptom | Rešitev |
 |---|---|
-| Vse rute vračajo 500, v dnevniku `Unable to open the database file` | `DATABASE_URL` v `.env` mora biti `file:../db/custom.db` — Prisma rešuje relativne poti glede na `prisma/schema.prisma`, ne glede na koren |
+| Vse rute vračajo 500, v dnevniku `DATABASE_URL ni razrešen na postgres:// URL` | `DATABASE_URL` v `.env` mora biti `postgresql://…` — SQLite ni podprt (S+8.2, fail closed). Lokalno: `bun run db:up` (embedded PG :5433) |
 | Preusmeri na `/login`, a prijava javi napako | `SESSION_SECRET` manjka ali je prekratek (min 16 znakov). Aplikacija je **fail closed** — brez skrivnosti ne podpisuje sej |
 | `Please tell me who you are` | `git config user.name … && git config user.email …` |
 | Prijava je zaklenjena (429) | Počakaj 15 minut ali ponovno zaženi strežnik (števec je v pomnilniku) |
 | `bun install --frozen-lockfile` pade | `bun.lock` ni posodobljen: `bun install` (brez `--frozen-lockfile`), nato commitaj `bun.lock` |
-| Gradnja porabi preveč pomnilnika | `NODE_OPTIONS=--max-old-space-size=4096 bun run build`. Dolgoročno: razbij `measurements-tab.tsx` (7.543 vrstic) in `calculator-tab.tsx` (5.791) |
-| Po `git pull` ne dela | `bun install && bunx prisma generate && bunx prisma db push` |
+| Gradnja porabi preveč pomnilnika | `NODE_OPTIONS=--max-old-space-size=4096 bun run build`. Dolgoročno: razbij `measurements-tab.tsx` (7.818 vrstic) in `calculator-tab.tsx` (6.010) |
+| Po `git pull` ne dela | `bun install && bunx prisma generate && bun run db:deploy` |

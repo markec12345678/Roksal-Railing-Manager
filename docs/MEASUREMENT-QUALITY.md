@@ -57,6 +57,17 @@ merila (npr. `detekcija (Hough runs × merilo iz user-known-measure)`).
 | mm ≤ 0 ali > 100 000 | merilo zavrnjeno |
 | meritev brez merila + projectId | 422, ni shranjeno |
 | detekcija odbijena s strani uporabnika | ročni način vedno na voljo (fail-safe) |
+| **delna zakritost > 12 % pasa** | **ZNANA v1 OMEJITEV (R118 S6):** vrzel razbije glavni run — detekcija lahko vrne KRATŠO meritev, ki izgleda veljavna (npr. 1 635 mm namesto ~4 000 mm). **Terenski protokol: pri delni zakritosti uporabi ročni način.** Trajna rešitev (multi-run merge) = issue #2 faza 2. |
+
+## R118 — validacijski harness (sintetični terenski scenariji)
+
+`bun run bench:measurement` — 12 scenarijev (raven balkon, L, U, perspektiva,
+zakritost 10/20 %, temna/svetla ograja, brez merila, napačna referenca, šum,
+prazna slika). HARD primeri = zakonske garancije (merilo, stanja, segmenti,
+dolžine) in gredo v exit code; INFO primeri = kvalitativni signal znanih v1
+omejitev (perspektiva, sintetični nizek kontrast, šum). To je ponovljiv
+regresijski signal — NI nadomestilo za benchmark na pravih fotografijah
+(manual acceptance, R118 full pass).
 
 ## Test metodologija
 

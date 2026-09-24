@@ -44,7 +44,13 @@
 
 ### Ključne prednosti
 
-- 📐 **AR vizualizacija ograj** — Monter vidi ograjo preko kamere, preden jo montira.
+- 📐 **Deterministični Merilni studio** — foto → samodejna CV zaznava (Sobel + Hough,
+  **brez AI**) ali ročne točke → obvezno referenčno merilo → izmerjena geometrija
+  z izvorom + negotovostjo. AI NIKOLI ni vir resnice (glej [`docs/MEASUREMENT.md`](docs/MEASUREMENT.md)).
+- 🏛️ **En vir geometrijske resnice** — Meritev → fence-engine / railing-layout →
+  BOM → ponudba; vsaka plast je funkcija prejšnje (kanonična veriga je testirana,
+  `src/lib/__tests__/canonical-chain.test.ts`).
+- 🖼️ **AR vizualizacija ograj** — Monter vidi ograjo preko kamere, preden jo montira.
   Tehnično gre za **2D risbo na sliki kamere** (`getUserMedia` + Canvas 2D) z ročno
   kalibracijo px→mm preko znane dolžine, plus poskus WebXR (`webxr-scanner.tsx`).
   Risba ni prostorsko sidrana: premakneš telefon in ostane na istem mestu na sliki.
@@ -55,26 +61,33 @@
 - 📷 **Dokumentacija s kamero** — slike pred/med/po montaži z annotacijami in GPS
 - 📄 **PDF izvoz** — delovni list monterja, ponudba za stranko, materialni list
 - 📴 **Deluje offline** — PWA s service workerjem, sinhronizacija ko je povezava
+- 🗄️ **PostgreSQL** — verzionirane migracije (`migrate deploy`), produkcija Neon
 
-### Statistika projekta
+### Statistika projekta (usklajeno z HEAD, R122)
 
 | Metrika | Vrednost |
 |---------|----------|
-| Vrstic kode (src) | ~48.000 |
-| React komponent | 22 glavnih + 60+ UI primitivov |
-| API končne točke | 30 |
-| Prisma modelov | 26 |
-| Izračunske funkcije | 18 |
-| Katalog profilov | 10 (WPC, ALU, Inox, Steklo) |
-| Testi izračunskega jedra | 78 (vitest) |
-| Testi | 147 enotskih + 77 varnostnih preverjanj (CI) |
+| Vrstic kode (src) | ~83.500 |
+| React komponent | 41 roksal modulov + 60+ UI primitivov |
+| API končne točke | 56 route handlerjev v 38 skupinah |
+| Prisma modelov | 33 (PostgreSQL) |
+| Prisma migracij | verzionirane (`migrate deploy`) |
+| Testi (vitest) | **495** (31 datotek, vključno z globalSetup embedded PG) |
+| Varnostni smoke | 52 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
+| Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
+| Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
 | Jezik vmesnika | Slovenščina |
+
+> Številke se osvežujejo ob Documentation Truth Pass — zadnjič R122.
 
 ---
 
 ## ✨ Funkcije
 
-Aplikacija ima **8 glavnih zavihkov** + **6 podzavihkov** v meniju "Več".
+Aplikacija ima **9 glavnih zavihkov** (Domov, Vizualizacija, AR kamera, Slike,
+Kalkulator, Meritve, Nagib, Zaloga, Več) + **15 podzavihkov** v meniju "Več"
+(Merilni studio, Ponudba s podpisom, Post-Signature, CRM, Material, Logistika,
+Tloris, Izvoz PDF, Galerija, Katalog, Skice, Dokumenti, Varnost, …).
 
 ### 🏠 1. Domov (Dashboard)
 
@@ -137,7 +150,7 @@ Polnozaslonska AR vizualizacija ograj na balkonu:
 
 ### 📏 5. Meritve
 
-Najobsežnejši modul (6390 vrstic):
+Najobsežnejši modul (7.800+ vrstic):
 
 #### Tipi meritev (9)
 - `RAZDALJA` — razdalja med dvema točkama
@@ -179,6 +192,30 @@ Najobsežnejši modul (6390 vrstic):
 - **Vnos v katerikoli enoti** — Select mm/cm/m ob inputih
 - **Povzetek projekta** — skupna dolžina, površina, št. segmentov
 - **Izvoz CSV in PDF**
+
+### 📐 Merilni studio (Več → Merilni studio) — deterministični, brez AI
+
+Naslednja generacija merjenja (issue #2, [`docs/MEASUREMENT.md`](docs/MEASUREMENT.md)):
+
+- **Samodejni način** — CV zaznava ograje na fotografiji (Sobel → Otsu → Hough):
+  horizontalni pasovi (runs), stebri, kotniki; objektivne metrike kakovosti
+  (pokritost, podpora, konsistentnost razmakov, temporalna stabilnost).
+- **Ročni način (fail-safe)** — uporabnik tapne točke poti (spodnja linija) in
+  zgornje linije; engine izračuna segmente (raven, L, U balkon).
+- **Merilo je OBVEZNO** — brez veljavne referenčne mere sistem vrača
+  `SCALE_REQUIRED` in **NIČ izmišljenih milimetrov**. Vsaka vrednost nosi
+  izvor (`source`) + `provenance` + negotovost (±mm).
+- **Server-avtoritativno** — merilo, končne mm in geometrijo izračuna STREŽNIK
+  (`buildSession`); klientski izračuni ne vstopajo v sistem (meje zaupanja).
+- **Takeoff predogled** — geometrija → Product SDK → fence-engine: št. desk,
+  linearni metri, rezi, stebri.
+- **Validacijski harness** — `bun run bench:measurement`: 12 sintetičnih
+  terenskih scenarijev (L/U, perspektiva, zakritost, tema/šum, napačno merilo)
+  z HARD zakoni in INFO signali (R118).
+
+> V AR kameri in Merilnem studiu obstajata tudi dve AI (VLM) **sugestivni**
+> orodji (`/api/ar/analyze`, `/api/measure/photo`) — njuna ocena je IZRECNO
+> samo predlog za uporabnika in NIKOLI ni vir geometrije/BOM/cene.
 
 ### 🧭 6. Nagib (Inclinometer)
 
@@ -264,8 +301,8 @@ Sheet z 6 podzavihki:
 | **Jezik** | [TypeScript 5](https://www.typescriptlang.org/) (strict) |
 | **Stil** | [Tailwind CSS 4](https://tailwindcss.com/) + [shadcn/ui](https://ui.shadcn.com/) (New York) |
 | **Ikone** | [Lucide React](https://lucide.dev/) |
-| **Baza** | [Prisma ORM 6](https://www.prisma.io/) + SQLite |
-| **Avtentikacija** | [NextAuth.js v4](https://next-auth.js.org/) (na voljo) |
+| **Baza** | [Prisma ORM 6](https://www.prisma.io/) + **PostgreSQL** (produkcija Neon; lokalno embedded PG 18 — `bun run db:up`) |
+| **Avtentikacija** | Lastna seja: scrypt gesla + HMAC-SHA256 podpisani žetoni (NextAuth v4 na voljo, ni v uporabi) |
 | **Stanje** | React hooks (Zustand na voljo) + TanStack Query |
 | **Kamera/AR** | MediaDevices API + Canvas 2D + WebXR (kjer podprt) |
 | **Nagib** | Device Orientation API |
@@ -275,6 +312,7 @@ Sheet z 6 podzavihki:
 | **PWA** | Service Worker + Web Manifest |
 | **Temnitveni način** | [next-themes](https://github.com/pacocoursey/next-themes) |
 | **Validacija** | [Zod 4](https://zod.dev/) |
+| **Testiranje** | [Vitest 4](https://vitest.dev/) (495 testov + globalSetup embedded PG) |
 | **Paketni upravitelj** | [Bun](https://bun.sh/) |
 | **Linting** | ESLint 9 + eslint-config-next |
 
@@ -285,48 +323,40 @@ Sheet z 6 podzavihki:
 ```
 roksal-railing-manager/
 ├── prisma/
-│   ├── schema.prisma          # 16 modelov (SQLite)
-│   └── seed.ts                # Demo podatki (profili, stranke, projekti)
+│   ├── schema.prisma          # 33 modelov (PostgreSQL)
+│   ├── migrations/            # verzionirane migracije (migrate deploy)
+│   ├── build-prepare.cjs      # build: generate + migrate deploy + seed (fail-closed)
+│   └── seed.cjs               # Demo podatki (profili, stranke, projekti)
 ├── src/
 │   ├── app/
-│   │   ├── layout.tsx         # Metadata, ThemeProvider, SW registracija
-│   │   ├── page.tsx           # Glavna SPA (8 zavihkov + Več meni)
-│   │   ├── globals.css        # Roksal tema (navy/amber)
-│   │   └── api/               # 15 API končnih točk (Route Handlers)
-│   │       ├── ar-snapshots/
-│   │       ├── auth/
-│   │       ├── calculator/
-│   │       ├── documents/
-│   │       ├── gallery/
-│   │       ├── inventory/
-│   │       ├── measurements/
-│   │       ├── photos/
-│   │       ├── profili/
-│   │       ├── projects/
-│   │       ├── sketches/
-│   │       ├── slopes/
-│   │       ├── sync/
-│   │       └── weather/
+│   │   ├── page.tsx           # Glavna SPA (9 zavihkov + Več meni)
+│   │   └── api/               # 56 route handlerjev v 38 skupinah
+│   │       ├── measurement/   # deterministični Merilni SDK API (detect/confirm/products)
+│   │       ├── sync/          # mobilna sinhronizacija (SERVICE principal MOBILE_SYNC)
+│   │       ├── quote/         # ponudba iz layouta (BOM + cena)
+│   │       ├── railing-layout/# razpored ograje (railing-layout)
+│   │       ├── ...            # glej tabelo API spodaj
 │   ├── components/
 │   │   ├── ui/                # shadcn/ui primitivi (60+)
-│   │   └── roksal/            # 14 glavnih komponent (glej spodaj)
+│   │   └── roksal/            # 41 glavnih modulov
 │   ├── lib/
-│   │   ├── calculator.ts      # 18 izračunskih funkcij
-│   │   ├── db.ts              # Prisma Client
-│   │   ├── ral-colors.ts      # 26 RAL barv
-│   │   ├── roksal-catalog-data.ts  # WPC profili, cene, specifikacije
-│   │   ├── validations.ts     # Zod sheme
-│   │   └── wind-service.ts    # Vetrni podatki (OpenWeather)
+│   │   ├── measurement/       # MEASUREMENT SDK — CV detekcija + merilo + engine (brez AI)
+│   │   ├── product-sdk/       # Product SDK — server-authoritative katalog + pravila
+│   │   ├── procedural/        # fence-engine (panel layout + render)
+│   │   ├── railing-layout.ts  # proizvodni layout (robovi, paneli, rezi, sidra)
+│   │   ├── quote.ts           # BOM + ponudba iz LayoutResult
+│   │   ├── project-state.ts   # statusni stroj projektov (prehodi + vloge)
+│   │   ├── access.ts          # resource-level avtorizacija (matrika vlog + SERVICE)
+│   │   ├── audit.ts           # revizijski dnevnik (auditInTx = atomska enota)
+│   │   ├── inventory.ts       # StockLedger (transakcijska zaloga + idempotenca)
+│   │   ├── auth.ts / session.ts / password.ts  # seja + scrypt + API ključi
+│   │   ├── calculator.ts      # izračunne funkcije (razmak, sidra, veter, …)
+│   │   ├── db.ts / db-url.ts  # Prisma Client (fail-closed na postgres://)
+│   │   └── viz/               # vizualizacijska plast (VizProject/render)
 │   └── hooks/
-│       ├── use-toast.ts
-│       └── use-mobile.ts
-├── public/
-│   ├── manifest.json          # PWA manifest
-│   ├── sw.js                  # Service Worker (offline cache)
-│   ├── icon.svg / icon-192.png / icon-512.png
-│   └── logo.svg
-├── docs/screenshots/          # Slike za README
-└── package.json
+├── tools/                     # setup, smoke, benchmark, backup, pg
+├── docs/                      # MEASUREMENT, SECURITY-POLICY, QUALITY, PRIMERJAVA …
+└── deploy/                    # VPS runbook (Caddy + systemd + backup)
 ```
 
 ### Vloge uporabnikov (Prisma `Profile`)
@@ -335,6 +365,13 @@ roksal-railing-manager/
 - `VODJA` — vodi ekipo, dodeljuje projekte
 - `MONTER` — vidi svoje projekte, ustvarja/ureja meritve, skice, slike
 - `SKLADISCE` — upravlja zalogo
+
+### Servisni principal (API ključ)
+
+`rkm_…` ključ = **MOBILE_SYNC** z najmanjšimi pravicami: sync projektov
+(branje zrcala + pisanje prek statusnega stroja), meritve, fotodokumentacija.
+NE sme cen/dobaviteljev/zaloge/brisanja/zaklepa. Glej
+[`docs/SECURITY-POLICY.md`](docs/SECURITY-POLICY.md).
 
 ---
 
@@ -391,15 +428,20 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | Skripta | Opis |
 |---------|------|
 | `bun run dev` | Zažene Next.js dev server (port 3000) |
-| `bun run build` | Produkcijska build |
+| `bun run build` | Produkcijska build (build-prepare: generate + migrate deploy + seed) |
 | `bun run start` | Zažene produkcijski server |
-| `bun run test` | Testi izračunskega jedra (vitest, 78 testov, ~1 s) |
+| `bun run test` | Vsi testi (vitest, 495, embedded PG prek globalSetup) |
+| `bun run check` | tsc --noEmit + vitest run (en ukaz za vse) |
 | `bunx tsc --noEmit` | Tipska kontrola celotnega projekta (trenutno 0 napak) |
 | `bun run lint` | ESLint preverjanje |
-| `bun run db:push` | Sinhronizira Prisma shemo z bazo |
-| `bun run db:generate` | Generira Prisma Client |
-| `bun run db:migrate` | Ustvari migracijo |
-| `bun run db:reset` | Ponastavi bazo |
+| `bun run smoke` | Varnostni smoke na zagnanem strežniku (52 preverjanj) |
+| `bun run bench:measurement` | R118 validacijski harness Merilnega SDK (12 scenarijev) |
+| `bun run db:deploy` | `prisma migrate deploy` (verzionirane migracije) |
+| `bun run db:seed` | Demo podatki |
+| `bun run db:up` / `db:down` | Embedded PostgreSQL 18 na :5433 (lokalni razvoj) |
+| `bun run db:reset` | Ponastavi bazo (migrate reset) |
+| `bun run apikey` | Ustvari API ključ (MOBILE_SYNC) — vidiš ga samo enkrat |
+| `bun run backup` | pg_dump backup (glej `tools/backup-db.ts`) |
 
 ### Privzeti uporabniki (po seed-u)
 
@@ -414,25 +456,27 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 
 ## 🗄️ Podatkovni model (Prisma)
 
-26 modelov v SQLite:
+33 modelov v PostgreSQL (verzionirane migracije):
 
 | Model | Namen |
 |-------|-------|
 | `Profile` | Uporabniki z vlogami (ADMIN/VODJA/MONTER/SKLADISCE) |
 | `Customer` | Stranke (ime, naslov, telefon, email) |
-| `Project` | Projekti (status: NACRTOVANO/V_TEKU/ZAKLJUCENO/USTAVLJENO) |
-| `Measurement` |Meritve (dolzinaMm, visinaMm, arMetadata JSON) |
+| `Project` | Projekti — statusni stroj (NACRTOVANO → V_TEKU → ZA_MONTAZO → V_IZDELAVI → MONTIRANO → ZAKLJUCENO; USTAVLJENO) |
+| `Measurement` | Meritve (dolzinaMm, visinaMm, session JSON z provenance v arMetadata) |
 | `Inventory` | Materialna zaloga (sifra, kolicina, minimalnaZaloga) |
 | `MaterialUsage` | Poraba materiala na projektu |
 | `InventoryMovement` | Premiki zaloge |
+| `StockLedger` | Transakcijski knjigovodski dogodki zaloge (balanceAfter, idempotencyKey) |
+| `NumberSequence` | Atomske številčne sekvence (računi, ponudbe) |
 | `Document` | Dokumenti (PDF, podpisi) |
-| `AuditLog` | Sledenje sprememb |
+| `AuditLog` | Revizijska sled (kdo/kaj/kdaj/IP, stara→nova vrednost) |
 | `Notification` | Obvestila uporabnikom |
-| `Profil` | Katalog profilov ograj (10 sejanih) |
-| `ArSnapshot` | AR posnetki (imageUrl, tocke, meritve, kalibracija) |
+| `Profil` | Katalog profilov ograj (20 sejanih) |
+| `ArSnapshot` | AR posnetki (imageUrl, točke, meritve, kalibracija) |
 | `Sketch` | Skice (PNG base64) |
 | `GalleryItem` | Galerija realizacij (pred/po, javno/privatno) |
-| `Slope` |Meritve nagibov (kotStopinje, smer, lokacija) |
+| `Slope` | Meritve nagibov (kotStopinje, smer, lokacija) |
 | `ProjectPhoto` | Slike projektov (PRED/MED/PO, GPS) |
 | `SignatureAudit` | Pravno sledenje podpisov (IP, UA, hash PDF-a) |
 | `Supplier` / `MaterialPrice` | Dobavitelji in zgodovina cen |
@@ -440,81 +484,82 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `Crew` | Ekipe monterjev (barva za koledar) |
 | `Equipment` / `EquipmentAssignment` | Oprema in dodelitve terminom |
 | `InstallationSchedule` | Koledar montaže (ekipa, ure, GPS) |
-| `ApiKey` | API ključi za mobilni klient (samo hash v bazi) |
+| `PunchItem` | Prejemni zapisnik (closeout kontrolni seznam) |
+| `Invoice` | Računi (eslog e-računi, številčenje) |
+| `SiteSurvey` | Terenski pregled pred montažo |
+| `ApiKey` | API ključi (MOBILE_SYNC) — samo SHA-256 hash v bazi |
+| `VizProject` / `VizRenderJob` | Vizualizacijska plast (render jobi) |
+
+> Shramba slik/AR/skic/PDF je trenutno **base64/URL v bazi** (prototipska
+> prenosljivost). Produkcijska nadgradnja (object storage + `storageKey/mime/
+> size/sha256`) je planiran korak R121 — glej [`docs/SECURITY-POLICY.md`](docs/SECURITY-POLICY.md).
 
 ---
 
 ## 🔌 API končne točke
 
-30 Route Handlerjev (Next.js App Router). Vse podatkovne rute zahtevajo sejo
-ali API ključ — glej [Varnost](#-varnost).
+56 Route Handlerjev v 38 skupinah (Next.js App Router). Vse podatkovne rute
+zahtevajo sejo ali servisni ključ + resource-level avtorizacijo — glej
+[Varnost](#-varnost) in [`docs/SECURITY-POLICY.md`](docs/SECURITY-POLICY.md).
 
-| Končna točka | Metode | Namen |
+| Skupina | Metode | Namen |
 |--------------|--------|-------|
-| `/api/projects` | GET, POST, PATCH | Projekti s strankami, meritvami, materiali |
-| `/api/measurements` | GET, POST |Meritve z AR metapodatki |
-| `/api/photos` | GET, POST, DELETE | Slike pred/med/po z GPS |
-| `/api/ar-snapshots` | GET, POST, DELETE | AR posnetki s točkami |
-| `/api/sketches` | GET, POST, DELETE | Skice (PNG base64) |
-| `/api/slopes` | GET, POST | Nagibi |
-| `/api/profili` | GET, POST | Katalog profilov |
-| `/api/gallery` | GET, POST | Galerija realizacij |
-| `/api/inventory` | GET, POST | Zaloga + premiki |
-| `/api/documents` | GET, POST | Dokumenti |
-| `/api/calculator` | POST | Izračuni (razmak, sidranje, veter) |
-| `/api/weather` | GET | Vetrni podatki (OpenWeather) |
-| `/api/auth` | GET, POST | Enostavna avtentikacija |
-| `/api/sync` | GET, POST | Sinhronizacija z mobilno aplikacijo |
+| `/api/projects` | GET, POST, PATCH | Projekti s strankami + state machine + audit |
+| `/api/measurements` | GET, POST | Klasične meritve z AR metapodatki |
+| `/api/measurement/detect · confirm · products` | POST/GET | **Merilni SDK** (CV detekcija, potrditev, katalog) |
+| `/api/quote` | GET, POST | Ponudba iz layouta (BOM + cena iz cenika) |
+| `/api/railing-layout` | GET, POST | Razpored ograje (robovi, paneli, rezi) |
+| `/api/bom-draft` · `/api/bom-refine` | GET, POST | BOM osnutek + izpopolnitve |
+| `/api/sync` | GET, POST | **Mobilna sinhronizacija** (SERVICE MOBILE_SYNC; statusni stroj; audit v transakciji) |
+| `/api/photos` | GET, POST, DELETE | Slike pred/med/po z GPS (resource-guard, R120) |
+| `/api/ar-snapshots` · `/api/ar/analyze` | GET/POST/DELETE · POST | AR posnetki · AI sugestija (NI vir resnice) |
+| `/api/measure/photo` | POST | AI ocena mere iz fotke — SAMO predlog |
+| `/api/sketches` · `/api/slopes` · `/api/gallery` | GET/POST/DELETE | Skice, nagibi, galerija |
+| `/api/inventory` | GET, POST | Zaloga + StockLedger premiki (idempotenca) |
+| `/api/material-prices` · `suppliers` · `material-orders` | CRUD | Ceniki, dobavitelji, naročila (vodstvo) |
+| `/api/documents` · `/api/invoices` (+`eslog`) · `/api/signature-audit` | CRUD | Dokumenti, računi, e-SLOG, podpisi |
+| `/api/crews` · `/api/schedules` | CRUD | Ekipe in koledar montaže |
+| `/api/crm` | GET, POST | CRM (LTV, opomniki) |
+| `/api/punch` | GET, POST, PATCH, DELETE | Prejemni zapisnik |
+| `/api/deal-lock` | GET, POST | Zaklep dogovora (audit v transakciji) |
+| `/api/portal` | GET, POST | Portal stranke (clientToken) |
+| `/api/audit` | GET | Revizijska sled (vodja/monter-lastni) |
+| `/api/calculator` · `/api/weather` | POST · GET | Izračuni · vetrni podatki |
+| `/api/auth` (+`demo`, `logout`, `password`, `register`) | GET/POST | Prijava/seja (scrypt + HMAC žeton) |
+| `/api/profili` · `/api/search` · `/api/surveys` · `/api/viz/*` | CRUD | Katalog, iskanje, terenski pregled, vizualizacija |
 | `/api/route.ts` | GET | Health check |
 
 ---
 
 ## 🧩 Komponente
 
-14 glavnih komponent v `src/components/roksal/`:
+41 glavnih modulov v `src/components/roksal/` (~44.000 vrstic) + 60+ shadcn/ui
+primitivov. Največji:
 
 | Komponenta | Vrstice | Funkcija |
 |-----------|---------|----------|
-| `measurements-tab.tsx` | 6390 |Meritve (9 tipov, stopniščni čarovnik, WPC, štebricki) |
-| `calculator-tab.tsx` | 4159 | Kalkulator (7 načinov + 6 izpolnitev) |
-| `reference-gallery.tsx` | 1875 | Galerija z masonry, lightbox, PDF katalog |
-| `photo-tab.tsx` | 1835 | Slike z annotation editor, batch, pred/po |
-| `ar-scanner.tsx` | 1706 | AR kamera z vizualizacijo ograje |
-| `dashboard-tab.tsx` | 1274 | Domov s projekti, iskalnikom, filtri |
-| `sketch-canvas.tsx` | 933 | Skicirka z ročnim risanjem |
-| `inventory-tab.tsx` | 709 | Zaloga z mini stock chart |
-| `safety-tab.tsx` | 683 | Varnost: kontrolni seznam, kompas, termometer |
-| `documents-tab.tsx` | 560 | Dokumenti |
-| `pdf-export.tsx` | 452 | PDF delovni list + ponudba |
-| `inclinometer-tab.tsx` | 275 | Digitalna libela |
-| `roksal-catalog.tsx` | 230 | Katalog profilov z iskanjem |
-| `ral-color-picker.tsx` | 219 | RAL barvnik (26 barv) |
+| `measurements-tab.tsx` | 7.818 | Meritve (9 tipov, stopniščni čarovnik, WPC, štebricki) |
+| `calculator-tab.tsx` | 6.010 | Kalkulator (7 načinov + 6 izpolnitev) |
+| `ar-scanner.tsx` | 2.789 | AR kamera z vizualizacijo ograje + AI sugestija |
+| `webxr-scanner.tsx` | 2.377 | WebXR poskus (kjer podprt) |
+| `photo-tab.tsx` | 2.570 | Slike z annotation editor, batch, pred/po |
+| `dashboard-tab.tsx` | 2.101 | Domov s projekti, iskalnikom, filtri |
+| `measurement-studio.tsx` | 1.630 | **Merilni studio** (deterministični CV + ročni način) |
+| … | | skice, zaloga, dokumenti, PDF, CRM, logistika, tloris, galerija … |
+
+> Opomba (R120/Problem 9): `measurements-tab` in `calculator-tab` sta zelo
+> velika — razcep je načrtovan ŠELE po validacijskem passu (najprej dokazati
+> kanonično verigo, potem refaktoriranje).
 
 ---
 
 ## 🧮 Knjižnica izračunov
 
-18 funkcij v `src/lib/calculator.ts`:
-
-### Osnovni (originalni)
-- `calculateRailingSpacing(input)` — razmik letev WPC
-- `calculateAnchoring(input)` — kemično sidranje (prostornina, čas strjevanja)
-- `calculateWindLoad(input)` — vetrna obremenitev (Eurocode EN 1991-1-4)
-
-### Razširjeni (P2)
-- `calculateEqualSpacing(input)` — enakomeren razmak palic + pozicije
-- `calculateAngledSpacing(input)` — kotni/stopniški izračun
-- `calculateHoleTemplate(input)` — predloga za vrtanje (running measurements)
-- `calculateMaterialTotal(input)` — skupni material (multi-segment)
-- `checkCompliance(input)` — skladnost s predpisi (SIST EN)
-
-### Pomožni (P2)
-- `formatEUR(eur)` — slovenski format valute (1.234,56 €)
-- `formatSI(num)` — slovenski format števil
-- `calculateLaborCost(input)` — strošek dela
-- `applyReserve(qty, pct)` — rezerva materiala
-- `calculateDDV(amount, rate)` — DDV
-- `calculateAkontacija(total, pct)` — akontacija + preostanek
+16 izvoženih funkcij v `src/lib/calculator.ts` (razmak, sidranje, veter,
+material, skladnost) — poleg tega vsebuje poslovno jedro tudi
+`railing-layout.ts` (razpored), `quote.ts` (BOM/cena) in
+`measurement/` (merilni engine). Pomožno: `formatEUR`, `formatSI`,
+`calculateLaborCost`, `applyReserve`, `calculateDDV`, `calculateAkontacija`.
 
 ---
 
@@ -568,23 +613,21 @@ EXPOSE 3000
 CMD ["bun", "run", "start"]
 ```
 
-### Na Vercel (demo)
+### Na Vercel (produkcija: Neon PostgreSQL)
 
-`bun run build` na Vercelu sam poskrbi za vse (glej `package.json`):
+`bun run build` na Vercelu sam poskrbi za vse (glej `prisma/build-prepare.cjs`):
 
 1. `prisma generate` — Vercelov `bun install` ne požene postinstall, brez tega so tipi zastareli (to je bil vzrok ERROR deploymentov),
-2. `prisma db push` + `prisma/seed.cjs` — ustvari in naseli bazo v build kontejnerju,
-3. baza gre v serverless bundle prek `outputFileTracingIncludes` (next.config.ts),
-4. ob hladnem startu jo `src/lib/db.ts` prekopira v zapisljiv `/tmp`.
+2. `prisma migrate deploy` — verzionirane migracije na zunanjo bazo,
+3. `prisma/seed.cjs` — naseli demo podatke (`SEED_ON_DEPLOY=false` izklopi),
+4. brez `postgres://` URL-a build FAIL-CLOSED pade (prehodni SQLite način NE obstaja več — S+8.2).
 
-**Pomembna omejitev:** SQLite na Vercelu je **demo način** — podatki so kratkotrajni
-(per-lambda instanca, hladni start jih ponastavi na demo stanje). Za produkcijo
-uporabi [Turso](https://turso.tech) (libSQL, kompatibilen s Prismo) ali Postgres,
-ali pa namesti aplikacijo na VPS (glej `deploy/README.md`).
+Baza je **Neon PostgreSQL** (Vercel integration), podatki so trajni. Runbook
+prehoda + backup: [`docs/POSTGRES-MIGRATION.md`](docs/POSTGRES-MIGRATION.md).
 
-Potrebne env spremenljivke na Vercelu: `SESSION_SECRET`, `API_KEY_PEPPER`
-(oba generiraj z `openssl rand -base64 32`) in `DATABASE_URL` (postgres:// URL —
-Vercel Storage / Neon; vgrajena SQLite baza ne obstaja več, S+8.2).
+Potrebne env spremenljivke na Vercelu: `DATABASE_URL` (postgres:// URL,
+**obvezen**), `SESSION_SECRET` in `API_KEY_PEPPER` (oba generiraj z
+`openssl rand -base64 32`).
 
 ### Environment spremenljivke
 
@@ -595,7 +638,7 @@ Vercel Storage / Neon; vgrajena SQLite baza ne obstaja več, S+8.2).
 | `API_KEY_PEPPER` | Sol za hashe API ključev | (generiraj) |
 | `NEXTAUTH_URL` | URL aplikacije | `http://localhost:3000` |
 | `OPENWEATHER_API_KEY` | API ključ za vetrne podatke | (opcijsko) |
-| `ZAI_VISION_MODEL` | VLM model za AI material takeoff | `glm-4.5v` |
+| `ZAI_VISION_MODEL` | VLM model za DVE sugestivni AI orodji (`/api/ar/analyze`, `/api/measure/photo`) — NI vir resnice | `glm-4.5v` |
 
 ---
 
@@ -629,9 +672,11 @@ Vercel Storage / Neon; vgrajena SQLite baza ne obstaja več, S+8.2).
 
 ## 🔒 Varnost
 
-> Od 2026-09-22: prijava s scrypt gesli in podpisanimi sejnimi žetoni, zaščitenih
-> vseh 24 podatkovnih API rut, API ključi s hashem v bazi. Preveri z
-> `python3 tools/security-smoke.py` (48 preverjanj). Podrobnosti v [`FIXES.md`](FIXES.md).
+> Od 2026-09-22: prijava s scrypt gesli in podpisanimi sejnimi žetoni, zaščitene
+> vse podatkovne API rute (resource-level avtorizacija), API ključi s hashem v
+> bazi kot servisni principal MOBILE_SYNC z najmanjšimi pravicami (R120).
+> Preveri z `python3 tools/security-smoke.py`. Podrobnosti v
+> [`docs/SECURITY-POLICY.md`](docs/SECURITY-POLICY.md) in [`FIXES.md`](FIXES.md).
 
 ### Avtentikacija
 
@@ -645,10 +690,13 @@ Vercel Storage / Neon; vgrajena SQLite baza ne obstaja več, S+8.2).
 
 ### Podatki
 
-- Baza: SQLite (lokalna datoteka, prenosljiva)
-- Gesla: bcrypt hash (če je NextAuth aktiviran)
-- Slike: base64 v bazi (za prenosljivost) ali filesystem (opcijsko)
+- Baza: **PostgreSQL** (produkcija Neon; lokalno embedded PG 18 na :5433;
+  brez `postgres://` URL-a sistem fail-closed — SQLite ni podprt od S+8.2)
+- Gesla: **scrypt** (N=16384, r=8, p=1) — bcrypt NI v uporabi
+- Slike/AR/skice: base64 v bazi (prototip) — object storage + hash/size
+  metadata = planiran korak R121
 - GPS: samo ob eksplicitni uporabnikovi privolitvi
+- Backup: `bun run backup` (pg_dump) + runbook v `docs/POSTGRES-MIGRATION.md`
 
 ### HTTPS obvezno
 

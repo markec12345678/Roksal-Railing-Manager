@@ -63,8 +63,38 @@ describe('matrika dostopa do projekta', () => {
     for (const access of ['read', 'update', 'delete', 'lock', 'changeStatus'] as const) {
       expect(projectAccessAllowed(user('ADMIN'), foreignProject, access)).toBe(true)
       expect(projectAccessAllowed(user('VODJA'), foreignProject, access)).toBe(true)
-      expect(projectAccessAllowed(apiKey, foreignProject, access)).toBe(true)
     }
+  })
+})
+
+describe('R120 — servisni principal MOBILE_SYNC (API ključ, najmanjše pravice)', () => {
+  it('read: sync zrcalo podjetja je namen ključa', () => {
+    expect(projectAccessAllowed(apiKey, foreignProject, 'read')).toBe(true)
+  })
+
+  it('update/changeStatus: dovoljeno, RAZEN na dealLocked projektu', () => {
+    expect(projectAccessAllowed(apiKey, foreignProject, 'update')).toBe(true)
+    expect(projectAccessAllowed(apiKey, foreignProject, 'changeStatus')).toBe(true)
+    expect(projectAccessAllowed(apiKey, lockedProject, 'update')).toBe(false)
+    expect(projectAccessAllowed(apiKey, lockedProject, 'changeStatus')).toBe(false)
+  })
+
+  it('delete/lock: NIKOLI (prej je apikey kot "manager" lahko oboje)', () => {
+    expect(projectAccessAllowed(apiKey, foreignProject, 'delete')).toBe(false)
+    expect(projectAccessAllowed(apiKey, foreignProject, 'lock')).toBe(false)
+  })
+
+  it('zaloga: servis NE upravlja (prej true)', () => {
+    expect(canManageInventory(apiKey)).toBe(false)
+  })
+
+  it('stranke: servis ne ustvarja/ureja/brise', () => {
+    expect(canManageCustomers(apiKey)).toBe(false)
+    expect(canDeleteCustomer(apiKey)).toBe(false)
+  })
+
+  it('sync zrcalo: WHERE {} je dokumentirana servisna pogodba', () => {
+    expect(projectWhereForPrincipal(apiKey)).toEqual({})
   })
 })
 
@@ -105,12 +135,12 @@ describe('filter seznamov + ostalo', () => {
     expect(projectWhereForPrincipal(apiKey)).toEqual({})
   })
 
-  it('zaloga: SKLADISCE + vodstvo piše, monter ne', () => {
+  it('zaloga: SKLADISCE + vodstvo piše, monter in servis ne', () => {
     expect(canManageInventory(user('SKLADISCE'))).toBe(true)
     expect(canManageInventory(user('ADMIN'))).toBe(true)
     expect(canManageInventory(user('VODJA'))).toBe(true)
     expect(canManageInventory(user('MONTER'))).toBe(false)
-    expect(canManageInventory(apiKey)).toBe(true)
+    expect(canManageInventory(apiKey)).toBe(false)
   })
 
   it('stranke: uporabniki ustvarjajo, brisanje samo vodstvo', () => {
@@ -118,6 +148,7 @@ describe('filter seznamov + ostalo', () => {
     expect(canManageCustomers(apiKey)).toBe(false)
     expect(canDeleteCustomer(user('MONTER'))).toBe(false)
     expect(canDeleteCustomer(user('VODJA'))).toBe(true)
+    expect(canDeleteCustomer(apiKey)).toBe(false)
   })
 
   it('actorIdOf: apikey nima uporabniške pripisnosti (null za audit)', () => {

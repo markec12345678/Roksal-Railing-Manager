@@ -6,6 +6,8 @@ import {
   transitionAllowed,
   InvalidTransitionError,
   isProjectStatus,
+  initialStatusFor,
+  isInitialProjectStatus,
 } from '@/lib/project-state'
 import type { AuthContext } from '@/lib/auth'
 
@@ -39,13 +41,16 @@ describe('ALLOWED_TRANSITIONS — matrika', () => {
 })
 
 describe('assertTransition — vloge', () => {
-  it('vodstvo (ADMIN/VODJA/apikey) sme vse, tudi iz končnih stanj', () => {
+  it('vodstvo (ADMIN/VODJA) sme vse, tudi iz končnih stanj', () => {
     expect(() =>
       assertTransition({ from: 'ZAKLJUCENO', to: 'V_TEKU', principal: user('ADMIN') })
     ).not.toThrow()
+  })
+
+  it('R120: servisni principal (MOBILE_SYNC) NI vodstvo — obhod iz končnega stanja → 409', () => {
     expect(() =>
       assertTransition({ from: 'MONTIRANO', to: 'NACRTOVANO', principal: apiKey })
-    ).not.toThrow()
+    ).toThrow(InvalidTransitionError)
   })
 
   it('MONTER: veljaven prehod NACRTOVANO → V_TEKU', () => {
@@ -89,6 +94,37 @@ describe('assertTransition — vloge', () => {
     expect(() =>
       assertTransition({ from: 'USTAVLJENO', to: 'V_TEKU', principal: user('MONTER') })
     ).toThrow(/končnega stanja/)
+  })
+
+  it('R120: servisni principal sme SAMO veljavne prehode (NACRTOVANO → V_TEKU)', () => {
+    expect(() =>
+      assertTransition({ from: 'NACRTOVANO', to: 'V_TEKU', principal: apiKey })
+    ).not.toThrow()
+    expect(() =>
+      assertTransition({ from: 'NACRTOVANO', to: 'MONTIRANO', principal: apiKey })
+    ).toThrow(InvalidTransitionError)
+  })
+
+  it('R120: servisni principal + dealLocked iz ZA_MONTAZO → blokiran', () => {
+    expect(() =>
+      assertTransition({
+        from: 'ZA_MONTAZO',
+        to: 'V_IZDELAVI',
+        principal: apiKey,
+        dealLocked: true,
+      })
+    ).toThrow(/Zaklenjen dogovor/)
+  })
+
+  it('R120: initialStatusFor — nov projekt se rodi samo kot NACRTOVANO', () => {
+    expect(initialStatusFor(undefined)).toEqual({ status: 'NACRTOVANO', clampedFrom: null })
+    expect(initialStatusFor('NACRTOVANO')).toEqual({ status: 'NACRTOVANO', clampedFrom: null })
+    // obhod poskus: mobilni klient pošlje MONTIRANO/ZAKLJUCENO/neumnost → korekcija + javljanje
+    expect(initialStatusFor('MONTIRANO')).toEqual({ status: 'NACRTOVANO', clampedFrom: 'MONTIRANO' })
+    expect(initialStatusFor('ZAKLJUCENO')).toEqual({ status: 'NACRTOVANO', clampedFrom: 'ZAKLJUCENO' })
+    expect(initialStatusFor('NEZNAN_STATUS')).toEqual({ status: 'NACRTOVANO', clampedFrom: 'NEZNAN_STATUS' })
+    expect(isInitialProjectStatus('NACRTOVANO')).toBe(true)
+    expect(isInitialProjectStatus('MONTIRANO')).toBe(false)
   })
 
   it('neznan status → napaka', () => {
