@@ -54,6 +54,29 @@ export function solveHomography(src: Corners, dst: Corners): number[] {
     for (let j = i + 1; j < n; j++) s -= A[i][j] * h[j]
     h[i] = s / A[i][i]
   }
+  // S+8.2 PORT (OgrajaVizija Homography.kt:81-98, proven better): corner
+  // reprojection validation. Partial pivoting alone does NOT catch degenerate
+  // quads (duplicate corner, collinear points) — the 8x8 system can be
+  // non-singular yet inconsistent, silently producing an H that does not map
+  // the corners (benchmark: reprojection error NaN @ commit 6641ca5). We verify
+  // all 4 corners and fail fast, tolerance scaled to the quad diagonal.
+  let diag = 0
+  for (let i = 0; i < 4; i++) {
+    for (let j = 0; j < 4; j++) {
+      const dd = Math.hypot(dst[i][0] - dst[j][0], dst[i][1] - dst[j][1])
+      if (dd > diag) diag = dd
+    }
+  }
+  const tol = Math.max(1e-3, diag * 1e-6)
+  for (let i = 0; i < 4; i++) {
+    const [pu, pv] = applyHomography(h, src[i][0], src[i][1])
+    const err = Math.max(Math.abs(pu - dst[i][0]), Math.abs(pv - dst[i][1]))
+    if (!(err < tol)) {
+      throw new Error(
+        `solveHomography: degenerate quad (corner ${i} reprojects with error ${err.toExponential(3)} > tol ${tol.toExponential(3)})`,
+      )
+    }
+  }
   return h
 }
 
@@ -79,9 +102,18 @@ export function computeInverse(H: number[]): number[] {
   ]
 }
 
-/** Map a point (x,y) through a row-major 3x3 homography (projective divide). */
+/**
+ * Map a point (x,y) through a row-major 3x3 homography (projective divide).
+ *
+ * S+8.2 PORT (OgrajaVizija Homography.kt:19-26, proven better): the divider w is
+ * clamped away from zero (|w| < 1e-12 → 1e-12). Before this guard a point on the
+ * horizon line (w = 0) silently produced NaN/Infinity which propagated into
+ * metrics/callers. For an exactly-on-horizon point the result is still a huge
+ * finite value (point at infinity) — but never NaN.
+ */
 export function applyHomography(H: number[], x: number, y: number): [number, number] {
-  const w = H[6] * x + H[7] * y + H[8]
+  const wRaw = H[6] * x + H[7] * y + H[8]
+  const w = Math.abs(wRaw) < 1e-12 ? 1e-12 : wRaw
   return [(H[0] * x + H[1] * y + H[2]) / w, (H[3] * x + H[4] * y + H[5]) / w]
 }
 

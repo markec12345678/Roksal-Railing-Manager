@@ -52,16 +52,25 @@ export function rgb2labScalar(r: number, g: number, b: number): { L: number; a: 
   return { L: L * 2.55, a: a + 128, b: bb + 128 }
 }
 
-/** LAB floats (OpenCV 8-bit convention) -> sRGB 8-bit, clamped. */
+/** LAB floats (OpenCV 8-bit convention) -> sRGB 8-bit, clamped.
+ *
+ * S+8.2 FIX (OgrajaVizija PureCore.labToRgb, proven better — issue #6 §7):
+ * fy is (L*+16)/116 UNCONDITIONALLY. The previous L*≤8 branch computed
+ * fy = L* / 903.3 + 16/116, which drops the K7787 factor of f() — for dark
+ * colors (L* ≤ 8, e.g. RAL 9005 jet black) fx/fz were derived from a wrong
+ * fy and the RGB round-trip error reached 20/255 (benchmark: rgb(0,0,90) →
+ * (0,20,75)). Uniform per-channel f⁻¹ is identical to OgrajaVizija and to
+ * the CIELAB definition; for L* > 8 output is bit-identical to before.
+ */
 export function lab2rgbScalar(L: number, a: number, b: number): { r: number; g: number; b: number } {
   const Ls = L / 2.55
   const as = a - 128
   const bs = b - 128
-  const fy = Ls > 8 ? (Ls + 16) / 116 : Ls / 903.3 + OFF // L*<=8: yr = L*/903.3
+  const fy = (Ls + 16) / 116
   const fx = fy + as / 500
   const fz = fy - bs / 200
   const xr = fx * fx * fx > THRESH ? fx * fx * fx : (fx - OFF) / K7787
-  const yr = Ls > 8 ? fy * fy * fy : Ls / 903.3
+  const yr = fy * fy * fy > THRESH ? fy * fy * fy : (fy - OFF) / K7787
   const zr = fz * fz * fz > THRESH ? fz * fz * fz : (fz - OFF) / K7787
   const X = xr * XN
   const Y = yr * YN
@@ -110,14 +119,15 @@ export function lab2rgb(L: Float32Array, a: Float32Array, b: Float32Array, w: nu
   const n = w * h
   const out = new Uint8ClampedArray(n * 4)
   for (let i = 0, p = 0; i < n; i++, p += 4) {
+    // S+8.2 FIX: fy = (L*+16)/116 neodvisno od L* (glej lab2rgbScalar komentar)
     const Ls = L[i] / 2.55
     const as = a[i] - 128
     const bs = b[i] - 128
-    const fy = Ls > 8 ? (Ls + 16) / 116 : Ls / 903.3 + OFF
+    const fy = (Ls + 16) / 116
     const fx = fy + as / 500
     const fz = fy - bs / 200
     const xr = fx * fx * fx > THRESH ? fx * fx * fx : (fx - OFF) / K7787
-    const yr = Ls > 8 ? fy * fy * fy : Ls / 903.3
+    const yr = fy * fy * fy > THRESH ? fy * fy * fy : (fy - OFF) / K7787
     const zr = fz * fz * fz > THRESH ? fz * fz * fz : (fz - OFF) / K7787
     const X = xr * XN
     const Y = yr * YN
