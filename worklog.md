@@ -1300,3 +1300,17 @@ Stage Summary:
   1) ČIŠČENJE PREHODNE POTI (docs/POSTGRES-MIGRATION.md korak 5): build-prepare sqlite veja, db.ts /tmp serverless veja, db/custom.db iz repozitorija, outputFileTracingIncludes — majhno, zapre issue #4 v celoti.
   2) Issue #2 — Measurement/CV SDK (zamenjava /api/ai-takeoff; segmentation adapter contract že dokumentiran v docs/OGRAJEVIZIJA-CV-HARVEST.md §E).
   3) S+9 faza 2 (issue #4): object storage za dokumente, structured BOM, material lifecycle, real cost, server-authoritative price book.
+---
+Task ID: S+8.2c + S+8.2d (issue #6 zaključek; reset peskovnika + okrevanje)
+Agent: Z.ai Code (glavni orkestrator)
+Task: (S+8.2c) Zaključiti neizpolnjen del issue #6 — čiščenje prehodne SQLite poti (POSTGRES-MIGRATION.md korak 5) + zaprtje issue #6. (S+8.2d) Okrevanje po ponastavitvi peskovnika (workspace = svež scaffold, izgubljeno vse lokalno, remote nedotaknjen).
+
+Work Log:
+- S+8.2c — ČIŠČENJE (commit 67195a8, 12 datotek, +122/−203): build-prepare.cjs sqliteMode veja IZBRISANA (brez postgres:// URL-a → exit 1); db.ts resolveServerlessDatabaseUrl + /tmp kopija odstranjena (brez URL-a → throw); viz/db.ts serverless vejica odstranjena; db-url.ts isSqliteUrl + file:* passthrough odstranjena (env pg → .env pg → null); tools/db.ts fail closed; next.config.ts outputFileTracingIncludes za ./db/** odstranjeno; docs/POSTGRES-MIGRATION.md precejena v DOKONČANA runbook; README/deploy docs na PostgreSQL + migrate deploy; schema.prisma + seed.cjs komentarji posodobljeni. Verifikacija: 458/458 testov, tsc 0, eslint 0, agent-browser E2E (prijava → projekti iz PG), API E2E (demo prijava 200, /api/projects → 3 projekta). Push 67195a8 → Vercel success, CI success (varnost 77 + build). Issue #6 ZAPRT (completed) z report komentarjem id 5812766365. Ustvarjen webDevReview cron (job 411101).
+- S+8.2d — RESET + OKREVANJE: peskovnik ponastavljen med rundama (/home/z/my-project = svež scaffold, commit aef35d4, brez worklog, brez Roksal kode; node_modules scaffold). Vsa dela VARNa na GitHub origin/main @ 67195a8. Okrevanje: git remote add origin (token v URL, LOKALNO); git fetch + reset --hard origin/main → koda 1:1; bun install (144 paketov); .env/.env.local REGENERIRANI (DATABASE_URL embedded PG, SESSION_SECRET + API_KEY_PEPPER = novi naključni — LOKALNE skrivnosti; Vercel produkcija ni prizadeta); embedded PG: `bun tools/pg.ts start` umira s shellom → rešitev: pg_ctl -D .pgdata start (pravi daemon, preživi); migrate deploy + seed na sveži roksal_dev; dev strežnik: platformni /start.sh ga je zagnal za prazni scaffold, po kill-u ga nič ne reanimira, setsid/nohup NE preživi → rešitev: /home/z/dev-daemon.mjs (spawn detached+unref = dvojni daemon vzorec) → preživi med klici. Verifikacija okrevanja: / 307, /login 200, 458/458 testov.
+- IZGUBLJENO (iskreno): S+8.2c worklog vnos je bil dodan PO pushu 67195a8 in ni bil commitan → padel je s resetom; ta vnos ga rekonstruira. Izgubljene .pgdata = obnovljene z migrate+seed (demo podatki, brez uporabniških podatkov — peskovniška baza).
+
+Stage Summary:
+- Issue #6 DOKONČANO IN ZAPRTO; Postgres prehod 100% (produkcija Neon, prehodna pot odstranjena, fail closed). Commit 67195a8 = nova osnovna linija.
+- Peskovnik okrevan: koda @ origin/main, PG daemon (pg_ctl), dev daemon (/home/z/dev-daemon.mjs — UPORABI ZA RESTART DEV STREŽNIKA!), 458/458 testov zeleno.
+- Naslednji kandidat: issue #2 — deterministični Measurement/CV SDK + ročna meritev (avtoritativno besedilo prebrano prek API; sledi audit + načrt).
