@@ -3,14 +3,9 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "standalone",
 
-  // SQLite baza mora biti v serverless bundle-u (Vercel), sicer Prisma
-  // ob hladnem startu ne najde datoteke (Error code 14). build jo ustvari in
-  // naseli (prisma db push + prisma/seed.cjs), db.ts pa jo ob hladnem startu
-  // prekopira v zapisljiv /tmp.
-  outputFileTracingIncludes: {
-    "/api/**/*": ["./db/**"],
-    "/**": ["./db/**"],
-  },
+  // S+8.2 (čiščenje prehodne poti): `outputFileTracingIncludes` za ./db/** je
+  // odstranjen — vir podatkov je izključno zunanji PostgreSQL (Neon), v
+  // serverless bundle ni več vgrajene SQLite baze (docs/POSTGRES-MIGRATION.md).
 
   // Tipske napake so zdaj NAPAKA GRADNJE.
   //

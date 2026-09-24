@@ -2,23 +2,16 @@
 /**
  * S+9 (issue #4, korak 1) — Priprava baze ob gradnji.
  *
- * Izbiro vira poganja DATABASE_URL (Prisma provider je v kanonični shemi
- * `prisma/schema.prisma` PostgreSQL):
+ * Edini vir je PostgreSQL (kanonična shema `prisma/schema.prisma`):
  *
  *   postgres://*  → `prisma generate` + `prisma migrate deploy` (+ seed, razen
- *                   ko je SEED_ON_DEPLOY=false). To je PRODUKCIJSKA pot:
- *                   verzionirane migracije, nobenega `db push`.
+ *                   ko je SEED_ON_DEPLOY=false). Verzionirane migracije,
+ *                   nobenega `db push`.
  *
- *   file:* / manjkajoč → PREHODNI demo način (trenutni Vercel deployment še
- *                   nima dodeljenega zunanjege PostgreSQL): iz kanonične sheme
- *                   se generira sqlite varianta (isti modeli, drug provider) in
- *                   se uporabi `db push` + demo seed. Ta pot je zabeležena kot
- *                   TEHNIČNI DOLG — odstrani se, takoj ko lastnik ustvari
- *                   Vercel Postgres/Neon bazo (docs/POSTGRES-MIGRATION.md).
- *
- * Postavka SQLite variante prinaša samo zamenjavo providerja — modeli/enums
- * so identični (Prisma 6 podpira enums na SQLite; obstoječa produkcijska
- * shema je to že dokazovala).
+ * S+8.2 (čiščenje prehodne poti, docs/POSTGRES-MIGRATION.md korak 5): prehodni
+ * SQLite demo način (generiranje `schema.build.prisma` + `db push` za file:*
+ * URL) je ODSTRANJEN — produkcija teče na Neon PostgreSQL. Brez postgres://
+ * URL-a gradnja JASNO FAILED (brez tihe sqlite zasilne poti).
  * */
 const { execSync } = require('node:child_process')
 const fs = require('node:fs')
@@ -36,12 +29,12 @@ function readEnvFileDatabaseUrl() {
 
 function readEnvUrl() {
   // Pravilo (src/lib/db-url.ts): postgres env zmaga; sicer .env postgres;
-  // sicer procesni env kot je (prehodni sqlite demo).
+  // sicer null (fail closed — sqlite zasilna pot ne obstaja več).
   const envUrl = process.env.DATABASE_URL
   if (envUrl && /^postgres(ql)?:\/\//.test(envUrl)) return envUrl
   const fromDotEnv = readEnvFileDatabaseUrl()
   if (fromDotEnv && /^postgres(ql)?:\/\//.test(fromDotEnv)) return fromDotEnv
-  return envUrl || fromDotEnv
+  return null
 }
 
 function run(cmd, extraEnv = {}) {
@@ -50,29 +43,20 @@ function run(cmd, extraEnv = {}) {
 }
 
 const url = readEnvUrl()
-const sqliteMode = !url || url.startsWith('file:')
 
-if (sqliteMode) {
-  console.warn(
-    '[build-prepare] DATABASE_URL je file:* — PREHODNI SQLite demo način.\n' +
-    '[build-prepare] Issue #4 zahteva zunanji PostgreSQL za produkcijo; glej docs/POSTGRES-MIGRATION.md.'
+if (!url) {
+  console.error(
+    '[build-prepare] DATABASE_URL ni razrešen na postgres:// URL.\n' +
+    '[build-prepare] Prehodni SQLite način je odstranjen (S+8.2) — produkcija\n' +
+    '[build-prepare] ZAHTEVA zunanji PostgreSQL. Glej docs/POSTGRES-MIGRATION.md.'
   )
-  const canonical = fs.readFileSync(path.join(process.cwd(), 'prisma', 'schema.prisma'), 'utf8')
-  const sqliteSchema = canonical.replace(
-    /provider\s*=\s*"postgresql"/,
-    'provider = "sqlite"'
-  )
-  const buildSchemaPath = path.join(process.cwd(), 'prisma', 'schema.build.prisma')
-  fs.writeFileSync(buildSchemaPath, sqliteSchema)
-  run(`bunx prisma generate --schema ${buildSchemaPath}`)
-  run(`bunx prisma db push --skip-generate --accept-data-loss --schema ${buildSchemaPath}`, { DATABASE_URL: url })
+  process.exit(1)
+}
+
+run('bunx prisma generate')
+run('bunx prisma migrate deploy', { DATABASE_URL: url })
+if (process.env.SEED_ON_DEPLOY !== 'false') {
   run('node prisma/seed.cjs')
 } else {
-  run('bunx prisma generate')
-  run('bunx prisma migrate deploy', { DATABASE_URL: url })
-  if (process.env.SEED_ON_DEPLOY !== 'false') {
-    run('node prisma/seed.cjs')
-  } else {
-    console.log('[build-prepare] SEED_ON_DEPLOY=false — seed preskočen.')
-  }
+  console.log('[build-prepare] SEED_ON_DEPLOY=false — seed preskočen.')
 }

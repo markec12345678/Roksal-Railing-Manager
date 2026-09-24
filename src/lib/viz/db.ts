@@ -23,7 +23,8 @@ import path from 'node:path'
 import type { PrismaClient } from '@prisma/client'
 // S+9: statični import čistega modula (brez stranskih učinkov) — ne sme
 // pasti skozi krhki dinamični import @/lib/db (glej zgodovino S+2).
-import { resolveDatabaseUrl, isSqliteUrl } from '@/lib/db-url'
+// S+8.2: prehodni SQLite /tmp demo odstranjen — vir je izključno PostgreSQL.
+import { resolveDatabaseUrl } from '@/lib/db-url'
 
 const projectRequire = createRequire(path.join(process.cwd(), 'package.json'))
 
@@ -32,7 +33,7 @@ const GENERATED_FILES = ['default.js', 'client.js', 'index.js'] as const
 
 type PrismaClientOptions = {
   log?: Array<'query' | 'error' | 'warn' | 'info' | 'event'>
-  /** S+9: razrešen URL (postgres prod/dev ali prehodni sqlite /tmp demo). */
+  /** S+9: razrešen URL (postgresql produkcija/dev). */
   datasourceUrl?: string
 }
 
@@ -61,29 +62,10 @@ const globalForVizDb = globalThis as unknown as { vizPrisma?: PrismaClient }
 export async function getVizDb(): Promise<PrismaClient> {
   if (!globalForVizDb.vizPrisma) {
     const PrismaClient = loadFreshPrismaClientCtor()
-    // Na Vercelu je filesystem bralen — uporabi ISTO /tmp kopijo baze kot
-    // glavni klient (src/lib/db.ts resolveServerlessDatabaseUrl). Brez tega bi
-    // viz rute pisale v bralno bundled datoteko (SQLite error 14).
     const resolvedUrl = resolveDatabaseUrl()
-    // /tmp kopija velja SAMO za prehodni SQLite način na Vercelu (stara pot —
-    // dinamični import je tu varno obdan s try/catch in ni kritičen).
-    let serverlessUrl: string | null = null
-    if (isSqliteUrl(resolvedUrl)) {
-      try {
-        const main = (await import('@/lib/db')) as {
-          resolveServerlessDatabaseUrl?: () => string | null
-        }
-        serverlessUrl = main.resolveServerlessDatabaseUrl?.() ?? null
-      } catch {
-        serverlessUrl = null
-      }
-    }
     const ctorOptions: PrismaClientOptions = { log: ['error'] }
-    if (serverlessUrl) {
-      // Prehodni SQLite demo (/tmp kopija na Vercelu).
-      ctorOptions.datasourceUrl = serverlessUrl
-    } else if (resolvedUrl) {
-      // S+9: peskovnikov file: env senči .env — vsili razrešen URL
+    if (resolvedUrl) {
+      // Peskovnikov file: env senči .env — vsili razrešen URL
       // (postgresql produkcija/dev; glej src/lib/db-url.ts).
       ctorOptions.datasourceUrl = resolvedUrl
     }

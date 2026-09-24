@@ -13,13 +13,13 @@ After=network.target
 
 [Service]
 Type=simple
-# Nikoli kot root: SQLite datoteka in dnevniki naj bodo v lasti navadnega uporabnika.
+# Nikoli kot root: dnevniki naj bodo v lasti navadnega uporabnika.
 User=roksal
 Group=roksal
 WorkingDirectory=/opt/roksal
 
 # Skrivnosti so v tej datoteki (pravice 600, lastnik roksal), ne v tej enoti:
-#   DATABASE_URL="file:/opt/roksal/db/custom.db"
+#   DATABASE_URL="postgresql://roksal:GESLO@localhost:5432/roksal"
 #   SESSION_SECRET="..."        ← openssl rand -base64 32
 #   API_KEY_PEPPER="..."        ← openssl rand -base64 24
 EnvironmentFile=/opt/roksal/.env.production

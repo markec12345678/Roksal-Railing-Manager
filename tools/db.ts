@@ -30,7 +30,9 @@ function resolveUrl(): string | null {
   if (fromEnv && /^postgres(ql)?:\/\//.test(fromEnv)) return fromEnv
   const fromDotEnv = readEnvFileDatabaseUrl()
   if (fromDotEnv && /^postgres(ql)?:\/\//.test(fromDotEnv)) return fromDotEnv
-  return fromEnv
+  // S+8.2: prehodni sqlite demo ne obstaja več — file: env NE upoštevamo
+  // (kanonična shema je PostgreSQL; fail closed, glej src/lib/db-url.ts).
+  return null
 }
 
 const args = process.argv.slice(2)

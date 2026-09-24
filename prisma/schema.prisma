@@ -1,9 +1,8 @@
 // Roksal Field v3.0 - PostgreSQL Production Schema (issue #4, korak 1)
 //
 // Prodajni vir podatkov je ZUNANJI TRAJNI PostgreSQL (Vercel Postgres / Neon).
-// SQLite je ostal samo kot prehoden demo način na Vercelu (prisma/build-prepare.cjs
-// generira sqlite varianto sheme IZKLJUČNO ko je DATABASE_URL `file:*`) —
-// odstrani se, takoj ko produkcijska baza obstaja (docs/POSTGRES-MIGRATION.md).
+// S+8.2 (čiščenje prehodne poti): prehodni SQLite demo način je odstranjen —
+// ta shema je edina, brez variant (docs/POSTGRES-MIGRATION.md).
 
 generator client {
   provider = "prisma-client-js"

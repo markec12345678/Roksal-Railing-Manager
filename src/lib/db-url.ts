@@ -3,17 +3,19 @@
  *
  * PROBLEM: peskovnik/platforma vbrizga star `DATABASE_URL=file:…` kot procesni
  * env, ki senči `.env` (Next.js in bun NE prepišejo obstoječih env spremenljivk).
- * Po preklopu na PostgreSQL (provider je v prisma/schema.prisma) file: URL ne
- * velja več in Prisma klient pada.
  *
  * PRAVILO razreševanja (dokumentirano v docs/POSTGRES-MIGRATION.md):
- *  1. `process.env.DATABASE_URL`, če je `postgres(ql)://*` → uporabi (Vercel
- *     produkcija z zunanjo bazo, testi, eksplicitno preglasitev).
+ *  1. `process.env.DATABASE_URL`, če je `postgres(ql)://*` → uporabi
+ *     (Vercel/Neon produkcija, testi, eksplicitna preglasitev).
  *  2. sicer `.env` iz projekta, če vsebuje `postgres(ql)://*` → uporabi
- *     (lokalni dev v peskovniku).
- *  3. sicer vrni procesni env kot je (prehodni Vercel SQLite demo, ki ga je
- *     zgradil prisma/build-prepare.cjs v sqlite načinu).
- *  4. null, če nič — klicatelj naj faila jasno.
+ *     (lokalni dev v peskovniku — vbrizgan file: env se ignorira).
+ *  3. sicer `null` — klicatelj naj faila JASNO.
+ *
+ * ZAKAJ NE vrne file:* URL-a (S+8.2 čiščenje prehodne poti): prehodni SQLite
+ * demo način je ODSTRANJEN (produkcija teče na Neon PostgreSQL od b23424a).
+ * Kanonična shema je PostgreSQL; file: URL bi ustvaril Prisma klienta z
+ * napačnim datasource-om in padel s skrivnostno napako — zato fail closed
+ * z jasnim sporočilom pri klicatelju (src/lib/db.ts).
  * */
 import fs from 'node:fs'
 import path from 'node:path'
@@ -42,13 +44,8 @@ export function resolveDatabaseUrl(): string | null {
       }
     }
   } catch {
-    // filesystem ni dosegljiv (edge?) — nadaljuj z env vrednostjo
+    // filesystem ni dosegljiv (edge?) — nadaljuj z null
   }
-  cached = fromEnv
+  cached = null
   return cached
-}
-
-/** Ali je razrešen URL SQLite (prehodni demo način)? */
-export function isSqliteUrl(url: string | null): boolean {
-  return !!url && url.startsWith('file:')
 }

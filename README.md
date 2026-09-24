@@ -356,14 +356,14 @@ cd Roksal-Railing-Manager
 bun install
 
 # 3. Pripravi okoljske spremenljivke
-cp .env.example .env  # DATABASE_URL="file:../db/custom.db"
-#                       Prisma rešuje relativne SQLite poti glede na prisma/schema.prisma,
-#                       zato ../db in ne ./db — s ./db baza ni najdena (Error code 14)
-#                       in vsi API endpointi vrnejo 500. Nikoli ne commitaj strojne poti.
+cp .env.example .env  # DATABASE_URL="postgresql://…" — vir je izključno PostgreSQL
+#                       (S+8.2: prehodni SQLite način ne obstaja več). Lokalno
+#                       priporočeno: `bun run db:up` (embedded PG :5433) in
+#                       URL postgres://roksal:roksal@localhost:5433/roksal_dev.
 
-# 4. Inicializiraj bazo (baza NI v gitu — ustvariš jo tukaj)
-bun run db:push         # sinhroniziraj Prisma shemo
-bunx tsx prisma/seed.ts # demo podatki (10 profilov, 3 stranke, 4 projekti)
+# 4. Inicializiraj bazo (verzionirane migracije, brez db push)
+bun run db:deploy       # prisma migrate deploy
+bun run db:seed         # demo podatki (+ OPENING ledger vnosi)
 
 # 5. Ustvari svoj račun z geslom (prijava je obvezna)
 #    V .env mora biti SESSION_SECRET — brez njega prijava ne dela (fail closed).
@@ -583,14 +583,14 @@ uporabi [Turso](https://turso.tech) (libSQL, kompatibilen s Prismo) ali Postgres
 ali pa namesti aplikacijo na VPS (glej `deploy/README.md`).
 
 Potrebne env spremenljivke na Vercelu: `SESSION_SECRET`, `API_KEY_PEPPER`
-(oba generiraj z `openssl rand -base64 32`). `DATABASE_URL` ni potreben —
-db.ts ob hladnem startu uporabi vgrajeno bazo iz bundle-a.
+(oba generiraj z `openssl rand -base64 32`) in `DATABASE_URL` (postgres:// URL —
+Vercel Storage / Neon; vgrajena SQLite baza ne obstaja več, S+8.2).
 
 ### Environment spremenljivke
 
 | Spremenljivka | Opis | Privzeto |
 |---------------|------|----------|
-| `DATABASE_URL` | Pot do SQLite datoteke (relativna glede na `prisma/`) | `file:../db/custom.db` |
+| `DATABASE_URL` | Povezava na PostgreSQL (produkcija: Vercel Postgres/Neon; lokalno: embedded PG — `bun run db:up`) | `postgresql://roksal:roksal@localhost:5433/roksal_dev` |
 | `SESSION_SECRET` | Skrivnost za podpisovanje sej (**obvezno**, min 16 znakov — fail closed) | (generiraj) |
 | `API_KEY_PEPPER` | Sol za hashe API ključev | (generiraj) |
 | `NEXTAUTH_URL` | URL aplikacije | `http://localhost:3000` |

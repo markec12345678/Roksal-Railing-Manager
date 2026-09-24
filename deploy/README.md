@@ -35,15 +35,17 @@ cd /opt/roksal
 # 2. okolje (NE v git!)
 sudo -u roksal cp .env.example .env.production
 sudo -u roksal nano .env.production
-#   DATABASE_URL="file:/opt/roksal/db/custom.db"
+#   DATABASE_URL="postgresql://roksal:GESLO@localhost:5432/roksal"
+#     (S+8.2: vir je izključno PostgreSQL — namesti postgres, `sudo -u postgres
+#      createdb -O roksal roksal`; prehodni SQLite način ne obstaja več)
 #   SESSION_SECRET="$(openssl rand -base64 32)"
 #   API_KEY_PEPPER="$(openssl rand -base64 24)"
 sudo chmod 600 .env.production && sudo chown roksal:roksal .env.production
 
 # 3. gradnja
 sudo -u roksal bun install
-sudo -u roksal bunx prisma db push
-sudo -u roksal bunx tsx prisma/seed.ts
+sudo -u roksal bunx prisma migrate deploy
+sudo -u roksal node prisma/seed.cjs
 sudo -u roksal bunx tsx tools/create-admin.ts admin@roksal.si
 sudo -u roksal bun run build
 

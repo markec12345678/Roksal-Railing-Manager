@@ -5,9 +5,10 @@
 //   1. `prisma generate` regenerira Prisma Client (Vercelov `bun install` ne
 //      požene postinstall skript → tipi so brez tega zastareli, kar je bil
 //      vzrok ERROR deploymentov od commita 31a72e9 naprej).
-//   2. `prisma db push` ustvari datoteko db/custom.db v build kontejnerju —
-//      prek outputFileTracingIncludes v next.config.ts gre v serverless bundle.
-//   3. Ta skripta naseli demo podatke, da je deploy takoj uporaben.
+//   2. `prisma migrate deploy` uveljavi verzionirane migracije na zunanji
+//      PostgreSQL (Neon) — brez db push in brez vgrajene SQLite baze.
+//   3. Ta skripta naseli demo podatke, da je deploy takoj uporaben
+//      (izklop: SEED_ON_DEPLOY=false).
 //
 // Idempotenten: upsert povsod, zato ga je varno pognati večkrat.
 //geslo demo uporabnika je javno (demo naprava) — v produkciji ga zamenjaj

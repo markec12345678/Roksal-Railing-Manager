@@ -1,23 +1,44 @@
-# PostgreSQL migracija — runbook (issue #4, korak 1)
+# PostgreSQL migracija — runbook (issue #4, korak 1) — DOKONČANA
 
-Status: **Lokalni dev/test teče na PostgreSQL 18 (embedded, brez root).**
-Produkcija (Vercel) še vedno teče na prehodnem SQLite demo načinu, dokler
-lastnik ne ustvari zunanje baze. Ta dokument opisuje postopek.
+Status: **DOKONČANA (S+8.2)** — lokalni dev/test teče na embedded PostgreSQL 18,
+produkcija (Vercel) teče na **Neon PostgreSQL** (deploy b23424a READY,
+E2E preverjen: prijava 200, /api/projects vrača realne podatke iz Neon CUID
+baze). Prehodni SQLite način je **odstranjen iz kode**.
 
-## Kaj je spremenjeno (S+9)
+## Zgodovina prehoda
 
-| Področje | Prej | Zdaj |
+| Področje | Prej (≤ S+8) | Zdaj (S+9 + S+8.2) |
 |---|---|---|
-| Kanonična shema | SQLite (`prisma/schema.prisma`) | **PostgreSQL** (`provider = "postgresql"`) |
+| Kanonična shema | SQLite (`provider = "sqlite"`) | **PostgreSQL** (`prisma/schema.prisma`) |
 | Migracije | `prisma db push` (brez verzij) | **`prisma/migrations/` (verzionirane, reproducible)** |
 | Lokalni dev | `db/custom.db` | embedded PG :5433 (`bun run db:up`), baza `roksal_dev` |
 | Testi (vitest) | SQLite file | PG baza `roksal_test` (globalSetup zažene PG + `migrate deploy`) |
-| Build (produkcija) | `db push` + seed | `prisma migrate deploy` + seed (SEED_ON_DEPLOY=false za izklop) |
-| Vercel demo | SQLite `/tmp` kopija | **nespremenjeno (PREHODNO)** — `prisma/build-prepare.cjs` generira sqlite varianto sheme IZKLJUČNO ko je `DATABASE_URL=file:*` |
-| Backup/restore | `tools/backup-db.ts` (SQLite) | `tools/migrate-data-to-postgres.ts` = restore SQLite → PG na sveži bazi |
+| Build (produkcija) | `db push` + seed | `prisma migrate deploy` + seed (`SEED_ON_DEPLOY=false` za izklop) |
+| Vercel baza | SQLite `/tmp` kopija | **Neon PostgreSQL** (Vercel Storage store `store_QmcbC5fiV3mcKwsy`, attach prek API) |
+| Backup/restore | `tools/backup-db.ts` (SQLite) | `pg_dump`/`psql` + `tools/migrate-data-to-postgres.ts` (SQLite → PG restore) |
 
-Nova pravila razreševanja vira: `src/lib/db-url.ts`
-(process env postgres → `.env` postgres → env kot je → fail).
+## Čiščenje prehodne poti (korak 5 — IZVEDENO v S+8.2)
+
+Odstranjeno:
+
+1. `prisma/build-prepare.cjs` — sqliteMode veja (generiranje
+   `schema.build.prisma` + `db push` za `file:*`) — **izbrisana**; brez
+   `postgres://` URL-a gradnja JASNO failed (fail closed).
+2. `src/lib/db.ts` — `resolveServerlessDatabaseUrl()` in `/tmp` kopija baze —
+   **izbrisano**; edini vir je razrešen `postgres://` URL, sicer throw.
+3. `src/lib/viz/db.ts` — serverless `/tmp` vejica — **izbrisana**.
+4. `src/lib/db-url.ts` — `isSqliteUrl()` in file:* passthrough — **odstranjena**;
+   pravilo: env postgres → .env postgres → `null` (fail closed).
+5. `next.config.ts` — `outputFileTracingIncludes` za `./db/**` — **odstranjeno**
+   (v serverless bundle ni več vgrajene baze).
+6. `tools/db.ts` — file:* env NE upošteva več (fail closed).
+7. `prisma/schema.prisma` in `prisma/seed.cjs` — zastareli komentarji o
+   prehodnem načinu — posodobljeni.
+8. README.md, deploy/README.md, deploy/roksal.service — navodila prenesena z
+   SQLite (`file:../db/custom.db`) na PostgreSQL + `migrate deploy`.
+
+`db/custom.db` NI v gitu (gitignore `/db/*.db`); datoteka ostane samo lokalno
+kot vir za enkratni restore (`bun run migrate:to-postgres`).
 
 ## Lokalno (peskovnik ali lastni računalnik)
 
@@ -32,37 +53,22 @@ bun run migrate:to-postgres   # enkratno: restore db/custom.db → PG (na sveži
 
 Testi sami zagotovijo PG: `bun run test` (vitest globalSetup).
 
-## PRODUKCIJA — koraki, ki jih mora izvesti LASTNIK
+## Produkcija (Neon) — kako je povezano
 
-Sandbox nima poverilnic za Vercel/Neon, zato teh korakov ni mogoče izvesti
-namesto tebe. Ko jih opraviš, prehodna SQLite pot avtomatsko izgine (koda je
-pripravljena):
-
-1. **Vercel Postgres ali Neon baza** (free tier zadostuje):
-   - Vercel Dashboard → Storage → Create Database → Postgres (ali neon.tech)
-2. **Poveži z repozitorijem**: Vercel → Project → Settings → Environment
-   Variables — `DATABASE_URL` naj kaže na `postgres://…` URL (vse tri
-   okolja: production/preview/development imajo ločene baze ali vsaj ločene
-   sheme — priporočeno: ločena baza na okolje).
-3. **Deploy**: `bun run build` na Vercelu zazna `postgres://` in sam zažene
-   `prisma migrate deploy` (brez `db push`) + seed. Seed na produkciji izklopiš
-   z env `SEED_ON_DEPLOY=false`.
-4. **Podatkovna migracija** (če imate realne podatke v SQLite):
-   - lokalno: `bun run migrate:to-postgres` (restore na sveži PG bazi)
-   - ali: `pg_dump`/`pg_restore` med bazo.
-5. **Očisti prehodno pot** (ko produkcijski `DATABASE_URL` kaže na PG):
-   - izbriši `prisma/schema.build.prisma` generiranje v `prisma/build-prepare.cjs`
-     (vejica `sqliteMode`),
-   - izbriši `/tmp` serverless vejico v `src/lib/db.ts` (resolveServerlessDatabaseUrl),
-   - odstrani `db/custom.db` iz repozitorija in `outputFileTracingIncludes` v next.config.ts.
+- Vercel → Storage → Neon store povezan na projekt; vbrizga `DATABASE_URL`
+  (in `POSTGRES_PRISMA_URL`, `PGHOST`, …) za production+preview okolja.
+- Build (`bun run build` → `prisma/build-prepare.cjs`): `prisma generate` +
+  `prisma migrate deploy` + seed (idempotenten upsert; izklop z
+  `SEED_ON_DEPLOY=false`).
+- Brez `postgres://` URL-a gradnja ne uspe (namenoma — brez tihe zasilne poti).
 
 ## Backup / restore na PostgreSQL
 
 ```bash
-# backup (vseeno kje teče pg client — priporočeno pg_dump na strežniku):
+# backup (priporočeno pg_dump na strežniku):
 pg_dump "$DATABASE_URL" > backup-$(date +%F).sql
 
-# restore na sveži bazi (dokazano v testih tools/migrate-data-to-postgres.ts):
+# restore na sveži bazi:
 createdb roksal_restore
 psql roksal_restore < backup-YYYY-MM-DD.sql
 ```
@@ -72,6 +78,5 @@ počisti ciljne tabele in jih obnovi 1:1 (id-ji, številke, e-pošte) + OPENING 
 
 ## Kaj NI del tega koraka (iskreno)
 
-- Vercel produkcija še teče na SQLite demo načinu (korak zgoraj je lastnikov).
 - Object storage za binarne dokumente je ločen korak issue #4 (VIZ ima vzorec v
   `src/lib/viz/storage.ts`; poslovni dokumenti sledijo v naslednji rundi).
