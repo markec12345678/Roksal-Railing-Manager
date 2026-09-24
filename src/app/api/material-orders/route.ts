@@ -25,6 +25,12 @@ export async function GET(request: Request) {
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
+  // R126 (issue #5 §3): naročila razkrivajo dobavitelje in cene — to ni del
+  // servisne pogodbe MOBILE_SYNC (matrika v access.ts). Prej je vsak API
+  // ključ lahko prebral vsa naročila z postavkami zaloge.
+  if (auth.kind === 'apikey') {
+    return forbidden('Naročila so poslovni podatki — API ključ nima dostopa.')
+  }
   try {
     const { searchParams } = new URL(request.url)
     const projectId = searchParams.get('projectId')
@@ -138,8 +144,9 @@ export async function PATCH(request: Request) {
   if (!auth) return unauthorized()
   const actor = actorIdOf(auth)
   const role = auth.kind === 'user' ? auth.session.vloga : null
-  const isManager =
-    auth.kind === 'apikey' || role === 'ADMIN' || role === 'VODJA'
+  // R126 (issue #5 §3): API ključ NI manager — prej je smel spreminjati
+  // naročila (nasprotno matriki: "administracija zaloge" je nedovoljeno).
+  const isManager = role === 'ADMIN' || role === 'VODJA'
   if (!isManager && role !== 'SKLADISCE') {
     return forbidden('Sprememba naročil je možnost vodstva ali skladišča.')
   }

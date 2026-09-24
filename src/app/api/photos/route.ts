@@ -22,8 +22,8 @@
 import { NextResponse } from 'next/server'
 import { randomUUID } from 'node:crypto'
 import { db } from '@/lib/db'
-import { authenticate, unauthorized } from '@/lib/auth'
-import { assertProjectAccess, AccessDeniedError } from '@/lib/access'
+import { authenticate, unauthorized, forbidden } from '@/lib/auth'
+import { assertProjectAccess, AccessDeniedError, apiKeyScopeDenied } from '@/lib/access'
 import {
   deleteObject,
   extensionForMime,
@@ -46,6 +46,10 @@ export async function GET(request: Request) {
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
+  // R126 (issue #5 §3): API ključ mora nositi scope `photos:read`.
+  if (apiKeyScopeDenied(auth, 'photos:read')) {
+    return forbidden('Ključ nima scope-a photos:read — branje fotodokumentacije ni dovoljeno.')
+  }
   try {
     const { searchParams } = new URL(request.url)
     const projectId = searchParams.get('projectId')
@@ -99,6 +103,10 @@ export async function POST(request: Request) {
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
+  // R126 (issue #5 §3): API ključ mora nositi scope `photos:write`.
+  if (apiKeyScopeDenied(auth, 'photos:write')) {
+    return forbidden('Ključ nima scope-a photos:write — nalaganje fotodokumentacije ni dovoljeno.')
+  }
   try {
     const body = await request.json()
     const kat = body.kategorija ?? 'MED'

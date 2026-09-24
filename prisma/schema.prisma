@@ -736,16 +736,32 @@ model EquipmentAssignment {
 // Zdaj se hrani samo SHA-256 ključa, ključ je viden enkrat ob ustvarjanju,
 // posamezen ključ pa je mogoče preklicati brez menjave ostalih.
 model ApiKey {
-  id         String    @id @default(cuid())
+  id        String    @id @default(cuid())
   /// Človeško berljivo ime ("Marko - telefon", "BalkonAR test").
-  name       String
-  keyHash    String    @unique
+  name      String
+  keyHash   String    @unique
   /// Prvih 12 znakov za prepoznavo v seznamu (brez razkritja ključa).
-  keyPrefix  String
-  createdBy  String?
-  createdAt  DateTime  @default(now())
+  keyPrefix String
+  createdBy String?
+  createdAt DateTime  @default(now())
   lastUsedAt DateTime?
-  revokedAt  DateTime?
+  revokedAt DateTime?
+
+  // ── R126 — issue #5 §3: API-key lifecycle ────────────────────────────────
+  /// Namenska raba ključa ("BalkonAR mobilni klient terenske ekipe").
+  purpose   String?
+  /// Scope lista (R126 §3), ločena z vejico. Privzeto dobrodelni nabor
+  /// MOBILE_SYNC iz matrike v src/lib/access.ts. Katalog: src/lib/api-keys.ts.
+  scopes    String    @default("projects:read,projects:write,measurements:create,photos:read,photos:write")
+  /// Omejitev na projekte (ID-ji ločeni z vejico). Null/prazno = vsi projekti
+  /// (sync zrcalo podjetja — dosedanja pogodba MOBILE_SYNC).
+  projectScope String?
+  /// Ko ključ poteče, ga verifyApiKey zavrne (fail-closed). Null = ne poteče.
+  expiresAt DateTime?
+  /// ID predhodnika, če je ključ nastal z rotacijo (--rotate).
+  rotatedFrom String?
+  /// Per-key omejitev hitrosti (zahtevkov/minuto). Null = privzeto 120.
+  rateLimitPerMin Int?
 }
 
 // ============================================

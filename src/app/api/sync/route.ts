@@ -31,8 +31,8 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { db } from '@/lib/db'
-import { authenticate, unauthorized } from '@/lib/auth'
-import { assertProjectAccess, projectWhereForPrincipal } from '@/lib/access'
+import { authenticate, unauthorized, forbidden } from '@/lib/auth'
+import { assertProjectAccess, projectWhereForPrincipal, apiKeyScopeDenied } from '@/lib/access'
 import {
   transitionAllowed,
   initialStatusFor,
@@ -88,6 +88,11 @@ export async function POST(request: Request) {
       { error: 'Neveljavna avtentikacija', detail: 'Pričakujem `Authorization: Bearer rkm_…` ali veljavno sejo.' },
       { status: 401 },
     )
+  }
+  // R126 (issue #5 §3): API ključ mora nositi scope `projects:write` —
+  // ključ samo za branje (projects:read) tu pade s 403, ne s tiho preskočenim vpisom.
+  if (apiKeyScopeDenied(auth, 'projects:write')) {
+    return forbidden('Ključ nima scope-a projects:write — vpis prek sync ni dovoljen.')
   }
 
   const rawList = Array.isArray(body) ? body : [body]
@@ -350,6 +355,10 @@ export async function GET(request: Request) {
   // Tudi branje projektov za sinhronizacijo je zaščiteno: seznam razkrije stranke in naslove.
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
+  // R126 (issue #5 §3): API ključ mora nositi scope `projects:read`.
+  if (apiKeyScopeDenied(auth, 'projects:read')) {
+    return forbidden('Ključ nima scope-a projects:read — branje sync zrcala ni dovoljeno.')
+  }
   try {
     const { searchParams } = new URL(request.url)
     const lastSync = searchParams.get('lastSync')

@@ -19,12 +19,44 @@
 
 import { NextResponse } from 'next/server'
 import { extractToken, verifySession, type SessionPayload } from './session'
-import { verifyApiKey } from './password'
+import { verifyApiKey, type ApiKeyFailureReason } from './password'
 import { assertSessionAlive } from './session-registry'
+import { audit } from './audit'
+import { checkRate, clientIp } from './rate-limit'
+import type { ApiKeyScope } from './api-keys'
 
 export type AuthContext =
   | { kind: 'user'; session: SessionPayload }
-  | { kind: 'apikey'; name: string }
+  | {
+      kind: 'apikey'
+      name: string
+      /** R126 §3: id vrstice v bazi (za audit + per-key omejevalnik). */
+      id: string
+      /** R126 §3: izrazne pravice ključa (katalog: api-keys.ts). */
+      scopes: readonly ApiKeyScope[]
+      /** R126 §3: omejitev na projekte; null = vsi. */
+      projectScope: readonly string[] | null
+    }
+
+/**
+ * R126 §3 — neuspešne preverbe ključev gredo v AuditLog (AUTH_APIKEY_FAIL),
+ * a vmejeno: 30/min na IP — brute-force ne sme napolniti dnevnika s tisoči
+ * vrstic, legalni incident pa mora biti viden.
+ */
+async function auditApiKeyFailure(
+  request: Request,
+  reason: ApiKeyFailureReason
+): Promise<void> {
+  const ip = clientIp(request)
+  const throttled = checkRate(`apikey-fail:${ip}`, { limit: 30, windowMs: 60_000 })
+  if (!throttled.ok) return
+  void audit({
+    request,
+    akcija: 'AUTH_APIKEY_FAIL',
+    oldValue: null,
+    newValue: { razlog: reason },
+  })
+}
 
 /** Vrni identiteto zahteve ali `null`, če je ni. Nikoli ne vrže. */
 export async function authenticate(request: Request): Promise<AuthContext | null> {
@@ -35,7 +67,17 @@ export async function authenticate(request: Request): Promise<AuthContext | null
     const token = header.slice(7)
     if (token.startsWith('rkm_')) {
       const key = await verifyApiKey(token)
-      return key ? { kind: 'apikey', name: key.name } : null
+      if (!key.ok) {
+        await auditApiKeyFailure(request, key.reason)
+        return null
+      }
+      return {
+        kind: 'apikey',
+        name: key.name,
+        id: key.id,
+        scopes: key.scopes,
+        projectScope: key.projectScope,
+      }
     }
     // Bearer z sejim žetonom (uporabno za skripte in testiranje)
     const session = await verifySession(token)

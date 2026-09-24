@@ -50,10 +50,17 @@ const PUBLIC_PREFIXES = [
 
 /**
  * API ključi: poti, kjer se namesto seje sprejme `Authorization: Bearer rkm_…`.
- * Proxy preveri samo **obliko** — pravi hash preveri ruta, ker Edge runtime
- * nima dostopa do `node:crypto` in ker mora biti preverjanje ključa v bazi.
+ * Proxy preveri samo **obliko** — pravi hash, scope-i, projektni obseg, potek
+ * in per-key omejitev so preverjeni v ruti (R126 — issue #5 §3), ker Edge
+ * runtime nima dostopa do `node:crypto` in baze.
+ *
+ * R126: pogodba MOBILE_SYNC (matrika v src/lib/access.ts) vključuje tudi
+ * potrjevanje meritev in fotodokumentacijo — prej jih je proxy blokiral s 401,
+ * kljub temu da jih ključi z ustreznimi scope-i smejo uporabljati. Računi,
+ * naročila, stranke itd. ostajajo za API ključe NEDOSEGLJIVI (401 na robu,
+ * 403 v ruti — dve neodvisni plasti).
  */
-const API_KEY_PATHS = ['/api/sync']
+const API_KEY_PATHS = ['/api/sync', '/api/measurement/confirm', '/api/photos']
 
 function isPublic(pathname: string): boolean {
   if (PUBLIC_EXACT.has(pathname)) return true

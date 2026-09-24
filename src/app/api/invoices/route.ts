@@ -16,10 +16,17 @@ import { actorIdOf } from '@/lib/access'
 const DDV_STOPLNJE = [22, 9.5, 0] as const
 const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100
 
-/** Uradni računi = samo vodstvo (ADMIN/VODJA); apikey = servisni dostop. */
+/**
+ * Uradni računi = samo vodstvo (ADMIN/VODJA).
+ * R126 (issue #5 §3): API ključ ni več izjema — prej je `kind === 'apikey'`
+ * vodil skozi in je servisni ključ lahko IZDAL račun; to je nasprotovalo
+ * matriki v access.ts ("Nedovoljeno: urejanje cen") in je bilo pukljavo.
+ */
 function denyUnlessManager(auth: import('@/lib/auth').AuthContext): NextResponse | null {
-  if (auth.kind === 'apikey') return null
-  if (hasRole(auth.session, MANAGER_ROLES)) return null
+  if (auth.kind === 'user' && hasRole(auth.session, MANAGER_ROLES)) return null
+  if (auth.kind === 'apikey') {
+    return forbidden('Računi so uradni dokumenti — API ključ nima dostopa.')
+  }
   return forbidden('Računi so uradni dokumenti — dostop ima samo vodstvo.')
 }
 
@@ -91,11 +98,13 @@ export async function GET(request: Request) {
     const projectId = searchParams.get('projectId')
 
     // Resource-level dostop (issue #4 §3): MONTER vidi samo račune svojih
-    // projektov; vodstvo/skladišče/apikey vse.
-    const isManager =
-      auth.kind === 'apikey' || hasRole(auth.session, MANAGER_ROLES) ||
-      hasRole(auth.session, ['SKLADISCE'])
-    if (!isManager && !projectId && auth.kind === 'user') {
+    // projektov; vodstvo/skladišče vse. R126: API ključ nima dostopa do
+    // računov (uradni dokumenti) — prej je tukaj spregledal manager preverbo.
+    if (auth.kind === 'apikey') {
+      return forbidden('Računi so uradni dokumenti — API ključ nima dostopa.')
+    }
+    const isManager = hasRole(auth.session, MANAGER_ROLES) || hasRole(auth.session, ['SKLADISCE'])
+    if (!isManager && !projectId) {
       const uid = auth.session.sub
       const ownProjects = await db.project.findMany({
         where: { OR: [{ monterId: uid }, { vodjaId: uid }] },

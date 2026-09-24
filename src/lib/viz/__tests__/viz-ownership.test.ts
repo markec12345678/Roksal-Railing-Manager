@@ -255,7 +255,8 @@ describe('S+4 lastništvo — API rute (Bearer sejni žetoni)', () => {
     vi.doMock('@/lib/password', () => ({
       verifyPassword: vi.fn(),
       hashPassword: vi.fn(),
-      verifyApiKey: vi.fn(async () => ({ name: 'mobilni-klient' })),
+      // R126: verifyApiKey vrne rezultatni objekt (ok + scopes).
+      verifyApiKey: vi.fn(async () => ({ ok: true, id: 'k1', name: 'mobilni-klient', scopes: ['projects:read'], projectScope: null })),
       generateApiKey: vi.fn(),
       hashApiKey: vi.fn(),
     }))

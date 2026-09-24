@@ -34,7 +34,8 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { db } from '@/lib/db'
-import { authenticate, unauthorized } from '@/lib/auth'
+import { authenticate, unauthorized, forbidden } from '@/lib/auth'
+import { apiKeyScopeDenied } from '@/lib/access'
 import { assertProjectAccess, actorIdOf, AccessDeniedError } from '@/lib/access'
 import { auditInTx } from '@/lib/audit'
 import {
@@ -119,6 +120,10 @@ const confirmSchema = z.object({
 export async function POST(request: Request) {
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
+  // R126 (issue #5 §3): API ključ mora nositi scope `measurements:create`.
+  if (apiKeyScopeDenied(auth, 'measurements:create')) {
+    return forbidden('Ključ nima scope-a measurements:create — potrjevanje meritev ni dovoljeno.')
+  }
   const actor = actorIdOf(auth)
 
   let body: unknown

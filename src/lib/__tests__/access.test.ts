@@ -19,7 +19,13 @@ function user(vloga: string, sub = 'u1'): AuthContext {
   }
 }
 
-const apiKey: AuthContext = { kind: 'apikey', name: 'test-key' }
+const apiKey: AuthContext = {
+  kind: 'apikey',
+  name: 'test-key',
+  id: 'key1',
+  scopes: ['projects:read', 'projects:write', 'measurements:create', 'photos:read', 'photos:write'],
+  projectScope: null,
+}
 
 const ownProject = { id: 'p1', monterId: 'u1', vodjaId: null, dealLocked: false }
 const foreignProject = { id: 'p2', monterId: 'kdo-drug', vodjaId: null, dealLocked: false }

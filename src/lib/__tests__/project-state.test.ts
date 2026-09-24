@@ -18,7 +18,13 @@ function user(vloga: string, sub = 'u1'): AuthContext {
   }
 }
 
-const apiKey: AuthContext = { kind: 'apikey', name: 'test-key' }
+const apiKey: AuthContext = {
+  kind: 'apikey',
+  name: 'test-key',
+  id: 'key1',
+  scopes: ['projects:read', 'projects:write', 'measurements:create', 'photos:read', 'photos:write'],
+  projectScope: null,
+}
 
 describe('ALLOWED_TRANSITIONS — matrika', () => {
   it('vse vrednosti so znani statusi in ne vsebujejo samega sebe', () => {
