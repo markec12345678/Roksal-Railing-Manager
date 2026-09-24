@@ -149,69 +149,14 @@ async function syncOneProject(
 ): Promise<{ projectId: string; action: 'created' | 'updated'; warnings: string[]; project: unknown }> {
   const warnings: string[] = []
 
-  const existingProject = await db.project.findFirst({
+  // R121: mobileProjectId je UNIQUE — dvojnikov ni niti ob vzporednem/replay
+  // syncu. findUnique (ne findFirst) je zdaj kanoničen način iskanja.
+  const existingProject = await db.project.findUnique({
     where: { mobileProjectId: mobileProject.id },
   })
 
   if (existingProject) {
-    // Resource authorization velja tudi tu (R120): servis sme sync polja
-    // spreminjati (razen deal-lock), monter sme samo na svojih projektih.
-    assertProjectAccess(auth, existingProject, 'update')
-
-    // Mobilni klient NE sme preskočiti statusnega stroja — predlagani status
-    // se upošteva SAMO, če je prehod veljaven; sicer ostane obstoječi in se
-    // zavrnitev JAVI (nič tiho).
-    const proposed = mobileProject.status
-    let nextStatus = existingProject.status
-    if (proposed && proposed !== existingProject.status) {
-      if (isProjectStatus(proposed) && transitionAllowed({ from: existingProject.status, to: proposed, principal: auth, dealLocked: existingProject.dealLocked })) {
-        nextStatus = proposed
-      } else {
-        warnings.push(
-          `Status "${proposed}" zavrnjen (statusni stroj) — ostaja "${existingProject.status}".`,
-        )
-      }
-    }
-
-    const updated = await db.$transaction(async (tx) => {
-      const row = await tx.project.update({
-        where: { id: existingProject.id },
-        data: {
-          status: nextStatus,
-          opombe: mobileProject.extraNotes || existingProject.opombe,
-          latitude: mobileProject.latitude ?? existingProject.latitude,
-          longitude: mobileProject.longitude ?? existingProject.longitude,
-          updatedAt: new Date(),
-        },
-        include: {
-          customer: true,
-          monter: { select: { id: true, ime: true } },
-        },
-      })
-      await auditInTx(tx, {
-        request,
-        userId: null,
-        akcija: 'SYNC_PROJECT_UPDATED',
-        projectId: row.id,
-        oldValue: {
-          status: existingProject.status,
-          opombe: existingProject.opombe,
-          latitude: existingProject.latitude,
-          longitude: existingProject.longitude,
-        },
-        newValue: {
-          status: nextStatus,
-          opombe: row.opombe,
-          latitude: row.latitude,
-          longitude: row.longitude,
-          servis: auth.kind === 'apikey' ? auth.name : 'uporabniška seja',
-          zavrnjeniStatus: warnings.length > 0 ? mobileProject.status : undefined,
-        },
-      })
-      return row
-    })
-
-    return { projectId: updated.id, action: 'updated', warnings, project: updated }
+    return applySyncUpdate(auth, existingProject, mobileProject, request, warnings)
   }
 
   // ── NOV PROJEKT ──────────────────────────────────────────────────────────
@@ -257,7 +202,8 @@ async function syncOneProject(
     )
   }
 
-  const newProject = await db.$transaction(async (tx) => {
+  try {
+    const newProject = await db.$transaction(async (tx) => {
     const row = await tx.project.create({
       data: {
         nazivProjekta: `${mobileProject.customerName || 'Neznana stranka'} - ${mobileProject.railingStyle || 'ograja'}`,
@@ -298,9 +244,105 @@ async function syncOneProject(
       },
     })
     return row
+    })
+
+    return { projectId: newProject.id, action: 'created', warnings, project: newProject }
+  } catch (error) {
+    // R121 — IDEMPOTENTEN REPLAY: mobileProjectId je UNIQUE. Če je med
+    // pripravo te zahteve vzporedni sync že ustvaril projekt z istim id-jem
+    // (P2002), to NI napaka klienta — obstoječi projekt se posodobi (isti
+    // rezultat kot počasnejši zahtevek). Dvojnikov ni niti pod vzporednostjo.
+    if (isUniqueViolation(error)) {
+      const raced = await db.project.findUnique({
+        where: { mobileProjectId: mobileProject.id },
+      })
+      if (raced) {
+        warnings.push(
+          'Vzporedni sync z istim mobileProjectId — obstoječi projekt posodobljen (unique constraint).',
+        )
+        return applySyncUpdate(auth, raced, mobileProject, request, warnings)
+      }
+    }
+    throw error
+  }
+}
+
+/**
+ * Posodobitev obstoječega projekta (statusni stroj + audit v transakciji).
+ * Izvlečena iz syncOneProject — uporablja jo tudi P2002 repli pot.
+ */
+async function applySyncUpdate(
+  auth: NonNullable<Awaited<ReturnType<typeof authenticate>>>,
+  existingProject: { id: string; status: string; dealLocked: boolean; opombe: string | null; latitude: number | null; longitude: number | null; monterId: string | null; vodjaId: string | null },
+  mobileProject: MobileProject,
+  request: Request,
+  warnings: string[]
+): Promise<{ projectId: string; action: 'updated'; warnings: string[]; project: unknown }> {
+  // Resource authorization velja tudi tu (R120): servis sme sync polja
+  // spreminjati (razen deal-lock), monter sme samo na svojih projektih.
+  assertProjectAccess(auth, existingProject, 'update')
+
+  const proposed = mobileProject.status
+  let nextStatus = existingProject.status
+  if (proposed && proposed !== existingProject.status) {
+    if (isProjectStatus(proposed) && transitionAllowed({ from: existingProject.status as never, to: proposed, principal: auth, dealLocked: existingProject.dealLocked })) {
+      nextStatus = proposed
+    } else {
+      warnings.push(
+        `Status "${proposed}" zavrnjen (statusni stroj) — ostaja "${existingProject.status}".`,
+      )
+    }
+  }
+
+  const updated = await db.$transaction(async (tx) => {
+    const row = await tx.project.update({
+      where: { id: existingProject.id },
+      data: {
+        status: nextStatus as never,
+        opombe: mobileProject.extraNotes || existingProject.opombe,
+        latitude: mobileProject.latitude ?? existingProject.latitude,
+        longitude: mobileProject.longitude ?? existingProject.longitude,
+        updatedAt: new Date(),
+      },
+      include: {
+        customer: true,
+        monter: { select: { id: true, ime: true } },
+      },
+    })
+    await auditInTx(tx, {
+      request,
+      userId: null,
+      akcija: 'SYNC_PROJECT_UPDATED',
+      projectId: row.id,
+      oldValue: {
+        status: existingProject.status,
+        opombe: existingProject.opombe,
+        latitude: existingProject.latitude,
+        longitude: existingProject.longitude,
+      },
+      newValue: {
+        status: nextStatus,
+        opombe: row.opombe,
+        latitude: row.latitude,
+        longitude: row.longitude,
+        servis: auth.kind === 'apikey' ? auth.name : 'uporabniška seja',
+        zavrnjeniStatus: warnings.length > 0 ? mobileProject.status : undefined,
+      },
+    })
+    return row
   })
 
-  return { projectId: newProject.id, action: 'created', warnings, project: newProject }
+  return { projectId: updated.id, action: 'updated', warnings, project: updated }
+}
+
+/** Prisma P2002 = kršitev unique constrainta. */
+function isUniqueViolation(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    (error as { code?: string }).code === 'P2002'
+  )
 }
 
 // GET - Vrne projekte za sinhronizacijo v mobilno aplikacijo

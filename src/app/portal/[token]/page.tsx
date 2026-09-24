@@ -1,6 +1,7 @@
 // Roksal Field - Javni portal stranke (server component)
 // Stran /portal/[token] — prikaz statusa, slik, cene in kontakta za stranko
 import { db } from '@/lib/db'
+import { getObject } from '@/lib/object-storage'
 import {
   Phone,
   Mail,
@@ -91,39 +92,57 @@ export default async function PortalPage({ params }: PageProps) {
   const statusCfg = STATUS_CONFIG[project.status] || STATUS_CONFIG.NACRTOVANO
   const StatusIcon = statusCfg.icon
 
-  const photosByCategory = {
-    PRED: project.photos.filter((p) => p.kategorija === 'PRED'),
-    MED: project.photos.filter((p) => p.kategorija === 'MED'),
-    PO: project.photos.filter((p) => p.kategorija === 'PO'),
+  // R121: bajti slik so v object storage — hydrate data URI iz shrambe;
+  // zapuščinske vrstice (storageKey null) še nosijo imageData iz DB. Če je
+  // artefakt izgubljen, sliko IZPUSTIMO z napako v logu (ne taji, ne podira
+  // strani stranke).
+  async function hydratePhoto(p: {
+    id: string
+    storageKey: string | null
+    imageData: string | null
+    mime: string | null
+    opomba: string | null
+    createdAt: Date
+  }): Promise<PortalPhoto | null> {
+    if (!p.storageKey) {
+      if (!p.imageData) return null
+      return { imageData: p.imageData, opomba: p.opomba, createdAt: p.createdAt.toISOString() }
+    }
+    const bytes = await getObject(p.storageKey)
+    if (!bytes) {
+      console.error(`[portal] slikovni artefakt manjka: ${p.storageKey} (photo ${p.id})`)
+      return null
+    }
+    return {
+      imageData: `data:${p.mime ?? 'image/jpeg'};base64,${bytes.toString('base64')}`,
+      opomba: p.opomba,
+      createdAt: p.createdAt.toISOString(),
+    }
   }
+
+  const [pred, med, po] = await Promise.all(
+    (['PRED', 'MED', 'PO'] as const).map(async (kat) => {
+      const rows = project.photos.filter((p) => p.kategorija === kat)
+      const hydrated = await Promise.all(rows.map(hydratePhoto))
+      return hydrated.filter((p): p is PortalPhoto => p !== null)
+    })
+  )
 
   const gallerySections = [
     {
       id: 'PRED' as const,
       label: 'Pred montažo',
-      photos: photosByCategory.PRED.map((p) => ({
-        imageData: p.imageData,
-        opomba: p.opomba,
-        createdAt: p.createdAt.toISOString(),
-      })) satisfies PortalPhoto[],
+      photos: pred,
     },
     {
       id: 'MED' as const,
       label: 'Med montažo',
-      photos: photosByCategory.MED.map((p) => ({
-        imageData: p.imageData,
-        opomba: p.opomba,
-        createdAt: p.createdAt.toISOString(),
-      })) satisfies PortalPhoto[],
+      photos: med,
     },
     {
       id: 'PO' as const,
       label: 'Po montaži',
-      photos: photosByCategory.PO.map((p) => ({
-        imageData: p.imageData,
-        opomba: p.opomba,
-        createdAt: p.createdAt.toISOString(),
-      })) satisfies PortalPhoto[],
+      photos: po,
     },
   ]
 
@@ -164,8 +183,7 @@ export default async function PortalPage({ params }: PageProps) {
     })
     .filter((t) => t.title)
 
-  const totalPhotos =
-    photosByCategory.PRED.length + photosByCategory.MED.length + photosByCategory.PO.length
+  const totalPhotos = pred.length + med.length + po.length
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f7f9ff]">

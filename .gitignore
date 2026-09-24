@@ -88,3 +88,6 @@ tmp/roksal-research/
 # S+9 — embedded PostgreSQL (lokalni vir, nikoli v repo)
 .pgdata/
 .pg.log
+
+# R121 — object storage (local driver bajti; produkcijski bajti živijo v Vercel Blob)
+/.storage/

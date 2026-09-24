@@ -97,7 +97,10 @@ model Project {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
-  mobileProjectId   String?
+  // R121: UNIQUE — ena mobilna kopija = EN projekt (replay/dvojni sync ne sme
+  // ustvariti dvojnika). Pred migracijo preverjeno: 0 duplikatov v produkciji.
+  // NULL vrednosti (ročno ustvarjeni projekti) so v PG dovoljene večkrat.
+  mobileProjectId   String? @unique
   originalImagePath String?
   geminiEstimate    String?
   latitude          Float?
@@ -304,13 +307,39 @@ enum DocumentType {
 model Document {
   id           String       @id @default(cuid())
   projectId    String
-  pdfUrl       String?
+  pdfUrl       String?  // ZASTARELO (R121): prej samo ime brez artefakta; nova dokumenta pišejo storageKey
+  storageKey   String?  // R121: object storage ključ PDF artefakta
+  sha256       String?  // R121: SHA-256 aktualne verzije (pravna integriteta)
   signatureUrl String?
   tipDokumenta DocumentType @default(TEHNICNI_LIST)
   status       String       @default("GENERIRANO")
   createdAt    DateTime     @default(now())
 
+  versions     DocumentVersion[]
   project      Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+// ============================================
+// 8a. R121 — VERZIJE DOKUMENTOV (pravi PDF artefakt v object storage)
+// ============================================
+// Kanonična pot: canonical data → renderer → PDF bytes → SHA-256 →
+// object storage → DocumentVersion. DB hrani SAMO metadata; bajti v
+// object storage (src/lib/object-storage.ts). Verzija se poveča ob vsaki
+// regeneraciji — prejšnje verzije ostajo (neizbrisna revizijska sled).
+model DocumentVersion {
+  id          String   @id @default(cuid())
+  documentId  String
+  version     Int      // 1, 2, 3 … znotraj dokumenta
+  storageKey  String   // ključ PDF v object storage
+  mime        String   @default("application/pdf")
+  sizeBytes   Int
+  sha256      String   // SHA-256 bajtov artefakta
+  createdAt   DateTime @default(now())
+
+  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, version])
+  @@index([documentId])
 }
 
 // ============================================
@@ -378,7 +407,12 @@ model ArSnapshot {
   id         String   @id @default(cuid())
   projectId  String
   profilId   String?
-  imageUrl   String   // base64 PNG (video frame + canvas overlay)
+  // R121: bajti v object storage; imageUrl = zapuščinska vrstica (backfill).
+  imageUrl   String?  // zapuščina: base64 PNG (video frame + canvas overlay)
+  storageKey String?
+  mime       String?
+  sizeBytes  Int?
+  sha256     String?
   tocke      String   // JSON: [{x,y,label}]
   meritve    String?  // JSON: [{a:{x,y}, b:{x,y}, dolzinaMm, oznaka}]
   kalibracija String? // JSON: {pixelsPerCm}
@@ -397,7 +431,12 @@ model Sketch {
   id         String   @id @default(cuid())
   projectId  String
   naziv      String
-  pngData    String   // base64 PNG
+  // R121: bajti v object storage; pngData = zapuščinska vrstica (backfill).
+  pngData    String?  // zapuščina: base64 PNG
+  storageKey String?
+  mime       String?
+  sizeBytes  Int?
+  sha256     String?
   povzetek   String?  // besedilni opis skice
   createdAt  DateTime @default(now())
 
@@ -415,8 +454,17 @@ model GalleryItem {
   naslov     String
   opis       String?
   lokacija   String?
-  slikaPred  String?  // base64 ali URL
-  slikaPo    String?  // base64 ali URL
+  // R121: bajti v object storage; slikaPred/slikaPo = zapuščinske vrstice (backfill).
+  slikaPred  String?  // zapuščina: base64 ali URL
+  slikaPo    String?  // zapuščina: base64 ali URL
+  slikaPredKey    String?
+  slikaPredMime   String?
+  slikaPredSize   Int?
+  slikaPredSha256 String?
+  slikaPoKey      String?
+  slikaPoMime     String?
+  slikaPoSize     Int?
+  slikaPoSha256   String?
   javno      Boolean  @default(false)
   createdAt  DateTime @default(now())
 
@@ -448,13 +496,21 @@ model ProjectPhoto {
   id          String   @id @default(cuid())
   projectId   String
   kategorija  String   // "PRED" | "MED" | "PO"
-  imageData   String   // base64 JPEG
+  // R121: bajti v object storage, DB samo metadata. imageData ostane SAMO za
+  // zapuščinske vrstice pred backfillom (tools/migrate-base64-to-storage.ts).
+  imageData   String?
+  storageKey  String?
+  mime        String?
+  sizeBytes   Int?
+  sha256      String?
   opomba      String?
   latitude    Float?
   longitude   Float?
   createdAt   DateTime @default(now())
 
   project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([storageKey])
 }
 
 // ============================================

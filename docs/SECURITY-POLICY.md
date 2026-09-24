@@ -68,6 +68,9 @@ poljubnim statusom, vplival na stranke). Je **namenski servisni principal**:
   prehodi prek statusnega stroja, audit v transakciji.
 - `api/photos` (R120) — zaprt cross-project IDOR: GET/POST = 'read' na projektu,
   DELETE = 'update'.
+- `api/sketches`, `api/ar-snapshots`, `api/gallery`, `api/documents` (R121) —
+  isti IDOR vzorec zaprt (prej samo avtentikacija!): GET/POST = 'read',
+  DELETE = 'update'; galerija zahteva guard samo, če ima `projectId`.
 
 ## Adversarial testi (vitest, `src/lib/__tests__/`)
 
@@ -85,9 +88,9 @@ poljubnim statusom, vplival na stranke). Je **namenski servisni principal**:
   nivoju modula; END-TO-END HTTP testi (pravi requesti čez strežnik) so del
   acceptance rund za preostale korake issue #4.
 - Portal (clientToken) ima lasten model dostopa (javna stranka) — ločena politika.
-- `mobileProjectId` še NIMA unique constrainta v bazi (preveriti je treba
-  obstoječe produkcije podatke na duplikate, preden se doda) — Route-level
-  dedup je rešen prek `findFirst`, duplikati znotraj ENEGA requesta pa gredo
-  vsak svojo pot (R121 kandidat).
+- `mobileProjectId`: UNIQUE constraint v bazi (R121, dodan po preverbi —
+  produkcija 0 duplikatov + lokalno 0). Route-level: `findUnique` + P2002
+  catch → idempotentna posodobitev (replay/vzporedni sync NE ustvari
+  dvojnika). Duplikati znotraj ENEGA requesta gredo vsak svojo pot.
 - Replay zaščita sync POST: trenutno idempotentna po `mobileProjectId`
   (isti payload = update istega zapisa); časovni žig / nonce NI implementiran.

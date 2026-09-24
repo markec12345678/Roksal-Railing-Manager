@@ -57,6 +57,9 @@ export const createMeasurementSchema = z.object({
 export const createDocumentSchema = z.object({
   projectId: z.string().min(1, 'ID projekta je obvezen'),
   tipDokumenta: z.enum(['TEHNICNI_LIST', 'PRIMOPREDAJA', 'E_RACUN', 'ZAPISNIK_NAVORA']),
+  // R121: opcijsko — pri obstoječem dokumentu ustvari NOVO verzijo (v2, v3 …);
+  // brez njega nastane nov dokument (v1).
+  documentId: z.string().min(1).optional(),
 })
 
 // ============================================

@@ -469,7 +469,8 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `InventoryMovement` | Premiki zaloge |
 | `StockLedger` | Transakcijski knjigovodski dogodki zaloge (balanceAfter, idempotencyKey) |
 | `NumberSequence` | Atomske številčne sekvence (računi, ponudbe) |
-| `Document` | Dokumenti (PDF, podpisi) |
+| `Document` | Dokumenti (pravi PDF artefakt v object storage, sha256, verzije) |
+| `DocumentVersion` | Verzije PDF artefaktov (storageKey/mime/size/sha256, neizbrisna sled) |
 | `AuditLog` | Revizijska sled (kdo/kaj/kdaj/IP, stara→nova vrednost) |
 | `Notification` | Obvestila uporabnikom |
 | `Profil` | Katalog profilov ograj (20 sejanih) |
@@ -490,9 +491,11 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `ApiKey` | API ključi (MOBILE_SYNC) — samo SHA-256 hash v bazi |
 | `VizProject` / `VizRenderJob` | Vizualizacijska plast (render jobi) |
 
-> Shramba slik/AR/skic/PDF je trenutno **base64/URL v bazi** (prototipska
-> prenosljivost). Produkcijska nadgradnja (object storage + `storageKey/mime/
-> size/sha256`) je planiran korak R121 — glej [`docs/SECURITY-POLICY.md`](docs/SECURITY-POLICY.md).
+> R121: bajti slik/AR/skic/PDF živijo v **object storage** (`files/…` — local
+> FS v dev, Vercel Blob v produkciji); DB hrani SAMO metadata
+> (`storageKey/mime/sizeBytes/sha256`). Dostop izključno skozi avtorizirano
+> ruto `GET /api/files/[…key]` (ETag = sha256). Arhitektura + restore drill:
+> [`docs/STORAGE.md`](docs/STORAGE.md).
 
 ---
 
@@ -693,8 +696,9 @@ Potrebne env spremenljivke na Vercelu: `DATABASE_URL` (postgres:// URL,
 - Baza: **PostgreSQL** (produkcija Neon; lokalno embedded PG 18 na :5433;
   brez `postgres://` URL-a sistem fail-closed — SQLite ni podprt od S+8.2)
 - Gesla: **scrypt** (N=16384, r=8, p=1) — bcrypt NI v uporabi
-- Slike/AR/skice: base64 v bazi (prototip) — object storage + hash/size
-  metadata = planiran korak R121
+- Slike/AR/skice/PDF: bajti v **object storage**, DB samo metadata — R121
+  DOKONČANO (`docs/STORAGE.md`); idempotentna migracija iz base64 =
+  `bun tools/migrate-base64-to-storage.ts --commit`
 - GPS: samo ob eksplicitni uporabnikovi privolitvi
 - Backup: `bun run backup` (pg_dump) + runbook v `docs/POSTGRES-MIGRATION.md`
 
