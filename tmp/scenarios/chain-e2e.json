@@ -1,0 +1,224 @@
+{
+  "base": "http://localhost:3000",
+  "at": "2026-09-24T15:53:14.462Z",
+  "chainHash": "0acf579fc491ffe4d715dfdb761476868f09879d43c9503287bf78fa40d6b0b4",
+  "hard": "32/32",
+  "checks": [
+    {
+      "step": "prijava demo ADMIN",
+      "ok": true,
+      "hard": true,
+      "detail": "HTTP 200, cookie=true"
+    },
+    {
+      "step": "anon POST /api/customers → 401",
+      "ok": true,
+      "hard": true,
+      "detail": "HTTP 401"
+    },
+    {
+      "step": "anon GET /api/projects → 401",
+      "ok": true,
+      "hard": true,
+      "detail": "HTTP 401"
+    },
+    {
+      "step": "POST /api/customers → 201",
+      "ok": true,
+      "hard": true,
+      "detail": "HTTP 201, id=cmufpo89i003ponq2k2w69v1z"
+    },
+    {
+      "step": "POST /api/projects → 201 (status NACRTOVANO)",
+      "ok": true,
+      "hard": true,
+      "detail": "HTTP 201, status=NACRTOVANO, id=cmufpo89v003sonq2rordk5k0"
+    },
+    {
+      "step": "registracija MONTER (za test stroja)",
+      "ok": true,
+      "hard": true,
+      "detail": "HTTP 200, userId=cmufpo8bb003wonq28euwg52i"
+    },
+    {
+      "step": "MONTER: PATCH NACRTOVANO→MONTIRANO → 409 (stroj velja prek API)",
+      "ok": true,
+      "hard": true,
+      "detail": "HTTP 409 (Neveljaven prehod statusa: NACRTOVANO → MONTIRANO (dovoljeni: V_TEKU, USTAVLJENO))"
+    },
+    {
+      "step": "MONTER: PATCH NACRTOVANO→V_TEKU → 200 (veljaven prehod dela)",
+      "ok": true,
+      "hard": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "step": "MONTER: PATCH V_TEKU→ZAKLJUCENO → 409 (stroj: ni veljaven prehod)",
+      "ok": true,
+      "hard": true,
+      "detail": "HTTP 409"
+    },
+    {
+      "step": "MONTER NE vidi ADMIN projekta (projectWhereForPrincipal prek API)",
+      "ok": true,
+      "hard": true,
+      "detail": "HTTP 200, vidi=1, admin projekt oddaljen=true"
+    },
+    {
+      "step": "POST /api/photos → 201",
+      "ok": true,
+      "hard": true,
+      "detail": "HTTP 201"
+    },
+    {
+      "step": "POST /api/measurement/detect → DETECTED (5 stebrov)",
+      "ok": true,
+      "hard": true,
+      "detail": "HTTP 200, state=DETECTED, posts=5, runs=1"
+    },
+    {
+      "step": "GET /api/measurement/products → katalog",
+      "ok": true,
+      "hard": true,
+      "detail": "HTTP 200, 8 izdelkov, izbran=roksal.woodcore.polna-128"
+    },
+    {
+      "step": "confirm (s referenco) → scale server-avtoritativno prisoten",
+      "ok": true,
+      "hard": true,
+      "detail": "HTTP 200, state=VERIFIED, scale=DA"
+    },
+    {
+      "step": "confirm v projekt brez izdelka → 201, takeoffPreview=null (brez izdelka ni BOM)",
+      "ok": true,
+      "hard": true,
+      "detail": "HTTP 201, saved=DA, takeoff=null"
+    },
+    {
+      "step": "confirm brez reference → SCALE_REQUIRED (nič izmišljenih mm)",
+      "ok": true,
+      "hard": true,
+      "detail": "state=SCALE_REQUIRED"
+    },
+    {
+      "step": "confirm (geometry + projectId) → shranjena meritev",
+      "ok": true,
+      "hard": true,
+      "detail": "HTTP 201, state=VERIFIED, savedId=cmufpo8nj004fonq2h3m5818m"
+    },
+    {
+      "step": "geometrija: total≈0.806×5000 mm, sledljiv izvor",
+      "ok": true,
+      "hard": true,
+      "detail": "total=4031.25 mm ±20.83, height=1593.75 mm, vir=detekcija (Hough runs × merilo iz user-known-measure)"
+    },
+    {
+      "step": "determinizem seje: 2× confirm = identičen JSON",
+      "ok": true,
+      "hard": true,
+      "detail": "session SHA-256 530579815f7eb5f1…"
+    },
+    {
+      "step": "PATCH NACRTOVANO→V_TEKU → 200",
+      "ok": true,
+      "hard": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "step": "POST /api/railing-layout → edges[0].fabricationLengthMm ≈ total",
+      "ok": true,
+      "hard": true,
+      "detail": "HTTP 200, fab=4031.25 mm vs meritev 4031.25 mm (Δ=0) "
+    },
+    {
+      "step": "POST /api/quote → postavke, runM ≈ meritev",
+      "ok": true,
+      "hard": true,
+      "detail": "HTTP 200, items=11, runM=4.03 vs 4.03125"
+    },
+    {
+      "step": "cena: seštevke konsistentne (materialTotal = Σ material; total = net + DDV)",
+      "ok": true,
+      "hard": true,
+      "detail": "material=1357.29, net=1624.44, DDV=357.38, total=1981.82 EUR"
+    },
+    {
+      "step": "determinizem ponudbe: 2× quote = identičen JSON",
+      "ok": true,
+      "hard": true,
+      "detail": "quote SHA-256 aee7f6f95e7a898c…"
+    },
+    {
+      "step": "POST /api/deal-lock → ZA_MONTAZO + bomDraft + 2 podpisa",
+      "ok": true,
+      "hard": true,
+      "detail": "HTTP 200, status=ZA_MONTAZO, bomDraft=DA, pdfHash=3d7578b450de…"
+    },
+    {
+      "step": "dvojni deal-lock → 409",
+      "ok": true,
+      "hard": true,
+      "detail": "HTTP 409"
+    },
+    {
+      "step": "GET /api/bom-draft → postavke iz zaklepa",
+      "ok": true,
+      "hard": true,
+      "detail": "HTTP 200, postavk=5"
+    },
+    {
+      "step": "GET /api/bom-refine → ujemanje z inventarjem (INFO)",
+      "ok": true,
+      "hard": false,
+      "detail": "HTTP 200, ujemenih=2/5 (INFO: cena je odvisna od inventarja)"
+    },
+    {
+      "step": "POST /api/documents → 201 (metadata; brez bajtov/hash = issue #7)",
+      "ok": true,
+      "hard": false,
+      "detail": "HTTP 201, pdfUrl=ZAPISNIK_NAVORA_cmufpo89v003sonq2rordk5k0_1790265194345.pdf"
+    },
+    {
+      "step": "PATCH → V_IZDELAVI",
+      "ok": true,
+      "hard": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "step": "PATCH → MONTIRANO",
+      "ok": true,
+      "hard": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "step": "PATCH → ZAKLJUCENO",
+      "ok": true,
+      "hard": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "step": "ADMIN: ZAKLJUCENO→V_TEKU = bypass (po zasnovi — INFO) + ponovni zaključek",
+      "ok": true,
+      "hard": false,
+      "detail": "HTTP 200 (upravitelj sme ponovno odpreti — unit testi pokrijejo stroj za ne-upravitelje)"
+    },
+    {
+      "step": "ADMIN: ponovni zaključek → ZAKLJUCENO",
+      "ok": true,
+      "hard": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "step": "GET /api/deal-lock → zaklenjeno, 2 podpisna revizijska zapisa",
+      "ok": true,
+      "hard": true,
+      "detail": "HTTP 200, podpisov=2"
+    },
+    {
+      "step": "GET /api/crm → zaklenjeni projekti ≥ 1",
+      "ok": true,
+      "hard": false,
+      "detail": "HTTP 200, zaklenjeni=1, LTV=1981.82 EUR (INFO: vrednost)"
+    }
+  ]
+}

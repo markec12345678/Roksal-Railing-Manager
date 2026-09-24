@@ -10,6 +10,8 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import crypto from 'crypto'
 import { authenticate, unauthorized } from '@/lib/auth'
+import { assertProjectAccess, AccessDeniedError } from '@/lib/access'
+import { auditInTx } from '@/lib/audit'
 
 interface DealLockRequest {
   projectId: string
@@ -45,6 +47,9 @@ export async function POST(request: Request) {
     if (!project) {
       return NextResponse.json({ error: 'Projekt ni najden' }, { status: 404 })
     }
+    // R120 vzorec: zaklep posla je poslovno kritično dejanje → 'update'
+    // (lastni monter/vodja ali upravitelj; servisni ključ ne zaklepa poslov).
+    assertProjectAccess(auth, project, 'update')
     if (project.dealLocked) {
       return NextResponse.json({ error: 'Deal je že zaklenjen', dealLockedAt: project.dealLockedAt }, { status: 409 })
     }
@@ -67,76 +72,87 @@ export async function POST(request: Request) {
     const materialCost = quoteData.skupajBrezDDV * 0.6 // 60% material, 40% marža + delo
     const marginLocked = quoteData.skupajBrezDDV - materialCost - (quoteData.skupajBrezDDV * 0.15) // 15% delo, 25% marža
 
-    // 3. Zakleni deal + posodobi status
-    const updatedProject = await db.project.update({
-      where: { id: projectId },
-      data: {
-        dealLocked: true,
-        dealLockedAt: new Date(),
-        dealSignedBy: customerName,
-        dealSignedByMonter: monterName,
-        dealSignatureIp: ipAddress,
-        dealSignatureDevice: userAgent,
-        bomDraftJson: bomJson,
-        marginLocked: Math.round(marginLocked * 100) / 100,
-        status: 'ZA_MONTAZO',
-        estimatedPrice: quoteData.skupajZDDV,
-      },
-    })
+    // Hash podpisanega dokumenta: prioriteta klientov pdfHash (resnična datoteka),
+    // sicer determinističen sintetični hash pogodbenih podatkov.
+    const pdfHash = body.pdfHash ||
+      crypto
+        .createHash('sha256')
+        .update(`${projectId}|${customerName}|${monterName}|${bomJson}`)
+        .digest('hex')
 
-    // 4. Ustvari SignatureAudit entries (oba podpisa)
-    const pdfHash = body.pdfHash || crypto
-      .createHash('sha256')
-      .update(`${projectId}|${customerName}|${monterName}|${Date.now()}`)
-      .digest('hex')
-
-    await db.signatureAudit.createMany({
-      data: [
-        {
-          projectId,
-          signatureType: 'CUSTOMER',
-          signedByName: customerName,
-          signedByRole: 'stranka',
-          signatureImage: customerSignature,
-          ipAddress,
-          userAgent,
-          deviceFingerprint,
-          geoLatitude: body.geoLatitude || null,
-          geoLongitude: body.geoLongitude || null,
-          pdfHash,
+    // 3–5. ATOMSKO: zaklep + podpisna revizija + audit v ENI transakciji.
+    // (Prej je bil update ločen od audit-a: padec audit-a je pustil zaklenjen
+    // projekt brez revizijskega vnosa in vrnil 500 — E2E veriga (issue #9)
+    // je to dokazala na živem strežniku.)
+    const actorId = auth.kind === 'user' ? auth.session.sub : null
+    const updatedProject = await db.$transaction(async (tx) => {
+      const updated = await tx.project.update({
+        where: { id: projectId },
+        data: {
+          dealLocked: true,
+          dealLockedAt: new Date(),
+          dealSignedBy: customerName,
+          dealSignedByMonter: monterName,
+          dealSignatureIp: ipAddress,
+          dealSignatureDevice: userAgent,
+          bomDraftJson: bomJson,
+          marginLocked: Math.round(marginLocked * 100) / 100,
+          status: 'ZA_MONTAZO',
+          estimatedPrice: quoteData.skupajZDDV,
         },
-        {
-          projectId,
-          signatureType: 'MONTER',
-          signedByName: monterName,
-          signedByRole: 'monter',
-          signatureImage: monterSignature,
-          ipAddress,
-          userAgent,
-          deviceFingerprint,
-          pdfHash,
-        },
-      ],
-    })
+      })
 
-    // 5. AuditLog
-    await db.auditLog.create({
-      data: {
-        userId: 'system',
+      await tx.signatureAudit.createMany({
+        data: [
+          {
+            projectId,
+            signatureType: 'CUSTOMER',
+            signedByName: customerName,
+            signedByRole: 'stranka',
+            signatureImage: customerSignature,
+            ipAddress,
+            userAgent,
+            deviceFingerprint,
+            geoLatitude: body.geoLatitude || null,
+            geoLongitude: body.geoLongitude || null,
+            pdfHash,
+          },
+          {
+            projectId,
+            signatureType: 'MONTER',
+            signedByName: monterName,
+            signedByRole: 'monter',
+            signatureImage: monterSignature,
+            ipAddress,
+            userAgent,
+            deviceFingerprint,
+            pdfHash,
+          },
+        ],
+      })
+
+      // userId = prijavljeni uporabnik (FK na Profile); servisni ključ → null.
+      await auditInTx(tx, {
+        request,
+        session: auth.kind === 'user' ? auth.session : null,
+        userId: actorId,
         projectId,
         akcija: 'DEAL_LOCKED',
-        newValue: JSON.stringify({
+        oldValue: { dealLocked: project.dealLocked, status: project.status },
+        newValue: {
           customerName,
           monterName,
           skupajZDDV: quoteData.skupajZDDV,
           marginLocked,
           bomItems: bomDraft.items.length,
           pdfHash,
-        }),
-        ipAddress,
-        userAgent,
-      },
+        },
+      })
+
+      return updated
     })
+
+    const signatureAuditCount = 2
 
     return NextResponse.json({
       success: true,
@@ -147,9 +163,12 @@ export async function POST(request: Request) {
       bomDraft,
       marginLocked: Math.round(marginLocked * 100) / 100,
       pdfHash,
-      signatureAuditCount: 2,
+      signatureAuditCount,
     })
   } catch (error) {
+    if (error instanceof AccessDeniedError) {
+      return NextResponse.json({ error: error.message }, { status: error.status })
+    }
     console.error('Deal Lock Error:', error)
     return NextResponse.json({ error: 'Napaka pri zaklepu deal-a' }, { status: 500 })
   }

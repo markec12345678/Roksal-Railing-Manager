@@ -16,6 +16,7 @@
     "test:watch": "vitest",
     "smoke": "python3 tools/security-smoke.py",
     "bench:measurement": "bun tools/measurement-benchmark.ts",
+    "verify:chain": "bun tools/chain-e2e.ts",
     "setup": "bash tools/setup.sh",
     "admin": "tsx tools/create-admin.ts",
     "apikey": "tsx tools/create-api-key.ts",
