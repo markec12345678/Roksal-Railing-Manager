@@ -1548,3 +1548,9 @@ Stage Summary:
 - BONUS: zaprti dve pukljavi (invoices + material-orders za servisne ključe) in usklajen proxy z dokumentirano pogodbo (measurement/confirm + photos zdaj dosegljivi ključem z ustreznimi scope-i).
 - Migracija se na produkciji (Neon) uporabi samodejno prek builda (migrate deploy) — brez ročnih posegov.
 - Ostanka: #7 Neon backfill --commit (lastnik — ukazi v issue #7 komentarju), #8 prave fotke + ročna sprejemba (lastnik); kandidati za naslednjo rundi iz #5: §4 offline queue (IndexedDB), §5 PWA/cache izolacija, §6 CSRF/Origin, §9 user lifecycle, §10 permission matrix.
+DODATEK R126 (CI + produkcija):
+- CI na 61d5d5a: "Tipi, testi, gradnja" SUCCESS · "Varnost (77 preverjanj)" SUCCESS (cancelled različica je bila supersedirana s poznejšim pushem — na HEAD spet SUCCESS). Vercel na 61d5d5a: SUCCESS → R126 koda ŽIVA v produkciji.
+- Vercel na docs commitu 0115be0: "Deployment rate limited — retry in 24h" (kvota, znana situacija kot pri a925bd1; docs commit vsebuje IZKLJUČNO dokumentacijo — nič runtime); se retriggera s naslednjim pushem.
+- PRODUKCIJA SPOT-CHECK (https://roksal-railing-manager.vercel.app): login 200 · anon sync 401 · napačen rkm_ 401 · auth sync 200 · auth projects 200 · auth invoices 200 (leak fix NI pokvaril legitimnih poti) · auth material-orders 200 · photos brez projectId 400 (ruta dosežena) · measurement/confirm {} 400 (ruta dosežena).
+- agent-browser produkcija: prijava → dashboard (Roksal Vizualizacija + TopBar) rendera, konzola čista.
+- Naslednja runda (kandidati iz #5): §4 offline queue IndexedDB, §5 PWA/cache izolacija, §6 CSRF/Origin, §9 user lifecycle, §10 permission matrix. Lastniška koraka ostajata: #7 Neon backfill --commit, #8 prave fotke.
