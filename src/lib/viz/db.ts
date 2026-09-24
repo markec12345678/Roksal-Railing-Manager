@@ -21,6 +21,9 @@
 import { createRequire } from 'node:module'
 import path from 'node:path'
 import type { PrismaClient } from '@prisma/client'
+// S+9: statični import čistega modula (brez stranskih učinkov) — ne sme
+// pasti skozi krhki dinamični import @/lib/db (glej zgodovino S+2).
+import { resolveDatabaseUrl, isSqliteUrl } from '@/lib/db-url'
 
 const projectRequire = createRequire(path.join(process.cwd(), 'package.json'))
 
@@ -57,18 +60,32 @@ export async function getVizDb(): Promise<PrismaClient> {
     // Na Vercelu je filesystem bralen — uporabi ISTO /tmp kopijo baze kot
     // glavni klient (src/lib/db.ts resolveServerlessDatabaseUrl). Brez tega bi
     // viz rute pisale v bralno bundled datoteko (SQLite error 14).
+    const resolvedUrl = resolveDatabaseUrl()
+    // /tmp kopija velja SAMO za prehodni SQLite način na Vercelu (stara pot —
+    // dinamični import je tu varno obdan s try/catch in ni kritičen).
     let serverlessUrl: string | null = null
-    try {
-      // Dinamični import (bundler razreši @/ alias); izpusti, če modul ni dosegljiv.
-      const main = (await import('@/lib/db')) as { resolveServerlessDatabaseUrl?: () => string | null }
-      serverlessUrl = main.resolveServerlessDatabaseUrl?.() ?? null
-    } catch {
-      serverlessUrl = null
+    if (isSqliteUrl(resolvedUrl)) {
+      try {
+        const main = (await import('@/lib/db')) as {
+          resolveServerlessDatabaseUrl?: () => string | null
+        }
+        serverlessUrl = main.resolveServerlessDatabaseUrl?.() ?? null
+      } catch {
+        serverlessUrl = null
+      }
     }
-    globalForVizDb.vizPrisma = new PrismaClient({
-      log: ['error'],
-      ...(serverlessUrl ? { datasources: { db: { url: serverlessUrl } } } : {}),
-    })
+    const ctorOptions: Record<string, unknown> = { log: ['error'] }
+    if (serverlessUrl) {
+      // Prehodni SQLite demo (/tmp kopija na Vercelu).
+      ;(ctorOptions as { datasourceUrl?: string }).datasourceUrl = serverlessUrl
+    } else if (resolvedUrl) {
+      // S+9: peskovnikov file: env senči .env — vsili razrešen URL
+      // (postgresql produkcija/dev; glej src/lib/db-url.ts).
+      ;(ctorOptions as { datasourceUrl?: string }).datasourceUrl = resolvedUrl
+    }
+    globalForVizDb.vizPrisma = new PrismaClient(
+      ctorOptions as unknown as Parameters<PrismaClientCtor>[0]
+    )
   }
   return globalForVizDb.vizPrisma
 }

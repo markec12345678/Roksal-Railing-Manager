@@ -1,12 +1,13 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { PrismaClient } from '@prisma/client'
+import { resolveDatabaseUrl, isSqliteUrl } from '@/lib/db-url'
 
 // Prisma client. V dev načinu ga cached-amo na globalThis, da preprečimo
 // odpiranje preveč povezav ob hot-reloadih. Ker ob spremembi sheme Prisma
 // regenerira engine binary, moramo v tem primeru ustvariti nov client.
 // `SCHEMA_VERSION` ročno dvignemo ob vsaki spremembi prisma/schema.prisma.
-const SCHEMA_VERSION = 'v2-portal-2026-09-r-survey-ral-viz-s2b'
+const SCHEMA_VERSION = 'v3-postgres-issue4-s9'
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
@@ -26,6 +27,11 @@ const globalForPrisma = globalThis as unknown as {
  * Izvoženo tudi za viz klienta (src/lib/viz/db.ts) — isti /tmp prototip.
  */
 export function resolveServerlessDatabaseUrl(): string | null {
+  // ISSUE #4: prehodni SQLite demo način — velja IZKLJUČNO, ko je razrešen
+  // URL `file:*` in tečemo na Vercelu. PostgreSQL pot (produkcija) te poti
+  // ne uporablja nikoli (docs/POSTGRES-MIGRATION.md).
+  const base = resolveDatabaseUrl()
+  if (!base || !isSqliteUrl(base)) return null // PostgreSQL pot ali brez URL-a
   const onVercel = process.env.VERCEL === '1' || Boolean(process.env.VERCEL_ENV)
   if (!onVercel) return null
 
@@ -55,6 +61,20 @@ export function resolveServerlessDatabaseUrl(): string | null {
 }
 
 const serverlessUrl = resolveServerlessDatabaseUrl()
+const resolvedUrl = resolveDatabaseUrl()
+if (!resolvedUrl) {
+  throw new Error(
+    '[db] DATABASE_URL ni razrešen — nastavi postgres:// URL v .env ali env.'
+  )
+}
+console.log(
+  '[db] vir:',
+  serverlessUrl
+    ? 'sqlite /tmp demo (PREHODNO)'
+    : isSqliteUrl(resolvedUrl)
+      ? 'sqlite (PREHODNI demo)'
+      : 'postgresql (produkcija)'
+)
 
 if (
   process.env.NODE_ENV !== 'production' &&
@@ -78,7 +98,7 @@ export const db =
   globalForPrisma.prisma ??
   new PrismaClient({
     log: ['query'],
-    ...(serverlessUrl ? { datasources: { db: { url: serverlessUrl } } } : {}),
+    datasourceUrl: serverlessUrl ?? resolvedUrl,
   })
 
 if (process.env.NODE_ENV !== 'production') {

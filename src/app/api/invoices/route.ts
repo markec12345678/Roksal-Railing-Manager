@@ -6,10 +6,22 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { z } from 'zod'
-import { authenticate, unauthorized } from '@/lib/auth'
+import { authenticate, unauthorized, forbidden } from '@/lib/auth'
+import { MANAGER_ROLES, hasRole } from '@/lib/auth'
+import type { SessionPayload } from '@/lib/session'
+import { allocateDocumentNumber, createWithNumber } from '@/lib/numbering'
+import { auditInTx, audit } from '@/lib/audit'
+import { actorIdOf } from '@/lib/access'
 
 const DDV_STOPLNJE = [22, 9.5, 0] as const
 const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100
+
+/** Uradni računi = samo vodstvo (ADMIN/VODJA); apikey = servisni dostop. */
+function denyUnlessManager(auth: import('@/lib/auth').AuthContext): NextResponse | null {
+  if (auth.kind === 'apikey') return null
+  if (hasRole(auth.session, MANAGER_ROLES)) return null
+  return forbidden('Računi so uradni dokumenti — dostop ima samo vodstvo.')
+}
 
 const postavkaSchema = z.object({
   opis: z.string().min(1, 'Opis postavke je obvezen').max(300),
@@ -64,19 +76,12 @@ function computeTotals(postavke: Array<{ kolicina: number; cenaNaEnoto: number; 
   return { osnova, ddv, znesek: round2(osnova + ddv) }
 }
 
-/** Zaporedna številka "2026-001" — šteje obstoječe račune istega leta (samo RACUN tipe). */
-async function nextStevilka(tip: string): Promise<string> {
-  const year = new Date().getFullYear()
-  // Predračuni in predplačilni računi imajo ločeno številčenje od računov
-  const prefix = tip === 'RACUN' ? '' : `${tip === 'PREDRACUN' ? 'PR' : 'PP'}-`
-  const base = `${year}-${prefix}`
-  const last = await db.invoice.findFirst({
-    where: { stevilka: { startsWith: base } },
-    orderBy: { stevilka: 'desc' },
-  })
-  const lastNum = last ? parseInt(last.stevilka.slice(base.length), 10) || 0 : 0
-  return `${base}${String(lastNum + 1).padStart(3, '0')}`
-}
+/**
+ * Številčenje (S+9, issue #4 §12): concurrency-safe prek NumberSequence
+ * (INSERT … ON CONFLICT … RETURNING v transakciji + retry na P2002, glej
+ * src/lib/numbering.ts). Oblika ostane združljiva: "2026-001" | "2026-PR-001".
+ * Stara nextStevilka (findFirst + 1) je bila tekmovalna — odstranjena.
+ */
 
 export async function GET(request: Request) {
   const auth = await authenticate(request)
@@ -84,6 +89,29 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const projectId = searchParams.get('projectId')
+
+    // Resource-level dostop (issue #4 §3): MONTER vidi samo račune svojih
+    // projektov; vodstvo/skladišče/apikey vse.
+    const isManager =
+      auth.kind === 'apikey' || hasRole(auth.session, MANAGER_ROLES) ||
+      hasRole(auth.session, ['SKLADISCE'])
+    if (!isManager && !projectId && auth.kind === 'user') {
+      const uid = auth.session.sub
+      const ownProjects = await db.project.findMany({
+        where: { OR: [{ monterId: uid }, { vodjaId: uid }] },
+        select: { id: true },
+      })
+      const invoices = await db.invoice.findMany({
+        where: { projectId: { in: ownProjects.map((p) => p.id) } },
+        include: {
+          project: {
+            select: { nazivProjekta: true, clientToken: true, customer: { select: { ime: true, naslov: true } } },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      })
+      return NextResponse.json(invoices)
+    }
 
     const invoices = await db.invoice.findMany({
       where: projectId ? { projectId } : undefined,
@@ -104,6 +132,10 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
+  // Uradni dokumenti = vodstvo (issue #4 §3 matrika).
+  const denied = await denyUnlessManager(auth)
+  if (denied) return denied
+  const actor = actorIdOf(auth)
   try {
     const body = await request.json()
     const validated = createInvoiceSchema.parse(body)
@@ -121,28 +153,39 @@ export async function POST(request: Request) {
     }
 
     const totals = computeTotals(validated.postavke)
-    const stevilka = await nextStevilka(validated.tip)
 
-    const invoice = await db.invoice.create({
-      data: {
+    // Concurrency-safe številčenje + audit v ENI transakciji (retry na P2002).
+    const invoice = await createWithNumber(validated.tip, async (tx, stevilka) => {
+      const created = await tx.invoice.create({
+        data: {
+          projectId: validated.projectId,
+          tip: validated.tip,
+          stevilka,
+          rokPlacilaDni: validated.rokPlacilaDni,
+          datumStoritve: validated.datumStoritve ? new Date(validated.datumStoritve) : null,
+          postavke: JSON.stringify(validated.postavke),
+          kupec: JSON.stringify({
+            ime: project.customer.ime,
+            naslov: project.customer.naslov,
+            telefon: project.customer.telefon,
+            email: project.customer.email,
+          }),
+          osnova: totals.osnova,
+          ddv: totals.ddv,
+          znesek: totals.znesek,
+          opombe: validated.opombe ?? null,
+          status: 'OSNUTEK',
+        },
+      })
+      await auditInTx(tx, {
+        request,
+        session: auth.kind === 'user' ? auth.session : null,
+        userId: actor,
         projectId: validated.projectId,
-        tip: validated.tip,
-        stevilka,
-        rokPlacilaDni: validated.rokPlacilaDni,
-        datumStoritve: validated.datumStoritve ? new Date(validated.datumStoritve) : null,
-        postavke: JSON.stringify(validated.postavke),
-        kupec: JSON.stringify({
-          ime: project.customer.ime,
-          naslov: project.customer.naslov,
-          telefon: project.customer.telefon,
-          email: project.customer.email,
-        }),
-        osnova: totals.osnova,
-        ddv: totals.ddv,
-        znesek: totals.znesek,
-        opombe: validated.opombe ?? null,
-        status: 'OSNUTEK',
-      },
+        akcija: 'INVOICE_CREATED',
+        newValue: { id: created.id, stevilka, tip: validated.tip, znesek: totals.znesek },
+      })
+      return created
     })
     return NextResponse.json(invoice, { status: 201 })
   } catch (error) {
@@ -157,6 +200,10 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
+  // Statusi (IZDAN/PLACAN/STORNIRAN) = finančno pomembni dejanji → vodstvo.
+  const denied = await denyUnlessManager(auth)
+  if (denied) return denied
+  const actor = actorIdOf(auth)
   try {
     const body = await request.json()
     const validated = updateInvoiceSchema.parse(body)
@@ -194,7 +241,22 @@ export async function PATCH(request: Request) {
       updateData.datumStoritve = data.datumStoritve ? new Date(data.datumStoritve) : null
     }
 
-    const invoice = await db.invoice.update({ where: { id }, data: updateData })
+    // Statusna sprememba = kritičen dogodek: update + audit v ISTI transakciji.
+    const invoice = data.status
+      ? await db.$transaction(async (tx) => {
+          const updated = await tx.invoice.update({ where: { id }, data: updateData })
+          await auditInTx(tx, {
+            request,
+            session: auth.kind === 'user' ? auth.session : null,
+            userId: actor,
+            projectId: existing.projectId,
+            akcija: 'INVOICE_STATUS',
+            oldValue: existing.status,
+            newValue: data.status,
+          })
+          return updated
+        })
+      : await db.invoice.update({ where: { id }, data: updateData })
     return NextResponse.json(invoice)
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -208,6 +270,9 @@ export async function PATCH(request: Request) {
 export async function DELETE(request: Request) {
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
+  // Brisanje računa = vodstvo.
+  const denied = await denyUnlessManager(auth)
+  if (denied) return denied
   try {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')

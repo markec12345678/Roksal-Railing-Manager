@@ -15,6 +15,10 @@
 import { db } from '@/lib/db'
 import { clientIp } from './rate-limit'
 import type { SessionPayload } from './session'
+import type { Prisma } from '@prisma/client'
+
+/** Transakcijski klient — za kritične dogodke (issue #4, §13). */
+export type AuditTx = Prisma.TransactionClient
 
 /** Največja dolžina posamezne vrednosti v dnevniku. */
 const MAX_VALUE_LENGTH = 4000
@@ -25,9 +29,8 @@ export interface AuditInput {
   /**
    * Neposredni ID uporabnika, kadar seje ni — npr. neuspešna prijava, kjer
    * poznamo profil (napačno geslo), a nimamo seje. Prednost pred `session.sub`.
-   * AuditLog.userId je obvezen tuji ključ, zato se dejanj brez znanega profila
-   * (npr. prijava z neobstoječim e-naslovom) ne da vpisati — ta gredo v dnevnik
-   * strežnika namesto v bazo.
+   * Null/izpuščeno = sistemski dogodek (AuditLog.userId je od S+9 nullable;
+   * prej je "system" string padal na FK constraint).
    */
   userId?: string | null
   /** Karkoli prepoznavnega: 'LOGIN', 'LOGIN_FAILED', 'QUOTE_CREATED', 'DEAL_LOCK' … */
@@ -50,11 +53,48 @@ function stringify(value: unknown): string | null {
   }
 }
 
+/**
+ * Vpis v AuditLog znotraj obstoječe transakcije — za pravno/finančno pomembne
+ * dogodke (prejem materiala, izdaja računa, deal-lock, sprememba statusa).
+ * NE požira napak: če audit pade, pade tudi poslovni dogodek (isti commit) —
+ * to je namerna durability garancija iz issue #4 §13. Klicatelj izbere:
+ *   auditAsync  → best-effort, necritični dogodki (prekini transakcijo NI moč)
+ *   auditInTx   → kritični dogodki, atomsko s poslom
+ */
+export async function auditInTx(tx: AuditTx, input: AuditInput): Promise<void> {
+  const userId = input.userId ?? input.session?.sub ?? null
+  await tx.auditLog.create({
+    data: {
+      userId,
+      projectId: input.projectId ?? null,
+      akcija: input.akcija,
+      oldValue: stringify(input.oldValue),
+      newValue: stringify(input.newValue),
+      ipAddress: input.request ? clientIp(input.request) : null,
+      userAgent: input.request?.headers.get('user-agent')?.slice(0, 300) ?? null,
+    },
+  })
+}
+
 /** Zapiše vnos v AuditLog. Nikoli ne vrže — dnevnik ne sme podreti posla. */
 export async function audit(input: AuditInput): Promise<void> {
   try {
-    const userId = input.userId ?? input.session?.sub
-    if (!userId) return // brez uporabnika ni komu pripisati dejanja
+    const userId = input.userId ?? input.session?.sub ?? null
+    if (!userId) {
+      // Sistemski dogodek brez uporabnika — vpši z userId null (schema S+9).
+      await db.auditLog.create({
+        data: {
+          userId: null,
+          projectId: input.projectId ?? null,
+          akcija: input.akcija,
+          oldValue: stringify(input.oldValue),
+          newValue: stringify(input.newValue),
+          ipAddress: input.request ? clientIp(input.request) : null,
+          userAgent: input.request?.headers.get('user-agent')?.slice(0, 300) ?? null,
+        },
+      })
+      return
+    }
     await db.auditLog.create({
       data: {
         userId,

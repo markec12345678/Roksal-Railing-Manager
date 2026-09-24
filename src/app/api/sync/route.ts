@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { createProjectSchema } from '@/lib/validations'
 import { authenticate, unauthorized } from '@/lib/auth'
+import { transitionAllowed } from '@/lib/project-state'
+import type { ProjectStatus } from '@prisma/client'
 
 // Avtentikacija: API ključ (mobilni klient) ali veljavna seja (brskalnik).
 //
@@ -37,10 +39,18 @@ export async function POST(request: Request) {
       })
 
       if (existingProject) {
+        // S+9 (issue #4, §14): mobilni klient NE sme preskočiti statusnega
+        // stroja — predlagani status se upošteva SAMO, če je prehod veljaven.
+        const proposed = mobileProject.status as string | undefined
+        const nextStatus: ProjectStatus =
+          proposed && proposed !== existingProject.status &&
+          transitionAllowed({ from: existingProject.status, to: proposed, principal: auth, dealLocked: existingProject.dealLocked })
+            ? (proposed as ProjectStatus)
+            : existingProject.status
         const updated = await db.project.update({
           where: { id: existingProject.id },
           data: {
-            status: mobileProject.status || existingProject.status,
+            status: nextStatus,
             opombe: mobileProject.extraNotes || existingProject.opombe,
             latitude: mobileProject.latitude ?? existingProject.latitude,
             longitude: mobileProject.longitude ?? existingProject.longitude,

@@ -1,16 +1,28 @@
-// Roksal Field - API: Projekti
+// Roksal Field - API: Projekti — S+9 (issue #4, §3 + §13 + §14)
+// GET: filtrirano po vlogi (MONTER vidi svoje, vodstvo/skladišče vse).
+// POST: ustvarjanje + audit v isti transakciji (brez ilegalnega userId 'system').
+// PATCH: resource-level dostop + ENOTEN statusni stroj (preprečuje preskoke).
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { createProjectSchema, updateProjectSchema } from '@/lib/validations'
 import { authenticate, unauthorized } from '@/lib/auth'
+import {
+  assertProjectAccess,
+  projectWhereForPrincipal,
+  actorIdOf,
+  AccessDeniedError,
+} from '@/lib/access'
+import { assertTransition, InvalidTransitionError } from '@/lib/project-state'
+import { auditInTx } from '@/lib/audit'
 
-// GET - Pridobi vse projekte s podatki o strankah in meritvah
+// GET - Pridobi projekte s podatki o strankah in meritvah (filtrirano po vlogi)
 export async function GET(request: Request) {
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
   try {
     const projects = await db.project.findMany({
+      where: projectWhereForPrincipal(auth),
       include: {
         customer: true,
         monter: { select: { id: true, ime: true, vloga: true } },
@@ -35,33 +47,37 @@ export async function POST(request: Request) {
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
+  const actor = actorIdOf(auth)
   try {
     const body = await request.json()
     const validated = createProjectSchema.parse(body)
 
-    const newProject = await db.project.create({
-      data: {
-        nazivProjekta: validated.nazivProjekta,
-        customerId: validated.customerId,
-        monterId: validated.monterId,
-        vodjaId: validated.vodjaId,
-        ekipaId: validated.ekipaId,
-        datumMontaze: validated.datumMontaze ? new Date(validated.datumMontaze) : null,
-        opombe: validated.opombe,
-      },
-      include: {
-        customer: true,
-        monter: { select: { id: true, ime: true } },
-      }
-    })
-
-    await db.auditLog.create({
-      data: {
-        userId: validated.monterId || validated.vodjaId || 'system',
-        projectId: newProject.id,
-        akcija: 'CREATE_PROJECT',
-        newValue: JSON.stringify({ nazivProjekta: validated.nazivProjekta }),
-      }
+    // Projekt + audit = ENA transakcija (issue #4, §13)
+    const newProject = await db.$transaction(async (tx) => {
+      const created = await tx.project.create({
+        data: {
+          nazivProjekta: validated.nazivProjekta,
+          customerId: validated.customerId,
+          monterId: validated.monterId,
+          vodjaId: validated.vodjaId,
+          ekipaId: validated.ekipaId,
+          datumMontaze: validated.datumMontaze ? new Date(validated.datumMontaze) : null,
+          opombe: validated.opombe,
+        },
+        include: {
+          customer: true,
+          monter: { select: { id: true, ime: true } },
+        }
+      })
+      await tx.auditLog.create({
+        data: {
+          userId: actor,
+          projectId: created.id,
+          akcija: 'CREATE_PROJECT',
+          newValue: JSON.stringify({ nazivProjekta: validated.nazivProjekta }),
+        }
+      })
+      return created
     })
 
     return NextResponse.json(newProject, { status: 201 })
@@ -79,6 +95,7 @@ export async function PATCH(request: Request) {
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
+  const actor = actorIdOf(auth)
   try {
     const body = await request.json()
     const { id, ...updateData } = body
@@ -89,6 +106,21 @@ export async function PATCH(request: Request) {
 
     const validated = updateProjectSchema.parse(updateData)
 
+    // Resource-level dostop (issue #4, §3): 404 ne obstaja, 403 tuj projekt.
+    const existing = await db.project.findUnique({ where: { id } })
+    if (!existing) throw new AccessDeniedError(404, 'Projekt ne obstaja')
+    assertProjectAccess(auth, existing, validated.status !== undefined ? 'changeStatus' : 'update')
+
+    // Statusni stroj (issue #4, §14) — prehod mora biti dovoljen.
+    if (validated.status !== undefined && validated.status !== existing.status) {
+      assertTransition({
+        from: existing.status,
+        to: validated.status,
+        principal: auth,
+        dealLocked: existing.dealLocked,
+      })
+    }
+
     // followUpDate prihaja kot ISO string — Prisma želi Date ali null
     const { followUpDate, followUpOpomba, ...rest } = validated
     const data: Record<string, unknown> = { ...rest }
@@ -98,44 +130,40 @@ export async function PATCH(request: Request) {
     }
     if (followUpOpomba !== undefined) data.followUpOpomba = followUpOpomba
 
-    // Stara vrednost statusa — za revijo sprememb (AuditLog)
-    const existing = await db.project.findUnique({
-      where: { id },
-      select: { status: true, nazivProjekta: true },
-    })
-    if (!existing) {
-      return NextResponse.json({ error: 'Projekt ne obstaja' }, { status: 404 })
-    }
+    const statusChanged = data.status !== undefined && data.status !== existing.status
 
-    const updated = await db.project.update({
-      where: { id },
-      data,
-      include: {
-        customer: true,
-        monter: { select: { id: true, ime: true } },
-      }
-    })
-
-    // SPREMEMBA STATUSA → revija (AuditLog), da vodja vidi kdo/kdaj je premaknil projekt
-    if (data.status !== undefined && data.status !== existing.status) {
-      try {
-        await db.auditLog.create({
+    // Update + (ob statusni spremembi) audit = ENA transakcija.
+    const updated = await db.$transaction(async (tx) => {
+      const result = await tx.project.update({
+        where: { id },
+        data,
+        include: {
+          customer: true,
+          monter: { select: { id: true, ime: true } },
+        }
+      })
+      if (statusChanged) {
+        await tx.auditLog.create({
           data: {
-            userId: auth.kind === 'user' ? auth.session.sub : 'system',
+            userId: actor,
             projectId: id,
             akcija: 'STATUS_SPREMENJEN',
             oldValue: existing.status,
             newValue: String(data.status),
           },
         })
-      } catch (auditError) {
-        // Revija ne sme pokvariti glavne operacije
-        console.error('Audit log (status) napaka:', auditError)
       }
-    }
+      return result
+    })
 
     return NextResponse.json(updated)
   } catch (error: unknown) {
+    if (error instanceof AccessDeniedError) {
+      return NextResponse.json({ error: error.message }, { status: error.status })
+    }
+    if (error instanceof InvalidTransitionError) {
+      return NextResponse.json({ error: error.message }, { status: error.status })
+    }
     if (error && typeof error === 'object' && 'issues' in error) {
       return NextResponse.json({ error: 'Neveljavni podatki', details: (error as { issues: unknown }).issues }, { status: 400 })
     }

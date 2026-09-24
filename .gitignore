@@ -84,3 +84,7 @@ evaluation/output/
 evaluation/**/__pycache__/
 .pytest_cache/
 tmp/roksal-research/
+
+# S+9 — embedded PostgreSQL (lokalni vir, nikoli v repo)
+.pgdata/
+.pg.log

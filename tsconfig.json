@@ -41,6 +41,9 @@
     "examples",
     "skills",
     "tests",
-    "mini-services"
+    "mini-services",
+    "tools",
+    "gpu-backend",
+    "evaluation"
   ]
 }

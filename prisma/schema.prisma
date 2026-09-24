@@ -1,11 +1,16 @@
-// Roksal Field v2.4 - SQLite Production Schema
+// Roksal Field v3.0 - PostgreSQL Production Schema (issue #4, korak 1)
+//
+// Prodajni vir podatkov je ZUNANJI TRAJNI PostgreSQL (Vercel Postgres / Neon).
+// SQLite je ostal samo kot prehoden demo način na Vercelu (prisma/build-prepare.cjs
+// generira sqlite varianto sheme IZKLJUČNO ko je DATABASE_URL `file:*`) —
+// odstrani se, takoj ko produkcijska baza obstaja (docs/POSTGRES-MIGRATION.md).
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -128,6 +133,7 @@ model Project {
   materials     MaterialUsage[]
   auditLogs     AuditLog[]
   inventoryMoves InventoryMovement[]
+  stockLedger    StockLedger[]
   arSnapshots   ArSnapshot[]
   sketches      Sketch[]
   slopes        Slope[]
@@ -176,6 +182,7 @@ model Inventory {
 
   usages          MaterialUsage[]
   movements       InventoryMovement[]
+  ledgerEntries   StockLedger[]
   prices          MaterialPrice[]
   orderItems      MaterialOrderItem[]
 }
@@ -220,6 +227,71 @@ model InventoryMovement {
 }
 
 // ============================================
+// 7b. IMMUTABLE STOCK LEDGER (issue #4, §4 — transakcijska zaloga)
+// ============================================
+// Vsaka sprememba zaloge = nespremenljiv dogodek s predznacenom deltami in
+// bilanco po premiku (balanceAfter). Dogodek IN sprememba balance sta V ISTI
+// DB transakciji (src/lib/inventory.ts) — balanca je vedno vsota dogodkov.
+// Idempotentnost prejema: unique `idempotencyKey` (npr. "receipt:<orderId>:<itemId>")
+// preprecuje dvojni prijem pri retry/double-click/webhook.
+enum StockLedgerEventType {
+  OPENING
+  PURCHASE
+  RECEIPT
+  RETURN
+  RESERVATION
+  RELEASE
+  ISSUE
+  WASTE
+  DAMAGE
+  ADJUSTMENT
+  PROJECT_ALLOCATION
+}
+
+model StockLedger {
+  id             String              @id @default(cuid())
+  inventoryId    String
+  eventType      StockLedgerEventType
+  /// Predznacena delta: pozitivno = prihod, negativno = odhod.
+  kolicina       Float
+  enota          String
+  /// Bilanca zaloge TAKOJ po tem dogodku (znotraj iste transakcije).
+  balanceAfter   Float
+  /// Referenca vira dogodka.
+  orderId        String?
+  orderItemId    String?
+  projectId      String?
+  /// Profile.id akterja (ali "system" za backfill/seed — ni FK, ker sistem nima uporabnika).
+  actorId        String?
+  /// Razlog/opomba (npr. "prejem naročila 2026-001", "fizična inventura").
+  reason         String?
+  /// Idempotency kljuc — unique. Npr. "receipt:<orderId>:<orderItemId>".
+  idempotencyKey String?             @unique
+  createdAt      DateTime            @default(now())
+
+  inventory Inventory @relation(fields: [inventoryId], references: [id])
+  project   Project?  @relation(fields: [projectId], references: [id])
+
+  @@index([inventoryId, createdAt])
+  @@index([eventType])
+  @@index([orderId])
+}
+
+// ============================================
+// 7c. SEKVENCA ŠTEVILKENJ (issue #4, §12 — concurrency-safe invoice numbering)
+// ============================================
+// Atomski povečevalnik za stevilke dokumentov ("RACUN:2026" → 1, 2, …).
+// Alokacija poteka z UPDATE ... RETURNING v transakciji (src/lib/numbering.ts),
+// unique constraint na Invoice.stevilka ostane zadnja linija obrambe.
+model NumberSequence {
+  id        String   @id @default(cuid())
+  /// Npr. "RACUN:2026", "PREDRACUN:2026".
+  seqKey    String   @unique
+  value     Int      @default(0)
+  updatedAt DateTime @updatedAt
+}
+
+// ============================================
 // 8. DOKUMENTI
 // ============================================
 
@@ -248,7 +320,9 @@ model Document {
 
 model AuditLog {
   id        String   @id @default(cuid())
-  userId    String
+  /// Null = sistemski dogodek (brez uporabnika). Prej je bil "system" string,
+  /// ki ni obstajal v Profile in je padal na FK constraint (issue #4, §13).
+  userId    String?
   projectId String?
   akcija    String
   oldValue  String?
@@ -257,7 +331,7 @@ model AuditLog {
   userAgent String?
   timestamp DateTime @default(now())
 
-  user    Profile  @relation(fields: [userId], references: [id])
+  user    Profile? @relation(fields: [userId], references: [id])
   project Project? @relation(fields: [projectId], references: [id])
 }
 

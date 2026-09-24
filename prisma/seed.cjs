@@ -211,7 +211,7 @@ async function main() {
     { sifra: 'EPDM-TESNILO', naziv: 'EPDM Tesnilo 10mm', tip: 'Alu_profil', zaloga: 300, enota: 'm', min: 100 },
   ]
   for (const item of inventoryItems) {
-    await db.inventory.upsert({
+    const created = await db.inventory.upsert({
       where: { sifraMateriala: item.sifra },
       update: {},
       create: {
@@ -223,6 +223,26 @@ async function main() {
         minimalnaZaloga: item.min,
       },
     })
+    // S+9 (issue #4 §4): ustanovitvena zaloga = OPENING ledger dogodek
+    // (idempotentno — samo ob prvem ustvarjanju artikla).
+    if (created && item.zaloga > 0) {
+      const opening = await db.stockLedger.findFirst({
+        where: { inventoryId: created.id, eventType: 'OPENING' },
+      })
+      if (!opening) {
+        await db.stockLedger.create({
+          data: {
+            inventoryId: created.id,
+            eventType: 'OPENING',
+            kolicina: item.zaloga,
+            enota: item.enota,
+            balanceAfter: item.zaloga,
+            actorId: 'system',
+            reason: 'Ustanovitvena zaloga (seed)',
+          },
+        })
+      }
+    }
   }
 
   // ── dokumenti ──

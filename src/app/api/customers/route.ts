@@ -2,7 +2,8 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { createCustomerSchema } from '@/lib/validations'
-import { authenticate, unauthorized } from '@/lib/auth'
+import { authenticate, unauthorized, forbidden } from '@/lib/auth'
+import { canManageCustomers, actorIdOf } from '@/lib/access'
 
 // GET - Pridobi vse stranke (opcionalno s search queryjem)
 export async function GET(request: Request) {
@@ -44,6 +45,10 @@ export async function POST(request: Request) {
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
+  // Stranke ustvarjajo/urejajo uporabniki na terenu; API ključ = servisno branje.
+  if (!canManageCustomers(auth)) {
+    return forbidden('Stranke ustvarjajo uporabniki (prijava), ne API ključi.')
+  }
   try {
     const body = await request.json()
     const validated = createCustomerSchema.parse(body)

@@ -7,7 +7,7 @@
   "license": "UNLICENSED",
   "scripts": {
     "dev": "next dev -p 3000 2>&1 | tee dev.log",
-    "build": "prisma generate && prisma db push --skip-generate && node prisma/seed.cjs && next build && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/",
+    "build": "node prisma/build-prepare.cjs && next build && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/",
     "start": "NODE_ENV=production bun .next/standalone/server.js 2>&1 | tee server.log",
     "lint": "eslint .",
     "check": "tsc --noEmit && vitest run",
@@ -19,10 +19,15 @@
     "admin": "tsx tools/create-admin.ts",
     "apikey": "tsx tools/create-api-key.ts",
     "backup": "tsx tools/backup-db.ts",
-    "db:push": "prisma db push",
+    "db:push": "bun tools/db.ts db push",
     "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev",
-    "db:reset": "prisma migrate reset"
+    "db:migrate": "bun tools/db.ts migrate deploy",
+    "db:reset": "bun tools/db.ts migrate reset",
+    "db:up": "bun tools/pg.ts start",
+    "db:down": "bun tools/pg.ts stop",
+    "db:deploy": "bun tools/db.ts migrate deploy",
+    "db:seed": "bun tools/db.ts seed",
+    "migrate:to-postgres": "bun tools/migrate-data-to-postgres.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -106,6 +111,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "bun-types": "^1.3.4",
+    "embedded-postgres": "^18.4.0-beta.17",
     "eslint": "^9",
     "eslint-config-next": "^16.1.1",
     "tailwindcss": "^4",

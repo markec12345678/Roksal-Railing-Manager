@@ -1,11 +1,26 @@
-// Roksal Field - API: Naročila materiala (V5)
-// Iz BOM draft → naročilo pri dobavitelju
+// Roksal Field - API: Naročila materiala (V5) — S+9 (issue #4, §4/§5/§7)
+// Iz BOM draft → naročilo pri dobavitelju.
+// Prejem (DOBLJENO) je IDEMPOTENTEN in transakcijski: status guard + ledger
+// dogodki + audit v ENI transakciji. Ponovljen request ne podvoji zaloge.
+// Statusni stroj naročila: OSNUTEK → POSLANO → POTRJENO → DOBLJENO;
+// PREKlicANO iz vseh stanj razen DOBLJENO.
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { authenticate, unauthorized } from '@/lib/auth'
+import { authenticate, unauthorized, forbidden } from '@/lib/auth'
 import { MANAGER_ROLES, denyUnless } from '@/lib/auth'
+import { receiveOrder, StockError } from '@/lib/inventory'
+import { auditInTx, audit } from '@/lib/audit'
+import { actorIdOf } from '@/lib/access'
 
-// GET — naročila (z option projectId)
+const ORDER_TRANSITIONS: Record<string, string[]> = {
+  OSNUTEK: ['POSLANO', 'POTRJENO', 'PREKlicANO'],
+  POSLANO: ['POTRJENO', 'DOBLJENO', 'PREKlicANO'],
+  POTRJENO: ['DOBLJENO', 'PREKlicANO'],
+  DOBLJENO: [],
+  PREKlicANO: [],
+}
+
+// GET — naročila (z option projectId). Branje: vsi poslovni principalci.
 export async function GET(request: Request) {
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
   const auth = await authenticate(request)
@@ -34,15 +49,15 @@ export async function GET(request: Request) {
   }
 }
 
-// POST — ustvari naročilo (iz BOM draft-a ali ročno)
+// POST — ustvari naročilo (iz BOM draft-a ali ročno) — samo vodstvo.
 export async function POST(request: Request) {
   // Spreminjanje cen, zalog, naročil in razporedov je vodstveno opravilo.
   // Monter bere (za delo na terenu), pisati pa ne sme.
   const denied = await denyUnless(request, MANAGER_ROLES)
   if (denied) return denied
-  // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
+  const actor = actorIdOf(auth)
   try {
     const body = await request.json()
     const { projectId, supplierId, items, opombe } = body as {
@@ -79,33 +94,35 @@ export async function POST(request: Request) {
 
     const skupajCena = orderItems.reduce((sum, i) => sum + i.cena * i.kolicina, 0)
 
-    // Ustvari naročilo s postavkami
-    const order = await db.materialOrder.create({
-      data: {
-        projectId: projectId || null,
-        supplierId,
-        skupajCena,
-        opombe: opombe || null,
-        status: 'OSNUTEK',
-        items: { create: orderItems },
-      },
-      include: {
-        supplier: true,
-        items: { include: { inventory: true } },
-      },
-    })
-
-    // AuditLog
-    if (projectId) {
-      await db.auditLog.create({
+    // Naročilo + audit = ENA transakcija (issue #4, §13)
+    const order = await db.$transaction(async (tx) => {
+      const created = await tx.materialOrder.create({
         data: {
-          userId: 'system',
-          projectId,
-          akcija: 'MATERIAL_ORDER_CREATED',
-          newValue: JSON.stringify({ orderId: order.id, supplierId, skupajCena, items: orderItems.length }),
+          projectId: projectId || null,
+          supplierId,
+          skupajCena,
+          opombe: opombe || null,
+          status: 'OSNUTEK',
+          items: { create: orderItems },
+        },
+        include: {
+          supplier: true,
+          items: { include: { inventory: true } },
         },
       })
-    }
+
+      if (projectId) {
+        await auditInTx(tx, {
+          request,
+          session: auth.kind === 'user' ? auth.session : null,
+          userId: actor,
+          projectId,
+          akcija: 'MATERIAL_ORDER_CREATED',
+          newValue: { orderId: created.id, supplierId, skupajCena, items: orderItems.length },
+        })
+      }
+      return created
+    })
 
     return NextResponse.json(order, { status: 201 })
   } catch (error) {
@@ -114,57 +131,82 @@ export async function POST(request: Request) {
   }
 }
 
-// PATCH — spremeni status naročila
+// PATCH — spremeni status naročila (statusni stroj + idempotenten prejem).
+// Pisati smejo vodstvo in skladišče (prejem je skladiščna operacija).
 export async function PATCH(request: Request) {
-  // Spreminjanje cen, zalog, naročil in razporedov je vodstveno opravilo.
-  // Monter bere (za delo na terenu), pisati pa ne sme.
-  const denied = await denyUnless(request, MANAGER_ROLES)
-  if (denied) return denied
-  // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
+  const actor = actorIdOf(auth)
+  const role = auth.kind === 'user' ? auth.session.vloga : null
+  const isManager =
+    auth.kind === 'apikey' || role === 'ADMIN' || role === 'VODJA'
+  if (!isManager && role !== 'SKLADISCE') {
+    return forbidden('Sprememba naročil je možnost vodstva ali skladišča.')
+  }
   try {
     const body = await request.json()
-    const { id, status, datumDobave } = body
+    const { id, status } = body as { id?: string; status?: string; datumDobave?: string }
 
     if (!id || !status) {
       return NextResponse.json({ error: 'id in status sta obvezna' }, { status: 400 })
     }
 
-    const validStatusi = ['OSNUTEK', 'POSLANO', 'POTRJENO', 'DOBLJENO', 'PREKlicANO']
-    if (!validStatusi.includes(status)) {
-      return NextResponse.json({ error: 'Neveljaven status' }, { status: 400 })
+    const existing = await db.materialOrder.findUnique({ where: { id } })
+    if (!existing) {
+      return NextResponse.json({ error: 'Naročilo ne obstaja' }, { status: 404 })
+    }
+
+    // Statusni stroj (issue #4, §7) — prehod mora biti dovoljen.
+    const allowed = ORDER_TRANSITIONS[existing.status] ?? []
+    if (status !== existing.status && !allowed.includes(status)) {
+      return NextResponse.json(
+        {
+          error: `Neveljaven prehod statusa: ${existing.status} → ${status} (dovoljeni: ${allowed.join(', ') || '—'})`,
+        },
+        { status: 409 }
+      )
+    }
+
+    // Prejem materiala — idempotentna transakcijska pot (issue #4, §5).
+    if (status === 'DOBLJENO') {
+      const result = await receiveOrder(id, actor)
+      const updated = await db.materialOrder.findUnique({
+        where: { id },
+        include: { supplier: true, items: { include: { inventory: true } } },
+      })
+      await audit({
+        request,
+        session: auth.kind === 'user' ? auth.session : null,
+        userId: actor,
+        projectId: existing.projectId,
+        akcija: result.alreadyReceived ? 'MATERIAL_RECEIPT_DUPLICATE' : 'MATERIAL_RECEIPT',
+        oldValue: existing.status,
+        newValue: 'DOBLJENO',
+      })
+      return NextResponse.json({ ...updated, alreadyReceived: result.alreadyReceived })
     }
 
     const updated = await db.materialOrder.update({
       where: { id },
-      data: {
-        status,
-        ...(datumDobave ? { datumDobave: new Date(datumDobave) } : {}),
-      },
+      data: { status },
       include: { supplier: true, items: true },
     })
 
-    // Če je status DOBLJENO — dodaj v zalogo
-    if (status === 'DOBLJENO') {
-      for (const item of updated.items) {
-        await db.inventory.update({
-          where: { id: item.inventoryId },
-          data: { kolicinaZaloga: { increment: item.kolicina } },
-        })
-        await db.inventoryMovement.create({
-          data: {
-            inventoryId: item.inventoryId,
-            kolicina: item.kolicina,
-            tipPremika: 'DOBAVA',
-            orderId: id,
-          },
-        })
-      }
-    }
+    await audit({
+      request,
+      session: auth.kind === 'user' ? auth.session : null,
+      userId: actor,
+      projectId: existing.projectId,
+      akcija: 'MATERIAL_ORDER_STATUS',
+      oldValue: existing.status,
+      newValue: status,
+    })
 
     return NextResponse.json(updated)
   } catch (error) {
+    if (error instanceof StockError) {
+      return NextResponse.json({ error: error.message }, { status: error.status })
+    }
     console.error('Material Orders PATCH Error:', error)
     return NextResponse.json({ error: 'Napaka pri posodabljanju naročila' }, { status: 500 })
   }
