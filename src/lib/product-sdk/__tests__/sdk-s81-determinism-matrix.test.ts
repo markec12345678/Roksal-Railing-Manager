@@ -284,11 +284,36 @@ describe('S+8.1 §15: adversarial matrika — barve', () => {
 
 // ───────────────────────── §17 AI TAKEOFF NI SDK ODVISNOST ─────────────────────────
 
-describe('S+8.1 §17: AI takeoff status — NI Product SDK odvisnosti', () => {
+describe('S+8.1 §17 (posodobljeno v issue #2): AI NI v merilni kritični poti', () => {
   const ROOT = process.cwd()
 
-  it('/api/ai-takeoff obstaja (ostane — issue #2 bo zamenjal), a NI del determinističnega SDK graf', () => {
-    expect(existsSync(join(ROOT, 'src/app/api/ai-takeoff/route.ts'))).toBe(true)
+  it('/api/ai-takeoff NE OBSTAJA več (issue #2: odstranjen, zamenjan z /api/measurement/*)', () => {
+    expect(existsSync(join(ROOT, 'src/app/api/ai-takeoff/route.ts'))).toBe(false)
+    expect(existsSync(join(ROOT, 'src/components/roksal/ai-takeoff.tsx'))).toBe(false)
+  })
+
+  it('/api/measurement rute ne uvozijo AI SDK (merilna kritična pot je deterministična)', () => {
+    const routes = [
+      'src/app/api/measurement/detect/route.ts',
+      'src/app/api/measurement/confirm/route.ts',
+      'src/app/api/measurement/products/route.ts',
+    ]
+    for (const route of routes) {
+      const src = readFileSync(join(ROOT, route), 'utf8')
+      for (const bad of ['z-ai-web-dev-sdk', 'createVision', 'chat.completions', 'VLM', 'ai-takeoff', 'ar/analyze']) {
+        expect({ route, token: bad, hit: src.includes(bad) }).toEqual({ route, token: bad, hit: false })
+      }
+    }
+  })
+
+  it('src/lib/measurement SDK ne uvozi AI SDK, omrežja ali nedeterminizma', () => {
+    const files = ['types.ts', 'cv.ts', 'detect.ts', 'scale.ts', 'engine.ts', 'geometry.ts', 'index.ts']
+    for (const f of files) {
+      const src = readFileSync(join(ROOT, 'src/lib/measurement', f), 'utf8')
+      for (const bad of ['z-ai-web-dev-sdk', 'createVision', 'chat.completions', 'VLM', 'Math.random', 'Date.now', 'randomUUID', 'randomBytes', 'fetch(', 'XMLHttpRequest']) {
+        expect({ file: f, token: bad, hit: src.includes(bad) }).toEqual({ file: f, token: bad, hit: false })
+      }
+    }
   })
 
   it('product-preview route ne uvozi AI SDK (import graf je čist)', () => {

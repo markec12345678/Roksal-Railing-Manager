@@ -35,12 +35,12 @@ const KORAKI: OnboardingStep[] = [
     akcija: { label: 'Odpri AR kamero', tab: 'ar' },
   },
   {
-    id: 'ai',
-    naslov: '2. AI Material Takeoff',
-    opis: 'V Več meni → AI Takeoff. Naloži sliko, AI zazna ograjo, izračuna material in ceno v 5 sekundah.',
+    id: 'measurement',
+    naslov: '2. Merilni studio',
+    opis: 'V Več meni → Merilni studio. Samodejna zaznava ograje ali ročno označevanje točk + znana mera → izračunane dimenzije (deterministično, brez AI).',
     ikona: Sparkles,
     barva: 'bg-purple-500',
-    akcija: { label: 'Odpri AI Takeoff', tab: 'ai' },
+    akcija: { label: 'Odpri merilni studio', tab: 'measurement' },
   },
   {
     id: 'meritve',

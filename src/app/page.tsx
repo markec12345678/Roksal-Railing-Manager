@@ -55,7 +55,7 @@ const PdfExport = dynamic(() => import('@/components/roksal/pdf-export').then((m
 const FloorPlanTab = dynamic(() => import('@/components/roksal/floor-plan-tab').then((m) => m.FloorPlanTab), { ssr: false, loading: () => <TabLoading /> })
 const MapMeasure = dynamic(() => import('@/components/roksal/map-measure').then((m) => m.MapMeasure), { ssr: false, loading: () => <TabLoading /> })
 const PunchList = dynamic(() => import('@/components/roksal/punch-list').then((m) => m.PunchList), { ssr: false, loading: () => <TabLoading /> })
-const AiTakeoff = dynamic(() => import('@/components/roksal/ai-takeoff').then((m) => m.AiTakeoff), { ssr: false, loading: () => <TabLoading /> })
+const MeasurementStudio = dynamic(() => import('@/components/roksal/measurement-studio').then((m) => m.MeasurementStudio), { ssr: false, loading: () => <TabLoading /> })
 const SignatureQuote = dynamic(() => import('@/components/roksal/signature-quote').then((m) => m.SignatureQuote), { ssr: false, loading: () => <TabLoading /> })
 const PostSignaturePanel = dynamic(() => import('@/components/roksal/post-signature-panel').then((m) => m.PostSignaturePanel), { ssr: false, loading: () => <TabLoading /> })
 const CrmTab = dynamic(() => import('@/components/roksal/crm-tab').then((m) => m.CrmTab), { ssr: false, loading: () => <TabLoading /> })
@@ -290,8 +290,8 @@ export default function Home() {
       ? 'Terenski pregled'
       : moreTab === 'vodja'
       ? 'Pregled za vodjo'
-      : moreTab === 'ai'
-      ? 'AI Takeoff'
+      : moreTab === 'measurement'
+      ? 'Merilni studio'
       : moreTab === 'signature'
         ? 'Ponudba s podpisom'
         : moreTab === 'postsig'
@@ -457,7 +457,7 @@ export default function Home() {
             <h2 className="mb-3 text-lg font-bold text-roksal-navy">{moreLabel}</h2>
             {moreTab === 'vodja' && <VodjaDashboard />}
             {moreTab === 'teren' && <SiteSurveyTab projectId={selectedProjectId} project={selectedProject} />}
-            {moreTab === 'ai' && <AiTakeoff projectId={selectedProjectId} />}
+            {moreTab === 'measurement' && <MeasurementStudio projectId={selectedProjectId} />}
             {moreTab === 'signature' && selectedProject && (
               <SignatureQuote
                 projectId={selectedProject.id}
@@ -549,7 +549,7 @@ export default function Home() {
 
       {activeTab !== 'viz' && (
       <OnboardingWrapper onNavigate={(tab) => {
-        if (tab === 'ai' || tab === 'signature' || tab === 'logistics') {
+        if (tab === 'measurement' || tab === 'signature' || tab === 'logistics') {
           setMoreTab(tab as MoreTabId)
           setActiveTab('more')
         } else {

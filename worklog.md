@@ -1314,3 +1314,30 @@ Stage Summary:
 - Issue #6 DOKONČANO IN ZAPRTO; Postgres prehod 100% (produkcija Neon, prehodna pot odstranjena, fail closed). Commit 67195a8 = nova osnovna linija.
 - Peskovnik okrevan: koda @ origin/main, PG daemon (pg_ctl), dev daemon (/home/z/dev-daemon.mjs — UPORABI ZA RESTART DEV STREŽNIKA!), 458/458 testov zeleno.
 - Naslednji kandidat: issue #2 — deterministični Measurement/CV SDK + ročna meritev (avtoritativno besedilo prebrano prek API; sledi audit + načrt).
+
+---
+Task ID: 2-b
+Agent: frontend-styling-expert
+Task: Measurement Studio UI (issue #2)
+
+Work Log:
+- Prebran worklog (zadnjih 80 vrstic) + kontrakti: src/lib/measurement/types.ts, api/measurement/detect/route.ts, api/measurement/confirm/route.ts, api/measurement/products/route.ts, lib/measurement/geometry.ts + engine.ts + scale.ts (oblike takeoffPreview/layout/stanj), vzorec stila iz components/roksal/ai-takeoff.tsx, fetch+toast vzorec iz photo-tab.tsx (1780-1850).
+- Ustvaril NOVO datoteko src/components/roksal/measurement-studio.tsx ('use client', 1630 vrstic) — komponenta MeasurementStudio({ projectId?: string | null }):
+  - VIR SLIKE: upload (file input → FileReader → canvas pomanjšanje na ≤1280 px → JPEG q 0.85) + kamera (getUserMedia facingMode environment, živi <video> predogled, gumb "Zajemi" → canvas → dataURL; ob napaki jasen fallback na upload + toast, BREZ crasha; stream sproščen ob unmountu in preklicu).
+  - DVA ZAVIHKI: "📷 Samodejno" | "✋ Ročno" (shadcn Tabs, min-h-44px touch targeti).
+  - SAMODEJNO: ob izbiri slike avtomatski POST /api/measurement/detect { imageData } (credentials:'include'); prikaz OVERLAY canvas-a natanko čez sliko (ResizeObserver + DPR skaliranje; normalizirane koordinate × prikazane dimenzije): runs = zelene horizontalne črte (yTop+yBottom), posts = modre vertikalne črtice, corners = oranžne točke; KAKOVOSTNA PLOŠČA z barvno kodiranim state Badge (INSUFFICIENT_DATA=rdeča, DETECTED/SCALE_REQUIRED/USER_REVIEW_REQUIRED=rumena, MEASUREMENT_READY=zalena, VERIFIED=zalena trda), vsemi 6 metrikami v % (edgeDensity, lineSupportTop/Bottom, lineCoverage, postSpacingConsistency, temporalStability + frames) in guidance seen/missing/nextAction; INSUFFICIENT_DATA → opozorilo + gumb "Preklopi na ročno meritev" (fail-safe).
+  - REFERENČNA MERA (skupna za oba načina): 2 klika na sliki → rdeča markerja + prekinjena črta + oznaka razdalje v % na canvasu; Input znana dolžina mm (min 1, decimalna vejica podprta) + Select vira mere (user-known-measure / roksal-marker / known-object); clientska validacija ≥ 2 % slike (usklajeno s scale.ts).
+  - IZRAČUNAJ MERITEV → POST /api/measurement/confirm: sessionId = crypto.randomUUID() ustvarjen ENKRAT ob mountu (useState initializer, z fallbackom); source 'automatic' (echo features+metrics iz detect) ALI 'manual' (manual:{path, top, posts?}); reference{p1,p2,knownMm,kind}; manualCorrections = št. klikov v ročnem načinu; confirmed:true; projectId ?? undefined; geometry{productId,orientation,gapMm,postWidthMm} SAMO če izbran izdelek. Odgovor { session, takeoffPreview, layout, savedMeasurementId }; 422 s session (SCALE_REQUIRED pri shranjevanju) se pravilno prikaže kot seansa.
+  - REZULTATNI PANEL (skupni ResultsSection za OBA načina): state badge, geometry=null → SCALE_REQUIRED kartica z guidance (pravilno vedenje, ne napaka), totalLengthMm (m + ± mm) in heightMm veliki številki, tabela segmentov (dolžina ± negotovost, startMm), postCount + postPositionsMm + konsistentnost, provenance besedila iz session.geometry.*.provenance + merilo (knownMm ↔ % slike, vir); takeoffPreview → "Predračun materiala (iz geometrija)" (boardCount, boardsTotalLinearM, postCount, cutList) + layout.warnings; savedMeasurementId → zelena sporočilo (role=status) + toast "Meritev shranjena v projekt".
+  - ROČNO: korak selektor (Referenca P1 → P2 → Spodnja linija 2..n → Zgornja linija enako → Stebri opcijsko) z avtomatskim napredovanjem, žive števce točk (badges), Razveljavi zadnjo točko / Počisti; točke rumene/rožate z zaporednimi številkami + vezne črte na istem overlay sistemu; validacija top.length === path.length pred izračunom.
+  - IZDELEK (opcijsko): GET /api/measurement/products ob mountu → Select izdelek (family · profile), Select orientacija (iz products[i].orientations, samodejna nastavitev ob izbiri), Input gapMm (default 30, clamp 0..200) + postWidthMm (default 60, clamp 10..200), hint z board.minGapMm/maxGapMm; brez izdelka → geometry ni poslan.
+  - STIL/DOSTOPNOST: ragranje na ai-takeoff vzorec (Card border-roksal-amber/30, text-roksal-navy naslovi, p-3/gap notranje plošče, amber CTA gumb); mobile-first (min-h-[44px] na vseh gumbih/inputs, klik na celotno sliko); aria-label na vseh gumbih/inputs, role="status" na sporočilih, alt besedilo, legenda barv overlayja; SAMO obstoječe shadcn/ui + React + lucide-react (ni novih paketov).
+  - VARNOST TIP: vse 3 rute lokalno tipizirane (DetectResponse, ConfirmResponse, ProductsResponse, ConfirmRequestBody, TakeoffPreview, ConfirmLayout, ProductDefinition); iz '@/lib/measurement' IZKLJUČNO type-only import.
+- Popravki med verifikacijo: mangled template literal (fr.) syntax napaka; odstranjena 2 nepotrebna eslint-disable direktiva; dodan cameraActive v ResizeObserver + draw efekta (overlay se pravilno obnovi po zajemu kamere).
+- VERIFIKACIJA: `bunx tsc --noEmit` = 0 napak; `bun run lint` = 0 napak/opozoril (celoten repo čist). page.tsx in bottom-nav.tsx NISNA spreminjana (orkestrator).
+
+Stage Summary:
+- Issue #2 UI plast DOKONČANA (task 2-b): Measurement Studio = deterministično merjenje brez AI z dvema načinoma (avtomatski CV overlay + ročne točke), obvezno referenčno mero (nič izmišljenih mm), opcijsko geometrijo izdelka za takeoffPreview, in trajnim shranjevanjem prek projectId. Kontrakt: <MeasurementStudio projectId={selectedProjectId} />.
+- Datoteka: src/components/roksal/measurement-studio.tsx (1630 vrstic, nova; edina spremenjena koda). tsc 0 · lint 0.
+- Za orkestratorja: vgrditi v page.tsx prek next/dynamic (ssr:false, TabLoading) namesto AiTakeoff (ai-takeoff.tsx bo izbrisan); props: { projectId: string | null }. Komponenta NE registrira zavihkov sama.
+---

@@ -27,7 +27,6 @@ import {
   ScanLine,
   ShieldCheck,
   Signature,
-  Sparkles,
   Sun,
   Truck,
   Users,
@@ -62,7 +61,7 @@ const MAIN_NAV: NavItem[] = [
 const MORE_NAV: NavItem[] = [
   { label: 'Pregled za vodjo', icon: LayoutDashboard, tab: 'more', more: 'vodja' },
   { label: 'Terenski pregled', icon: ClipboardList, tab: 'more', more: 'teren' },
-  { label: 'AI Takeoff', icon: Sparkles, tab: 'more', more: 'ai' },
+  { label: 'Merilni studio (brez AI)', icon: Ruler, tab: 'more', more: 'measurement' },
   { label: 'Ponudba s podpisom', icon: Signature, tab: 'more', more: 'signature' },
   { label: 'Post-Signature (V4.1)', icon: ClipboardList, tab: 'more', more: 'postsig' },
   { label: 'CRM stranke (V4.2)', icon: Users, tab: 'more', more: 'crm' },
