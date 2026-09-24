@@ -1467,3 +1467,29 @@ Stage Summary:
 - ISSUE #11 IZPOLNJEN (jedro): Scene Understanding samo za deterministično podprte tipe (ostali = ročno); PHOTO deluje; LIVE deluje z dokazljivim capability fallbackom; originalna slika nespremenjena (overlay ločen); brez ugibanja merila (strežniško iz reference); PWC asseti katalogizirani iz repozitorija (nič izmišljenega); determinističen placement s katalog pravili; invalid placement ne pride v BOM; PHOTO/LIVE = isti core; real-field validation harness pripravljen (fotke čakajo lastnika); performance izmerjen; varnost (auth na novih rutah, brez nove storage površine, audit prek obstoječega confirm).
 - R122 ZAKLJUČEN: podpisi v object storage (write-through + kompenzacija + serving + hydration), GC orodje dokazano, migracija na dev; NEON BACKFILL ostaja LASTNIŠKI KORAK (connection string je namenoma samo v Vercel env — higiena S+8.2; ukaz: DATABASE_URL="<Neon URL>" bun tools/migrate-base64-to-storage.ts --commit, DRY RUN najprej).
 - OSTANKO: (1) Neon backfill --commit (lastnik), (2) #8 prave fotke + ročna sprejemba, (3) Vercel deploy na a925bd1 (kvota; retrigger prek naslednjega pusha), (4) reactStrictMode sinh baton (dev-only), (5) pravi WebXR tracking ostane v AR skenerju (CV Studio ima iskren 2D fallback).
+---
+Task ID: NEON-INV (owner Neon API key — inventarizacija, backfill priprava, produkcija verifikacija)
+Agent: Z.ai Code (glavni orkestrator)
+Task: Owner je dostavil Neon API key ("ne povozi kaj, samo na istem projektu delaj, ker mam več projektov tam"). Cilj: izvesti Neon backfill (R121/R122 --commit) nad produkcijo; medtem dokazati, da issues #10/#11 CV Studio živita v produkciji.
+
+Work Log:
+- PREBRAN worklog + HEAD 286d90d: issues #10/#11 + R122 (GC orodje + signatureImage) ŽE IZVEDENI v prejšnji rundi (commit a925bd1). Ostal je Neon backfill (lastniški korak), #8 fotke (blokirano), Vercel deploy retrigger.
+- NEON API (SAMO GET — nič pisanja, nič brisanja, upoštevana direktiva "ne povozi"): API key je org-scoped. Orga: org-calm-dust-24493128 (Vercel-managed) + org-sparkling-moon-70517348 (osebni). Skupaj 5 projektov / 7 databaz — VSE preverjene z read-only SQL (information_schema):
+  · morning-lab-27392732 "neon-coquelicot-mountain" (Vercel-managed): neondb = moto app (50 tabel: Route/Ride/Trip/lean_angle_sessions…), agentflow_pro_dev = AI agent app (Agent/WorkflowCheckpoint…) → NI Roksal.
+  · delicate-cherry-55249833 "markec" (osebni, branch "production"): neondb = 6 tabel (Analytics/Comment/Notification/Project/RailingModel/User), Project=0 vrstic → STARI railing prototip, NE produkcija (brez ProjectPhoto/storageKey kolon → app bi padel).
+  · withered-wind-52521930 "griblje-museum": muzej (Exhibit/StoryItem…). billowing-poetry-40620976 "discover-slovenia-ai": turizem. nameless-cell-83770448 "lovable": Lovable platforma.
+  SKLEP (fail-closed): Neon produkcija Roksal NI v tem računu → backfill --commit NI bil pognan proti nobeni bazi (pravilno: orodje bi brez Roksal tabel sicer le fail-closed padel, a dokaz je bistven — connection string je po S+8.2 higieni NAMENOMA samo v Vercel env).
+- ZAČASNE credential datoteke (/tmp/conn-*.json) takoj pobrisane; v dev.log nič; v git nič.
+- PRODUKCIJA VERIFIKACIJA (https://roksal-railing-manager.vercel.app, po uspešnem deployu HEAD 286d90d — GitHub status checks: Vercel=success na a925bd1 IN 286d90d → kvota rešena, ostanek (3) iz prejšnje runde IZPOLNJEN):
+  · ANON /api/vision/scene → 401, ANON /api/vision/placement → 401 (auth guard živ),
+  · AUTH scene z praznim telesom → 400 (zod politika), /api/sync GET → 200, /api/projects → 200 (3 projekti),
+  · /api/signature-audit → 200 (R122 ruta ŽIVA v produkciji), /api/documents → 200.
+  → issues #10/#11 CV Studio + R122 signature storage so POTRJENO ŽIVI v produkciji.
+- BACKFILL NAVODILA (ostaja lastniški korak; dve varianti):
+  (A) Lastnik poženi lokalno: `DATABASE_URL="<Neon URL iz Vercel env>" BLOB_READ_WRITE_TOKEN="<Vercel Blob token>" bun tools/migrate-base64-to-storage.ts` (dry-run) → nato z `--commit`. ORODJE je idempotentno, fail-closed, s kompenzacijo.
+  (B) Lastnik poda Vercel token (rober…@gmail.com account) → agent prebere DATABASE_URL + BLOB_READ_WRITE_TOKEN iz env roksal-railing-manager in izvede dry-run → poročilo → --commit po lastnikovem odobrenju. NEON API key za to NE ZADOSTUJE (produkcija ni v tem računu).
+
+Stage Summary:
+- Neon račun (key napi_4ebs…) POPOLNOMAPORIZAN: 5 projektov, noben NI Roksal produkcija — nič ni bilo spremenjeno/izbrisano (vse operacije GET/SELECT).
+- Produkcija na HEAD 286d90d: Vercel=success; CV Studio (#10/#11) + R122 + sync varnost živi; 3 projekti v DB.
+- Neon backfill ostaja edini realen lastniški korak za zaključek R121/R122 na EXISTING podatkih; točen ukaz dokumentiran tu in v issue #7 komentarju.
