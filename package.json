@@ -29,7 +29,10 @@
     "db:down": "bun tools/pg.ts stop",
     "db:deploy": "bun tools/db.ts migrate deploy",
     "db:seed": "bun tools/db.ts seed",
-    "migrate:to-postgres": "bun tools/migrate-data-to-postgres.ts"
+    "migrate:to-postgres": "bun tools/migrate-data-to-postgres.ts",
+    "bench:vision": "bun tools/vision-benchmark.ts",
+    "gc:storage": "bun tools/storage-gc.ts",
+    "pwc:assets": "bun tools/pwc-asset-report.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

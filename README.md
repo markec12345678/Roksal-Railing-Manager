@@ -47,6 +47,11 @@
 - 📐 **Deterministični Merilni studio** — foto → samodejna CV zaznava (Sobel + Hough,
   **brez AI**) ali ročne točke → obvezno referenčno merilo → izmerjena geometrija
   z izvorom + negotovostjo. AI NIKOLI ni vir resnice (glej [`docs/MEASUREMENT.md`](docs/MEASUREMENT.md)).
+- 🔭 **CV Studio (nov, issues #10/#11)** — samostojen scene understanding + PWC
+  postavitev: PHOTO/LIVE način, zaznave (pas/stebri/rob/stopnice/ovire) kot
+  POPRAVLJIVI predlogi, capability-based AR abstrakcija, deterministični
+  placement iz Product SDK + fence-engine. CV = predlog, Measurement/Geometry =
+  vir resnice (glej [`docs/CV-STUDIO.md`](docs/CV-STUDIO.md) + [`docs/PWC-ASSETS.md`](docs/PWC-ASSETS.md)).
 - 🏛️ **En vir geometrijske resnice** — Meritev → fence-engine / railing-layout →
   BOM → ponudba; vsaka plast je funkcija prejšnje (kanonična veriga je testirana,
   `src/lib/__tests__/canonical-chain.test.ts`).
@@ -216,6 +221,28 @@ Naslednja generacija merjenja (issue #2, [`docs/MEASUREMENT.md`](docs/MEASUREMEN
 > V AR kameri in Merilnem studiu obstajata tudi dve AI (VLM) **sugestivni**
 > orodji (`/api/ar/analyze`, `/api/measure/photo`) — njuna ocena je IZRECNO
 > samo predlog za uporabnika in NIKOLI ni vir geometrije/BOM/cene.
+
+### 🔭 CV Studio (Več → CV Studio) — scene understanding + PWC postavitev (brez AI)
+
+Samostojen CV modul (issues #10 + #11, [`docs/CV-STUDIO.md`](docs/CV-STUDIO.md)):
+
+- **PHOTO način** — upload/kamera → deterministična analiza prizora
+  (`POST /api/vision/scene`): pas ograje, balkonni rob, stebri, stopniščne
+  družine, ovire — vse kot SPREJMLJIVI/ZAVRLJIVI/VLECLJIVI predlogi;
+  površine (FLOOR/WALL/DOOR/…) so izključno ročna označba (CV jih ne simulira).
+- **LIVE način** — zadnja kamera, 2D CV predogled (throttled analiza, zadnji
+  rezultat stabilen), zajem kadra → PHOTO; capability-based (brez WebXR =
+  iskren frame-relative fallback, brez fake 3D).
+- **ROČNO** — popoln fail-safe brez CV (CV neuspeh ne blokira projekta).
+- **PWC Placement** — produkt iz realnega kataloga (8 profilov,
+  [`docs/PWC-ASSETS.md`](docs/PWC-ASSETS.md)) → strežnik-avtoritativna ocena
+  (`/api/vision/placement`): katalog pravila razmakov/stebrov, layout iz
+  fence-engine; **invalid → razlog, brez layouta, brez BOM-a**. Projekcija:
+  homografija (4 kotniki) ali iskren 2D približek z opozorilom.
+- **Kanonična veriga ostane** — zapis meritve izključno prek
+  `/api/measurement/confirm`; CV brez potrditve ne spremeni resnice.
+- Determinizem: enaka slika → enak `sessionId` + bajtno enak odgovor (test 100×).
+- Realne fotografije (#8): `bun run bench:vision` — poročilo za ročno sprejembo.
 
 ### 🧭 6. Nagib (Inclinometer)
 

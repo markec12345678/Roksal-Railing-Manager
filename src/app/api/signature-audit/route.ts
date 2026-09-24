@@ -1,8 +1,13 @@
 // Roksal Field - API: Signature Audit (V4.1)
 // GET /api/signature-audit?projectId=X — pridobi audit trail podpisov za projekt
+// R122: podpisi živijo v object storage (R121 vzorec) — meta seznam vrača
+// signatureUrl (/api/files/… proxy), "full" branje hidrira data URI iz
+// storage (zapuščinski base6 zapisi ostanejo branljivi).
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { authenticate, unauthorized } from '@/lib/auth'
+import { assertProjectAccess, AccessDeniedError } from '@/lib/access'
+import { getObject, objectUrlFor } from '@/lib/object-storage'
 
 export async function GET(request: Request) {
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
@@ -25,13 +30,15 @@ export async function GET(request: Request) {
       },
     })
 
-    // Ne vračaj signatureImage v seznamu (preveliko) — samo metadata
+    // Ne vračaj signatureImage v seznamu (preveliko) — samo metadata + URL.
     const auditsMeta = audits.map((a) => ({
       id: a.id,
       signatureType: a.signatureType,
       signedByName: a.signedByName,
       signedByRole: a.signedByRole,
-      hasSignature: !!a.signatureImage,
+      hasSignature: !!(a.signatureImage || a.storageKey),
+      signatureUrl: a.storageKey ? objectUrlFor(a.storageKey) : null,
+      storageMode: a.storageKey ? 'object-storage' : a.signatureImage ? 'legacy-base64' : 'none',
       ipAddress: a.ipAddress,
       userAgent: a.userAgent,
       deviceFingerprint: a.deviceFingerprint,
@@ -74,8 +81,30 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Audit entry ni najden' }, { status: 404 })
     }
 
-    return NextResponse.json(audit)
+    // R122: avtorizacija — podpis je projektni vir (isti pristop kot /api/files).
+    const project = await db.project.findUnique({
+      where: { id: audit.projectId },
+      select: { id: true, monterId: true, vodjaId: true, dealLocked: true },
+    })
+    assertProjectAccess(auth, project, 'read')
+
+    // Hidratacija: object storage → data URI; zapuščinski base6 ostane.
+    let signatureData: string | null = audit.signatureImage
+    let storageMissing = false
+    if (!signatureData && audit.storageKey) {
+      const bytes = await getObject(audit.storageKey)
+      if (bytes) {
+        signatureData = `data:${audit.mime ?? 'image/png'};base64,${bytes.toString('base64')}`
+      } else {
+        storageMissing = true // iskreno: ne fabriciraj slike
+      }
+    }
+
+    return NextResponse.json({ ...audit, signatureImage: signatureData, storageMissing })
   } catch (error) {
+    if (error instanceof AccessDeniedError) {
+      return NextResponse.json({ error: error.message }, { status: error.status })
+    }
     console.error('Signature Audit POST Error:', error)
     return NextResponse.json({ error: 'Napaka' }, { status: 500 })
   }

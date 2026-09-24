@@ -523,7 +523,11 @@ model SignatureAudit {
   signatureType   String   // "CUSTOMER" | "MONTER"
   signedByName    String   // ime podpisnika
   signedByRole    String?  // "stranka" | "monter" | "vodja"
-  signatureImage  String   // base64 PNG podpisa
+  signatureImage  String?  // ZASTARELO: base64 PNG (R122: migrirano v object storage; ostane za stare zapise)
+  storageKey      String?  // R121 vzorec: files/signatures/<id>/podpis.png (bajti izven baze)
+  mime            String?
+  sizeBytes       Int?
+  sha256          String?  // SHA-256 bajtov (integriteta)
   ipAddress       String?
   userAgent       String?
   deviceFingerprint String? // poenostavljen fingerprint (IP + UA hash)
@@ -538,6 +542,7 @@ model SignatureAudit {
 
   @@index([projectId])
   @@index([createdAt])
+  @@index([storageKey])
 }
 
 // ============================================

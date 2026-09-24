@@ -133,13 +133,23 @@ promotion brancha v glavno bazo. Isti orodje, isti zakoni.
 
 ## 8. Kaj še NIMA pokritja (iskreno)
 
-- `SignatureAudit.signatureImage` (base64 podpis) še vedno v DB — majhni PNG
-  (~10 kB), nizka frekvenca; preseliti ob istem vzorcu, ko bo potrebno.
+- ~~`SignatureAudit.signatureImage` v DB~~ → **REŠENO (R122)**: podpisi živijo
+  v object storage (`files/signatures/<id>/podpis.<ext>`, metadata-only DB,
+  write-through s kompenzacijo v deal-lock rutи, serving/serving-pravice prek
+  `/api/files` + `assertProjectAccess('read')`, hidratacija prek
+  `/api/signature-audit?id=…&full=true`; zapuščinski base64 zapisi ostanejo
+  branljivi, migracija idempotentna v `tools/migrate-base64-to-storage.ts`).
 - `Document.signatureUrl` / `Project.originalImagePath` / `geminiEstimate` —
   zapuščinska polja, brez bajtov v uporabi (URL/ime).
-- Brisanje projektov kaskadno briše vrstice, a artefakte iz object storage
-  brisalec projektov (za zdaj) ne — GC orodje je naslednji kandidat
-  (kot viz gc.ts).
-- Vercel Blob driver je enak vzorc kot viz (produkcija S+3/S+4 dokazana), a
-  za glavno aplikacijo še ni pognan na živem deployu — prvi deploy z
-  `BLOB_READ_WRITE_TOKEN` preveriti z drillom na produkciji.
+- ~~GC za artefakte pobrisanih projektov~~ → **REŠENO (R122)**:
+  `bun run gc:storage` (`tools/storage-gc.ts`) — zbere veljavne ključe iz DB
+  (photos/sketches/ar/gallery/documents+versions/signatures), izpiše shrambo
+  (`listObjects`, local walk | blob list), SIROTE izbriše z `--commit`
+  (samo whitelist `files/<resource>/…`; ključi `viz/…` so nedosegljivi),
+  MANJKAJOČE artefakte samo integritetno poroča. DRY RUN privzeto.
+- Vercel Blob driver je enak vzorc kot viz (produkcija S+3/S+4 dokazana tudi
+  za glavno aplikacijo v R121 produkciskem E2E — foto POST/serving/DELETE).
+- Neon backfill nad EXISTING podatki (`migrate-base64-to-storage --commit` z
+  Neon URL) je lastniški korak — connection string je namenoma shranjen samo
+  v Vercel env (higiena S+8.2; v repozitoriju ni in ne bo).
+

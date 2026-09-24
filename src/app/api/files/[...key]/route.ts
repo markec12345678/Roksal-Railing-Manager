@@ -88,6 +88,19 @@ export async function GET(
         knownSha256 = row.sha256
         break
       }
+      case 'signatures': {
+        // R122: podpisi (SignatureAudit) so po R121 vzorcu preseljeni iz
+        // base64 v DB v object storage — serving z enakim pravilom dostopa
+        // kot ostali projektni viri (pravno občutljivo: samo 'read').
+        const row = await db.signatureAudit.findUnique({
+          where: { id: parsed.id },
+          select: { projectId: true, sha256: true },
+        })
+        if (!row) return NextResponse.json({ error: 'Podpis ne obstaja' }, { status: 404 })
+        projectId = row.projectId
+        knownSha256 = row.sha256
+        break
+      }
     }
 
     if (projectId) {

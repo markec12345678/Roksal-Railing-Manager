@@ -12,6 +12,13 @@ import crypto from 'crypto'
 import { authenticate, unauthorized } from '@/lib/auth'
 import { assertProjectAccess, AccessDeniedError } from '@/lib/access'
 import { auditInTx } from '@/lib/audit'
+import {
+  deleteObject,
+  extensionForMime,
+  objectKey,
+  parseDataUri,
+  putObject,
+} from '@/lib/object-storage'
 
 interface DealLockRequest {
   projectId: string
@@ -85,7 +92,44 @@ export async function POST(request: Request) {
     // projekt brez revizijskega vnosa in vrnil 500 — E2E veriga (issue #9)
     // je to dokazala na živem strežniku.)
     const actorId = auth.kind === 'user' ? auth.session.sub : null
-    const updatedProject = await db.$transaction(async (tx) => {
+
+    // R122 — podpisi v object storage (isti vzorec kot photos R121):
+    //   bajti (data URI) → putObject ŠE PRE transakcije → v tx SE ZAPIŠE
+    //   SAMO metadata (storageKey/mime/sizeBytes/sha256, signatureImage=null)
+    //   → ob padcu transakcije kompenzacija deleteObject (0 sirot).
+    //   Fail-closed: neveljaven/neobvladljiv podpis = 400, NI tišega "samo DB".
+    const MAX_SIGNATURE_BYTES = 2 * 1024 * 1024 // 2 MB na podpis (PNG poteza)
+    const customerParsed = parseDataUri(customerSignature, MAX_SIGNATURE_BYTES)
+    const monterParsed = parseDataUri(monterSignature, MAX_SIGNATURE_BYTES)
+    if (!customerParsed || !monterParsed) {
+      return NextResponse.json(
+        { error: 'Neveljaven podpis (pričakovan base64 PNG data URI, ≤2 MB).' },
+        { status: 400 },
+      )
+    }
+    const customerSigId = crypto.randomUUID()
+    const monterSigId = crypto.randomUUID()
+    const customerKey = objectKey(
+      'signatures',
+      customerSigId,
+      `podpis.${extensionForMime(customerParsed.mime)}`,
+    )
+    const monterKey = objectKey(
+      'signatures',
+      monterSigId,
+      `podpis.${extensionForMime(monterParsed.mime)}`,
+    )
+    // Artefakti se zapišejo PRE transakcije; ključi ostanejo lokalni — ob
+    // padcu transakcije spodaj jih kompenzacija zbriše (0 sirot).
+    const uploadedSignatureKeys: string[] = []
+    let updatedProject: Awaited<ReturnType<typeof db.project.update>>
+    try {
+      await putObject(customerKey, customerParsed.bytes, customerParsed.mime)
+      uploadedSignatureKeys.push(customerKey)
+      await putObject(monterKey, monterParsed.bytes, monterParsed.mime)
+      uploadedSignatureKeys.push(monterKey)
+
+      updatedProject = await db.$transaction(async (tx) => {
       const updated = await tx.project.update({
         where: { id: projectId },
         data: {
@@ -105,11 +149,16 @@ export async function POST(request: Request) {
       await tx.signatureAudit.createMany({
         data: [
           {
+            id: customerSigId,
             projectId,
             signatureType: 'CUSTOMER',
             signedByName: customerName,
             signedByRole: 'stranka',
-            signatureImage: customerSignature,
+            signatureImage: null,
+            storageKey: customerKey,
+            mime: customerParsed.mime,
+            sizeBytes: customerParsed.bytes.length,
+            sha256: crypto.createHash('sha256').update(customerParsed.bytes).digest('hex'),
             ipAddress,
             userAgent,
             deviceFingerprint,
@@ -118,11 +167,16 @@ export async function POST(request: Request) {
             pdfHash,
           },
           {
+            id: monterSigId,
             projectId,
             signatureType: 'MONTER',
             signedByName: monterName,
             signedByRole: 'monter',
-            signatureImage: monterSignature,
+            signatureImage: null,
+            storageKey: monterKey,
+            mime: monterParsed.mime,
+            sizeBytes: monterParsed.bytes.length,
+            sha256: crypto.createHash('sha256').update(monterParsed.bytes).digest('hex'),
             ipAddress,
             userAgent,
             deviceFingerprint,
@@ -150,7 +204,15 @@ export async function POST(request: Request) {
       })
 
       return updated
-    })
+      })
+    } catch (txError) {
+      // R122 kompenzacija: transakcija DB padla → zbriši že zapisane
+      // artefakte podpisov (idempotentno; 0 sirot v object storage).
+      for (const k of uploadedSignatureKeys) {
+        await deleteObject(k).catch(() => undefined)
+      }
+      throw txError
+    }
 
     const signatureAuditCount = 2
 

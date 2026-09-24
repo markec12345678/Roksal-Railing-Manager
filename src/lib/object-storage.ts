@@ -24,19 +24,20 @@
  *   files/ar-snapshots/<snapshotId>/posnetek.png
  *   files/gallery/<galleryItemId>/pred.jpg | po.jpg
  *   files/documents/<documentId>/v<version>.pdf
+ *   files/signatures/<signatureAuditId>/podpis.png
  *
  * OgrajaVizija (src/lib/viz/*) je NEDOTAKNJENA — to je ločen modul z ločenim
  * prostorom ključev (viz/…), svojim driver-jem in lastnim namenom.
  */
 import { createHash } from 'node:crypto'
-import { mkdir, readFile, rm, writeFile, access, stat } from 'node:fs/promises'
+import { mkdir, readFile, readdir, rm, writeFile, access, stat } from 'node:fs/promises'
 import path from 'node:path'
 
 /** Varnostna prevera segmenta ključa: brez pik-pik, brez ločil poti. */
 const SAFE_SEGMENT = /^[A-Za-z0-9][A-Za-z0-9._-]{0,119}$/
 
 /** Dovoljeni prostori ključev (resource del). */
-const RESOURCES = ['photos', 'sketches', 'ar-snapshots', 'gallery', 'documents'] as const
+const RESOURCES = ['photos', 'sketches', 'ar-snapshots', 'gallery', 'documents', 'signatures'] as const
 export type StorageResource = (typeof RESOURCES)[number]
 
 /** Ključ mora biti files/<resource>/<id>/<ime>. */
@@ -278,4 +279,48 @@ export async function objectStatLocal(key: string): Promise<{ sizeBytes: number 
   } catch {
     return null
   }
+}
+
+/**
+ * Izpiši vse ključe pod `files/` prefixom (GC orodje + integritetna preverba).
+ * local: rekurzivni sprehod po disku; blob: @vercel/blob list (paginirano).
+ * Vrne samo ključe iz dovoljenih resource prostorov (signatures vključeno).
+ */
+export async function listObjects(prefix = 'files/'): Promise<string[]> {
+  if (objectStorageMode() === 'blob') {
+    const { list } = await import('@vercel/blob')
+    const out: string[] = []
+    let cursor: string | undefined = undefined
+    do {
+      const page = await list({ prefix, cursor, limit: 1000 })
+      for (const b of page.blobs) {
+        const parsed = parseObjectKey(b.pathname)
+        if (parsed) out.push(b.pathname)
+      }
+      cursor = page.cursor
+    } while (cursor)
+    return out.sort()
+  }
+  const rootDir = path.join(localRoot(), 'files')
+  const out: string[] = []
+  async function walk(dir: string): Promise<void> {
+    let entries
+    try {
+      entries = await readdir(dir, { withFileTypes: true })
+    } catch {
+      return
+    }
+    for (const e of entries) {
+      const full = path.join(dir, e.name)
+      if (e.isDirectory()) {
+        await walk(full)
+      } else if (e.isFile()) {
+        const rel = path.relative(localRoot(), full).split(path.sep).join('/')
+        const parsed = parseObjectKey(rel)
+        if (parsed) out.push(rel)
+      }
+    }
+  }
+  await walk(rootDir)
+  return out.sort()
 }

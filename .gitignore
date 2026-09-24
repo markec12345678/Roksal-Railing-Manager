@@ -91,3 +91,4 @@ tmp/roksal-research/
 
 # R121 — object storage (local driver bajti; produkcijski bajti živijo v Vercel Blob)
 /.storage/
+benchmarks/vision-real/

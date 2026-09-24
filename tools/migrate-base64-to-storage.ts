@@ -11,6 +11,7 @@
  *   ArSnapshot.imageUrl    → files/ar-snapshots/<id>/posnetek.<ext>
  *   GalleryItem.slikaPred  → files/gallery/<id>/pred.<ext>   (samo data URI;
  *   GalleryItem.slikaPo    → files/gallery/<id>/po.<ext>      URL ostane)
+ *   SignatureAudit.signatureImage → files/signatures/<id>/podpis.<ext>  (R122)
  *
  * VARNOST:
  *   • privzeto DRY RUN (pokaže, kaj bi naredil); zapiše ŠELE z `--commit`;
@@ -99,7 +100,9 @@ async function migrateRow(
         ? 'sketches'
         : row.table === 'ar-snapshots'
           ? 'ar-snapshots'
-          : 'gallery',
+          : row.table === 'signatures'
+            ? 'signatures'
+            : 'gallery',
     row.id,
     `${row.slot}.${extensionForMime(parsed.mime)}`
   )
@@ -232,6 +235,25 @@ async function main(): Promise<number> {
         )
       )
     }
+  }
+
+  // ── SignatureAudit (R122: pravno občutljivi podpisi izven baze) ──────────
+  const signatures = await prisma.signatureAudit.findMany({
+    where: { signatureImage: { not: null }, storageKey: null },
+    select: { id: true, projectId: true, signatureImage: true },
+  })
+  for (const s of signatures) {
+    outcomes.push(
+      await migrateRow(
+        { table: 'signatures', id: s.id, slot: 'podpis', projectId: s.projectId },
+        s.signatureImage!,
+        (id, key, mime, sizeBytes, sha256) =>
+          prisma.signatureAudit.update({
+            where: { id },
+            data: { storageKey: key, mime, sizeBytes, sha256, signatureImage: null },
+          })
+      )
+    )
   }
 
   // ── Poročilo ──────────────────────────────────────────────────────────────

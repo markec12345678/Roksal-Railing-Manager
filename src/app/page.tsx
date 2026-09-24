@@ -56,6 +56,7 @@ const FloorPlanTab = dynamic(() => import('@/components/roksal/floor-plan-tab').
 const MapMeasure = dynamic(() => import('@/components/roksal/map-measure').then((m) => m.MapMeasure), { ssr: false, loading: () => <TabLoading /> })
 const PunchList = dynamic(() => import('@/components/roksal/punch-list').then((m) => m.PunchList), { ssr: false, loading: () => <TabLoading /> })
 const MeasurementStudio = dynamic(() => import('@/components/roksal/measurement-studio').then((m) => m.MeasurementStudio), { ssr: false, loading: () => <TabLoading /> })
+const CvStudio = dynamic(() => import('@/components/roksal/cv-studio').then((m) => m.CvStudio), { loading: () => <TabLoading />, ssr: false })
 const SignatureQuote = dynamic(() => import('@/components/roksal/signature-quote').then((m) => m.SignatureQuote), { ssr: false, loading: () => <TabLoading /> })
 const PostSignaturePanel = dynamic(() => import('@/components/roksal/post-signature-panel').then((m) => m.PostSignaturePanel), { ssr: false, loading: () => <TabLoading /> })
 const CrmTab = dynamic(() => import('@/components/roksal/crm-tab').then((m) => m.CrmTab), { ssr: false, loading: () => <TabLoading /> })
@@ -292,6 +293,8 @@ export default function Home() {
       ? 'Pregled za vodjo'
       : moreTab === 'measurement'
       ? 'Merilni studio'
+      : moreTab === 'cvstudio'
+      ? 'CV Studio'
       : moreTab === 'signature'
         ? 'Ponudba s podpisom'
         : moreTab === 'postsig'
@@ -458,6 +461,7 @@ export default function Home() {
             {moreTab === 'vodja' && <VodjaDashboard />}
             {moreTab === 'teren' && <SiteSurveyTab projectId={selectedProjectId} project={selectedProject} />}
             {moreTab === 'measurement' && <MeasurementStudio projectId={selectedProjectId} />}
+            {moreTab === 'cvstudio' && <CvStudio projectId={selectedProjectId} />}
             {moreTab === 'signature' && selectedProject && (
               <SignatureQuote
                 projectId={selectedProject.id}

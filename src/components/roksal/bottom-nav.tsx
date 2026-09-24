@@ -18,6 +18,7 @@ import {
   Truck,
   BarChart3,
   Wand2,
+  ScanLine,
 } from 'lucide-react'
 import { useState } from 'react'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
@@ -53,7 +54,7 @@ const mainTabs: TabItem[] = [
   { id: 'more', label: 'Več', icon: MoreHorizontal },
 ]
 
-export type MoreTabId = 'teren' | 'documents' | 'safety' | 'catalog' | 'sketches' | 'gallery' | 'pdf' | 'measurement' | 'floorplan' | 'signature' | 'postsig' | 'crm' | 'material' | 'logistics' | 'vodja'
+export type MoreTabId = 'teren' | 'documents' | 'safety' | 'catalog' | 'sketches' | 'gallery' | 'pdf' | 'measurement' | 'cvstudio' | 'floorplan' | 'signature' | 'postsig' | 'crm' | 'material' | 'logistics' | 'vodja'
 
 interface MoreTabItem {
   id: MoreTabId
@@ -66,6 +67,7 @@ const moreTabs: MoreTabItem[] = [
   { id: 'teren', label: 'Terenski pregled', icon: MapPinned, description: 'Zapisnik pred montažo: podlaga, ovire, dvig + "s seboj prinesti"' },
   { id: 'vodja', label: 'Pregled za vodjo', icon: BarChart3, description: 'Statistika, opozorila, današnji termini' },
   { id: 'measurement', label: 'Merilni studio', icon: Ruler, description: 'Foto → zaznavi ali označi → merilo → geometrija (brez AI)' },
+  { id: 'cvstudio', label: 'CV Studio', icon: ScanLine, description: 'CV analiza prizora + predlog postavitve (ni vir resnice)' },
   { id: 'signature', label: 'Ponudba s podpisom', icon: Pen, description: 'Podpisana PDF ponudba (V4)' },
   { id: 'postsig', label: 'Post-Signature', icon: ShieldCheck, description: 'Deal Lock + BOM Draft + Audit (V4.1)' },
   { id: 'crm', label: 'CRM stranke', icon: Users, description: 'LTV, opomniki, kontaktna oseba (V4.2)' },
