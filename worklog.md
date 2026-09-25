@@ -2186,3 +2186,16 @@ Stage Summary:
 - PRODUKCIJA: R144 živo (rate limit sproščen; napačen fingerprint R141-B/R142 popravljen in dokumentiran — pravi discriminator so AVTENTICIRANE zahteve na nove rute, ne anon Bearer).
 - Ostanki (lastniški, nespremenjeni): #7 Neon backfill --commit, #8 R118-real fotke, #12 Render kartica, ⏰ roksal-fallback-db POTEČE 2026-10-25 (4 tedni).
 - Naslednja runda: P1 kandidati: §27 QC gate / §28 Structured installation evidence (terenski dokazi — naravna nadgradja Punch/SiteSurvey), §36 Mobile sync conflict model (/api/sync), §32-34 engineering/versioning; DB nivo EXCLUDE za opremo (btree_gist) opcija; živi fingerprint R145: GET /api/equipment s MONTER sejo → 200 z calibrationMissing=true za mersko (ali "Zabeleži dogodek" chunk), vsak push = deploy poskus (kvota trenutno OK).
+
+---
+Task ID: R145-B (dodatek: iskren status produkcije — Vercel rate limit ponovno)
+Agent: Z.ai Code (isti R145 tok)
+
+Work Log:
+- CI na ccf32bd: Tipi, testi, gradnja SUCCESS (880/880, 58 datotek) · Varnost (129 preverjanj) SUCCESS · sync SUCCESS (render vejica samodejno usklajena).
+- VERCEL: commit status "Vercel → failure — Deployment rate limited — retry in 24 hours" na ccf32bd. Produkcija ostaja na R144 (zdrava; R145 koda je popolnoma zelena lokalno + CI). Rate limit se je vrnil po rafalu deplojev (R143+R144+poskusi) — lastniška rešitev: UpgradeToPro ALI počakati okviro (AI NE zaobide, precedens R137-B/R141-B).
+- ISKREN FINGERPRINT NAVODILO ZA R146 (popravek R141-B napake, tokrat zapisano PRAV): anon Bearer/proba fingerprinti na /api/* so NEdiskriminirajoči (neznana ruta → proxy 401; nova ruta z neveljavnim ključem → ruta 401 — ISTI rezultat). Pravi dokaz R145 živo: ① prijava spot računa (MONTER) v brskalniku → GET /api/equipment → 200 s polji calibrationRequired/inspectionDue (na R140 te ruta NE obstaja → 404 za avtenticirano zahtevo), ALI ② GET /api/schedules s sejo + equipmentIds v odgovoru POST. Če fingerprint pokaže še vedno R144 → sporočiti lastniku (Pro ali čakanje); NE pushati brez potrebe.
+
+Stage Summary:
+- R145 koda POPOLNOMA zelena (CI 3× SUCCESS na ccf32bd: testi 880/880, dimni 129); §31 zaprto kodno; bo ŽIVO ko deploy plana (kvota okvira 24 h). Produkcija R144 zdrava.
+- Ostanki (lastniški, nespremenjeni): #7 Neon backfill --commit, #8 R118-real fotke, #12 Render kartica, ⏰ roksal-fallback-db POTEČE 2026-10-25 (4 tedni), 🆕 Vercel rate limit (Pro ali čakanje okvira).
