@@ -2,7 +2,7 @@
 """
 Varnostni dimni test za Roksal Railing Manager.
 
-Preveri 119 stvari na ŽIVEM strežniku — ne na kodi, kar je edini način, da se
+Preveri 121 stvari na ŽIVEM strežniku — ne na kodi, kar je edini način, da se
 ujame napaka v plasteh (proxy, ruta, piškotek, baza). Napisan je bil prav zato,
 ker je prva različica proxy-ja blokirala prijavo samo: 32/36 testov je bilo
 zelenih, aplikacija pa neuporabna.
@@ -461,6 +461,28 @@ check("GET /api/jobs brez seje → 401 + x-correlation-id", st == 401 and len(h.
 # da jo Vercel Cron doseže z Bearer CRON_SECRET — brez žetona so vrata zaprta).
 st, h, body = call("/api/jobs/run", "POST", {})
 check("POST /api/jobs/run brez seje → 401 (cron-only vrata)", st == 401, f"dobil {st} {body[:60]!r}")
+
+
+print("\n[24] Prekrivanja terminov (R142 — issue #5 §30: registrirana ruta)")
+# Terminska ruta po R142: GET z sejo in ?limit=1 → 200 s POLJEM dolžine ≤ 1
+# (regresija §17 pagination na ruti, ki je dobila §30 preverbe) + korelacija.
+if auth:
+    st, h, body = call("/api/schedules?limit=1", headers=auth)
+    try:
+        rows = json.loads(body)
+    except Exception:
+        rows = None
+    ok = st == 200 and isinstance(rows, list) and len(rows) <= 1 and len(h.get("x-correlation-id", "")) >= 8
+    check("GET /api/schedules?limit=1 (s sejo) → 200, ≤1 vrstica + correlation", ok,
+          f"st={st} vrste={type(rows).__name__ if rows is not None else 'ne-parsano'}")
+    # Neveljaven interval → 400 PRED preverbo konfliktov (vrstni red: validacija
+    # → konflikti → tx; fail-closed brez tihega sprejemanja).
+    st, h, body = call("/api/schedules", "POST",
+                       {"projectId": "x", "datumZacetka": "2026-03-05T16:00:00Z", "datumKonca": "2026-03-05T08:00:00Z"},
+                       headers=auth)
+    check("POST /api/schedules obrnjen interval (s sejo) → 400", st == 400, f"dobil {st} {body[:60]!r}")
+else:
+    skip("[24] termina", "seja ni na voljo (prijava spodletela)")
 
 
 print(f"\n{'=' * 60}")

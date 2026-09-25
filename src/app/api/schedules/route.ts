@@ -23,6 +23,10 @@ import {
   idempotencyReplayResponse,
   idempotencyConflictResponse,
 } from '@/lib/idempotency'
+import {
+  findResourceConflicts,
+  conflictMessage,
+} from '@/lib/schedule-conflicts'
 
 // R139 (issue #5 §17): neomejen findMany → privzeta zgornja meja + opcijske
 // strani (isti kontrakt kot /api/customers iz R138). Odzivna OBLIKA (polje)
@@ -120,20 +124,32 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'projectId, datumZacetka, datumKonca so obvezni' }, { status: 400 })
     }
 
-    // Preveri konflikte (isti crew ali monter v istem času)
-    if (crewId) {
-      const conflict = await db.installationSchedule.findFirst({
-        where: {
-          crewId,
-          status: { in: ['NAVRTENO', 'V_TEKU'] },
-          OR: [
-            { datumZacetka: { lte: new Date(datumKonca) }, datumKonca: { gte: new Date(datumZacetka) } },
-          ],
+    // R142 (§30): preverba prekrivanja prek skupnega determinističnega
+    // pomožnika — EKIPA in GLAVNI MONTER sta neodvisna vira (prej: samo ekipa;
+    // monter je bil nezaščiten). Poli-odprt interval: konec 16:00 + začetek
+    // 16:00 NI konflikt (nazaj-na-nazaj je dovoljeno).
+    const startAt = new Date(datumZacetka)
+    const endAt = new Date(datumKonca)
+    if (Number.isNaN(startAt.getTime()) || Number.isNaN(endAt.getTime()) || endAt <= startAt) {
+      return NextResponse.json(
+        { error: 'datumKonca mora biti PO datumZacetka' },
+        { status: 400 },
+      )
+    }
+    const conflicts = await findResourceConflicts({
+      crewId: crewId || null,
+      monterId: monterId || null,
+      datumZacetka: startAt,
+      datumKonca: endAt,
+    })
+    if (conflicts.length > 0) {
+      return NextResponse.json(
+        {
+          error: conflictMessage(conflicts),
+          conflicts,
         },
-      })
-      if (conflict) {
-        return NextResponse.json({ error: 'Ekipa ima že termin v tem času', conflict }, { status: 409 })
-      }
+        { status: 409 },
+      )
     }
 
     const schedule = await db.$transaction(async (tx) => {
@@ -216,7 +232,7 @@ export async function PATCH(request: Request) {
   const correlationId = correlationFromRequest(request)
   try {
     const body = await request.json()
-    const { id, status, dejanskeUre, opombe } = body
+    const { id, status, dejanskeUre, opombe, datumZacetka, datumKonca, crewId, monterId } = body
 
     if (!id || !status) {
       return NextResponse.json({ error: 'id in status sta obvezna' }, { status: 400 })
@@ -227,13 +243,69 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: 'Neveljaven status' }, { status: 400 })
     }
 
+    // R142 (§30): PREMESTITEV termina (preložitev / zamenjava ekipe ali
+    // monterja) — prej PATCH ni znal spremeniti časa/vira, zato je bila edina
+    // pot izbris + ponovno ustvarjanje (izguba id-povezav: oprema, revizija).
+    // Nova pogodba: opcijski datumZacetka/datumKonca/crewId/monterId. Če je
+    // KATERI KOLI čas podan, morata biti oba (drugače nejasen interval);
+    // manjkajoč čas ostane nespremenjen. Vsi podatki gredo skozi ISTO
+    // preverbo prekrivanja kot POST (izključi premikan termin sam).
+    const moving = datumZacetka !== undefined || datumKonca !== undefined
+    let newStart: Date | null = null
+    let newEnd: Date | null = null
+    // R142: vrednosti PRED premikom (za revizijsko razliko oldValue).
+    let preMove: { datumZacetka: Date; datumKonca: Date; crewId: string | null; monterId: string | null } | null = null
+    if (moving) {
+      if (datumZacetka === undefined || datumKonca === undefined) {
+        return NextResponse.json(
+          { error: 'Za premik termina podaj datumZacetka IN datumKonca (dva časa).' },
+          { status: 400 },
+        )
+      }
+      newStart = new Date(datumZacetka)
+      newEnd = new Date(datumKonca)
+      if (Number.isNaN(newStart.getTime()) || Number.isNaN(newEnd.getTime()) || newEnd <= newStart) {
+        return NextResponse.json(
+          { error: 'datumKonca mora biti PO datumZacetka' },
+          { status: 400 },
+        )
+      }
+    }
+
     const updated = await db.$transaction(async (tx) => {
+      // R142 (§30): preverba prekrivanja ZA PREMEK — znotraj transakcije,
+      // izključi premikan termin sam (drugače bi prekril samega sebe).
+      if (moving && newStart && newEnd) {
+        const current = await tx.installationSchedule.findUnique({
+          where: { id },
+          select: { crewId: true, monterId: true, datumZacetka: true, datumKonca: true },
+        })
+        if (!current) {
+          return { kind: 'notfound' } as const
+        }
+        preMove = current
+        const conflicts = await findResourceConflicts({
+          crewId: crewId !== undefined ? crewId || null : current.crewId,
+          monterId: monterId !== undefined ? monterId || null : current.monterId,
+          datumZacetka: newStart,
+          datumKonca: newEnd,
+          excludeId: id,
+        })
+        if (conflicts.length > 0) {
+          return { kind: 'conflict', conflicts } as const
+        }
+      }
+
       const row = await tx.installationSchedule.update({
         where: { id },
         data: {
           status,
           ...(dejanskeUre !== undefined ? { dejanskeUre } : {}),
           ...(opombe !== undefined ? { opombe } : {}),
+          ...(moving && newStart ? { datumZacetka: newStart } : {}),
+          ...(moving && newEnd ? { datumKonca: newEnd } : {}),
+          ...(crewId !== undefined ? { crewId: crewId || null } : {}),
+          ...(monterId !== undefined ? { monterId: monterId || null } : {}),
         },
         include: { project: { select: { id: true, nazivProjekta: true } }, crew: { select: { naziv: true } } },
       })
@@ -290,15 +362,32 @@ export async function PATCH(request: Request) {
         data: {
           userId: auditUserId,
           projectId: row.projectId,
-          akcija: 'SCHEDULE_STATUS',
-          newValue: JSON.stringify({ scheduleId: row.id, status }),
+          akcija: moving ? 'SCHEDULE_RESCHEDULED' : 'SCHEDULE_STATUS',
+          oldValue: moving && preMove
+            ? JSON.stringify({ scheduleId: row.id, datumZacetka: preMove.datumZacetka, datumKonca: preMove.datumKonca, crewId: preMove.crewId, monterId: preMove.monterId })
+            : null,
+          newValue: moving
+            ? JSON.stringify({ scheduleId: row.id, datumZacetka: newStart, datumKonca: newEnd, crewId: crewId ?? undefined, monterId: monterId ?? undefined, status })
+            : JSON.stringify({ scheduleId: row.id, status }),
         },
       })
 
-      return row
+      return { kind: 'updated', row } as const
     })
 
-    return NextResponse.json(updated)
+    // R142 (§30): rezultati transakcije, ki NISO uspeh — 409 (konflikt vira)
+    // in 404 (neznani termin). rollback je opravil $transaction — nič ni
+    // delno spremenjeno (vzorec §19).
+    if (updated.kind === 'conflict') {
+      return NextResponse.json(
+        { error: conflictMessage(updated.conflicts), conflicts: updated.conflicts },
+        { status: 409 },
+      )
+    }
+    if (updated.kind === 'notfound') {
+      return NextResponse.json({ error: 'Termin ne obstaja' }, { status: 404 })
+    }
+    return NextResponse.json(updated.row)
   } catch (error) {
     if (error instanceof InsufficientStockError) {
       // Fail-closed, javno razložljivo: materiala ni dovolj — nič ni spremenjeno.

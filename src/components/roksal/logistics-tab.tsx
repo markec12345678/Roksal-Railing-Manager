@@ -12,7 +12,7 @@ import { Separator } from '@/components/ui/separator'
 import { useToast } from '@/hooks/use-toast'
 import { downloadCsv, todayStamp } from '@/lib/csv-export'
 import {
-  Calendar, Download, Users, Wrench, Plus, Clock, MapPin, CheckCircle2,
+  Calendar, Download, Users, Wrench, Plus, Clock, MapPin, CheckCircle2, CalendarClock,
   Loader2, AlertTriangle, Truck, Package,
 } from 'lucide-react'
 
@@ -220,6 +220,13 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
   const [crewNaziv, setCrewNaziv] = useState('')
   const [equipNaziv, setEquipNaziv] = useState('')
   const [equipTip, setEquipTip] = useState('ROCNO_ORODJE')
+  // R142 (§30): preložitev termina — datum/ura/trajanje se PATCH-a, konflikti
+  // vira (ekipa/monter) jih javi strežnik (409 z razlogom — fail-verbose).
+  const [moveTarget, setMoveTarget] = useState<{ id: string; status: string; project: string } | null>(null)
+  const [moveDate, setMoveDate] = useState('')
+  const [moveTime, setMoveTime] = useState('08:00')
+  const [moveHours, setMoveHours] = useState('8')
+  const [moveBusy, setMoveBusy] = useState(false)
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -270,11 +277,40 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, status, ...(dejanskeUre ? { dejanskeUre } : {}) }),
       })
+      const data = (await res.json().catch(() => null)) as { error?: string } | null
       if (res.ok) {
         toast({ title: `Status → ${STATUS_LABELS[status] || status}` })
         loadData()
+      } else {
+        // R142: fail-verbose (R140 vzorec) — 403/409/500 se POKAŽE, ne tiho
+        // ugine (prej: MONTER ni videl, zakaj "Zaključi" ne dela).
+        toast({ title: 'Napaka', description: data?.error ?? `HTTP ${res.status}`, variant: 'destructive' })
       }
     } catch { toast({ title: 'Napaka', variant: 'destructive' }) }
+  }
+
+  /** R142 (§30): preloži termin na nov datum/uro (PATCH z novim intervalom). */
+  const handleMoveSchedule = async () => {
+    if (!moveTarget || !moveDate) return
+    const start = new Date(`${moveDate}T${moveTime}`)
+    const end = new Date(start.getTime() + parseInt(moveHours) * 3600000)
+    setMoveBusy(true)
+    try {
+      const res = await fetch('/api/schedules', {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: moveTarget.id, status: moveTarget.status, datumZacetka: start.toISOString(), datumKonca: end.toISOString() }),
+      })
+      const data = (await res.json().catch(() => null)) as { error?: string } | null
+      if (res.ok) {
+        toast({ title: '✓ Termin preložen', description: `${formatDate(start.toISOString())} ob ${moveTime}` })
+        setMoveTarget(null)
+        loadData()
+      } else {
+        // 409 z razlogom vira ("Ekipa \"X\" ima že termin …") se pokaže cel.
+        toast({ title: 'Prekrivanje', description: data?.error ?? `HTTP ${res.status}`, variant: 'destructive' })
+      }
+    } catch { toast({ title: 'Omrežna napaka', variant: 'destructive' }) }
+    finally { setMoveBusy(false) }
   }
 
   const handleCreateCrew = async () => {
@@ -378,13 +414,51 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                     </div>
                     {/* Status actions */}
                     {s.status === 'NAVRTENO' && (
-                      <Button type="button" size="sm" variant="outline" className="h-6 text-[10px] bg-amber-50 focus-visible:ring-2 focus-visible:ring-roksal-amber/50" onClick={() => handleStatusChange(s.id, 'V_TEKU')}>
-                        Začni montažo
-                      </Button>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <Button type="button" size="sm" variant="outline" className="h-6 text-[10px] bg-amber-50 focus-visible:ring-2 focus-visible:ring-roksal-amber/50" onClick={() => handleStatusChange(s.id, 'V_TEKU')}>
+                          Začni montažo
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="h-6 text-[10px] focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                          aria-label={`Preloži termin za ${s.project.nazivProjekta}`}
+                          onClick={() => {
+                            const d = new Date(s.datumZacetka)
+                            const p = (n: number) => String(n).padStart(2, '0')
+                            setMoveTarget({ id: s.id, status: s.status, project: s.project.nazivProjekta })
+                            setMoveDate(`${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`)
+                            setMoveTime(`${p(d.getHours())}:${p(d.getMinutes())}`)
+                            setMoveHours(String(s.predvideneUre ?? 8))
+                          }}
+                        >
+                          <CalendarClock className="h-3 w-3 mr-1" /> Preloži
+                        </Button>
+                      </div>
                     )}
                     {s.status === 'V_TEKU' && (
                       <Button type="button" size="sm" variant="outline" className="h-6 text-[10px] bg-green-50 focus-visible:ring-2 focus-visible:ring-roksal-navy/40" onClick={() => handleStatusChange(s.id, 'ZAKLJUCENO', s.predvideneUre)}>
                         <CheckCircle2 className="h-3 w-3 mr-1" /> Zaključi (odštej material)
+                      </Button>
+                    )}
+                    {s.status === 'PRELOZENO' && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="h-6 text-[10px] focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                        aria-label={`Premakni preloženi termin ${s.project.nazivProjekta}`}
+                        onClick={() => {
+                          const d = new Date(s.datumZacetka)
+                          const p = (n: number) => String(n).padStart(2, '0')
+                          setMoveTarget({ id: s.id, status: s.status, project: s.project.nazivProjekta })
+                          setMoveDate(`${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`)
+                          setMoveTime(`${p(d.getHours())}:${p(d.getMinutes())}`)
+                          setMoveHours(String(s.predvideneUre ?? 8))
+                        }}
+                      >
+                        <CalendarClock className="h-3 w-3 mr-1" /> Premakni na nov datum
                       </Button>
                     )}
                   </CardContent>
@@ -407,13 +481,13 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
               <p className="text-sm">Ni ekip. Ustvari prvo ekipo.</p>
             </CardContent></Card>
           ) : crews.map((c) => (
-            <Card key={c.id}>
+            <Card key={c.id} className="transition-[border-color,box-shadow] duration-150 hover:border-roksal-navy/25 hover:shadow-sm">
               <CardContent className="p-3">
                 <div className="flex items-center gap-2 mb-1">
-                  <div className="h-4 w-4 rounded-full" style={{ backgroundColor: c.barva }} />
+                  <div className="h-4 w-4 rounded-full ring-2 ring-white shadow-sm" style={{ backgroundColor: c.barva }} aria-hidden />
                   <span className="text-sm font-semibold text-roksal-navy">{c.naziv}</span>
                 </div>
-                <div className="text-[10px] text-muted-foreground">
+                <div className="text-[10px] tabular-nums text-muted-foreground">
                   {c.vodja ? `Vodja: ${c.vodja.ime}` : 'Brez vodje'} · {c._count.members} članov · {c._count.schedules} terminov
                 </div>
               </CardContent>
@@ -434,7 +508,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
               <p className="text-sm">Ni opreme. Dodaj prvo.</p>
             </CardContent></Card>
           ) : equipment.map((e) => (
-            <Card key={e.id}>
+            <Card key={e.id} className="transition-[border-color,box-shadow] duration-150 hover:border-roksal-navy/25 hover:shadow-sm">
               <CardContent className="p-3">
                 <div className="flex items-start justify-between gap-2">
                   <div>
@@ -444,7 +518,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                         {e.status === 'NA_VOLJO' ? 'Na voljo' : e.status}
                       </Badge>
                     </div>
-                    <div className="text-[10px] text-muted-foreground">
+                    <div className="text-[10px] tabular-nums text-muted-foreground">
                       {EQUIPMENT_TYPES[e.tip] || e.tip} · {e.lokacija || 'Brez lokacije'} · {e._count.assignments} rezervacij
                     </div>
                   </div>
@@ -484,6 +558,47 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setNewScheduleOpen(false)}>Prekliči</Button>
             <Button type="button" onClick={handleCreateSchedule} className="bg-roksal-navy text-white">Shrani</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: preloži termin (R142 §30) — nov datum/ura, strežnik javi
+          prekrivanja vira s 409 in človeku berljivim razlogom. */}
+      <Dialog open={moveTarget !== null} onOpenChange={(open) => !open && setMoveTarget(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-roksal-navy">
+              <CalendarClock className="h-4.5 w-4.5 text-roksal-amber" />
+              Preloži termin
+            </DialogTitle>
+          </DialogHeader>
+          {moveTarget && (
+            <p className="text-[11px] text-muted-foreground">
+              {moveTarget.project} · trenutno status{' '}
+              <span className="font-semibold text-roksal-navy">{STATUS_LABELS[moveTarget.status] ?? moveTarget.status}</span>
+            </p>
+          )}
+          <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-2">
+              <div><Label className="text-xs">Nov datum *</Label><Input type="date" value={moveDate} onChange={(e) => setMoveDate(e.target.value)} className="h-9" /></div>
+              <div><Label className="text-xs">Ura začetka</Label><Input type="time" value={moveTime} onChange={(e) => setMoveTime(e.target.value)} className="h-9" /></div>
+            </div>
+            <div><Label className="text-xs">Trajanje (ure)</Label><Input type="number" min="1" max="24" value={moveHours} onChange={(e) => setMoveHours(e.target.value)} className="h-9 tabular-nums" /></div>
+            <p className="text-[10px] leading-relaxed text-muted-foreground">
+              Če ekipa ali monter v novem oknu ima že drug termin, bo preložitev zavrnjena (409) z razlago — nič ne bo tiho prekrivano.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setMoveTarget(null)}>Prekliči</Button>
+            <Button
+              type="button"
+              onClick={() => void handleMoveSchedule()}
+              disabled={moveBusy || !moveDate}
+              className="bg-roksal-navy hover:bg-roksal-navy/90 text-white focus-visible:ring-roksal-navy/40"
+            >
+              {moveBusy && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
+              Preloži
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
