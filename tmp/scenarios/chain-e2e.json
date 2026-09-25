@@ -1,11 +1,11 @@
 {
   "base": "http://localhost:3000",
-  "at": "2026-09-24T15:53:14.462Z",
+  "at": "2026-09-25T05:22:32.759Z",
   "chainHash": "0acf579fc491ffe4d715dfdb761476868f09879d43c9503287bf78fa40d6b0b4",
   "hard": "32/32",
   "checks": [
     {
-      "step": "prijava demo ADMIN",
+      "step": "prijava ADMIN (E2E_EMAIL)",
       "ok": true,
       "hard": true,
       "detail": "HTTP 200, cookie=true"
@@ -26,19 +26,19 @@
       "step": "POST /api/customers → 201",
       "ok": true,
       "hard": true,
-      "detail": "HTTP 201, id=cmufpo89i003ponq2k2w69v1z"
+      "detail": "HTTP 201, id=cmugikz6m0004on3o49nxlf8y"
     },
     {
       "step": "POST /api/projects → 201 (status NACRTOVANO)",
       "ok": true,
       "hard": true,
-      "detail": "HTTP 201, status=NACRTOVANO, id=cmufpo89v003sonq2rordk5k0"
+      "detail": "HTTP 201, status=NACRTOVANO, id=cmugikz850007on3ouugx3f9h"
     },
     {
       "step": "registracija MONTER (za test stroja)",
       "ok": true,
       "hard": true,
-      "detail": "HTTP 200, userId=cmufpo8bb003wonq28euwg52i"
+      "detail": "HTTP 200, userId=cmugikzcb000bon3oo4vsiqw3"
     },
     {
       "step": "MONTER: PATCH NACRTOVANO→MONTIRANO → 409 (stroj velja prek API)",
@@ -104,7 +104,7 @@
       "step": "confirm (geometry + projectId) → shranjena meritev",
       "ok": true,
       "hard": true,
-      "detail": "HTTP 201, state=VERIFIED, savedId=cmufpo8nj004fonq2h3m5818m"
+      "detail": "HTTP 201, state=VERIFIED, savedId=cmugikzyt000uon3o8srd3e4e"
     },
     {
       "step": "geometrija: total≈0.806×5000 mm, sledljiv izvor",
@@ -176,7 +176,7 @@
       "step": "POST /api/documents → 201 (metadata; brez bajtov/hash = issue #7)",
       "ok": true,
       "hard": false,
-      "detail": "HTTP 201, pdfUrl=ZAPISNIK_NAVORA_cmufpo89v003sonq2rordk5k0_1790265194345.pdf"
+      "detail": "HTTP 201, pdfUrl=—"
     },
     {
       "step": "PATCH → V_IZDELAVI",

@@ -96,9 +96,10 @@ describe('POST /api/auth/demo — produkcija je privzeto OFF', () => {
     expect(status).toBe(403)
     expect(cookie).toBeNull()
     const after = await db.profile.findUnique({ where: { email: DEMO_EMAIL } })
-    // profil (če obstaja) se NI spremenil
-    expect(after?.vloga).toBe(before?.vloga ?? null)
-    expect(after?.passwordHash).toBe(before?.passwordHash ?? null)
+    // profil (če obstaja) se NI spremenil — `?? null` normalizira undefined
+    // (profil še ne obstaja, npr. čista CI baza) in null (polje je null)
+    expect(after?.vloga ?? null).toBe(before?.vloga ?? null)
+    expect(after?.passwordHash ?? null).toBe(before?.passwordHash ?? null)
   })
 
   it('NODE_ENV=production (lokalni produkcijski start) → 403', async () => {
