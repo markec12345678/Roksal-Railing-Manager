@@ -1999,3 +1999,17 @@ Stage Summary:
 - ZAKLJUČENO: §20 idempotenca ZDAJ NA VSEH mutacijskih rutah offline vrste (schedules + material-orders zadnji manjkajoči; živ HTTP dokaz exactly-once), §22 material-orders korelacija (poslovni moduli 100% pokriti), §17 stropi na vseh težkih seznamih (photos/sketches/documents 200, material-orders 500), 2 novi uporabniški funkcionalnosti (Naročila CSV + razprte postavke), fail-verbose toast, stil pass čez Material Intelligence. 792/792 zeleno, dimni 117 (116 uspešnih lokalno), build zelen.
 - Ostanki (lastniški, nespremenjeni): #7 Neon backfill --commit, #8 R118-real fotke, #12 Render kartica (tool + runbook pripravljeni, ROKSAL_SETUP_TOKEN/EMAIL passthrough), ⏰ roksal-fallback-db POTEČE 2026-10-25 (5 tednov).
 - Naslednja runda: issue #5 preostanek → §10/§23 iz addenduma če bo na voljo; sicer kandidati: offline vrsta UI indekator stanja vrste (števec čakajočih zapisov v top-bar), dokajen inspect API_KEY smoke preskok (lokalni ključ prek tools/create-api-key.ts), preveriti Vercel kvoto (1 commit/runda drži pritisk nizek) + živi fingerprint R140 na produkciji (npr. /api/schedules z neveljavnim Idempotency-Key pod sejo → 400 ali CSV gumb v Naročilih chunku).
+
+---
+Task ID: R140-B (dodatek: CI zelen + živa produkcija potrjena na R140)
+Agent: Z.ai Code (isti R140 tok)
+
+Work Log:
+- CI na f59ef9f: Tipi, testi, gradnja SUCCESS (792/792, 53 datotek) · Varnost (117 preverjanj) SUCCESS · sync SUCCESS (render vejica samodejno usklajena).
+- VERCEL: commit status "Vercel → success" na f59ef9f — produkcija je na R140 (ENOTEN commit na rundo, brez rate-limit incidenta).
+- ŽIVI FINGERPRINT NOVE KODE (R137-B nauček: fingerprint, ne prazna lastnost): POST /api/schedules z neveljavnim Idempotency-Key brez seje → 401 + x-correlation-id (red vrstic "vrata pred 400" je dokumentirano R140 vedenje — dimni [22] ga preverja na vsakem pushu); GET /api/material-orders → 401 + x-correlation-id (§22 korelacija na do zdaj nekoreliranem modulu). /api/auth/demo {enabled:false} ✓.
+
+Stage Summary:
+- PRODUKCIJA je na R140 (f59ef9f): §20 idempotenca zaključena na vseh mutacijskih rutah offline vrste, §22 korelacija 100% čez poslovne module, §17 stropi na vseh težkih seznamih, Naročila CSV + razprte postavke + stil pass Material Intelligence. CI 3× zelen, testi 792/792, dimni 117.
+- Ostanki (lastniški, nespremenjeni): #7 Neon backfill --commit, #8 R118-real fotke, #12 Render kartica, ⏰ roksal-fallback-db POTEČE 2026-10-25 (5 tednov).
+- Naslednja runda: offline vrsta UI indikator (števec čakajočih zapisov), lokalni API_KEY za dimni preskok, preveriti Vercel kvoto + živi fingerprint (CSV gumb v Naročilih chunku pod sejo).
