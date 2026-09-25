@@ -162,6 +162,32 @@ Prijavna stran poštuje zastavico `GET /api/auth/demo → { enabled }`: ko je
 demo izklopljen, se gumb ne prikaže (noben vabil v slepo ulico). Demo vstop
 ostane preklicljiv kot vsaka seja (R125 register: logout/password revoke).
 
+## Offline vrsta — IndexedDB + idempotenca (R128, issue #5 §4)
+
+Terenski zapis (meritev, AR posnetek) NE SME izginiti brez signala. R128
+zamenja localStorage z IndexedDB in doda produkcjsko pogodbo
+(`src/lib/offline-queue.ts`, `src/lib/idempotency.ts`):
+
+| Zahteva (§4) | Implementacija |
+|---|---|
+| IndexedDB | `roksal-offline` / store `requests` (indeksi: status, seq, nextAttemptAt); legacy localStorage vrsta se enkrat uvozri in izbriše (nadgradnja brez izgube) |
+| brez persistent bearer/API credentialov | vrsta NE shranjuje NOBENE glave — ponovitev pošlje samo httpOnly sejni piškotek + `Idempotency-Key`; kredenciali ne morejo ostati na disku |
+| client mutation ID + Idempotency-Key | vsak čakajoč zapis dobi stabilen `mutationId`, poslan kot `Idempotency-Key` ob VSAKEM poizkusu; strežnik shrani snapshot odgovora (`IdempotencyKey` model) — ponovitev vrne ORIGINALNI odgovor (`Idempotent-Replay: true`), brez dvojnika |
+| pending/sending/succeeded/failed/conflict | vsa pet stanj; succeeded 24 h (potrdilo), failed/conflict do ročne odločitve (max 7 dni) |
+| retry/backoff | 30 s → 1 min → 2 min → … → 15 min strop; flush pošilja samo zapadle |
+| conflict resolution | 409 → status `conflict` — UI pas z opozorilom, ročni retry ali ekspliciten izbris (s potrditvijo); tuji principal ne more replayati ključa (vezava na profil/principal → 409, brez razkritja) |
+| ordering | monotoni `seq` — flush zaporedno v vrstnem redu nastanka |
+| attachment retry | AR posnetki (base64 v JSON telesu) gredo skozi isto vrsto (`webxr-scanner`) — retry z ISTIM ključem, storage write + DB vrstica brez dvojnika (rezervacija pred zapisom) |
+| 4xx se ne sme tiho izgubiti | 4xx → `failed` z napako + statusCode — OHRANJEN v pasu do ročne odločitve (prej: localStorage flush je 400/401/422 tiho zavržel) |
+| manual retry/recovery | UI pas (PwaStatus): seznam neuspelih z napako/časom/številom poizkusov, retry posameznega/vseh, ekspliciten izbris s potrditvijo; crash recovery: stale `sending` > 5 min → pending |
+| test reconnecta za kritične terenske tokove | 12 vitest primerov (fake-indexeddb): enqueue/migracija/sanitizacija/2xx/4xx/409/backoff/vrstni red/recovery/kapaciteta/ročno upravljanje + 5 idempotence primerov čez pravo ruto (isti ključ = natanko ena vrstica, tuj profil 409, neveljaven ključ 400, brez ključa starejša pogodba) + agent-browser E2E (legacy seed → migracija → flush → 400 → pas → retry → izbris) |
+
+Dodatno: kapaciteta 200 vnosov — polna vrsta vrne iskren sintetičen
+503 `{ queued:false }` (ni tihe izgube); flush-on-mount (app odprta zjutraj s
+signalom → vrsta iz terena odide); GC `IdempotencyKey` vrstic > 30 dni (lenobno,
+brez cron odvisnosti); rezervacija ključa je PRVI stavek transakcije meritve —
+vzporedni poizkus istega ključa rollbacka celotno mutacijo (exactly-once).
+
 ## Še ni pokrito (iskreno, naslednje runde)
 
 - customers/measurements/documents/inventory posamezne IDOR rute imajo guard na

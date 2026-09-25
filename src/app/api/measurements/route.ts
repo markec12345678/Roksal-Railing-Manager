@@ -2,22 +2,39 @@
 // Resource-level dostop: meritve sme dodati izvajalec projekta ali vodstvo
 // (SKLADISCE samo bere). Stranski preskok NACRTOVANO → V_TEKU gre skozi
 // statusni stroj (brez prisilnega overwrite-a statusa).
+// R128 (issue #5 §4): `Idempotency-Key` (offline vrsta) — rezervacija ključa
+// IN snapshot odgovora v ISTI transakciji kot mutacija = exactly-once replay
+// (ponovitev istega ključa vrne originalni odgovor, brez dvojnika meritve).
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { createMeasurementSchema } from '@/lib/validations'
 import { authenticate, unauthorized } from '@/lib/auth'
-import {
-  assertProjectAccess,
-  actorIdOf,
-  AccessDeniedError,
-} from '@/lib/access'
+import { assertProjectAccess, actorIdOf, principalBindingOf, AccessDeniedError } from '@/lib/access'
 import { assertTransition, InvalidTransitionError } from '@/lib/project-state'
+import {
+  beginIdempotency,
+  idempotencyConflictResponse,
+  idempotencyReplayResponse,
+  IdempotencyRaceError,
+  isValidIdempotencyKey,
+  reserveIdempotencyIn,
+  storeResponseIn,
+} from '@/lib/idempotency'
 
 export async function POST(request: Request) {
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
   const actor = actorIdOf(auth)
+  // Idempotenca (R128): veljaven klient ključ se rezervira kot PRVI stavek
+  // transakcije (atomsko z mutacijo — exactly-once); validacija 400 rezervacije
+  // NE pusti (ročni retry ostane čist 400, ne večni 409).
+  const idemHeader = request.headers.get('Idempotency-Key')
+  const idemKey = idemHeader !== null && isValidIdempotencyKey(idemHeader) ? idemHeader : null
+  if (idemHeader !== null && !idemKey) {
+    return NextResponse.json({ error: 'Neveljaven Idempotency-Key' }, { status: 400 })
+  }
+  const idemBinding = idemKey ? principalBindingOf(auth) : null
   try {
     const body = await request.json()
     const validated = createMeasurementSchema.parse(body)
@@ -27,8 +44,12 @@ export async function POST(request: Request) {
     if (!project) throw new AccessDeniedError(404, 'Projekt ne obstaja')
     assertProjectAccess(auth, project, 'update')
 
-    // Meritev + (možen prehod statusa) + audit = ENA transakcija (§13).
+    // Meritev + (možen prehod statusa) + audit (+ idempotenca) = ENA transakcija (§13).
     const measurement = await db.$transaction(async (tx) => {
+      // R128: rezervacija Idempotency-Key = PRVI stavek — vzporedni poizkus
+      // istega ključa povzroči rollback cele transakcije (brez dvojnikov).
+      if (idemKey) await reserveIdempotencyIn(tx, idemKey, 'measurements', idemBinding)
+
       const created = await tx.measurement.create({
         data: {
           projectId: validated.projectId,
@@ -59,11 +80,26 @@ export async function POST(request: Request) {
         }
       })
 
+      // R128: snapshot odgovora v isti transakciji — retry istega ključa
+      // vrne TA odgovor (exactly-once), ne ustvari druge meritve.
+      if (idemKey) {
+        await storeResponseIn(tx, idemKey, 201, JSON.stringify(created))
+      }
+
       return created
     })
 
-    return NextResponse.json(measurement, { status: 201 })
+    const response = NextResponse.json(measurement, { status: 201 })
+    if (idemKey) response.headers.set('Idempotent-Stored', 'true')
+    return response
   } catch (error: unknown) {
+    // R128: vzporedni poizkus istega ključa — transakcija rollbackana;
+    // vrni shranjen odgovor (replay) ali čist 409 (tudi tuji profil — brez razkritja).
+    if (idemKey && error instanceof IdempotencyRaceError) {
+      const begun = await beginIdempotency(idemKey, 'measurements', idemBinding)
+      if (begun.kind === 'replay') return idempotencyReplayResponse(begun)
+      return idempotencyConflictResponse()
+    }
     if (error instanceof AccessDeniedError) {
       return NextResponse.json({ error: error.message }, { status: error.status })
     }

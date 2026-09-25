@@ -226,3 +226,12 @@ export function actorIdOf(principal: AuthContext): string | null {
 export function actorLabelOf(principal: AuthContext): string {
   return principal.kind === 'user' ? principal.session.sub : `service:${principal.name}`
 }
+
+/**
+ * R128 (issue #5 §4) — vezava idempotence ključa na principal.
+ * Nikoli null: seja → profileId, API ključ → "service:<name>". Dva različna
+ * servisa z istim ključem si NE podelita replaya (profileId=null kolizija).
+ */
+export function principalBindingOf(principal: AuthContext): string {
+  return principal.kind === 'user' ? principal.session.sub : `service:${principal.name}`
+}

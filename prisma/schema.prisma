@@ -906,3 +906,24 @@ model VizRenderJob {
   @@index([projectId])
   @@index([status])
 }
+
+// ============================================
+// IDEMPOTENCA (R128 — issue #5 §4: offline vrsta)
+// ============================================
+// Terenski klient pošilja čakajoče zapise s stabilnim `Idempotency-Key`
+// (klient mutacijski ID). Strežnik shrani snapshot odgovora — ponovitev
+// istega ključa vrne ORIGINALNI odgovor in ne ustvari dvojnika (npr. dve
+// meritvi iz istega offline zapisa po več poizkusih pošiljanja).
+// Ključ je vezan na profil (profileId) — tuj ključ ne razkrije odgovora.
+model IdempotencyKey {
+  key            String   @id
+  /// Katera raba (route family): "measurements" | "ar-snapshots" …
+  route          String
+  /// Lastnik ključa (avtorizacija replaya) — null = rezervacija brez seje.
+  profileId      String?
+  responseStatus Int?
+  responseBody   String?
+  createdAt      DateTime @default(now())
+
+  @@index([createdAt])
+}

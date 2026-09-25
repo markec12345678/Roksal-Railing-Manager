@@ -65,19 +65,21 @@
 - 📏 **Specifične meritve za ograje** — stopniščni čarovnik, štebricki, WPC orientacije, koti
 - 📷 **Dokumentacija s kamero** — slike pred/med/po montaži z annotacijami in GPS
 - 📄 **PDF izvoz** — delovni list monterja, ponudba za stranko, materialni list
-- 📴 **Deluje offline** — PWA s service workerjem, sinhronizacija ko je povezava
+- 📴 **Deluje offline** — PWA s service workerjem; zapisi se vrstijo v IndexedDB
+  vrsto (idempotentno pošiljanje z `Idempotency-Key`, retry/backoff, 4xx ni
+  nikoli tiho izgubljen) in pošljejo samodejno ob povezavi
 - 🗄️ **PostgreSQL** — verzionirane migracije (`migrate deploy`), produkcija Neon
 
-### Statistika projekta (usklajeno z HEAD, R125)
+### Statistika projekta (usklajeno z HEAD, R128)
 
 | Metrika | Vrednost |
 |---------|----------|
 | Vrstic kode (src) | ~91.400 |
 | React komponent | 41 roksal modulov + 60+ UI primitivov |
 | API končne točke | 61 route handlerjev v 41 skupinah |
-| Prisma modelov | 35 (PostgreSQL) |
+| Prisma modelov | 36 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **597** (38 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **614** (40 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 52 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -339,7 +341,7 @@ Sheet z 6 podzavihki:
 | **PWA** | Service Worker + Web Manifest |
 | **Temnitveni način** | [next-themes](https://github.com/pacocoursey/next-themes) |
 | **Validacija** | [Zod 4](https://zod.dev/) |
-| **Testiranje** | [Vitest 4](https://vitest.dev/) (597 testov + globalSetup embedded PG) |
+| **Testiranje** | [Vitest 4](https://vitest.dev/) (614 testov + globalSetup embedded PG) |
 | **Paketni upravitelj** | [Bun](https://bun.sh/) |
 | **Linting** | ESLint 9 + eslint-config-next |
 

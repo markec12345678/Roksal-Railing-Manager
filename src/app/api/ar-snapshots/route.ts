@@ -13,7 +13,7 @@ import { NextResponse } from 'next/server'
 import { randomUUID } from 'node:crypto'
 import { db } from '@/lib/db'
 import { authenticate, unauthorized } from '@/lib/auth'
-import { assertProjectAccess, AccessDeniedError } from '@/lib/access'
+import { assertProjectAccess, AccessDeniedError, principalBindingOf } from '@/lib/access'
 import {
   deleteObject,
   getObject,
@@ -21,6 +21,13 @@ import {
   parseDataUri,
   putObject,
 } from '@/lib/object-storage'
+import {
+  beginIdempotency,
+  idempotencyConflictResponse,
+  idempotencyReplayResponse,
+  isValidIdempotencyKey,
+  storeResponse,
+} from '@/lib/idempotency'
 
 function accessErrorResponse(error: unknown): NextResponse | null {
   if (error instanceof AccessDeniedError) {
@@ -101,6 +108,21 @@ export async function POST(request: Request) {
       )
     }
 
+    // R128 (issue #5 §4): idempotenca AR posnetkov — rezervacija ključa
+    // ŠELE po validaciji (400 ne ostavi večnega 409); objekt + vrstica sta
+    // netransakcijska (storage), zato snapshot odgovora best-effort po
+    // uspehu — retry v vmesnem oknu dobi 409 → klient conflict → ročni retry.
+    const idemHeader = request.headers.get('Idempotency-Key')
+    if (idemHeader !== null && !isValidIdempotencyKey(idemHeader)) {
+      return NextResponse.json({ error: 'Neveljaven Idempotency-Key' }, { status: 400 })
+    }
+    const actorId = principalBindingOf(auth)
+    if (idemHeader) {
+      const begun = await beginIdempotency(idemHeader, 'ar-snapshots', actorId)
+      if (begun.kind === 'replay') return idempotencyReplayResponse(begun)
+      if (begun.kind === 'conflict') return idempotencyConflictResponse()
+    }
+
     const id = randomUUID()
     const key = objectKey('ar-snapshots', id, 'posnetek.png')
     const put = await putObject(key, parsed.bytes, parsed.mime)
@@ -121,6 +143,9 @@ export async function POST(request: Request) {
         },
         include: { profil: true },
       })
+      if (idemHeader) {
+        await storeResponse(idemHeader, 201, JSON.stringify(snapshot))
+      }
       return NextResponse.json(snapshot, { status: 201 })
     } catch (dbError) {
       await deleteObject(key)
