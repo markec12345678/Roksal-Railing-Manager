@@ -465,3 +465,28 @@ Dokazi: `src/lib/__tests__/db-integrity.test.ts` (10 testov — omejitve v pg_co
 SQL kršitve zavrnjene, EXCLUDE par/dobavitelj semantika, 409 + ČISTA rollback na nezadostni
 zalogi, točen odštevek + premik + MONTIRANO + revizija atomsko, 400 polja naročil, GREATEST
 zapiranje cen, schema higiena) + varnostni smoke [18] (4 preverjanja).
+
+## Nastavitvena konzola — lastnikova varovalka (R137)
+
+**Problem:** na produkciji ni bilo mogoče pridobiti ADMIN dostopa iz aplikacije same — registracija daje izključno MONTER, upravljanje uporabnikov pa zahteva ADMIN sejo. Izgubljeno geslo lastnika ali prazen production sistem je pomenil trajno izključenost (produkcija baza je dosegljiva izključno prek Vercel env).
+
+**Rešitev:** `/setup` + `POST /api/setup`, zaščitena z žetonom iz okolja. Dva env var-ja (oba lastniška, oba NESTA v repozitoriju):
+
+| Env var | Pomen |
+| --- | --- |
+| `ROKSAL_SETUP_TOKEN` | Dolg naključen žeton (min 16 znakov). Ni nastavljen ALI prekratek → konzola POPOLNOMA izklopljena (POST 404, GET `{enabled:false}`). |
+| `ROKSAL_SETUP_EMAIL` | Opcijsko ožilje: nastavljen → sme konzola ustvariti ALI obnoviti IZKLJUČNO ta račun. Pokvarjen vnos = kot da ni nastavljen (ne razširi ničesar). |
+
+| Zahteva | Izvedba |
+| --- | --- |
+| Fail-closed privzeto | brez žetona v okolju ruta vrne 404 in stran iskreno pokaže "izklopljena" (brez lažne forme) |
+| Konstantnočasna primerjava žetona | sha256 obeh strani + `timingSafeEqual` (dolžina ne povzroči izjeme) |
+| Rate limit | 5/uro/IP — šteje TUDI napačne žetone; veljavne uspešne/ne-uganitvene napake sprostijo žeton (`releaseRate`) |
+| Ožilje obstoječih računov | BREZ `ROKSAL_SETUP_EMAIL` obstoječih računov NIKOLI ne dotakne (žeton ni mojstrski ključ za prevzem); z ožiljem samo točen e-naslov → RECOVER |
+| RECOVER atomsko (§19) | novo geslo + vloga ADMIN + odpeljane blokade (deactivatedAt/lockedAt) + počiščena povabila + REVOKE VSEH sej v ENI transakciji |
+| BOOTSTRAP atomsko (§19) | nov ADMIN profil + audit v ENI transakciji; geslo hashano izven tx (R136 vzorec) |
+| Revizija vsakega poskusa | `SETUP_BOOTSTRAP` / `SETUP_RECOVER` / `SETUP_DENIED` / `SETUP_FAILED` z hashiranim IP (32 hex, surov IP nikoli) — vzorec §7/§8 |
+| Enumeracija | 403 na politiki ožilja NE razkriva, ali račun obstaja |
+| Javna površina | GET razkrije samo `{enabled}`; vrata so v proxy dodana kot javna (mutacije vseeno prek CSRF/Origin, R130) |
+
+Znan mejnik: uspešna uporaba konzole je revizijsko vidna, žeton pa ostane veljaven, dokler ga lastnik ne odstrani iz okolja — priporočilo (izpisano tudi na strani): po uporabi žeton odstrani.

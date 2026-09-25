@@ -32,6 +32,10 @@ const PUBLIC_EXACT = new Set<string>([
   '/api/auth/demo',
   // Registracija (S+4 §7) — javna po zasnovi (samo MONTER, rate limit 5/uro).
   '/api/auth/register',
+  // R137: nastavitvena konzola — lastnikova varovalka za "zaklenjen ven"
+  // scenarij. Javna po zasnovi, a fail-closed: brez ROKSAL_SETUP_TOKEN vrne
+  // 404, z žetonom pa preveri politiko ožilja (ROKSAL_SETUP_EMAIL).
+  '/api/setup',
   // Vercel Cron (GC staginga, S+4) pošilja Bearer CRON_SECRET, ne seje —
   // ruta SAMA fail-closed preveri CRON_SECRET ali ADMIN sejo.
   '/api/viz/gc',
@@ -61,6 +65,8 @@ const PUBLIC_PREFIXES = [
   // + rate limit; upravljanje (/api/users brez /activate) ostane zaščiteno.
   '/aktivacija/',
   '/api/users/activate',
+  // R137: javna /setup stran (forma sama kliče javni /api/setup).
+  '/setup',
   // 3D modeli ograj (runda O): Scene Viewer/Quick Look ju prenese IZVEN
   // brskalniške seje (sistemska aplikacija brez piškotkov) — preusmeritev na
   // prijavo bi pokvarila AR na telefonu. Modeli so generična geometrija

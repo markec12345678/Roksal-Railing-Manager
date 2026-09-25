@@ -1,12 +1,14 @@
 'use client'
 
-import { RefreshCw, Moon, Sun, Clock, Search, LogOut } from 'lucide-react'
+import { RefreshCw, Moon, Sun, Clock, Search, LogOut, KeyRound, MonitorSmartphone } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { NotificationCenter } from '@/components/roksal/notification-center'
+import { SessionsDialog } from '@/components/roksal/sessions-dialog'
 import { useTheme } from 'next-themes'
 import { useSyncExternalStore, useCallback, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { getQueueLength, setQueueIdentity } from '@/lib/offline-queue'
+import { PasswordDialog } from '@/components/roksal/password-dialog'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -64,6 +66,12 @@ export function TopBar({ onSync, syncing, onOpenPalette, hidden = false }: TopBa
   const router = useRouter()
   const [lastSynced, setLastSynced] = useState<number>(0)
   const [loggingOut, setLoggingOut] = useState(false)
+  // R137: samostojna menjava gesla (runda S ruta /api/auth/password je do zdaj
+  // bila dosegljiva le prisilno prek PasswordChangeBanner).
+  const [pwdOpen, setPwdOpen] = useState(false)
+  // R137: "Aktivne seje" — samostojni pregled živih sej + preklic tujih
+  // naprav (GET/DELETE /api/auth/sessions sta obstajala od R134 brez UI).
+  const [sessionsOpen, setSessionsOpen] = useState(false)
 
   const toggleTheme = useCallback(() => {
     setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')
@@ -213,18 +221,43 @@ export function TopBar({ onSync, syncing, onOpenPalette, hidden = false }: TopBa
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>Odjava</DropdownMenuLabel>
+              <DropdownMenuLabel className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                Račun
+              </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => void handleLogout(false)}>
-                <LogOut className="h-4 w-4" />
+              <DropdownMenuItem
+                onClick={() => setPwdOpen(true)}
+                className="gap-2 focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              >
+                <KeyRound className="h-4 w-4 text-roksal-navy/70" aria-hidden="true" />
+                Zamenjaj geslo
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => setSessionsOpen(true)}
+                className="gap-2 focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              >
+                <MonitorSmartphone className="h-4 w-4 text-roksal-navy/70" aria-hidden="true" />
+                Aktivne seje
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => void handleLogout(false)}
+                className="gap-2 focus-visible:ring-2 focus-visible:ring-roksal-red/40"
+              >
+                <LogOut className="h-4 w-4 text-roksal-navy/70" aria-hidden="true" />
                 Ta naprava
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => void handleLogout(true)}>
-                <LogOut className="h-4 w-4" />
+              <DropdownMenuItem
+                onClick={() => void handleLogout(true)}
+                className="gap-2 focus-visible:ring-2 focus-visible:ring-roksal-red/40"
+              >
+                <LogOut className="h-4 w-4 text-roksal-navy/70" aria-hidden="true" />
                 Vse naprave (tudi ta)
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          <PasswordDialog open={pwdOpen} onOpenChange={setPwdOpen} />
+          <SessionsDialog open={sessionsOpen} onOpenChange={setSessionsOpen} />
         </div>
       </div>
     </header>

@@ -154,6 +154,15 @@ async function main() {
       { key: 'NEXTAUTH_URL', value: `https://${SERVICE_NAME}.onrender.com` },
       { key: 'ROKSAL_RIGHTS_MODE', value: 'production' },
       { key: 'SEED_ON_DEPLOY', value: 'true' },
+      // R137: nastavitvena konzola — lastnikova varovalka za bootstrap/obnovu
+      // ADMIN računa. Vrednosti pride iz okolja ob klicu (NIČ v repozitoriju);
+      // če nista podani, se env var-i NE nastavijo (konzola izklopljena).
+      ...(process.env.ROKSAL_SETUP_TOKEN
+        ? [{ key: 'ROKSAL_SETUP_TOKEN', value: process.env.ROKSAL_SETUP_TOKEN }]
+        : []),
+      ...(process.env.ROKSAL_SETUP_EMAIL
+        ? [{ key: 'ROKSAL_SETUP_EMAIL', value: process.env.ROKSAL_SETUP_EMAIL }]
+        : []),
       { key: 'NPM_CONFIG_FUND', value: 'false' },
       { key: 'NPM_CONFIG_AUDIT', value: 'false' },
     ],
@@ -170,7 +179,7 @@ async function main() {
 
   console.log('Env ključi (vrednosti skritih):')
   for (const e of payload.envVars) {
-    const hidden = e.key === 'DATABASE_URL' || /SECRET|PEPPER|CRON/.test(e.key)
+    const hidden = e.key === 'DATABASE_URL' || /SECRET|PEPPER|CRON|SETUP_TOKEN/.test(e.key)
     console.log(`  ${e.key} = ${hidden ? '***' : e.value}`)
   }
   console.log(`Build: ${payload.serviceDetails.envSpecificDetails.buildCommand}`)

@@ -53,7 +53,9 @@ const eslintConfig = [
     "no-useless-escape": "off",
   },
 }, {
-  ignores: ["node_modules/**", ".next/**", "out/**", "build/**", "next-env.d.ts", "examples/**", "skills"]
+  // R137: enkratni CommonJS revizijski skripti (scripts/*.cjs) so istega razreda
+  // kot tools/*.cjs — namensko CommonJS, brez ESM; ESLint jih ne vrednosti.
+  ignores: ["node_modules/**", ".next/**", "out/**", "build/**", "next-env.d.ts", "examples/**", "skills", "scripts/**/*.cjs"]
 }];
 
 export default eslintConfig;

@@ -402,6 +402,31 @@ check("POST /api/material-prices negativna cena brez seje → 401", st == 401, f
 st, _, _ = call("/api/customers", "POST", {"ime": "X", "naslov": "Y"})
 check("POST /api/customers brez seje → 401", st == 401, f"dobil {st}")
 
+print("\n[19] Aktivne seje — samopregled + preklic (R137 — issue #5 §2/§9 UI)")
+# Seznam sej je privatni podatek prijavljenega uporabnika → brez seje 401.
+st, _, _ = call("/api/auth/sessions", "GET")
+check("GET /api/auth/sessions brez seje → 401", st == 401, f"dobil {st}")
+# Preklic posamezne seje je mutacija → brez seje 401 (vrata pred 404).
+st, _, _ = call("/api/auth/sessions/nekaj", "DELETE")
+check("DELETE /api/auth/sessions/[id] brez seje → 401", st == 401, f"dobil {st}")
+
+
+print("\n[20] Nastavitvena konzola (R137 — fail-closed bootstrap/obnova ADMIN računa)")
+# GET je javen po zasnovi (brez žetona) — razkrije SAMO, ali je konzola vklopljena.
+st, _, body = call("/api/setup")
+check("GET /api/setup → 200", st == 200, f"dobil {st}")
+try:
+    enabled = json.loads(body).get("enabled")
+    check("GET /api/setup → { enabled: <bool> }", isinstance(enabled, bool), f"tel={body[:80]}")
+except Exception as e:  # noqa: BLE001
+    check("GET /api/setup → { enabled: <bool> }", False, f"napaka={e}")
+# POST mora biti fail-closed v OBEH stanjih: izklopljena konzola (brez
+# ROKSAL_SETUP_TOKEN v okolju) → 404; vklopljena brez žetona → 403.
+# Nikoli 2xx in nikoli 5xx.
+st, _, _ = call("/api/setup", "POST", {"email": "nekomu@roksal.si", "password": "geslo12345"})
+check("POST /api/setup brez žetona → 403 ali 404 (fail-closed)", st in (403, 404), f"dobil {st}")
+
+
 print(f"\n{'=' * 60}")
 print(f"  {passed} uspešnih · {failed} neuspešnih · {skipped} preskočenih")
 print(f"{'=' * 60}\n")
