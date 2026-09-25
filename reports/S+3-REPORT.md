@@ -67,7 +67,7 @@ Realne fotografije (S+1 vhodi), realen produkt (fence_0 S+1 bay 460×660), maske
 2. **Produkcija: render job 500** — "blob already exists" pri update queued→… (runtime logi `vercel logs`).
 3. **T2 FAIL 15≠13** — pregeneren quad/maska (moja mera postavitve, NE algoritem).
 4. **Vercel build FAIL ×2** — začasni probe orodja z absolutnimi potmi; `countLetvice` tip (number vs objekt).
-5. **Login na produkciji NI deloval z admin@roksal.si** — demo račun je `demo@roksal.si` / `RoksalDemo2026!` (seed; dokumentirano).
+5. **Login na produkciji NI deloval z admin@roksal.si** — demo račun je `demo@roksal.si` z geslom, ki je bilo takrat javno v README `(redacted — R127: geslo uničeno, demo je MONTER brez gesla)` (seed; dokumentirano).
 
 ## Popravljene napake
 1. stage 500 → **storage driver** (local + Vercel Blob); dokaz: produkcija stage 200 z blob URL; testi: viz-storage (14), viz-repository (5).

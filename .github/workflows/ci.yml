@@ -77,6 +77,19 @@ jobs:
       - name: Namestitev odvisnosti
         run: bun install --frozen-lockfile
 
+      # R127 (issue #5 §1): demo poverilnice ne smejo obstajati v repozitoriju.
+      # Zgodovinsko geslo je bilo v README/seedu — ta korak prepreči vrnitev.
+      # (Nekega dne lahko seznam dopolniš; fail = najdena skrivnost.)
+      - name: Skeniranje skrivnosti (demo credentials morajo biti mrtvi)
+        run: |
+          # Literala je sestavljena iz dveh delov, da skeniranje ne najde same sebe.
+          P="Roksal""Demo2026"
+          if git grep -nI "$P" -- . ':!*.lock'; then
+            echo "✗ NAJDENO demo geslo v repozitoriju (issue #5 §1) — odstrani/redigiraj.";
+            exit 1
+          fi
+          echo "✓ ni demo poverilnic v tracked datotekah"
+
       - name: Prisma Client (PostgreSQL)
         run: bunx prisma generate
 
@@ -115,7 +128,7 @@ jobs:
   # zelenih, aplikacija pa neuporabna. Zato se tu zažene pravi strežnik in
   # preveri, da anonimni uporabnik dobi 401 na vseh podatkovnih rutah.
   security:
-    name: Varnost (77 preverjanj na živem strežniku)
+    name: Varnost (84 preverjanj na živem strežniku)
     runs-on: ubuntu-latest
     needs: verify
     timeout-minutes: 15

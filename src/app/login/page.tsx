@@ -30,6 +30,26 @@ function LoginForm() {
   const [error, setError] = React.useState<string | null>(null)
   const [busy, setBusy] = React.useState(false)
   const [demoBusy, setDemoBusy] = React.useState(false)
+  // R127 (#5 §1): demo dostop je na produkciji privzeto IZKLOPLJEN. Prijavna
+  // stran vpraša javno zastavico GET /api/auth/demo in gumb pokaže samo,
+  // kadar je dostop res omogočen (null = še ne vemo → ne prikaži, da ne
+  // utripa in da izklopljeni demo ne obljublja nemogočega).
+  const [demoEnabled, setDemoEnabled] = React.useState<boolean | null>(null)
+
+  React.useEffect(() => {
+    let cancelled = false
+    fetch('/api/auth/demo')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { enabled?: boolean } | null) => {
+        if (!cancelled) setDemoEnabled(data?.enabled === true)
+      })
+      .catch(() => {
+        if (!cancelled) setDemoEnabled(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   // `/next` je lahko samo relativna pot — sicer bi `?next=https://zlobna.stran`
   // postal odprta preusmeritev takoj po prijavi.
@@ -153,23 +173,29 @@ function LoginForm() {
               {busy ? 'Prijavljam…' : 'Prijava'}
             </Button>
 
-            {/* Ločilna črta + vstop brez prijave */}
-            <div className="flex items-center gap-3 pt-1" aria-hidden>
-              <div className="h-px flex-1 bg-border" />
-              <span className="text-xs uppercase tracking-wide text-muted-foreground">ali</span>
-              <div className="h-px flex-1 bg-border" />
-            </div>
+            {/* Ločilna črta + vstop brez prijave — samo kadar je demo omogočen
+                (R127: produkcija je privzeto izklopljena, gumb se tedaj ne
+                prikaže sploh, da ne vabi v slepo ulico). */}
+            {demoEnabled && (
+              <>
+                <div className="flex items-center gap-3 pt-1" aria-hidden>
+                  <div className="h-px flex-1 bg-border" />
+                  <span className="text-xs uppercase tracking-wide text-muted-foreground">ali</span>
+                  <div className="h-px flex-1 bg-border" />
+                </div>
 
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full border-roksal-amber/60 bg-roksal-amber/10 text-roksal-navy transition-all hover:bg-roksal-amber/20 hover:shadow-md active:scale-[0.99]"
-              disabled={busy || demoBusy}
-              onClick={onDemoAccess}
-            >
-              {demoBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
-              {demoBusy ? 'Pripravljam demo…' : 'Vstop brez prijave (Demo)'}
-            </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full border-roksal-amber/60 bg-roksal-amber/10 text-roksal-navy transition-all hover:bg-roksal-amber/20 hover:shadow-md active:scale-[0.99]"
+                  disabled={busy || demoBusy}
+                  onClick={onDemoAccess}
+                >
+                  {demoBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
+                  {demoBusy ? 'Pripravljam demo…' : 'Vstop brez prijave (Demo)'}
+                </Button>
+              </>
+            )}
 
             <p className="text-center text-xs leading-relaxed text-muted-foreground">
               Račun ustvari administrator na strežniku:

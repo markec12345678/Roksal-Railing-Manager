@@ -11,21 +11,13 @@
 //      (izklop: SEED_ON_DEPLOY=false).
 //
 // Idempotenten: upsert povsod, zato ga je varno pognati večkrat.
-//geslo demo uporabnika je javno (demo naprava) — v produkciji ga zamenjaj
-// prek `bunx tsx tools/create-admin.ts`.
+// R127 (#5 §1): demo profil je MONTER brez gesla (dostop izključno prek
+// demo rute) — v repozitoriju ne obstaja nobeno demo geslo.
 
 const { PrismaClient } = require('@prisma/client')
-const { randomBytes, scryptSync } = require('node:crypto')
 
 const db = new PrismaClient({ log: [] })
 
-// Enaki parametri kot src/lib/password.ts — format `scrypt$N$r$p$salt$hash`.
-const SCRYPT = { N: 16384, r: 8, p: 1 }
-function hashPassword(password) {
-  const salt = randomBytes(16)
-  const derived = scryptSync(password.normalize('NFKC'), salt, 64, SCRYPT)
-  return ['scrypt', SCRYPT.N, SCRYPT.r, SCRYPT.p, salt.toString('base64'), derived.toString('base64')].join('$')
-}
 
 async function main() {
   // ── uporabniki (brez ekipaId — FK na Crew, ki ga demo ne ustvarja) ──
@@ -45,17 +37,20 @@ async function main() {
     create: { email: 'peter@roksal.si', ime: 'Peter Horvat', vloga: 'VODJA', telefon: '+386 41 333 444' },
   })
 
-  // ── demo prijava za javni deploy (Vercel) ──
-  // Geslo je zavestno javno in piše v README; brez njega nihče ne more
-  // videti zaščitenega vmesnika na javnem URL-ju.
+  // ── demo profil (R127 — issue #5 §1) ──
+  // Varnostno nevtralen: vloga NIKOLI ADMIN (MONTER — samo svoji projekti,
+  // brez cen/računov/naročil), passwordHash NULL = prijava prek /login forme
+  // nemogoča. Dostop izključno prek demo rute ("vstop brez prijave"), ki je
+  // na produkciji privzeto IZKLOPLJENA (DEMO_ACCESS=on jo lastnik vklopi).
+  // V repozitoriju NE obstaja nobeno demo geslo (CI secret scan to varuje).
   await db.profile.upsert({
     where: { email: 'demo@roksal.si' },
-    update: { passwordHash: hashPassword('RoksalDemo2026!') },
+    update: { vloga: 'MONTER', passwordHash: null },
     create: {
       email: 'demo@roksal.si',
       ime: 'Demo Uporabnik',
-      vloga: 'ADMIN',
-      passwordHash: hashPassword('RoksalDemo2026!'),
+      vloga: 'MONTER',
+      passwordHash: null,
     },
   })
 

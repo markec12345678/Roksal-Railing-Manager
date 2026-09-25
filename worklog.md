@@ -71,7 +71,7 @@ Agent: Main Orchestrator (Z.ai Code)
 Task: Popravi prijavo ("nemorem se logirat") — najboljše odprto brez login; AR raziskava repojev za meritve/slikanje/menjavo ograj; delo SAMO na Roksal-Railing-Manager.
 
 Work Log:
-- Ugotovljeno: lokalni login deluje (demo@roksal.si / RoksalDemo2026! iz seeda), a lastnik na Vercelu gesel ne pozna (seed ne teče vedno; create-admin zahteva shell)
+- Ugotovljeno: lokalni login deluje (demo@roksal.si z geslom iz seeda `(redacted — R127)`), a lastnik na Vercelu gesel ne pozna (seed ne teče vedno; create-admin zahteva shell)
 - Implementiran javni demo dostop: nova ruta POST /api/auth/demo (upsert demo profila brez seeda + podpisan sejni žeton + audit + rate-limit 10/uro/IP + izklop z DEMO_ACCESS=off)
 - proxy.ts: /api/auth/demo dodan med javne poti
 - login/page.tsx: gumb "Vstop brez prijave (Demo)" (amber, z ločilno črto "ali")
@@ -1555,3 +1555,30 @@ DODATEK R126 (CI + produkcija):
 - agent-browser produkcija: prijava → dashboard (Roksal Vizualizacija + TopBar) rendera, konzola čista.
 - Naslednja runda (kandidati iz #5): §4 offline queue IndexedDB, §5 PWA/cache izolacija, §6 CSRF/Origin, §9 user lifecycle, §10 permission matrix. Lastniška koraka ostajata: #7 Neon backfill --commit, #8 prave fotke.
 DODATEK R126 (issue #5 komentar): 5822409836 — R126 §3 tabela zahtev + pukljavi + uskladitev proxy + verifikacija.
+---
+Task ID: R127 (#5 §1 — Demo ADMIN production-safe)
+Agent: Z.ai Code (glavni orkestrator)
+Task: Po R126 nadaljevanje po "odlicno nadaljuj" — naslednja P0 varnostna postavka iz issue #5: §1 Demo production-safe (demo ruta production privzeto OFF, demo nikoli ADMIN, credentials izven source, CI secret scan, production gate, test privileged access).
+
+Work Log:
+- ANALIZA luknje (pred R127): (1) /api/auth/demo je na produkciji privzeto IZDAVAL ADMIN sejo (rate limit 10/h/IP edina ovira); (2) /login forma z javnim geslom iz README (demo@roksal.si) = ADMIN; (3) prisma/seed.cjs teče na VSAKEM Vercel deployu in je znova ustvaril ADMIN demo profil z znanim geslom — ročni popravki v bazi bi bili brez njegove spremembe ob vsakem deployu razveljavljeni.
+- src/lib/demo-access.ts (NOV — edina avtoriteta): DEMO_ROLE='MONTER' (konstanta, nikoli privilegirana); isProductionEnv (VERCEL_ENV=production || NODE_ENV=production, fail-closed); demoAccessState matrika: off→403 povsod, on→vklopljen (tudi produkcija — namerna lastnikova odločitev), neznana vrednost→OFF (fail-closed), prazno→produkcija OFF / razvoj ON; randomDemoPassword (naključno geslo, ki ga nihče ne pozna in se ne beleži).
+- /api/auth/demo rewrite: GET → javna zastavica { enabled } (no-store); POST → politika 403 (produkcija privzeto off) → rate limit → upsert z DOWNGRADE-om (obstoječ ADMIN demo → MONTER) + rotacija gesla na naključno (znana skrivnost umre ob prvem novem vstopu) → seja gre v register (R125, preklicljiva) → audit DEMO_LOGIN z razlogom.
+- SEED (prisma/seed.ts + prisma/seed.cjs — Vercel build!): demo profil = MONTER + passwordHash NULL (prijava prek forme nemogoča po shematski pogodbi "null = račun brez gesla"); hashPassword iz seedov odstranjena; prisma/password-helper.ts izbrisan (mrta koda).
+- MIGRACIJA 20260925000000_r127_demo_safe (data-only, idempotentna): UPDATE Profile SET vloga=MONTER, passwordHash=NULL WHERE email=demo@roksal.si AND (vloga<>MONTER OR passwordHash NOT NULL) — popravi ŽE naseljene baze (produkcija) samodejno prek Vercel builda (migrate deploy). Dev: počisteni 2 neuspeła zapisa v _prisma_migrations (metapodatki), resolve --applied za r125/r126 (shema je bila db-push sinhronizirana), nato migrate deploy POGNEL r127 SQL nad dev bazo → demo profil potrjeno MONTER + brez gesla.
+- LOGIN UI: GET /api/auth/demo ob mountu → gumb "Vstop brez prijave" se prikaže SAMO kadar je demo omogočen (null=skrit, off=skrit) — nobenega vabljenja v slepo ulico; onDemoAccess 403 obdelava ostane.
+- TESTI +11 (src/lib/__tests__/demo-access.test.ts, skupaj 597/597): politika matrika (čiste funkcije, brez mučenja process.env); produkcija (VERCEL_ENV=production in NODE_ENV=production) → 403 brez sprememb profila; DEMO_ACCESS=off → 403 + zastavica false; razvoj → 200 + MONTER + rotirano geslo (verifyPassword=false za ugibanja) + živa seja (register) + audit DEMO_LOGIN; obstoječ ADMIN demo → SNIŽAN na MONTER + geslo zamenjano; privileged access denial: demo seja → POST /api/invoices 403 (denyUnlessManager) + GET /api/projects vidi izključno lastne (SQL dokaz: WHERE monterId OR vodjaId).
+- CI (ci.yml): NOV korak "Skeniranje skrivnosti" (git grep po sestavljeni literali — da sken ne najde sebe; fail = najdena skrivnost); job ime 77→84 (statično preštet: +5 demo dimni +6 vloge +4 apikey = 84 na živem strežniku).
+- SMOKE (tools/security-smoke.py) [11] Demo dostop: GET zastavica + boolean; demo POST → 200 (razvoj, vloga MONTER — NIKOLI ADMIN) ALI 403 (produkcija/off, fail-closed); prijava prek /login forme z demo e-pošto → 401. Iskreno v obeh okoljih (bere zastavico).
+- chain-e2e.ts: prijava NI VEČ demo ADMIN — E2E_EMAIL/E2E_PASSWORD obvezni (fail-fast z navodilom `bun run admin ...`), sicer bi MONTER veriga tiho padala na 403 sredi korakov. Pognan: HARD 32/32 ✓ z novim admin računom.
+- REDAKCIJA skrivnosti POVSOD: README (tabela uporabnikov + nov poglavje "Demo dostop" z matriko DEMO_ACCESS), worklog, reports/S+3-REPORT.md (zgodovinski, redacted), demo-access komentar. `git grep RoksalDemo2026` po tracked datotekah = 0 zadetkov.
+- DOKS: docs/SECURITY-POLICY.md — novo poglavje "Demo dostop — production-safe (R127)" z tabelo vseh 7 zahtev §1 + status; docs/VIZ_CONTRACTS.md — zapuščinski zapisi opomba (demo MONTER jih pravilno ne vidi).
+- ŽIVI E2E (dev + simulacije): matrika okolj dokazana — dev {enabled:true}→200 MONTER; DEMO_ACCESS=off → GET false + POST 403; VERCEL_ENV=production → GET false + POST 403 (default-production-off); VERCEL_ENV=production+DEMO_ACCESS=on → 200 MONTER (namerna odločitev); /login z demo e-pošto + starim geslom → 401; invoices z demo sejo → 403; projekti → []. agent-browser: gumb viden v dev, klik → app rendera (konzola čista); z off → gumb IZGINIL (samo Prijava).
+- SMOKE na živem strežniku: 74 uspešnih / 0 neuspešnih (vloge+apikey local preskočeni; [11] 5/5 ✓). Testni API ključi po testiranju preklicani (0 živih). E2E računi (e2e-r127@, monter-r127@) ostajajo kot lokalni testni (kot CI ci@roksal.si).
+- VERIFIKACIJA: 597/597 testov · tsc 0 · eslint 0 · dev.log čist.
+
+Stage Summary:
+- ISSUE #5 §1 (Demo ADMIN production-safe) IZPOLNJEN v celoti: vseh 7 zahtev ima dokaz (glej tabelo v SECURITY-POLICY.md). Največja produkcijska luknja projekta (javna ruta izdaja ADMIN sejo + javno geslo ADMIN računa, ki se ob vsakem deployu znova ustvari) je ZAPRTA.
+- OPOMBA ZA LASTNIKA: po deployu bo demo gumb na produkciji IZGINIL (zahteva #5 §1). Dostop: (a) osebni ADMIN račun: DATABASE_URL="<Neon URL iz Vercel env>" bunx tsx tools/create-admin.ts <email> <geslo> ADMIN <ime>; (b) javna demonstracija: Vercel env DEMO_ACCESS=on (demo ostane MONTER — brez poslovnih podatkov).
+- Migration na produkciji se uporabi samodejno prek builda; existing ADMIN demo profil na Neonu se SNIŽI + znano geslo umre (passwordHash NULL).
+- Ostanka (lastniška koraka): #7 Neon backfill --commit (ukazi v issue #7 komentarju 5821139319), #8 R118-real prave fotke + ročna sprejemba. Naslednji kandidati iz #5: §4 offline queue (IndexedDB), §5 PWA/cache izolacija, §6 CSRF/Origin, §7 portal security, §9 user lifecycle, §10 permission matrix.

@@ -40,17 +40,21 @@ async function seed() {
     }
   })
 
-  // Demo prijava za javni deploy — geslo je zavestno javno (piše v README).
-  // Hash format enak src/lib/password.ts: scrypt$N$r$p$salt$hash.
-  const { hashPassword } = await import('./password-helper')
+  // R127 (#5 §1): demo profil je varnostno nevtralen.
+  //   • vloga NIKOLI ADMIN (MONTER — vidi samo svoje projekte, brez cen/računov),
+  //   • passwordHash NULL = prijava prek /login forme nemogoča (shema:
+  //     "Null = račun brez gesla"); dostop izključno prek demo rute
+  //     ("vstop brez prijave"), ki ga lahko lastnik na produkciji izklopi
+  //     z DEMO_ACCESS=off (privzeto produkcija OFF).
+  // V repozitoriju NE obstaja nobeno demo geslo (CI secret scan to varuje).
   await db.profile.upsert({
     where: { email: 'demo@roksal.si' },
-    update: { passwordHash: await hashPassword('RoksalDemo2026!') },
+    update: { vloga: 'MONTER', passwordHash: null },
     create: {
       email: 'demo@roksal.si',
       ime: 'Demo Uporabnik',
-      vloga: 'ADMIN',
-      passwordHash: await hashPassword('RoksalDemo2026!'),
+      vloga: 'MONTER',
+      passwordHash: null,
     },
   })
 

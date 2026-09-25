@@ -256,7 +256,9 @@ Vsak viz projekt in render job je vezan na **uporabniško sejo**, ki ga je ustva
   informacije, ali projekt z danim id obstaja. Vsi /api/viz/* handlerji preverjajo
   lastništvo na backendu (frontend je samo udobje, nikoli varnost).
 - **Zapuščinski zapisi** (`ownerId = null`, ustvarjeni pred S+4): vidni/administrirajo
-  samo uporabniki z vlogo ADMIN (demo račun). Vsak nov projekt vedno dobi ownerId.
+  samo uporabniki z vlogo ADMIN. Vsak nov projekt vedno dobi ownerId.
+  (R127: demo račun je MONTER — zapuščinskih zapisov ne vidi, kar je po matriki
+  pravilno.)
 - Vrsta dostopov (matrica §1): user A vidi/odpre/preimenuje/zbriše SAMO svoje;
   user B za A-jev projekt vedno dobi 404 — tudi za `POST /api/viz/render` in
   `GET /api/viz/render/[jobId]` (jobi imajo svoj ownerId).

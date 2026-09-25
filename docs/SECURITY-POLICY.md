@@ -1,6 +1,6 @@
-# Varnostna politika — resource-level avtorizacija (issue #4, §3; R120; R125; R126)
+# Varnostna politika — resource-level avtorizacija (issue #4, §3; R120; R125; R126; R127)
 
-Velja od: **S+9**, razširjeno **R120** (security pass), **R125** (session revocation), **R126** (API-key lifecycle). Modul: `src/lib/access.ts` (+ `src/lib/project-state.ts`, `src/lib/api-keys.ts`).
+Velja od: **S+9**, razširjeno **R120** (security pass), **R125** (session revocation), **R126** (API-key lifecycle), **R127** (demo production-safe). Modul: `src/lib/access.ts` (+ `src/lib/project-state.ts`, `src/lib/api-keys.ts`).
 
 ## Načelo
 
@@ -143,6 +143,24 @@ E2E (dev, HTTP): read-only ključ — sync GET 200 / sync POST 403 /
 measurement+photos 403; polni scope — sync POST 200, measurement 400 (zod =
 vrata prehojena), photos 404 (vir ne obstaja); neznani ključ 401; rotacija —
 stari 401, novi 200; audit vidi `unknown` in `revoked` razloge.
+
+## Demo dostop — production-safe (R127, issue #5 §1)
+
+Modul: `src/lib/demo-access.ts` (edina avtoriteta), ruta `src/app/api/auth/demo/route.ts`.
+
+| Zahteva (#5 §1) | Stanje |
+|---|---|
+| demo ruta production privzeto OFF | ✅ `demoAccessState()`: brez `DEMO_ACCESS` produkcija → **403** (fail-closed); `on`/`off` eksplicitno; neznana vrednost → OFF |
+| demo uporabnik nikoli production ADMIN | ✅ `DEMO_ROLE = 'MONTER'` (matrika: samo svoji projekti, brez cen/računov/zalog); upsert tudi **sniža** obstoječega ADMIN demo profila |
+| demo podatki ločeni | ✅ demo (MONTER) vidi IZKLJUČNO projekte, kjer je monter/vodja — realni poslovni podatki so nedosegljivi (`projectWhereForPrincipal`) |
+| credentials niso v source/README | ✅ geslo NE obstaja: `passwordHash = NULL` (seed) / naključno zrotirano na vsak demo vstop; prijava prek `/login` forme za demo račun nemogoča; CI secret scan (zgodovinsko demo geslo ne sme obstajati nikjer v repozitoriju) |
+| CI secret scan | ✅ korak v `ci.yml` (verify job) |
+| production deploy security gate | ✅ migracija `20260925000000_r127_demo_safe` (downgrade ADMIN→MONTER + NULL geslo na že naseljenih bazah, samodejno prek Vercel builda) + smoke [11] |
+| test: demo endpoint ne omogoči privileged access | ✅ `src/lib/__tests__/demo-access.test.ts` (11 primerov) + dimni test `tools/security-smoke.py` [11] (demo vloga MONTER na živem strežniku, prijava prek forme → 401) |
+
+Prijavna stran poštuje zastavico `GET /api/auth/demo → { enabled }`: ko je
+demo izklopljen, se gumb ne prikaže (noben vabil v slepo ulico). Demo vstop
+ostane preklicljiv kot vsaka seja (R125 register: logout/password revoke).
 
 ## Še ni pokrito (iskreno, naslednje runde)
 

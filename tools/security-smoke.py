@@ -260,6 +260,36 @@ check("429 vsebuje Retry-After", "retry-after" in {k.lower() for k in h2}, str(l
 st3, _, _ = call("/api/auth", "POST", {"email": "drug-probe@neobstaja.si", "password": "napacno"})
 check("omejitev je po e-naslovu, ne samo po IP", st3 == 401, f"dobil {st3}")
 
+print("\n[11] Demo dostop (R127 — issue #5 §1: demo NI production ADMIN)")
+# GET zastavica pove, ali je demo v tem okolju sploh omogočen; test je zato
+# iskren v obeh okoljih: razvoj (vklopljen → MONTER) in produkcija (403).
+st, _, b = call("/api/auth/demo")
+check("GET /api/auth/demo \u2192 200", st == 200, f"dobil {st}")
+flag = None
+if st == 200:
+    try:
+        flag = json.loads(b).get("enabled")
+    except Exception:
+        flag = None
+check("GET zastavica nosi 'enabled' (boolean)", isinstance(flag, bool), str(flag))
+st, _, b = call("/api/auth/demo", "POST")
+if flag:
+    check("demo POST \u2192 200 ali 429 (rate limit)", st in (200, 429), f"dobil {st}")
+    vloga = None
+    if st == 200:
+        try:
+            vloga = json.loads(b).get("user", {}).get("vloga")
+        except Exception:
+            pass
+    if st == 200:
+        check("demo vloga je MONTER \u2014 NIKOLI ADMIN (#5 \u00a71)", vloga == "MONTER", f"dobil {vloga}")
+else:
+    check("demo POST \u2192 403 (produkcija/off \u2014 fail-closed)", st == 403, f"dobil {st}")
+# Prijava prek /login forme z demo ra\u010dunom mora ZAMUDITI: geslo ne obstaja
+# (null/random) \u2014 edini vhod je demo gumb, kadar je vklopljen.
+st, _, _ = call("/api/auth", "POST", {"email": "demo@roksal.si", "password": "karkoli-neobstaja-2026"})
+check("demo prijava prek /login forme \u2192 401", st == 401, f"dobil {st}")
+
 print(f"\n{'=' * 60}")
 print(f"  {passed} uspešnih · {failed} neuspešnih · {skipped} preskočenih")
 print(f"{'=' * 60}\n")

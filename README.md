@@ -77,7 +77,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 35 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **586** (37 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **597** (38 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 52 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -339,7 +339,7 @@ Sheet z 6 podzavihki:
 | **PWA** | Service Worker + Web Manifest |
 | **Temnitveni način** | [next-themes](https://github.com/pacocoursey/next-themes) |
 | **Validacija** | [Zod 4](https://zod.dev/) |
-| **Testiranje** | [Vitest 4](https://vitest.dev/) (586 testov + globalSetup embedded PG) |
+| **Testiranje** | [Vitest 4](https://vitest.dev/) (597 testov + globalSetup embedded PG) |
 | **Paketni upravitelj** | [Bun](https://bun.sh/) |
 | **Linting** | ESLint 9 + eslint-config-next |
 
@@ -481,7 +481,25 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `marko@roksal.si` | MONTER | — (nastavi s `tools/create-admin.ts`) |
 | `admin@roksal.si` | ADMIN | — (nastavi s `tools/create-admin.ts`) |
 | `peter@roksal.si` | VODJA | — (nastavi s `tools/create-admin.ts`) |
-| `demo@roksal.si` | ADMIN | `RoksalDemo2026!` **(samo za javni deploy — pred produkcijo odstrani)** |
+| `demo@roksal.si` | MONTER | — **nobeno geslo ne obstaja** (prijava prek forme ni mogoča; R127) |
+
+### Demo dostop ("vstop brez prijave") — R127, issue #5 §1
+
+Demo račun je **varnostno nevtralen**: vloga MONTER (vidi samo svoje projekte,
+brez cen/računov/zalog/naročil), geslo ne obstaja (`passwordHash = NULL`), edini
+vhod je gumb **"Vstop brez prijave"** na `/login`. Politika okolja:
+
+| `DEMO_ACCESS` | Razvoj | Produkcija (Vercel) |
+|---------------|--------|---------------------|
+| ne nastavljeno | ✅ vklopljen | ❌ **privzeto IZKLOPLJEN** (fail-closed) |
+| `on` | ✅ | ✅ (namerna odločitev lastnika; še vedno MONTER) |
+| `off` | ❌ | ❌ |
+
+Na produkciji demo torej privzeto **ne dela** — to je zahtevano varnostno
+stanje (javna ruta nikoli ne izda privilegirane seje). Za javno demonstracijo
+lastnik nastavi `DEMO_ACCESS=on` v Vercel env var. CI vsebuje secret scan
+(demo geslo ne sme obstajati v repozitoriju) in dimni test, ki dokazuje, da
+demo seja ni ADMIN in da prijava prek forme za demo račun ne uspe.
 
 ---
 

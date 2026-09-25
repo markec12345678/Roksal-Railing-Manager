@@ -110,15 +110,36 @@ async function api(
 async function main() {
   console.log(`\n═══ E2E VERIGA proti ${BASE} ═══\n`)
 
-  // ── 0. PRIJAVA (ADMIN — celotna veriga) ──
+  // ── 0. PRIJAVA (ADMIN — celotna veriga potrebuje vodstvo: računi, zaklep,
+  // statusni stroj) ──
+  // R127 (issue #5 §1): demo dostop je varnostno nevtralen — profil je MONTER
+  // brez gesla, na produkciji pa je demo ruta privzeto IZKLOPLJENA. Ta skripta
+  // zato pričakuje ADMIN poverilnice prek okolja (E2E_EMAIL/E2E_PASSWORD,
+  // ustvari z `bun run admin <email> <geslo> ADMIN <ime>`). Fail-fast z
+  // jasnim sporočilom namesto tihega niza 403 kasneje v verigi.
+  const E2E_EMAIL = process.env.E2E_EMAIL
+  const E2E_PASSWORD = process.env.E2E_PASSWORD
+  if (!E2E_EMAIL || !E2E_PASSWORD) {
+    console.error(
+      '\n✗ Prijava: nastavi E2E_EMAIL in E2E_PASSWORD (ADMIN račun).\n' +
+        '  Primer: bun run admin e2e@roksal.si "MočnoGeslo123" ADMIN "E2E"\n' +
+        '  nato:   E2E_EMAIL=e2e@roksal.si E2E_PASSWORD="MočnoGeslo123" bun run verify:chain\n' +
+        '  (R127: demo račun je MONTER brez gesla — ni več ADMIN vhod za verigo.)',
+    )
+    process.exit(1)
+  }
   const login = await fetch(`${BASE}/api/auth`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ email: 'demo@roksal.si', password: 'RoksalDemo2026!' }),
+    body: JSON.stringify({ email: E2E_EMAIL, password: E2E_PASSWORD }),
   })
   const setCookie = login.headers.get('set-cookie') ?? ''
   const cookie = setCookie.split(';')[0] || null
-  record('prijava demo ADMIN', login.status === 200 && !!cookie, `HTTP ${login.status}, cookie=${!!cookie}`)
+  record('prijava ADMIN (E2E_EMAIL)', login.status === 200 && !!cookie, `HTTP ${login.status}, cookie=${!!cookie}`)
+  if (!(login.status === 200 && cookie)) {
+    console.error(`\n✗ Prijava ni uspela (HTTP ${login.status}) — veriga se ne nadaljuje.`)
+    process.exit(1)
+  }
 
   // ── 1. FAIL-CLOSED: anonimni dostop = 401 ──
   const anonCustomers = await api('POST', '/api/customers', null, { ime: 'X', naslov: 'Y' })
