@@ -177,18 +177,18 @@ export function InclinometerTab({ projectId }: { projectId: string | null }) {
             />
           </div>
 
-          {/* Prikaz kotov */}
+          {/* Prikaz kotov — tabular-nums, da se številke ne "skakljejo" */}
           <div className="grid w-full grid-cols-2 gap-3">
-            <div className="rounded-lg border border-roksal-navy/10 bg-white p-3 text-center">
+            <div className="rounded-lg border border-roksal-navy/10 bg-white p-3 text-center transition-[border-color,box-shadow] duration-150 hover:border-roksal-navy/25 hover:shadow-sm">
               <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Levo ↔ Desno</div>
-              <div className="text-2xl font-bold text-roksal-navy">{reading ? angleX.toFixed(1) : '–'}°</div>
+              <div className="text-2xl font-bold tabular-nums text-roksal-navy">{reading ? angleX.toFixed(1) : '–'}°</div>
               <div className="text-[10px] text-muted-foreground">
                 {reading ? (Math.abs(reading.gamma) < 1.5 ? '↓ ravno' : reading.gamma > 0 ? '→ desno' : '← levo') : ''}
               </div>
             </div>
-            <div className="rounded-lg border border-roksal-navy/10 bg-white p-3 text-center">
+            <div className="rounded-lg border border-roksal-navy/10 bg-white p-3 text-center transition-[border-color,box-shadow] duration-150 hover:border-roksal-navy/25 hover:shadow-sm">
               <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Naprej ↔ Nazaj</div>
-              <div className="text-2xl font-bold text-roksal-navy">{reading ? angleY.toFixed(1) : '–'}°</div>
+              <div className="text-2xl font-bold tabular-nums text-roksal-navy">{reading ? angleY.toFixed(1) : '–'}°</div>
               <div className="text-[10px] text-muted-foreground">
                 {reading ? (angleY < 1.5 ? '↓ ravno' : reading.beta > 90 ? '↓ naprej' : '↑ nazaj') : ''}
               </div>
@@ -197,13 +197,13 @@ export function InclinometerTab({ projectId }: { projectId: string | null }) {
 
           {/* Kontrola senzorja */}
           {permission === 'idle' && (
-            <Button type="button" onClick={enableSensor} className="w-full bg-roksal-amber text-white hover:bg-roksal-amber/90">
+            <Button type="button" onClick={enableSensor} className="w-full bg-roksal-amber text-white hover:bg-roksal-amber/90 focus-visible:ring-2 focus-visible:ring-roksal-amber/50">
               <Compass className="mr-2 h-4 w-4" />
               Vklopi libelo
             </Button>
           )}
           {permission === 'granted' && (
-            <Button type="button" variant={monitoring ? 'outline' : 'default'} onClick={monitoring ? stopSensor : enableSensor} className="w-full">
+            <Button type="button" variant={monitoring ? 'outline' : 'default'} onClick={monitoring ? stopSensor : enableSensor} className="w-full focus-visible:ring-2 focus-visible:ring-roksal-navy/40">
               {monitoring ? (
                 <>
                   <RefreshCw className="mr-2 h-4 w-4" /> Ustavi merjenje
@@ -241,7 +241,7 @@ export function InclinometerTab({ projectId }: { projectId: string | null }) {
               {lokacija === 'Drugo' && (
                 <Input value={customLokacija} onChange={(e) => setCustomLokacija(e.target.value)} placeholder="Opis lokacije" className="h-9" />
               )}
-              <Button type="button" onClick={handleSave} disabled={saving || !projectId} className="w-full bg-roksal-navy text-white hover:bg-roksal-navy/90">
+              <Button type="button" onClick={handleSave} disabled={saving || !projectId} className="w-full bg-roksal-navy text-white hover:bg-roksal-navy/90 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 disabled:cursor-not-allowed disabled:opacity-50">
                 <Save className="mr-2 h-4 w-4" />
                 {saving ? 'Shranjujem...' : 'Shrani nagib'}
               </Button>
@@ -252,19 +252,26 @@ export function InclinometerTab({ projectId }: { projectId: string | null }) {
       </Card>
 
       {/* Zgodovina nagibov */}
-      {saved.length > 0 && (
+      {saved.length === 0 ? (
+        <Card>
+          <CardContent className="py-8 text-center text-muted-foreground">
+            <Compass className="h-10 w-10 mx-auto mb-2 opacity-30" />
+            <p className="text-sm">Ni še zabeleženih nagibov. Vklopite libelo in shrani prvo meritev.</p>
+          </CardContent>
+        </Card>
+      ) : (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm">Zabeleženi nagibi ({saved.length})</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             {saved.map((s) => (
-              <div key={s.id} className="flex items-center justify-between rounded-lg border border-roksal-navy/10 bg-white p-2.5 text-xs">
+              <div key={s.id} className="flex items-center justify-between rounded-lg border border-roksal-navy/10 bg-white p-2.5 text-xs transition-[border-color,box-shadow] duration-150 hover:border-roksal-navy/25 hover:shadow-sm">
                 <div>
-                  <div className="font-medium text-roksal-navy">{s.kotStopinje}° ({s.smer === 'Y' ? 'L↔D' : 'N↔Z'})</div>
+                  <div className="font-medium tabular-nums text-roksal-navy">{s.kotStopinje.toFixed(1)}° ({s.smer === 'Y' ? 'L↔D' : 'N↔Z'})</div>
                   <div className="text-muted-foreground">{s.lokacija ?? 'Brez lokacije'}</div>
                 </div>
-                <div className="text-muted-foreground">{new Date(s.createdAt).toLocaleDateString('sl-SI', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</div>
+                <div className="tabular-nums text-muted-foreground">{new Date(s.createdAt).toLocaleDateString('sl-SI', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</div>
               </div>
             ))}
           </CardContent>

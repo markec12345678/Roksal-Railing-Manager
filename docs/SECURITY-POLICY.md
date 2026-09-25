@@ -490,3 +490,25 @@ zapiranje cen, schema higiena) + varnostni smoke [18] (4 preverjanja).
 | Javna površina | GET razkrije samo `{enabled}`; vrata so v proxy dodana kot javna (mutacije vseeno prek CSRF/Origin, R130) |
 
 Znan mejnik: uspešna uporaba konzole je revizijsko vidna, žeton pa ostane veljaven, dokler ga lastnik ne odstrani iz okolja — priporočilo (izpisano tudi na strani): po uporabi žeton odstrani.
+
+## Oprema — življenjski cikl (R145, issue #5 §31)
+
+**Stanje pred**: oprema je imela SAMO status (NA_VOLJO/V_UPORABI/V_SERVISU/IZGUBLJENO) brez pravil prehodov — iz "Upokojeno" se je lahko vrnila v uporabo, merska oprema je bila brez kalibracijskih rokov/potrdil, dodeljevanje opreme terminom pa sploh ni imelo API rute (R142 je konfliktov opreme zato namenoma pustil odprte — "zaščita pride sozvučno z dodeljevalno ruto").
+
+**Pogodba §31 → dokaz (src/lib/equipment-lifecycle.ts = deterministično jedro + rute):**
+
+| Zahteva | Izvedba |
+| --- | --- |
+| status transitions (lifecycle) | matrika `EQUIPMENT_TRANSITIONS` — nelegalna tranzicija → 409 z dovoljenimi cilji; **UPOKOJENO je terminalno** (prazna lista); DB CHECK `equipment_status_allowed` (NOT VALID, §18 vzorec) kot zadnja linija |
+| serial number | `serijskaStevilka` (opolnoličen podatkovni stolpec, prikaz v UI, snemanje v revizijo) |
+| acquisition | `pridobitev` (DateTime, opcijsko — brez izmišljevanja) |
+| assignment | `equipmentIds` v POST/PATCH `/api/schedules` — oprema je TRETJI vir (R142 obljuba ZAPRTA): prekrivanje → 409 z razlogom "Oprema »X« je že rezervirana"; premik termina SINHRONIZIRA intervale assignmentov; UPOKOJENA/IZGUBLJENA/V_SERVISU oprema ni rezervirljiva (400) |
+| inspection | `lastInspectionAt` + `inspectionIntervalDays` → determinističen naslednji rok (`nextInspectionAt`); interval brez zabeleženega pregleda = iskreno "NI ZABELEŽEN" (NEZNANO — ne računamo od pridobitve) |
+| calibration (date/due/certificate) | `calibrationRequired` (backfill: tip='MERSKA_OPREMA' → true; tudi ob ustvarjanju), `calibrationDueDate`, `calibrationCertificate`; POTEČENA (rok < danes) = rdeča zastavica, merska brez roka = "manjka potrdilo" (NEZNANO) |
+| fail-closed event pogodbe | `POST /api/equipment/events`: KALIBRACIJA na merski opremi **BREZ potrdila → 400**; KALIBRACIJA na nemerski → 400; `performedAt` v prihodnosti → 400 (nikoli izmišljevanja izvedbe); rezultat NAPAKA NE posodablja življenjskih polj (pregled z napako ni "zadnji veljaven") |
+| revizija | EQUIPMENT_STATUS / EQUIPMENT_UPDATE / EQUIPMENT_EVENT z `oldValue` (stanje pred spremembo) — ATOMSKO s spremembo (§19) |
+| pravice | branje: vsaka živa seja; pisanje (PATCH/events): `production.manage` (VODJA/ADMIN) — MONTER bere, ne upravlja |
+
+**Zakaj "NEZNANO" namesto izmišljenih datumov:** oprema brez zabeleženega pregleda ali brez kalibracijskega roka je PRAVDILO neznano stanje — aplikacija ga izrecno pokaže (oramno/rdeče), namesto da bi tiho ugibala rok in s tem zakrila pravo tveganje. Fail-closed tudi v prikazu.
+
+Dokazi: `src/lib/__tests__/r145-equipment.test.ts` (31 testov — transicijska matrika, kalibracijska deterministika, fail-closed pogodbe dogodkov, konflikti opreme z nazaj-na-nazaj semantiko, sinhronizacija intervalov pri premiku, pravice) + varnostni smoke [27] (4 preverjanja).

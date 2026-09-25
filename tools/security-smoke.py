@@ -2,7 +2,7 @@
 """
 Varnostni dimni test za Roksal Railing Manager.
 
-Preveri 123 stvari na ŽIVEM strežniku — ne na kodi, kar je edini način, da se
+Preveri 129 stvari na ŽIVEM strežniku — ne na kodi, kar je edini način, da se
 ujame napaka v plasteh (proxy, ruta, piškotek, baza). Napisan je bil prav zato,
 ker je prva različica proxy-ja blokirala prijavo samo: 32/36 testov je bilo
 zelenih, aplikacija pa neuporabna.
@@ -518,6 +518,31 @@ if auth:
           f"st={st} lots={len(rows.get('lots', [])) if isinstance(rows, dict) else 'ne-parsano'}")
 else:
     skip("[26] šarže (sejo)", "seja ni na voljo (prijava spodletela)")
+
+
+print("\n[27] Oprema — življenjski cikl (R145 — issue #5 §31: fail-closed vrata)")
+# Bralna ruta po R145: GET brez seje → 401 + korelacija; z sejo → 200 z
+# determinističnimi zastavicami kalibracije/pregledov (§17 DTO, strop 100).
+st, h, body = call("/api/equipment")
+ok = st == 401 and len(h.get("x-correlation-id", "")) >= 8
+check("GET /api/equipment brez seje → 401 + correlation", ok, f"dobil {st}")
+st, h, body = call("/api/equipment/events", "POST",
+                   {"equipmentId": "neobstaja", "type": "PREGLED"})
+ok = st == 401 and len(h.get("x-correlation-id", "")) >= 8
+check("POST /api/equipment/events brez seje → 401 + correlation", ok, f"dobil {st}")
+if auth:
+    st, h, body = call("/api/equipment", headers=auth)
+    try:
+        rows = json.loads(body)
+    except Exception:
+        rows = None
+    ok = st == 200 and isinstance(rows, list) and len(h.get("x-correlation-id", "")) >= 8
+    check("GET /api/equipment (s sejo) → 200, lista + correlation", ok, f"st={st}")
+    st, h, body = call("/api/equipment/events?equipmentId=neobstaja", headers=auth)
+    ok = st == 200 and json.loads(body) == [] and len(h.get("x-correlation-id", "")) >= 8
+    check("GET /api/equipment/events neznana oprema (s sejo) → 200 []", ok, f"dobil {st}")
+else:
+    skip("[27] oprema (sejo)", "seja ni na voljo (prijava spodletela)")
 
 
 print(f"\n{'=' * 60}")

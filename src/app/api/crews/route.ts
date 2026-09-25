@@ -58,6 +58,10 @@ export async function POST(request: Request) {
           sifra: body.sifra || null,
           lokacija: body.lokacija || null,
           opomba: body.opomba || null,
+          // R145 (§31): merska oprema ZAHTEVA kalibracijo — deterministično
+          // pravilo ob ustvarjanju (migracija r145 backfilla obstoječe vrstice).
+          calibrationRequired: body.tip === 'MERSKA_OPREMA',
+          ...(body.serijskaStevilka ? { serijskaStevilka: String(body.serijskaStevilka).slice(0, 100) } : {}),
         },
       })
       return NextResponse.json(eq, { status: 201 })

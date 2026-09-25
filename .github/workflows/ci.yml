@@ -128,7 +128,7 @@ jobs:
   # zelenih, aplikacija pa neuporabna. Zato se tu zažene pravi strežnik in
   # preveri, da anonimni uporabnik dobi 401 na vseh podatkovnih rutah.
   security:
-    name: Varnost (125 preverjanj na živem strežniku)
+    name: Varnost (129 preverjanj na živem strežniku)
     runs-on: ubuntu-latest
     needs: verify
     timeout-minutes: 15

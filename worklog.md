@@ -2128,3 +2128,61 @@ Stage Summary:
 - Produkcija POTRJENA na R143 (deploy uspel med rundou; discriminating fingerprint GET /api/notifications s sejo → 200). R144 odpelje samodejno (EN commit na rundo — kvota varna).
 - Ostanki (lastniški, nespremenjeni): #7 Neon backfill --commit, #8 R118-real fotke, #12 Render kartica (tool + runbook pripravljeni), ⏰ roksal-fallback-db POTEČE 2026-10-25 (4 tedne).
 - Naslednja runda: živi fingerprint R144 — DISCRIMINATING dokaz: spot sejo GET /api/inventory/lots → R144: 200 {"lots":[…] ALI {lots:[]}}, R143: neznana ruta → 404 (anonski 401 ni discriminating); P1 kandidat §36 Mobile sync conflict model (/api/sync obstaja, 401 vrstic — conflict/tombstone/revision model); opcija: DB EXCLUDE preverba prekrivanja (btree_gist) za §30; preveriti Vercel kvoto (1 commit/runda drži).
+
+---
+Task ID: R143 (Job 413422, trace ~202609260400 — BACKFILL, runda ni zapustila workloga)
+Agent: Z.ai Code (cron avtomatizirana runda; rekonstruirano iz commita 9b7f0e4)
+
+Work Log:
+- (BACKFILL — naslednji agent: ta runda je komitirala, a NI pripisala workloga; vsebina rekonstruirana iz commit sporočila 9b7f0e4 in kode.)
+- FOKUS: §29 Notifications lifecycle — QUEUED→SENT→DELIVERED→OPENED(+FAILED) s strogimi prehodi (samo naprej), registrirane predloge z verzijo (LOW_STOCK v1, JOB_FAILED v1 — fail-closed), XOR naslavljanje (profil ALI vloga: nizka zaloga → SKLADISCE, FAILED posli → ADMIN — prej pseudo-'skladisce' orphan), retry politika (nextDispatchState, sanitiziran lastError §22), korelacijski ID + entitetna povezava.
+- RUTE: GET /api/notifications (lenobni dispatch + delivery ack v isti zahtevi, §17 strop) + POST read (open ack, tuj id 404, QUEUED 409). UI "Poslana obvestila" z živimi značkami + fail-verbose.
+- MIGRACIJA 20260926050000 (čista dodajanja, legacy → LEGACY backfill).
+- STIL: status značke + focus ringi + Zaloga tabular-nums.
+- VERIFIKACIJA: testi 832/832 (56 datotek, +15 r143-notifications), dimni 123 (+2 [25]), E2E živi HTTP 12/12 + brskalniški dokaz Dostavljeno→Odprto. CI zelen, Vercel success.
+
+Stage Summary:
+- §29 zaprto (kodno + živo, 9b7f0e4 v produkciji). Ostanki lastniški: #7 backfill, #8 fotke, #12 kartica, ⏰ fallback DB 2026-10-25.
+- Naslednja runda: §24 Inventory lots ali §31 Equipment lifecycle.
+
+---
+Task ID: R144 (Job 413422, trace ~202609260450 — BACKFILL, runda ni zapustila workloga)
+Agent: Z.ai Code (cron avtomatizirana runda; rekonstruirano iz commita 075e561)
+
+Work Log:
+- (BACKFILL — runda je komitirala, a NI pripisala workloga; vsebina rekonstruirana iz commit sporočila 075e561 in kode.)
+- FOKUS: §24 Inventory lot/batch traceability — NOVA modela InventoryLot (lotNumber unique per artikel, supplier/order poreklo, deliveryDate = FIFO ključ, purchasePrice, quantityInitial/Remaining, status ACTIVE/EXHAUSTED/CLOSED) + LotAllocation (lotId, ledgerId → StockLedger, predznačena količina, projectId) + StockLedger.lotId.
+- DETERMINIZEM: FIFO alokacija (deliveryDate ASC, createdAt ASC, id ASC = totalen red); premalo porekla → 409 PRED zapisom, rollback brez delnih alokacij; prejem naročila = šarža na postavko (LOT-<id8>-<n>, supplier + nabavna cena, idempotentno); LEGACY backfill migracija (iskreno 'poreklo neznano', FIFO postavi prvo).
+- RUTE + UI: GET /api/inventory/lots (§17 DTO, strop 100/10, anon 401 + korelacija); OPENING kreira šaržo v isti tx; UI "Šarže" toggle na artiklih (status značke, ostanek trak, alokacijska sled, fail-verbose).
+- STIL: Premik dialog focus ringi + tabular-nums, Dobavitelji živa pika aktivnosti.
+- VERIFIKACIJA: testi 849/849 (57 datotek, +17 r144-lots), dimni 125 (+2 [26]), build zelen, CI zelen. Vercel deploy na 075e561 SUCCESS (rate limit sproščen — produkcija na R144, živo potrjeno v R145).
+
+Stage Summary:
+- §24 zaprto (kodno + živo, 075e561 = trenutni main/origin). Ostanki lastniški nespremenjeni.
+- Naslednja runda: §31 Equipment lifecycle (izbrana v R145), §36 sync conflicts ali §27/§28 QC/evidence kasneje.
+
+---
+Task ID: R145 (Job 413422, trace 1a0d7c0831c23029-cron-agent-loop-202609260515)
+Agent: Z.ai Code (cron avtomatizirana runda)
+
+Work Log:
+- STANJE OB ZAČETKU: main == origin/main (075e561, R144); CI zelen. PRODUKCIJA POTRJENO NA R144 — ključno odkritje: fingerprint iz R141-B ("POST /api/jobs/run z Bearer rkm_invalid → 403 = R141, 401 = R140") je NEdiskriminirajoč — authenticate() vrne null za NEVELJAVEN rkm_ ključ (src/lib/auth.ts L75–77), zato ruta vrne 401 na VSEH verzijah; sklep R142 "produkcija še R140" je bil NAPAČEN. Pravi živi dokazi (agent-browser seja, spot-r145@roksal.si MONTER — precedens R127): GET /api/inventory/lots → 200 z LOT-LEGACY vrsticami (R144 živo) + GET /api/notifications → 200 (R143 živo); Vercel status na 075e561 "Deployment has completed" (rate limit SPROŠČEN). R143/R144 deploji so splanili skupaj.
+- AGENT-BROWSER QA PRODUKCIJE: demo {enabled:false} ✓, prijava skozi formo → dashboard (pozdrav "Dobro večer, Spot!", "Obvestila (2 novih)" → nizka zaloga + vetrno opozorilo ✓), Zaloga z R144 "Šarže" toggle → LOT-LEGACY panel (Aktivna, poreklo neznano, 24. 9. 2026) ✓, Kalkulator ✓, CRM kanban ✓, konzola ČISTA. NOVIH BUGOV NI.
+- FOKUS RUNDE: §31 EQUIPMENT LIFECYCLE — življenjski cikl opreme + ZAPRTJE R142 OBLJUBE (konflikti opreme "sozvučno z dodeljevalno ruto").
+- PRISMA: migracija 20260926080000_r145_equipment_lifecycle — Equipment +7 stolpcev (serijskaStevilka, pridobitev, lastInspectionAt, inspectionIntervalDays, calibrationRequired, calibrationDueDate, calibrationCertificate) + NOV model EquipmentEvent (type PREGLED|KALIBRACIJA|SERVIS|POPRAVILO, performedAt, result V_REDU|NAPAKA, certificate, performedById → Profile SetNull, FK cascade; revizijska sled se NE čišči) + CHECK equipment_status_allowed (NOT VALID, §18 vzorec, vključuje NOVO UPOKOJENO). Deterministični backfill: tip='MERSKA_OPREMA' → calibrationRequired=true (datumov/potrdil se NE izmišljuje — ostanejo null = iskreno NEZNANO).
+- LIB: src/lib/equipment-lifecycle.ts (čisto jedro, `now` vedno vhod) — EQUIPMENT_TRANSITIONS matrika (UPOKOJENO terminalno), checkTransition/allowedTransitions, isCalibrationOverdue/Missing (NEZNANO namesto ugibanja), isInspectionDue/Unknown, nextInspectionAt, eventUpdatesField (deterministična trasa eventa → polje). schedule-conflicts.ts EXTENDED: ResourceConflict.resource + 'oprema', findEquipmentConflicts (EquipmentAssignment intervali, poli-odprto, samo AKTIVEN nadrejeni termin, excludeScheduleId), conflictMessage → "Oprema »X« je že rezervirana".
+- RUTE: GET /api/equipment (§17 DTO + deterministične zastavice, strop 100/10, anon 401 + korelacija); PATCH /api/equipment (statusne tranzicije — 409 z dovoljenimi cilji, serijska/lokacija/interval/rok/potrdilo, revizija EQUIPMENT_STATUS/UPDATE ATOMSKO z oldValue, production.manage); GET/POST /api/equipment/events (KALIBRACIJA na merski brez potrdila → 400 fail-closed; na nemerski → 400; performedAt v prihodnosti → 400; NAPAKA rezultat NE posodablja polj; zgodovina determinističen red DESC); crews POST (equipment) zdaj postavlja calibrationRequired za MERSKA_OPREMA ob ustvarjanju.
+- SCHEDULES INTEGRATION (R142 obljuba ZAPRTA): POST/PATCH /api/schedules sprejmeta equipmentIds (validacija: array non-empty string, dedupe, strop 20, neznana oprema → 400, UPOKOJENA/IZGUBLJENA/V_SERVISU → 400 "ni rezervirljiva"); konflikti opreme → 409 z vir 'oprema'; premik termina SINHRONIZIRA intervale assignmentov (brez zastarelih rezervacij); čista zamenjava opreme brez premika preverja proti OBSTOJEČEMU intervalu.
+- UI (logistics-tab Oprema): status značke po vlogah (UPOKOJENO sivo terminalno), kalibracijske vrstice (POTEČENA rdeča / manjka potrdilo oramno / ShieldCheck do-roka s potrdilom), pregled vrstice (zadelju oramno / ni zabeležen / naslednji rok), SN prikaz, tranzicijski gumbi (samo dovoljeni; "Upokoji" ločen rdeč z aria opozorilom "terminalno — ni mogoče razveljaviti"), dialog "Zabeleži" (tip/rezultat/datetime/potrdilo pogojno za KALIBRACIJO/rok/opomba + zgodovina zadnjih 20, submit disabled dokler potrdilo manjka — fail-closed že v UI); Nov termin dialog: oprema več-izbira (samo rezervirljiva, števec rezervacij). Vse v blagovnem jeziku (tabular-nums, focus ringi, fail-verbose toasti).
+- STIL (obvezni pass — Nagib + Galerija realizacij, doslej nedotaknjeni): inclinometer-tab — kotne kartice tabular-nums + hover elevation, focus ringi na Vklopi/Shrani, prazno stanje zgodovine (Compass ikona, vabilo k prvi meritvi), toFixed(1) dosledno; reference-gallery — kartice hover border-roksal-navy/25 + focus-visible ring + keyboard dostopnost (tabIndex/role/Enter-Space) + aria-label, datumi tabular-nums.
+- TESTI +31 (skupaj 880/880, 58 datotek; r145-equipment.test.ts): transicijska matrika (legalne, nelegalne z allowed, UPOKOJENO terminalno, neznani status fail-closed), kalibracijska deterministika (rok preteklost/prihodnost, nemerska vedno false, merska brez roka NEZNANO), pregledi (zadelju, NEZNANO brez lasta), event pogodbe (merska brez potrdila → 400 + NIČ posodobljeno, s potrdilom → 201 + rok + revizija, nemerska KALIBRACIJA → 400, NAPAKA ne posodablja polj, prihodnost → 400, 404, neznani tip, zgodovina DESC red), PATCH (MONTER 403, nelegalna → 409 allowed + nič spremenjeno, legalna → 200 + revizija z oldValue, UPOKOJENO terminalno 409, interval -5 → 400), dodelitev (prekrivanje → 409 'oprema' + sporočilo, nazaj-na-nazaj → 201, neznana → 400, UPOKOJENA → 400, premik sinhronizira + stari dan prost, polna zamenjava → 409 rollback + → 200, GET vsebuje opremo).
+- DIMNI [27] +4 (skupaj 129): GET /api/equipment anon → 401 + correlation; POST /api/equipment/events anon → 401; s sejo → 200 lista; events neznana oprema → 200 []. Števci: ci.yml 125→129, README (testi 880/58 + smoke 129), docs/VARNOST.md 129, smoke header 129, scripts/r145-run-smoke.sh.
+- VERIFIKACIJA: tsc 0 · eslint 0 (celoten src) · testi 880/880 (58 datotek) · next build ✓ (standalone + cp static; fingerprint: "Zabeleži dogodek" v client chunku e76d7afb + "Upokoji" bbae0f84, api/equipment/{,events/}route.js v standalone) · lokalni dimni (svež proces) 123 uspešnih / 0 neuspešnih / 2 preskočenih (API_KEY + MONTER par, precedens) · migracija deployana na roksal_dev.
+- E2E ŽIVO na lokalnem buildu (ci@roksal.si dev ADMIN): oprema ustvarjena prek /api/crews (merska → calibrationRequired=true SAMODEJNO ✓), lifecycle DTO zastavice pravilne, Oprema subtab izriše značke/tranzicije/Zabeleži, dialog KALIBRACIJA predizbor za mersko + submit disabled brez potrdila, zabeležena kalibracija → cert + rok ŽIVO v DTO ("Kalibracija do 15. 03. 2027 · CAL-2026-0142"), nemerska brez kalibracijske vrstice, konzola ČISTA. NAUČEK: dialog gumbi morajo biti poizvedeni ZNOTRAJ [role=dialog] — klik na prvi "Zabeleži" v DOM pade na kartični gumb (odpre dialog, ne pošlje).
+- HIGIENA: strežnik kill -9 po PID + port 3100 potrjeno sproščen; /tmp cookies + logi pobrisani; E2E oprema (E2E Laser/Vijačnik) ostane v roksal_dev (dev peskovnik, precedens r139sched1); spot-r145@roksal.si SAMO na produkciji (MONTER, precedens R127); brez skrivnosti v repo/worklog.
+
+Stage Summary:
+- ZAKLJUČENO: §31 Equipment lifecycle — statusne tranzicije z terminalno upokojitvijo, kalibracija merske opreme (rok/potrdilo, fail-closed brez potrdila), pregledi z determinističnimi roki, EquipmentEvent revizijska sled, dodelitev opreme terminom s prekrivanji (R142 obljuba zaprta), UI preko celotnega cikla. Plus: stil pass Nagib + Galerija. 880/880 zeleno, dimni 129 (123/0/2 lokalno), build zelen.
+- PRODUKCIJA: R144 živo (rate limit sproščen; napačen fingerprint R141-B/R142 popravljen in dokumentiran — pravi discriminator so AVTENTICIRANE zahteve na nove rute, ne anon Bearer).
+- Ostanki (lastniški, nespremenjeni): #7 Neon backfill --commit, #8 R118-real fotke, #12 Render kartica, ⏰ roksal-fallback-db POTEČE 2026-10-25 (4 tedni).
+- Naslednja runda: P1 kandidati: §27 QC gate / §28 Structured installation evidence (terenski dokazi — naravna nadgradja Punch/SiteSurvey), §36 Mobile sync conflict model (/api/sync), §32-34 engineering/versioning; DB nivo EXCLUDE za opremo (btree_gist) opcija; živi fingerprint R145: GET /api/equipment s MONTER sejo → 200 z calibrationMissing=true za mersko (ali "Zabeleži dogodek" chunk), vsak push = deploy poskus (kvota trenutno OK).

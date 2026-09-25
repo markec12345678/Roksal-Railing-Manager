@@ -25,8 +25,37 @@ import {
 } from '@/lib/idempotency'
 import {
   findResourceConflicts,
+  findEquipmentConflicts,
   conflictMessage,
 } from '@/lib/schedule-conflicts'
+
+// R145 (§31): dodeljevanje opreme terminu — max 20 kosov na termin (§17
+// strop; več kot 20 kosov opreme na EN termin je patološki vnos).
+const MAX_EQUIPMENT_PER_SCHEDULE = 20
+
+/**
+ * R145 (§31): validacija equipmentIds iz telesa zahteve.
+ * Vrne: null (ni podano) | { error } (neveljavno → 400) | deduplirana lista.
+ * Fail-closed: ne-niz, ne-array, prazni člani, presežen strop → 400.
+ */
+function parseEquipmentIds(
+  raw: unknown,
+): { error: string } | { ids: string[] } | null {
+  if (raw === undefined) return null
+  if (!Array.isArray(raw)) return { error: 'equipmentIds mora biti seznam ID-jev' }
+  const seen = new Set<string>()
+  for (const item of raw) {
+    if (typeof item !== 'string' || item.length === 0) {
+      return { error: 'equipmentIds vsebuje neveljaven ID' }
+    }
+    seen.add(item)
+  }
+  const ids = [...seen]
+  if (ids.length > MAX_EQUIPMENT_PER_SCHEDULE) {
+    return { error: `Največ ${MAX_EQUIPMENT_PER_SCHEDULE} kosov opreme na termin` }
+  }
+  return { ids }
+}
 
 // R139 (issue #5 §17): neomejen findMany → privzeta zgornja meja + opcijske
 // strani (isti kontrakt kot /api/customers iz R138). Odzivna OBLIKA (polje)
@@ -118,11 +147,18 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json()
-    const { projectId, crewId, monterId, datumZacetka, datumKonca, predvideneUre, opombe, lokacija } = body
+    const { projectId, crewId, monterId, datumZacetka, datumKonca, predvideneUre, opombe, lokacija, equipmentIds: equipmentRaw } = body
 
     if (!projectId || !datumZacetka || !datumKonca) {
       return NextResponse.json({ error: 'projectId, datumZacetka, datumKonca so obvezni' }, { status: 400 })
     }
+
+    // R145 (§31): oprema za termin (opcijsko) — validacija OBLIKE fail-closed.
+    const equipmentParsed = parseEquipmentIds(equipmentRaw)
+    if (equipmentParsed && 'error' in equipmentParsed) {
+      return NextResponse.json({ error: equipmentParsed.error }, { status: 400 })
+    }
+    const equipmentIds = equipmentParsed && 'ids' in equipmentParsed ? equipmentParsed.ids : []
 
     // R142 (§30): preverba prekrivanja prek skupnega determinističnega
     // pomožnika — EKIPA in GLAVNI MONTER sta neodvisna vira (prej: samo ekipa;
@@ -142,6 +178,36 @@ export async function POST(request: Request) {
       datumZacetka: startAt,
       datumKonca: endAt,
     })
+    // R145 (§31): konflikti OPREME — isti 409 pogodba (razlog vira v telesu).
+    if (equipmentIds.length > 0) {
+      // Neznana oprema → 400 PRED konflikti (ne more rezervirati ne-obstoječe).
+      const known = await db.equipment.findMany({
+        where: { id: { in: equipmentIds } },
+        select: { id: true, naziv: true, status: true },
+      })
+      const knownIds = new Set(known.map((k) => k.id))
+      const missing = equipmentIds.filter((eid) => !knownIds.has(eid))
+      if (missing.length > 0) {
+        return NextResponse.json(
+          { error: `Neznana oprema: ${missing.join(', ')}` },
+          { status: 400 },
+        )
+      }
+      // UPOKOJENA/IZGUBLJENA/V_SERVISU oprema ni rezervirljiva (deterministično).
+      const notAvailable = known.filter((k) => ['UPOKOJENO', 'IZGUBLJENO', 'V_SERVISU'].includes(k.status))
+      if (notAvailable.length > 0) {
+        return NextResponse.json(
+          { error: `Oprema ni na voljo za rezervacijo: ${notAvailable.map((k) => k.naziv).join(', ')}` },
+          { status: 400 },
+        )
+      }
+      const eqConflicts = await findEquipmentConflicts({
+        equipmentIds,
+        datumZacetka: startAt,
+        datumKonca: endAt,
+      })
+      conflicts.push(...eqConflicts)
+    }
     if (conflicts.length > 0) {
       return NextResponse.json(
         {
@@ -180,6 +246,19 @@ export async function POST(request: Request) {
         where: { id: projectId, status: 'ZA_MONTAZO' },
         data: { status: 'V_IZDELAVI' },
       })
+
+      // R145 (§31): dodelitev opreme V ISTI transakciji (§19) — interval
+      // assignmenta = interval termina (sinhronizirana resničnost).
+      if (equipmentIds.length > 0) {
+        await tx.equipmentAssignment.createMany({
+          data: equipmentIds.map((eid) => ({
+            scheduleId: created.id,
+            equipmentId: eid,
+            datumOd: startAt,
+            datumDo: endAt,
+          })),
+        })
+      }
 
       // Revizijski vpis ATOMSKO s terminom (userId mora obstajati v Profile —
       // API-ključ pade nazaj na ADMIN profil; 'system' ni veljaven FK).
@@ -232,7 +311,7 @@ export async function PATCH(request: Request) {
   const correlationId = correlationFromRequest(request)
   try {
     const body = await request.json()
-    const { id, status, dejanskeUre, opombe, datumZacetka, datumKonca, crewId, monterId } = body
+    const { id, status, dejanskeUre, opombe, datumZacetka, datumKonca, crewId, monterId, equipmentIds: equipmentRaw } = body
 
     if (!id || !status) {
       return NextResponse.json({ error: 'id in status sta obvezna' }, { status: 400 })
@@ -272,27 +351,94 @@ export async function PATCH(request: Request) {
       }
     }
 
+    // R145 (§31): equipmentIds (opcijsko) — POLNA ZAMENJAVA (podano = točno
+    // ta oprema; izpuščeno = nespremenjeno). Validacija OBLIKE fail-closed.
+    const equipmentParsed = parseEquipmentIds(equipmentRaw)
+    if (equipmentParsed && 'error' in equipmentParsed) {
+      return NextResponse.json({ error: equipmentParsed.error }, { status: 400 })
+    }
+    const equipmentIds = equipmentParsed && 'ids' in equipmentParsed ? equipmentParsed.ids : null
+
     const updated = await db.$transaction(async (tx) => {
       // R142 (§30): preverba prekrivanja ZA PREMEK — znotraj transakcije,
       // izključi premikan termin sam (drugače bi prekril samega sebe).
-      if (moving && newStart && newEnd) {
-        const current = await tx.installationSchedule.findUnique({
+      // R145 (§31): trenutno stanje je potrebno TUDI za čisto zamenjavo
+      // opreme (preverba proti OBSTOJEČEMU intervalu termina).
+      let current: { crewId: string | null; monterId: string | null; datumZacetka: Date; datumKonca: Date } | null = null
+      if (moving || equipmentIds !== null) {
+        const cur = await tx.installationSchedule.findUnique({
           where: { id },
           select: { crewId: true, monterId: true, datumZacetka: true, datumKonca: true },
         })
-        if (!current) {
+        if (!cur) {
           return { kind: 'notfound' } as const
         }
+        current = cur
+      }
+      if (moving && current) {
         preMove = current
         const conflicts = await findResourceConflicts({
           crewId: crewId !== undefined ? crewId || null : current.crewId,
           monterId: monterId !== undefined ? monterId || null : current.monterId,
-          datumZacetka: newStart,
-          datumKonca: newEnd,
+          datumZacetka: newStart!,
+          datumKonca: newEnd!,
           excludeId: id,
         })
         if (conflicts.length > 0) {
           return { kind: 'conflict', conflicts } as const
+        }
+      }
+
+      // R145 (§31): preverba opreme ZNOTRAJ transakcije — ali pri podani
+      // zamenjavi (proti ciljnemu intervalu: nov premik ALI obstoječi), ali
+      // pri premiku (obstoječa oprema premika interval). Izključi premikan
+      // termin sam. UPOKOJENA/IZGUBLJENA/V_SERVISU → 400 (ni rezervirljiva).
+      {
+        const checkStart = moving ? newStart : current?.datumZacetka
+        const checkEnd = moving ? newEnd : current?.datumKonca
+        const hasAssignments =
+          equipmentIds === null && moving
+            ? (await tx.equipmentAssignment.count({ where: { scheduleId: id } })) > 0
+            : true
+        if (checkStart && checkEnd && (equipmentIds !== null || hasAssignments)) {
+          let checkIds: string[]
+          if (equipmentIds !== null) {
+            if (equipmentIds.length > 0) {
+              const known = await tx.equipment.findMany({
+                where: { id: { in: equipmentIds } },
+                select: { id: true, naziv: true, status: true },
+              })
+              const knownIds = new Set(known.map((k) => k.id))
+              const missing = equipmentIds.filter((eid) => !knownIds.has(eid))
+              if (missing.length > 0) {
+                return { kind: 'badrequest', error: `Neznana oprema: ${missing.join(', ')}` } as const
+              }
+              const notAvailable = known.filter((k) => ['UPOKOJENO', 'IZGUBLJENO', 'V_SERVISU'].includes(k.status))
+              if (notAvailable.length > 0) {
+                return {
+                  kind: 'badrequest',
+                  error: `Oprema ni na voljo za rezervacijo: ${notAvailable.map((k) => k.naziv).join(', ')}`,
+                } as const
+              }
+            }
+            checkIds = equipmentIds
+          } else {
+            // Premik z obstoječo opremo: preveri VSE kose termina.
+            const rows = await tx.equipmentAssignment.findMany({
+              where: { scheduleId: id },
+              select: { equipmentId: true },
+            })
+            checkIds = rows.map((r) => r.equipmentId)
+          }
+          const eqConflicts = await findEquipmentConflicts({
+            equipmentIds: checkIds,
+            datumZacetka: checkStart,
+            datumKonca: checkEnd,
+            excludeScheduleId: id,
+          })
+          if (eqConflicts.length > 0) {
+            return { kind: 'conflict', conflicts: eqConflicts } as const
+          }
         }
       }
 
@@ -349,6 +495,24 @@ export async function PATCH(request: Request) {
         }
       }
 
+      // R145 (§31): polna zamenjava opreme + premik SINHRONIZIRA intervale
+      // assignmentov s terminom (resničnost podatkov, brez zastarelih rezervacij).
+      if (equipmentIds !== null) {
+        await tx.equipmentAssignment.deleteMany({ where: { scheduleId: id } })
+        if (equipmentIds.length > 0) {
+          const s = moving && newStart ? newStart : row.datumZacetka
+          const e = moving && newEnd ? newEnd : row.datumKonca
+          await tx.equipmentAssignment.createMany({
+            data: equipmentIds.map((eid) => ({ scheduleId: id, equipmentId: eid, datumOd: s, datumDo: e })),
+          })
+        }
+      } else if (moving && newStart && newEnd) {
+        await tx.equipmentAssignment.updateMany({
+          where: { scheduleId: id },
+          data: { datumOd: newStart, datumDo: newEnd },
+        })
+      }
+
       // Revizijski vpis ATOMSKO s spremembo (prej: ločen write, crash = sprememba
       // brez sledi; 'system' ni veljaven FK → API-ključ pade na ADMIN profil).
       let auditUserId: string | null = null
@@ -383,6 +547,9 @@ export async function PATCH(request: Request) {
         { error: conflictMessage(updated.conflicts), conflicts: updated.conflicts },
         { status: 409 },
       )
+    }
+    if (updated.kind === 'badrequest') {
+      return NextResponse.json({ error: updated.error }, { status: 400 })
     }
     if (updated.kind === 'notfound') {
       return NextResponse.json({ error: 'Termin ne obstaja' }, { status: 404 })

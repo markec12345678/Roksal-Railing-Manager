@@ -56,6 +56,7 @@ model Profile {
   leadsCrew Crew[]                 @relation("CrewLeader")
   schedules InstallationSchedule[] @relation("MonterSchedules")
   sessions  UserSession[]
+  equipmentEvents EquipmentEvent[] // R145 §31 — pregledi/kalibracije, ki jih je zabeležil
 }
 
 /// #5 §2 — Session revocation: registracija izdanih sejnih žetonov.
@@ -846,16 +847,49 @@ model Equipment {
   naziv        String    @unique // npr. "Laser Bosch GLM 50C", "Vijačnik", "Avtomobil A"
   tip          String // "MERSKA_OPREMA" | "ROČNO_ORODJE" | "PREVOZ" | "VARNOSTNA_OPREMA" | "OSTALO"
   sifra        String?
-  status       String    @default("NA_VOLJO") // NA_VOLJO | V_UPORABI | V_SERVISU | IZGUBLJENO
+  status       String    @default("NA_VOLJO") // NA_VOLJO | V_UPORABI | V_SERVISU | IZGUBLJENO | UPOKOJENO (§31; CHECK v migraciji r145)
   lokacija     String? // npr. "Skladišče Kranj", "Avto A"
   zadnjiServis DateTime?
   opomba       String?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
+  // R145 (§31 Equipment lifecycle): serijska številka, pridobitev, pregledi
+  // in kalibracije. Kalibracija je POGOJ za mersko opremo (backfill:
+  // tip='MERSKA_OPREMA' → calibrationRequired=true — deterministično, brez
+  // ugibanja); rok (calibrationDueDate) + potrdilo vpisuje izvedeni pregled.
+  serijskaStevilka      String? // §31 "serial number"
+  pridobitev            DateTime? // §31 "acquisition"
+  lastInspectionAt      DateTime? // zadnji PREGLED (iz EquipmentEvent)
+  inspectionIntervalDays Int? // pogostost pregleda v dneh; null = brez periodike
+  calibrationRequired   Boolean   @default(false) // merska oprema = true (fail-closed)
+  calibrationDueDate    DateTime? // rok naslednje kalibracije (s potrdila)
+  calibrationCertificate String? // §31 "certificate" — naziv/številka potrdila
+
   assignments EquipmentAssignment[]
+  events      EquipmentEvent[]
 
   @@index([status])
+}
+
+// R145 (§31): zgodovina pregledov/kalibracij/servisov/Popravil opreme.
+// Neomejen vpis je PRETEKLOST — ni stropov (revizija življenjskega cikla,
+// podobno AuditLogu: pravno/tehnično pomembna sled se NE čišči).
+model EquipmentEvent {
+  id            String   @id @default(cuid())
+  equipmentId   String
+  type          String // PREGLED | KALIBRACJA | SERVIS | POPRAVILO
+  performedAt   DateTime // kdaj je bilo izvedeno (nikoli v prihodnosti — 400)
+  result        String   @default("V_REDU") // V_REDU | NAPAKA
+  certificate   String? // potrdilo o kalibraciji (obvezno za KALIBRACIJO na merski opremi)
+  opomba        String?
+  performedById String?
+  performedBy   Profile? @relation(fields: [performedById], references: [id], onDelete: SetNull)
+  createdAt     DateTime @default(now())
+
+  equipment Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+
+  @@index([equipmentId, performedAt])
 }
 
 // Termin montaže v koledarju

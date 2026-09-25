@@ -1525,8 +1525,17 @@ export function ReferenceGallery() {
             return (
               <Card
                 key={item.id}
-                className="break-inside-avoid mb-3 overflow-hidden cursor-pointer hover:shadow-md transition-shadow group relative"
+                className="break-inside-avoid mb-3 overflow-hidden cursor-pointer transition-[border-color,box-shadow] duration-150 hover:border-roksal-navy/25 hover:shadow-md group relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                tabIndex={0}
+                role="button"
+                aria-label={`Odpri realizacijo: ${item.naslov}`}
                 onClick={() => openLightbox(idx)}
+                onKeyDown={(e0) => {
+                  if (e0.key === 'Enter' || e0.key === ' ') {
+                    e0.preventDefault()
+                    openLightbox(idx)
+                  }
+                }}
               >
                 <div className="relative overflow-hidden bg-muted">
                   {item.slikaPo ? (
@@ -1593,7 +1602,7 @@ export function ReferenceGallery() {
                         {item.profil.material}
                       </Badge>
                     )}
-                    <span className="text-[10px] text-muted-foreground ml-auto">
+                    <span className="text-[10px] tabular-nums text-muted-foreground ml-auto">
                       {formatDateShort(item.createdAt)}
                     </span>
                   </div>

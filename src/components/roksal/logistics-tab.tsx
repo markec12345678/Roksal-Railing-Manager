@@ -11,9 +11,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Separator } from '@/components/ui/separator'
 import { useToast } from '@/hooks/use-toast'
 import { downloadCsv, todayStamp } from '@/lib/csv-export'
+import { allowedTransitions } from '@/lib/equipment-lifecycle'
 import {
   Calendar, Download, Users, Wrench, Plus, Clock, MapPin, CheckCircle2, CalendarClock,
-  Loader2, AlertTriangle, Truck, Package,
+  Loader2, AlertTriangle, Truck, Package, ShieldCheck, History,
 } from 'lucide-react'
 
 interface Schedule {
@@ -45,7 +46,29 @@ interface Equipment {
   tip: string
   status: string
   lokacija: string | null
-  _count: { assignments: number }
+  serijskaStevilka: string | null
+  lastInspectionAt: string | null
+  inspectionIntervalDays: number | null
+  nextInspectionAt: string | null
+  inspectionDue: boolean
+  inspectionUnknown: boolean
+  calibrationRequired: boolean
+  calibrationDueDate: string | null
+  calibrationCertificate: string | null
+  calibrationOverdue: boolean
+  calibrationMissing: boolean
+  zadnjiServis: string | null
+  assignmentsCount: number
+}
+
+interface EquipmentEventRow {
+  id: string
+  type: string
+  performedAt: string
+  result: string
+  certificate: string | null
+  opomba: string | null
+  performedBy: string | null
 }
 
 interface Project {
@@ -76,6 +99,30 @@ const EQUIPMENT_TYPES: Record<string, string> = {
   PREVOZ: 'Prevoz',
   VARNOSTNA_OPREMA: 'Varnostna oprema',
   OSTALO: 'Ostalo',
+}
+
+// R145 (§31): oznake statusov opreme (življenjski cikl — UPOKOJENO je novo).
+const EQUIPMENT_STATUS_LABELS: Record<string, string> = {
+  NA_VOLJO: 'Na voljo',
+  V_UPORABI: 'V uporabi',
+  V_SERVISU: 'V servisu',
+  IZGUBLJENO: 'Izgubljeno',
+  UPOKOJENO: 'Upokojeno',
+}
+
+const EQUIPMENT_STATUS_COLORS: Record<string, string> = {
+  NA_VOLJO: 'bg-green-50 text-green-700 border-green-300',
+  V_UPORABI: 'bg-blue-100 text-blue-800 border-blue-300',
+  V_SERVISU: 'bg-amber-100 text-amber-800 border-amber-300',
+  IZGUBLJENO: 'bg-red-100 text-red-700 border-red-300',
+  UPOKOJENO: 'bg-gray-100 text-gray-600 border-gray-300',
+}
+
+const EQUIPMENT_EVENT_LABELS: Record<string, string> = {
+  PREGLED: 'Pregled',
+  KALIBRACIJA: 'Kalibracija',
+  SERVIS: 'Servis',
+  POPRAVILO: 'Popravilo',
 }
 
 function formatDate(d: string): string {
@@ -227,6 +274,20 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
   const [moveTime, setMoveTime] = useState('08:00')
   const [moveHours, setMoveHours] = useState('8')
   const [moveBusy, setMoveBusy] = useState(false)
+  // R145 (§31): oprema pri novem terminu (več-izbira; konflikti opreme 409).
+  const [schedEquipment, setSchedEquipment] = useState<string[]>([])
+  // R145 (§31): zabeleži pregled/kalibracijo/servis/popravilo + statusne
+  // tranzicije (409 z dovoljenimi cilji — fail-verbose).
+  const [eventTarget, setEventTarget] = useState<Equipment | null>(null)
+  const [eventType, setEventType] = useState('PREGLED')
+  const [eventDate, setEventDate] = useState('')
+  const [eventResult, setEventResult] = useState('V_REDU')
+  const [eventCertificate, setEventCertificate] = useState('')
+  const [eventNextDue, setEventNextDue] = useState('')
+  const [eventOpomba, setEventOpomba] = useState('')
+  const [eventBusy, setEventBusy] = useState(false)
+  const [eventHistory, setEventHistory] = useState<EquipmentEventRow[]>([])
+  const [eventHistoryFor, setEventHistoryFor] = useState<string | null>(null)
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -234,7 +295,9 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
       const [schedRes, crewRes, equipRes, projRes] = await Promise.all([
         fetch('/api/schedules' + (projectId ? `?projectId=${projectId}` : '')),
         fetch('/api/crews'),
-        fetch('/api/crews?type=equipment'),
+        // R145 (§31): lifecycle DTO (zastavice kalibracije/pregledov) —
+        // /api/equipment, ne starejši /api/crews?type=equipment (brez cikla).
+        fetch('/api/equipment'),
         fetch('/api/projects'),
       ])
       if (schedRes.ok) setSchedules(await schedRes.json())
@@ -257,18 +320,92 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
     try {
       const res = await fetch('/api/schedules', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectId: schedProject, crewId: schedCrew || undefined, datumZacetka: start.toISOString(), datumKonca: end.toISOString(), predvideneUre: parseInt(schedHours), lokacija: schedLocation }),
+        body: JSON.stringify({
+          projectId: schedProject,
+          crewId: schedCrew || undefined,
+          datumZacetka: start.toISOString(),
+          datumKonca: end.toISOString(),
+          predvideneUre: parseInt(schedHours),
+          lokacija: schedLocation,
+          // R145 (§31): dodeljena oprema (prazna lista = brez opreme).
+          ...(schedEquipment.length > 0 ? { equipmentIds: schedEquipment } : {}),
+        }),
       })
       const data = await res.json()
       if (res.ok) {
-        toast({ title: '✓ Termin ustvarjen', description: `${formatDate(start.toISOString())} · ${schedHours}h` })
+        toast({ title: '✓ Termin ustvarjen', description: `${formatDate(start.toISOString())} · ${schedHours}h${schedEquipment.length > 0 ? ` · ${schedEquipment.length} kosov opreme` : ''}` })
         setNewScheduleOpen(false)
-        setSchedDate(''); setSchedLocation('')
+        setSchedDate(''); setSchedLocation(''); setSchedEquipment([])
         loadData()
       } else {
         toast({ title: 'Napaka', description: data.error, variant: 'destructive' })
       }
     } catch { toast({ title: 'Omrežna napaka', variant: 'destructive' }) }
+  }
+
+  /** R145 (§31): statusna tranzicija opreme (409 z dovoljenimi cilji). */
+  const handleEquipmentStatus = async (e0: Equipment, to: string) => {
+    try {
+      const res = await fetch('/api/equipment', {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: e0.id, status: to }),
+      })
+      const data = (await res.json().catch(() => null)) as { error?: string } | null
+      if (res.ok) {
+        toast({ title: `Status → ${EQUIPMENT_STATUS_LABELS[to] ?? to}`, description: e0.naziv })
+        loadData()
+      } else {
+        toast({ title: 'Napaka', description: data?.error ?? `HTTP ${res.status}`, variant: 'destructive' })
+      }
+    } catch { toast({ title: 'Omrežna napaka', variant: 'destructive' }) }
+  }
+
+  /** R145 (§31): odpri dialog za dogodek + naloži zgodovino (zadnjih 20). */
+  const openEventDialog = async (e0: Equipment) => {
+    setEventTarget(e0)
+    setEventType(e0.calibrationRequired ? 'KALIBRACIJA' : 'PREGLED')
+    setEventResult('V_REDU')
+    setEventCertificate('')
+    setEventNextDue('')
+    setEventOpomba('')
+    const now = new Date()
+    const p = (n: number) => String(n).padStart(2, '0')
+    setEventDate(`${now.getFullYear()}-${p(now.getMonth() + 1)}-${p(now.getDate())}T${p(now.getHours())}:${p(now.getMinutes())}`)
+    setEventHistory([])
+    setEventHistoryFor(e0.id)
+    try {
+      const res = await fetch(`/api/equipment/events?equipmentId=${e0.id}`)
+      if (res.ok) setEventHistory(await res.json())
+    } catch { /* zgodovina je naknadna — dialog ostane uporaben */ }
+  }
+
+  /** R145 (§31): zabeleži dogodek (fail-verbose — 400/403/404/500 se pokažejo). */
+  const handleLogEvent = async () => {
+    if (!eventTarget || !eventDate) return
+    setEventBusy(true)
+    try {
+      const res = await fetch('/api/equipment/events', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          equipmentId: eventTarget.id,
+          type: eventType,
+          performedAt: new Date(eventDate).toISOString(),
+          result: eventResult,
+          ...(eventType === 'KALIBRACIJA' && eventCertificate ? { certificate: eventCertificate } : {}),
+          ...(eventType === 'KALIBRACIJA' && eventNextDue ? { nextDueDate: new Date(`${eventNextDue}T12:00:00`).toISOString() } : {}),
+          ...(eventOpomba ? { opomba: eventOpomba } : {}),
+        }),
+      })
+      const data = (await res.json().catch(() => null)) as { error?: string } | null
+      if (res.ok) {
+        toast({ title: `✓ ${EQUIPMENT_EVENT_LABELS[eventType] ?? eventType} zabeležen`, description: eventTarget.naziv })
+        setEventTarget(null)
+        loadData()
+      } else {
+        toast({ title: 'Napaka', description: data?.error ?? `HTTP ${res.status}`, variant: 'destructive' })
+      }
+    } catch { toast({ title: 'Omrežna napaka', variant: 'destructive' }) }
+    finally { setEventBusy(false) }
   }
 
   const handleStatusChange = async (id: string, status: string, dejanskeUre?: number) => {
@@ -511,18 +648,93 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
             <Card key={e.id} className="transition-[border-color,box-shadow] duration-150 hover:border-roksal-navy/25 hover:shadow-sm">
               <CardContent className="p-3">
                 <div className="flex items-start justify-between gap-2">
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 mb-0.5">
                       <span className="text-sm font-semibold text-roksal-navy">{e.naziv}</span>
-                      <Badge variant="outline" className={`text-[8px] ${e.status === 'NA_VOLJO' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>
-                        {e.status === 'NA_VOLJO' ? 'Na voljo' : e.status}
+                      <Badge variant="outline" className={`text-[8px] shrink-0 ${EQUIPMENT_STATUS_COLORS[e.status] ?? 'bg-muted'}`}>
+                        {EQUIPMENT_STATUS_LABELS[e.status] ?? e.status}
                       </Badge>
                     </div>
                     <div className="text-[10px] tabular-nums text-muted-foreground">
-                      {EQUIPMENT_TYPES[e.tip] || e.tip} · {e.lokacija || 'Brez lokacije'} · {e._count.assignments} rezervacij
+                      {EQUIPMENT_TYPES[e.tip] || e.tip} · {e.lokacija || 'Brez lokacije'} · {e.assignmentsCount} rezervacij
+                      {e.serijskaStevilka && <span className="ml-1"> · SN {e.serijskaStevilka}</span>}
                     </div>
+                    {/* R145 (§31): življenjski cikl — kalibracija (fail-closed
+                        poudarki: POTEČENA rdeče, manjka potrdilo/rok oramno). */}
+                    {e.calibrationRequired && (
+                      <div className="mt-1 text-[10px] tabular-nums">
+                        {e.calibrationOverdue ? (
+                          <span className="inline-flex items-center gap-1 rounded border border-red-300 bg-red-50 px-1.5 py-0.5 font-semibold text-red-700">
+                            <AlertTriangle className="h-3 w-3" aria-hidden /> Kalibracija potečena ({e.calibrationDueDate ? formatDate(e.calibrationDueDate) : '—'})
+                          </span>
+                        ) : e.calibrationMissing ? (
+                          <span className="inline-flex items-center gap-1 rounded border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-amber-800">
+                            <AlertTriangle className="h-3 w-3" aria-hidden /> Manjka potrdilo/rok kalibracije
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-muted-foreground">
+                            <ShieldCheck className="h-3 w-3 text-green-600" aria-hidden />
+                            Kalibracija do {e.calibrationDueDate ? formatDate(e.calibrationDueDate) : '—'}{e.calibrationCertificate ? ` · ${e.calibrationCertificate}` : ''}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    {e.inspectionIntervalDays !== null && (
+                      <div className="mt-0.5 text-[10px] tabular-nums text-muted-foreground">
+                        {e.inspectionDue ? (
+                          <span className="font-semibold text-amber-700">Pregled zadelju{e.nextInspectionAt ? ` (rok ${formatDate(e.nextInspectionAt)})` : ''}</span>
+                        ) : e.inspectionUnknown ? (
+                          <span className="text-amber-700">Pregled ni še zabeležen (interval {e.inspectionIntervalDays} dni)</span>
+                        ) : (
+                          <span>Naslednji pregled: {e.nextInspectionAt ? formatDate(e.nextInspectionAt) : '—'}</span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
+                {/* Statusne tranzicije (matrika §31 — samo dovoljeni cilji;
+                    UPOKOJENO je izpostavljeno ločeno (terminalno — rdeče) in
+                    zahteva zaveden klik). */}
+                {e.status !== 'UPOKOJENO' && (
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                    {allowedTransitions(e.status).filter((s) => s !== 'UPOKOJENO').map((s) => (
+                      <Button
+                        key={s}
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="h-6 text-[10px] focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                        aria-label={`${EQUIPMENT_STATUS_LABELS[s] ?? s}: ${e.naziv}`}
+                        onClick={() => void handleEquipmentStatus(e, s)}
+                      >
+                        {s === 'V_SERVISU' ? 'V servis' : EQUIPMENT_STATUS_LABELS[s] ?? s}
+                      </Button>
+                    ))}
+                    {allowedTransitions(e.status).includes('UPOKOJENO') && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="h-6 text-[10px] border-red-300 text-red-700 hover:bg-red-50 focus-visible:ring-2 focus-visible:ring-red-400/50"
+                        aria-label={`Upokoji ${e.naziv} (terminalno — ni mogoče razveljaviti)`}
+                        title="Upokojitev je terminalna — ni mogoče razveljaviti"
+                        onClick={() => void handleEquipmentStatus(e, 'UPOKOJENO')}
+                      >
+                        Upokoji
+                      </Button>
+                    )}
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-6 text-[10px] bg-roksal-navy/5 focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                      aria-label={`Zabeleži dogodek za ${e.naziv}`}
+                      onClick={() => void openEventDialog(e)}
+                    >
+                      <History className="h-3 w-3 mr-1" aria-hidden /> Zabeleži
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}
@@ -553,6 +765,31 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
             <div className="grid grid-cols-2 gap-2">
               <div><Label className="text-xs">Predvidene ure</Label><Input type="number" value={schedHours} onChange={(e) => setSchedHours(e.target.value)} className="h-9" /></div>
               <div><Label className="text-xs">Lokacija</Label><Input value={schedLocation} onChange={(e) => setSchedLocation(e.target.value)} placeholder="naslov" className="h-9" /></div>
+            </div>
+            {/* R145 (§31): dodelitev opreme — samo rezervirljiva (brez
+                UPOKOJENO/IZGUBLJENO/V_SERVISU); konflikt javi strežnik (409). */}
+            <div>
+              <Label className="text-xs">Oprema ({schedEquipment.length} izbranih)</Label>
+              {equipment.filter((e0) => !['UPOKOJENO', 'IZGUBLJENO', 'V_SERVISU'].includes(e0.status)).length === 0 ? (
+                <p className="text-[10px] text-muted-foreground py-1">Ni rezervirljive opreme.</p>
+              ) : (
+                <div className="max-h-32 space-y-1 overflow-y-auto rounded-md border p-2">
+                  {equipment.filter((e0) => !['UPOKOJENO', 'IZGUBLJENO', 'V_SERVISU'].includes(e0.status)).map((e0) => (
+                    <label key={e0.id} className="flex cursor-pointer items-center gap-2 text-xs">
+                      <input
+                        type="checkbox"
+                        className="h-3.5 w-3.5 accent-[#1d2b3e] focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                        checked={schedEquipment.includes(e0.id)}
+                        onChange={(ev) => {
+                          setSchedEquipment((prev) => ev.target.checked ? [...prev, e0.id] : prev.filter((x) => x !== e0.id))
+                        }}
+                      />
+                      <span className="min-w-0 flex-1 truncate">{e0.naziv}</span>
+                      <span className="shrink-0 text-[9px] tabular-nums text-muted-foreground">{e0.assignmentsCount}×</span>
+                    </label>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
           <DialogFooter>
@@ -631,6 +868,87 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setNewEquipOpen(false)}>Prekliči</Button>
             <Button type="button" onClick={handleCreateEquip} className="bg-roksal-navy text-white">Shrani</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: zabeleži pregled/kalibracijo/servis/popravilo (R145 §31).
+          Fail-closed pogodba je na strežniku: kalibracija merske opreme BREZ
+          potrdila → 400 (toast pokaže razlog — ni tiho ugibanja). */}
+      <Dialog open={eventTarget !== null} onOpenChange={(open) => !open && setEventTarget(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-roksal-navy">
+              <History className="h-4.5 w-4.5 text-roksal-amber" />
+              Zabeleži dogodek
+            </DialogTitle>
+          </DialogHeader>
+          {eventTarget && (
+            <p className="text-[11px] text-muted-foreground">
+              {eventTarget.naziv}
+              {eventTarget.serijskaStevilka ? ` · SN ${eventTarget.serijskaStevilka}` : ''}
+              {eventTarget.calibrationRequired ? ' · merska oprema' : ''}
+            </p>
+          )}
+          <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-2">
+              <div><Label className="text-xs">Tip dogodka</Label>
+                <Select value={eventType} onValueChange={setEventType}>
+                  <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(EQUIPMENT_EVENT_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div><Label className="text-xs">Rezultat</Label>
+                <Select value={eventResult} onValueChange={setEventResult}>
+                  <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="V_REDU">V redu</SelectItem>
+                    <SelectItem value="NAPAKA">Napaka</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div><Label className="text-xs">Izvedeno *</Label><Input type="datetime-local" value={eventDate} onChange={(e) => setEventDate(e.target.value)} className="h-9 tabular-nums" /></div>
+            {eventType === 'KALIBRACIJA' && (
+              <>
+                <div><Label className="text-xs">Potrdilo (obvezno za mersko opremo)</Label><Input value={eventCertificate} onChange={(e) => setEventCertificate(e.target.value)} placeholder="npr. CAL-2026-0142 / Siemens" className="h-9" /></div>
+                <div><Label className="text-xs">Naslednja kalibracija (rok)</Label><Input type="date" value={eventNextDue} onChange={(e) => setEventNextDue(e.target.value)} className="h-9 tabular-nums" /></div>
+              </>
+            )}
+            <div><Label className="text-xs">Opomba</Label><Input value={eventOpomba} onChange={(e) => setEventOpomba(e.target.value)} placeholder="neobvezno" className="h-9" /></div>
+            {/* Zgodovina (zadnjih 20) — deterministični red strežnika. */}
+            {eventHistoryFor === eventTarget?.id && eventHistory.length > 0 && (
+              <div>
+                <Label className="text-xs text-muted-foreground">Zadnji dogodki</Label>
+                <div className="max-h-28 space-y-1 overflow-y-auto rounded-md border p-2">
+                  {eventHistory.map((h) => (
+                    <div key={h.id} className="flex items-center gap-2 text-[10px] tabular-nums">
+                      <span className="font-semibold text-roksal-navy">{EQUIPMENT_EVENT_LABELS[h.type] ?? h.type}</span>
+                      <span className="text-muted-foreground">{formatDate(h.performedAt)}</span>
+                      {h.result === 'NAPAKA' && <span className="font-semibold text-red-700">NAPAKA</span>}
+                      {h.certificate && <span className="truncate text-muted-foreground">· {h.certificate}</span>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            <p className="text-[10px] leading-relaxed text-muted-foreground">
+              Dogodek v prihodnosti ni mogoč (preverba na strežniku). Kalibracija merske opreme zahteva potrdilo — sicer zavržena (400).
+            </p>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setEventTarget(null)}>Prekliči</Button>
+            <Button
+              type="button"
+              onClick={() => void handleLogEvent()}
+              disabled={eventBusy || !eventDate || (eventType === 'KALIBRACIJA' && eventTarget?.calibrationRequired && !eventCertificate)}
+              className="bg-roksal-navy hover:bg-roksal-navy/90 text-white focus-visible:ring-roksal-navy/40"
+            >
+              {eventBusy && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
+              Zabeleži
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

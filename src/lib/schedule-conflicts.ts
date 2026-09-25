@@ -20,11 +20,18 @@
  *   • ZAKLJUCENO — ne zasede (opravljeno; zgodovina ne more prekrivati
  *     načrtovanja v prihodnje, zgodovinski vnosi pa ne smejo blokirati).
  *
- * §30 omenja še: opremo, odsotnost, travel-time/capacity. Oprema ima model
- * EquipmentAssignment, a NIMA API poti za dodeljevanje (ni pisalne rute —
- * konfliktov ne more nastati prek API-ja; zaščita se doda SOZvučno z
- * dodeljevalno ruto). Odsotnost/travel-time zahtevata NOVA modela (shema +
- * upravljanje) — ločena runda, dokumentirano v worklogu kot nadaljevanje.
+ * §30 omenja še: opremo, odsotnost, travel-time/capacity.
+ *
+ * R145 (§31): OPREMA je zdaj TRETJI vir — dodeljevalna pot obstaja
+ * (equipmentIds v POST/PATCH /api/schedules), zato tudi konflikti opreme
+ * (findEquipmentConflicts): EquipmentAssignment vrstice držijo opremo
+ * zasedeno v svojem intervalu [datumOd, datumDo), NAMERNO poli-odprto
+ * (nazaj-na-nazaj prenos opreme je dovoljen — isti vzorec kot ekipe) —
+ * ampak SAMO, če je nadrejeni termin AKTIVEN (statusHoldsResource).
+ * PREKlicANO/ZAKLJUCENO termina ne držita opreme več. Premik termina
+ * (PATCH moving) v isti transakciji posodobi tudi intervale njegovih
+ * assignments — resničnost podatkov ostane sinhronizirana s terminom.
+ * Odsotnost/travel-time zahtevata še vedno NOVA modela (ločena runda).
  */
 import { db } from '@/lib/db'
 
@@ -46,11 +53,11 @@ export function statusHoldsResource(status: string): boolean {
 }
 
 export interface ResourceConflict {
-  /** Kateri vir je dvojno rezerviran. */
-  resource: 'ekipa' | 'monter'
-  /** ID vira (crewId / monterId) — enak kot v zahtevi. */
+  /** Kateri vir je dvojno rezerviran (R145: tudi OPREMA). */
+  resource: 'ekipa' | 'monter' | 'oprema'
+  /** ID vira (crewId / monterId / equipmentId) — enak kot v zahtevi. */
   resourceId: string
-  /** Prikazno ime (ekipa naziv / monter ime) — za UI sporočilo. */
+  /** Prikazno ime (ekipa naziv / monter ime / oprema naziv) — za UI sporočilo. */
   naziv: string
   /** Nasprotujoči si termin. */
   scheduleId: string
@@ -156,5 +163,76 @@ export function conflictMessage(conflicts: ResourceConflict[]): string {
     hour: '2-digit',
     minute: '2-digit',
   })
-  return `${c.resource === 'ekipa' ? 'Ekipa' : 'Monter'} "${c.naziv}" ima že termin (${c.nazivProjekta}) ob ${cas}.`
+  const oznaka = c.resource === 'ekipa' ? 'Ekipa' : c.resource === 'oprema' ? 'Oprema' : 'Monter'
+  return `${oznaka} "${c.naziv}" ${c.resource === 'oprema' ? 'je že rezervirana' : 'ima že termin'} (${c.nazivProjekta}) ob ${cas}.`
+}
+
+export interface EquipmentConflictQuery {
+  /** Oprema, ki jo želimo rezervirati (non-empty ID-ji; klicatelj deduplira). */
+  equipmentIds: readonly string[]
+  datumZacetka: Date
+  datumKonca: Date
+  /** Pri premiku (PATCH): izključi premikan termin (njegove assignments). */
+  excludeScheduleId?: string
+}
+
+/**
+ * R145 (§30+§31): prekrivanje OPREME — EquipmentAssignment vrstice, katerih
+ * interval [datumOd, datumDo) se poli-odprto prekriva z novim oknom, NADREJENI
+ * TERMIN pa je aktiven (drži vir). Grob DB stavek + natančna JS revalidacija
+ * (isti vzorec kot findResourceConflicts — deterministika v enem mestu).
+ *
+ * Fail-closed po naravi: brez equipmentIds → prazen rezultat (ni česa
+ * rezervirati); neznana oprema je odgovornost rute (400 PRED zapisom).
+ */
+export async function findEquipmentConflicts(
+  q: EquipmentConflictQuery,
+): Promise<ResourceConflict[]> {
+  if (q.equipmentIds.length === 0) return []
+
+  const candidates = await db.equipmentAssignment.findMany({
+    where: {
+      equipmentId: { in: [...q.equipmentIds] },
+      datumOd: { lt: q.datumKonca },
+      datumDo: { gt: q.datumZacetka },
+      ...(q.excludeScheduleId ? { scheduleId: { not: q.excludeScheduleId } } : {}),
+      schedule: { status: { in: [...SCHEDULE_ACTIVE_STATUSES] } },
+    },
+    select: {
+      equipmentId: true,
+      datumOd: true,
+      datumDo: true,
+      equipment: { select: { naziv: true } },
+      schedule: {
+        select: {
+          id: true,
+          projectId: true,
+          datumZacetka: true,
+          datumKonca: true,
+          status: true,
+          project: { select: { nazivProjekta: true } },
+        },
+      },
+    },
+  })
+
+  const out: ResourceConflict[] = []
+  for (const a of candidates) {
+    // Natančna revalidacija obeh intervalov (assignment + termin) — grob
+    // stavek je predmetnik, deterministika živi tu.
+    if (!overlaps(q.datumZacetka, q.datumKonca, a.datumOd, a.datumDo)) continue
+    if (!statusHoldsResource(a.schedule.status)) continue
+    out.push({
+      resource: 'oprema',
+      resourceId: a.equipmentId,
+      naziv: a.equipment?.naziv ?? 'oprema',
+      scheduleId: a.schedule.id,
+      projectId: a.schedule.projectId,
+      nazivProjekta: a.schedule.project?.nazivProjekta ?? '—',
+      datumZacetka: a.schedule.datumZacetka.toISOString(),
+      datumKonca: a.schedule.datumKonca.toISOString(),
+      status: a.schedule.status,
+    })
+  }
+  return out
 }
