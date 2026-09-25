@@ -79,8 +79,8 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 36 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **614** (40 datotek, vključno z globalSetup embedded PG) |
-| Varnostni smoke | 52 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
+| Testi (vitest) | **638** (41 datotek, vključno z globalSetup embedded PG) |
+| Varnostni smoke | 86 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
 | Jezik vmesnika | Slovenščina |
@@ -341,7 +341,7 @@ Sheet z 6 podzavihki:
 | **PWA** | Service Worker + Web Manifest |
 | **Temnitveni način** | [next-themes](https://github.com/pacocoursey/next-themes) |
 | **Validacija** | [Zod 4](https://zod.dev/) |
-| **Testiranje** | [Vitest 4](https://vitest.dev/) (614 testov + globalSetup embedded PG) |
+| **Testiranje** | [Vitest 4](https://vitest.dev/) (638 testov + globalSetup embedded PG) |
 | **Paketni upravitelj** | [Bun](https://bun.sh/) |
 | **Linting** | ESLint 9 + eslint-config-next |
 
@@ -467,7 +467,7 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `bun run check` | tsc --noEmit + vitest run (en ukaz za vse) |
 | `bunx tsc --noEmit` | Tipska kontrola celotnega projekta (trenutno 0 napak) |
 | `bun run lint` | ESLint preverjanje |
-| `bun run smoke` | Varnostni smoke na zagnanem strežniku (52 preverjanj) |
+| `bun run smoke` | Varnostni smoke na zagnanem strežniku (86 preverjanj) |
 | `bun run bench:measurement` | R118 validacijski harness Merilnega SDK (12 scenarijev) |
 | `bun run db:deploy` | `prisma migrate deploy` (verzionirane migracije) |
 | `bun run db:seed` | Demo podatki |
@@ -741,6 +741,10 @@ Potrebne env spremenljivke na Vercelu: `DATABASE_URL` (postgres:// URL,
   `UserSession`; odjava / odjava vseh naprav / menjava gesla / brisanje profila prekličejo
   žeton TAKOJ (ukraden žeton ne preživi). Active-session pregled + revoke posamezne naprave
   prek `/api/auth/sessions`; UI gumb Odjava v TopBar. Fail-closed: žeton brez `jti` ni veljaven.
+- **CSRF / Origin preverba** (R130, issue #5 §6): vsaka `/api/*` mutacija (tudi prijava/demo)
+  mora dokazati izvor — glava `Origin` (ali `Referer` rezerva) se preveri proti gostitelju;
+  manjkata → 403 fail-closed; Bearer/API-key klienti so izjema (ni ambientnega piškotka);
+  razširljivo z `CSRF_ALLOWED_ORIGINS` — `src/lib/csrf.ts`, prva vrsta v proxy
 - Gesla: **scrypt** (N=16384, r=8, p=1) z `timingSafeEqual` primerjavo
 - Brute-force zaščita: 10 poskusov / 15 min na (IP, e-mail) par — `src/lib/rate-limit.ts`
 - API ključi `rkm_…` samo s pepper-hashem v bazi, preklicljivi

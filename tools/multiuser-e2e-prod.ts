@@ -36,9 +36,12 @@ function check(step: string, ok: boolean, detail: string): Check {
 }
 
 async function api(path: string, init: RequestInit & { cookie?: string } = {}) {
+  const method = (init.method ?? 'GET').toUpperCase()
   const res = await fetch(`${BASE}${path}`, {
     ...init,
     headers: {
+      // R130 (CSRF §6): legitimni isti-izvorni klient pošilja Origin na mutacijah.
+      ...(method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS' ? { origin: BASE } : {}),
       ...(init.body && !(init.body instanceof FormData) ? { 'content-type': 'application/json' } : {}),
       ...(init.cookie ? { cookie: init.cookie } : {}),
       ...(init.headers ?? {}),

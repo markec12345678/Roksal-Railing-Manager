@@ -14,12 +14,12 @@ async function register(name: string): Promise<string> {
   const email = `s5-${name}-${randomUUID().slice(0, 8)}@test.roksal.si`
   const res = await fetch(`${BASE}/api/auth/register`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', origin: BASE },
     body: JSON.stringify({ email, password: 'S5-testni-2026!', name: `S5 ${name}` }),
   })
   if (res.status === 404 || res.status === 405) {
     // registracija nedosegljiva → demo
-    const d = await fetch(`${BASE}/api/auth/demo`, { method: 'POST' })
+    const d = await fetch(`${BASE}/api/auth/demo`, { method: 'POST', headers: { origin: BASE } })
     const setCookie = d.headers.get('set-cookie') ?? ''
     return setCookie.split(';')[0]
   }
@@ -41,7 +41,7 @@ async function main() {
     const fd = new FormData()
     fd.append('file', new Blob([buf], { type: 'image/jpeg' }), file.split('/').pop()!)
     fd.append('kind', kind)
-    const res = await fetch(`${BASE}/api/viz/stage`, { method: 'POST', headers: { cookie }, body: fd })
+    const res = await fetch(`${BASE}/api/viz/stage`, { method: 'POST', headers: { cookie, origin: BASE }, body: fd })
     if (!res.ok) throw new Error(`stage ${kind} → ${res.status}`)
     return ((await res.json()) as { token: string }).token
   }
@@ -54,7 +54,7 @@ async function main() {
   const tMask = await stage(cookieA, 'public/viz-demo/mask.png', 'mask')
   const preview = await fetch(`${BASE}/api/viz/preview`, {
     method: 'POST',
-    headers: { cookie: cookieA, 'content-type': 'application/json' },
+    headers: { cookie: cookieA, 'content-type': 'application/json', origin: BASE },
     body: JSON.stringify({
       originalToken: tBalkon,
       productToken: tProduct,
@@ -68,7 +68,7 @@ async function main() {
 
   const save = await fetch(`${BASE}/api/viz/projects`, {
     method: 'POST',
-    headers: { cookie: cookieA, 'content-type': 'application/json' },
+    headers: { cookie: cookieA, 'content-type': 'application/json', origin: BASE },
     body: JSON.stringify({ name: 'S5 security check', stagingToken: tBalkon }),
   })
   checks.push({ name: 'A: save', ok: save.ok, status: save.status })
@@ -77,10 +77,10 @@ async function main() {
   // B poskuša dostopati do A-jevih podatkov (vse MORA biti 404/403)
   const bChecks: Array<[string, Response]> = [
     ['B: GET tuj projekt', await fetch(`${BASE}/api/viz/projects/${projectId}`, { headers: { cookie: cookieB } })],
-    ['B: PATCH tuj projekt', await fetch(`${BASE}/api/viz/projects/${projectId}`, { method: 'PATCH', headers: { cookie: cookieB, 'content-type': 'application/json' }, body: JSON.stringify({ name: 'Ukraden' }) })],
+    ['B: PATCH tuj projekt', await fetch(`${BASE}/api/viz/projects/${projectId}`, { method: 'PATCH', headers: { cookie: cookieB, 'content-type': 'application/json', origin: BASE }, body: JSON.stringify({ name: 'Ukraden' }) })],
     ['B: DELETE tuj projekt', await fetch(`${BASE}/api/viz/projects/${projectId}`, { method: 'DELETE', headers: { cookie: cookieB } })],
-    ['B: render tuj projekt', await fetch(`${BASE}/api/viz/render`, { method: 'POST', headers: { cookie: cookieB, 'content-type': 'application/json' }, body: JSON.stringify({ projectId }) })],
-    ['B: duplicate tuj projekt', await fetch(`${BASE}/api/viz/projects/${projectId}/duplicate`, { method: 'POST', headers: { cookie: cookieB } })],
+    ['B: render tuj projekt', await fetch(`${BASE}/api/viz/render`, { method: 'POST', headers: { cookie: cookieB, 'content-type': 'application/json', origin: BASE }, body: JSON.stringify({ projectId }) })],
+    ['B: duplicate tuj projekt', await fetch(`${BASE}/api/viz/projects/${projectId}/duplicate`, { method: 'POST', headers: { cookie: cookieB, origin: BASE } })],
     ['B: file original', await fetch(`${BASE}/api/viz/files/viz/projects/${projectId}/original.jpg`, { headers: { cookie: cookieB } })],
     ['B: file preview', await fetch(`${BASE}/api/viz/files/viz/projects/${projectId}/preview.jpg`, { headers: { cookie: cookieB } })],
   ]
@@ -91,7 +91,7 @@ async function main() {
   // A še vedno dostopa (sanity) + počisti
   const aGet = await fetch(`${BASE}/api/viz/projects/${projectId}`, { headers: { cookie: cookieA } })
   checks.push({ name: 'A: GET svoj (sanity)', ok: aGet.ok, status: aGet.status })
-  const del = await fetch(`${BASE}/api/viz/projects/${projectId}`, { method: 'DELETE', headers: { cookie: cookieA } })
+  const del = await fetch(`${BASE}/api/viz/projects/${projectId}`, { method: 'DELETE', headers: { cookie: cookieA, origin: BASE } })
   checks.push({ name: 'A: DELETE svoj (cleanup)', ok: del.ok, status: del.status })
 
   let pass = 0

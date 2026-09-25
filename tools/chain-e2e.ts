@@ -98,6 +98,11 @@ async function api(
   const res = await fetch(`${BASE}${path}`, {
     method,
     headers: {
+      // R130 (CSRF §6): brskalnik na mutaciji vedno pošlje Origin — ta klient
+      // ga ponareja, da ostane legitimni isti-izvorni klient.
+      ...(method.toUpperCase() !== 'GET' && method.toUpperCase() !== 'HEAD' && method.toUpperCase() !== 'OPTIONS'
+        ? { origin: BASE }
+        : {}),
       ...(body !== undefined ? { 'content-type': 'application/json' } : {}),
       ...(cookie ? { cookie } : {}),
     },
@@ -130,7 +135,7 @@ async function main() {
   }
   const login = await fetch(`${BASE}/api/auth`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', origin: BASE },
     body: JSON.stringify({ email: E2E_EMAIL, password: E2E_PASSWORD }),
   })
   const setCookie = login.headers.get('set-cookie') ?? ''
@@ -180,7 +185,7 @@ async function main() {
   const monterEmail = `e2e-chain-${stamp}@roksal.si`
   const reg = await fetch(`${BASE}/api/auth/register`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', origin: BASE },
     body: JSON.stringify({ email: monterEmail, password: 'E2eVeriga2026!x', name: 'E2E Monter' }),
   })
   const monterCookie = (reg.headers.get('set-cookie') ?? '').split(';')[0] || null

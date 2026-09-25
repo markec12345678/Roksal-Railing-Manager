@@ -11,11 +11,13 @@
 // ime je zastarelo in bo v Next 17 odstranjeno. Zato je ta datoteka že na novi
 // konvenciji — `npx @next/codemod middleware-to-proxy .` ni potreben.
 //
-// Proxy teče na Edge runtimeu, zato uvaža SAMO `@/lib/session` (Web Crypto).
+// Proxy teče na Edge runtimeu, zato uvaža SAMO `@/lib/session` (Web Crypto)
+// in `@/lib/csrf` (čisto razčlenjevanje URL-jev — prav tako Edge-varno).
 // `@/lib/password` (node:crypto scrypt) bi tu počil — in se ne sme.
 
 import { NextResponse, type NextRequest } from 'next/server'
 import { extractToken, verifySession } from '@/lib/session'
+import { csrfGuard } from '@/lib/csrf'
 
 /** Poti, ki so javne po zasnovi. */
 const PUBLIC_EXACT = new Set<string>([
@@ -73,6 +75,12 @@ function acceptsApiKey(pathname: string): boolean {
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
+
+  // R130 (issue #5 §6): centralna CSRF/Origin preverba — PRVA vrsta, pred vsemi
+  // javnimi preusmeritvami, ker so prijava/demo/portal prav tako mutacije, ki
+  // jih je treba braniti. Varne metode in Bearer klienti grejo skozi.
+  const csrf = csrfGuard(request)
+  if (csrf) return csrf
 
   if (isPublic(pathname)) return NextResponse.next()
 

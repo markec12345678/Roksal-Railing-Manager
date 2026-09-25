@@ -188,6 +188,43 @@ signalom → vrsta iz terena odide); GC `IdempotencyKey` vrstic > 30 dni (lenobn
 brez cron odvisnosti); rezervacija ključa je PRVI stavek transakcije meritve —
 vzporedni poizkus istega ključa rollbacka celotno mutacijo (exactly-once).
 
+## CSRF / Origin — centralna preverba (R130, issue #5 §6)
+
+Sejni piškotek je `SameSite=Lax`, kar v sodobnih brskalnikih že blokira
+klasični cross-site form POST — a Lax sam ni dovolj (starejši brskalniki,
+same-site ≠ same-origin, top-level GET navigacija pošlje piškotek). R130 doda
+EKSPPLICITNO centralno plast (`src/lib/csrf.ts`, vgrajena v `proxy()` kot
+PRVA vrsta — pred vsemi javnimi preusmeritvami):
+
+| Zahteva (§6) | Implementacija |
+|---|---|
+| centralna Origin/Referer validation | vsaka mutacija (POST/PATCH/PUT/DELETE) na `/api/*` mora dokazati izvor: `Origin` (odloča izključno, kadar je prisoten) ali `Referer` (rezerva) — gostitelj mora ustrezati `x-forwarded-host`/`Host` ali listi `CSRF_ALLOWED_ORIGINS`; manjka oboje → **403 (fail-closed)** |
+| CSRF zaščito, kjer je potrebna | vse `/api/*` mutacije, TUDI javne rute (prijava, demo, register, portal, public measure) — prijava/demo so prav tako cookie-mutacije, ki jih je treba braniti (login-CSRF) |
+| ločeno obravnavo Bearer/API-key | klient z `Authorization: Bearer …` je IZJET — ni ambientnega piškotka (CSRF zlori prav piškotek, ki ga brskalnik pošlje sam); cross-site napadalec NE more nastaviti tujega `Authorization` (prepovedana glava brez CORS odobritve) |
+| cross-origin POST/PATCH/DELETE teste | 24 vitest primerov (čisto jedro + pravi NextRequest skozi `csrfGuard`) + dimni test [12] na živem strežniku (tuj Origin → 403, brez Origin → 403, isti izvor doseže ruto, Bearer izjema, GET nedotaknjen) + brskalniški E2E (prava prijava s pravim Origin brskalnika) |
+
+Podrobnosti politike (vrstni red pravil je pomemben):
+
+1. varne metode (GET/HEAD/OPTIONS) → dovoljene (branje ni CSRF površina);
+2. Bearer overitev → dovoljena (glej zgoraj);
+3. `Origin` prisoten → odloča izključno on (Referer je slabši signal:
+   `referrer-policy` ga lahko odreže, Origin ne);
+4. `Origin` manjka → `Referer` rezerva z enako preverbo;
+5. oboje manjka → 403 (brskalnik na mutaciji VEDNO pošlje Origin; klient brez
+   obeh je po dokumentirani pogodbi dolžan Bearer).
+
+Normalizacija: male črke, odrezana privzeta vrata (`:443`/`:80`), `x-forwarded-host`
+prvi vnos ima prednost pred `Host` (proxy/prembla), literal `null` in nesposobne
+sheme (`data:`, `blob:`, `ftp:`) so zavrnjene. `CSRF_ALLOWED_ORIGINS` (veja/lista
+polnih izvorov, ločenih z vejico) razširi dostop na točno določene gostitelje
+(npr. ločena landinja na lastni domeni); pokvarjeni vnosi ne razširijo ničesar.
+Strani (ne-`/api/`) niso predmet preverbe — server actions se ne uporabljajo,
+Next pa svoje akcije ščiti sam.
+
+Legitimni ne-brskalniški klienti (E2E orodja, dimni test) na mutacijah
+eksplicitno pošiljajo `Origin: <baza>` — enako kot brskalnik; to je dokumentirana
+pogodba (enako obnašanje kot Django/Rails CSRF zaščita).
+
 ## Še ni pokrito (iskreno, naslednje runde)
 
 - customers/measurements/documents/inventory posamezne IDOR rute imajo guard na

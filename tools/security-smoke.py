@@ -66,6 +66,13 @@ def call(path, method="GET", body=None, headers=None, follow=False):
     data = json.dumps(body).encode() if body is not None else None
     req = urllib.request.Request(BASE + path, data=data, method=method)
     req.add_header("Content-Type", "application/json")
+    # R130 (issue #5 §6): proxy zavrača mutacije brez veljavnega izvora. Brskalnik
+    # na vsaki mutaciji sam pošlje Origin — zato ga tudi ta klient pošlje (isti
+    # izvor), razen če ga posamezen test eksplicitno preglasi (npr. z zlonamernim).
+    if method.upper() not in ("GET", "HEAD", "OPTIONS") and not any(
+        k.lower() == "origin" for k in (headers or {})
+    ):
+        req.add_header("Origin", BASE)
     for k, v in (headers or {}).items():
         req.add_header(k, v)
     opener = urllib.request.build_opener() if follow else urllib.request.build_opener(NoRedirect)
@@ -289,6 +296,29 @@ else:
 # (null/random) \u2014 edini vhod je demo gumb, kadar je vklopljen.
 st, _, _ = call("/api/auth", "POST", {"email": "demo@roksal.si", "password": "karkoli-neobstaja-2026"})
 check("demo prijava prek /login forme \u2192 401", st == 401, f"dobil {st}")
+
+print("\n[12] CSRF / Origin (R130 \u2014 issue #5 \u00a76: mutacije morajo dokazati izvor)")
+# Brskalnik pošlje Origin na VSAKI mutaciji; proxy ga preveri proti Host/x-forwarded-host.
+# Zlonameren izvor → 403 (plast deluje PRED prijavo, zato ne porabi rate limita).
+st, _, _ = call("/api/auth", "POST", {"email": EMAIL, "password": "x"}, headers={"Origin": "https://zlonameren.example"})
+check("cross-origin POST (tuj Origin) \u2192 403", st == 403, f"dobil {st}")
+st, _, _ = call("/api/auth", "POST", {"email": EMAIL, "password": "x"}, headers={"Origin": BASE})
+check("isti izvor (Origin = strežnik) doseže ruto \u2192 401", st == 401, f"dobil {st} — ruta mora biti dosežena")
+# Brez Origin in brez Bearer → fail-closed 403 (brskalnik to pri mutaciji ne more storiti).
+try:
+    raw_req = urllib.request.Request(BASE + "/api/auth", data=json.dumps({"email": EMAIL, "password": "x"}).encode(), method="POST")
+    raw_req.add_header("Content-Type", "application/json")
+    raw_op = urllib.request.build_opener(NoRedirect)
+    raw_st = raw_op.open(raw_req, timeout=60).status
+except urllib.error.HTTPError as e:
+    raw_st = e.code
+check("mutacija BREZ Origin/Referer/Bearer \u2192 403 (fail-closed)", raw_st == 403, f"dobil {raw_st}")
+# Bearer klient je izjema (ločena obravnava po §6): tuj Origin ne škodi, ključ je pa napačen → 401.
+st, _, _ = call("/api/sync", headers={"Origin": "https://zlonameren.example", "Authorization": "Bearer rkm_nakljucninizkikljuc"})
+check("Bearer ključ je izjema — doseže auth (401 za napačen ključ)", st == 401, f"dobil {st}")
+# Varne metode ostanejo nedotaknjene tudi z tujim Origin (branje ni CSRF površina).
+st, _, _ = call("/api/projects", headers={"Origin": "https://zlonameren.example"})
+check("GET z tujim Origin ostane običajen anon (401)", st == 401, f"dobil {st}")
 
 print(f"\n{'=' * 60}")
 print(f"  {passed} uspešnih · {failed} neuspešnih · {skipped} preskočenih")
