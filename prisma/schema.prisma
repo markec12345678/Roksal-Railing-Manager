@@ -432,13 +432,53 @@ model AuditLog {
 // 10. OBVESTILA
 // ============================================
 
+// R143 (issue #5 §29): življenjski cikel obvestila — DETERMINISTIČEN stroj s
+// prehodi samo NAPREJ (glej src/lib/notifications.ts):
+//   QUEUED → SENT → DELIVERED → OPENED, ali QUEUED → FAILED (retry politika).
+//   • QUEUED    — vrstica zapisana, kanal je še ni oddal (dispatch korak)
+//   • SENT      — kanal jo je oddal (in-app: vidna na prvi pridobitvi)
+//   • DELIVERED — klient jo je dejansko POBRAL (ack na GET)
+//   • OPENED    — uporabnik jo je odprl/prebral (isRead=true, terminalno)
+//   • FAILED    — dispatch je po maxRetries poskusih spodletel (terminalno,
+//                 lastError je sanitiziran — §22, brez stacka)
+enum NotificationStatus {
+  QUEUED
+  SENT
+  DELIVERED
+  OPENED
+  FAILED
+}
+
 model Notification {
   id        String   @id @default(cuid())
-  userId    String
+  // Naslovnik: ALI posamezen profil (userId), ALI vloga (recipientRole) —
+  // XOR (določa queueNotifications). 'skladisce' pseudo-uporabnik iz starejše
+  // kode ostane bralcu neviden (orphan, dokumentirano R143) — nove vrstice so
+  // naslovljene prek recipientRole (SKLADISCE), kar daje realno občinstvo.
+  userId    String?
   naslov    String
   sporocilo String?
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
+  // §29 pogodba: status, predloga + verzija, naslovnik, entiteta, korelacija,
+  // retry politika + razlog napake, časovni žigi posameznih prehodov.
+  status          NotificationStatus @default(QUEUED)
+  template        String // ključ iz NOTIFICATION_TEMPLATES (fail-closed, brez 'LEGACY' novih)
+  templateVersion Int                @default(1)
+  recipientRole   UserRole?
+  entityType      String? // npr. 'inventory', 'jobrun'
+  entityId        String? // povezani poslovni objekt (navigacija UI)
+  correlationId   String? // §22 — povezava klient ↔ logi
+  retryCount      Int                @default(0)
+  maxRetries      Int                @default(3)
+  lastError       String? // sanitiziran (§22) — brez stacka
+  sentAt          DateTime?
+  deliveredAt     DateTime?
+  openedAt        DateTime?
+
+  @@index([status, createdAt])
+  @@index([userId, isRead])
+  @@index([recipientRole, createdAt])
 }
 
 // ============================================

@@ -304,7 +304,7 @@ export function InventoryTab() {
           <div className="flex items-end justify-around gap-3 h-24">
             {categoryStock.map((cat) => (
               <div key={cat.category} className="flex flex-1 flex-col items-center gap-1.5">
-                <span className="text-[10px] font-medium text-roksal-navy">{cat.totalStock}</span>
+                <span className="text-[10px] font-medium tabular-nums text-roksal-navy">{cat.totalStock}</span>
                 <div className="relative w-full flex justify-center">
                   <div className="w-10 bg-secondary/50 rounded-t-sm relative overflow-hidden" style={{ height: '80px' }}>
                     <div
@@ -345,7 +345,7 @@ export function InventoryTab() {
               <Euro className="h-4 w-4 text-roksal-navy" />
               <span className="text-xs text-muted-foreground">Ocena vrednosti zaloge</span>
             </div>
-            <span className="text-sm font-bold text-roksal-navy">
+            <span className="text-sm font-bold tabular-nums text-roksal-navy">
               {totalValueEstimate.toLocaleString('sl-SI', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
             </span>
           </div>
@@ -358,13 +358,13 @@ export function InventoryTab() {
           <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
             Artikli
           </p>
-          <p className="text-xl font-bold text-roksal-navy">{totalItems}</p>
+          <p className="text-xl font-bold tabular-nums text-roksal-navy">{totalItems}</p>
         </Card>
         <Card className="px-3 py-3 card-hover transition-all duration-200 animate-fade-in-up" style={{ animationDelay: '120ms' }}>
           <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
             Skupna zaloga
           </p>
-          <p className="text-xl font-bold text-roksal-navy">
+          <p className="text-xl font-bold tabular-nums text-roksal-navy">
             {totalStock.toFixed(0)}
           </p>
         </Card>
@@ -372,7 +372,7 @@ export function InventoryTab() {
           <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
             Opozorila
           </p>
-          <p className={`text-xl font-bold ${lowStockItems.length > 0 ? 'text-roksal-red' : 'text-roksal-green'}`}>
+          <p className={`text-xl font-bold tabular-nums ${lowStockItems.length > 0 ? 'text-roksal-red' : 'text-roksal-green'}`}>
             {lowStockItems.length}
           </p>
         </Card>
@@ -462,7 +462,7 @@ export function InventoryTab() {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="h-7 px-2.5 text-[10px] gap-1 border-roksal-red/30 text-roksal-red hover:bg-roksal-red/10 press-scale"
+                            className="h-7 px-2.5 text-[10px] gap-1 border-roksal-red/30 text-roksal-red hover:bg-roksal-red/10 press-scale focus-visible:ring-2 focus-visible:ring-roksal-red/40"
                             onClick={() => handleReorder(item)}
                           >
                             <ShoppingCart className="h-3 w-3" />
@@ -480,7 +480,7 @@ export function InventoryTab() {
                               {item.enota}
                             </span>
                           </p>
-                          <p className="text-[10px] text-muted-foreground">
+                          <p className="text-[10px] tabular-nums text-muted-foreground">
                             Min: {item.minimalnaZaloga} {item.enota}
                           </p>
                         </div>

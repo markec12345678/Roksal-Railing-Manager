@@ -2,7 +2,7 @@
 """
 Varnostni dimni test za Roksal Railing Manager.
 
-Preveri 121 stvari na ŽIVEM strežniku — ne na kodi, kar je edini način, da se
+Preveri 123 stvari na ŽIVEM strežniku — ne na kodi, kar je edini način, da se
 ujame napaka v plasteh (proxy, ruta, piškotek, baza). Napisan je bil prav zato,
 ker je prva različica proxy-ja blokirala prijavo samo: 32/36 testov je bilo
 zelenih, aplikacija pa neuporabna.
@@ -41,7 +41,7 @@ PROTECTED = [
     "/api/slopes", "/api/photos", "/api/gallery", "/api/documents", "/api/crews",
     "/api/schedules", "/api/calculator", "/api/deal-lock", "/api/bom-draft",
     "/api/bom-refine", "/api/portal", "/api/signature-audit", "/api/ar-snapshots",
-    "/api/profili", "/api/measurements?projectId=x",
+    "/api/profili", "/api/measurements?projectId=x", "/api/notifications",
 ]
 
 passed = failed = skipped = 0
@@ -483,6 +483,17 @@ if auth:
     check("POST /api/schedules obrnjen interval (s sejo) → 400", st == 400, f"dobil {st} {body[:60]!r}")
 else:
     skip("[24] termina", "seja ni na voljo (prijava spodletela)")
+
+
+print("\n[25] Obvestila lifecycle (R143 — issue #5 §29: fail-closed vrata)")
+# Ruta po R143: GET brez seje → 401 (anon); POST read brez seje → 401;
+# obe nosita x-correlation-id (§22 — enotna pogodba vseh novih rut).
+st, h, body = call("/api/notifications")
+ok = st == 401 and len(h.get("x-correlation-id", "")) >= 8
+check("GET /api/notifications brez seje → 401 + correlation", ok, f"dobil {st}")
+st, h, body = call("/api/notifications/read", "POST", {"id": "x"})
+ok = st == 401 and len(h.get("x-correlation-id", "")) >= 8
+check("POST /api/notifications/read brez seje → 401 + correlation", ok, f"dobil {st}")
 
 
 print(f"\n{'=' * 60}")

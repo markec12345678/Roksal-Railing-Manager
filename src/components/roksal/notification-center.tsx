@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button'
 import {
   Bell, Package, CalendarDays, CloudLightning, CheckCheck,
   ChevronRight, RefreshCw, AlertTriangle, Loader2, FileClock, Receipt,
+  Inbox, Wrench,
 } from 'lucide-react'
 
 interface NotificationItem {
@@ -32,6 +33,26 @@ interface NotificationItem {
   meta?: string
   /** Koliko enakih obvestil je združenih (duplikati projektov z istim imenom) */
   count?: number
+}
+
+/** R143 (§29): zapisano obvestilo z življenjskim ciklom (GET /api/notifications). */
+interface PersistedNotification {
+  id: string
+  naslov: string
+  sporocilo: string | null
+  isRead: boolean
+  status: 'QUEUED' | 'SENT' | 'DELIVERED' | 'OPENED' | 'FAILED'
+  template: string
+  templateVersion: number
+  entityType: string | null
+  entityId: string | null
+  retryCount: number
+  maxRetries: number
+  lastError: string | null
+  createdAt: string
+  sentAt: string | null
+  deliveredAt: string | null
+  openedAt: string | null
 }
 
 interface WeatherSummary {
@@ -48,12 +69,26 @@ const RISK_LABEL: Record<WeatherSummary['riskLevel'], string> = {
   dangerous: 'NE montaža',
 }
 
+/** R143 (§29): življenjski cikel — berljive oznake + stil (fail-verbose: FAILED pokaže razlog). */
+const STATUS_STYLE: Record<
+  PersistedNotification['status'],
+  { label: string; dot: string; text: string }
+> = {
+  QUEUED: { label: 'V vrsti', dot: 'bg-muted-foreground/40', text: 'text-muted-foreground' },
+  SENT: { label: 'Poslano', dot: 'bg-sky-500', text: 'text-sky-700' },
+  DELIVERED: { label: 'Dostavljeno', dot: 'bg-roksal-amber', text: 'text-roksal-amber' },
+  OPENED: { label: 'Odprto', dot: 'bg-green-500', text: 'text-green-700' },
+  FAILED: { label: 'Napaka', dot: 'bg-roksal-red', text: 'text-roksal-red' },
+}
+
 export function NotificationCenter() {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [items, setItems] = useState<NotificationItem[]>([])
   const [badge, setBadge] = useState(0)
   const [pulse, setPulse] = useState(false)
+  const [persisted, setPersisted] = useState<PersistedNotification[]>([])
+  const [persistedError, setPersistedError] = useState<string | null>(null)
   const loadedOnce = useRef(false)
 
   const load = useCallback(async () => {
@@ -167,6 +202,22 @@ export function NotificationCenter() {
         }
       } catch { /* vreme je opcijsko */ }
 
+      // R143 (§29): zapisana obvestila z življenjskim ciklom — fail-verbose
+      // napaka se POKAŽE (ni tihe degradacije).
+      try {
+        const nRes = await fetch('/api/notifications')
+        if (nRes.ok) {
+          const data = (await nRes.json()) as { notifications: PersistedNotification[] }
+          setPersisted(data.notifications ?? [])
+          setPersistedError(null)
+        } else {
+          const err = (await nRes.json().catch(() => null)) as { error?: string } | null
+          setPersistedError(`${nRes.status}: ${err?.error ?? 'napaka pri branju obvestil'}`)
+        }
+      } catch {
+        setPersistedError('Obvestil ni bilo mogoče prenesti (omrežje).')
+      }
+
       // Dedup: enaki kartici (isti kind+naslov+podnaslov) se združijo v eno
       // s števcem "×N" — primer: več projektov z istim imenom "Ograja Novak"
       const deduped: NotificationItem[] = []
@@ -218,6 +269,26 @@ export function NotificationCenter() {
     }
   }
 
+  /** R143 (§29): open ack — SENT|DELIVERED → OPENED; fail-verbose (404/409/500 se pokaže). */
+  async function openPersisted(n: PersistedNotification) {
+    try {
+      const res = await fetch('/api/notifications/read', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: n.id }),
+      })
+      if (!res.ok) {
+        const err = (await res.json().catch(() => null)) as { error?: string } | null
+        setPersistedError(`${res.status}: ${err?.error ?? 'odpiranje ni uspelo'}`)
+        return
+      }
+      setPersistedError(null)
+      void load()
+    } catch {
+      setPersistedError('Odpiranja ni bilo mogoče poslati (omrežje).')
+    }
+  }
+
   const KIND_STYLE: Record<NotificationItem['kind'], { icon: React.ElementType; bg: string; fg: string }> = {
     stock: { icon: Package, bg: 'bg-red-100', fg: 'text-red-600' },
     install: { icon: CalendarDays, bg: 'bg-roksal-amber/15', fg: 'text-roksal-amber' },
@@ -255,7 +326,7 @@ export function NotificationCenter() {
           </SheetHeader>
 
           <div className="max-h-[calc(100dvh-8rem)] overflow-y-auto px-3 py-3 scrollbar-thin">
-            {items.length === 0 && !loading && (
+            {items.length === 0 && persisted.length === 0 && !loading && !persistedError && (
               <div className="flex flex-col items-center gap-2 py-12 text-center">
                 <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-100">
                   <CheckCheck className="h-7 w-7 text-green-600" />
@@ -323,6 +394,88 @@ export function NotificationCenter() {
                 )
               })}
             </ul>
+
+            {/* R143 (§29): zapisana obvestila — življenjski cikel
+                QUEUED → SENT → DELIVERED → OPENED / FAILED (retry politika). */}
+            {persisted.length > 0 && (
+              <div className="mt-3 border-t border-border/60 pt-3">
+                <p className="mb-2 flex items-center gap-1.5 px-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  <Inbox className="h-3 w-3" aria-hidden="true" />
+                  Poslana obvestila ({persisted.length})
+                </p>
+                <ul className="space-y-2" role="list">
+                  {persisted.map((n) => {
+                    const st = STATUS_STYLE[n.status]
+                    return (
+                      <li key={n.id}>
+                        <button
+                          type="button"
+                          onClick={() => void openPersisted(n)}
+                          className="group flex w-full items-start gap-3 rounded-xl border border-border/60 bg-white p-3 text-left transition-all hover:-translate-y-0.5 hover:border-roksal-navy/25 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 active:scale-[0.98]"
+                          aria-label={`${n.naslov} — ${st.label}`}
+                        >
+                          <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-roksal-navy/5">
+                            {n.entityType === 'jobrun' ? (
+                              <Wrench className="h-4 w-4 text-roksal-navy" aria-hidden="true" />
+                            ) : (
+                              <Bell className="h-4 w-4 text-roksal-navy" aria-hidden="true" />
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5">
+                              <p
+                                className={`truncate text-[13px] font-semibold ${
+                                  n.isRead ? 'text-muted-foreground' : 'text-roksal-navy'
+                                }`}
+                              >
+                                {n.naslov}
+                              </p>
+                              <span
+                                className="ml-auto flex shrink-0 items-center gap-1 rounded-full border border-border/50 px-1.5 py-0.5"
+                                title={`Predloga ${n.template} v${n.templateVersion}`}
+                              >
+                                <span className={`h-1.5 w-1.5 rounded-full ${st.dot}`} aria-hidden="true" />
+                                <span className={`text-[9px] font-bold tabular-nums ${st.text}`}>{st.label}</span>
+                              </span>
+                            </div>
+                            {n.sporocilo && (
+                              <p className="line-clamp-2 text-[11px] text-muted-foreground">{n.sporocilo}</p>
+                            )}
+                            {n.status === 'FAILED' && (
+                              <p className="mt-0.5 flex items-center gap-1 text-[10px] font-semibold text-roksal-red">
+                                <AlertTriangle className="h-3 w-3 shrink-0" aria-hidden="true" />
+                                {n.lastError ?? 'Razlog ni znan'} · poskus{' '}
+                                <span className="tabular-nums">
+                                  {n.retryCount}/{n.maxRetries}
+                                </span>
+                              </p>
+                            )}
+                            <p className="mt-0.5 text-[10px] tabular-nums text-muted-foreground/70">
+                              {new Date(n.createdAt).toLocaleString('sl-SI', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </p>
+                          </div>
+                        </button>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </div>
+            )}
+
+            {persistedError && (
+              <p
+                role="alert"
+                className="mt-3 flex items-start gap-1.5 rounded-lg border border-roksal-red/30 bg-roksal-red/5 px-3 py-2 text-[11px] font-semibold text-roksal-red"
+              >
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                {persistedError}
+              </p>
+            )}
           </div>
         </SheetContent>
       </Sheet>

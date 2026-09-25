@@ -8,6 +8,8 @@ import { createInventorySchema, inventoryMovementSchema } from '@/lib/validation
 import { authenticate, unauthorized, forbidden, denyWithoutPermission } from '@/lib/auth'
 import { recordMovement, StockError } from '@/lib/inventory'
 import { hasPermission, actorIdOf } from '@/lib/access'
+import { queueNotifications } from '@/lib/notifications'
+import { correlationFromRequest } from '@/lib/correlation'
 import type { StockLedgerEventType } from '@prisma/client'
 
 /** Stari UI tipi → ledger dogodki (združljivost z obstoječim klientom). */
@@ -80,6 +82,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
+  const correlationId = correlationFromRequest(request)
   try {
     const body = await request.json()
 
@@ -108,12 +111,17 @@ export async function POST(request: Request) {
       })
 
       if (updated.kolicinaZaloga < updated.minimalnaZaloga) {
-        await db.notification.create({
-          data: {
-            userId: 'skladisce',
-            naslov: `Nizka zaloga: ${updated.naziv}`,
-            sporocilo: `Zaloga za "${updated.naziv}" (${updated.sifraMateriala}) je padla na ${updated.kolicinaZaloga} ${updated.enota}.`,
-          }
+        // R143 (§29): obvestilo gre skozi dispatcher (QUEUED → SENT → …) —
+        // predloga LOW_STOCK v1, naslovljeno na VLOGO SKLADISCE (prej pseudo-
+        // uporabnik 'skladisce', ki ga nobena seja ne ujame), z entiteto in
+        // korelacijo. Vedenjska pariteta: ena vrstica na premik pod minimumom.
+        await queueNotifications({
+          template: 'LOW_STOCK',
+          naslov: `Nizka zaloga: ${updated.naziv}`,
+          sporocilo: `Zaloga za "${updated.naziv}" (${updated.sifraMateriala}) je padla na ${updated.kolicinaZaloga} ${updated.enota}.`,
+          recipients: [{ recipientRole: 'SKLADISCE' }],
+          entity: { type: 'inventory', id: updated.id },
+          correlationId,
         })
       }
 

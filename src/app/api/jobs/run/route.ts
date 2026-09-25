@@ -15,6 +15,7 @@
 import { NextResponse } from 'next/server'
 import { authenticate, forbidden, unauthorized } from '@/lib/auth'
 import { runMaintenanceJobs } from '@/lib/jobs'
+import { queueJobFailureNotifications } from '@/lib/notifications'
 import { CORRELATION_HEADER, correlationFromRequest, logWithCorrelation } from '@/lib/correlation'
 
 export const runtime = 'nodejs'
@@ -59,7 +60,16 @@ async function handle(request: Request): Promise<NextResponse> {
   try {
     const owner = await resolveOwner(request)
     const run = await runMaintenanceJobs({ owner, correlationId })
-    const res = NextResponse.json({ ok: true, ...run })
+    // R143 (§29): neuspešni posli obvestijo ADMIN-e prek dispatcherja
+    // (role-naslovljeno, entity=jobrun, correlationId run-a). Napaka
+    // obveščanja NE podre odgovora poslov — posli so tekli; napaka gre v log.
+    let notifiedAdmins: number | null = null
+    try {
+      notifiedAdmins = await queueJobFailureNotifications(run.outcomes, { correlationId })
+    } catch (notifyError) {
+      logWithCorrelation('jobs.run.notify.error', correlationId, notifyError)
+    }
+    const res = NextResponse.json({ ok: true, notifiedAdmins, ...run })
     res.headers.set(CORRELATION_HEADER, correlationId)
     return res
   } catch (error) {
