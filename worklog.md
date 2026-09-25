@@ -2037,3 +2037,17 @@ Stage Summary:
 - ZAKLJUČENO: §23 Background jobs — ZADNJI P0 iz addenduma #5 (celoten addendum §1–§23 je ZDAJ zaprt): JobRun ledger z VSEMI §23 polji (job ID, owner, input, status, attempts, retry policy, error, idempotency, correlation ID), 3 deterministični GC posli (idempotenčni ključi 7 dni, portal dostopi 90 dni, seje 30 dni), cron ruta (03:30 UTC) + ADMIN register UI z ročnim zagonom in replay varovalko. Plus: Računi + prijava stil pass, fail-verbose/animacija detajli. 804/804 zeleno, dimni 119 (112/0/2 lokalno), build zelen.
 - Ostanki (lastniški, nespremenjeni): #7 Neon backfill --commit, #8 R118-real fotke, #12 Render kartica (tool + runbook pripravljeni, ROKSAL_SETUP_TOKEN/EMAIL passthrough), ⏰ roksal-fallback-db POTEČE 2026-10-25 (4 tedni).
 - Naslednja runda: P1 iz #5 — kandidati po vrednosti: §24 Inventory lot/batch traceability (zahteva shemo), §29 Notifications (model že obstaja — UI združevanje?), §30 Scheduler conflicts (prekrivanja terminov ekip), §36 Mobile sync conflict model; ali operacijsko: VALIDATE CONSTRAINT po lastniški potrditvi (R136 follow-up), preveriti Vercel deploy kvoto (ENOTEN commit na rundo drži), živi fingerprint R141 na produkciji (npr. GET /api/jobs → 401 z correlation glavo ali "Vzdrževanje" chunk fingerprint).
+
+---
+Task ID: R141-B (dodatek: iskren status produkcije — Vercel rate limit)
+Agent: Z.ai Code (isti R141 tok)
+
+Work Log:
+- CI na 6530de9: Tipi, testi, gradnja SUCCESS (804/804, 54 datotek) · Varnost (119 preverjanj) SUCCESS · sync SUCCESS (render vejica samodejno usklajena).
+- VERCEL: commit status "Vercel → failure — Deployment rate limited — retry in 24 hours" na 6530de9. Produkcija je ŠE VEDNO na R140 (deploy ni planil; ediniška rešitev je lastniška: UpgradeToPro ALI počakanje okvira — AI NE zaobide, precedens R137-B).
+- ISKREN POPRAVEK FINGERPRINTA (nauček R137-B ponovno potrjen — verzija MORA biti fingerprint, ne "route obstaja"): prvi živi "dokaz" (GET /api/jobs anon → 401 + correlation) NI bil dokaz R141 — na R140 neznana /api/* pot pade skozi auth vrata proxyja → 401 PRED Nextovim 404. Pravi discriminating fingerprint: POST /api/jobs/run z `Authorization: Bearer rkm_invalid` → na R141 ruta vrne 403 (API-ključ veja), na R140 → 401 (auth vrata). ŽIV rezultat: 401 → produkcija ŠE VEDNO R140. Naslednja runda MORA ponoviti ta fingerprint (pričakovano 403, ko deploy plana).
+- Posledica za naslednjo rundo: 1) preveriti, ali je deploy 6530de9 planal (fingerprint: Bearer rkm_ → 403); 2) če je rate limit še živ, poročati lastniku (UpgradeToPro ali počakati) in NE delati dodatnih pushov brez potrebe (vsak push = nov poskus deploya).
+
+Stage Summary:
+- R141 koda je POPOLNOMA zelena (CI 3× SUCCESS na 6530de9: testi 804/804, dimni 119), a produkcija čaka na Vercel kvoto — okno 24 h. Celoten addendum #5 (§1–§23) je kodno zaprt; §23 bo ŽIVO potrjen takoj, ko deploy plana.
+- Ostanki (lastniški, nespremenjeni): #7 Neon backfill --commit, #8 R118-real fotke, #12 Render kartica, ⏰ roksal-fallback-db POTEČE 2026-10-25 (4 tedni), 🆕 Vercel rate limit (lastniška odločitev: Pro ali počakati okno).
