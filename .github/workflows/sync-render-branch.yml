@@ -1,0 +1,40 @@
+name: Sync render branch (Render fallback)
+
+# Rezervna (fallback) dostava: Render servis `roksal-railing-manager` gradi
+# iz svoje lastne veje `render` (Vercel ostane primarni — gradi `main`).
+# Ta workflow ob vsakem pushu na main (brez dokumentacijskih sprememb)
+# posodobi vejico `render` na main HEAD, tako da rezervni deployment
+# ostane v koraku s produkcijo. Nic drugega se ne spreminja.
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'reports/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-render-branch
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Posodobi vejico render na main HEAD
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          SHA="${{ github.sha }}"
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/render" > /dev/null 2>&1; then
+            gh api -X PATCH "repos/$GITHUB_REPOSITORY/git/refs/heads/render" -f sha="$SHA" -F force=true
+            echo "vejica render → $SHA (force update)"
+          else
+            gh api -X POST "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/heads/render" -f sha="$SHA"
+            echo "vejica render USTVARJENA → $SHA"
+          fi
