@@ -355,3 +355,62 @@ Znan meji (iskreno): povabila/reset brez e-pošte — povezavo/geslo posreduje
 pisarna offline (dokumentirano v UI); brez e-poštne infrastrukture je to
 edini determinističen potek. Deaktivacija NE briše podatkov (revizijska
 sled ostane; brisanje je ločena, nevarnejša akcija).
+
+## Matrika dovoljenj — vsaka ruta preverja konkretno pravico (R135, issue #5 §10)
+
+Do R135 je večina poslovnih rut preverjala VLOGO (`denyUnless(request, MANAGER_ROLES)`),
+kar je delovalo, a ni bilo formalizirano: pravice so bile razpršene po rutah, sporočila
+403 nespecifična, UI pa je ugibal po vlogah. §10 zahteva **katalog dovoljenj**, kjer
+vsak endpoint preverja KONKRETNO pravico.
+
+**Enoten vir resnice: `src/lib/permissions.ts`** — katalog (28 pravic: 26 iz §10 spec +
+2 read-dodatka `users.read`/`invoices.read` za natančen izraz obstoječe matrike branja),
+vloga → pravice (frozen, deterministično), API-ključ scope-i → pravice, pomožniki
+(`hasPermission`, `permissionsForPrincipal`, `describePermission`).
+
+**Vrata na ravni zahtevka: `denyWithoutPermission(request, permission)`** (auth.ts) —
+401 anon / 403 API ključ / 403 z imenom manjkajoče pravice (slovenska oznaka + tehnično
+ime) v `detail`. Odjemalec dobi svoje pravice prek `GET /api/auth` (`permissions: []`),
+zato UI skriva akcije, ki jih uporabnik ne more izvesti, in pošteno pokaže stanje
+"Ureja pisarna" namesto mrtvega gumba (strežnik bi vseeno vrnil 403 — UI je le
+izkustvena plast, NE varnostna).
+
+| Vloga | Pravice |
+|---|---|
+| ADMIN | vseh 28 |
+| VODJA | 27 (vse razen `users.manage`) |
+| MONTER | terenskih 11: projects.*, customers.*, quotes.create, deal.lock, inventory.read, invoices.read, documents.* (read/generate/sign) |
+| SKLADISCE | skladiščnih 7: projects.read, customers.read, inventory.read/write, procurement.receive, invoices.read, documents.read |
+| API ključ (MOBILE_SYNC) | izključno preslikava scope-ov: `projects:read`→projects.read, `projects:write`→projects.write; uradne površine (računi, dokumenti, portal, users, cene) NIKOLI |
+
+| Ruta | Prej (vloga) | Zdaj (konkretna pravica) |
+|---|---|---|
+| POST/PATCH `/api/material-prices` | MANAGER | `price.override` |
+| POST `/api/profili`, `/api/suppliers` | MANAGER | `catalog.manage` |
+| POST `/api/inventory` (nov artikel) | MANAGER | `catalog.manage` |
+| POST `/api/inventory` (premik) | MANAGER+SKLADISCE | `inventory.write` |
+| POST `/api/material-orders` | MANAGER | `procurement.create` |
+| PATCH `/api/material-orders` | MANAGER+SKLADISCE (vsi prehodi) | `procurement.approve` (vodstvo: vsi prehodi); SKLADISCE samo `procurement.receive` (status → DOBLJENO) — usklajeno s komentarjem "prejem je skladiščna operacija" |
+| `/api/schedules`, `/api/crews` (mutacije) | MANAGER | `production.manage` |
+| GET `/api/invoices` | vse vloge (monter svoje) | `invoices.read` (monter še vedno vidi svoje projekte) |
+| POST/DELETE `/api/invoices` (osnutek) | MANAGER | `invoices.create` |
+| PATCH `/api/invoices` → IZDAN/PLAČAN | MANAGER | `invoices.issue` |
+| PATCH `/api/invoices` → STORNIRAN | MANAGER | `invoices.cancel` |
+| GET `/api/users` | ADMIN+VODJA | `users.read` |
+| POST `/api/users` | ADMIN | `users.manage` |
+| POST `/api/portal` (upravljanje) | user + project update | `portal.manage` + project update (IZRECNA ZOŽITEV: monter ne upravlja portalov — pisarna; UI to pošteno prikaže) |
+| POST `/api/deal-lock` | user + project update | `deal.lock` + project update (monter OHRANI pravico — podpis poteka na terenu) |
+| POST `/api/documents` | user + project read | `documents.generate` + project read (IZRECNA ZOŽITEV: API ključ ne generira uradnih dokumentov) |
+| POST `/api/signature-audit` | user + project update | `documents.sign` + project update |
+| POST `/api/quote` | user | `quotes.create` (IZRECNA ZOŽITEV: API ključ ne izdeluje ponudb) |
+| POST `/api/customers` | user | `customers.write` (isti set, formaliziran) |
+
+Rezervirane pravice (v katalogu, brez rute — dokumentirano, da UI/dokumentacija govorita
+isti jezik, ko bo površina nastala): `measurements.approve`, `quotes.approve`,
+`inventory.adjust`, `warranty.manage`.
+
+Dokazi: `src/lib/__tests__/permissions.test.ts` (18 testov — katalog integrity, matrika,
+fail-closed neznana vloga, API-ključ preslikava, vrata 401/403 z imenom pravice, spot-testi
+rut: portal MONTER → 403 `portal.manage`, users VODJA → 403 `users.manage`, invoices MONTER
+→ 403 `invoices.create`/`invoices.issue`, material-orders SKLADISCE receive-only, prices
+MONTER → 403 `price.override`) + varnostni smoke [17] (4 preverjanja).

@@ -1,0 +1,352 @@
+[
+  {
+    "test_id": "T1-ravna",
+    "label": "Ravna balkonska ograja (jeklena — dokazan primer S+1)",
+    "input": "balcony_3.png",
+    "product": "product_bay.jpg (fence_0 S+1 bay, 460×660)",
+    "mask": "mask_C_old_fence.png",
+    "placement": {
+      "corners": [
+        [
+          0.232421875,
+          0.451171875
+        ],
+        [
+          0.93359375,
+          0.294921875
+        ],
+        [
+          0.9296875,
+          0.65234375
+        ],
+        [
+          0.232421875,
+          0.708984375
+        ]
+      ],
+      "rotation": 0,
+      "scale": 1,
+      "productQuad": [
+        [
+          0,
+          0.12121212121212122
+        ],
+        [
+          1,
+          0.02727272727272727
+        ],
+        [
+          1,
+          0.9666666666666667
+        ],
+        [
+          0,
+          0.9090909090909091
+        ]
+      ]
+    },
+    "expected_slats": 13,
+    "detected_or_rendered_slats": 13,
+    "outside_max_diff": 66,
+    "outside_mean_diff": 1.1581,
+    "outside_max_pre_shadow": 0,
+    "deltaE": 0,
+    "chroma_ab": {
+      "aBefore": 126.9713,
+      "aAfter": 126.9713,
+      "bBefore": 127.0718,
+      "bAfter": 127.0718,
+      "dE": 0
+    },
+    "processing_ms": 1452,
+    "wall_ms": 1610,
+    "geometry_note": "quad = S+1 dokazani vogali (iz mask_C poligona)",
+    "black_edge_detected": false,
+    "ring_diff_pixels": 389,
+    "ring_max_diff": 24,
+    "mask_bleed_detected": false,
+    "harmonizeStrength": 1,
+    "alphaCoverage": 0.1628,
+    "result": "PASS"
+  },
+  {
+    "test_id": "T2-perspektiva",
+    "label": "Ograja z močno perspektivo (srednji balkon, kovano železo)",
+    "input": "balcony_2.jpg",
+    "product": "product_bay.jpg (fence_0 S+1 bay, 460×660)",
+    "mask": "mask_b2_middle.png",
+    "placement": {
+      "corners": [
+        [
+          0.347,
+          0.588
+        ],
+        [
+          0.612,
+          0.58
+        ],
+        [
+          0.614,
+          0.748
+        ],
+        [
+          0.349,
+          0.756
+        ]
+      ],
+      "rotation": 0,
+      "scale": 1,
+      "productQuad": [
+        [
+          0,
+          0.12121212121212122
+        ],
+        [
+          1,
+          0.02727272727272727
+        ],
+        [
+          1,
+          0.9666666666666667
+        ],
+        [
+          0,
+          0.9090909090909091
+        ]
+      ]
+    },
+    "expected_slats": 13,
+    "detected_or_rendered_slats": 13,
+    "outside_max_diff": 51,
+    "outside_mean_diff": 0.3685,
+    "outside_max_pre_shadow": 0,
+    "deltaE": 0,
+    "chroma_ab": {
+      "aBefore": 126.8682,
+      "aAfter": 126.8682,
+      "bBefore": 127.0784,
+      "bAfter": 127.0784,
+      "dE": 0
+    },
+    "processing_ms": 718,
+    "wall_ms": 772,
+    "geometry_note": "spodaj-levo bližje, zgoraj-deso dlje — višinski raz Trap 1,2 % širine",
+    "black_edge_detected": false,
+    "ring_diff_pixels": 1343,
+    "ring_max_diff": 17,
+    "mask_bleed_detected": false,
+    "harmonizeStrength": 1,
+    "alphaCoverage": 0.0338,
+    "result": "PASS"
+  },
+  {
+    "test_id": "T3-sonce",
+    "label": "Sončna fotografija z močnim gradientom svetlobe (beneški balkon)",
+    "input": "balcony_4.jpg",
+    "product": "product_bay.jpg (fence_0 S+1 bay, 460×660)",
+    "mask": "mask_b4_sun.png",
+    "placement": {
+      "corners": [
+        [
+          0.205,
+          0.372
+        ],
+        [
+          0.823,
+          0.356
+        ],
+        [
+          0.828,
+          0.592
+        ],
+        [
+          0.21,
+          0.607
+        ]
+      ],
+      "rotation": 0,
+      "scale": 1,
+      "productQuad": [
+        [
+          0,
+          0.12121212121212122
+        ],
+        [
+          1,
+          0.02727272727272727
+        ],
+        [
+          1,
+          0.9666666666666667
+        ],
+        [
+          0,
+          0.9090909090909091
+        ]
+      ]
+    },
+    "expected_slats": 13,
+    "detected_or_rendered_slats": 13,
+    "outside_max_diff": 65,
+    "outside_mean_diff": 0.8887,
+    "outside_max_pre_shadow": 0,
+    "deltaE": 0,
+    "chroma_ab": {
+      "aBefore": 126.8662,
+      "aAfter": 126.8662,
+      "bBefore": 127.0872,
+      "bAfter": 127.0872,
+      "dE": 0
+    },
+    "processing_ms": 534,
+    "wall_ms": 606,
+    "geometry_note": "sonce z leve, senca desno — gradient čez celoten produkt",
+    "black_edge_detected": false,
+    "ring_diff_pixels": 810,
+    "ring_max_diff": 27,
+    "mask_bleed_detected": false,
+    "harmonizeStrength": 1,
+    "alphaCoverage": 0.1107,
+    "result": "PASS"
+  },
+  {
+    "test_id": "T4-temna",
+    "label": "Temna/antracitna ograja in temna okolica (opečna fasada)",
+    "input": "balcony_5.jpg",
+    "product": "product_bay.jpg (fence_0 S+1 bay, 460×660)",
+    "mask": "mask_b5_dark.png",
+    "placement": {
+      "corners": [
+        [
+          0.115,
+          0.235
+        ],
+        [
+          0.885,
+          0.225
+        ],
+        [
+          0.88,
+          0.76
+        ],
+        [
+          0.12,
+          0.77
+        ]
+      ],
+      "rotation": 0,
+      "scale": 1,
+      "productQuad": [
+        [
+          0,
+          0.12121212121212122
+        ],
+        [
+          1,
+          0.02727272727272727
+        ],
+        [
+          1,
+          0.9666666666666667
+        ],
+        [
+          0,
+          0.9090909090909091
+        ]
+      ]
+    },
+    "expected_slats": 13,
+    "detected_or_rendered_slats": 13,
+    "outside_max_diff": 56,
+    "outside_mean_diff": 0.2739,
+    "outside_max_pre_shadow": 0,
+    "deltaE": 0,
+    "chroma_ab": {
+      "aBefore": 126.8671,
+      "aAfter": 126.8671,
+      "bBefore": 127.0867,
+      "bAfter": 127.0867,
+      "dE": 0
+    },
+    "processing_ms": 1911,
+    "wall_ms": 1980,
+    "geometry_note": "antracit produkt na temni opeki — dark-product guard (strength 0.6)",
+    "black_edge_detected": false,
+    "ring_diff_pixels": 56,
+    "ring_max_diff": 6,
+    "mask_bleed_detected": false,
+    "harmonizeStrength": 1,
+    "alphaCoverage": 0.311,
+    "result": "PASS"
+  },
+  {
+    "test_id": "T5-zakrit",
+    "label": "Delno zakrit balkon (rastline čez ograjo)",
+    "input": "balcony_0.jpg",
+    "product": "product_bay.jpg (fence_0 S+1 bay, 460×660)",
+    "mask": "mask_b0_railing.png",
+    "placement": {
+      "corners": [
+        [
+          0.355,
+          0.56
+        ],
+        [
+          0.885,
+          0.505
+        ],
+        [
+          0.89,
+          0.76
+        ],
+        [
+          0.36,
+          0.785
+        ]
+      ],
+      "rotation": 0,
+      "scale": 1,
+      "productQuad": [
+        [
+          0,
+          0.12121212121212122
+        ],
+        [
+          1,
+          0.02727272727272727
+        ],
+        [
+          1,
+          0.9666666666666667
+        ],
+        [
+          0,
+          0.9090909090909091
+        ]
+      ]
+    },
+    "expected_slats": 13,
+    "detected_or_rendered_slats": 13,
+    "outside_max_diff": 56,
+    "outside_mean_diff": 0.1341,
+    "outside_max_pre_shadow": 0,
+    "deltaE": 0,
+    "chroma_ab": {
+      "aBefore": 126.9101,
+      "aAfter": 126.9101,
+      "bBefore": 127.0807,
+      "bAfter": 127.0807,
+      "dE": 0
+    },
+    "processing_ms": 1291,
+    "wall_ms": 1359,
+    "geometry_note": "kaktus + lončnice prekrivajo del ograje — stolpična sinteza ozadja",
+    "black_edge_detected": false,
+    "ring_diff_pixels": 318,
+    "ring_max_diff": 9,
+    "mask_bleed_detected": false,
+    "harmonizeStrength": 1,
+    "alphaCoverage": 0.0968,
+    "result": "PASS"
+  }
+]

@@ -85,9 +85,16 @@
   (strežniški exactly-once replay), duplicate protection (dedupeHash, 30 min), strop
   telesa 8 kB, dva rate žebrka (IP + žeton), audit vsakega poskusa z hashiranim IP,
   ownership marker 'public:measure' + upravljanje v dashboardu (izdaja/izklop/preklic)
+- 🛡️ **Matrika dovoljenj** (R135, issue #5 §10) — vsaka poslovna ruta preverja
+  KONKRETNO pravico (`invoices.create`, `price.override`, `portal.manage`, …)
+  namesto vloge: enoten katalog 28 pravic (`src/lib/permissions.ts`), vloga →
+  pravice (ADMIN 28, VODJA 27, MONTER terenskih 11, SKLADISCE skladiščnih 7,
+  API ključ izključno iz scope-ov), sporočila 403 imenujejo manjkajočo pravico,
+  odjemalec dobi svoje pravice prek `GET /api/auth` — UI skriva akcije brez
+  pravic in pošteno pokaže stanje "Ureja pisarna" (portal/ekipa)
 - 🗄️ **PostgreSQL** — verzionirane migracije (`migrate deploy`), produkcija Neon
 
-### Statistika projekta (usklajeno z HEAD, R134)
+### Statistika projekta (usklajeno z HEAD, R135)
 
 | Metrika | Vrednost |
 |---------|----------|
@@ -96,7 +103,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 36 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **681** (44 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **699** (45 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 104 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -358,7 +365,7 @@ Sheet z 6 podzavihki:
 | **PWA** | Service Worker + Web Manifest |
 | **Temnitveni način** | [next-themes](https://github.com/pacocoursey/next-themes) |
 | **Validacija** | [Zod 4](https://zod.dev/) |
-| **Testiranje** | [Vitest 4](https://vitest.dev/) (681 testov + globalSetup embedded PG) |
+| **Testiranje** | [Vitest 4](https://vitest.dev/) (699 testov + globalSetup embedded PG) |
 | **Paketni upravitelj** | [Bun](https://bun.sh/) |
 | **Linting** | ESLint 9 + eslint-config-next |
 
