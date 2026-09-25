@@ -387,6 +387,21 @@ check("POST /api/portal enable brez seje → 401", st == 401, f"dobil {st}")
 st, _, _ = call("/api/material-orders", "PATCH", {"id": "x", "status": "DOBLJENO"})
 check("PATCH /api/material-orders brez seje → 401", st == 401, f"dobil {st}")
 
+
+print("\n[18] DB integriteta + atomske transakcije (R136 — issue #5 #18/#19)")
+# Termin: brez seje 401 (vrata), z neznano sejo 401.
+st, _, _ = call("/api/schedules", "PATCH", {"id": "x", "status": "ZAKLJUCENO"})
+check("PATCH /api/schedules brez seje → 401", st == 401, f"dobil {st}")
+# Naročilo z NEVELJAVNO količino → 400 (app plast pred DB CHECK — brez surovega 500).
+st, body, _ = call("/api/material-orders", "POST", {"supplierId": "x", "items": [{"inventoryId": "y", "kolicina": 0}]})
+check("POST /api/material-orders neveljavna postavka brez seje → 401 (najprej vrata)", st == 401, f"dobil {st}")
+# Cena: negativna cena ne sme skozi vrata avtentikacije → 401 brez seje.
+st, _, _ = call("/api/material-prices", "POST", {"inventoryId": "x", "supplierId": "y", "cena": -5})
+check("POST /api/material-prices negativna cena brez seje → 401", st == 401, f"dobil {st}")
+# Stranke: ustvarjanje brez seje → 401 (nova revizija CUSTOMER_CREATED je za sejo).
+st, _, _ = call("/api/customers", "POST", {"ime": "X", "naslov": "Y"})
+check("POST /api/customers brez seje → 401", st == 401, f"dobil {st}")
+
 print(f"\n{'=' * 60}")
 print(f"  {passed} uspešnih · {failed} neuspešnih · {skipped} preskočenih")
 print(f"{'=' * 60}\n")

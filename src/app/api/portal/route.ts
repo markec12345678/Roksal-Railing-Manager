@@ -274,38 +274,40 @@ export async function POST(request: Request) {
       updateData.measureTokenRevokedAt = new Date()
     }
 
-    const updated = await db.project.update({
-      where: { id: projectId },
-      data: updateData,
-      select: PORTAL_SELECT,
-    })
+    // R136 (§19): projektni žetoni + revizijski vpis v ENI transakciji —
+    // crash med korakoma ne sme pustiti omogočenega portala brez sledi.
+    const updated = await db.$transaction(async (tx) => {
+      const row = await tx.project.update({
+        where: { id: projectId },
+        data: updateData,
+        select: PORTAL_SELECT,
+      })
 
-    try {
-      await db.auditLog.create({
+      await tx.auditLog.create({
         data: {
           // R132: pravi akter (prej 'system', ki je padal na FK konvencijo).
           userId: auth.session.sub,
-          projectId: updated.id,
+          projectId: row.id,
           // Portal akcije ohranijo PORTAL_ predpono (R132 pogodba); merilne
           // akcije nosijo MEASURE_ z podčrtajem (R133).
           akcija: action.startsWith('measure')
             ? action.replace(/^measure/, 'MEASURE_').toUpperCase()
             : `PORTAL_${action.toUpperCase()}`,
           newValue: JSON.stringify({
-            enabled: updated.clientPortalEnabled,
-            hasToken: !!updated.clientToken,
-            expiresAt: updated.clientTokenExpiresAt?.toISOString() ?? null,
-            revokedAt: updated.clientTokenRevokedAt?.toISOString() ?? null,
-            measureEnabled: updated.measureEnabled,
-            hasMeasureToken: !!updated.measureToken,
-            measureExpiresAt: updated.measureTokenExpiresAt?.toISOString() ?? null,
-            measureRevokedAt: updated.measureTokenRevokedAt?.toISOString() ?? null,
+            enabled: row.clientPortalEnabled,
+            hasToken: !!row.clientToken,
+            expiresAt: row.clientTokenExpiresAt?.toISOString() ?? null,
+            revokedAt: row.clientTokenRevokedAt?.toISOString() ?? null,
+            measureEnabled: row.measureEnabled,
+            hasMeasureToken: !!row.measureToken,
+            measureExpiresAt: row.measureTokenExpiresAt?.toISOString() ?? null,
+            measureRevokedAt: row.measureTokenRevokedAt?.toISOString() ?? null,
           }),
         },
       })
-    } catch {
-      // Audit ne sme porušiti upravljanja; napaka ostane v logih.
-    }
+
+      return row
+    })
 
     return NextResponse.json(portalPayload(updated))
   } catch (error) {

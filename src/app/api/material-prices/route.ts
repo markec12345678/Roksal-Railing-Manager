@@ -1,6 +1,7 @@
 // Roksal Field - API: Cene materiala pri dobaviteljih (V5)
 // Pricing intelligence — primerjava cen, najcenejši dobavitelj
 import { NextResponse } from 'next/server'
+import { Prisma } from '@prisma/client'
 import { db } from '@/lib/db'
 import { authenticate, unauthorized } from '@/lib/auth'
 import { denyWithoutPermission } from '@/lib/auth'
@@ -86,21 +87,38 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'inventoryId, supplierId, cena so obvezni' }, { status: 400 })
     }
 
-    // Zapri prejšnjo veljavno ceno
-    await db.materialPrice.updateMany({
-      where: { inventoryId, supplierId, veljavnostDo: null },
-      data: { veljavnostDo: new Date() },
-    })
+    // R136 (§18): cena mora biti končno število >= 0 — DB CHECK (price_nonnegative)
+    // bi sicer vrnil surov P2010; jasna 400 s slovenskim sporočilom je pogodba.
+    const cenaSt = typeof cena === 'string' ? Number(cena.replace(',', '.')) : Number(cena)
+    if (!Number.isFinite(cenaSt) || cenaSt < 0) {
+      return NextResponse.json({ error: 'Cena mora biti neznegativno število.' }, { status: 400 })
+    }
 
-    // Ustvari novo ceno
-    const price = await db.materialPrice.create({
-      data: {
-        inventoryId,
-        supplierId,
-        cena: parseFloat(cena),
-        opomba: opomba || null,
-      },
-      include: { inventory: true, supplier: true },
+    // R136 (§19): zapri prejšnjo ceno + ustvari novo v ENI transakciji.
+    // Prej sta bila dva ločena write-a — crash/vstavljanje med njima bi pustil
+    // DVE odprti ceni za isti par (material, dobavitelj), kar je hkrati edini
+    // možen kršitelj EXCLUDE omejitve material_price_no_overlap (§18).
+    //
+    // GREATEST(veljavnostOd, zdaj): če je ura aplikacije za urnikom baze
+    // (razpeljeno deployanje/vm), bi veljavnostDo < veljavnostOd ustvarilo
+    // NEVELJAVEN range (PostgreSQL 22000) → EXCLUDE transakcija bi padla.
+    // GREATEST zagotovi veljaven interval tudi pri odmiku ur.
+    const zapriOb = new Date()
+    const price = await db.$transaction(async (tx) => {
+      await tx.$executeRaw(
+        Prisma.sql`UPDATE "MaterialPrice"
+          SET "veljavnostDo" = GREATEST("veljavnostOd", ${zapriOb}::timestamp)
+          WHERE "inventoryId" = ${inventoryId} AND "supplierId" = ${supplierId} AND "veljavnostDo" IS NULL`,
+      )
+      return tx.materialPrice.create({
+        data: {
+          inventoryId,
+          supplierId,
+          cena: cenaSt,
+          opomba: opomba || null,
+        },
+        include: { inventory: true, supplier: true },
+      })
     })
 
     return NextResponse.json(price, { status: 201 })

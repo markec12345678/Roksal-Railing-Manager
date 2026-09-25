@@ -932,22 +932,22 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
         </div>
       </div>
 
-      {/* Quick Stats Row */}
+      {/* Quick Stats Row — R136: tabular-nums (stabilna širina števcov ob osvežitvi) + focus rings */}
       <div className="flex items-center gap-2 overflow-x-auto pb-0.5 scrollbar-thin animate-fade-in-up" style={{ animationDelay: '30ms' }}>
-        <Badge className="shrink-0 bg-roksal-navy/10 text-roksal-navy hover:bg-roksal-navy/15 text-[11px] px-2.5 py-1">
+        <Badge className="shrink-0 bg-roksal-navy/10 text-roksal-navy hover:bg-roksal-navy/15 text-[11px] px-2.5 py-1 tabular-nums">
           <TrendingUp className="mr-1 h-3 w-3" aria-hidden="true" />
           <span className="font-bold mr-0.5">{activeCount}</span> aktivnih
         </Badge>
-        <Badge className="shrink-0 bg-roksal-amber/15 text-roksal-navy hover:bg-roksal-amber/20 text-[11px] px-2.5 py-1">
+        <Badge className="shrink-0 bg-roksal-amber/15 text-roksal-navy hover:bg-roksal-amber/20 text-[11px] px-2.5 py-1 tabular-nums">
           <Clock className="mr-1 h-3 w-3 text-roksal-amber" aria-hidden="true" />
           <span className="font-bold mr-0.5">{pendingCount}</span> načrtovanih
         </Badge>
-        <Badge className="shrink-0 bg-roksal-green/15 text-roksal-green hover:bg-roksal-green/20 text-[11px] px-2.5 py-1">
+        <Badge className="shrink-0 bg-roksal-green/15 text-roksal-green hover:bg-roksal-green/20 text-[11px] px-2.5 py-1 tabular-nums">
           <CheckCircle2 className="mr-1 h-3 w-3" aria-hidden="true" />
           <span className="font-bold mr-0.5">{completedCount}</span> končanih
         </Badge>
         {!invLoading && totalInventoryItems > 0 && (
-          <Badge className={`shrink-0 text-[11px] px-2.5 py-1 ${
+          <Badge className={`shrink-0 text-[11px] px-2.5 py-1 tabular-nums ${
             lowStockCount > 0
               ? 'bg-roksal-red/15 text-roksal-red hover:bg-roksal-red/20'
               : 'bg-roksal-green/15 text-roksal-green hover:bg-roksal-green/20'

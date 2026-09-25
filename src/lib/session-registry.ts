@@ -19,6 +19,7 @@
 import { db } from '@/lib/db'
 import { clientIp } from '@/lib/rate-limit'
 import { SESSION_TTL_SECONDS, signSession, type SessionPayload } from '@/lib/session'
+import type { Prisma } from '@prisma/client'
 
 export interface IssuedSession {
   token: string
@@ -92,9 +93,19 @@ export async function revokeSession(jti: string, profileId: string): Promise<num
 /**
  * Revoke vseh živih sej profila. `exceptJti` pusti trenutno napravo prijavo
  * (odjava ostalih naprav); brez njega pade TUDI trenutna seja (menjava gesla).
+ *
+ * R136 (§19): neobvezen `client` (Prisma.TransactionClient) — kadar upravljanje
+ * uporabnikov (deaktivacija/zaklep/role-change/reset) teče v transakciji, mora
+ * tudi revoke sej pasti v ISTI commit; sicer bi crash med korakoma pustil
+ * deaktiviranega uporabnika z živimi žetoni (kršitev §9 hard requirementa).
+ * Brez clienta se uporabi globalni `db` (obstoječi klicatelji nespremenjeni).
  */
-export async function revokeAllForUser(profileId: string, exceptJti?: string): Promise<number> {
-  const res = await db.userSession.updateMany({
+export async function revokeAllForUser(
+  profileId: string,
+  exceptJti?: string,
+  client?: Prisma.TransactionClient,
+): Promise<number> {
+  const res = await (client ?? db).userSession.updateMany({
     where: {
       profileId,
       revokedAt: null,

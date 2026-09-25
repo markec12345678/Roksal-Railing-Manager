@@ -34,8 +34,10 @@ import {
   Loader2,
   ShoppingCart,
   Euro,
+  Download,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { downloadCsv, todayStamp } from '@/lib/csv-export'
 
 type InventoryType = 'ALL' | 'WPC_deska' | 'Inox_vijak' | 'Kemicno_sidro' | 'Alu_profil'
 type MovementType = 'PORABA' | 'DOPOLNITEV' | 'ODPIS'
@@ -188,6 +190,28 @@ export function InventoryTab() {
         onClick: () => {},
       },
     })
+  }
+
+  /** R136 — CSV izvoz vidnih artiklov (upošteva aktiven filter; SI oblika). */
+  function exportZalogaCsv() {
+    if (filtered.length === 0) {
+      toast.error('Ni artiklov za izvoz.')
+      return
+    }
+    downloadCsv(
+      `zaloga-${todayStamp()}.csv`,
+      ['Šifra', 'Naziv', 'Tip', 'Enota', 'Zaloga', 'Min. zaloga', 'Nizka'],
+      filtered.map((item) => [
+        item.sifraMateriala,
+        item.naziv,
+        typeLabels[item.tip] || item.tip,
+        item.enota,
+        item.kolicinaZaloga,
+        item.minimalnaZaloga,
+        item.kolicinaZaloga <= item.minimalnaZaloga ? 'DA' : 'NE',
+      ]),
+    )
+    toast.success(`Izvoženih ${filtered.length} artiklov v CSV.`)
   }
 
   const filtered = filter === 'ALL'
@@ -369,22 +393,35 @@ export function InventoryTab() {
         </div>
       )}
 
-      {/* Filter Tabs */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
-        <Filter className="h-4 w-4 shrink-0 text-muted-foreground" />
-        {filterTabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setFilter(tab.id)}
-            className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors press-scale ${
-              filter === tab.id
-                ? 'bg-roksal-navy text-white border-b-2 border-white/30'
-                : 'bg-secondary text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      {/* Filter Tabs + CSV izvoz (R136) */}
+      <div className="flex items-center gap-2">
+        <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
+          <Filter className="h-4 w-4 shrink-0 text-muted-foreground" />
+          {filterTabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setFilter(tab.id)}
+              className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 ${
+                filter === tab.id
+                  ? 'bg-roksal-navy text-white border-b-2 border-white/30'
+                  : 'bg-secondary text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={exportZalogaCsv}
+          className="h-8 shrink-0 gap-1.5 text-[11px] font-medium tabular-nums press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+          aria-label="Izvozi vidno zalogo kot CSV"
+          title="Izvozi vidno zalogo (upošteva filter) kot CSV za Excel"
+        >
+          <Download className="h-3.5 w-3.5" />
+          CSV
+        </Button>
       </div>
 
       {/* Inventory List */}
@@ -403,7 +440,7 @@ export function InventoryTab() {
                 return (
                   <div
                     key={item.id}
-                    className="flex flex-col gap-2 px-4 py-3 transition-colors hover:bg-secondary/20 md:rounded-lg md:border md:border-border/50"
+                    className="group flex flex-col gap-2 px-4 py-3 transition-all duration-200 hover:bg-secondary/20 md:rounded-lg md:border md:border-border/50 md:hover:border-roksal-navy/20 md:hover:shadow-sm"
                   >
                     <div className="flex items-center justify-between">
                       <div className="min-w-0 flex-1">
@@ -434,7 +471,7 @@ export function InventoryTab() {
                         )}
                         <div className="text-right">
                           <p
-                            className={`text-lg font-bold ${
+                            className={`text-lg font-bold tabular-nums ${
                               isLow ? 'text-roksal-red' : 'text-roksal-navy'
                             }`}
                           >

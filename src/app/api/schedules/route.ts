@@ -1,9 +1,25 @@
 // Roksal Field - API: Installation Schedules (V6)
 // Koledar montaže — termini, ekipe, status
+//
+// R136 (§19): POST in PATCH sta ATOMSKA — termin + status projekta + poraba
+// zaloge (BOM draft) + revizijski vpis padejo v EN commit. Prej je crash med
+// koraki lahko pustil: zaključen termin brez MONTIRANO projekta ALI delno
+// odšteto zalogo (ne-idempotentno — ponovni zaključek bi odštel dvakrat).
+// R136 (§18): odšteto zalogo NE SME pasti pod 0 — pogojni decrement
+// (updateMany WHERE kolicinaZaloga >= kolicina); nezadostna zaloga → 409
+// z imenom materiala, CELA transakcija se vrne (prej je šlo tiho v minus).
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { authenticate, unauthorized } from '@/lib/auth'
 import { denyWithoutPermission } from '@/lib/auth'
+
+/** Nezadostna zaloga — signal za 409 (ne 500); rollback opravi $transaction. */
+class InsufficientStockError extends Error {
+  constructor(public materialNaziv: string, public potrebno: number, public naZalogi: number) {
+    super(`Zaloga "${materialNaziv}" ni dovoljša (potrebno ${potrebno}, na zalogi ${naZalogi}).`)
+    this.name = 'InsufficientStockError'
+  }
+}
 
 // GET — termini (z option projectId, crewId, datum range)
 export async function GET(request: Request) {
@@ -76,53 +92,51 @@ export async function POST(request: Request) {
       }
     }
 
-    const schedule = await db.installationSchedule.create({
-      data: {
-        projectId,
-        crewId: crewId || null,
-        monterId: monterId || null,
-        datumZacetka: new Date(datumZacetka),
-        datumKonca: new Date(datumKonca),
-        predvideneUre: predvideneUre || 8,
-        opombe: opombe || null,
-        lokacija: lokacija || null,
-        status: 'NAVRTENO',
-      },
-      include: {
-        project: { select: { nazivProjekta: true, customer: { select: { ime: true, naslov: true } } } },
-        crew: { select: { naziv: true, barva: true } },
-      },
-    })
+    const schedule = await db.$transaction(async (tx) => {
+      const created = await tx.installationSchedule.create({
+        data: {
+          projectId,
+          crewId: crewId || null,
+          monterId: monterId || null,
+          datumZacetka: new Date(datumZacetka),
+          datumKonca: new Date(datumKonca),
+          predvideneUre: predvideneUre || 8,
+          opombe: opombe || null,
+          lokacija: lokacija || null,
+          status: 'NAVRTENO',
+        },
+        include: {
+          project: { select: { nazivProjekta: true, customer: { select: { ime: true, naslov: true } } } },
+          crew: { select: { naziv: true, barva: true } },
+        },
+      })
 
-    // Posodobi projekt status na V_IZDELAVI če je bil ZA_MONTAZO
-    await db.project.updateMany({
-      where: { id: projectId, status: 'ZA_MONTAZO' },
-      data: { status: 'V_IZDELAVI' },
-    })
+      // Posodobi projekt status na V_IZDELAVI če je bil ZA_MONTAZO
+      await tx.project.updateMany({
+        where: { id: projectId, status: 'ZA_MONTAZO' },
+        data: { status: 'V_IZDELAVI' },
+      })
 
-    // AuditLog — userId mora obstajati v Profile (FK!), zato seje uporabimo
-    // pravi id, API-ključ pa pade nazaj na demo profil. Zavito v try/catch:
-    // revija ne sme pokvariti glavne operacije (prej je FK kršitev na
-    // 'system' vrgla 500 in ustvarjanje termina je bilo pokvarjeno).
-    try {
-      let auditUserId = 'system'
+      // Revizijski vpis ATOMSKO s terminom (userId mora obstajati v Profile —
+      // API-ključ pade nazaj na ADMIN profil; 'system' ni veljaven FK).
+      let auditUserId: string | null = null
       if (auth.kind === 'user') {
         auditUserId = auth.session.sub
       } else {
-        const fallback = await db.profile.findFirst({ where: { vloga: 'ADMIN' }, select: { id: true } })
-        if (fallback) auditUserId = fallback.id
+        const fallback = await tx.profile.findFirst({ where: { vloga: 'ADMIN' }, select: { id: true } })
+        auditUserId = fallback?.id ?? null
       }
-      await db.auditLog.create({
+      await tx.auditLog.create({
         data: {
           userId: auditUserId,
           projectId,
           akcija: 'SCHEDULE_CREATED',
-          newValue: JSON.stringify({ scheduleId: schedule.id, datumZacetka, crewId }),
+          newValue: JSON.stringify({ scheduleId: created.id, datumZacetka, crewId }),
         },
       })
-    } catch (auditError) {
-      console.error('Audit log (schedule) napaka:', auditError)
-    }
+
+      return created
+    })
 
     return NextResponse.json(schedule, { status: 201 })
   } catch (error) {
@@ -153,38 +167,81 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: 'Neveljaven status' }, { status: 400 })
     }
 
-    const updated = await db.installationSchedule.update({
-      where: { id },
-      data: {
-        status,
-        ...(dejanskeUre !== undefined ? { dejanskeUre } : {}),
-        ...(opombe !== undefined ? { opombe } : {}),
-      },
-      include: { project: { select: { id: true, nazivProjekta: true } }, crew: { select: { naziv: true } } },
-    })
-
-    // Če je ZAKLJUCENO → posodobi projekt status na MONTIRANO
-    if (status === 'ZAKLJUCENO') {
-      await db.project.update({
-        where: { id: updated.projectId },
-        data: { status: 'MONTIRANO' },
+    const updated = await db.$transaction(async (tx) => {
+      const row = await tx.installationSchedule.update({
+        where: { id },
+        data: {
+          status,
+          ...(dejanskeUre !== undefined ? { dejanskeUre } : {}),
+          ...(opombe !== undefined ? { opombe } : {}),
+        },
+        include: { project: { select: { id: true, nazivProjekta: true } }, crew: { select: { naziv: true } } },
       })
-      // Odštej material iz zaloge (iz BOM draft)
-      const project = await db.project.findUnique({ where: { id: updated.projectId }, select: { bomDraftJson: true } })
-      if (project?.bomDraftJson) {
-        const bom = JSON.parse(project.bomDraftJson)
-        for (const item of bom.items || []) {
-          const inv = await db.inventory.findFirst({ where: { naziv: { contains: item.naziv.split(' ')[0] } } })
-          if (inv) {
-            await db.inventory.update({ where: { id: inv.id }, data: { kolicinaZaloga: { decrement: item.kolicina } } })
-            await db.inventoryMovement.create({ data: { inventoryId: inv.id, kolicina: -item.kolicina, tipPremika: 'PORABA', projectId: updated.projectId } })
+
+      // Če je ZAKLJUCENO → posodobi projekt status na MONTIRANO + odštej
+      // material iz zaloge (iz BOM draft) — VSE v isti transakciji.
+      if (status === 'ZAKLJUCENO') {
+        await tx.project.update({
+          where: { id: row.projectId },
+          data: { status: 'MONTIRANO' },
+        })
+        const project = await tx.project.findUnique({ where: { id: row.projectId }, select: { bomDraftJson: true } })
+        if (project?.bomDraftJson) {
+          const bom = JSON.parse(project.bomDraftJson)
+          for (const item of bom.items || []) {
+            const inv = await tx.inventory.findFirst({ where: { naziv: { contains: item.naziv.split(' ')[0] } } })
+            if (inv) {
+              // §18: pogojni decrement — zaloga ne sme pasti pod 0. Neuspeh →
+              // InsufficientStockError → CELA transakcija rollback (tudi status
+              // termina in projekta; ni delne porabe).
+              const decremented = await tx.inventory.updateMany({
+                where: { id: inv.id, kolicinaZaloga: { gte: item.kolicina } },
+                data: { kolicinaZaloga: { decrement: item.kolicina } },
+              })
+              if (decremented.count === 0) {
+                throw new InsufficientStockError(inv.naziv, item.kolicina, inv.kolicinaZaloga)
+              }
+              await tx.inventoryMovement.create({
+                data: { inventoryId: inv.id, kolicina: -item.kolicina, tipPremika: 'PORABA', projectId: row.projectId },
+              })
+            }
           }
         }
       }
-    }
+
+      // Revizijski vpis ATOMSKO s spremembo (prej: ločen write, crash = sprememba
+      // brez sledi; 'system' ni veljaven FK → API-ključ pade na ADMIN profil).
+      let auditUserId: string | null = null
+      if (auth.kind === 'user') {
+        auditUserId = auth.session.sub
+      } else {
+        const fallback = await tx.profile.findFirst({ where: { vloga: 'ADMIN' }, select: { id: true } })
+        auditUserId = fallback?.id ?? null
+      }
+      await tx.auditLog.create({
+        data: {
+          userId: auditUserId,
+          projectId: row.projectId,
+          akcija: 'SCHEDULE_STATUS',
+          newValue: JSON.stringify({ scheduleId: row.id, status }),
+        },
+      })
+
+      return row
+    })
 
     return NextResponse.json(updated)
   } catch (error) {
+    if (error instanceof InsufficientStockError) {
+      // Fail-closed, javno razložljivo: materiala ni dovolj — nič ni spremenjeno.
+      return NextResponse.json(
+        {
+          error: error.message,
+          detail: 'Termin NI bil zaključen — zaloga materiala je nezadostna. Dopolnite zalogo ali prilagodite BOM.',
+        },
+        { status: 409 },
+      )
+    }
     console.error('Schedules PATCH Error:', error)
     return NextResponse.json({ error: 'Napaka pri posodabljanju termina' }, { status: 500 })
   }

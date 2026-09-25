@@ -53,16 +53,29 @@ export async function POST(request: Request) {
     const body = await request.json()
     const validated = createCustomerSchema.parse(body)
 
-    const newCustomer = await db.customer.create({
-      data: {
-        ime: validated.ime.trim(),
-        naslov: validated.naslov.trim(),
-        telefon: validated.telefon?.trim() || null,
-        email: validated.email?.trim() || null,
-      },
-      include: {
-        _count: { select: { projects: true } },
-      },
+    // R136 (§19): stranka + revizijski vpis v ENI transakciji. Prej je bila
+    // ustvarjanje stranke brez vsakega revizijskega vpisa (vrzel v sledljivosti
+    // "critical audit" iz §19) — zdaj CUSTOMER_CREATED z akterjem.
+    const newCustomer = await db.$transaction(async (tx) => {
+      const created = await tx.customer.create({
+        data: {
+          ime: validated.ime.trim(),
+          naslov: validated.naslov.trim(),
+          telefon: validated.telefon?.trim() || null,
+          email: validated.email?.trim() || null,
+        },
+        include: {
+          _count: { select: { projects: true } },
+        },
+      })
+      await tx.auditLog.create({
+        data: {
+          userId: auth.kind === 'user' ? auth.session.sub : null,
+          akcija: 'CUSTOMER_CREATED',
+          newValue: JSON.stringify({ customerId: created.id, ime: created.ime, naslov: created.naslov }),
+        },
+      })
+      return created
     })
 
     return NextResponse.json(newCustomer, { status: 201 })

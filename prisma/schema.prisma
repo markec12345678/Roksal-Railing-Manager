@@ -420,6 +420,12 @@ model AuditLog {
 
   user    Profile? @relation(fields: [userId], references: [id])
   project Project? @relation(fields: [projectId], references: [id])
+
+  /// R136 (§18): revizijski dnevnik je bil brez VSEH indeksov (sekvenčni scan
+  /// na vsakem ogledu sledi). Branje teče po projektu + kronološko.
+  @@index([projectId, timestamp])
+  /// Pregled po akciji (npr. vsi USER_DEACTIVATE dogodki) — varnostna analiza.
+  @@index([akcija, timestamp])
 }
 
 // ============================================
@@ -853,6 +859,9 @@ model Invoice {
 
   @@index([projectId])
   @@index([status])
+  /// R136 (§18): dashboard/pregled filtrira "projekt + status" — kompozitni
+  /// indeks pade iz dveh posameznih na en range scan.
+  @@index([projectId, status])
 }
 
 // ============================================

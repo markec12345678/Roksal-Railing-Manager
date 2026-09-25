@@ -414,3 +414,54 @@ fail-closed neznana vloga, API-ključ preslikava, vrata 401/403 z imenom pravice
 rut: portal MONTER → 403 `portal.manage`, users VODJA → 403 `users.manage`, invoices MONTER
 → 403 `invoices.create`/`invoices.issue`, material-orders SKLADISCE receive-only, prices
 MONTER → 403 `price.override`) + varnostni smoke [17] (4 preverjanja).
+
+## DB integriteta + atomske transakcije (R136, issue #5 §18 + §19)
+
+### §18 — Database constraints (baza kot ZADNJA linija obrambe)
+
+Migracija `20260925223000_r136_db_constraints` (PostgreSQL-only; brez nje gradnja FAIL):
+
+| Omejitev | Tip | Namen |
+|---|---|---|
+| `invoice_amounts_nonnegative` | CHECK (NOT VALID) | osnova, DDV, znesek, rok ≥ 0 |
+| `invoice_status_allowed` | CHECK (NOT VALID) | status ∈ {OSNUTEK, IZDAN, PLACAN, STORNIRAN} |
+| `invoice_tip_allowed` | CHECK (NOT VALID) | tip ∈ {PREDRACUN, RACUN, PREDPLACILNI} |
+| `inventory_stock_nonnegative` | CHECK (NOT VALID) | zaloga in min. zaloga ≥ 0 (negative stock NI tiho dovoljen) |
+| `order_item_quantity_positive` | CHECK (NOT VALID) | količina > 0, cena ≥ 0 |
+| `order_total_nonnegative` | CHECK (NOT VALID) | skupajCena ≥ 0 |
+| `usage_quantity_positive` | CHECK (NOT VALID) | porabljena količina > 0 |
+| `price_nonnegative` | CHECK (NOT VALID) | cena ≥ 0 |
+| `material_price_no_overlap` | **EXCLUDE (validated)** | za isti (material, dobavitelj) se veljavnostni okni NE SMESTA prekrivati (`tsrange '[)'`, btree_gist) |
+| `PortalAccess_projectId_fkey` | FK (bila R132 vrzel) | referenčna integriteta dostopov portala |
+| kompozitni indeksi | 3 | AuditLog (projectId+timestamp, akcija+timestamp), Invoice (projectId+status) — revizija brez sekvenčnih skenov |
+
+**NOT VALID strategija** (fail-closed brez tveganja deploja): CHECK veljajo takoj za VSE NOVE
+zapise; legacy vrstice se ne skenirajo (ni dolge blokade, ni deploja, ki pade na star podatek).
+Dev baza: 0 kršitev (skripta `scripts/r136-constraint-audit.cjs`). `VALIDATE CONSTRAINT` sledi
+kot ločen korak, ko je produkcijska data enkrat preverjena (follow-up, ne tiha zaobvoz).
+
+**EXCLUDE tehnična opomba**: Prisma DateTime = `timestamp(3) WITHOUT time zone` → range mora
+biti `tsrange` (ne `tstzrange` — implicitni cast na timestamptz je STABLE, PostgreSQL zato
+zavrne indeksni izraz). Polodprt interval `[)` je usklajen z API vzorcem zapiranja cen.
+
+### §19 — Atomske poslovne transakcije (crash = rollback, nikoli delno stanje)
+
+| Operacija | Prej (riziko) | Zdaj |
+|---|---|---|
+| `/api/users` vse akcije (invite/deactivate/lock/setRole/resetPassword) | profil + revoke sej + audit = 2–3 ločena write-a → crash pusti deaktiviranega z ŽIVIMI žetoni (kršitev §9) | ENA transakcija: profil + revoke (`revokeAllForUser(…, tx)`) + `auditInTx` |
+| `/api/schedules` PATCH → ZAKLJUČENO | termin + projekt + N×(zaloga−, premik) ločeno → delna poraba, ne-idempotentno (ponovni zaključek = dvojni odštevek) | ENA transakcija; **pogojni decrement** (`WHERE kolicinaZaloga >= kolicina`) — nezadostna zaloga → 409 z imenom materiala, ČISTA rollback |
+| `/api/schedules` POST | termin + status projekta + audit ločeno | ENA transakcija (+ audit API-ključ → ADMIN profil namesto FK-invalid 'system') |
+| `/api/material-prices` POST | zapri staro ceno + ustvari novo = 2 write-a → crash pusti DVE odprti ceni (= edini možen kršitelj EXCLUDE) | ENA transakcija + `GREATEST(veljavnostOd, zdaj)` proti odmiku ur (veljaven range tudi pri clock skew) |
+| `/api/portal` POST | žetoni + audit ločeno (audit lahko pade tiho) | ENA transakcija |
+| `/api/customers` POST | stranka BREZ vsakega revizijskega vpisa | ENA transakcija + `CUSTOMER_CREATED` z akterjem |
+| `/api/material-orders` POST | nevalidni količini/cena → surov 500 (DB CHECK), neznani inventoryId → FK 500 | 400 z jasnim sporočilom (app plast pred bazo); OBSTOJEČA transakcija nespremenjena |
+
+**Sprememba vedenja (izrecna, ne tiha)**: zaključek termina ne more več spraviti zaloge pod 0.
+Prej je šlo tiho v minus (ne-idempotentno in zmeda v bilanci); zdaj → 409 „Zaloga … ni dovoljša"
+in CELO transakcija se vrne. Pisarna najprej dopolni zalogo (ali prilagodi BOM), nato zaključi
+termin. Že izdani MATERIAL_ZALOGA ledger ostane konsistenten.
+
+Dokazi: `src/lib/__tests__/db-integrity.test.ts` (10 testov — omejitve v pg_constraint, direktni
+SQL kršitve zavrnjene, EXCLUDE par/dobavitelj semantika, 409 + ČISTA rollback na nezadostni
+zalogi, točen odštevek + premik + MONTIRANO + revizija atomsko, 400 polja naročil, GREATEST
+zapiranje cen, schema higiena) + varnostni smoke [18] (4 preverjanja).

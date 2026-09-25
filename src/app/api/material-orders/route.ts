@@ -76,9 +76,40 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'supplierId in items so obvezni' }, { status: 400 })
     }
 
+    // R136 (§18): količina > 0 in cena >= 0 — prej sta nevalidni vrednosti
+    // (npr. 0, -5, NaN) prišle do DB CHECK (order_item_quantity_positive) kot
+    // surov 500. Jasna 400 z elementom je pogodba za klienta (fail-closed,
+    // brez ugibanja, katere postavka je pokvarjena).
+    for (const [i, item] of items.entries()) {
+      const kol = Number(item.kolicina)
+      if (!Number.isFinite(kol) || kol <= 0) {
+        return NextResponse.json(
+          { error: `Količina postavke ${i + 1} mora biti pozitivno število.` },
+          { status: 400 },
+        )
+      }
+      if (item.cena !== undefined && (!Number.isFinite(Number(item.cena)) || Number(item.cena) < 0)) {
+        return NextResponse.json(
+          { error: `Cena postavke ${i + 1} ne sme biti negativna.` },
+          { status: 400 },
+        )
+      }
+    }
+
     // Pridobi trenutne cene + inventory podatke
     const inventoryIds = items.map((i) => i.inventoryId)
     const inventories = await db.inventory.findMany({ where: { id: { in: inventoryIds } } })
+
+    // R136: neznani inventoryId pade na FK kot surov 500 — jasna 400 z
+    // seznamom problematičnih ID-jev je deterministična pogodba.
+    const neznani = inventoryIds.filter((id) => !inventories.some((inv) => inv.id === id))
+    if (neznani.length > 0) {
+      return NextResponse.json(
+        { error: 'Nekateri materiali ne obstajajo.', neznaniId: neznani },
+        { status: 400 },
+      )
+    }
+
     const prices = await db.materialPrice.findMany({
       where: { inventoryId: { in: inventoryIds }, supplierId, veljavnostDo: null },
     })
@@ -87,10 +118,10 @@ export async function POST(request: Request) {
     const orderItems = items.map((item) => {
       const inv = inventories.find((i) => i.id === item.inventoryId)
       const price = prices.find((p) => p.inventoryId === item.inventoryId)
-      const cena = item.cena || price?.cena || 0
+      const cena = Number(item.cena || price?.cena || 0)
       return {
         inventoryId: item.inventoryId,
-        kolicina: item.kolicina,
+        kolicina: Number(item.kolicina),
         cena,
         naziv: inv?.naziv || 'Neznan material',
         enota: inv?.enota || 'kos',

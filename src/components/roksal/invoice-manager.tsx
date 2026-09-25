@@ -51,7 +51,9 @@ import {
   Copy,
   Banknote,
   BellRing,
+  Download,
 } from 'lucide-react'
+import { downloadCsv, todayStamp } from '@/lib/csv-export'
 
 // ---------- tipi ----------
 
@@ -167,6 +169,39 @@ function zapadlaDni(inv: Invoice): number | null {
 }
 
 const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100
+
+/** R136 — CSV izvoz računov (pregled za pisarno/računovodstvo; SI oblika). */
+function exportRacuniCsv(invoices: Invoice[]) {
+  if (invoices.length === 0) return
+  const statusLabels: Record<Invoice['status'], string> = {
+    OSNUTEK: 'Osnutek',
+    IZDAN: 'Izdan',
+    PLACAN: 'Plačan',
+    STORNIRAN: 'Storniran',
+  }
+  const tipLabels: Record<string, string> = {
+    RACUN: 'Račun',
+    PREDRACUN: 'Predračun',
+    PREDPLACILNI: 'Predplačilni',
+  }
+  downloadCsv(
+    `racuni-${todayStamp()}.csv`,
+    ['Številka', 'Tip', 'Status', 'Datum izdaje', 'Rok (dni)', 'Zapadlo (dni)', 'Osnova (EUR)', 'DDV (EUR)', 'Za plačilo (EUR)'],
+    [...invoices]
+      .sort((a, b) => b.datumIzdaje.localeCompare(a.datumIzdaje))
+      .map((inv) => [
+        inv.stevilka,
+        tipLabels[inv.tip] ?? inv.tip,
+        statusLabels[inv.status],
+        inv.datumIzdaje.slice(0, 10),
+        inv.rokPlacilaDni,
+        zapadlaDni(inv),
+        inv.osnova,
+        inv.ddv,
+        inv.znesek,
+      ]),
+  )
+}
 
 // ---------- prazna postavka ----------
 
@@ -784,13 +819,27 @@ export function InvoiceManager() {
             <Receipt className="h-4 w-4 text-amber-500" />
             Računi <span className="text-xs font-normal text-muted-foreground">(FURS)</span>
           </CardTitle>
-          <Button
-            size="sm"
-            onClick={() => setDialogOpen(true)}
-            className="h-8 bg-amber-500 text-navy-900 hover:bg-amber-400"
-          >
-            <Plus className="h-4 w-4" /> Nov račun
-          </Button>
+          <div className="flex shrink-0 items-center gap-2">
+            {/* R136 — CSV izvoz seznama računov (pregled za pisarno/računovodstvo) */}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => exportRacuniCsv(invoices)}
+              className="h-8 gap-1.5 px-2.5 text-[11px] font-medium press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50"
+              aria-label="Izvozi račune kot CSV"
+              title="Izvozi vse račune (številka, status, zneski) kot CSV za Excel"
+            >
+              <Download className="h-3.5 w-3.5" />
+              CSV
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => setDialogOpen(true)}
+              className="h-8 bg-amber-500 text-navy-900 hover:bg-amber-400"
+            >
+              <Plus className="h-4 w-4" /> Nov račun
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-3">

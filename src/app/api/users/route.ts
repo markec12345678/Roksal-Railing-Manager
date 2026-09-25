@@ -25,7 +25,7 @@ import { authenticate, unauthorized, forbidden } from '@/lib/auth'
 import { lacksPermission } from '@/lib/access'
 import { hashPassword } from '@/lib/password'
 import { revokeAllForUser } from '@/lib/session-registry'
-import { audit } from '@/lib/audit'
+import { auditInTx } from '@/lib/audit'
 import {
   VALID_ROLES,
   generateInviteToken,
@@ -130,26 +130,31 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Račun s tem e-naslovom že obstaja.' }, { status: 409 })
       }
       const token = generateInviteToken()
-      const profile = await db.profile.create({
-        data: {
-          email,
-          ime,
-          vloga,
-          passwordHash: null, // aktivira ga lastnik žetona z nastavitvijo gesla
-          inviteTokenHash: hashInviteToken(token),
-          inviteExpiresAt: inviteExpiryFromNow(),
-          invitedBy: actorEmail,
-          invitedAt: new Date(),
-        },
-        select: { id: true, email: true },
-      })
-      await audit({
-        request,
-        session: auth.session,
-        userId: auth.session.sub,
-        akcija: 'USER_INVITE',
-        oldValue: null,
-        newValue: { invitedEmail: email, vloga },
+      // R136 (§19): profil + revizijski vpis v ENI transakciji — povabilo brez
+      // sledi v dnevniku ne sme obstajati (in obratno; crash med korakoma = nič).
+      const profile = await db.$transaction(async (tx) => {
+        const created = await tx.profile.create({
+          data: {
+            email,
+            ime,
+            vloga,
+            passwordHash: null, // aktivira ga lastnik žetona z nastavitvijo gesla
+            inviteTokenHash: hashInviteToken(token),
+            inviteExpiresAt: inviteExpiryFromNow(),
+            invitedBy: actorEmail,
+            invitedAt: new Date(),
+          },
+          select: { id: true, email: true },
+        })
+        await auditInTx(tx, {
+          request,
+          session: auth.session,
+          userId: auth.session.sub,
+          akcija: 'USER_INVITE',
+          oldValue: null,
+          newValue: { invitedEmail: email, vloga },
+        })
+        return created
       })
       // Aktivacijska povezava gre v odgovor IZKLJUČNO ENKRAT (ni e-pošte —
       // admin jo posreduje po SMS/telefonu); v bazi je samo hash.
@@ -180,80 +185,134 @@ export async function POST(request: Request) {
       )
     }
 
-    let response: Record<string, unknown> = { ok: true }
-    let akcija = ''
+    // R136 (§19): vsa stanja tečejo v ENI transakciji (profil + revoke sej +
+    // revizijski vpis). Crash med koraki = ROLBACK — ne obstaja okno, kjer bi
+    // deaktiviran uporabnik imel žive žetone ali vloga bi bila spremenjena brez
+    // sledi v dnevniku (§9 hard requirement + "critical audit" iz §19).
+    let response: Record<string, unknown>
 
     if (action === 'deactivate') {
       // §9 offboarding: blokada + revoke vseh živih sej. assertSessionAlive
       // dodatno preverja status ob vsakem zahtevku (dvojna plast).
-      await db.profile.update({
-        where: { id: userId },
-        data: { deactivatedAt: new Date() },
+      response = await db.$transaction(async (tx) => {
+        await tx.profile.update({
+          where: { id: userId },
+          data: { deactivatedAt: new Date() },
+        })
+        const revoked = await revokeAllForUser(userId, undefined, tx)
+        await auditInTx(tx, {
+          request,
+          session: auth.session,
+          userId: auth.session.sub,
+          akcija: 'USER_DEACTIVATE',
+          oldValue: lifecycleSnapshot(target),
+          newValue: { email: target.email, action },
+        })
+        return { ok: true, revokedSessions: revoked }
       })
-      const revoked = await revokeAllForUser(userId)
-      akcija = 'USER_DEACTIVATE'
-      response = { ok: true, revokedSessions: revoked }
     } else if (action === 'reactivate') {
-      await db.profile.update({ where: { id: userId }, data: { deactivatedAt: null } })
-      akcija = 'USER_REACTIVATE'
+      response = await db.$transaction(async (tx) => {
+        await tx.profile.update({ where: { id: userId }, data: { deactivatedAt: null } })
+        await auditInTx(tx, {
+          request,
+          session: auth.session,
+          userId: auth.session.sub,
+          akcija: 'USER_REACTIVATE',
+          oldValue: lifecycleSnapshot(target),
+          newValue: { email: target.email, action },
+        })
+        return { ok: true }
+      })
     } else if (action === 'lock') {
-      await db.profile.update({ where: { id: userId }, data: { lockedAt: new Date() } })
-      const revoked = await revokeAllForUser(userId)
-      akcija = 'USER_LOCK'
-      response = { ok: true, revokedSessions: revoked }
+      response = await db.$transaction(async (tx) => {
+        await tx.profile.update({ where: { id: userId }, data: { lockedAt: new Date() } })
+        const revoked = await revokeAllForUser(userId, undefined, tx)
+        await auditInTx(tx, {
+          request,
+          session: auth.session,
+          userId: auth.session.sub,
+          akcija: 'USER_LOCK',
+          oldValue: lifecycleSnapshot(target),
+          newValue: { email: target.email, action },
+        })
+        return { ok: true, revokedSessions: revoked }
+      })
     } else if (action === 'unlock') {
-      await db.profile.update({ where: { id: userId }, data: { lockedAt: null } })
-      akcija = 'USER_UNLOCK'
+      response = await db.$transaction(async (tx) => {
+        await tx.profile.update({ where: { id: userId }, data: { lockedAt: null } })
+        await auditInTx(tx, {
+          request,
+          session: auth.session,
+          userId: auth.session.sub,
+          akcija: 'USER_UNLOCK',
+          oldValue: lifecycleSnapshot(target),
+          newValue: { email: target.email, action },
+        })
+        return { ok: true }
+      })
     } else if (action === 'setRole') {
       const { vloga } = parsed.data as { vloga: (typeof VALID_ROLES)[number] }
       if (vloga === target.vloga) {
         return NextResponse.json({ error: 'Uporabnik že ima to vlogo.' }, { status: 400 })
       }
-      await db.profile.update({ where: { id: userId }, data: { vloga } })
-      // Žeton nosi vlogo (snapshot) → vse seje se revoke (nova vloga velja po
-      // ponovni prijavi; stari žeton ne more "živeti" s staro vlogo).
-      const revoked = await revokeAllForUser(userId)
-      akcija = 'USER_ROLE_CHANGE'
-      response = { ok: true, revokedSessions: revoked }
+      response = await db.$transaction(async (tx) => {
+        await tx.profile.update({ where: { id: userId }, data: { vloga } })
+        // Žeton nosi vlogo (snapshot) → vse seje se revoke (nova vloga velja po
+        // ponovni prijavi; stari žeton ne more "živeti" s staro vlogo).
+        const revoked = await revokeAllForUser(userId, undefined, tx)
+        await auditInTx(tx, {
+          request,
+          session: auth.session,
+          userId: auth.session.sub,
+          akcija: 'USER_ROLE_CHANGE',
+          oldValue: lifecycleSnapshot(target),
+          newValue: { email: target.email, action, novaVloga: vloga },
+        })
+        return { ok: true, revokedSessions: revoked }
+      })
     } else if (action === 'resetPassword') {
       // §9 password reset (brez e-pošte): začasno geslo gre v odgovor ENKRAT;
       // v bazi je samo scrypt hash. Uporabnik MORA geslo zamenjati (mustChangePassword).
       const tempPassword = generateTempPassword()
-      await db.profile.update({
-        where: { id: userId },
-        data: {
-          passwordHash: await hashPassword(tempPassword),
-          mustChangePassword: true,
-        },
+      const passwordHash = await hashPassword(tempPassword) // CPU izven transakcije
+      response = await db.$transaction(async (tx) => {
+        await tx.profile.update({
+          where: { id: userId },
+          data: { passwordHash, mustChangePassword: true },
+        })
+        const revoked = await revokeAllForUser(userId, undefined, tx)
+        await auditInTx(tx, {
+          request,
+          session: auth.session,
+          userId: auth.session.sub,
+          akcija: 'USER_PASSWORD_RESET',
+          oldValue: lifecycleSnapshot(target),
+          newValue: { email: target.email, action }, // gesla NIKOLI v dnevniku
+        })
+        return { ok: true, tempPassword, revokedSessions: revoked }
       })
-      const revoked = await revokeAllForUser(userId)
-      akcija = 'USER_PASSWORD_RESET'
-      response = { ok: true, tempPassword, revokedSessions: revoked }
     } else {
       return NextResponse.json({ error: 'Neznana akcija' }, { status: 400 })
     }
-
-    await audit({
-      request,
-      session: auth.session,
-      userId: auth.session.sub,
-      akcija,
-      oldValue: JSON.stringify({
-        email: target.email,
-        vloga: target.vloga,
-        deactivated: target.deactivatedAt !== null,
-        locked: target.lockedAt !== null,
-      }),
-      newValue: JSON.stringify({
-        email: target.email,
-        action,
-        ...(action === 'setRole' ? { novaVloga: (parsed.data as { vloga?: string }).vloga } : {}),
-      }),
-    })
 
     return NextResponse.json(response)
   } catch (error) {
     console.error('Users POST Error:', error)
     return NextResponse.json({ error: 'Napaka pri upravljanju uporabnikov' }, { status: 500 })
+  }
+}
+
+/** Snapshot stanja profila PRED akcijo — v dnevnik gre razlika, ne celoten profil. */
+function lifecycleSnapshot(target: {
+  email: string
+  vloga: string
+  deactivatedAt: Date | null
+  lockedAt: Date | null
+}): Record<string, unknown> {
+  return {
+    email: target.email,
+    vloga: target.vloga,
+    deactivated: target.deactivatedAt !== null,
+    locked: target.lockedAt !== null,
   }
 }
