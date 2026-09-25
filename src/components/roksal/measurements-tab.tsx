@@ -3656,7 +3656,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
     return (
       <div
         key={m.id}
-        className={`rounded-xl border border-border/50 overflow-hidden transition-colors hover:border-roksal-navy/20 slide-in-right ${
+        className={`rounded-xl border border-border/50 overflow-hidden transition-all hover:border-roksal-navy/20 hover:shadow-sm slide-in-right focus-within:border-roksal-navy/30 ${
           isArchived ? 'opacity-60' : ''
         } ${isPhoto ? 'border-roksal-amber/30' : ''}`}
       >
@@ -3760,21 +3760,21 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                 {/* P1 — multi-unit prikaz */}
                 {m.tipMeritve !== 'KOT' && m.tipMeritve !== 'NAGIB' && (
                   <>
-                    <span className="text-[11px] text-muted-foreground font-mono">
+                    <span className="text-[11px] text-muted-foreground font-mono tabular-nums">
                       ↔ {formatMultiUnit(m.dolzinaMm)}
                     </span>
-                    <span className="text-[11px] text-muted-foreground font-mono">
+                    <span className="text-[11px] text-muted-foreground font-mono tabular-nums">
                       ↕ {formatMultiUnit(m.visinaMm)}
                     </span>
                   </>
                 )}
                 {m.tipMeritve === 'KOT' && angleDeg != null && (
-                  <span className="text-xs text-roksal-amber font-mono">
+                  <span className="text-xs text-roksal-amber font-mono tabular-nums">
                     {formatAngleMulti(angleDeg)}
                   </span>
                 )}
                 {m.tipMeritve === 'NAGIB' && angleDeg != null && (
-                  <span className="text-xs text-roksal-amber font-mono">
+                  <span className="text-xs text-roksal-amber font-mono tabular-nums">
                     {formatSlopeMulti(angleDeg)}
                   </span>
                 )}
@@ -3814,8 +3814,9 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   <button
                     type="button"
                     onClick={() => handleViewPhoto(m)}
-                    className="p-1.5 rounded-lg hover:bg-roksal-amber/10 transition-colors"
+                    className="p-1.5 rounded-lg hover:bg-roksal-amber/10 focus-visible:ring-2 focus-visible:ring-roksal-amber/40 focus-visible:outline-none transition-colors"
                     title="Poglej foto"
+                    aria-label={`Poglej pripadajočo foto mero za ${m.oznaka || 'meritev'}`}
                   >
                     <Camera className="h-3.5 w-3.5 text-roksal-amber" />
                   </button>
@@ -3826,16 +3827,18 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
             <button
               type="button"
               onClick={() => handleDuplicateMeasurement(m)}
-              className="p-1.5 rounded-lg hover:bg-secondary/60 transition-colors"
+              className="p-1.5 rounded-lg hover:bg-secondary/60 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:outline-none transition-colors"
               title="Podvoji meritev"
+              aria-label={`Podvoji meritev ${m.oznaka || m.id.slice(-4)}`}
             >
               <Copy className="h-3.5 w-3.5 text-muted-foreground" />
             </button>
             <button
               type="button"
               onClick={() => handleDeleteMeasurement(m.id)}
-              className="p-1.5 rounded-lg hover:bg-roksal-red/10 transition-colors"
+              className="p-1.5 rounded-lg hover:bg-roksal-red/10 focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:outline-none transition-colors"
               title="Izbriši meritev"
+              aria-label={`Izbriši meritev ${m.oznaka || m.id.slice(-4)}`}
             >
               <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-roksal-red" />
             </button>
@@ -3853,7 +3856,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
         {/* Noga */}
         <div className="flex items-center justify-between border-t border-border/30 px-3 py-2 bg-secondary/10">
           <div className="flex items-center gap-3 text-[11px] text-muted-foreground min-w-0">
-            <span className="flex items-center gap-1 shrink-0">
+            <span className="flex items-center gap-1 shrink-0 tabular-nums">
               <Calendar className="h-3 w-3" />
               {new Date(m.createdAt).toLocaleDateString('sl-SI')}
             </span>
@@ -3876,8 +3879,9 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               <button
                 type="button"
                 onClick={() => handleViewPhoto(m)}
-                className="flex items-center gap-1 rounded-lg border border-roksal-amber/30 bg-roksal-amber/5 px-2 py-1 text-[11px] font-medium text-roksal-amber hover:bg-roksal-amber/10 active:scale-[0.96] transition-all duration-150"
+                className="flex items-center gap-1 rounded-lg border border-roksal-amber/30 bg-roksal-amber/5 px-2 py-1 text-[11px] font-medium text-roksal-amber hover:bg-roksal-amber/10 active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-roksal-amber/40 focus-visible:outline-none transition-all duration-150"
                 title="Poglej pripadajočo foto mero"
+                aria-label={`Poglej pripadajočo foto mero za ${m.oznaka || 'meritev'}`}
               >
                 <Link2 className="h-3 w-3" />
                 <span>Poglej foto</span>
@@ -3893,8 +3897,9 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                     m.oznaka || m.lokacija || `Meritev #${m.id.slice(-4)}`
                   )
                 }
-                className="flex items-center gap-1 rounded-lg bg-roksal-navy text-white px-2.5 py-1 text-[11px] font-medium hover:bg-roksal-navy/90 active:scale-[0.96] transition-all duration-150 press-scale"
+                className="flex items-center gap-1 rounded-lg bg-roksal-navy text-white px-2.5 py-1 text-[11px] font-medium hover:bg-roksal-navy/90 active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:outline-none transition-all duration-150 press-scale"
                 title="Izračunaj razmike v kalkulatorju"
+                aria-label={`Izračunaj razmike za meritev ${m.oznaka || m.id.slice(-4)}`}
               >
                 <Calculator className="h-3.5 w-3.5" />
                 <span>Razmiki</span>
@@ -4245,7 +4250,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
             <CollapsibleTrigger asChild>
               <button
                 type="button"
-                className="flex w-full items-center justify-between p-4 text-left hover:bg-secondary/30 transition-colors"
+                className="flex w-full items-center justify-between p-4 text-left hover:bg-secondary/30 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-roksal-navy/40 focus-visible:outline-none transition-colors"
               >
                 <div className="flex items-center gap-2">
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-roksal-amber text-white">
@@ -4450,7 +4455,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
           <CollapsibleTrigger asChild>
             <button
               type="button"
-              className="flex w-full items-center justify-between p-4 text-left hover:bg-secondary/30 transition-colors"
+              className="flex w-full items-center justify-between p-4 text-left hover:bg-secondary/30 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-roksal-navy/40 focus-visible:outline-none transition-colors"
             >
               <div className="flex items-center gap-2">
                 <div
@@ -4591,7 +4596,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
         <button
           type="button"
           onClick={() => setFormOpen(!formOpen)}
-          className="flex w-full items-center justify-between p-4 text-left hover:bg-secondary/30 transition-colors"
+          className="flex w-full items-center justify-between p-4 text-left hover:bg-secondary/30 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-roksal-navy/40 focus-visible:outline-none transition-colors"
         >
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-roksal-navy text-white">
@@ -5308,7 +5313,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
             <CollapsibleTrigger asChild>
               <button
                 type="button"
-                className="flex w-full items-center justify-between p-4 text-left hover:bg-secondary/30 transition-colors"
+                className="flex w-full items-center justify-between p-4 text-left hover:bg-secondary/30 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-roksal-navy/40 focus-visible:outline-none transition-colors"
               >
                 <div className="flex items-center gap-2">
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500 text-white">
@@ -5812,7 +5817,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
           <CollapsibleTrigger asChild>
             <button
               type="button"
-              className="flex w-full items-center justify-between p-4 text-left hover:bg-secondary/30 transition-colors"
+              className="flex w-full items-center justify-between p-4 text-left hover:bg-secondary/30 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-roksal-navy/40 focus-visible:outline-none transition-colors"
             >
               <div className="flex items-center gap-2">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-roksal-navy/10 text-roksal-navy">

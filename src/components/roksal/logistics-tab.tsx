@@ -13,9 +13,10 @@ import { useToast } from '@/hooks/use-toast'
 import { downloadCsv, todayStamp } from '@/lib/csv-export'
 import { allowedTransitions } from '@/lib/equipment-lifecycle'
 import { QC_TEMPLATE, computePassed, countDefects } from '@/lib/qc-gate'
+import { IEV_TEMPLATE } from '@/lib/installation-evidence'
 import {
   Calendar, Download, Users, Wrench, Plus, Clock, MapPin, CheckCircle2, CalendarClock,
-  Loader2, AlertTriangle, Truck, Package, ShieldCheck, History,
+  Loader2, AlertTriangle, Truck, Package, ShieldCheck, History, FileCheck2, Lock,
 } from 'lucide-react'
 
 interface Schedule {
@@ -39,6 +40,37 @@ interface Crew {
   barva: string
   vodja: { ime: string } | null
   _count: { members: number; schedules: number }
+}
+
+/** R147 (§28): montažno dokazilo (§17 minimalni DTO + izpeljane zastavice). */
+interface EvidenceRow {
+  id: string
+  scheduleId: string | null
+  templateVersion: string
+  lokacija: string
+  beforePhotoId: string | null
+  afterPhotoId: string | null
+  gps: { gpsLat: number; gpsLng: number; consentAt: string } | null
+  checklist: Array<{ key: string; checked: boolean; note: string | null }>
+  defects: Array<{ opomba: string; reseno: boolean }>
+  handoverName: string | null
+  handoverAt: string | null
+  createdBy: string | null
+  createdAt: string
+  hasBefore: boolean
+  hasAfter: boolean
+  checklistAllChecked: boolean
+  openDefectsCount: number
+  complete: boolean
+  locked: boolean
+}
+
+/** R147 (§28): fotka projekta (izbor PRED/PO v dokazilu). */
+interface PhotoRow {
+  id: string
+  kategorija: string
+  opomba: string | null
+  createdAt: string
 }
 
 interface Equipment {
@@ -297,6 +329,21 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
   const [qcBusy, setQcBusy] = useState(false)
   const [qcOverrideMode, setQcOverrideMode] = useState(false)
   const [qcOverrideReason, setQcOverrideReason] = useState('')
+  // R147 (§28): montažno dokazilo — pred/po + GPS (po policyju) + verzirani
+  // checklist + napake + dokaz predaje (predaja zakleni — fail-closed 409).
+  const [evTarget, setEvTarget] = useState<{ id: string; projectId: string; project: string } | null>(null)
+  const [evExisting, setEvExisting] = useState<EvidenceRow | null>(null)
+  const [evLokacija, setEvLokacija] = useState('')
+  const [evGpsConsent, setEvGpsConsent] = useState(false)
+  const [evGps, setEvGps] = useState<{ lat: number; lng: number } | null>(null)
+  const [evChecked, setEvChecked] = useState<Record<string, boolean>>({})
+  const [evNotes, setEvNotes] = useState<Record<string, string>>({})
+  const [evDefects, setEvDefects] = useState('')
+  const [evBeforeId, setEvBeforeId] = useState('')
+  const [evAfterId, setEvAfterId] = useState('')
+  const [evPhotos, setEvPhotos] = useState<{ pred: PhotoRow[]; po: PhotoRow[] }>({ pred: [], po: [] })
+  const [evHandoverName, setEvHandoverName] = useState('')
+  const [evBusy, setEvBusy] = useState(false)
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -424,6 +471,143 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
     setQcNotes({})
     setQcOverrideMode(false)
     setQcOverrideReason('')
+  }
+
+  /** R147 (§28): odpri montažno dokazilo + naloži obstoječe + fotke PRED/PO. */
+  const openEvidenceDialog = async (id: string, projectId: string, project: string) => {
+    setEvTarget({ id, projectId, project })
+    setEvExisting(null)
+    setEvLokacija('')
+    setEvGpsConsent(false)
+    setEvGps(null)
+    setEvChecked({})
+    setEvNotes({})
+    setEvDefects('')
+    setEvBeforeId('')
+    setEvAfterId('')
+    setEvPhotos({ pred: [], po: [] })
+    setEvHandoverName('')
+    try {
+      const [evRes, phRes] = await Promise.all([
+        fetch(`/api/evidence?projectId=${projectId}`),
+        fetch(`/api/photos?projectId=${projectId}&limit=100`),
+      ])
+      if (evRes.ok) {
+        const data = (await evRes.json().catch(() => null)) as { evidence?: EvidenceRow[] } | null
+        const found = data?.evidence?.find((e) => e.scheduleId === id) ?? null
+        if (found) {
+          setEvExisting(found)
+          setEvLokacija(found.lokacija)
+          setEvGpsConsent(found.gps !== null)
+          if (found.gps) setEvGps({ lat: found.gps.gpsLat, lng: found.gps.gpsLng })
+          setEvChecked(Object.fromEntries(found.checklist.map((c) => [c.key, c.checked])))
+          setEvNotes(Object.fromEntries(found.checklist.map((c) => [c.key, c.note ?? ''])))
+          setEvDefects(found.defects.map((d) => d.opomba).join('\n'))
+          setEvBeforeId(found.beforePhotoId ?? '')
+          setEvAfterId(found.afterPhotoId ?? '')
+          setEvHandoverName(found.handoverName ?? '')
+        }
+      }
+      if (phRes.ok) {
+        const photos = (await phRes.json().catch(() => null)) as PhotoRow[] | null
+        if (Array.isArray(photos)) {
+          setEvPhotos({
+            pred: photos.filter((p) => p.kategorija === 'PRED'),
+            po: photos.filter((p) => p.kategorija === 'PO'),
+          })
+        }
+      }
+    } catch { /* naknadni podatki — dialog ostane uporaben (fail-verbose ob shranjevanju) */ }
+  }
+
+  /** R147 (§28): GPS po policyju — koordinate IZ naprave, samo z izrecnim soglasjem. */
+  const handleEvGpsConsent = (checked: boolean) => {
+    setEvGpsConsent(checked)
+    if (!checked) { setEvGps(null); return }
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      toast({ title: 'GPS ni na voljo', description: 'Naprava ne omogoča geolokacije — dokazilo ostane brez koordinat (iskreno neznano).', variant: 'destructive' })
+      setEvGpsConsent(false)
+      return
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => setEvGps({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => {
+        toast({ title: 'Dostop do GPS zavrnjen', description: 'Brez soglasja naprave se koordinate NE zapišejo (fail-closed, ne tiho).', variant: 'destructive' })
+        setEvGpsConsent(false)
+      },
+      { timeout: 8000 },
+    )
+  }
+
+  /** R147 (§28): checklist payload (isti fail-closed vzorec kot QC). */
+  const evChecklistPayload = IEV_TEMPLATE.map((t) => ({
+    key: t.key,
+    checked: evChecked[t.key] === true,
+    note: evNotes[t.key] || null,
+  }))
+  const evValid = evChecklistPayload.every((i) => i.checked || (i.note && i.note.trim().length > 0))
+  const evAllChecked = evChecklistPayload.every((i) => i.checked)
+  /** Napake iz tekstualnega polja (vrstica = napaka; opomba je dejstvo terenskega dela). */
+  const evDefectsList = evDefects.split('\n').map((l) => l.trim()).filter((l) => l.length > 0)
+
+  /** R147 (§28): shrani dokazilo (POST ali PATCH) — fail-verbose. */
+  const handleEvidenceSave = async () => {
+    if (!evTarget || !evValid) return
+    setEvBusy(true)
+    try {
+      const payload = {
+        ...(evExisting ? { id: evExisting.id } : { projectId: evTarget.projectId, scheduleId: evTarget.id }),
+        lokacija: evLokacija,
+        checklist: evChecklistPayload,
+        defects: evDefectsList.map((opomba) => ({ opomba, reseno: false })),
+        gps: { gpsConsent: evGpsConsent, ...(evGpsConsent && evGps ? { gpsLat: evGps.lat, gpsLng: evGps.lng } : {}) },
+        ...(evBeforeId ? { beforePhotoId: evBeforeId } : {}),
+        ...(evAfterId ? { afterPhotoId: evAfterId } : {}),
+      }
+      const res = await fetch('/api/evidence', {
+        method: evExisting ? 'PATCH' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      const data = (await res.json().catch(() => null)) as { error?: string; id?: string } | null
+      if (res.ok) {
+        toast({ title: evExisting ? '✓ Dokazilo posodobljeno' : '✓ Montažno dokazilo shranjeno', description: evTarget.project })
+        if (evExisting && data?.id) await openEvidenceDialog(evTarget.id, evTarget.projectId, evTarget.project)
+        else if (!evExisting) await openEvidenceDialog(evTarget.id, evTarget.projectId, evTarget.project)
+        loadData()
+      } else {
+        toast({ title: 'Napaka', description: data?.error ?? `HTTP ${res.status}`, variant: 'destructive' })
+      }
+    } catch {
+      toast({ title: 'Omrežna napaka', variant: 'destructive' })
+    } finally {
+      setEvBusy(false)
+    }
+  }
+
+  /** R147 (§28): potrdi predajo — strežnik zavrača brez PRED+PO fotk (409). */
+  const handleEvidenceHandover = async () => {
+    if (!evExisting || !evHandoverName.trim()) return
+    setEvBusy(true)
+    try {
+      const res = await fetch('/api/evidence', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: evExisting.id, handoverName: evHandoverName.trim() }),
+      })
+      const data = (await res.json().catch(() => null)) as { error?: string } | null
+      if (res.ok) {
+        toast({ title: '✓ Predaja potrjena', description: 'Dokazilo je zaklenjeno — nič več ni spreminljivo.' })
+        await openEvidenceDialog(evTarget!.id, evTarget!.projectId, evTarget!.project)
+        loadData()
+      } else {
+        toast({ title: 'Predaja ni mogoča', description: data?.error ?? `HTTP ${res.status}`, variant: 'destructive' })
+      }
+    } catch {
+      toast({ title: 'Omrežna napaka', variant: 'destructive' })
+    } finally {
+      setEvBusy(false)
+    }
   }
 
   const qcItemsPayload = QC_TEMPLATE.map((t) => ({
@@ -667,9 +851,14 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                       </div>
                     )}
                     {s.status === 'V_TEKU' && (
-                      <Button type="button" size="sm" variant="outline" className="h-6 text-[10px] bg-green-50 focus-visible:ring-2 focus-visible:ring-roksal-navy/40" aria-label={`Zaključi termin ${s.project.nazivProjekta} s preverbo kakovosti`} onClick={() => openQcDialog(s.id, s.project.id, s.project.nazivProjekta)}>
-                        <CheckCircle2 className="h-3 w-3 mr-1" /> Zaključi (preverba + odštej material)
-                      </Button>
+                      <>
+                        <Button type="button" size="sm" variant="outline" className="h-6 text-[10px] bg-green-50 focus-visible:ring-2 focus-visible:ring-roksal-navy/40" aria-label={`Zaključi termin ${s.project.nazivProjekta} s preverbo kakovosti`} onClick={() => openQcDialog(s.id, s.project.id, s.project.nazivProjekta)}>
+                          <CheckCircle2 className="h-3 w-3 mr-1" /> Zaključi (preverba + odštej material)
+                        </Button>
+                        <Button type="button" size="sm" variant="outline" className="h-6 text-[10px] focus-visible:ring-2 focus-visible:ring-roksal-navy/40" aria-label={`Montažno dokazilo za ${s.project.nazivProjekta} (pred/po, checklist, predaja)`} onClick={() => void openEvidenceDialog(s.id, s.project.id, s.project.nazivProjekta)}>
+                          <FileCheck2 className="h-3 w-3 mr-1" /> Montažno dokazilo
+                        </Button>
+                      </>
                     )}
                     {s.status === 'PRELOZENO' && (
                       <Button
@@ -1143,6 +1332,180 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
             >
               {qcBusy && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
               {qcPassed ? 'Preverba + zaključi' : 'Shrani preverbo (z napakami)'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: montažno dokazilo (R147 §28) — pred/po fotke, lokacija, GPS
+          po policyju (samo s soglasjem, koordinate iz naprave), verzirani
+          checklist (iev-v1), napake, dokaz predaje (predaja zakleni). */}
+      <Dialog open={evTarget !== null} onOpenChange={(open) => !open && setEvTarget(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-roksal-navy">
+              <FileCheck2 className="h-4.5 w-4.5 text-roksal-navy" />
+              Montažno dokazilo
+            </DialogTitle>
+          </DialogHeader>
+          {evTarget && (
+            <p className="text-[11px] text-muted-foreground">
+              {evTarget.project}
+              {evExisting ? ` · verzija ${evExisting.templateVersion} · ustvaril ${evExisting.createdBy ?? '—'}` : ' · še ni shranjeno'}
+            </p>
+          )}
+          <div className="space-y-3">
+            {evExisting?.locked ? (
+              <div className="flex items-center gap-2 rounded-md border border-green-200 bg-green-50/60 p-2 text-[11px] font-semibold text-green-700">
+                <Lock className="h-3.5 w-3.5" /> Zaklenjeno s predajo ({evExisting.handoverName ?? '—'})
+              </div>
+            ) : null}
+            <div>
+              <Label className="text-xs font-semibold">Lokacija montaže *</Label>
+              <Input
+                value={evLokacija}
+                onChange={(e) => setEvLokacija(e.target.value)}
+                placeholder="Naslov / objekt (obvezno)"
+                className="mt-1 h-8 text-xs"
+                aria-label="Lokacija montaže"
+              />
+            </div>
+            {/* Fotke PRED/PO (§28 before/after): samo obstoječe fotke projekta. */}
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label className="text-xs font-semibold">Fotka PRED</Label>
+                <Select value={evBeforeId || undefined} onValueChange={setEvBeforeId}>
+                  <SelectTrigger className="mt-1 h-8 text-xs" aria-label="Izberi fotografijo PRED">
+                    <SelectValue placeholder={evPhotos.pred.length === 0 ? 'Ni PRED fotk' : 'Izberi'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {evPhotos.pred.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{p.opomba || `Fotka (${p.createdAt.slice(0, 10)})`}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs font-semibold">Fotka PO</Label>
+                <Select value={evAfterId || undefined} onValueChange={setEvAfterId}>
+                  <SelectTrigger className="mt-1 h-8 text-xs" aria-label="Izberi fotografijo PO">
+                    <SelectValue placeholder={evPhotos.po.length === 0 ? 'Ni PO fotk' : 'Izberi'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {evPhotos.po.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{p.opomba || `Fotka (${p.createdAt.slice(0, 10)})`}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            {/* GPS po policyju: koordinate pridejo IZ naprave, samo z izrecnim
+                soglasjem — brez soglasja se nič ne zapiše (fail-closed). */}
+            <label className="flex cursor-pointer items-start gap-2 text-xs">
+              <input
+                type="checkbox"
+                className="mt-0.5 h-3.5 w-3.5 accent-[#1d2b3e] focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                checked={evGpsConsent}
+                aria-label="Z dovoljenjem zabeleži GPS lokacijo"
+                onChange={(e) => handleEvGpsConsent(e.target.checked)}
+              />
+              <span className="flex-1">
+                Zabeleži GPS lokacijo <span className="text-muted-foreground">(samo z vašim dovoljenjem)</span>
+                {evGpsConsent && evGps && (
+                  <span className="ml-1 tabular-nums">· {evGps.lat.toFixed(5)}, {evGps.lng.toFixed(5)}</span>
+                )}
+              </span>
+            </label>
+            <div>
+              <Label className="text-xs font-semibold">Checklist dokazila *</Label>
+              <div className="mt-1 max-h-44 space-y-1.5 overflow-y-auto rounded-md border p-2">
+                {IEV_TEMPLATE.map((t) => (
+                  <div key={t.key}>
+                    <label className="flex cursor-pointer items-start gap-2 text-xs">
+                      <input
+                        type="checkbox"
+                        className="mt-0.5 h-3.5 w-3.5 accent-[#1d2b3e] focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                        checked={evChecked[t.key] === true}
+                        aria-label={t.label}
+                        onChange={(e) => setEvChecked((prev) => ({ ...prev, [t.key]: e.target.checked }))}
+                      />
+                      <span className="flex-1">{t.label}</span>
+                    </label>
+                    {evChecked[t.key] !== true && (
+                      <Input
+                        value={evNotes[t.key] || ''}
+                        onChange={(e) => setEvNotes((prev) => ({ ...prev, [t.key]: e.target.value }))}
+                        placeholder="Razlog / korektivni ukrep (obvezno)"
+                        className="mt-1 ml-6 h-7 text-[11px]"
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs font-semibold">Napake / defekti</Label>
+              <textarea
+                value={evDefects}
+                onChange={(e) => setEvDefects(e.target.value)}
+                placeholder="Ena napaka na vrstico (prazno = brez napak)"
+                rows={2}
+                aria-label="Napake in defekti (ena na vrstico)"
+                className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              />
+            </div>
+            {/* Dokaz predaje — strežnik zavrača brez PRED+PO fotk (fail-closed 409). */}
+            {evExisting && !evExisting.locked && (
+              <div className="rounded-md border border-roksal-navy/20 bg-roksal-navy/5 p-2">
+                <Label className="text-xs font-semibold">Potrditev predaje</Label>
+                <div className="mt-1 flex gap-2">
+                  <Input
+                    value={evHandoverName}
+                    onChange={(e) => setEvHandoverName(e.target.value)}
+                    placeholder="Predal / predajnik (ime)"
+                    className="h-8 flex-1 text-xs"
+                    aria-label="Ime predajnika"
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={evBusy || !evHandoverName.trim() || !evExisting.hasBefore || !evExisting.hasAfter}
+                    className="h-8 bg-roksal-navy text-[11px] text-white hover:bg-roksal-navy/90 focus-visible:ring-roksal-navy/40"
+                    onClick={() => void handleEvidenceHandover()}
+                  >
+                    {evBusy && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
+                    Potrdi predajo
+                  </Button>
+                </div>
+                {(!evExisting.hasBefore || !evExisting.hasAfter) && (
+                  <p className="mt-1 text-[10px] text-amber-700">
+                    Predaja zahteva PRED in PO fotografijo — {(!evExisting.hasBefore && !evExisting.hasAfter) ? 'manjkata oba' : 'manjka ena'} (shranite dokazilo z izbranimi fotkami).
+                  </p>
+                )}
+              </div>
+            )}
+            <div className="flex items-center justify-between text-[11px] tabular-nums">
+              {evValid ? (
+                <span className="inline-flex items-center gap-1 font-semibold text-green-700">
+                  <CheckCircle2 className="h-3.5 w-3.5" /> {evAllChecked ? 'Checklist polno' : `Checklist: ${IEV_TEMPLATE.filter((t) => evChecked[t.key] === true).length}/${IEV_TEMPLATE.length}`} · napake: {evDefectsList.length}
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 font-semibold text-amber-700">
+                  <AlertTriangle className="h-3.5 w-3.5" /> Neizpolnjene postavke potrebujejo opombo
+                </span>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setEvTarget(null)}>Zapri</Button>
+            <Button
+              type="button"
+              onClick={() => void handleEvidenceSave()}
+              disabled={evBusy || evExisting?.locked === true || !evValid || !evLokacija.trim()}
+              className="bg-roksal-navy hover:bg-roksal-navy/90 text-white focus-visible:ring-roksal-navy/40"
+            >
+              {evBusy && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
+              {evExisting ? 'Posodobi dokazilo' : 'Shrani dokazilo'}
             </Button>
           </DialogFooter>
         </DialogContent>

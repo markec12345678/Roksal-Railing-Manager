@@ -49,15 +49,16 @@ model Profile {
   invitedBy          String? // e-pošta povabljajočega (kontekst, brez FK)
   invitedAt          DateTime?
 
-  projects  Project[]              @relation("InstallerProjects")
-  leads     Project[]              @relation("ManagerProjects")
-  auditLogs AuditLog[]
-  crew      Crew?                  @relation(fields: [ekipaId], references: [id])
-  leadsCrew Crew[]                 @relation("CrewLeader")
-  schedules InstallationSchedule[] @relation("MonterSchedules")
-  sessions  UserSession[]
-  equipmentEvents EquipmentEvent[] // R145 §31 — pregledi/kalibracije, ki jih je zabeležil
-  qualityControls QualityControl[] // R146 §27 — preverbe, ki jih je odobril
+  projects             Project[]              @relation("InstallerProjects")
+  leads                Project[]              @relation("ManagerProjects")
+  auditLogs            AuditLog[]
+  crew                 Crew?                  @relation(fields: [ekipaId], references: [id])
+  leadsCrew            Crew[]                 @relation("CrewLeader")
+  schedules            InstallationSchedule[] @relation("MonterSchedules")
+  sessions             UserSession[]
+  equipmentEvents      EquipmentEvent[] // R145 §31 — pregledi/kalibracije, ki jih je zabeležil
+  qualityControls      QualityControl[] // R146 §27 — preverbe, ki jih je odobril
+  installationEvidence InstallationEvidence[] // R147 §28 — dokazila, ki jih je ustvaril
 }
 
 /// #5 §2 — Session revocation: registracija izdanih sejnih žetonov.
@@ -180,29 +181,30 @@ model Project {
   followUpDate   DateTime? // kdaj poslati/narediti spomnik
   followUpOpomba String? // kratka opomba k spomniku
 
-  customer        Customer               @relation(fields: [customerId], references: [id])
-  monter          Profile?               @relation("InstallerProjects", fields: [monterId], references: [id])
-  vodja           Profile?               @relation("ManagerProjects", fields: [vodjaId], references: [id])
-  measurements    Measurement[]
-  documents       Document[]
-  materials       MaterialUsage[]
-  auditLogs       AuditLog[]
-  inventoryMoves  InventoryMovement[]
-  stockLedger     StockLedger[]
-  lotAllocations  LotAllocation[]
-  arSnapshots     ArSnapshot[]
-  sketches        Sketch[]
-  slopes          Slope[]
-  galleryItems    GalleryItem[]
-  photos          ProjectPhoto[]
-  signatureAudits SignatureAudit[]
-  materialOrders  MaterialOrder[]
-  schedules       InstallationSchedule[]
-  punchItems      PunchItem[]
-  invoices        Invoice[]
-  siteSurvey      SiteSurvey?
-  portalAccess    PortalAccess[]
-  qualityControls QualityControl[] // R146 §27 — preverbe kakovosti projekta
+  customer             Customer               @relation(fields: [customerId], references: [id])
+  monter               Profile?               @relation("InstallerProjects", fields: [monterId], references: [id])
+  vodja                Profile?               @relation("ManagerProjects", fields: [vodjaId], references: [id])
+  measurements         Measurement[]
+  documents            Document[]
+  materials            MaterialUsage[]
+  auditLogs            AuditLog[]
+  inventoryMoves       InventoryMovement[]
+  stockLedger          StockLedger[]
+  lotAllocations       LotAllocation[]
+  arSnapshots          ArSnapshot[]
+  sketches             Sketch[]
+  slopes               Slope[]
+  galleryItems         GalleryItem[]
+  photos               ProjectPhoto[]
+  signatureAudits      SignatureAudit[]
+  materialOrders       MaterialOrder[]
+  schedules            InstallationSchedule[]
+  punchItems           PunchItem[]
+  invoices             Invoice[]
+  siteSurvey           SiteSurvey?
+  portalAccess         PortalAccess[]
+  qualityControls      QualityControl[] // R146 §27 — preverbe kakovosti projekta
+  installationEvidence InstallationEvidence[] // R147 §28 — montažna dokazila projekta
 }
 
 // ============================================
@@ -225,7 +227,8 @@ model Measurement {
   // meritev (200, duplicate:true) namesto nove vrstice.
   dedupeHash String?
 
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project              Project                @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  installationEvidence InstallationEvidence[] // R147 §28 — merilni dokazi povezani z dokazili
 
   @@index([projectId, dedupeHash])
 }
@@ -709,7 +712,9 @@ model ProjectPhoto {
   longitude  Float?
   createdAt  DateTime @default(now())
 
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project        Project                @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  evidenceBefore InstallationEvidence[] @relation("EvidenceBeforePhoto") // R147 §28 — dokazila s to PRED fotko
+  evidenceAfter  InstallationEvidence[] @relation("EvidenceAfterPhoto") // R147 §28 — dokazila s to PO fotko
 
   @@index([storageKey])
 }
@@ -860,12 +865,12 @@ model Equipment {
   // in kalibracije. Kalibracija je POGOJ za mersko opremo (backfill:
   // tip='MERSKA_OPREMA' → calibrationRequired=true — deterministično, brez
   // ugibanja); rok (calibrationDueDate) + potrdilo vpisuje izvedeni pregled.
-  serijskaStevilka      String? // §31 "serial number"
-  pridobitev            DateTime? // §31 "acquisition"
-  lastInspectionAt      DateTime? // zadnji PREGLED (iz EquipmentEvent)
+  serijskaStevilka       String? // §31 "serial number"
+  pridobitev             DateTime? // §31 "acquisition"
+  lastInspectionAt       DateTime? // zadnji PREGLED (iz EquipmentEvent)
   inspectionIntervalDays Int? // pogostost pregleda v dneh; null = brez periodike
-  calibrationRequired   Boolean   @default(false) // merska oprema = true (fail-closed)
-  calibrationDueDate    DateTime? // rok naslednje kalibracije (s potrdila)
+  calibrationRequired    Boolean   @default(false) // merska oprema = true (fail-closed)
+  calibrationDueDate     DateTime? // rok naslednje kalibracije (s potrdila)
   calibrationCertificate String? // §31 "certificate" — naziv/številka potrdila
 
   assignments EquipmentAssignment[]
@@ -912,11 +917,12 @@ model InstallationSchedule {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  project   Project               @relation(fields: [projectId], references: [id])
-  crew      Crew?                 @relation(fields: [crewId], references: [id])
-  monter    Profile?              @relation("MonterSchedules", fields: [monterId], references: [id])
-  equipment EquipmentAssignment[]
-  qualityControls QualityControl[] // R146 §27 — preverbe kakovosti povezane s terminom
+  project              Project                @relation(fields: [projectId], references: [id])
+  crew                 Crew?                  @relation(fields: [crewId], references: [id])
+  monter               Profile?               @relation("MonterSchedules", fields: [monterId], references: [id])
+  equipment            EquipmentAssignment[]
+  qualityControls      QualityControl[] // R146 §27 — preverbe kakovosti povezane s terminom
+  installationEvidence InstallationEvidence[] // R147 §28 — montažna dokazila termina
 
   @@index([datumZacetka])
   @@index([crewId])
@@ -952,6 +958,48 @@ model QualityControl {
   schedule InstallationSchedule? @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
 
   @@index([projectId, approvedAt])
+  @@index([scheduleId])
+}
+
+// R147 (issue #5 §28) — Struktuirano montažno dokazilo: pred/po, lokacija,
+// čas, akter, projekt, GPS (SAMO z izrecnim dovoljenjem — gpsConsentAt),
+// checklist (verzirana predloga), merilni dokaz, poraba materiala (IZVEDENA
+// s strežnika iz StockLedger — nikoli iz klienta), napake, dokaz predaje.
+model InstallationEvidence {
+  id              String    @id @default(cuid())
+  projectId       String
+  scheduleId      String?
+  templateVersion String // "iev-v1" — sprememba seznama = nova verzija
+  lokacija        String // kje je bila montaža (obvezno, ≤ 300 znakov)
+  beforePhotoId   String?
+  afterPhotoId    String?
+  /// GPS po policyju: shranjeno IZKLJUČNO z izrecnim dovoljenjem terenskega
+  /// uporabnika (gpsConsentAt = čas soglasja). Brez soglasja = null (ne tiho).
+  gpsLat          Float?
+  gpsLng          Float?
+  gpsConsentAt    DateTime?
+  /// JSON po obliki IEV_TEMPLATE_VERSION (isti fail-closed vzorec kot QC).
+  checklistJson   String
+  /// Merilni dokaz (povezana VERIFIED meritev istega projekta).
+  measurementId   String?
+  /// JSON lista napak: [{ opomba, reseno }] — strogo validirana (≤ 20).
+  defectsJson     String
+  /// Dokaz predaje: ime predaja + čas. Zakleni dokazilo (nič več ni spreminljivo).
+  handoverName    String?
+  handoverAt      DateTime?
+  note            String?
+  createdById     String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  project     Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  schedule    InstallationSchedule? @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
+  beforePhoto ProjectPhoto?         @relation("EvidenceBeforePhoto", fields: [beforePhotoId], references: [id], onDelete: SetNull)
+  afterPhoto  ProjectPhoto?         @relation("EvidenceAfterPhoto", fields: [afterPhotoId], references: [id], onDelete: SetNull)
+  measurement Measurement?          @relation(fields: [measurementId], references: [id], onDelete: SetNull)
+  createdBy   Profile?              @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([projectId, createdAt])
   @@index([scheduleId])
 }
 
