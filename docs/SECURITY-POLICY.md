@@ -260,3 +260,28 @@ vrste (ni tihe izgube; lastništvo rešuje pripisnost).
   dvojnika). Duplikati znotraj ENEGA requesta gredo vsak svojo pot.
 - Replay zaščita sync POST: trenutno idempotentna po `mobileProjectId`
   (isti payload = update istega zapisa); časovni žig / nonce NI implementiran.
+
+## Portal stranke — clientToken življenjski cikl (R132, issue #5 §7)
+
+Dokazana pukljava (pred R132): clientToken je bil TRAJNI javni ključ — veljal
+večno, brez revokacije, brez dostopnega dnevnika, brez omejitve hitrosti;
+generiran z `Math.random()` (ni kripto). Upravljanje (/api/portal) je imelo
+projektni IDOR (brez assertProjectAccess) in je delilo žetone z API ključi.
+
+| Zahteva §7 | Implementacija | Dokaz |
+|---|---|---|
+| expiry | `clientTokenExpiresAt`: enable/regenerate nastavita privzeto **90 dni** (payload `expiresInDays`, clamp 1..365); migracija r132 je ŽE omogočenim portalom backfillala 90 dni | vitest (89–91 dni, clamp) |
+| revoke | akcija `revoke`: `clientTokenRevokedAt` → žeton MRTAV (stran 404), UI gumb z potrditvijo | vitest + brskalniški E2E (reload → „Stran ni na voljo") |
+| regenerate | NOV kripto žeton (`randomBytes(18)` base64url), stari mrtav, revokedAt počiščen, svež potek; enable ROTIRA zastarele pre-R132 žetone (cuid ni kripto) | vitest (nov ≠ star, stari → 404) |
+| access log | NOV model `PortalAccess`: vsak poskus (OK / NOT_FOUND / DISABLED / EXPIRED / REVOKED / RATE_LIMITED / INVALID) z **hashiranim IP** (sha256+pepper, brez surovega IP) in UA; `clientTokenLastUsedAt` za pisarno | vitest + dev baza (OK+REVOKED vrstici) |
+| shared rate limit | `checkRate('portal:<ipHash>', 60/10 min)` — EN vzvratni števec za stran in JSON, pred bazo; 429 + `Retry-After` + dnevnik | vitest (61. zahtevek 429) |
+| minimalni DTO | `select` namesto `include` — samo polja za izris; timeline = kurirani naslovi (brez surovih AuditLog zapisov, oldValue/newValue nikoli v odgovoru) | vitest (raw nima oldValue/ipAddress) |
+| private photo access | zapisi z `storageKey` hydrata strežnik prek `getObject` (stran); JSON ruta prenasa samo meta + zapuščinski imageData; manjkajoč artefakt = slika izpuščena z napako v logu (ni taji) | obstoječi R121 tok, potrjen |
+| cache protection | `/api/portal/*` pod centralnim `no-store` (R131); stran = HTML brez uporabniških podatkov | dimni [14] |
+| share/read-only policy | portal je izključno GET (branje); vse mutacije ostanejo za sejo + assertProjectAccess | koda + smoke |
+| enumeration protection | vsa neveljavna stanja (neznan/potekel/preklican/onemogočen) = **ISTA 404** z istim telesom (`PORTAL_UNAVAILABLE`); visoka entropija žetona + rate limit | vitest (isti JSON) |
+| upravljanje (dodatno) | samo uporabniške seje (API ključ → 403); `assertProjectAccess` na GET (read) in POST (update) — IDOR zaprt; audit z pravim akterjem (prej 'system') | vitest (IDOR 403, apikey 403) |
+
+Enotni vir resnice: `src/lib/portal.ts` (veljavnost, žeton, potek, ipHash,
+dnevnik) — uporablja jo HTML stran `/portal/[token]` IN JSON ruta
+`/api/portal/[token]` (prej sta imeli RAZLIČNI validaciji).

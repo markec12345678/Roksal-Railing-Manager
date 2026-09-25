@@ -334,6 +334,19 @@ st, hd, _ = call("/api/auth/demo")
 check("GET /api/auth/demo nosi Cache-Control: no-store",
       st == 200 and "no-store" in hd.get("cache-control", ""), f"{st} cache-control={hd.get('cache-control')!r}")
 
+print("\n[14] Portal stranke (R131 → R132 — issue #5 §7: žeton ni več trajni javni ključ)")
+# Neznan žeton → 404 z enotnim kodiranjem (enumeration protection) + no-store (config).
+st, hd, body = call("/api/portal/neznan-zeton-1234567890")
+check("neznan žeton → 404 PORTAL_UNAVAILABLE",
+      st == 404 and b"PORTAL_UNAVAILABLE" in body, f"{st} {body[:60]!r}")
+check("javna portal ruta nosi Cache-Control: no-store",
+      "no-store" in hd.get("cache-control", ""), f"cache-control={hd.get('cache-control')!r}")
+# Upravljanje portala je samo za seje (§7) — brez avtorizacije 401.
+st, _, _ = call("/api/portal?projectId=test")
+check("GET /api/portal (management) brez seje → 401", st == 401, f"dobil {st}")
+st, _, _ = call("/api/portal", "POST", {"projectId": "test", "action": "enable"})
+check("POST /api/portal (management) brez seje → 401", st == 401, f"dobil {st}")
+
 print(f"\n{'=' * 60}")
 print(f"  {passed} uspešnih · {failed} neuspešnih · {skipped} preskočenih")
 print(f"{'=' * 60}\n")

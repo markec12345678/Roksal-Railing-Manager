@@ -61,6 +61,9 @@ import {
   Eye,
   EyeOff,
   ShieldCheck,
+  KeyRound,
+  History,
+  CalendarClock,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -283,6 +286,10 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
     enabled: boolean
     token: string | null
     url: string | null
+    /** R132 (§7): življenjski cikl žetona — potek, revokacija, zadnji dostop. */
+    expiresAt: string | null
+    revokedAt: string | null
+    lastUsedAt: string | null
     clientNotes: string | null
     estimatedPrice: number | null
   }
@@ -673,8 +680,15 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
       .finally(() => setPortalLoading(false))
   }
 
-  async function portalAction(action: 'enable' | 'disable' | 'regenerate') {
+  async function portalAction(action: 'enable' | 'disable' | 'regenerate' | 'revoke') {
     if (!detailProject) return
+    // R132 (§7): revokacija je TRAJNA — stari URL takoj mrtav. Vedno potrditev.
+    if (action === 'revoke') {
+      const ok = window.confirm(
+        'Preklic povezave: stranka z obstoječim URL-jem TAKOJ izgubi dostop (stran postane nedosegljiva).\n\nNova povezava nastane šele z obnovo (regenerate). Prekliči povezavo?',
+      )
+      if (!ok) return
+    }
     setPortalActionLoading(true)
     try {
       const res = await fetch('/api/portal', {
@@ -685,9 +699,10 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
       if (res.ok) {
         const data = await res.json()
         setPortalInfo(data)
-        if (action === 'enable') toast.success('Portal stranke omogočen')
+        if (action === 'enable') toast.success('Portal stranke omogočen (velja 90 dni)')
         else if (action === 'disable') toast.success('Portal stranke onemogočen')
-        else if (action === 'regenerate') toast.success('Povezava ponovno generirana')
+        else if (action === 'regenerate') toast.success('Nova povezava (stara je mrtva, velja 90 dni)')
+        else if (action === 'revoke') toast.success('Povezava preklicana — stari URL je nedosegljiv')
       } else {
         const err = await res.json().catch(() => null)
         toast.error(err?.error || 'Napaka pri upravljanju portala')
@@ -1911,6 +1926,57 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                           </div>
                         </div>
 
+                        {/* R132 (§7): življenjski cikl žetona — potek, zadnji obisk, revokacija */}
+                        {(() => {
+                          const exp = portalInfo.expiresAt ? new Date(portalInfo.expiresAt) : null
+                          const dni = exp ? Math.ceil((exp.getTime() - Date.now()) / 86400000) : null
+                          const expCritical = dni !== null && dni <= 7
+                          return (
+                            <div className="grid grid-cols-2 gap-1.5 rounded-md border border-border bg-secondary/30 px-2 py-1.5">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <CalendarClock
+                                  className={`h-3.5 w-3.5 shrink-0 ${expCritical ? 'text-amber-600' : 'text-muted-foreground'}`}
+                                />
+                                <div className="min-w-0">
+                                  <p className="text-[9px] uppercase tracking-wide text-muted-foreground leading-tight">
+                                    Velja do
+                                  </p>
+                                  <p
+                                    className={`text-[10px] font-semibold leading-tight truncate ${
+                                      expCritical ? 'text-amber-600' : 'text-roksal-navy'
+                                    }`}
+                                    title={portalInfo.revokedAt ? 'Povezava je preklicana' : exp ? exp.toLocaleDateString('sl-SI') : 'Brez poteka'}
+                                  >
+                                    {portalInfo.revokedAt
+                                      ? 'Preklicana'
+                                      : exp
+                                        ? exp.toLocaleDateString('sl-SI') + (expCritical && dni !== null ? ` (${dni} dni)` : '')
+                                        : 'Brez poteka'}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <History className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                                <div className="min-w-0">
+                                  <p className="text-[9px] uppercase tracking-wide text-muted-foreground leading-tight">
+                                    Zadnji obisk
+                                  </p>
+                                  <p className="text-[10px] font-semibold leading-tight text-roksal-navy truncate">
+                                    {portalInfo.lastUsedAt
+                                      ? new Date(portalInfo.lastUsedAt).toLocaleString('sl-SI', {
+                                          day: '2-digit',
+                                          month: '2-digit',
+                                          hour: '2-digit',
+                                          minute: '2-digit',
+                                        })
+                                      : 'nikoli'}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })()}
+
                         {/* Share buttons */}
                         <div className="grid grid-cols-3 gap-1.5">
                           <Button
@@ -2027,7 +2093,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                         </Button>
 
                         {/* Admin actions */}
-                        <div className="grid grid-cols-2 gap-1.5 pt-1 border-t border-border">
+                        <div className="grid grid-cols-3 gap-1.5 pt-1 border-t border-border">
                           <Button
                             type="button"
                             size="sm"
@@ -2035,9 +2101,10 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                             onClick={() => portalAction('regenerate')}
                             disabled={portalActionLoading}
                             className="h-8 text-[11px] text-roksal-navy hover:bg-roksal-navy/10"
+                            title="Ustvari novo povezavo — stara postane trajno nedosegljiva"
                           >
                             <RefreshCw className="mr-1 h-3 w-3" />
-                            Nova povezava
+                            Nova
                           </Button>
                           <Button
                             type="button"
@@ -2046,9 +2113,22 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                             onClick={() => portalAction('disable')}
                             disabled={portalActionLoading}
                             className="h-8 text-[11px] text-roksal-red hover:bg-roksal-red/10"
+                            title="Začasno izklopi stran — povezava ostane veljavna"
                           >
                             <X className="mr-1 h-3 w-3" />
-                            Onemogoči
+                            Izklopi
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => portalAction('revoke')}
+                            disabled={portalActionLoading}
+                            className="h-8 text-[11px] text-roksal-red hover:bg-roksal-red/10 border border-roksal-red/30"
+                            title="Trajno prekliči povezavo (žeton mrtev) — potrebna Nova povezava"
+                          >
+                            <KeyRound className="mr-1 h-3 w-3" />
+                            Prekliči
                           </Button>
                         </div>
                       </>

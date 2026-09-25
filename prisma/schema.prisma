@@ -25,26 +25,26 @@ enum UserRole {
 }
 
 model Profile {
-  id         String    @id @default(cuid())
-  ime        String
-  email      String    @unique
-  vloga      UserRole  @default(MONTER)
+  id           String   @id @default(cuid())
+  ime          String
+  email        String   @unique
+  vloga        UserRole @default(MONTER)
   /// scrypt hash gesla: `scrypt$N$r$p$salt$hash`. Null = račun brez gesla
   /// (še ne more se prijaviti) — nastavi ga s `bunx tsx tools/create-admin.ts`.
   passwordHash String?
-  telefon    String?
-  ekipaId    String?
-  lastActive DateTime  @default(now())
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  telefon      String?
+  ekipaId      String?
+  lastActive   DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  projects   Project[] @relation("InstallerProjects")
-  leads      Project[] @relation("ManagerProjects")
-  auditLogs  AuditLog[]
-  crew       Crew?     @relation(fields: [ekipaId], references: [id])
-  leadsCrew  Crew[]    @relation("CrewLeader")
-  schedules  InstallationSchedule[] @relation("MonterSchedules")
-  sessions   UserSession[]
+  projects  Project[]              @relation("InstallerProjects")
+  leads     Project[]              @relation("ManagerProjects")
+  auditLogs AuditLog[]
+  crew      Crew?                  @relation(fields: [ekipaId], references: [id])
+  leadsCrew Crew[]                 @relation("CrewLeader")
+  schedules InstallationSchedule[] @relation("MonterSchedules")
+  sessions  UserSession[]
 }
 
 /// #5 §2 — Session revocation: registracija izdanih sejnih žetonov.
@@ -75,23 +75,23 @@ model UserSession {
 // ============================================
 
 model Customer {
-  id        String    @id @default(cuid())
+  id        String   @id @default(cuid())
   ime       String
   naslov    String
   telefon   String?
   email     String?
-  createdAt DateTime  @default(now())
+  createdAt DateTime @default(now())
 
   // V4.2 — CRM razširitev
-  status            String  @default("AKTIVEN")  // AKTIVEN | NEAKTIVEN | POTENCIALEN | ARHIVIRAN
-  kontaktnaOseba    String?  // npr. "Janez Novak (predsednik uprave)"
-  opomnikDatum      DateTime?  // opomnik za ponovni kontakt
-  opomnikOpis       String?  // "Letni pregled balkonov"
-  zadnjiKontakt     DateTime?
-  opombeCRM         String?  // interne opombe (ne za stranko)
-  kategorija        String?  // "Stanovanjska skupnost" | "Posameznik" | "Podjetje"
+  status         String    @default("AKTIVEN") // AKTIVEN | NEAKTIVEN | POTENCIALEN | ARHIVIRAN
+  kontaktnaOseba String? // npr. "Janez Novak (predsednik uprave)"
+  opomnikDatum   DateTime? // opomnik za ponovni kontakt
+  opomnikOpis    String? // "Letni pregled balkonov"
+  zadnjiKontakt  DateTime?
+  opombeCRM      String? // interne opombe (ne za stranko)
+  kategorija     String? // "Stanovanjska skupnost" | "Posameznik" | "Podjetje"
 
-  projects  Project[]
+  projects Project[]
 }
 
 // ============================================
@@ -103,9 +103,9 @@ enum ProjectStatus {
   V_TEKU
   ZAKLJUCENO
   USTAVLJENO
-  ZA_MONTAZO   // V4.1 — podpisano, čaka na montažo
-  V_IZDELAVI   // V6 — material v izdelavi/dobavi
-  MONTIRANO    // V6 — montaža zaključena
+  ZA_MONTAZO // V4.1 — podpisano, čaka na montažo
+  V_IZDELAVI // V6 — material v izdelavi/dobavi
+  MONTIRANO // V6 — montaža zaključena
 }
 
 model Project {
@@ -132,45 +132,51 @@ model Project {
   projectData       String?
 
   // PORTAL STRANKE — javna stran za sledenje napredku
-  clientToken          String   @unique @default(cuid())
-  clientPortalEnabled  Boolean  @default(false)
-  clientNotes          String?  // sporočilo monterja, vidno stranki
-  estimatedPrice       Float?   // predvidena cena, vidna stranki
+  // R132 (§7): žeton NI več trajni javni ključ — dobi potek, revokacijo in
+  // zadnji dostop; vsak poskus branja gre v PortalAccess dnevnik.
+  clientToken           String    @unique @default(cuid())
+  clientPortalEnabled   Boolean   @default(false)
+  clientTokenExpiresAt  DateTime? // null = brez poteka (zapuščinski žetoni; nova = privzeto 90 dni)
+  clientTokenRevokedAt  DateTime? // revokacija = žeton MRTAV (regenerate ga oživi z novim)
+  clientTokenLastUsedAt DateTime? // zadnji uspešen dostop (telemetrija za pisarno)
+  clientNotes           String? // sporočilo monterja, vidno stranki
+  estimatedPrice        Float? // predvidena cena, vidna stranki
 
   // V4.1 — POST-SIGNATURE AUTOMATION LAYER
-  dealLocked          Boolean   @default(false)  // true po podpisu — nič več editanja
+  dealLocked          Boolean   @default(false) // true po podpisu — nič več editanja
   dealLockedAt        DateTime?
-  dealSignedBy        String?   // ime/podpis stranke
-  dealSignedByMonter  String?   // ime monterja
-  dealSignatureIp     String?   // IP naslov ob podpisu
-  dealSignatureDevice String?   // User-Agent ob podpisu
-  bomDraftJson        String?   // BOM (Bill of Materials) draft JSON — ne naročilo še
-  marginLocked        Float?    // zaklenjena marža ob podpisu
+  dealSignedBy        String? // ime/podpis stranke
+  dealSignedByMonter  String? // ime monterja
+  dealSignatureIp     String? // IP naslov ob podpisu
+  dealSignatureDevice String? // User-Agent ob podpisu
+  bomDraftJson        String? // BOM (Bill of Materials) draft JSON — ne naročilo še
+  marginLocked        Float? // zaklenjena marža ob podpisu
 
   // FOLLOW-UP PONUDBE — sledenje odzivu stranke na poslano ponudbo
-  followUpDate        DateTime? // kdaj poslati/narediti spomnik
-  followUpOpomba      String?   // kratka opomba k spomniku
+  followUpDate   DateTime? // kdaj poslati/narediti spomnik
+  followUpOpomba String? // kratka opomba k spomniku
 
-  customer      Customer       @relation(fields: [customerId], references: [id])
-  monter        Profile?       @relation("InstallerProjects", fields: [monterId], references: [id])
-  vodja         Profile?       @relation("ManagerProjects", fields: [vodjaId], references: [id])
-  measurements  Measurement[]
-  documents     Document[]
-  materials     MaterialUsage[]
-  auditLogs     AuditLog[]
-  inventoryMoves InventoryMovement[]
-  stockLedger    StockLedger[]
-  arSnapshots   ArSnapshot[]
-  sketches      Sketch[]
-  slopes        Slope[]
-  galleryItems  GalleryItem[]
-  photos        ProjectPhoto[]
+  customer        Customer               @relation(fields: [customerId], references: [id])
+  monter          Profile?               @relation("InstallerProjects", fields: [monterId], references: [id])
+  vodja           Profile?               @relation("ManagerProjects", fields: [vodjaId], references: [id])
+  measurements    Measurement[]
+  documents       Document[]
+  materials       MaterialUsage[]
+  auditLogs       AuditLog[]
+  inventoryMoves  InventoryMovement[]
+  stockLedger     StockLedger[]
+  arSnapshots     ArSnapshot[]
+  sketches        Sketch[]
+  slopes          Slope[]
+  galleryItems    GalleryItem[]
+  photos          ProjectPhoto[]
   signatureAudits SignatureAudit[]
-  materialOrders MaterialOrder[]
-  schedules     InstallationSchedule[]
-  punchItems    PunchItem[]
-  invoices      Invoice[]
-  siteSurvey    SiteSurvey?
+  materialOrders  MaterialOrder[]
+  schedules       InstallationSchedule[]
+  punchItems      PunchItem[]
+  invoices        Invoice[]
+  siteSurvey      SiteSurvey?
+  portalAccess    PortalAccess[]
 }
 
 // ============================================
@@ -188,7 +194,7 @@ model Measurement {
   createdAt    DateTime @default(now())
   createdBy    String?
 
-  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }
 
 // ============================================
@@ -196,21 +202,21 @@ model Measurement {
 // ============================================
 
 model Inventory {
-  id              String              @id @default(cuid())
-  sifraMateriala  String              @unique
+  id              String   @id @default(cuid())
+  sifraMateriala  String   @unique
   naziv           String
   tip             String
-  kolicinaZaloga  Float               @default(0)
+  kolicinaZaloga  Float    @default(0)
   enota           String
-  minimalnaZaloga Float               @default(5)
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
+  minimalnaZaloga Float    @default(5)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  usages          MaterialUsage[]
-  movements       InventoryMovement[]
-  ledgerEntries   StockLedger[]
-  prices          MaterialPrice[]
-  orderItems      MaterialOrderItem[]
+  usages        MaterialUsage[]
+  movements     InventoryMovement[]
+  ledgerEntries StockLedger[]
+  prices        MaterialPrice[]
+  orderItems    MaterialOrderItem[]
 }
 
 // ============================================
@@ -218,11 +224,11 @@ model Inventory {
 // ============================================
 
 model MaterialUsage {
-  id                  String    @id @default(cuid())
-  projectId           String
-  inventoryId         String
-  porabljenaKolicina  Float
-  datumVpisa          DateTime  @default(now())
+  id                 String   @id @default(cuid())
+  projectId          String
+  inventoryId        String
+  porabljenaKolicina Float
+  datumVpisa         DateTime @default(now())
 
   project   Project   @relation(fields: [projectId], references: [id])
   inventory Inventory @relation(fields: [inventoryId], references: [id])
@@ -233,7 +239,7 @@ model MaterialUsage {
 // ============================================
 
 model InventoryMovement {
-  id          String    @id @default(cuid())
+  id          String   @id @default(cuid())
   inventoryId String
   projectId   String?
   /// Naročilo, ki je povzročilo premik (dobava). Nullable, ker so ročni
@@ -243,7 +249,7 @@ model InventoryMovement {
   orderId     String?
   kolicina    Float
   tipPremika  String
-  createdAt   DateTime  @default(now())
+  createdAt   DateTime @default(now())
   createdBy   String?
 
   inventory Inventory @relation(fields: [inventoryId], references: [id])
@@ -275,7 +281,7 @@ enum StockLedgerEventType {
 }
 
 model StockLedger {
-  id             String              @id @default(cuid())
+  id             String               @id @default(cuid())
   inventoryId    String
   eventType      StockLedgerEventType
   /// Predznacena delta: pozitivno = prihod, negativno = odhod.
@@ -292,8 +298,8 @@ model StockLedger {
   /// Razlog/opomba (npr. "prejem naročila 2026-001", "fizična inventura").
   reason         String?
   /// Idempotency kljuc — unique. Npr. "receipt:<orderId>:<orderItemId>".
-  idempotencyKey String?             @unique
-  createdAt      DateTime            @default(now())
+  idempotencyKey String?              @unique
+  createdAt      DateTime             @default(now())
 
   inventory Inventory @relation(fields: [inventoryId], references: [id])
   project   Project?  @relation(fields: [projectId], references: [id])
@@ -331,16 +337,16 @@ enum DocumentType {
 model Document {
   id           String       @id @default(cuid())
   projectId    String
-  pdfUrl       String?  // ZASTARELO (R121): prej samo ime brez artefakta; nova dokumenta pišejo storageKey
-  storageKey   String?  // R121: object storage ključ PDF artefakta
-  sha256       String?  // R121: SHA-256 aktualne verzije (pravna integriteta)
+  pdfUrl       String? // ZASTARELO (R121): prej samo ime brez artefakta; nova dokumenta pišejo storageKey
+  storageKey   String? // R121: object storage ključ PDF artefakta
+  sha256       String? // R121: SHA-256 aktualne verzije (pravna integriteta)
   signatureUrl String?
   tipDokumenta DocumentType @default(TEHNICNI_LIST)
   status       String       @default("GENERIRANO")
   createdAt    DateTime     @default(now())
 
-  versions     DocumentVersion[]
-  project      Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  versions DocumentVersion[]
+  project  Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }
 
 // ============================================
@@ -351,16 +357,16 @@ model Document {
 // object storage (src/lib/object-storage.ts). Verzija se poveča ob vsaki
 // regeneraciji — prejšnje verzije ostajo (neizbrisna revizijska sled).
 model DocumentVersion {
-  id          String   @id @default(cuid())
-  documentId  String
-  version     Int      // 1, 2, 3 … znotraj dokumenta
-  storageKey  String   // ključ PDF v object storage
-  mime        String   @default("application/pdf")
-  sizeBytes   Int
-  sha256      String   // SHA-256 bajtov artefakta
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  documentId String
+  version    Int // 1, 2, 3 … znotraj dokumenta
+  storageKey String // ključ PDF v object storage
+  mime       String   @default("application/pdf")
+  sizeBytes  Int
+  sha256     String // SHA-256 bajtov artefakta
+  createdAt  DateTime @default(now())
 
-  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
   @@unique([documentId, version])
   @@index([documentId])
@@ -405,19 +411,19 @@ model Notification {
 // ============================================
 
 model Profil {
-  id          String   @id @default(cuid())
-  sifra       String   @unique
-  naziv       String
-  material    String   // alu / inox / wpc / steklo
-  kategorija  String   // npr. "WPC H-Line", "Inox Line", "Steklo"
-  visinaMm    Int      @default(1100)
-  sirinaMm    Int      @default(140)
-  cenaM       Float    // EUR na meter linearni
-  barvaRal    String?  // privzeta RAL koda
-  slikaUrl    String?
-  aktivna     Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(cuid())
+  sifra      String   @unique
+  naziv      String
+  material   String // alu / inox / wpc / steklo
+  kategorija String // npr. "WPC H-Line", "Inox Line", "Steklo"
+  visinaMm   Int      @default(1100)
+  sirinaMm   Int      @default(140)
+  cenaM      Float // EUR na meter linearni
+  barvaRal   String? // privzeta RAL koda
+  slikaUrl   String?
+  aktivna    Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   arSnapshots  ArSnapshot[]
   galleryItems GalleryItem[]
@@ -428,23 +434,23 @@ model Profil {
 // ============================================
 
 model ArSnapshot {
-  id         String   @id @default(cuid())
-  projectId  String
-  profilId   String?
+  id          String   @id @default(cuid())
+  projectId   String
+  profilId    String?
   // R121: bajti v object storage; imageUrl = zapuščinska vrstica (backfill).
-  imageUrl   String?  // zapuščina: base64 PNG (video frame + canvas overlay)
-  storageKey String?
-  mime       String?
-  sizeBytes  Int?
-  sha256     String?
-  tocke      String   // JSON: [{x,y,label}]
-  meritve    String?  // JSON: [{a:{x,y}, b:{x,y}, dolzinaMm, oznaka}]
+  imageUrl    String? // zapuščina: base64 PNG (video frame + canvas overlay)
+  storageKey  String?
+  mime        String?
+  sizeBytes   Int?
+  sha256      String?
+  tocke       String // JSON: [{x,y,label}]
+  meritve     String? // JSON: [{a:{x,y}, b:{x,y}, dolzinaMm, oznaka}]
   kalibracija String? // JSON: {pixelsPerCm}
-  opombe     String?
-  createdAt  DateTime @default(now())
+  opombe      String?
+  createdAt   DateTime @default(now())
 
-  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  profil     Profil?  @relation(fields: [profilId], references: [id])
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  profil  Profil? @relation(fields: [profilId], references: [id])
 }
 
 // ============================================
@@ -456,15 +462,15 @@ model Sketch {
   projectId  String
   naziv      String
   // R121: bajti v object storage; pngData = zapuščinska vrstica (backfill).
-  pngData    String?  // zapuščina: base64 PNG
+  pngData    String? // zapuščina: base64 PNG
   storageKey String?
   mime       String?
   sizeBytes  Int?
   sha256     String?
-  povzetek   String?  // besedilni opis skice
+  povzetek   String? // besedilni opis skice
   createdAt  DateTime @default(now())
 
-  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }
 
 // ============================================
@@ -472,15 +478,15 @@ model Sketch {
 // ============================================
 
 model GalleryItem {
-  id         String   @id @default(cuid())
-  projectId  String?
-  profilId   String?
-  naslov     String
-  opis       String?
-  lokacija   String?
+  id              String   @id @default(cuid())
+  projectId       String?
+  profilId        String?
+  naslov          String
+  opis            String?
+  lokacija        String?
   // R121: bajti v object storage; slikaPred/slikaPo = zapuščinske vrstice (backfill).
-  slikaPred  String?  // zapuščina: base64 ali URL
-  slikaPo    String?  // zapuščina: base64 ali URL
+  slikaPred       String? // zapuščina: base64 ali URL
+  slikaPo         String? // zapuščina: base64 ali URL
   slikaPredKey    String?
   slikaPredMime   String?
   slikaPredSize   Int?
@@ -489,11 +495,11 @@ model GalleryItem {
   slikaPoMime     String?
   slikaPoSize     Int?
   slikaPoSha256   String?
-  javno      Boolean  @default(false)
-  createdAt  DateTime @default(now())
+  javno           Boolean  @default(false)
+  createdAt       DateTime @default(now())
 
-  project    Project? @relation(fields: [projectId], references: [id])
-  profil     Profil?  @relation(fields: [profilId], references: [id])
+  project Project? @relation(fields: [projectId], references: [id])
+  profil  Profil?  @relation(fields: [profilId], references: [id])
 }
 
 // ============================================
@@ -501,15 +507,15 @@ model GalleryItem {
 // ============================================
 
 model Slope {
-  id         String   @id @default(cuid())
-  projectId  String
-  kotStopinje Float   // nagib v stopinjah
-  smer       String?  // "X" (horizontal) / "Y" (front-back)
-  lokacija   String?  // opis npr. "talna plošča balkona"
-  veljaven   Boolean  @default(true)
-  createdAt  DateTime @default(now())
+  id          String   @id @default(cuid())
+  projectId   String
+  kotStopinje Float // nagib v stopinjah
+  smer        String? // "X" (horizontal) / "Y" (front-back)
+  lokacija    String? // opis npr. "talna plošča balkona"
+  veljaven    Boolean  @default(true)
+  createdAt   DateTime @default(now())
 
-  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }
 
 // ============================================
@@ -517,22 +523,22 @@ model Slope {
 // ============================================
 
 model ProjectPhoto {
-  id          String   @id @default(cuid())
-  projectId   String
-  kategorija  String   // "PRED" | "MED" | "PO"
+  id         String   @id @default(cuid())
+  projectId  String
+  kategorija String // "PRED" | "MED" | "PO"
   // R121: bajti v object storage, DB samo metadata. imageData ostane SAMO za
   // zapuščinske vrstice pred backfillom (tools/migrate-base64-to-storage.ts).
-  imageData   String?
-  storageKey  String?
-  mime        String?
-  sizeBytes   Int?
-  sha256      String?
-  opomba      String?
-  latitude    Float?
-  longitude   Float?
-  createdAt   DateTime @default(now())
+  imageData  String?
+  storageKey String?
+  mime       String?
+  sizeBytes  Int?
+  sha256     String?
+  opomba     String?
+  latitude   Float?
+  longitude  Float?
+  createdAt  DateTime @default(now())
 
-  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([storageKey])
 }
@@ -542,27 +548,27 @@ model ProjectPhoto {
 // ============================================
 
 model SignatureAudit {
-  id              String   @id @default(cuid())
-  projectId       String
-  signatureType   String   // "CUSTOMER" | "MONTER"
-  signedByName    String   // ime podpisnika
-  signedByRole    String?  // "stranka" | "monter" | "vodja"
-  signatureImage  String?  // ZASTARELO: base64 PNG (R122: migrirano v object storage; ostane za stare zapise)
-  storageKey      String?  // R121 vzorec: files/signatures/<id>/podpis.png (bajti izven baze)
-  mime            String?
-  sizeBytes       Int?
-  sha256          String?  // SHA-256 bajtov (integriteta)
-  ipAddress       String?
-  userAgent       String?
+  id                String   @id @default(cuid())
+  projectId         String
+  signatureType     String // "CUSTOMER" | "MONTER"
+  signedByName      String // ime podpisnika
+  signedByRole      String? // "stranka" | "monter" | "vodja"
+  signatureImage    String? // ZASTARELO: base64 PNG (R122: migrirano v object storage; ostane za stare zapise)
+  storageKey        String? // R121 vzorec: files/signatures/<id>/podpis.png (bajti izven baze)
+  mime              String?
+  sizeBytes         Int?
+  sha256            String? // SHA-256 bajtov (integriteta)
+  ipAddress         String?
+  userAgent         String?
   deviceFingerprint String? // poenostavljen fingerprint (IP + UA hash)
-  geoLatitude     Float?
-  geoLongitude    Float?
-  pdfUrl          String?  // povezava do generiranega PDF (če shranjen)
-  pdfHash         String?  // SHA-256 hash PDF vsebine za pravno integriteto
-  isValid         Boolean  @default(true)
-  createdAt       DateTime @default(now())
+  geoLatitude       Float?
+  geoLongitude      Float?
+  pdfUrl            String? // povezava do generiranega PDF (če shranjen)
+  pdfHash           String? // SHA-256 hash PDF vsebine za pravno integriteto
+  isValid           Boolean  @default(true)
+  createdAt         DateTime @default(now())
 
-  project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId])
   @@index([createdAt])
@@ -574,18 +580,18 @@ model SignatureAudit {
 // ============================================
 
 model Supplier {
-  id            String   @id @default(cuid())
-  naziv         String   @unique
-  kontakt       String?
-  email         String?
-  telefon       String?
-  naslov        String?
-  iban          String?
-  dobavniRok    Int      @default(7)  // dni
-  popust       Float    @default(0)   // % popust za Roksal
-  aktivna       Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id         String   @id @default(cuid())
+  naziv      String   @unique
+  kontakt    String?
+  email      String?
+  telefon    String?
+  naslov     String?
+  iban       String?
+  dobavniRok Int      @default(7) // dni
+  popust     Float    @default(0) // % popust za Roksal
+  aktivna    Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   materialPrices MaterialPrice[]
   orders         MaterialOrder[]
@@ -593,17 +599,17 @@ model Supplier {
 
 // Cena materiala pri posameznem dobavitelju (zgodovina cen)
 model MaterialPrice {
-  id            String   @id @default(cuid())
-  inventoryId   String
-  supplierId    String
-  cena          Float    // EUR na enoto
-  veljavnostOd  DateTime @default(now())
-  veljavnostDo  DateTime?
-  opomba        String?  // npr. "akcijska cena", "letni okvir"
-  createdAt     DateTime @default(now())
+  id           String    @id @default(cuid())
+  inventoryId  String
+  supplierId   String
+  cena         Float // EUR na enoto
+  veljavnostOd DateTime  @default(now())
+  veljavnostDo DateTime?
+  opomba       String? // npr. "akcijska cena", "letni okvir"
+  createdAt    DateTime  @default(now())
 
-  inventory     Inventory @relation(fields: [inventoryId], references: [id])
-  supplier      Supplier  @relation(fields: [supplierId], references: [id])
+  inventory Inventory @relation(fields: [inventoryId], references: [id])
+  supplier  Supplier  @relation(fields: [supplierId], references: [id])
 
   @@index([inventoryId, supplierId])
   @@index([veljavnostOd])
@@ -611,35 +617,35 @@ model MaterialPrice {
 
 // Naročilo materiala (V5 — iz BOM draft v naročilo)
 model MaterialOrder {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   projectId     String?
   supplierId    String
-  status        String   @default("OSNUTEK")  // OSNUTEK | POSLANO | POTRJENO | DOBLJENO | PREKlicANO
-  skupajCena    Float    @default(0)
-  datumNarocila DateTime @default(now())
+  status        String    @default("OSNUTEK") // OSNUTEK | POSLANO | POTRJENO | DOBLJENO | PREKlicANO
+  skupajCena    Float     @default(0)
+  datumNarocila DateTime  @default(now())
   datumDobave   DateTime?
   opombe        String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
-  project       Project?  @relation(fields: [projectId], references: [id])
-  supplier      Supplier  @relation(fields: [supplierId], references: [id])
-  items         MaterialOrderItem[]
+  project  Project?            @relation(fields: [projectId], references: [id])
+  supplier Supplier            @relation(fields: [supplierId], references: [id])
+  items    MaterialOrderItem[]
 }
 
 // Posamezna postavka naročila
 model MaterialOrderItem {
-  id            String   @id @default(cuid())
-  orderId       String
-  inventoryId   String
-  kolicina      Float
-  cena          Float    // cena na enoto ob naročilu
-  naziv         String   // snapshot naziva
-  enota         String   // snapshot enote
-  createdAt     DateTime @default(now())
+  id          String   @id @default(cuid())
+  orderId     String
+  inventoryId String
+  kolicina    Float
+  cena        Float // cena na enoto ob naročilu
+  naziv       String // snapshot naziva
+  enota       String // snapshot enote
+  createdAt   DateTime @default(now())
 
-  order         MaterialOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  inventory     Inventory    @relation(fields: [inventoryId], references: [id])
+  order     MaterialOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  inventory Inventory     @relation(fields: [inventoryId], references: [id])
 
   @@index([orderId])
 }
@@ -649,60 +655,60 @@ model MaterialOrderItem {
 // ============================================
 
 model Crew {
-  id          String   @id @default(cuid())
-  naziv       String   @unique  // npr. "Ekipa A", "Ekipa Kranj"
-  vodjaId     String?  // Profile.id vodje ekipe
-  aktivna     Boolean  @default(true)
-  barva       String   @default("#1d2b3e")  // za prikaz v koledarju
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  naziv     String   @unique // npr. "Ekipa A", "Ekipa Kranj"
+  vodjaId   String? // Profile.id vodje ekipe
+  aktivna   Boolean  @default(true)
+  barva     String   @default("#1d2b3e") // za prikaz v koledarju
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  vodja       Profile?  @relation("CrewLeader", fields: [vodjaId], references: [id])
-  members     Profile[]
-  schedules   InstallationSchedule[]
+  vodja     Profile?               @relation("CrewLeader", fields: [vodjaId], references: [id])
+  members   Profile[]
+  schedules InstallationSchedule[]
 
   @@index([aktivna])
 }
 
 model Equipment {
-  id            String   @id @default(cuid())
-  naziv         String   @unique  // npr. "Laser Bosch GLM 50C", "Vijačnik", "Avtomobil A"
-  tip           String   // "MERSKA_OPREMA" | "ROČNO_ORODJE" | "PREVOZ" | "VARNOSTNA_OPREMA" | "OSTALO"
-  sifra         String?
-  status        String   @default("NA_VOLJO")  // NA_VOLJO | V_UPORABI | V_SERVISU | IZGUBLJENO
-  lokacija      String?  // npr. "Skladišče Kranj", "Avto A"
-  zadnjiServis  DateTime?
-  opomba        String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String    @id @default(cuid())
+  naziv        String    @unique // npr. "Laser Bosch GLM 50C", "Vijačnik", "Avtomobil A"
+  tip          String // "MERSKA_OPREMA" | "ROČNO_ORODJE" | "PREVOZ" | "VARNOSTNA_OPREMA" | "OSTALO"
+  sifra        String?
+  status       String    @default("NA_VOLJO") // NA_VOLJO | V_UPORABI | V_SERVISU | IZGUBLJENO
+  lokacija     String? // npr. "Skladišče Kranj", "Avto A"
+  zadnjiServis DateTime?
+  opomba       String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
-  assignments   EquipmentAssignment[]
+  assignments EquipmentAssignment[]
 
   @@index([status])
 }
 
 // Termin montaže v koledarju
 model InstallationSchedule {
-  id            String    @id @default(cuid())
+  id            String   @id @default(cuid())
   projectId     String
   crewId        String?
-  monterId      String?   // glavni monter (Profile.id)
+  monterId      String? // glavni monter (Profile.id)
   datumZacetka  DateTime
   datumKonca    DateTime
-  status        String    @default("NAVRTENO")  // NAVRTENO | V_TEKU | ZAKLJUCENO | PREKlicANO | PRELOZENO
-  predvideneUre Int       @default(8)
+  status        String   @default("NAVRTENO") // NAVRTENO | V_TEKU | ZAKLJUCENO | PREKlicANO | PRELOZENO
+  predvideneUre Int      @default(8)
   dejanskeUre   Int?
   opombe        String?
-  lokacija      String?   // naslov montaže
+  lokacija      String? // naslov montaže
   gpsLat        Float?
   gpsLon        Float?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  project       Project   @relation(fields: [projectId], references: [id])
-  crew          Crew?     @relation(fields: [crewId], references: [id])
-  monter        Profile?  @relation("MonterSchedules", fields: [monterId], references: [id])
-  equipment     EquipmentAssignment[]
+  project   Project               @relation(fields: [projectId], references: [id])
+  crew      Crew?                 @relation(fields: [crewId], references: [id])
+  monter    Profile?              @relation("MonterSchedules", fields: [monterId], references: [id])
+  equipment EquipmentAssignment[]
 
   @@index([datumZacetka])
   @@index([crewId])
@@ -711,16 +717,16 @@ model InstallationSchedule {
 
 // Oprema dodeljena terminu montaže
 model EquipmentAssignment {
-  id            String   @id @default(cuid())
-  scheduleId    String
-  equipmentId   String
-  datumOd       DateTime
-  datumDo       DateTime
-  opomba        String?
-  createdAt     DateTime @default(now())
+  id          String   @id @default(cuid())
+  scheduleId  String
+  equipmentId String
+  datumOd     DateTime
+  datumDo     DateTime
+  opomba      String?
+  createdAt   DateTime @default(now())
 
-  schedule      InstallationSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
-  equipment     Equipment            @relation(fields: [equipmentId], references: [id])
+  schedule  InstallationSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  equipment Equipment            @relation(fields: [equipmentId], references: [id])
 
   @@index([scheduleId])
   @@index([equipmentId])
@@ -736,30 +742,30 @@ model EquipmentAssignment {
 // Zdaj se hrani samo SHA-256 ključa, ključ je viden enkrat ob ustvarjanju,
 // posamezen ključ pa je mogoče preklicati brez menjave ostalih.
 model ApiKey {
-  id        String    @id @default(cuid())
+  id         String    @id @default(cuid())
   /// Človeško berljivo ime ("Marko - telefon", "BalkonAR test").
-  name      String
-  keyHash   String    @unique
+  name       String
+  keyHash    String    @unique
   /// Prvih 12 znakov za prepoznavo v seznamu (brez razkritja ključa).
-  keyPrefix String
-  createdBy String?
-  createdAt DateTime  @default(now())
+  keyPrefix  String
+  createdBy  String?
+  createdAt  DateTime  @default(now())
   lastUsedAt DateTime?
-  revokedAt DateTime?
+  revokedAt  DateTime?
 
   // ── R126 — issue #5 §3: API-key lifecycle ────────────────────────────────
   /// Namenska raba ključa ("BalkonAR mobilni klient terenske ekipe").
-  purpose   String?
+  purpose         String?
   /// Scope lista (R126 §3), ločena z vejico. Privzeto dobrodelni nabor
   /// MOBILE_SYNC iz matrike v src/lib/access.ts. Katalog: src/lib/api-keys.ts.
-  scopes    String    @default("projects:read,projects:write,measurements:create,photos:read,photos:write")
+  scopes          String    @default("projects:read,projects:write,measurements:create,photos:read,photos:write")
   /// Omejitev na projekte (ID-ji ločeni z vejico). Null/prazno = vsi projekti
   /// (sync zrcalo podjetja — dosedanja pogodba MOBILE_SYNC).
-  projectScope String?
+  projectScope    String?
   /// Ko ključ poteče, ga verifyApiKey zavrne (fail-closed). Null = ne poteče.
-  expiresAt DateTime?
+  expiresAt       DateTime?
   /// ID predhodnika, če je ključ nastal z rotacijo (--rotate).
-  rotatedFrom String?
+  rotatedFrom     String?
   /// Per-key omejitev hitrosti (zahtevkov/minuto). Null = privzeto 120.
   rateLimitPerMin Int?
 }
@@ -826,29 +832,29 @@ model Invoice {
 // seznam "s seboj prinesti" (orodje/mozniki) glede na podlago, pritrditev, ovire.
 // ============================================
 model SiteSurvey {
-  id                  String   @id @default(cuid())
-  projectId           String   @unique
-  tipObjekta          String   @default("balkon")   // balkon|stopnice|terasa|loggia|friz|prehod
-  oblika              String   @default("ravno")    // ravno|L|U|krog
-  pritrditev          String   @default("obrobna")  // obrobna|tloris|stena|mesano
-  podlaga             String   @default("neznan")   // beton|estrih|les|kovina|plocice|neznan
-  razponNajdaljsiMm   Int?
-  skupnaDolzinaMm     Int?
-  visinaMm            Int?
-  steviloStopnic      Int?
-  razhodMm            Int?
+  id                String   @id @default(cuid())
+  projectId         String   @unique
+  tipObjekta        String   @default("balkon") // balkon|stopnice|terasa|loggia|friz|prehod
+  oblika            String   @default("ravno") // ravno|L|U|krog
+  pritrditev        String   @default("obrobna") // obrobna|tloris|stena|mesano
+  podlaga           String   @default("neznan") // beton|estrih|les|kovina|plocice|neznan
+  razponNajdaljsiMm Int?
+  skupnaDolzinaMm   Int?
+  visinaMm          Int?
+  steviloStopnic    Int?
+  razhodMm          Int?
   /// CSV ovir: cevi|vticnice|podstavki|osvetlitev|okna|locnik|vlaga|druge
-  ovire               String?
-  dvigalo             Boolean  @default(false)
-  dostopOpomba        String?
+  ovire             String?
+  dvigalo           Boolean  @default(false)
+  dostopOpomba      String?
   /// CSV posnetih točk foto kontrolnega seznama: tip1|meritve|podlaga|pritrditev|ovire|celota
-  fotoPosneto         String?
+  fotoPosneto       String?
   /// RAL barva prahu izbrana na terenu (runda R): 7016|9005|9016|6005|8017
-  ralCode             String?
-  opombe              String?
-  zakljuceno          Boolean  @default(false)
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  ralCode           String?
+  opombe            String?
+  zakljuceno        Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
@@ -865,24 +871,24 @@ model SiteSurvey {
 // ============================================
 
 model VizProject {
-  id               String   @id @default(cuid())
+  id              String         @id @default(cuid())
   // S+4 lastništvo: Profile.id seje, ki je projekt ustvarila. Null = zapuščina
   // iz rund pred S+4 (vidijo jo samo ADMIN — glej docs/VIZ_CONTRACTS.md).
-  ownerId          String?
-  name             String
-  originalPath     String
-  productPath      String
-  productMaskPath  String?
-  maskPath         String
-  previewPath      String?
-  resultPath       String?
-  resultImagePath  String?
-  placement        String
-  variants         String?
-  idempotencyKey   String?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  renderJobs       VizRenderJob[]
+  ownerId         String?
+  name            String
+  originalPath    String
+  productPath     String
+  productMaskPath String?
+  maskPath        String
+  previewPath     String?
+  resultPath      String?
+  resultImagePath String?
+  placement       String
+  variants        String?
+  idempotencyKey  String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  renderJobs      VizRenderJob[]
 
   @@index([ownerId])
 }
@@ -926,4 +932,24 @@ model IdempotencyKey {
   createdAt      DateTime @default(now())
 
   @@index([createdAt])
+}
+
+/// R132 (issue #5 §7): dostopni dnevnik javnega portala stranke.
+/// Vsak poskus (uspešen ali ne) se zabeleži — revizija javne površine.
+/// ipHash = sha256(IP + API_KEY_PEPPER), 32 hex znakov — zasebnost obiskovalcev.
+model PortalAccess {
+  id        String   @id @default(cuid())
+  /// null = poskus z neobstoječim žetonom (nismo podigli projekt).
+  projectId String?
+  /// OK | NOT_FOUND | DISABLED | EXPIRED | REVOKED | RATE_LIMITED | INVALID
+  status    String
+  ipHash    String
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@index([projectId, createdAt])
+  @@index([createdAt])
+  @@index([ipHash, createdAt])
 }

@@ -1,7 +1,22 @@
 // Roksal Field - Javni portal stranke (server component)
 // Stran /portal/[token] — prikaz statusa, slik, cene in kontakta za stranko
+//
+// R132 (issue #5 §7): ENOTNA validacija z JSON ruto prek src/lib/portal.ts —
+// rate limit na IP (shared), življenjski cikl žetona (potek/revokacija/onemogočen),
+// dostopni dnevnik PortalAccess, vsa neveljavna stanja = ISTA neobstoječa stran
+// (enumeration protection), minimalni selecti namesto include.
+import { headers } from 'next/headers'
 import { db } from '@/lib/db'
 import { getObject } from '@/lib/object-storage'
+import { checkRate } from '@/lib/rate-limit'
+import {
+  MIN_TOKEN_LENGTH,
+  PORTAL_LIMIT,
+  clientIpOfHeaders,
+  hashIp,
+  logPortalAccess,
+  portalValidity,
+} from '@/lib/portal'
 import {
   Phone,
   Mail,
@@ -68,26 +83,73 @@ interface PageProps {
 
 export default async function PortalPage({ params }: PageProps) {
   const { token } = await params
+  const hdrs = await headers()
+  const ipHash = hashIp(clientIpOfHeaders(hdrs))
+  const userAgent = hdrs.get('user-agent')
 
-  if (!token || token.length < 8) {
+  if (!token || token.length < MIN_TOKEN_LENGTH) {
+    await logPortalAccess({ projectId: null, status: 'INVALID', ipHash, userAgent })
     return <NotFoundPage />
   }
 
+  // §7: shared rate limit — ista meja kot JSON ruta (isti IP delí vzvratni števec).
+  const rate = checkRate(`portal:${ipHash}`, PORTAL_LIMIT)
+  if (!rate.ok) {
+    await logPortalAccess({ projectId: null, status: 'RATE_LIMITED', ipHash, userAgent })
+    return <NotFoundPage />
+  }
+
+  // Minimalna izbira (§7): samo polja, ki jih stran stranke izriše.
   const project = await db.project.findUnique({
     where: { clientToken: token },
-    include: {
-      customer: true,
-      photos: { orderBy: { createdAt: 'desc' } },
+    select: {
+      id: true,
+      nazivProjekta: true,
+      status: true,
+      datumMontaze: true,
+      estimatedPrice: true,
+      clientNotes: true,
+      clientPortalEnabled: true,
+      clientTokenExpiresAt: true,
+      clientTokenRevokedAt: true,
+      customer: { select: { ime: true, naslov: true } },
+      photos: {
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          kategorija: true,
+          imageData: true,
+          storageKey: true,
+          mime: true,
+          opomba: true,
+          createdAt: true,
+        },
+      },
+      // Kuriran timeline (§7: brez internih surovin — samo izpeljani naslovi).
       auditLogs: {
-        orderBy: { timestamp: 'asc' },
+        orderBy: { timestamp: 'asc' as const },
         take: 50,
+        select: { akcija: true, oldValue: true, newValue: true, timestamp: true },
       },
     },
   })
 
-  if (!project || !project.clientPortalEnabled) {
+  if (!project) {
+    await logPortalAccess({ projectId: null, status: 'NOT_FOUND', ipHash, userAgent })
     return <NotFoundPage />
   }
+
+  // §7: življenjski cikl žetona — potekel/preklican/onemogočen = ista 404 stran.
+  const validity = portalValidity(project)
+  if (validity !== 'OK') {
+    await logPortalAccess({ projectId: project.id, status: validity, ipHash, userAgent })
+    return <NotFoundPage />
+  }
+
+  void db.project
+    .update({ where: { id: project.id }, data: { clientTokenLastUsedAt: new Date() } })
+    .catch((error: unknown) => console.error('[portal] lastUsed ni posodobljen:', error))
+  await logPortalAccess({ projectId: project.id, status: 'OK', ipHash, userAgent })
 
   const statusCfg = STATUS_CONFIG[project.status] || STATUS_CONFIG.NACRTOVANO
   const StatusIcon = statusCfg.icon
