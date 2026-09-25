@@ -103,8 +103,8 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 40 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **880** (58 datotek, vključno z globalSetup embedded PG) |
-| Varnostni smoke | 129 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
+| Testi (vitest) | **897** (59 datotek, vključno z globalSetup embedded PG) |
+| Varnostni smoke | 131 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
 | Jezik vmesnika | Slovenščina |
@@ -491,7 +491,7 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `bun run check` | tsc --noEmit + vitest run (en ukaz za vse) |
 | `bunx tsc --noEmit` | Tipska kontrola celotnega projekta (trenutno 0 napak) |
 | `bun run lint` | ESLint preverjanje |
-| `bun run smoke` | Varnostni smoke na zagnanem strežniku (129 preverjanj) |
+| `bun run smoke` | Varnostni smoke na zagnanem strežniku (131 preverjanj) |
 | `bun run bench:measurement` | R118 validacijski harness Merilnega SDK (12 scenarijev) |
 | `bun run db:deploy` | `prisma migrate deploy` (verzionirane migracije) |
 | `bun run db:seed` | Demo podatki |
@@ -559,6 +559,7 @@ demo seja ni ADMIN in da prijava prek forme za demo račun ne uspe.
 | `MaterialOrder` / `MaterialOrderItem` | Naročila materiala (BOM → naročilo) |
 | `Crew` | Ekipe monterjev (barva za koledar) |
 | `Equipment` / `EquipmentAssignment` / `EquipmentEvent` | Oprema: življenjski cikl (statusne tranzicije, kalibracija merske opreme, pregledi) in dodelitve terminom (R145, §31) |
+| `QualityControl` | Preverba kakovosti: verzirana deterministična predloga (qc-v1), vrata na zaključitvi + reviziran override (R146, §27) |
 | `InstallationSchedule` | Koledar montaže (ekipa, ure, GPS) |
 | `PunchItem` | Prejemni zapisnik (closeout kontrolni seznam) |
 | `Invoice` | Računi (eslog e-računi, številčenje) |

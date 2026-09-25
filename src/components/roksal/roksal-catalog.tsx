@@ -75,7 +75,8 @@ export function RoksalCatalog() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Iskanje profilov, šifer..."
-            className="h-10 pl-9"
+            aria-label="Iskanje profilov"
+            className="h-10 pl-9 focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
           />
         </div>
 
@@ -88,8 +89,9 @@ export function RoksalCatalog() {
                 type="button"
                 variant={kategorija === k ? 'default' : 'outline'}
                 size="sm"
+                aria-pressed={kategorija === k}
                 onClick={() => setKategorija(k)}
-                className={`h-7 shrink-0 text-[11px] ${kategorija === k ? 'bg-roksal-navy text-white' : ''}`}
+                className={`h-7 shrink-0 text-[11px] focus-visible:ring-2 focus-visible:ring-roksal-navy/40 ${kategorija === k ? 'bg-roksal-navy text-white' : ''}`}
               >
                 {k}
               </Button>
@@ -118,37 +120,38 @@ export function RoksalCatalog() {
           {filtered.map((p) => {
             const badge = MATERIAL_BADGE[p.material] ?? { label: p.material, cls: 'bg-gray-100 text-gray-800' }
             return (
-              <Card key={p.id} className="overflow-hidden card-hover">
+              <Card key={p.id} className="overflow-hidden transition-[border-color,box-shadow] duration-150 hover:border-roksal-navy/25 hover:shadow-sm">
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <div className="mb-1 flex flex-wrap items-center gap-2">
-                        <Badge className={badge.cls} variant="secondary">
+                        <Badge className={`${badge.cls} border border-transparent`} variant="secondary">
                           {badge.label}
                         </Badge>
-                        <span className="text-[10px] font-mono text-muted-foreground">{p.sifra}</span>
+                        <span className="text-[10px] font-mono tabular-nums text-muted-foreground">{p.sifra}</span>
                       </div>
                       <h3 className="text-sm font-semibold text-roksal-navy">{p.naziv}</h3>
                       <p className="text-[11px] text-muted-foreground">{p.kategorija}</p>
 
-                      <div className="mt-3 flex flex-wrap gap-3 text-[11px]">
+                      <div className="mt-3 flex flex-wrap gap-3 text-[11px] tabular-nums">
                         <div className="flex items-center gap-1 text-muted-foreground">
                           <Ruler className="h-3 w-3" />
                           <span>
                             {p.visinaMm}×{p.sirinaMm}mm
                           </span>
                         </div>
-                        <div className="flex items-center gap-1 text-muted-foreground">
-                          <Euro className="h-3 w-3" />
-                          <span className="font-semibold text-roksal-navy">{p.cenaM.toFixed(0)} €/m</span>
+                        <div className="flex items-center gap-1">
+                          <Euro className="h-3 w-3 text-muted-foreground" />
+                          <span className="font-semibold text-roksal-navy">{p.cenaM.toFixed(2)} €/m</span>
                         </div>
                         {p.barvaRal && (
                           <div className="flex items-center gap-1 text-muted-foreground">
                             <span
-                              className="inline-block h-3 w-3 rounded-sm border border-border"
+                              className="inline-block h-3 w-3 rounded-sm border border-border ring-1 ring-white shadow-sm"
                               style={{ backgroundColor: ralToHex(p.barvaRal) }}
+                              aria-hidden
                             />
-                            <span>RAL {p.barvaRal}</span>
+                            <span className="tabular-nums">RAL {p.barvaRal}</span>
                           </div>
                         )}
                       </div>

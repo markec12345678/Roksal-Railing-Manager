@@ -2,7 +2,7 @@
 """
 Varnostni dimni test za Roksal Railing Manager.
 
-Preveri 129 stvari na ŽIVEM strežniku — ne na kodi, kar je edini način, da se
+Preveri 131 stvari na ŽIVEM strežniku — ne na kodi, kar je edini način, da se
 ujame napaka v plasteh (proxy, ruta, piškotek, baza). Napisan je bil prav zato,
 ker je prva različica proxy-ja blokirala prijavo samo: 32/36 testov je bilo
 zelenih, aplikacija pa neuporabna.
@@ -543,6 +543,16 @@ if auth:
     check("GET /api/equipment/events neznana oprema (s sejo) → 200 []", ok, f"dobil {st}")
 else:
     skip("[27] oprema (sejo)", "seja ni na voljo (prijava spodletela)")
+
+
+print("\n[28] Preverba kakovosti (R146 — issue #5 §27: fail-closed vrata)")
+# Bralna ruta po R146: GET brez seje → 401 + korelacija; POST brez seje → 401.
+st, h, body = call("/api/qc?projectId=x")
+ok = st == 401 and len(h.get("x-correlation-id", "")) >= 8
+check("GET /api/qc brez seje → 401 + correlation", ok, f"dobil {st}")
+st, h, body = call("/api/qc", "POST", {"projectId": "x", "items": []})
+ok = st == 401 and len(h.get("x-correlation-id", "")) >= 8
+check("POST /api/qc brez seje → 401 + correlation", ok, f"dobil {st}")
 
 
 print(f"\n{'=' * 60}")

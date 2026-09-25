@@ -12,6 +12,7 @@ import { Separator } from '@/components/ui/separator'
 import { useToast } from '@/hooks/use-toast'
 import { downloadCsv, todayStamp } from '@/lib/csv-export'
 import { allowedTransitions } from '@/lib/equipment-lifecycle'
+import { QC_TEMPLATE, computePassed, countDefects } from '@/lib/qc-gate'
 import {
   Calendar, Download, Users, Wrench, Plus, Clock, MapPin, CheckCircle2, CalendarClock,
   Loader2, AlertTriangle, Truck, Package, ShieldCheck, History,
@@ -288,6 +289,14 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
   const [eventBusy, setEventBusy] = useState(false)
   const [eventHistory, setEventHistory] = useState<EquipmentEventRow[]>([])
   const [eventHistoryFor, setEventHistoryFor] = useState<string | null>(null)
+  // R146 (§27): preverba kakovosti PRED zaključitvijo — vrata so na strežniku
+  // (ZAKLJUCENO brez prešle preverbe → 409; override z razlogom reviziran).
+  const [qcTarget, setQcTarget] = useState<{ id: string; projectId: string; project: string } | null>(null)
+  const [qcChecked, setQcChecked] = useState<Record<string, boolean>>({})
+  const [qcNotes, setQcNotes] = useState<Record<string, string>>({})
+  const [qcBusy, setQcBusy] = useState(false)
+  const [qcOverrideMode, setQcOverrideMode] = useState(false)
+  const [qcOverrideReason, setQcOverrideReason] = useState('')
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -406,6 +415,89 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
       }
     } catch { toast({ title: 'Omrežna napaka', variant: 'destructive' }) }
     finally { setEventBusy(false) }
+  }
+
+  /** R146 (§27): odpri preverbo kakovosti za zaključitev termina. */
+  const openQcDialog = (id: string, projectId: string, project: string) => {
+    setQcTarget({ id, projectId, project })
+    setQcChecked({})
+    setQcNotes({})
+    setQcOverrideMode(false)
+    setQcOverrideReason('')
+  }
+
+  const qcItemsPayload = QC_TEMPLATE.map((t) => ({
+    key: t.key,
+    checked: qcChecked[t.key] === true,
+    note: qcNotes[t.key] || null,
+  }))
+  const qcPassed = computePassed(qcItemsPayload)
+  const qcDefects = countDefects(qcItemsPayload)
+  const qcValid = qcItemsPayload.every((i) => i.checked || (i.note && i.note.trim().length > 0))
+
+  /** R146 (§27): shrani preverbo → če je prešla, zaključi termin (PATCH). */
+  const handleQcSubmit = async () => {
+    if (!qcTarget || !qcValid) return
+    setQcBusy(true)
+    try {
+      const qcRes = await fetch('/api/qc', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectId: qcTarget.projectId, scheduleId: qcTarget.id, items: qcItemsPayload }),
+      })
+      const qcData = (await qcRes.json().catch(() => null)) as { error?: string; passed?: boolean } | null
+      if (!qcRes.ok) {
+        toast({ title: 'Napaka pri preverbi', description: qcData?.error ?? `HTTP ${qcRes.status}`, variant: 'destructive' })
+        return
+      }
+      if (!qcData?.passed) {
+        toast({
+          title: `Preverba NE prehaja (${qcDefects} napak)`,
+          description: 'Zabeležena je kot napaka — zaključitev ostane zaprta do prehoda ali reviziranega override.',
+          variant: 'destructive',
+        })
+        setQcTarget(null)
+        return
+      }
+      await finalizeSchedule(qcTarget.id)
+      setQcTarget(null)
+    } catch {
+      toast({ title: 'Omrežna napaka', variant: 'destructive' })
+    } finally {
+      setQcBusy(false)
+    }
+  }
+
+  /**
+   * R146 (§27): zaključi termin — kot override z razlogom (revizirano
+   * QC_OVERRIDE) ali po prešli preverbi (brez override). Fail-verbose.
+   */
+  const finalizeSchedule = async (id: string, overrideReason?: string) => {
+    try {
+      const res = await fetch('/api/schedules', {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, status: 'ZAKLJUCENO', dejanskeUre: undefined, ...(overrideReason ? { qcOverrideReason: overrideReason } : {}) }),
+      })
+      const data = (await res.json().catch(() => null)) as { error?: string } | null
+      if (res.ok) {
+        toast({ title: '✓ Termin zaključen', description: overrideReason ? 'Z reviziranim override preverbe.' : 'Preverba kakovosti prešla.' })
+        loadData()
+      } else {
+        toast({ title: 'Napaka', description: data?.error ?? `HTTP ${res.status}`, variant: 'destructive' })
+      }
+    } catch {
+      toast({ title: 'Omrežna napaka', variant: 'destructive' })
+    }
+  }
+
+  const handleQcOverride = async () => {
+    if (!qcTarget || !qcOverrideReason.trim()) return
+    setQcBusy(true)
+    try {
+      await finalizeSchedule(qcTarget.id, qcOverrideReason.trim())
+      setQcTarget(null)
+    } finally {
+      setQcBusy(false)
+    }
   }
 
   const handleStatusChange = async (id: string, status: string, dejanskeUre?: number) => {
@@ -575,8 +667,8 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                       </div>
                     )}
                     {s.status === 'V_TEKU' && (
-                      <Button type="button" size="sm" variant="outline" className="h-6 text-[10px] bg-green-50 focus-visible:ring-2 focus-visible:ring-roksal-navy/40" onClick={() => handleStatusChange(s.id, 'ZAKLJUCENO', s.predvideneUre)}>
-                        <CheckCircle2 className="h-3 w-3 mr-1" /> Zaključi (odštej material)
+                      <Button type="button" size="sm" variant="outline" className="h-6 text-[10px] bg-green-50 focus-visible:ring-2 focus-visible:ring-roksal-navy/40" aria-label={`Zaključi termin ${s.project.nazivProjekta} s preverbo kakovosti`} onClick={() => openQcDialog(s.id, s.project.id, s.project.nazivProjekta)}>
+                        <CheckCircle2 className="h-3 w-3 mr-1" /> Zaključi (preverba + odštej material)
                       </Button>
                     )}
                     {s.status === 'PRELOZENO' && (
@@ -948,6 +1040,109 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
             >
               {eventBusy && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
               Zabeleži
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: preverba kakovosti PRED zaključitvijo (R146 §27).
+          Deterministična predloga (lib/qc-gate, qc-v1): napaka brez opombe ni
+          shranjena; preverba NE prehaja → zaključitev ostane zaprta; override
+          z razlogom je ločena, izrecna pot (strežnik ga revizira). */}
+      <Dialog open={qcTarget !== null} onOpenChange={(open) => !open && setQcTarget(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-roksal-navy">
+              <ShieldCheck className="h-4.5 w-4.5 text-roksal-amber" />
+              Preverba kakovosti
+            </DialogTitle>
+          </DialogHeader>
+          {qcTarget && (
+            <p className="text-[11px] text-muted-foreground">
+              {qcTarget.project} · zaključitev odšteje material iz zaloge
+            </p>
+          )}
+          <div className="space-y-2">
+            <div className="max-h-56 space-y-1.5 overflow-y-auto rounded-md border p-2">
+              {QC_TEMPLATE.map((t) => (
+                <div key={t.key}>
+                  <label className="flex cursor-pointer items-start gap-2 text-xs">
+                    <input
+                      type="checkbox"
+                      className="mt-0.5 h-3.5 w-3.5 accent-[#1d2b3e] focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                      checked={qcChecked[t.key] === true}
+                      aria-label={t.label}
+                      onChange={(e) => setQcChecked((prev) => ({ ...prev, [t.key]: e.target.checked }))}
+                    />
+                    <span className="flex-1">{t.label}</span>
+                  </label>
+                  {qcChecked[t.key] !== true && (
+                    <Input
+                      value={qcNotes[t.key] || ''}
+                      onChange={(e) => setQcNotes((prev) => ({ ...prev, [t.key]: e.target.value }))}
+                      placeholder="Napaka / korektivni ukrep (obvezno)"
+                      className="mt-1 ml-6 h-7 text-[11px]"
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center justify-between text-[11px] tabular-nums">
+              {qcPassed ? (
+                <span className="inline-flex items-center gap-1 font-semibold text-green-700">
+                  <CheckCircle2 className="h-3.5 w-3.5" /> Preverba prehaja — vse izpolnjeno
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 font-semibold text-amber-700">
+                  <AlertTriangle className="h-3.5 w-3.5" /> Napake: {qcDefects} — zaključitev ne bo prehajala
+                </span>
+              )}
+            </div>
+            {/* Override — izrecna, ločena pot (razlog gre v revizijo QC_OVERRIDE). */}
+            {qcOverrideMode ? (
+              <div className="rounded-md border border-red-200 bg-red-50/60 p-2">
+                <Label className="text-xs font-semibold text-red-700">Zaključi brez preverbe (override)</Label>
+                <Input
+                  value={qcOverrideReason}
+                  onChange={(e) => setQcOverrideReason(e.target.value)}
+                  placeholder="Razlog (obvezen, reviziran kot QC_OVERRIDE)"
+                  className="mt-1 h-8 text-xs"
+                />
+                <p className="mt-1 text-[10px] text-red-700/80">Razlog se nespremenljivo zapiše v revizijsko sled skupaj z zaključitvijo.</p>
+                <div className="mt-2 flex gap-2">
+                  <Button type="button" size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => setQcOverrideMode(false)}>Nazaj na preverbo</Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={qcBusy || !qcOverrideReason.trim()}
+                    className="h-7 bg-red-600 text-[11px] text-white hover:bg-red-700 focus-visible:ring-red-400/50"
+                    onClick={() => void handleQcOverride()}
+                  >
+                    {qcBusy && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
+                    Zaključi z override
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                className="text-left text-[10px] text-muted-foreground underline underline-offset-2 hover:text-red-700"
+                onClick={() => setQcOverrideMode(true)}
+              >
+                Preverba ni mogoča — zaključi z izrecnim override (razlog se revizira) →
+              </button>
+            )}
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setQcTarget(null)}>Prekliči</Button>
+            <Button
+              type="button"
+              onClick={() => void handleQcSubmit()}
+              disabled={qcBusy || !qcValid}
+              className="bg-roksal-navy hover:bg-roksal-navy/90 text-white focus-visible:ring-roksal-navy/40"
+            >
+              {qcBusy && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
+              {qcPassed ? 'Preverba + zaključi' : 'Shrani preverbo (z napakami)'}
             </Button>
           </DialogFooter>
         </DialogContent>

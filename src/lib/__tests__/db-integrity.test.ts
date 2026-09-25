@@ -217,7 +217,10 @@ describe('§19 — atomske poslovne transakcije', () => {
     const project = await makeProjectWithBom(naziv, 5) // potrebuje 5, na zalogi 2
     const schedule = await makeSchedule(project.id)
 
-    const res = await schedulesRoute.PATCH(request('PATCH', '/api/schedules', token, { id: schedule.id, status: 'ZAKLJUCENO' }))
+    // R146 (§27): qcOverrideReason — izrecen reviziran preskok preverbe
+    // kakovosti (ta test preverja ODŠTEVANJE zaloge, ne QC); vrata QC so
+    // s tem iskreno prehojena po dokumentirani override poti.
+    const res = await schedulesRoute.PATCH(request('PATCH', '/api/schedules', token, { id: schedule.id, status: 'ZAKLJUCENO', qcOverrideReason: 'r136-legacy test odštevanja zaloge (override preverbe)' }))
     expect(res.status).toBe(409)
     const body = (await res.json()) as { error: string }
     expect(body.error).toContain(naziv.slice(0, 12))
@@ -251,7 +254,9 @@ describe('§19 — atomske poslovne transakcije', () => {
     const project = await makeProjectWithBom(naziv, 3)
     const schedule = await makeSchedule(project.id)
 
-    const res = await schedulesRoute.PATCH(request('PATCH', '/api/schedules', token, { id: schedule.id, status: 'ZAKLJUCENO' }))
+    // R146 (§27): qcOverrideReason — reviziran preskok preverbe (test
+    // preverja atomsko odštevanje zaloge po dokumentirani override poti).
+    const res = await schedulesRoute.PATCH(request('PATCH', '/api/schedules', token, { id: schedule.id, status: 'ZAKLJUCENO', qcOverrideReason: 'r136-legacy test odštevanja zaloge (override preverbe)' }))
     expect(res.status).toBe(200)
 
     const invAfter = await db.inventory.findUnique({ where: { id: inv.id } })

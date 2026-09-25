@@ -57,6 +57,7 @@ model Profile {
   schedules InstallationSchedule[] @relation("MonterSchedules")
   sessions  UserSession[]
   equipmentEvents EquipmentEvent[] // R145 §31 — pregledi/kalibracije, ki jih je zabeležil
+  qualityControls QualityControl[] // R146 §27 — preverbe, ki jih je odobril
 }
 
 /// #5 §2 — Session revocation: registracija izdanih sejnih žetonov.
@@ -201,6 +202,7 @@ model Project {
   invoices        Invoice[]
   siteSurvey      SiteSurvey?
   portalAccess    PortalAccess[]
+  qualityControls QualityControl[] // R146 §27 — preverbe kakovosti projekta
 }
 
 // ============================================
@@ -914,10 +916,43 @@ model InstallationSchedule {
   crew      Crew?                 @relation(fields: [crewId], references: [id])
   monter    Profile?              @relation("MonterSchedules", fields: [monterId], references: [id])
   equipment EquipmentAssignment[]
+  qualityControls QualityControl[] // R146 §27 — preverbe kakovosti povezane s terminom
 
   @@index([datumZacetka])
   @@index([crewId])
   @@index([status])
+}
+
+// R146 (issue #5 §27 — Quality control gate): struktuirana preverba kakovosti
+// pred zaključitvijo termina/prehodom projekta v MONTIRANO.
+//
+// Kontrolni seznam je DETERMINISTIČEN in živi v kodi (lib/qc-gate.ts,
+// QC_TEMPLATE z verzijo) — vrstic NI v bazi, zato ni plesa sheme ob spremembi
+// seznama; sprememba seznama = nova verzija (templateVersion), stare zapisi
+// ostanejo berljivi z njihovo verzijo. itemsJson je strogo validiran
+// (validateQCItems: natanko ključi predloge, boolean checked, opomba OBVEZNA
+// pri neizpolnjeni postavki — napaka brez ukrepa se ne zapiše). Fail-closed
+// vrata so v PATCH /api/schedules: ZAKLJUCENO brez PREŠLE preverbe zahteva
+// izrecen qcOverrideReason (revizirano QC_OVERRIDE).
+model QualityControl {
+  id              String   @id @default(cuid())
+  projectId       String
+  scheduleId      String?
+  templateVersion String
+  itemsJson       String // JSON — oblika številka QC_TEMPLATE_VERSION
+  passed          Boolean
+  defectsCount    Int // število neizpolnjenih postavk (deterministično)
+  note            String? // povzetek korektivnih ukrepov (opcijsko)
+  approvedById    String?
+  approvedBy      Profile? @relation(fields: [approvedById], references: [id], onDelete: SetNull)
+  approvedAt      DateTime @default(now())
+  createdAt       DateTime @default(now())
+
+  project  Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  schedule InstallationSchedule? @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
+
+  @@index([projectId, approvedAt])
+  @@index([scheduleId])
 }
 
 // Oprema dodeljena terminu montaže

@@ -512,3 +512,22 @@ Znan mejnik: uspešna uporaba konzole je revizijsko vidna, žeton pa ostane velj
 **Zakaj "NEZNANO" namesto izmišljenih datumov:** oprema brez zabeleženega pregleda ali brez kalibracijskega roka je PRAVDILO neznano stanje — aplikacija ga izrecno pokaže (oramno/rdeče), namesto da bi tiho ugibala rok in s tem zakrila pravo tveganje. Fail-closed tudi v prikazu.
 
 Dokazi: `src/lib/__tests__/r145-equipment.test.ts` (31 testov — transicijska matrika, kalibracijska deterministika, fail-closed pogodbe dogodkov, konflikti opreme z nazaj-na-nazaj semantiko, sinhronizacija intervalov pri premiku, pravice) + varnostni smoke [27] (4 preverjanja).
+
+## Preverba kakovosti — vrata na zaključitvi (R146, issue #5 §27)
+
+**Stanje pred**: "Zaključi" je bil en klik brez kakršne koli preverbe — termin je bil zaključen, projekt MONTIRANO, material odštet; QC podatkov (dimenzije, sidranje, RAL, komponente, steklo, poravnava, varnost, fotke, napake, korektivni ukrepi) NI BIL struktuiran nikjer.
+
+**Pogodba §27 → dokaz (lib/qc-gate.ts = deterministično jedro + /api/qc + vrata v PATCH /api/schedules):**
+
+| Zahteva | Izvedba |
+| --- | --- |
+| checklist (vseh 10 §27 področij) | `QC_TEMPLATE` (qc-v1) — verzirana predloga V KODI; sprememba = nova verzija, stare vrstice berljive z templateVersion |
+| defects / corrective action | neizpolnjena postavka ZAHTEVA opombo/ukrep (napaka brez sledi se ne zapiše — fail-closed); defectsCount deterministično izračunan (ne zaupamo klientu) |
+| approvedBy/approvedAt | `approvedById` iz seje + `approvedAt` na vrstici; DTO izpostavi ime odobritelja |
+| completed brez QC samo z explicit audited override | vrata v PATCH: ZAKLJUCENO brez prešle preverbe → **409 qcRequired** (nič ni spremenjeno — vrata PRED mutacijo, ker se Prisma transakcija COMMITA, če callback ne vrže); `qcOverrideReason` (ne-prazen, ≤ 500) → override + revizija **QC_OVERRIDE** atomsko z zaključitvijo; prazen razlog → 400 |
+| passed je resnica, ne klient | `passed`/`defectsCount` izračuna strežnik iz strogo validiranih items (manjkajoč/dodatn ključ → 400) |
+| pravice | POST preverbe: MONTER+ (terensko delo); vrata/override: production.manage (kot zaključitev sama); revizija QC_SUBMITTED/QC_OVERRIDE z userId |
+
+**NAUČEK (tokrat ujet z testi PRED pushom)**: `return { kind: 'error' }` iz Prisma `$transaction` callbacka NE rollback-a — transakcija se commita. Vrata (in vse preverbe) morajo biti ZA vsako mutacijo; za odgovor 409 brez sprememb je bil zaključni update že zapisan (test "termin NESPREMENJENA" je to ujel).
+
+Dokazi: `src/lib/__tests__/r146-qc.test.ts` (17 testov — predloga/verzija, fail-closed validacija, deterministični passed/defects, vrata 409 + atomnost, override pot z revizijo, izolacija po projektu, NE-prešla preverba ne odpre vrat) + varnostni smoke [28] (2 preverjanji).

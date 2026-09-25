@@ -28,6 +28,7 @@ import {
   findEquipmentConflicts,
   conflictMessage,
 } from '@/lib/schedule-conflicts'
+import { isValidOverrideReason } from '@/lib/qc-gate'
 
 // R145 (§31): dodeljevanje opreme terminu — max 20 kosov na termin (§17
 // strop; več kot 20 kosov opreme na EN termin je patološki vnos).
@@ -311,7 +312,7 @@ export async function PATCH(request: Request) {
   const correlationId = correlationFromRequest(request)
   try {
     const body = await request.json()
-    const { id, status, dejanskeUre, opombe, datumZacetka, datumKonca, crewId, monterId, equipmentIds: equipmentRaw } = body
+    const { id, status, dejanskeUre, opombe, datumZacetka, datumKonca, crewId, monterId, equipmentIds: equipmentRaw, qcOverrideReason: qcOverrideRaw } = body
 
     if (!id || !status) {
       return NextResponse.json({ error: 'id in status sta obvezna' }, { status: 400 })
@@ -359,16 +360,26 @@ export async function PATCH(request: Request) {
     }
     const equipmentIds = equipmentParsed && 'ids' in equipmentParsed ? equipmentParsed.ids : null
 
+    // R146 (§27): QC override razlog — validirana PRED transakcijo (vrstni red:
+    // oblika → vrata). Fail-closed: prazen/beli prostor ali ne-niz NI razlog.
+    const hasOverrideReason = qcOverrideRaw !== undefined && isValidOverrideReason(qcOverrideRaw)
+    if (status === 'ZAKLJUCENO' && qcOverrideRaw !== undefined && !hasOverrideReason) {
+      return NextResponse.json(
+        { error: 'qcOverrideReason je neveljaven (prazen ali predolg, max 500 znakov)' },
+        { status: 400 },
+      )
+    }
+
     const updated = await db.$transaction(async (tx) => {
       // R142 (§30): preverba prekrivanja ZA PREMEK — znotraj transakcije,
       // izključi premikan termin sam (drugače bi prekril samega sebe).
       // R145 (§31): trenutno stanje je potrebno TUDI za čisto zamenjavo
       // opreme (preverba proti OBSTOJEČEMU intervalu termina).
-      let current: { crewId: string | null; monterId: string | null; datumZacetka: Date; datumKonca: Date } | null = null
+      let current: { projectId?: string; crewId: string | null; monterId: string | null; datumZacetka: Date; datumKonca: Date } | null = null
       if (moving || equipmentIds !== null) {
         const cur = await tx.installationSchedule.findUnique({
           where: { id },
-          select: { crewId: true, monterId: true, datumZacetka: true, datumKonca: true },
+          select: { projectId: true, crewId: true, monterId: true, datumZacetka: true, datumKonca: true },
         })
         if (!cur) {
           return { kind: 'notfound' } as const
@@ -438,6 +449,44 @@ export async function PATCH(request: Request) {
           })
           if (eqConflicts.length > 0) {
             return { kind: 'conflict', conflicts: eqConflicts } as const
+          }
+        }
+      }
+
+      // R146 (§27) — QC GATE: preverba PRED vsako mutacijo (Prisma transakcija
+      // se COMMITA, če callback ne vrže — zato vrata nikoli ne smejo biti za
+      // update; neveljavno stanje = nič ni zapisano). ZAKLJUCENO brez prešle
+      // preverbe kakovosti za projekt → 'qc-required'; IZRECEN override je
+      // dovoljen in REVIZIRAN (QC_OVERRIDE, atomsko z zaključitvijo — §19).
+      let qcOverridden = false
+      if (status === 'ZAKLJUCENO') {
+        const gateProjectId = current?.projectId ??
+          (await tx.installationSchedule.findUnique({ where: { id }, select: { projectId: true } }))?.projectId
+        const qc = gateProjectId
+          ? await tx.qualityControl.findFirst({ where: { projectId: gateProjectId, passed: true }, select: { id: true } })
+          : null
+        if (!qc) {
+          if (hasOverrideReason) {
+            qcOverridden = true
+            let auditUserId0: string | null = null
+            if (auth.kind === 'user') auditUserId0 = auth.session.sub
+            await tx.auditLog.create({
+              data: {
+                userId: auditUserId0,
+                projectId: gateProjectId,
+                akcija: 'QC_OVERRIDE',
+                oldValue: null,
+                newValue: JSON.stringify({
+                  scheduleId: id,
+                  razlog: String(qcOverrideRaw).trim(),
+                }),
+              },
+            })
+          } else {
+            return {
+              kind: 'qc-required',
+              projectId: gateProjectId,
+            } as const
           }
         }
       }
@@ -532,7 +581,7 @@ export async function PATCH(request: Request) {
             : null,
           newValue: moving
             ? JSON.stringify({ scheduleId: row.id, datumZacetka: newStart, datumKonca: newEnd, crewId: crewId ?? undefined, monterId: monterId ?? undefined, status })
-            : JSON.stringify({ scheduleId: row.id, status }),
+            : JSON.stringify({ scheduleId: row.id, status, ...(status === 'ZAKLJUCENO' ? { qcOverridden } : {}) }),
         },
       })
 
@@ -550,6 +599,17 @@ export async function PATCH(request: Request) {
     }
     if (updated.kind === 'badrequest') {
       return NextResponse.json({ error: updated.error }, { status: 400 })
+    }
+    if (updated.kind === 'qc-required') {
+      // R146 (§27): fail-closed vrata — nič ni spremenjeno (rollback v tx).
+      return NextResponse.json(
+        {
+          error: 'Zaključitev brez preverbe kakovosti ni mogoča — projekt nima PREŠLE preverbe (§27).',
+          detail: 'Izpolnite preverbo kakovosti (Zaključi → preverba) ALI pošljite izrecen qcOverrideReason (razlog se revizira kot QC_OVERRIDE).',
+          qcRequired: true,
+        },
+        { status: 409 },
+      )
     }
     if (updated.kind === 'notfound') {
       return NextResponse.json({ error: 'Termin ne obstaja' }, { status: 404 })
