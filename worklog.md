@@ -1960,3 +1960,18 @@ Stage Summary:
 - ZAKLJUČENO: §22 CORRELATION ID zdaj NA VSEH kritičnih rutah (17 handlerjev, ENA oblika loga + payload — iskanje/računi/termini/projekti/uporabniki/stranke/sync) z živim echo dokazom; §17 pagination zaključena za schedules + users (customers iz R138); §20 idempotenca razširjena na customers POST (exactly-once). 2 novi uporabniški funkcionalnosti (Revizijska sled UI — zaprta vrzel "pravno pomemben podatek brez vmesnika" in Termini CSV) + stil pass čez logistics/CRM/detail/audit. 782/782 zeleno, dimni 115 (114 uspešnih lokalno), build zelen.
 - Ostanka (lastniška, nespremenjeni): #7 Neon backfill --commit, #8 R118-real fotke, #12 Render kartica (tool + runbook pripravljeni, ROKSAL_SETUP_TOKEN/EMAIL passthrough), ⏰ roksal-fallback-db POTEČE 2026-10-25.
 - Naslednja runda: §20 nadaljevanje (schedules POST + material-orders POST idempotenca — tx že obstajata), §17 drobno (photos/documents/sketches strop), §10/§23 iz addenduma če bo na voljo; preveriti Vercel deploy kvoto (EN commit na rundo); potrditi CI zeleno na R139 commitu + živ fingerprint na produkciji (x-correlation-id na /api/schedules error payload ali "Revizijska sled" gumb v build chunku).
+
+---
+Task ID: R139-B (dodatek: CI zelen + živa produkcija potrjena na R139)
+Agent: Z.ai Code (isti R139 tok)
+
+Work Log:
+- CI na 12ce589: Tipi, testi, gradnja SUCCESS (782/782, 52 datotek) · Varnost (115 preverjanj) SUCCESS · sync SUCCESS (render vejica samodejno usklajena).
+- VERCEL: commit status "Vercel → success Deployment has completed" — produkcija je na R139.
+- ŽIVI FINGERPRINT NOVE KODE (R137-B nauček: preverba verzije MORA biti fingerprint, ne prazna lastnost): spot-r139b@roksal.si (MONTER) → POST /api/customers z NEVELJAVNIM Idempotency-Key "kratki" → 400 {"error":"Neveljaven Idempotency-Key"} — to vedenje obstaja IZKLJUČNO od R139 (prej je bila glava ignorirana → 201, brez zapisa ker 400 pade PRED tx). Klientov x-correlation-id "r139-prod-fp-01" se vrne na avtenticirani ruti (echo) ✓. /api/auth/demo {enabled:false} ✓.
+- Revizijska sled UI na produkciji ni brskalniško odprta (spot račun nima projekta), a je chunk-fingerprint + 400 fingerprint dokazala verzijo; dialog je v celoti E2E preverjen na lokalnem buildu (glej R139).
+
+Stage Summary:
+- PRODUKCIJA je na R139 (12ce589): §22 correlation ID v 17 handlerjih + §17 pagination (schedules/users) + §20 customers idempotenca + Revizijska sled UI + Termini CSV + stil pass. CI 3× zelen, testi 782/782, dimni 115.
+- Ostanki (lastniški, nespremenjeni): #7 Neon backfill --commit, #8 R118-real fotke, #12 Render kartica, ⏰ roksal-fallback-db POTEČE 2026-10-25.
+- Naslednja runda: §20 nadaljevanje (schedules/material-orders POST idempotenca), §17 drobno (photos/documents/sketches strop), preveriti Vercel kvoto (1 commit/runda drži pritisk nizek).
