@@ -25,6 +25,24 @@ const nextConfig: NextConfig = {
   // uporabljata useEffect cleanup (stream/canvas sprostitev), zato dvakratni
   // mount oboje pravilno očisti — preverjeno z agent-browser E2E.
   reactStrictMode: true,
+
+  // R131 (issue #5 §5): privatni API podatki NISO javno cacheirani.
+  // Vsak /api/* odgovor (tudi 401/404) nosi `Cache-Control: no-store` —
+  // brskalniški/posredni HTTP cache ne sme obdržati niti enega privatnega
+  // odgovora (uporabnik A → odjava → uporabnik B ne sme videti A-jevih
+  // podatkov). Opomba: middleware ne more vsiliti Cache-Control route
+  // handlerjem (Next 16 ga od njih odvzame — preverjeno s sondo), zato je
+  // točka prepričanja tu, na nivoju strežnika. Rute, ki nastavijo SVOJO
+  // Cache-Control politiko (fotografije/skice: `private, max-age=3600` v
+  // /api/files/*), jo obdržijo — no-store je samo privzeti rezervni.
+  async headers() {
+    return [
+      {
+        source: "/api/:path*",
+        headers: [{ key: "Cache-Control", value: "no-store" }],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

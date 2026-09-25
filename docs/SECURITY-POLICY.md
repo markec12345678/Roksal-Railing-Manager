@@ -225,6 +225,29 @@ Legitimni ne-brskalniški klienti (E2E orodja, dimni test) na mutacijah
 eksplicitno pošiljajo `Origin: <baza>` — enako kot brskalnik; to je dokumentirana
 pogodba (enako obnašanje kot Django/Rails CSRF zaščita).
 
+## PWA / cache izolacija (R131, issue #5 §5)
+
+Dokazana pukljava (pred R131): service worker je cacheiral VSE uspešne
+`/api/*` GET odgovore v `roksal-v2` in jih nikoli ne počistil — uporabnik A →
+odjava → uporabnik B (ali kdorkoli z dostopom do naprave ob mrežni napaki)
+je lahko videl A-jeve privatne podatke iz SW cache-a. API odgovori poleg tega
+niso imeli `Cache-Control` glave (brskalniški HTTP cache je bil odprt za
+heuristiko), odjava pa ni čistila nobenega brskalniškega stanja.
+
+| Zahteva §5 | Implementacija | Dokaz |
+|---|---|---|
+| privatni API podatki niso javno cacheirani | `next.config.ts headers()`: vsak `/api/*` odgovor nosi `Cache-Control: no-store` (tudi 401/403/404). Next 16 Cache-Control iz middleware-a na route handlerjih odvzame (sonda v E2E je to dokazala), zato je točka prepričanja na nivoju strežnika; middleware nastavi glavo še na lastnih 401 odgovorih | brskalniški fetch `/api/projects` (seja) → `no-store`; dimni [13] na 3 anon površinah |
+| logout počisti občutljiv cache | `top-bar.handleLogout`: purge VSI `roksal-*` cache-i (`caches.delete`), `sessionStorage.clear()`, sejski `localStorage` ključ (`roksal_open_photo_id`), identiteta vrste → null. SW poleg tega posluša `ROKSAL_PURGE_CACHES` sporočilo | agent-browser: odjava → `/login`, sessionStorage prazen |
+| user A → logout → user B ne vidi A podatkov | SW v3 (`roksal-v3`): `/api/*` GET je **network-only** — ničesar ne shrani in iz cache-a ne servoira. Skupaj z `no-store` HTTP glavo ne obstaja več nobena plast, ki bi hranila API odgovore čez seje | `public/sw.js` — API veja eksplicitno `return` (brez `respondWith`) |
+| cache versioning | `CACHE_NAME = 'roksal-v3'`; `activate` izbriše vse starejše cache-e (nadgradnja uniči zastarele podatke); purge handler izbriše VSE | sw.js + stale-cache purge v `activate` |
+| stale-data policy | dokazana politika: API odgovori se NIKOLI ne servoajo zastareli (network-only + no-store). Offline navigacija → `/offline.html` — eksplicitno označena zastarela stran, ne silent-stale podatki | offline.html + sw.js komentarji |
+| offline retention | pisanje: IndexedDB vrsta (R128) — pending/failed/conflict ostanejo čez odjavo (GC 24 h / 7 dni). Branje: NE retencira. **Lastništvo vrste (novo R131):** vsak zapis nosi `queuedBy`; flush zadrži tuje zapise (uporabnik B ne pošlje tiho A-jevih meritev pod svojo sejo — napačna pripisnost); prevzem je EKSPliciten | vitest 3 nova (zadrži/prevzemi/neznan lastnik) + agent-browser vijoličen pas |
+| multi-user browser/device test | agent-browser: A-jev zapis v vrsti → prijava B → vijoličen pas z lastnikom → „Prevzemi in pošlji" → flush pod B-jevo sejo → iskren 400 v rožnatem pasu (4xx nikoli tiho izgubljen) → odjava z varovalko (dialog s števcem, prekinitev ob preklicu) → `/login` + čiščenje | pas s `peter-terenski@roksal.si`, prevzem → `queuedBy: demo@roksal.si` |
+
+Odjava ne počisti: napravnih nastavitev kalkulatorja (`roksal_calc_*`, enote,
+laser, RAL — delovno orodje ekipe, ne osebni podatki) in NE izbriše offline
+vrste (ni tihe izgube; lastništvo rešuje pripisnost).
+
 ## Še ni pokrito (iskreno, naslednje runde)
 
 - customers/measurements/documents/inventory posamezne IDOR rute imajo guard na

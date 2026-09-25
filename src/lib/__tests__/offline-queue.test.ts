@@ -380,3 +380,75 @@ describe('offline vrsta — ročno upravljanje', () => {
     expect(await q.getQueueItems()).toHaveLength(0)
   })
 })
+
+describe('offline vrsta — lastništvo (R131, §5 multi-user naprava)', () => {
+  it('enqueue z identiteto zapiše queuedBy; flush pod TUJIM uporabnikom zadrži zapis', async () => {
+    const h = await setupHarness(false)
+    h.setResponder(() => { throw new TypeError('Ni mreže') })
+    const q = await import('@/lib/offline-queue')
+
+    // A (monter na terenu) vrsti meritev offline
+    q.setQueueIdentity('a@roksal.si')
+    await q.fetchWithQueue('/api/measurements', { method: 'POST', body: { n: 1 }, label: 'Meritev A' })
+    let items = await q.getQueueItems()
+    expect(items[0].queuedBy).toBe('a@roksal.si')
+
+    // A se odjavi, B se prijavi → flush NE pošlje tujega zapisa pod B-jevo sejo
+    q.setQueueIdentity('b@roksal.si')
+    h.setResponder(() => jsonRes(201, { ok: true }))
+    const sent = await q.flushQueue()
+    expect(sent).toBe(0)
+    items = await q.getQueueItems()
+    expect(items[0].status).toBe('pending')
+    expect(items[0].queuedBy).toBe('a@roksal.si')
+
+    // UI: zadržani zapisi so vidni (pas "drugega uporabnika")
+    const held = await q.heldItems()
+    expect(held).toHaveLength(1)
+    expect(held[0].queuedBy).toBe('a@roksal.si')
+
+    // lastnikov flush (identity nazaj na a) zapis pošlje
+    q.setQueueIdentity('a@roksal.si')
+    expect(await q.flushQueue()).toBe(1)
+    expect((await q.getQueueItems())[0].status).toBe('succeeded')
+  })
+
+  it('adoptHeldItems EKSPlicitno prevzame tuje zapise (queuedBy → jaz) in jih pošlje', async () => {
+    const h = await setupHarness(false)
+    h.setResponder(() => { throw new TypeError('Ni mreže') })
+    const q = await import('@/lib/offline-queue')
+
+    q.setQueueIdentity('a@roksal.si')
+    await q.fetchWithQueue('/api/measurements', { method: 'POST', body: { n: 1 } })
+    await q.fetchWithQueue('/api/measurements', { method: 'POST', body: { n: 2 } })
+
+    // B prevzame → oba zapisa dobita queuedBy=b in gresta v flush (201)
+    q.setQueueIdentity('b@roksal.si')
+    h.setResponder(() => jsonRes(201, { ok: true }))
+    const adopted = await q.adoptHeldItems()
+    expect(adopted).toBe(2)
+    await vi.waitFor(async () => {
+      const all = await q.getQueueItems()
+      expect(all.every((x) => x.status === 'succeeded' && x.queuedBy === 'b@roksal.si')).toBe(true)
+    })
+    // Idempotency-Key ostane izvoren (mutationId se pri prevzemu ne spremeni)
+    // (prva dva fetch klica so offline enqueue poskusi — brez glav; filter na pošiljanja)
+    const sends = h.fetchCalls.filter((c) => (c.init?.headers as Record<string, string> | undefined)?.['Idempotency-Key'])
+    expect(sends).toHaveLength(2)
+    expect(sends.every((c) => (c.init?.headers as Record<string, string>)['Idempotency-Key'].startsWith('m'))).toBe(true)
+  })
+
+  it('brez znane identitete flush obnaša se kot prej (vrsta se ne ustavi)', async () => {
+    const h = await setupHarness(false)
+    h.setResponder(() => { throw new TypeError('Ni mreže') })
+    const q = await import('@/lib/offline-queue')
+
+    // zapis z lastnikom, identiteta pa neznana (npr. stara verzija app ali
+    // /api/auth nedosegljiv) → flush vseeno pošlje (ni blokade vrste)
+    await q.fetchWithQueue('/api/measurements', { method: 'POST', body: { n: 1 } })
+    q.setQueueIdentity(null)
+    h.setResponder(() => jsonRes(201, { ok: true }))
+    expect(await q.flushQueue()).toBe(1)
+    expect((await q.getQueueItems())[0].status).toBe('succeeded')
+  })
+})

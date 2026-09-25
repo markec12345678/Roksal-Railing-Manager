@@ -320,6 +320,20 @@ check("Bearer ključ je izjema — doseže auth (401 za napačen ključ)", st ==
 st, _, _ = call("/api/projects", headers={"Origin": "https://zlonameren.example"})
 check("GET z tujim Origin ostane običajen anon (401)", st == 401, f"dobil {st}")
 
+print("\n[13] Cache glave (R131 \u2014 issue #5 \u00a75: privatni API podatki niso javno cacheirani)")
+# Proxy nastavi `Cache-Control: no-store` na VSEH /api/* odgovorih (izjema:
+# /api/files/*, ki imajo lastno `private, max-age=3600` politiko). Preverimo
+# tri anon dostopne površine — 401 zaščitena ruta, javni health, demo vrata.
+st, hd, _ = call("/api/projects")
+check("anon GET /api/projects (401) nosi Cache-Control: no-store",
+      st == 401 and "no-store" in hd.get("cache-control", ""), f"{st} cache-control={hd.get('cache-control')!r}")
+st, hd, _ = call("/api")
+check("GET /api (javni health) nosi Cache-Control: no-store",
+      st == 200 and "no-store" in hd.get("cache-control", ""), f"{st} cache-control={hd.get('cache-control')!r}")
+st, hd, _ = call("/api/auth/demo")
+check("GET /api/auth/demo nosi Cache-Control: no-store",
+      st == 200 and "no-store" in hd.get("cache-control", ""), f"{st} cache-control={hd.get('cache-control')!r}")
+
 print(f"\n{'=' * 60}")
 print(f"  {passed} uspešnih · {failed} neuspešnih · {skipped} preskočenih")
 print(f"{'=' * 60}\n")

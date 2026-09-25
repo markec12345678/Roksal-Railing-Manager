@@ -55,6 +55,9 @@ export interface QueuedRequest {
   headers?: Record<string, string>
   createdAt: string
   label?: string
+  /** R131 (§5): e-pošta uporabnika, ki je zapis ustvaril — uporabnik B ne
+   *  pošlje tiho A-jevih zapisov (napačna pripisnost + tuji podatki). */
+  queuedBy?: string
   /** R128 naslednja polja (novalni zapisi jih vedno imajo): */
   mutationId?: string
   seq?: number
@@ -84,6 +87,8 @@ export interface QueueItem {
   statusCode?: number
   updatedAt: string
   succeededAt?: string
+  /** R131 (§5): kdo je zapis ustvaril (e-pošta seje ob vrstenju). */
+  queuedBy?: string
 }
 
 /** Strop vrste — pošten 503 namesto tihe izgube. */
@@ -97,6 +102,26 @@ const BACKOFF_BASE_MS = 30 * 1000
 const BACKOFF_CAP_MS = 15 * 60 * 1000
 
 const QUEUABLE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
+
+// ---------------------------------------------------------------------------
+// Identiteta vrste (R131 — issue #5 §5: multi-user naprava)
+// ---------------------------------------------------------------------------
+// Aplikacija (pwa-status ob zagonu: GET /api/auth) nastavi trenutnega
+// uporabnika; novi zapisi dobijo `queuedBy`, flush pa ZADRŽI zapise tujega
+// lastnika — uporabnik B po odjavi A ne pošlje tiho A-jevih meritev pod svojo
+// sejo (napačna pripisnost). Neznana identiteta = stara vedenje (flush vse).
+
+let currentIdentity: string | null = null
+
+/** Nastavi trenutnega uporabnika (e-pošta) — kliče app shell ob seji/odjavi. */
+export function setQueueIdentity(identity: string | null): void {
+  currentIdentity = typeof identity === 'string' && identity.trim() ? identity.trim() : null
+}
+
+/** Trenutna identiteta vrste (ali null, če seja še ni znana). */
+export function getQueueIdentity(): string | null {
+  return currentIdentity
+}
 
 /** Diagnostika: glave z kredenciali v vrsti NIKOLI ne potujejo na disk. */
 function warnCredentialHeaders(headers?: Record<string, string>): void {
@@ -255,6 +280,7 @@ function normalize(raw: QueuedRequest | undefined): QueueItem | null {
     statusCode: raw.statusCode,
     updatedAt: raw.updatedAt ?? raw.createdAt ?? new Date().toISOString(),
     succeededAt: raw.succeededAt,
+    queuedBy: raw.queuedBy,
   }
 }
 
@@ -364,6 +390,7 @@ async function enqueue(
     attempts: 0,
     nextAttemptAt: now,
     updatedAt: now,
+    queuedBy: currentIdentity ?? undefined,
   }
   await transactionToPromise(db, [STORE], 'readwrite', (tx) => {
     tx.objectStore(STORE).put(item)
@@ -395,7 +422,7 @@ async function putItem(db: IDBDatabase, item: QueueItem): Promise<void> {
   })
 }
 
-/** Vrne zapise, ki jih ta flush sme pošiljati (pravi status + zapadlost). */
+/** Vrne zapise, ki jih ta flush sme pošiljati (pravi status + zapadlost + lastništvo). */
 async function dueItems(db: IDBDatabase): Promise<QueueItem[]> {
   const tx = db.transaction(STORE, 'readwrite')
   const store = tx.objectStore(STORE)
@@ -405,6 +432,9 @@ async function dueItems(db: IDBDatabase): Promise<QueueItem[]> {
   for (const raw of all) {
     const item = normalize(raw)
     if (!item) { store.delete(raw.id); continue }
+    // R131 (§5): tujega lastnika NE pošiljamo pod trenutno sejo — zapis čaka,
+    // dokler se lastnik ne vrne ali ga novi uporabnik EKSPlicitno prevzame.
+    if (item.queuedBy && currentIdentity && item.queuedBy !== currentIdentity) continue
     if (item.status === 'sending') {
       const staleMs = now - new Date(item.updatedAt).getTime()
       if (staleMs <= STALE_SENDING_MS) continue
@@ -518,6 +548,53 @@ export async function flushQueue(): Promise<number> {
     if (changed) notify()
   }
   return sent
+}
+
+// ---------------------------------------------------------------------------
+// Lastništvo vrste (R131 — issue #5 §5: multi-user naprava)
+// ---------------------------------------------------------------------------
+
+/** Čakajoči zapisi TUJEGA lastnika (flush jih namenoma ne pošilja). */
+export async function heldItems(): Promise<QueueItem[]> {
+  if (!currentIdentity) return []
+  const items = await getQueueItems(['pending'])
+  return items.filter((i) => i.queuedBy && i.queuedBy !== currentIdentity)
+}
+
+/**
+ * Eksplicitni prevzem tujih zapisov: novi uporabnik prevzame odgovornost
+ * (queuedBy = trenutna identiteta) in takoj sproži flush. NIKOLI samodejno —
+ * vedno za uporabnikovo potrditvijo v UI.
+ */
+export async function adoptHeldItems(): Promise<number> {
+  if (!currentIdentity) return 0
+  try {
+    const db = await withDb((d) => Promise.resolve(d))
+    const tx = db.transaction(STORE, 'readwrite')
+    const store = tx.objectStore(STORE)
+    const all = await requestToPromise(store.getAll() as IDBRequest<QueuedRequest[]>)
+    const now = new Date().toISOString()
+    let adopted = 0
+    for (const raw of all) {
+      const item = normalize(raw)
+      if (!item || item.status !== 'pending') continue
+      if (!item.queuedBy || item.queuedBy === currentIdentity) continue
+      store.put({ ...item, queuedBy: currentIdentity, updatedAt: now })
+      adopted += 1
+    }
+    await new Promise<void>((resolve, reject) => {
+      tx.oncomplete = () => resolve()
+      tx.onerror = () => reject(tx.error)
+      tx.onabort = () => reject(tx.error)
+    })
+    if (adopted > 0) {
+      notify()
+      void flushQueue()
+    }
+    return adopted
+  } catch {
+    return 0
+  }
 }
 
 // ---------------------------------------------------------------------------

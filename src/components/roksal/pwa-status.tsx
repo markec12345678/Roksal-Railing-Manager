@@ -1,17 +1,21 @@
 'use client'
 
 /**
- * PWA status — pasovi pod TopBar (R128 — issue #5 §4):
+ * PWA status — pasovi pod TopBar (R128 — issue #5 §4; R131 — §5):
  *  1. OFFLINE: "Ni povezave" + števec čakajočih zapisov (offline vrsta),
  *     samodejno izgine ob vrnitvi povezave (flush se sproži takrat).
- *  2. PROBLEMI (nov): failed/conflict zapisi z offline vrste — 4xx NI tiho
+ *  2. ZADRŽANI (R131): zapisi drugega uporabnika — flush jih NE pošilja pod
+ *     tujo sejo; novi uporabnik jih lahko EKSPlicitno prevzame ("Prevzemi in
+ *     pošlji") ali pusti, da jih pošlje pravi lastnik.
+ *  3. PROBLEMI: failed/conflict zapisi z offline vrste — 4xx NI tiho
  *     izgubljen: seznam z napako, ročni retry posameznega/vseh, izbris
  *     (eksplicitna uporabnikova odločitev s potrditvijo).
- *  3. SYNCED: "Povezava vzpostavljena" (ob uspešnem flushu).
- *  4. INSTALL: "Namesti Roksal app" (beforeinstallprompt).
+ *  4. SYNCED: "Povezava vzpostavljena" (ob uspešnem flushu).
+ *  5. INSTALL: "Namesti Roksal app" (beforeinstallprompt).
  *
  * Vrsta živi v IndexedDB (src/lib/offline-queue.ts) — vsi števci so asinhroni
- * in se osvežijo prek QUEUE_EVENT.
+ * in se osvežijo prek QUEUE_EVENT. Identiteta seje (§5) se nastavi ob zagonu
+ * prek GET /api/auth → setQueueIdentity(email).
  */
 
 import { useState, useEffect, useCallback } from 'react'
@@ -27,6 +31,7 @@ import {
   Trash2,
   ChevronDown,
   ChevronUp,
+  UserCheck,
 } from 'lucide-react'
 import {
   getQueueItems,
@@ -35,6 +40,9 @@ import {
   retryItem,
   retryFailed,
   deleteItem,
+  setQueueIdentity,
+  heldItems,
+  adoptHeldItems,
   QUEUE_EVENT,
   type QueueItem,
 } from '@/lib/offline-queue'
@@ -52,6 +60,7 @@ export function PwaStatus() {
   const [online, setOnline] = useState(true)
   const [pending, setPending] = useState(0)
   const [problems, setProblems] = useState<QueueItem[]>([])
+  const [held, setHeld] = useState<QueueItem[]>([])
   const [expanded, setExpanded] = useState(false)
   const [flushing, setFlushing] = useState(false)
   const [justSynced, setJustSynced] = useState(false)
@@ -64,20 +73,38 @@ export function PwaStatus() {
       setPending(items.filter((i) => i.status === 'pending' || i.status === 'sending').length)
       setProblems(items.filter((i) => i.status === 'failed' || i.status === 'conflict'))
     })
+    void heldItems().then(setHeld)
   }, [])
 
   useEffect(() => {
     // Začetno stanje preberemo v mikrotasku (omejitev pravila set-state-in-effect)
     queueMicrotask(() => {
       setOnline(navigator.onLine)
-      // R128: ob zagonu app pošlji čakajoče zapise (app se odpre zjutraj
-      // s signalom → vrsta iz terena odide, brez ročnega posega).
-      void getQueueLength().then((n) => {
-        if (n > 0 && navigator.onLine) {
-          void flushQueue()
+      // R131 (§5): identiteta seje PREJ flusha — flush lahko šele potem loči
+      // "moje" zapise od "tujih" (queuedBy). Ob napaki (offline) flush sledi
+      // vseeno: neznana identiteta pomeni staro vedenje, zapisov ne izgubimo.
+      void (async () => {
+        try {
+          const res = await fetch('/api/auth')
+          if (res.ok) {
+            const data = (await res.json()) as { user?: { email?: string } }
+            setQueueIdentity(data.user?.email ?? null)
+          } else {
+            setQueueIdentity(null)
+          }
+        } catch {
+          // Brez mreže — identiteta ostane neznana; vrsta počaka na naslednji mount.
         }
-        refresh()
-      })
+        // R128: ob zagonu app pošlji čakajoče zapise (app se odpre zjutraj
+        // s signalom → vrsta iz terena odide, brez ročnega posega). Tujih
+        // lastnikov flush NE dotakne (filter v dueItems).
+        void getQueueLength().then((n) => {
+          if (n > 0 && navigator.onLine) {
+            void flushQueue()
+          }
+          refresh()
+        })
+      })()
       setInstallDismissed(window.localStorage.getItem(DISMISS_KEY) === '1')
     })
 
@@ -147,10 +174,17 @@ export function PwaStatus() {
     if (ok) void deleteItem(item.id)
   }, [])
 
+  // R131 (§5): eksplicitni prevzem tujih zapisov (vedno uporabnikova odločitev)
+  const onAdopt = useCallback(() => {
+    void adoptHeldItems()
+  }, [])
+
   const showOffline = !online
+  const showHeld = held.length > 0
   const showProblems = problems.length > 0
   const showSynced = justSynced && online
   const showInstall = online && !!installEvent && !installDismissed
+  const heldOwners = Array.from(new Set(held.map((i) => i.queuedBy).filter(Boolean))) as string[]
 
   return (
     <div className="mx-auto w-full max-w-lg px-3 md:max-w-3xl lg:max-w-5xl" aria-live="polite">
@@ -179,6 +213,37 @@ export function PwaStatus() {
                 {pending}
               </span>
             )}
+          </motion.div>
+        )}
+
+        {showHeld && (
+          <motion.div
+            key="held"
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2 }}
+            className="mb-1.5 flex items-center gap-2.5 rounded-xl border border-violet-300 bg-violet-50 px-3 py-2 text-violet-900 shadow-sm"
+            role="status"
+          >
+            <UserCheck className="h-4 w-4 shrink-0" />
+            <div className="min-w-0 flex-1">
+              <p className="text-[12px] font-semibold leading-tight">
+                {held.length} {held.length === 1 ? 'zapis drugega uporabnika' : 'zapisov drugih uporabnikov'} — ni poslano
+              </p>
+              <p className="truncate text-[10px] leading-tight text-violet-800">
+                Dodal(a): {heldOwners.join(', ')} · prevzemi in pošlji s svojo sejo ali pusti lastniku.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onAdopt}
+              className="flex min-h-[32px] shrink-0 items-center gap-1 rounded-lg bg-violet-600 px-2.5 text-[11px] font-bold text-white transition-colors hover:bg-violet-700 active:scale-95"
+              aria-label="Prevzemi tuje zapise in jih pošlji s svojo sejo"
+            >
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              Prevzemi in pošlji
+            </button>
           </motion.div>
         )}
 

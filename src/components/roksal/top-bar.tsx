@@ -6,6 +6,7 @@ import { NotificationCenter } from '@/components/roksal/notification-center'
 import { useTheme } from 'next-themes'
 import { useSyncExternalStore, useCallback, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { getQueueLength, setQueueIdentity } from '@/lib/offline-queue'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -77,8 +78,24 @@ export function TopBar({ onSync, syncing, onOpenPalette, hidden = false }: TopBa
 
   // #5 §2: odjava prekliče sejo v registru (UserSession) — ukraden žeton
   // ne preživi odjave. `all` odjavi tudi ostale naprave.
+  // #5 §5 (R131): odjava počisti tudi občutljivo brskalniško stanje — SW
+  // cache-i, sessionStorage, sejski localStorage ključi, identiteta vrste.
+  // NE počisti: offline vrste (zapisi ostanejo — §4: brez tihe izgube) in
+  // napravnih nastavitev kalkulatorja (roksal_calc_*, enote, laser, RAL —
+  // naprava ni osebna omarica, ampak delovno orodje ekipe).
   const handleLogout = useCallback(
     async (all: boolean) => {
+      // Varovalka: neposlana zapisi ne izginejo, a uporabnik mora vedeti,
+      // da se pošljejo šele po ponovni prijavi (svoji ali prevzemom).
+      let queueCount = 0
+      try { queueCount = await getQueueLength() } catch { /* vrsta ni dostopna */ }
+      if (queueCount > 0) {
+        const ok = window.confirm(
+          `Imate ${queueCount} ${queueCount === 1 ? 'neposlan zapis' : 'neposlanih zapisov'} v offline vrsti.\n\n` +
+            'Zapisi ostanejo ohranjeni na tej napravi — pošljejo se po ponovni prijavi (ali ko jih drug uporabnik eksplicitno prevzame).\n\nOdjava?',
+        )
+        if (!ok) return
+      }
       setLoggingOut(true)
       try {
         await fetch('/api/auth/logout', {
@@ -90,6 +107,19 @@ export function TopBar({ onSync, syncing, onOpenPalette, hidden = false }: TopBa
         // Omrežna napaka: piškotek počistimo z vseeno — seja poteče,
         // uporabnik gre na prijavo (fail-closed počutje je ohranjeno).
       } finally {
+        // §5: čiščenje občutljivega stanja — PIŠKOTEK je sicer počiščen na
+        // strežniku, a SW cache-i in sejski ključi bi preživeli odjavo.
+        try {
+          if ('caches' in window) {
+            const keys = await caches.keys()
+            await Promise.all(
+              keys.filter((k) => k.startsWith('roksal-')).map((k) => caches.delete(k)),
+            )
+          }
+        } catch { /* cache storage ni dosegljiv — SW purge ni kritičen */ }
+        try { window.sessionStorage.clear() } catch { /* ignore */ }
+        try { window.localStorage.removeItem('roksal_open_photo_id') } catch { /* ignore */ }
+        setQueueIdentity(null)
         router.replace('/login')
         router.refresh()
       }

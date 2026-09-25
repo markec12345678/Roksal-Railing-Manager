@@ -37,6 +37,19 @@ const PUBLIC_EXACT = new Set<string>([
   '/api/viz/gc',
 ])
 
+/**
+ * R131 (issue #5 §5): privatni API podatki NISO javno cacheirani. Točka
+ * prepričanja je `next.config.ts headers()` — vsak /api/* odgovor nosi
+ * `Cache-Control: no-store` (brskalniški HTTP cache ne sme obdržati niti
+ * enega privatnega odgovora: uporabnik A → odjava → uporabnik B NE SME videti
+ * A-jevih podatkov). Middleware tu nastavi glavo SAMO na lastnih 401 odgovorih
+ * — Next 16 Cache-Control iz middleware-a na route handlerjih ODVZAME (sonda
+ * je to dokazala), zato tu ni mrtve kode.
+ */
+function wantsNoStore(pathname: string): boolean {
+  return pathname.startsWith('/api/')
+}
+
 /** Predpone, ki so javne: portal stranke je dostopen s sposobnostnim URL-jem (clientToken). */
 const PUBLIC_PREFIXES = [
   '/portal/',
@@ -106,7 +119,10 @@ export async function proxy(request: NextRequest) {
   if (pathname.startsWith('/api/')) {
     return NextResponse.json(
       { error: 'Neavtoriziran dostop', detail: 'Prijava je obvezna.' },
-      { status: 401 },
+      {
+        status: 401,
+        headers: wantsNoStore(pathname) ? { 'Cache-Control': 'no-store' } : undefined,
+      },
     )
   }
 
