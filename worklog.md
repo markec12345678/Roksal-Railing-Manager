@@ -1613,3 +1613,25 @@ Stage Summary:
 - ISSUE #5 §4 (Offline queue) IZPOLNJEN v celoti: IndexedDB, brez persistent credentialov, mutationId+Idempotency-Key (strežniški exactly-once replay), 5 stanj, retry/backoff, conflict rešitev, ordering, attachment retry, 4xx nikoli tiho izgubljen, ročna rešitev + crash recovery, reconnect testi (12+5) + pravi browser E2E. Največja terenska pukljava (tiha izguba 4xx zapisov) ZAPRTA.
 - Produkcija: migracija gre samodejno prek Vercel builda; kliente ob nadgradnji legacy zapisi samodejno preselijo.
 - Ostanka (lastniška koraka): #7 Neon backfill --commit (ukazi v issue #7 komentarju 5821139319), #8 R118-real prave fotke + ročna sprejemba. Naslednji kandidati iz #5: §5 PWA/cache izolacija, §6 CSRF/Origin, §7 portal security, §8 public measurement security, §9 user lifecycle, §10 permission matrix.
+---
+Task ID: R129 (Deploy: Render fallback — lastna veja `render`, nič obstoječega se ne dotika)
+Agent: Z.ai Code (glavni orkestrator)
+Task: Lastnik dal Render API ključ (rnd_…): "render, če ne deluje Vercel — naredi SAMO svojo vejo na Renderju, ne povozi ničesar (na računu so druge stvari)". Nadaljuj.
+
+Work Log:
+- FAIL-CLOSED PREVERBE: Render račun (My Workspace, tea-dao3to2jnfac73afudug) ima točno 1 obstoječ servis `griblje-museum` (srv-dar1hn942hec73clb92g) + 0 Postgres instanc + nič z imenom roksal → varno za ustvarjanje izključno NOVIH virov. Servisu griblje-museum se NIČ ne dotikamo (samo branje seznama).
+- VERCEL PRODUKCIJA: še vedno ZDRAVA (/api/auth/demo → {enabled:false} 200, R127 aktivna) → Render je čista rezervna pot (kot je lastnik naročil: "če ne deluje Vercel").
+- NEON NEDELOVANJE: api.neon.tech javno NODATA (2 neodvisna DoH resolverja) + origin 1016 prek --resolve → Neon API nedosegljiv (ni naša napaka). Načrt B: Render Postgres.
+- RENDER POSTGRES USTVARJEN (NOV vir): roksal-fallback-db, dpg-dar3hd17lnhs739tdn7g-a, free, frankfurt, pg17, available. ⚠️ POTEČE 2026-10-25 (free = 30 dni).
+- VEJA `render` (lastnikova zahteva "samo svojo vejo"): workflow .github/workflows/sync-render-branch.yml (commit a64e550) ob pushu na main (paths-ignore: **.md, docs/**, reports/**) posodobi render vejico na main HEAD → Render autoDeploy; GITHUB_TOKEN pushi ne sprožijo rekursije workflowov. Workflow na a64e550 že USPEŠNO tekel; vejica obstaja na a64e550.
+- package.json: NOVA skripta `build:render` = npx prisma generate + prisma migrate deploy + node prisma/seed.cjs + next build + cp static/public v standalone (brez bun odvisnosti — Render node runtime; build-prepare.cjs uporablja bunx zato ni primeren). Migracije+seed tečejo znotraj Render builda (baza dosegljiva iz Render omrežja; sandbox ni potreben).
+- WEB SERVICE USTVARJANJE → BLOKIRA S STRANI RENDER: POST /v1/services vrne "Payment information is required to complete this request" (2. free web service; workspace že ima griblje-museum). Preizkušene sheme: serviceDetails{runtime,node; envSpecificDetails{buildCommand,startCommand}; plan default 0.5c-512mb} — payload 100% pripravljen (env: NODE_VERSION=22, DATABASE_URL=internal conn string, SESSION_SECRET/NEXTAUTH_SECRET b64(32), API_KEY_PEPPER b64(24), CRON_SECRET hex(24), NEXTAUTH_URL=https://roksal-railing-manager.onrender.com, ROKSAL_RIGHTS_MODE=production, SEED_ON_DEPLOY=true, NPM_CONFIG_FUND/AUDIT=false; healthCheckPath=/api/auth/demo; build=npm install --include=dev && npm run build:render; start=node .next/standalone/server.js). To je LASTNIŠKA billing odločitev — nič se ne zaobide.
+- ORODJE tools/render-create-service.mjs (2617d10): dry-run/--commit, fail-closed (brez ključa stop; obstoječ servis z imenom → idempotentna zaustavitev; tuji servisi samo branje), Payment-error → jasen navodilo lastniku; skrivnosti generira ob zagonu, pošlje IZKLJUČNO Render API-ju. DRY RUN testiran živo: vse faze OK (owner → servis check → baza → connection-info → payload izpis s skritimi vrednostmi).
+- CI na a64e550 IN 2617d10: "Tipi, testi, gradnja" SUCCESS · "Varnost (84)" SUCCESS · sync SUCCESS. Vercel deploya main (md + skripta — nič runtime).
+- ISSUE #12 USTVARJEN: celoten runbook (možnost A: kartica + `RENDER_API_KEY=… bun tools/render-create-service.mjs --commit`; možnost B: ročni dashboard postopek s tabelo env) — brez skrivnosti.
+- HIGIENA: vse začasne datoteke s ključi (/tmp/rk, nk, cinfo.json, svc.json, rpg_*, creds.json, dburl) izbrisane; noben ključ ni v repo/issue/worklog.
+
+Stage Summary:
+- Render fallback je 95% pripravljen: veja `render` + auto-sync workflow + build:render skripta + NOVA fallback baza + idempotentno orodje + runbook (issue #12). ZADNJI KORAK je lastniški: plačilna metoda za 2. free web service (dashboard.render.com/billing) → potem EN ukaz, ali ročna izdelava v dashboardu.
+- Vercel produkcija zdrava in primarna; Render ničesar ne prevzame, dokler lastnik ne želi (fallback semantics).
+- Ostanka (lastniška): #7 Neon backfill --commit, #8 prave fotke, #12 billing odobritev. Neon API trenutno nedosegljiv (ne blokira ničesar od tega).
