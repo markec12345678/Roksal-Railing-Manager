@@ -2,7 +2,7 @@
 """
 Varnostni dimni test za Roksal Railing Manager.
 
-Preveri 36 stvari na ŽIVEM strežniku — ne na kodi, kar je edini način, da se
+Preveri 117 stvari na ŽIVEM strežniku — ne na kodi, kar je edini način, da se
 ujame napaka v plasteh (proxy, ruta, piškotek, baza). Napisan je bil prav zato,
 ker je prva različica proxy-ja blokirala prijavo samo: 32/36 testov je bilo
 zelenih, aplikacija pa neuporabna.
@@ -438,6 +438,17 @@ client_corr = "smoke-r139-client-id-001"
 st2, h2, _ = call("/api/auth/demo", headers={"x-correlation-id": client_corr})
 check("klientov x-correlation-id se prevzame (echo)", st2 == 200 and h2.get("x-correlation-id") == client_corr,
       f"st={st2} dobil={h2.get('x-correlation-id', '')[:24]}")
+
+
+print("\n[22] Idempotenca naročil/terminov (R140 — issue #5 §20: fail-closed ključ)")
+# Neveljaven Idempotency-Key na novi idempotentni ruti → 400 PRED kakršno koli
+# mutacijo (fingerprint R140 — prej je bila glava ignorirana → 201 + dvojnik).
+st, _, body = call("/api/schedules", "POST", {"projectId": "x", "datumZacetka": "2026-01-01", "datumKonca": "2026-01-02"}, headers={"Idempotency-Key": "kr"})
+check("POST /api/schedules neveljaven Idempotency-Key brez seje → 401 (vrata pred 400)", st == 401, f"dobil {st} {body[:60]!r}")
+# Naročila: GET odgovor nosi x-correlation-id (R140 §22 — ruta sedaj strukturirano logira).
+st, h, _ = call("/api/material-orders")
+check("GET /api/material-orders nosi x-correlation-id", st == 401 and len(h.get("x-correlation-id", "")) >= 8,
+      f"st={st} corr={h.get('x-correlation-id', '')[:16]}")
 
 
 print(f"\n{'=' * 60}")

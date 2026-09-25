@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
 import { useToast } from '@/hooks/use-toast'
+import { downloadCsv, todayStamp, type CsvValue } from '@/lib/csv-export'
 import {
   Package,
   TrendingUp,
@@ -22,6 +23,9 @@ import {
   Loader2,
   Sparkles,
   ArrowRight,
+  Download,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react'
 
 interface Supplier {
@@ -78,6 +82,45 @@ interface MaterialOrder {
   items: Array<{ naziv: string; kolicina: number; enota: string; cena: number }>
 }
 
+// ---------------------------------------------------------------------------
+// R140 — pomožniki prikaza + izvoza (Material Intelligence).
+//   • fmtDate: sl-SI datum (dd.mm.llll) — isti prikaz kot logistics.
+//   • downloadOrdersCsv: deterministični kontrakt kot Zaloga/Računi/Termini
+//     (BOM, podpičje, decimalna vejica, CRLF — src/lib/csv-export.ts).
+//     ENA VRSTICA NA POSTAVKO (detail nivo) — pisarna filtrira po
+//     dobavitelju/statusu v Excelu; skupajCena se ponovi za vsako vrstico,
+//     da vrstica stoji sama (brez VLOOKUP).
+// ---------------------------------------------------------------------------
+function fmtDate(d: string): string {
+  return new Date(d).toLocaleDateString('sl-SI', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
+function downloadOrdersCsv(orders: MaterialOrder[]): number {
+  const rows: CsvValue[][] = []
+  for (const o of orders) {
+    for (const item of o.items) {
+      rows.push([
+        fmtDate(o.datumNarocila),
+        o.supplier.naziv,
+        o.status,
+        item.naziv,
+        item.kolicina,
+        item.enota,
+        item.cena,
+        item.cena * item.kolicina,
+        o.skupajCena,
+        o.opombe ?? '',
+      ])
+    }
+  }
+  downloadCsv(
+    `Narocila-${todayStamp()}.csv`,
+    ['Datum', 'Dobavitelj', 'Status', 'Artikel', 'Količina', 'Enota', 'Cena', 'Vrednost', 'Naročilo skupaj', 'Opombe'],
+    rows,
+  )
+  return rows.length
+}
+
 export function MaterialIntelligenceTab({ projectId }: { projectId: string | null }) {
   const [tab, setTab] = useState<'bom' | 'orders' | 'suppliers'>('bom')
   const [bomRefine, setBomRefine] = useState<BomRefineData | null>(null)
@@ -89,6 +132,8 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
   const [priceDialogOpen, setPriceDialogOpen] = useState(false)
   const [selectedInventory, setSelectedInventory] = useState<Inventory | null>(null)
   const [inventories, setInventories] = useState<Inventory[]>([])
+  // R140: razprta postavka naročila (en hkrati — preglednost na telefonu).
+  const [expandedOrder, setExpandedOrder] = useState<string | null>(null)
   const { toast } = useToast()
 
   // Nov dobavitelj form
@@ -202,10 +247,22 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
       if (res.ok) {
         toast({ title: `Status → ${status}` })
         loadData()
+      } else {
+        // R140: fail-verbose — 403/409 napake se POKAŽEJO (prej tiho ugasil
+        // gumb brez razlage; npr. MONTER ni videl zakaj "Dobljeno" ne dela).
+        const data = await res.json().catch(() => null)
+        toast({ title: 'Napaka', description: data?.error ?? `HTTP ${res.status}`, variant: 'destructive' })
       }
     } catch {
-      toast({ title: 'Napaka', variant: 'destructive' })
+      toast({ title: 'Omrežna napaka', variant: 'destructive' })
     }
+  }
+
+  // R140: izvoz vidnih naročil v CSV (pisarniški pregled).
+  const handleOrdersCsv = () => {
+    if (orders.length === 0) return
+    const count = downloadOrdersCsv(orders)
+    toast({ title: 'CSV prenesen', description: `${count} postavk v Narocila-${todayStamp()}.csv` })
   }
 
   return (
@@ -247,15 +304,15 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
               <div className="grid grid-cols-3 gap-2">
                 <Card className="border-green-200"><CardContent className="p-3">
                   <div className="flex items-center gap-1 mb-1"><CheckCircle2 className="h-3 w-3 text-green-600" /><span className="text-[10px] text-muted-foreground">Skupaj</span></div>
-                  <div className="text-lg font-bold text-roksal-navy">{bomRefine.skupajCena.toFixed(0)} €</div>
+                  <div className="text-lg font-bold text-roksal-navy tabular-nums">{bomRefine.skupajCena.toFixed(0)} €</div>
                 </CardContent></Card>
                 <Card className="border-amber-200"><CardContent className="p-3">
                   <div className="flex items-center gap-1 mb-1"><TrendingUp className="h-3 w-3 text-amber-600" /><span className="text-[10px] text-muted-foreground">Prihranek</span></div>
-                  <div className="text-lg font-bold text-amber-700">{bomRefine.skupajPrihranek.toFixed(0)} €</div>
+                  <div className="text-lg font-bold text-amber-700 tabular-nums">{bomRefine.skupajPrihranek.toFixed(0)} €</div>
                 </CardContent></Card>
                 <Card className="border-blue-200"><CardContent className="p-3">
                   <div className="flex items-center gap-1 mb-1"><Package className="h-3 w-3 text-blue-600" /><span className="text-[10px] text-muted-foreground">Artikli</span></div>
-                  <div className="text-lg font-bold text-roksal-navy">{bomRefine.matchedCount}/{bomRefine.totalCount}</div>
+                  <div className="text-lg font-bold text-roksal-navy tabular-nums">{bomRefine.matchedCount}/{bomRefine.totalCount}</div>
                 </CardContent></Card>
               </div>
 
@@ -269,15 +326,15 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
                   </CardHeader>
                   <CardContent className="space-y-2">
                     {bomRefine.optimizacija.map((opt, i) => (
-                      <div key={opt.supplierId} className={`rounded-lg border p-2.5 ${i === 0 ? 'border-green-300 bg-green-50' : 'border-border'}`}>
+                      <div key={opt.supplierId} className={`rounded-lg border p-2.5 transition-colors ${i === 0 ? 'border-green-300 bg-green-50' : 'border-border hover:border-roksal-navy/25'}`}>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             {i === 0 && <Badge className="bg-green-600 text-white text-[8px]">NAJBOLJŠI</Badge>}
                             <span className="text-sm font-medium text-roksal-navy">{opt.supplier}</span>
                           </div>
-                          <span className="text-sm font-bold text-roksal-amber">{opt.skupaj.toFixed(0)} €</span>
+                          <span className="text-sm font-bold text-roksal-amber tabular-nums">{opt.skupaj.toFixed(0)} €</span>
                         </div>
-                        <div className="text-[10px] text-muted-foreground mt-1">{opt.items.length} artiklov</div>
+                        <div className="text-[10px] text-muted-foreground mt-1 tabular-nums">{opt.items.length} artiklov</div>
                       </div>
                     ))}
                   </CardContent>
@@ -303,10 +360,10 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
                         <div className="text-right shrink-0">
                           {item.bestPrice ? (
                             <>
-                              <div className="text-sm font-bold text-roksal-amber">{item.skupajCena.toFixed(0)} €</div>
+                              <div className="text-sm font-bold text-roksal-amber tabular-nums">{item.skupajCena.toFixed(0)} €</div>
                               <div className="text-[9px] text-muted-foreground">{item.bestPrice.supplier}</div>
                               {item.razlikaCen > 0 && (
-                                <div className="text-[9px] text-green-600">−{item.razlikaCen.toFixed(2)} €/en</div>
+                                <div className="text-[9px] text-green-600 tabular-nums">−{item.razlikaCen.toFixed(2)} €/en</div>
                               )}
                             </>
                           ) : (
@@ -345,51 +402,101 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
               <p className="text-sm">Ni naročil. Pretvori BOM draft v naročilo.</p>
             </CardContent></Card>
           ) : (
-            orders.map((order) => (
-              <Card key={order.id}>
-                <CardContent className="p-3">
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-roksal-navy">{order.supplier.naziv}</span>
-                        <Badge variant="outline" className={`text-[8px] ${
-                          order.status === 'DOBLJENO' ? 'bg-green-50 text-green-700 border-green-300' :
-                          order.status === 'POSLANO' ? 'bg-blue-50 text-blue-700 border-blue-300' :
-                          order.status === 'POTRJENO' ? 'bg-amber-50 text-amber-700 border-amber-300' :
-                          'bg-gray-50 text-gray-700 border-gray-300'
-                        }`}>{order.status}</Badge>
+            <>
+              {/* R140: CSV izvoz — isti kontrakt kot Zaloga/Računi/Termini. */}
+              <div className="flex justify-end">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={handleOrdersCsv}
+                  className="h-8 text-xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
+                >
+                  <Download className="h-3.5 w-3.5 mr-1 text-roksal-amber" /> CSV
+                </Button>
+              </div>
+              {orders.map((order) => {
+                const expanded = expandedOrder === order.id
+                return (
+                  <Card
+                    key={order.id}
+                    className="transition-colors hover:border-roksal-navy/25 hover:shadow-sm"
+                  >
+                    <CardContent className="p-3">
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold text-roksal-navy">{order.supplier.naziv}</span>
+                            <Badge variant="outline" className={`text-[8px] ${
+                              order.status === 'DOBLJENO' ? 'bg-green-50 text-green-700 border-green-300' :
+                              order.status === 'POSLANO' ? 'bg-blue-50 text-blue-700 border-blue-300' :
+                              order.status === 'POTRJENO' ? 'bg-amber-50 text-amber-700 border-amber-300' :
+                              'bg-gray-50 text-gray-700 border-gray-300'
+                            }`}>{order.status}</Badge>
+                          </div>
+                          <div className="text-[10px] text-muted-foreground mt-0.5 tabular-nums">
+                            {fmtDate(order.datumNarocila)}
+                            {order.datumDobave && ` → dobava ${fmtDate(order.datumDobave)}`}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm font-bold text-roksal-amber tabular-nums">{order.skupajCena.toFixed(0)} €</div>
+                          <div className="text-[10px] text-muted-foreground tabular-nums">{order.items.length} artiklov</div>
+                        </div>
                       </div>
-                      <div className="text-[10px] text-muted-foreground mt-0.5">
-                        {new Date(order.datumNarocila).toLocaleDateString('sl-SI')}
-                        {order.datumDobave && ` → dobava ${new Date(order.datumDobave).toLocaleDateString('sl-SI')}`}
+                      {/* R140: razprta postavka naročila — artikli s količino/ceno
+                          (tabular-nums); toggle gumb je pravi button z aria. */}
+                      <button
+                        type="button"
+                        aria-expanded={expanded}
+                        onClick={() => setExpandedOrder(expanded ? null : order.id)}
+                        className="flex w-full items-center gap-1 rounded px-1 py-0.5 text-[10px] text-muted-foreground transition-colors hover:text-roksal-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
+                      >
+                        {expanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                        {expanded ? 'Skrij postavke' : 'Pokaži postavke'}
+                      </button>
+                      {expanded && (
+                        <div className="mt-1 space-y-1">
+                          {order.items.map((item, i) => (
+                            <div key={i} className="flex items-center justify-between gap-2 rounded border border-border/60 bg-muted/40 px-2 py-1">
+                              <span className="min-w-0 flex-1 truncate text-[11px] text-roksal-navy">{item.naziv}</span>
+                              <span className="shrink-0 text-[10px] text-muted-foreground tabular-nums">
+                                {item.kolicina} {item.enota}
+                              </span>
+                              <span className="shrink-0 text-[10px] text-muted-foreground tabular-nums">{item.cena.toFixed(2)} €/en</span>
+                              <span className="shrink-0 text-[11px] font-semibold text-roksal-navy tabular-nums">
+                                {(item.cena * item.kolicina).toFixed(2)} €
+                              </span>
+                            </div>
+                          ))}
+                          {order.opombe && (
+                            <div className="px-2 text-[10px] italic text-muted-foreground">Opomba: {order.opombe}</div>
+                          )}
+                        </div>
+                      )}
+                      {/* Status actions */}
+                      <div className="flex gap-1 pt-2 border-t border-border">
+                        {order.status === 'OSNUTEK' && (
+                          <Button type="button" size="sm" variant="outline" className="h-6 text-[10px] focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1" onClick={() => handleOrderStatus(order.id, 'POSLANO')}>
+                            Pošlji
+                          </Button>
+                        )}
+                        {order.status === 'POSLANO' && (
+                          <Button type="button" size="sm" variant="outline" className="h-6 text-[10px] focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1" onClick={() => handleOrderStatus(order.id, 'POTRJENO')}>
+                            Potrdi
+                          </Button>
+                        )}
+                        {order.status === 'POTRJENO' && (
+                          <Button type="button" size="sm" variant="outline" className="h-6 text-[10px] bg-green-50 focus-visible:ring-2 focus-visible:ring-green-600/40 focus-visible:ring-offset-1" onClick={() => handleOrderStatus(order.id, 'DOBLJENO')}>
+                            <CheckCircle2 className="h-3 w-3 mr-1" /> Dobljeno (v zalogo)
+                          </Button>
+                        )}
                       </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm font-bold text-roksal-amber">{order.skupajCena.toFixed(0)} €</div>
-                      <div className="text-[10px] text-muted-foreground">{order.items.length} artiklov</div>
-                    </div>
-                  </div>
-                  {/* Status actions */}
-                  <div className="flex gap-1 pt-2 border-t border-border">
-                    {order.status === 'OSNUTEK' && (
-                      <Button type="button" size="sm" variant="outline" className="h-6 text-[10px]" onClick={() => handleOrderStatus(order.id, 'POSLANO')}>
-                        Pošlji
-                      </Button>
-                    )}
-                    {order.status === 'POSLANO' && (
-                      <Button type="button" size="sm" variant="outline" className="h-6 text-[10px]" onClick={() => handleOrderStatus(order.id, 'POTRJENO')}>
-                        Potrdi
-                      </Button>
-                    )}
-                    {order.status === 'POTRJENO' && (
-                      <Button type="button" size="sm" variant="outline" className="h-6 text-[10px] bg-green-50" onClick={() => handleOrderStatus(order.id, 'DOBLJENO')}>
-                        <CheckCircle2 className="h-3 w-3 mr-1" /> Dobljeno (v zalogo)
-                      </Button>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))
+                    </CardContent>
+                  </Card>
+                )
+              })}
+            </>
           )}
         </div>
       )}
@@ -409,7 +516,7 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
             </CardContent></Card>
           ) : (
             suppliers.map((sup) => (
-              <Card key={sup.id}>
+              <Card key={sup.id} className="transition-colors hover:border-roksal-navy/25 hover:shadow-sm">
                 <CardContent className="p-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
@@ -417,7 +524,7 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
                         <span className="text-sm font-semibold text-roksal-navy truncate">{sup.naziv}</span>
                         {sup.popust > 0 && <Badge variant="outline" className="text-[8px] bg-amber-50 text-amber-700">-{sup.popust}%</Badge>}
                       </div>
-                      <div className="text-[10px] text-muted-foreground space-y-0.5">
+                      <div className="text-[10px] text-muted-foreground space-y-0.5 tabular-nums">
                         {sup.kontakt && <div>{sup.kontakt}</div>}
                         {sup.telefon && <div>{sup.telefon}</div>}
                         <div>Dobavni rok: {sup.dobavniRok} dni</div>

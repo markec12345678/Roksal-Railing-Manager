@@ -9,7 +9,24 @@ import { db } from '@/lib/db'
 import { authenticate, unauthorized, forbidden, denyWithoutPermission } from '@/lib/auth'
 import { receiveOrder, StockError } from '@/lib/inventory'
 import { auditInTx, audit } from '@/lib/audit'
-import { actorIdOf, hasPermission } from '@/lib/access'
+import { actorIdOf, hasPermission, principalBindingOf } from '@/lib/access'
+import { correlationFromRequest, logWithCorrelation } from '@/lib/correlation'
+import {
+  isValidIdempotencyKey,
+  reserveIdempotencyIn,
+  storeResponseIn,
+  beginIdempotency,
+  IdempotencyRaceError,
+  idempotencyReplayResponse,
+  idempotencyConflictResponse,
+} from '@/lib/idempotency'
+
+// R140 (issue #5 §17): neomejen findMany → privzeta zgornja meja + opcijske
+// strani (isti kontrakt kot customers/schedules iz R138/R139). Odzivna OBLIKA
+// (polje) ostane ista — obstoječi klient ni prelomen. Neveljavne številke →
+// fail-closed na privzeti limit.
+const DEFAULT_LIMIT = 500
+const MAX_LIMIT = 500
 
 const ORDER_TRANSITIONS: Record<string, string[]> = {
   OSNUTEK: ['POSLANO', 'POTRJENO', 'PREKlicANO'],
@@ -30,10 +47,20 @@ export async function GET(request: Request) {
   if (auth.kind === 'apikey') {
     return forbidden('Naročila so poslovni podatki — API ključ nima dostopa.')
   }
+  const correlationId = correlationFromRequest(request)
   try {
     const { searchParams } = new URL(request.url)
     const projectId = searchParams.get('projectId')
     const status = searchParams.get('status')
+
+    // R140 (§17): strani — neveljavne številke → privzeti limit (fail-closed).
+    const limitRaw = Number.parseInt(searchParams.get('limit') ?? '', 10)
+    const offsetRaw = Number.parseInt(searchParams.get('offset') ?? '', 10)
+    const limit =
+      Number.isFinite(limitRaw) && limitRaw > 0
+        ? Math.min(limitRaw, MAX_LIMIT)
+        : DEFAULT_LIMIT
+    const offset = Number.isFinite(offsetRaw) && offsetRaw > 0 ? offsetRaw : 0
 
     const orders = await db.materialOrder.findMany({
       where: {
@@ -46,11 +73,13 @@ export async function GET(request: Request) {
         items: { include: { inventory: true } },
       },
       orderBy: { createdAt: 'desc' },
+      take: limit,
+      skip: offset,
     })
     return NextResponse.json(orders)
   } catch (error) {
-    console.error('Material Orders GET Error:', error)
-    return NextResponse.json({ error: 'Napaka pri branju naročil' }, { status: 500 })
+    logWithCorrelation('material-orders.get', correlationId, error)
+    return NextResponse.json({ error: 'Napaka pri branju naročil', correlationId }, { status: 500 })
   }
 }
 
@@ -63,6 +92,18 @@ export async function POST(request: Request) {
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
   const actor = actorIdOf(auth)
+  const correlationId = correlationFromRequest(request)
+
+  // R140 (issue #5 §20): idempotenca — retry po mrežni napaki NE SME
+  // ustvariti dvojnika naročila (dvojno naročilo = dvojni material pri
+  // dobavitelju!). Rezervacija + odgovor v ISTI transakciji (exactly-once
+  // replay, isti vzorec kot customers/measurements/schedules).
+  const idemHeader = request.headers.get('Idempotency-Key')
+  const idemKey = idemHeader !== null && isValidIdempotencyKey(idemHeader) ? idemHeader : null
+  if (idemHeader !== null && !idemKey) {
+    return NextResponse.json({ error: 'Neveljaven Idempotency-Key' }, { status: 400 })
+  }
+  const idemBinding = idemKey ? principalBindingOf(auth) : null
   try {
     const body = await request.json()
     const { projectId, supplierId, items, opombe } = body as {
@@ -132,6 +173,11 @@ export async function POST(request: Request) {
 
     // Naročilo + audit = ENA transakcija (issue #4, §13)
     const order = await db.$transaction(async (tx) => {
+      // R140 (§20): rezervacija idempotenčnega ključa = PRVI stavek —
+      // vzporedni poizkus istega ključa povzroči rollback cele transakcije
+      // (naročilo + postavke + audit skupaj brez dvojnikov).
+      if (idemKey) await reserveIdempotencyIn(tx, idemKey, 'material-orders', idemBinding)
+
       const created = await tx.materialOrder.create({
         data: {
           projectId: projectId || null,
@@ -157,13 +203,25 @@ export async function POST(request: Request) {
           newValue: { orderId: created.id, supplierId, skupajCena, items: orderItems.length },
         })
       }
+
+      // R140 (§20): odgovor se shrani v ISTI transakciji — replay vrne
+      // originalni 201 z originalnim telesom (exactly-once).
+      if (idemKey) await storeResponseIn(tx, idemKey, 201, JSON.stringify(created))
+
       return created
     })
 
     return NextResponse.json(order, { status: 201 })
   } catch (error) {
-    console.error('Material Orders POST Error:', error)
-    return NextResponse.json({ error: 'Napaka pri ustvarjanju naročila' }, { status: 500 })
+    // R140 (§20): P2002 na rezervaciji (vzporedni poizkus istega ključa) →
+    // odloči replay/conflict — ISTA odločitev kot customers/measurements.
+    if (error instanceof IdempotencyRaceError && idemKey) {
+      const begun = await beginIdempotency(idemKey, 'material-orders', idemBinding)
+      if (begun.kind === 'replay') return idempotencyReplayResponse(begun)
+      return idempotencyConflictResponse()
+    }
+    logWithCorrelation('material-orders.post', correlationId, error)
+    return NextResponse.json({ error: 'Napaka pri ustvarjanju naročila', correlationId }, { status: 500 })
   }
 }
 
@@ -174,6 +232,9 @@ export async function PATCH(request: Request) {
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
   const actor = actorIdOf(auth)
+  // R140 (§22): strukturiran log + correlationId v 5xx payloadu (isti vzorec
+  // kot ostale rute — prej je bil tu surov console.error brez korelacije).
+  const correlationId = correlationFromRequest(request)
   // R126 (issue #5 §3): API ključ NI manager — prej je smel spreminjati
   // naročila (nasprotno matriki: "administracija zaloge" je nedovoljeno).
   const canApprove = hasPermission(auth, 'procurement.approve')
@@ -249,7 +310,7 @@ export async function PATCH(request: Request) {
     if (error instanceof StockError) {
       return NextResponse.json({ error: error.message }, { status: error.status })
     }
-    console.error('Material Orders PATCH Error:', error)
-    return NextResponse.json({ error: 'Napaka pri posodabljanju naročila' }, { status: 500 })
+    logWithCorrelation('material-orders.patch', correlationId, error)
+    return NextResponse.json({ error: 'Napaka pri posodabljanju naročila', correlationId }, { status: 500 })
   }
 }

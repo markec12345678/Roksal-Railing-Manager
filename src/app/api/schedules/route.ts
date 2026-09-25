@@ -12,7 +12,17 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { authenticate, unauthorized } from '@/lib/auth'
 import { denyWithoutPermission } from '@/lib/auth'
+import { principalBindingOf } from '@/lib/access'
 import { correlationFromRequest, logWithCorrelation } from '@/lib/correlation'
+import {
+  isValidIdempotencyKey,
+  reserveIdempotencyIn,
+  storeResponseIn,
+  beginIdempotency,
+  IdempotencyRaceError,
+  idempotencyReplayResponse,
+  idempotencyConflictResponse,
+} from '@/lib/idempotency'
 
 // R139 (issue #5 §17): neomejen findMany → privzeta zgornja meja + opcijske
 // strani (isti kontrakt kot /api/customers iz R138). Odzivna OBLIKA (polje)
@@ -89,6 +99,19 @@ export async function POST(request: Request) {
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
   const correlationId = correlationFromRequest(request)
+
+  // R140 (issue #5 §20): idempotenca — pisarna/offline klient pošilja stabilen
+  // `Idempotency-Key`; retry po mrežni napaki NE SME ustvariti dvojnika
+  // termina (prej: isti ključ ni bil upoštevan → dva termina za isti klik).
+  // Rezervacija + odgovor v ISTI transakciji (exactly-once replay, isti
+  // vzorec kot customers/measurements).
+  const idemHeader = request.headers.get('Idempotency-Key')
+  const idemKey = idemHeader !== null && isValidIdempotencyKey(idemHeader) ? idemHeader : null
+  if (idemHeader !== null && !idemKey) {
+    return NextResponse.json({ error: 'Neveljaven Idempotency-Key' }, { status: 400 })
+  }
+  const idemBinding = idemKey ? principalBindingOf(auth) : null
+
   try {
     const body = await request.json()
     const { projectId, crewId, monterId, datumZacetka, datumKonca, predvideneUre, opombe, lokacija } = body
@@ -114,6 +137,10 @@ export async function POST(request: Request) {
     }
 
     const schedule = await db.$transaction(async (tx) => {
+      // R140 (§20): rezervacija idempotenčnega ključa = PRVI stavek —
+      // vzporedni poizkus istega ključa povzroči rollback cele transakcije.
+      if (idemKey) await reserveIdempotencyIn(tx, idemKey, 'schedules', idemBinding)
+
       const created = await tx.installationSchedule.create({
         data: {
           projectId,
@@ -156,11 +183,22 @@ export async function POST(request: Request) {
         },
       })
 
+      // R140 (§20): odgovor se shrani v ISTI transakciji — replay vrne
+      // originalni 201 z originalnim telesom (exactly-once).
+      if (idemKey) await storeResponseIn(tx, idemKey, 201, JSON.stringify(created))
+
       return created
     })
 
     return NextResponse.json(schedule, { status: 201 })
   } catch (error) {
+    // R140 (§20): P2002 na rezervaciji (vzporedni poizkus istega ključa) →
+    // odloči replay/conflict — ISTA odločitev kot customers/measurements.
+    if (error instanceof IdempotencyRaceError && idemKey) {
+      const begun = await beginIdempotency(idemKey, 'schedules', idemBinding)
+      if (begun.kind === 'replay') return idempotencyReplayResponse(begun)
+      return idempotencyConflictResponse()
+    }
     logWithCorrelation('schedules.post', correlationId, error)
     return NextResponse.json({ error: 'Napaka pri ustvarjanju termina', correlationId }, { status: 500 })
   }

@@ -30,6 +30,12 @@ import {
 } from '@/lib/object-storage'
 import { generateDocumentPdf } from '@/lib/document-pdf'
 
+// R140 (issue #5 §17): dokumenti + verzije so težki odgovori — neomejen
+// findMany bi za dolgoživim projektom povlekel vse PDF metadata + verzije.
+// Privzeti strop 200 + opcijski limit/offset. Odzivna OBLIKA (polje) ostane ista.
+const DOCUMENT_DEFAULT_LIMIT = 200
+const DOCUMENT_MAX_LIMIT = 200
+
 export async function POST(request: Request) {
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
   const auth = await authenticate(request)
@@ -216,10 +222,21 @@ export async function GET(request: Request) {
     })
     assertProjectAccess(auth, project, 'read')
 
+    // R140 (§17): strani — neveljavne številke → fail-closed na privzeti limit.
+    const limitRaw = Number.parseInt(searchParams.get('limit') ?? '', 10)
+    const offsetRaw = Number.parseInt(searchParams.get('offset') ?? '', 10)
+    const limit =
+      Number.isFinite(limitRaw) && limitRaw > 0
+        ? Math.min(limitRaw, DOCUMENT_MAX_LIMIT)
+        : DOCUMENT_DEFAULT_LIMIT
+    const offset = Number.isFinite(offsetRaw) && offsetRaw > 0 ? offsetRaw : 0
+
     const documents = await db.document.findMany({
       where: { projectId },
       orderBy: { createdAt: 'desc' },
       include: { versions: { orderBy: { version: 'asc' } } },
+      take: limit,
+      skip: offset,
     })
 
     return NextResponse.json(documents)

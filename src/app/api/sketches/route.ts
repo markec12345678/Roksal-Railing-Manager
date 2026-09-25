@@ -29,6 +29,12 @@ function accessErrorResponse(error: unknown): NextResponse | null {
   return null
 }
 
+// R140 (issue #5 §17): skice vodijo težke data URI-je — neomejen findMany bi
+// za projektom z mnogo skicami povlekel ogromen odgovor. Privzeti strop 200
+// + opcijski limit/offset. Odzivna OBLIKA (polje) ostane ista.
+const SKETCH_DEFAULT_LIMIT = 200
+const SKETCH_MAX_LIMIT = 200
+
 // GET - Skice za projekt
 export async function GET(request: Request) {
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
@@ -47,9 +53,20 @@ export async function GET(request: Request) {
     })
     assertProjectAccess(auth, project, 'read')
 
+    // R140 (§17): strani — neveljavne številke → fail-closed na privzeti limit.
+    const limitRaw = Number.parseInt(searchParams.get('limit') ?? '', 10)
+    const offsetRaw = Number.parseInt(searchParams.get('offset') ?? '', 10)
+    const limit =
+      Number.isFinite(limitRaw) && limitRaw > 0
+        ? Math.min(limitRaw, SKETCH_MAX_LIMIT)
+        : SKETCH_DEFAULT_LIMIT
+    const offset = Number.isFinite(offsetRaw) && offsetRaw > 0 ? offsetRaw : 0
+
     const rows = await db.sketch.findMany({
       where: { projectId },
       orderBy: { createdAt: 'desc' },
+      take: limit,
+      skip: offset,
     })
     const sketches = await Promise.all(
       rows.map(async (s) => {

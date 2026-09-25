@@ -41,6 +41,13 @@ function accessErrorResponse(error: unknown): NextResponse | null {
   return null
 }
 
+// R140 (issue #5 §17): slike vodijo težke data URI-je (do 15 MB / slika) —
+// neomejen findMany za projektom z več sto fotodokumentacijami bi povlekel
+// ~GB odgovor. Privzeti strop 200 + opcijski limit/offset (isti kontrakt kot
+// customers/schedules). Odzivna OBLIKA (polje) ostane ista.
+const PHOTO_DEFAULT_LIMIT = 200
+const PHOTO_MAX_LIMIT = 200
+
 // GET - Slike za projekt (opcionalno filter po kategoriji)
 export async function GET(request: Request) {
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
@@ -65,12 +72,23 @@ export async function GET(request: Request) {
     })
     assertProjectAccess(auth, project, 'read')
 
+    // R140 (§17): strani — neveljavne številke → fail-closed na privzeti limit.
+    const limitRaw = Number.parseInt(searchParams.get('limit') ?? '', 10)
+    const offsetRaw = Number.parseInt(searchParams.get('offset') ?? '', 10)
+    const limit =
+      Number.isFinite(limitRaw) && limitRaw > 0
+        ? Math.min(limitRaw, PHOTO_MAX_LIMIT)
+        : PHOTO_DEFAULT_LIMIT
+    const offset = Number.isFinite(offsetRaw) && offsetRaw > 0 ? offsetRaw : 0
+
     const rows = await db.projectPhoto.findMany({
       where: {
         projectId,
         ...(kategorija ? { kategorija } : {}),
       },
       orderBy: { createdAt: 'desc' },
+      take: limit,
+      skip: offset,
     })
 
     // Združljivost s klientom: data URI hydrate iz object storage.
