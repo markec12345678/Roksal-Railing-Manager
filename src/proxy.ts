@@ -46,6 +46,10 @@ const PUBLIC_EXACT = new Set<string>([
   // Vercel Cron (GC staginga, S+4) pošilja Bearer CRON_SECRET, ne seje —
   // ruta SAMA fail-closed preveri CRON_SECRET ali ADMIN sejo.
   '/api/viz/gc',
+  // R141 (§23): Vercel Cron za vzdrževalne posle (GC idempotenčnih ključev,
+  // portal dostopov, starih sej) pošilja Bearer CRON_SECRET, ne seje —
+  // ruta SAMA fail-closed preveri CRON_SECRET ali ADMIN sejo.
+  '/api/jobs/run',
 ])
 
 /**

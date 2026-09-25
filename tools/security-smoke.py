@@ -2,7 +2,7 @@
 """
 Varnostni dimni test za Roksal Railing Manager.
 
-Preveri 117 stvari na ŽIVEM strežniku — ne na kodi, kar je edini način, da se
+Preveri 119 stvari na ŽIVEM strežniku — ne na kodi, kar je edini način, da se
 ujame napaka v plasteh (proxy, ruta, piškotek, baza). Napisan je bil prav zato,
 ker je prva različica proxy-ja blokirala prijavo samo: 32/36 testov je bilo
 zelenih, aplikacija pa neuporabna.
@@ -449,6 +449,18 @@ check("POST /api/schedules neveljaven Idempotency-Key brez seje → 401 (vrata p
 st, h, _ = call("/api/material-orders")
 check("GET /api/material-orders nosi x-correlation-id", st == 401 and len(h.get("x-correlation-id", "")) >= 8,
       f"st={st} corr={h.get('x-correlation-id', '')[:16]}")
+
+
+print("\n[23] Vzdrževalni posli (R141 — issue #5 §23: fail-closed register)")
+# Register poslov je ADMIN-only: anon zahteva → 401, odgovor nosi korelacijo
+# (§22 pogodba velja tudi za nove rute).
+st, h, body = call("/api/jobs")
+check("GET /api/jobs brez seje → 401 + x-correlation-id", st == 401 and len(h.get("x-correlation-id", "")) >= 8,
+      f"st={st} corr={h.get('x-correlation-id', '')[:16]}")
+# Zagon poslov: anon → 401 (fail-closed; ruta je javna v proxyju SAMO zato,
+# da jo Vercel Cron doseže z Bearer CRON_SECRET — brez žetona so vrata zaprta).
+st, h, body = call("/api/jobs/run", "POST", {})
+check("POST /api/jobs/run brez seje → 401 (cron-only vrata)", st == 401, f"dobil {st} {body[:60]!r}")
 
 
 print(f"\n{'=' * 60}")

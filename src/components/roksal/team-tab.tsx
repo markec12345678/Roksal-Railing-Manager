@@ -13,6 +13,7 @@
 // Own-guard je tudi na strežniku — tu ga samo ne prikažemo (občutek ≠ varnost).
 
 import { useCallback, useEffect, useState } from 'react'
+import dynamic from 'next/dynamic'
 import {
   BadgeCheck,
   CalendarClock,
@@ -48,6 +49,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+
+// R141 (§23): register poslov se naloži le na Ekipa površini (code-split).
+const JobsPanel = dynamic(
+  () => import('@/components/roksal/jobs-panel').then((m) => m.JobsPanel),
+  { ssr: false, loading: () => null },
+)
 
 interface Lifecycle {
   deactivated: boolean
@@ -472,6 +479,9 @@ export function TeamTab() {
           })}
         </div>
       )}
+
+      {/* R141 (§23): register vzdrževalnih poslov — samo ADMIN (API je ADMIN-only). */}
+      {myRole === 'ADMIN' && <JobsPanel />}
 
       {/* Povabilo dialog */}
       <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>

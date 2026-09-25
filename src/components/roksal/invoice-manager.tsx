@@ -847,25 +847,25 @@ export function InvoiceManager() {
         {!loading && invoices.length > 0 && (
           <div className="space-y-2">
             <div className="grid grid-cols-3 gap-2">
-              <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 p-2 text-center">
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 p-2 text-center transition-all hover:shadow-sm hover:border-emerald-300/70">
                 <div className="text-[10px] uppercase tracking-wide text-emerald-700">Plačano</div>
-                <div className="text-sm font-bold text-emerald-800">{eur(summary.placano)}</div>
+                <div className="text-sm font-bold tabular-nums text-emerald-800">{eur(summary.placano)}</div>
               </div>
-              <div className="rounded-lg border border-amber-200 bg-amber-50/60 p-2 text-center">
+              <div className="rounded-lg border border-amber-200 bg-amber-50/60 p-2 text-center transition-all hover:shadow-sm hover:border-amber-300/70">
                 <div className="text-[10px] uppercase tracking-wide text-amber-700">Odprto</div>
-                <div className="text-sm font-bold text-amber-800">
+                <div className="text-sm font-bold tabular-nums text-amber-800">
                   {eur(Math.max(0, summary.izdano - summary.placano))}
                 </div>
               </div>
-              <div className={`rounded-lg border p-2 text-center ${summary.zapadloN > 0 ? 'border-red-200 bg-red-50/60' : 'border-stone-200 bg-stone-50/60'}`}>
+              <div className={`rounded-lg border p-2 text-center transition-all hover:shadow-sm ${summary.zapadloN > 0 ? 'border-red-200 bg-red-50/60 hover:border-red-300/70' : 'border-stone-200 bg-stone-50/60 hover:border-stone-300'}`}>
                 <div className={`text-[10px] uppercase tracking-wide ${summary.zapadloN > 0 ? 'text-red-700' : 'text-stone-500'}`}>
                   Zapadlo
                 </div>
-                <div className={`text-sm font-bold ${summary.zapadloN > 0 ? 'text-red-800' : 'text-stone-600'}`}>
+                <div className={`text-sm font-bold tabular-nums ${summary.zapadloN > 0 ? 'text-red-800' : 'text-stone-600'}`}>
                   {summary.zapadloN > 0 ? eur(summary.zapadlo) : '—'}
                 </div>
                 {summary.zapadloN > 0 && (
-                  <div className="text-[10px] text-red-600">{summary.zapadloN} račun(ov)</div>
+                  <div className="text-[10px] tabular-nums text-red-600">{summary.zapadloN} račun(ov)</div>
                 )}
               </div>
             </div>
@@ -913,7 +913,7 @@ export function InvoiceManager() {
               return (
                 <div
                   key={inv.id}
-                  className={`rounded-xl border border-l-4 p-3 transition-shadow hover:shadow-sm ${rail} ${
+                  className={`rounded-xl border border-l-4 p-3 transition-all hover:shadow-md hover:border-roksal-navy/25 ${rail} ${
                     zapadlo ? 'border-red-300 bg-red-50/40' : 'border-border/70 bg-card'
                   }`}
                 >
@@ -937,15 +937,15 @@ export function InvoiceManager() {
                       <div className="mt-1 truncate text-xs text-muted-foreground">
                         {inv.project?.nazivProjekta ?? '—'} · {parseKupec(inv.kupec)?.ime ?? '—'}
                       </div>
-                      <div className="mt-0.5 text-[10px] text-muted-foreground">
+                      <div className="mt-0.5 text-[10px] tabular-nums text-muted-foreground">
                         izdano {new Date(inv.datumIzdaje).toLocaleDateString('sl-SI')} · rok{' '}
                         {inv.rokPlacilaDni} dni
                         {inv.placanoAt && ` · plačano ${new Date(inv.placanoAt).toLocaleDateString('sl-SI')}`}
                       </div>
                     </div>
                     <div className="text-right shrink-0">
-                      <div className="text-sm font-bold text-roksal-navy">{eur(inv.znesek)}</div>
-                      <div className="text-[10px] text-muted-foreground">z DDV {inv.ddv > 0 ? '22 %' : '0 %'}</div>
+                      <div className="text-sm font-bold tabular-nums text-roksal-navy">{eur(inv.znesek)}</div>
+                      <div className="text-[10px] tabular-nums text-muted-foreground">z DDV {inv.ddv > 0 ? '22 %' : '0 %'}</div>
                     </div>
                   </div>
 
@@ -955,12 +955,12 @@ export function InvoiceManager() {
                       <>
                         <Button
                           size="sm"
-                          className="h-7 text-xs bg-emerald-600 hover:bg-emerald-500"
+                          className="h-7 text-xs bg-emerald-600 hover:bg-emerald-500 focus-visible:ring-emerald-400/50"
                           onClick={() => patchStatus(inv, 'IZDAN')}
                         >
                           <Send className="h-3 w-3" /> Izdaj
                         </Button>
-                        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => deleteInvoice(inv)}>
+                        <Button size="sm" variant="outline" className="h-7 text-xs focus-visible:ring-roksal-navy/40" onClick={() => deleteInvoice(inv)}>
                           <Trash2 className="h-3 w-3" /> Briši
                         </Button>
                       </>
@@ -969,7 +969,7 @@ export function InvoiceManager() {
                       <>
                         <Button
                           size="sm"
-                          className="h-7 text-xs bg-emerald-600 hover:bg-emerald-500"
+                          className="h-7 text-xs bg-emerald-600 hover:bg-emerald-500 focus-visible:ring-emerald-400/50"
                           onClick={() => patchStatus(inv, 'PLACAN')}
                         >
                           <CheckCircle2 className="h-3 w-3" /> Plačan
@@ -989,7 +989,7 @@ export function InvoiceManager() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className={`h-7 text-xs border-red-300 hover:bg-red-50 ${stornoId === inv.id ? 'bg-red-600 text-white hover:bg-red-500' : 'text-red-700'}`}
+                          className={`h-7 text-xs border-red-300 hover:bg-red-50 focus-visible:ring-red-400/60 ${stornoId === inv.id ? 'bg-red-600 text-white hover:bg-red-500' : 'text-red-700'}`}
                           onClick={() => {
                             if (stornoId === inv.id) {
                               setStornoId(null)
@@ -1023,14 +1023,14 @@ export function InvoiceManager() {
                         <Pencil className="h-3 w-3" /> Uredi
                       </Button>
                     )}
-                    <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => generatePdf(inv)}>
+                    <Button size="sm" variant="outline" className="h-7 text-xs focus-visible:ring-roksal-navy/40" onClick={() => generatePdf(inv)}>
                       <FileDown className="h-3 w-3" /> PDF
                     </Button>
                     {inv.status !== 'STORNIRAN' && (
                       <Button
                         size="sm"
                         variant="outline"
-                        className="h-7 text-xs"
+                        className="h-7 text-xs focus-visible:ring-roksal-navy/40"
                         onClick={() => setQrInvoice(inv)}
                         title="UPN QR koda za plačilo"
                         aria-label="UPN QR koda za plačilo"
@@ -1042,7 +1042,7 @@ export function InvoiceManager() {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="h-7 text-xs"
+                        className="h-7 text-xs focus-visible:ring-roksal-navy/40"
                         onClick={() => void downloadXml(inv)}
                         disabled={xmlLoading === inv.id}
                         title="eRačun XML (eSlog 2.1 / EN 16931)"

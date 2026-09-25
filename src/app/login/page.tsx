@@ -116,7 +116,7 @@ function LoginForm() {
         aria-hidden
       />
 
-      <Card className="relative w-full max-w-sm rounded-xl border-white/10 bg-white/95 shadow-2xl backdrop-blur md:max-w-md">
+      <Card className="relative w-full max-w-sm animate-fade-in-up rounded-xl border-white/10 bg-white/95 shadow-2xl backdrop-blur md:max-w-md">
         <CardHeader className="space-y-3 text-center">
           {/* Znamka — isti amber znak kot v aplikaciji */}
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-roksal-amber text-lg font-bold text-roksal-navy shadow-md md:h-14 md:w-14 md:text-xl">
@@ -158,7 +158,10 @@ function LoginForm() {
             </div>
 
             {error && (
-              <div className="flex items-start gap-2 rounded-lg bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950/40 dark:text-red-200">
+              <div
+                role="alert"
+                className="animate-shake flex items-start gap-2 rounded-lg bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950/40 dark:text-red-200"
+              >
                 <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
                 <span>{error}</span>
               </div>

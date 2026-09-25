@@ -991,3 +991,41 @@ model PortalAccess {
   @@index([createdAt])
   @@index([ipHash, createdAt])
 }
+
+/// R141 (issue #5 §23 — Background jobs): enoten register poslov (job ledger).
+///
+/// Vsak zagon vzdrževalnega posla (GC idempotenčnih ključev, GC dostopov
+/// portala, GC starih sej …) ima VRSTICO z vsemi zahtevami §23:
+///   • job ID          = `id` (cuid) — povezljiv z logi prek correlationId;
+///   • owner           = kdo je sprožil: "cron" (Vercel Cron) ali e-mail
+///                       ADMIN-a pri ročnem zagonu prek UI;
+///   • input           = JSON parametri zagona (okno, pragovi);
+///   • status          = RUNNING | SUCCEEDED | FAILED;
+///   • attempts        = števec poskusov znotraj istega okna (okno = dan);
+///   • retry policy    = maxAttempts + dokumentirana naravna ponovitev
+///                       (dnevni cron poskusi naslednji dan znova);
+///   • error           = lastError (sanitiziran prek correlationErrorSummary —
+///                       brez stacka, brez Prisma internals, §22 pogodba);
+///   • idempotency     = idempotencyKey (type + okno) UNIQUE — dvakrat isti
+///                       dan = replay (drugi zagon NE dela dvojno delo);
+///   • correlation ID  = nosilec povezave z Vercel logi istega zagona.
+model JobRun {
+  id             String    @id @default(cuid())
+  type           String
+  owner          String
+  input          String?
+  status         String
+  attempts       Int       @default(0)
+  maxAttempts    Int       @default(3)
+  lastError      String?
+  correlationId  String
+  idempotencyKey String    @unique
+  result         String?
+  createdAt      DateTime  @default(now())
+  startedAt      DateTime?
+  finishedAt     DateTime?
+  durationMs     Int?
+
+  @@index([type, createdAt])
+  @@index([createdAt])
+}

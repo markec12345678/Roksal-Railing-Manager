@@ -339,6 +339,23 @@
   .animate-fade-in-up {
     animation: fadeInUp 0.3s ease-out forwards;
   }
+  /* R141: prijavna napaka — kratek tresljaj (pozornost brez kričanja).
+     respects-reduced-motion: ob izklopu animacij se box samo prikaže. */
+  @keyframes roksalShake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-4px); }
+    40% { transform: translateX(4px); }
+    60% { transform: translateX(-2px); }
+    80% { transform: translateX(2px); }
+  }
+  .animate-shake {
+    animation: roksalShake 0.36s ease-in-out;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .animate-shake {
+      animation: none;
+    }
+  }
   /* Več-meniju ploščice — mehak stagger ob odprtju lista */
   @keyframes tilePopIn {
     from {
