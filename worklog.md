@@ -1743,3 +1743,8 @@ Work Log:
 Stage Summary:
 - ISSUE #5 §8 (Javna samomeritev security) IZPOLNJEN v celoti: scoped žeton z življenjskim ciklom (ločen od portala), shared rate limiti, server-side idempotency (exactly-once replay), duplicate protection (dedupeHash), anti-abuse stropi, ownership marker, audit vsakega poskusa z zasebnostjo (hash IP), upravljanje v UI s varovalkami — plus popravljen dolgo skrit SSR 500 za veljavne merilne povezave in portal enable-after-revoke luknja.
 - Ostanka (lastniška): #7 Neon backfill --commit, #8 R118-real fotke, #12 Render billing (kartica). Naslednji kandidati iz #5: §9 user lifecycle (invite/activation/deactivate/reset/lock/offboarding), §10 permission matrix.
+
+DODATEK R133 (CI zelen + produkcija potrjena):
+- CI na bd44558: „Tipi, testi, gradnja" SUCCESS (669/669) · „Varnost (96 preverjanj na živem strežniku)" SUCCESS · sync SUCCESS (render vejica posodobljena samodejno) · Vercel deploy ✓.
+- PRODUKCIJA: GET /api/public/measure?token=<neznan> → 404 {„error":"Povezava ni veljavna"} + no-store; /api/auth/demo → {enabled:false} (nedotaknjeno). §8 ŽIVO.
+- Priprava na naslednjo rund: §9 user lifecycle (največja preostala P0) ali §10 permission matrix; lastniški ostanki nespremenjeni (#7 Neon backfill, #8 fotke, #12 Render kartica).
