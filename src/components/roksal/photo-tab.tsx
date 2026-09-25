@@ -644,7 +644,8 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
                   key={k.id}
                   type="button"
                   onClick={() => setActiveKategorija(k.id as 'PRED' | 'MED' | 'PO')}
-                  className={`rounded-md border px-2 py-2 text-[11px] font-medium transition-colors ${
+                  aria-pressed={activeKategorija === k.id}
+                  className={`rounded-md border px-2 py-2 text-[11px] font-medium transition-colors focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:outline-none ${
                     activeKategorija === k.id
                       ? 'border-roksal-amber bg-roksal-amber text-white'
                       : 'border-border bg-white text-muted-foreground hover:bg-muted'
@@ -695,7 +696,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
           {projectId && photos.length > 0 && (
             <div className="grid grid-cols-4 gap-1.5">
               <div className="rounded-md border border-border bg-white p-1.5 text-center">
-                <div className="text-base font-bold text-roksal-navy">{stats.total}</div>
+                <div className="text-base font-bold text-roksal-navy tabular-nums">{stats.total}</div>
                 <div className="text-[9px] text-muted-foreground">Skupaj</div>
               </div>
               <div className="rounded-md border border-border bg-white p-1.5 text-center">
@@ -852,7 +853,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
                 return (
                   <div
                     key={p.id}
-                    className="group relative mb-2 break-inside-avoid overflow-hidden rounded-lg border border-border"
+                    className="group relative mb-2 break-inside-avoid overflow-hidden rounded-lg border border-border transition-all hover:border-roksal-navy/25 hover:shadow-sm focus-within:border-roksal-navy/30"
                   >
                     { }
                     <img
@@ -872,8 +873,8 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
                         e.stopPropagation()
                         handleDelete(p.id)
                       }}
-                      className="absolute right-1 top-1 rounded-full bg-black/50 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100"
-                      aria-label="Izbriši sliko"
+                      className="absolute right-1 top-1 rounded-full bg-black/50 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
+                      aria-label={`Izbriši sliko${p.opomba ? ` (${p.opomba})` : ''}`}
                     >
                       <Trash2 className="h-3 w-3" />
                     </button>
@@ -936,7 +937,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
                       afterLabel="PO"
                     />
                     <div className="mt-2 flex items-center justify-between">
-                      <div className="text-[10px] text-muted-foreground">
+                      <div className="text-[10px] text-muted-foreground tabular-nums">
                         {new Date(po!.createdAt).toLocaleDateString('sl-SI')}
                       </div>
                       <Button
@@ -1023,7 +1024,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); navPreview(-1) }}
-                      className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/60 p-1.5 text-white hover:bg-black/80"
+                      className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/60 p-1.5 text-white hover:bg-black/80 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
                       aria-label="Prejšnja"
                     >
                       <ChevronLeft className="h-5 w-5" />
@@ -1031,7 +1032,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); navPreview(1) }}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/60 p-1.5 text-white hover:bg-black/80"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/60 p-1.5 text-white hover:bg-black/80 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
                       aria-label="Naslednja"
                     >
                       <ChevronRight className="h-5 w-5" />
@@ -2254,7 +2255,7 @@ function AnnotationEditor({
                             isCalibration: false,
                           })
                         }
-                        className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-roksal-navy"
+                        className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-roksal-navy focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:outline-none"
                         aria-label="Uredi mero"
                       >
                         <Pencil className="h-3 w-3" />
@@ -2262,7 +2263,7 @@ function AnnotationEditor({
                       <button
                         type="button"
                         onClick={() => deleteMeasure(m.id ?? '')}
-                        className="rounded p-1 text-muted-foreground hover:bg-red-50 hover:text-red-600"
+                        className="rounded p-1 text-muted-foreground hover:bg-red-50 hover:text-red-600 focus-visible:ring-2 focus-visible:ring-red-400/50 focus-visible:outline-none"
                         aria-label="Izbriši mero"
                       >
                         <Trash2 className="h-3 w-3" />
@@ -2297,7 +2298,8 @@ function AnnotationEditor({
               key={t.id}
               type="button"
               onClick={() => setTool(t.id)}
-              className={`flex shrink-0 flex-col items-center gap-0.5 rounded-md px-2.5 py-1.5 text-[9px] transition-colors ${
+              aria-pressed={tool === t.id}
+              className={`flex shrink-0 flex-col items-center gap-0.5 rounded-md px-2.5 py-1.5 text-[9px] transition-colors focus-visible:ring-2 focus-visible:ring-roksal-amber/60 focus-visible:outline-none ${
                 tool === t.id
                   ? 'bg-roksal-amber text-white'
                   : 'bg-white/10 text-white/70 hover:bg-white/20'

@@ -2,7 +2,7 @@
 """
 Varnostni dimni test za Roksal Railing Manager.
 
-Preveri 133 stvari na ŽIVEM strežniku — ne na kodi, kar je edini način, da se
+Preveri 135 stvari na ŽIVEM strežniku — ne na kodi, kar je edini način, da se
 ujame napaka v plasteh (proxy, ruta, piškotek, baza). Napisan je bil prav zato,
 ker je prva različica proxy-ja blokirala prijavo samo: 32/36 testov je bilo
 zelenih, aplikacija pa neuporabna.
@@ -562,6 +562,17 @@ check("GET /api/evidence brez seje → 401 + correlation", ok, f"dobil {st}")
 st, h, body = call("/api/evidence", "POST", {"projectId": "x"})
 ok = st == 401 and len(h.get("x-correlation-id", "")) >= 8
 check("POST /api/evidence brez seje → 401 + correlation", ok, f"dobil {st}")
+
+print("\n[30] Sync konflikti (R148 — issue #5 §36: revision cursor + tombstones)")
+# Nove rute po R148: DELETE brez seje → 401 + korelacija; delta kurzor brez
+# seje → 401 + korelacija (validacija kurzorja pride AZUR po avtentikaciji —
+# fail-closed red: najprej kdo si, nato kaj hočeš).
+st, h, body = call("/api/sync", "DELETE", {"mobileProjectId": "x"})
+ok = st == 401 and len(h.get("x-correlation-id", "")) >= 8
+check("DELETE /api/sync brez seje → 401 + correlation", ok, f"dobil {st}")
+st, h, body = call("/api/sync?sinceRevision=0")
+ok = st == 401 and len(h.get("x-correlation-id", "")) >= 8
+check("GET /api/sync?sinceRevision=0 brez seje → 401 + correlation", ok, f"dobil {st}")
 
 
 print(f"\n{'=' * 60}")

@@ -25,6 +25,32 @@
 //      try/catch — en pokvarjen zapis ne podre cele serije; stanje vsakega
 //      zapisa je razvidno iz `results`.
 //
+// R148 (issue #5 §36 — Mobile sync conflict model):
+//
+//   • DEVICE ID: `X-Device-Id` header (stabilen klientov UUID, 8–128 znakov,
+//     varni znaki) — lenobni upsert v SyncDevice (firstSeenAt/lastSeenAt,
+//     apiKeyId = ključ, ki je napravo uvedel). Neveljaven → 400 (fail-closed).
+//   • CLIENT MUTATION ID: vsak element sme nositi `mutationId` — echo v
+//     results + revizija (klient lahko poveže odgovor s svojo čakajočo vrsto).
+//   • ORDERING + CURSOR: monotoni `Project.syncRevision` (rasel SAMO ob sync
+//     zapisih); GET ?sinceRevision=N → delta (syncRevision > N, ASC, limit
+//     + hasMore + nextCursor). Časovni žigi NIKOLI za vrstni red.
+//   • CONFLICT DETECTION/RESOLUTION: element sme nositi `baseRevision` +
+//     `baseUpdatedAt` (stanje, ki ga je klient videl). Odstopanje kateregakoli
+//     PODANEGA vhoda → konflikt: zapis se NE uporabi, rezultat je
+//     { ok:false, action:'conflict', retryable:true, serverState } — klient
+//     osveži bazo in ponovi. Star klient brez obeh → uporabljeno z IZRECNIM
+//     warningom (nadgrajljivost, dokumentirano — ni tihe LWW).
+//   • TOMBSTONES: DELETE /api/sync ustvari grobnico (preživi brisanje
+//     projekta); ponovni sync istega mobileProjectId → iskren `tombstone`
+//     rezultat (ni dvojnika); GET vrne grobnice za čiščenje in izključi
+//     grobnice projekte iz zrcala.
+//   • IDEMPOTENCA SERIJE: `Idempotency-Key` header (R128 vzorec) — replay
+//     vrne originalni odgovor (exactly-once za celotno serijo; snapshot je
+//     best-effort po uspehu — dokumentirano okno, vzorec ar-snapshots).
+//   • HTTP 200 jasno pove, kaj je bilo sprejeto: per-item
+//     { ok, action: created|updated|conflict|tombstone, revision, retryable }.
+//
 // Ključi se ustvarijo z `bun run apikey`, v bazi je samo pepper+SHA-256 hash,
 // posamezen ključ se da preklicati (revokedAt).
 
@@ -41,11 +67,28 @@ import {
   isProjectStatus,
 } from '@/lib/project-state'
 import { auditInTx } from '@/lib/audit'
+import {
+  beginIdempotency,
+  storeResponse,
+  idempotencyConflictResponse,
+  idempotencyReplayResponse,
+  isValidIdempotencyKey,
+} from '@/lib/idempotency'
+import {
+  normalizeDeviceId,
+  detectSyncConflict,
+  nextSyncRevision,
+  syncRetryable,
+  SYNC_GET_DEFAULT_LIMIT,
+  SYNC_GET_MAX_LIMIT,
+  SYNC_TOMBSTONES_MAX,
+} from '@/lib/sync-conflicts'
 
 /**
  * Shema mobilnega payload-a. Namerno SPROŠČENA (vse ključne poslovne polja
  * opcijska z privzetki) — mobilni klient je starejša aplikacija in ne sme
  * obrati, a neznana/napačna tipizirana polja se zavržejo (zod strip).
+ * R148 (§36): + baseRevision/baseUpdatedAt (konflikti) + mutationId (echo).
  */
 const mobileProjectSchema = z.object({
   id: z.string().min(1).max(128),
@@ -66,13 +109,59 @@ const mobileProjectSchema = z.object({
   colorName: z.string().max(80).optional(),
   originalImagePath: z.string().max(1000).optional(),
   geminiEstimate: z.string().max(1000).optional(),
+  // R148 (§36) — sync protokol polja (opcijska: stari klient obrati naprej).
+  baseRevision: z.number().int().min(0).optional(),
+  baseUpdatedAt: z.string().max(64).optional(),
+  mutationId: z.string().max(128).optional(),
 })
 
 type MobileProject = z.infer<typeof mobileProjectSchema>
 
-type SyncResult =
-  | { mobileProjectId: string; ok: true; projectId: string; action: 'created' | 'updated'; warnings: string[] }
-  | { mobileProjectId: string; ok: false; error: string }
+type SyncAction = 'created' | 'updated' | 'conflict' | 'tombstone'
+
+type SyncResult = {
+  mobileProjectId: string
+  mutationId: string | null
+  ok: boolean
+  action: SyncAction
+  /** Strežniška revizija PO operaciji (pri konfliktu: trenutna strežniška). */
+  revision: number | null
+  retryable: boolean
+  warnings?: string[]
+  projectId?: string
+  error?: string
+  /** Pri konfliktu: trenutno strežniško stanje (klient osveži bazo iz njega). */
+  serverState?: { syncRevision: number; updatedAt: string; status: string }
+}
+
+function deviceIdFrom(request: Request): { error: string } | { deviceId: string } {
+  return normalizeDeviceId(request.headers.get('x-device-id'))
+}
+
+/** Lenobni upsert naprave (§36 device ID) — lastSeenAt se vsakokrat osveži. */
+async function upsertSyncDevice(
+  deviceId: string,
+  auth: NonNullable<Awaited<ReturnType<typeof authenticate>>>,
+): Promise<{ firstSeen: boolean }> {
+  const existing = await db.syncDevice.findUnique({ where: { deviceId } })
+  if (existing) {
+    await db.syncDevice.update({
+      where: { deviceId },
+      data: {
+        lastSeenAt: new Date(),
+        ...(auth.kind === 'apikey' && !existing.apiKeyId ? { apiKeyId: auth.id } : {}),
+      },
+    })
+    return { firstSeen: false }
+  }
+  await db.syncDevice.create({
+    data: {
+      deviceId,
+      ...(auth.kind === 'apikey' ? { apiKeyId: auth.id } : {}),
+    },
+  })
+  return { firstSeen: true }
+}
 
 // POST - Sprejme podatke iz mobilne aplikacije in ustvari/posodobi projekte
 export async function POST(request: Request) {
@@ -96,8 +185,45 @@ export async function POST(request: Request) {
     return forbidden('Ključ nima scope-a projects:write — vpis prek sync ni dovoljen.')
   }
 
+  // R148 (§36): device ID — obvezen NISO (stari klient obrati naprej), a
+  // če ga klient pošlje in je neveljaven, je to 400 (ne tiho ignoriranje).
+  let deviceId: string | null = null
+  const deviceHeader = request.headers.get('x-device-id')
+  if (deviceHeader !== null) {
+    const norm = normalizeDeviceId(deviceHeader)
+    if ('error' in norm) {
+      return NextResponse.json({ error: norm.error }, { status: 400 })
+    }
+    deviceId = norm.deviceId
+  }
+
+  // R148 (§36): idempotenca celotne serije (R128 vzorec — replay originala).
+  const idemHeader = request.headers.get('Idempotency-Key')
+  const idemKey = idemHeader !== null && isValidIdempotencyKey(idemHeader) ? idemHeader : null
+  if (idemHeader !== null && !idemKey) {
+    return NextResponse.json({ error: 'Neveljaven Idempotency-Key' }, { status: 400 })
+  }
+  if (idemKey) {
+    const profileId = auth.kind === 'user' ? auth.session.sub : null
+    const idem = await beginIdempotency(idemKey, 'sync', profileId)
+    if (idem.kind === 'replay') return idempotencyReplayResponse(idem)
+    if (idem.kind === 'conflict') return idempotencyConflictResponse()
+  }
+
   // R139 (§22): correlation ID za korelacijo serije sync z Vercel logi.
   const correlationId = correlationFromRequest(request)
+
+  // §36 device upsert — po validaciji, pred obdelavo serije.
+  let deviceFirstSeen = false
+  if (deviceId) {
+    try {
+      deviceFirstSeen = (await upsertSyncDevice(deviceId, auth)).firstSeen
+    } catch (error) {
+      logWithCorrelation('sync.device.upsert', correlationId, error)
+      // Napaka DB pri napravi NE utaji serije — sync se nadaljuje brez
+      // zapisa naprave (naprava je diagnostika, ne poslovni pogoj).
+    }
+  }
 
   const rawList = Array.isArray(body) ? body : [body]
   const results: SyncResult[] = []
@@ -110,9 +236,16 @@ export async function POST(request: Request) {
         typeof (raw as { id?: unknown })?.id === 'string'
           ? (raw as { id: string }).id
           : 'neznan'
+      const mutationId = typeof (raw as { mutationId?: unknown })?.mutationId === 'string'
+        ? ((raw as { mutationId: string }).mutationId)
+        : null
       results.push({
         mobileProjectId: id,
+        mutationId,
         ok: false,
+        action: 'error' as never,
+        revision: null,
+        retryable: false,
         error: `Neveljaven payload: ${parsed.error.issues.slice(0, 3).map((i) => `${i.path.join('.')}: ${i.message}`).join('; ')}`,
       })
       continue
@@ -120,15 +253,29 @@ export async function POST(request: Request) {
     const mobileProject = parsed.data
 
     try {
-      const outcome = await syncOneProject(auth, mobileProject, request)
-      results.push({
-        mobileProjectId: mobileProject.id,
-        ok: true,
-        projectId: outcome.projectId,
-        action: outcome.action,
-        warnings: outcome.warnings,
+      // §36 TOMBSTONE: izbrisan mobilni projekt se NE ponovno ustvari —
+      // iskren rezultat (klient lokalno pobriše), ne dvojnika.
+      const tombstone = await db.syncTombstone.findUnique({
+        where: { mobileProjectId: mobileProject.id },
       })
-      syncedProjects.push(outcome.project as Record<string, unknown>)
+      if (tombstone) {
+        results.push({
+          mobileProjectId: mobileProject.id,
+          mutationId: mobileProject.mutationId ?? null,
+          ok: false,
+          action: 'tombstone',
+          revision: null,
+          retryable: syncRetryable('tombstone'),
+          error: 'Mobilni projekt je izbrisan na strežniku (grobnica) — lokalni zapis pobrišite.',
+        })
+        continue
+      }
+
+      const outcome = await syncOneProject(auth, mobileProject, request)
+      results.push(outcome.result)
+      if (outcome.action === 'created' || outcome.action === 'updated') {
+        syncedProjects.push(outcome.project as Record<string, unknown>)
+      }
     } catch (error) {
       const message =
         error instanceof InvalidTransitionError
@@ -137,26 +284,46 @@ export async function POST(request: Request) {
             ? error.message
             : 'Napaka pri sinhronizaciji zapisa'
       logWithCorrelation('sync.post.item', correlationId, error)
-      results.push({ mobileProjectId: mobileProject.id, ok: false, error: message })
+      results.push({
+        mobileProjectId: mobileProject.id,
+        mutationId: mobileProject.mutationId ?? null,
+        ok: false,
+        action: 'error' as never,
+        revision: null,
+        retryable: syncRetryable('error', message),
+        error: message,
+      })
     }
   }
 
   const okCount = results.filter((r) => r.ok).length
-  return NextResponse.json({
+  const responseBody = {
     message: `Sinhroniziranih ${okCount} projektov (${results.length - okCount} napak)`,
     projects: syncedProjects,
     results,
+    ...(deviceId ? { device: { deviceId, firstSeen: deviceFirstSeen } } : {}),
     timestamp: new Date().toISOString(),
-  })
+  }
+  // R128 vzorec (best-effort snapshot — dokumentirano okno, vzorec ar-snapshots).
+  if (idemKey) {
+    await storeResponse(idemKey, 200, JSON.stringify(responseBody))
+  }
+  return NextResponse.json(responseBody)
 }
+
+type SyncOutcome =
+  | { action: 'created'; projectId: string; project: unknown; result: SyncResult }
+  | { action: 'updated'; projectId: string; project: unknown; result: SyncResult }
+  | { action: 'conflict'; projectId: string | null; result: SyncResult }
 
 /** Obdelaj EN mobilni projekt (update ali create) z auditom v transakciji. */
 async function syncOneProject(
   auth: NonNullable<Awaited<ReturnType<typeof authenticate>>>,
   mobileProject: MobileProject,
   request: Request
-): Promise<{ projectId: string; action: 'created' | 'updated'; warnings: string[]; project: unknown }> {
+): Promise<SyncOutcome> {
   const warnings: string[] = []
+  const mutationId = mobileProject.mutationId ?? null
 
   // R121: mobileProjectId je UNIQUE — dvojnikov ni niti ob vzporednem/replay
   // syncu. findUnique (ne findFirst) je zdaj kanoničen način iskanja.
@@ -211,6 +378,7 @@ async function syncOneProject(
     )
   }
 
+  // §36: nov projekt nosi mutationId klienta v reviziji + prvo revizijo 1.
   try {
     const newProject = await db.$transaction(async (tx) => {
     const row = await tx.project.create({
@@ -224,6 +392,7 @@ async function syncOneProject(
         mobileProjectId: mobileProject.id,
         originalImagePath: mobileProject.originalImagePath || null,
         geminiEstimate: mobileProject.geminiEstimate || null,
+        syncRevision: 1,
         projectData: JSON.stringify({
           lengthCm: mobileProject.lengthCm,
           heightCm: mobileProject.heightCm,
@@ -247,6 +416,8 @@ async function syncOneProject(
       newValue: {
         status: row.status,
         mobileProjectId: mobileProject.id,
+        ...(mutationId ? { mutationId } : {}),
+        syncRevision: row.syncRevision,
         stranka: customer!.ime,
         servis: auth.kind === 'apikey' ? auth.name : 'uporabniška seja',
         korigiranStatus: resolved.clampedFrom,
@@ -255,7 +426,21 @@ async function syncOneProject(
     return row
     })
 
-    return { projectId: newProject.id, action: 'created', warnings, project: newProject }
+    return {
+      action: 'created',
+      projectId: newProject.id,
+      project: newProject,
+      result: {
+        mobileProjectId: mobileProject.id,
+        mutationId,
+        ok: true,
+        action: 'created',
+        revision: newProject.syncRevision,
+        retryable: syncRetryable('created'),
+        warnings,
+        projectId: newProject.id,
+      },
+    }
   } catch (error) {
     // R121 — IDEMPOTENTEN REPLAY: mobileProjectId je UNIQUE. Če je med
     // pripravo te zahteve vzporedni sync že ustvaril projekt z istim id-jem
@@ -277,19 +462,54 @@ async function syncOneProject(
 }
 
 /**
- * Posodobitev obstoječega projekta (statusni stroj + audit v transakciji).
- * Izvlečena iz syncOneProject — uporablja jo tudi P2002 repli pot.
+ * Posodobitev obstoječega projekta (statusni stroj + konflikti + audit v
+ * transakciji). Izvlečena iz syncOneProject — uporablja jo tudi P2002 repli.
+ * R148 (§36): konflikti prek baseRevision/baseUpdatedAt — zapis se uporabi
+ * SAMO če je baza kliena še vedno strežniška; sicer iskren konflikt.
  */
 async function applySyncUpdate(
   auth: NonNullable<Awaited<ReturnType<typeof authenticate>>>,
-  existingProject: { id: string; status: string; dealLocked: boolean; opombe: string | null; latitude: number | null; longitude: number | null; monterId: string | null; vodjaId: string | null },
+  existingProject: { id: string; status: string; dealLocked: boolean; opombe: string | null; latitude: number | null; longitude: number | null; monterId: string | null; vodjaId: string | null; syncRevision: number; updatedAt: Date },
   mobileProject: MobileProject,
   request: Request,
   warnings: string[]
-): Promise<{ projectId: string; action: 'updated'; warnings: string[]; project: unknown }> {
+): Promise<SyncOutcome> {
   // Resource authorization velja tudi tu (R120): servis sme sync polja
   // spreminjati (razen deal-lock), monter sme samo na svojih projektih.
   assertProjectAccess(auth, existingProject, 'update')
+
+  // ── §36 CONFLICT DETECTION (PRED statusnim strojem in mutacijo) ──────────
+  const verdict = detectSyncConflict({
+    baseRevision: mobileProject.baseRevision,
+    baseUpdatedAt: mobileProject.baseUpdatedAt,
+    serverRevision: existingProject.syncRevision,
+    serverUpdatedAt: existingProject.updatedAt,
+  })
+  if (verdict.kind === 'conflict') {
+    return {
+      action: 'conflict',
+      projectId: existingProject.id,
+      result: {
+        mobileProjectId: mobileProject.id,
+        mutationId: mobileProject.mutationId ?? null,
+        ok: false,
+        action: 'conflict',
+        revision: existingProject.syncRevision,
+        retryable: syncRetryable('conflict'),
+        error: `Konflikt sinhronizacije: ${verdict.detail} Nič ni bilo spremenjeno — osvežite bazo (GET ?sinceRevision=…) in ponovite.`,
+        serverState: {
+          syncRevision: existingProject.syncRevision,
+          updatedAt: existingProject.updatedAt.toISOString(),
+          status: existingProject.status,
+        },
+      },
+    }
+  }
+  if (verdict.kind === 'legacy') {
+    warnings.push(
+      'Sync brez baseRevision/baseUpdatedAt (star klient) — zapis uporabljen brez preverbe konflikta.',
+    )
+  }
 
   const proposed = mobileProject.status
   let nextStatus = existingProject.status
@@ -312,6 +532,8 @@ async function applySyncUpdate(
         latitude: mobileProject.latitude ?? existingProject.latitude,
         longitude: mobileProject.longitude ?? existingProject.longitude,
         updatedAt: new Date(),
+        // §36: revizija raste MONOTONO ob vsakem sync zapisu.
+        syncRevision: nextSyncRevision(existingProject.syncRevision),
       },
       include: {
         customer: true,
@@ -328,12 +550,15 @@ async function applySyncUpdate(
         opombe: existingProject.opombe,
         latitude: existingProject.latitude,
         longitude: existingProject.longitude,
+        syncRevision: existingProject.syncRevision,
       },
       newValue: {
         status: nextStatus,
         opombe: row.opombe,
         latitude: row.latitude,
         longitude: row.longitude,
+        syncRevision: row.syncRevision,
+        ...(mobileProject.mutationId ? { mutationId: mobileProject.mutationId } : {}),
         servis: auth.kind === 'apikey' ? auth.name : 'uporabniška seja',
         zavrnjeniStatus: warnings.length > 0 ? mobileProject.status : undefined,
       },
@@ -341,7 +566,21 @@ async function applySyncUpdate(
     return row
   })
 
-  return { projectId: updated.id, action: 'updated', warnings, project: updated }
+  return {
+    action: 'updated',
+    projectId: updated.id,
+    project: updated,
+    result: {
+      mobileProjectId: mobileProject.id,
+      mutationId: mobileProject.mutationId ?? null,
+      ok: true,
+      action: 'updated',
+      revision: updated.syncRevision,
+      retryable: syncRetryable('updated'),
+      warnings,
+      projectId: updated.id,
+    },
+  }
 }
 
 /** Prisma P2002 = kršitev unique constrainta. */
@@ -355,6 +594,8 @@ function isUniqueViolation(error: unknown): boolean {
 }
 
 // GET - Vrne projekte za sinhronizacijo v mobilno aplikacijo
+// R148 (§36): delta sync — ?sinceRevision=N (syncRevision > N), limit +
+// hasMore + nextCursor, grobnice za čiščenje, syncRevision v vsaki vrstici.
 export async function GET(request: Request) {
   // Tudi branje projektov za sinhronizacijo je zaščiteno: seznam razkrije stranke in naslove.
   const auth = await authenticate(request)
@@ -368,6 +609,32 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const lastSync = searchParams.get('lastSync')
 
+    // §36 cursor: ne-negativno celo število; neveljaven → 400 (ne tiho 0).
+    const sinceRaw = searchParams.get('sinceRevision')
+    let sinceRevision: number | null = null
+    if (sinceRaw !== null) {
+      const parsed = Number.parseInt(sinceRaw, 10)
+      if (!Number.isInteger(parsed) || parsed < 0) {
+        return NextResponse.json({ error: 'sinceRevision mora biti ne-negativno celo število' }, { status: 400 })
+      }
+      sinceRevision = parsed
+    }
+    // §17 strop: neveljavne številke → fail-closed na privzeti limit.
+    const limitRaw = Number.parseInt(searchParams.get('limit') ?? '', 10)
+    const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? Math.min(limitRaw, SYNC_GET_MAX_LIMIT) : SYNC_GET_DEFAULT_LIMIT
+
+    // §36 device recording: z veljavnim X-Device-Id + sinceRevision zabeležimo
+    // kurzor naprave (monotono — nazaj se ne premika).
+    const deviceHeader = request.headers.get('x-device-id')
+    let deviceId: string | null = null
+    if (deviceHeader !== null) {
+      const norm = normalizeDeviceId(deviceHeader)
+      if ('error' in norm) {
+        return NextResponse.json({ error: norm.error }, { status: 400 })
+      }
+      deviceId = norm.deviceId
+    }
+
     // R120 (Problem 2): skoping po principalu.
     //  - USER: monter vidi SAMO svoje projekte (projectWhereForPrincipal),
     //    vodstvo/skladišče vse — enako kot na ostalih business rutah.
@@ -375,27 +642,137 @@ export async function GET(request: Request) {
     //    (mobilni klient podjetja zrcali projekte podjetja).
     const scope = projectWhereForPrincipal(auth)
 
-    const timeFilter = lastSync
-      ? { updatedAt: { gte: new Date(lastSync) } }
-      // Brez lastSync: samo projekti z mobilnim izvorom — sync endpoint ni
-      // splošni seznam projektov (ta je /api/projects).
-      : { mobileProjectId: { not: null } }
+    // §36: grobnice izključijo projekte iz zrcala (klient jih je pobrisal).
+    const timeFilter = sinceRevision !== null
+      ? { syncRevision: { gt: sinceRevision } }
+      : lastSync
+        ? { updatedAt: { gte: new Date(lastSync) } }
+        // Brez lastSync: samo projekti z mobilnim izvorom — sync endpoint ni
+        // splošni seznam projektov (ta je /api/projects).
+        : { mobileProjectId: { not: null } }
 
     const projects = await db.project.findMany({
-      where: { AND: [scope, timeFilter] },
+      where: { AND: [scope, timeFilter, { syncTombstones: { none: {} } }] },
       include: {
         customer: true,
         monter: { select: { id: true, ime: true } },
       },
-      orderBy: { updatedAt: 'asc' },
+      orderBy: sinceRevision !== null ? { syncRevision: 'asc' } : { updatedAt: 'asc' },
+      take: limit,
     })
 
-    return NextResponse.json({
-      projects,
-      timestamp: new Date().toISOString(),
+    // §36: grobnice za čiščenje (najnovejše SYNC_TOMBSTONES_MAX, DESC).
+    const tombstones = await db.syncTombstone.findMany({
+      orderBy: { tombstonedAt: 'desc' },
+      take: SYNC_TOMBSTONES_MAX,
+      select: { mobileProjectId: true, tombstonedAt: true, reason: true },
     })
+
+    // Monoton kurzor: max videna revizija (ali ostane vhod, če nič novega).
+    const batchMaxRevision = projects.reduce((m, p) => Math.max(m, p.syncRevision), sinceRevision ?? 0)
+    if (deviceId && sinceRevision !== null) {
+      try {
+        await db.syncDevice.updateMany({
+          where: { deviceId, lastSyncCursor: { lt: batchMaxRevision } },
+          data: { lastSyncCursor: batchMaxRevision, lastSeenAt: new Date() },
+        })
+      } catch (error) {
+        logWithCorrelation('sync.device.cursor', correlationId, error)
+      }
+    }
+
+    const responseBody = {
+      projects,
+      // §36 partial sync: kurzor + nadaljevanje.
+      nextCursor: batchMaxRevision,
+      hasMore: projects.length === limit,
+      tombstones,
+      timestamp: new Date().toISOString(),
+    }
+    return NextResponse.json(responseBody)
   } catch (error) {
     logWithCorrelation('sync.get', correlationId, error)
     return NextResponse.json({ error: 'Napaka pri pridobivanju projektov', correlationId }, { status: 500 })
+  }
+}
+
+// DELETE (R148 §36 — tombstones): mobilni projekt je izbrisan iz zrcala.
+// Grobnica PREŽIVI brisanje projektne vrstice (SetNull) — ponovni sync
+// istega mobileProjectId ne ustvari dvojnika, ampak dobi iskren rezultat.
+export async function DELETE(request: Request) {
+  const auth = await authenticate(request)
+  if (!auth) return unauthorized()
+  // Isti scope kot vpis: ključ brez projects:write ne briše iz zrcala.
+  if (apiKeyScopeDenied(auth, 'projects:write')) {
+    return forbidden('Ključ nima scope-a projects:write — brisanje iz sync zrcala ni dovoljeno.')
+  }
+  const correlationId = correlationFromRequest(request)
+  try {
+    const body = (await request.json().catch(() => null)) as Record<string, unknown> | null
+    const mobileProjectId = typeof body?.mobileProjectId === 'string' ? body.mobileProjectId.trim() : ''
+    const reason =
+      typeof body?.reason === 'string' && body.reason.trim().length > 0
+        ? body.reason.trim().slice(0, 500)
+        : 'Izbrisano iz mobilne aplikacije'
+    if (!mobileProjectId || mobileProjectId.length > 128) {
+      return NextResponse.json({ error: 'mobileProjectId je obvezen (≤ 128 znakov)' }, { status: 400 })
+    }
+
+    // Fail-closed: grobnica samo za ZNAN mobilni projekt (živ ALI že z grobnico).
+    const existingTombstone = await db.syncTombstone.findUnique({ where: { mobileProjectId } })
+    if (existingTombstone) {
+      // Idempotenten ponovni DELETE → ista grobnica (brez dvojnikov).
+      return NextResponse.json({
+        tombstoned: true,
+        mobileProjectId,
+        tombstonedAt: existingTombstone.tombstonedAt.toISOString(),
+        already: true,
+      })
+    }
+    const project = await db.project.findUnique({
+      where: { mobileProjectId },
+      select: { id: true, status: true },
+    })
+    if (!project) {
+      return NextResponse.json(
+        { error: 'Mobilni projekt ne obstaja (niti živ niti že izbrisan)' },
+        { status: 404 },
+      )
+    }
+
+    const created = await db.$transaction(async (tx) => {
+      const row = await tx.syncTombstone.create({
+        data: {
+          mobileProjectId,
+          reason,
+          projectId: project.id,
+          ...(auth.kind === 'user' ? { createdById: auth.session.sub } : {}),
+        },
+      })
+      await auditInTx(tx, {
+        request,
+        userId: auth.kind === 'user' ? auth.session.sub : null,
+        akcija: 'SYNC_TOMBSTONE',
+        projectId: project.id,
+        oldValue: { status: project.status, syncMirror: true },
+        newValue: {
+          mobileProjectId,
+          reason,
+          tombstoneId: row.id,
+          servis: auth.kind === 'apikey' ? auth.name : 'uporabniška seja',
+        },
+      })
+      return row
+    })
+
+    return NextResponse.json({
+      tombstoned: true,
+      mobileProjectId,
+      tombstonedAt: created.tombstonedAt.toISOString(),
+      already: false,
+    })
+  } catch (error) {
+    logWithCorrelation('sync.delete', correlationId, error)
+    return NextResponse.json({ error: 'Napaka pri brisanju iz sync zrcala', correlationId }, { status: 500 })
   }
 }
