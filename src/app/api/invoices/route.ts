@@ -7,6 +7,7 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { z } from 'zod'
 import { authenticate, unauthorized, forbidden } from '@/lib/auth'
+import { correlationFromRequest, logWithCorrelation } from '@/lib/correlation'
 import { hasPermission, lacksPermission } from '@/lib/access'
 import type { SessionPayload } from '@/lib/session'
 import { allocateDocumentNumber, createWithNumber } from '@/lib/numbering'
@@ -99,6 +100,7 @@ function computeTotals(postavke: Array<{ kolicina: number; cenaNaEnoto: number; 
 export async function GET(request: Request) {
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
+  const correlationId = correlationFromRequest(request)
   try {
     const { searchParams } = new URL(request.url)
     const projectId = searchParams.get('projectId')
@@ -141,8 +143,8 @@ export async function GET(request: Request) {
     })
     return NextResponse.json(invoices)
   } catch (error) {
-    console.error('Invoices GET error:', error)
-    return NextResponse.json({ error: 'Napaka pri branju računov' }, { status: 500 })
+    logWithCorrelation('invoices.get', correlationId, error)
+    return NextResponse.json({ error: 'Napaka pri branju računov', correlationId }, { status: 500 })
   }
 }
 
@@ -153,6 +155,7 @@ export async function POST(request: Request) {
   const denied = denyUnlessInvoice(auth, 'invoices.create')
   if (denied) return denied
   const actor = actorIdOf(auth)
+  const correlationId = correlationFromRequest(request)
   try {
     const body = await request.json()
     const validated = createInvoiceSchema.parse(body)
@@ -209,8 +212,8 @@ export async function POST(request: Request) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues[0]?.message ?? 'Neveljavni podatki' }, { status: 400 })
     }
-    console.error('Invoices POST error:', error)
-    return NextResponse.json({ error: 'Napaka pri shranjevanju računa' }, { status: 500 })
+    logWithCorrelation('invoices.post', correlationId, error)
+    return NextResponse.json({ error: 'Napaka pri shranjevanju računa', correlationId }, { status: 500 })
   }
 }
 
@@ -223,6 +226,7 @@ export async function PATCH(request: Request) {
   const bodyPreview = (await request.clone().json().catch(() => ({}))) as { status?: string }
   const denied = denyUnlessInvoice(auth, bodyPreview.status === 'STORNIRAN' ? 'invoices.cancel' : 'invoices.issue')
   if (denied) return denied
+  const correlationId = correlationFromRequest(request)
   const actor = actorIdOf(auth)
   try {
     const body = await request.json()
@@ -282,8 +286,8 @@ export async function PATCH(request: Request) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues[0]?.message ?? 'Neveljavni podatki' }, { status: 400 })
     }
-    console.error('Invoices PATCH error:', error)
-    return NextResponse.json({ error: 'Napaka pri posodabljanju računa' }, { status: 500 })
+    logWithCorrelation('invoices.patch', correlationId, error)
+    return NextResponse.json({ error: 'Napaka pri posodabljanju računa', correlationId }, { status: 500 })
   }
 }
 
@@ -293,6 +297,7 @@ export async function DELETE(request: Request) {
   // Brisanje OSNUTKA računa = ista pravica kot ustvarjanje (invoices.create).
   const denied = denyUnlessInvoice(auth, 'invoices.create')
   if (denied) return denied
+  const correlationId = correlationFromRequest(request)
   try {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
@@ -313,7 +318,7 @@ export async function DELETE(request: Request) {
     await db.invoice.delete({ where: { id } })
     return NextResponse.json({ ok: true })
   } catch (error) {
-    console.error('Invoices DELETE error:', error)
-    return NextResponse.json({ error: 'Napaka pri brisanju računa' }, { status: 500 })
+    logWithCorrelation('invoices.delete', correlationId, error)
+    return NextResponse.json({ error: 'Napaka pri brisanju računa', correlationId }, { status: 500 })
   }
 }

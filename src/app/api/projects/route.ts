@@ -14,12 +14,14 @@ import {
 } from '@/lib/access'
 import { assertTransition, InvalidTransitionError } from '@/lib/project-state'
 import { auditInTx } from '@/lib/audit'
+import { correlationFromRequest, logWithCorrelation } from '@/lib/correlation'
 
 // GET - Pridobi projekte s podatki o strankah in meritvah (filtrirano po vlogi)
 export async function GET(request: Request) {
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
+  const correlationId = correlationFromRequest(request)
   try {
     const projects = await db.project.findMany({
       where: projectWhereForPrincipal(auth),
@@ -37,8 +39,8 @@ export async function GET(request: Request) {
     })
     return NextResponse.json(projects)
   } catch (error) {
-    console.error('Projects GET Error:', error)
-    return NextResponse.json({ error: 'Napaka pri branju projektov' }, { status: 500 })
+    logWithCorrelation('projects.get', correlationId, error)
+    return NextResponse.json({ error: 'Napaka pri branju projektov', correlationId }, { status: 500 })
   }
 }
 
@@ -48,6 +50,7 @@ export async function POST(request: Request) {
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
   const actor = actorIdOf(auth)
+  const correlationId = correlationFromRequest(request)
   try {
     const body = await request.json()
     const validated = createProjectSchema.parse(body)
@@ -85,8 +88,8 @@ export async function POST(request: Request) {
     if (error && typeof error === 'object' && 'issues' in error) {
       return NextResponse.json({ error: 'Neveljavni podatki', details: (error as { issues: unknown }).issues }, { status: 400 })
     }
-    console.error('Projects POST Error:', error)
-    return NextResponse.json({ error: 'Napaka pri ustvarjanju projekta' }, { status: 500 })
+    logWithCorrelation('projects.post', correlationId, error)
+    return NextResponse.json({ error: 'Napaka pri ustvarjanju projekta', correlationId }, { status: 500 })
   }
 }
 
@@ -96,6 +99,7 @@ export async function PATCH(request: Request) {
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
   const actor = actorIdOf(auth)
+  const correlationId = correlationFromRequest(request)
   try {
     const body = await request.json()
     const { id, ...updateData } = body
@@ -167,7 +171,7 @@ export async function PATCH(request: Request) {
     if (error && typeof error === 'object' && 'issues' in error) {
       return NextResponse.json({ error: 'Neveljavni podatki', details: (error as { issues: unknown }).issues }, { status: 400 })
     }
-    console.error('Projects PATCH Error:', error)
-    return NextResponse.json({ error: 'Napaka pri posodabljanju projekta' }, { status: 500 })
+    logWithCorrelation('projects.patch', correlationId, error)
+    return NextResponse.json({ error: 'Napaka pri posodabljanju projekta', correlationId }, { status: 500 })
   }
 }

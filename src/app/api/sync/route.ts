@@ -32,6 +32,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { db } from '@/lib/db'
 import { authenticate, unauthorized, forbidden } from '@/lib/auth'
+import { correlationFromRequest, logWithCorrelation } from '@/lib/correlation'
 import { assertProjectAccess, projectWhereForPrincipal, apiKeyScopeDenied } from '@/lib/access'
 import {
   transitionAllowed,
@@ -95,6 +96,9 @@ export async function POST(request: Request) {
     return forbidden('Ključ nima scope-a projects:write — vpis prek sync ni dovoljen.')
   }
 
+  // R139 (§22): correlation ID za korelacijo serije sync z Vercel logi.
+  const correlationId = correlationFromRequest(request)
+
   const rawList = Array.isArray(body) ? body : [body]
   const results: SyncResult[] = []
   const syncedProjects: Array<Record<string, unknown>> = []
@@ -132,7 +136,7 @@ export async function POST(request: Request) {
           : error instanceof Error && error.message.includes('Dostop do projekta')
             ? error.message
             : 'Napaka pri sinhronizaciji zapisa'
-      console.error('Sync POST item error:', error)
+      logWithCorrelation('sync.post.item', correlationId, error)
       results.push({ mobileProjectId: mobileProject.id, ok: false, error: message })
     }
   }
@@ -359,6 +363,7 @@ export async function GET(request: Request) {
   if (apiKeyScopeDenied(auth, 'projects:read')) {
     return forbidden('Ključ nima scope-a projects:read — branje sync zrcala ni dovoljeno.')
   }
+  const correlationId = correlationFromRequest(request)
   try {
     const { searchParams } = new URL(request.url)
     const lastSync = searchParams.get('lastSync')
@@ -390,7 +395,7 @@ export async function GET(request: Request) {
       timestamp: new Date().toISOString(),
     })
   } catch (error) {
-    console.error('Sync GET Error:', error)
-    return NextResponse.json({ error: 'Napaka pri pridobivanju projektov' }, { status: 500 })
+    logWithCorrelation('sync.get', correlationId, error)
+    return NextResponse.json({ error: 'Napaka pri pridobivanju projektov', correlationId }, { status: 500 })
   }
 }

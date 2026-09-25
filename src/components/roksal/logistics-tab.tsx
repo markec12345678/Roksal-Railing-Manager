@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
 import { useToast } from '@/hooks/use-toast'
+import { downloadCsv, todayStamp } from '@/lib/csv-export'
 import {
   Calendar, Download, Users, Wrench, Plus, Clock, MapPin, CheckCircle2,
   Loader2, AlertTriangle, Truck, Package,
@@ -105,6 +106,30 @@ function icsFold(line: string): string {
   }
   out.push(rest)
   return out.join('\r\n')
+}
+
+// ---------------------------------------------------------------------------
+// R139 — CSV izvoz terminov (isti deterministični kontrakt kot Zaloga/Računi
+// iz R136: BOM, podpičje, decimalna vejica, CRLF — src/lib/csv-export.ts).
+// Pisarna dobi termini kot preglednico (mesečna poročila, urni list).
+// ---------------------------------------------------------------------------
+function downloadSchedulesCsv(schedules: Schedule[]): number {
+  downloadCsv(
+    `Termini-${todayStamp()}.csv`,
+    ['Datum', 'Od', 'Do', 'Projekt', 'Stranka', 'Ekipa', 'Status', 'Lokacija', 'Ure'],
+    schedules.map((s) => [
+      formatDate(s.datumZacetka),
+      formatTime(s.datumZacetka),
+      formatTime(s.datumKonca || s.datumZacetka),
+      s.project.nazivProjekta,
+      s.project.customer.ime,
+      s.crew?.naziv ?? '',
+      STATUS_LABELS[s.status] || s.status,
+      s.lokacija ?? '',
+      s.predvideneUre,
+    ]),
+  )
+  return schedules.length
 }
 
 function icsUtc(d: string | Date): string {
@@ -294,9 +319,23 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
               type="button"
               variant="outline"
               disabled={schedules.length === 0}
+              aria-label="Izvozi vidne termine kot CSV"
+              title="Termine kot preglednico (Excel)"
+              className="shrink-0 focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              onClick={() => {
+                const n = downloadSchedulesCsv(schedules)
+                if (n > 0) toast({ title: `CSV izvožen (${n} terminov)`, description: 'Datoteka vsebuje vidne termine — odpravite jo v Excelu.' })
+              }}
+            >
+              <Download className="h-4 w-4 mr-1" aria-hidden /> CSV
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={schedules.length === 0}
               aria-label="Izvozi termine montaže kot koledarsko datoteko (.ics)"
               title="Termine odpri v Google/Apple/Outlook koledarju"
-              className="shrink-0"
+              className="shrink-0 focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
               onClick={() => {
                 const n = downloadIcs(schedules)
                 if (n > 0) toast({ title: `Koledar izvožen (${n} terminov)`, description: 'Datoteko odpri v telefonu — dogodki se dodajo v koledar.' })
@@ -315,7 +354,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
             </CardContent></Card>
           ) : (
             schedules.map((s) => (
-              <Card key={s.id} className="overflow-hidden">
+              <Card key={s.id} className="overflow-hidden transition-[border-color,box-shadow] duration-150 hover:border-roksal-navy/25 hover:shadow-sm focus-within:border-roksal-navy/25">
                 <div className="flex items-stretch">
                   <div className="w-1.5 shrink-0" style={{ backgroundColor: s.crew?.barva || '#1d2b3e' }} />
                   <CardContent className="p-3 flex-1">
@@ -328,10 +367,10 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                           </Badge>
                         </div>
                         <div className="text-[10px] text-muted-foreground">{s.project.customer.ime}</div>
-                        <div className="flex flex-wrap items-center gap-2 text-[10px] mt-1">
+                        <div className="flex flex-wrap items-center gap-2 text-[10px] mt-1 tabular-nums text-muted-foreground">
                           <span className="flex items-center gap-0.5"><Clock className="h-2.5 w-2.5" />{formatDate(s.datumZacetka)} {formatTime(s.datumZacetka)}</span>
                           <span>·</span>
-                          <span>{s.predvideneUre}h{s.dejanskeUre ? ` (dejan. ${s.dejanskeUre}h)` : ''}</span>
+                          <span className="text-roksal-navy">{s.predvideneUre}h{s.dejanskeUre ? ` (dejan. ${s.dejanskeUre}h)` : ''}</span>
                           {s.crew && <><span>·</span><span className="flex items-center gap-0.5"><Users className="h-2.5 w-2.5" />{s.crew.naziv}</span></>}
                           {s.lokacija && <><span>·</span><span className="flex items-center gap-0.5"><MapPin className="h-2.5 w-2.5" />{s.lokacija}</span></>}
                         </div>
@@ -339,12 +378,12 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                     </div>
                     {/* Status actions */}
                     {s.status === 'NAVRTENO' && (
-                      <Button type="button" size="sm" variant="outline" className="h-6 text-[10px] bg-amber-50" onClick={() => handleStatusChange(s.id, 'V_TEKU')}>
+                      <Button type="button" size="sm" variant="outline" className="h-6 text-[10px] bg-amber-50 focus-visible:ring-2 focus-visible:ring-roksal-amber/50" onClick={() => handleStatusChange(s.id, 'V_TEKU')}>
                         Začni montažo
                       </Button>
                     )}
                     {s.status === 'V_TEKU' && (
-                      <Button type="button" size="sm" variant="outline" className="h-6 text-[10px] bg-green-50" onClick={() => handleStatusChange(s.id, 'ZAKLJUCENO', s.predvideneUre)}>
+                      <Button type="button" size="sm" variant="outline" className="h-6 text-[10px] bg-green-50 focus-visible:ring-2 focus-visible:ring-roksal-navy/40" onClick={() => handleStatusChange(s.id, 'ZAKLJUCENO', s.predvideneUre)}>
                         <CheckCircle2 className="h-3 w-3 mr-1" /> Zaključi (odštej material)
                       </Button>
                     )}

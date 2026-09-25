@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Skeleton } from '@/components/ui/skeleton'
 import { WeatherCard } from '@/components/roksal/weather-card'
+import { AuditTrailDialog } from '@/components/roksal/audit-trail-dialog'
 import {
   Dialog,
   DialogContent,
@@ -289,6 +290,8 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
   // Project detail dialog
   const [detailProject, setDetailProject] = useState<Project | null>(null)
   const [detailOpen, setDetailOpen] = useState(false)
+  // R139: revizijska sled (audit trail) — dialog nad podrobnostmi projekta.
+  const [auditOpen, setAuditOpen] = useState(false)
   const [statusUpdating, setStatusUpdating] = useState(false)
 
   // Status change dropdown
@@ -1793,6 +1796,17 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                 <DialogDescription>
                   Podrobnosti projekta
                 </DialogDescription>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="mt-1 w-full border-roksal-navy/20 text-roksal-navy hover:bg-roksal-navy/5 hover:text-roksal-navy focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                  aria-label="Odpri revizijsko sled projekta"
+                  onClick={() => setAuditOpen(true)}
+                >
+                  <History className="h-3.5 w-3.5 mr-1.5 text-roksal-amber" aria-hidden />
+                  Revizijska sled
+                </Button>
               </DialogHeader>
               <div className="space-y-4 py-2">
                 <div className="space-y-1.5">
@@ -2505,6 +2519,13 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
           )}
         </DialogContent>
       </Dialog>
+
+      {/* R139: revizijska sled — odprta iz podrobnosti projekta */}
+      <AuditTrailDialog
+        projectId={detailProject?.id ?? null}
+        open={auditOpen}
+        onOpenChange={setAuditOpen}
+      />
     </div>
   )
 }

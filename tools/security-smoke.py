@@ -427,6 +427,19 @@ st, _, _ = call("/api/setup", "POST", {"email": "nekomu@roksal.si", "password": 
 check("POST /api/setup brez žetona → 403 ali 404 (fail-closed)", st in (403, 404), f"dobil {st}")
 
 
+print("\n[21] Correlation ID (R139 — issue #5 §22: korelacija klient ↔ logi)")
+# Proxy dodeli x-correlation-id VSEM odgovorom — tudi javnim (demo health check).
+st, h, _ = call("/api/auth/demo")
+corr = h.get("x-correlation-id", "")
+check("GET /api/auth/demo nosi x-correlation-id", st == 200 and len(corr) >= 8, f"st={st} corr={corr[:16]}")
+# Klientov correlation ID (sanitiziran) se prevzame — korelacija screenshot
+# napake s strežniškim zapisom (isti ID v Vercel logih).
+client_corr = "smoke-r139-client-id-001"
+st2, h2, _ = call("/api/auth/demo", headers={"x-correlation-id": client_corr})
+check("klientov x-correlation-id se prevzame (echo)", st2 == 200 and h2.get("x-correlation-id") == client_corr,
+      f"st={st2} dobil={h2.get('x-correlation-id', '')[:24]}")
+
+
 print(f"\n{'=' * 60}")
 print(f"  {passed} uspešnih · {failed} neuspešnih · {skipped} preskočenih")
 print(f"{'=' * 60}\n")

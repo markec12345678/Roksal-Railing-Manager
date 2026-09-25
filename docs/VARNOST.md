@@ -136,7 +136,7 @@ Tri vrzeli s seznama spodaj so zdaj zapolnjene:
 | **Revizijski dnevnik** | `src/lib/audit.ts` — enoten zapis, nikoli ne vrže in ne blokira zahtevka. `LOGIN`, `LOGIN_FAILED`, `PASSWORD_CHANGED`, `RAILING_LAYOUT`, `QUOTE_CALCULATED`. Branje prek `GET /api/audit?projectId=…` (VODJA/ADMIN ali dodeljeni monter). |
 
 Preverjeno v `tools/security-smoke.py`, razdelka [9] Vloge in [10] Omejevanje
-hitrosti — skupaj 113 preverjanj, tečejo v CI ob vsakem pushu.
+hitrosti — skupaj 115 preverjanj, tečejo v CI ob vsakem pushu.
 
 ## Kaj še NI narejeno
 

@@ -19,6 +19,7 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { authenticate, unauthorized } from '@/lib/auth'
+import { correlationFromRequest, logWithCorrelation } from '@/lib/correlation'
 import {
   searchVisibilityFor,
   projectSearchWhereFor,
@@ -106,13 +107,9 @@ export async function GET(request: Request) {
       })),
     })
   } catch (error) {
-    console.error(
-      JSON.stringify({
-        event: 'search.get.error',
-        correlationId,
-        error: error instanceof Error ? error.message : String(error),
-      })
-    )
+    // R139: skupni pomožnik (src/lib/correlation.ts) — ENA oblika loga čez
+    // vse rute (prej je ta ruta nosila lasten prepis istega vzorca).
+    logWithCorrelation('search.get.error', correlationId ?? correlationFromRequest(request), error)
     // §22: uporabniku NIKOLI stack trace / Prisma internals — samo sporočilo
     // + correlation ID za povezavo z logi.
     return NextResponse.json(

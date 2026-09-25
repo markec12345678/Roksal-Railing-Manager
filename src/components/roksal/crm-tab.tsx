@@ -213,7 +213,7 @@ export function CrmTab() {
                 <CheckCircle2 className="h-3 w-3 text-green-600" />
                 <span className="text-[10px] text-muted-foreground">Aktivni</span>
               </div>
-              <div className="text-lg font-bold text-roksal-navy">{stats.aktivni}</div>
+              <div className="text-lg font-bold text-roksal-navy tabular-nums">{stats.aktivni}</div>
             </CardContent>
           </Card>
           <Card className="border-amber-200">
@@ -222,7 +222,7 @@ export function CrmTab() {
                 <Bell className="h-3 w-3 text-amber-600" />
                 <span className="text-[10px] text-muted-foreground">Opomniki</span>
               </div>
-              <div className="text-lg font-bold text-amber-700">
+              <div className="text-lg font-bold text-amber-700 tabular-nums">
                 {stats.zOpomniki}
                 {stats.potekliOpomniki > 0 && (
                   <span className="text-[10px] text-red-600 ml-1">({stats.potekliOpomniki} poteklo)</span>
@@ -236,7 +236,7 @@ export function CrmTab() {
                 <TrendingUp className="h-3 w-3 text-roksal-navy" />
                 <span className="text-[10px] text-muted-foreground">Skupni LTV</span>
               </div>
-              <div className="text-lg font-bold text-roksal-navy">{formatLTV(stats.skupniLTV)}</div>
+              <div className="text-lg font-bold text-roksal-navy tabular-nums">{formatLTV(stats.skupniLTV)}</div>
             </CardContent>
           </Card>
           <Card className="border-purple-200">
@@ -245,7 +245,7 @@ export function CrmTab() {
                 <Users className="h-3 w-3 text-purple-600" />
                 <span className="text-[10px] text-muted-foreground">Skupno</span>
               </div>
-              <div className="text-lg font-bold text-roksal-navy">{stats.skupno}</div>
+              <div className="text-lg font-bold text-roksal-navy tabular-nums">{stats.skupno}</div>
             </CardContent>
           </Card>
         </div>
@@ -271,7 +271,7 @@ export function CrmTab() {
                 variant={statusFilter === s ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setStatusFilter(s)}
-                className={`h-7 shrink-0 text-[11px] ${statusFilter === s ? 'bg-roksal-navy text-white' : ''}`}
+                className={`h-7 shrink-0 text-[11px] focus-visible:ring-2 focus-visible:ring-roksal-navy/40 ${statusFilter === s ? 'bg-roksal-navy text-white' : ''}`}
               >
                 {s === 'ALL' ? 'Vsi' : STATUS_LABELS[s]}
               </Button>
@@ -301,7 +301,7 @@ export function CrmTab() {
       ) : (
         <div className="space-y-2">
           {filtered.map((c) => (
-            <Card key={c.id} className="cursor-pointer hover:border-roksal-amber/40 transition-colors" onClick={() => handleOpenDetail(c)}>
+            <Card key={c.id} className="cursor-pointer transition-[border-color,box-shadow] duration-150 hover:border-roksal-amber/40 hover:shadow-sm" onClick={() => handleOpenDetail(c)}>
               <CardContent className="p-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
@@ -334,12 +334,12 @@ export function CrmTab() {
                           {c.kategorija}
                         </span>
                       )}
-                      <span className="flex items-center gap-0.5">
+                      <span className="flex items-center gap-0.5 tabular-nums">
                         <FileText className="h-2.5 w-2.5 text-muted-foreground" />
                         {c.skupajProjektov} projektov
                       </span>
                       {c.ltv > 0 && (
-                        <span className="flex items-center gap-0.5 font-medium text-roksal-amber">
+                        <span className="flex items-center gap-0.5 font-medium text-roksal-amber tabular-nums">
                           <Euro className="h-2.5 w-2.5" />
                           {formatLTV(c.ltv)}
                         </span>
@@ -350,7 +350,7 @@ export function CrmTab() {
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="shrink-0 h-7"
+                    className="shrink-0 h-7 focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
                     onClick={(e) => {
                       e.stopPropagation()
                       handleOpenEdit(c)

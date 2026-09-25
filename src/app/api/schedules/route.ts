@@ -12,6 +12,14 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { authenticate, unauthorized } from '@/lib/auth'
 import { denyWithoutPermission } from '@/lib/auth'
+import { correlationFromRequest, logWithCorrelation } from '@/lib/correlation'
+
+// R139 (issue #5 §17): neomejen findMany → privzeta zgornja meja + opcijske
+// strani (isti kontrakt kot /api/customers iz R138). Odzivna OBLIKA (polje)
+// ostane ista — mobilni klient ni prelomen. Neveljavne številke → fail-closed
+// na privzeti limit (patološki vnosi ne morejo vleči neomejeno vrstic).
+const DEFAULT_LIMIT = 500
+const MAX_LIMIT = 500
 
 /** Nezadostna zaloga — signal za 409 (ne 500); rollback opravi $transaction. */
 class InsufficientStockError extends Error {
@@ -21,11 +29,12 @@ class InsufficientStockError extends Error {
   }
 }
 
-// GET — termini (z option projectId, crewId, datum range)
+// GET — termini (z option projectId, crewId, datum range, limit/offset)
 export async function GET(request: Request) {
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
+  const correlationId = correlationFromRequest(request)
   try {
     const { searchParams } = new URL(request.url)
     const projectId = searchParams.get('projectId')
@@ -33,6 +42,15 @@ export async function GET(request: Request) {
     const status = searchParams.get('status')
     const od = searchParams.get('od')
     const doD = searchParams.get('do')
+
+    // R139 (§17): strani — neveljavne številke → privzeti limit (fail-closed).
+    const limitRaw = Number.parseInt(searchParams.get('limit') ?? '', 10)
+    const offsetRaw = Number.parseInt(searchParams.get('offset') ?? '', 10)
+    const limit =
+      Number.isFinite(limitRaw) && limitRaw > 0
+        ? Math.min(limitRaw, MAX_LIMIT)
+        : DEFAULT_LIMIT
+    const offset = Number.isFinite(offsetRaw) && offsetRaw > 0 ? offsetRaw : 0
 
     const where = {
       ...(projectId ? { projectId } : {}),
@@ -50,12 +68,14 @@ export async function GET(request: Request) {
         equipment: { include: { equipment: { select: { id: true, naziv: true, tip: true } } } },
       },
       orderBy: { datumZacetka: 'asc' },
+      take: limit,
+      skip: offset,
     })
 
     return NextResponse.json(schedules)
   } catch (error) {
-    console.error('Schedules GET Error:', error)
-    return NextResponse.json({ error: 'Napaka pri branju terminov' }, { status: 500 })
+    logWithCorrelation('schedules.get', correlationId, error)
+    return NextResponse.json({ error: 'Napaka pri branju terminov', correlationId }, { status: 500 })
   }
 }
 
@@ -68,6 +88,7 @@ export async function POST(request: Request) {
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
+  const correlationId = correlationFromRequest(request)
   try {
     const body = await request.json()
     const { projectId, crewId, monterId, datumZacetka, datumKonca, predvideneUre, opombe, lokacija } = body
@@ -140,8 +161,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json(schedule, { status: 201 })
   } catch (error) {
-    console.error('Schedules POST Error:', error)
-    return NextResponse.json({ error: 'Napaka pri ustvarjanju termina' }, { status: 500 })
+    logWithCorrelation('schedules.post', correlationId, error)
+    return NextResponse.json({ error: 'Napaka pri ustvarjanju termina', correlationId }, { status: 500 })
   }
 }
 
@@ -154,6 +175,7 @@ export async function PATCH(request: Request) {
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
+  const correlationId = correlationFromRequest(request)
   try {
     const body = await request.json()
     const { id, status, dejanskeUre, opombe } = body
@@ -250,8 +272,8 @@ export async function PATCH(request: Request) {
         { status: 409 },
       )
     }
-    console.error('Schedules PATCH Error:', error)
-    return NextResponse.json({ error: 'Napaka pri posodabljanju termina' }, { status: 500 })
+    logWithCorrelation('schedules.patch', correlationId, error)
+    return NextResponse.json({ error: 'Napaka pri posodabljanju termina', correlationId }, { status: 500 })
   }
 }
 
@@ -264,6 +286,7 @@ export async function DELETE(request: Request) {
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
+  const correlationId = correlationFromRequest(request)
   try {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
@@ -271,7 +294,7 @@ export async function DELETE(request: Request) {
     await db.installationSchedule.delete({ where: { id } })
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Schedules DELETE Error:', error)
-    return NextResponse.json({ error: 'Napaka pri brisanju termina' }, { status: 500 })
+    logWithCorrelation('schedules.delete', correlationId, error)
+    return NextResponse.json({ error: 'Napaka pri brisanju termina', correlationId }, { status: 500 })
   }
 }

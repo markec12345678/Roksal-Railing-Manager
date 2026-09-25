@@ -26,6 +26,7 @@ import { lacksPermission } from '@/lib/access'
 import { hashPassword } from '@/lib/password'
 import { revokeAllForUser } from '@/lib/session-registry'
 import { auditInTx } from '@/lib/audit'
+import { correlationFromRequest, logWithCorrelation } from '@/lib/correlation'
 import {
   VALID_ROLES,
   generateInviteToken,
@@ -35,6 +36,10 @@ import {
   profileLifecycleView,
   emailTaken,
 } from '@/lib/user-lifecycle'
+
+// Meje strani (R139 §17) — isti kontrakt kot customers/schedules.
+const USER_DEFAULT_LIMIT = 500
+const USER_MAX_LIMIT = 500
 
 const actionsSchema = z.discriminatedUnion('action', [
   z.object({
@@ -76,10 +81,23 @@ export async function GET(request: Request) {
   if (lacksPermission(auth, 'users.read')) {
     return forbidden('Seznam uporabnikov je pravica users.read (pisarna).')
   }
+  const correlationId = correlationFromRequest(request)
   try {
+    // R139 (issue #5 §17): strop na findMany — isti kontrakt kot customers/
+    // schedules (neveljavne številke → privzeti limit, odzivna oblika ista).
+    const { searchParams } = new URL(request.url)
+    const limitRaw = Number.parseInt(searchParams.get('limit') ?? '', 10)
+    const offsetRaw = Number.parseInt(searchParams.get('offset') ?? '', 10)
+    const limit =
+      Number.isFinite(limitRaw) && limitRaw > 0
+        ? Math.min(limitRaw, USER_MAX_LIMIT)
+        : USER_DEFAULT_LIMIT
+    const offset = Number.isFinite(offsetRaw) && offsetRaw > 0 ? offsetRaw : 0
     const users = await db.profile.findMany({
       orderBy: { createdAt: 'desc' },
       select: USER_LIST_SELECT,
+      take: limit,
+      skip: offset,
     })
     return NextResponse.json(
       users.map((u) => ({
@@ -94,8 +112,8 @@ export async function GET(request: Request) {
       })),
     )
   } catch (error) {
-    console.error('Users GET Error:', error)
-    return NextResponse.json({ error: 'Napaka pri branju uporabnikov' }, { status: 500 })
+    logWithCorrelation('users.get', correlationId, error)
+    return NextResponse.json({ error: 'Napaka pri branju uporabnikov', correlationId }, { status: 500 })
   }
 }
 
@@ -109,6 +127,7 @@ export async function POST(request: Request) {
   if (lacksPermission(auth, 'users.manage')) {
     return forbidden('Upravljanje računov je pravica users.manage (izključno administrator).')
   }
+  const correlationId = correlationFromRequest(request)
 
   try {
     const body = await request.json().catch(() => null)
@@ -297,8 +316,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json(response)
   } catch (error) {
-    console.error('Users POST Error:', error)
-    return NextResponse.json({ error: 'Napaka pri upravljanju uporabnikov' }, { status: 500 })
+    logWithCorrelation('users.post', correlationId, error)
+    return NextResponse.json({ error: 'Napaka pri upravljanju uporabnikov', correlationId }, { status: 500 })
   }
 }
 
