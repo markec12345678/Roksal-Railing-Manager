@@ -496,6 +496,30 @@ ok = st == 401 and len(h.get("x-correlation-id", "")) >= 8
 check("POST /api/notifications/read brez seje → 401 + correlation", ok, f"dobil {st}")
 
 
+print("\n[26] Šarže / lot traceability (R144 — issue #5 §24: fail-closed vrata)")
+# Bralna ruta po R144: GET brez seje → 401 + korelacija; z sejo → 200 s
+# strukturo { inventory?, lots: [...] } (§17 DTO, strop 100).
+st, h, body = call("/api/inventory/lots")
+ok = st == 401 and len(h.get("x-correlation-id", "")) >= 8
+check("GET /api/inventory/lots brez seje → 401 + correlation", ok, f"dobil {st}")
+if auth:
+    st, h, body = call("/api/inventory/lots", headers=auth)
+    try:
+        rows = json.loads(body)
+    except Exception:
+        rows = None
+    ok = (
+        st == 200
+        and isinstance(rows, dict)
+        and isinstance(rows.get("lots"), list)
+        and len(h.get("x-correlation-id", "")) >= 8
+    )
+    check("GET /api/inventory/lots (s sejo) → 200, {lots: []} + correlation", ok,
+          f"st={st} lots={len(rows.get('lots', [])) if isinstance(rows, dict) else 'ne-parsano'}")
+else:
+    skip("[26] šarže (sejo)", "seja ni na voljo (prijava spodletela)")
+
+
 print(f"\n{'=' * 60}")
 print(f"  {passed} uspešnih · {failed} neuspešnih · {skipped} preskočenih")
 print(f"{'=' * 60}\n")

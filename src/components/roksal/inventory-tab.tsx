@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/select'
 import {
   Package,
+  PackageSearch,
   AlertTriangle,
   Filter,
   TrendingDown,
@@ -35,6 +36,8 @@ import {
   ShoppingCart,
   Euro,
   Download,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { downloadCsv, todayStamp } from '@/lib/csv-export'
@@ -57,6 +60,34 @@ interface InventoryItem {
 interface Project {
   id: string
   nazivProjekta: string
+}
+
+// R144 (§24) — šarže
+interface LotAllocationDto {
+  id: string
+  eventType: string
+  kolicina: number
+  projekt: string | null
+  createdAt: string
+}
+interface LotDto {
+  id: string
+  lotNumber: string
+  dobavitelj: string | null
+  orderId: string | null
+  deliveryDate: string
+  purchasePrice: number | null
+  quantityInitial: number
+  quantityRemaining: number
+  status: string
+  note: string | null
+  allocations: LotAllocationDto[]
+}
+interface LotsResponse {
+  inventory: { id: string; naziv: string; enota: string }
+  lots: LotDto[]
+  activeLots: number
+  exhaustedLots: number
 }
 
 const typeLabels: Record<string, string> = {
@@ -86,6 +117,13 @@ const movementColors: Record<MovementType, string> = {
   ODPIS: 'bg-roksal-red/15 text-roksal-red',
 }
 
+// R144 (§24) — življenjski status šarže (pika + oznaka, jezik pozivi/dostava).
+const lotStatusStyle: Record<string, { dot: string; text: string; label: string }> = {
+  ACTIVE: { dot: 'bg-roksal-green', text: 'text-roksal-green', label: 'Aktivna' },
+  EXHAUSTED: { dot: 'bg-roksal-amber', text: 'text-roksal-amber', label: 'Izčrpana' },
+  CLOSED: { dot: 'bg-muted-foreground', text: 'text-muted-foreground', label: 'Zaprta' },
+}
+
 export function InventoryTab() {
   const [inventory, setInventory] = useState<InventoryItem[]>([])
   const [projects, setProjects] = useState<Project[]>([])
@@ -99,6 +137,12 @@ export function InventoryTab() {
   const [movementQuantity, setMovementQuantity] = useState('')
   const [movementProjectId, setMovementProjectId] = useState('')
   const [submitting, setSubmitting] = useState(false)
+
+  // R144 (§24) — šarže (lot/batch) na artikel: expand/collapse + živi podatki
+  const [lotsOpenId, setLotsOpenId] = useState<string | null>(null)
+  const [lotsData, setLotsData] = useState<LotsResponse | null>(null)
+  const [lotsLoading, setLotsLoading] = useState(false)
+  const [lotsError, setLotsError] = useState<string | null>(null)
 
   useEffect(() => {
     async function fetchData() {
@@ -190,6 +234,33 @@ export function InventoryTab() {
         onClick: () => {},
       },
     })
+  }
+
+  // R144 (§24) — odpri/zapri šarže artikla (živi GET /api/inventory/lots).
+  async function toggleLots(item: InventoryItem) {
+    if (lotsOpenId === item.id) {
+      setLotsOpenId(null)
+      setLotsData(null)
+      setLotsError(null)
+      return
+    }
+    setLotsOpenId(item.id)
+    setLotsData(null)
+    setLotsError(null)
+    setLotsLoading(true)
+    try {
+      const res = await fetch(`/api/inventory/lots?inventoryId=${encodeURIComponent(item.id)}`)
+      if (!res.ok) {
+        // Fail-verbose: napaka se pokaže (brez tihe degradacije).
+        setLotsError(`Napaka ${res.status} pri branju šarž.`)
+        return
+      }
+      setLotsData((await res.json()) as LotsResponse)
+    } catch {
+      setLotsError('Omrežna napaka pri branju šarž.')
+    } finally {
+      setLotsLoading(false)
+    }
   }
 
   /** R136 — CSV izvoz vidnih artiklov (upošteva aktiven filter; SI oblika). */
@@ -502,6 +573,135 @@ export function InventoryTab() {
                         </span>
                       </div>
                     </div>
+
+                    {/* R144 (§24) — Šarže (lot/batch): sledljivost porekla */}
+                    <div>
+                      <button
+                        type="button"
+                        onClick={() => void toggleLots(item)}
+                        aria-expanded={lotsOpenId === item.id}
+                        className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 text-[10px] font-semibold text-roksal-navy/70 transition-colors hover:bg-secondary hover:text-roksal-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                        title="Od kod je ta material? Šarže, dobavitelji in poraba"
+                      >
+                        <PackageSearch className="h-3 w-3" aria-hidden="true" />
+                        Šarže
+                        {lotsOpenId === item.id ? (
+                          <ChevronUp className="h-3 w-3" aria-hidden="true" />
+                        ) : (
+                          <ChevronDown className="h-3 w-3" aria-hidden="true" />
+                        )}
+                      </button>
+
+                      {lotsOpenId === item.id && (
+                        <div className="mt-1.5 rounded-lg border border-border/60 bg-secondary/30 p-2 animate-fade-in-up">
+                          {lotsLoading && (
+                            <div className="flex items-center justify-center gap-2 py-3 text-[11px] text-muted-foreground">
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                              Branje šarž …
+                            </div>
+                          )}
+                          {!lotsLoading && lotsError && (
+                            <p
+                              role="alert"
+                              className="flex items-start gap-1.5 rounded-md border border-roksal-red/30 bg-roksal-red/5 px-2 py-1.5 text-[11px] font-semibold text-roksal-red"
+                            >
+                              <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" aria-hidden="true" />
+                              {lotsError}
+                            </p>
+                          )}
+                          {!lotsLoading && !lotsError && lotsData && lotsData.lots.length === 0 && (
+                            <p className="py-2 text-center text-[11px] text-muted-foreground">
+                              Ta artikel še nima šarž — prvi prihod jih ustvari.
+                            </p>
+                          )}
+                          {!lotsLoading && !lotsError && lotsData && lotsData.lots.length > 0 && (
+                            <ul className="space-y-1.5" role="list">
+                              {lotsData.lots.map((lot) => {
+                                const st = lotStatusStyle[lot.status] ?? lotStatusStyle.ACTIVE
+                                const pct =
+                                  lot.quantityInitial > 0
+                                    ? Math.max((lot.quantityRemaining / lot.quantityInitial) * 100, 0)
+                                    : 0
+                                return (
+                                  <li
+                                    key={lot.id}
+                                    className="rounded-md border border-border/50 bg-white p-2 transition-all hover:border-roksal-navy/25 hover:shadow-sm"
+                                  >
+                                    <div className="flex items-center justify-between gap-2">
+                                      <div className="flex min-w-0 items-center gap-1.5">
+                                        <span
+                                          className={`h-1.5 w-1.5 shrink-0 rounded-full ${st.dot}`}
+                                          aria-hidden="true"
+                                        />
+                                        <p className="truncate font-mono text-[10px] font-semibold text-roksal-navy">
+                                          {lot.lotNumber}
+                                        </p>
+                                      </div>
+                                      <span
+                                        className={`shrink-0 text-[9px] font-bold tabular-nums ${st.text}`}
+                                      >
+                                        {st.label}
+                                      </span>
+                                    </div>
+                                    <div className="mt-1 flex items-center justify-between gap-2 text-[10px] text-muted-foreground">
+                                      <span className="truncate">
+                                        {lot.dobavitelj ? (
+                                          lot.dobavitelj
+                                        ) : (
+                                          <span className="italic">poreklo neznano</span>
+                                        )}
+                                        {lot.purchasePrice != null && (
+                                          <span className="ml-1 tabular-nums text-roksal-navy/70">
+                                            · {lot.purchasePrice.toLocaleString('sl-SI', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €/{lotsData.inventory.enota}
+                                          </span>
+                                        )}
+                                      </span>
+                                      <span className="shrink-0 tabular-nums">
+                                        {new Date(lot.deliveryDate).toLocaleDateString('sl-SI')}
+                                      </span>
+                                    </div>
+                                    <div className="mt-1 flex items-center justify-between gap-2">
+                                      <div className="h-1 w-full overflow-hidden rounded-full bg-secondary">
+                                        <div
+                                          className={`h-full rounded-full transition-all duration-300 ${
+                                            pct <= 0 ? 'bg-roksal-amber' : pct <= 25 ? 'bg-roksal-red' : 'bg-roksal-green'
+                                          }`}
+                                          style={{ width: `${Math.min(pct, 100)}%` }}
+                                        />
+                                      </div>
+                                      <span className="shrink-0 text-[10px] font-semibold tabular-nums text-roksal-navy">
+                                        {lot.quantityRemaining}/{lot.quantityInitial} {lotsData.inventory.enota}
+                                      </span>
+                                    </div>
+                                    {lot.allocations.length > 0 && (
+                                      <div className="mt-1.5 space-y-0.5 border-t border-border/50 pt-1.5">
+                                        {lot.allocations.slice(0, 3).map((a) => (
+                                          <p key={a.id} className="flex items-center justify-between text-[9px] text-muted-foreground">
+                                            <span>
+                                              {a.eventType}
+                                              {a.projekt ? ` · ${a.projekt}` : ''}
+                                            </span>
+                                            <span className="font-semibold tabular-nums">
+                                              {a.kolicina > 0 ? '+' : ''}
+                                              {a.kolicina}
+                                            </span>
+                                          </p>
+                                        ))}
+                                        {lot.allocations.length > 3 && (
+                                          <p className="text-[9px] text-muted-foreground/70">
+                                            + {lot.allocations.length - 3} starejših alokacij
+                                          </p>
+                                        )}
+                                      </div>
+                                    )}
+                                  </li>
+                                )
+                              })}
+                            </ul>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )
               })}
@@ -538,9 +738,9 @@ export function InventoryTab() {
                   <button
                     key={key}
                     onClick={() => setMovementType(key)}
-                    className={`rounded-lg border p-2 text-center text-xs font-medium transition-colors press-scale ${
+                    className={`rounded-lg border p-2 text-center text-xs font-medium transition-all press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 ${
                       movementType === key
-                        ? `border-roksal-navy bg-roksal-navy/10 text-roksal-navy`
+                        ? `border-roksal-navy bg-roksal-navy/10 text-roksal-navy shadow-sm`
                         : 'border-border bg-background text-muted-foreground hover:bg-secondary'
                     }`}
                   >
@@ -566,7 +766,7 @@ export function InventoryTab() {
                 </SelectContent>
               </Select>
               {selectedItem && (
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-[10px] tabular-nums text-muted-foreground">
                   Trenutna zaloga: {selectedItem.kolicinaZaloga} {selectedItem.enota} · Min: {selectedItem.minimalnaZaloga} {selectedItem.enota}
                 </p>
               )}
@@ -585,6 +785,7 @@ export function InventoryTab() {
                 placeholder="1"
                 min="0.1"
                 step="0.5"
+                className="tabular-nums focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
               />
             </div>
 
@@ -613,7 +814,7 @@ export function InventoryTab() {
                 <CardContent className="p-3">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground">Novo stanje:</span>
-                    <span className={`font-bold ${
+                    <span className={`font-bold tabular-nums ${
                       movementType === 'DOPOLNITEV'
                         ? 'text-roksal-green'
                         : (selectedItem.kolicinaZaloga - parseFloat(movementQuantity)) < selectedItem.minimalnaZaloga
@@ -630,7 +831,7 @@ export function InventoryTab() {
                     <Badge className={`text-[10px] h-5 px-1.5 ${movementColors[movementType]}`}>
                       {movementLabels[movementType]}
                     </Badge>
-                    <span className="text-[10px] text-muted-foreground">
+                    <span className="text-[10px] tabular-nums text-muted-foreground">
                       {movementQuantity} {selectedItem.enota}
                     </span>
                   </div>
@@ -639,13 +840,17 @@ export function InventoryTab() {
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setMovementOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setMovementOpen(false)}
+              className="focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+            >
               Prekliči
             </Button>
             <Button
               onClick={handleMovement}
               disabled={submitting || !movementInventoryId || !movementQuantity || parseFloat(movementQuantity) <= 0}
-              className="bg-roksal-navy hover:bg-roksal-navy/90 text-white"
+              className="bg-roksal-navy hover:bg-roksal-navy/90 text-white shadow-sm transition-all focus-visible:ring-2 focus-visible:ring-roksal-navy/40 disabled:opacity-50"
             >
               {submitting ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

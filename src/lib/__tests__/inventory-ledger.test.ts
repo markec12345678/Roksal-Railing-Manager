@@ -26,6 +26,22 @@ async function makeItem(startQty = 0, enota = 'kos') {
     },
   })
   createdInventories.push(inv.id)
+  // R144 (§24): artikel, ustvarjen DIREKTNO prek db (obvoz rute), z zalogo > 0
+  // dobi šaržo z istim vzorcem kot backfill migracije (LOT-LEGACY-<id>) —
+  // sicer bi odhod 409-al ("šarže ne pokrijejo"), ker porekla ni.
+  if (startQty > 0) {
+    await db.inventoryLot.create({
+      data: {
+        inventoryId: inv.id,
+        lotNumber: `LOT-LEGACY-${inv.id}`,
+        deliveryDate: inv.createdAt,
+        quantityInitial: startQty,
+        quantityRemaining: startQty,
+        status: 'ACTIVE',
+        note: 'Zaloga pred uvedbo šarž (§24 backfill) — poreklo neznano',
+      },
+    })
+  }
   return inv
 }
 
@@ -47,7 +63,9 @@ async function makeOrder(itemId: string, kolicina: number) {
 }
 
 afterAll(async () => {
-  // Čistilna akcija — FK varni vrstni red.
+  // Čistilna akcija — FK varni vrstni red (R144: šarže + alokacije PRED ledger).
+  await db.lotAllocation.deleteMany({ where: { lot: { inventoryId: { in: createdInventories } } } })
+  await db.inventoryLot.deleteMany({ where: { inventoryId: { in: createdInventories } } })
   await db.stockLedger.deleteMany({ where: { inventoryId: { in: createdInventories } } })
   await db.inventoryMovement.deleteMany({ where: { inventoryId: { in: createdInventories } } })
   await db.materialOrderItem.deleteMany({ where: { orderId: { in: createdOrders } } })

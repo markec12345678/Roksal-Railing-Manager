@@ -14,6 +14,7 @@
 
 import { db } from '@/lib/db'
 import type { Prisma, StockLedgerEventType } from '@prisma/client'
+import { creditLotInTx, allocateLotsInTx } from '@/lib/lots'
 
 export class StockError extends Error {
   readonly status: number
@@ -36,6 +37,8 @@ export type LedgerMovementInput = {
   actorId?: string | null
   reason?: string | null
   idempotencyKey?: string | null
+  /** Šarža vira prihoda (R144, §24) ali PRIMARY lot odhoda. */
+  lotId?: string | null
 }
 
 type Tx = Prisma.TransactionClient
@@ -59,6 +62,7 @@ async function writeLedgerEntry(tx: Tx, input: LedgerMovementInput) {
       actorId: input.actorId ?? null,
       reason: input.reason ?? null,
       idempotencyKey: input.idempotencyKey ?? null,
+      lotId: input.lotId ?? null,
     },
   })
 }
@@ -76,6 +80,15 @@ export type MovementCommand = {
   idempotencyKey?: string | null
   /** Prepovedi premikov pod 0 (privzeto true; ADJUSTMENT lahko popravlja). */
   allowNegative?: boolean
+  // R144 (§24) — šarže:
+  /** Eksplicitna šarža za prihod (npr. RETURN v določeno šaržo). */
+  lotId?: string | null
+  /** Zaporedna št. postavke znotraj naročila (determinističen lotNumber). */
+  orderItemIndex?: number | null
+  /** Poreklo prejema (naročilo ve, kdo dobavlja). */
+  supplierId?: string | null
+  /** Nabavna cena na enoto ob prejemu (MaterialOrderItem.cena). */
+  purchasePrice?: number | null
 }
 
 const OUTFLOW: ReadonlySet<string> = new Set(['ISSUE', 'WASTE', 'DAMAGE', 'RESERVATION'])
@@ -148,7 +161,26 @@ export async function recordMovementInTx(tx: Tx, cmd: MovementCommand): Promise<
     throw new StockError(409, 'Sodobni konflikt premika zaloge — poskusi znova')
   }
 
-  await writeLedgerEntry(tx, {
+  // R144 (§24) — šarže: prihod kredira šaržo PRED ledger vnosom (lotId poveže
+  // vir), odhod pa alokira FIFO PO ledger vnosu (LotAllocation se poveže z
+  // dogodkom). Napaka alokacije (premalo porekla) zavrže CELO transakcijo —
+  // bilanca + ledger + alokacija so atomarni.
+  let lotId: string | null = null
+  if (delta > 0) {
+    const lot = await creditLotInTx(tx, {
+      inventoryId: cmd.inventoryId,
+      kolicina: delta,
+      lotId: cmd.lotId ?? null,
+      orderId: cmd.orderId ?? null,
+      orderItemId: cmd.orderItemId ?? null,
+      orderItemIndex: cmd.orderItemIndex ?? null,
+      supplierId: cmd.supplierId ?? null,
+      purchasePrice: cmd.purchasePrice ?? null,
+    })
+    lotId = lot.id
+  }
+
+  const ledgerEntry = await writeLedgerEntry(tx, {
     inventoryId: cmd.inventoryId,
     eventType: cmd.eventType,
     kolicina: delta,
@@ -160,7 +192,26 @@ export async function recordMovementInTx(tx: Tx, cmd: MovementCommand): Promise<
     actorId: cmd.actorId ?? null,
     reason: cmd.reason ?? null,
     idempotencyKey: cmd.idempotencyKey ?? null,
+    lotId,
   })
+
+  if (delta < 0) {
+    const allocations = await allocateLotsInTx(tx, {
+      inventoryId: cmd.inventoryId,
+      kolicina: Math.abs(delta),
+      ledgerId: ledgerEntry.id,
+      eventType: cmd.eventType,
+      projectId: cmd.projectId ?? null,
+      actorId: cmd.actorId ?? null,
+    })
+    // PRIMARY lot odhoda = najstarejši vpleten (prvi v FIFO planu).
+    if (allocations.length > 0 && !ledgerEntry.lotId) {
+      await tx.stockLedger.update({
+        where: { id: ledgerEntry.id },
+        data: { lotId: allocations[0].lotId },
+      })
+    }
+  }
 
   // Združljivost: obstoječi UI bere InventoryMovement.
   await tx.inventoryMovement.create({
@@ -191,6 +242,9 @@ export type ReceiptResult = {
  *  2. Za vsako postavko: RECEIPT ledger dogodek z idempotencyKey
  *     `receipt:<orderId>:<itemId>` + posodobitev bilance, vse v ISTI transakciji.
  *  3. Datum dobave se nastavi samo ob prvem prejemu.
+ *  4. R144 (§24): vsaka postavka dobi svojo ŠARŽO (supplier = dobavitelj
+ *     naročila, purchasePrice = cena postavke, deliveryDate = prejem) —
+ *     determinističen lotNumber, idempotentno po (orderId, orderItemId).
  */
 export async function receiveOrder(
   orderId: string,
@@ -219,7 +273,7 @@ export async function receiveOrder(
     if (!order) throw new StockError(404, 'Naročilo ne obstaja')
 
     const balanceAfter: Record<string, number> = {}
-    for (const item of order.items) {
+    for (const [idx, item] of order.items.entries()) {
       const bal = await recordMovementInTx(tx, {
         inventoryId: item.inventoryId,
         eventType: 'RECEIPT',
@@ -230,6 +284,10 @@ export async function receiveOrder(
         orderItemId: item.id,
         projectId: order.projectId,
         idempotencyKey: `receipt:${order.id}:${item.id}`,
+        // R144 (§24) — šarža po postavki: poreklo + nabavna cena + zap. št.
+        orderItemIndex: idx,
+        supplierId: order.supplierId,
+        purchasePrice: item.cena,
       })
       balanceAfter[item.inventoryId] = bal
     }

@@ -187,6 +187,7 @@ model Project {
   auditLogs       AuditLog[]
   inventoryMoves  InventoryMovement[]
   stockLedger     StockLedger[]
+  lotAllocations  LotAllocation[]
   arSnapshots     ArSnapshot[]
   sketches        Sketch[]
   slopes          Slope[]
@@ -246,6 +247,7 @@ model Inventory {
   ledgerEntries StockLedger[]
   prices        MaterialPrice[]
   orderItems    MaterialOrderItem[]
+  lots          InventoryLot[]
 }
 
 // ============================================
@@ -330,12 +332,103 @@ model StockLedger {
   idempotencyKey String?              @unique
   createdAt      DateTime             @default(now())
 
-  inventory Inventory @relation(fields: [inventoryId], references: [id])
-  project   Project?  @relation(fields: [projectId], references: [id])
+  inventory   Inventory       @relation(fields: [inventoryId], references: [id])
+  project     Project?        @relation(fields: [projectId], references: [id])
+  /// Šarža dogodka (R144, §24) — nasprona stran InventoryLot.ledgerEvents.
+  lot         InventoryLot?   @relation(fields: [lotId], references: [id])
+  /// Alokacije, ki izhajajo iz tega dogodka (odhodki se razdelijo čez šarže).
+  allocations LotAllocation[]
+
+  /// Šarža, iz katere je dogodek prišel/odšel (R144, §24). Prihodki: lot vira.
+  /// Odhodki (FIFO alokacija čez več lotov): PRIMARY lot (najstarejši vpleten).
+  lotId String?
 
   @@index([inventoryId, createdAt])
   @@index([eventType])
   @@index([orderId])
+  @@index([lotId])
+}
+
+// ============================================
+// 7b-LOT. ŠARŽE / LOT TRACEABILITY (issue #5, §24 — R144)
+// ============================================
+// Ciljna sled (addendum #5 §24): Project → Product → BOM → Material →
+// Supplier/Batch → Installation. Vsak prihod zaloge (OPENING, PURCHASE,
+// RECEIPT, RETURN, pozitiven ADJUSTMENT) kredira šaržo; vsak odhod (ISSUE,
+// WASTE, DAMAGE, RESERVATION, negativen ADJUSTMENT) alokira DETERMINISTIČNO
+// FIFO po deliveryDate ASC, createdAt ASC, id ASC (pravilo je čista funkcija,
+// brez naključja). LotAllocation povezuje odhodni StockLedger dogodek z
+// šaržami, iz katerih je material dejansko prišel.
+//
+// Backfill (migracija r144): artikli z zalogo pred uvedbo šarž dobijo ENO
+// "LEGACY" šaržo (lotNumber = 'LOT-LEGACY-' || id, dobava = createdAt,
+// dobavitelj/cena NULL — iskreno "neznana poreklo", brez izmišljanja podatkov).
+// FIFO jo postavi PRVO (najstarejši deliveryDate), kar je tudi pravilno
+// skladiščno vedenje (najstarejša zaloga gre ven prva).
+model InventoryLot {
+  id                String   @id @default(cuid())
+  inventoryId       String
+  /// Človeku berljiva št. šarže, unikatna per artikel. Pri prejemu naročila:
+  /// 'LOT-<orderId zadnjih 8>-<zap. postavke>' (deterministično, idempotentno
+  /// po (orderId, orderItemId)). Ročni prihod: 'LOT-M-<kratki unikat>'.
+  lotNumber         String
+  /// Poreklo — dobavitelj (NULL = notranja/legacy šarža, iskreno dokumentirano).
+  supplierId        String?
+  /// Naročilo, iz katerega je šarža prišla.
+  orderId           String?
+  orderItemId       String?
+  /// Datum prejema/dobave (FIFO primarni ključ).
+  deliveryDate      DateTime @default(now())
+  /// Nabavna cena na enoto ob prejemu (EUR) — iz MaterialOrderItem.cena.
+  purchasePrice     Float?
+  /// Originalna količina šarže ob kreaciji.
+  quantityInitial   Float
+  /// Trenutno preostanek = quantityInitial - Σ negativnih + Σ pozitivnih alokacij.
+  quantityRemaining Float
+  /// ACTIVE | EXHAUSTED (remaining = 0) | CLOSED (ročno zaprta, ne sodeluje v FIFO).
+  status            String   @default("ACTIVE")
+  note              String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  inventory    Inventory          @relation(fields: [inventoryId], references: [id])
+  supplier     Supplier?          @relation(fields: [supplierId], references: [id])
+  order        MaterialOrder?     @relation(fields: [orderId], references: [id])
+  orderItem    MaterialOrderItem? @relation(fields: [orderItemId], references: [id])
+  allocations  LotAllocation[]
+  ledgerEvents StockLedger[]
+
+  @@unique([inventoryId, lotNumber])
+  @@index([inventoryId, status])
+  @@index([supplierId])
+  @@index([orderId])
+  @@index([deliveryDate])
+}
+
+// Alokacija odhoda na šaržo: negativna količina = poraba iz šarže, pozitivna
+// = vračilo v šaržo. ledgerId poveže z odhodnim StockLedger dogodkom →
+// polna sled Project (projectId) → StockLedger → LotAllocation → InventoryLot
+// → Supplier/MaterialOrder.
+model LotAllocation {
+  id        String   @id @default(cuid())
+  lotId     String
+  /// StockLedger dogodek, ki je porabil/vrnil količino.
+  ledgerId  String?
+  /// Kopija eventType (berljivost DTO — brez joina za osnovni prikaz).
+  eventType String
+  /// Predznačena: minus = odhod iz šarže, plus = vračilo v šaržo.
+  kolicina  Float
+  projectId String?
+  actorId   String?
+  createdAt DateTime @default(now())
+
+  lot     InventoryLot @relation(fields: [lotId], references: [id])
+  ledger  StockLedger? @relation(fields: [ledgerId], references: [id])
+  project Project?     @relation(fields: [projectId], references: [id])
+
+  @@index([lotId, createdAt])
+  @@index([projectId])
+  @@index([ledgerId])
 }
 
 // ============================================
@@ -450,16 +543,16 @@ enum NotificationStatus {
 }
 
 model Notification {
-  id        String   @id @default(cuid())
+  id              String             @id @default(cuid())
   // Naslovnik: ALI posamezen profil (userId), ALI vloga (recipientRole) —
   // XOR (določa queueNotifications). 'skladisce' pseudo-uporabnik iz starejše
   // kode ostane bralcu neviden (orphan, dokumentirano R143) — nove vrstice so
   // naslovljene prek recipientRole (SKLADISCE), kar daje realno občinstvo.
-  userId    String?
-  naslov    String
-  sporocilo String?
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
+  userId          String?
+  naslov          String
+  sporocilo       String?
+  isRead          Boolean            @default(false)
+  createdAt       DateTime           @default(now())
   // §29 pogodba: status, predloga + verzija, naslovnik, entiteta, korelacija,
   // retry politika + razlog napake, časovni žigi posameznih prehodov.
   status          NotificationStatus @default(QUEUED)
@@ -670,6 +763,7 @@ model Supplier {
 
   materialPrices MaterialPrice[]
   orders         MaterialOrder[]
+  lots           InventoryLot[]
 }
 
 // Cena materiala pri posameznem dobavitelju (zgodovina cen)
@@ -706,6 +800,7 @@ model MaterialOrder {
   project  Project?            @relation(fields: [projectId], references: [id])
   supplier Supplier            @relation(fields: [supplierId], references: [id])
   items    MaterialOrderItem[]
+  lots     InventoryLot[]
 }
 
 // Posamezna postavka naročila
@@ -719,8 +814,9 @@ model MaterialOrderItem {
   enota       String // snapshot enote
   createdAt   DateTime @default(now())
 
-  order     MaterialOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  inventory Inventory     @relation(fields: [inventoryId], references: [id])
+  order     MaterialOrder  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  inventory Inventory      @relation(fields: [inventoryId], references: [id])
+  lots      InventoryLot[]
 
   @@index([orderId])
 }

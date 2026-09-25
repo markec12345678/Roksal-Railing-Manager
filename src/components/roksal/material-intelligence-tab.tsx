@@ -504,7 +504,7 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
       {/* Suppliers tab */}
       {tab === 'suppliers' && (
         <div className="space-y-3">
-          <Button type="button" onClick={() => setSupplierDialogOpen(true)} className="w-full bg-roksal-navy text-white">
+          <Button type="button" onClick={() => setSupplierDialogOpen(true)} className="w-full bg-roksal-navy text-white shadow-sm transition-all focus-visible:ring-2 focus-visible:ring-roksal-navy/40">
             <Plus className="h-4 w-4 mr-2" /> Nov dobavitelj
           </Button>
           {loading ? (
@@ -521,6 +521,12 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 mb-1">
+                        {/* R144 stil: živa pika aktivnosti dobavitelja */}
+                        <span
+                          className={`h-2 w-2 shrink-0 rounded-full ${sup.aktivna ? 'bg-roksal-green ring-2 ring-roksal-green/20' : 'bg-muted-foreground/40'}`}
+                          aria-hidden="true"
+                          title={sup.aktivna ? 'Aktiven dobavitelj' : 'Neaktiven dobavitelj'}
+                        />
                         <span className="text-sm font-semibold text-roksal-navy truncate">{sup.naziv}</span>
                         {sup.popust > 0 && <Badge variant="outline" className="text-[8px] bg-amber-50 text-amber-700">-{sup.popust}%</Badge>}
                       </div>

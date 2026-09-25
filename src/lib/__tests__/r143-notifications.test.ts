@@ -355,6 +355,23 @@ describe('R143 §29 — integracije (inventory × §23 jobs)', () => {
         minimalnaZaloga: 10,
       },
     })
+    // R144 (§24): re-stanira šaržo (vzorec backfill migracije LOT-LEGACY-<id>) —
+    // upsert bilance NE zravna s quantityRemaining šarže; brez tega bi ponovni
+    // run Issue 409-al ("šarže ne pokrijejo"). Idempotentno per run.
+    await db.inventoryLot.upsert({
+      where: {
+        inventoryId_lotNumber: { inventoryId: inv.id, lotNumber: `LOT-LEGACY-${inv.id}` },
+      },
+      update: { quantityRemaining: 5, quantityInitial: 5, status: 'ACTIVE' },
+      create: {
+        inventoryId: inv.id,
+        lotNumber: `LOT-LEGACY-${inv.id}`,
+        quantityInitial: 5,
+        quantityRemaining: 5,
+        status: 'ACTIVE',
+        note: 'Zaloga pred uvedbo šarž (§24 backfill) — poreklo neznano',
+      },
+    })
     try {
       const { token } = await createTestUserWithSession('r143vodja', 'VODJA')
       const res = await inventoryPost(

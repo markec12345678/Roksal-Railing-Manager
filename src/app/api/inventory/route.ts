@@ -7,6 +7,7 @@ import { db } from '@/lib/db'
 import { createInventorySchema, inventoryMovementSchema } from '@/lib/validations'
 import { authenticate, unauthorized, forbidden, denyWithoutPermission } from '@/lib/auth'
 import { recordMovement, StockError } from '@/lib/inventory'
+import { creditLotInTx } from '@/lib/lots'
 import { hasPermission, actorIdOf } from '@/lib/access'
 import { queueNotifications } from '@/lib/notifications'
 import { correlationFromRequest } from '@/lib/correlation'
@@ -133,7 +134,7 @@ export async function POST(request: Request) {
       const validated = createInventorySchema.parse(body)
       const actor = actorIdOf(auth)
 
-      // Artikel + OPENING ledger dogodek = ENA transakcija.
+      // Artikel + OPENING ledger dogodek + ustanovitvena ŠARŽA (§24) = ENA transakcija.
       const item = await db.$transaction(async (tx) => {
         const created = await tx.inventory.create({
           data: {
@@ -146,6 +147,14 @@ export async function POST(request: Request) {
           }
         })
         if (validated.kolicinaZaloga > 0) {
+          // R144 (§24): ustanovitvena zaloga = šarža z neznanim poreklom
+          // (iskreno — brez izmišljanja dobavitelja/cene). FIFO jo postavi
+          // prvo (deliveryDate = kreacija artikla).
+          const lot = await creditLotInTx(tx, {
+            inventoryId: created.id,
+            kolicina: validated.kolicinaZaloga,
+            note: 'Ustanovitvena zaloga (poreklo neznano)',
+          })
           await tx.stockLedger.create({
             data: {
               inventoryId: created.id,
@@ -155,6 +164,7 @@ export async function POST(request: Request) {
               balanceAfter: validated.kolicinaZaloga,
               actorId: actor,
               reason: 'Ustanovitvena zaloga',
+              lotId: lot.id,
             },
           })
         }

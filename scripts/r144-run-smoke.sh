@@ -9,7 +9,7 @@ for pid in $(ss -tlnp 2>/dev/null | grep ':3100' | grep -oP 'pid=\K[0-9]+' | sor
 done
 sleep 1
 
-setsid node .next/standalone/server.js > /tmp/r143-server-smoke.log 2>&1 < /dev/null &
+setsid node .next/standalone/server.js > /tmp/r144-server-smoke.log 2>&1 < /dev/null &
 sleep 4
 
 echo "--- dimni [1..26] (125 preverjanj) ---"

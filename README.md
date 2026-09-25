@@ -101,10 +101,10 @@
 | Vrstic kode (src) | ~91.400 |
 | React komponent | 41 roksal modulov + 60+ UI primitivov |
 | API končne točke | 61 route handlerjev v 41 skupinah |
-| Prisma modelov | 36 (PostgreSQL) |
+| Prisma modelov | 40 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **832** (56 datotek, vključno z globalSetup embedded PG) |
-| Varnostni smoke | 123 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
+| Testi (vitest) | **849** (57 datotek, vključno z globalSetup embedded PG) |
+| Varnostni smoke | 125 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
 | Jezik vmesnika | Slovenščina |
