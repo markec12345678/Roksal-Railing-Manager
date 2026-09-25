@@ -1777,3 +1777,8 @@ Work Log:
 Stage Summary:
 - ISSUE #5 §9 (User lifecycle) IZPOLNJEN v celoti: invite + activation (enkratna povezava, hash v bazi), deactivate/reactivate z TAKOJŠNJO smrtjo že izdanih žetonov (hard requirement, dvojna plast), account lock, role change (seje revoke), password reset (začasno geslo + prisilna zamenjava), email change (s trenutnim geslom), offboarding (blokada + revoke + ohranjene sledi) — vse samo ADMIN, vse v dnevniku, vse z UI in brez e-poštne infrastrukture (offline posredovanje, dokumentirano).
 - Ostanka (lastniška): #7 Neon backfill --commit, #8 R118-real fotke, #12 Render billing. Naslednji kandidat iz #5: §10 permission matrix (formalizirani permissioni namesto role-only).
+
+DODATEK R134 (CI zelen + produkcija potrjena):
+- Prvi CI zagon na 6d1a1a4: dimni [16] assertion napačen niz ('ne veljavna' namesto 'ni veljavna' — slovenska negacija); popravljeno + push 2db4c8d → „Tipi, testi, gradnja" SUCCESS (681/681) · „Varnost (100 preverjanj)" SUCCESS · sync SUCCESS.
+- PRODUKCIJA: POST /api/users/activate (neznan žeton) → 400 enotno sporočilo (§9 ŽIVO); /api/auth/demo → {enabled:false} (nedotaknjeno).
+- Priprava na naslednjo rund: §10 permission matrix (zadnja P0 varnostna postavka iz §5); lastniški ostanki nespremenjeni (#7 Neon backfill, #8 fotke, #12 Render kartica).
