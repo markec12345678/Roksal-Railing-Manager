@@ -1808,3 +1808,9 @@ Work Log:
 Stage Summary:
 - ISSUE #5 §10 (Permission matrix) IZPOLNJEN v celoti: katalog 28 dovoljenj kot enoten vir resnice, 13 poslovnih rut preverja KONKRETNO dovoljenje (fail-closed vrata z imenom pravice v 403), API-ključ scope-i vezani v katalog, odjemalec dobi svoje pravice, UI pošteno gated — ZADNJA P0 VARNOSTNA POSTAVKA IZ ISSUE #5 ZAPRTA. Vse P0 varnostne točke (§1–§10) so zdaj izpolnjene.
 - Ostanka (lastniška): #7 Neon backfill --commit, #8 R118-real fotke, #12 Render billing (kartica). Kandidati za naslednje runde iz #5: P0 Finance/numerika (§11 Decimal namesto Float, §12 Canonical units — POZOR: pricing core je AI-frozen, potrebna lastniška uskladitev), §17 API response minimization, §18 Database constraints, §19 Atomic transactions.
+
+DODATEK R135 (CI zelen + produkcija potrjena):
+- CI na 223cf17: „Tipi, testi, gradnja" SUCCESS (699/699, 45 datotek) · „Varnost (104 preverjanj)" SUCCESS · sync SUCCESS (render vejica posodobljena samodejno) · Vercel deploy ✓.
+- PRODUKCIJA: /api/auth/demo → {enabled:false}; anon POST /api/invoices same-origin → 401 „Prijava je obvezna" (§10 vrata živa), cross-origin → 403 CSRF (R130 plast, po zasnovi). §10 ŽIVO.
+- Commiti: 3ffa699 (R135 koda) + 223cf17 (dokumentacija). Push na origin/main ✓.
+- Priprava na naslednjo rundo: issue #5 P0 VARNOST (§1–§10) ZAPRTA v celoti. Kandidati: P0 Finance/numerika (§11 Decimal namesto Float, §12 Canonical units — pozor: pricing core je AI-frozen, potrebna lastniška uskladitev), §17 API response minimization, §18 Database constraints, §19 Atomic business transactions. Lastniški ostanki nespremenjeni (#7 Neon backfill, #8 fotke, #12 Render kartica).
