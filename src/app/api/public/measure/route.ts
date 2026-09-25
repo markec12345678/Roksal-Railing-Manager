@@ -260,9 +260,10 @@ export async function POST(request: Request) {
       return { id: measurement.id, responseBody }
     })
 
-    // Telemetrija pisarne + audit (uspeh). lastUsed je fire-and-forget
-    // (telemetrija ne sme porušiti oddaje); audit je vzdržljiv (await).
-    void db.project
+    // Telemetrija pisarne + audit (uspeh). lastUsed je AWAIT z lovljenjem
+    // napak: ne sme porušiti oddaje (napaka ostane v logu), a je
+    // determinističen ob zaključku rute (brez tekmovanja z odgovorom).
+    await db.project
       .update({
         where: { id: projectId },
         data: { measureTokenLastUsedAt: new Date() },

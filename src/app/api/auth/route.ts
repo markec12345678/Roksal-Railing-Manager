@@ -19,6 +19,7 @@ import { createUserSession } from '@/lib/session-registry'
 import { authenticate } from '@/lib/auth'
 import { audit } from '@/lib/audit'
 import { LOGIN_LIMIT, checkRate, clientIp, releaseRate } from '@/lib/rate-limit'
+import { accountBlock, BLOCK_MESSAGES } from '@/lib/user-lifecycle'
 
 const loginSchema = z.object({
   email: z.string().trim().min(3).max(254),
@@ -66,6 +67,21 @@ export async function POST(request: Request) {
       await audit({ request, userId: profile.id, akcija: 'LOGIN_FAILED', newValue: { email: normalizedEmail } })
       return invalid
     }
+    // R134 (§9): blokiran račun NE dobi seje. Preverba ŠELE za uspešnim geslom
+    // (kdo brez pravih pravic ne izve ničesar o statusu računa), sporočilo pa
+    // je jasno — uporabnik ve, da ni pozabil gesla, ampak da račun blokira
+    // pisarna. Vsak blokirani poskus gre v dnevnik.
+    const block = accountBlock(profile)
+    if (block) {
+      await audit({
+        request,
+        userId: profile.id,
+        akcija: 'LOGIN_BLOCKED',
+        oldValue: null,
+        newValue: { razlog: block, email: normalizedEmail },
+      })
+      return NextResponse.json({ error: BLOCK_MESSAGES[block] }, { status: 403 })
+    }
     releaseRate(limitKey)
 
     // #5 §2: seja gre v register (UserSession) — žeton dobi jti in je preklicljiv.
@@ -78,6 +94,8 @@ export async function POST(request: Request) {
 
     const response = NextResponse.json({
       user: { id: profile.id, email: profile.email, ime: profile.ime, vloga: profile.vloga },
+      // R134 (§9): admin reset gesla → uporabnik mora geslo zamenjati.
+      mustChangePassword: profile.mustChangePassword,
     })
     response.headers.set('Set-Cookie', `${SESSION_COOKIE}=${issued.token}; ${sessionCookieAttributes(isSecureRequest(request))}`)
     return response
@@ -94,8 +112,15 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Neavtoriziran dostop' }, { status: 401 })
   }
   const { session } = context
+  // R134 (§9): zastavica prisilne zamenjave gesla se bere ŽIVO iz baze
+  // (nastavi jo admin reset — seja nosi samo identiteto, ne statusov).
+  const mustChangePassword = await db.profile
+    .findUnique({ where: { id: session.sub }, select: { mustChangePassword: true } })
+    .then((p) => p?.mustChangePassword ?? false)
+    .catch(() => false)
   return NextResponse.json({
     user: { id: session.sub, email: session.email, ime: session.ime, vloga: session.vloga },
     expiresAt: session.exp * 1000,
+    mustChangePassword,
   })
 }

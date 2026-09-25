@@ -68,7 +68,12 @@ export async function POST(request: Request) {
     const [, revokedSessions] = await db.$transaction([
       db.profile.update({
         where: { id: profile.id },
-        data: { passwordHash: await hashPassword(parsed.data.newPassword) },
+        data: {
+          passwordHash: await hashPassword(parsed.data.newPassword),
+          // R134 (§9): uspešna menjava gesla počisti zastavico prisilne
+          // zamenjave (admin reset → uporabnik zamenja → flag dol).
+          mustChangePassword: false,
+        },
       }),
       db.userSession.updateMany({
         where: { profileId: profile.id, revokedAt: null },

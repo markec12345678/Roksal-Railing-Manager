@@ -360,6 +360,19 @@ check("POST /api/public/measure neznan žeton → 404", st == 404, f"dobil {st}"
 st, _, _ = call("/api/public/measure", "POST", {"token": "neznan-zeton-qa-133", "points": [[0.1, 0.1]], "opomba": "x" * 9000})
 check("POST /api/public/measure preveliko telo → 413", st == 413, f"dobil {st}")
 
+print("\n[16] Življenjski cikl uporabnikov (R134 — issue #5 §9: upravljanje je zaščiteno)")
+# Upravljanje računov je samo za seje (ADMIN/VODJA) — brez avtorizacije 401.
+st, _, _ = call("/api/users")
+check("GET /api/users brez seje → 401", st == 401, f"dobil {st}")
+st, _, _ = call("/api/users", "POST", {"action": "deactivate", "userId": "test"})
+check("POST /api/users brez seje → 401", st == 401, f"dobil {st}")
+# Aktivacija z neznanim žetonom → ISTA 400 kot potečen/porabljen (enumeration protection).
+st, _, body = call("/api/users/activate", "POST", {"token": "neznan-zeton-aktivacije", "password": "NekajDolgega123"})
+check("POST /api/users/activate neznan žeton → 400", st == 400 and b"ne veljavna" in body, f"{st} {body[:70]!r}")
+# Menjava e-pošte je samo-servis — brez seje 401.
+st, _, _ = call("/api/auth/email", "POST", {"newEmail": "kdo@nekaj.si", "currentPassword": "x"})
+check("POST /api/auth/email brez seje → 401", st == 401, f"dobil {st}")
+
 print(f"\n{'=' * 60}")
 print(f"  {passed} uspešnih · {failed} neuspešnih · {skipped} preskočenih")
 print(f"{'=' * 60}\n")

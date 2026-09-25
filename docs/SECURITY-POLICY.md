@@ -321,3 +321,37 @@ prva pošiljanja z različnima ključema in identično vsebino imata majhno okno
 za tekmo (obračunava se z idempotence ključem stranke, ki ga pošilja naša
 stranka). Rate limiter ostane in-memory (dokumentirano pri `checkRate`) —
 za več vozlišč se zamenja shramba, vmesnik ostane.
+
+## Življenjski cikl uporabnikov (R134, issue #5 §9)
+
+Prej so imeli profili SAMO vlogo: brez deaktivacije, zaklepa, povabil ali
+prisilne zamenjave gesla. Deaktiviran uporabnik je lahko nadaljeval z že
+izdanim žetonom (seje so žive do poteka); edini "izklop" je bilo brisanje
+profila (cascade — uniči revizijske sledi). E-poštne infrastrukture ni, zato
+je povabilo/aktivacija in reset gesla rešeno z enkratnimi povezavami/gesli,
+ki jih pisarna posreduje po SMS/telefonu (deterministično, brez zunanjih
+odvisnosti).
+
+| Zahteva §9 | Implementacija | Dokaz |
+|---|---|---|
+| invite | akcija `invite` (samo ADMIN): profil BREZ gesla + aktivacijski žeton (crypto 24 base64url); v bazi IZKLJUČNO sha256 hash (+ pepper, unique), čistega NIKOLI; poteče 7 dni; odgovor vrne povezavo ENKRAT | vitest (hash ≠ žeton, 6–7 dni, 409 dvojnik) |
+| activation | javna ruta `/api/users/activate` + stran `/aktivacija/[token]` (obe javni prek proxy, fail-closed): nastavi geslo + počisti žeton (enkratna uporaba); neznanski/potečen/porabljen/deaktiviran → ISTA 400/istа stran (enumeration protection); rate limit 6/h/IP | vitest (replay = neznanski) + E2E |
+| deactivate/reactivate | `deactivatedAt` + revoke vseh živih sej; **assertSessionAlive preverja status ob VSAKEM zahtevku** → že izdani žeton deaktiviranega uporabnika preneha delovati TAKOJ (hard requirement); reactivate vrne račun v delo | vitest + E2E (token → 401 takoj) |
+| password reset | brez e-pošte: admin `resetPassword` izda kripto začasno geslo (ENKRAT v odgovoru; v dnevniku NIKOLI) + `mustChangePassword=true` + revoke vseh sej; prijava dela, `GET /api/auth` nosi zastavico; menjava gesla (/api/auth/password) jo počisti | vitest (stari žeton mrtev, gesla brez sledi) |
+| email change | samo-servis `/api/auth/email`: TRENUTNO geslo obvezno (ukradena seja ne zadostuje), unikatenost (409), revoke drugih sej (trenutna ostane), audit staro/novo | vitest (403/409/200 + prijava z novo) |
+| role change | `setRole` (samo ADMIN): žeton nosi vlogo (snapshot) → vse seje revoke (nova vloga velja po ponovni prijavi); audit vsebuje novo vlogo | vitest (žeton po spremembi 401) |
+| account lock | `lock`/`unlock` (samo ADMIN): prijava → 403 z jasnim sporočilom + LOGIN_BLOCKED dnevnik; blokiran račun ne upravlja z identiteto | vitest |
+| session revoke | prejšnje runde (§2 register sej) — deaktivacija/zaklep/role-change/reset/email-change VSI revoke-ajo seje; assertSessionAlive je avtoritativna plast | vitest + E2E |
+| offboarding | deaktivacija = offboarding: blokada + revoke + ohranjene revizijske sledi (proti brisanju profila); self-guard: ADMIN ne deaktivira/zaklene/spremeni vloge sebi | vitest (400) |
+| dostop | upravljanje = samo ADMIN seja (VODJA bere, MONTER/SKLADISCE/API ključ → 403); login preverja blokado ŠELE za uspešnim geslom (brez pravic ne izveš statusa tujega računa) | vitest (matrica) |
+
+UI: nova površina **Ekipa** (Več meni) — seznam računov s statusi (Aktiven /
+Deaktiviran / Zaklenjen / Čaka aktivacijo / mora zamenjati geslo), akcije z
+varovalkami, ENKRATNI prikaz aktivacijske povezave in začasnega gesla (dialog
+s kopiranjem). Pas prisilne zamenjave gesla (PasswordChangeBanner) se prikaže
+na vseh zavihkih, dokler uporabnik gesla ne zamenja.
+
+Znan meji (iskreno): povabila/reset brez e-pošte — povezavo/geslo posreduje
+pisarna offline (dokumentirano v UI); brez e-poštne infrastrukture je to
+edini determinističen potek. Deaktivacija NE briše podatkov (revizijska
+sled ostane; brisanje je ločena, nevarnejša akcija).

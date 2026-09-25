@@ -61,12 +61,22 @@ export async function assertSessionAlive(payload: SessionPayload): Promise<boole
   if (!payload.jti) return false // žeton brez registra — fail-closed
   const row = await db.userSession.findUnique({
     where: { id: payload.jti },
-    select: { profileId: true, expiresAt: true, revokedAt: true },
+    // R134 (§9): status profila je del živosti — deaktiviran/zaklenjen
+    // uporabnik NE SME nadaljevati z že izdanim žetonom (hard requirement).
+    // Preverba teče ob VSAKEM avtenticiranem zahtevku, tako da deaktivacija/
+    // zaklep učinkujeta TAKOJ, brez čakanja na potek žetona.
+    select: {
+      profileId: true,
+      expiresAt: true,
+      revokedAt: true,
+      profile: { select: { deactivatedAt: true, lockedAt: true } },
+    },
   })
   if (!row) return false
   if (row.profileId !== payload.sub) return false // jti tujega računa
   if (row.revokedAt) return false
   if (row.expiresAt.getTime() <= Date.now()) return false
+  if (row.profile.deactivatedAt || row.profile.lockedAt) return false // §9
   return true
 }
 

@@ -54,6 +54,8 @@ const PhotoTab = dynamic(() => import('@/components/roksal/photo-tab').then((m) 
 const PdfExport = dynamic(() => import('@/components/roksal/pdf-export').then((m) => m.PdfExport), { ssr: false, loading: () => <TabLoading /> })
 const FloorPlanTab = dynamic(() => import('@/components/roksal/floor-plan-tab').then((m) => m.FloorPlanTab), { ssr: false, loading: () => <TabLoading /> })
 const MapMeasure = dynamic(() => import('@/components/roksal/map-measure').then((m) => m.MapMeasure), { ssr: false, loading: () => <TabLoading /> })
+const TeamTab = dynamic(() => import('@/components/roksal/team-tab').then((m) => m.TeamTab), { ssr: false, loading: () => <TabLoading /> })
+const PasswordChangeBanner = dynamic(() => import('@/components/roksal/password-change-banner').then((m) => m.PasswordChangeBanner), { ssr: false })
 const PunchList = dynamic(() => import('@/components/roksal/punch-list').then((m) => m.PunchList), { ssr: false, loading: () => <TabLoading /> })
 const MeasurementStudio = dynamic(() => import('@/components/roksal/measurement-studio').then((m) => m.MeasurementStudio), { ssr: false, loading: () => <TabLoading /> })
 const CvStudio = dynamic(() => import('@/components/roksal/cv-studio').then((m) => m.CvStudio), { loading: () => <TabLoading />, ssr: false })
@@ -291,6 +293,8 @@ export default function Home() {
       ? 'Terenski pregled'
       : moreTab === 'vodja'
       ? 'Pregled za vodjo'
+      : moreTab === 'ekipa'
+      ? 'Ekipa (življenjski cikl računov)'
       : moreTab === 'measurement'
       ? 'Merilni studio'
       : moreTab === 'cvstudio'
@@ -345,6 +349,7 @@ export default function Home() {
       </div>
 
       <TopBar onSync={handleSync} syncing={syncing} onOpenPalette={() => setPaletteOpen(true)} hidden={activeTab === 'viz'} />
+      <PasswordChangeBanner />
 
       {/* PWA status — offline pas + namestitev app (skrit v produktnem načinu) */}
       {activeTab !== 'viz' && <PwaStatus />}
@@ -460,6 +465,7 @@ export default function Home() {
             </Button>
             <h2 className="mb-3 text-lg font-bold text-roksal-navy">{moreLabel}</h2>
             {moreTab === 'vodja' && <VodjaDashboard />}
+        {moreTab === 'ekipa' && <TeamTab />}
             {moreTab === 'teren' && <SiteSurveyTab projectId={selectedProjectId} project={selectedProject} />}
             {moreTab === 'measurement' && <MeasurementStudio projectId={selectedProjectId} />}
             {moreTab === 'cvstudio' && <CvStudio projectId={selectedProjectId} />}

@@ -38,6 +38,17 @@ model Profile {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  // R134 (§9): življenjski cikl računa — vse Null/false = aktiven račun.
+  // assertSessionAlive preverja status ob VSAKEM zahtevku → deaktivacija/
+  // zaklep učinkujeta TAKOJ na že izdane žetone (hard requirement §9).
+  deactivatedAt      DateTime? // deaktivacija (offboarding) — prijava + žive seje mrte
+  lockedAt           DateTime? // zaklenjen račun (admin akcija) — prijava blokirana
+  mustChangePassword Boolean   @default(false) // admin reset gesla → zamenjava ob naslednji prijavi
+  inviteTokenHash    String?   @unique // sha256(token) — aktivacijski žeton povabila (čistega NIKOLI v bazi)
+  inviteExpiresAt    DateTime? // povabilo poteče (privzeto 7 dni)
+  invitedBy          String? // e-pošta povabljajočega (kontekst, brez FK)
+  invitedAt          DateTime?
+
   projects  Project[]              @relation("InstallerProjects")
   leads     Project[]              @relation("ManagerProjects")
   auditLogs AuditLog[]

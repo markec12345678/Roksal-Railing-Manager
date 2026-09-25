@@ -56,6 +56,11 @@ const PUBLIC_PREFIXES = [
   '/api/portal',
   '/m/',
   '/api/public',
+  // R134 (§9): aktivacija povabljenega računa — lastnik aktivacijske povezave
+  // nima (in ne sme imeti) seje. Ruta sama preveri žeton (hash v bazi, potek)
+  // + rate limit; upravljanje (/api/users brez /activate) ostane zaščiteno.
+  '/aktivacija/',
+  '/api/users/activate',
   // 3D modeli ograj (runda O): Scene Viewer/Quick Look ju prenese IZVEN
   // brskalniške seje (sistemska aplikacija brez piškotkov) — preusmeritev na
   // prijavo bi pokvarila AR na telefonu. Modeli so generična geometrija
