@@ -1635,3 +1635,34 @@ Stage Summary:
 - Render fallback je 95% pripravljen: veja `render` + auto-sync workflow + build:render skripta + NOVA fallback baza + idempotentno orodje + runbook (issue #12). ZADNJI KORAK je lastniški: plačilna metoda za 2. free web service (dashboard.render.com/billing) → potem EN ukaz, ali ročna izdelava v dashboardu.
 - Vercel produkcija zdrava in primarna; Render ničesar ne prevzame, dokler lastnik ne želi (fallback semantics).
 - Ostanka (lastniška): #7 Neon backfill --commit, #8 prave fotke, #12 billing odobritev. Neon API trenutno nedosegljiv (ne blokira ničesar od tega).
+---
+Task ID: R130 (Render --commit poskus + issue #5 §6 — CSRF/Origin)
+Agent: Z.ai Code (glavni orkestrator)
+Task: Lastnik ponovno posredoval Render API ključ z ukazom "render, če nedela Vercel — samo svoja veja na Renderju, ne povozi ničesar od obstoječega. Nadaljuj." Po zablokiranem Render koraku pivot na naslednjo P0 postavko issue #5 (§6 CSRF/Origin).
+
+Work Log:
+- WORKLOG + REPO STANJE: prebrana celotna zgodovina (R129 = Render fallback 95% pripravljen); lokal main a9c3995 == origin/main; veja `render` obstaja (2617d10); Vercel produkcija zdrava (/api/auth/demo → {"enabled":false} 200, R127 aktivna).
+- RENDER INVENTURA (strogo read-only): My Workspace (tea-dao3to2jnfac73afudug) ima točno 1 tuj servis `griblje-museum` (srv-dar1hn942hec73clb92g, not_suspended) + 1 naš Postgres `roksal-fallback-db` (dpg-dar3hd17lnhs739tdn7g-a, available, poteče 2026-10-25). Nič od tega ni bilo spreminjano.
+- RENDER DRY RUN: tools/render-create-service.mjs — vse faze OK (owner → servis idempotencna zaustavitev → baza → connection-info → payload s skritimi skrivnostmi).
+- RENDER --commit → ŠE VEDNO BLOKIRANO: POST /v1/services vrne "Payment information is required to complete this request" (2. free web service; workspace že ima griblje-museum). To je LASTNIŠKA billing odločitev (dashboard.render.com/billing — free tier ostane brezplačen, kartica je samo preverba); nič se ne zaobide. Ko lastnik doda kartico, EN ukaz dokonča: RENDER_API_KEY=… bun tools/render-create-service.mjs --commit. Runbook: issue #12.
+- PIVOT: izbrana naslednja P0 postavka iz issue #5 — §6 CSRF/Origin (po zaporedju §2→§3→§1→§4).
+- ANALIZA: sejni piškotek je SameSite=Lax (blokira klasični cross-site form POST v sodobnih brskalnikih), a Lax sam ni dovolj: starejši brskalniki, same-site ≠ same-origin (drugi servisi na isti platformi), Lax pošlje piškotek še pri top-level GET navigaciji. Origin/Referer validacija je eksplicitna obrambna plast, ki jo §6 zahteva.
+- IMPLEMENTACIJA src/lib/csrf.ts (NOV, Edge-safe — čisto razčlenjevanje, brez node API-jev):
+  · jedro isMutationOriginAllowed: 1) varne metode (GET/HEAD/OPTIONS) dovoljene; 2) Bearer izjema (ni ambientnega piškotka; cross-site napadalec ne more nastaviti tuje Authorization glave brez CORS odobritve); 3) Origin odloča IZKLJUČNO (Referer je slabši signal — referrer-policy ga lahko odreže); 4) brez Origin → Referer rezerva; 5) oboje manjka → ZAVRNJENO (fail-closed; brskalnik na mutaciji VEDNO pošlje Origin);
+  · normalizacija: male črke, odrezana privzeta vrata (:443/:80), x-forwarded-host (prvi vnos) ima prednost pred Host (proxy/prevlada), literal "null" in sheme data:/blob:/ftp: zavrnjene;
+  · CSRF_ALLOWED_ORIGINS: veja/lista polnih izvorov za npr. ločeno landinjo na lastni domeni; pokvarjeni vnosi ne razširijo ničesar;
+  · csrfGuard(NextRequest): samo /api/* mutacije (strani nimajo mutacijskih handlerjev; server actions se ne uporabljajo), 403 z jasnim sporočilom + console.warn dnevnik.
+- PROXY: csrfGuard vstavljen kot PRVA vrsta v proxy() — pred javnimi preusmeritvami, ker so prijava/demo/register/portal prav tako cookie-mutacije (login-CSRF je realen vektor).
+- LEGITIMNI KLIJENTI usklajeni (pogodba: ne-brskalniški klient na mutaciji pošlje Origin: <baza>, enako kot brskalnik): tools/security-smoke.py (avtomatski Origin na mutacijah + nov razdelek [12]), tools/chain-e2e.ts (api() + prijava + registracija), tools/multiuser-e2e-prod.ts (api()), tools/s5-security-check.ts (vse mutacije).
+- TESTI +24 (skupaj 638/638, 41 datotek): src/lib/__tests__/csrf.test.ts — cisto jedro (varne metode, Bearer izjema, Origin odloča, Referer rezerva, fail-closed brez obeh, null/data:/blob:, x-forwarded-host prednost, vrata normalizacija, allowlist) + prava vstopna točka (NextRequest skozi csrfGuard: 403 cross-origin, 403 brez glav, Bearer gre skozi, stran ni predmet, env allowlist).
+- DIMNI TEST: nov razdelek [12] CSRF/Origin (5 preverb: tuj Origin → 403; isti izvor doseže ruto → 401; brez Origin/Bearer → 403 fail-closed; Bearer izjema doseže auth; GET z tujim Origin ostane anon 401) — skupaj 86 preverb na živem strežniku (CI job ime 84 → 86).
+- ŽIVI E2E (scripts/r130-e2e.sh, en klic — peskovnik ubija ozadnje procese med klici): CSRF matrika 7/7 (cross-origin 403, brez glav 403, isti izvor doseže ruto, GET nedotaknjen, Bearer izjema, Referer rezerva, OPTIONS preflight skozi) · dimni test 85 uspešnih / 0 neuspešnih / 1 preskočen (API_KEY ni nastavljen lokalno) · agent-browser prava prijava (r130-admin) → URL / — brskalnikov pravi Origin gre skozi varovalo, [csrf] opozoril ni, POST /api/auth 200.
+- NAUČEK (dev): po uspešni prijavi router.replace('/') v dev (Turbopack) čaka prevajanje ciljne strani — URL se zamenja šele po navigaciji; E2E polla do 45 s (produkcija nima prevajanja, zato tam ni opažen).
+- DOKS: docs/SECURITY-POLICY.md novo poglavje "CSRF / Origin — centralna preverba (R130, issue #5 §6)" s tabelo vseh 4 zahtev + pravila vrstnega reda + pogodba za ne-brskalniške kliente; README (638 testov/41 datotek, Varnostni smoke 86, nov varnostni bullet); docs/VARNOST.md (77→86); ci.yml (ime joba 84→86).
+- VERIFIKACIJA: 638/638 testov · tsc 0 napak · eslint 0 napak · CI + Vercel na push (glej dodatek).
+- HIGIENA: Render ključ samo v ukazih, NI v repo/issue/worklog; testni računi r130-admin/r130-monter obstajajo samo v peskovniški dev bazi (localhost:5433/roksal_dev); preizkusni skripti v scripts/ (r130-e2e.sh komitiran, debug varianta izbrisana).
+
+Stage Summary:
+- ISSUE #5 §6 (CSRF/Origin) IZPOLNJEN: centralna Origin/Referer preverba na VSEH /api/* mutacijah (tudi javnih), fail-closed brez glav, ločena obravnava Bearer/API-key, cross-origin testi na treh ravnih (vitest 24, dimni 5, brskalniški E2E).
+- Render fallback ŠE VEDNO čaka izključno na lastnikovo plačilno metodo (dashboard.render.com/billing) — baza, veja, build skripta in enoukazno orodje so pripravljeni in preizkušeni (issue #12).
+- Ostanka (lastniška): #7 Neon backfill --commit, #8 R118-real prave fotke, #12 billing odobritev. Naslednji kandidati iz #5: §5 PWA/cache izolacija, §7 portal security, §8 public measurement security, §9 user lifecycle, §10 permission matrix.
