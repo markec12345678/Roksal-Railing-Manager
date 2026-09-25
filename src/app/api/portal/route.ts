@@ -1,6 +1,8 @@
-// Roksal Field - API: Portal stranke (management endpoints)
-// POST /api/portal {projectId, action: 'enable'|'disable'|'regenerate'|'revoke'|'update'}
-// GET  /api/portal?projectId=X  ->  {enabled, token, url, expiresAt, revokedAt, lastUsedAt}
+// Roksal Field - API: Portal stranke + merilna povezava (management endpoints)
+// POST /api/portal {projectId, action: 'enable'|'disable'|'regenerate'|'revoke'|'update'
+//                            | 'measureEnable'|'measureDisable'|'measureRegenerate'|'measureRevoke'}
+// GET  /api/portal?projectId=X  ->  {enabled, token, url, expiresAt, revokedAt, lastUsedAt,
+//                                    clientNotes, estimatedPrice, measure:{...}}
 //
 // R132 (issue #5 §7):
 //   • Upravljanje je SAMO za uporabniške seje (API ključi → 403) — mobilni
@@ -13,6 +15,11 @@
 //     `expiresInDays` 1..365), update lahko potek spremeni/podaljša.
 //   • revoke: žeton MRTAV (revokedAt) — stran takoj 404; regenerate oživi
 //     z NOVIM žetonom in svežim potekom.
+// R133 (issue #5 §8): scoped MERILNI žeton — ista pravila, LOČEN žeton
+//   (measureToken). `measureExpiresInDays` nastavi potek merilne povezave;
+//   enable izda povezavo, če je še ni (ali je zapuščinski cuid → rotacija).
+//   Enable na PREKLICANEM žetonu izda NOVEGA (revokacija je trajna —
+//   popravljeno tudi za portal, kjer je enable pustil revokedAt postavljen).
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { authenticate, unauthorized } from '@/lib/auth'
@@ -23,9 +30,33 @@ import {
   generatePortalToken,
   portalExpiryFromDays,
 } from '@/lib/portal'
+import {
+  DEFAULT_MEASURE_EXPIRY_DAYS,
+  MAX_MEASURE_EXPIRY_DAYS,
+  generateMeasureToken,
+} from '@/lib/measure'
 
-type PortalAction = 'enable' | 'disable' | 'regenerate' | 'revoke' | 'update'
-const ACTIONS: PortalAction[] = ['enable', 'disable', 'regenerate', 'revoke', 'update']
+type PortalAction =
+  | 'enable'
+  | 'disable'
+  | 'regenerate'
+  | 'revoke'
+  | 'update'
+  | 'measureEnable'
+  | 'measureDisable'
+  | 'measureRegenerate'
+  | 'measureRevoke'
+const ACTIONS: PortalAction[] = [
+  'enable',
+  'disable',
+  'regenerate',
+  'revoke',
+  'update',
+  'measureEnable',
+  'measureDisable',
+  'measureRegenerate',
+  'measureRevoke',
+]
 
 /** Skupna izbira polj žetona za odgovor (široka kot UI potrebuje, nič več). */
 const PORTAL_SELECT = {
@@ -37,9 +68,16 @@ const PORTAL_SELECT = {
   clientTokenLastUsedAt: true,
   clientNotes: true,
   estimatedPrice: true,
+  // R133 (§8): scoped merilni žeton — ločen življenjski cikl.
+  measureToken: true,
+  measureEnabled: true,
+  measureTokenExpiresAt: true,
+  measureTokenRevokedAt: true,
+  measureTokenLastUsedAt: true,
 } as const
 
-function portalPayload(p: {
+type PortalProjectRow = {
+  id: string
   clientToken: string | null
   clientPortalEnabled: boolean
   clientTokenExpiresAt: Date | null
@@ -47,7 +85,14 @@ function portalPayload(p: {
   clientTokenLastUsedAt: Date | null
   clientNotes: string | null
   estimatedPrice: number | null
-}) {
+  measureToken: string | null
+  measureEnabled: boolean
+  measureTokenExpiresAt: Date | null
+  measureTokenRevokedAt: Date | null
+  measureTokenLastUsedAt: Date | null
+}
+
+function portalPayload(p: PortalProjectRow) {
   return {
     enabled: p.clientPortalEnabled,
     token: p.clientToken,
@@ -57,6 +102,15 @@ function portalPayload(p: {
     lastUsedAt: p.clientTokenLastUsedAt?.toISOString() ?? null,
     clientNotes: p.clientNotes,
     estimatedPrice: p.estimatedPrice,
+    // R133 (§8): merilna povezava — ločen blok, ločen cikl.
+    measure: {
+      enabled: p.measureEnabled,
+      token: p.measureToken,
+      url: p.measureToken ? `/m/${p.measureToken}` : null,
+      expiresAt: p.measureTokenExpiresAt?.toISOString() ?? null,
+      revokedAt: p.measureTokenRevokedAt?.toISOString() ?? null,
+      lastUsedAt: p.measureTokenLastUsedAt?.toISOString() ?? null,
+    },
   }
 }
 
@@ -106,6 +160,8 @@ export async function POST(request: Request) {
       estimatedPrice?: number | null
       /** R132 (§7): potek v dneh (1..365) — privzeto 90 pri enable/regenerate. */
       expiresInDays?: number
+      /** R133 (§8): potek merilne povezave v dneh (1..365) — privzeto 90. */
+      measureExpiresInDays?: number
     }
     const { projectId, action } = body
 
@@ -114,14 +170,23 @@ export async function POST(request: Request) {
     }
     if (!action || !ACTIONS.includes(action)) {
       return NextResponse.json(
-        { error: "action mora biti 'enable', 'disable', 'regenerate', 'revoke' ali 'update'" },
+        { error: "action mora biti 'enable', 'disable', 'regenerate', 'revoke', 'update', 'measureEnable', 'measureDisable', 'measureRegenerate' ali 'measureRevoke'" },
         { status: 400 },
       )
     }
 
     const existing = await db.project.findUnique({
       where: { id: projectId },
-      select: { id: true, monterId: true, vodjaId: true, clientToken: true },
+      select: {
+        id: true,
+        monterId: true,
+        vodjaId: true,
+        clientToken: true,
+        clientTokenRevokedAt: true,
+        measureToken: true,
+        measureEnabled: true,
+        measureTokenRevokedAt: true,
+      },
     })
     if (!existing) {
       return NextResponse.json({ error: 'Projekt ni najden' }, { status: 404 })
@@ -132,9 +197,12 @@ export async function POST(request: Request) {
 
     if (action === 'enable') {
       updateData.clientPortalEnabled = true
-      // Brez žetona ALI zastarelega formata (pre-R132 cuid ni kripto in brez
-      // poteka) ustvarimo NOVEGA z svežim potekom — stari URL umre.
-      if (!isCryptoPortalToken(existing.clientToken)) {
+      // Brez žetona, zapuščinski format (pre-R132 cuid ni kripto in brez
+      // poteka) ALI PREKLICAN žeton → izdaj NOVEGA s svežim potekom.
+      // Revokacija je trajna (§7): ponovni enable = NOVA povezava, ne
+      // oživitev mrtvega žetona (prej je enable pustil revokedAt — UI je
+      // kazal "omogočen", stran pa je ostala 404).
+      if (!isCryptoPortalToken(existing.clientToken) || existing.clientTokenRevokedAt) {
         updateData.clientToken = generatePortalToken()
         updateData.clientTokenRevokedAt = null
       }
@@ -169,6 +237,33 @@ export async function POST(request: Request) {
           body.expiresInDays === null ? null : readExpiry(body.expiresInDays)
       }
     }
+    // ------------------------------------------------------------------
+    // R133 (§8): scoped merilna povezava — isti cikl kot portal, ločen žeton.
+    // ------------------------------------------------------------------
+    else if (action === 'measureEnable') {
+      updateData.measureEnabled = true
+      // Brez žetona, zapuščinski format (pre-R133 = kopija clientToken
+      // cuid, ni kripto) ALI PREKLICAN žeton → izdaj NOVEGA s svežim
+      // potekom. Revokacija je trajna (§8): ponovni enable = NOVA povezava.
+      if (!isCryptoPortalToken(existing.measureToken) || existing.measureTokenRevokedAt) {
+        updateData.measureToken = generateMeasureToken()
+        updateData.measureTokenRevokedAt = null
+      }
+      updateData.measureTokenExpiresAt = readMeasureExpiry(body.measureExpiresInDays)
+    } else if (action === 'measureDisable') {
+      // Začasno izklopljena — žeton OSTANE (vrnitev = isti URL).
+      updateData.measureEnabled = false
+    } else if (action === 'measureRegenerate') {
+      // Nov kripto žeton + svež potek + počisti revokacijo (stari URL MRTAV).
+      updateData.measureToken = generateMeasureToken()
+      updateData.measureEnabled = true
+      updateData.measureTokenRevokedAt = null
+      updateData.measureTokenExpiresAt = readMeasureExpiry(body.measureExpiresInDays)
+    } else if (action === 'measureRevoke') {
+      // §8: revokacija — žeton trajno mrtev, povezava izklopljena.
+      updateData.measureEnabled = false
+      updateData.measureTokenRevokedAt = new Date()
+    }
 
     const updated = await db.project.update({
       where: { id: projectId },
@@ -182,12 +277,20 @@ export async function POST(request: Request) {
           // R132: pravi akter (prej 'system', ki je padal na FK konvencijo).
           userId: auth.session.sub,
           projectId: updated.id,
-          akcija: `PORTAL_${action.toUpperCase()}`,
+          // Portal akcije ohranijo PORTAL_ predpono (R132 pogodba); merilne
+          // akcije nosijo MEASURE_ z podčrtajem (R133).
+          akcija: action.startsWith('measure')
+            ? action.replace(/^measure/, 'MEASURE_').toUpperCase()
+            : `PORTAL_${action.toUpperCase()}`,
           newValue: JSON.stringify({
             enabled: updated.clientPortalEnabled,
             hasToken: !!updated.clientToken,
             expiresAt: updated.clientTokenExpiresAt?.toISOString() ?? null,
             revokedAt: updated.clientTokenRevokedAt?.toISOString() ?? null,
+            measureEnabled: updated.measureEnabled,
+            hasMeasureToken: !!updated.measureToken,
+            measureExpiresAt: updated.measureTokenExpiresAt?.toISOString() ?? null,
+            measureRevokedAt: updated.measureTokenRevokedAt?.toISOString() ?? null,
           }),
         },
       })
@@ -206,12 +309,21 @@ function isCryptoPortalToken(token: string | null): boolean {
   return typeof token === 'string' && /^[A-Za-z0-9_-]{24}$/.test(token)
 }
 
-/** Prebere/clampa potek iz payloada; brez podanega = privzeti 90 dni. */
+/** Prebere/clampa portal potek iz payloada; brez podanega = privzeti 90 dni. */
 function readExpiry(days?: number): Date {
   if (typeof days !== 'number' || Number.isNaN(days)) {
     return portalExpiryFromDays(DEFAULT_PORTAL_EXPIRY_DAYS)
   }
   const clamped = Math.min(MAX_PORTAL_EXPIRY_DAYS, Math.max(1, Math.floor(days)))
+  return portalExpiryFromDays(clamped)
+}
+
+/** R133 (§8): isti dogovor za merilno povezavo (privzeto 90 dni, strop 365). */
+function readMeasureExpiry(days?: number): Date {
+  if (typeof days !== 'number' || Number.isNaN(days)) {
+    return portalExpiryFromDays(DEFAULT_MEASURE_EXPIRY_DAYS)
+  }
+  const clamped = Math.min(MAX_MEASURE_EXPIRY_DAYS, Math.max(1, Math.floor(days)))
   return portalExpiryFromDays(clamped)
 }
 

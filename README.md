@@ -75,9 +75,14 @@
 - 🌐 **Portal stranke** — javna stran za sledenje projekta z življenjskim ciklom
   povezave: kripto žeton (90 dni potek, revokacija, obnova), dostopni dnevnik z
   hashiranim IP, skupna omejitev hitrosti in enotna 404 za vsa neveljavna stanja
+- 📏 **Merilna povezava (samomeritev)** (R133, issue #5 §8) — LOČEN scoped žeton za
+  javno samomeritev (/m/[token]): lasten potek/revokacija/onemogočeno, Idempotency-Key
+  (strežniški exactly-once replay), duplicate protection (dedupeHash, 30 min), strop
+  telesa 8 kB, dva rate žebrka (IP + žeton), audit vsakega poskusa z hashiranim IP,
+  ownership marker 'public:measure' + upravljanje v dashboardu (izdaja/izklop/preklic)
 - 🗄️ **PostgreSQL** — verzionirane migracije (`migrate deploy`), produkcija Neon
 
-### Statistika projekta (usklajeno z HEAD, R132)
+### Statistika projekta (usklajeno z HEAD, R133)
 
 | Metrika | Vrednost |
 |---------|----------|
@@ -86,8 +91,8 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 36 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **654** (42 datotek, vključno z globalSetup embedded PG) |
-| Varnostni smoke | 92 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
+| Testi (vitest) | **668** (43 datotek, vključno z globalSetup embedded PG) |
+| Varnostni smoke | 96 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
 | Jezik vmesnika | Slovenščina |
@@ -348,7 +353,7 @@ Sheet z 6 podzavihki:
 | **PWA** | Service Worker + Web Manifest |
 | **Temnitveni način** | [next-themes](https://github.com/pacocoursey/next-themes) |
 | **Validacija** | [Zod 4](https://zod.dev/) |
-| **Testiranje** | [Vitest 4](https://vitest.dev/) (654 testov + globalSetup embedded PG) |
+| **Testiranje** | [Vitest 4](https://vitest.dev/) (668 testov + globalSetup embedded PG) |
 | **Paketni upravitelj** | [Bun](https://bun.sh/) |
 | **Linting** | ESLint 9 + eslint-config-next |
 
@@ -474,7 +479,7 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `bun run check` | tsc --noEmit + vitest run (en ukaz za vse) |
 | `bunx tsc --noEmit` | Tipska kontrola celotnega projekta (trenutno 0 napak) |
 | `bun run lint` | ESLint preverjanje |
-| `bun run smoke` | Varnostni smoke na zagnanem strežniku (92 preverjanj) |
+| `bun run smoke` | Varnostni smoke na zagnanem strežniku (96 preverjanj) |
 | `bun run bench:measurement` | R118 validacijski harness Merilnega SDK (12 scenarijev) |
 | `bun run db:deploy` | `prisma migrate deploy` (verzionirane migracije) |
 | `bun run db:seed` | Demo podatki |

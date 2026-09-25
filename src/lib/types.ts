@@ -55,6 +55,9 @@ export interface Project {
 
   // Javna povezava stranke: portal (/portal/[token]) + samomeritev (/m/[token])
   clientToken?: string | null
+  // R133 (§8): scoped merilni žeton — LOČEN od portal žetona (lasten cikl).
+  measureToken?: string | null
+  measureEnabled?: boolean
   followUpDate?: string | null
   followUpOpomba?: string | null
 

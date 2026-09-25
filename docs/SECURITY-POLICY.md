@@ -285,3 +285,39 @@ projektni IDOR (brez assertProjectAccess) in je delilo žetone z API ključi.
 Enotni vir resnice: `src/lib/portal.ts` (veljavnost, žeton, potek, ipHash,
 dnevnik) — uporablja jo HTML stran `/portal/[token]` IN JSON ruta
 `/api/portal/[token]` (prej sta imeli RAZLIČNI validaciji).
+
+## Javna samomeritev — scoped žeton (R133, issue #5 §8)
+
+Površina `/api/public/measure` + stran `/m/[token]` (stranka sama nariše črto
+ograje na satelitski karti in pošlje meritev) je prej uporabljala
+`Project.clientToken` — ISTI žeton kot portal stranke — brez preverbe poteka/
+revokacije, z lastnim in-memory limiterjem (resetira se ob restartu), brez
+idempotence (retry stranke = dvojnik), brez zaščite pred duplikati in brez
+audit sledi. Poleg tega je merilni klient (Leaflet) padel med SSR za VELJAVNE
+povezave (`window is not defined` → 500) — napaka, ki jo neveljavne poti
+nikoli niso razkrile (dolgo skrit bug, najden z E2E tokom te runde).
+
+| Zahteva §8 | Implementacija | Dokaz |
+|---|---|---|
+| scoped token | NOV ločen `Project.measureToken` (migracija r133): merilna povezava NI več portal žeton — revokacija/potek portala ne vpliva nanj in obratno; backfill = kopija clientToken + 90 dni (kontinuiteta obstoječih povezav, določen — ne tih) | vitest + E2E (ločena akcija, ločen URL) |
+| expiry/revoke | `measureTokenExpiresAt` (privzeto 90 dni, clamp 1..365) + `measureTokenRevokedAt`; `measureValidity`: REVOKED > DISABLED > EXPIRED > OK; enable na preklicanem žetonu izda NOVEGA (revokacija je trajna — popravljeno tudi pri portal enable, ki je pustil revokedAt postavljen) | vitest (veljavnost + enable-after-revoke) |
+| shared rate limit | skupni `checkRate` žebrki (src/lib/rate-limit.ts, isti vir kot prijava/portal): GET 30/10 min na IP, POST 6/h na žeton + 10/h na IP; 429 + `Retry-After` + dnevnik | vitest (31. GET → 429) |
+| idempotency | `Idempotency-Key` (opcijski, a ko pride, je obveza — neveljaven → 400) prek R128 infrastrukture: transakcijska rezervacija = PRVI stavek (po validaciji), snapshot odgovora v ISTI transakciji, principal `public:measure`; replay = ISTI odgovor + `Idempotent-Replay: true` | vitest (race → replay, natanko 1 vrstica) |
+| duplicate protection | determinističen `dedupeHash` (projekt + točke 6 dec. + skupajM 1 dec. + višina, pepper) — identična oddaja v 30 min vrne OBSTOJEČO meritev (200, `duplicate:true`); ščiti pred dvojnim tap-om in retry-i z novim ključem | vitest (isti id, count=1) |
+| anti-abuse | strop surovega telesa 8 kB → 413 (prej samo v komentarju); max 300 točk (zod); dva neodvisna žebrka (IP + žeton); vsak zavrnjen poskus v dnevniku z razlogom | vitest (413/400/404) |
+| ownership | `Measurement.createdBy = 'public:measure'` (jasen izvor, ločen od terenskih meritev) + `dedupeHash` na vrstici | vitest |
+| omejene mutacije | javna površina ustvari SAMO meritev (nič drugega ni dosegljivo brez seje); GET vrne izključno naziv projekta + ime stranke | koda + smoke [15] |
+| audit | vsak poskus (VIEW/SUBMIT/DUPLICATE/REJECTED) v AuditLog z **hashiranim IP** (sha256+pepper, 32 hex — surov IP se NE shranjuje, isti dogovor kot PortalAccess) + UA; vzdržljiv (await — naučen v R132) | vitest + E2E (audit-check) |
+| SSR popravek | merilni klient se naloži LEN prek `dynamic(..., { ssr: false })` (`measure-lazy.tsx`) — Leaflet na uvozu zahteva `window`; prej je veljavna povezava vrwala 500 | E2E (stran 200 + Leaflet renderan) |
+
+Enotni vir resnice: `src/lib/measure.ts` (veljavnost, resolve, dnevnik,
+dedupe hash, omejitve) — uporabljata ga HTML stran `/m/[token]` IN obe rute
+`/api/public/measure`. Upravljanje (enable/disable/regenerate/revoke +
+`measureExpiresInDays`) je v `/api/portal` (seja + assertProjectAccess),
+z novimi akcijami `measure*` (audit: `MEASURE_ENABLE` … `MEASURE_REVOKE`).
+
+Znan meji (iskreno): dedupe je best-effort poleg idempotence — dva VZPOREDNA
+prva pošiljanja z različnima ključema in identično vsebino imata majhno okno
+za tekmo (obračunava se z idempotence ključem stranke, ki ga pošilja naša
+stranka). Rate limiter ostane in-memory (dokumentirano pri `checkRate`) —
+za več vozlišč se zamenja shramba, vmesnik ostane.

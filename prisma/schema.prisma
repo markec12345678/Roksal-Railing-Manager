@@ -142,6 +142,17 @@ model Project {
   clientNotes           String? // sporočilo monterja, vidno stranki
   estimatedPrice        Float? // predvidena cena, vidna stranki
 
+  // R133 (§8): scoped MERILNI žeton — LOČEN od portal žetona. Portal povezava
+  // pomeni "vidi napredek projekta"; merilna povezava pomeni "lahko pošlje
+  // meritev" — dve različni zmožnosti, dva žetona, dva neodvisna življenjska
+  // cikla (potek/revokacija/onemogočeno). Revokacija portala ne mori merilne
+  // povezave in obratno.
+  measureToken           String?   @unique // null = merilna povezava še nikoli izdana
+  measureEnabled         Boolean   @default(false)
+  measureTokenExpiresAt  DateTime? // null = brez poteka (zapuščinski; nova = privzeto 90 dni)
+  measureTokenRevokedAt  DateTime? // revokacija = žeton MRTAV (regenerate ga oživi)
+  measureTokenLastUsedAt DateTime? // zadnja uspešna samomeritev (telemetrija)
+
   // V4.1 — POST-SIGNATURE AUTOMATION LAYER
   dealLocked          Boolean   @default(false) // true po podpisu — nič več editanja
   dealLockedAt        DateTime?
@@ -194,7 +205,14 @@ model Measurement {
   createdAt    DateTime @default(now())
   createdBy    String?
 
+  // R133 (§8): duplicate protection — deterministični hash (projekt + točke +
+  // dolžina + višina). Identična pošiljanja v oknu 30 min vrnejo OBSTOJEČO
+  // meritev (200, duplicate:true) namesto nove vrstice.
+  dedupeHash String?
+
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, dedupeHash])
 }
 
 // ============================================

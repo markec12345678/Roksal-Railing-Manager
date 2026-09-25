@@ -292,6 +292,15 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
     lastUsedAt: string | null
     clientNotes: string | null
     estimatedPrice: number | null
+    /** R133 (§8): scoped merilna povezava — LOČEN žeton, ločen cikl. */
+    measure: {
+      enabled: boolean
+      token: string | null
+      url: string | null
+      expiresAt: string | null
+      revokedAt: string | null
+      lastUsedAt: string | null
+    } | null
   }
   const [portalInfo, setPortalInfo] = useState<PortalInfo | null>(null)
   const [portalLoading, setPortalLoading] = useState(false)
@@ -680,12 +689,21 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
       .finally(() => setPortalLoading(false))
   }
 
-  async function portalAction(action: 'enable' | 'disable' | 'regenerate' | 'revoke') {
+  async function portalAction(
+    action: 'enable' | 'disable' | 'regenerate' | 'revoke' | 'measureEnable' | 'measureDisable' | 'measureRegenerate' | 'measureRevoke',
+  ) {
     if (!detailProject) return
     // R132 (§7): revokacija je TRAJNA — stari URL takoj mrtav. Vedno potrditev.
     if (action === 'revoke') {
       const ok = window.confirm(
         'Preklic povezave: stranka z obstoječim URL-jem TAKOJ izgubi dostop (stran postane nedosegljiva).\n\nNova povezava nastane šele z obnovo (regenerate). Prekliči povezavo?',
+      )
+      if (!ok) return
+    }
+    // R133 (§8): isti varovalnik za merilno povezavo.
+    if (action === 'measureRevoke') {
+      const ok = window.confirm(
+        'Preklic merilne povezave: stranka z obstoječo merilno povezavo TAKOJ izgubi dostop (ne more več poslati meritve).\n\nNova povezava nastane šele z »Nova povezava«. Prekliči?',
       )
       if (!ok) return
     }
@@ -703,6 +721,10 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
         else if (action === 'disable') toast.success('Portal stranke onemogočen')
         else if (action === 'regenerate') toast.success('Nova povezava (stara je mrtva, velja 90 dni)')
         else if (action === 'revoke') toast.success('Povezava preklicana — stari URL je nedosegljiv')
+        else if (action === 'measureEnable') toast.success('Merilna povezava izdana (velja 90 dni)')
+        else if (action === 'measureDisable') toast.success('Merilna povezava začasno izklopljena')
+        else if (action === 'measureRegenerate') toast.success('Nova merilna povezava (stara je mrtva, velja 90 dni)')
+        else if (action === 'measureRevoke') toast.success('Merilna povezava preklicana — stari URL je nedosegljiv')
       } else {
         const err = await res.json().catch(() => null)
         toast.error(err?.error || 'Napaka pri upravljanju portala')
@@ -794,6 +816,54 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
     }
     const subject = `Napredek vašega projekta: ${detailProject?.nazivProjekta ?? ''}`
     const body = `Pozdravljeni,\n\nSledite napredku vašega projekta preko portala stranke:\n${url}\n\nLep pozdrav,\nRoksal d.o.o.`
+    window.location.href = `mailto:${detailProject.customer.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+  }
+
+  // R133 (§8): merilna povezava — lastni URL pomočniki (scoped measureToken).
+  function getMeasureUrl(): string {
+    if (!portalInfo?.measure?.token) return ''
+    return `${window.location.origin}/m/${portalInfo.measure.token}`
+  }
+
+  async function copyMeasureUrl() {
+    const url = getMeasureUrl()
+    if (!url) return
+    try {
+      await navigator.clipboard.writeText(url)
+      toast.success('Merilna povezava kopirana')
+    } catch {
+      const ta = document.createElement('textarea')
+      ta.value = url
+      document.body.appendChild(ta)
+      ta.select()
+      try {
+        document.execCommand('copy')
+        toast.success('Merilna povezava kopirana')
+      } finally {
+        document.body.removeChild(ta)
+      }
+    }
+  }
+
+  function sendSmsMeasure() {
+    const url = getMeasureUrl()
+    if (!url || !detailProject?.customer?.telefon) {
+      toast.error('Stranka nima telefonske številke')
+      return
+    }
+    const phone = detailProject.customer.telefon.replace(/\s+/g, '')
+    const body = 'Pozdravljeni, na povezavi lahko sami izmerite svojo ograjo na karti (2 min): '
+    window.location.href = `sms:${phone}?body=${encodeURIComponent(body + url)}`
+  }
+
+  function sendEmailMeasure() {
+    const url = getMeasureUrl()
+    if (!url || !detailProject?.customer?.email) {
+      toast.error('Stranka nima e-pošte')
+      return
+    }
+    const subject = 'Samomeritev vaše ograje — Roksal'
+    const body = `Pozdravljeni,\n\nNa spodnji povezavi lahko v 2 minutah sami narišete črto vaše ograje na satelitski karti in nam jo pošljete:\n${url}\n\nLep pozdrav,\nRoksal d.o.o.`
     window.location.href = `mailto:${detailProject.customer.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
   }
 
@@ -2126,6 +2196,208 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                             disabled={portalActionLoading}
                             className="h-8 text-[11px] text-roksal-red hover:bg-roksal-red/10 border border-roksal-red/30"
                             title="Trajno prekliči povezavo (žeton mrtev) — potrebna Nova povezava"
+                          >
+                            <KeyRound className="mr-1 h-3 w-3" />
+                            Prekliči
+                          </Button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </Card>
+
+                {/* R133 (§8): Merilna povezava — scoped žeton za samomeritev stranke.
+                    Vizualno sorojena s Portal kartico, a ambrov akcent (ločena zmožnost). */}
+                <Card className="overflow-hidden border-l-4 border-l-roksal-amber/60">
+                  <div className="flex w-full items-center justify-between p-3 bg-roksal-amber/5">
+                    <div className="flex items-center gap-2">
+                      <Ruler className="h-4 w-4 text-roksal-navy" />
+                      <span className="text-xs font-semibold text-roksal-navy">Merilna povezava (samomeritev)</span>
+                    </div>
+                    {portalLoading ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                    ) : portalInfo?.measure?.enabled ? (
+                      <Badge className="bg-roksal-amber/15 text-amber-700 hover:bg-roksal-amber/25 text-[10px]">
+                        <ShieldCheck className="mr-1 h-3 w-3" />
+                        Izdana
+                      </Badge>
+                    ) : (
+                      <Badge variant="secondary" className="text-[10px]">Ni izdana</Badge>
+                    )}
+                  </div>
+
+                  <div className="px-3 pb-3 pt-2 space-y-3">
+                    {!portalLoading && !portalInfo?.measure?.enabled && (
+                      <div className="space-y-2">
+                        <p className="text-[11px] text-muted-foreground leading-relaxed">
+                          Stranka dobi povezavo, na kateri sama nariše črto ograje na satelitski karti in
+                          pošlje meritev — brez odhoda monterja. Ločena povezava od portala: lasten potek,
+                          lasten preklic, lasten dnevnik.
+                        </p>
+                        <Button
+                          type="button"
+                          onClick={() => portalAction('measureEnable')}
+                          disabled={portalActionLoading}
+                          className="w-full bg-roksal-amber hover:bg-roksal-amber/90 text-white h-9"
+                          size="sm"
+                        >
+                          {portalActionLoading ? (
+                            <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Ruler className="mr-2 h-3.5 w-3.5" />
+                          )}
+                          Izdaj merilno povezavo
+                        </Button>
+                      </div>
+                    )}
+
+                    {portalInfo?.measure?.enabled && portalInfo.measure.token && (
+                      <>
+                        {/* URL with copy */}
+                        <div className="space-y-1.5">
+                          <Label className="text-[11px] text-muted-foreground">Merilna povezava</Label>
+                          <div className="flex items-center gap-1.5">
+                            <div className="flex-1 min-w-0 flex items-center gap-1.5 rounded-md border border-border bg-secondary/40 px-2 py-1.5">
+                              <Link2 className="h-3 w-3 shrink-0 text-roksal-amber" />
+                              <span className="text-[11px] font-mono text-roksal-navy truncate">
+                                /m/{portalInfo.measure.token.slice(0, 12)}…
+                              </span>
+                            </div>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={copyMeasureUrl}
+                              className="h-8 px-2.5 shrink-0"
+                            >
+                              <Copy className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+
+                        {/* R133 (§8): življenjski cikl — potek + zadnja oddana meritev */}
+                        {(() => {
+                          const m = portalInfo.measure
+                          if (!m) return null
+                          const mexp = m.expiresAt ? new Date(m.expiresAt) : null
+                          const mDni = mexp ? Math.ceil((mexp.getTime() - Date.now()) / 86400000) : null
+                          const mCritical = mDni !== null && mDni <= 7
+                          return (
+                            <div className="grid grid-cols-2 gap-1.5 rounded-md border border-border bg-secondary/30 px-2 py-1.5">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <CalendarClock
+                                  className={`h-3.5 w-3.5 shrink-0 ${mCritical ? 'text-amber-600' : 'text-muted-foreground'}`}
+                                />
+                                <div className="min-w-0">
+                                  <p className="text-[9px] uppercase tracking-wide text-muted-foreground leading-tight">
+                                    Velja do
+                                  </p>
+                                  <p
+                                    className={`text-[10px] font-semibold leading-tight truncate ${
+                                      mCritical ? 'text-amber-600' : 'text-roksal-navy'
+                                    }`}
+                                    title={m.revokedAt ? 'Povezava je preklicana' : mexp ? mexp.toLocaleDateString('sl-SI') : 'Brez poteka'}
+                                  >
+                                    {m.revokedAt
+                                      ? 'Preklicana'
+                                      : mexp
+                                        ? mexp.toLocaleDateString('sl-SI') + (mCritical && mDni !== null ? ` (${mDni} dni)` : '')
+                                        : 'Brez poteka'}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <History className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                                <div className="min-w-0">
+                                  <p className="text-[9px] uppercase tracking-wide text-muted-foreground leading-tight">
+                                    Zadnja meritev
+                                  </p>
+                                  <p className="text-[10px] font-semibold leading-tight text-roksal-navy truncate">
+                                    {m.lastUsedAt
+                                      ? new Date(m.lastUsedAt).toLocaleString('sl-SI', {
+                                          day: '2-digit',
+                                          month: '2-digit',
+                                          hour: '2-digit',
+                                          minute: '2-digit',
+                                        })
+                                      : 'nikoli'}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })()}
+
+                        {/* Share buttons */}
+                        <div className="grid grid-cols-3 gap-1.5">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={sendSmsMeasure}
+                            disabled={!detailProject?.customer?.telefon}
+                            className="h-8 text-[11px]"
+                          >
+                            <MessageSquare className="mr-1 h-3.5 w-3.5" />
+                            SMS
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={sendEmailMeasure}
+                            disabled={!detailProject?.customer?.email}
+                            className="h-8 text-[11px]"
+                          >
+                            <Mail className="mr-1 h-3.5 w-3.5" />
+                            Email
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={copyMeasureUrl}
+                            className="h-8 text-[11px]"
+                          >
+                            <Copy className="mr-1 h-3.5 w-3.5" />
+                            Kopiraj
+                          </Button>
+                        </div>
+
+                        {/* Admin actions */}
+                        <div className="grid grid-cols-3 gap-1.5 pt-1 border-t border-border">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => portalAction('measureRegenerate')}
+                            disabled={portalActionLoading}
+                            className="h-8 text-[11px] text-roksal-navy hover:bg-roksal-navy/10"
+                            title="Ustvari novo merilno povezavo — stara postane trajno nedosegljiva"
+                          >
+                            <RefreshCw className="mr-1 h-3 w-3" />
+                            Nova
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => portalAction('measureDisable')}
+                            disabled={portalActionLoading}
+                            className="h-8 text-[11px] text-roksal-red hover:bg-roksal-red/10"
+                            title="Začasno izklopi sprejemanje meritev — povezava ostane veljavna"
+                          >
+                            <X className="mr-1 h-3 w-3" />
+                            Izklopi
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => portalAction('measureRevoke')}
+                            disabled={portalActionLoading}
+                            className="h-8 text-[11px] text-roksal-red hover:bg-roksal-red/10 border border-roksal-red/30"
+                            title="Trajno prekliči merilno povezavo (žeton mrtev) — potrebna Nova povezava"
                           >
                             <KeyRound className="mr-1 h-3 w-3" />
                             Prekliči

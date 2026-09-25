@@ -47,8 +47,10 @@ import type { Map as LeafletMap, LayerGroup, Polyline as LeafletPolyline } from 
 
 interface MapMeasureProps {
   projectId: string | null
-  /** Za javno merilno povezavo stranke (/m/[token]) */
+  /** Za javno merilno povezavo stranke (/m/[token])
+   *  R133 (§8): scoped merilni žeton — LOČEN od portal žetona. */
   clientToken?: string | null
+  measureToken?: string | null
   nazivProjekta?: string | null
 }
 
@@ -91,7 +93,7 @@ function pinIcon(n: number, first: boolean) {
   })
 }
 
-export function MapMeasure({ projectId, clientToken, nazivProjekta }: MapMeasureProps) {
+export function MapMeasure({ projectId, clientToken, measureToken, nazivProjekta }: MapMeasureProps) {
   const mapElRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<LeafletMap | null>(null)
   const markersRef = useRef<LayerGroup | null>(null)
@@ -106,9 +108,14 @@ export function MapMeasure({ projectId, clientToken, nazivProjekta }: MapMeasure
   const [copied, setCopied] = useState(false)
   const { toast } = useToast()
 
+  // R133 (§8): merilna povezava uporablja scoped merilni žeton; zapuščinski
+  // projekti brez izdanega žetona padejo na clientToken (stare povezave).
   const shareUrl = useMemo(
-    () => (clientToken && typeof window !== 'undefined' ? `${window.location.origin}/m/${clientToken}` : null),
-    [clientToken],
+    () =>
+      typeof window !== 'undefined' && (measureToken || clientToken)
+        ? `${window.location.origin}/m/${measureToken || clientToken}`
+        : null,
+    [measureToken, clientToken],
   )
 
   const segmentsM = useMemo(() => {

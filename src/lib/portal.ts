@@ -39,6 +39,14 @@ export function generatePortalToken(): string {
   return randomBytes(18).toString('base64url')
 }
 
+/**
+ * Generičen kriptografsko varen žeton (isti format kot portal žeton) —
+ * uporablja ga tudi scoped merilni žeton (R133, §8), da ne duplicira vira.
+ */
+export function generateSecureToken(): string {
+  return randomBytes(18).toString('base64url')
+}
+
 /** Izračun datum poteka iz števila dni (clamped 1..365). */
 export function portalExpiryFromDays(days: number, from: Date = new Date()): Date {
   const n = Number.isFinite(days) ? Math.floor(days) : DEFAULT_PORTAL_EXPIRY_DAYS

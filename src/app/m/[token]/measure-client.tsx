@@ -58,6 +58,10 @@ export function MeasureClient({ token, nazivProjekta, stranka }: MeasureClientPr
   const [ime, setIme] = useState('')
   const [telefon, setTelefon] = useState('')
   const [opomba, setOpomba] = useState('')
+  // R133 (§8): Idempotency-Key — en ključ na osnutek. Ob mrežni napaki in
+  // ponovnem pošiljanju ostane ISTI (strežnik vrne ISTO meritev — brez dvojnikov).
+  const idemKeyRef = useRef<string>('')
+  const [reference, setReference] = useState<string | null>(null)
   const [sending, setSending] = useState(false)
   const [done, setDone] = useState(false)
   const { toast } = useToast()
@@ -134,11 +138,17 @@ export function MeasureClient({ token, nazivProjekta, stranka }: MeasureClientPr
       toast({ title: 'Vnesite ime in priimek', variant: 'destructive' })
       return
     }
+    if (!idemKeyRef.current) {
+      idemKeyRef.current =
+        typeof crypto !== 'undefined' && 'randomUUID' in crypto
+          ? crypto.randomUUID()
+          : `m${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+    }
     setSending(true)
     try {
       const res = await fetch('/api/public/measure', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Idempotency-Key': idemKeyRef.current },
         body: JSON.stringify({
           token,
           points: points.map((p) => [+p.lat.toFixed(6), +p.lng.toFixed(6)]),
@@ -152,6 +162,8 @@ export function MeasureClient({ token, nazivProjekta, stranka }: MeasureClientPr
         const data = (await res.json().catch(() => null)) as { error?: string } | null
         throw new Error(data?.error ?? 'Pošiljanje ni uspelo')
       }
+      const data = (await res.json().catch(() => null)) as { id?: string } | null
+      setReference(data?.id ?? null)
       setDone(true)
       window.scrollTo({ top: 0, behavior: 'smooth' })
     } catch (err) {
@@ -177,6 +189,11 @@ export function MeasureClient({ token, nazivProjekta, stranka }: MeasureClientPr
             Vaša meritev ({totalM >= 100 ? `${(totalM / 1000).toFixed(2)} km` : `${totalM.toFixed(1)} m`})
             je poslana. Kontaktirali vas bomo v 24 urah s predračunom.
           </p>
+          {reference && (
+            <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-stone-100 px-3 py-1 text-[11px] font-medium text-stone-500">
+              Sklic: <span className="font-mono text-stone-700">{reference.slice(-8).toUpperCase()}</span>
+            </p>
+          )}
           <div className="mt-6 rounded-xl bg-stone-50 p-4 text-left text-xs text-muted-foreground">
             <p className="font-semibold text-stone-700">Roksal d.o.o. Kranj</p>
             <p>T: +386 4 237 05 50 · info@roksal.si</p>

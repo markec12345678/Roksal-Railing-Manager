@@ -1,14 +1,46 @@
 // Roksal Field - JAVNI API: samomeritev stranke prek povezave (/m/[token])
 // Stranka brez prijave nariše črto ograje na satelitski karti (page /m/[token])
-// in pošlje meritev. Povezava vsebuje clientToken projekta (isti kot portal).
+// in pošlje meritev. Povezava vsebuje scoped measureToken projekta (R133, §8) —
+// LOČEN od portal žetona (clientToken).
 //
-// Varnost:
-//  - token (cuid) mora obstajati v Project.clientToken
-//  - omejitve: max 6 predlog na token/uro (in-memory), max 300 točk, max 8 kB body
-//  - API NE razkrije nič drugega kot naziv projekta + ime stranke
+// Varnost (§8 pogodba — glej src/lib/measure.ts):
+//  - scoped token: Project.measureToken (potek/revokacija/onemogočeno preverjena);
+//  - vsa neveljavna stanja → ISTA 404 'Povezava ni veljavna' (enumeration protection);
+//  - shared rate limit (checkRate): GET 30/10min na IP, POST 6/h na žeton + 10/h na IP;
+//  - idempotency: Idempotency-Key (R128 infrastruktura, principal 'public:measure');
+//  - duplicate protection: dedupeHash, identična oddaja v 30 min → obstoječa meritev;
+//  - anti-abuse: strop telesa 8 kB, max 300 točk, dnevnik vsakega poskusa;
+//  - ownership: Measurement.createdBy = 'public:measure';
+//  - omejene mutacije: javnost ustvari SAMO meritev;
+//  - audit: MEASURE_VIEW / MEASURE_SUBMIT / MEASURE_DUPLICATE / MEASURE_REJECTED
+//    z hashiranim IP (surov IP se NE shranjuje).
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { z } from 'zod'
+import { checkRate } from '@/lib/rate-limit'
+import {
+  BeginIdempotency,
+  IdempotencyRaceError,
+  beginIdempotency,
+  idempotencyReplayResponse,
+  isValidIdempotencyKey,
+  reserveIdempotencyIn,
+  storeResponseIn,
+} from '@/lib/idempotency'
+import {
+  MEASURE_DEDUPE_WINDOW_MS,
+  MEASURE_GET_LIMIT,
+  MEASURE_MAX_BODY_BYTES,
+  MEASURE_SUBMIT_LIMIT_IP,
+  MEASURE_SUBMIT_LIMIT_TOKEN,
+  PUBLIC_MEASURE_OWNER,
+  PUBLIC_MEASURE_PRINCIPAL,
+  clientIpOf,
+  hashIp,
+  logMeasureEvent,
+  measureDedupeHash,
+  resolveMeasureToken,
+} from '@/lib/measure'
 
 const pointSchema = z.tuple([z.number().min(-90).max(90), z.number().min(-180).max(180)])
 
@@ -22,45 +54,62 @@ const submitSchema = z.object({
   visinaMm: z.number().int().min(300).max(3000).optional(),
 })
 
-// Zelo preprost rate limiter v pomnilniku (resetira se ob restartu — dovolj za zlorabo)
-const rateMap = new Map<string, { count: number; windowStart: number }>()
-const RATE_LIMIT = 6
-const RATE_WINDOW_MS = 60 * 60 * 1000
+/** Isti javni 404 za VSA neveljavna stanja (enumeration protection, §7/§8). */
+function unavailable(): NextResponse {
+  return NextResponse.json({ error: 'Povezava ni veljavna' }, { status: 404 })
+}
 
-function rateLimited(key: string): boolean {
-  const now = Date.now()
-  const entry = rateMap.get(key)
-  if (!entry || now - entry.windowStart > RATE_WINDOW_MS) {
-    rateMap.set(key, { count: 1, windowStart: now })
-    return false
-  }
-  entry.count += 1
-  return entry.count > RATE_LIMIT
+function tooMany(retryAfterSeconds: number): NextResponse {
+  return NextResponse.json(
+    { error: 'Preveč zahtevkov, poskusite pozneje' },
+    { status: 429, headers: { 'Retry-After': String(retryAfterSeconds) } },
+  )
 }
 
 export async function GET(request: Request) {
+  const ipHash = hashIp(clientIpOf(request))
+  const userAgent = request.headers.get('user-agent')
+
+  // §8: shared rate limit — prva vrsta, pred bazo (pošteno tudi do baze).
+  const rate = checkRate(`measure-get:${ipHash}`, MEASURE_GET_LIMIT)
+  if (!rate.ok) {
+    await logMeasureEvent({
+      projectId: null,
+      akcija: 'MEASURE_REJECTED',
+      ipHash,
+      userAgent,
+      podrobnosti: JSON.stringify({ reason: 'RATE_LIMITED', surface: 'GET' }),
+    })
+    return tooMany(rate.retryAfterSeconds)
+  }
+
   try {
     const { searchParams } = new URL(request.url)
-    const token = searchParams.get('token')
-    if (!token) {
-      return NextResponse.json({ error: 'Manjka token' }, { status: 400 })
+    const token = searchParams.get('token') ?? ''
+
+    const resolved = await resolveMeasureToken(token)
+    if (resolved.status !== 'OK') {
+      await logMeasureEvent({
+        projectId: null,
+        akcija: 'MEASURE_REJECTED',
+        ipHash,
+        userAgent,
+        podrobnosti: JSON.stringify({ reason: resolved.status, surface: 'GET' }),
+      })
+      return unavailable()
     }
-    if (rateLimited(`get:${token}`)) {
-      return NextResponse.json({ error: 'Preveč zahtevkov, poskusite pozneje' }, { status: 429 })
-    }
-    const project = await db.project.findUnique({
-      where: { clientToken: token },
-      select: {
-        nazivProjekta: true,
-        customer: { select: { ime: true } },
-      },
+
+    await logMeasureEvent({
+      projectId: resolved.project.id,
+      akcija: 'MEASURE_VIEW',
+      ipHash,
+      userAgent,
     })
-    if (!project) {
-      return NextResponse.json({ error: 'Povezava ni veljavna' }, { status: 404 })
-    }
+
+    // Minimalni DTO: samo naziv + ime stranke (nič drugega).
     return NextResponse.json({
-      nazivProjekta: project.nazivProjekta,
-      stranka: project.customer?.ime ?? null,
+      nazivProjekta: resolved.project.nazivProjekta,
+      stranka: resolved.project.customer?.ime ?? null,
     })
   } catch (error) {
     console.error('Public measure GET error:', error)
@@ -69,53 +118,184 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  try {
-    const ip =
-      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'neznan'
-    const body = await request.json()
-    const token = typeof body?.token === 'string' ? body.token : ''
-    if (rateLimited(`post:${token}:${ip}`)) {
-      return NextResponse.json({ error: 'Preveč poskusov, poskusite pozneje' }, { status: 429 })
-    }
+  const ipHash = hashIp(clientIpOf(request))
+  const userAgent = request.headers.get('user-agent')
 
-    const validated = submitSchema.parse(body)
-    const project = await db.project.findUnique({
-      where: { clientToken: validated.token },
-      select: { id: true, nazivProjekta: true },
+  // §8: shared rate limit — prva vrsta (pred razčlenjevanjem telesa).
+  // Dva žebrka: enega delita vse pošiljanje na ta IP, drugi samo žeton
+  // (iz telesa, kadar ga je sploh moč prebrati).
+  const rateIp = checkRate(`measure-post-ip:${ipHash}`, MEASURE_SUBMIT_LIMIT_IP)
+  if (!rateIp.ok) {
+    await logMeasureEvent({
+      projectId: null,
+      akcija: 'MEASURE_REJECTED',
+      ipHash,
+      userAgent,
+      podrobnosti: JSON.stringify({ reason: 'RATE_LIMITED_IP', surface: 'POST' }),
     })
-    if (!project) {
-      return NextResponse.json({ error: 'Povezava ni veljavna' }, { status: 404 })
+    return tooMany(rateIp.retryAfterSeconds)
+  }
+
+  // §8 anti-abuse: strop surove velikosti (prej samo v komentarju).
+  const rawBody = await request.text()
+  if (rawBody.length > MEASURE_MAX_BODY_BYTES) {
+    await logMeasureEvent({
+      projectId: null,
+      akcija: 'MEASURE_REJECTED',
+      ipHash,
+      userAgent,
+      podrobnosti: JSON.stringify({ reason: 'BODY_TOO_LARGE', bytes: rawBody.length }),
+    })
+    return NextResponse.json({ error: 'Zahtevek je prevelik' }, { status: 413 })
+  }
+
+  let body: unknown
+  try {
+    body = JSON.parse(rawBody)
+  } catch {
+    return NextResponse.json({ error: 'Neveljavni podatki' }, { status: 400 })
+  }
+
+  const token = typeof (body as { token?: unknown })?.token === 'string' ? (body as { token: string }).token : ''
+  const rateToken = checkRate(`measure-post-token:${token}`, MEASURE_SUBMIT_LIMIT_TOKEN)
+  if (!rateToken.ok) {
+    await logMeasureEvent({
+      projectId: null,
+      akcija: 'MEASURE_REJECTED',
+      ipHash,
+      userAgent,
+      podrobnosti: JSON.stringify({ reason: 'RATE_LIMITED_TOKEN', surface: 'POST' }),
+    })
+    return tooMany(rateToken.retryAfterSeconds)
+  }
+
+  // §8 idempotency: ključ je opcijski (stranke ga pošljejo od tega deploya
+  // naprej), a ko pride, je obveza — neveljaven format → 400.
+  const idemKey = request.headers.get('Idempotency-Key')
+  if (idemKey !== null && !isValidIdempotencyKey(idemKey)) {
+    return NextResponse.json(
+      { error: 'Neveljaven Idempotency-Key' },
+      { status: 400 },
+    )
+  }
+
+  try {
+    const validated = submitSchema.parse(body)
+
+    const resolved = await resolveMeasureToken(validated.token)
+    if (resolved.status !== 'OK') {
+      await logMeasureEvent({
+        projectId: null,
+        akcija: 'MEASURE_REJECTED',
+        ipHash,
+        userAgent,
+        podrobnosti: JSON.stringify({ reason: resolved.status, surface: 'POST' }),
+      })
+      return unavailable()
+    }
+    const projectId = resolved.project.id
+
+    // §8 duplicate protection: identična oddaja v oknu 30 min → obstoječa
+    // meritev (200, duplicate:true). Best-effort zraven idempotence (ta lovi
+    // iste ključe, ta lovi isti vsebini z različnima ključema). Ožja tekma
+    // (dva vzporedna PRVA pošiljanja) je dokumentirano okno — idempotence
+    // ključ stranke ga zapre v praksi.
+    const dedupeHash = measureDedupeHash(
+      projectId,
+      validated.points,
+      validated.skupajM,
+      validated.visinaMm ?? 1800,
+    )
+    const cutoff = new Date(Date.now() - MEASURE_DEDUPE_WINDOW_MS)
+    const duplicate = await db.measurement.findFirst({
+      where: { projectId, dedupeHash, createdAt: { gt: cutoff } },
+      select: { id: true },
+      orderBy: { createdAt: 'desc' },
+    })
+    if (duplicate) {
+      await logMeasureEvent({
+        projectId,
+        akcija: 'MEASURE_DUPLICATE',
+        ipHash,
+        userAgent,
+        podrobnosti: JSON.stringify({ existingId: duplicate.id }),
+      })
+      return NextResponse.json(
+        { ok: true, id: duplicate.id, duplicate: true },
+        { status: 200 },
+      )
     }
 
+    // §8 idempotency: transakcija = rezervacija ključa → meritev → snapshot
+    // odgovora (exactly-once, R128 vzorec). Ključ se rezervira ŠELE po
+    // validaciji (napaka 400 ne sme zapreti ključa v večni conflict).
     const first = validated.points[0]
     const visinaMm = validated.visinaMm ?? 1800
-    const measurement = await db.measurement.create({
-      data: {
-        projectId: project.id,
-        dolzinaMm: Math.round(validated.skupajM * 1000),
-        visinaMm,
-        gpsLokacija: JSON.stringify({ lat: first[0], lng: first[1] }),
-        arMetadata: JSON.stringify({
-          source: 'customer-map',
-          lokacija: `Samomeritev stranke — ${project.nazivProjekta}`,
-          tocke: validated.points,
-          skupajM: validated.skupajM,
-          opombaStranke: validated.opomba ?? null,
-          imeStranke: validated.imeStranke ?? null,
-          telefonStranke: validated.telefonStranke ?? null,
-          submittedAt: new Date().toISOString(),
-        }),
-      },
+    const arMetadata = JSON.stringify({
+      source: 'customer-map',
+      lokacija: `Samomeritev stranke — ${resolved.project.nazivProjekta}`,
+      tocke: validated.points,
+      skupajM: validated.skupajM,
+      opombaStranke: validated.opomba ?? null,
+      imeStranke: validated.imeStranke ?? null,
+      telefonStranke: validated.telefonStranke ?? null,
+      submittedAt: new Date().toISOString(),
     })
 
-    // Status projekta: priprava ponudbe se nadaljuje (ostane NACRTOVANO/V_TEKU — ne spreminjamo)
+    const result = await db.$transaction(async (tx) => {
+      if (idemKey) await reserveIdempotencyIn(tx, idemKey, 'public-measure', PUBLIC_MEASURE_PRINCIPAL)
+      const measurement = await tx.measurement.create({
+        data: {
+          projectId,
+          dolzinaMm: Math.round(validated.skupajM * 1000),
+          visinaMm,
+          gpsLokacija: JSON.stringify({ lat: first[0], lng: first[1] }),
+          arMetadata,
+          dedupeHash,
+          createdBy: PUBLIC_MEASURE_OWNER,
+        },
+      })
+      const responseBody = JSON.stringify({ ok: true, id: measurement.id })
+      if (idemKey) await storeResponseIn(tx, idemKey, 201, responseBody)
+      return { id: measurement.id, responseBody }
+    })
 
-    return NextResponse.json({ ok: true, id: measurement.id }, { status: 201 })
+    // Telemetrija pisarne + audit (uspeh). lastUsed je fire-and-forget
+    // (telemetrija ne sme porušiti oddaje); audit je vzdržljiv (await).
+    void db.project
+      .update({
+        where: { id: projectId },
+        data: { measureTokenLastUsedAt: new Date() },
+      })
+      .catch((error) => console.error('[measure] lastUsed NI posodobljen:', error))
+
+    await logMeasureEvent({
+      projectId,
+      akcija: 'MEASURE_SUBMIT',
+      ipHash,
+      userAgent,
+      podrobnosti: JSON.stringify({ measurementId: result.id, idempotent: !!idemKey }),
+    })
+
+    return new NextResponse(result.responseBody, {
+      status: 201,
+      headers: { 'Content-Type': 'application/json' },
+    })
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: error.issues[0]?.message ?? 'Neveljavni podatki' },
         { status: 400 },
+      )
+    }
+    if (error instanceof IdempotencyRaceError && idemKey) {
+      // Vzporedni poizkus ISTEGA ključa: transakcija je bila prekinjena
+      // (ni dvojnika) — vrni replay/conflict po R128 pogodbi.
+      const outcome: BeginIdempotency = await beginIdempotency(idemKey, 'public-measure', PUBLIC_MEASURE_PRINCIPAL)
+      if (outcome.kind === 'replay') return idempotencyReplayResponse(outcome)
+      return NextResponse.json(
+        { error: 'Zapis s tem Idempotency-Key je že v obdelavi — poskusite znova čez trenutek' },
+        { status: 409 },
       )
     }
     console.error('Public measure POST error:', error)

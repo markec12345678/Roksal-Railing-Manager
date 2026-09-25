@@ -419,6 +419,7 @@ export default function Home() {
               <MapMeasure
                 projectId={selectedProjectId}
                 clientToken={selectedProject?.clientToken ?? null}
+                measureToken={selectedProject?.measureToken ?? null}
                 nazivProjekta={selectedProject?.nazivProjekta ?? null}
               />
             </div>

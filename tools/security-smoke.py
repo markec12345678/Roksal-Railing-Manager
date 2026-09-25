@@ -347,6 +347,19 @@ check("GET /api/portal (management) brez seje → 401", st == 401, f"dobil {st}"
 st, _, _ = call("/api/portal", "POST", {"projectId": "test", "action": "enable"})
 check("POST /api/portal (management) brez seje → 401", st == 401, f"dobil {st}")
 
+print("\n[15] Javna samomeritev (R133 — issue #5 §8: scoped žeton + anti-abuse)")
+# Neznan merilni žeton → ISTA 404 kot neveljavna stanja (enumeration protection).
+st, hd, body = call("/api/public/measure?token=neznan-zeton-qa-133")
+check("GET /api/public/measure neznan žeton → 404", st == 404 and b"veljavna" in body, f"{st} {body[:60]!r}")
+check("javna merilna ruta nosi Cache-Control: no-store",
+      "no-store" in hd.get("cache-control", ""), f"cache-control={hd.get('cache-control')!r}")
+# POST z neznanim žetonom → 404, nikoli 500.
+st, _, _ = call("/api/public/measure", "POST", {"token": "neznan-zeton-qa-133", "points": [[46.1, 14.8], [46.1005, 14.801]], "skupajM": 10})
+check("POST /api/public/measure neznan žeton → 404", st == 404, f"dobil {st}")
+# Preveliko telo (> 8 kB) → 413 (anti-abuse strop).
+st, _, _ = call("/api/public/measure", "POST", {"token": "neznan-zeton-qa-133", "points": [[0.1, 0.1]], "opomba": "x" * 9000})
+check("POST /api/public/measure preveliko telo → 413", st == 413, f"dobil {st}")
+
 print(f"\n{'=' * 60}")
 print(f"  {passed} uspešnih · {failed} neuspešnih · {skipped} preskočenih")
 print(f"{'=' * 60}\n")
