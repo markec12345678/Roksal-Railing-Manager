@@ -189,7 +189,15 @@ export async function PATCH(request: Request) {
         if (project?.bomDraftJson) {
           const bom = JSON.parse(project.bomDraftJson)
           for (const item of bom.items || []) {
-            const inv = await tx.inventory.findFirst({ where: { naziv: { contains: item.naziv.split(' ')[0] } } })
+            // R138: po migraciji SQLite→PostgreSQL je `contains` postal
+            // case-sensitive — ujemanje imena BOM artikla z zalogo je lahko
+            // tihon odpadlo (npr. "inox vijak" v BOM ne bi več našlo
+            // "Inox Vijak" → zaloga NI bila odšteta). Izrecno
+            // mode: 'insensitive' obnovi vedenje iz SQLite obdobja.
+            const firstWord = item.naziv.split(' ')[0]
+            const inv = await tx.inventory.findFirst({
+              where: { naziv: { contains: firstWord, mode: 'insensitive' } },
+            })
             if (inv) {
               // §18: pogojni decrement — zaloga ne sme pasti pod 0. Neuspeh →
               // InsufficientStockError → CELA transakcija rollback (tudi status

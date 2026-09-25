@@ -245,6 +245,25 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
   const [customers, setCustomers] = useState<Customer[]>([])
   const [loading, setLoading] = useState(true)
   const [invLoading, setInvLoading] = useState(true)
+  // R138: pravo ime prijavljenega (GET /api/auth) — pozdrav ni več vedno
+  // "Monter!". Fallback ostaja vloga-neodvisen "Monter" (nič ne fali, če
+  // je seja spodaj — pozdrav ni kritična pot).
+  const [displayName, setDisplayName] = useState('Monter')
+
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/auth')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { user?: { ime?: string } } | null) => {
+        if (cancelled) return
+        const ime = data?.user?.ime?.trim()
+        if (ime) setDisplayName(ime.split(/\s+/)[0])
+      })
+      .catch(() => undefined) // pozdrav ostane privzet — ni napaka
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   // Search & Filter
   const [searchQuery, setSearchQuery] = useState('')
@@ -923,7 +942,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
         <div className="flex items-end justify-between gap-2">
           <div>
             <h2 className="text-xl font-bold text-roksal-navy">
-              {getGreeting()}, Monter!
+              {getGreeting()}, {displayName}!
             </h2>
             <p className="text-sm text-muted-foreground">{getTodayString()}</p>
           </div>

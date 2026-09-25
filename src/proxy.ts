@@ -14,6 +14,13 @@
 // Proxy teče na Edge runtimeu, zato uvaža SAMO `@/lib/session` (Web Crypto)
 // in `@/lib/csrf` (čisto razčlenjevanje URL-jev — prav tako Edge-varno).
 // `@/lib/password` (node:crypto scrypt) bi tu počil — in se ne sme.
+//
+// R138 (issue #5 §22): CORRELATION ID — vsak request dobi enoličen
+// `x-correlation-id` (klientov ga prevzame, sicer crypto.randomUUID):
+//   • vrne se v glavi odgovora (korelacija klient ↔ Vercel logi),
+//   • posreduje route handlerjem (npr. /api/search ga vpiše v error log
+//     in 5xx payload),
+//   • ne spremeni vedenja: ne blokira, ne preusmerja, ne piše ničesar.
 
 import { NextResponse, type NextRequest } from 'next/server'
 import { extractToken, verifySession } from '@/lib/session'
@@ -97,7 +104,40 @@ function acceptsApiKey(pathname: string): boolean {
   return API_KEY_PATHS.some((prefix) => pathname === prefix || pathname.startsWith(prefix + '/'))
 }
 
+/** Glava korelacije (§22) — enako ime na zahtevi in odgovoru. */
+const CORRELATION_HEADER = 'x-correlation-id'
+const MAX_INCOMING_CORRELATION = 128
+
+/**
+ * Pripravi glave zahteve: izvorne glave + enoličen correlation ID.
+ * Route handlerji (in logi) ga berejo z request.headers.get().
+ */
+function withCorrelationId(request: NextRequest): Headers {
+  const headers = new Headers(request.headers)
+  const incoming = request.headers.get(CORRELATION_HEADER)
+  const correlationId =
+    incoming && incoming.length > 0 && incoming.length <= MAX_INCOMING_CORRELATION
+      ? incoming
+      : crypto.randomUUID()
+  headers.set(CORRELATION_HEADER, correlationId)
+  return headers
+}
+
 export async function proxy(request: NextRequest) {
+  // §22: correlation ID dodelimo PRED vsemi vejami — vsak odgovor (next,
+  // 401, preusmeritev) ga nosi v glavi, ne glede na izid preverb.
+  const requestHeaders = withCorrelationId(request)
+  const correlationId = requestHeaders.get(CORRELATION_HEADER) as string
+
+  const response = await handleAccess(request, requestHeaders)
+  response.headers.set(CORRELATION_HEADER, correlationId)
+  return response
+}
+
+async function handleAccess(
+  request: NextRequest,
+  requestHeaders: Headers
+): Promise<NextResponse> {
   const { pathname } = request.nextUrl
 
   // R130 (issue #5 §6): centralna CSRF/Origin preverba — PRVA vrsta, pred vsemi
@@ -106,12 +146,14 @@ export async function proxy(request: NextRequest) {
   const csrf = csrfGuard(request)
   if (csrf) return csrf
 
-  if (isPublic(pathname)) return NextResponse.next()
+  if (isPublic(pathname)) return NextResponse.next({ request: { headers: requestHeaders } })
 
   // Mobilni klient z API ključem
   if (acceptsApiKey(pathname)) {
     const auth = request.headers.get('authorization')
-    if (auth?.startsWith('Bearer rkm_')) return NextResponse.next()
+    if (auth?.startsWith('Bearer rkm_')) {
+      return NextResponse.next({ request: { headers: requestHeaders } })
+    }
     // brez ključa še vedno preverimo sejo — sinhronizacija iz brskalnika naj dela
   }
 
@@ -120,11 +162,10 @@ export async function proxy(request: NextRequest) {
     // Identiteto posredujemo naprej, da je rutam ni treba znova razčlenjevati.
     // Ruta vseeno preveri podpis sama (authenticate), zato to ni vir zaupanja,
     // ampak samo priročen podatek za dnevnike.
-    const headers = new Headers(request.headers)
-    headers.set('x-roksal-user', session.sub)
-    headers.set('x-roksal-role', session.vloga)
-    headers.set('x-roksal-email', session.email)
-    return NextResponse.next({ request: { headers } })
+    requestHeaders.set('x-roksal-user', session.sub)
+    requestHeaders.set('x-roksal-role', session.vloga)
+    requestHeaders.set('x-roksal-email', session.email)
+    return NextResponse.next({ request: { headers: requestHeaders } })
   }
 
   if (pathname.startsWith('/api/')) {

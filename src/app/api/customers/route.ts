@@ -4,8 +4,16 @@ import { db } from '@/lib/db'
 import { createCustomerSchema } from '@/lib/validations'
 import { authenticate, unauthorized, forbidden } from '@/lib/auth'
 import { canManageCustomers, actorIdOf } from '@/lib/access'
+import { escapeLikePattern } from '@/lib/search-access'
 
-// GET - Pridobi vse stranke (opcionalno s search queryjem)
+// Meje strani (issue #5 §17): brez parametrov se vedno vrne
+// POPOLN seznam (zadržljivost s starimi klienti); z ?limit=&offset=
+// pa strani. Strop limit = 500 — patološki vnosi ne morejo vleči
+// neomejeno vrstic.
+const DEFAULT_LIMIT = 500
+const MAX_LIMIT = 500
+
+// GET - Pridobi vse stranke (opcionalno s search queryjem + limit/offset)
 export async function GET(request: Request) {
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
   const auth = await authenticate(request)
@@ -14,13 +22,33 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('search')?.trim() ?? ''
 
+    // R138 (§17): neomejen findMany → privzeta zgornja meja + opcijske
+    // strani. Odzivna OBLIKA (polje) ostane ista — mobilni klient ni
+    // prelomen. Neveljavne številke → fail-closed na privzeti limit.
+    const limitRaw = Number.parseInt(searchParams.get('limit') ?? '', 10)
+    const offsetRaw = Number.parseInt(searchParams.get('offset') ?? '', 10)
+    const limit =
+      Number.isFinite(limitRaw) && limitRaw > 0
+        ? Math.min(limitRaw, MAX_LIMIT)
+        : DEFAULT_LIMIT
+    const offset = Number.isFinite(offsetRaw) && offsetRaw > 0 ? offsetRaw : 0
+
+    // R138: Po migraciji SQLite→PostgreSQL je `contains` postal
+    // case-SENSITIVE (SQLite LIKE je bil za ASCII case-insensitive).
+    // Iskanje "inox" je nenadoma prenehalo najti "Inox Vijak" — tiho
+    // vedenjsko spremembo migracije. Zdaj izrecno mode: 'insensitive'
+    // + escape LIKE wildcard znakov (deterministično dobesedno
+    // ujemanje, enako vedenju JS .includes()).
+    const pattern = escapeLikePattern(search)
+    const insensitive = { contains: pattern, mode: 'insensitive' as const }
+
     const where = search
       ? {
           OR: [
-            { ime: { contains: search } },
-            { naslov: { contains: search } },
-            { telefon: { contains: search } },
-            { email: { contains: search } },
+            { ime: insensitive },
+            { naslov: insensitive },
+            { telefon: insensitive },
+            { email: insensitive },
           ],
         }
       : {}
@@ -31,6 +59,8 @@ export async function GET(request: Request) {
         _count: { select: { projects: true } },
       },
       orderBy: { ime: 'asc' },
+      take: limit,
+      skip: offset,
     })
 
     return NextResponse.json(customers)
