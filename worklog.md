@@ -1854,5 +1854,5 @@ Stage Summary:
 
 DODATEK R136 (CI zelen + produkcija potrjena):
 - CI na 4e2dbf5: „Tipi, testi, gradnja" SUCCESS (716/716, 47 datotek) · „Varnost (108 preverjanj)" SUCCESS · sync SUCCESS (render vejica samodejno usklajena) · Vercel deploy ✓.
-- PRODUKCIJA: /api/auth/demo → {enabled:false}; anon /api/projects → 401; material-orders gate → 401 (najprej vrata, §18/§19 živi). Issue #5 komentar 5833544807 (R136 povzetek).
+- PRODUKCIJA: /api/auth/demo → {enabled:false}; anon /api/projects → 401; material-orders gate → 401 (najprej vrata, §18/§19 živi). Issue #5 komentar 5835344807 (R136 povzetek).
 - Priprava na naslednjo rundo: kandidati iz #5 — §17 API response minimization, §20 System-wide idempotency (deloma R128), §21 Search authorization, §22 correlation ID; VALIDATE CONSTRAINT checkov po lastniški potrditvi produkcijske data. Lastniški ostanki nespremenjeni (#7 Neon backfill, #8 fotke, #12 Render kartica). ⏰ Opomnik: roksal-fallback-db POTEČE 2026-10-25.
