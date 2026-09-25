@@ -1584,3 +1584,8 @@ Stage Summary:
 - Ostanka (lastniška koraka): #7 Neon backfill --commit (ukazi v issue #7 komentarju 5821139319), #8 R118-real prave fotke + ročna sprejemba. Naslednji kandidati iz #5: §4 offline queue (IndexedDB), §5 PWA/cache izolacija, §6 CSRF/Origin, §7 portal security, §9 user lifecycle, §10 permission matrix.
 DODATEK R127 (CI samozadetek skena):
 - Prvi CI zagon na a20a0db je PASTAL na novem skenu skrivnosti — ujel je lastno worklog vrstico, ki je omenjala zgodovinsko literalo v backtickih (dokaz, da sken deluje, tudi ko ulove avtorja popravka). Zapis preformuliran, commit+push ponovljen → CI znova.
+DODATEK R127 (CI zelen + produkcija potrjena):
+- CI na e9f319d: "Tipi, testi, gradnja" SUCCESS · "Varnost (84 preverjanj)" SUCCESS · Vercel = SUCCESS → R127 ŽIVO v produkciji.
+- Popotnica: prvi zgon skena je ulovil lastno worklog vrstico (dokaz delovanja); test fix `?? null` normalizacija za čisto CI bazo (before/after profil undefined).
+- PRODUKCIJA (https://roksal-railing-manager.vercel.app): GET /api/auth/demo → {enabled:false} · POST demo → 403 z jasnim sporočilom · /login z demo e-pošto in STARIM geslom → 401 (migracija r127 pognana na Neonu prek builda — skrivnost MRTVA) · anon sync 401 · health 200 · registrirani testni monter → projects 200 [] + sync 200 (legitimne poti NE regresirale) · login stran brez demo gumba, konzola čista.
+- Zaključek: issue #5 §1 v celoti izpolnjen in dokazan na produkciji. Testni spot profil spot-r127@roksal.si ostane v produkciji (MONTER brez projektov — neškodljiv, uporaben za prihodnje spot-checke).
