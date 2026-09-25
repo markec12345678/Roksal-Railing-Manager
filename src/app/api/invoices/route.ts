@@ -7,7 +7,7 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { z } from 'zod'
 import { authenticate, unauthorized, forbidden } from '@/lib/auth'
-import { MANAGER_ROLES, hasRole } from '@/lib/auth'
+import { hasPermission, lacksPermission } from '@/lib/access'
 import type { SessionPayload } from '@/lib/session'
 import { allocateDocumentNumber, createWithNumber } from '@/lib/numbering'
 import { auditInTx, audit } from '@/lib/audit'
@@ -17,17 +17,23 @@ const DDV_STOPLNJE = [22, 9.5, 0] as const
 const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100
 
 /**
- * Uradni računi = samo vodstvo (ADMIN/VODJA).
- * R126 (issue #5 §3): API ključ ni več izjema — prej je `kind === 'apikey'`
- * vodil skozi in je servisni ključ lahko IZDAL račun; to je nasprotovalo
- * matriki v access.ts ("Nedovoljeno: urejanje cen") in je bilo pukljavo.
+ * §10 (R135) — uradni računi = KONKRETNA dovoljenja (invoices.*).
+ * POST → invoices.create · PATCH → invoices.issue / invoices.cancel ·
+ * DELETE (osnutek) → invoices.create · GET → invoices.read.
+ * R126 (issue #5 §3): API ključ ni izjema — servisni ključ ne dela z uradnimi
+ * dokumenti (katalog dovoljenj apikey zato ne vsebuje nobenega invoices.*).
  */
-function denyUnlessManager(auth: import('@/lib/auth').AuthContext): NextResponse | null {
-  if (auth.kind === 'user' && hasRole(auth.session, MANAGER_ROLES)) return null
+function denyUnlessInvoice(
+  auth: import('@/lib/auth').AuthContext,
+  permission: 'invoices.create' | 'invoices.issue' | 'invoices.cancel'
+): NextResponse | null {
   if (auth.kind === 'apikey') {
     return forbidden('Računi so uradni dokumenti — API ključ nima dostopa.')
   }
-  return forbidden('Računi so uradni dokumenti — dostop ima samo vodstvo.')
+  if (lacksPermission(auth, permission)) {
+    return forbidden(`Računi so uradni dokumenti — potrebna je pravica ${permission}.`)
+  }
+  return null
 }
 
 const postavkaSchema = z.object({
@@ -103,8 +109,10 @@ export async function GET(request: Request) {
     if (auth.kind === 'apikey') {
       return forbidden('Računi so uradni dokumenti — API ključ nima dostopa.')
     }
-    const isManager = hasRole(auth.session, MANAGER_ROLES) || hasRole(auth.session, ['SKLADISCE'])
-    if (!isManager && !projectId) {
+    // Širina branja: pisarna (users.read: ADMIN/VODJA) ali skladišče
+    // (inventory.write) vidi VSE račune; ostali (monter) svoje projekte.
+    const seesAll = hasPermission(auth, 'users.read') || hasPermission(auth, 'inventory.write')
+    if (!seesAll && !projectId) {
       const uid = auth.session.sub
       const ownProjects = await db.project.findMany({
         where: { OR: [{ monterId: uid }, { vodjaId: uid }] },
@@ -141,8 +149,8 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
-  // Uradni dokumenti = vodstvo (issue #4 §3 matrika).
-  const denied = await denyUnlessManager(auth)
+  // §10: osnutek računa = invoices.create (vodstvo; uradni dokument).
+  const denied = denyUnlessInvoice(auth, 'invoices.create')
   if (denied) return denied
   const actor = actorIdOf(auth)
   try {
@@ -209,8 +217,11 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
-  // Statusi (IZDAN/PLACAN/STORNIRAN) = finančno pomembni dejanji → vodstvo.
-  const denied = await denyUnlessManager(auth)
+  // Statusi (IZDAN/PLACAN/STORNIRAN) = finančno pomembna dejanja → §10:
+  // izdaja/plačilo = invoices.issue, storno = invoices.cancel. Telo beremo
+  // najprej, da vemo, katera pravica velja.
+  const bodyPreview = (await request.clone().json().catch(() => ({}))) as { status?: string }
+  const denied = denyUnlessInvoice(auth, bodyPreview.status === 'STORNIRAN' ? 'invoices.cancel' : 'invoices.issue')
   if (denied) return denied
   const actor = actorIdOf(auth)
   try {
@@ -279,8 +290,8 @@ export async function PATCH(request: Request) {
 export async function DELETE(request: Request) {
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
-  // Brisanje računa = vodstvo.
-  const denied = await denyUnlessManager(auth)
+  // Brisanje OSNUTKA računa = ista pravica kot ustvarjanje (invoices.create).
+  const denied = denyUnlessInvoice(auth, 'invoices.create')
   if (denied) return denied
   try {
     const { searchParams } = new URL(request.url)

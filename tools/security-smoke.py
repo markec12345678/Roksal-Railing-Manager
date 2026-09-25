@@ -373,6 +373,20 @@ check("POST /api/users/activate neznan žeton → 400", st == 400 and b"veljavna
 st, _, _ = call("/api/auth/email", "POST", {"newEmail": "kdo@nekaj.si", "currentPassword": "x"})
 check("POST /api/auth/email brez seje → 401", st == 401, f"dobil {st}")
 
+print("\n[17] Matrika dovoljenj (R135 — issue #5 §10: konkretna pravica na ruti)")
+# Upravljanje računov = users.manage (ADMIN) — brez seje 401 (fail-closed vrata).
+st, _, _ = call("/api/users", "POST", {"action": "invite", "email": "x@y.si", "ime": "X", "vloga": "MONTER"})
+check("POST /api/users invite brez seje → 401", st == 401, f"dobil {st}")
+# Računi = invoices.create (vodstvo) — brez seje 401; telo ni obvezno za vrata.
+st, _, _ = call("/api/invoices", "POST", {})
+check("POST /api/invoices brez seje → 401", st == 401, f"dobil {st}")
+# Portal management = portal.manage (pisarna) — brez seje 401.
+st, _, _ = call("/api/portal", "POST", {"projectId": "x", "action": "enable"})
+check("POST /api/portal enable brez seje → 401", st == 401, f"dobil {st}")
+# Naročila = procurement.* — brez seje 401.
+st, _, _ = call("/api/material-orders", "PATCH", {"id": "x", "status": "DOBLJENO"})
+check("PATCH /api/material-orders brez seje → 401", st == 401, f"dobil {st}")
+
 print(f"\n{'=' * 60}")
 print(f"  {passed} uspešnih · {failed} neuspešnih · {skipped} preskočenih")
 print(f"{'=' * 60}\n")

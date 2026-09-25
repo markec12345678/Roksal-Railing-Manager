@@ -76,10 +76,32 @@ const ROLE_LABEL: Record<string, string> = {
 }
 
 const ROLE_CHIP: Record<string, string> = {
-  ADMIN: 'bg-roksal-navy/10 text-roksal-navy',
-  VODJA: 'bg-roksal-amber/15 text-amber-700',
-  MONTER: 'bg-secondary text-muted-foreground',
-  SKLADISCE: 'bg-roksal-green/10 text-roksal-green',
+  ADMIN: 'bg-roksal-navy/10 text-roksal-navy ring-1 ring-inset ring-roksal-navy/20',
+  VODJA: 'bg-roksal-amber/15 text-amber-700 ring-1 ring-inset ring-roksal-amber/30',
+  MONTER: 'bg-secondary text-muted-foreground ring-1 ring-inset ring-border',
+  SKLADISCE: 'bg-roksal-green/10 text-roksal-green ring-1 ring-inset ring-roksal-green/25',
+}
+
+/**
+ * Determinističen avatar (R135 stil): iniciali + ena od 4 blagovnih tint,
+ * izbrana po dolžini imena (isto ime = isti ton, brez naključja).
+ */
+const AVATAR_TINT = [
+  'bg-roksal-navy/12 text-roksal-navy',
+  'bg-roksal-amber/18 text-amber-700',
+  'bg-roksal-green/14 text-roksal-green',
+  'bg-stone-200/70 text-stone-600',
+] as const
+
+function initialsOf(ime: string): string {
+  const parts = ime.trim().split(/\s+/).filter(Boolean)
+  const a = parts[0]?.[0] ?? '?'
+  const b = parts.length > 1 ? parts[parts.length - 1]![0] : ''
+  return (a + b).toUpperCase()
+}
+
+function avatarTintOf(ime: string): string {
+  return AVATAR_TINT[ime.trim().length % AVATAR_TINT.length]!
 }
 
 type OneTime =
@@ -91,6 +113,9 @@ export function TeamTab() {
   const [loading, setLoading] = useState(true)
   const [myRole, setMyRole] = useState<string | null>(null)
   const [myId, setMyId] = useState<string | null>(null)
+  // §10 (R135): UI se veže na KONKRETNE pravice (users.read/users.manage),
+  // ne na vloge — isti jezik kot strežniška vrata (fail-closed enako).
+  const [myPermissions, setMyPermissions] = useState<readonly string[]>([])
   const [users, setUsers] = useState<TeamUser[]>([])
   const [busyId, setBusyId] = useState<string | null>(null)
   const [inviteOpen, setInviteOpen] = useState(false)
@@ -106,6 +131,7 @@ export function TeamTab() {
       const me = await fetch('/api/auth').then((r) => (r.ok ? r.json() : null))
       setMyRole(me?.user?.vloga ?? null)
       setMyId(me?.user?.id ?? null)
+      setMyPermissions(Array.isArray(me?.permissions) ? (me.permissions as string[]) : [])
       const res = await fetch('/api/users')
       if (res.ok) {
         const data = (await res.json()) as TeamUser[]
@@ -195,7 +221,9 @@ export function TeamTab() {
     }
   }
 
-  const canManage = myRole === 'ADMIN'
+  // §10 (R135): pravice namesto vlog — users.manage = upravljanje, users.read = pregled
+  const canManage = myPermissions.includes('users.manage')
+  const canRead = myPermissions.includes('users.read')
 
   return (
     <div className="mx-auto max-w-3xl space-y-3 p-4">
@@ -230,9 +258,9 @@ export function TeamTab() {
         </div>
       </div>
 
-      {!canManage && myRole === 'VODJA' && (
+      {!canManage && canRead && (
         <div className="rounded-lg border border-border bg-secondary/40 px-3 py-2 text-[11px] text-muted-foreground">
-          Pregled je samo za branje — upravljanje računov (povabila, deaktivacija, vloge) je za administratorja.
+          Pregled je samo za branje — upravljanje računov (pravica users.manage) je za administratorja.
         </div>
       )}
 
@@ -242,9 +270,23 @@ export function TeamTab() {
           <Loader2 className="h-6 w-6 animate-spin text-roksal-amber" />
         </div>
       ) : users.length === 0 ? (
-        <div className="rounded-xl border border-border bg-white p-10 text-center text-sm text-muted-foreground">
-          Ni podatkov (ali pa nimate dostopa).
-        </div>
+        canRead ? (
+          <div className="rounded-xl border border-border bg-white p-10 text-center text-sm text-muted-foreground">
+            Ni podatkov — povabite prvega člana ekipe.
+          </div>
+        ) : (
+          // §10 (R135): pošteno stanje namesto praznega seznama (strežnik: 403 users.read)
+          <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50/70 px-3.5 py-3">
+            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+            <div className="space-y-0.5">
+              <p className="text-xs font-semibold text-amber-800">Ekipa — ureja pisarna</p>
+              <p className="text-[11px] text-amber-700/90 leading-relaxed">
+                Pregled računov je pravica users.read (pisarna). Za povabilo ali
+                spremembo vloge kontaktirajte administratorja.
+              </p>
+            </div>
+          </div>
+        )
       ) : (
         <div className="space-y-2">
           {users.map((u) => {
@@ -252,7 +294,7 @@ export function TeamTab() {
             return (
               <div
                 key={u.id}
-                className={`rounded-xl border bg-white p-3 shadow-sm transition-colors ${
+                className={`rounded-xl border bg-white p-3 shadow-sm transition-all hover:shadow-md ${
                   u.lifecycle.deactivated
                     ? 'border-stone-200 opacity-75'
                     : u.lifecycle.locked
@@ -261,10 +303,19 @@ export function TeamTab() {
                 }`}
               >
                 <div className="flex flex-wrap items-center gap-2">
+                  <div
+                    aria-hidden="true"
+                    className={`flex h-9 w-9 shrink-0 select-none items-center justify-center rounded-full text-[11px] font-bold ${avatarTintOf(u.ime)}`}
+                  >
+                    {initialsOf(u.ime)}
+                  </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-1.5">
                       <p className="truncate text-sm font-semibold text-roksal-navy">{u.ime}</p>
-                      <Badge className={`text-[10px] ${ROLE_CHIP[u.vloga] ?? 'bg-secondary'}`}>
+                      <Badge
+                        className={`text-[10px] font-medium ${ROLE_CHIP[u.vloga] ?? 'bg-secondary'}`}
+                        title={`Vloga: ${ROLE_LABEL[u.vloga] ?? u.vloga}`}
+                      >
                         {ROLE_LABEL[u.vloga] ?? u.vloga}
                       </Badge>
                       {self && (
@@ -278,22 +329,22 @@ export function TeamTab() {
 
                   {/* Statusni chip */}
                   {u.lifecycle.deactivated ? (
-                    <Badge variant="secondary" className="text-[10px] bg-stone-100 text-stone-500">
+                    <Badge variant="secondary" className="text-[10px] bg-stone-100 text-stone-500" title="Offboarding — prijava in že izdani žetoni so takoj mrtvi">
                       <Trash2 className="mr-1 h-3 w-3" />
                       Deaktiviran
                     </Badge>
                   ) : u.lifecycle.locked ? (
-                    <Badge variant="secondary" className="text-[10px] bg-roksal-red/10 text-roksal-red">
+                    <Badge variant="secondary" className="text-[10px] bg-roksal-red/10 text-roksal-red" title="Varnostni zaklep — prijava blokirana">
                       <Lock className="mr-1 h-3 w-3" />
                       Zaklenjen
                     </Badge>
                   ) : u.lifecycle.invited ? (
-                    <Badge variant="secondary" className="text-[10px] bg-amber-50 text-amber-700">
+                    <Badge variant="secondary" className="text-[10px] bg-amber-50 text-amber-700" title="Račun še ni aktiviran prek povabila">
                       <CalendarClock className="mr-1 h-3 w-3" />
                       {u.lifecycle.inviteExpired ? 'Povabilo poteklo' : 'Čaka aktivacijo'}
                     </Badge>
                   ) : (
-                    <Badge variant="secondary" className="text-[10px] bg-roksal-green/10 text-roksal-green">
+                    <Badge variant="secondary" className="text-[10px] bg-roksal-green/10 text-roksal-green" title="Aktiven račun — prijava deluje">
                       <ShieldCheck className="mr-1 h-3 w-3" />
                       Aktiven
                     </Badge>

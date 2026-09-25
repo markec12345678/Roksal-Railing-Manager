@@ -5,10 +5,9 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { createInventorySchema, inventoryMovementSchema } from '@/lib/validations'
-import { authenticate, unauthorized, forbidden } from '@/lib/auth'
-import { MANAGER_ROLES, denyUnless } from '@/lib/auth'
+import { authenticate, unauthorized, forbidden, denyWithoutPermission } from '@/lib/auth'
 import { recordMovement, StockError } from '@/lib/inventory'
-import { canManageInventory, actorIdOf } from '@/lib/access'
+import { hasPermission, actorIdOf } from '@/lib/access'
 import type { StockLedgerEventType } from '@prisma/client'
 
 /** Stari UI tipi → ledger dogodki (združljivost z obstoječim klientom). */
@@ -85,9 +84,10 @@ export async function POST(request: Request) {
     const body = await request.json()
 
     if (body.tipPremika) {
-      // Premik zaloge: vodstvo + skladišče (monter bere, ne piše).
-      if (!canManageInventory(auth)) {
-        return forbidden('Premike zaloge beležita vodstvo ali skladišče.')
+      // §10 (R135): premik zaloge = konkretno dovoljenje inventory.write
+      // (vodstvo + skladišče; monter bere, ne piše; API ključ ne upravlja zaloge).
+      if (!hasPermission(auth, 'inventory.write')) {
+        return forbidden('Premike zaloge beležita vodstvo ali skladišče (pravica inventory.write).')
       }
       const validated = inventoryMovementSchema.parse(body)
       const eventType = mapEventType(validated.tipPremika)
@@ -119,8 +119,8 @@ export async function POST(request: Request) {
 
       return NextResponse.json({ balanceAfter, inventory: updated }, { status: 201 })
     } else {
-      // Nova inventarna postavka = vodstvena odločitev.
-      const denied = await denyUnless(request, MANAGER_ROLES)
+      // Nova inventarna postavka = master podatek kataloga (vodstvo).
+      const denied = await denyWithoutPermission(request, 'catalog.manage')
       if (denied) return denied
       const validated = createInventorySchema.parse(body)
       const actor = actorIdOf(auth)

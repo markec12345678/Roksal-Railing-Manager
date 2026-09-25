@@ -42,6 +42,7 @@ import {
   Loader2,
   X,
   Search,
+  Info,
   Activity,
   PackageX,
   Filter,
@@ -308,6 +309,26 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
   const [portalNotesInput, setPortalNotesInput] = useState('')
   const [portalPriceInput, setPortalPriceInput] = useState('')
   const [portalShowPrice, setPortalShowPrice] = useState(false)
+  // §10 (R135): UI upravljanja portala vidi SAMO nosilec pravice portal.manage
+  // (pisarna). Monter vidi stanje (read-only + "Ureja pisarna"), ne akcij —
+  // ista pravila kot strežnik (403 portal.manage), le izkustveno, ne naključno.
+  const [myPermissions, setMyPermissions] = useState<readonly string[] | null>(null)
+  useEffect(() => {
+    let alive = true
+    fetch('/api/auth')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (alive && data?.permissions) setMyPermissions(data.permissions as readonly string[])
+        else if (alive) setMyPermissions([])
+      })
+      .catch(() => {
+        if (alive) setMyPermissions([])
+      })
+    return () => {
+      alive = false
+    }
+  }, [])
+  const canManagePortal = myPermissions !== null && myPermissions.includes('portal.manage')
 
   const fetchProjects = useCallback(async () => {
     try {
@@ -1949,7 +1970,21 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                   </div>
 
                   <div className="px-3 pb-3 pt-2 space-y-3">
-                    {!portalLoading && !portalInfo?.enabled && (
+                    {!portalLoading && !portalInfo?.enabled && !canManagePortal && (
+                      // §10 (R135): monter brez pravice portal.manage — pošteno
+                      // stanje namesto mrtvega gumba (strežnik bi vrnil 403).
+                      <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50/70 px-2.5 py-2">
+                        <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" />
+                        <div className="space-y-0.5">
+                          <p className="text-[11px] font-medium text-amber-800">Ureja pisarna</p>
+                          <p className="text-[11px] text-amber-700/90 leading-relaxed">
+                            Portal stranke izdaja in upravlja pisarna (pravica portal.manage).
+                            Za povezavo kontaktirajte vodjo.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    {!portalLoading && !portalInfo?.enabled && canManagePortal && (
                       <div className="space-y-2">
                         <p className="text-[11px] text-muted-foreground leading-relaxed">
                           Omogočite javno stran, kjer stranka v realnem času spremlja status, slike
@@ -1959,7 +1994,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                           type="button"
                           onClick={() => portalAction('enable')}
                           disabled={portalActionLoading}
-                          className="w-full bg-roksal-navy hover:bg-roksal-navy/90 text-white h-9"
+                          className="w-full bg-roksal-navy hover:bg-roksal-navy/90 text-white h-9 focus-visible:ring-2 focus-visible:ring-roksal-amber/60 focus-visible:ring-offset-1 transition-colors"
                           size="sm"
                         >
                           {portalActionLoading ? (
@@ -2162,7 +2197,8 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                           Shrani sporočilo in ceno
                         </Button>
 
-                        {/* Admin actions */}
+                        {/* Admin actions — §10: samo nosilec portal.manage */}
+                        {canManagePortal && (
                         <div className="grid grid-cols-3 gap-1.5 pt-1 border-t border-border">
                           <Button
                             type="button"
@@ -2201,6 +2237,16 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                             Prekliči
                           </Button>
                         </div>
+                        )}
+                        {!canManagePortal && (
+                          // §10 (R135): stanje namesto akcij za nosilca brez pravice
+                          <div className="flex items-center gap-1.5 border-t border-border pt-2">
+                            <Info className="h-3.5 w-3.5 shrink-0 text-amber-600" />
+                            <span className="text-[11px] text-muted-foreground">
+                              Ureja pisarna (pravica portal.manage)
+                            </span>
+                          </div>
+                        )}
                       </>
                     )}
                   </div>
@@ -2227,7 +2273,19 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                   </div>
 
                   <div className="px-3 pb-3 pt-2 space-y-3">
-                    {!portalLoading && !portalInfo?.measure?.enabled && (
+                    {!portalLoading && !portalInfo?.measure?.enabled && !canManagePortal && (
+                      // §10 (R135): pošteno stanje namesto gumba, ki bi vrnil 403
+                      <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50/70 px-2.5 py-2">
+                        <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" />
+                        <div className="space-y-0.5">
+                          <p className="text-[11px] font-medium text-amber-800">Ureja pisarna</p>
+                          <p className="text-[11px] text-amber-700/90 leading-relaxed">
+                            Merilno povezavo izdaja pisarna (pravica portal.manage).
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    {!portalLoading && !portalInfo?.measure?.enabled && canManagePortal && (
                       <div className="space-y-2">
                         <p className="text-[11px] text-muted-foreground leading-relaxed">
                           Stranka dobi povezavo, na kateri sama nariše črto ograje na satelitski karti in
@@ -2364,7 +2422,8 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                           </Button>
                         </div>
 
-                        {/* Admin actions */}
+                        {/* Admin actions — §10: samo nosilec portal.manage */}
+                        {canManagePortal && (
                         <div className="grid grid-cols-3 gap-1.5 pt-1 border-t border-border">
                           <Button
                             type="button"
@@ -2403,6 +2462,16 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                             Prekliči
                           </Button>
                         </div>
+                        )}
+                        {!canManagePortal && (
+                          // §10 (R135): stanje namesto akcij za nosilca brez pravice
+                          <div className="flex items-center gap-1.5 border-t border-border pt-2">
+                            <Info className="h-3.5 w-3.5 shrink-0 text-amber-600" />
+                            <span className="text-[11px] text-muted-foreground">
+                              Ureja pisarna (pravica portal.manage)
+                            </span>
+                          </div>
+                        )}
                       </>
                     )}
                   </div>

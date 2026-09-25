@@ -6,11 +6,10 @@
 // PREKlicANO iz vseh stanj razen DOBLJENO.
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { authenticate, unauthorized, forbidden } from '@/lib/auth'
-import { MANAGER_ROLES, denyUnless } from '@/lib/auth'
+import { authenticate, unauthorized, forbidden, denyWithoutPermission } from '@/lib/auth'
 import { receiveOrder, StockError } from '@/lib/inventory'
 import { auditInTx, audit } from '@/lib/audit'
-import { actorIdOf } from '@/lib/access'
+import { actorIdOf, hasPermission } from '@/lib/access'
 
 const ORDER_TRANSITIONS: Record<string, string[]> = {
   OSNUTEK: ['POSLANO', 'POTRJENO', 'PREKlicANO'],
@@ -59,7 +58,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   // Spreminjanje cen, zalog, naročil in razporedov je vodstveno opravilo.
   // Monter bere (za delo na terenu), pisati pa ne sme.
-  const denied = await denyUnless(request, MANAGER_ROLES)
+  const denied = await denyWithoutPermission(request, 'procurement.create')
   if (denied) return denied
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
@@ -138,17 +137,18 @@ export async function POST(request: Request) {
 }
 
 // PATCH — spremeni status naročila (statusni stroj + idempotenten prejem).
-// Pisati smejo vodstvo in skladišče (prejem je skladiščna operacija).
+// §10 (R135): statusni stroj = procurement.approve (vodstvo); skladišče sme
+// SAMO prejem (status → DOBLJENO, "prejem je skladiščna operacija").
 export async function PATCH(request: Request) {
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
   const actor = actorIdOf(auth)
-  const role = auth.kind === 'user' ? auth.session.vloga : null
   // R126 (issue #5 §3): API ključ NI manager — prej je smel spreminjati
   // naročila (nasprotno matriki: "administracija zaloge" je nedovoljeno).
-  const isManager = role === 'ADMIN' || role === 'VODJA'
-  if (!isManager && role !== 'SKLADISCE') {
-    return forbidden('Sprememba naročil je možnost vodstva ali skladišča.')
+  const canApprove = hasPermission(auth, 'procurement.approve')
+  const canReceive = hasPermission(auth, 'procurement.receive')
+  if (!canApprove && !canReceive) {
+    return forbidden('Sprememba naročil je pravica vodstva (procurement.approve); skladišče sme samo prejem (procurement.receive).')
   }
   try {
     const body = await request.json()
@@ -156,6 +156,10 @@ export async function PATCH(request: Request) {
 
     if (!id || !status) {
       return NextResponse.json({ error: 'id in status sta obvezna' }, { status: 400 })
+    }
+
+    if (!canApprove && status !== 'DOBLJENO') {
+      return forbidden('Skladišče lahko naročilo samo prejme (DOBLJENO) — ostale prehode ureja vodstvo (procurement.approve).')
     }
 
     const existing = await db.materialOrder.findUnique({ where: { id } })

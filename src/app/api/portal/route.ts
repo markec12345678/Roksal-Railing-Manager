@@ -23,7 +23,7 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { authenticate, unauthorized } from '@/lib/auth'
-import { assertProjectAccess, AccessDeniedError } from '@/lib/access'
+import { assertProjectAccess, AccessDeniedError, lacksPermission } from '@/lib/access'
 import {
   DEFAULT_PORTAL_EXPIRY_DAYS,
   MAX_PORTAL_EXPIRY_DAYS,
@@ -146,11 +146,20 @@ export async function GET(request: Request) {
 }
 
 // POST - upravljanje portala (enable/disable/regenerate/revoke/update)
+// §10 (R135): upravljanje portalov = pravica portal.manage (pisarna).
+// Prej je lastnik-monter lahko omogočil portal; zdaj izključno ADMIN/VODJA
+// (izrecna, dokumentirana zožitev — UI pokaže stanje "Ureja pisarna").
 export async function POST(request: Request) {
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
   if (auth.kind !== 'user') {
     return NextResponse.json({ error: 'Portal upravlja samo osebje' }, { status: 403 })
+  }
+  if (lacksPermission(auth, 'portal.manage')) {
+    return NextResponse.json(
+      { error: 'Portalne povezave ureja pisarna (pravica portal.manage).' },
+      { status: 403 }
+    )
   }
   try {
     const body = await request.json() as {

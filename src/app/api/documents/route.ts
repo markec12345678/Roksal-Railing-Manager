@@ -19,8 +19,8 @@ import { NextResponse } from 'next/server'
 import { randomUUID } from 'node:crypto'
 import { db } from '@/lib/db'
 import { createDocumentSchema } from '@/lib/validations'
-import { authenticate, unauthorized } from '@/lib/auth'
-import { assertProjectAccess, actorLabelOf, AccessDeniedError } from '@/lib/access'
+import { authenticate, unauthorized, forbidden } from '@/lib/auth'
+import { assertProjectAccess, actorLabelOf, lacksPermission, AccessDeniedError } from '@/lib/access'
 import { auditInTx } from '@/lib/audit'
 import {
   deleteObject,
@@ -34,6 +34,12 @@ export async function POST(request: Request) {
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
+  // §10 (R135): generiranje uradnih dokumentov = documents.generate —
+  // samo uporabniške vloge (API ključ ne dela uradnih dokumentov, isto kot
+  // pri računih; izrecna, dokumentirana zožitev servisne pogodbe).
+  if (lacksPermission(auth, 'documents.generate')) {
+    return forbidden('Izdelava dokumentov zahteva uporabniško pravico documents.generate.')
+  }
   try {
     const body = await request.json()
     const validated = createDocumentSchema.parse(body)

@@ -6,7 +6,7 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { authenticate, unauthorized } from '@/lib/auth'
-import { assertProjectAccess, AccessDeniedError } from '@/lib/access'
+import { assertProjectAccess, AccessDeniedError, lacksPermission } from '@/lib/access'
 import { getObject, objectUrlFor } from '@/lib/object-storage'
 
 export async function GET(request: Request) {
@@ -66,6 +66,13 @@ export async function POST(request: Request) {
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
+  // §10 (R135): podpis = documents.sign (teren podpisuje, servis ključ ne).
+  if (lacksPermission(auth, 'documents.sign')) {
+    return NextResponse.json(
+      { error: 'Podpisovanje dokumentov zahteva pravico documents.sign.' },
+      { status: 403 }
+    )
+  }
   try {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')

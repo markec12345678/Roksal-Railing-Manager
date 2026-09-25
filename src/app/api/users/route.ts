@@ -21,7 +21,8 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { db } from '@/lib/db'
-import { authenticate, unauthorized, forbidden, hasRole, MANAGER_ROLES } from '@/lib/auth'
+import { authenticate, unauthorized, forbidden } from '@/lib/auth'
+import { lacksPermission } from '@/lib/access'
 import { hashPassword } from '@/lib/password'
 import { revokeAllForUser } from '@/lib/session-registry'
 import { audit } from '@/lib/audit'
@@ -65,15 +66,15 @@ const USER_LIST_SELECT = {
   inviteExpiresAt: true,
 } as const
 
-// GET — seznam uporabnikov (ADMIN + VODJA; MONTER/SKLADISCE → 403)
+// GET — seznam uporabnikov (§10: users.read = ADMIN + VODJA; ostali → 403)
 export async function GET(request: Request) {
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
   if (auth.kind !== 'user') {
     return NextResponse.json({ error: 'Uporabnike upravlja samo osebje s sejo' }, { status: 403 })
   }
-  if (!hasRole(auth.session, MANAGER_ROLES)) {
-    return forbidden('Seznam uporabnikov je samo za pisarno.')
+  if (lacksPermission(auth, 'users.read')) {
+    return forbidden('Seznam uporabnikov je pravica users.read (pisarna).')
   }
   try {
     const users = await db.profile.findMany({
@@ -98,15 +99,15 @@ export async function GET(request: Request) {
   }
 }
 
-// POST — upravljanje (samo ADMIN)
+// POST — upravljanje (§10: users.manage = izključno ADMIN)
 export async function POST(request: Request) {
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
   if (auth.kind !== 'user') {
     return NextResponse.json({ error: 'Uporabnike upravlja samo osebje s sejo' }, { status: 403 })
   }
-  if (!hasRole(auth.session, ['ADMIN'])) {
-    return forbidden('Upravljanje računov je samo za administratorja.')
+  if (lacksPermission(auth, 'users.manage')) {
+    return forbidden('Upravljanje računov je pravica users.manage (izključno administrator).')
   }
 
   try {

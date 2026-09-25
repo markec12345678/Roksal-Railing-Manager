@@ -322,11 +322,13 @@ describe('merilna povezava — upravljanje (R133 §8)', () => {
   }
 
   it('measureEnable izda kripto žeton (zapuščinski cuid → rotacija) z privzetim potekom; measureRevoke je trajna; audit z pravim akterjem', async () => {
-    const { user, token } = await createTestUserWithSession(`r133-measure-mgmt-${Date.now()}`)
-    // zapuščinski žeton = kopija clientToken (backfill R133) — NI kripto formata
+    const { user, token } = await createTestUserWithSession(`r133-measure-mgmt-${Date.now()}`, 'VODJA')
+    // zapuščinski žeton = kopija clientToken (backfill R133) — NI kripto formata;
+    // unikaten na run (trajna testna baza — kolizija z ostanki prejšnjih runov)
+    const legacyToken = `cuid-legacy-copy-${Date.now()}`
     const customer = await db.customer.create({ data: { ime: `R133-MGMT-${Date.now()}`, naslov: 'Test 1' } })
     const project = await db.project.create({
-      data: { customerId: customer.id, nazivProjekta: 'Measure-mgmt', monterId: user.id, measureToken: 'cuid-legacy-copy-token', measureEnabled: true },
+      data: { customerId: customer.id, nazivProjekta: 'Measure-mgmt', monterId: user.id, measureToken: legacyToken, measureEnabled: true },
     })
 
     const route = await import('@/app/api/portal/route')
@@ -336,7 +338,7 @@ describe('merilna povezava — upravljanje (R133 §8)', () => {
       measure: { enabled: boolean; token: string | null; expiresAt: string | null; revokedAt: string | null }
     }
     expect(enabled.measure.enabled).toBe(true)
-    expect(enabled.measure.token).not.toBe('cuid-legacy-copy-token')
+    expect(enabled.measure.token).not.toBe(legacyToken)
     expect(enabled.measure.token).toHaveLength(24)
     expect(enabled.measure.expiresAt).not.toBeNull()
     const expiryDays = Math.round((new Date(enabled.measure.expiresAt!).getTime() - Date.now()) / 86400000)
@@ -391,7 +393,7 @@ describe('merilna povezava — upravljanje (R133 §8)', () => {
   })
 
   it('§8 enable po preklicu izda NOV žeton (revokacija je trajna — UI nikoli ne kaže žive povezave za mrtvi žeton)', async () => {
-    const { user, token } = await createTestUserWithSession(`r133-measure-rev-${Date.now()}`)
+    const { user, token } = await createTestUserWithSession(`r133-measure-rev-${Date.now()}`, 'VODJA')
     const cryptoToken = generateMeasureToken()
     const customer = await db.customer.create({ data: { ime: `R133-REV-${Date.now()}`, naslov: 'Test 1' } })
     const project = await db.project.create({

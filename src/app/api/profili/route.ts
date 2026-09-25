@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { authenticate, unauthorized } from '@/lib/auth'
-import { MANAGER_ROLES, denyUnless } from '@/lib/auth'
+import { denyWithoutPermission } from '@/lib/auth'
 
 // GET - Vsi profili (ali samo aktivni)
 export async function GET(request: Request) {
@@ -32,7 +32,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   // Spreminjanje cen, zalog, naročil in razporedov je vodstveno opravilo.
   // Monter bere (za delo na terenu), pisati pa ne sme.
-  const denied = await denyUnless(request, MANAGER_ROLES)
+  const denied = await denyWithoutPermission(request, 'catalog.manage')
   if (denied) return denied
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
   const auth = await authenticate(request)

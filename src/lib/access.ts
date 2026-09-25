@@ -43,6 +43,10 @@
 import { hasRole, MANAGER_ROLES } from '@/lib/auth'
 import type { AuthContext } from '@/lib/auth'
 import type { ApiKeyScope } from '@/lib/api-keys'
+import { hasPermission, permissionsForPrincipal, type Permission } from '@/lib/permissions'
+
+/** §10 (R135): ali principal nosi konkretno dovoljenje (iz permissions.ts). */
+export { hasPermission } from '@/lib/permissions'
 
 export type AccessError = { status: 403 | 404; message: string }
 
@@ -78,19 +82,28 @@ export function isServicePrincipal(principal: AuthContext): boolean {
   return principal.kind === 'apikey'
 }
 
-/** Zaloga/naročila: SKLADISCE in vodstvo imajo pisni dostop; servis NE (R120). */
+/** Zaloga/naročila: §10 — inventory.write (vodstvo + skladišče); servis NE (R120). */
 export function canManageInventory(principal: AuthContext): boolean {
-  return isManager(principal) ||
-    (principal.kind === 'user' && hasRole(principal.session, ['SKLADISCE']))
+  return hasPermission(principal, 'inventory.write')
 }
 
-/** Stranke: ustvarjanje/urejanje = vsa uporabniška vloga (teren), brisanje = vodstvo. */
+/** Stranke: ustvarjanje/urejanje = §10 customers.write (teren), brisanje = vodstvo. */
 export function canManageCustomers(principal: AuthContext): boolean {
-  return principal.kind === 'user'
+  return hasPermission(principal, 'customers.write')
 }
 
 export function canDeleteCustomer(principal: AuthContext): boolean {
-  return isManager(principal)
+  // Brisanje stranke ni v katalogu dovoljenj (§10 ni customers.delete) —
+  // vodstvena pravica: customers.write + manager vloga (ADMIN/VODJA).
+  return isManager(principal) && hasPermission(principal, 'customers.write')
+}
+
+/**
+ * §10 (R135) — ali principal NIMA dovoljenja? (Negacija hasPermission;
+ * uporabno v guard verigah: `if (lacks(auth, 'x')) return forbidden(...)`.)
+ */
+export function lacksPermission(principal: AuthContext, permission: Permission): boolean {
+  return !permissionsForPrincipal(principal).includes(permission)
 }
 
 /**

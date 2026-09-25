@@ -20,6 +20,7 @@ import { authenticate } from '@/lib/auth'
 import { audit } from '@/lib/audit'
 import { LOGIN_LIMIT, checkRate, clientIp, releaseRate } from '@/lib/rate-limit'
 import { accountBlock, BLOCK_MESSAGES } from '@/lib/user-lifecycle'
+import { permissionsForRole } from '@/lib/permissions'
 
 const loginSchema = z.object({
   email: z.string().trim().min(3).max(254),
@@ -122,5 +123,8 @@ export async function GET(request: Request) {
     user: { id: session.sub, email: session.email, ime: session.ime, vloga: session.vloga },
     expiresAt: session.exp * 1000,
     mustChangePassword,
+    // §10 (R135): odjemalec dobi svoje KONKRETNE pravice — UI skriva/omogoča
+    // akcije po dovoljenjih (ne po vlogah) in pošteno pokaže, kaj mu manjka.
+    permissions: permissionsForRole(session.vloga),
   })
 }

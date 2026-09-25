@@ -24,6 +24,11 @@ import { assertSessionAlive } from './session-registry'
 import { audit } from './audit'
 import { checkRate, clientIp } from './rate-limit'
 import type { ApiKeyScope } from './api-keys'
+import {
+  hasPermission,
+  describePermission,
+  type Permission,
+} from './permissions'
 
 export type AuthContext =
   | { kind: 'user'; session: SessionPayload }
@@ -137,6 +142,38 @@ export async function denyUnless(request: Request, roles: string[]): Promise<Nex
   }
   if (!hasRole(context.session, roles)) {
     return forbidden(`Za to dejanje je potrebna vloga ${roles.join(' ali ')}. Tvoja vloga: ${context.session.vloga}.`)
+  }
+  return null
+}
+
+/**
+ * §10 (R135) — vrže `NextResponse`, če zahtevek NIMA konkretnega dovoljenja,
+ * sicer `null`. To je naslednik `denyUnless` (vloga → dovoljenje):
+ *
+ *     const denied = await denyWithoutPermission(request, 'invoices.create')
+ *     if (denied) return denied
+ *
+ * Odgovori (fail-closed, konsistentni z denyUnless):
+ *   • brez identitete → 401,
+ *   • API ključ (MOBILE_SYNC) → 403 s pojasnilom (ključ ni uporabniška rola),
+ *   • uporabnik brez dovoljenja → 403, detail IME konkretnega dovoljenja
+ *     (slovenska oznaka + tehnično ime) — spec §10: endpoint preverja
+ *     konkretno dovoljenje, sporočilo pa mora biti razumljivo in točno.
+ */
+export async function denyWithoutPermission(
+  request: Request,
+  permission: Permission
+): Promise<NextResponse | null> {
+  const context = await authenticate(request)
+  if (!context) return unauthorized()
+  if (context.kind !== 'user') {
+    return forbidden('API ključ nima dostopa do te poti — potrebna je prijava uporabnika.')
+  }
+  if (!hasPermission(context, permission)) {
+    return forbidden(
+      `Za to dejanje potrebuješ pravico »${describePermission(permission)}« (${permission}). ` +
+        `Tvoja vloga: ${context.session.vloga}.`
+    )
   }
   return null
 }

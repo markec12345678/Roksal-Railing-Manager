@@ -10,7 +10,7 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import crypto from 'crypto'
 import { authenticate, unauthorized } from '@/lib/auth'
-import { assertProjectAccess, AccessDeniedError } from '@/lib/access'
+import { assertProjectAccess, AccessDeniedError, lacksPermission } from '@/lib/access'
 import { auditInTx } from '@/lib/audit'
 import {
   deleteObject,
@@ -56,6 +56,14 @@ export async function POST(request: Request) {
     }
     // R120 vzorec: zaklep posla je poslovno kritično dejanje → 'update'
     // (lastni monter/vodja ali upravitelj; servisni ključ ne zaklepa poslov).
+    // §10 (R135): + konkretna pravica deal.lock (ADMIN/VODJA/MONTER —
+    // podpis poteka na terenu, zato monter ohrani pravico; SKLADISCE/apikey ne).
+    if (lacksPermission(auth, 'deal.lock')) {
+      return NextResponse.json(
+        { error: 'Zaklep posla zahteva pravico deal.lock.' },
+        { status: 403 }
+      )
+    }
     assertProjectAccess(auth, project, 'update')
     if (project.dealLocked) {
       return NextResponse.json({ error: 'Deal je že zaklenjen', dealLockedAt: project.dealLockedAt }, { status: 409 })

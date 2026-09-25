@@ -97,7 +97,7 @@
 | Prisma modelov | 36 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
 | Testi (vitest) | **681** (44 datotek, vključno z globalSetup embedded PG) |
-| Varnostni smoke | 100 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
+| Varnostni smoke | 104 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
 | Jezik vmesnika | Slovenščina |
@@ -484,7 +484,7 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `bun run check` | tsc --noEmit + vitest run (en ukaz za vse) |
 | `bunx tsc --noEmit` | Tipska kontrola celotnega projekta (trenutno 0 napak) |
 | `bun run lint` | ESLint preverjanje |
-| `bun run smoke` | Varnostni smoke na zagnanem strežniku (100 preverjanj) |
+| `bun run smoke` | Varnostni smoke na zagnanem strežniku (104 preverjanj) |
 | `bun run bench:measurement` | R118 validacijski harness Merilnega SDK (12 scenarijev) |
 | `bun run db:deploy` | `prisma migrate deploy` (verzionirane migracije) |
 | `bun run db:seed` | Demo podatki |

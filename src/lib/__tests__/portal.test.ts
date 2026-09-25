@@ -140,7 +140,7 @@ describe('portal rute — upravljanje, javni dostop, dnevnik (R132 §7)', () => 
   })
 
   it('enable: kripto žeton + privzeti potek 90 dni; GET vrne življenjski cikl; audit z pravim akterjem', async () => {
-    const { user, token } = await createTestUserWithSession(`r132-portal-a-${Date.now()}`)
+    const { user, token } = await createTestUserWithSession(`r132-portal-a-${Date.now()}`, 'VODJA')
     const projectId = await makeProjectFor(user.id, 'Portal-a')
 
     const route = await import('@/app/api/portal/route')
@@ -177,7 +177,7 @@ describe('portal rute — upravljanje, javni dostop, dnevnik (R132 §7)', () => 
   })
 
   it('expiresInDays je clamped (0 → 1 dan, 100000 → 365 dni)', async () => {
-    const { user, token } = await createTestUserWithSession(`r132-portal-b-${Date.now()}`)
+    const { user, token } = await createTestUserWithSession(`r132-portal-b-${Date.now()}`, 'VODJA')
     const projectId = await makeProjectFor(user.id, 'Portal-b')
     const route = await import('@/app/api/portal/route')
 
@@ -193,7 +193,7 @@ describe('portal rute — upravljanje, javni dostop, dnevnik (R132 §7)', () => 
   })
 
   it('revoke: žeton MRTAV → javna ruta 404 z ISTIM telesom kot neznan žeton; dnevnik REVOKED', async () => {
-    const { user, token } = await createTestUserWithSession(`r132-portal-c-${Date.now()}`)
+    const { user, token } = await createTestUserWithSession(`r132-portal-c-${Date.now()}`, 'VODJA')
     const projectId = await makeProjectFor(user.id, 'Portal-c')
     const route = await import('@/app/api/portal/route')
     const publicRoute = await import('@/app/api/portal/[token]/route')
@@ -224,7 +224,7 @@ describe('portal rute — upravljanje, javni dostop, dnevnik (R132 §7)', () => 
   })
 
   it('regenerate: NOV žeton (stari mrtav), revokedAt počiščen, svež potek; javna ruta dela', async () => {
-    const { user, token } = await createTestUserWithSession(`r132-portal-d-${Date.now()}`)
+    const { user, token } = await createTestUserWithSession(`r132-portal-d-${Date.now()}`, 'VODJA')
     const projectId = await makeProjectFor(user.id, 'Portal-d')
     const route = await import('@/app/api/portal/route')
     const publicRoute = await import('@/app/api/portal/[token]/route')
@@ -270,7 +270,7 @@ describe('portal rute — upravljanje, javni dostop, dnevnik (R132 §7)', () => 
   })
 
   it('EXPIRED: pretečen potek → 404 + dnevnik; disable → 404 (DISABLED)', async () => {
-    const { user, token } = await createTestUserWithSession(`r132-portal-e-${Date.now()}`)
+    const { user, token } = await createTestUserWithSession(`r132-portal-e-${Date.now()}`, 'VODJA')
     const projectId = await makeProjectFor(user.id, 'Portal-e')
     const route = await import('@/app/api/portal/route')
     const publicRoute = await import('@/app/api/portal/[token]/route')

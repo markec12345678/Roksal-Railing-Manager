@@ -9,7 +9,8 @@
 
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { authenticate, unauthorized } from '@/lib/auth'
+import { authenticate, unauthorized, forbidden } from '@/lib/auth'
+import { lacksPermission } from '@/lib/access'
 import { auditAsync } from '@/lib/audit'
 import { defaultRailingSpec, layoutRailing, mergeSpec, perimeterOf, type Vec3 } from '@/lib/railing-layout'
 import { buildQuote, defaultPriceBook, mergePriceBook, quoteSummary } from '@/lib/quote'
@@ -18,6 +19,11 @@ import { quoteSchema } from '@/lib/validations'
 export async function POST(request: Request) {
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
+  // §10 (R135): izračun ponudbe = quotes.create (vse uporabniške vloge;
+  // API ključ ne izdeluje ponudb — pogodba MOBILE_SYNC je merjenje/foto).
+  if (lacksPermission(auth, 'quotes.create')) {
+    return forbidden('Izdelava ponudbe zahteva uporabniško pravico quotes.create.')
+  }
 
   try {
     const body = await request.json().catch(() => null)
