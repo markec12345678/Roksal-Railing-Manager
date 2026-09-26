@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -109,40 +110,55 @@ export function SafetyTab() {
   const [loading, setLoading] = useState(true)
   // R152: vremenska napaka je EKSPlicitna — brez izmišljenih varnih vrednosti.
   const [weatherError, setWeatherError] = useState<string | null>(null)
-  const [reloadKey, setReloadKey] = useState(0)
   const [ghostMode, setGhostMode] = useState(false)
   const [checklist, setChecklist] = useState<ChecklistItem[]>(defaultChecklist)
 
-  useEffect(() => {
-    let alive = true
-    async function fetchWeather() {
+  // R176 — stabilen fail-verbose loader (EN VIR napak, žičen tudi na
+  // useRefetchOnFocus): prej reloadKey + in-effect fetchWeather. Vrtiljak
+  // SAMO na prvem loadu (vzorec termini-card R170) — ob osvežitvi ob fokusu
+  // in ponovnem poskusu ostane obstoječa vsebina/poštena napaka VIDNA
+  // (nikoli utripa skeletov nad živimi podatki).
+  const unmountedRef = useRef(false)
+  useEffect(() => () => { unmountedRef.current = true }, [])
+
+  const prviLoadRef = useRef(true)
+  const loadWeather = useCallback(async () => {
+    if (prviLoadRef.current) {
+      prviLoadRef.current = false
       setLoading(true)
-      setWeatherError(null)
-      try {
-        const res = await fetch('/api/weather?lat=46.2397&lon=14.3556')
-        if (!alive) return
-        if (res.ok) {
-          const data = await res.json()
-          setWindData(data)
-        } else {
-          // Fail-closed: NI izmišljenih podatkov — ocena ni mogoča je vidna.
-          setWindData(null)
-          setWeatherError(`Vremenska storitev ni odgovorila (napaka ${res.status}).`)
-        }
-      } catch {
-        if (!alive) return
-        setWindData(null)
-        setWeatherError('Vremenskih podatkov ni mogoče pridobiti — preverite povezavo.')
-      } finally {
-        if (alive) setLoading(false)
-      }
     }
-    fetchWeather()
-    return () => { alive = false }
-  }, [reloadKey])
+    setWeatherError(null)
+    try {
+      const res = await fetch('/api/weather?lat=46.2397&lon=14.3556')
+      if (unmountedRef.current) return
+      if (res.ok) {
+        const data = await res.json()
+        setWindData(data)
+      } else {
+        // Fail-closed: NI izmišljenih podatkov — ocena ni mogoča je vidna.
+        setWindData(null)
+        setWeatherError(`Vremenska storitev ni odgovorila (napaka ${res.status}).`)
+      }
+    } catch {
+      if (unmountedRef.current) return
+      setWindData(null)
+      setWeatherError('Vremenskih podatkov ni mogoče pridobiti — preverite povezavo.')
+    } finally {
+      if (!unmountedRef.current) setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    void loadWeather()
+  }, [loadWeather])
+
+  // R176 (iz R175 kandidatov) — vrnitev v zavihek/okno → ponovno naloži vreme
+  // (ocena varnosti montaže je časovno občutljiva; zastareli podatki = lažna
+  // varnost). loadWeather je fail-verbose — hook ne požira napak.
+  useRefetchOnFocus(loadWeather)
 
   function retryWeather() {
-    setReloadKey((k) => k + 1)
+    void loadWeather()
   }
 
   function toggleChecklist(id: string) {
@@ -245,7 +261,7 @@ export function SafetyTab() {
             size="sm"
             variant="outline"
             onClick={retryWeather}
-            className="focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+            className="shrink-0 transition-colors hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
             aria-label="Ponovno poskusi pridobiti vremenske podatke"
           >
             Poskusi znova

@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -95,44 +96,62 @@ export function DocumentsTab() {
   const [previewDoc, setPreviewDoc] = useState<DocumentItem | null>(null)
   const [previewOpen, setPreviewOpen] = useState(false)
 
+  // R176 — stabilen fail-verbose loader (EN VIR napak, žičen tudi na
+  // useRefetchOnFocus): prej fetchData (nestabilna funkcija v useEffect).
+  // Ob osvežitvi ob fokusu NE resetiramo izbire projekta — dokumente osvežimo
+  // za TRENUTNO izbrani projekt; auto-izbira prvega SAMO ko izbire še ni
+  // (prvi load; dokumente za sveže izbrani projekt naloži obstoječi
+  // selectedProject useEffect — nič dvojnega fetcha).
+  const selectedProjectRef = useRef(selectedProject)
   useEffect(() => {
-    async function fetchData() {
-      try {
-        const projRes = await fetch('/api/projects')
-        if (projRes.ok) {
-          const projData = await projRes.json()
-          setProjects(projData)
-          if (projData.length > 0) {
-            const firstProjectId = projData[0].id
-            setSelectedProject(firstProjectId)
-            const docRes = await fetch(`/api/documents?projectId=${firstProjectId}`)
-            if (docRes.ok) {
-              const docData = await docRes.json()
-              setDocuments(docData)
-            } else {
-              // R151: brez tihe degradacije — API napaka je izrecna, ne demo podatki.
-              setDocuments([])
-              toast.error('Dokumentov ni mogoče naložiti (napaka strežnika)')
-            }
-          } else {
-            setDocuments([])
-          }
-        } else {
-          // R151: brez demo projekatov/dokumentov — prazen + izrecna napaka.
-          setProjects([])
-          setDocuments([])
-          toast.error('Projektov ni mogoče naložiti (napaka strežnika)')
+    selectedProjectRef.current = selectedProject
+  }, [selectedProject])
+
+  const loadAll = useCallback(async () => {
+    try {
+      const projRes = await fetch('/api/projects')
+      if (projRes.ok) {
+        const projData = await projRes.json()
+        setProjects(projData)
+        if (!selectedProjectRef.current && projData.length > 0) {
+          setSelectedProject(projData[0].id)
+          return
         }
-      } catch {
+      } else {
+        // R151: brez demo projekatov/dokumentov — prazen + izrecna napaka.
         setProjects([])
-        setDocuments([])
-        toast.error('Povezava ni uspela — podatki niso na voljo')
-      } finally {
-        setLoading(false)
+        toast.error('Projektov ni mogoče naložiti (napaka strežnika)')
       }
+      const pid = selectedProjectRef.current
+      if (pid) {
+        const docRes = await fetch(`/api/documents?projectId=${pid}`)
+        if (docRes.ok) {
+          const docData = await docRes.json()
+          setDocuments(docData)
+        } else {
+          // R151: napaka je izrecna — ne pusti zastarelih podatkov kot lažno varnost.
+          setDocuments([])
+          toast.error('Dokumentov ni mogoče naložiti (napaka strežnika)')
+        }
+      }
+    } catch {
+      setProjects([])
+      setDocuments([])
+      toast.error('Povezava ni uspela — podatki niso na voljo')
+    } finally {
+      setLoading(false)
     }
-    fetchData()
   }, [])
+
+  useEffect(() => {
+    void loadAll()
+  }, [loadAll])
+
+  // R176 (iz R175 kandidatov) — vrnitev v zavihek/okno → ponovno naloži
+  // projekte + dokumente izbranega projekta (pisarna dodaja dokumente v drugi
+  // seji; terenski pregled ostane zastarel do remonta). loadAll je
+  // fail-verbose — hook ne požira napak.
+  useRefetchOnFocus(loadAll)
 
   useEffect(() => {
     if (!selectedProject || loading) return
@@ -340,8 +359,8 @@ export function DocumentsTab() {
             <Badge variant="secondary">{documents.length}</Badge>
           </div>
         </CardHeader>
-        <CardContent className="px-4 pb-4">
-          {loading ? (
+        <CardContent className="px-4 pb-4" aria-busy={loading || undefined}>
+          {loading && documents.length === 0 ? (
             <div className="space-y-3">
               {[1, 2, 3].map((i) => (
                 <Skeleton key={i} className="h-16 w-full" />

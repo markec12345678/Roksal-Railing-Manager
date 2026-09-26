@@ -74,6 +74,7 @@ describe('R175 STIL DETAJL — vsi error-panel gumbi imajo enotno hover povratno
     ['dashboard-tab.tsx', 'Ponovno naloži projekte'],
     ['inclinometer-tab.tsx', 'Poskusi znova naložiti zgodovino nagibov'],
     ['inventory-tab.tsx', 'Ponovno naloži zalogo'],
+    ['safety-tab.tsx', 'Ponovno poskusi pridobiti vremenske podatke'],
   ] as const)('%s: gumb "%s" ima transition-colors hover:text-roksal-ink', (file, label) => {
     const src = read(file)
     expect(
