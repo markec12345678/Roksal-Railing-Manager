@@ -324,6 +324,7 @@ Sheet z 6 podzavihki:
 - SVG vetrni kompas
 - Temperaturni indikator z digitalno termometrom
 - Ghost Mode toggle
+- Politika občutljivih podatkov: [docs/PODATKI.md](docs/PODATKI.md) (§38 — inventar + zaščita + kaj se NE hrani)
 
 ---
 
@@ -487,7 +488,7 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `bun run dev` | Zažene Next.js dev server (port 3000) |
 | `bun run build` | Produkcijska build (build-prepare: generate + migrate deploy + seed) |
 | `bun run start` | Zažene produkcijski server |
-| `bun run test` | Vsi testi (vitest, 1046, embedded PG prek globalSetup) |
+| `bun run test` | Vsi testi (vitest, 1075, embedded PG prek globalSetup) |
 | `bun run check` | tsc --noEmit + vitest run (en ukaz za vse) |
 | `bunx tsc --noEmit` | Tipska kontrola celotnega projekta (trenutno 0 napak) |
 | `bun run lint` | ESLint preverjanje |
@@ -608,7 +609,7 @@ zahtevajo sejo ali servisni ključ + resource-level avtorizacijo — glej
 | `/api/audit` | GET | Revizijska sled (vodja/monter-lastni) |
 | `/api/calculator` · `/api/weather` | POST · GET | Izračuni · vetrni podatki |
 | `/api/auth` (+`demo`, `logout`, `password`, `register`) | GET/POST | Prijava/seja (scrypt + HMAC žeton) |
-| `/api/profili` · `/api/search` · `/api/surveys` · `/api/viz/*` | CRUD | Katalog, iskanje, terenski pregled, vizualizacija |
+| `/api/profili` · `/api/search` · `/api/surveys` · `/api/viz/*` | CRUD | Katalog, iskanje, terenski pregled, vizualizacija (vse z vrati na ravni projekta — R155) |
 | `/api/route.ts` | GET | Health check |
 
 ---

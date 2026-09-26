@@ -46,10 +46,12 @@ function req(path: string, token: string | null, body?: unknown, method = 'GET')
 
 const T = (day: number, hour: number) => new Date(Date.UTC(2027, 8, day, hour, 0, 0))
 
-/** Stranka + projekt (FK pogodba za schedule). */
-async function makeProject(tag: string): Promise<string> {
+/** Stranka + projekt (FK pogodba za schedule). R155: opcijski monterId — vrata na ravni vira. */
+async function makeProject(tag: string, monterId?: string): Promise<string> {
   const customer = await db.customer.create({ data: { ime: `Stranka ${tag}`, naslov: 'Test 1' } })
-  const project = await db.project.create({ data: { customerId: customer.id, nazivProjekta: `Projekt ${tag}` } })
+  const project = await db.project.create({
+    data: { customerId: customer.id, nazivProjekta: `Projekt ${tag}`, ...(monterId ? { monterId } : {}) },
+  })
   return project.id
 }
 
@@ -160,9 +162,10 @@ describe('POST/GET /api/qc', () => {
 
   it('MONTER shrani preverbo → 201 + passed + revizija QC_SUBMITTED + approvedBy', async () => {
     const stamp = `r146-post-${Date.now()}`
-    const projectId = await makeProject(stamp)
-    const scheduleId = await makeSchedule(projectId)
+    // R155: vrata na ravni vira — MONTER je član projekta (monterId).
     const { token, user } = await createTestUserWithSession(`r146-post-${Date.now()}`, 'MONTER')
+    const projectId = await makeProject(stamp, user.id)
+    const scheduleId = await makeSchedule(projectId)
 
     const res = await qcPost(req('/api/qc', token, { projectId, scheduleId, items: allChecked() }, 'POST'))
     expect(res.status).toBe(201)
@@ -181,10 +184,11 @@ describe('POST/GET /api/qc', () => {
 
   it('neveljavna oblika → 400; tuj schedule → 400; neznani projekt → 404', async () => {
     const stamp = `r146-bad-${Date.now()}`
-    const projectId = await makeProject(stamp)
+    // R155: vrata na ravni vira — MONTER je član projekta (monterId).
+    const { token, user } = await createTestUserWithSession(`r146-bad-${Date.now()}`, 'MONTER')
+    const projectId = await makeProject(stamp, user.id)
     const otherProject = await makeProject(`r146-drugi-${Date.now()}`)
     const foreignSchedule = await makeSchedule(otherProject)
-    const { token } = await createTestUserWithSession(`r146-bad-${Date.now()}`, 'MONTER')
 
     const badItems = await qcPost(req('/api/qc', token, { projectId, items: [{ key: 'dimenzije', checked: true }] }, 'POST'))
     expect(badItems.status).toBe(400)
@@ -201,8 +205,9 @@ describe('POST/GET /api/qc', () => {
 
   it('GET vrne najnovejšo preverbo z items (determinističen red DESC)', async () => {
     const stamp = `r146-get-${Date.now()}`
-    const projectId = await makeProject(stamp)
-    const { token } = await createTestUserWithSession(`r146-get-${Date.now()}`, 'MONTER')
+    // R155: vrata na ravni vira — MONTER je član projekta (monterId).
+    const { token, user } = await createTestUserWithSession(`r146-get-${Date.now()}`, 'MONTER')
+    const projectId = await makeProject(stamp, user.id)
 
     const empty = await qcGet(req(`/api/qc?projectId=${projectId}`, token))
     expect((await empty.json()) as { qualityControl: null }).toEqual({ qualityControl: null })

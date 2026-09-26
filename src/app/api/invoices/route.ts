@@ -8,7 +8,7 @@ import { db } from '@/lib/db'
 import { z } from 'zod'
 import { authenticate, unauthorized, forbidden } from '@/lib/auth'
 import { correlationFromRequest, logWithCorrelation } from '@/lib/correlation'
-import { hasPermission, lacksPermission } from '@/lib/access'
+import { hasPermission, lacksPermission, assertProjectAccess, AccessDeniedError } from '@/lib/access'
 import type { SessionPayload } from '@/lib/session'
 import { allocateDocumentNumber, createWithNumber } from '@/lib/numbering'
 import { auditInTx, audit } from '@/lib/audit'
@@ -114,7 +114,26 @@ export async function GET(request: Request) {
     // Širina branja: pisarna (users.read: ADMIN/VODJA) ali skladišče
     // (inventory.write) vidi VSE račune; ostali (monter) svoje projekte.
     const seesAll = hasPermission(auth, 'users.read') || hasPermission(auth, 'inventory.write')
-    if (!seesAll && !projectId) {
+    if (!seesAll) {
+      // R155 (P1 bug fix — IDOR zaključek): `?projectId=` je prej OBŠEL
+      // lastniška vrata — MONTER je s poljubnim tujim projectId prebral
+      // račune projekta, ki ga sploh ni videl (filter se je uveljavil SAMO
+      // brez parametra). Zdaj isti 404/403 kot sestrske rute: neznani
+      // projekt → 404, tuj projekt → 403; svoj projekt → filtrirano branje.
+      if (projectId) {
+        const project = await db.project.findUnique({ where: { id: projectId } })
+        assertProjectAccess(auth, project, 'read')
+        const invoices = await db.invoice.findMany({
+          where: { projectId },
+          include: {
+            project: {
+              select: { nazivProjekta: true, clientToken: true, customer: { select: { ime: true, naslov: true } } },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+        })
+        return NextResponse.json(invoices)
+      }
       const uid = auth.session.sub
       const ownProjects = await db.project.findMany({
         where: { OR: [{ monterId: uid }, { vodjaId: uid }] },
@@ -143,6 +162,9 @@ export async function GET(request: Request) {
     })
     return NextResponse.json(invoices)
   } catch (error) {
+    if (error instanceof AccessDeniedError) {
+      return NextResponse.json({ error: error.message }, { status: error.status })
+    }
     logWithCorrelation('invoices.get', correlationId, error)
     return NextResponse.json({ error: 'Napaka pri branju računov', correlationId }, { status: 500 })
   }

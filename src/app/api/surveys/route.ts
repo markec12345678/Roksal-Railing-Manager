@@ -1,10 +1,20 @@
 // Roksal Field - API: Terenski pregled (site survey) — zapisnik monterja pred montažo (runda Q)
 // En zapisnik na projekt (upsert): tip objekta, pritrditev, podlaga, ovire, dostop,
 // foto kontrolni seznam → UI iz tega generira pametni seznam "s seboj prinesti".
+// R155 (P1 bug fix — zaključek IDOR pregleda): do zdaj je ruta preverila SAMO
+// prijavo — vsak avtenticiran uporabnik je lahko BRAL terenski pregled TUJEGA
+// projekta in GA PREGAL (upsert) brez da bi projekt sploh videl. Zdaj isti
+// vrata kot sestrske rute (slopes R154, sketches R120, measurements):
+//   • GET  → assertProjectAccess(auth, project, 'read')
+//   • POST → assertProjectAccess(auth, project, 'update') — upsert je mutacija
+//     projektne podatkovne zbirke (isti prag kot dodajanje meritve).
+// Neznani projectId → 404 (prej tihi Prisma FK P2003 → 500), tuj projekt → 403.
+// Nič ni zapisano, preden vrata prestanejo (fail-closed red).
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { z } from 'zod'
 import { authenticate, unauthorized } from '@/lib/auth'
+import { assertProjectAccess, AccessDeniedError } from '@/lib/access'
 
 const TIP_OBJEKTA = ['balkon', 'stopnice', 'terasa', 'loggia', 'friz', 'prehod'] as const
 const OBLIKA = ['ravno', 'L', 'U', 'krog'] as const
@@ -41,9 +51,15 @@ export async function GET(request: Request) {
     if (!projectId) {
       return NextResponse.json({ error: 'projectId je obvezen' }, { status: 400 })
     }
+    // R155: dostop do terenskega pregleda = dostop do projekta (404 neznana, 403 tuja).
+    const project = await db.project.findUnique({ where: { id: projectId } })
+    assertProjectAccess(auth, project, 'read')
     const survey = await db.siteSurvey.findUnique({ where: { projectId } })
     return NextResponse.json(survey)
   } catch (error) {
+    if (error instanceof AccessDeniedError) {
+      return NextResponse.json({ error: error.message }, { status: error.status })
+    }
     console.error('Survey GET error:', error)
     return NextResponse.json({ error: 'Napaka pri branju terenskega pregleda' }, { status: 500 })
   }
@@ -57,6 +73,11 @@ export async function POST(request: Request) {
     const validated = surveySchema.parse(body)
     const { projectId, ...data } = validated
 
+    // R155: upsert pregleda = mutacija projekta (isti prag kot meritve POST);
+    // vrata PRED zapisom — po 403 je baza NESPREMENJENA.
+    const project = await db.project.findUnique({ where: { id: projectId } })
+    assertProjectAccess(auth, project, 'update')
+
     const survey = await db.siteSurvey.upsert({
       where: { projectId },
       create: { projectId, ...data },
@@ -66,6 +87,9 @@ export async function POST(request: Request) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'Neveljavni podatki', details: error.issues }, { status: 400 })
+    }
+    if (error instanceof AccessDeniedError) {
+      return NextResponse.json({ error: error.message }, { status: error.status })
     }
     console.error('Survey POST error:', error)
     return NextResponse.json({ error: 'Napaka pri shranjevanju terenskega pregleda' }, { status: 500 })

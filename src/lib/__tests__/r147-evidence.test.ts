@@ -47,10 +47,12 @@ function req(path: string, token: string | null, body?: unknown, method = 'GET')
 
 const T = (day: number, hour: number) => new Date(Date.UTC(2027, 8, day, hour, 0, 0))
 
-/** Stranka + projekt (FK pogodba). */
-async function makeProject(tag: string): Promise<string> {
+/** Stranka + projekt (FK pogodba). R155: opcijski monterId — vrata na ravni vira. */
+async function makeProject(tag: string, monterId?: string): Promise<string> {
   const customer = await db.customer.create({ data: { ime: `Stranka ${tag}`, naslov: 'Test 1' } })
-  const project = await db.project.create({ data: { customerId: customer.id, nazivProjekta: `Projekt ${tag}` } })
+  const project = await db.project.create({
+    data: { customerId: customer.id, nazivProjekta: `Projekt ${tag}`, ...(monterId ? { monterId } : {}) },
+  })
   return project.id
 }
 
@@ -218,9 +220,10 @@ describe('POST /api/evidence', () => {
 
   it('MONTER shrani dokazilo → 201 + revizija INSTALLATION_EVIDENCE_SUBMITTED + createdById', async () => {
     const stamp = `r147-post-${Date.now()}`
-    const projectId = await makeProject(stamp)
-    const scheduleId = await makeSchedule(projectId)
+    // R155: vrata na ravni vira — MONTER je član projekta (monterId).
     const { token, user } = await createTestUserWithSession(`r147-post-${Date.now()}`, 'MONTER')
+    const projectId = await makeProject(stamp, user.id)
+    const scheduleId = await makeSchedule(projectId)
 
     const res = await evidencePost(req('/api/evidence', token, VALID_BODY(projectId, { scheduleId }), 'POST'))
     expect(res.status).toBe(201)
@@ -239,8 +242,9 @@ describe('POST /api/evidence', () => {
 
   it('GPS z soglasjem → koordinate + gpsConsentAt (strežnik); brez soglasja s koordinatami → 400', async () => {
     const stamp = `r147-gps-${Date.now()}`
-    const projectId = await makeProject(stamp)
-    const { token } = await createTestUserWithSession(`r147-gps-${Date.now()}`, 'MONTER')
+    // R155: vrata na ravni vira — MONTER je član projekta (monterId).
+    const { token, user } = await createTestUserWithSession(`r147-gps-${Date.now()}`, 'MONTER')
+    const projectId = await makeProject(stamp, user.id)
 
     const ok = await evidencePost(req('/api/evidence', token, VALID_BODY(projectId, {
       gps: { gpsConsent: true, gpsLat: 46.1512, gpsLng: 14.9935 },
@@ -260,9 +264,10 @@ describe('POST /api/evidence', () => {
 
   it('fotka: napačna kategorija → 400; tuja → 400; neznana → 400; prava kategorija → 201', async () => {
     const stamp = `r147-foto-${Date.now()}`
-    const projectId = await makeProject(stamp)
     const otherProject = await makeProject(`r147-drugi-${Date.now()}`)
-    const { token } = await createTestUserWithSession(`r147-foto-${Date.now()}`, 'MONTER')
+    // R155: vrata na ravni vira — MONTER je član projekta (monterId).
+    const { token, user } = await createTestUserWithSession(`r147-foto-${Date.now()}`, 'MONTER')
+    const projectId = await makeProject(stamp, user.id)
     const predPhoto = await makePhoto(projectId, 'PRED')
     const poPhoto = await makePhoto(projectId, 'PO')
     const foreignPhoto = await makePhoto(otherProject, 'PO')
@@ -282,11 +287,12 @@ describe('POST /api/evidence', () => {
 
   it('neveljaven checklist → 400; tuja meritev → 400; prazna lokacija → 400; derivacija projectId iz scheduleId', async () => {
     const stamp = `r147-val-${Date.now()}`
-    const projectId = await makeProject(stamp)
     const otherProject = await makeProject(`r147-drugi-${Date.now()}`)
+    // R155: vrata na ravni vira — MONTER je član projekta (monterId).
+    const { token, user } = await createTestUserWithSession(`r147-val-${Date.now()}`, 'MONTER')
+    const projectId = await makeProject(stamp, user.id)
     const scheduleId = await makeSchedule(projectId)
     const foreignSchedule = await makeSchedule(otherProject)
-    const { token } = await createTestUserWithSession(`r147-val-${Date.now()}`, 'MONTER')
     const measurement = await db.measurement.create({
       data: { projectId, dolzinaMm: 1000, visinaMm: 2000 },
     })
@@ -329,8 +335,9 @@ describe('GET /api/evidence', () => {
 
   it('lista DESC z izpeljanimi zastavicami; poraba materiala izvedena iz StockLedger', async () => {
     const stamp = `r147-list-${Date.now()}`
-    const projectId = await makeProject(stamp)
-    const { token } = await createTestUserWithSession(`r147-list-${Date.now()}`, 'MONTER')
+    // R155: vrata na ravni vira — MONTER je član projekta (monterId).
+    const { token, user } = await createTestUserWithSession(`r147-list-${Date.now()}`, 'MONTER')
+    const projectId = await makeProject(stamp, user.id)
     const predPhoto = await makePhoto(projectId, 'PRED')
     const poPhoto = await makePhoto(projectId, 'PO')
 
@@ -377,8 +384,9 @@ describe('GET /api/evidence', () => {
 
   it('strop limit: limit=1 → 1 vrstica + total pravi', async () => {
     const stamp = `r147-cap-${Date.now()}`
-    const projectId = await makeProject(stamp)
-    const { token } = await createTestUserWithSession(`r147-cap-${Date.now()}`, 'MONTER')
+    // R155: vrata na ravni vira — MONTER je član projekta (monterId).
+    const { token, user } = await createTestUserWithSession(`r147-cap-${Date.now()}`, 'MONTER')
+    const projectId = await makeProject(stamp, user.id)
     await evidencePost(req('/api/evidence', token, VALID_BODY(projectId), 'POST'))
     await evidencePost(req('/api/evidence', token, { scheduleId: await makeSchedule(projectId), lokacija: 'B', checklist: allChecked(), defects: [] }, 'POST'))
     const res = await evidenceGet(req(`/api/evidence?projectId=${projectId}&limit=1`, token))
@@ -403,8 +411,9 @@ describe('PATCH /api/evidence', () => {
 
   it('predaja brez PRED/PO fotk → 409; NIČ spremenjeno (vrata PRED mutacijo)', async () => {
     const stamp = `r147-gate-${Date.now()}`
-    const projectId = await makeProject(stamp)
-    const { token } = await createTestUserWithSession(`r147-gate-${Date.now()}`, 'MONTER')
+    // R155: vrata na ravni vira — MONTER je član projekta (monterId).
+    const { token, user } = await createTestUserWithSession(`r147-gate-${Date.now()}`, 'MONTER')
+    const projectId = await makeProject(stamp, user.id)
     const created = await evidencePost(req('/api/evidence', token, VALID_BODY(projectId), 'POST'))
     const { id } = (await created.json()) as { id: string }
 
@@ -418,8 +427,9 @@ describe('PATCH /api/evidence', () => {
 
   it('prazno handoverName → 400; veljavna predaja (s fotkami) → handoverAt + revizija _HANDOVER', async () => {
     const stamp = `r147-hand-${Date.now()}`
-    const projectId = await makeProject(stamp)
-    const { token } = await createTestUserWithSession(`r147-hand-${Date.now()}`, 'MONTER')
+    // R155: vrata na ravni vira — MONTER je član projekta (monterId).
+    const { token, user } = await createTestUserWithSession(`r147-hand-${Date.now()}`, 'MONTER')
+    const projectId = await makeProject(stamp, user.id)
     const predPhoto = await makePhoto(projectId, 'PRED')
     const poPhoto = await makePhoto(projectId, 'PO')
     const created = await evidencePost(req('/api/evidence', token, VALID_BODY(projectId, {
@@ -452,8 +462,9 @@ describe('PATCH /api/evidence', () => {
 
   it('zaklenjeno dokazilo → 409 za VSAK nadaljnji PATCH (tudi brez sprememb)', async () => {
     const stamp = `r147-lock-${Date.now()}`
-    const projectId = await makeProject(stamp)
-    const { token } = await createTestUserWithSession(`r147-lock-${Date.now()}`, 'MONTER')
+    // R155: vrata na ravni vira — MONTER je član projekta (monterId).
+    const { token, user } = await createTestUserWithSession(`r147-lock-${Date.now()}`, 'MONTER')
+    const projectId = await makeProject(stamp, user.id)
     const predPhoto = await makePhoto(projectId, 'PRED')
     const poPhoto = await makePhoto(projectId, 'PO')
     const created = await evidencePost(req('/api/evidence', token, VALID_BODY(projectId, {
@@ -470,8 +481,9 @@ describe('PATCH /api/evidence', () => {
 
   it('navadna posodobitev (checklist/napake/GPS) → 200 + revizija INSTALLATION_EVIDENCE_UPDATED; neveljaven checklist → 400', async () => {
     const stamp = `r147-up-${Date.now()}`
-    const projectId = await makeProject(stamp)
-    const { token } = await createTestUserWithSession(`r147-up-${Date.now()}`, 'MONTER')
+    // R155: vrata na ravni vira — MONTER je član projekta (monterId).
+    const { token, user } = await createTestUserWithSession(`r147-up-${Date.now()}`, 'MONTER')
+    const projectId = await makeProject(stamp, user.id)
     const created = await evidencePost(req('/api/evidence', token, VALID_BODY(projectId), 'POST'))
     const { id } = (await created.json()) as { id: string }
 

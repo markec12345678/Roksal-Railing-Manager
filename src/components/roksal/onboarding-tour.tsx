@@ -138,8 +138,13 @@ export function OnboardingTour({ onClose, onNavigate }: { onClose: () => void; o
               </Badge>
               <span className="text-[10px] text-muted-foreground">Onboarding</span>
             </div>
-            <button type="button" onClick={handleSkip} className="text-muted-foreground hover:text-foreground p-1">
-              <X className="h-4 w-4" />
+            <button
+              type="button"
+              onClick={handleSkip}
+              aria-label="Zapri uvodni vodič"
+              className="rounded-md p-1 text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-roksal-amber focus-visible:ring-offset-2"
+            >
+              <X className="h-4 w-4" aria-hidden="true" />
             </button>
           </div>
 

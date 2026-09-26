@@ -241,6 +241,9 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
   const [saving, setSaving] = useState(false)
   const [generating, setGenerating] = useState(false)
   const [tools, setTools] = useState<Record<string, boolean>>({})
+  // R155: fail-verbose — 403/404 pri nalaganju je VIDEN (prej tiho prazen
+  // zapisnik = utvara "ni podatkov").
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   const set = useCallback(<K extends keyof SurveyData>(key: K, value: SurveyData[K]) => {
     setData((prev) => ({ ...prev, [key]: value }))
@@ -251,8 +254,20 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
     if (!projectId) return
     let alive = true
     setLoading(true)
+    setLoadError(null)
     fetch(`/api/surveys?projectId=${encodeURIComponent(projectId)}`)
-      .then((r) => (r.ok ? r.json() : null))
+      .then(async (r) => {
+        // R155: neuspeh (403 tuj projekt / 404 neznan) → vidna napaka z razlogom.
+        if (!r.ok) {
+          const reason = await r.json().catch(() => null)
+          throw new Error(
+            reason && typeof reason.error === 'string'
+              ? reason.error
+              : `Nalaganje ni uspelo (HTTP ${r.status}).`,
+          )
+        }
+        return r.json()
+      })
       .then((s) => {
         if (!alive || !s) return
         setData({
@@ -274,7 +289,11 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
           zakljuceno: !!s.zakljuceno,
         })
       })
-      .catch(() => { /* zapisnik ni obvezen — tiho */ })
+      .catch((err: unknown) => {
+        if (alive) {
+          setLoadError(err instanceof Error ? err.message : 'Nalaganje zapisnika ni uspelo.')
+        }
+      })
       .finally(() => { if (alive) setLoading(false) })
     return () => { alive = false }
   }, [projectId])
@@ -336,14 +355,28 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
-      if (!res.ok) throw new Error(await res.text())
+      // R155: fail-verbose — razlog iz odgovora (403 dostop, 400 validacija).
+      if (!res.ok) {
+        const reason = await res.json().catch(() => null)
+        throw new Error(
+          reason && typeof reason.error === 'string'
+            ? reason.error
+            : `Shranjevanje ni uspelo (HTTP ${res.status}).`,
+        )
+      }
       setData((prev) => ({ ...prev, zakljuceno: finish || prev.zakljuceno }))
       toast({
         title: finish ? 'Pregled zaključen ✓' : 'Zapisnik shranjen',
         description: finish ? 'Terenski pregled je zaključen — vidi ga vodja.' : 'Podatki o objektu so shranjeni.',
       })
-    } catch {
-      toast({ title: 'Napaka pri shranjevanju', description: 'Preveri povezavo in poskusi znova.', variant: 'destructive' })
+    } catch (err) {
+      toast({
+        title: 'Napaka pri shranjevanju',
+        description: err instanceof Error && err.message !== 'Failed to fetch'
+          ? err.message
+          : 'Preveri povezavo in poskusi znova.',
+        variant: 'destructive',
+      })
     } finally {
       setSaving(false)
     }
@@ -468,6 +501,19 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_360px]">
       {/* ── LEVO: obrazec ─────────────────────────────────────────── */}
       <div className="space-y-4">
+        {/* R155: vidna napaka nalaganja (fail-verbose; vzorec R152/R154). */}
+        {loadError && (
+          <div
+            role="alert"
+            className="flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 p-3"
+          >
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" aria-hidden="true" />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-amber-900">Zapisnika ni bilo mogoče naložiti</p>
+              <p className="mt-0.5 break-words text-xs text-amber-800">{loadError}</p>
+            </div>
+          </div>
+        )}
         {/* Status */}
         <Card className="overflow-hidden border-roksal-navy/15">
           <CardContent className="p-4">

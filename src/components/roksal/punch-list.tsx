@@ -58,6 +58,7 @@ export function PunchList({ project }: { project: Project | null }) {
   const [items, setItems] = useState<PunchItem[]>([])
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [newTitle, setNewTitle] = useState('')
   const [generating, setGenerating] = useState(false)
   const { toast } = useToast()
@@ -66,11 +67,25 @@ export function PunchList({ project }: { project: Project | null }) {
   const fetchItems = useCallback(async (projectId: string) => {
     projectIdRef.current = projectId
     setLoading(true)
+    setLoadError(null)
     try {
       const res = await fetch(`/api/punch?projectId=${projectId}`)
-      if (res.ok) {
-        setItems((await res.json()) as PunchItem[])
+      // R155: neuspeh je VIDEN (prej je tiho padel na prazen seznam = utvara
+      // "ni točk"; 403 tuj projekt / 404 neznan zdaj od strežnika z razlogom).
+      if (!res.ok) {
+        const reason = await res.json().catch(() => null)
+        setLoadError(
+          reason && typeof reason.error === 'string'
+            ? reason.error
+            : `Nalaganje zapisnika ni uspelo (HTTP ${res.status}).`,
+        )
+        setItems([])
+        return
       }
+      setItems((await res.json()) as PunchItem[])
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : 'Nalaganje zapisnika ni uspelo.')
+      setItems([])
     } finally {
       setLoading(false)
     }
@@ -99,13 +114,25 @@ export function PunchList({ project }: { project: Project | null }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ projectId: project.id, naslov, opomba: opomba ?? null }),
       })
-      if (!res.ok) throw new Error('shranjevanje ni uspelo')
+      // R155: fail-verbose — razlog iz odgovora (403 dostop, 400 validacija).
+      if (!res.ok) {
+        const reason = await res.json().catch(() => null)
+        throw new Error(
+          reason && typeof reason.error === 'string'
+            ? reason.error
+            : `Shranjevanje ni uspelo (HTTP ${res.status}).`,
+        )
+      }
       const created = (await res.json()) as PunchItem
       setItems((prev) => [...prev, created])
       setNewTitle('')
       toast({ title: 'Točka dodana' })
-    } catch {
-      toast({ title: 'Napaka', description: 'Točke ni bilo mogoče dodati.', variant: 'destructive' })
+    } catch (err) {
+      toast({
+        title: 'Napaka',
+        description: err instanceof Error ? err.message : 'Točke ni bilo mogoče dodati.',
+        variant: 'destructive',
+      })
     } finally {
       setSaving(false)
     }
@@ -116,18 +143,50 @@ export function PunchList({ project }: { project: Project | null }) {
     setSaving(true)
     try {
       const created: PunchItem[] = []
+      let failed = 0
+      let firstError: string | null = null
       for (const tocka of STANDARDNE_TOCKE) {
         const res = await fetch('/api/punch', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ projectId: project.id, naslov: tocka.naslov, opomba: tocka.opomba }),
         })
-        if (res.ok) created.push((await res.json()) as PunchItem)
+        // R155: iskren povzetek — nič tiho preskočenih točk.
+        if (res.ok) {
+          created.push((await res.json()) as PunchItem)
+        } else {
+          failed += 1
+          if (!firstError) {
+            const reason = await res.json().catch(() => null)
+            firstError =
+              reason && typeof reason.error === 'string'
+                ? reason.error
+                : `HTTP ${res.status}`
+          }
+        }
       }
       setItems((prev) => [...prev, ...created])
-      toast({ title: `${created.length} standardnih točk dodanih` })
-    } catch {
-      toast({ title: 'Napaka', description: 'Standardnih točk ni bilo mogoče dodati.', variant: 'destructive' })
+      if (failed === 0) {
+        toast({ title: `${created.length} standardnih točk dodanih` })
+      } else if (created.length > 0) {
+        toast({
+          title: `Delno: ${created.length} dodanih, ${failed} ni uspelo`,
+          description: firstError ?? undefined,
+          variant: 'destructive',
+        })
+      } else {
+        toast({
+          title: 'Napaka',
+          description: firstError ?? 'Standardnih točk ni bilo mogoče dodati.',
+          variant: 'destructive',
+        })
+      }
+    } catch (err) {
+      toast({
+        title: 'Napaka',
+        description: err instanceof Error ? err.message : 'Standardnih točk ni bilo mogoče dodati.',
+        variant: 'destructive',
+      })
     } finally {
       setSaving(false)
     }
@@ -142,10 +201,19 @@ export function PunchList({ project }: { project: Project | null }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: item.id, status: next }),
       })
-      if (!res.ok) throw new Error()
-    } catch {
+      if (!res.ok) {
+        const reason = await res.json().catch(() => null)
+        throw new Error(reason && typeof reason.error === 'string' ? reason.error : `HTTP ${res.status}`)
+      }
+    } catch (err) {
       setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, status: item.status } : i)))
-      toast({ title: 'Napaka', description: 'Statusa ni bilo mogoče shraniti.', variant: 'destructive' })
+      toast({
+        title: 'Napaka',
+        description: err instanceof Error && err.message !== 'Failed to fetch'
+          ? `Statusa ni bilo mogoče shraniti — ${err.message}`
+          : 'Statusa ni bilo mogoče shraniti.',
+        variant: 'destructive',
+      })
     }
   }
 
@@ -153,10 +221,19 @@ export function PunchList({ project }: { project: Project | null }) {
     setItems((prev) => prev.filter((i) => i.id !== item.id))
     try {
       const res = await fetch(`/api/punch?id=${item.id}`, { method: 'DELETE' })
-      if (!res.ok) throw new Error()
-    } catch {
+      if (!res.ok) {
+        const reason = await res.json().catch(() => null)
+        throw new Error(reason && typeof reason.error === 'string' ? reason.error : `HTTP ${res.status}`)
+      }
+    } catch (err) {
       setItems((prev) => [...prev, item].sort((a, b) => a.createdAt.localeCompare(b.createdAt)))
-      toast({ title: 'Napaka', description: 'Točke ni bilo mogoče izbrisati.', variant: 'destructive' })
+      toast({
+        title: 'Napaka',
+        description: err instanceof Error && err.message !== 'Failed to fetch'
+          ? `Točke ni bilo mogoče izbrisati — ${err.message}`
+          : 'Točke ni bilo mogoče izbrisati.',
+        variant: 'destructive',
+      })
     }
   }
 
@@ -273,6 +350,31 @@ export function PunchList({ project }: { project: Project | null }) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
+        {/* R155: vidna napaka nalaganja (fail-verbose; vzorec R152/R154). */}
+        {loadError && !loading && (
+          <div
+            role="alert"
+            className="flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 p-3"
+          >
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" aria-hidden="true" />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-amber-900">Zapisnika ni bilo mogoče naložiti</p>
+              <p className="mt-0.5 break-words text-xs text-amber-800">{loadError}</p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 shrink-0 border-amber-400 text-amber-900 hover:bg-amber-100"
+              onClick={() => {
+                if (project?.id) void fetchItems(project.id)
+              }}
+              aria-label="Poskusi znova naložiti zapisnik"
+            >
+              Poskusi znova
+            </Button>
+          </div>
+        )}
         {loading ? (
           <div className="flex items-center justify-center py-6 text-sm text-muted-foreground">
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -290,7 +392,7 @@ export function PunchList({ project }: { project: Project | null }) {
           <>
             <div className="space-y-1.5">
               <Progress value={progress} className="h-2" />
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs tabular-nums text-muted-foreground">
                 {doneCount} rešenih · {issueCount} napak · {progress} %
               </p>
             </div>
@@ -339,9 +441,9 @@ export function PunchList({ project }: { project: Project | null }) {
                     type="button"
                     onClick={() => void removeItem(item)}
                     aria-label={`Izbriši: ${item.naslov}`}
-                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-stone-400 transition-colors hover:bg-red-50 hover:text-red-500"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-stone-400 outline-none transition-colors hover:bg-red-50 hover:text-red-500 focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-4 w-4" aria-hidden="true" />
                   </button>
                 </li>
               ))}
@@ -358,6 +460,8 @@ export function PunchList({ project }: { project: Project | null }) {
               if (e.key === 'Enter' && newTitle.trim()) void addItem(newTitle.trim())
             }}
             placeholder="Nova točka kontrole…"
+            aria-label="Nova točka kontrole"
+            maxLength={200}
             className="h-10"
           />
           <Button

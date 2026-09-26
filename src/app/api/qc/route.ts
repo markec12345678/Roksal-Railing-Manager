@@ -8,11 +8,14 @@
 //       defectsCount so IZRAČUNANI (ne zaupamo klientu). Revizija QC_SUBMITTED
 //       ATOMSKO s zapisom (§19). Odobritelj = seja (approvedBy/approvedAt §27).
 //
-// Pravice: branje vsaka živa seja; zapis MONTER+ (terensko delo, kot meritve).
+// Pravice: branje član projekta (+ skladišče za material kontekst, isti prag
+// kot meritve); zapis MONTER+ na projektu (terensko delo) — R155 vrata
+// assertProjectAccess (prej je bila samo prijava — BOLA, popravljeno).
 // Fail-closed vrata ZAKLJUCENO so v PATCH /api/schedules (override tam).
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { authenticate, unauthorized } from '@/lib/auth'
+import { assertProjectAccess, AccessDeniedError } from '@/lib/access'
 import { correlationFromRequest, logWithCorrelation } from '@/lib/correlation'
 import {
   QC_TEMPLATE_VERSION,
@@ -32,6 +35,9 @@ export async function GET(request: Request) {
     if (!projectId) {
       return NextResponse.json({ error: 'projectId je obvezen' }, { status: 400 })
     }
+    // R155: dostop do preverbe = dostop do projekta (404 neznana, 403 tuja).
+    const project = await db.project.findUnique({ where: { id: projectId } })
+    assertProjectAccess(auth, project, 'read')
     const latest = await db.qualityControl.findFirst({
       where: { projectId },
       orderBy: [{ approvedAt: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }],
@@ -64,6 +70,9 @@ export async function GET(request: Request) {
       },
     })
   } catch (error) {
+    if (error instanceof AccessDeniedError) {
+      return NextResponse.json({ error: error.message }, { status: error.status })
+    }
     logWithCorrelation('qc.get', correlationId, error)
     return NextResponse.json(
       { error: 'Napaka pri branju preverbe kakovosti', correlationId },
@@ -95,6 +104,13 @@ export async function POST(request: Request) {
     if (!projectId) {
       return NextResponse.json({ error: 'projectId (ALI scheduleId) je obvezen' }, { status: 400 })
     }
+    // R155: zapis preverbe = mutacija projekta (isti prag kot meritve POST);
+    // vrata PRED transakcijo — po 403 je baza NESPREMENJENA.
+    const gateProject = await db.project.findUnique({
+      where: { id: projectId },
+      select: { id: true, monterId: true, vodjaId: true, dealLocked: true },
+    })
+    assertProjectAccess(auth, gateProject, 'update')
     if (!body || !('items' in body)) {
       return NextResponse.json({ error: 'items so obvezni' }, { status: 400 })
     }
@@ -177,6 +193,9 @@ export async function POST(request: Request) {
       { status: 201 },
     )
   } catch (error) {
+    if (error instanceof AccessDeniedError) {
+      return NextResponse.json({ error: error.message }, { status: error.status })
+    }
     logWithCorrelation('qc.post', correlationId, error)
     return NextResponse.json(
       { error: 'Napaka pri shranjevanju preverbe kakovosti', correlationId },

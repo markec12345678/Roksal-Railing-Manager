@@ -16,11 +16,14 @@
 //       Potrjena predaja ZAKLENE dokazilo (locked → nadaljnji PATCH 409).
 //       Revizija INSTALLATION_EVIDENCE_UPDATED / _HANDOVER ATOMSKO.
 //
-// Pravice: branje vsaka živa seja; zapis živa seja (terensko delo, vzorec
-// QC R146). Fail-closed: GPS brez izrecnega dovoljenja → 400 (ne tiho).
+// Pravice (R155 vrata assertProjectAccess — prej BOLA, samo prijava):
+// branje član projekta (+ skladišče za material kontekst, isti prag kot
+// meritve); zapis MONTER+ na projektu. Fail-closed: GPS brez izrecnega
+// dovoljenja → 400 (ne tiho).
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { authenticate, unauthorized } from '@/lib/auth'
+import { assertProjectAccess, AccessDeniedError } from '@/lib/access'
 import { correlationFromRequest, logWithCorrelation } from '@/lib/correlation'
 import {
   IEV_TEMPLATE_VERSION,
@@ -71,10 +74,10 @@ export async function GET(request: Request) {
     const offset = Number.isFinite(offsetRaw) && offsetRaw > 0 ? Math.min(offsetRaw, MAX_OFFSET) : 0
     const now = new Date()
 
-    const project = await db.project.findUnique({ where: { id: projectId }, select: { id: true } })
-    if (!project) {
-      return NextResponse.json({ error: 'Projekt ne obstaja' }, { status: 404 })
-    }
+    // R155 (IDOR zaključek): dostop do dokazil = dostop do projekta
+    // (404 neznana, 403 tuja) — prej samo 404 preverba, brez lastniških vrat.
+    const project = await db.project.findUnique({ where: { id: projectId } })
+    assertProjectAccess(auth, project, 'read')
 
     const [rows, total, ledger] = await Promise.all([
       db.installationEvidence.findMany({
@@ -171,6 +174,9 @@ export async function GET(request: Request) {
       materialConsumption,
     })
   } catch (error) {
+    if (error instanceof AccessDeniedError) {
+      return NextResponse.json({ error: error.message }, { status: error.status })
+    }
     logWithCorrelation('evidence.get', correlationId, error)
     return NextResponse.json(
       { error: 'Napaka pri branju montažnih dokazil', correlationId },
@@ -201,6 +207,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'projectId (ALI scheduleId) je obvezen' }, { status: 400 })
     }
     if (!body) return NextResponse.json({ error: 'Manjka telo zahteve' }, { status: 400 })
+
+    // R155 (IDOR zaključek): zapis dokazila = mutacija projekta (isti prag kot
+    // meritve POST); vrata PRED transakcijo — po 403 je baza NESPREMENJENA.
+    const gateProject = await db.project.findUnique({ where: { id: projectId } })
+    assertProjectAccess(auth, gateProject, 'update')
 
     const loc = validateIEVLocation(body.lokacija)
     if ('error' in loc) return NextResponse.json({ error: loc.error }, { status: 400 })
@@ -321,6 +332,9 @@ export async function POST(request: Request) {
       { status: 201 },
     )
   } catch (error) {
+    if (error instanceof AccessDeniedError) {
+      return NextResponse.json({ error: error.message }, { status: error.status })
+    }
     logWithCorrelation('evidence.post', correlationId, error)
     return NextResponse.json(
       { error: 'Napaka pri shranjevanju montažnega dokazila', correlationId },
@@ -343,6 +357,10 @@ export async function PATCH(request: Request) {
       select: { id: true, projectId: true, handoverAt: true, beforePhotoId: true, afterPhotoId: true },
     })
     if (!existing) return NextResponse.json({ error: 'Dokazilo ne obstaja' }, { status: 404 })
+    // R155 (IDOR zaključek): sprememba dokazila = mutacija njegovega projekta
+    // (404 neznana, 403 tuja; deal-lock zavre prek 'update' vrata).
+    const gateProject = await db.project.findUnique({ where: { id: existing.projectId } })
+    assertProjectAccess(auth, gateProject, 'update')
     // Zaklenjeno = potrjena predaja (deterministična funkcija zapisa).
     if (existing.handoverAt !== null) {
       return NextResponse.json(
@@ -488,6 +506,9 @@ export async function PATCH(request: Request) {
 
     return NextResponse.json({ id: outcome.updated.id, handoverAt: outcome.updated.handoverAt?.toISOString() ?? null })
   } catch (error) {
+    if (error instanceof AccessDeniedError) {
+      return NextResponse.json({ error: error.message }, { status: error.status })
+    }
     logWithCorrelation('evidence.patch', correlationId, error)
     return NextResponse.json(
       { error: 'Napaka pri posodabljanju montažnega dokazila', correlationId },

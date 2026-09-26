@@ -261,3 +261,39 @@ namesto polnega prenosa + clientskega zoženja.
 | **Brez tihega poglate** | Prej: `catch { /* ignore */ }` + neuspeh `res.ok` brez poročanja — napaka strežnika je bila NEVIDNA (prazen seznam = utvara "ni nagibov"). Zdaj: izrecna stanja BREZ_PROJEKTA / NALAGANJE / OK / NAPAKA z role="alert" panelom + "Poskusi znova". |
 | **Brez zmešnjave stanj** | Brez projekta = izrecno "izberite projekt" (prej prikazano kot "ni nagibov"); prazno = res prazno. |
 | **A11y** | Libela `role="img"` + opisni aria-label (vzorcu R150 kompas), zgodovina `role="list"/"listitem"` z aria-labeli, busy stanja `aria-busy`, preklop senzorja `aria-pressed`. |
+
+## IDOR zaključek + politika občutljivih podatkov (R155 — issue #5 §38)
+
+### Zaključek preverbe dostopa na ravni vira
+
+R154 je zaprl `/api/slopes`; sistematični pregled preostalih rut je v R155
+našel in zaprl še pet istovrstnih vrzel (vsaka preverjala SAMO prijavo):
+
+| Ruta | Prej (R154) | Zdaj (R155) |
+|---|---|---|
+| `/api/surveys` GET/POST | bral/pisal terenski pregled TUJEGA projekta | `read` / `update` vrata; neznani projekt → 404 (prej tihi FK 500) |
+| `/api/qc` GET/POST | bral/pisal preverbo kakovosti TUJEGA projekta (dokumentirano "MONTER+" sploh ni bilo uveljavljeno) | `read` / `update` vrata PRED transakcijo |
+| `/api/punch` GET/POST/PATCH/DELETE | bral/dodal/spremenil/BRISAL točke koder koli po id | projektna vrata na vseh štirih; neznana točka → 404 (prej 500) |
+| `/api/evidence` GET/POST/PATCH | bral/pisal montažna dokazila tujega projekta | `read` / `update` vrata (PATCH: točka → projekt) |
+| `/api/invoices` GET `?projectId=` | MONTER je s poljubnim tujim projectId obšel lastniški filter | isti 404/403 kot sestrske rute; svoj projekt → filtrirano branje |
+
+Red je povsod fail-closed: vrata PRED mutacijo — po 403 je baza NESPREMENJENA.
+
+### Fail-verbose UI za nove 403/404
+
+Kjer ruta zdaj zavre, UI ne molči: punch-list in Terenski pregled dobita
+viden `role="alert"` amber panel z razlogom + "Poskusi znova" (nalaganje),
+toasti pa nosijo razlog iz odgovora (prej generična sporočila oz. tihe
+preskoke pri standardnih točkah — zdaj iskren povzetek uspeh/delno/napaka).
+
+### Politika občutljivih podatkov (§38)
+
+NOV dokument **`docs/PODATKI.md`** — inventar občutljivih podatkov z vezavo
+na kodo: gesla (scrypt N=16384), seje (httpOnly + server-side preklic),
+IP (surov se NE hrani — samo sha256+pepper v portalu; rate-limit vedra samo
+v pomnilniku), API ključi (samo keyHash; viden enkrat), GPS (izrecno opt-in
+s `gpsConsentAt` dokazom), EXIF (canvas odstrani pri izvoru; strežniško
+stripanje izrecno odloženo), localStorage inventar + čiščenje ob odjavi,
+revizije brez gesel/IP/stackov, in tabela "kaj namenoma NE hranimo".
+Dokument je trditev-po-trditev vezan na datoteke — posodablja se v isti
+rundi kot koda (konvencija tega dokumenta).
