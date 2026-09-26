@@ -1268,7 +1268,7 @@ export function InvoiceManager() {
 
           {qrInvoice && (
             <div className="space-y-3">
-              <div className="flex flex-col items-center gap-2 rounded-xl border border-border/60 bg-white p-4">
+              <div className="flex flex-col items-center gap-2 rounded-xl border border-border/60 bg-card p-4">
                 {qrDataUrl ? (
                   <img
                     src={qrDataUrl}

@@ -339,7 +339,7 @@ export default function Home() {
         aria-hidden="true"
       >
         <div
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-lg ring-1 ring-roksal-amber/30"
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-card shadow-lg ring-1 ring-roksal-amber/30"
           style={{ transform: `rotate(${pullPx * 3}deg)` }}
         >
           <RefreshCw

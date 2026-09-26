@@ -362,12 +362,12 @@ export function TeamTab() {
 
       {/* Seznam */}
       {loading ? (
-        <div className="flex items-center justify-center rounded-xl border border-border bg-white p-10">
+        <div className="flex items-center justify-center rounded-xl border border-border bg-card p-10">
           <Loader2 className="h-6 w-6 animate-spin text-roksal-amber" />
         </div>
       ) : users.length === 0 ? (
         canRead ? (
-          <div className="rounded-xl border border-border bg-white p-10 text-center text-sm text-muted-foreground">
+          <div className="rounded-xl border border-border bg-card p-10 text-center text-sm text-muted-foreground">
             Ni podatkov — povabite prvega člana ekipe.
           </div>
         ) : (
@@ -392,11 +392,11 @@ export function TeamTab() {
             return (
               <div
                 key={u.id}
-                className={`rounded-xl border bg-white p-3 shadow-sm transition-all hover:shadow-md ${
+                className={`rounded-xl border bg-card p-3 shadow-sm transition-all hover:shadow-md ${
                   u.lifecycle.deactivated
-                    ? 'border-stone-200 opacity-75'
+                    ? 'border-stone-200 dark:border-stone-700 opacity-75'
                     : u.lifecycle.locked
-                      ? 'border-roksal-red/40'
+                      ? 'border-roksal-red/40 dark:border-roksal-red/50'
                       : 'border-border'
                 }`}
               >

@@ -353,7 +353,7 @@ export function SignatureQuote({ quoteData, monterName = 'Monter Roksal', projec
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Pregled podatkov */}
-        <div className="rounded-lg border border-border bg-white p-3 text-xs space-y-1">
+        <div className="rounded-lg border border-border bg-card p-3 text-xs space-y-1">
           <div className="flex justify-between">
             <span className="text-muted-foreground">Projekt:</span>
             <span className="font-medium text-roksal-ink">{quoteData.projectName}</span>
@@ -491,7 +491,7 @@ export function SignatureQuote({ quoteData, monterName = 'Monter Roksal', projec
             <p className="text-xs text-muted-foreground">
               Stranka naj podpiše s prstom na spodnjem platnu. Podpis se uporabi za PDF ponudbo.
             </p>
-            <div className="rounded-lg border-2 border-roksal-navy/20 bg-white">
+            <div className="rounded-lg border-2 border-roksal-navy/20 bg-white"> {/* PODPISNO PLATNO — belo v OBEH temah (črnilo + izvoz PDF), nič ne spreminjamo */}
               <SignatureCanvas
                 ref={(ref) => {
                   customerSigRef.current = ref
@@ -535,7 +535,7 @@ export function SignatureQuote({ quoteData, monterName = 'Monter Roksal', projec
             <p className="text-xs text-muted-foreground">
               Monter naj podpiše s prstom na spodnjem platnu.
             </p>
-            <div className="rounded-lg border-2 border-roksal-amber/30 bg-white">
+            <div className="rounded-lg border-2 border-roksal-amber/30 bg-white"> {/* PODPISNO PLATNO — belo v OBEH temah (črnilo + izvoz PDF), nič ne spreminjamo */}
               <SignatureCanvas
                 ref={(ref) => {
                   monterSigRef.current = ref

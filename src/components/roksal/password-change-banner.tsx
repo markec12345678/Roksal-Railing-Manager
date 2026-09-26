@@ -83,7 +83,7 @@ export function PasswordChangeBanner() {
       </div>
 
       {open && (
-        <div className="mx-auto mt-2 max-w-sm space-y-2 rounded-xl border border-roksal-amber/40 bg-white p-3 shadow-sm">
+        <div className="mx-auto mt-2 max-w-sm space-y-2 rounded-xl border border-roksal-amber/40 bg-card p-3 shadow-sm">
           <input
             type="password"
             value={current}

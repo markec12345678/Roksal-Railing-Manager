@@ -86,7 +86,7 @@ export function QuickActionsFab() {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 12, scale: 0.85 }}
                     transition={{ duration: 0.18, delay: i * 0.035, ease: 'easeOut' }}
-                    className="flex min-h-[44px] items-center gap-2.5 rounded-full border border-roksal-navy/10 bg-white py-2 pl-4 pr-3 shadow-lg transition-colors hover:border-roksal-amber/50 hover:bg-roksal-amber/5 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                    className="flex min-h-[44px] items-center gap-2.5 rounded-full border border-roksal-navy/10 bg-card dark:border-roksal-ink/15 py-2 pl-4 pr-3 shadow-lg transition-colors hover:border-roksal-amber/50 hover:bg-roksal-amber/5 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 dark:focus-visible:ring-roksal-ink/40"
                   >
                     <span className="text-[13px] font-semibold text-roksal-ink">{action.label}</span>
                     <span className="flex h-8 w-8 items-center justify-center rounded-full bg-roksal-navy/5">

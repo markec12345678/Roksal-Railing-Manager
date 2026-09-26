@@ -5993,7 +5993,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   .map((d) => (
                     <li
                       key={d.draftId}
-                      className="flex items-center justify-between gap-2 rounded-lg border border-roksal-amber/30 bg-white/70 px-3 py-2 transition-all hover:shadow-sm focus-within:ring-2 focus-within:ring-roksal-navy/30"
+                      className="flex items-center justify-between gap-2 rounded-lg border border-roksal-amber/30 bg-white/70 dark:bg-card/60 px-3 py-2 transition-all hover:shadow-sm focus-within:ring-2 focus-within:ring-roksal-navy/30"
                     >
                       <div className="min-w-0">
                         <p className="truncate text-xs font-semibold text-roksal-ink">
@@ -6805,7 +6805,7 @@ function InlineInclinometer({
 
         {/* Prikaz kotov */}
         <div className="grid w-full grid-cols-2 gap-2">
-          <div className="rounded-lg border border-roksal-navy/10 bg-white p-2 text-center">
+          <div className="rounded-lg border border-roksal-navy/10 bg-card dark:border-roksal-ink/15 p-2 text-center">
             <div className="text-[9px] font-medium uppercase tracking-wide text-muted-foreground">
               Levo ↔ Desno
             </div>
@@ -6813,7 +6813,7 @@ function InlineInclinometer({
               {reading ? angleX.toFixed(1) : '–'}°
             </div>
           </div>
-          <div className="rounded-lg border border-roksal-navy/10 bg-white p-2 text-center">
+          <div className="rounded-lg border border-roksal-navy/10 bg-card dark:border-roksal-ink/15 p-2 text-center">
             <div className="text-[9px] font-medium uppercase tracking-wide text-muted-foreground">
               Naprej ↔ Nazaj
             </div>
@@ -6880,7 +6880,7 @@ function InlineInclinometer({
 
         {/* Lokacija + Save */}
         {reading && monitoring && (
-          <div className="w-full space-y-2 rounded-lg border border-roksal-navy/10 bg-white p-2.5">
+          <div className="w-full space-y-2 rounded-lg border border-roksal-navy/10 bg-card dark:border-roksal-ink/15 p-2.5">
             <Label className="text-xs font-medium">Lokacija meritve</Label>
             <Select value={lokacija} onValueChange={setLokacija}>
               <SelectTrigger className="h-9">

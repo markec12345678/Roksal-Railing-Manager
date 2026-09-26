@@ -71,6 +71,7 @@ import {
 import { toast } from 'sonner'
 import { buildProjektiCsv, projektiCsvFilename, projektiLabel, PROJEKTI_STATUS_LABELS } from '@/lib/projekti-csv'
 import { todayStamp } from '@/lib/csv-export'
+import { statusOptionsFor, statusOptionsHint } from '@/lib/status-options'
 
 interface Project {
   id: string
@@ -83,6 +84,9 @@ interface Project {
   opombe?: string | null
   createdAt?: string
   updatedAt?: string
+  // R165: zaklenjen dogovor (prisma scalar; GET /api/projects ga vrača prek
+  // include) — statusOptionsFor ga uporablja za fail-closed dropdown.
+  dealLocked?: boolean
   // GPS (API ju vrača iz Prisme; uporablja jih vremenska kartica za montažo)
   latitude?: number | null
   longitude?: number | null
@@ -264,17 +268,23 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
   // "Monter!". Fallback ostaja vloga-neodvisen "Monter" (nič ne fali, če
   // je seja spodaj — pozdrav ni kritična pot).
   const [displayName, setDisplayName] = useState('Monter')
+  // R165: vloga prijavljenega (GET /api/auth → user.vloga) — statusni dropdown
+  // ponuja SAMO prehode, ki jih strežnik (assertTransition) sprejme za to vlogo.
+  // Neznana vloga (seja spodaj) = pot ne-vodstva (least privilege, fail-closed).
+  const [myVloga, setMyVloga] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
     fetch('/api/auth')
       .then((r) => (r.ok ? r.json() : null))
-      .then((data: { user?: { ime?: string } } | null) => {
+      .then((data: { user?: { ime?: string; vloga?: string } } | null) => {
         if (cancelled) return
         const ime = data?.user?.ime?.trim()
         if (ime) setDisplayName(ime.split(/\s+/)[0])
+        const vloga = data?.user?.vloga?.trim()
+        if (vloga) setMyVloga(vloga)
       })
-      .catch(() => undefined) // pozdrav ostane privzet — ni napaka
+      .catch(() => undefined) // pozdrav ostane privzet; vloga ostane null (least privilege)
     return () => {
       cancelled = true
     }
@@ -984,12 +994,19 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
         if (newStatus === 'ZAKLJUCENO') {
           toast.success('Projekt zaključen! 🎉')
         } else {
-          toast.success(`Status posodobljen: ${statusLabels[newStatus]}`)
+          // R165: ?? newStatus — neznana oznaka nikoli ne prikaže "undefined" besedila.
+          toast.success(`Status posodobljen: ${statusLabels[newStatus] ?? newStatus}`)
         }
         setStatusDropdownId(null)
+      } else {
+        // R165 fail-verbose (vzorec R161–R163): prej je bilo `if (res.ok)` BREZ
+        // else — 409 (neveljaven prehod), 401 ali 500 = TIHO nič (dropdown ostane,
+        // ni sporočila). Zdaj razlog VEDNO viden.
+        const body = (await res.json().catch(() => null)) as { error?: string } | null
+        toast.error(body?.error?.trim() || `Status ni bil posodobljen (napaka ${res.status})`)
       }
     } catch {
-      toast.error('Napaka pri posodabljanju statusa')
+      toast.error('Ni povezave — status ni bil posodobljen')
     } finally {
       setStatusUpdating(false)
     }
@@ -1543,18 +1560,37 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                       className="absolute right-3 top-12 z-20 rounded-lg border border-border bg-popover shadow-lg p-1 min-w-[140px]" // R164 stil pass: bg-white → bg-popover
                       onClick={(e) => e.stopPropagation()}
                     >
-                      {Object.entries(statusLabels).map(([key, label]) => (
-                        <button
-                          key={key}
-                          disabled={key === project.status || statusUpdating}
-                          className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs hover:bg-secondary transition-colors disabled:opacity-50"
-                          onClick={() => handleStatusChange(project.id, key)}
-                        >
-                          <span className={`inline-block h-2 w-2 rounded-full ${statusColors[key]?.split(' ')[0]}`} />
-                          {label}
-                          {key === project.status && <X className="ml-auto h-3 w-3 text-muted-foreground" />}
-                        </button>
-                      ))}
+                      {/* R165: SAMO prehodi, ki jih strežnik sprejme za to vlogo
+                          (prej vseh 7 — ilegalna izbira = tihi 409). */}
+                      {(() => {
+                        const opts = statusOptionsFor(project.status, { vloga: myVloga, dealLocked: project.dealLocked })
+                        if (opts.length === 0) {
+                          const hint = statusOptionsHint(project.status, { vloga: myVloga, dealLocked: project.dealLocked })
+                          return (
+                            <p className="max-w-[180px] px-2.5 py-1.5 text-xs text-muted-foreground" role="note">
+                              {hint ?? 'Sprememba statusa ni na voljo.'}
+                            </p>
+                          )
+                        }
+                        return opts.map((key) => {
+                          // label izračunan PREJ — skener a11y (r158) prepozna
+                          // {label} kot vidno besedilo; izraz `a ?? b` v JSX
+                          // ne prepozna (lažno javi ikonski gumb).
+                          const label = statusLabels[key] ?? key
+                          return (
+                            <button
+                              key={key}
+                              disabled={key === project.status || statusUpdating}
+                              className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs hover:bg-secondary transition-colors disabled:opacity-50"
+                              onClick={() => handleStatusChange(project.id, key)}
+                            >
+                              <span className={`inline-block h-2 w-2 rounded-full ${statusColors[key]?.split(' ')[0]}`} />
+                              {label}
+                              {key === project.status && <X className="ml-auto h-3 w-3 text-muted-foreground" />}
+                            </button>
+                          )
+                        })
+                      })()}
                     </div>
                   )}
                 </div>
@@ -1905,22 +1941,43 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
               <div className="space-y-4 py-2">
                 <div className="space-y-1.5">
                   <Label className="text-xs">Status</Label>
-                  <Select
-                    value={detailProject.status}
-                    onValueChange={(v) => handleStatusChange(detailProject.id, v)}
-                    disabled={statusUpdating}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(statusLabels).map(([key, label]) => (
-                        <SelectItem key={key} value={key}>
-                          {label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  {/* R165: SAMO prehodi, ki jih strežnik sprejme za to vlogo;
+                      če jih ni (končno stanje / zaklenjen dogovor / Skladišče),
+                      pošten razlog namesto praznega Selecta. */}
+                  {(() => {
+                    const opts = statusOptionsFor(detailProject.status, { vloga: myVloga, dealLocked: detailProject.dealLocked })
+                    if (opts.length === 0) {
+                      const hint = statusOptionsHint(detailProject.status, { vloga: myVloga, dealLocked: detailProject.dealLocked })
+                      return (
+                        <p className="rounded-md border border-border bg-muted/40 px-2.5 py-2 text-xs text-muted-foreground" role="note">
+                          {hint ?? 'Sprememba statusa ni na voljo.'}
+                        </p>
+                      )
+                    }
+                    return (
+                      <Select
+                        value={detailProject.status}
+                        onValueChange={(v) => handleStatusChange(detailProject.id, v)}
+                        disabled={statusUpdating}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {/* Trenutni status VEDNO v seznamu (disabled) — sicer
+                              Radix SelectValue za ne-vodstvo izriše prazno vrednost. */}
+                          {(opts.includes(detailProject.status)
+                            ? opts
+                            : [detailProject.status, ...opts]
+                          ).map((key) => (
+                            <SelectItem key={key} value={key} disabled={key === detailProject.status}>
+                              {statusLabels[key] ?? key}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )
+                  })()}
                 </div>
 
                 <Card className="px-3 py-3">

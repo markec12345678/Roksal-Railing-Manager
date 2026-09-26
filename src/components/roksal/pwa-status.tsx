@@ -289,7 +289,7 @@ export function PwaStatus() {
             {expanded && (
               <ul className="mt-2 max-h-48 space-y-1.5 overflow-y-auto border-t border-rose-200 pt-2" aria-label="Seznam neuspelih zapisov">
                 {problems.map((item) => (
-                  <li key={item.id} className="flex items-start gap-2 rounded-lg bg-white/70 px-2 py-1.5">
+                  <li key={item.id} className="flex items-start gap-2 rounded-lg bg-white/70 dark:bg-card/60 px-2 py-1.5">
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-[11px] font-semibold leading-tight">
                         {item.label ?? item.url}
@@ -349,7 +349,7 @@ export function PwaStatus() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.2 }}
-            className="mb-1.5 flex items-center gap-2.5 rounded-xl border border-roksal-navy/15 bg-white px-3 py-2 shadow-sm"
+            className="mb-1.5 flex items-center gap-2.5 rounded-xl border border-roksal-navy/15 dark:border-roksal-ink/15 bg-card px-3 py-2 shadow-sm"
           >
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-roksal-amber/15">
               <Download className="h-4 w-4 text-roksal-amber" />

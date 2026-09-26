@@ -231,7 +231,7 @@ export function AuditTrailDialog({
                 const isOpen = expanded.has(e.id)
                 const hasDetail = Boolean(e.oldValue || e.newValue)
                 return (
-                  <li key={e.id} className="rounded-md border border-roksal-navy/10 bg-white px-2.5 py-2 transition-colors hover:border-roksal-navy/25">
+                  <li key={e.id} className="rounded-md border border-roksal-navy/10 bg-card dark:border-roksal-ink/15 px-2.5 py-2 transition-colors hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25">
                     <div className="flex items-center justify-between gap-2">
                       <Badge variant="outline" className={`text-[9px] shrink-0 ${badge.className}`}>
                         {badge.label}

@@ -2362,7 +2362,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                             className={`min-h-[32px] rounded-full border px-3 text-[10px] font-bold transition-all ${
                               anchorType === t
                                 ? 'border-roksal-amber bg-roksal-amber/15 text-roksal-amber'
-                                : 'border-amber-300 bg-white text-amber-800 hover:border-amber-400'
+                                : 'border-amber-300 bg-white text-amber-800 dark:border-amber-800/60 dark:bg-amber-950/30 dark:text-amber-300 hover:border-amber-400 dark:hover:border-amber-700'
                             }`}
                           >
                             {anchorTypeLabels[t]}
@@ -3893,14 +3893,14 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
-                        <Card className="px-3 py-2.5 bg-white">
+                        <Card className="px-3 py-2.5 bg-card">
                           <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Betona skupaj</p>
                           <p className="text-xl font-bold text-roksal-ink">
                             {totalL.toLocaleString('sl-SI')} <span className="text-sm font-medium">L</span>
                           </p>
                           <p className="text-[10px] text-muted-foreground">{Math.round(perPostL)} L / steber</p>
                         </Card>
-                        <Card className="px-3 py-2.5 bg-white">
+                        <Card className="px-3 py-2.5 bg-card">
                           <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Vreče 25 kg</p>
                           <p className="text-xl font-bold text-roksal-amber">{bags25}</p>
                           <p className="text-[10px] text-muted-foreground">≈ 12 L / vreča</p>

@@ -565,7 +565,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
                   className={`flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-xl border px-1 py-2 transition-all ${
                     data.tipObjekta === t.id
                       ? 'border-roksal-amber bg-roksal-amber/10 shadow-sm'
-                      : 'border-roksal-navy/10 bg-white hover:border-roksal-navy/30'
+                      : 'border-roksal-navy/10 bg-white dark:border-roksal-ink/15 dark:bg-card hover:border-roksal-navy/30 dark:hover:border-roksal-ink/30'
                   }`}
                 >
                   <t.icon className={`h-4 w-4 ${data.tipObjekta === t.id ? 'text-roksal-amber' : 'text-roksal-ink/60'}`} />
@@ -776,9 +776,9 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
                     className={`min-h-[36px] rounded-full border px-3 text-[11px] font-semibold transition-all ${
                       on
                         ? o.id === 'cevi' || o.id === 'vticnice'
-                          ? 'border-red-300 bg-red-50 text-red-700'
+                          ? 'border-red-300 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300'
                           : 'border-roksal-amber bg-roksal-amber/10 text-roksal-amber'
-                        : 'border-roksal-navy/10 bg-white text-roksal-navy/60 hover:border-roksal-navy/30'
+                        : 'border-roksal-navy/10 bg-white text-roksal-navy/60 dark:border-roksal-ink/15 dark:bg-card dark:text-roksal-ink/60 hover:border-roksal-navy/30 dark:hover:border-roksal-ink/30'
                     }`}
                   >
                     {o.label}
@@ -829,7 +829,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
                     aria-pressed={on}
                     aria-label={`RAL ${r.code} ${r.ime}`}
                     className={`flex items-center gap-2 rounded-full border py-1.5 pl-1.5 pr-3 transition-all ${
-                      on ? 'border-roksal-amber bg-roksal-amber/10 shadow-sm' : 'border-roksal-navy/10 bg-white hover:border-roksal-navy/30'
+                      on ? 'border-roksal-amber bg-roksal-amber/10 shadow-sm' : 'border-roksal-navy/10 bg-white dark:border-roksal-ink/15 dark:bg-card hover:border-roksal-navy/30 dark:hover:border-roksal-ink/30'
                     }`}
                   >
                     <span

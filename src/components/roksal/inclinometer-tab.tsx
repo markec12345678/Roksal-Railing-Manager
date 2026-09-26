@@ -243,14 +243,14 @@ export function InclinometerTab({ projectId }: { projectId: string | null }) {
 
           {/* Prikaz kotov — tabular-nums, da se številke ne "skakljejo" */}
           <div className="grid w-full grid-cols-2 gap-3">
-            <div className="rounded-lg border border-roksal-navy/10 bg-white p-3 text-center transition-[border-color,box-shadow] duration-150 hover:border-roksal-navy/25 hover:shadow-sm">
+            <div className="rounded-lg border border-roksal-navy/10 bg-card dark:border-roksal-ink/15 p-3 text-center transition-[border-color,box-shadow] duration-150 hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25 hover:shadow-sm">
               <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Levo ↔ Desno</div>
               <div className="text-2xl font-bold tabular-nums text-roksal-ink">{reading ? angleX.toFixed(1) : '–'}°</div>
               <div className="text-[10px] text-muted-foreground">
                 {reading ? (Math.abs(reading.gamma) < 1.5 ? '↓ ravno' : reading.gamma > 0 ? '→ desno' : '← levo') : ''}
               </div>
             </div>
-            <div className="rounded-lg border border-roksal-navy/10 bg-white p-3 text-center transition-[border-color,box-shadow] duration-150 hover:border-roksal-navy/25 hover:shadow-sm">
+            <div className="rounded-lg border border-roksal-navy/10 bg-card dark:border-roksal-ink/15 p-3 text-center transition-[border-color,box-shadow] duration-150 hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25 hover:shadow-sm">
               <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Naprej ↔ Nazaj</div>
               <div className="text-2xl font-bold tabular-nums text-roksal-ink">{reading ? angleY.toFixed(1) : '–'}°</div>
               <div className="text-[10px] text-muted-foreground">
@@ -294,7 +294,7 @@ export function InclinometerTab({ projectId }: { projectId: string | null }) {
 
           {/* Shranjevanje */}
           {reading && monitoring && (
-            <div className="w-full space-y-3 rounded-lg border border-roksal-navy/10 bg-white p-3">
+            <div className="w-full space-y-3 rounded-lg border border-roksal-navy/10 bg-card dark:border-roksal-ink/15 p-3">
               <Label className="text-xs font-medium">Lokacija meritve</Label>
               <Select value={lokacija} onValueChange={setLokacija}>
                 <SelectTrigger className="h-9">
@@ -412,7 +412,7 @@ export function InclinometerTab({ projectId }: { projectId: string | null }) {
                 key={s.id}
                 role="listitem"
                 aria-label={`Nagib ${s.kotStopinje.toFixed(1)} stopinj, ${s.smer === 'Y' ? 'levo-desno' : 'naprej-nazaj'}, ${s.lokacija ?? 'brez lokacije'}`}
-                className="flex items-center justify-between rounded-lg border border-roksal-navy/10 bg-white p-2.5 text-xs transition-[border-color,box-shadow] duration-150 hover:border-roksal-navy/25 hover:shadow-sm"
+                className="flex items-center justify-between rounded-lg border border-roksal-navy/10 bg-card dark:border-roksal-ink/15 p-2.5 text-xs transition-[border-color,box-shadow] duration-150 hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25 hover:shadow-sm"
               >
                 <div>
                   <div className="font-medium tabular-nums text-roksal-ink">{s.kotStopinje.toFixed(1)}° ({s.smer === 'Y' ? 'L↔D' : 'N↔Z'})</div>

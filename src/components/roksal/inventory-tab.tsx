@@ -634,7 +634,7 @@ export function InventoryTab() {
                                 return (
                                   <li
                                     key={lot.id}
-                                    className="rounded-md border border-border/50 bg-white p-2 transition-all hover:border-roksal-navy/25 hover:shadow-sm"
+                                    className="rounded-md border border-border/50 bg-card p-2 transition-all hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25 hover:shadow-sm"
                                   >
                                     <div className="flex items-center justify-between gap-2">
                                       <div className="flex min-w-0 items-center gap-1.5">
