@@ -35,8 +35,10 @@ import {
   FolderOpen,
 
   FileStack,
+  History,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { casOznaka } from '@/lib/osvezitev-fokus'
 
 interface DocumentItem {
   id: string
@@ -91,6 +93,10 @@ export function DocumentsTab() {
   const [selectedProject, setSelectedProject] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [docLoading, setDocLoading] = useState(false)
+  // R177 — pečat 'Osveženo ob' = čas zadnjega USPEŠNEGA branja dokumentov
+  // (primarni vir te površine, vzorec R170/R171). Napaka/omrežje → null
+  // (pečat brez podatkov bi lažno trdil svežino).
+  const [dokumentiOsvezitev, setDokumentiOsvezitev] = useState<Date | null>(null)
 
   // Document preview dialog
   const [previewDoc, setPreviewDoc] = useState<DocumentItem | null>(null)
@@ -128,15 +134,18 @@ export function DocumentsTab() {
         if (docRes.ok) {
           const docData = await docRes.json()
           setDocuments(docData)
+          setDokumentiOsvezitev(new Date())
         } else {
           // R151: napaka je izrecna — ne pusti zastarelih podatkov kot lažno varnost.
           setDocuments([])
+          setDokumentiOsvezitev(null)
           toast.error('Dokumentov ni mogoče naložiti (napaka strežnika)')
         }
       }
     } catch {
       setProjects([])
       setDocuments([])
+      setDokumentiOsvezitev(null)
       toast.error('Povezava ni uspela — podatki niso na voljo')
     } finally {
       setLoading(false)
@@ -161,12 +170,19 @@ export function DocumentsTab() {
         if (docRes.ok) {
           const docData = await docRes.json()
           setDocuments(docData)
+          setDokumentiOsvezitev(new Date())
         } else {
           // R151: napaka je izrecna — ne pusti zastarelih podatkov kot lažno varnost.
           setDocuments([])
+          setDokumentiOsvezitev(null)
           toast.error('Dokumentov ni mogoče naložiti (napaka strežnika)')
         }
       } catch {
+        // R177 — fail-verbose doslednost (vzorec R174/R175): tudi omrežna napaka
+        // počisti staro stanje (nikoli zastarelih dokumentov kot svežih);
+        // pečat preneha trditi svežino nad odsotnimi podatki.
+        setDocuments([])
+        setDokumentiOsvezitev(null)
         toast.error('Povezava ni uspela — podatki niso na voljo')
       }
     }
@@ -261,9 +277,22 @@ export function DocumentsTab() {
     <div className="space-y-4 px-4 pb-4 pt-2">
       <div>
         <h2 className="text-xl font-bold text-roksal-ink">Dokumenti</h2>
-        <p className="text-sm text-muted-foreground">
-          Tehnični listi, podpisi in računi
-        </p>
+        {/* R177 — pečat 'Osveženo ob HH:MM:SS' = čas zadnjega uspešnega branja
+            dokumentov (vzorec R170/R171; skrit na ozkih zaslonih; flex-wrap). */}
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+          <p className="text-sm text-muted-foreground">
+            Tehnični listi, podpisi in računi
+          </p>
+          {dokumentiOsvezitev && (
+            <span
+              className="hidden items-center gap-1 text-[11px] text-muted-foreground sm:flex"
+              title="Čas zadnje uspešne osvežitve podatkov"
+            >
+              <History className="h-3 w-3 shrink-0" aria-hidden="true" />
+              Osveženo ob <span className="tabular-nums">{casOznaka(dokumentiOsvezitev)}</span>
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Project Selector */}

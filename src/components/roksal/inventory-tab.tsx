@@ -39,9 +39,11 @@ import {
   Download,
   ChevronDown,
   ChevronUp,
+  History,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { downloadCsv, todayStamp } from '@/lib/csv-export'
+import { casOznaka } from '@/lib/osvezitev-fokus'
 
 type InventoryType = 'ALL' | 'WPC_deska' | 'Inox_vijak' | 'Kemicno_sidro' | 'Alu_profil'
 type MovementType = 'PORABA' | 'DOPOLNITEV' | 'ODPIS'
@@ -146,6 +148,10 @@ export function InventoryTab() {
   const [lotsError, setLotsError] = useState<string | null>(null)
   // R152: napaka nalaganja zaloge je EKSPlicitna (nič izmišljenih artiklov).
   const [invError, setInvError] = useState<string | null>(null)
+  // R177 — pečat 'Osveženo ob' = čas zadnjega USPEŠNEGA branja zaloge (primarni
+  // vir te površine, vzorec R170/R171). Napaka/omrežje → null (pečat brez
+  // podatkov bi lažno trdil svežino).
+  const [zalogaOsvezitev, setZalogaOsvezitev] = useState<Date | null>(null)
 
   // R175 — stabilen fail-verbose loader (EN VIR napak, žičen tudi na
   // useRefetchOnFocus): zaloga (R152 že fail-verbose) + projekti (prej TIHA
@@ -162,10 +168,12 @@ export function InventoryTab() {
         // R152: prazna zaloga ostane PRAZNA (iskreno stanje) — ni demo artiklov.
         setInventory(data)
         setInvError(null)
+        setZalogaOsvezitev(new Date())
       } else {
         setInventory([])
         setInvError(`Zaloge ni bilo mogoče naložiti (napaka ${invRes.status}).`)
         toast.error(`Zaloge ni bilo mogoče naložiti (napaka ${invRes.status})`)
+        setZalogaOsvezitev(null)
       }
       if (projRes.ok) {
         const projData = await projRes.json()
@@ -179,6 +187,7 @@ export function InventoryTab() {
       setProjects([])
       setInvError('Zaloge ni bilo mogoče naložiti — preverite povezavo.')
       toast.error('Zaloge ni bilo mogoče naložiti — preverite povezavo.')
+      setZalogaOsvezitev(null)
     } finally {
       setLoading(false)
     }
@@ -359,9 +368,23 @@ export function InventoryTab() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold text-roksal-ink">Zaloga</h2>
-          <p className="text-sm text-muted-foreground">
-            Upravljanje materiala in inventarja
-          </p>
+          {/* R177 — pečat 'Osveženo ob HH:MM:SS' = čas zadnjega uspešnega
+              branja zaloge (vzorec R170/R171; skrit na ozkih zaslonih;
+              flex-wrap — pri sm širini se lepo prilega ob podnaslov). */}
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+            <p className="text-sm text-muted-foreground">
+              Upravljanje materiala in inventarja
+            </p>
+            {zalogaOsvezitev && (
+              <span
+                className="hidden items-center gap-1 text-[11px] text-muted-foreground sm:flex"
+                title="Čas zadnje uspešne osvežitve podatkov"
+              >
+                <History className="h-3 w-3 shrink-0" aria-hidden="true" />
+                Osveženo ob <span className="tabular-nums">{casOznaka(zalogaOsvezitev)}</span>
+              </span>
+            )}
+          </div>
         </div>
         <Button
           size="icon"

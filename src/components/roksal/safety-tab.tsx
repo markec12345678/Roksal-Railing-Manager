@@ -25,7 +25,9 @@ import {
   CloudSun,
   Zap,
   FileText,
+  History,
 } from 'lucide-react'
+import { casOznaka } from '@/lib/osvezitev-fokus'
 
 interface WindData {
   speed: number
@@ -110,6 +112,11 @@ export function SafetyTab() {
   const [loading, setLoading] = useState(true)
   // R152: vremenska napaka je EKSPlicitna — brez izmišljenih varnih vrednosti.
   const [weatherError, setWeatherError] = useState<string | null>(null)
+  // R177 — pečat 'Osveženo ob' = čas zadnjega USPEŠNEGA branja vremena
+  // (primarni vir te površine, vzorec R170/R171). Napaka/omrežje → null
+  // (pečat brez podatkov bi lažno trdil svežino — varnost ocena je časovno
+  // občutljiva, zastarel pečat bi bil naslednja lažna varnost).
+  const [vremeOsvezitev, setVremeOsvezitev] = useState<Date | null>(null)
   const [ghostMode, setGhostMode] = useState(false)
   const [checklist, setChecklist] = useState<ChecklistItem[]>(defaultChecklist)
 
@@ -134,14 +141,17 @@ export function SafetyTab() {
       if (res.ok) {
         const data = await res.json()
         setWindData(data)
+        setVremeOsvezitev(new Date())
       } else {
         // Fail-closed: NI izmišljenih podatkov — ocena ni mogoča je vidna.
         setWindData(null)
+        setVremeOsvezitev(null)
         setWeatherError(`Vremenska storitev ni odgovorila (napaka ${res.status}).`)
       }
     } catch {
       if (unmountedRef.current) return
       setWindData(null)
+      setVremeOsvezitev(null)
       setWeatherError('Vremenskih podatkov ni mogoče pridobiti — preverite povezavo.')
     } finally {
       if (!unmountedRef.current) setLoading(false)
@@ -222,9 +232,22 @@ export function SafetyTab() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold text-roksal-ink">Varnost</h2>
-          <p className="text-sm text-muted-foreground">
-            Vremenski podatki, seznam preverjanj in načini
-          </p>
+          {/* R177 — pečat 'Osveženo ob HH:MM:SS' = čas zadnjega uspešnega branja
+              vremena (vzorec R170/R171; skrit na ozkih zaslonih; flex-wrap). */}
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+            <p className="text-sm text-muted-foreground">
+              Vremenski podatki, seznam preverjanj in načini
+            </p>
+            {vremeOsvezitev && (
+              <span
+                className="hidden items-center gap-1 text-[11px] text-muted-foreground sm:flex"
+                title="Čas zadnje uspešne osvežitve podatkov"
+              >
+                <History className="h-3 w-3 shrink-0" aria-hidden="true" />
+                Osveženo ob <span className="tabular-nums">{casOznaka(vremeOsvezitev)}</span>
+              </span>
+            )}
+          </div>
         </div>
         <Button
           size="sm"
