@@ -179,10 +179,10 @@ export function MeasureClient({ token, nazivProjekta, stranka }: MeasureClientPr
 
   if (done) {
     return (
-      <main className="min-h-screen bg-stone-100 px-4 py-10">
-        <div className="mx-auto max-w-md rounded-2xl border border-emerald-200 bg-white p-8 text-center shadow-sm">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50">
-            <CheckCircle2 className="h-9 w-9 text-emerald-600" />
+      <main className="min-h-screen bg-stone-100 px-4 py-10 dark:bg-background">
+        <div className="mx-auto max-w-md rounded-2xl border border-emerald-200 bg-white p-8 text-center shadow-sm dark:border-emerald-800 dark:bg-card">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-950/40">
+            <CheckCircle2 className="h-9 w-9 text-emerald-600 dark:text-emerald-400" />
           </div>
           <h1 className="text-xl font-bold text-roksal-ink">Hvala, {ime.split(' ')[0]}!</h1>
           <p className="mt-2 text-sm text-muted-foreground">
@@ -190,12 +190,12 @@ export function MeasureClient({ token, nazivProjekta, stranka }: MeasureClientPr
             je poslana. Kontaktirali vas bomo v 24 urah s predračunom.
           </p>
           {reference && (
-            <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-stone-100 px-3 py-1 text-[11px] font-medium text-stone-500">
-              Sklic: <span className="font-mono text-stone-700">{reference.slice(-8).toUpperCase()}</span>
+            <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-stone-100 px-3 py-1 text-[11px] font-medium text-stone-500 dark:bg-stone-800 dark:text-stone-400">
+              Sklic: <span className="font-mono text-stone-700 dark:text-stone-300">{reference.slice(-8).toUpperCase()}</span>
             </p>
           )}
-          <div className="mt-6 rounded-xl bg-stone-50 p-4 text-left text-xs text-muted-foreground">
-            <p className="font-semibold text-stone-700">Roksal d.o.o. Kranj</p>
+          <div className="mt-6 rounded-xl bg-stone-50 p-4 text-left text-xs text-muted-foreground dark:bg-stone-950/40">
+            <p className="font-semibold text-stone-700 dark:text-stone-300">Roksal d.o.o. Kranj</p>
             <p>T: +386 4 237 05 50 · info@roksal.si</p>
           </div>
         </div>
@@ -204,7 +204,7 @@ export function MeasureClient({ token, nazivProjekta, stranka }: MeasureClientPr
   }
 
   return (
-    <main className="min-h-screen bg-stone-100 pb-10">
+    <main className="min-h-screen bg-stone-100 pb-10 dark:bg-background">
       <style>{`
         @keyframes stranka-pin-in { from { transform: translateY(-8px) scale(.6); opacity: 0 } }
         .stranka-pin { animation: stranka-pin-in .22s ease-out; filter: drop-shadow(0 2px 3px rgba(0,0,0,.35)); }
@@ -225,12 +225,12 @@ export function MeasureClient({ token, nazivProjekta, stranka }: MeasureClientPr
 
       <div className="mx-auto max-w-xl space-y-4 px-4 pt-5">
         {/* Uvod */}
-        <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
+        <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm dark:border-stone-800 dark:bg-card">
           <h1 className="text-lg font-bold text-roksal-ink">
             {stranka ? `Pozdravljeni, ${stranka.split(' ')[0]}!` : 'Pozdravljeni!'}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Projekt: <span className="font-medium text-stone-700">{nazivProjekta}</span>
+            Projekt: <span className="font-medium text-stone-700 dark:text-stone-300">{nazivProjekta}</span>
           </p>
           <ol className="mt-3 space-y-1 text-xs text-muted-foreground">
             <li className="flex gap-2"><span className="font-bold text-roksal-amber">1.</span> poiščite svojo parcelo na karti (približajte s prsti)</li>
@@ -240,7 +240,7 @@ export function MeasureClient({ token, nazivProjekta, stranka }: MeasureClientPr
         </div>
 
         {/* Karta */}
-        <div className="overflow-hidden rounded-2xl border border-stone-200 shadow-sm">
+        <div className="overflow-hidden rounded-2xl border border-stone-200 shadow-sm dark:border-stone-800">
           <div className="relative h-[300px] w-full sm:h-[360px]">
             <div ref={mapElRef} className="h-full w-full" aria-label="Karta za risanje črte ograje" />
             <div className="pointer-events-none absolute left-2 top-2 z-[500] rounded-lg bg-roksal-navy/90 px-3 py-1.5 text-xs font-medium text-white shadow">
@@ -260,7 +260,7 @@ export function MeasureClient({ token, nazivProjekta, stranka }: MeasureClientPr
             </button>
           </div>
           {/* Mer */}
-          <div className="flex items-center gap-3 border-t border-stone-200 bg-white px-4 py-3">
+          <div className="flex items-center gap-3 border-t border-stone-200 bg-white px-4 py-3 dark:border-stone-800 dark:bg-card">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-roksal-amber/15">
               <MapPin className="h-5 w-5 text-roksal-amber" />
             </div>
@@ -274,7 +274,7 @@ export function MeasureClient({ token, nazivProjekta, stranka }: MeasureClientPr
               type="button"
               onClick={() => setPoints((prev) => prev.slice(0, -1))}
               disabled={points.length === 0}
-              className="flex h-10 items-center gap-1.5 rounded-lg border border-stone-300 px-3 text-xs font-medium text-stone-700 disabled:opacity-40"
+              className="flex h-10 items-center gap-1.5 rounded-lg border border-stone-300 px-3 text-xs font-medium text-stone-700 disabled:opacity-40 dark:border-stone-700 dark:text-stone-300"
             >
               <Undo2 className="h-3.5 w-3.5" /> Nazaj
             </button>
@@ -282,7 +282,7 @@ export function MeasureClient({ token, nazivProjekta, stranka }: MeasureClientPr
               type="button"
               onClick={() => setPoints([])}
               disabled={points.length === 0}
-              className="flex h-10 w-10 items-center justify-center rounded-lg border border-stone-300 text-stone-500 disabled:opacity-40"
+              className="flex h-10 w-10 items-center justify-center rounded-lg border border-stone-300 text-stone-500 disabled:opacity-40 dark:border-stone-700 dark:text-stone-400"
               aria-label="Počisti vse točke"
             >
               <Eraser className="h-4 w-4" />
@@ -291,14 +291,14 @@ export function MeasureClient({ token, nazivProjekta, stranka }: MeasureClientPr
         </div>
 
         {/* Obrazec */}
-        <div className="space-y-3 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
+        <div className="space-y-3 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm dark:border-stone-800 dark:bg-card">
           <p className="text-sm font-semibold text-roksal-ink">Vaši podatki</p>
           <input
             value={ime}
             onChange={(e) => setIme(e.target.value)}
             placeholder="Ime in priimek *"
             autoComplete="name"
-            className="h-12 w-full rounded-xl border border-stone-300 px-4 text-sm outline-none focus:border-roksal-amber focus:ring-2 focus:ring-roksal-amber/30"
+            className="h-12 w-full rounded-xl border border-stone-300 bg-transparent px-4 text-sm outline-none placeholder:text-muted-foreground focus:border-roksal-amber focus:ring-2 focus:ring-roksal-amber/30 dark:border-stone-700"
           />
           <input
             value={telefon}
@@ -306,14 +306,14 @@ export function MeasureClient({ token, nazivProjekta, stranka }: MeasureClientPr
             placeholder="Telefon (za ponudbo po SMS)"
             inputMode="tel"
             autoComplete="tel"
-            className="h-12 w-full rounded-xl border border-stone-300 px-4 text-sm outline-none focus:border-roksal-amber focus:ring-2 focus:ring-roksal-amber/30"
+            className="h-12 w-full rounded-xl border border-stone-300 bg-transparent px-4 text-sm outline-none placeholder:text-muted-foreground focus:border-roksal-amber focus:ring-2 focus:ring-roksal-amber/30 dark:border-stone-700"
           />
           <textarea
             value={opomba}
             onChange={(e) => setOpomba(e.target.value)}
             placeholder="Opomba (vrsta ograje, višina, termine…)"
             rows={2}
-            className="w-full rounded-xl border border-stone-300 px-4 py-3 text-sm outline-none focus:border-roksal-amber focus:ring-2 focus:ring-roksal-amber/30"
+            className="w-full rounded-xl border border-stone-300 bg-transparent px-4 py-3 text-sm outline-none placeholder:text-muted-foreground focus:border-roksal-amber focus:ring-2 focus:ring-roksal-amber/30 dark:border-stone-700"
           />
           <button
             type="button"

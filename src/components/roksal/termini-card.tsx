@@ -20,6 +20,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
+import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -30,12 +31,14 @@ import {
   Clock,
   Copy,
   Filter,
+  History,
   MapPin,
   RefreshCw,
   User,
   Users,
   Wrench,
 } from 'lucide-react'
+import { casOznaka } from '@/lib/osvezitev-fokus'
 import {
   buildTerminShareText,
   filtrirajTermini,
@@ -176,6 +179,13 @@ export function TerminiCard({ myUserId, onOpenProjectId }: TerminiCardProps) {
     return () => abortRef.current?.abort()
   }, [nalozi])
 
+  // R170 — vrnitev v zavihek/okno → osveži terme (druga seja — pisarna —
+  // lahko medtem spremeni status; zastarel prikaz je zavajajoč). Odločitev
+  // (30 s rate-limit, dedup obeh dogodkov, skrit dokument nikoli) je čista
+  // lib funkcija; hook je tanka ovojnica in ne požira napak (fail-verbose
+  // loader ostane EDINI vir napak — viden error panel, ne tihi refresh).
+  useRefetchOnFocus(nalozi)
+
   const skupnoSkupin =
     (prikazane?.danes.length ?? 0) + (prikazane?.kasneje.length ?? 0)
   const preskoceni =
@@ -311,6 +321,19 @@ export function TerminiCard({ myUserId, onOpenProjectId }: TerminiCardProps) {
             Termini — naslednjih 7 dni
           </CardTitle>
           <div className="flex items-center gap-1.5">
+            {/* R170 — pečat 'Osveženo ob HH:MM:SS' = čas ZADNJEGA uspešnega
+                branja (zdaj je nastavljen samo v uspešni veji nalozi — EN VIR
+                RESNICE, brez novega stanja). Napaka/nalaganje → brez pečata
+                (nikoli lažne svežine nad zastarelimi/odsotnimi podatki). */}
+            {zdaj && (
+              <span
+                className="hidden items-center gap-1 text-[11px] text-muted-foreground sm:flex"
+                title="Čas zadnje uspešne osvežitve podatkov"
+              >
+                <History className="h-3 w-3 shrink-0" aria-hidden="true" />
+                Osveženo ob <span className="tabular-nums">{casOznaka(zdaj)}</span>
+              </span>
+            )}
             {skupnoSkupin > 0 && (
               <Badge className="bg-roksal-navy/10 text-roksal-ink hover:bg-roksal-navy/15 tabular-nums">
                 {skupnoSkupin}

@@ -82,10 +82,10 @@ export function SetupClient({ initialToken }: SetupClientProps) {
 
   if (done) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-stone-100 p-6">
-        <div className="w-full max-w-md rounded-2xl border border-emerald-200 bg-white p-8 text-center shadow-sm">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50">
-            <CheckCircle2 className="h-7 w-7 text-emerald-600" />
+      <main className="flex min-h-screen items-center justify-center bg-stone-100 p-6 dark:bg-background">
+        <div className="w-full max-w-md rounded-2xl border border-emerald-200 bg-white p-8 text-center shadow-sm dark:border-emerald-800 dark:bg-card">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-950/40">
+            <CheckCircle2 className="h-7 w-7 text-emerald-600 dark:text-emerald-400" />
           </div>
           <h1 className="text-xl font-bold text-roksal-ink">
             {done.mode === 'RECOVER' ? 'Račun je obnovljen!' : 'Račun je ustvarjen!'}
@@ -108,8 +108,8 @@ export function SetupClient({ initialToken }: SetupClientProps) {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-stone-100 p-6">
-      <div className="w-full max-w-md rounded-2xl border border-stone-200 bg-white p-8 shadow-sm">
+    <main className="flex min-h-screen items-center justify-center bg-stone-100 p-6 dark:bg-background">
+      <div className="w-full max-w-md rounded-2xl border border-stone-200 bg-white p-8 shadow-sm dark:border-stone-800 dark:bg-card">
         <div className="mb-5 text-center">
           <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-roksal-amber/15">
             <Settings2 className="h-6 w-6 text-roksal-amber" aria-hidden="true" />
@@ -125,15 +125,15 @@ export function SetupClient({ initialToken }: SetupClientProps) {
         )}
 
         {status === 'off' && (
-          <div role="status" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-relaxed text-stone-700">
+          <div role="status" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-relaxed text-stone-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-stone-300">
             <p className="mb-2 flex items-center gap-2 font-semibold text-roksal-ink">
               <ShieldOff className="h-4 w-4 text-roksal-amber" aria-hidden="true" />
               Konzola je izklopljena
             </p>
             <p>
-              Žeton <code className="rounded bg-white px-1 py-0.5 text-[11px]">ROKSAL_SETUP_TOKEN</code> ni
+              Žeton <code className="rounded bg-white px-1 py-0.5 text-[11px] dark:bg-stone-800">ROKSAL_SETUP_TOKEN</code> ni
               nastavljen v okolju strežnika. Nastavite ga v upravni plošči gostovanja (Vercel/Render),
-              po potrebi tudi <code className="rounded bg-white px-1 py-0.5 text-[11px]">ROKSAL_SETUP_EMAIL</code>,
+              po potrebi tudi <code className="rounded bg-white px-1 py-0.5 text-[11px] dark:bg-stone-800">ROKSAL_SETUP_EMAIL</code>,
               in ponovno razmajnite aplikacijo.
             </p>
           </div>
@@ -142,7 +142,7 @@ export function SetupClient({ initialToken }: SetupClientProps) {
         {status === 'on' && (
           <div className="space-y-3">
             <div>
-              <label htmlFor="setup-token" className="mb-1 block text-xs font-medium text-stone-600">
+              <label htmlFor="setup-token" className="mb-1 block text-xs font-medium text-stone-600 dark:text-stone-400">
                 Žeton iz okolja (ROKSAL_SETUP_TOKEN)
               </label>
               <input
@@ -151,11 +151,11 @@ export function SetupClient({ initialToken }: SetupClientProps) {
                 value={token}
                 onChange={(e) => setToken(e.target.value)}
                 autoComplete="off"
-                className="h-11 w-full rounded-xl border border-stone-300 px-3 font-mono text-sm outline-none focus:border-roksal-amber focus:ring-2 focus:ring-roksal-amber/30"
+                className="h-11 w-full rounded-xl border border-stone-300 bg-transparent px-3 font-mono text-sm outline-none focus:border-roksal-amber focus:ring-2 focus:ring-roksal-amber/30 dark:border-stone-700"
               />
             </div>
             <div>
-              <label htmlFor="setup-email" className="mb-1 block text-xs font-medium text-stone-600">
+              <label htmlFor="setup-email" className="mb-1 block text-xs font-medium text-stone-600 dark:text-stone-400">
                 E-naslov računa
               </label>
               <input
@@ -165,12 +165,12 @@ export function SetupClient({ initialToken }: SetupClientProps) {
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"
                 placeholder="robertpezdirc@gmail.com"
-                className="h-11 w-full rounded-xl border border-stone-300 px-3 text-sm outline-none focus:border-roksal-amber focus:ring-2 focus:ring-roksal-amber/30"
+                className="h-11 w-full rounded-xl border border-stone-300 bg-transparent px-3 text-sm outline-none placeholder:text-muted-foreground focus:border-roksal-amber focus:ring-2 focus:ring-roksal-amber/30 dark:border-stone-700"
               />
             </div>
             <div>
-              <label htmlFor="setup-name" className="mb-1 block text-xs font-medium text-stone-600">
-                Ime in priimek <span className="text-stone-400">(obvezno pri novem računu)</span>
+              <label htmlFor="setup-name" className="mb-1 block text-xs font-medium text-stone-600 dark:text-stone-400">
+                Ime in priimek <span className="text-stone-400 dark:text-stone-500">(obvezno pri novem računu)</span>
               </label>
               <input
                 id="setup-name"
@@ -178,11 +178,11 @@ export function SetupClient({ initialToken }: SetupClientProps) {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 autoComplete="name"
-                className="h-11 w-full rounded-xl border border-stone-300 px-3 text-sm outline-none focus:border-roksal-amber focus:ring-2 focus:ring-roksal-amber/30"
+                className="h-11 w-full rounded-xl border border-stone-300 bg-transparent px-3 text-sm outline-none placeholder:text-muted-foreground focus:border-roksal-amber focus:ring-2 focus:ring-roksal-amber/30 dark:border-stone-700"
               />
             </div>
             <div>
-              <label htmlFor="setup-pass" className="mb-1 block text-xs font-medium text-stone-600">
+              <label htmlFor="setup-pass" className="mb-1 block text-xs font-medium text-stone-600 dark:text-stone-400">
                 Novo geslo (vsaj 8 znakov)
               </label>
               <input
@@ -191,11 +191,11 @@ export function SetupClient({ initialToken }: SetupClientProps) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="new-password"
-                className="h-11 w-full rounded-xl border border-stone-300 px-3 text-sm outline-none focus:border-roksal-amber focus:ring-2 focus:ring-roksal-amber/30"
+                className="h-11 w-full rounded-xl border border-stone-300 bg-transparent px-3 text-sm outline-none placeholder:text-muted-foreground focus:border-roksal-amber focus:ring-2 focus:ring-roksal-amber/30 dark:border-stone-700"
               />
             </div>
             <div>
-              <label htmlFor="setup-repeat" className="mb-1 block text-xs font-medium text-stone-600">
+              <label htmlFor="setup-repeat" className="mb-1 block text-xs font-medium text-stone-600 dark:text-stone-400">
                 Ponovite geslo
               </label>
               <input
@@ -204,12 +204,12 @@ export function SetupClient({ initialToken }: SetupClientProps) {
                 value={repeat}
                 onChange={(e) => setRepeat(e.target.value)}
                 autoComplete="new-password"
-                className="h-11 w-full rounded-xl border border-stone-300 px-3 text-sm outline-none focus:border-roksal-amber focus:ring-2 focus:ring-roksal-amber/30"
+                className="h-11 w-full rounded-xl border border-stone-300 bg-transparent px-3 text-sm outline-none placeholder:text-muted-foreground focus:border-roksal-amber focus:ring-2 focus:ring-roksal-amber/30 dark:border-stone-700"
               />
             </div>
 
             {error && (
-              <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-roksal-red">
+              <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-roksal-red dark:bg-red-950/40">
                 {error}
               </p>
             )}

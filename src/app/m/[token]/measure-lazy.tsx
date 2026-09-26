@@ -11,7 +11,7 @@ import { Loader2 } from 'lucide-react'
 const MeasureClient = dynamic(() => import('./measure-client').then((m) => m.MeasureClient), {
   ssr: false,
   loading: () => (
-    <main className="flex min-h-screen items-center justify-center bg-stone-100">
+    <main className="flex min-h-screen items-center justify-center bg-stone-100 dark:bg-background">
       <div className="flex flex-col items-center gap-3">
         <Loader2 className="h-6 w-6 animate-spin text-roksal-amber" />
         <p className="text-xs text-muted-foreground">Nalagam merilno karto…</p>

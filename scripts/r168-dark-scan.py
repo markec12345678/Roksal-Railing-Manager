@@ -41,6 +41,13 @@ VZORCI = {
     'fill': (re.compile(r"(?<![\w-])fill-(?:roksal|gray|slate|stone|zinc|neutral|red|amber|green|blue|purple|violet|emerald|teal|cyan|sky|indigo|fuchsia|pink|rose|orange|lime)-\d+"), re.compile(r"dark:fill-")),
     'stroke': (re.compile(r"(?<![\w-])stroke-(?:roksal|gray|slate|stone|zinc|neutral|red|amber|green|blue|purple|violet|emerald|teal|cyan|sky|indigo|fuchsia|pink|rose|orange|lime)-\d+"), re.compile(r"dark:stroke-")),
     'border-100': (re.compile(r"(?<![\w-])border-(?:gray|slate|stone|zinc|neutral)-(?:100)\b"), re.compile(r"dark:border-")),
+    # R170 — nove družine: svetla ozadja bg-X-50/100 + border-X-300
+    # (aktivacija/m/[token] javne strani — bg-stone-100 poln zaslon brez dark:)
+    'bg-svetli': (re.compile(r"(?<![\w-])bg-(?:gray|slate|stone|zinc|neutral)-(?:50|100)\b"), re.compile(r"dark:bg-")),
+    'border-300': (re.compile(r"(?<![\w-])border-(?:gray|slate|stone|zinc|neutral)-(?:300)\b"), re.compile(r"dark:border-")),
+    # R170 — izrecni SVETLI ring-offset (R168 fix nastavi privzeti na
+    # --background; izrecen ring-offset-X/white ga PREZRI in vrne beli halo)
+    'ring-offset': (re.compile(r"(?<![\w-])ring-offset-(?:white|(?:gray|slate|stone|zinc|neutral)-\d+)"), re.compile(r"dark:ring-offset-")),
 }
 
 def je_izjema(p: Path) -> bool:

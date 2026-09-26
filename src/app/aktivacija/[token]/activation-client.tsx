@@ -51,10 +51,10 @@ export function ActivationClient({ token, ime }: ActivationClientProps) {
 
   if (done) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-stone-100 p-6">
-        <div className="w-full max-w-md rounded-2xl border border-emerald-200 bg-white p-8 text-center shadow-sm">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50">
-            <CheckCircle2 className="h-7 w-7 text-emerald-600" />
+      <main className="flex min-h-screen items-center justify-center bg-stone-100 p-6 dark:bg-background">
+        <div className="w-full max-w-md rounded-2xl border border-emerald-200 bg-white p-8 text-center shadow-sm dark:border-emerald-800 dark:bg-card">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-950/40">
+            <CheckCircle2 className="h-7 w-7 text-emerald-600 dark:text-emerald-400" />
           </div>
           <h1 className="text-xl font-bold text-roksal-ink">Račun je aktiven!</h1>
           <p className="mt-2 text-sm text-muted-foreground">
@@ -73,8 +73,8 @@ export function ActivationClient({ token, ime }: ActivationClientProps) {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-stone-100 p-6">
-      <div className="w-full max-w-md rounded-2xl border border-stone-200 bg-white p-8 shadow-sm">
+    <main className="flex min-h-screen items-center justify-center bg-stone-100 p-6 dark:bg-background">
+      <div className="w-full max-w-md rounded-2xl border border-stone-200 bg-white p-8 shadow-sm dark:border-stone-800 dark:bg-card">
         <div className="mb-5 text-center">
           <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-roksal-amber/15">
             <KeyRound className="h-6 w-6 text-roksal-amber" />
@@ -87,7 +87,7 @@ export function ActivationClient({ token, ime }: ActivationClientProps) {
 
         <div className="space-y-3">
           <div>
-            <label htmlFor="act-pass" className="mb-1 block text-xs font-medium text-stone-600">
+            <label htmlFor="act-pass" className="mb-1 block text-xs font-medium text-stone-600 dark:text-stone-400">
               Novo geslo (vsaj 8 znakov)
             </label>
             <input
@@ -96,11 +96,11 @@ export function ActivationClient({ token, ime }: ActivationClientProps) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="new-password"
-              className="h-11 w-full rounded-xl border border-stone-300 px-3 text-sm outline-none focus:border-roksal-amber focus:ring-2 focus:ring-roksal-amber/30"
+              className="h-11 w-full rounded-xl border border-stone-300 bg-transparent px-3 text-sm outline-none placeholder:text-muted-foreground focus:border-roksal-amber focus:ring-2 focus:ring-roksal-amber/30 dark:border-stone-700"
             />
           </div>
           <div>
-            <label htmlFor="act-repeat" className="mb-1 block text-xs font-medium text-stone-600">
+            <label htmlFor="act-repeat" className="mb-1 block text-xs font-medium text-stone-600 dark:text-stone-400">
               Ponovite geslo
             </label>
             <input
@@ -109,12 +109,12 @@ export function ActivationClient({ token, ime }: ActivationClientProps) {
               value={repeat}
               onChange={(e) => setRepeat(e.target.value)}
               autoComplete="new-password"
-              className="h-11 w-full rounded-xl border border-stone-300 px-3 text-sm outline-none focus:border-roksal-amber focus:ring-2 focus:ring-roksal-amber/30"
+              className="h-11 w-full rounded-xl border border-stone-300 bg-transparent px-3 text-sm outline-none placeholder:text-muted-foreground focus:border-roksal-amber focus:ring-2 focus:ring-roksal-amber/30 dark:border-stone-700"
             />
           </div>
 
           {error && (
-            <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-roksal-red">
+            <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-roksal-red dark:bg-red-950/40">
               {error}
             </p>
           )}

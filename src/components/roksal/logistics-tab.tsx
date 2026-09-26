@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
 import { useToast } from '@/hooks/use-toast'
+import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'
+import { casOznaka } from '@/lib/osvezitev-fokus'
 import { downloadCsv, todayStamp } from '@/lib/csv-export'
 import { allowedTransitions } from '@/lib/equipment-lifecycle'
 import {
@@ -311,6 +313,11 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
   const [loading, setLoading] = useState(false)
   // R163 fail-verbose: razlog, zakaj podatkov NI (prej catch ignore + stale state).
   const [loadError, setLoadError] = useState<string | null>(null)
+  // R170 — pečat 'Osveženo ob' = čas zadnjega USPEŠNega branja vseh virov.
+  // Napaka/invaliden odgovor → null (pečat brez podatkov bi lažno trdil
+  // svežino — pečat je viden TOČNO TAKRAT, ko so na zaslonu podatki uspešnega
+  // branja, vzorec EN VIR RESNICE s Termini kartico).
+  const [zadnjaOsvezitev, setZadnjaOsvezitev] = useState<Date | null>(null)
   const [newScheduleOpen, setNewScheduleOpen] = useState(false)
   const [newCrewOpen, setNewCrewOpen] = useState(false)
   const [newEquipOpen, setNewEquipOpen] = useState(false)
@@ -403,6 +410,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
         setCrews([])
         setEquipment([])
         setProjects([])
+        setZadnjaOsvezitev(null)
         return
       }
       const [schedJson, crewJson, equipJson, projJson] = (await Promise.all([
@@ -417,12 +425,14 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
         setCrews([])
         setEquipment([])
         setProjects([])
+        setZadnjaOsvezitev(null)
         return
       }
       setSchedules(schedJson as Schedule[])
       setCrews(crewJson as Crew[])
       setEquipment(equipJson as Equipment[])
       setProjects(projJson as Project[])
+      setZadnjaOsvezitev(new Date())
       if (!schedProject && projJson.length > 0) setSchedProject(projectId || (projJson as Project[])[0].id)
     } catch {
       // R163: nič tihega ignore — omrežna napaka je vidna z razlogom.
@@ -431,10 +441,18 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
       setCrews([])
       setEquipment([])
       setProjects([])
+      setZadnjaOsvezitev(null)
     } finally { setLoading(false) }
   }, [projectId, schedProject])
 
   useEffect(() => { loadData() }, [loadData])
+
+  // R170 — vrnitev v zavihek/okno → ponovno naloži logistiko (pisarna lahko
+  // medtem spremeni termine/ekipe/opremo; okno ostane zastarel do remonta —
+  // P1-b iz R169). Odločitev je čista lib funkcija (30 s rate-limit, dedup
+  // visibilitychange+focus, skrit dokument nikoli ne fetcha); hook ne požira
+  // napak — fail-verbose loadError panel ostane EDINI vir resnice o napakah.
+  useRefetchOnFocus(loadData)
 
   const handleCreateSchedule = async () => {
     if (!schedProject || !schedDate) return
@@ -887,6 +905,20 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
               <Download className="h-4 w-4 mr-1" aria-hidden /> .ics
             </Button>
           </div>
+
+          {/* R170 — pečat 'Osveženo ob HH:MM:SS' = čas zadnjega uspešnega
+              branja vseh virov (zadnjaOsvezitev je nastavljen samo v uspešni
+              veji loadData; napaka → null). Skrit med nalaganjem — med fetchem
+              ni še podatka, ki bi bil 'svež'. Semantični žetoni (temna tema). */}
+          {zadnjaOsvezitev && !loading && (
+            <p
+              className="flex items-center gap-1 text-[11px] text-muted-foreground"
+              title="Čas zadnje uspešne osvežitve podatkov logistike"
+            >
+              <History className="h-3 w-3 shrink-0" aria-hidden="true" />
+              Osveženo ob <span className="tabular-nums">{casOznaka(zadnjaOsvezitev)}</span>
+            </p>
+          )}
 
           {loading ? (
             <Card><CardContent className="py-8 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto text-roksal-amber" /></CardContent></Card>
