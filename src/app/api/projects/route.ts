@@ -16,6 +16,7 @@ import { assertTransition, InvalidTransitionError } from '@/lib/project-state'
 import { auditInTx } from '@/lib/audit'
 import { correlationFromRequest, logWithCorrelation } from '@/lib/correlation'
 
+import { zapisOmejitev } from '@/lib/rate-limit'
 // GET - Pridobi projekte s podatki o strankah in meritvah (filtrirano po vlogi)
 export async function GET(request: Request) {
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
@@ -46,6 +47,10 @@ export async function GET(request: Request) {
 
 // POST - Ustvari nov projekt
 export async function POST(request: Request) {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'projects')
+  if (zavrnjeno) return zavrnjeno
+
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
@@ -95,6 +100,10 @@ export async function POST(request: Request) {
 
 // PATCH - Posodobi projekt
 export async function PATCH(request: Request) {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'projects')
+  if (zavrnjeno) return zavrnjeno
+
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
   const auth = await authenticate(request)
   if (!auth) return unauthorized()

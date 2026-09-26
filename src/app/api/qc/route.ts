@@ -17,6 +17,7 @@ import { db } from '@/lib/db'
 import { authenticate, unauthorized } from '@/lib/auth'
 import { assertProjectAccess, AccessDeniedError } from '@/lib/access'
 import { correlationFromRequest, logWithCorrelation } from '@/lib/correlation'
+import { zapisOmejitev } from '@/lib/rate-limit'
 import {
   QC_TEMPLATE_VERSION,
   validateQCItems,
@@ -82,6 +83,10 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'qc')
+  if (zavrnjeno) return zavrnjeno
+
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
   const correlationId = correlationFromRequest(request)

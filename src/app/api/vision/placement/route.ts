@@ -23,6 +23,7 @@ import { evaluatePlacement, projectPlacement } from '@/lib/cv-studio/placement'
 import { resolveScale } from '@/lib/measurement/scale'
 import type { ProjectionResult } from '@/lib/cv-studio/types'
 
+import { zapisOmejitev } from '@/lib/rate-limit'
 export const runtime = 'nodejs'
 export const maxDuration = 30
 
@@ -65,6 +66,10 @@ const placementSchema = z.object({
 })
 
 export async function POST(request: Request) {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'vision/placement')
+  if (zavrnjeno) return zavrnjeno
+
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
 

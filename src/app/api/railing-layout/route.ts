@@ -34,7 +34,12 @@ import {
 } from '@/lib/railing-layout'
 import { railingLayoutSchema } from '@/lib/validations'
 
+import { zapisOmejitev } from '@/lib/rate-limit'
 export async function POST(request: Request) {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'railing-layout')
+  if (zavrnjeno) return zavrnjeno
+
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
 

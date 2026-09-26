@@ -22,6 +22,7 @@ import {
   putObject,
 } from '@/lib/object-storage'
 import { validateUploadContent } from '@/lib/upload-security'
+import { zapisOmejitev } from '@/lib/rate-limit'
 import {
   beginIdempotency,
   idempotencyConflictResponse,
@@ -83,6 +84,10 @@ export async function GET(request: Request) {
 
 // POST - Shrani AR posnetek (data URI → object storage + metadata v DB)
 export async function POST(request: Request) {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'ar-snapshots')
+  if (zavrnjeno) return zavrnjeno
+
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
@@ -168,6 +173,10 @@ export async function POST(request: Request) {
 
 // DELETE - Izbriši AR posnetek (DB + artefakt)
 export async function DELETE(request: Request) {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'ar-snapshots')
+  if (zavrnjeno) return zavrnjeno
+
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
   const auth = await authenticate(request)
   if (!auth) return unauthorized()

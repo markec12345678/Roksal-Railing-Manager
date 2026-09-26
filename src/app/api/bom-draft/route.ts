@@ -5,6 +5,7 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { authenticate, unauthorized } from '@/lib/auth'
 
+import { zapisOmejitev } from '@/lib/rate-limit'
 // GET — pridobi BOM draft
 export async function GET(request: Request) {
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
@@ -47,6 +48,10 @@ export async function GET(request: Request) {
 
 // PATCH — posodobi BOM draft (uredi artikle, dodaj opombe)
 export async function PATCH(request: Request) {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'bom-draft')
+  if (zavrnjeno) return zavrnjeno
+
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
   const auth = await authenticate(request)
   if (!auth) return unauthorized()

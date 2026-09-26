@@ -16,6 +16,7 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { authenticate, unauthorized, denyWithoutPermission } from '@/lib/auth'
 import { correlationFromRequest, logWithCorrelation } from '@/lib/correlation'
+import { zapisOmejitev } from '@/lib/rate-limit'
 import {
   EQUIPMENT_EVENT_TYPES,
   EQUIPMENT_EVENT_RESULTS,
@@ -71,6 +72,10 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'equipment/events')
+  if (zavrnjeno) return zavrnjeno
+
   const denied = await denyWithoutPermission(request, 'production.manage')
   if (denied) return denied
   const auth = await authenticate(request)

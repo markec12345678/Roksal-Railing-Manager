@@ -22,6 +22,7 @@
 // Pomembno (brez lažnih trditev): števeci so v pomnilniku in veljajo za
 // TRENUTNI PRIMEREK — panel to izrecno pove ("vzorec, ne globalne absolutne
 // vrednosti").
+import { NextResponse } from 'next/server'
 import { createHash } from 'node:crypto'
 
 export interface RateLimitOptions {
@@ -226,11 +227,11 @@ export function clientIp(request: Request): string {
  *
  * Vrne `Response` (429), kadar je blokirano, sicer `null` (nadaljuj handler).
  */
-export function zapisOmejitev(request: Request, ruta: string): Response | null {
+export function zapisOmejitev(request: Request, ruta: string): NextResponse | null {
   const key = `write:${ruta}:${clientIp(request)}`
   const limit = checkRate(key, WRITE_LIMIT)
   if (limit.ok) return null
-  return Response.json(
+  return NextResponse.json(
     {
       error: 'Preveč zahtev.',
       detail: `Poskusi znova čez ${limit.retryAfterSeconds} s.`,

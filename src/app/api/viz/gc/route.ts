@@ -16,6 +16,7 @@ import { NextResponse } from 'next/server'
 import { gcStaging } from '@/lib/viz/gc'
 import { vizOwner } from '@/lib/viz/ownership'
 
+import { zapisOmejitev } from '@/lib/rate-limit'
 export const runtime = 'nodejs'
 
 async function authorized(request: Request): Promise<boolean> {
@@ -44,6 +45,10 @@ async function handle(request: Request): Promise<NextResponse> {
 }
 
 export async function POST(request: Request): Promise<NextResponse> {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'viz/gc')
+  if (zavrnjeno) return zavrnjeno
+
   return handle(request)
 }
 

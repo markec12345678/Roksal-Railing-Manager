@@ -11,6 +11,7 @@ import { receiveOrder, StockError } from '@/lib/inventory'
 import { auditInTx, audit } from '@/lib/audit'
 import { actorIdOf, hasPermission, principalBindingOf } from '@/lib/access'
 import { correlationFromRequest, logWithCorrelation } from '@/lib/correlation'
+import { zapisOmejitev } from '@/lib/rate-limit'
 import {
   isValidIdempotencyKey,
   reserveIdempotencyIn,
@@ -85,6 +86,10 @@ export async function GET(request: Request) {
 
 // POST — ustvari naročilo (iz BOM draft-a ali ročno) — samo vodstvo.
 export async function POST(request: Request) {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'material-orders')
+  if (zavrnjeno) return zavrnjeno
+
   // Spreminjanje cen, zalog, naročil in razporedov je vodstveno opravilo.
   // Monter bere (za delo na terenu), pisati pa ne sme.
   const denied = await denyWithoutPermission(request, 'procurement.create')
@@ -229,6 +234,10 @@ export async function POST(request: Request) {
 // §10 (R135): statusni stroj = procurement.approve (vodstvo); skladišče sme
 // SAMO prejem (status → DOBLJENO, "prejem je skladiščna operacija").
 export async function PATCH(request: Request) {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'material-orders')
+  if (zavrnjeno) return zavrnjeno
+
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
   const actor = actorIdOf(auth)

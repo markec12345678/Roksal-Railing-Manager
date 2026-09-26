@@ -24,6 +24,7 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { authenticate, unauthorized } from '@/lib/auth'
 import { assertProjectAccess, AccessDeniedError, lacksPermission } from '@/lib/access'
+import { zapisOmejitev } from '@/lib/rate-limit'
 import {
   DEFAULT_PORTAL_EXPIRY_DAYS,
   MAX_PORTAL_EXPIRY_DAYS,
@@ -150,6 +151,10 @@ export async function GET(request: Request) {
 // Prej je lastnik-monter lahko omogočil portal; zdaj izključno ADMIN/VODJA
 // (izrecna, dokumentirana zožitev — UI pokaže stanje "Ureja pisarna").
 export async function POST(request: Request) {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'portal')
+  if (zavrnjeno) return zavrnjeno
+
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
   if (auth.kind !== 'user') {

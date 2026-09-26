@@ -14,6 +14,7 @@ import { allocateDocumentNumber, createWithNumber } from '@/lib/numbering'
 import { auditInTx, audit } from '@/lib/audit'
 import { actorIdOf } from '@/lib/access'
 
+import { zapisOmejitev } from '@/lib/rate-limit'
 const DDV_STOPLNJE = [22, 9.5, 0] as const
 const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100
 
@@ -171,6 +172,10 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'invoices')
+  if (zavrnjeno) return zavrnjeno
+
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
   // §10: osnutek računa = invoices.create (vodstvo; uradni dokument).
@@ -240,6 +245,10 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'invoices')
+  if (zavrnjeno) return zavrnjeno
+
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
   // Statusi (IZDAN/PLACAN/STORNIRAN) = finančno pomembna dejanja → §10:
@@ -314,6 +323,10 @@ export async function PATCH(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'invoices')
+  if (zavrnjeno) return zavrnjeno
+
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
   // Brisanje OSNUTKA računa = ista pravica kot ustvarjanje (invoices.create).

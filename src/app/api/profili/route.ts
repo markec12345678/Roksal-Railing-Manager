@@ -4,6 +4,7 @@ import { db } from '@/lib/db'
 import { authenticate, unauthorized } from '@/lib/auth'
 import { denyWithoutPermission } from '@/lib/auth'
 
+import { zapisOmejitev } from '@/lib/rate-limit'
 // GET - Vsi profili (ali samo aktivni)
 export async function GET(request: Request) {
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
@@ -30,6 +31,10 @@ export async function GET(request: Request) {
 
 // POST - Ustvari nov profil (admin)
 export async function POST(request: Request) {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'profili')
+  if (zavrnjeno) return zavrnjeno
+
   // Spreminjanje cen, zalog, naročil in razporedov je vodstveno opravilo.
   // Monter bere (za delo na terenu), pisati pa ne sme.
   const denied = await denyWithoutPermission(request, 'catalog.manage')

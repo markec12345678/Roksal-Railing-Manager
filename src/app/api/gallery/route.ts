@@ -20,6 +20,7 @@ import {
 } from '@/lib/object-storage'
 import { validateUploadContent } from '@/lib/upload-security'
 
+import { zapisOmejitev } from '@/lib/rate-limit'
 function accessErrorResponse(error: unknown): NextResponse | null {
   if (error instanceof AccessDeniedError) {
     return NextResponse.json({ error: error.message }, { status: error.status })
@@ -77,6 +78,10 @@ export async function GET(request: Request) {
 
 // POST - Dodaj v galerijo (slike → object storage, metadata → DB)
 export async function POST(request: Request) {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'gallery')
+  if (zavrnjeno) return zavrnjeno
+
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
   const auth = await authenticate(request)
   if (!auth) return unauthorized()

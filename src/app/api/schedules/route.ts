@@ -30,6 +30,7 @@ import {
 } from '@/lib/schedule-conflicts'
 import { isValidOverrideReason } from '@/lib/qc-gate'
 
+import { zapisOmejitev } from '@/lib/rate-limit'
 // R145 (§31): dodeljevanje opreme terminu — max 20 kosov na termin (§17
 // strop; več kot 20 kosov opreme na EN termin je patološki vnos).
 const MAX_EQUIPMENT_PER_SCHEDULE = 20
@@ -125,6 +126,10 @@ export async function GET(request: Request) {
 
 // POST — ustvari termin montaže
 export async function POST(request: Request) {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'schedules')
+  if (zavrnjeno) return zavrnjeno
+
   // Spreminjanje cen, zalog, naročil in razporedov je vodstveno opravilo.
   // Monter bere (za delo na terenu), pisati pa ne sme.
   const denied = await denyWithoutPermission(request, 'production.manage')
@@ -302,6 +307,10 @@ export async function POST(request: Request) {
 
 // PATCH — spremeni status termina
 export async function PATCH(request: Request) {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'schedules')
+  if (zavrnjeno) return zavrnjeno
+
   // Spreminjanje cen, zalog, naročil in razporedov je vodstveno opravilo.
   // Monter bere (za delo na terenu), pisati pa ne sme.
   const denied = await denyWithoutPermission(request, 'production.manage')
@@ -633,6 +642,10 @@ export async function PATCH(request: Request) {
 
 // DELETE — izbriši termin
 export async function DELETE(request: Request) {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'schedules')
+  if (zavrnjeno) return zavrnjeno
+
   // Spreminjanje cen, zalog, naročil in razporedov je vodstveno opravilo.
   // Monter bere (za delo na terenu), pisati pa ne sme.
   const denied = await denyWithoutPermission(request, 'production.manage')

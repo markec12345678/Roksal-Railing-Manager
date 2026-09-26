@@ -30,6 +30,7 @@ import {
 } from '@/lib/object-storage'
 import { generateDocumentPdf } from '@/lib/document-pdf'
 
+import { zapisOmejitev } from '@/lib/rate-limit'
 // R140 (issue #5 §17): dokumenti + verzije so težki odgovori — neomejen
 // findMany bi za dolgoživim projektom povlekel vse PDF metadata + verzije.
 // Privzeti strop 200 + opcijski limit/offset. Odzivna OBLIKA (polje) ostane ista.
@@ -37,6 +38,10 @@ const DOCUMENT_DEFAULT_LIMIT = 200
 const DOCUMENT_MAX_LIMIT = 200
 
 export async function POST(request: Request) {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'documents')
+  if (zavrnjeno) return zavrnjeno
+
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
   const auth = await authenticate(request)
   if (!auth) return unauthorized()

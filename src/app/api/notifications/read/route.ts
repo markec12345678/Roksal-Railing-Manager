@@ -10,6 +10,7 @@ import { z } from 'zod'
 import { authenticate, unauthorized } from '@/lib/auth'
 import { CORRELATION_HEADER, correlationFromRequest, logWithCorrelation } from '@/lib/correlation'
 import type { UserRole } from '@prisma/client'
+import { zapisOmejitev } from '@/lib/rate-limit'
 import {
   markNotificationOpened,
   NotificationNotFoundError,
@@ -21,6 +22,10 @@ export const runtime = 'nodejs'
 const readSchema = z.object({ id: z.string().min(1).max(128) })
 
 export async function POST(request: Request): Promise<NextResponse> {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'notifications/read')
+  if (zavrnjeno) return zavrnjeno
+
   const correlationId = correlationFromRequest(request)
   const ctx = await authenticate(request)
   if (!ctx || ctx.kind !== 'user') {

@@ -21,12 +21,17 @@ import { authenticate, unauthorized } from '@/lib/auth'
 import { analyzeScene, SceneValidationError } from '@/lib/cv-studio/scene'
 import { decodeImageToImageBuffer, VisionDecodeError } from '@/lib/cv-studio/decode'
 
+import { zapisOmejitev } from '@/lib/rate-limit'
 export const runtime = 'nodejs'
 export const maxDuration = 30
 
 const MAX_BODY_BYTES = 8 * 1024 * 1024 // 8 MB (data URL)
 
 export async function POST(request: Request) {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'vision/scene')
+  if (zavrnjeno) return zavrnjeno
+
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
 

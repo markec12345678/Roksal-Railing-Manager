@@ -4,6 +4,7 @@ import { db } from '@/lib/db'
 import { authenticate, unauthorized } from '@/lib/auth'
 import { denyWithoutPermission } from '@/lib/auth'
 
+import { zapisOmejitev } from '@/lib/rate-limit'
 // GET — vsi dobavitelji (z številom cen in naročil)
 export async function GET(request: Request) {
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
@@ -29,6 +30,10 @@ export async function GET(request: Request) {
 
 // POST — ustvari dobavitelja
 export async function POST(request: Request) {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'suppliers')
+  if (zavrnjeno) return zavrnjeno
+
   // Spreminjanje cen, zalog, naročil in razporedov je vodstveno opravilo.
   // Monter bere (za delo na terenu), pisati pa ne sme.
   const denied = await denyWithoutPermission(request, 'catalog.manage')
@@ -59,6 +64,10 @@ export async function POST(request: Request) {
 
 // PATCH — posodobi dobavitelja
 export async function PATCH(request: Request) {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'suppliers')
+  if (zavrnjeno) return zavrnjeno
+
   // Spreminjanje cen, zalog, naročil in razporedov je vodstveno opravilo.
   // Monter bere (za delo na terenu), pisati pa ne sme.
   const denied = await denyWithoutPermission(request, 'catalog.manage')
@@ -80,6 +89,10 @@ export async function PATCH(request: Request) {
 
 // DELETE — izklopi dobavitelja (ne izbriše)
 export async function DELETE(request: Request) {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'suppliers')
+  if (zavrnjeno) return zavrnjeno
+
   // Spreminjanje cen, zalog, naročil in razporedov je vodstveno opravilo.
   // Monter bere (za delo na terenu), pisati pa ne sme.
   const denied = await denyWithoutPermission(request, 'catalog.manage')

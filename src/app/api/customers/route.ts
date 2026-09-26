@@ -6,6 +6,7 @@ import { authenticate, unauthorized, forbidden } from '@/lib/auth'
 import { canManageCustomers, actorIdOf, principalBindingOf } from '@/lib/access'
 import { escapeLikePattern } from '@/lib/search-access'
 import { correlationFromRequest, logWithCorrelation } from '@/lib/correlation'
+import { zapisOmejitev } from '@/lib/rate-limit'
 import {
   isValidIdempotencyKey,
   reserveIdempotencyIn,
@@ -83,6 +84,10 @@ export async function GET(request: Request) {
 
 // POST - Ustvari novo stranko
 export async function POST(request: Request) {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'customers')
+  if (zavrnjeno) return zavrnjeno
+
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
   const auth = await authenticate(request)
   if (!auth) return unauthorized()

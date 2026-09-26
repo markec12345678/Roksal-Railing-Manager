@@ -21,6 +21,7 @@ import { db } from '@/lib/db'
 import { authenticate, unauthorized } from '@/lib/auth'
 import { canManageCustomers, actorIdOf } from '@/lib/access'
 
+import { zapisOmejitev } from '@/lib/rate-limit'
 const CRM_STATUSI = ['AKTIVEN', 'NEAKTIVEN', 'POTENCIALEN', 'ARHIVIRAN'] as const
 const MAX_KONTAKTNA = 120
 const MAX_KATEGORIJA = 80
@@ -196,6 +197,10 @@ export async function GET(request: Request) {
 
 // PATCH — posodobi CRM polja stranke
 export async function PATCH(request: Request) {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'crm')
+  if (zavrnjeno) return zavrnjeno
+
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
   const auth = await authenticate(request)
   if (!auth) return unauthorized()

@@ -17,6 +17,7 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { authenticate, unauthorized, denyWithoutPermission } from '@/lib/auth'
 import { correlationFromRequest, logWithCorrelation } from '@/lib/correlation'
+import { zapisOmejitev } from '@/lib/rate-limit'
 import {
   checkTransition,
   isCalibrationOverdue,
@@ -119,6 +120,10 @@ const VALID_FIELDS = [
 ] as const
 
 export async function PATCH(request: Request) {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'equipment')
+  if (zavrnjeno) return zavrnjeno
+
   // Upravljanje opreme je vodstveno opravilo (isti katalog kot ustvarjanje).
   const denied = await denyWithoutPermission(request, 'production.manage')
   if (denied) return denied

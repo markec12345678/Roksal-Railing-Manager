@@ -6,6 +6,7 @@ import { db } from '@/lib/db'
 import { authenticate, unauthorized } from '@/lib/auth'
 import { denyWithoutPermission } from '@/lib/auth'
 
+import { zapisOmejitev } from '@/lib/rate-limit'
 // GET — cene materiala (z option za primerjavo dobaviteljev)
 export async function GET(request: Request) {
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
@@ -72,6 +73,10 @@ export async function GET(request: Request) {
 
 // POST — dodaj/posodobi ceno materiala pri dobavitelju
 export async function POST(request: Request) {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'material-prices')
+  if (zavrnjeno) return zavrnjeno
+
   // Spreminjanje cen, zalog, naročil in razporedov je vodstveno opravilo.
   // Monter bere (za delo na terenu), pisati pa ne sme.
   const denied = await denyWithoutPermission(request, 'price.override')

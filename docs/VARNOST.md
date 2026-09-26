@@ -172,6 +172,23 @@ Kalkulator (razmiki, kemično sidranje, vetrna obremenitev) teče skozi
 | **Obrambna plast za klienta** | Zod (v4) že zavrne NaN/Infinity na API-ju; ovojnica dodaja meje umerjenosti in je ista plast v brskalniku, kjer `parseFloat('1e999')` → Infinity (klient NE gre skozi Zod). |
 | **API** | POST /api/calculator → 400 z izrecnimi napakami (nič tihega nonsensa), 200 nosi `formulaVersion` + `inputHash`; GET = register formul z mejami (anon → 401). |
 
+## Omejevanje hitrosti na pisanju — ZAPRTO (R190/R191 — val 1+2)
+
+VARNOST.md prej: "pisanje po ostalih rutah ima pripravljen `WRITE_LIMIT`, a še ni vklopljen." Zdaj je vklopljen POVSEK.
+
+| | |
+|---|---|
+| **Mehanizem** | `zapisOmejitev(request, ruta)` v `src/lib/rate-limit.ts` — ključ `write:<ruta>:<ip>`, okno 60 s, 300 zahtevkov (WRITE_LIMIT; velikodušno, lovi SAMO zankaste kliente). Guard je PRVI stavek handlerja (vzorec /api/auth: omejitev pred delom) — lovi tudi neavtenticirano spam industrijo. Pošten kompromis: deljeni IP (pisarna NAT) si deli proračun na rundo; 300/min pa je nad vsakim legitnim vzorcem. |
+| **429 odgovor** | ISTA fail-verbose družina kot prijava (R137/R189): `{ error: 'Preveč zahtev.', detail: 'Poskusi znova čez N s.' }` + `Retry-After` glava. Helper vrača `NextResponse` (assignable tudi v handlerje z deklariranim povratnim tipom). |
+| **Pokritje** | val 1 (R190): 9 računsko intenzivnih rut / 10 handlerjev (calculator, quote, viz/render, viz/preview, viz/product-preview, viz/stage, measurement/detect, measurement/confirm, sync POST+DELETE). val 2 (R191): VSE preostale mutirajoče rute — 42 datotek / 57 handlerjev (invoices, customers, projects, schedules, punch, photos, sketches, suppliers, equipment, crm, portal, evidence, bom-draft, bom-refine, …). Skupaj z val 1: 51 datotek / 67 handlerjev. |
+| **Izjeme (lasten `checkRate`, starejše runde)** | /api/auth (LOGIN_LIMIT), /api/auth/demo, /api/auth/email, /api/auth/password, /api/auth/register, /api/setup, /api/users/activate, /api/ar/analyze, /api/measure/photo, /api/public/measure, /api/portal/[token]. |
+| **Telemetrija** | Zavreže tečejo v R184 telemetrijo s kategorijo `write` — ADMIN panel v Ekipi prikazuje modro značko `write` (tehnična blokada, ne jantar auth = napad na prijavo) + legenda v note. |
+| **Trajni stražar** | Inventarni test (r191-val2-omejitev.test.ts) preišče datotečni sistem: VSAKA ruta z mutirajočim handlerjem MORA vsebovati `zapisOmejitev(` ali `checkRate(` — nova ruta brez omejitve pade v CI. |
+| **E2E ŽIVO dokaz** | 301× realni POST /api/calculator (lokalni standalone) → {400: 300, 429: 1} — točno na 301. zahtevku, Retry-After + fail-verbose telo; izolacija po ruti (quote NI blokiran); telemetrija trip brez PII (krajšani SHA-256 hash). |
+| **BOM opomba** | bom-draft/bom-refine ROUTE handlerja so omejena (gre za transportni sloj); pricing/BOM CORE (lib) ni bil dotaknjen — AI-frozen pravilo ostaja nedotaknjeno. |
+
+Preverjeno v vitestu (r190 + r191 testi) in dimnem smoči.
+
 ## Kaj še NI narejeno
 
 | | Zakaj je pomembno |
@@ -179,7 +196,6 @@ Kalkulator (razmiki, kemično sidranje, vetrna obremenitev) teče skozi
 | **EXIF stripping na strežniku (§37)** | Uploadi iz canvas data URI so brez EXIF (canvas re-enkodira), neposredni API uploadi JPEG pa EXIF lahko ohranijo. Strežniško stripanje zahteva dekodiranje (sharp) — izrecno odloženo, ne utišano; GPS polja so pri fotodokumentaciji izrecna klientova izbira (opt-in), ne EXIF prenos. |
 | **Malware scanning (§37)** | Policy: magični bajti + dovoljen seznam + stropi preprečijo skriptne nosilce (SVG/HTML) in dekompresijske bombe; pravi AV sken bajtov ni implementiran (zahteva zunanji servis) — dokumentirano kot odloženo. |
 | **CSRF** | `SameSite=Lax` pokriva večino, ne pa vseh primerov (GET z vrhnje ravni). Za mutacije je `SameSite=Strict` ali dvojni žeton varnejši. |
-| **Omejevanje hitrosti na drugih rutah** | Zaščitena je prijava. R190 (val 1): WRITE_LIMIT (300/min/runda/IP, ključ `write:<ruta>:<ip>`) teče na 10 handlerjih v 9 računsko intenzivnih rutah — `calculator`, `quote`, `viz/render`, `viz/preview`, `viz/product-preview`, `viz/stage`, `measurement/detect`, `measurement/confirm`, `sync` (POST+DELETE). Guard je prvi stavek handlerja (pred auth) — lovi tudi neavtenticirano spam industrijo; pošten kompromis: deljeni IP (pisarna NAT) si deli proračun na rundo, 300/min pa je nad vsakim legitnim vzorcem. Zavrage tečejo telemetrijo (R184, kategorija `write`, modra značka v ADMIN panelu). Preostanek (val 2+): ostale mutirajoče rute po istem vzorcu `zapisOmejitev(request, '<ruta>')`. |
 | **Revizijski dnevnik na vseh mutacijah** | Piše se na prijavi, geslu, razporedu in ponudbi; `deal-lock`, `measurements` in `projects` imajo svoje stare klice, ki jih velja poenotiti. |
 | **Rotacija `SESSION_SECRET`** | Menjava razveljavi vse seje naenkrat. To je v redu, a mora biti znano. |
 | **Šifriranje baze v mirovanju** | SQLite datoteka je v jasni besedi. Na VPS reši šifriran disk (LUKS). |

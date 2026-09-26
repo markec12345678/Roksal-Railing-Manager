@@ -9,6 +9,7 @@ import { authenticate, unauthorized } from '@/lib/auth'
 import { assertProjectAccess, AccessDeniedError, lacksPermission } from '@/lib/access'
 import { getObject, objectUrlFor } from '@/lib/object-storage'
 
+import { zapisOmejitev } from '@/lib/rate-limit'
 export async function GET(request: Request) {
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
   const auth = await authenticate(request)
@@ -63,6 +64,10 @@ export async function GET(request: Request) {
 
 // GET s ?id=X&full=true — pridobi posamezni podpis (s sliko)
 export async function POST(request: Request) {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'signature-audit')
+  if (zavrnjeno) return zavrnjeno
+
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
   const auth = await authenticate(request)
   if (!auth) return unauthorized()

@@ -16,6 +16,7 @@ import { z } from 'zod'
 import { authenticate, unauthorized } from '@/lib/auth'
 import { assertProjectAccess, AccessDeniedError } from '@/lib/access'
 
+import { zapisOmejitev } from '@/lib/rate-limit'
 const TIP_OBJEKTA = ['balkon', 'stopnice', 'terasa', 'loggia', 'friz', 'prehod'] as const
 const OBLIKA = ['ravno', 'L', 'U', 'krog'] as const
 const PRITRDITEV = ['obrobna', 'tloris', 'stena', 'mesano'] as const
@@ -66,6 +67,10 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'surveys')
+  if (zavrnjeno) return zavrnjeno
+
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
   try {

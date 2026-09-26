@@ -23,6 +23,7 @@ import { db } from '@/lib/db'
 import { authenticate, unauthorized } from '@/lib/auth'
 import { assertProjectAccess, actorIdOf, AccessDeniedError } from '@/lib/access'
 
+import { zapisOmejitev } from '@/lib/rate-limit'
 const MEASUREMENT_STATUSES = ['OSNUTEK', 'POTRJENA', 'ARHIVIRANA'] as const
 
 const patchMeasurementStatusSchema = z.object({
@@ -37,6 +38,10 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'measurements/[id]')
+  if (zavrnjeno) return zavrnjeno
+
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
   const auth = await authenticate(request)
   if (!auth) return unauthorized()

@@ -11,6 +11,7 @@ import { vizOwner } from '@/lib/viz/ownership'
 import { vizList, vizCopy } from '@/lib/viz/storage'
 import { duplicateProjectForOwner } from '@/lib/viz/repository'
 
+import { zapisOmejitev } from '@/lib/rate-limit'
 export const runtime = 'nodejs'
 
 /** Kopira vse projektne datoteke (brez metadata dokumenta) na nov id. */
@@ -31,6 +32,10 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'viz/projects/[id]/duplicate')
+  if (zavrnjeno) return zavrnjeno
+
   // S+4/S+5: samo lastnik sme podvojiti; tuj projekt = 404.
   const ctx = await vizOwner(request)
   if (ctx instanceof Response) return ctx

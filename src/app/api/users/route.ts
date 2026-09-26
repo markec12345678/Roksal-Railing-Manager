@@ -27,6 +27,7 @@ import { hashPassword } from '@/lib/password'
 import { revokeAllForUser } from '@/lib/session-registry'
 import { auditInTx } from '@/lib/audit'
 import { correlationFromRequest, logWithCorrelation } from '@/lib/correlation'
+import { zapisOmejitev } from '@/lib/rate-limit'
 import {
   VALID_ROLES,
   generateInviteToken,
@@ -119,6 +120,10 @@ export async function GET(request: Request) {
 
 // POST — upravljanje (§10: users.manage = izključno ADMIN)
 export async function POST(request: Request) {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'users')
+  if (zavrnjeno) return zavrnjeno
+
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
   if (auth.kind !== 'user') {

@@ -9,7 +9,12 @@ import { requireUser, unauthorized } from '@/lib/auth'
 import { revokeSession } from '@/lib/session-registry'
 import { audit } from '@/lib/audit'
 
+import { zapisOmejitev } from '@/lib/rate-limit'
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'auth/sessions/[id]')
+  if (zavrnjeno) return zavrnjeno
+
   const session = await requireUser(request)
   if (!session) return unauthorized()
 

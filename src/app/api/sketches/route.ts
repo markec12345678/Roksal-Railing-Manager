@@ -23,6 +23,7 @@ import {
 } from '@/lib/object-storage'
 import { validateUploadContent } from '@/lib/upload-security'
 
+import { zapisOmejitev } from '@/lib/rate-limit'
 function accessErrorResponse(error: unknown): NextResponse | null {
   if (error instanceof AccessDeniedError) {
     return NextResponse.json({ error: error.message }, { status: error.status })
@@ -91,6 +92,10 @@ export async function GET(request: Request) {
 
 // POST - Shrani skico (data URI → object storage + metadata v DB)
 export async function POST(request: Request) {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'sketches')
+  if (zavrnjeno) return zavrnjeno
+
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
@@ -154,6 +159,10 @@ export async function POST(request: Request) {
 
 // DELETE - Izbriši skico (DB + artefakt)
 export async function DELETE(request: Request) {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'sketches')
+  if (zavrnjeno) return zavrnjeno
+
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
   const auth = await authenticate(request)
   if (!auth) return unauthorized()

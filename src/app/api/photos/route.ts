@@ -34,6 +34,7 @@ import {
 } from '@/lib/object-storage'
 import { validateUploadContent } from '@/lib/upload-security'
 
+import { zapisOmejitev } from '@/lib/rate-limit'
 /** Zavij resource napake v 403/404 odgovor (politika: 404 ne obstaja, 403 prepovedano). */
 function accessErrorResponse(error: unknown): NextResponse | null {
   if (error instanceof AccessDeniedError) {
@@ -119,6 +120,10 @@ export async function GET(request: Request) {
 
 // POST - Shrani sliko (data URI/base64 + kategorija + GPS) → object storage
 export async function POST(request: Request) {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'photos')
+  if (zavrnjeno) return zavrnjeno
+
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
@@ -196,6 +201,10 @@ export async function POST(request: Request) {
 
 // DELETE - Izbriši sliko (DB vrstica + artefakt iz object storage)
 export async function DELETE(request: Request) {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'photos')
+  if (zavrnjeno) return zavrnjeno
+
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
   const auth = await authenticate(request)
   if (!auth) return unauthorized()

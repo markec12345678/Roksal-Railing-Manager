@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { authenticate, unauthorized } from '@/lib/auth'
 
+import { zapisOmejitev } from '@/lib/rate-limit'
 interface BomDraftItem {
   kategorija: string
   naziv: string
@@ -113,6 +114,10 @@ export async function GET(request: Request) {
 
 // POST — pretvori BOM draft v naročilo pri najboljšem dobavitelju
 export async function POST(request: Request) {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'bom-refine')
+  if (zavrnjeno) return zavrnjeno
+
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
   const auth = await authenticate(request)
   if (!auth) return unauthorized()

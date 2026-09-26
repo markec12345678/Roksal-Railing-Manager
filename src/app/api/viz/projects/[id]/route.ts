@@ -8,6 +8,7 @@ import { z } from 'zod'
 import { vizOwner } from '@/lib/viz/ownership'
 import type { VizPlacement, VizVariant } from '@/lib/viz/types'
 import { VIZ_FILE_NAMES, clientUrlFor, clientUrlForPath, projectKey, vizDelPrefix } from '@/lib/viz/storage'
+import { zapisOmejitev } from '@/lib/rate-limit'
 import {
   deleteProject,
   getProjectForOwner,
@@ -89,6 +90,10 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'viz/projects/[id]')
+  if (zavrnjeno) return zavrnjeno
+
   // S+4: samo lastnik sme preimenovati; tuj projekt = 404.
   const ctx = await vizOwner(request)
   if (ctx instanceof Response) return ctx
@@ -117,6 +122,10 @@ export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'viz/projects/[id]')
+  if (zavrnjeno) return zavrnjeno
+
   // S+4: samo lastnik sme brisati; tuj projekt = 404.
   const ctx = await vizOwner(request)
   if (ctx instanceof Response) return ctx

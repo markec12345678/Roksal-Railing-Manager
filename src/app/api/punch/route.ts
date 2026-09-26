@@ -15,6 +15,7 @@ import { z } from 'zod'
 import { authenticate, unauthorized, type AuthContext } from '@/lib/auth'
 import { assertProjectAccess, AccessDeniedError, type ProjectRef } from '@/lib/access'
 
+import { zapisOmejitev } from '@/lib/rate-limit'
 const PROJECT_SELECT = { id: true, monterId: true, vodjaId: true, dealLocked: true } satisfies Record<string, boolean>
 
 function accessErrorResponse(error: unknown): NextResponse | null {
@@ -81,6 +82,10 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'punch')
+  if (zavrnjeno) return zavrnjeno
+
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
   try {
@@ -109,6 +114,10 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'punch')
+  if (zavrnjeno) return zavrnjeno
+
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
   try {
@@ -132,6 +141,10 @@ export async function PATCH(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'punch')
+  if (zavrnjeno) return zavrnjeno
+
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
   try {

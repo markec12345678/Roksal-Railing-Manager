@@ -18,6 +18,7 @@ import { authenticate } from '@/lib/auth'
 import { revokeAllForUser, revokeSession } from '@/lib/session-registry'
 import { audit } from '@/lib/audit'
 
+import { zapisOmejitev } from '@/lib/rate-limit'
 const schema = z
   .object({
     all: z.boolean().optional(),
@@ -26,6 +27,10 @@ const schema = z
   .optional()
 
 export async function POST(request: Request) {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'auth/logout')
+  if (zavrnjeno) return zavrnjeno
+
   const body = await request.json().catch(() => null)
   const parsed = schema.safeParse(body)
   const opts = parsed.success ? (parsed.data ?? {}) : {}

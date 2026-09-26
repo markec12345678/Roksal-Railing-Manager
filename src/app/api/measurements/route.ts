@@ -11,6 +11,7 @@ import { createMeasurementSchema } from '@/lib/validations'
 import { authenticate, unauthorized } from '@/lib/auth'
 import { assertProjectAccess, actorIdOf, principalBindingOf, AccessDeniedError } from '@/lib/access'
 import { assertTransition, InvalidTransitionError } from '@/lib/project-state'
+import { zapisOmejitev } from '@/lib/rate-limit'
 import {
   MEASUREMENT_STATUS_VALUES,
   isValidMeasurementStatus,
@@ -27,6 +28,10 @@ import {
 } from '@/lib/idempotency'
 
 export async function POST(request: Request) {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'measurements')
+  if (zavrnjeno) return zavrnjeno
+
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
   const auth = await authenticate(request)
   if (!auth) return unauthorized()

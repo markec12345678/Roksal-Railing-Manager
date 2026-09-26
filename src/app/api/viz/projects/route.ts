@@ -21,6 +21,7 @@ import { VIZ_FILE_NAMES, clientUrlForPath, stagingKey, vizGet, vizHas } from '@/
 import { findProjectByIdempotencyKey, listProjectsForOwner } from '@/lib/viz/repository'
 import { saveProjectFromStaging, type VizSaveVariantInput } from '@/lib/viz/save-flow'
 
+import { zapisOmejitev } from '@/lib/rate-limit'
 export const runtime = 'nodejs'
 
 interface StagedResultJson {
@@ -89,6 +90,10 @@ export async function GET(request: Request) {
 
 /** POST — shrani staging v projekt (kopira datoteke + ustvari metadata zapis). */
 export async function POST(request: Request) {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'viz/projects')
+  if (zavrnjeno) return zavrnjeno
+
   // S+4: projekt je vezan na prijavljenega uporabnika (lastništvo na backendu).
   const ctx: VizOwnerContext | Response = await vizOwner(request)
   if (ctx instanceof Response) return ctx

@@ -18,6 +18,7 @@ import { runMaintenanceJobs } from '@/lib/jobs'
 import { queueJobFailureNotifications } from '@/lib/notifications'
 import { CORRELATION_HEADER, correlationFromRequest, logWithCorrelation } from '@/lib/correlation'
 
+import { zapisOmejitev } from '@/lib/rate-limit'
 export const runtime = 'nodejs'
 
 async function isAdminSession(request: Request): Promise<boolean> {
@@ -84,6 +85,10 @@ async function handle(request: Request): Promise<NextResponse> {
 }
 
 export async function POST(request: Request): Promise<NextResponse> {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'jobs/run')
+  if (zavrnjeno) return zavrnjeno
+
   return handle(request)
 }
 

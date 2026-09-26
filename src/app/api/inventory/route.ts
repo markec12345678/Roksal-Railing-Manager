@@ -13,6 +13,7 @@ import { queueNotifications } from '@/lib/notifications'
 import { correlationFromRequest } from '@/lib/correlation'
 import type { StockLedgerEventType } from '@prisma/client'
 
+import { zapisOmejitev } from '@/lib/rate-limit'
 /** Stari UI tipi → ledger dogodki (združljivost z obstoječim klientom). */
 function mapEventType(tip: string): StockLedgerEventType {
   switch (tip) {
@@ -81,6 +82,10 @@ export async function GET(request: Request) {
 
 // POST - Ustvari novo inventarno postavko ali zabeleži premik
 export async function POST(request: Request) {
+  // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'inventory')
+  if (zavrnjeno) return zavrnjeno
+
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
   const correlationId = correlationFromRequest(request)
