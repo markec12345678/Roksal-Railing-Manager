@@ -2,7 +2,9 @@
 // ---------------------------------------------------------------------------
 // TS port orodja scripts/r157-a11y-audit.py (R157/R158), da je regresijski
 // stražar poganjan kot del vitest suite-a (r157/r158 testna datoteka).
-// Pokriva OBADVA <Button> (shadcn) in surovi <button> elemente.
+// Pokriva OBADVA <Button> (shadcn) in surovi <button> elemente; od R160 tudi
+// surove <a> povezave (ikonske povezave brez imena = isti razred napake —
+// R158 kandidat (c): ročni pregled je pokazal čisto stanje, stražar ga drži).
 //
 // Algoritem:
 //  1. najdi odpiralni tag (brace/quote-aware — arrow funkcije vsebujejo '>'),
@@ -100,7 +102,10 @@ function hasVisibleText(child: string): boolean {
     if (depthBrace === 0 || inFragment) text += c
     i += 1
   }
-  if (/[A-Za-zžščćđŽŠČĆĐ]/.test(text)) return true
+  // R160: tudi CIFRE so vidno besedilo (tel. številka "040 123 456" je
+  // veljavno dostopno ime) — prej je skener zahteval črke in lažno javil
+  // povezave z izključno številčnim besedilom.
+  if (/[A-Za-z0-9žščćđŽŠČĆĐ]/.test(text)) return true
   const stripped = child.replace(/<[^<>]*>/g, '')
   for (const m of stripped.matchAll(
     /\{\s*([A-Za-z_$][\w.$]*\[[^\]]*\]|[A-Za-z_$][\w.$]*)\s*\}/g,
@@ -116,18 +121,30 @@ export interface IconButtonOffender {
   tag: string
 }
 
-/** Skensira TSX vir in vrne ikonske gumbe (<Button>/<button>) brez aria-label/aria-labelledby. */
+interface ScanKind {
+  open: string
+  close: string
+}
+
+const SCAN_KINDS: readonly ScanKind[] = [
+  { open: '<Button', close: '</Button>' },
+  { open: '<button', close: '</button>' },
+  { open: '<a', close: '</a>' },
+]
+
+/** Skensira TSX vir in vrne ikonske gumbe/povezave (<Button>/<button>/<a>) brez
+ * dostopnega imena (aria-label/aria-labelledby ALI vidno besedilo). */
 export function iconOnlyButtonsWithoutLabel(
   src: string,
   file = 'inline.tsx',
 ): IconButtonOffender[] {
   const offenders: IconButtonOffender[] = []
-  for (const kind of ['<Button', '<button'] as const) {
+  for (const kind of SCAN_KINDS) {
     let idx = 0
     for (;;) {
-      const start = src.indexOf(kind, idx)
+      const start = src.indexOf(kind.open, idx)
       if (start === -1) break
-      const after = start + kind.length
+      const after = start + kind.open.length
       if (after < src.length && /[A-Za-z0-9_]/.test(src[after])) {
         idx = start + 1
         continue
@@ -143,14 +160,14 @@ export function iconOnlyButtonsWithoutLabel(
       }
       const tag = src.slice(start, tagEnd + 1)
       if (!tag.includes('aria-label') && !tag.includes('aria-labelledby')) {
-        const closeTag = kind === '<Button' ? '</Button>' : '</button>'
-        const close = src.indexOf(closeTag, tagEnd)
+        const selfClosing = /\/>\s*$/.test(tag)
+        const close = selfClosing ? -1 : src.indexOf(kind.close, tagEnd)
         const child = close !== -1 ? src.slice(tagEnd + 1, close) : ''
         if (!hasVisibleText(child)) {
           offenders.push({
             file,
             line: src.slice(0, start).split('\n').length,
-            tag: kind,
+            tag: kind.open,
           })
         }
       }

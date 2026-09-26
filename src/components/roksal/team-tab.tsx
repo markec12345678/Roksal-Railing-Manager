@@ -18,6 +18,7 @@ import {
   BadgeCheck,
   CalendarClock,
   Copy,
+  Download,
   Loader2,
   Lock,
   LockOpen,
@@ -28,7 +29,16 @@ import {
   UserCog,
   UserPlus,
   UserCheck,
+  type LucideIcon,
 } from 'lucide-react'
+import {
+  buildEkipaCsv,
+  ekipaCsvFilename,
+  ekipaStatusOf,
+  EKIPA_VLOGE,
+  type EkipaStatus,
+} from '@/lib/ekipa-csv'
+import { todayStamp } from '@/lib/csv-export'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -75,19 +85,15 @@ interface TeamUser {
   lifecycle: Lifecycle
 }
 
-const ROLE_LABEL: Record<string, string> = {
-  ADMIN: 'Admin',
-  VODJA: 'Vodja',
-  MONTER: 'Monter',
-  SKLADISCE: 'Skladišče',
-}
-
 const ROLE_CHIP: Record<string, string> = {
   ADMIN: 'bg-roksal-navy/10 text-roksal-navy ring-1 ring-inset ring-roksal-navy/20',
   VODJA: 'bg-roksal-amber/15 text-amber-700 ring-1 ring-inset ring-roksal-amber/30',
   MONTER: 'bg-secondary text-muted-foreground ring-1 ring-inset ring-border',
   SKLADISCE: 'bg-roksal-green/10 text-roksal-green ring-1 ring-inset ring-roksal-green/25',
 }
+
+// R160: vloge pridejo iz src/lib/ekipa-csv.ts (EN VIR RESNICE za UI in izvoz).
+const ROLE_LABEL: Record<string, string> = EKIPA_VLOGE
 
 /**
  * Determinističen avatar (R135 stil): iniciali + ena od 4 blagovnih tint,
@@ -115,6 +121,36 @@ type OneTime =
   | { kind: 'activation'; path: string; email: string }
   | { kind: 'tempPassword'; password: string; email: string }
   | null
+
+// R160: status računa pride iz ekipaStatusOf (EN VIR RESNICE z izvozom CSV);
+// tu je samo zaslonska meta (chip, ikona, title) na status.
+const STATUS_META: Record<EkipaStatus, { chip: string; icon: LucideIcon; title: string }> = {
+  Deaktiviran: {
+    chip: 'bg-stone-100 text-stone-500',
+    icon: Trash2,
+    title: 'Offboarding — prijava in že izdani žetoni so takoj mrtvi',
+  },
+  Zaklenjen: {
+    chip: 'bg-roksal-red/10 text-roksal-red',
+    icon: Lock,
+    title: 'Varnostni zaklep — prijava blokirana',
+  },
+  'Povabilo poteklo': {
+    chip: 'bg-amber-50 text-amber-700',
+    icon: CalendarClock,
+    title: 'Račun še ni aktiviran prek povabila',
+  },
+  'Čaka aktivacijo': {
+    chip: 'bg-amber-50 text-amber-700',
+    icon: CalendarClock,
+    title: 'Račun še ni aktiviran prek povabila',
+  },
+  Aktiven: {
+    chip: 'bg-roksal-green/10 text-roksal-green',
+    icon: ShieldCheck,
+    title: 'Aktiven račun — prijava deluje',
+  },
+}
 
 export function TeamTab() {
   const [loading, setLoading] = useState(true)
@@ -178,6 +214,45 @@ export function TeamTab() {
       return null
     } finally {
       setBusyId(null)
+    }
+  }
+
+  // R160 — CSV izvoz ekipe (podatkovni izvoz za pisarniško rabo; logika v
+  // src/lib/ekipa-csv.ts — deterministično, testirljivo, fail-closed).
+  // Izvozi točno to, kar uporabnik vidi: status z ISTIM prednostnim redom
+  // kot značke (ekipaStatusOf), vloge z ISTIMI naslovi (EKIPA_VLOGE).
+  function handleExportCsv() {
+    if (users.length === 0) return
+    try {
+      const { csv, vrstic } = buildEkipaCsv(
+        users.map((u) => ({
+          ime: u.ime,
+          email: u.email,
+          vloga: u.vloga,
+          lifecycle: u.lifecycle,
+          telefon: u.telefon,
+          lastActive: u.lastActive,
+          createdAt: u.createdAt,
+        })),
+      )
+      const filename = ekipaCsvFilename(todayStamp())
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+      toast.success(
+        `CSV izvožen — ${vrstic} ${vrstic === 1 ? 'član' : 'članov'} v datoteko ${filename}`,
+      )
+    } catch (err) {
+      // Fail-verbose: izvoz ne sme tiho spodleteti — razlog gre v toast.
+      toast.error('Izvoz ni uspel', {
+        description: err instanceof Error ? err.message : `Neznana napaka (${String(err)}).`,
+      })
     }
   }
 
@@ -248,6 +323,20 @@ export function TeamTab() {
           </div>
         </div>
         <div className="flex items-center gap-1.5">
+          {canRead && users.length > 0 && (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={handleExportCsv}
+              className="h-8 px-2.5 focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              aria-label={`Izvozi CSV (${users.length} ${users.length === 1 ? 'član' : 'članov'})`}
+              title="Izvozi seznam ekipe v CSV za Excel/nadaljnjo obdelavo"
+            >
+              <Download className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
+              Izvozi CSV
+            </Button>
+          )}
           <Button type="button" size="sm" variant="ghost" onClick={() => void load()} className="h-8 px-2.5 focus-visible:ring-2 focus-visible:ring-roksal-navy/40" aria-label="Osveži seznam ekipe" aria-busy={loading}>
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
           </Button>
@@ -298,6 +387,8 @@ export function TeamTab() {
         <div className="space-y-2">
           {users.map((u) => {
             const self = u.id === myId
+            const status = ekipaStatusOf(u.lifecycle)
+            const StatusIcon = STATUS_META[status].icon
             return (
               <div
                 key={u.id}
@@ -334,28 +425,15 @@ export function TeamTab() {
                     <p className="truncate text-[11px] text-muted-foreground">{u.email}</p>
                   </div>
 
-                  {/* Statusni chip */}
-                  {u.lifecycle.deactivated ? (
-                    <Badge variant="secondary" className="text-[10px] bg-stone-100 text-stone-500" title="Offboarding — prijava in že izdani žetoni so takoj mrtvi">
-                      <Trash2 className="mr-1 h-3 w-3" />
-                      Deaktiviran
-                    </Badge>
-                  ) : u.lifecycle.locked ? (
-                    <Badge variant="secondary" className="text-[10px] bg-roksal-red/10 text-roksal-red" title="Varnostni zaklep — prijava blokirana">
-                      <Lock className="mr-1 h-3 w-3" />
-                      Zaklenjen
-                    </Badge>
-                  ) : u.lifecycle.invited ? (
-                    <Badge variant="secondary" className="text-[10px] bg-amber-50 text-amber-700" title="Račun še ni aktiviran prek povabila">
-                      <CalendarClock className="mr-1 h-3 w-3" />
-                      {u.lifecycle.inviteExpired ? 'Povabilo poteklo' : 'Čaka aktivacijo'}
-                    </Badge>
-                  ) : (
-                    <Badge variant="secondary" className="text-[10px] bg-roksal-green/10 text-roksal-green" title="Aktiven račun — prijava deluje">
-                      <ShieldCheck className="mr-1 h-3 w-3" />
-                      Aktiven
-                    </Badge>
-                  )}
+                  {/* Statusni chip (R160: status iz ENEGA vira resnice z izvozom) */}
+                  <Badge
+                    variant="secondary"
+                    className={`text-[10px] ${STATUS_META[status].chip}`}
+                    title={STATUS_META[status].title}
+                  >
+                    <StatusIcon className="mr-1 h-3 w-3" />
+                    {status}
+                  </Badge>
                 </div>
 
                 <div className="mt-1.5 flex flex-wrap items-center gap-3 text-[10px] text-muted-foreground">

@@ -366,7 +366,7 @@ Sheet z 6 podzavihki:
 | **PWA** | Service Worker + Web Manifest |
 | **Temnitveni način** | [next-themes](https://github.com/pacocoursey/next-themes) |
 | **Validacija** | [Zod 4](https://zod.dev/) |
-| **Testiranje** | [Vitest 4](https://vitest.dev/) (1126 testov + globalSetup embedded PG) |
+| **Testiranje** | [Vitest 4](https://vitest.dev/) (1145 testov + globalSetup embedded PG) |
 | **Paketni upravitelj** | [Bun](https://bun.sh/) |
 | **Linting** | ESLint 9 + eslint-config-next |
 
@@ -488,7 +488,7 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `bun run dev` | Zažene Next.js dev server (port 3000) |
 | `bun run build` | Produkcijska build (build-prepare: generate + migrate deploy + seed) |
 | `bun run start` | Zažene produkcijski server |
-| `bun run test` | Vsi testi (vitest, 1126, embedded PG prek globalSetup) |
+| `bun run test` | Vsi testi (vitest, 1145, embedded PG prek globalSetup) |
 | `bun run check` | tsc --noEmit + vitest run (en ukaz za vse) |
 | `bunx tsc --noEmit` | Tipska kontrola celotnega projekta (trenutno 0 napak) |
 | `bun run lint` | ESLint preverjanje |

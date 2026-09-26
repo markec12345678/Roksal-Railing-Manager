@@ -10,7 +10,7 @@
  * • Skrij se ob odprti ukazni paleti ni treba (z-40 < dialog z-50)
  */
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Plus, ScanLine, ImagePlus, Ruler, PenLine, Calculator, X } from 'lucide-react'
 
@@ -32,6 +32,17 @@ const ACTIONS: FabAction[] = [
 
 export function QuickActionsFab() {
   const [open, setOpen] = useState(false)
+
+  // R160 (stil/a11y pass): FAB meni se zapre tudi z Escape (tipkovnica —
+  // doslej je bila zapiranja zavedna samo miška/dotik).
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open])
 
   function run(action: FabAction) {
     setOpen(false)
@@ -75,11 +86,11 @@ export function QuickActionsFab() {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 12, scale: 0.85 }}
                     transition={{ duration: 0.18, delay: i * 0.035, ease: 'easeOut' }}
-                    className="flex min-h-[44px] items-center gap-2.5 rounded-full border border-roksal-navy/10 bg-white py-2 pl-4 pr-3 shadow-lg transition-colors hover:border-roksal-amber/50 hover:bg-roksal-amber/5 active:scale-95"
+                    className="flex min-h-[44px] items-center gap-2.5 rounded-full border border-roksal-navy/10 bg-white py-2 pl-4 pr-3 shadow-lg transition-colors hover:border-roksal-amber/50 hover:bg-roksal-amber/5 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
                   >
                     <span className="text-[13px] font-semibold text-roksal-navy">{action.label}</span>
                     <span className="flex h-8 w-8 items-center justify-center rounded-full bg-roksal-navy/5">
-                      <Icon className="h-4 w-4 text-roksal-amber" />
+                      <Icon className="h-4 w-4 text-roksal-amber" aria-hidden="true" />
                     </span>
                   </motion.button>
                 )
@@ -93,13 +104,14 @@ export function QuickActionsFab() {
           type="button"
           onClick={() => { setOpen((v) => !v); try { navigator.vibrate?.(15) } catch { /* ignore */ } }}
           whileTap={{ scale: 0.9 }}
-          className={`flex h-14 w-14 items-center justify-center rounded-full shadow-xl transition-colors ${
+          className={`flex h-14 w-14 items-center justify-center rounded-full shadow-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/50 focus-visible:ring-offset-2 ${
             open ? 'bg-roksal-navy text-white' : 'bg-roksal-amber text-white'
           }`}
           aria-expanded={open}
+          aria-haspopup="menu"
           aria-label={open ? 'Zapri hitre akcije' : 'Hitre akcije'}
         >
-          {open ? <X className="h-5 w-5" /> : <Plus className="h-7 w-7" />}
+          {open ? <X className="h-5 w-5" aria-hidden="true" /> : <Plus className="h-7 w-7" aria-hidden="true" />}
         </motion.button>
       </div>
     </>

@@ -17,6 +17,11 @@ export interface WindData {
   isSafeForInstallation: boolean
   riskLevel: 'low' | 'medium' | 'high' | 'dangerous'
   maxRailingHeight: number
+  /** R160 — izvor podatkov (fail-verbose): 'openweather' = živi podatki,
+   * 'demo' = NAKLJUČNI demo vzorec (brez API ključa ALI ob napaki API-ja).
+   * Vmesnik MORA demo izvor vidno pokazati — varnostna ocena iz naključja
+   * je tiha degradacija (projektno pravilo: brez izmišljenih podatkov). */
+  source: 'openweather' | 'demo'
 }
 
 const WIND_DIRECTIONS = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW']
@@ -74,6 +79,7 @@ export async function getWindData(lat: number, lon: number, apiKey?: string): Pr
       isSafeForInstallation: risk.isSafe,
       riskLevel: risk.riskLevel,
       maxRailingHeight: risk.maxRailingHeight,
+      source: 'openweather',
     }
   } catch (error) {
     console.error('Wind data fetch failed:', error)
@@ -101,6 +107,7 @@ function getDemoWindData(lat: number, lon: number): WindData {
     isSafeForInstallation: risk.isSafe,
     riskLevel: risk.riskLevel,
     maxRailingHeight: risk.maxRailingHeight,
+    source: 'demo',
   }
 }
 
