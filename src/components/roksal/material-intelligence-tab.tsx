@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
 import { useToast } from '@/hooks/use-toast'
+import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'
+import { casOznaka } from '@/lib/osvezitev-fokus'
 import { downloadCsv, todayStamp, type CsvValue } from '@/lib/csv-export'
 import {
   Package,
@@ -26,6 +28,7 @@ import {
   Download,
   ChevronDown,
   ChevronRight,
+  History,
 } from 'lucide-react'
 
 interface Supplier {
@@ -132,6 +135,11 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
   const [priceDialogOpen, setPriceDialogOpen] = useState(false)
   const [selectedInventory, setSelectedInventory] = useState<Inventory | null>(null)
   const [inventories, setInventories] = useState<Inventory[]>([])
+  // R182 — pečat svežine (družina R170) + fail-verbose agregacije: prej je
+  // tihi izpad /api/suppliers pomenil PRAZEN seznam (lažno 'Ni dobaviteljev —
+  // dodaj prvega') isti vzorec R162/R174; 403 = meja vloge (R175, tiho).
+  const [materialOsvezitev, setMaterialOsvezitev] = useState<Date | null>(null)
+  const [viriNapaka, setViriNapaka] = useState<string | null>(null)
   // R140: razprta postavka naročila (en hkrati — preglednost na telefonu).
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null)
   const { toast } = useToast()
@@ -143,24 +151,43 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
 
   const loadData = useCallback(async () => {
     setLoading(true)
+    // R182 — zbiranje NEUSPELIH virov (non-403; 403 = pravična meja R175)
+    const neuspeliViri: string[] = []
     try {
       const [supRes, invRes] = await Promise.all([
         fetch('/api/suppliers'),
         fetch('/api/inventory'),
       ])
       if (supRes.ok) setSuppliers(await supRes.json())
+      else if (supRes.status !== 403) neuspeliViri.push('dobavitelji')
       if (invRes.ok) setInventories(await invRes.json())
+      else if (invRes.status !== 403) neuspeliViri.push('zaloga')
 
       if (projectId && tab === 'bom') {
         const bomRes = await fetch(`/api/bom-refine?projectId=${projectId}`)
         if (bomRes.ok) setBomRefine(await bomRes.json())
+        else if (bomRes.status !== 403) neuspeliViri.push('BOM')
       }
       if (tab === 'orders') {
         const ordRes = await fetch('/api/material-orders')
         if (ordRes.ok) setOrders(await ordRes.json())
+        else if (ordRes.status !== 403) neuspeliViri.push('naročila')
+      }
+
+      // R182 — pečat = zadnje USPEŠNO branje VSEH poskušanih virov
+      // (vsaj EN non-403 neuspešen → BREZ pečata + viden warning)
+      if (neuspeliViri.length > 0) {
+        setViriNapaka(`Nekateri viri niso bilo naloženi (${neuspeliViri.join(', ')}) — prikaz je lahko nepopoln.`)
+        setMaterialOsvezitev(null)
+      } else {
+        setViriNapaka(null)
+        setMaterialOsvezitev(new Date())
       }
     } catch {
-      /* ignore */
+      // R182 — (prej tiho /* ignore */) omrežna napaka je VIDNA; podatki
+      // ostanejo, a BREZ lažnega pečata
+      setViriNapaka('Podatki niso bili osveženi (omrežje) — prikaz je lahko zastarel.')
+      setMaterialOsvezitev(null)
     } finally {
       setLoading(false)
     }
@@ -169,6 +196,10 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
   useEffect(() => {
     loadData()
   }, [loadData])
+
+  // R182 — vrnitev v zavihek → ponovno naloži (pisarna spreminja cene, naročila
+  // in dobavitelje v drugi seji). loadData je fail-verbose — hook ne požira napak.
+  useRefetchOnFocus(loadData)
 
   const handleConvertToOrder = async (supplierId?: string) => {
     if (!projectId) return
@@ -280,6 +311,38 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
         </Button>
       </div>
 
+      {/* R182 — pečat svežine + fail-verbose agregacije (družina R170) */}
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
+        <span>Dobavitelji, zaloge, naročila in BOM optimizacija.</span>
+        {materialOsvezitev && (
+          <span
+            className="hidden items-center gap-1 text-[11px] text-muted-foreground sm:flex"
+            title="Čas zadnje uspešne osvežitve podatkov"
+          >
+            <History className="h-3 w-3 shrink-0" aria-hidden="true" />
+            Osveženo ob{' '}
+            <span className="tabular-nums">{casOznaka(materialOsvezitev)}</span>
+          </span>
+        )}
+      </div>
+      {viriNapaka && (
+        <div
+          role="alert"
+          className="flex flex-wrap items-center gap-2 rounded-lg border border-roksal-red/30 bg-roksal-red/5 px-3 py-2 text-[11px] font-semibold text-roksal-red"
+        >
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+          <span className="min-w-0 flex-1">{viriNapaka}</span>
+          <button
+            type="button"
+            onClick={() => void loadData()}
+            aria-label="Ponovno naloži materialno inteligenco"
+            className="rounded px-1 py-0.5 font-bold transition-colors hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-red/40"
+          >
+            Poskusi znova
+          </button>
+        </div>
+      )}
+
       {/* BOM Refine tab */}
       {tab === 'bom' && (
         <div className="space-y-3">
@@ -288,9 +351,11 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
               <Package className="h-10 w-10 mx-auto mb-2 opacity-30" />
               <p className="text-sm">Izberi projekt v Domov za BOM optimizacijo.</p>
             </CardContent></Card>
-          ) : loading ? (
+          ) : loading && !bomRefine ? (
             <Card><CardContent className="py-8 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto text-roksal-amber" /></CardContent></Card>
-          ) : !bomRefine?.dealLocked ? (
+          ) : !bomRefine && viriNapaka ? null : !bomRefine?.dealLocked ? (
+            // R182 — BOM vir ni naložen (napaka vidna zgoraj) → brez lažnega
+            // 'Deal ni zaklenjen' (R174: error panel je PREDNOST pred praznim stanjem)
             <Card className="border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40">
               <CardContent className="py-6 text-center">
                 <AlertTriangle className="h-8 w-8 mx-auto text-amber-500 dark:text-amber-400 mb-2" />
@@ -394,13 +459,16 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
       {/* Orders tab */}
       {tab === 'orders' && (
         <div className="space-y-2">
-          {loading ? (
+          {loading && orders.length === 0 ? (
             <Card><CardContent className="py-8 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto text-roksal-amber" /></CardContent></Card>
           ) : orders.length === 0 ? (
-            <Card><CardContent className="py-8 text-center text-muted-foreground">
-              <ShoppingCart className="h-10 w-10 mx-auto mb-2 opacity-30" />
-              <p className="text-sm">Ni naročil. Pretvori BOM draft v naročilo.</p>
-            </CardContent></Card>
+            // R182 — naročila niso naložena (napaka zgoraj) → brez lažnega 'Ni naročil'
+            viriNapaka ? null : (
+              <Card><CardContent className="py-8 text-center text-muted-foreground">
+                <ShoppingCart className="h-10 w-10 mx-auto mb-2 opacity-30" />
+                <p className="text-sm">Ni naročil. Pretvori BOM draft v naročilo.</p>
+              </CardContent></Card>
+            )
           ) : (
             <>
               {/* R140: CSV izvoz — isti kontrakt kot Zaloga/Računi/Termini. */}
@@ -507,13 +575,16 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
           <Button type="button" onClick={() => setSupplierDialogOpen(true)} className="w-full bg-roksal-navy text-white shadow-sm transition-all focus-visible:ring-2 focus-visible:ring-roksal-navy/40">
             <Plus className="h-4 w-4 mr-2" /> Nov dobavitelj
           </Button>
-          {loading ? (
+          {loading && suppliers.length === 0 ? (
             <Card><CardContent className="py-8 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto text-roksal-amber" /></CardContent></Card>
           ) : suppliers.length === 0 ? (
-            <Card><CardContent className="py-8 text-center text-muted-foreground">
-              <Truck className="h-10 w-10 mx-auto mb-2 opacity-30" />
-              <p className="text-sm">Ni dobaviteljev. Dodaj prvega.</p>
-            </CardContent></Card>
+            // R182 — dobavitelji niso naloženi (napaka zgoraj) → brez lažnega 'Ni dobaviteljev'
+            viriNapaka ? null : (
+              <Card><CardContent className="py-8 text-center text-muted-foreground">
+                <Truck className="h-10 w-10 mx-auto mb-2 opacity-30" />
+                <p className="text-sm">Ni dobaviteljev. Dodaj prvega.</p>
+              </CardContent></Card>
+            )
           ) : (
             suppliers.map((sup) => (
               <Card key={sup.id} className="transition-colors hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25 hover:shadow-sm">

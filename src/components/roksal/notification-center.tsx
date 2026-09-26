@@ -17,13 +17,15 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import {
   Bell, Package, CalendarDays, CloudLightning, CheckCheck,
   ChevronRight, RefreshCw, AlertTriangle, Loader2, FileClock, Receipt,
-  Inbox, Wrench,
+  Inbox, Wrench, History,
 } from 'lucide-react'
+import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'
+import { casOznaka } from '@/lib/osvezitev-fokus'
 
 interface NotificationItem {
   id: string
@@ -89,11 +91,22 @@ export function NotificationCenter() {
   const [pulse, setPulse] = useState(false)
   const [persisted, setPersisted] = useState<PersistedNotification[]>([])
   const [persistedError, setPersistedError] = useState<string | null>(null)
+  // R182 — pečat svežine (družina R170): čas zadnjega USPEŠNEGA branja VSEH
+  // virov; vsaj EN neuspešen vir → BREZ pečata (nikoli lažne svežine).
+  const [obvestilaOsvezitev, setObvestilaOsvezitev] = useState<Date | null>(null)
+  // R182 — fail-verbose agregacije: vidna opozorilna vrstica z imeni virov,
+  // ki niso bilo naloženi (non-403). Prej je tihi izpad /api/inventory pomenil
+  // 'nizka zaloga NEVIDNA' = lažno 'Vse je pod nadzorom' (isti vzorec R162/R174).
+  const [viriNapaka, setViriNapaka] = useState<string | null>(null)
   const loadedOnce = useRef(false)
 
   const load = useCallback(async () => {
     setLoading(true)
     const out: NotificationItem[] = []
+    // R182 — zbiranje NEUSPELIH virov: 403 = pravična meja vloge (R175 vzorec
+    // — poštno stanje, NE napaka), vse ostalo (401/5xx/omrežje) gre v vidno
+    // opozorilno vrstico + brez pečata.
+    const neuspeliViri: string[] = []
     try {
       const [invRes, projRes] = await Promise.all([fetch('/api/inventory'), fetch('/api/projects')])
       const today = new Date()
@@ -113,6 +126,10 @@ export function NotificationCenter() {
             meta: 'Naroči material',
           })
         }
+      } else if (invRes.status !== 403) {
+        // R182 — fail-verbose: tihi izpad vira = nizka zaloga NEVIDNA (lažno
+        // 'Vse je pod nadzorom'); 403 = meja vloge, tiho (R175).
+        neuspeliViri.push('zaloga')
       }
 
       // 2) Današnje montaže
@@ -153,6 +170,8 @@ export function NotificationCenter() {
             meta: days > 0 ? `zapadlo ${days} dni` : 'danes',
           })
         }
+      } else if (projRes.status !== 403) {
+        neuspeliViri.push('projekti')
       }
 
       // 5) Zapadli računi (izdan + rok plačila pretekel)
@@ -182,8 +201,14 @@ export function NotificationCenter() {
               meta: days > 0 ? `zapadlo ${days} dni` : 'rok danes',
             })
           }
+        } else if (invRes2.status !== 403) {
+          // R182 — računi so FINANČNO KRITIČNI: tihi izpad = zapadli račun
+          // NEVIDEN ('opcijski vir' NE pomeni tihe degradacije).
+          neuspeliViri.push('računi')
         }
-      } catch { /* računi so opcijski za obvestila */ }
+      } catch {
+        neuspeliViri.push('računi')
+      }
 
       // 3) Vremensko opozorilo (samo če ni "low")
       try {
@@ -199,8 +224,14 @@ export function NotificationCenter() {
               meta: 'Preveri pogoje',
             })
           }
+        } else if (wRes.status !== 403) {
+          // R182 — R152 vzorec: izpad/izpahan vremenski vir = LAŽNA VARNOST
+          // (monter bi sklepal, da vreme ne povzroča skrbi, a je sploh ni bran).
+          neuspeliViri.push('vreme')
         }
-      } catch { /* vreme je opcijsko */ }
+      } catch {
+        neuspeliViri.push('vreme')
+      }
 
       // R143 (§29): zapisana obvestila z življenjskim ciklom — fail-verbose
       // napaka se POKAŽE (ni tihe degradacije).
@@ -235,13 +266,28 @@ export function NotificationCenter() {
 
       setItems(deduped)
       setBadge(deduped.reduce((n, i) => n + (i.count ?? 1), 0))
+
+      // R182 — pečat + agregacijska napaka: pečat = zadnje USPEŠNO branje
+      // VSEH virov (vsaj EN non-403 neuspešen → BREZ pečata + viden warning);
+      // pri podatkih v viru gre za svojo prikazano sporočilo.
+      if (neuspeliViri.length > 0) {
+        setViriNapaka(`Nekateri viri niso bilo naloženi (${neuspeliViri.join(', ')}) — prikaz je lahko nepopoln.`)
+        setObvestilaOsvezitev(null)
+      } else {
+        setViriNapaka(null)
+        setObvestilaOsvezitev(new Date())
+      }
+
       if (out.length > 0 && loadedOnce.current) {
         setPulse(true)
         setTimeout(() => setPulse(false), 1200)
       }
       loadedOnce.current = true
     } catch {
-      // offline — pustimo obstoječe podatke
+      // R182 — (prej tiho: 'offline — pustimo obstoječe podatke') omrežna
+      // napaka je VIDNA; obstoječi podatki ostanejo, a BREZ lažnega pečata.
+      setViriNapaka('Obvestila niso bila osvežena (omrežje) — prikaz je lahko zastarel.')
+      setObvestilaOsvezitev(null)
     } finally {
       setLoading(false)
     }
@@ -254,6 +300,11 @@ export function NotificationCenter() {
     window.addEventListener('roksal:refresh', onRefresh)
     return () => window.removeEventListener('roksal:refresh', onRefresh)
   }, [load])
+
+  // R182 — vrnitev v zavihek → osveži agregacijo (pisarna spreminja zaloge,
+  // račune in vreme v drugi seji; zvonek je prižgan STALNO — badge zastari).
+  // load je fail-verbose — hook ne požira napak (EN VIR napak = loader).
+  useRefetchOnFocus(load)
 
   function handleClick(item: NotificationItem) {
     setOpen(false)
@@ -323,10 +374,41 @@ export function NotificationCenter() {
               Obvestila
               {loading && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
             </SheetTitle>
+            <SheetDescription className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
+              <span>Nizka zaloga, današnje montaže, vreme, računi in poslana obvestila.</span>
+              {obvestilaOsvezitev && (
+                <span
+                  className="hidden items-center gap-1 text-[11px] text-muted-foreground sm:flex"
+                  title="Čas zadnje uspešne osvežitve podatkov"
+                >
+                  <History className="h-3 w-3 shrink-0" aria-hidden="true" />
+                  Osveženo ob{' '}
+                  <span className="tabular-nums">{casOznaka(obvestilaOsvezitev)}</span>
+                </span>
+              )}
+            </SheetDescription>
           </SheetHeader>
 
           <div className="max-h-[calc(100dvh-8rem)] overflow-y-auto px-3 py-3 scrollbar-thin">
-            {items.length === 0 && persisted.length === 0 && !loading && !persistedError && (
+            {viriNapaka && (
+              <div
+                role="alert"
+                className="mb-2 flex flex-wrap items-center gap-2 rounded-lg border border-roksal-red/30 bg-roksal-red/5 px-3 py-2 text-[11px] font-semibold text-roksal-red"
+              >
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                <span className="min-w-0 flex-1">{viriNapaka}</span>
+                <button
+                  type="button"
+                  onClick={() => void load()}
+                  aria-label="Ponovno naloži obvestila"
+                  className="rounded px-1 py-0.5 font-bold transition-colors hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-red/40"
+                >
+                  Poskusi znova
+                </button>
+              </div>
+            )}
+
+            {items.length === 0 && persisted.length === 0 && !loading && !persistedError && !viriNapaka && (
               <div className="flex flex-col items-center gap-2 py-12 text-center">
                 <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-100 dark:bg-green-500/15">
                   <CheckCheck className="h-7 w-7 text-green-600 dark:text-green-400" />

@@ -44,7 +44,9 @@ const PRIMERI = [
   stražar('src/components/roksal/calculator-tab.tsx', 2343, 'bg-amber-50/60', 'dark:bg-amber-950/40'),
   stražar('src/components/roksal/calculator-tab.tsx', 3802, 'bg-amber-50/60', 'dark:bg-amber-950/40'),
   // material-intelligence-tab — NAJBOLJŠI ponudnik
-  stražar('src/components/roksal/material-intelligence-tab.tsx', 329, 'bg-green-50', 'dark:bg-green-950/40'),
+  // R182: vrstica +65 (uvozi+stanja+fail-verbose loadData +47, pečat+warning
+  // vrstica +18) — ogledalo ŠE VEDNO na ISTI vrstici (precedens R180 '+34').
+  stražar('src/components/roksal/material-intelligence-tab.tsx', 394, 'bg-green-50', 'dark:bg-green-950/40'),
   // roksal-catalog — steklo tint (vzorec Inox fix R171)
   stražar('src/components/roksal/roksal-catalog.tsx', 193, 'bg-cyan-200/40', 'dark:bg-cyan-500/20'),
   // site-survey-tab — estrih Card + opravljeno opravilo
