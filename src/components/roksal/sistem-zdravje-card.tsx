@@ -26,6 +26,16 @@ import { useCallback, useEffect, useState } from 'react'
 import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'
 import { casOznaka } from '@/lib/osvezitev-fokus'
 import { zigIzpis } from '@/lib/posodobitev-jedro'
+// R188 — zgodovina odzivnih časov te seje: VSA odločitev v čistem jedru
+// (ring, sklanjatev, povzetek, višina palice) — komponenta je samo žičenje.
+import {
+  ZGODOVINA_MAX,
+  obsegZgodovine,
+  odziviPovzetek,
+  sejaZgodovinaDodaj,
+  sejaZgodovinaPreber,
+  visinaPalice,
+} from '@/lib/zdravje-zgodovina'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Activity, History, RefreshCw, AlertTriangle } from 'lucide-react'
@@ -46,6 +56,13 @@ export function SistemZdravjeCard() {
   const [odzivMs, setOdzivMs] = useState<number | null>(null)
   const [zgrajeno, setZgrajeno] = useState<string | null>(null)
   const [zdravjeOsvezitev, setZdravjeOsvezitev] = useState<Date | null>(null)
+  // R188 — zgodovina odzivnih časov TE SEJE (samo uspešne preverbe — napaka
+  // / omrežje NE dodata palice; ring obseg ZGODOVINA_MAX, najstarejša pade
+  // ven). Shrama je na nivoju modula (zdravje-zgodovina): vodja dashboard
+  // remontira kartico ob vsaki svoji fokus-osvežitvi (if (loading) skrije
+  // vsebino) — komponentni useState bi zgodovino stalno izgubil; seja shrama
+  // preživi remonte znotraj istega dokumenta (initializacija lenoba spodaj).
+  const [zgodovina, setZgodovina] = useState<number[]>(() => [...sejaZgodovinaPreber()])
 
   const load = useCallback(async () => {
     const zacetek = performance.now()
@@ -63,6 +80,11 @@ export function SistemZdravjeCard() {
           setZgrajeno(null)
         }
         setOdzivMs(Math.round(performance.now() - zacetek))
+        // R188 — ring zgodovine prek seja shrame (čisto jedro vrne novo
+        // tabelo, omejeno na ZGODOVINA_MAX; fail-closed TypeError se širi
+        // kot napaka preverbe — nikoli tiho izmišljena palica); lokalni
+        // state = kopija za render, shrama preživi remonte dashboarda.
+        setZgodovina([...sejaZgodovinaDodaj(Math.round(performance.now() - zacetek))])
         setZdravjeOsvezitev(new Date())
       } else {
         setData(null)
@@ -158,6 +180,34 @@ export function SistemZdravjeCard() {
             )}
             <span className="text-[10px] text-muted-foreground/70">
               Javna sonda /api/public/health — pinguje bazo (3 s vrata).
+            </span>
+          </div>
+        )}
+        {/* R188 — zgodovina odzivnih časov te seje: trak palic (samo realne
+            meritve uspešnih preverb — fail-closed jedro zdravje-zgodovina;
+            višina sorazmerna z maksimumom, zadnja palica poudarjena).
+            role="img" + determinističen aria povzetek za bralnik zaslona. */}
+        {!napaka && data && zgodovina.length > 0 && (
+          <div className="mt-2 flex items-end gap-2 border-t border-roksal-navy/10 pt-2 dark:border-roksal-ink/10">
+            <div
+              className="flex h-7 items-end gap-[3px]"
+              role="img"
+              aria-label={odziviPovzetek(zgodovina)}
+            >
+              {zgodovina.map((ms, i) => {
+                const zadnja = i === zgodovina.length - 1
+                return (
+                  <span
+                    key={`${i}-${ms}`}
+                    title={`${ms} ms`}
+                    style={{ height: `${visinaPalice(ms, Math.max(...zgodovina))}px` }}
+                    className={zadnja ? 'w-1.5 rounded-sm bg-roksal-amber' : 'w-1.5 rounded-sm bg-roksal-amber/40'}
+                  />
+                )
+              })}
+            </div>
+            <span className="text-[10px] leading-tight text-muted-foreground/70">
+              Odzivni časi ({obsegZgodovine(zgodovina.length)}, ring {ZGODOVINA_MAX})
             </span>
           </div>
         )}

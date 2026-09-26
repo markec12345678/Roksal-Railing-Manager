@@ -112,7 +112,7 @@ describe('R179 (a) — update-banner žičenje (družina refetch-on-focus + fail
     expect(src).toContain('aria-label="Skrij obvestilo o novi verziji"')
   })
 
-  it('montaža v lupini: pas zraven PwaStatus, na istih površinah (skrit v VizTab produktu)', () => {
+  it('montaža v lupini: pas zraven PwaStatus na glavnih površinah (page.tsx skriva ob activeTab===viz — VizTab ima LASTNO montažo od R188,glej r188 testi)', () => {
     const src = srcOf('src/app/page.tsx')
     expect(src).toContain("import { UpdateBanner } from '@/components/roksal/update-banner'")
     expect(src).toMatch(/\{activeTab !== 'viz' && <UpdateBanner \/>\}/)

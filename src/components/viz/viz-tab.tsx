@@ -22,6 +22,10 @@ import dynamic from 'next/dynamic'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/hooks/use-toast'
 import { ChevronLeft, FolderOpen, Hammer, Loader2 } from 'lucide-react'
+// R188 — sistemski notice pasovi v produktni lupini (glej opombo pri montaži
+// znotraj VizTab): deploy pas + offline pas sta zdaj vidna tudi MONTER-ju.
+import { UpdateBanner } from '@/components/roksal/update-banner'
+import { PwaStatus } from '@/components/roksal/pwa-status'
 import { getProject } from './api'
 import { maxReachableStep, toVizImage, useVizStore, type VizStep } from './viz-store'
 import { ProductHome } from './product-home'
@@ -88,6 +92,13 @@ function Stepper() {
 }
 
 /** Produktni header — LOGO | Moji projekti | Nov projekt (spec §7, minimalno). */
+// R188 — sistemski notice pasovi TUDI v produktni lupini (MONTER dom
+// 'Moji projekti'): R186 QA dodatek (P2) je ugotovil, da page.tsx skriva
+// UpdateBanner in PwaStatus ob activeTab==='viz' → parkirani MONTER ni videl
+// niti deploy pasu ('na voljo je nova verzija') niti offline pasa ('Ni
+// povezave'). Montaža je TUKAJ, v lupini, tik pod glavo — oba pasa se sama
+// skrijeta, ko nista relevantna (fail-closed render null). Z montažo v
+// page.tsx (activeTab !== 'viz') se izključujeta — NIČ kdaj dvojnega pasa.
 function ProductHeader() {
   const step = useVizStore((s) => s.step)
   const setStep = useVizStore((s) => s.setStep)
@@ -247,6 +258,18 @@ export function VizTab() {
   return (
     <div className="flex min-h-[calc(100dvh-3.5rem)] flex-col" data-testid="viz-product-shell">
       <ProductHeader />
+
+      {/* R188 — sistemski notice pasovi (deploy + offline/namestitev): glej
+          opombo zgoraj. PwaStatus sam upravlja svojo širino/odmik (max-w-lg
+          px-3, enako kot v glavni app); UpdateBanner dobi enak 12/16 px odmik
+          prek ovoja — pasova sta poravnana. Fail-closed: brez pogoja pasova
+          nista relevantna, vsak sam renderira null. */}
+      <div className="mx-auto w-full max-w-lg pt-2 sm:max-w-2xl">
+        <PwaStatus />
+        <div className="px-3 sm:px-4">
+          <UpdateBanner />
+        </div>
+      </div>
 
       {inWizard && (
         <div className="mx-auto w-full max-w-lg sm:max-w-2xl">
