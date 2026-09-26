@@ -15,12 +15,16 @@ import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/component
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell, TableFooter } from '@/components/ui/table'
 import { EmptyState } from '@/components/ui/empty-state'
 import { useToast } from '@/hooks/use-toast'
+// R183 — živostna družina: refetch-on-focus + pečat 'Osveženo ob' (EN VIR
+// casOznaka — komponenta NE formatiraj časa sama; vzorec R170-R182).
+import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'
+import { casOznaka } from '@/lib/osvezitev-fokus'
 import {
   Camera, Trash2, MapPin, ImagePlus, X, Check, Loader2, AlertTriangle,
   ArrowRight, Minus, Square, Circle as CircleIcon, Type, Pencil, Ruler, Eraser,
   Upload, Copy, Download, ChevronLeft, ChevronRight, Images, Layers, Search,
   ExternalLink, Save, Undo2, Calendar, Sparkles, Columns, Trash,
-  ChevronDown, Lightbulb, FileText, Send, Info,
+  ChevronDown, Lightbulb, FileText, Send, Info, History,
 } from 'lucide-react'
 
 // ============================================================
@@ -377,15 +381,36 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
 
-  // ---- Nalaganje slik ----
+  // R183 — pečat 'Osveženo ob' = čas zadnjega USPEŠNEGA branja fotografij
+  // (primarni vir te površine, vzorec R170-R182). Napaka/omrežje → null
+  // (pečat brez podatkov bi lažno trdil svežino).
+  const [fotkeOsvezitev, setFotkeOsvezitev] = useState<Date | null>(null)
+  // R183 — fail-verbose (vzorec R162/R174/R182): prej je bil `if (res.ok)`
+  // BREZ else + `catch { /* ignore */ }` — neuspelo branje = tiho PRAZEN ali
+  // ZASTAREL seznam brez opozorila (terenski delavac ne ve, da fotke manjkajo).
+  const [napakaNalaganja, setNapakaNalaganja] = useState<string | null>(null)
+
+  // ---- Nalaganje slik (fail-verbose, EN VIR — mount + fokus + Poskusi znova) ----
   const loadPhotos = useCallback(async () => {
     if (!projectId) return
     setLoading(true)
     try {
       const res = await fetch(`/api/photos?projectId=${projectId}`)
-      if (res.ok) setPhotos(await res.json())
+      if (res.ok) {
+        setPhotos(await res.json())
+        setFotkeOsvezitev(new Date())
+        setNapakaNalaganja(null)
+      } else {
+        // R183: napaka je izrecna — zastarele fotke ostanejo BREZ pečata
+        // (nikoli starega stanja kot svežega, vzorec R174/R177).
+        setPhotos([])
+        setFotkeOsvezitev(null)
+        setNapakaNalaganja(`Fotografij ni bilo mogoče naložiti (napaka ${res.status}).`)
+      }
     } catch {
-      /* ignore */
+      setPhotos([])
+      setFotkeOsvezitev(null)
+      setNapakaNalaganja('Fotografij ni bilo mogoče naložiti — preverite povezavo.')
     } finally {
       setLoading(false)
     }
@@ -394,6 +419,11 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
   useEffect(() => {
     loadPhotos()
   }, [loadPhotos])
+
+  // R183 — vrnitev v zavihek/okno → ponovno naloži fotke (pisarna dodaja
+  // fotografije v drugi seji; terenski seznam ostane zastarel do remonta).
+  // loadPhotos je fail-verbose — hook ne požira napak (vzorec R176).
+  useRefetchOnFocus(loadPhotos)
 
   // ---- Nalaganje parov iz localStorage ----
   useEffect(() => {
@@ -623,11 +653,43 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
       {/* GLAVA — akcije */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-base">
+          <CardTitle className="flex flex-wrap items-center gap-2 text-base">
             <Camera className="h-5 w-5 text-roksal-amber" />
             Slikanje projekta
+            {/* R183 — pečat v CardTitle vrstici (vzorec zapisnik/ponudbe R181);
+                skrit na ozkih zaslonih; EN VIR casOznaka. */}
+            {fotkeOsvezitev && (
+              <span
+                className="hidden items-center gap-1 text-[11px] text-muted-foreground sm:flex"
+                title="Čas zadnje uspešne osvežitve podatkov"
+              >
+                <History className="h-3 w-3 shrink-0" aria-hidden="true" />
+                Osveženo ob{' '}
+                <span className="tabular-nums">{casOznaka(fotkeOsvezitev)}</span>
+              </span>
+            )}
           </CardTitle>
         </CardHeader>
+        {/* R183 — fail-verbose: neuspelo branje fotografij je VIDENO (vzorec
+            R182 materialna inteligenca) — PREDNOST pred lažnim praznim
+            galerijskim stanjem ('Ni fotografij' nad napako = utvara). */}
+        {napakaNalaganja && (
+          <div
+            role="alert"
+            className="mx-6 mb-2 flex flex-wrap items-center gap-2 rounded-lg border border-roksal-red/30 bg-roksal-red/5 px-3 py-2 text-[11px] font-semibold text-roksal-red"
+          >
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            <span className="min-w-0 flex-1">{napakaNalaganja}</span>
+            <button
+              type="button"
+              onClick={() => void loadPhotos()}
+              aria-label="Ponovno naloži fotografije"
+              className="rounded px-1 py-0.5 font-bold transition-colors hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-red/40"
+            >
+              Poskusi znova
+            </button>
+          </div>
+        )}
         <CardContent className="space-y-4">
           {!projectId && (
             <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-800">

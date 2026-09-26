@@ -53,7 +53,9 @@ const PRIMERI = [
   stražar('src/components/roksal/site-survey-tab.tsx', 625, 'bg-amber-50/40', 'dark:bg-amber-950/40'),
   stražar('src/components/roksal/site-survey-tab.tsx', 873, 'bg-green-50', 'dark:bg-green-950/40'),
   // measurements-tab — AR snapshot hover obroba
-  stražar('src/components/roksal/measurements-tab.tsx', 6364, 'hover:border-cyan-300', 'dark:hover:border-cyan-700'),
+  // (R183: +51 vrstic — loadAll refactor + pečat meritveOsvezitev + glavna
+  // flex-wrap vrstica; ogledalo na ISTI vsebinski vrstici, precedens R180/R182)
+  stražar('src/components/roksal/measurements-tab.tsx', 6415, 'hover:border-cyan-300', 'dark:hover:border-cyan-700'),
 ]
 
 describe('R172 dark-spot stražar — vsak svetli barvni žeton ima dark: ogledalo na ISTI vrstici', () => {

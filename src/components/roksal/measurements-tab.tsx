@@ -39,6 +39,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+// R183 — živostna družina: refetch-on-focus + pečat 'Osveženo ob' (EN VIR
+// casOznaka — komponenta NE formatiraj časa sama; vzorec R170-R182).
+import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'
+import { casOznaka } from '@/lib/osvezitev-fokus'
 import {
   Dialog,
   DialogContent,
@@ -836,6 +840,10 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedProject, setSelectedProject] = useState<string>('')
+  // R183 — pečat 'Osveženo ob' = čas zadnjega USPEŠNEGA branja meritev
+  // (primarni vir te površine, vzorec R170-R182). Napaka/omrežje → null
+  // (pečat brez podatkov bi lažno trdil svežino).
+  const [meritveOsvezitev, setMeritveOsvezitev] = useState<Date | null>(null)
   const [formOpen, setFormOpen] = useState(false)
 
   // Obstoječa polja obrazca
@@ -1043,52 +1051,78 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
   const selectedProjectIdRef = useRef(selectedProjectId)
   selectedProjectIdRef.current = selectedProjectId
 
+  // R183 — stabilen fail-verbose loader (EN VIR — mount + fokus; vzorec R176
+  // dokumenti). Ob osvežitvi ob fokusu NE resetiramo izbire projekta —
+  // meritve osvežimo za TRENUTNO izbrani projekt; auto-izbira (sledi glavni
+  // app, sicer prvi) SAMO ko izbire še ni — meritve za sveže izbrani projekt
+  // naloži obstoječi selectedProject efekt (BREZ dvojnega fetcha — prej sta
+  // mount efekt IN selectedProject efekt oba pobrala meritve prvega projekta).
+  const selectedProjectRef = useRef(selectedProject)
   useEffect(() => {
-    async function fetchData() {
-      try {
-        const projRes = await fetch('/api/projects')
-        if (projRes.ok) {
-          const projData = await projRes.json()
-          setProjects(projData)
-          if (projData.length > 0) {
-            // Sinhronizirano z glavno aplikacijo: če je v glavni app izbran
-            // projekt, uporabi tega, sicer prvi (prej je ta izbrnik vedno
-            // ignoriral izbiro glavne app — bug odkrit v rundi G)
-            const wanted = selectedProjectIdRef.current
-            const firstProjectId =
-              wanted && projData.some((p: { id: string }) => p.id === wanted)
-                ? wanted
-                : projData[0].id
-            setSelectedProject(firstProjectId)
-            const measRes = await fetch(`/api/measurements?projectId=${firstProjectId}`)
-            if (measRes.ok) {
-              const measData = await measRes.json()
-              // R152: prazen projekt ostane PRAZEN — ni izmišljenih meritev.
-              setMeasurements(normalizeMeasurements(measData))
-            } else {
-              // R152 fail-closed: napaka API-ja je vidna, nič demo meritev.
-              setMeasurements([])
-              toast.error(`Meritev ni bilo mogoče naložiti (napaka ${measRes.status})`)
-            }
-          } else {
-            setMeasurements([])
-          }
-        } else {
-          // R152 fail-closed: ni izmišljenih projektov/meritev — napaka je vidna.
-          setMeasurements([])
-          setProjects([])
-          toast.error(`Projektov ni bilo mogoče naložiti (napaka ${projRes.status})`)
-        }
-      } catch {
+    selectedProjectRef.current = selectedProject
+  }, [selectedProject])
+
+  const loadAll = useCallback(async () => {
+    try {
+      const projRes = await fetch('/api/projects')
+      if (!projRes.ok) {
+        // R152 fail-closed: ni izmišljenih projektov/meritev — napaka je vidna.
         setMeasurements([])
         setProjects([])
-        toast.error('Meritev ni bilo mogoče naložiti — preverite povezavo.')
-      } finally {
-        setLoading(false)
+        setMeritveOsvezitev(null)
+        toast.error(`Projektov ni bilo mogoče naložiti (napaka ${projRes.status})`)
+        return
       }
+      const projData = await projRes.json()
+      setProjects(projData)
+      if (projData.length === 0) {
+        setMeasurements([])
+        setMeritveOsvezitev(null)
+        return
+      }
+      if (!selectedProjectRef.current) {
+        // Sinhronizirano z glavno aplikacijo: če je v glavni app izbran
+        // projekt, uporabi tega, sicer prvi (prej je ta izbrnik vedno
+        // ignoriral izbiro glavne app — bug odkrit v rundi G)
+        const wanted = selectedProjectIdRef.current
+        const firstProjectId =
+          wanted && projData.some((p: { id: string }) => p.id === wanted)
+            ? wanted
+            : projData[0].id
+        setSelectedProject(firstProjectId)
+        return
+      }
+      // Fokus/osvežitev: meritve za TRENUTNO izbrani projekt (izbira ostane).
+      const measRes = await fetch(`/api/measurements?projectId=${selectedProjectRef.current}`)
+      if (measRes.ok) {
+        const measData = await measRes.json()
+        // R152: prazen projekt ostane PRAZEN — ni izmišljenih meritev.
+        setMeasurements(normalizeMeasurements(measData))
+        setMeritveOsvezitev(new Date())
+      } else {
+        // R152 fail-closed: napaka API-ja je vidna, nič demo meritev.
+        setMeasurements([])
+        setMeritveOsvezitev(null)
+        toast.error(`Meritev ni bilo mogoče naložiti (napaka ${measRes.status})`)
+      }
+    } catch {
+      setMeasurements([])
+      setProjects([])
+      setMeritveOsvezitev(null)
+      toast.error('Meritev ni bilo mogoče naložiti — preverite povezavo.')
+    } finally {
+      setLoading(false)
     }
-    fetchData()
   }, [])
+
+  useEffect(() => {
+    void loadAll()
+  }, [loadAll])
+
+  // R183 — vrnitev v zavihek/okno → ponovno naloži projekte + meritve
+  // izbranega projekta (pisarna dodaja meritve v drugi seji; terenski seznam
+  // ostane zastarel do remonta). loadAll je fail-verbose — hook ne požira napak.
+  useRefetchOnFocus(loadAll)
 
   // Sinhronizacija iz glavne aplikacije: uporabnik zamenja projekt v headeru
   // → Meritve izbrnik sledi (in re-fetch useEffect zgoraj pritegne meritve)
@@ -1109,12 +1143,16 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
           const measData = await measRes.json()
           // R152: prazen projekt ostane PRAZEN — ni izmišljenih meritev.
           setMeasurements(normalizeMeasurements(measData))
+          // R183 — pečat v OBEH uspešnih vejah (vzorec R177 dokumenti).
+          setMeritveOsvezitev(new Date())
         } else {
           setMeasurements([])
+          setMeritveOsvezitev(null)
           toast.error(`Meritev ni bilo mogoče osvežiti (napaka ${measRes.status})`)
         }
       } catch {
         setMeasurements([])
+        setMeritveOsvezitev(null)
         toast.error('Meritev ni bilo mogoče osvežiti — preverite povezavo.')
       }
     }
@@ -4116,9 +4154,22 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
     <div className="space-y-4 px-4 pb-4 pt-2 md:space-y-5 md:px-6 md:pb-6">
       <div>
         <h2 className="text-xl font-bold text-roksal-ink">Meritve</h2>
-        <p className="text-sm text-muted-foreground">
-          Meritve ograj, dimenzije, kotovi in nagibi — z umeritvijo in segmenti
-        </p>
+        {/* R183 — pečat 'Osveženo ob HH:MM:SS' = čas zadnjega uspešnega branja
+            meritev (vzorec R170-R182; skrit na ozkih zaslonih; flex-wrap). */}
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+          <p className="text-sm text-muted-foreground">
+            Meritve ograj, dimenzije, kotovi in nagibi — z umeritvijo in segmenti
+          </p>
+          {meritveOsvezitev && (
+            <span
+              className="hidden items-center gap-1 text-[11px] text-muted-foreground sm:flex"
+              title="Čas zadnje uspešne osvežitve podatkov"
+            >
+              <History className="h-3 w-3 shrink-0" aria-hidden="true" />
+              Osveženo ob <span className="tabular-nums">{casOznaka(meritveOsvezitev)}</span>
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Project Selector */}
