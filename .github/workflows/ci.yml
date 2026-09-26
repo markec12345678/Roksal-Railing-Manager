@@ -103,7 +103,7 @@ jobs:
       - name: Tipska kontrola
         run: bunx tsc --noEmit
 
-      - name: Testi (428, proti embedded PG roksal_test)
+      - name: Testi (proti embedded PG roksal_test; števec vzdrževan v README)
         run: bun run test
 
       - name: Gradnja
