@@ -30,8 +30,8 @@ function Command({
 }
 
 function CommandDialog({
-  title = "Command Palette",
-  description = "Search for a command to run...",
+  title = "Ukazna paleta",
+  description = "Poišči ukaz za izvedbo…",
   children,
   className,
   showCloseButton = true,

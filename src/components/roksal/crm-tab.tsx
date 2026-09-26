@@ -17,6 +17,8 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { QuoteFollowUp } from '@/components/roksal/quote-followup'
 import { InvoiceManager } from '@/components/roksal/invoice-manager'
 import { DealPipeline } from '@/components/roksal/deal-pipeline'
+import { buildCrmCsv, crmCsvFilename } from '@/lib/crm-csv'
+import { todayStamp } from '@/lib/csv-export'
 import {
   Users,
   Search,
@@ -36,6 +38,7 @@ import {
   Building2,
   User,
   Loader2,
+  Download,
 } from 'lucide-react'
 
 interface CrmCustomer {
@@ -160,6 +163,51 @@ export function CrmTab() {
   const handleOpenDetail = (customer: CrmCustomer) => {
     setSelectedCustomer(customer)
     setDetailOpen(true)
+  }
+
+  // R159 — CSV izvoz seznama strank (podatkovni izvoz za Excel/mail-merge;
+  // logika v src/lib/crm-csv.ts — deterministično, testirljivo, fail-closed).
+  // Izvozi točno to, kar uporabnik vidi: upošteva iskanje + statusni filter.
+  const handleExportCsv = () => {
+    if (filtered.length === 0) return
+    try {
+      const { csv, vrstic } = buildCrmCsv(
+        filtered.map((c) => ({
+          ime: c.ime,
+          naslov: c.naslov,
+          status: c.status,
+          kontaktnaOseba: c.kontaktnaOseba,
+          telefon: c.telefon,
+          email: c.email,
+          kategorija: c.kategorija,
+          opomnikDatum: c.opomnikDatum,
+          opomnikOpis: c.opomnikOpis,
+          zadnjiKontakt: c.zadnjiKontakt,
+          skupajProjektov: c.skupajProjektov,
+          ltv: c.ltv,
+          zaklenjeni: c.zaklenjeni,
+          opombeCRM: c.opombeCRM,
+        })),
+      )
+      const filename = crmCsvFilename(todayStamp())
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+      toast({ title: 'CSV izvožen', description: `${vrstic} strank izvoženih v datoteko ${filename}.` })
+    } catch (err) {
+      // Fail-verbose: izvoz ne sme tiho spodleteti — razlog gredo v toast.
+      toast({
+        title: 'Izvoz ni uspel',
+        description: err instanceof Error ? err.message : `Neznana napaka (${String(err)}).`,
+        variant: 'destructive',
+      })
+    }
   }
 
   const handleSaveEdit = async () => {
@@ -287,6 +335,19 @@ export function CrmTab() {
                 {s === 'ALL' ? 'Vsi' : STATUS_LABELS[s]}
               </Button>
             ))}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleExportCsv}
+              disabled={filtered.length === 0}
+              className="ml-auto h-7 shrink-0 gap-1.5 text-[11px] focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              aria-label={`Izvozi CSV (${filtered.length} ${filtered.length === 1 ? 'stranka' : 'strank'})`}
+              title="Izvozi prikazani seznam strank v CSV"
+            >
+              <Download className="h-3 w-3" aria-hidden="true" />
+              Izvozi CSV
+            </Button>
           </div>
         </ScrollArea>
       </div>
