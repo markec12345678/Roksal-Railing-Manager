@@ -37,6 +37,10 @@ VZORCI = {
     'outline': (re.compile(r"(?<![\w-])outline-(?:roksal|gray|slate|stone|zinc|neutral)-\d+"), re.compile(r"dark:outline-")),
     'text-svetli': (re.compile(r"(?<![\w-])text-(?:gray|slate|stone|zinc|neutral)-(?:50|100|200)\b"), re.compile(r"dark:text-")),
     'bg-200': (re.compile(r"(?<![\w-])bg-(?:gray|slate|stone|zinc|neutral)-(?:200)\b"), re.compile(r"dark:bg-")),
+    # R169 — nove družine: SVG fill/stroke + zelo svetle obrobe border-X-100
+    'fill': (re.compile(r"(?<![\w-])fill-(?:roksal|gray|slate|stone|zinc|neutral|red|amber|green|blue|purple|violet|emerald|teal|cyan|sky|indigo|fuchsia|pink|rose|orange|lime)-\d+"), re.compile(r"dark:fill-")),
+    'stroke': (re.compile(r"(?<![\w-])stroke-(?:roksal|gray|slate|stone|zinc|neutral|red|amber|green|blue|purple|violet|emerald|teal|cyan|sky|indigo|fuchsia|pink|rose|orange|lime)-\d+"), re.compile(r"dark:stroke-")),
+    'border-100': (re.compile(r"(?<![\w-])border-(?:gray|slate|stone|zinc|neutral)-(?:100)\b"), re.compile(r"dark:border-")),
 }
 
 def je_izjema(p: Path) -> bool:

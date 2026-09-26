@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -12,6 +12,12 @@ import { Separator } from '@/components/ui/separator'
 import { useToast } from '@/hooks/use-toast'
 import { downloadCsv, todayStamp } from '@/lib/csv-export'
 import { allowedTransitions } from '@/lib/equipment-lifecycle'
+import {
+  normalizirajTermin,
+  terminUrPovzetek,
+  vsotaPredvidenihUr,
+  type TerminPrikazVnos,
+} from '@/lib/termini-prikaz'
 import { QC_TEMPLATE, computePassed, countDefects } from '@/lib/qc-gate'
 import { IEV_TEMPLATE } from '@/lib/installation-evidence'
 import {
@@ -281,6 +287,24 @@ export function downloadIcs(schedules: Schedule[]): number {
 export function LogisticsTab({ projectId }: { projectId: string | null }) {
   const [subtab, setSubtab] = useState<'calendar' | 'crews' | 'equipment'>('calendar')
   const [schedules, setSchedules] = useState<Schedule[]>([])
+
+  // R169 — povzetek 'Skupaj ur' nad vidnimi termini (EN VIR RESNICE z
+  // dashboard Termini kartico: ISTI normalizirajTermin → vsotaPredvidenihUr
+  // → terminUrPovzetek). PREKlicano izključen + vidno preštet; '≥' ko ure
+  // manjkajo; pokvarjen vnos → vidno preštet kot preskočen (ne tiho izgubljen).
+  const urPovzetek = useMemo(() => {
+    let preskoceni = 0
+    const prikazne: TerminPrikazVnos[] = []
+    for (const raw of schedules) {
+      const res = normalizirajTermin(raw, null)
+      if ('napaka' in res) {
+        preskoceni += 1
+        continue
+      }
+      prikazne.push(res.vnos)
+    }
+    return { ag: vsotaPredvidenihUr(prikazne), preskoceni }
+  }, [schedules])
   const [crews, setCrews] = useState<Crew[]>([])
   const [equipment, setEquipment] = useState<Equipment[]>([])
   const [projects, setProjects] = useState<Project[]>([])
@@ -872,7 +896,24 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
               <p className="text-sm">Ni terminov. Ustvari nov termin montaže.</p>
             </CardContent></Card>
           ) : (
-            schedules.map((s) => (
+            <div className="space-y-2">
+              {/* R169 — povzetek predvidenih ur nad vidnimi termini (EN VIR
+                  RESNICE z dashboard Termini kartico — isti lib). PREKlicani
+                  so izključeni in vidno omenjeni; preskočeni (pokvarjeni)
+                  vnosi so vidno preštet — nikoli tihega izginjanja. */}
+              <p
+                className="flex flex-wrap items-center gap-x-2 gap-y-0.5 rounded-md bg-muted/60 px-2.5 py-1.5 text-[11px] text-muted-foreground"
+                title="Vsota predvidenih ur vidnih terminov (preklicani so izključeni)"
+              >
+                <Clock className="h-3 w-3 shrink-0 text-roksal-amber" aria-hidden="true" />
+                <span className="tabular-nums font-medium">{terminUrPovzetek(urPovzetek.ag)}</span>
+                {urPovzetek.preskoceni > 0 && (
+                  <span className="tabular-nums">
+                    · {urPovzetek.preskoceni} {urPovzetek.preskoceni === 1 ? 'vnos preskočen' : 'vnosov preskočenih'} (neveljaven vnos)
+                  </span>
+                )}
+              </p>
+              {schedules.map((s) => (
               <Card key={s.id} className="overflow-hidden transition-[border-color,box-shadow] duration-150 hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25 hover:shadow-sm focus-within:border-roksal-navy/25 dark:focus-within:border-roksal-ink/25">
                 <div className="flex items-stretch">
                   <div className="w-1.5 shrink-0" style={{ backgroundColor: s.crew?.barva || '#1d2b3e' }} />
@@ -952,7 +993,8 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                   </CardContent>
                 </div>
               </Card>
-            ))
+            ))}
+            </div>
           )}
         </div>
       )}
