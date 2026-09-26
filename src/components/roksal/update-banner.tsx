@@ -20,7 +20,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { RefreshCw, X } from 'lucide-react'
 import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'
-import { aliJeNovaVerzijaNaVoljo } from '@/lib/posodobitev-jedro'
+import { aliJeNovaVerzijaNaVoljo, zigIzpis } from '@/lib/posodobitev-jedro'
 
 /** Build žig TEKUČE seje — vgrajen ob gradnji (next.config env). */
 const MOJ_ZIG: string | null = process.env.NEXT_PUBLIC_BUILD_STAMP ?? null
@@ -82,6 +82,20 @@ export function UpdateBanner() {
     aliJeNovaVerzijaNaVoljo({ mojZig: MOJ_ZIG, streznikovZig }) &&
     skritZig !== streznikovZig
 
+  // R185 — podrobnost 'Zgrajeno <datum> ob <ura> (Europe/Ljubljana)': uporabnik
+  // vidi, kako ZASTAREL je tab (1 min vs 3 dni sta različni situaciji).
+  // Podrobnost je NASVETNA (izris, ne odločitev) — pokvarjen žig (nič na
+  // stotisočih) NE sme razbiti pasu: brez podrobnosti, osnovno sporočilo ostane.
+  // Osnovno sporočilo: 'Osvežite za najnovejše funkcije in popravke.'
+  let zgrajeno: string | null = null
+  if (vidn && streznikovZig) {
+    try {
+      zgrajeno = zigIzpis(streznikovZig)
+    } catch {
+      zgrajeno = null
+    }
+  }
+
   if (!vidn) return null
 
   return (
@@ -98,7 +112,7 @@ export function UpdateBanner() {
           Na voljo je nova verzija aplikacije.
         </p>
         <p className="text-[10px] text-muted-foreground leading-tight">
-          Osvežite za najnovejše funkcije in popravke.
+          {zgrajeno ? `${zgrajeno} — ` : ''}Osvežite za najnovejše funkcije in popravke.
         </p>
       </div>
       <button

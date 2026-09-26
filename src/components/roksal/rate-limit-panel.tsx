@@ -27,11 +27,33 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
-import { Gauge, History, Loader2, RefreshCw, ShieldAlert } from 'lucide-react'
+import { Download, Gauge, History, Loader2, RefreshCw, ShieldAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'
 import { casOznaka } from '@/lib/osvezitev-fokus'
+import { izvozImeDatoteke, telemetrijaCsv } from '@/lib/telemetrija-csv'
+
+// R185 — IZVOZ CSV: panel ponudi MAŠINETNO BERLJIV izvoz TRENUTNEGA stanja
+// (ista podatkovna oblika, samo drug izris — brez dodatnega API klica).
+// Jedro je čisto (src/lib/telemetrija-csv.ts — determinizem + fail-closed +
+// PII zaščita: odtis MORA biti 10-hex, sicer jedro vrže TypeError). Gumb je
+// onemogočen, dokler ni uspešno brano stanje (fail-closed: pokvaren/ničen
+// odgovor → NI izvoza). Arhiv/poročilo o napadu za lastnika — do zdaj je
+// bila telemetrija vidna samo živo na zaslonu.
+
+/** Prenesi CSV lokano (blob + a.download) — brez strežniške poti. */
+function prenesiCsv(vsebina: string, ime: string): void {
+  const blob = new Blob([vsebina], { type: 'text/csv;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = ime
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
+}
 
 interface TripRow {
   kind: string
@@ -176,7 +198,28 @@ export function RateLimitPanel() {
             </p>
           </div>
         </div>
-        <div className="shrink-0">
+        <div className="flex shrink-0 items-center gap-0.5">
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              // Fail-closed: izvoz SAMO iz uspešno branega stanja (data != null).
+              if (!data) return
+              try {
+                prenesiCsv(telemetrijaCsv(data), izvozImeDatoteke(new Date()))
+              } catch {
+                // pokvaren odgovor te oblike ne sme ustaviti UI — brez izvoza
+                // (stanje na zaslonu je že pokazalo napako prek load)
+              }
+            }}
+            disabled={loading || napaka !== null || !data}
+            className="h-8 px-2 transition-colors hover:text-roksal-ink focus-visible:ring-roksal-navy/40"
+            aria-label="Izvozi telemetrijo omejevanja hitrosti kot CSV"
+            title="Prenesi trenutno telemetrijo (CSV, ločilo ;)"
+          >
+            <Download className="h-3.5 w-3.5" aria-hidden="true" />
+          </Button>
           <Button
             type="button"
             size="sm"

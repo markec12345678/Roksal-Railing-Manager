@@ -74,7 +74,9 @@ describe('R179 (a) — update-banner žičenje (družina refetch-on-focus + fail
 
   it('EN VIR odločbe: uvaža čisto jedro — komponenta NE odloča sama', () => {
     const src = banner()
-    expect(src).toContain("import { aliJeNovaVerzijaNaVoljo } from '@/lib/posodobitev-jedro'")
+    // R185: uvoz dopolnjen z zigIzpis (podrobnost 'Zgrajeno') — odločitev ostane
+    // v istem čistem jedru (ogledalo ISTA vrstica, precedens R180 '+34')
+    expect(src).toContain("import { aliJeNovaVerzijaNaVoljo, zigIzpis } from '@/lib/posodobitev-jedro'")
     expect(src).toContain('aliJeNovaVerzijaNaVoljo({ mojZig: MOJ_ZIG, streznikovZig })')
   })
 
