@@ -66,8 +66,11 @@ import {
   KeyRound,
   History,
   CalendarClock,
+  FileDown,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { buildProjektiCsv, projektiCsvFilename, projektiLabel, PROJEKTI_STATUS_LABELS } from '@/lib/projekti-csv'
+import { todayStamp } from '@/lib/csv-export'
 
 interface Project {
   id: string
@@ -105,19 +108,28 @@ interface Customer {
   _count?: { projects: number }
 }
 
-const statusLabels: Record<string, string> = {
-  NACRTOVANO: 'Načrtovano',
-  V_TEKU: 'V teku',
-  ZAKLJUCENO: 'Zaključeno',
-  USTAVLJENO: 'Ustavljeno',
-}
+// R164: statusLabels = EN VIR RESNICE s src/lib/projekti-csv.ts (istega vira
+// uporablja tudi CSV izvoz projektov — precedens R161 ponudbe). Besedila se
+// ne urejajo tukaj, ampak v PROJEKTI_STATUS_LABELS.
+const statusLabels: Record<string, string> = PROJEKTI_STATUS_LABELS
 
 const statusColors: Record<string, string> = {
-  NACRTOVANO: 'bg-blue-100 text-blue-800',
+  // R164 stil pass: NACRTOVANO je prej bilo bg-blue-100/text-blue-800 BREZ
+  // dark: varianti (svetlomodri pegi v temni temi) — dodane temne variante;
+  // svetla tema NESPREMENJENA. R164 bug fix (E2E ujel): statusi ZA_MONTAZO /
+  // V_IZDELAVI / MONTIRANO (prisma enum ProjectStatus — V4.1/V6) niso imeli
+  // ne besedila ne barve (prazna neobarvana značka) — barve po vzoru
+  // deal-pipeline (oranžna/vijolična/teal), z dark: variantami.
+  NACRTOVANO: 'bg-blue-100 text-blue-800 dark:bg-blue-950/40 dark:text-blue-300',
   V_TEKU: 'bg-roksal-amber/20 text-roksal-ink',
+  ZA_MONTAZO: 'bg-orange-100 text-orange-800 dark:bg-orange-950/40 dark:text-orange-300',
+  V_IZDELAVI: 'bg-violet-100 text-violet-800 dark:bg-violet-950/40 dark:text-violet-300',
+  MONTIRANO: 'bg-teal-100 text-teal-800 dark:bg-teal-950/40 dark:text-teal-300',
   ZAKLJUCENO: 'bg-roksal-green/20 text-roksal-green',
   USTAVLJENO: 'bg-roksal-red/20 text-roksal-red',
 }
+
+
 
 const statusFilterTabs = [
   { id: 'ALL', label: 'Vsi' },
@@ -271,6 +283,43 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
   // Search & Filter
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('ALL')
+  const [exportingProjects, setExportingProjects] = useState(false)
+
+  // R164: izvoz PRILAGOJENIH projektov (isti filter: iskanje + status) v CSV.
+  // Izvoži TOČNO to, kar uporabnik vidi na kartici — IZVOŽENO = ZASLON.
+  const handleExportProjectsCsv = () => {
+    if (filteredProjects.length === 0) return
+    setExportingProjects(true)
+    try {
+      const { csv, vrstic } = buildProjektiCsv(
+        filteredProjects.map((p) => ({
+          nazivProjekta: p.nazivProjekta,
+          status: p.status,
+          strankaIme: p.customer?.ime ?? null,
+          strankaNaslov: p.customer?.naslov ?? null,
+          datumMontaze: p.datumMontaze ?? null,
+        })),
+      )
+      const filename = projektiCsvFilename(todayStamp())
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+      toast.success('CSV izvožen', { description: `Izvožen seznam (${projektiLabel(vrstic)}) v datoteko ${filename}.` })
+    } catch (err) {
+      // Fail-verbose: izvoz ne sme tiho spodleteti — razlog gre v toast.
+      toast.error('Izvoz ni uspel', {
+        description: err instanceof Error ? err.message : `Neznana napaka (${String(err)}).`,
+      })
+    } finally {
+      setExportingProjects(false)
+    }
+  }
 
   // New project dialog
   const [newProjectOpen, setNewProjectOpen] = useState(false)
@@ -1350,7 +1399,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Išči projekte, stranke..."
-            className="pl-9 h-10 bg-white"
+            className="pl-9 h-10 bg-background focus-visible:ring-roksal-navy/40" // R164 stil pass: bg-white → bg-background (v temni temi bela pegа)
           />
           {searchQuery && (
             <button
@@ -1383,11 +1432,26 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
       {/* Projects List */}
       <Card>
         <CardHeader className="pb-2 pt-4 px-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <CardTitle className="text-sm font-semibold text-roksal-ink">
               Projekti
             </CardTitle>
-            <Badge variant="secondary">{filteredProjects.length}</Badge>
+            <div className="flex items-center gap-1.5">
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                disabled={exportingProjects || filteredProjects.length === 0}
+                onClick={handleExportProjectsCsv}
+                className="h-7 px-2 text-[11px] focus-visible:ring-roksal-navy/40"
+                aria-label={`Izvozi prikazane projekte v CSV (${projektiLabel(filteredProjects.length)})`}
+                title="Izvozi prikazane projekte (upošteva iskanje in filter) kot CSV za Excel"
+              >
+                <FileDown className={`h-3.5 w-3.5 ${exportingProjects ? 'animate-pulse' : ''}`} aria-hidden="true" />
+                Izvozi CSV
+              </Button>
+              <Badge variant="secondary">{filteredProjects.length}</Badge>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="px-4 pb-4">
@@ -1443,24 +1507,24 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                     {/* Swipe action icons */}
                     <button
                       onClick={(e) => { e.stopPropagation(); toast.info(`Klic stranke: ${project.customer?.ime || '—'}`) }}
-                      className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:text-roksal-green hover:bg-roksal-green/10 transition-colors"
+                      className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:text-roksal-green hover:bg-roksal-green/10 focus-visible:ring-2 focus-visible:ring-roksal-green/40 outline-none transition-colors"
                       aria-label="Pokliči stranko"
                     >
-                      <Phone className="h-3.5 w-3.5" />
+                      <Phone className="h-3.5 w-3.5" aria-hidden="true" />
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); toast.info(`Urejanje: ${project.nazivProjekta}`) }}
-                      className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:text-roksal-amber hover:bg-roksal-amber/10 transition-colors"
+                      className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:text-roksal-amber hover:bg-roksal-amber/10 focus-visible:ring-2 focus-visible:ring-roksal-amber/40 outline-none transition-colors"
                       aria-label="Uredi projekt"
                     >
-                      <Pencil className="h-3.5 w-3.5" />
+                      <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); toast.info(`Arhiviranje: ${project.nazivProjekta}`) }}
-                      className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:text-roksal-ink hover:bg-roksal-navy/10 transition-colors"
+                      className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:text-roksal-ink hover:bg-roksal-navy/10 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 outline-none transition-colors"
                       aria-label="Arhiviraj projekt"
                     >
-                      <Archive className="h-3.5 w-3.5" />
+                      <Archive className="h-3.5 w-3.5" aria-hidden="true" />
                     </button>
                     <div
                       onClick={(e) => {
@@ -1476,7 +1540,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                   </div>
                   {statusDropdownId === project.id && (
                     <div
-                      className="absolute right-3 top-12 z-20 rounded-lg border border-border bg-white shadow-lg p-1 min-w-[140px]"
+                      className="absolute right-3 top-12 z-20 rounded-lg border border-border bg-popover shadow-lg p-1 min-w-[140px]" // R164 stil pass: bg-white → bg-popover
                       onClick={(e) => e.stopPropagation()}
                     >
                       {Object.entries(statusLabels).map(([key, label]) => (
@@ -2036,11 +2100,11 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                     {!portalLoading && !portalInfo?.enabled && !canManagePortal && (
                       // §10 (R135): monter brez pravice portal.manage — pošteno
                       // stanje namesto mrtvega gumba (strežnik bi vrnil 403).
-                      <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50/70 px-2.5 py-2">
-                        <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" />
+                      <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50/70 px-2.5 py-2 dark:border-roksal-amber/25 dark:bg-roksal-amber/10">
+                        <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-roksal-amber" />
                         <div className="space-y-0.5">
-                          <p className="text-[11px] font-medium text-amber-800">Ureja pisarna</p>
-                          <p className="text-[11px] text-amber-700/90 leading-relaxed">
+                          <p className="text-[11px] font-medium text-amber-800 dark:text-roksal-amber">Ureja pisarna</p>
+                          <p className="text-[11px] text-amber-700/90 leading-relaxed dark:text-roksal-amber/80">
                             Portal stranke izdaja in upravlja pisarna (pravica portal.manage).
                             Za povezavo kontaktirajte vodjo.
                           </p>
@@ -2339,11 +2403,11 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                   <div className="px-3 pb-3 pt-2 space-y-3">
                     {!portalLoading && !portalInfo?.measure?.enabled && !canManagePortal && (
                       // §10 (R135): pošteno stanje namesto gumba, ki bi vrnil 403
-                      <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50/70 px-2.5 py-2">
-                        <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" />
+                      <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50/70 px-2.5 py-2 dark:border-roksal-amber/25 dark:bg-roksal-amber/10">
+                        <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-roksal-amber" />
                         <div className="space-y-0.5">
-                          <p className="text-[11px] font-medium text-amber-800">Ureja pisarna</p>
-                          <p className="text-[11px] text-amber-700/90 leading-relaxed">
+                          <p className="text-[11px] font-medium text-amber-800 dark:text-roksal-amber">Ureja pisarna</p>
+                          <p className="text-[11px] text-amber-700/90 leading-relaxed dark:text-roksal-amber/80">
                             Merilno povezavo izdaja pisarna (pravica portal.manage).
                           </p>
                         </div>
