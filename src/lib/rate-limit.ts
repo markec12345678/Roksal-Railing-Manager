@@ -3,13 +3,26 @@
 // Brez tega je brute-force na gesla neomejen: napadalec lahko preizkusi tisoč
 // gesel na sekundo in edina ovira je bila dolžina skriptovskega dela.
 //
-// Drseče okno v pomnilniku. Za to aplikacijo je to dovolj, ker:
-//   - teče na ENEM vozlišču (SQLite je enoprocesna, systemd enota),
-//   - ne potrebuje Redis-a in s tem nove infrastrukture,
-//   - ob ponovnem zagonu se števec izprazni, kar je sprejemljivo (najslabši
-//     primer: napadalec sproži ponovni zagon in dobi svež proračun).
-// Če kdaj postaviš več vozlišč pred isto bazo, zamenjaj shrambo za Redis ali
-// SQLite tabelo — vmesnik (`checkRate`) ostane enak.
+// Drseče okno v pomnilniku. Zgodovinsko (lastna namestitev, systemd enota) je
+// to bil enoprocesni model; NA Vercelu (PostgreSQL/Neon, serverless) živi vsak
+// primerek lambda funkcije s SVOJIM pomnilnikom, zato je zaščita NA PRIMEREK:
+//   - ustavi zankaste kliente znotraj enega primerka (glavni cilj),
+//   - globalni proračun čez primerke bi zahteval zunanjo shrambo (Redis/
+//     DB tabelo) — vmesnik (`checkRate`) ostane enak, kadar se kdaj zamenja,
+//   - ob hladnem startu se števec izprazni (sprejemljivo: napadalec dobi
+//     svež proračun samo za svoj primerek).
+//
+// R184 — TELEMETRIJA: vsak ZAVRAĆEN zadetek (`ok: false`) se zabeleži kot
+// "trip" (ključ, števec, zadnji čas) — ADMIN panel v Ekipi (Vzdrževanje —
+// omejevanje hitrosti, /api/security/rate-limit) prikazuje vzorec napadov
+// na trenutnem primerku. Ključi vsebujejo IP + e-naslov, zato telemetrija
+// vrača SAMO kategorijo (predpono ključa) + deterministični krajšani SHA-256
+// prstni odtis — nič PII nad tisto, kar že piše v revizijski sledi.
+//
+// Pomembno (brez lažnih trditev): števeci so v pomnilniku in veljajo za
+// TRENUTNI PRIMEREK — panel to izrecno pove ("vzorec, ne globalne absolutne
+// vrednosti").
+import { createHash } from 'node:crypto'
 
 export interface RateLimitOptions {
   /** Število dovoljenih zadetkov v oknu. */
@@ -33,7 +46,14 @@ interface Bucket {
   hits: number[]
 }
 
+interface Trip {
+  count: number
+  lastAt: number
+}
+
 const buckets = new Map<string, Bucket>()
+/** R184: zavrženi zadetki po ključu (telemetrija blokad — glej glavo zgoraj). */
+const trips = new Map<string, Trip>()
 
 /** Privzeto za prijavo: 10 poskusov na 15 minut na (IP + e-naslov). */
 export const LOGIN_LIMIT: RateLimitOptions = { limit: 10, windowMs: 15 * 60 * 1000 }
@@ -57,6 +77,15 @@ export function checkRate(key: string, options: RateLimitOptions = WRITE_LIMIT):
     const oldest = bucket.hits[0]
     const retryAfterMs = Math.max(0, oldest + options.windowMs - now)
     buckets.set(key, bucket)
+    // R184: ZAVRAĆEN zadetek = trip — telemetrija blokade (samo ok:false;
+    // uspešni zadetki NE štejejo kot blokade).
+    const trip = trips.get(key)
+    if (trip) {
+      trip.count += 1
+      trip.lastAt = now
+    } else {
+      trips.set(key, { count: 1, lastAt: now })
+    }
     return {
       ok: false,
       remaining: 0,
@@ -93,8 +122,14 @@ export function releaseRate(key: string): void {
 
 /** Pozabi vse (testi) ali en ključ (ročno odpuščanje po preverjenem incidentu). */
 export function resetRateLimit(key?: string): void {
-  if (key === undefined) buckets.clear()
-  else buckets.delete(key)
+  if (key === undefined) {
+    buckets.clear()
+    // R184: tudi telemetrija blokad gre počist — restart primerka je restart.
+    trips.clear()
+  } else {
+    buckets.delete(key)
+    trips.delete(key)
+  }
 }
 
 /** Stanje za diagnostiko — koliko ključev je trenutno omejenih. */
@@ -102,6 +137,54 @@ export function rateLimitStats(): { keys: number; hits: number } {
   let hits = 0
   for (const b of buckets.values()) hits += b.hits.length
   return { keys: buckets.size, hits }
+}
+
+export interface RateLimitTripRow {
+  /** Kategorija omejitve (predpona ključa pred prvim ':' — npr. `login`). */
+  kind: string
+  /** Deterministični krajšani prstni odtis ključa (SHA-256, 10 hex) — brez PII. */
+  keyHash: string
+  /** Koliko zavrženih zadetkov je ta ključ zbral (od zadnjega restarta). */
+  count: number
+  /** Čas zadnjega zavrženega zadetka (epoch ms). */
+  lastAt: number
+}
+
+export interface RateLimitDetail {
+  keys: number
+  hits: number
+  /** Skupno število vseh zavrženih zadetkov (od zadnjega restarta). */
+  tripsTotal: number
+  /** Blokade po ključih, UREJENE deterministično: count padajoče, nato lastAt padajoče, nato keyHash. */
+  trips: RateLimitTripRow[]
+}
+
+/** Determinističen krajšani prstni odtis ključa (SHA-256, 10 hex) — brez PII. */
+function prstniOdtis(key: string): string {
+  return createHash('sha256').update(key, 'utf8').digest('hex').slice(0, 10)
+}
+
+/**
+ * R184 — podrobna telemetrija za ADMIN diagnostiko (ta primerek).
+ * Deterministična: isti nabor vedno isti vrstni red (count ↓, lastAt ↓, keyHash ↑).
+ */
+export function rateLimitDetail(): RateLimitDetail {
+  const stats = rateLimitStats()
+  let tripsTotal = 0
+  const rows: RateLimitTripRow[] = []
+  for (const [key, trip] of trips) {
+    tripsTotal += trip.count
+    rows.push({
+      kind: key.includes(':') ? key.slice(0, key.indexOf(':')) : key,
+      keyHash: prstniOdtis(key),
+      count: trip.count,
+      lastAt: trip.lastAt,
+    })
+  }
+  rows.sort(
+    (a, b) => b.count - a.count || b.lastAt - a.lastAt || (a.keyHash < b.keyHash ? -1 : a.keyHash > b.keyHash ? 1 : 0),
+  )
+  return { keys: stats.keys, hits: stats.hits, tripsTotal, trips: rows }
 }
 
 /**

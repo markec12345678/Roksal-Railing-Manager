@@ -21,6 +21,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
   HelpCircle,
+  History,
   Loader2,
   Monitor,
   ShieldCheck,
@@ -40,6 +41,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { deviceLabelLine, describeDevice } from '@/lib/device-label'
+import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'
+import { casOznaka } from '@/lib/osvezitev-fokus'
 
 interface SessionRow {
   id: string
@@ -82,6 +85,10 @@ export function SessionsDialog({ open, onOpenChange }: SessionsDialogProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [revokingId, setRevokingId] = useState<string | null>(null)
+  // R184 — pečat svežine (20. površina družine R170–R183): čas zadnjega
+  // USPEŠNEGA branja /api/auth/sessions. Napaka/omrežje/401/404 → null
+  // (fail-closed — NIČ lažne svežine; napaka ostane vidna, BREZ pečata).
+  const [sejeOsvezitev, setSejeOsvezitev] = useState<Date | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -96,18 +103,25 @@ export function SessionsDialog({ open, onOpenChange }: SessionsDialogProps) {
             : `Strežnik ni vrnil sej (napaka ${res.status}).`,
         )
         setSessions(null)
+        // R184: fail-closed pečat — napaka → BREZ pečata (v paru s čiščenjem)
+        setSejeOsvezitev(null)
         return
       }
       const data = (await res.json().catch(() => null)) as { sessions?: SessionRow[] } | null
       if (!data || !Array.isArray(data.sessions)) {
         setError('Neveljaven odgovor strežnika.')
         setSessions(null)
+        setSejeOsvezitev(null)
         return
       }
       setSessions(data.sessions)
+      // R184: pečat SAMO ob uspešnem branju (1×)
+      setSejeOsvezitev(new Date())
     } catch {
       setError('Ni povezave s strežnikom. Preverite omrežje in poskusite znova.')
       setSessions(null)
+      // R184: omrežje → BREZ pečata (v paru z napako)
+      setSejeOsvezitev(null)
     } finally {
       setLoading(false)
     }
@@ -117,6 +131,14 @@ export function SessionsDialog({ open, onOpenChange }: SessionsDialogProps) {
     // Vsako odpirje = sveža poizvedba (stanje sej se lahko spremeni zunaj).
     if (open) void load()
   }, [open, load])
+
+  // R184 — ponovni bris ob vrnitvi v ospredje, MEDTEM KO je dialog odprt
+  // (družinski hook, 30 s vrata R170; wrapper `open` = precedens R181
+  // punch-list — zaprt dialog ne sme fetchati v ozadju brez razloga).
+  // EN VIR: load = odpirje + Znova + preklic + fokus.
+  useRefetchOnFocus(() => {
+    if (open) void load()
+  })
 
   async function revoke(id: string) {
     setRevokingId(id)
@@ -143,8 +165,22 @@ export function SessionsDialog({ open, onOpenChange }: SessionsDialogProps) {
             Aktivne seje
           </DialogTitle>
           <DialogDescription>
-            Naprave, ki so prijavljene v vaš račun. Tujim sejam lahko dostop
-            prekličete — veljajo za odjavo te naprave.
+            <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+              <span>
+                Naprave, ki so prijavljene v vaš račun. Tujim sejam lahko dostop
+                prekličete — veljajo za odjavo te naprave.
+              </span>
+              {sejeOsvezitev && (
+                <span
+                  className="hidden items-center gap-1 text-[11px] text-muted-foreground sm:flex"
+                  title="Čas zadnje uspešne osvežitve podatkov"
+                >
+                  <History className="h-3 w-3 shrink-0" aria-hidden="true" />
+                  Osveženo ob{' '}
+                  <span className="tabular-nums">{casOznaka(sejeOsvezitev)}</span>
+                </span>
+              )}
+            </span>
           </DialogDescription>
         </DialogHeader>
 

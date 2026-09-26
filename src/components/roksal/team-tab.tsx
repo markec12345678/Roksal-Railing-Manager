@@ -72,6 +72,12 @@ const JobsPanel = dynamic(
   { ssr: false, loading: () => null },
 )
 
+// R184: telemetrija omejevanja hitrosti — isti code-split vzorec (ADMIN kartica).
+const RateLimitPanel = dynamic(
+  () => import('@/components/roksal/rate-limit-panel').then((m) => m.RateLimitPanel),
+  { ssr: false, loading: () => null },
+)
+
 interface Lifecycle {
   deactivated: boolean
   locked: boolean
@@ -637,6 +643,10 @@ export function TeamTab() {
 
       {/* R141 (§23): register vzdrževalnih poslov — samo ADMIN (API je ADMIN-only). */}
       {myRole === 'ADMIN' && <JobsPanel />}
+      {/* R184: telemetrija omejevanja hitrosti — samo ADMIN (API je ADMIN-only,
+          isti vzorec kot posli zgoraj; blokade brute-force zaščite so do zdaj
+          bile vidne samo napadalcu — 429 — lastnik pa ni videl nič). */}
+      {myRole === 'ADMIN' && <RateLimitPanel />}
 
       {/* Povabilo dialog */}
       <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
