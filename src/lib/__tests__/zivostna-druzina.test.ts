@@ -8,7 +8,7 @@
 // kopijo družinske tabele (r177 ×6, r178 ×9, r180 ×11, r181 ×14, r182 ×16,
 // r183 ×18, r184 ×20) — 7 kopij istega seznama, vsaka nova runda je kopijo
 // podaljšala. R186 tabelo KONSOLIDIRA v ENO kanonično mesto:
-//  • nova površina = ENA vrstica v DRUŽINA_20 + metapodatki (setN/minNullN)
+//  • nova površina = ENA vrstica v DRUŽINA_21 + metapodatki (setN/minNullN)
 //    + per-površinski opis v rundi, ki jo uvaja (SCOPED trditve ostanejo tam);
 //  • kumulativne kopije v r177/r178/r180/r181/r182/r183/r184 so IZTISNJENE
 //    (per-površinski opisi teh rund ostanejo nedotaknjeni — konsolidira se
@@ -38,7 +38,7 @@ const HISTORY_ICON = /<History className="h-3 w-3 shrink-0" aria-hidden="true" \
 const HOOK_IMPORT = "import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'"
 const CAS_IMPORT = "import { casOznaka } from '@/lib/osvezitev-fokus'"
 
-// KANONIČNA DRUŽINSKA TABELA — 20 površin (R170–R184).
+// KANONIČNA DRUŽINSKA TABELA — 21 POVRSINA (R170–R187).
 // [ime, datoteka, stanje, setter, setN (natanko), minNullN (vsaj)]
 //  • termini: stanje 'zdaj' je R170 posebnost — pečat IZ bralnega časa brez
 //    ločenega stanja pečata (setZdaj tudi pomika agregate; minNull 1 =
@@ -46,7 +46,10 @@ const CAS_IMPORT = "import { casOznaka } from '@/lib/osvezitev-fokus'"
 //  • logistika: minNull 2 od 3 (tretja je metapodatkovni izvoz — domenska).
 //  • vodja: fail-closed prek clearOnFail (ENA skupna točka, klicana iz vseh
 //    3 fail poti) — minNull 1.
-const DRUŽINA_20: Array<[string, string, string, string, number, number]> = [
+//  • zdravje (R187): javna sonda /api/public/health iz vodjinega pogleda —
+//    prva površina DODANA PO konsolidaciji po postopku 'ENA vrstica +
+//    metapodatki + per-površinski opis v rundi'.
+const DRUŽINA_21: Array<[string, string, string, string, number, number]> = [
   ['termini', 'termini-card', 'zdaj', 'setZdaj', 1, 1],
   ['logistika', 'logistics-tab', 'zadnjaOsvezitev', 'setZadnjaOsvezitev', 1, 2],
   ['dashboard', 'dashboard-tab', 'projektiOsvezitev', 'setProjektiOsvezitev', 1, 2],
@@ -67,12 +70,13 @@ const DRUŽINA_20: Array<[string, string, string, string, number, number]> = [
   ['meritve', 'measurements-tab', 'meritveOsvezitev', 'setMeritveOsvezitev', 2, 6],
   ['omejitve', 'rate-limit-panel', 'omejitveOsvezitev', 'setOmejitveOsvezitev', 1, 3],
   ['seje', 'sessions-dialog', 'sejeOsvezitev', 'setSejeOsvezitev', 1, 3],
+  ['zdravje', 'sistem-zdravje-card', 'zdravjeOsvezitev', 'setZdravjeOsvezitev', 1, 2],
 ]
 
 const vir = (datoteka: string): string => srcOf(`src/components/roksal/${datoteka}.tsx`)
 
-describe('ŽIVOSTNA DRUŽINA (kanon) — 20 površin: EN VIR casOznaka + družinski hook + tooltip', () => {
-  it.each(DRUŽINA_20)('%s: casOznaka EN VIR + {casOznaka(%s)} + hook + tooltip', (ime, datoteka, stanje) => {
+describe('ŽIVOSTNA DRUŽINA (kanon) — 21 površin: EN VIR casOznaka + družinski hook + tooltip', () => {
+  it.each(DRUŽINA_21)('%s: casOznaka EN VIR + {casOznaka(%s)} + hook + tooltip', (ime, datoteka, stanje) => {
     const src = vir(datoteka)
     expect(src).toContain(CAS_IMPORT)
     expect(src).toContain(`{casOznaka(${stanje})}`)
@@ -89,17 +93,17 @@ describe('ŽIVOSTNA DRUŽINA (kanon) — 20 površin: EN VIR casOznaka + družin
     expect(src).toContain('Osveženo ob')
   })
 
-  it('kanon ima TOČNO 20 površin (nova površina = ENA vrstica + metapodatki + per-površinski opis v rundi)', () => {
-    expect(DRUŽINA_20).toHaveLength(20)
+  it('kanon ima TOČNO 21 površin (nova površina = ENA vrstica + metapodatki + per-površinski opis v rundi)', () => {
+    expect(DRUŽINA_21).toHaveLength(21)
     // datoteke v tabeli dejansko obstajajo (zaščita pred tipkarskimi napakami)
-    for (const [, datoteka] of DRUŽINA_20) {
+    for (const [, datoteka] of DRUŽINA_21) {
       expect(() => vir(datoteka), datoteka).not.toThrow()
     }
   })
 })
 
 describe('ŽIVOSTNA DRUŽINA (kanon) — fail-closed žičenje: set N× + null ≥ M×', () => {
-  it.each(DRUŽINA_20)(
+  it.each(DRUŽINA_21)(
     '%s: %s natanko %i× set, vsaj %i× null (fail-closed pečat)',
     (ime, datoteka, _stanje, setter, setN, minNullN) => {
       const src = vir(datoteka)
@@ -116,7 +120,7 @@ describe('ŽIVOSTNA DRUŽINA (kanon) — fail-closed žičenje: set N× + null �
 })
 
 describe('ŽIVOSTNA DRUŽINA (kanon) — tight-header klasni niz', () => {
-  const BREZ_LOGISTIKE = DRUŽINA_20.filter(([ime]) => ime !== 'logistika')
+  const BREZ_LOGISTIKE = DRUŽINA_21.filter(([ime]) => ime !== 'logistika')
 
   it.each(BREZ_LOGISTIKE)('%s: tight-header klasni niz IDENTIČEN (hidden sm:flex) + standardni tooltip', (ime, datoteka) => {
     const src = vir(datoteka)

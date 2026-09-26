@@ -24,6 +24,9 @@ import { useToast } from '@/hooks/use-toast'
 import { generateMonthlyReport } from '@/lib/boss-report-pdf'
 import { buildVodjaCsv, vodjaCsvFilename, terminStatusLabel } from '@/lib/vodja-csv'
 import { todayStamp } from '@/lib/csv-export'
+// R187 — Sistem — zdravje kartica (21. površina živostne družine; javna
+// sonda /api/public/health R186 iz vodjinega pogleda).
+import { SistemZdravjeCard } from '@/components/roksal/sistem-zdravje-card'
 import {
   TrendingUp, Clock, Users, Package, Euro, CheckCircle2,
   AlertTriangle, Calendar, Truck, Bell, FileDown, Loader2, Download,
@@ -791,6 +794,11 @@ export function VodjaDashboard() {
           </Card>
         </div>
       </div>
+
+      {/* R187 — Sistem — zdravje (javna sonda /api/public/health): baza
+          odgovarja? odzivni čas? kdaj je build? fail-verbose panel z
+          'Poskusi znova' + samodejna preverba ob vrnitvi povezave. */}
+      <SistemZdravjeCard />
     </div>
   )
 }
