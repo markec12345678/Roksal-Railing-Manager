@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { parseSlDimension, useSpeechRecognition } from '@/lib/sl-speech'
+import { measurementStatusCounts } from '@/lib/measurement-status'
 import {
   loadDrafts,
   saveDraft,
@@ -1793,15 +1794,10 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
     return stats
   }, [allSegments, measurements])
 
-  // P1 — števci statusov
-  const statusCounts = useMemo(() => {
-    const counts: Record<MeasurementStatus, number> = { OSNUTEK: 0, POTRJENA: 0, ARHIVIRANA: 0 }
-    measurements.forEach((m) => {
-      const s: MeasurementStatus = m.status || 'OSNUTEK'
-      counts[s]++
-    })
-    return counts
-  }, [measurements])
+  // P1 — števci statusov (R154: čisto jedro lib/measurement-status — ista
+  // logika v UI, PDF izvozu in testih; brez statusa = OSNUTEK, iskren
+  // privzetek migracijskega backfilla R153)
+  const statusCounts = useMemo(() => measurementStatusCounts(measurements), [measurements])
 
   // P1 — filtrirane meritve glede na status filter
   const filteredMeasurements = useMemo(() => {
@@ -2738,6 +2734,9 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
       `Število segmentov: ${allSegments.length}`,
       `Najdaljša meritev: ${longestMeasurement ? formatDimension(longestMeasurement.dolzinaMm) : '—'}`,
       `Skupna površina: ${formatM2(totalArea)}`,
+      // R154 — statusi so del iskrenega povzetka (ŠT=okvirni prikaz, ne
+      // poslovna matematika: dolžine/višine ostanejo nespremenjene)
+      `Status — Osnutek: ${statusCounts.OSNUTEK} · Potrjena: ${statusCounts.POTRJENA} · Arhivirana: ${statusCounts.ARHIVIRANA}`,
     ]
     summary.forEach((s, i) => {
       const x = 14 + (i % 2) * (pageW / 2 - 14)
@@ -2748,11 +2747,12 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
     // Tabela meritev
     autoTable(doc, {
       startY: 56,
-      head: [['#', 'Oznaka', 'Tip', 'Segment', 'Dolžina', 'Višina', 'Kot', 'Datum']],
+      head: [['#', 'Oznaka', 'Tip', 'Status', 'Segment', 'Dolžina', 'Višina', 'Kot', 'Datum']],
       body: measurements.map((m, i) => [
         String(i + 1),
         m.oznaka || m.lokacija || `Meritev #${m.id.slice(-4)}`,
         m.tipMeritve ? tipMeritveLabels[m.tipMeritve] : 'Razdalja',
+        statusLabels[(m.status || 'OSNUTEK') as MeasurementStatus],
         m.segmentId || '—',
         formatDimension(m.dolzinaMm),
         formatDimension(m.visinaMm),
@@ -2765,9 +2765,9 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
       alternateRowStyles: { fillColor: [245, 245, 245] },
       columnStyles: {
         0: { cellWidth: 8 },
-        4: { halign: 'right' },
         5: { halign: 'right' },
         6: { halign: 'right' },
+        7: { halign: 'right' },
       },
       margin: { left: 14, right: 14 },
     })

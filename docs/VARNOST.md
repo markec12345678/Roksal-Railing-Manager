@@ -227,3 +227,37 @@ koncept — po reloadu je izginil. Zdaj je perzistenten prek
 | **Dostop** | Isti vrata kot POST meritve: izvajalec projekta ali vodstvo; SKLADISCE samo bere (403). |
 | **Brisanje po zasnovni zavrnjeno** | DELETE ne obstaja (405) — meritve so revizijski podatki, ki napajajo BOM/dokazila. Popravek vrednosti gre skozi vodjo (nov vnos). |
 | **Iskren backfill** | Migracija nastavi obstoječim vrsticam `OSNUTEK` — nič izmišljene zgodovine statusov. |
+
+## Dostop na ravni vira + strežniški filter statusa (R154)
+
+### P1 popavek: /api/slopes rava dostopa
+
+Do R154 je `/api/slopes` (nagibi/digitalna libela) preverjal SAMO prijavo —
+vsak avtenticiran uporabnik je lahko **bral nagibe tujega projekta** in **jih
+zapisoval na tuj projekt** (broken object-level authorization; 14 sestrskih
+rut je imelo vrata, slopes jih je manjkal).
+
+| | Pravilo |
+|---|---|
+| **GET = read** | `assertProjectAccess(auth, project, 'read')` — neznani projekt → 404, tuj projekt → 403. |
+| **POST = update** | Zapis nagiba je mutacija projektne podatkovne zbirke (isti prag kot dodajanje meritve). Vrata PRED mutacijo: po 403 je baza NESPREMENJENA (test + E2E živo dokazano). |
+| **Izrecna validacija** | Brez `projectId` → 400; ne-številčen `kotStopinje` → 400 (prej: tihi NaN/500). Nič zapisano pred vrati. |
+
+### Strežniški filter `GET /api/measurements?status=`
+
+R153 indeks `(projectId, status)` dobi dejansko rabo: filter na strežniku
+namesto polnega prenosa + clientskega zoženja.
+
+| | Pravilo |
+|---|---|
+| **Stroga validacija** | Neznana vrednost (tudi mala črka, presledki) → 400 z izrecnim seznamom dovoljenih (`OSNUTEK, POTRJENA, ARHIVIRANA`) — ne tiho prazen seznam. Vrednosti iz `src/lib/measurement-status.ts` (enoten vir resnice z UI in testi). |
+| **Nazaj-združljivo** | Brez parametra = nespremenjeno obnašanje (vse meritve projekta). |
+| **Dostop nespremenjen** | Vrata ostajajo na robu: anon → 401; SKLADISCE lahko bere (material kontekst, matrika), ne sme pisati (r153). |
+
+### Iskrena zgodovina nagibov (Nagib tab)
+
+| | Pravilo |
+|---|---|
+| **Brez tihega poglate** | Prej: `catch { /* ignore */ }` + neuspeh `res.ok` brez poročanja — napaka strežnika je bila NEVIDNA (prazen seznam = utvara "ni nagibov"). Zdaj: izrecna stanja BREZ_PROJEKTA / NALAGANJE / OK / NAPAKA z role="alert" panelom + "Poskusi znova". |
+| **Brez zmešnjave stanj** | Brez projekta = izrecno "izberite projekt" (prej prikazano kot "ni nagibov"); prazno = res prazno. |
+| **A11y** | Libela `role="img"` + opisni aria-label (vzorcu R150 kompas), zgodovina `role="list"/"listitem"` z aria-labeli, busy stanja `aria-busy`, preklop senzorja `aria-pressed`. |

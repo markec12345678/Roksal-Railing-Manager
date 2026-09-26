@@ -12,6 +12,11 @@ import { authenticate, unauthorized } from '@/lib/auth'
 import { assertProjectAccess, actorIdOf, principalBindingOf, AccessDeniedError } from '@/lib/access'
 import { assertTransition, InvalidTransitionError } from '@/lib/project-state'
 import {
+  MEASUREMENT_STATUS_VALUES,
+  isValidMeasurementStatus,
+  type MeasurementStatusValue,
+} from '@/lib/measurement-status'
+import {
   beginIdempotency,
   idempotencyConflictResponse,
   idempotencyReplayResponse,
@@ -126,13 +131,29 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Manjka projectId' }, { status: 400 })
     }
 
+    // R154: ?status= — strežniški filter po statusu meritve (R153 indeks
+    // (projectId, status) dobi dejansko rabo). Stroga validacija: neznana
+    // vrednost → 400 z izrecno napako (fail-closed, ne tiho prazen seznam).
+    // Brez parametra = nespremenjeno obnašanje (vse meritve projekta).
+    const statusParam = searchParams.get('status')
+    let statusFilter: MeasurementStatusValue | null = null
+    if (statusParam !== null) {
+      if (!isValidMeasurementStatus(statusParam)) {
+        return NextResponse.json(
+          { error: `Neveljaven status: dovoljene vrednosti so ${MEASUREMENT_STATUS_VALUES.join(', ')}` },
+          { status: 400 }
+        )
+      }
+      statusFilter = statusParam
+    }
+
     // Dostop do meritev = dostop do projekta (403 na tuj projekt).
     const project = await db.project.findUnique({ where: { id: projectId } })
     if (!project) throw new AccessDeniedError(404, 'Projekt ne obstaja')
     assertProjectAccess(auth, project, 'read')
 
     const measurements = await db.measurement.findMany({
-      where: { projectId },
+      where: statusFilter ? { projectId, status: statusFilter } : { projectId },
       orderBy: { createdAt: 'desc' }
     })
 

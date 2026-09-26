@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
-import { Compass, RefreshCw, Save, TriangleAlert, CheckCircle2 } from 'lucide-react'
+import { Compass, RefreshCw, Save, TriangleAlert, CheckCircle2, Loader2 } from 'lucide-react'
 
 interface SlopeReading {
   beta: number // X front-back tilt (-180 to 180)
@@ -40,6 +40,13 @@ export function InclinometerTab({ projectId }: { projectId: string | null }) {
   const [customLokacija, setCustomLokacija] = useState('')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState<SavedSlope[]>([])
+  // R154 — iskrena zgodovina: BREZ_PROJEKTA / NALAGANJE / OK / NAPAKA.
+  // Prej: tihi catch /* ignore */ in neuspeh res.ok brez poročanja — napaka
+  // strežnika je bila za uporabnika NEVIDNA (prazen seznam = utvara
+  // "ni nagibov"). Brez izmišljenih podatkov: napaka je vidna, prazno je res
+  // prazno, brez projekta je izrecno rečeno.
+  const [historyState, setHistoryState] = useState<'BREZ_PROJEKTA' | 'NALAGANJE' | 'OK' | 'NAPAKA'>('BREZ_PROJEKTA')
+  const [historyError, setHistoryError] = useState<string | null>(null)
   const { toast } = useToast()
   const rafRef = useRef<number | null>(null)
 
@@ -86,14 +93,33 @@ export function InclinometerTab({ projectId }: { projectId: string | null }) {
     }
   }, [monitoring])
 
-  // Naloži zgodovino nagibov za projekt
+  // Naloži zgodovino nagibov za projekt (R154: brez tihega poglate —
+  // napaka je VIDLJIVA; prej je bil catch /* ignore */ fail-open kršitev)
   const loadSaved = useCallback(async () => {
-    if (!projectId) return
+    if (!projectId) {
+      setSaved([])
+      setHistoryError(null)
+      setHistoryState('BREZ_PROJEKTA')
+      return
+    }
+    setHistoryState('NALAGANJE')
     try {
       const res = await fetch(`/api/slopes?projectId=${projectId}`)
-      if (res.ok) setSaved(await res.json())
+      if (!res.ok) {
+        const json = (await res.json().catch(() => null)) as { error?: string } | null
+        setSaved([])
+        setHistoryError(json?.error ?? `Napaka ${res.status}`)
+        setHistoryState('NAPAKA')
+        return
+      }
+      const rows = (await res.json()) as SavedSlope[]
+      setSaved(Array.isArray(rows) ? rows : [])
+      setHistoryError(null)
+      setHistoryState('OK')
     } catch {
-      /* ignore */
+      setSaved([])
+      setHistoryError('Napaka pri povezavi s strežnikom')
+      setHistoryState('NAPAKA')
     }
   }, [projectId])
 
@@ -132,7 +158,10 @@ export function InclinometerTab({ projectId }: { projectId: string | null }) {
         toast({ title: 'Nagib shranjen', description: `${kot}° (${smer === 'Y' ? 'levo-desno' : 'naprej-nazaj'}) — ${lokacija === 'Drugo' ? customLokacija : lokacija}` })
         loadSaved()
       } else {
-        toast({ title: 'Napaka', description: 'Shranjevanje ni uspelo.', variant: 'destructive' })
+        // R154 — fail-verbose: pokaži razlog iz odgovora (npr. 403 dostop do
+        // tujega projekta), ne generične utvare "ni uspelo"
+        const json = (await res.json().catch(() => null)) as { error?: string } | null
+        toast({ title: 'Napaka', description: json?.error ?? 'Shranjevanje ni uspelo.', variant: 'destructive' })
       }
     } catch {
       toast({ title: 'Napaka', description: 'Omrežna napaka.', variant: 'destructive' })
@@ -151,16 +180,27 @@ export function InclinometerTab({ projectId }: { projectId: string | null }) {
               Digitalna libela
             </CardTitle>
             {reading && (
-              <Badge variant={isLevel ? 'default' : 'secondary'} className={isLevel ? 'bg-green-600 text-white' : ''}>
-                {isLevel ? <CheckCircle2 className="mr-1 h-3 w-3" /> : <TriangleAlert className="mr-1 h-3 w-3" />}
+              <Badge
+                variant={isLevel ? 'default' : 'secondary'}
+                className={isLevel ? 'bg-green-600 text-white' : ''}
+                aria-label={isLevel ? 'Libela je v vodoravni' : `Odstopanje od vodoravne: ${(angleX + angleY).toFixed(1)} stopinj`}
+              >
+                {isLevel ? <CheckCircle2 className="mr-1 h-3 w-3" aria-hidden="true" /> : <TriangleAlert className="mr-1 h-3 w-3" aria-hidden="true" />}
                 {isLevel ? 'V vodoravni' : `${(angleX + angleY).toFixed(1)}°`}
               </Badge>
             )}
           </div>
         </CardHeader>
         <CardContent className="flex flex-col items-center gap-4">
-          {/* Libela — krožna */}
-          <div className="relative h-56 w-56 rounded-full border-4 border-roksal-navy/20 bg-gradient-to-br from-roksal-navy/5 to-roksal-amber/5">
+          {/* Libela — krožna (R150 vzorec: grafika z vlogo img + opisnim
+              aria-labelom, ki ga bralniki lahko preberejo) */}
+          <div
+            className="relative h-56 w-56 rounded-full border-4 border-roksal-navy/20 bg-gradient-to-br from-roksal-navy/5 to-roksal-amber/5"
+            role="img"
+            aria-label={reading
+              ? `Libela — odstopanje ${angleX.toFixed(1)} stopinj levo-desno, ${angleY.toFixed(1)} stopinj naprej-nazaj${isLevel ? ' — v vodoravni' : ''}`
+              : 'Libela — ni aktivnega branja'}
+          >
             {/* križ */}
             <div className="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 bg-roksal-navy/15" />
             <div className="absolute top-1/2 left-0 w-full h-px -translate-y-1/2 bg-roksal-navy/15" />
@@ -203,7 +243,13 @@ export function InclinometerTab({ projectId }: { projectId: string | null }) {
             </Button>
           )}
           {permission === 'granted' && (
-            <Button type="button" variant={monitoring ? 'outline' : 'default'} onClick={monitoring ? stopSensor : enableSensor} className="w-full focus-visible:ring-2 focus-visible:ring-roksal-navy/40">
+            <Button
+              type="button"
+              variant={monitoring ? 'outline' : 'default'}
+              onClick={monitoring ? stopSensor : enableSensor}
+              aria-pressed={monitoring}
+              className="w-full focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+            >
               {monitoring ? (
                 <>
                   <RefreshCw className="mr-2 h-4 w-4" /> Ustavi merjenje
@@ -239,11 +285,28 @@ export function InclinometerTab({ projectId }: { projectId: string | null }) {
                 </SelectContent>
               </Select>
               {lokacija === 'Drugo' && (
-                <Input value={customLokacija} onChange={(e) => setCustomLokacija(e.target.value)} placeholder="Opis lokacije" className="h-9" />
+                <Input
+                  value={customLokacija}
+                  onChange={(e) => setCustomLokacija(e.target.value)}
+                  placeholder="Opis lokacije"
+                  aria-label="Opis lokacije po meri"
+                  maxLength={120}
+                  className="h-9 tabular-nums"
+                />
               )}
-              <Button type="button" onClick={handleSave} disabled={saving || !projectId} className="w-full bg-roksal-navy text-white hover:bg-roksal-navy/90 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 disabled:cursor-not-allowed disabled:opacity-50">
-                <Save className="mr-2 h-4 w-4" />
-                {saving ? 'Shranjujem...' : 'Shrani nagib'}
+              <Button
+                type="button"
+                onClick={handleSave}
+                disabled={saving || !projectId}
+                className="w-full bg-roksal-navy text-white hover:bg-roksal-navy/90 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 disabled:cursor-not-allowed disabled:opacity-50 aria-busy:cursor-wait"
+                aria-busy={saving}
+              >
+                {saving ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+                ) : (
+                  <Save className="mr-2 h-4 w-4" aria-hidden="true" />
+                )}
+                {saving ? 'Shranjujem …' : 'Shrani nagib'}
               </Button>
               {!projectId && <p className="text-center text-[10px] text-amber-600">Izberite projekt v zavihku Domov.</p>}
             </div>
@@ -251,12 +314,54 @@ export function InclinometerTab({ projectId }: { projectId: string | null }) {
         </CardContent>
       </Card>
 
-      {/* Zgodovina nagibov */}
-      {saved.length === 0 ? (
+      {/* Zgodovina nagibov (R154 — iskrena stanja: brez projekta / napaka /
+          nalaganje / resnično prazno / podatki) */}
+      {historyState === 'BREZ_PROJEKTA' ? (
         <Card>
           <CardContent className="py-8 text-center text-muted-foreground">
-            <Compass className="h-10 w-10 mx-auto mb-2 opacity-30" />
-            <p className="text-sm">Ni še zabeleženih nagibov. Vklopite libelo in shrani prvo meritev.</p>
+            <Compass className="h-10 w-10 mx-auto mb-2 opacity-30" aria-hidden="true" />
+            <p className="text-sm">Izberite projekt v zavihku Domov — zgodovina nagibov se naloži za izbrani projekt.</p>
+          </CardContent>
+        </Card>
+      ) : historyState === 'NAPAKA' ? (
+        <Card>
+          <CardContent className="p-3">
+            <div
+              role="alert"
+              className="flex flex-col gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div className="flex items-start gap-2">
+                <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" aria-hidden="true" />
+                <div>
+                  <p className="text-xs font-medium text-amber-800">Zgodovine nagibov ni mogoče prikazati</p>
+                  <p className="text-[11px] text-amber-700">{historyError}</p>
+                </div>
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => void loadSaved()}
+                className="shrink-0 focus-visible:ring-2 focus-visible:ring-roksal-amber/50"
+                aria-label="Poskusi znova naložiti zgodovino nagibov"
+              >
+                <RefreshCw className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" /> Poskusi znova
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : historyState === 'NALAGANJE' ? (
+        <Card>
+          <CardContent className="py-8 text-center text-muted-foreground">
+            <RefreshCw className="h-6 w-6 mx-auto mb-2 animate-spin opacity-40" aria-hidden="true" />
+            <p className="text-sm">Nalagam zgodovino nagibov …</p>
+          </CardContent>
+        </Card>
+      ) : saved.length === 0 ? (
+        <Card>
+          <CardContent className="py-8 text-center text-muted-foreground">
+            <Compass className="h-10 w-10 mx-auto mb-2 opacity-30" aria-hidden="true" />
+            <p className="text-sm">Ni še zabeleženih nagibov. Vklopite libelo in shranite prvo meritev.</p>
           </CardContent>
         </Card>
       ) : (
@@ -264,9 +369,14 @@ export function InclinometerTab({ projectId }: { projectId: string | null }) {
           <CardHeader className="pb-3">
             <CardTitle className="text-sm">Zabeleženi nagibi ({saved.length})</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent role="list" className="space-y-2">
             {saved.map((s) => (
-              <div key={s.id} className="flex items-center justify-between rounded-lg border border-roksal-navy/10 bg-white p-2.5 text-xs transition-[border-color,box-shadow] duration-150 hover:border-roksal-navy/25 hover:shadow-sm">
+              <div
+                key={s.id}
+                role="listitem"
+                aria-label={`Nagib ${s.kotStopinje.toFixed(1)} stopinj, ${s.smer === 'Y' ? 'levo-desno' : 'naprej-nazaj'}, ${s.lokacija ?? 'brez lokacije'}`}
+                className="flex items-center justify-between rounded-lg border border-roksal-navy/10 bg-white p-2.5 text-xs transition-[border-color,box-shadow] duration-150 hover:border-roksal-navy/25 hover:shadow-sm"
+              >
                 <div>
                   <div className="font-medium tabular-nums text-roksal-navy">{s.kotStopinje.toFixed(1)}° ({s.smer === 'Y' ? 'L↔D' : 'N↔Z'})</div>
                   <div className="text-muted-foreground">{s.lokacija ?? 'Brez lokacije'}</div>
