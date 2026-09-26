@@ -4630,10 +4630,11 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                           <button
                             type="button"
                             onClick={() => handleDeleteStairTemplate(t.id)}
-                            className="p-1 rounded hover:bg-red-50 transition-colors shrink-0"
+                            className="p-1 rounded hover:bg-red-50 transition-colors shrink-0 focus-visible:ring-2 focus-visible:ring-roksal-red/40"
                             title="Izbriši predlogo"
+                            aria-label={`Izbriši predlogo ${t.naziv}`}
                           >
-                            <Trash2 className="h-3 w-3 text-muted-foreground hover:text-roksal-red" />
+                            <Trash2 className="h-3 w-3 text-muted-foreground hover:text-roksal-red" aria-hidden="true" />
                           </button>
                         </div>
                       ))}
@@ -5355,9 +5356,10 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               <button
                 type="button"
                 onClick={() => setStebriFormOpen(false)}
-                className="p-1.5 rounded-lg hover:bg-secondary/60 transition-colors"
+                className="p-1.5 rounded-lg hover:bg-secondary/60 transition-colors focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                aria-label="Zapri formo za nov stebriček"
               >
-                <X className="h-4 w-4 text-muted-foreground" />
+                <X className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
               </button>
             </div>
           </CardHeader>
@@ -6777,9 +6779,10 @@ function InlineInclinometer({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-secondary/60 transition-colors"
+            className="p-1.5 rounded-lg hover:bg-secondary/60 transition-colors focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+            aria-label={mode === 'KOT' ? 'Zapri meritev kota' : 'Zapri meritev nagiba'}
           >
-            <X className="h-4 w-4 text-muted-foreground" />
+            <X className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
           </button>
         </div>
       </CardHeader>
@@ -7285,9 +7288,10 @@ function InlineKotomer({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-secondary/60 transition-colors"
+            className="p-1.5 rounded-lg hover:bg-secondary/60 transition-colors focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+            aria-label={`Zapri ${modeTitle}`}
           >
-            <X className="h-4 w-4 text-muted-foreground" />
+            <X className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
           </button>
         </div>
       </CardHeader>

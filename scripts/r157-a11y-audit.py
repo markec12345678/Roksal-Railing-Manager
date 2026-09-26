@@ -103,9 +103,10 @@ def has_visible_text(child):
     text = ''.join(pieces)
     if re.search(r'[A-Za-zžščćđŽŠČĆĐ]', text):
         return True
-    # 3) property access that renders text: {action.label}, {k}, {mat}
+    # 3) property/bracket access that renders text: {action.label}, {k}, {mat},
+    #    {tipMeritveLabels[tip]}
     stripped = re.sub(r'<[^<>]*>', '', child)
-    for m in re.finditer(r'\{\s*([A-Za-z_$][\w.$]*)\s*\}', stripped):
+    for m in re.finditer(r'\{\s*([A-Za-z_$][\w.$]*\[[^\]]*\]|[A-Za-z_$][\w.$]*)\s*\}', stripped):
         if not re.match(r'^(true|false|null|undefined)$', m.group(1)):
             return True
     return False
@@ -113,31 +114,36 @@ def has_visible_text(child):
 
 def audit_file(path):
     src = open(path).read()
-    idx = 0
-    while True:
-        start = src.find('<Button', idx)
-        if start == -1:
-            break
-        end_of_word = start + len('<Button')
-        if end_of_word < len(src) and (src[end_of_word].isalnum() or src[end_of_word] == '_'):
-            idx = start + 1
-            continue
-        tag_end = find_opening_tag_end(src, start)
-        if tag_end == -1:
-            idx = start + 1
-            continue
-        tag = src[start:tag_end + 1]
-        line = src[:start].count('\n') + 1
-        if ('aria-label' in tag) or ('aria-labelledby' in tag):
+    for kind in ('<Button', '<button'):
+        idx = 0
+        while True:
+            start = src.find(kind, idx)
+            if start == -1:
+                break
+            end_of_word = start + len(kind)
+            # word boundary: <ButtonX / <buttons ne štejeta; </button> je zapiralni tag
+            if end_of_word < len(src) and (src[end_of_word].isalnum() or src[end_of_word] == '_'):
+                idx = start + 1
+                continue
+            if start > 0 and src[start - 1] == '/':
+                idx = start + 1
+                continue
+            tag_end = find_opening_tag_end(src, start)
+            if tag_end == -1:
+                idx = start + 1
+                continue
+            tag = src[start:tag_end + 1]
+            line = src[:start].count('\n') + 1
+            if ('aria-label' in tag) or ('aria-labelledby' in tag):
+                idx = tag_end
+                continue
+            close = src.find('</Button>', tag_end) if kind == '<Button' else src.find('</button>', tag_end)
+            child = src[tag_end + 1:close] if close != -1 else ''
+            if has_visible_text(child):
+                false_positives.append((path, line))
+            else:
+                results.append((path, line, ' '.join(child.split())[:140]))
             idx = tag_end
-            continue
-        close = src.find('</Button>', tag_end)
-        child = src[tag_end + 1:close] if close != -1 else ''
-        if has_visible_text(child):
-            false_positives.append((path, line))
-        else:
-            results.append((path, line, ' '.join(child.split())[:140]))
-        idx = tag_end
 
 
 for root in ROOTS:

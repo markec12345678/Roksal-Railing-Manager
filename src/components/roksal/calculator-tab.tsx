@@ -1850,10 +1850,11 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
           <button
             type="button"
             onClick={onClearImport}
-            className="p-1 rounded-md hover:bg-secondary/60 transition-colors shrink-0"
+            className="p-1 rounded-md hover:bg-secondary/60 transition-colors shrink-0 focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
             title="Počisti uvoz"
+            aria-label="Počisti uvoz meritve"
           >
-            <RotateCcw className="h-3.5 w-3.5 text-muted-foreground" />
+            <RotateCcw className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
           </button>
         </div>
       )}

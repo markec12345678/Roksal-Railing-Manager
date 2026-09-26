@@ -15,6 +15,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { useToast } from '@/hooks/use-toast'
 import {
   ClipboardCheck,
+  Download,
   Plus,
   Trash2,
   FileDown,
@@ -26,6 +27,7 @@ import {
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { registerSloPdfFonts } from '@/lib/pdf-sl-font'
+import { buildPunchCsv, punchCsvFilename } from '@/lib/punch-csv'
 import type { Project } from '@/lib/types'
 
 interface PunchItem {
@@ -336,6 +338,29 @@ export function PunchList({ project }: { project: Project | null }) {
     }
   }
 
+  // R158 — CSV izvoz zapisnika (podatkovni izvoz poleg PDF; logika v
+  // src/lib/punch-csv.ts — deterministično, testirljivo, fail-closed).
+  function handleExportCsv() {
+    if (items.length === 0) return
+    try {
+      const { csv, vrstic } = buildPunchCsv(items)
+      const filename = punchCsvFilename(project?.id ?? 'brez-projekta', new Date().toISOString().slice(0, 10))
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+      toast({ title: 'CSV izvožen', description: `${vrstic} točk zapisnika izvoženih v datoteko ${filename}.` })
+    } catch {
+      // Fail-verbose: izvoz ne sme tiho spodleteti (npr. neznan status v bazi).
+      toast({ title: 'Izvoz ni uspel', description: 'Podatki zapisnika vsebujejo neveljavno vrednost — osvežite zapisnik in poskusite znova.', variant: 'destructive' })
+    }
+  }
+
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -500,6 +525,18 @@ export function PunchList({ project }: { project: Project | null }) {
           >
             {generating ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <FileDown className="mr-1.5 h-4 w-4" />}
             PDF zapisnik
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-9 focus-visible:ring-2 focus-visible:ring-roksal-amber/50"
+            disabled={items.length === 0}
+            onClick={handleExportCsv}
+            aria-label={`Izvozi ${items.length} točk zapisnika kot CSV datoteko`}
+          >
+            <Download className="mr-1.5 h-4 w-4" aria-hidden="true" />
+            Izvozi CSV
           </Button>
         </div>
       </CardContent>

@@ -1308,8 +1308,8 @@ function CameraCapture({
     <div className="fixed inset-0 z-[60] flex flex-col bg-black">
       {/* Header */}
       <div className="flex items-center justify-between bg-black/80 px-4 py-3 text-white">
-        <button type="button" onClick={handleClose} className="rounded-full p-1.5 hover:bg-white/10">
-          <X className="h-5 w-5" />
+        <button type="button" onClick={handleClose} className="rounded-full p-1.5 hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-white/60" aria-label="Zapri slikanje">
+          <X className="h-5 w-5" aria-hidden="true" />
         </button>
         <span className="text-sm font-medium">Slikanje — {KATEGORIJE.find((k) => k.id === kategorija)?.label}</span>
         {gps ? (
@@ -1942,9 +1942,10 @@ function AnnotationEditor({
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-md bg-white/10 px-2.5 py-1.5 text-[11px] font-medium hover:bg-white/20"
+          className="rounded-md bg-white/10 px-2.5 py-1.5 text-[11px] font-medium hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-white/60"
+          aria-label="Zapri urejevalnik anotacij"
         >
-          <X className="h-4 w-4" />
+          <X className="h-4 w-4" aria-hidden="true" />
         </button>
         <span className="text-xs font-medium">Anotacije</span>
         <span className="ml-1 text-[10px] text-white/60">{anns.length}</span>
@@ -1954,19 +1955,21 @@ function AnnotationEditor({
             type="button"
             onClick={undoLast}
             disabled={anns.length === 0}
-            className="rounded-md bg-white/10 px-2 py-1.5 text-[11px] hover:bg-white/20 disabled:opacity-30"
+            className="rounded-md bg-white/10 px-2 py-1.5 text-[11px] hover:bg-white/20 disabled:opacity-30 focus-visible:ring-2 focus-visible:ring-white/60"
             title="Radiraj zadnjo"
+            aria-label="Radiraj zadnjo anotacijo"
           >
-            <Undo2 className="h-3.5 w-3.5" />
+            <Undo2 className="h-3.5 w-3.5" aria-hidden="true" />
           </button>
           <button
             type="button"
             onClick={clearAll}
             disabled={anns.length === 0}
-            className="rounded-md bg-white/10 px-2 py-1.5 text-[11px] hover:bg-white/20 disabled:opacity-30"
+            className="rounded-md bg-white/10 px-2 py-1.5 text-[11px] hover:bg-white/20 disabled:opacity-30 focus-visible:ring-2 focus-visible:ring-white/60"
             title="Počisti vse"
+            aria-label="Počisti vse anotacije"
           >
-            <Trash className="h-3.5 w-3.5" />
+            <Trash className="h-3.5 w-3.5" aria-hidden="true" />
           </button>
           <button
             type="button"
@@ -2004,12 +2007,14 @@ function AnnotationEditor({
               key={s.value}
               type="button"
               onClick={() => setStroke(s.value)}
-              className={`flex h-6 w-9 items-center justify-center rounded-md border text-[10px] ${
+              className={`flex h-6 w-9 items-center justify-center rounded-md border text-[10px] focus-visible:ring-2 focus-visible:ring-roksal-amber/60 ${
                 stroke === s.value
                   ? 'border-roksal-amber bg-roksal-amber/20 text-roksal-amber'
                   : 'border-white/20 text-white/70'
               }`}
               title={s.name}
+              aria-label={`Debelina črte: ${s.name}`}
+              aria-pressed={stroke === s.value}
             >
               <div className="rounded-full bg-current" style={{ width: s.value + 'px', height: s.value + 'px' }} />
             </button>

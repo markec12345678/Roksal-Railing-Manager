@@ -12,136 +12,11 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { buildNagibiCsv, nagibiCsvFilename, type NagibiCsvRow } from '@/lib/nagibi-csv'
+import { iconOnlyButtonsWithoutLabel } from '@/lib/a11y-scan'
 
 // ---------------------------------------------------------------------------
 // 1) A11Y STRAŽAR — ikonski gumbi brez aria-label
 // ---------------------------------------------------------------------------
-
-/** Poišče konec JSX odpiralnega taga <Button …>, preskoči {} izraze in navedke. */
-function findOpeningTagEnd(src: string, start: number): number {
-  let i = start
-  let depth = 0
-  const n = src.length
-  while (i < n) {
-    const c = src[i]
-    if (c === '{') depth += 1
-    else if (c === '}') depth -= 1
-    else if ((c === '"' || c === "'") && depth === 0) {
-      const q = c
-      i += 1
-      while (i < n && src[i] !== q) {
-        if (src[i] === '\\') i += 1
-        i += 1
-      }
-    } else if (c === '>' && depth === 0) return i
-    i += 1
-  }
-  return -1
-}
-
-/** Ima otrok <Button> vidno besedilo (besedilna vozlišča, fragmenti, {nizi})? */
-function hasVisibleText(child: string): boolean {
-  let i = 0
-  let depthBrace = 0
-  let inFragment = false
-  let text = ''
-  const n = child.length
-  while (i < n) {
-    const c = child[i]
-    if (c === '{') {
-      depthBrace += 1
-      i += 1
-      continue
-    }
-    if (c === '}') {
-      depthBrace -= 1
-      inFragment = false
-      i += 1
-      continue
-    }
-    if (c === '<') {
-      if (depthBrace > 0 && child[i + 1] === '>') {
-        inFragment = true
-        i += 2
-        continue
-      }
-      if (depthBrace > 0 && child[i + 1] === '/' && child[i + 2] === '>') {
-        inFragment = false
-        i += 3
-        continue
-      }
-      i += 1
-      while (i < n && child[i] !== '>') {
-        if (child[i] === '"' || child[i] === "'") {
-          const q = child[i]
-          i += 1
-          while (i < n && child[i] !== q) i += 1
-        }
-        i += 1
-      }
-      i += 1
-      continue
-    }
-    if ((c === '"' || c === "'" || c === '`') && depthBrace > 0) {
-      const q = c
-      i += 1
-      const buf: string[] = []
-      while (i < n && child[i] !== q) {
-        if (child[i] === '\\') {
-          i += 1
-          if (i < n) {
-            buf.push(child[i])
-            i += 1
-          }
-          continue
-        }
-        buf.push(child[i])
-        i += 1
-      }
-      text += buf.join('')
-      i += 1
-      continue
-    }
-    if (depthBrace === 0 || inFragment) text += c
-    i += 1
-  }
-  if (/[A-Za-zžščćđŽŠČĆĐ]/.test(text)) return true
-  // {action.label} — samostojen identifikator v {} izriše vrednost (besedilo)
-  const stripped = child.replace(/<[^<>]*>/g, '')
-  for (const m of stripped.matchAll(/\{\s*([A-Za-z_$][\w.$]*)\s*\}/g)) {
-    if (!/^(true|false|null|undefined)$/.test(m[1])) return true
-  }
-  return false
-}
-
-function iconOnlyButtonsWithoutLabel(src: string): number[] {
-  const lines: number[] = []
-  let idx = 0
-  for (;;) {
-    const start = src.indexOf('<Button', idx)
-    if (start === -1) break
-    const after = start + '<Button'.length
-    if (after < src.length && /[A-Za-z0-9_]/.test(src[after])) {
-      idx = start + 1
-      continue
-    }
-    const tagEnd = findOpeningTagEnd(src, start)
-    if (tagEnd === -1) {
-      idx = start + 1
-      continue
-    }
-    const tag = src.slice(start, tagEnd + 1)
-    if (!tag.includes('aria-label') && !tag.includes('aria-labelledby')) {
-      const close = src.indexOf('</Button>', tagEnd)
-      const child = close !== -1 ? src.slice(tagEnd + 1, close) : ''
-      if (!hasVisibleText(child)) {
-        lines.push(src.slice(0, start).split('\n').length)
-      }
-    }
-    idx = tagEnd
-  }
-  return lines
-}
 
 describe('R157 regresijski stražar — ikonski gumbi morajo imeti aria-label', () => {
   it('noben ikonski <Button> v roksal komponentah ni brez aria-label/aria-labelledby', () => {
@@ -150,8 +25,9 @@ describe('R157 regresijski stražar — ikonski gumbi morajo imeti aria-label', 
     const offenders: string[] = []
     for (const f of files) {
       const src = readFileSync(join(dir, f), 'utf8')
-      const lines = iconOnlyButtonsWithoutLabel(src)
-      for (const line of lines) offenders.push(`${f}:${line}`)
+      // R158: skener razširjen na surove <button> elemente (lib a11y-scan)
+      const found = iconOnlyButtonsWithoutLabel(src, f)
+      for (const o of found) offenders.push(`${f}:${o.line}`)
     }
     expect(offenders).toEqual([])
   })

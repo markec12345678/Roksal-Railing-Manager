@@ -1,0 +1,161 @@
+// R158 — statični a11y skener: ikonski gumbi brez dostopnega imena.
+// ---------------------------------------------------------------------------
+// TS port orodja scripts/r157-a11y-audit.py (R157/R158), da je regresijski
+// stražar poganjan kot del vitest suite-a (r157/r158 testna datoteka).
+// Pokriva OBADVA <Button> (shadcn) in surovi <button> elemente.
+//
+// Algoritem:
+//  1. najdi odpiralni tag (brace/quote-aware — arrow funkcije vsebujejo '>'),
+//  2. če tag nima aria-label/aria-labelledby, preveri otroka:
+//     - surova besedilna vozlišča (zunaj tagov; znotraj izrazov samo v
+//       fragmentih <> … </>),
+//     - nizi v izrazih ({cond ? 'Shrani' : 'Pošlji'}),
+//     - identifikatorji/property/bracket dostop ({action.label},
+//       {tipMeritveLabels[tip]}), ki izrišejo vrednost.
+//     Če nič ne najde → gumb je IKONSKI in MORA imeti aria-label.
+
+function findOpeningTagEnd(src: string, start: number): number {
+  let i = start
+  let depth = 0
+  const n = src.length
+  while (i < n) {
+    const c = src[i]
+    if (c === '{') depth += 1
+    else if (c === '}') depth -= 1
+    else if ((c === '"' || c === "'") && depth === 0) {
+      const q = c
+      i += 1
+      while (i < n && src[i] !== q) {
+        if (src[i] === '\\') i += 1
+        i += 1
+      }
+    } else if (c === '>' && depth === 0) return i
+    i += 1
+  }
+  return -1
+}
+
+function hasVisibleText(child: string): boolean {
+  let i = 0
+  let depthBrace = 0
+  let inFragment = false
+  let text = ''
+  const n = child.length
+  while (i < n) {
+    const c = child[i]
+    if (c === '{') {
+      depthBrace += 1
+      i += 1
+      continue
+    }
+    if (c === '}') {
+      depthBrace -= 1
+      inFragment = false
+      i += 1
+      continue
+    }
+    if (c === '<') {
+      if (depthBrace > 0 && child[i + 1] === '>') {
+        inFragment = true
+        i += 2
+        continue
+      }
+      if (depthBrace > 0 && child[i + 1] === '/' && child[i + 2] === '>') {
+        inFragment = false
+        i += 3
+        continue
+      }
+      i += 1
+      while (i < n && child[i] !== '>') {
+        if (child[i] === '"' || child[i] === "'") {
+          const q = child[i]
+          i += 1
+          while (i < n && child[i] !== q) i += 1
+        }
+        i += 1
+      }
+      i += 1
+      continue
+    }
+    if ((c === '"' || c === "'" || c === '`') && depthBrace > 0) {
+      const q = c
+      i += 1
+      const buf: string[] = []
+      while (i < n && child[i] !== q) {
+        if (child[i] === '\\') {
+          i += 1
+          if (i < n) {
+            buf.push(child[i])
+            i += 1
+          }
+          continue
+        }
+        buf.push(child[i])
+        i += 1
+      }
+      text += buf.join('')
+      i += 1
+      continue
+    }
+    if (depthBrace === 0 || inFragment) text += c
+    i += 1
+  }
+  if (/[A-Za-zžščćđŽŠČĆĐ]/.test(text)) return true
+  const stripped = child.replace(/<[^<>]*>/g, '')
+  for (const m of stripped.matchAll(
+    /\{\s*([A-Za-z_$][\w.$]*\[[^\]]*\]|[A-Za-z_$][\w.$]*)\s*\}/g,
+  )) {
+    if (!/^(true|false|null|undefined)$/.test(m[1])) return true
+  }
+  return false
+}
+
+export interface IconButtonOffender {
+  file: string
+  line: number
+  tag: string
+}
+
+/** Skensira TSX vir in vrne ikonske gumbe (<Button>/<button>) brez aria-label/aria-labelledby. */
+export function iconOnlyButtonsWithoutLabel(
+  src: string,
+  file = 'inline.tsx',
+): IconButtonOffender[] {
+  const offenders: IconButtonOffender[] = []
+  for (const kind of ['<Button', '<button'] as const) {
+    let idx = 0
+    for (;;) {
+      const start = src.indexOf(kind, idx)
+      if (start === -1) break
+      const after = start + kind.length
+      if (after < src.length && /[A-Za-z0-9_]/.test(src[after])) {
+        idx = start + 1
+        continue
+      }
+      if (start > 0 && src[start - 1] === '/') {
+        idx = start + 1
+        continue
+      }
+      const tagEnd = findOpeningTagEnd(src, start)
+      if (tagEnd === -1) {
+        idx = start + 1
+        continue
+      }
+      const tag = src.slice(start, tagEnd + 1)
+      if (!tag.includes('aria-label') && !tag.includes('aria-labelledby')) {
+        const closeTag = kind === '<Button' ? '</Button>' : '</button>'
+        const close = src.indexOf(closeTag, tagEnd)
+        const child = close !== -1 ? src.slice(tagEnd + 1, close) : ''
+        if (!hasVisibleText(child)) {
+          offenders.push({
+            file,
+            line: src.slice(0, start).split('\n').length,
+            tag: kind,
+          })
+        }
+      }
+      idx = tagEnd
+    }
+  }
+  return offenders.sort((a, b) => a.line - b.line)
+}

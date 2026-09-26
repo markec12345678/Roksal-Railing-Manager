@@ -1355,9 +1355,10 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2"
+              className="absolute right-3 top-1/2 -translate-y-1/2 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 rounded"
+              aria-label="Počisti iskanje projektov"
             >
-              <X className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
+              <X className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" aria-hidden="true" />
             </button>
           )}
         </div>
