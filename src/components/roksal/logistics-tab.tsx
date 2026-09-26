@@ -810,7 +810,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 mb-0.5">
-                          <span className="text-sm font-semibold text-roksal-navy truncate">{s.project.nazivProjekta}</span>
+                          <span className="text-sm font-semibold text-roksal-ink truncate">{s.project.nazivProjekta}</span>
                           <Badge variant="outline" className={`text-[8px] shrink-0 ${STATUS_COLORS[s.status]}`}>
                             {STATUS_LABELS[s.status] || s.status}
                           </Badge>
@@ -819,7 +819,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                         <div className="flex flex-wrap items-center gap-2 text-[10px] mt-1 tabular-nums text-muted-foreground">
                           <span className="flex items-center gap-0.5"><Clock className="h-2.5 w-2.5" />{formatDate(s.datumZacetka)} {formatTime(s.datumZacetka)}</span>
                           <span>·</span>
-                          <span className="text-roksal-navy">{s.predvideneUre}h{s.dejanskeUre ? ` (dejan. ${s.dejanskeUre}h)` : ''}</span>
+                          <span className="text-roksal-ink">{s.predvideneUre}h{s.dejanskeUre ? ` (dejan. ${s.dejanskeUre}h)` : ''}</span>
                           {s.crew && <><span>·</span><span className="flex items-center gap-0.5"><Users className="h-2.5 w-2.5" />{s.crew.naziv}</span></>}
                           {s.lokacija && <><span>·</span><span className="flex items-center gap-0.5"><MapPin className="h-2.5 w-2.5" />{s.lokacija}</span></>}
                         </div>
@@ -903,7 +903,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
               <CardContent className="p-3">
                 <div className="flex items-center gap-2 mb-1">
                   <div className="h-4 w-4 rounded-full ring-2 ring-white shadow-sm" style={{ backgroundColor: c.barva }} aria-hidden />
-                  <span className="text-sm font-semibold text-roksal-navy">{c.naziv}</span>
+                  <span className="text-sm font-semibold text-roksal-ink">{c.naziv}</span>
                 </div>
                 <div className="text-[10px] tabular-nums text-muted-foreground">
                   {c.vodja ? `Vodja: ${c.vodja.ime}` : 'Brez vodje'} · {c._count.members} članov · {c._count.schedules} terminov
@@ -931,7 +931,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 mb-0.5">
-                      <span className="text-sm font-semibold text-roksal-navy">{e.naziv}</span>
+                      <span className="text-sm font-semibold text-roksal-ink">{e.naziv}</span>
                       <Badge variant="outline" className={`text-[8px] shrink-0 ${EQUIPMENT_STATUS_COLORS[e.status] ?? 'bg-muted'}`}>
                         {EQUIPMENT_STATUS_LABELS[e.status] ?? e.status}
                       </Badge>
@@ -1025,7 +1025,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
       {/* Dialog: nov termin */}
       <Dialog open={newScheduleOpen} onOpenChange={setNewScheduleOpen}>
         <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle className="text-roksal-navy">Nov termin montaže</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="text-roksal-ink">Nov termin montaže</DialogTitle></DialogHeader>
           <div className="space-y-2">
             <div><Label className="text-xs">Projekt *</Label>
               <Select value={schedProject} onValueChange={setSchedProject}>
@@ -1085,7 +1085,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
       <Dialog open={moveTarget !== null} onOpenChange={(open) => !open && setMoveTarget(null)}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-roksal-navy">
+            <DialogTitle className="flex items-center gap-2 text-roksal-ink">
               <CalendarClock className="h-4.5 w-4.5 text-roksal-amber" />
               Preloži termin
             </DialogTitle>
@@ -1093,7 +1093,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
           {moveTarget && (
             <p className="text-[11px] text-muted-foreground">
               {moveTarget.project} · trenutno status{' '}
-              <span className="font-semibold text-roksal-navy">{STATUS_LABELS[moveTarget.status] ?? moveTarget.status}</span>
+              <span className="font-semibold text-roksal-ink">{STATUS_LABELS[moveTarget.status] ?? moveTarget.status}</span>
             </p>
           )}
           <div className="space-y-2">
@@ -1124,7 +1124,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
       {/* Dialog: nova ekipa */}
       <Dialog open={newCrewOpen} onOpenChange={setNewCrewOpen}>
         <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle className="text-roksal-navy">Nova ekipa</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="text-roksal-ink">Nova ekipa</DialogTitle></DialogHeader>
           <div><Label className="text-xs">Naziv ekipe</Label><Input value={crewNaziv} onChange={(e) => setCrewNaziv(e.target.value)} placeholder="npr. Ekipa A" className="h-9" /></div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setNewCrewOpen(false)}>Prekliči</Button>
@@ -1136,7 +1136,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
       {/* Dialog: nova oprema */}
       <Dialog open={newEquipOpen} onOpenChange={setNewEquipOpen}>
         <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle className="text-roksal-navy">Nova oprema</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="text-roksal-ink">Nova oprema</DialogTitle></DialogHeader>
           <div className="space-y-2">
             <div><Label className="text-xs">Naziv</Label><Input value={equipNaziv} onChange={(e) => setEquipNaziv(e.target.value)} placeholder="npr. Laser Bosch GLM 50C" className="h-9" /></div>
             <div><Label className="text-xs">Tip</Label>
@@ -1159,7 +1159,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
       <Dialog open={eventTarget !== null} onOpenChange={(open) => !open && setEventTarget(null)}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-roksal-navy">
+            <DialogTitle className="flex items-center gap-2 text-roksal-ink">
               <History className="h-4.5 w-4.5 text-roksal-amber" />
               Zabeleži dogodek
             </DialogTitle>
@@ -1206,7 +1206,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                 <div className="max-h-28 space-y-1 overflow-y-auto rounded-md border p-2">
                   {eventHistory.map((h) => (
                     <div key={h.id} className="flex items-center gap-2 text-[10px] tabular-nums">
-                      <span className="font-semibold text-roksal-navy">{EQUIPMENT_EVENT_LABELS[h.type] ?? h.type}</span>
+                      <span className="font-semibold text-roksal-ink">{EQUIPMENT_EVENT_LABELS[h.type] ?? h.type}</span>
                       <span className="text-muted-foreground">{formatDate(h.performedAt)}</span>
                       {h.result === 'NAPAKA' && <span className="font-semibold text-red-700">NAPAKA</span>}
                       {h.certificate && <span className="truncate text-muted-foreground">· {h.certificate}</span>}
@@ -1241,7 +1241,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
       <Dialog open={qcTarget !== null} onOpenChange={(open) => !open && setQcTarget(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-roksal-navy">
+            <DialogTitle className="flex items-center gap-2 text-roksal-ink">
               <ShieldCheck className="h-4.5 w-4.5 text-roksal-amber" />
               Preverba kakovosti
             </DialogTitle>
@@ -1343,8 +1343,8 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
       <Dialog open={evTarget !== null} onOpenChange={(open) => !open && setEvTarget(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-roksal-navy">
-              <FileCheck2 className="h-4.5 w-4.5 text-roksal-navy" />
+            <DialogTitle className="flex items-center gap-2 text-roksal-ink">
+              <FileCheck2 className="h-4.5 w-4.5 text-roksal-ink" />
               Montažno dokazilo
             </DialogTitle>
           </DialogHeader>

@@ -56,7 +56,7 @@ export function ActivationClient({ token, ime }: ActivationClientProps) {
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50">
             <CheckCircle2 className="h-7 w-7 text-emerald-600" />
           </div>
-          <h1 className="text-xl font-bold text-roksal-navy">Račun je aktiven!</h1>
+          <h1 className="text-xl font-bold text-roksal-ink">Račun je aktiven!</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Geslo je nastavljeno. Prijavite se z vašim e-naslovom in novim geslom.
           </p>
@@ -79,7 +79,7 @@ export function ActivationClient({ token, ime }: ActivationClientProps) {
           <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-roksal-amber/15">
             <KeyRound className="h-6 w-6 text-roksal-amber" />
           </div>
-          <h1 className="text-xl font-bold text-roksal-navy">Dobrodošli, {ime.split(' ')[0]}!</h1>
+          <h1 className="text-xl font-bold text-roksal-ink">Dobrodošli, {ime.split(' ')[0]}!</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Nastavite geslo za vaš račun — po njem se boste prijavljali v aplikacijo.
           </p>

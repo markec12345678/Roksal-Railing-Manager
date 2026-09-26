@@ -225,7 +225,7 @@ export function StepProduct() {
       />
 
       <header className="px-1">
-        <h2 className="text-lg font-bold text-roksal-navy">Dodajte svojo ograjo</h2>
+        <h2 className="text-lg font-bold text-roksal-ink">Dodajte svojo ograjo</h2>
         <p className="text-xs leading-snug text-muted-foreground">
           Fotografirajte svojo ograjo ali izberite sliko — vzorec in barva izdelka ostajajo točno takšni, kot so.
         </p>
@@ -235,9 +235,9 @@ export function StepProduct() {
         <Card className="rounded-2xl">
           <CardContent className="flex flex-col items-center gap-3 p-6 text-center">
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-roksal-navy/10" aria-hidden="true">
-              <WandSparkles className="h-7 w-7 text-roksal-navy" />
+              <WandSparkles className="h-7 w-7 text-roksal-ink" />
             </div>
-            <p className="text-sm font-semibold text-roksal-navy">Naložite fotografijo ograje</p>
+            <p className="text-sm font-semibold text-roksal-ink">Naložite fotografijo ograje</p>
             <p className="text-xs text-muted-foreground">
               Najbolje po primeru: ograja čim bolj zapolni kader, čim manj okoliških predmetov.
             </p>
@@ -270,7 +270,7 @@ export function StepProduct() {
         <Card className="rounded-2xl">
           <CardContent className="space-y-3 p-4">
             <div className="flex items-center justify-between gap-2">
-              <p className="text-sm font-bold text-roksal-navy">VAŠA OGRAJA</p>
+              <p className="text-sm font-bold text-roksal-ink">VAŠA OGRAJA</p>
               {productMask?.edited ? (
                 <Badge className="bg-roksal-amber/15 text-[10px] font-semibold text-roksal-amber hover:bg-roksal-amber/15">
                   Maska urejena ročno
@@ -302,7 +302,7 @@ export function StepProduct() {
 
             {/* POTRDITEV (spec §9) — "Ali je to prava ograja?" */}
             <div className="rounded-xl bg-roksal-navy/5 p-3 text-center">
-              <p className="text-sm font-semibold text-roksal-navy">Ali je to prava ograja?</p>
+              <p className="text-sm font-semibold text-roksal-ink">Ali je to prava ograja?</p>
               <p className="mt-0.5 text-[11px] text-muted-foreground">
                 To bo vizualizirano na vašem balkonu.
               </p>

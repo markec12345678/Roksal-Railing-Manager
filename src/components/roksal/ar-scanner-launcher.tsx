@@ -48,7 +48,7 @@ export function ArScannerLauncher({ projectId }: ArScannerLauncherProps) {
       ) : (
         <div className="w-full rounded-lg border border-dashed border-roksal-amber/40 bg-roksal-amber/5 p-4 flex flex-col items-center text-center gap-2">
           <AlertCircle className="h-6 w-6 text-roksal-amber" />
-          <p className="text-sm font-medium text-roksal-navy">
+          <p className="text-sm font-medium text-roksal-ink">
             Najprej izberite projekt
           </p>
           <p className="text-xs text-muted-foreground">

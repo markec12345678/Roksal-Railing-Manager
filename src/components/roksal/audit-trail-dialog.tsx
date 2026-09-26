@@ -26,7 +26,9 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { History, Loader2, ShieldCheck, ChevronDown, ChevronRight } from 'lucide-react'
+import { useToast } from '@/hooks/use-toast'
+import { buildAuditCsv, auditCsvFilename, revizijaLabel } from '@/lib/audit-csv'
+import { History, Loader2, ShieldCheck, ChevronDown, ChevronRight, Download } from 'lucide-react'
 
 interface AuditEntry {
   id: string
@@ -39,20 +41,22 @@ interface AuditEntry {
   user: { id: string; ime: string; email: string; vloga: string } | null
 }
 
-/** Barvne kategorije po pomenu akcije — prva beseda določi razred. */
+/** Barvne kategorije po pomenu akcije — prva beseda določi razred.
+ * R162 stil pass — dark: variante (svetla tema NESPREMENJENA, temna dobi
+ * berljive polprosojne značke namesto svetlih 100-barv). */
 function akcijaBadge(akcija: string): { label: string; className: string } {
   const upper = akcija.toUpperCase()
   if (upper.includes('LOGIN')) {
-    return { label: akcija, className: 'bg-blue-100 text-blue-800 border-blue-300' }
+    return { label: akcija, className: 'bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-500/15 dark:text-blue-300 dark:border-blue-500/30' }
   }
   if (upper.includes('DELETE') || upper.includes('REVOKE') || upper.includes('STORNO')) {
-    return { label: akcija, className: 'bg-red-100 text-red-700 border-red-300' }
+    return { label: akcija, className: 'bg-red-100 text-red-700 border-red-300 dark:bg-roksal-red/15 dark:text-roksal-red dark:border-roksal-red/30' }
   }
   if (upper.includes('CREATE') || upper.includes('ISSUE') || upper.includes('BOOTSTRAP')) {
-    return { label: akcija, className: 'bg-green-100 text-green-800 border-green-300' }
+    return { label: akcija, className: 'bg-green-100 text-green-800 border-green-300 dark:bg-roksal-green/15 dark:text-roksal-green dark:border-roksal-green/30' }
   }
   if (upper.includes('DEAL') || upper.includes('SIGN') || upper.includes('LOCK')) {
-    return { label: akcija, className: 'bg-roksal-amber/20 text-roksal-navy border-roksal-amber/50' }
+    return { label: akcija, className: 'bg-roksal-amber/20 text-roksal-navy border-roksal-amber/50 dark:bg-roksal-amber/15 dark:text-roksal-amber dark:border-roksal-amber/30' }
   }
   return { label: akcija, className: 'bg-muted text-muted-foreground border-border' }
 }
@@ -89,6 +93,8 @@ export function AuditTrailDialog({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  const [exporting, setExporting] = useState(false)
+  const { toast } = useToast()
 
   useEffect(() => {
     if (!open || !projectId) return
@@ -130,14 +136,75 @@ export function AuditTrailDialog({
     })
   }
 
+  // R162 — CSV izvoz revizijske sledi (arhiv/skladnost/pisarniška obdelava;
+  // logika v src/lib/audit-csv.ts — deterministično, fail-closed, RFC 4180).
+  // Izvozi TOČNO to, kar je naloženo v dialogu (zadnjih 100 vpisov).
+  const handleExportCsv = () => {
+    if (!entries || entries.length === 0 || !projectId) return
+    setExporting(true)
+    try {
+      const { csv, vrstic } = buildAuditCsv(
+        entries.map((e) => ({
+          id: e.id,
+          akcija: e.akcija,
+          oldValue: e.oldValue,
+          newValue: e.newValue,
+          ipAddress: e.ipAddress,
+          timestamp: e.timestamp,
+          user: e.user ? { ime: e.user.ime, email: e.user.email, vloga: e.user.vloga } : null,
+        })),
+      )
+      const danes = new Date().toISOString().slice(0, 10)
+      const filename = auditCsvFilename(projectId, danes)
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+      toast({ title: 'CSV izvožen', description: `Izvožen seznam (${revizijaLabel(vrstic)}) v datoteko ${filename}.` })
+    } catch (err) {
+      // Fail-verbose: izvoz ne sme tiho spodleteti — razlog gre v toast.
+      toast({
+        title: 'Izvoz ni uspel',
+        description: err instanceof Error ? err.message : `Neznana napaka (${String(err)}).`,
+        variant: 'destructive',
+      })
+    } finally {
+      setExporting(false)
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
-          <DialogTitle className="text-roksal-navy flex items-center gap-2">
-            <History className="h-4 w-4 text-roksal-amber" aria-hidden />
-            Revizijska sled
-          </DialogTitle>
+          <div className="flex items-center gap-2">
+            <DialogTitle className="text-roksal-ink flex items-center gap-2">
+              <History className="h-4 w-4 text-roksal-amber" aria-hidden="true" />
+              Revizijska sled
+            </DialogTitle>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={handleExportCsv}
+              disabled={!entries || entries.length === 0 || exporting || loading || error !== null}
+              className="ml-auto h-7 shrink-0 gap-1.5 text-[11px] focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              aria-label={`Izvozi prikazani seznam revizijskih vpisov v CSV (${revizijaLabel(entries?.length ?? 0)})`}
+              title="Izvozi prikazani seznam revizijskih vpisov v CSV"
+            >
+              {exporting ? (
+                <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
+              ) : (
+                <Download className="h-3 w-3" aria-hidden="true" />
+              )}
+              Izvozi CSV
+            </Button>
+          </div>
           <DialogDescription>
             Kdo, kaj, kdaj — pravno pomembna sled projekta (zadnjih 100 vpisov).
           </DialogDescription>
@@ -171,7 +238,7 @@ export function AuditTrailDialog({
                       </Badge>
                       <span className="text-[10px] text-muted-foreground tabular-nums">{formatCas(e.timestamp)}</span>
                     </div>
-                    <div className="mt-1 text-xs text-roksal-navy">
+                    <div className="mt-1 text-xs text-roksal-ink">
                       {e.user ? (
                         <span className="font-medium">{e.user.ime}</span>
                       ) : (
@@ -188,7 +255,7 @@ export function AuditTrailDialog({
                           type="button"
                           onClick={() => toggle(e.id)}
                           aria-expanded={isOpen}
-                          className="mt-1 inline-flex items-center gap-0.5 rounded text-[10px] text-muted-foreground hover:text-roksal-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                          className="mt-1 inline-flex items-center gap-0.5 rounded text-[10px] text-muted-foreground hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
                         >
                           {isOpen ? (
                             <ChevronDown className="h-3 w-3" aria-hidden />
@@ -205,7 +272,7 @@ export function AuditTrailDialog({
                               </p>
                             ) : null}
                             {e.newValue ? (
-                              <p className="break-all font-mono text-[10px] text-roksal-navy">
+                              <p className="break-all font-mono text-[10px] text-roksal-ink">
                                 <span className="font-semibold text-green-700">+</span> {e.newValue}
                               </p>
                             ) : null}

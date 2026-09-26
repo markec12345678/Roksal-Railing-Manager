@@ -60,7 +60,7 @@ export function PortalGallery({ sections }: PortalGalleryProps) {
           <section key={section.id}>
             <div className="flex items-center gap-2 mb-3">
               <SectionBadge id={section.id} />
-              <h2 className="text-base font-bold text-roksal-navy">{section.label}</h2>
+              <h2 className="text-base font-bold text-roksal-ink">{section.label}</h2>
               <span className="ml-auto text-xs text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">
                 {section.photos.length} {section.photos.length === 1 ? 'slika' : section.photos.length < 5 ? 'slike' : 'slik'}
               </span>
@@ -191,7 +191,7 @@ export function PortalGallery({ sections }: PortalGalleryProps) {
 function SectionBadge({ id }: { id: 'PRED' | 'MED' | 'PO' }) {
   const config = {
     PRED: { label: '1', color: 'bg-amber-100 text-roksal-navy' },
-    MED: { label: '2', color: 'bg-blue-100 text-roksal-navy' },
+    MED: { label: '2', color: 'bg-blue-100 text-roksal-ink' },
     PO: { label: '3', color: 'bg-green-100 text-roksal-green' },
   }
   const c = config[id]

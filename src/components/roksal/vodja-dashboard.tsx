@@ -346,7 +346,7 @@ export function VodjaDashboard() {
       {/* Naslov */}
       <div className="flex flex-wrap items-center gap-2">
         <TrendingUp className="h-5 w-5 text-roksal-amber" />
-        <h2 className="text-base font-bold text-roksal-navy">Pregled za vodjo</h2>
+        <h2 className="text-base font-bold text-roksal-ink">Pregled za vodjo</h2>
         <Badge variant="outline" className="text-[9px] bg-roksal-amber/10 text-roksal-amber">
           {new Date().toLocaleDateString('sl-SI', { weekday: 'long', day: '2-digit', month: 'long' })}
         </Badge>
@@ -354,7 +354,7 @@ export function VodjaDashboard() {
         <Button
           size="sm"
           variant="outline"
-          className="ml-auto h-8 gap-1.5 border-roksal-navy/25 text-xs text-roksal-navy transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-navy focus-visible:ring-roksal-amber/50"
+          className="ml-auto h-8 gap-1.5 border-roksal-navy/25 text-xs text-roksal-ink transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-roksal-amber/50"
           onClick={downloadReport}
           disabled={reportLoading}
           aria-label="Prenesi mesečno PDF poročilo"
@@ -371,7 +371,7 @@ export function VodjaDashboard() {
           <Card className="group border-blue-200 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-blue-300">
             <CardContent className="p-3 text-center">
               <Calendar className="h-4 w-4 mx-auto text-blue-600 mb-1 transition-transform duration-200 group-hover:scale-110" />
-              <div className="text-xl font-bold text-roksal-navy">{stats.danasTermini}</div>
+              <div className="text-xl font-bold text-roksal-ink">{stats.danasTermini}</div>
               <div className="text-[9px] text-muted-foreground">Termini</div>
             </CardContent>
           </Card>
@@ -406,7 +406,7 @@ export function VodjaDashboard() {
               <div key={t.id} className="flex items-center gap-2 rounded-lg border border-border p-2">
                 <div className="h-8 w-1 rounded-full" style={{ backgroundColor: t.crew?.barva || '#1d2b3e' }} />
                 <div className="min-w-0 flex-1">
-                  <div className="text-xs font-medium text-roksal-navy truncate">{t.project.nazivProjekta}</div>
+                  <div className="text-xs font-medium text-roksal-ink truncate">{t.project.nazivProjekta}</div>
                   <div className="text-[9px] text-muted-foreground truncate">
                     {formatTime(t.datumZacetka)} · {t.project.customer.ime} · {t.crew?.naziv || 'Brez ekipe'}
                   </div>
@@ -431,10 +431,10 @@ export function VodjaDashboard() {
           <Card className="border-roksal-navy/20 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
             <CardContent className="p-3">
               <div className="flex items-center gap-1 mb-1">
-                <Euro className="h-3 w-3 text-roksal-navy" />
+                <Euro className="h-3 w-3 text-roksal-ink" />
                 <span className="text-[10px] text-muted-foreground">Prihodek (plačano)</span>
               </div>
-              <div className="text-lg font-bold text-roksal-navy">{formatEUR(stats.mesecniPrihodek)}</div>
+              <div className="text-lg font-bold text-roksal-ink">{formatEUR(stats.mesecniPrihodek)}</div>
               <div className="text-[9px] text-muted-foreground">iz plačanih računov</div>
             </CardContent>
           </Card>
@@ -453,7 +453,7 @@ export function VodjaDashboard() {
                 <Package className="h-3 w-3 text-purple-600" />
                 <span className="text-[10px] text-muted-foreground">Projektov</span>
               </div>
-              <div className="text-lg font-bold text-roksal-navy">{stats.mesecnoProjektov}</div>
+              <div className="text-lg font-bold text-roksal-ink">{stats.mesecnoProjektov}</div>
             </CardContent>
           </Card>
           <Card className="border-amber-200 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
@@ -462,7 +462,7 @@ export function VodjaDashboard() {
                 <Clock className="h-3 w-3 text-amber-600" />
                 <span className="text-[10px] text-muted-foreground">Ure</span>
               </div>
-              <div className="text-lg font-bold text-roksal-navy">{stats.mesecnoUr}h</div>
+              <div className="text-lg font-bold text-roksal-ink">{stats.mesecnoUr}h</div>
             </CardContent>
           </Card>
         </div>
@@ -487,7 +487,7 @@ export function VodjaDashboard() {
                     title={`${m.label}: ${formatEUR(m.eur)}`}
                   >
                     {m.eur > 0 && (
-                      <span className="text-[8px] font-semibold text-roksal-navy">{formatEUR(m.eur)}</span>
+                      <span className="text-[8px] font-semibold text-roksal-ink">{formatEUR(m.eur)}</span>
                     )}
                     <div
                       className={`w-full max-w-[38px] rounded-t-md transition-all duration-500 ${
@@ -513,7 +513,7 @@ export function VodjaDashboard() {
                 <span className="h-2 w-2 shrink-0 rounded-full bg-roksal-amber" aria-hidden />
                 <div className="min-w-0">
                   <p className="text-[9px] text-muted-foreground">Odprto (izdano)</p>
-                  <p className="text-xs font-bold text-roksal-navy">{formatEUR(stats.odprtoZnesek)}</p>
+                  <p className="text-xs font-bold text-roksal-ink">{formatEUR(stats.odprtoZnesek)}</p>
                 </div>
               </div>
               <div
@@ -524,7 +524,7 @@ export function VodjaDashboard() {
                 <span className={`h-2 w-2 shrink-0 rounded-full ${stats.zapadloSt > 0 ? 'bg-roksal-red' : 'bg-stone-400'}`} aria-hidden />
                 <div className="min-w-0">
                   <p className={`text-[9px] ${stats.zapadloSt > 0 ? 'text-red-700' : 'text-muted-foreground'}`}>Zapadlo</p>
-                  <p className={`text-xs font-bold ${stats.zapadloSt > 0 ? 'text-red-700' : 'text-roksal-navy'}`}>
+                  <p className={`text-xs font-bold ${stats.zapadloSt > 0 ? 'text-red-700' : 'text-roksal-ink'}`}>
                     {formatEUR(stats.zapadloZnesek)}
                     {stats.zapadloSt > 0 && <span className="ml-1 font-medium">({stats.zapadloSt})</span>}
                   </p>
@@ -590,13 +590,13 @@ export function VodjaDashboard() {
         <div className="grid grid-cols-3 gap-2">
           <Card>
             <CardContent className="p-2.5 text-center">
-              <div className="text-sm font-bold text-roksal-navy">{stats.skupajProjektov}</div>
+              <div className="text-sm font-bold text-roksal-ink">{stats.skupajProjektov}</div>
               <div className="text-[9px] text-muted-foreground">Projektov</div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-2.5 text-center">
-              <div className="text-sm font-bold text-roksal-navy">{stats.skupajStrank}</div>
+              <div className="text-sm font-bold text-roksal-ink">{stats.skupajStrank}</div>
               <div className="text-[9px] text-muted-foreground">Strank</div>
             </CardContent>
           </Card>

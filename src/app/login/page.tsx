@@ -190,7 +190,7 @@ function LoginForm() {
                 <Button
                   type="button"
                   variant="outline"
-                  className="w-full border-roksal-amber/60 bg-roksal-amber/10 text-roksal-navy transition-all hover:bg-roksal-amber/20 hover:shadow-md active:scale-[0.99]"
+                  className="w-full border-roksal-amber/60 bg-roksal-amber/10 text-roksal-ink transition-all hover:bg-roksal-amber/20 hover:shadow-md active:scale-[0.99]"
                   disabled={busy || demoBusy}
                   onClick={onDemoAccess}
                 >

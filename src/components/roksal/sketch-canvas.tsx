@@ -711,7 +711,7 @@ export function SketchCanvas({ projectId, onClose }: SketchCanvasProps) {
       <Dialog open={measureDialogOpen} onOpenChange={setMeasureDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-roksal-navy dark:text-white">
+            <DialogTitle className="flex items-center gap-2 text-roksal-ink dark:text-white">
               <Ruler className="w-5 h-5 text-roksal-amber" />
               Vnesi mero
             </DialogTitle>
@@ -763,7 +763,7 @@ export function SketchCanvas({ projectId, onClose }: SketchCanvasProps) {
       <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-roksal-navy dark:text-white">
+            <DialogTitle className="flex items-center gap-2 text-roksal-ink dark:text-white">
               <Save className="w-5 h-5 text-roksal-amber" />
               Shrani skico
             </DialogTitle>
@@ -833,7 +833,7 @@ export function SketchCanvas({ projectId, onClose }: SketchCanvasProps) {
       <Dialog open={loadDialogOpen} onOpenChange={setLoadDialogOpen}>
         <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-roksal-navy dark:text-white">
+            <DialogTitle className="flex items-center gap-2 text-roksal-ink dark:text-white">
               <FolderOpen className="w-5 h-5 text-roksal-amber" />
               Shranjene skice
             </DialogTitle>
@@ -862,7 +862,7 @@ export function SketchCanvas({ projectId, onClose }: SketchCanvasProps) {
                       onClick={() => setViewingSketch(sk)}
                     />
                     <div className="p-2">
-                      <div className="text-xs font-semibold truncate text-roksal-navy dark:text-white">
+                      <div className="text-xs font-semibold truncate text-roksal-ink dark:text-white">
                         {sk.naziv}
                       </div>
                       <div className="text-[10px] text-muted-foreground">
@@ -903,7 +903,7 @@ export function SketchCanvas({ projectId, onClose }: SketchCanvasProps) {
       <Dialog open={!!viewingSketch} onOpenChange={(o) => !o && setViewingSketch(null)}>
         <DialogContent className="sm:max-w-4xl max-h-[90vh]">
           <DialogHeader>
-            <DialogTitle className="text-roksal-navy dark:text-white">
+            <DialogTitle className="text-roksal-ink dark:text-white">
               {viewingSketch?.naziv}
             </DialogTitle>
             {viewingSketch?.povzetek && (

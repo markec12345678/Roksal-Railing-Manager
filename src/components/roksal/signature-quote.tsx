@@ -356,11 +356,11 @@ export function SignatureQuote({ quoteData, monterName = 'Monter Roksal', projec
         <div className="rounded-lg border border-border bg-white p-3 text-xs space-y-1">
           <div className="flex justify-between">
             <span className="text-muted-foreground">Projekt:</span>
-            <span className="font-medium text-roksal-navy">{quoteData.projectName}</span>
+            <span className="font-medium text-roksal-ink">{quoteData.projectName}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Stranka:</span>
-            <span className="font-medium text-roksal-navy">{quoteData.customerName}</span>
+            <span className="font-medium text-roksal-ink">{quoteData.customerName}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Skupaj z DDV:</span>
@@ -397,7 +397,7 @@ export function SignatureQuote({ quoteData, monterName = 'Monter Roksal', projec
           {/* Stranka */}
           <div className="rounded-lg border-2 border-dashed border-border p-3 text-center">
             <div className="flex items-center justify-center gap-1 mb-2">
-              <User className="h-4 w-4 text-roksal-navy" />
+              <User className="h-4 w-4 text-roksal-ink" />
               <span className="text-xs font-medium">Podpis stranke</span>
             </div>
             {customerSig ? (
@@ -482,7 +482,7 @@ export function SignatureQuote({ quoteData, monterName = 'Monter Roksal', projec
       <Dialog open={customerSigOpen} onOpenChange={setCustomerSigOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-roksal-navy">
+            <DialogTitle className="flex items-center gap-2 text-roksal-ink">
               <Pen className="h-5 w-5 text-roksal-amber" />
               Podpis stranke
             </DialogTitle>
@@ -526,7 +526,7 @@ export function SignatureQuote({ quoteData, monterName = 'Monter Roksal', projec
       <Dialog open={monterSigOpen} onOpenChange={setMonterSigOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-roksal-navy">
+            <DialogTitle className="flex items-center gap-2 text-roksal-ink">
               <Pen className="h-5 w-5 text-roksal-amber" />
               Podpis monterja
             </DialogTitle>

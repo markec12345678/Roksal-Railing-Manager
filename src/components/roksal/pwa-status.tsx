@@ -355,7 +355,7 @@ export function PwaStatus() {
               <Download className="h-4 w-4 text-roksal-amber" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[12px] font-semibold leading-tight text-roksal-navy">Namesti Roksal kot aplikacijo</p>
+              <p className="text-[12px] font-semibold leading-tight text-roksal-ink">Namesti Roksal kot aplikacijo</p>
               <p className="text-[10px] leading-tight text-muted-foreground">Ikona na domačem zaslonu, deluje tudi offline</p>
             </div>
             <button

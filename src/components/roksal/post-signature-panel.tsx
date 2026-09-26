@@ -297,7 +297,7 @@ export function PostSignaturePanel({ project }: { project: Project }) {
           <CardContent className="p-3">
             <div className="flex items-center gap-2 mb-1">
               <Lock className="h-4 w-4 text-green-600" />
-              <span className="text-[11px] font-semibold text-roksal-navy">Deal Lock</span>
+              <span className="text-[11px] font-semibold text-roksal-ink">Deal Lock</span>
               <CheckCircle2 className="h-3 w-3 text-green-600 ml-auto" />
             </div>
             <p className="text-[10px] text-muted-foreground">
@@ -311,7 +311,7 @@ export function PostSignaturePanel({ project }: { project: Project }) {
           <CardContent className="p-3">
             <div className="flex items-center gap-2 mb-1">
               <Package className="h-4 w-4 text-blue-600" />
-              <span className="text-[11px] font-semibold text-roksal-navy">BOM Draft</span>
+              <span className="text-[11px] font-semibold text-roksal-ink">BOM Draft</span>
               {bomDraft && (
                 <Badge variant="outline" className="ml-auto text-[8px] bg-blue-50 text-blue-700">
                   {bomDraft.items.length} art.
@@ -329,7 +329,7 @@ export function PostSignaturePanel({ project }: { project: Project }) {
           <CardContent className="p-3">
             <div className="flex items-center gap-2 mb-1">
               <FileText className="h-4 w-4 text-amber-600" />
-              <span className="text-[11px] font-semibold text-roksal-navy">Projekt = ZA_MONTAZO</span>
+              <span className="text-[11px] font-semibold text-roksal-ink">Projekt = ZA_MONTAZO</span>
               <CheckCircle2 className="h-3 w-3 text-green-600 ml-auto" />
             </div>
             <p className="text-[10px] text-muted-foreground">
@@ -343,7 +343,7 @@ export function PostSignaturePanel({ project }: { project: Project }) {
           <CardContent className="p-3">
             <div className="flex items-center gap-2 mb-1">
               <TrendingUp className="h-4 w-4 text-purple-600" />
-              <span className="text-[11px] font-semibold text-roksal-navy">Marža zaklenjena</span>
+              <span className="text-[11px] font-semibold text-roksal-ink">Marža zaklenjena</span>
               {project.marginLocked && (
                 <Badge variant="outline" className="ml-auto text-[8px] bg-purple-50 text-purple-700">
                   {project.marginLocked.toFixed(0)} €
@@ -378,7 +378,7 @@ export function PostSignaturePanel({ project }: { project: Project }) {
                     <Badge variant="outline" className="text-[8px] bg-muted/50">
                       {item.kategorija}
                     </Badge>
-                    <span className="font-medium text-roksal-navy">{item.naziv}</span>
+                    <span className="font-medium text-roksal-ink">{item.naziv}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-roksal-amber">
@@ -414,13 +414,13 @@ export function PostSignaturePanel({ project }: { project: Project }) {
                   variant="outline"
                   className={
                     a.signatureType === 'CUSTOMER'
-                      ? 'text-[9px] bg-roksal-navy/10 text-roksal-navy border-roksal-navy/20'
+                      ? 'text-[9px] bg-roksal-navy/10 text-roksal-ink border-roksal-navy/20'
                       : 'text-[9px] bg-roksal-amber/10 text-roksal-amber border-roksal-amber/30'
                   }
                 >
                   {a.signatureType === 'CUSTOMER' ? 'STRANKA' : 'MONTER'}
                 </Badge>
-                <span className="text-xs font-semibold text-roksal-navy">{a.signedByName}</span>
+                <span className="text-xs font-semibold text-roksal-ink">{a.signedByName}</span>
                 <CheckCircle2 className="h-3 w-3 text-green-600 ml-auto" />
               </div>
               <div className="grid grid-cols-2 gap-1 text-[10px] text-muted-foreground">

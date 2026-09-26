@@ -80,10 +80,12 @@ const STATUS_LABELS: Record<string, string> = {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  AKTIVEN: 'bg-green-100 text-green-800 border-green-300',
-  NEAKTIVEN: 'bg-gray-100 text-gray-700 border-gray-300',
-  POTENCIALEN: 'bg-amber-100 text-amber-800 border-amber-300',
-  ARHIVIRAN: 'bg-red-100 text-red-700 border-red-300',
+  // R162 stil pass — dark: variante (svetla tema NESPREMENJENA, temna dobi
+  // berljive polprosojne chipe namesto svetlih 100-barv).
+  AKTIVEN: 'bg-green-100 text-green-800 border-green-300 dark:bg-green-500/15 dark:text-green-300 dark:border-green-500/30',
+  NEAKTIVEN: 'bg-gray-100 text-gray-700 border-gray-300 dark:bg-gray-500/15 dark:text-gray-300 dark:border-gray-500/30',
+  POTENCIALEN: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30',
+  ARHIVIRAN: 'bg-red-100 text-red-700 border-red-300 dark:bg-red-500/15 dark:text-red-300 dark:border-red-500/30',
 }
 
 const KATEGORIJE = ['Stanovanjska skupnost', 'Posameznik', 'Podjetje', 'Drugo']
@@ -101,6 +103,7 @@ export function CrmTab() {
   const [customers, setCustomers] = useState<CrmCustomer[]>([])
   const [stats, setStats] = useState<CrmStats | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('ALL')
   const [selectedCustomer, setSelectedCustomer] = useState<CrmCustomer | null>(null)
@@ -118,17 +121,34 @@ export function CrmTab() {
   const [editZadnjiKontakt, setEditZadnjiKontakt] = useState('')
   const [editOpombe, setEditOpombe] = useState('')
 
+  // R162 — fail-verbose (isti razred kot R161 QuoteFollowUp): GET /api/crm
+  // je pri neuspehu TIHO pokazal staro/prazno stanje (if (res.ok) brez else +
+  // catch {/* ignore */}) — pisarna je lahko mislila, da strank ni, medtem
+  // ko je API padel. Zdaj ločen error state z razlogom + gumb "Poskusi znova".
   const loadCustomers = useCallback(async () => {
     setLoading(true)
+    setError(null)
     try {
-      const res = await fetch('/api/crm')
-      if (res.ok) {
-        const data = await res.json()
-        setCustomers(data.customers || [])
-        setStats(data.stats || null)
+      const res = await fetch('/api/crm', { credentials: 'same-origin' })
+      const json = (await res.json().catch(() => null)) as ({ customers?: CrmCustomer[]; stats?: CrmStats; error?: string } | null)
+      if (!res.ok) {
+        setCustomers([])
+        setStats(null)
+        setError(
+          res.status === 401
+            ? 'Prijava je potekla — ponovno se prijavite (napaka 401).'
+            : json?.error
+              ? `Strežnik ni vrnil strank: ${json.error} (napaka ${res.status}).`
+              : `Strežnik ni vrnil strank (napaka ${res.status}).`,
+        )
+        return
       }
+      setCustomers(json?.customers ?? [])
+      setStats(json?.stats ?? null)
     } catch {
-      /* ignore */
+      setCustomers([])
+      setStats(null)
+      setError('Ni povezave s strežnikom — preverite omrežje in poskusite znova.')
     } finally {
       setLoading(false)
     }
@@ -266,45 +286,45 @@ export function CrmTab() {
       {/* Statistike */}
       {stats && (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <Card className="border-green-200">
+          <Card className="border-green-200 dark:border-green-500/30">
             <CardContent className="p-3">
               <div className="flex items-center gap-1 mb-1">
-                <CheckCircle2 className="h-3 w-3 text-green-600" />
+                <CheckCircle2 className="h-3 w-3 text-green-600 dark:text-green-400" aria-hidden="true" />
                 <span className="text-[10px] text-muted-foreground">Aktivni</span>
               </div>
-              <div className="text-lg font-bold text-roksal-navy tabular-nums">{stats.aktivni}</div>
+              <div className="text-lg font-bold text-roksal-ink tabular-nums">{stats.aktivni}</div>
             </CardContent>
           </Card>
-          <Card className="border-amber-200">
+          <Card className="border-amber-200 dark:border-amber-500/30">
             <CardContent className="p-3">
               <div className="flex items-center gap-1 mb-1">
-                <Bell className="h-3 w-3 text-amber-600" />
+                <Bell className="h-3 w-3 text-amber-600 dark:text-amber-400" aria-hidden="true" />
                 <span className="text-[10px] text-muted-foreground">Opomniki</span>
               </div>
-              <div className="text-lg font-bold text-amber-700 tabular-nums">
+              <div className="text-lg font-bold text-amber-700 dark:text-amber-300 tabular-nums">
                 {stats.zOpomniki}
                 {stats.potekliOpomniki > 0 && (
-                  <span className="text-[10px] text-red-600 ml-1">({stats.potekliOpomniki} poteklo)</span>
+                  <span className="text-[10px] text-red-600 dark:text-red-400 ml-1">({stats.potekliOpomniki} poteklo)</span>
                 )}
               </div>
             </CardContent>
           </Card>
-          <Card className="border-roksal-navy/20">
+          <Card className="border-roksal-navy/20 dark:border-roksal-amber/40">
             <CardContent className="p-3">
               <div className="flex items-center gap-1 mb-1">
-                <TrendingUp className="h-3 w-3 text-roksal-navy" />
+                <TrendingUp className="h-3 w-3 text-roksal-ink" aria-hidden="true" />
                 <span className="text-[10px] text-muted-foreground">Skupni LTV</span>
               </div>
-              <div className="text-lg font-bold text-roksal-navy tabular-nums">{formatLTV(stats.skupniLTV)}</div>
+              <div className="text-lg font-bold text-roksal-ink tabular-nums">{formatLTV(stats.skupniLTV)}</div>
             </CardContent>
           </Card>
-          <Card className="border-purple-200">
+          <Card className="border-purple-200 dark:border-purple-500/30">
             <CardContent className="p-3">
               <div className="flex items-center gap-1 mb-1">
-                <Users className="h-3 w-3 text-purple-600" />
+                <Users className="h-3 w-3 text-purple-600 dark:text-purple-400" aria-hidden="true" />
                 <span className="text-[10px] text-muted-foreground">Skupno</span>
               </div>
-              <div className="text-lg font-bold text-roksal-navy tabular-nums">{stats.skupno}</div>
+              <div className="text-lg font-bold text-roksal-ink tabular-nums">{stats.skupno}</div>
             </CardContent>
           </Card>
         </div>
@@ -354,10 +374,30 @@ export function CrmTab() {
 
       {/* Seznam strank */}
       {loading ? (
-        <div className="space-y-2">
+        <div className="space-y-2" aria-busy="true" aria-live="polite">
           {[1, 2, 3].map((i) => (
             <div key={i} className="h-24 animate-pulse rounded-lg bg-muted" />
           ))}
+        </div>
+      ) : error ? (
+        <div
+          role="alert"
+          className="flex flex-col gap-2 rounded-xl border border-roksal-amber/40 bg-roksal-amber/10 p-3 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div className="flex items-start gap-2">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-roksal-amber" aria-hidden="true" />
+            <p className="text-sm text-foreground">{error}</p>
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => void loadCustomers()}
+            className="shrink-0 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+            aria-label="Ponovno naloži seznam strank"
+          >
+            Poskusi znova
+          </Button>
         </div>
       ) : filtered.length === 0 ? (
         customers.length === 0 ? (
@@ -391,19 +431,19 @@ export function CrmTab() {
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-sm font-semibold text-roksal-navy truncate">{c.ime}</span>
+                      <span className="text-sm font-semibold text-roksal-ink truncate">{c.ime}</span>
                       <Badge variant="outline" className={`text-[8px] shrink-0 ${STATUS_COLORS[c.status]}`}>
                         {STATUS_LABELS[c.status] || c.status}
                       </Badge>
                       {c.opomnikStatus === 'POTEKEL' && (
-                        <Badge variant="outline" className="text-[8px] bg-red-100 text-red-700 border-red-300 shrink-0">
-                          <AlertCircle className="h-2.5 w-2.5 mr-0.5" />
+                        <Badge variant="outline" className="text-[8px] bg-red-100 text-red-700 border-red-300 dark:bg-red-500/15 dark:text-red-300 dark:border-red-500/30 shrink-0">
+                          <AlertCircle className="h-2.5 w-2.5 mr-0.5" aria-hidden="true" />
                           Opomnik potekel
                         </Badge>
                       )}
                       {c.opomnikStatus === 'AKTIVEN' && (
-                        <Badge variant="outline" className="text-[8px] bg-amber-100 text-amber-700 border-amber-300 shrink-0">
-                          <Bell className="h-2.5 w-2.5 mr-0.5" />
+                        <Badge variant="outline" className="text-[8px] bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30 shrink-0">
+                          <Bell className="h-2.5 w-2.5 mr-0.5" aria-hidden="true" />
                           Opomnik
                         </Badge>
                       )}
@@ -436,7 +476,7 @@ export function CrmTab() {
                     variant="ghost"
                     size="sm"
                     aria-label={`Uredi CRM: ${c.ime}`}
-                    className="shrink-0 h-7 outline-none focus-visible:ring-2 focus-visible:ring-roksal-amber focus-visible:ring-offset-2 hover:bg-amber-50 hover:text-roksal-navy"
+                    className="shrink-0 h-7 outline-none focus-visible:ring-2 focus-visible:ring-roksal-amber focus-visible:ring-offset-2 hover:bg-amber-50 hover:text-roksal-navy dark:hover:bg-amber-500/15 dark:hover:text-amber-300"
                     onClick={(e) => {
                       e.stopPropagation()
                       handleOpenEdit(c)
@@ -455,7 +495,7 @@ export function CrmTab() {
       <Sheet open={detailOpen} onOpenChange={setDetailOpen}>
         <SheetContent side="bottom" className="rounded-t-2xl max-h-[85vh] overflow-y-auto">
           <SheetHeader>
-            <SheetTitle className="text-roksal-navy">{selectedCustomer?.ime}</SheetTitle>
+            <SheetTitle className="text-roksal-ink">{selectedCustomer?.ime}</SheetTitle>
           </SheetHeader>
           {selectedCustomer && (
             <div className="space-y-3 p-4">
@@ -480,7 +520,7 @@ export function CrmTab() {
                 {selectedCustomer.telefon && (
                   <div className="flex items-center gap-2">
                     <Phone className="h-3 w-3 text-muted-foreground shrink-0" />
-                    <a href={`tel:${selectedCustomer.telefon}`} className="text-roksal-navy hover:underline">
+                    <a href={`tel:${selectedCustomer.telefon}`} className="text-roksal-ink hover:underline">
                       {selectedCustomer.telefon}
                     </a>
                   </div>
@@ -488,7 +528,7 @@ export function CrmTab() {
                 {selectedCustomer.email && (
                   <div className="flex items-center gap-2">
                     <Mail className="h-3 w-3 text-muted-foreground shrink-0" />
-                    <a href={`mailto:${selectedCustomer.email}`} className="text-roksal-navy hover:underline truncate">
+                    <a href={`mailto:${selectedCustomer.email}`} className="text-roksal-ink hover:underline truncate">
                       {selectedCustomer.email}
                     </a>
                   </div>
@@ -505,15 +545,15 @@ export function CrmTab() {
               <div className="grid grid-cols-3 gap-2">
                 <div className="rounded-lg bg-roksal-navy/5 p-2 text-center">
                   <div className="text-[10px] text-muted-foreground">LTV</div>
-                  <div className="text-sm font-bold text-roksal-navy">{formatLTV(selectedCustomer.ltv)}</div>
+                  <div className="text-sm font-bold text-roksal-ink">{formatLTV(selectedCustomer.ltv)}</div>
                 </div>
                 <div className="rounded-lg bg-roksal-navy/5 p-2 text-center">
                   <div className="text-[10px] text-muted-foreground">Projekti</div>
-                  <div className="text-sm font-bold text-roksal-navy">{selectedCustomer.skupajProjektov}</div>
+                  <div className="text-sm font-bold text-roksal-ink">{selectedCustomer.skupajProjektov}</div>
                 </div>
                 <div className="rounded-lg bg-roksal-navy/5 p-2 text-center">
                   <div className="text-[10px] text-muted-foreground">Zaklenjeni</div>
-                  <div className="text-sm font-bold text-roksal-navy">{selectedCustomer.zaklenjeni}</div>
+                  <div className="text-sm font-bold text-roksal-ink">{selectedCustomer.zaklenjeni}</div>
                 </div>
               </div>
 
@@ -521,11 +561,11 @@ export function CrmTab() {
               {selectedCustomer.opomnikDatum && (
                 <div className={`rounded-lg border p-2 ${
                   selectedCustomer.opomnikStatus === 'POTEKEL'
-                    ? 'border-red-300 bg-red-50'
-                    : 'border-amber-300 bg-amber-50'
+                    ? 'border-red-300 bg-red-50 dark:border-red-500/30 dark:bg-red-500/10'
+                    : 'border-amber-300 bg-amber-50 dark:border-amber-500/30 dark:bg-amber-500/10'
                 }`}>
                   <div className="flex items-center gap-2 mb-1">
-                    <Bell className={`h-3 w-3 ${selectedCustomer.opomnikStatus === 'POTEKEL' ? 'text-red-600' : 'text-amber-600'}`} />
+                    <Bell className={`h-3 w-3 ${selectedCustomer.opomnikStatus === 'POTEKEL' ? 'text-red-600 dark:text-red-400' : 'text-amber-600 dark:text-amber-400'}`} aria-hidden="true" />
                     <span className="text-xs font-semibold">
                       {selectedCustomer.opomnikStatus === 'POTEKEL' ? 'Opomnik potekel' : 'Opomnik'}
                     </span>
@@ -566,7 +606,7 @@ export function CrmTab() {
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-roksal-navy">Uredi CRM — {selectedCustomer?.ime}</DialogTitle>
+            <DialogTitle className="text-roksal-ink">Uredi CRM — {selectedCustomer?.ime}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-2">

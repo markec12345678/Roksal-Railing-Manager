@@ -114,7 +114,7 @@ const statusLabels: Record<string, string> = {
 
 const statusColors: Record<string, string> = {
   NACRTOVANO: 'bg-blue-100 text-blue-800',
-  V_TEKU: 'bg-roksal-amber/20 text-roksal-navy',
+  V_TEKU: 'bg-roksal-amber/20 text-roksal-ink',
   ZAKLJUCENO: 'bg-roksal-green/20 text-roksal-green',
   USTAVLJENO: 'bg-roksal-red/20 text-roksal-red',
 }
@@ -600,7 +600,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
           id: `plan_${p.id}`,
           type: 'project_created',
           icon: Wrench,
-          iconColor: 'text-roksal-navy',
+          iconColor: 'text-roksal-ink',
           title: 'Nov projekt načrtovan',
           description: p.nazivProjekta,
           time: formatRelativeTime(dateStr),
@@ -952,7 +952,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
       <div className="animate-fade-in-up">
         <div className="flex items-end justify-between gap-2">
           <div>
-            <h2 className="text-xl font-bold text-roksal-navy">
+            <h2 className="text-xl font-bold text-roksal-ink">
               {getGreeting()}, {displayName}!
             </h2>
             <p className="text-sm text-muted-foreground">{getTodayString()}</p>
@@ -964,11 +964,11 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
 
       {/* Quick Stats Row — R136: tabular-nums (stabilna širina števcov ob osvežitvi) + focus rings */}
       <div className="flex items-center gap-2 overflow-x-auto pb-0.5 scrollbar-thin animate-fade-in-up" style={{ animationDelay: '30ms' }}>
-        <Badge className="shrink-0 bg-roksal-navy/10 text-roksal-navy hover:bg-roksal-navy/15 text-[11px] px-2.5 py-1 tabular-nums">
+        <Badge className="shrink-0 bg-roksal-navy/10 text-roksal-ink hover:bg-roksal-navy/15 text-[11px] px-2.5 py-1 tabular-nums">
           <TrendingUp className="mr-1 h-3 w-3" aria-hidden="true" />
           <span className="font-bold mr-0.5">{activeCount}</span> aktivnih
         </Badge>
-        <Badge className="shrink-0 bg-roksal-amber/15 text-roksal-navy hover:bg-roksal-amber/20 text-[11px] px-2.5 py-1 tabular-nums">
+        <Badge className="shrink-0 bg-roksal-amber/15 text-roksal-ink hover:bg-roksal-amber/20 text-[11px] px-2.5 py-1 tabular-nums">
           <Clock className="mr-1 h-3 w-3 text-roksal-amber" aria-hidden="true" />
           <span className="font-bold mr-0.5">{pendingCount}</span> načrtovanih
         </Badge>
@@ -992,7 +992,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
       <Card className="card-accent-top overflow-hidden border-l-4 border-l-roksal-amber card-hover transition-all duration-200">
         <CardHeader className="pb-2 pt-4 px-4">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-semibold text-roksal-navy">
+            <CardTitle className="text-sm font-semibold text-roksal-ink">
               Naslednja montaža
             </CardTitle>
             <Badge className={statusColors[nextInstallation?.status || 'NACRTOVANO']}>
@@ -1005,7 +1005,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
             <Skeleton className="h-20 w-full" />
           ) : nextInstallation ? (
             <div className="space-y-2">
-              <h3 className="font-bold text-base text-roksal-navy">
+              <h3 className="font-bold text-base text-roksal-ink">
                 {nextInstallation.nazivProjekta}
               </h3>
               <div className="flex flex-col gap-1.5 text-sm text-muted-foreground">
@@ -1049,12 +1049,12 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
         >
           <CardHeader className="pb-2 pt-4 px-4">
             <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
                 <CalendarDays className="h-4 w-4 text-roksal-amber" />
                 Danes & opozorila
               </CardTitle>
               {(todayInstallations.length + overdueProjects.length) > 0 && (
-                <Badge className="bg-roksal-navy/10 text-roksal-navy hover:bg-roksal-navy/15">
+                <Badge className="bg-roksal-navy/10 text-roksal-ink hover:bg-roksal-navy/15">
                   {todayInstallations.length + overdueProjects.length}
                 </Badge>
               )}
@@ -1072,7 +1072,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                   <Wrench className="h-4 w-4 text-roksal-amber" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="flex items-center gap-1.5 text-xs font-semibold text-roksal-navy">
+                  <p className="flex items-center gap-1.5 text-xs font-semibold text-roksal-ink">
                     <span className="truncate">{p.nazivProjekta}</span>
                     {n > 1 && (
                       <Badge variant="secondary" className="h-4 shrink-0 rounded-full px-1.5 text-[9px] font-bold">
@@ -1098,7 +1098,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                   <AlertTriangle className="h-4 w-4 text-roksal-red" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="flex items-center gap-1.5 text-xs font-semibold text-roksal-navy">
+                  <p className="flex items-center gap-1.5 text-xs font-semibold text-roksal-ink">
                     <span className="truncate">{p.nazivProjekta}</span>
                     {n > 1 && (
                       <Badge variant="secondary" className="h-4 shrink-0 rounded-full px-1.5 text-[9px] font-bold">
@@ -1134,10 +1134,10 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
         <Card className="px-3 py-3 card-hover transition-all duration-200">
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-roksal-navy/10">
-              <TrendingUp className="h-4 w-4 text-roksal-navy" />
+              <TrendingUp className="h-4 w-4 text-roksal-ink" />
             </div>
             <div>
-              <p className="text-lg font-bold text-roksal-navy">{totalProjects}</p>
+              <p className="text-lg font-bold text-roksal-ink">{totalProjects}</p>
               <p className="text-[10px] text-muted-foreground leading-tight">Projekti</p>
             </div>
           </div>
@@ -1148,7 +1148,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
               <Clock className="h-4 w-4 text-roksal-amber" />
             </div>
             <div>
-              <p className="text-lg font-bold text-roksal-navy">{projects.filter(p => p.status === 'V_TEKU').length}</p>
+              <p className="text-lg font-bold text-roksal-ink">{projects.filter(p => p.status === 'V_TEKU').length}</p>
               <p className="text-[10px] text-muted-foreground leading-tight">V teku</p>
             </div>
           </div>
@@ -1159,7 +1159,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
               <CheckCircle2 className="h-4 w-4 text-roksal-green" />
             </div>
             <div>
-              <p className="text-lg font-bold text-roksal-navy">{completedCount}</p>
+              <p className="text-lg font-bold text-roksal-ink">{completedCount}</p>
               <p className="text-[10px] text-muted-foreground leading-tight">Končani</p>
             </div>
           </div>
@@ -1171,7 +1171,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
         <div className="grid gap-4 md:grid-cols-2 md:items-start">
         <Card className="card-hover transition-all duration-200 animate-fade-in-up" style={{ animationDelay: '70ms' }}>
           <CardHeader className="pb-2 pt-4 px-4">
-            <CardTitle className="text-sm font-semibold text-roksal-navy">
+            <CardTitle className="text-sm font-semibold text-roksal-ink">
               Pregled projekta
             </CardTitle>
           </CardHeader>
@@ -1224,8 +1224,8 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
         >
           <CardHeader className="pb-2 pt-4 px-4">
             <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
-                <TrendingUp className="h-4 w-4 text-roksal-navy" />
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
+                <TrendingUp className="h-4 w-4 text-roksal-ink" />
                 Aktivnost (6 mesecev)
               </CardTitle>
               {/* Legenda */}
@@ -1250,7 +1250,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                     const isCurrent = i === monthlyTrend.length - 1
                     return (
                       <div key={m.key} className="flex min-w-0 flex-1 flex-col items-center gap-1">
-                        <span className={`text-[10px] font-bold tabular-nums ${m.newCount > 0 ? 'text-roksal-navy' : 'text-muted-foreground/50'}`}>
+                        <span className={`text-[10px] font-bold tabular-nums ${m.newCount > 0 ? 'text-roksal-ink' : 'text-muted-foreground/50'}`}>
                           {m.newCount}
                         </span>
                         <div className="flex h-20 w-full items-end justify-center gap-1" title={`${m.label}: ${m.newCount} novih, ${m.doneCount} zaključenih`}>
@@ -1298,7 +1298,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
       {/* Equipment Status */}
       <Card className="card-hover transition-all duration-200">
         <CardHeader className="pb-2 pt-4 px-4">
-          <CardTitle className="text-sm font-semibold text-roksal-navy">
+          <CardTitle className="text-sm font-semibold text-roksal-ink">
             Stanje opreme
           </CardTitle>
         </CardHeader>
@@ -1307,14 +1307,14 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
             <div className="flex items-center gap-2.5 rounded-lg bg-secondary/50 p-2.5">
               <BatteryMedium className="h-5 w-5 text-roksal-green" />
               <div>
-                <p className="text-xs font-medium text-roksal-navy">Baterija</p>
+                <p className="text-xs font-medium text-roksal-ink">Baterija</p>
                 <p className="text-[11px] text-muted-foreground">87% — polna</p>
               </div>
             </div>
             <div className="flex items-center gap-2.5 rounded-lg bg-secondary/50 p-2.5">
               <Wifi className="h-5 w-5 text-roksal-green animate-pulse-soft" />
               <div>
-                <p className="text-xs font-medium text-roksal-navy">Povezava</p>
+                <p className="text-xs font-medium text-roksal-ink">Povezava</p>
                 <p className="text-[11px] text-muted-foreground">Online — sinhron.</p>
               </div>
             </div>
@@ -1384,7 +1384,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
       <Card>
         <CardHeader className="pb-2 pt-4 px-4">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-semibold text-roksal-navy">
+            <CardTitle className="text-sm font-semibold text-roksal-ink">
               Projekti
             </CardTitle>
             <Badge variant="secondary">{filteredProjects.length}</Badge>
@@ -1414,7 +1414,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <p className="truncate text-sm font-medium text-roksal-navy">
+                      <p className="truncate text-sm font-medium text-roksal-ink">
                         {project.nazivProjekta}
                       </p>
                       {daysRemaining !== null && (
@@ -1422,9 +1422,9 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                           daysRemaining < 0
                             ? 'bg-roksal-red/15 text-roksal-red'
                             : daysRemaining === 0
-                              ? 'bg-roksal-amber/15 text-roksal-navy'
+                              ? 'bg-roksal-amber/15 text-roksal-ink'
                               : daysRemaining <= 3
-                                ? 'bg-roksal-amber/15 text-roksal-navy'
+                                ? 'bg-roksal-amber/15 text-roksal-ink'
                                 : 'bg-roksal-green/15 text-roksal-green'
                         }`}>
                           {daysRemaining < 0
@@ -1457,7 +1457,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); toast.info(`Arhiviranje: ${project.nazivProjekta}`) }}
-                      className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:text-roksal-navy hover:bg-roksal-navy/10 transition-colors"
+                      className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:text-roksal-ink hover:bg-roksal-navy/10 transition-colors"
                       aria-label="Arhiviraj projekt"
                     >
                       <Archive className="h-3.5 w-3.5" />
@@ -1504,7 +1504,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
             >
               <div className="flex items-start gap-2">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-roksal-amber" aria-hidden="true" />
-                <p className="text-xs text-roksal-navy">
+                <p className="text-xs text-roksal-ink">
                   {projectsError} Podatki projektov niso izmišljeni — prazen seznam pomeni, da jih ni bilo mogoče prebrati.
                 </p>
               </div>
@@ -1531,7 +1531,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
         <div className="flex items-center gap-3 rounded-xl border border-roksal-red/20 bg-roksal-red/5 p-3 animate-fade-in-up">
           <AlertTriangle className="h-5 w-5 shrink-0 text-roksal-red badge-pulse" />
           <div>
-            <p className="text-sm font-medium text-roksal-navy">
+            <p className="text-sm font-medium text-roksal-ink">
               Nizka zaloga materiala
             </p>
             <p className="text-xs text-muted-foreground">
@@ -1543,7 +1543,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
         <div className="flex items-center gap-3 rounded-xl border border-roksal-green/20 bg-roksal-green/5 p-3">
           <CheckCircle2 className="h-5 w-5 shrink-0 text-roksal-green" />
           <div>
-            <p className="text-sm font-medium text-roksal-navy">
+            <p className="text-sm font-medium text-roksal-ink">
               Zaloga v redu
             </p>
             <p className="text-xs text-muted-foreground">
@@ -1558,7 +1558,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
         <Card className="card-hover transition-all duration-200">
           <CardHeader className="pb-2 pt-4 px-4">
             <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
                 <Activity className="h-4 w-4" />
                 Aktivnosti
               </CardTitle>
@@ -1582,7 +1582,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                     </div>
                     <div className="min-w-0 flex-1 pt-0.5">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-xs font-medium text-roksal-navy">{activity.title}</p>
+                        <p className="text-xs font-medium text-roksal-ink">{activity.title}</p>
                         <span className="text-[10px] text-muted-foreground whitespace-nowrap">{activity.time}</span>
                       </div>
                       <p className="text-[11px] text-muted-foreground truncate">{activity.description}</p>
@@ -1599,7 +1599,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
       <Dialog open={newProjectOpen} onOpenChange={setNewProjectOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle className="text-roksal-navy">Nov projekt</DialogTitle>
+            <DialogTitle className="text-roksal-ink">Nov projekt</DialogTitle>
             <DialogDescription>
               Ustvarite nov projekt montaže ograje.
             </DialogDescription>
@@ -1623,7 +1623,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="h-7 px-2 text-xs text-roksal-navy hover:text-roksal-navy hover:bg-roksal-amber/15"
+                  className="h-7 px-2 text-xs text-roksal-ink hover:text-roksal-ink hover:bg-roksal-amber/15"
                   onClick={() => {
                     resetCustomerDialog()
                     setCustomerSearch('')
@@ -1724,7 +1724,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
       >
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle className="text-roksal-navy">Nova stranka</DialogTitle>
+            <DialogTitle className="text-roksal-ink">Nova stranka</DialogTitle>
             <DialogDescription>
               Ustvarite novo stranko. Po shranjevanju bo samodejno izbrana v projektu.
             </DialogDescription>
@@ -1820,7 +1820,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
           {detailProject && (
             <>
               <DialogHeader>
-                <DialogTitle className="text-roksal-navy">
+                <DialogTitle className="text-roksal-ink">
                   {detailProject.nazivProjekta}
                 </DialogTitle>
                 <DialogDescription>
@@ -1830,7 +1830,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="mt-1 w-full border-roksal-navy/20 text-roksal-navy hover:bg-roksal-navy/5 hover:text-roksal-navy focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                  className="mt-1 w-full border-roksal-navy/20 text-roksal-ink hover:bg-roksal-navy/5 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
                   aria-label="Odpri revizijsko sled projekta"
                   onClick={() => setAuditOpen(true)}
                 >
@@ -1862,9 +1862,9 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                 <Card className="px-3 py-3">
                   <div className="flex items-center gap-2 mb-2">
                     <Wrench className="h-3.5 w-3.5 text-roksal-amber" />
-                    <span className="text-xs font-medium text-roksal-navy">Stranka</span>
+                    <span className="text-xs font-medium text-roksal-ink">Stranka</span>
                   </div>
-                  <p className="text-sm font-medium text-roksal-navy">
+                  <p className="text-sm font-medium text-roksal-ink">
                     {detailProject.customer?.ime || 'Ni stranke'}
                   </p>
                   <p className="text-xs text-muted-foreground">
@@ -1884,7 +1884,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                     {detailProject.customer?.email && (
                       <a
                         href={`mailto:${detailProject.customer.email}`}
-                        className="flex items-center gap-1.5 rounded-lg bg-roksal-navy/10 border border-roksal-navy/20 px-2.5 py-1.5 text-[11px] font-medium text-roksal-navy hover:bg-roksal-navy/15 active:scale-[0.96] transition-all duration-150 press-scale"
+                        className="flex items-center gap-1.5 rounded-lg bg-roksal-navy/10 border border-roksal-navy/20 px-2.5 py-1.5 text-[11px] font-medium text-roksal-ink hover:bg-roksal-navy/15 active:scale-[0.96] transition-all duration-150 press-scale"
                       >
                         <Mail className="h-3.5 w-3.5" />
                         <span>E-pošta</span>
@@ -1903,8 +1903,8 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                     onClick={() => setDetailMeasurementsExpanded(!detailMeasurementsExpanded)}
                   >
                     <div className="flex items-center gap-2">
-                      <Ruler className="h-4 w-4 text-roksal-navy" />
-                      <span className="text-xs font-medium text-roksal-navy">Meritve tega projekta</span>
+                      <Ruler className="h-4 w-4 text-roksal-ink" />
+                      <span className="text-xs font-medium text-roksal-ink">Meritve tega projekta</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge variant="secondary" className="text-[11px]">{detailMeasurements.length}</Badge>
@@ -1922,7 +1922,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                         detailMeasurements.map((m) => (
                           <div key={m.id} className="rounded-lg border border-border/40 overflow-hidden">
                             <div className="flex items-center justify-between px-2.5 py-1.5">
-                              <span className="text-[11px] font-medium text-roksal-navy truncate">
+                              <span className="text-[11px] font-medium text-roksal-ink truncate">
                                 {m.lokacija || ("Meritev #" + m.id.slice(-4))}
                               </span>
                               <span className="text-[11px] font-mono text-muted-foreground shrink-0 ml-2">
@@ -1944,7 +1944,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                     <div className="border-t border-border/30 px-3 py-2.5 bg-secondary/10 flex items-center justify-between">
                       <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
                         <span>Skupna dolzina:</span>
-                        <span className="font-semibold text-roksal-navy">
+                        <span className="font-semibold text-roksal-ink">
                           {(detailMeasurements.reduce((s, m) => s + m.dolzinaMm, 0) / 1000).toFixed(1)}m
                         </span>
                       </div>
@@ -1960,22 +1960,22 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
 
                 <div className="grid grid-cols-3 gap-3">
                   <Card className="px-3 py-3 text-center">
-                    <Ruler className="mx-auto mb-1 h-4 w-4 text-roksal-navy" />
-                    <p className="text-lg font-bold text-roksal-navy">
+                    <Ruler className="mx-auto mb-1 h-4 w-4 text-roksal-ink" />
+                    <p className="text-lg font-bold text-roksal-ink">
                       {detailProject._count?.measurements || 0}
                     </p>
                     <p className="text-[10px] text-muted-foreground">Meritve</p>
                   </Card>
                   <Card className="px-3 py-3 text-center">
-                    <FileText className="mx-auto mb-1 h-4 w-4 text-roksal-navy" />
-                    <p className="text-lg font-bold text-roksal-navy">
+                    <FileText className="mx-auto mb-1 h-4 w-4 text-roksal-ink" />
+                    <p className="text-lg font-bold text-roksal-ink">
                       {detailProject._count?.documents || 0}
                     </p>
                     <p className="text-[10px] text-muted-foreground">Dokumenti</p>
                   </Card>
                   <Card className="px-3 py-3 text-center">
-                    <Package className="mx-auto mb-1 h-4 w-4 text-roksal-navy" />
-                    <p className="text-lg font-bold text-roksal-navy">
+                    <Package className="mx-auto mb-1 h-4 w-4 text-roksal-ink" />
+                    <p className="text-lg font-bold text-roksal-ink">
                       {detailProject._count?.auditLogs || 0}
                     </p>
                     <p className="text-[10px] text-muted-foreground">Dnevniki</p>
@@ -1985,7 +1985,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                 <div className="flex items-center gap-2 text-sm">
                   <CalendarDays className="h-4 w-4 text-muted-foreground" />
                   <span className="text-muted-foreground">Datum montaže:</span>
-                  <span className="font-medium text-roksal-navy">
+                  <span className="font-medium text-roksal-ink">
                     {detailProject.datumMontaze
                       ? new Date(detailProject.datumMontaze).toLocaleDateString('sl-SI', {
                           day: 'numeric',
@@ -2000,7 +2000,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                   <div className="flex items-center gap-2 text-sm">
                     <Wrench className="h-4 w-4 text-muted-foreground" />
                     <span className="text-muted-foreground">Monter:</span>
-                    <span className="font-medium text-roksal-navy">
+                    <span className="font-medium text-roksal-ink">
                       {detailProject.monter.ime}
                     </span>
                   </div>
@@ -2009,7 +2009,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                 {detailProject.opombe && (
                   <div className="rounded-lg bg-secondary/50 p-3">
                     <p className="text-xs text-muted-foreground mb-1">Opombe</p>
-                    <p className="text-sm text-roksal-navy">{detailProject.opombe}</p>
+                    <p className="text-sm text-roksal-ink">{detailProject.opombe}</p>
                   </div>
                 )}
 
@@ -2017,8 +2017,8 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                 <Card className="overflow-hidden border-l-4 border-l-roksal-navy/40">
                   <div className="flex w-full items-center justify-between p-3 bg-roksal-navy/5">
                     <div className="flex items-center gap-2">
-                      <Globe className="h-4 w-4 text-roksal-navy" />
-                      <span className="text-xs font-semibold text-roksal-navy">Portal stranke</span>
+                      <Globe className="h-4 w-4 text-roksal-ink" />
+                      <span className="text-xs font-semibold text-roksal-ink">Portal stranke</span>
                     </div>
                     {portalLoading ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
@@ -2078,7 +2078,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                           <div className="flex items-center gap-1.5">
                             <div className="flex-1 min-w-0 flex items-center gap-1.5 rounded-md border border-border bg-secondary/40 px-2 py-1.5">
                               <Link2 className="h-3 w-3 shrink-0 text-roksal-amber" />
-                              <span className="text-[11px] font-mono text-roksal-navy truncate">
+                              <span className="text-[11px] font-mono text-roksal-ink truncate">
                                 /portal/{portalInfo.token.slice(0, 12)}…
                               </span>
                             </div>
@@ -2112,7 +2112,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                                   </p>
                                   <p
                                     className={`text-[10px] font-semibold leading-tight truncate ${
-                                      expCritical ? 'text-amber-600' : 'text-roksal-navy'
+                                      expCritical ? 'text-amber-600' : 'text-roksal-ink'
                                     }`}
                                     title={portalInfo.revokedAt ? 'Povezava je preklicana' : exp ? exp.toLocaleDateString('sl-SI') : 'Brez poteka'}
                                   >
@@ -2130,7 +2130,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                                   <p className="text-[9px] uppercase tracking-wide text-muted-foreground leading-tight">
                                     Zadnji obisk
                                   </p>
-                                  <p className="text-[10px] font-semibold leading-tight text-roksal-navy truncate">
+                                  <p className="text-[10px] font-semibold leading-tight text-roksal-ink truncate">
                                     {portalInfo.lastUsedAt
                                       ? new Date(portalInfo.lastUsedAt).toLocaleString('sl-SI', {
                                           day: '2-digit',
@@ -2251,7 +2251,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                           variant="outline"
                           onClick={savePortalSettings}
                           disabled={portalActionLoading}
-                          className="w-full h-8 text-[11px] border-roksal-amber/40 text-roksal-navy hover:bg-roksal-amber/10"
+                          className="w-full h-8 text-[11px] border-roksal-amber/40 text-roksal-ink hover:bg-roksal-amber/10"
                         >
                           {portalActionLoading ? (
                             <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
@@ -2270,7 +2270,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                             variant="ghost"
                             onClick={() => portalAction('regenerate')}
                             disabled={portalActionLoading}
-                            className="h-8 text-[11px] text-roksal-navy hover:bg-roksal-navy/10"
+                            className="h-8 text-[11px] text-roksal-ink hover:bg-roksal-navy/10"
                             title="Ustvari novo povezavo — stara postane trajno nedosegljiva"
                           >
                             <RefreshCw className="mr-1 h-3 w-3" />
@@ -2321,8 +2321,8 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                 <Card className="overflow-hidden border-l-4 border-l-roksal-amber/60">
                   <div className="flex w-full items-center justify-between p-3 bg-roksal-amber/5">
                     <div className="flex items-center gap-2">
-                      <Ruler className="h-4 w-4 text-roksal-navy" />
-                      <span className="text-xs font-semibold text-roksal-navy">Merilna povezava (samomeritev)</span>
+                      <Ruler className="h-4 w-4 text-roksal-ink" />
+                      <span className="text-xs font-semibold text-roksal-ink">Merilna povezava (samomeritev)</span>
                     </div>
                     {portalLoading ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
@@ -2381,7 +2381,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                           <div className="flex items-center gap-1.5">
                             <div className="flex-1 min-w-0 flex items-center gap-1.5 rounded-md border border-border bg-secondary/40 px-2 py-1.5">
                               <Link2 className="h-3 w-3 shrink-0 text-roksal-amber" />
-                              <span className="text-[11px] font-mono text-roksal-navy truncate">
+                              <span className="text-[11px] font-mono text-roksal-ink truncate">
                                 /m/{portalInfo.measure.token.slice(0, 12)}…
                               </span>
                             </div>
@@ -2417,7 +2417,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                                   </p>
                                   <p
                                     className={`text-[10px] font-semibold leading-tight truncate ${
-                                      mCritical ? 'text-amber-600' : 'text-roksal-navy'
+                                      mCritical ? 'text-amber-600' : 'text-roksal-ink'
                                     }`}
                                     title={m.revokedAt ? 'Povezava je preklicana' : mexp ? mexp.toLocaleDateString('sl-SI') : 'Brez poteka'}
                                   >
@@ -2435,7 +2435,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                                   <p className="text-[9px] uppercase tracking-wide text-muted-foreground leading-tight">
                                     Zadnja meritev
                                   </p>
-                                  <p className="text-[10px] font-semibold leading-tight text-roksal-navy truncate">
+                                  <p className="text-[10px] font-semibold leading-tight text-roksal-ink truncate">
                                     {m.lastUsedAt
                                       ? new Date(m.lastUsedAt).toLocaleString('sl-SI', {
                                           day: '2-digit',
@@ -2496,7 +2496,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                             variant="ghost"
                             onClick={() => portalAction('measureRegenerate')}
                             disabled={portalActionLoading}
-                            className="h-8 text-[11px] text-roksal-navy hover:bg-roksal-navy/10"
+                            className="h-8 text-[11px] text-roksal-ink hover:bg-roksal-navy/10"
                             title="Ustvari novo merilno povezavo — stara postane trajno nedosegljiva"
                           >
                             <RefreshCw className="mr-1 h-3 w-3" />

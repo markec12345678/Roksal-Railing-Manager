@@ -318,7 +318,7 @@ export function NotificationCenter() {
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-sm rounded-l-3xl">
           <SheetHeader className="border-b border-border/60 px-4 py-3">
-            <SheetTitle className="flex items-center gap-2 text-roksal-navy">
+            <SheetTitle className="flex items-center gap-2 text-roksal-ink">
               <Bell className="h-4 w-4 text-roksal-amber" />
               Obvestila
               {loading && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
@@ -331,7 +331,7 @@ export function NotificationCenter() {
                 <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-100">
                   <CheckCheck className="h-7 w-7 text-green-600" />
                 </div>
-                <p className="text-sm font-semibold text-roksal-navy">Vse je pod nadzorom</p>
+                <p className="text-sm font-semibold text-roksal-ink">Vse je pod nadzorom</p>
                 <p className="max-w-[220px] text-xs text-muted-foreground">
                   Ni nizke zaloge, danes ni montaž in vreme ne povzroča skrbi.
                 </p>
@@ -371,7 +371,7 @@ export function NotificationCenter() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
-                          <p className="truncate text-[13px] font-semibold text-roksal-navy">{item.title}</p>
+                          <p className="truncate text-[13px] font-semibold text-roksal-ink">{item.title}</p>
                           {(item.count ?? 1) > 1 && (
                             <span className="shrink-0 rounded-full bg-roksal-amber/15 px-1.5 text-[9px] font-bold text-roksal-amber">
                               ×{item.count}
@@ -416,16 +416,16 @@ export function NotificationCenter() {
                         >
                           <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-roksal-navy/5">
                             {n.entityType === 'jobrun' ? (
-                              <Wrench className="h-4 w-4 text-roksal-navy" aria-hidden="true" />
+                              <Wrench className="h-4 w-4 text-roksal-ink" aria-hidden="true" />
                             ) : (
-                              <Bell className="h-4 w-4 text-roksal-navy" aria-hidden="true" />
+                              <Bell className="h-4 w-4 text-roksal-ink" aria-hidden="true" />
                             )}
                           </div>
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-1.5">
                               <p
                                 className={`truncate text-[13px] font-semibold ${
-                                  n.isRead ? 'text-muted-foreground' : 'text-roksal-navy'
+                                  n.isRead ? 'text-muted-foreground' : 'text-roksal-ink'
                                 }`}
                               >
                                 {n.naslov}

@@ -2417,7 +2417,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
       >
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-roksal-navy">
+            <DialogTitle className="flex items-center gap-2 text-roksal-ink">
               <Crosshair className="h-5 w-5 text-roksal-amber" />
               Umeritev kamere
             </DialogTitle>
@@ -2467,7 +2467,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
       <Dialog open={labelDialogOpen} onOpenChange={(o) => { if (!o) cancelMeritev() }}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-roksal-navy">
+            <DialogTitle className="flex items-center gap-2 text-roksal-ink">
               <Ruler className="h-5 w-5 text-roksal-green" />
               Označi meritev
             </DialogTitle>
@@ -2475,7 +2475,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
               {pendingMeritev && (
                 <>
                   Izmerjena razdalja:{' '}
-                  <span className="font-semibold text-roksal-navy">
+                  <span className="font-semibold text-roksal-ink">
                     {formatDistance(pendingMeritev.dolzinaMm)}
                   </span>
                 </>
@@ -2520,7 +2520,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
       <Sheet open={aiSheetOpen} onOpenChange={setAiSheetOpen}>
         <SheetContent side="right" className="w-full sm:max-w-md p-0 flex flex-col">
           <SheetHeader className="px-4 pt-5 pb-3 border-b">
-            <SheetTitle className="flex items-center gap-2 text-roksal-navy">
+            <SheetTitle className="flex items-center gap-2 text-roksal-ink">
               <Sparkles className="h-5 w-5 text-roksal-amber" />
               AI analiza ograje
             </SheetTitle>
@@ -2536,7 +2536,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
                   <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
                     Prepoznana ograja
                   </p>
-                  <p className="text-sm font-bold text-roksal-navy">{aiAnaliza.tipOgraje}</p>
+                  <p className="text-sm font-bold text-roksal-ink">{aiAnaliza.tipOgraje}</p>
                 </div>
                 <Badge
                   variant="secondary"
@@ -2563,7 +2563,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
                     <dt className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                       {label}
                     </dt>
-                    <dd className="text-[13px] leading-relaxed text-roksal-navy">{value}</dd>
+                    <dd className="text-[13px] leading-relaxed text-roksal-ink">{value}</dd>
                   </div>
                 ))}
               </dl>
@@ -2579,7 +2579,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
                     className="rounded-lg border bg-white p-2.5"
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <p className="text-[13px] font-semibold text-roksal-navy">{m.naziv}</p>
+                      <p className="text-[13px] font-semibold text-roksal-ink">{m.naziv}</p>
                       <Badge
                         variant="secondary"
                         className={cn(
@@ -2604,7 +2604,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
                   <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">
                     Opombe za ponudbo
                   </p>
-                  <p className="text-[12px] leading-relaxed text-roksal-navy">{aiAnaliza.opombe}</p>
+                  <p className="text-[12px] leading-relaxed text-roksal-ink">{aiAnaliza.opombe}</p>
                 </div>
               )}
 
@@ -2642,7 +2642,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
       <Sheet open={historyOpen} onOpenChange={setHistoryOpen}>
         <SheetContent side="right" className="w-full sm:max-w-md p-0 flex flex-col">
           <SheetHeader className="px-4 pt-5 pb-3 border-b">
-            <SheetTitle className="flex items-center gap-2 text-roksal-navy">
+            <SheetTitle className="flex items-center gap-2 text-roksal-ink">
               <History className="h-5 w-5 text-roksal-amber" />
               Zgodovina AR posnetkov
             </SheetTitle>
@@ -2653,7 +2653,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
           <div className="flex-1 overflow-y-auto p-3 scrollbar-thin">
             {snapshotsLoading ? (
               <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-6 w-6 animate-spin text-roksal-navy" />
+                <Loader2 className="h-6 w-6 animate-spin text-roksal-ink" />
               </div>
             ) : snapshots.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -2740,7 +2740,7 @@ function SnapshotCard({
       <div className="p-2.5">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold text-roksal-navy truncate">
+            <p className="text-xs font-semibold text-roksal-ink truncate">
               {snapshot.profil?.naziv ?? 'Brez profila'}
             </p>
             <p className="text-[10px] text-muted-foreground">{date}</p>

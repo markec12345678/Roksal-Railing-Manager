@@ -304,7 +304,7 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
               <div className="grid grid-cols-3 gap-2">
                 <Card className="border-green-200"><CardContent className="p-3">
                   <div className="flex items-center gap-1 mb-1"><CheckCircle2 className="h-3 w-3 text-green-600" /><span className="text-[10px] text-muted-foreground">Skupaj</span></div>
-                  <div className="text-lg font-bold text-roksal-navy tabular-nums">{bomRefine.skupajCena.toFixed(0)} €</div>
+                  <div className="text-lg font-bold text-roksal-ink tabular-nums">{bomRefine.skupajCena.toFixed(0)} €</div>
                 </CardContent></Card>
                 <Card className="border-amber-200"><CardContent className="p-3">
                   <div className="flex items-center gap-1 mb-1"><TrendingUp className="h-3 w-3 text-amber-600" /><span className="text-[10px] text-muted-foreground">Prihranek</span></div>
@@ -312,7 +312,7 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
                 </CardContent></Card>
                 <Card className="border-blue-200"><CardContent className="p-3">
                   <div className="flex items-center gap-1 mb-1"><Package className="h-3 w-3 text-blue-600" /><span className="text-[10px] text-muted-foreground">Artikli</span></div>
-                  <div className="text-lg font-bold text-roksal-navy tabular-nums">{bomRefine.matchedCount}/{bomRefine.totalCount}</div>
+                  <div className="text-lg font-bold text-roksal-ink tabular-nums">{bomRefine.matchedCount}/{bomRefine.totalCount}</div>
                 </CardContent></Card>
               </div>
 
@@ -330,7 +330,7 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             {i === 0 && <Badge className="bg-green-600 text-white text-[8px]">NAJBOLJŠI</Badge>}
-                            <span className="text-sm font-medium text-roksal-navy">{opt.supplier}</span>
+                            <span className="text-sm font-medium text-roksal-ink">{opt.supplier}</span>
                           </div>
                           <span className="text-sm font-bold text-roksal-amber tabular-nums">{opt.skupaj.toFixed(0)} €</span>
                         </div>
@@ -353,7 +353,7 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5 mb-0.5">
                             <Badge variant="outline" className="text-[8px] bg-muted/50">{item.bomItem.kategorija}</Badge>
-                            <span className="text-xs font-medium text-roksal-navy truncate">{item.bomItem.naziv}</span>
+                            <span className="text-xs font-medium text-roksal-ink truncate">{item.bomItem.naziv}</span>
                           </div>
                           <div className="text-[10px] text-muted-foreground">{item.bomItem.kolicina} {item.bomItem.enota}</div>
                         </div>
@@ -426,7 +426,7 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-semibold text-roksal-navy">{order.supplier.naziv}</span>
+                            <span className="text-sm font-semibold text-roksal-ink">{order.supplier.naziv}</span>
                             <Badge variant="outline" className={`text-[8px] ${
                               order.status === 'DOBLJENO' ? 'bg-green-50 text-green-700 border-green-300' :
                               order.status === 'POSLANO' ? 'bg-blue-50 text-blue-700 border-blue-300' :
@@ -450,7 +450,7 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
                         type="button"
                         aria-expanded={expanded}
                         onClick={() => setExpandedOrder(expanded ? null : order.id)}
-                        className="flex w-full items-center gap-1 rounded px-1 py-0.5 text-[10px] text-muted-foreground transition-colors hover:text-roksal-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
+                        className="flex w-full items-center gap-1 rounded px-1 py-0.5 text-[10px] text-muted-foreground transition-colors hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
                       >
                         {expanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
                         {expanded ? 'Skrij postavke' : 'Pokaži postavke'}
@@ -459,12 +459,12 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
                         <div className="mt-1 space-y-1">
                           {order.items.map((item, i) => (
                             <div key={i} className="flex items-center justify-between gap-2 rounded border border-border/60 bg-muted/40 px-2 py-1">
-                              <span className="min-w-0 flex-1 truncate text-[11px] text-roksal-navy">{item.naziv}</span>
+                              <span className="min-w-0 flex-1 truncate text-[11px] text-roksal-ink">{item.naziv}</span>
                               <span className="shrink-0 text-[10px] text-muted-foreground tabular-nums">
                                 {item.kolicina} {item.enota}
                               </span>
                               <span className="shrink-0 text-[10px] text-muted-foreground tabular-nums">{item.cena.toFixed(2)} €/en</span>
-                              <span className="shrink-0 text-[11px] font-semibold text-roksal-navy tabular-nums">
+                              <span className="shrink-0 text-[11px] font-semibold text-roksal-ink tabular-nums">
                                 {(item.cena * item.kolicina).toFixed(2)} €
                               </span>
                             </div>
@@ -527,7 +527,7 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
                           aria-hidden="true"
                           title={sup.aktivna ? 'Aktiven dobavitelj' : 'Neaktiven dobavitelj'}
                         />
-                        <span className="text-sm font-semibold text-roksal-navy truncate">{sup.naziv}</span>
+                        <span className="text-sm font-semibold text-roksal-ink truncate">{sup.naziv}</span>
                         {sup.popust > 0 && <Badge variant="outline" className="text-[8px] bg-amber-50 text-amber-700">-{sup.popust}%</Badge>}
                       </div>
                       <div className="text-[10px] text-muted-foreground space-y-0.5 tabular-nums">
@@ -570,7 +570,7 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
       {/* Dialog: nov dobavitelj */}
       <Dialog open={supplierDialogOpen} onOpenChange={setSupplierDialogOpen}>
         <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle className="text-roksal-navy">Nov dobavitelj</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="text-roksal-ink">Nov dobavitelj</DialogTitle></DialogHeader>
           <div className="space-y-2">
             <div><Label className="text-xs">Naziv *</Label><Input value={newSupplier.naziv} onChange={(e) => setNewSupplier({ ...newSupplier, naziv: e.target.value })} className="h-9" /></div>
             <div className="grid grid-cols-2 gap-2">
@@ -593,7 +593,7 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
       {/* Dialog: nova cena */}
       <Dialog open={priceDialogOpen} onOpenChange={setPriceDialogOpen}>
         <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle className="text-roksal-navy">Cena za {selectedInventory?.naziv}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="text-roksal-ink">Cena za {selectedInventory?.naziv}</DialogTitle></DialogHeader>
           <div className="space-y-2">
             <Label className="text-xs">Dobavitelj</Label>
             <Select value={newPrice.supplierId} onValueChange={(v) => setNewPrice({ ...newPrice, supplierId: v })}>

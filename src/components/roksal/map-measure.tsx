@@ -349,7 +349,7 @@ ${tocke}
         .roksal-map-hint { animation: roksal-hint-pulse 2.4s ease-in-out infinite; }
       `}</style>
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base text-roksal-navy">
+        <CardTitle className="flex items-center gap-2 text-base text-roksal-ink">
           <Satellite className="h-5 w-5 text-roksal-amber" />
           Satelitsko merjenje črte
           <Badge variant="outline" className="ml-auto text-[11px]">
@@ -385,7 +385,7 @@ ${tocke}
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-xs text-muted-foreground">Dolžina črte ograje</p>
-            <p className="text-xl font-bold tabular-nums text-roksal-navy">
+            <p className="text-xl font-bold tabular-nums text-roksal-ink">
               {totalM >= 100 ? `${(totalM / 1000).toFixed(2)} km` : `${totalM.toFixed(1)} m`}
             </p>
           </div>
@@ -485,7 +485,7 @@ ${tocke}
         <Dialog open={shareOpen} onOpenChange={setShareOpen}>
           <DialogContent className="max-w-sm rounded-2xl">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 text-roksal-navy">
+              <DialogTitle className="flex items-center gap-2 text-roksal-ink">
                 <Share2 className="h-5 w-5 text-roksal-amber" />
                 Merilna povezava stranke
               </DialogTitle>

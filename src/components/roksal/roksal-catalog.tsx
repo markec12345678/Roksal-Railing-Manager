@@ -130,7 +130,7 @@ export function RoksalCatalog() {
                         </Badge>
                         <span className="text-[10px] font-mono tabular-nums text-muted-foreground">{p.sifra}</span>
                       </div>
-                      <h3 className="text-sm font-semibold text-roksal-navy">{p.naziv}</h3>
+                      <h3 className="text-sm font-semibold text-roksal-ink">{p.naziv}</h3>
                       <p className="text-[11px] text-muted-foreground">{p.kategorija}</p>
 
                       <div className="mt-3 flex flex-wrap gap-3 text-[11px] tabular-nums">
@@ -142,7 +142,7 @@ export function RoksalCatalog() {
                         </div>
                         <div className="flex items-center gap-1">
                           <Euro className="h-3 w-3 text-muted-foreground" />
-                          <span className="font-semibold text-roksal-navy">{p.cenaM.toFixed(2)} €/m</span>
+                          <span className="font-semibold text-roksal-ink">{p.cenaM.toFixed(2)} €/m</span>
                         </div>
                         {p.barvaRal && (
                           <div className="flex items-center gap-1 text-muted-foreground">

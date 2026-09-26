@@ -173,7 +173,7 @@ export function BeforeAfter({
               onPointerDown={onHandlePointerDown}
               onKeyDown={onHandleKeyDown}
             >
-              <ChevronsLeftRight className="h-5 w-5 text-roksal-navy" />
+              <ChevronsLeftRight className="h-5 w-5 text-roksal-ink" />
             </div>
           </div>
         )}

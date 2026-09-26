@@ -159,7 +159,7 @@ export function PhotoMeasure({ projectId }: { projectId: string | null }) {
               <Sparkles className="h-4 w-4" />
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-medium text-roksal-navy">Meri iz fotke (AI ocena)</p>
+              <p className="text-xs font-medium text-roksal-ink">Meri iz fotke (AI ocena)</p>
               <p className="text-[10px] text-muted-foreground truncate">
                 Fotka → ocena dolžine/višine — brez ARCore, tudi za iPhone
               </p>

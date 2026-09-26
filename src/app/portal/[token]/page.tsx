@@ -50,7 +50,7 @@ const STATUS_CONFIG: Record<
   NACRTOVANO: {
     label: 'Načrtovano',
     bg: 'bg-amber-50',
-    text: 'text-roksal-navy',
+    text: 'text-roksal-ink',
     ring: 'ring-amber-200',
     icon: Clock,
   },
@@ -310,7 +310,7 @@ export default async function PortalPage({ params }: PageProps) {
                 <Calendar className="h-4 w-4 text-roksal-amber shrink-0" />
                 <div className="min-w-0">
                   <p className="text-[10px] text-muted-foreground leading-tight">Datum montaže</p>
-                  <p className="text-sm font-semibold text-roksal-navy truncate">
+                  <p className="text-sm font-semibold text-roksal-ink truncate">
                     {new Date(project.datumMontaze).toLocaleDateString('sl-SI', {
                       weekday: 'long',
                       day: 'numeric',
@@ -326,7 +326,7 @@ export default async function PortalPage({ params }: PageProps) {
                 <Euro className="h-4 w-4 text-roksal-green shrink-0" />
                 <div className="min-w-0">
                   <p className="text-[10px] text-muted-foreground leading-tight">Predvidena cena</p>
-                  <p className="text-sm font-semibold text-roksal-navy truncate">
+                  <p className="text-sm font-semibold text-roksal-ink truncate">
                     {formatPrice(project.estimatedPrice)}
                   </p>
                 </div>
@@ -342,9 +342,9 @@ export default async function PortalPage({ params }: PageProps) {
               <div className="flex h-7 w-7 items-center justify-center rounded-full bg-roksal-amber">
                 <MessageSquare className="h-3.5 w-3.5 text-white" />
               </div>
-              <p className="text-sm font-bold text-roksal-navy">Sporočilo monterja</p>
+              <p className="text-sm font-bold text-roksal-ink">Sporočilo monterja</p>
             </div>
-            <p className="text-sm text-roksal-navy leading-relaxed whitespace-pre-wrap">
+            <p className="text-sm text-roksal-ink leading-relaxed whitespace-pre-wrap">
               {project.clientNotes}
             </p>
           </section>
@@ -353,8 +353,8 @@ export default async function PortalPage({ params }: PageProps) {
         {/* PHOTO TIMELINE */}
         <section>
           <div className="flex items-center gap-2 mb-3">
-            <Camera className="h-4 w-4 text-roksal-navy" />
-            <h2 className="text-base font-bold text-roksal-navy">Slike montaže</h2>
+            <Camera className="h-4 w-4 text-roksal-ink" />
+            <h2 className="text-base font-bold text-roksal-ink">Slike montaže</h2>
             {totalPhotos > 0 && (
               <span className="ml-auto text-xs text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">
                 {totalPhotos} {totalPhotos === 1 ? 'slika' : totalPhotos < 5 ? 'slike' : 'slik'}
@@ -368,8 +368,8 @@ export default async function PortalPage({ params }: PageProps) {
         {timeline.length > 0 && (
           <section className="rounded-xl border border-border bg-white p-4 shadow-sm">
             <div className="flex items-center gap-2 mb-3">
-              <History className="h-4 w-4 text-roksal-navy" />
-              <h2 className="text-base font-bold text-roksal-navy">Zgodovina projekta</h2>
+              <History className="h-4 w-4 text-roksal-ink" />
+              <h2 className="text-base font-bold text-roksal-ink">Zgodovina projekta</h2>
             </div>
             <div className="relative space-y-0">
               <div className="absolute left-[11px] top-2 bottom-2 w-px bg-border" />
@@ -384,7 +384,7 @@ export default async function PortalPage({ params }: PageProps) {
                   </div>
                   <div className="min-w-0 flex-1 pt-0.5">
                     <div className="flex items-center justify-between gap-2">
-                      <p className="text-xs font-semibold text-roksal-navy">{event.title}</p>
+                      <p className="text-xs font-semibold text-roksal-ink">{event.title}</p>
                       <time className="text-[10px] text-muted-foreground whitespace-nowrap">
                         {new Date(event.timestamp).toLocaleDateString('sl-SI', {
                           day: 'numeric',
@@ -405,7 +405,7 @@ export default async function PortalPage({ params }: PageProps) {
 
         {/* CONTACT CTA */}
         <section className="rounded-xl border border-roksal-navy/15 bg-white p-5 shadow-sm">
-          <h2 className="text-base font-bold text-roksal-navy mb-1">Imate vprašanja?</h2>
+          <h2 className="text-base font-bold text-roksal-ink mb-1">Imate vprašanja?</h2>
           <p className="text-xs text-muted-foreground mb-4">
             Naša ekipa je na voljo za vse informacije o vašem projektu.
           </p>
@@ -474,7 +474,7 @@ function NotFoundPage() {
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-50">
           <ChevronRight className="h-7 w-7 text-roksal-red" />
         </div>
-        <h1 className="text-lg font-bold text-roksal-navy mb-2">Stran ni na voljo</h1>
+        <h1 className="text-lg font-bold text-roksal-ink mb-2">Stran ni na voljo</h1>
         <p className="text-sm text-muted-foreground mb-5">
           Ta povezava ni veljavna ali pa je portal onemogočen. Za več informacij kontaktirajte
           ekipo Roksal.

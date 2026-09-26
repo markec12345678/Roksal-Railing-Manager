@@ -67,15 +67,15 @@ function Stepper() {
                   : done
                     ? 'bg-roksal-navy text-white'
                     : reachable
-                      ? 'border-2 border-roksal-navy/25 text-roksal-navy/60'
-                      : 'border-2 border-roksal-navy/10 text-roksal-navy/25'
+                      ? 'border-2 border-roksal-navy/25 text-roksal-ink/60'
+                      : 'border-2 border-roksal-navy/10 text-roksal-ink/25'
               }`}
             >
               {i + 1}
             </span>
             <span
               className={`truncate text-[9px] font-semibold sm:text-[10px] ${
-                active ? 'text-roksal-navy' : 'text-muted-foreground'
+                active ? 'text-roksal-ink' : 'text-muted-foreground'
               }`}
             >
               {s.short}
@@ -120,7 +120,7 @@ function ProductHeader() {
           >
             R
           </span>
-          <span className="text-sm font-bold tracking-tight text-roksal-navy">
+          <span className="text-sm font-bold tracking-tight text-roksal-ink">
             Roksal<span className="hidden font-medium text-muted-foreground sm:inline"> · Vizualizacija</span>
           </span>
         </button>
@@ -129,7 +129,7 @@ function ProductHeader() {
           <Button
             type="button"
             variant="ghost"
-            className="h-10 shrink-0 px-2.5 text-[13px] font-semibold text-muted-foreground hover:text-roksal-navy sm:px-3 sm:text-sm"
+            className="h-10 shrink-0 px-2.5 text-[13px] font-semibold text-muted-foreground hover:text-roksal-ink sm:px-3 sm:text-sm"
             aria-current={step === 'projects' ? 'page' : undefined}
             onClick={() => setStep('projects')}
           >
@@ -150,7 +150,7 @@ function ProductHeader() {
             type="button"
             variant="ghost"
             size="icon"
-            className="hidden h-10 w-10 shrink-0 text-muted-foreground hover:text-roksal-navy sm:inline-flex"
+            className="hidden h-10 w-10 shrink-0 text-muted-foreground hover:text-roksal-ink sm:inline-flex"
             aria-label="Montažna orodja (kalkulator, meritve, zaloga …)"
             title="Montažna orodja"
             onClick={openTools}
@@ -304,7 +304,7 @@ export function VizTab() {
         <div className="mx-auto flex w-full max-w-lg flex-col items-center gap-2 px-4 text-center sm:max-w-2xl">
           <button
             type="button"
-            className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground hover:text-roksal-navy sm:hidden"
+            className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground hover:text-roksal-ink sm:hidden"
             onClick={() => window.dispatchEvent(new CustomEvent('roksal:navigate', { detail: { tab: 'dashboard' } }))}
           >
             <Hammer className="h-3 w-3" aria-hidden="true" />

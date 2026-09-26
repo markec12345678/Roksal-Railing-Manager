@@ -219,7 +219,7 @@ function BeforeAfterSlider({
         style={{ left: `${percentage}%` }}
       >
         <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-9 h-9 bg-white rounded-full flex items-center justify-center shadow-lg">
-          <GripVertical className="w-4 h-4 text-roksal-navy" />
+          <GripVertical className="w-4 h-4 text-roksal-ink" />
         </div>
       </div>
       <div className="absolute top-2 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded z-20">
@@ -282,7 +282,7 @@ function StatisticsCard({ items }: { items: GalleryItem[] }) {
   return (
     <Card className="border-roksal-navy/10">
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-semibold text-roksal-navy dark:text-white flex items-center gap-2">
+        <CardTitle className="text-sm font-semibold text-roksal-ink dark:text-white flex items-center gap-2">
           <Layers className="w-4 h-4 text-roksal-amber" />
           Pregled galerije
         </CardTitle>
@@ -293,7 +293,7 @@ function StatisticsCard({ items }: { items: GalleryItem[] }) {
           <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
             Skupno realizacij
           </p>
-          <p className="text-2xl font-bold text-roksal-navy dark:text-white">
+          <p className="text-2xl font-bold text-roksal-ink dark:text-white">
             {total}
           </p>
         </div>
@@ -303,7 +303,7 @@ function StatisticsCard({ items }: { items: GalleryItem[] }) {
           <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
             Z javnim prikazom
           </p>
-          <p className="text-2xl font-bold text-roksal-navy dark:text-white flex items-center gap-1">
+          <p className="text-2xl font-bold text-roksal-ink dark:text-white flex items-center gap-1">
             <Eye className="w-4 h-4 text-roksal-amber" />
             {publicCount}
           </p>
@@ -319,7 +319,7 @@ function StatisticsCard({ items }: { items: GalleryItem[] }) {
           </p>
           {newest.date ? (
             <>
-              <p className="text-sm font-semibold text-roksal-navy dark:text-white line-clamp-1">
+              <p className="text-sm font-semibold text-roksal-ink dark:text-white line-clamp-1">
                 {newest.naslov}
               </p>
               <p className="text-[10px] text-muted-foreground flex items-center gap-1">
@@ -1209,7 +1209,7 @@ export function ReferenceGallery() {
       {/* Header */}
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div>
-          <h2 className="text-lg font-bold text-roksal-navy dark:text-white flex items-center gap-2">
+          <h2 className="text-lg font-bold text-roksal-ink dark:text-white flex items-center gap-2">
             <ImageIcon className="w-5 h-5 text-roksal-amber" />
             Galerija realizacij
           </h2>
@@ -1582,7 +1582,7 @@ export function ReferenceGallery() {
                   </div>
                 </div>
                 <CardContent className="p-3 space-y-1">
-                  <h3 className="text-sm font-semibold text-roksal-navy dark:text-white line-clamp-1">
+                  <h3 className="text-sm font-semibold text-roksal-ink dark:text-white line-clamp-1">
                     {item.naslov}
                   </h3>
                   {item.lokacija && (
@@ -1637,7 +1637,7 @@ export function ReferenceGallery() {
           className="w-full sm:max-w-2xl overflow-y-auto p-4 sm:p-6"
         >
           <SheetHeader>
-            <SheetTitle className="text-roksal-navy dark:text-white">
+            <SheetTitle className="text-roksal-ink dark:text-white">
               {selectedItem?.naslov}
             </SheetTitle>
             {selectedItem?.lokacija && (
@@ -1722,7 +1722,7 @@ export function ReferenceGallery() {
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-roksal-navy dark:text-white">
+            <DialogTitle className="flex items-center gap-2 text-roksal-ink dark:text-white">
               <Plus className="w-5 h-5 text-roksal-amber" />
               Dodaj v galerijo
             </DialogTitle>

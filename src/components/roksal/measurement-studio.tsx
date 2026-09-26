@@ -214,7 +214,7 @@ function StateBadge({ state, className }: { state: MeasurementQualityState; clas
 function MetricCell({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded bg-muted/40 p-1.5 text-center">
-      <div className="text-sm font-bold text-roksal-navy">{value}</div>
+      <div className="text-sm font-bold text-roksal-ink">{value}</div>
       <div className="text-[9px] text-muted-foreground">{label}</div>
     </div>
   )
@@ -235,7 +235,7 @@ function QualityPanel({
   return (
     <div className="space-y-2 rounded-lg border border-roksal-navy/15 bg-white p-3" role="status">
       <div className="flex items-center gap-2">
-        <span className="text-xs font-semibold text-roksal-navy">Kakovost detekcije</span>
+        <span className="text-xs font-semibold text-roksal-ink">Kakovost detekcije</span>
         <StateBadge state={state} className="ml-auto" />
       </div>
 
@@ -313,7 +313,7 @@ function ReferenceSection({
     <div className="space-y-2 rounded-lg border border-roksal-amber/30 bg-roksal-amber/5 p-3">
       <div className="flex items-center gap-2">
         <Crosshair className="h-4 w-4 text-roksal-amber" />
-        <span className="text-sm font-semibold text-roksal-navy">
+        <span className="text-sm font-semibold text-roksal-ink">
           Referenčna mera (obvezna za mm)
         </span>
       </div>
@@ -325,20 +325,20 @@ function ReferenceSection({
       <div className="grid grid-cols-2 gap-2 text-[11px]">
         <div className="rounded bg-white p-1.5">
           <span className="text-muted-foreground">P1:</span>{' '}
-          <span className="font-medium text-roksal-navy">
+          <span className="font-medium text-roksal-ink">
             {refP1 ? `${(refP1.x * 100).toFixed(1)} %, ${(refP1.y * 100).toFixed(1)} %` : '— klikni na sliki'}
           </span>
         </div>
         <div className="rounded bg-white p-1.5">
           <span className="text-muted-foreground">P2:</span>{' '}
-          <span className="font-medium text-roksal-navy">
+          <span className="font-medium text-roksal-ink">
             {refP2 ? `${(refP2.x * 100).toFixed(1)} %, ${(refP2.y * 100).toFixed(1)} %` : '— klikni na sliki'}
           </span>
         </div>
       </div>
 
       {refP1 && refP2 && (
-        <p className="text-[11px] text-roksal-navy" role="status">
+        <p className="text-[11px] text-roksal-ink" role="status">
           Izmerjena razdalja: <b>{referenceDistancePct(refP1, refP2).toFixed(1)} % slike</b>
           {!refLenOk && (
             <span className="ml-1 text-red-700">
@@ -429,8 +429,8 @@ function ProductSection({
   return (
     <div className="space-y-2 rounded-lg border border-border bg-white p-3">
       <div className="flex items-center gap-2">
-        <Package className="h-4 w-4 text-roksal-navy" />
-        <span className="text-sm font-semibold text-roksal-navy">
+        <Package className="h-4 w-4 text-roksal-ink" />
+        <span className="text-sm font-semibold text-roksal-ink">
           Izdelek (opcijsko — za predračun materiala)
         </span>
       </div>
@@ -549,7 +549,7 @@ function ResultsSection({ result, error }: { result: ConfirmResponse | null; err
     <div className="space-y-3 rounded-lg border border-roksal-navy/15 bg-muted/20 p-3">
       <div className="flex items-center gap-2">
         <CheckCircle2 className="h-4 w-4 text-green-600" />
-        <span className="text-sm font-semibold text-roksal-navy">Rezultat meritve</span>
+        <span className="text-sm font-semibold text-roksal-ink">Rezultat meritve</span>
         <StateBadge state={session.quality.state} className="ml-auto" />
       </div>
 
@@ -581,8 +581,8 @@ function ResultsSection({ result, error }: { result: ConfirmResponse | null; err
         <>
           <div className="grid grid-cols-2 gap-2">
             <div className="rounded-lg border border-border bg-white p-2.5 text-center">
-              <Ruler className="mx-auto mb-1 h-4 w-4 text-roksal-navy" />
-              <div className="text-lg font-bold text-roksal-navy">
+              <Ruler className="mx-auto mb-1 h-4 w-4 text-roksal-ink" />
+              <div className="text-lg font-bold text-roksal-ink">
                 {(g.totalLengthMm.valueMm / 1000).toFixed(3)} m
               </div>
               <div className="text-[9px] text-muted-foreground">
@@ -590,8 +590,8 @@ function ResultsSection({ result, error }: { result: ConfirmResponse | null; err
               </div>
             </div>
             <div className="rounded-lg border border-border bg-white p-2.5 text-center">
-              <Ruler className="mx-auto mb-1 h-4 w-4 text-roksal-navy" />
-              <div className="text-lg font-bold text-roksal-navy">{fmtNum(g.heightMm.valueMm)} mm</div>
+              <Ruler className="mx-auto mb-1 h-4 w-4 text-roksal-ink" />
+              <div className="text-lg font-bold text-roksal-ink">{fmtNum(g.heightMm.valueMm)} mm</div>
               <div className="text-[9px] text-muted-foreground">
                 Višina · ± {fmtNum(g.heightMm.uncertaintyMm)} mm
               </div>
@@ -613,7 +613,7 @@ function ResultsSection({ result, error }: { result: ConfirmResponse | null; err
                 {g.segments.map((s) => (
                   <tr key={s.index} className="border-b border-border/40 last:border-0">
                     <td className="py-1 pr-2">{s.index + 1}</td>
-                    <td className="py-1 pr-2 font-medium text-roksal-navy">{fmtNum(s.lengthMm)}</td>
+                    <td className="py-1 pr-2 font-medium text-roksal-ink">{fmtNum(s.lengthMm)}</td>
                     <td className="py-1 pr-2">± {fmtNum(s.uncertaintyMm)}</td>
                     <td className="py-1">{fmtNum(s.startMm)}</td>
                   </tr>
@@ -624,7 +624,7 @@ function ResultsSection({ result, error }: { result: ConfirmResponse | null; err
 
           {/* Stebri */}
           <div className="rounded-lg border border-border bg-white p-2.5 text-[11px]">
-            <span className="font-semibold text-roksal-navy">Stebri: {g.postCount}</span>
+            <span className="font-semibold text-roksal-ink">Stebri: {g.postCount}</span>
             {g.postPositionsMm.length > 0 && (
               <p className="text-muted-foreground">
                 Položaji (mm od začetka): {g.postPositionsMm.map((p) => fmtNum(p)).join(', ')}
@@ -666,23 +666,23 @@ function ResultsSection({ result, error }: { result: ConfirmResponse | null; err
         <div className="space-y-2 rounded-lg border border-roksal-amber/40 bg-roksal-amber/5 p-3">
           <div className="flex items-center gap-2">
             <Package className="h-4 w-4 text-roksal-amber" />
-            <span className="text-sm font-semibold text-roksal-navy">
+            <span className="text-sm font-semibold text-roksal-ink">
               Predračun materiala (iz geometrije)
             </span>
           </div>
           <div className="grid grid-cols-3 gap-2 text-center text-[11px]">
             <div className="rounded bg-white p-1.5">
-              <div className="text-base font-bold text-roksal-navy">{takeoffPreview.boardCount}</div>
+              <div className="text-base font-bold text-roksal-ink">{takeoffPreview.boardCount}</div>
               <div className="text-[9px] text-muted-foreground">Deske</div>
             </div>
             <div className="rounded bg-white p-1.5">
-              <div className="text-base font-bold text-roksal-navy">
+              <div className="text-base font-bold text-roksal-ink">
                 {takeoffPreview.boardsTotalLinearM.toFixed(2)}
               </div>
               <div className="text-[9px] text-muted-foreground">Linearni m</div>
             </div>
             <div className="rounded bg-white p-1.5">
-              <div className="text-base font-bold text-roksal-navy">{takeoffPreview.postCount}</div>
+              <div className="text-base font-bold text-roksal-ink">{takeoffPreview.postCount}</div>
               <div className="text-[9px] text-muted-foreground">Stebri</div>
             </div>
           </div>
@@ -1332,7 +1332,7 @@ export function MeasurementStudio({ projectId }: { projectId?: string | null }) 
             Merilni studio
             <Badge
               variant="secondary"
-              className="ml-auto bg-roksal-navy/10 text-[9px] text-roksal-navy"
+              className="ml-auto bg-roksal-navy/10 text-[9px] text-roksal-ink"
             >
               DETERMINISTIČNO · BREZ AI
             </Badge>
@@ -1382,7 +1382,7 @@ export function MeasurementStudio({ projectId }: { projectId?: string | null }) 
                   className="min-h-[44px] flex-col gap-1 border-roksal-navy/20"
                   aria-label="Odpri kamero za zajem slike"
                 >
-                  <Camera className="h-5 w-5 text-roksal-navy" />
+                  <Camera className="h-5 w-5 text-roksal-ink" />
                   <span className="text-xs">Kamera</span>
                 </Button>
                 <Button
@@ -1392,7 +1392,7 @@ export function MeasurementStudio({ projectId }: { projectId?: string | null }) 
                   className="min-h-[44px] flex-col gap-1 border-roksal-navy/20"
                   aria-label="Naloži sliko iz datoteke"
                 >
-                  <Upload className="h-5 w-5 text-roksal-navy" />
+                  <Upload className="h-5 w-5 text-roksal-ink" />
                   <span className="text-xs">Naloži sliko</span>
                 </Button>
               </div>
@@ -1496,7 +1496,7 @@ export function MeasurementStudio({ projectId }: { projectId?: string | null }) 
                 </p>
               )}
               <div className="space-y-2 rounded-lg border border-roksal-navy/15 bg-roksal-navy/5 p-3">
-                <p className="text-xs font-semibold text-roksal-navy">
+                <p className="text-xs font-semibold text-roksal-ink">
                   Korak: {MANUAL_STEPS.find((s) => s.id === activeStep)?.label}
                 </p>
                 <p className="text-[11px] text-muted-foreground" role="status">

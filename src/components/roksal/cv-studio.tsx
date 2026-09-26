@@ -765,7 +765,7 @@ function ElementCard({
   return (
     <div className="rounded-lg border border-border bg-white p-2.5">
       <div className="flex flex-wrap items-center gap-1.5">
-        <span className="text-xs font-semibold text-roksal-navy">
+        <span className="text-xs font-semibold text-roksal-ink">
           {ELEMENT_LABELS[el.type] ?? el.type}
         </span>
         <Badge variant="outline" className={`text-[9px] ${stCfg.cls}`}>
@@ -886,7 +886,7 @@ function ReferenceSection({
     <div className="space-y-2 rounded-lg border border-red-200 bg-red-50/40 p-3">
       <div className="flex items-center gap-2">
         <Ruler className="h-4 w-4 text-red-600" />
-        <span className="text-xs font-semibold text-roksal-navy">Referenčna mera (obvezna za mm)</span>
+        <span className="text-xs font-semibold text-roksal-ink">Referenčna mera (obvezna za mm)</span>
       </div>
       <Alert className="border-amber-300 bg-amber-50 py-2">
         <TriangleAlert className="h-4 w-4 text-amber-700" />
@@ -1928,7 +1928,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
       {/* ── ZGORNJA PLOŠČA: naslov + zmožnosti + projekt ── */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-base text-roksal-navy">
+          <CardTitle className="flex items-center gap-2 text-base text-roksal-ink">
             <ScanLine className="h-5 w-5 text-roksal-amber" />
             CV Studio
           </CardTitle>
@@ -2021,7 +2021,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                     if (f) processFile(f, true)
                   }}
                 >
-                  <Upload className="h-8 w-8 text-roksal-navy/40" />
+                  <Upload className="h-8 w-8 text-roksal-ink/40" />
                   <p className="text-xs text-muted-foreground">
                     Povleci sliko sem ali izberi datoteko (≤1280 px, JPEG).
                   </p>
@@ -2149,7 +2149,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
               {/* Orodja: referenca / segment / kotniki / ročna označba */}
               {imageData && (
                 <div className="space-y-2 rounded-lg border border-border bg-white p-3">
-                  <p className="text-xs font-semibold text-roksal-navy">Orodja označevanja</p>
+                  <p className="text-xs font-semibold text-roksal-ink">Orodja označevanja</p>
                   <div className="grid grid-cols-2 gap-2">
                     <Button
                       type="button"
@@ -2341,7 +2341,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
               {analysis && (
                 <div className="space-y-2 rounded-lg border border-border bg-white p-3" role="status">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-xs font-semibold text-roksal-navy">Kakovost prizora</span>
+                    <span className="text-xs font-semibold text-roksal-ink">Kakovost prizora</span>
                     {analyzeMs !== null && (
                       <Badge variant="outline" className="ml-auto border-stone-300 bg-stone-50 text-[9px] text-stone-600">
                         Analiza: {analyzeMs} ms
@@ -2356,7 +2356,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                       { l: 'Šum', v: formatPct(analysis.quality.noiseEstimate) },
                     ].map((m) => (
                       <div key={m.l} className="rounded bg-muted/40 p-1.5 text-center">
-                        <div className="text-sm font-bold text-roksal-navy">{m.v}</div>
+                        <div className="text-sm font-bold text-roksal-ink">{m.v}</div>
                         <div className="text-[9px] text-muted-foreground">{m.l}</div>
                       </div>
                     ))}
@@ -2399,7 +2399,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
             <div className="space-y-3">
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm text-roksal-navy">
+                  <CardTitle className="text-sm text-roksal-ink">
                     Zaznave {analysis ? `(${visibleCount}/${allElements.length})` : ''}
                   </CardTitle>
                 </CardHeader>
@@ -2441,7 +2441,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
 
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm text-roksal-navy">Postavitev (PWC predlog)</CardTitle>
+                  <CardTitle className="text-sm text-roksal-ink">Postavitev (PWC predlog)</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   {products.length === 0 && !productsError && (
@@ -2572,7 +2572,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
 
                       <p className="text-[10px] text-muted-foreground">
                         Širina polja (iz reference + segment):{' '}
-                        <span className="font-semibold text-roksal-navy">
+                        <span className="font-semibold text-roksal-ink">
                           {fenceWidthMm !== null ? `${fenceWidthMm} mm` : '— (manjka referenca/segment)'}
                         </span>
                         {' · '}Ročaj: ni podprt v katalogu (handle: false).
@@ -2676,7 +2676,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
 
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm text-roksal-navy">Potrditev meritve</CardTitle>
+                  <CardTitle className="text-sm text-roksal-ink">Potrditev meritve</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <div className="flex flex-wrap gap-1.5 text-[10px]">
@@ -2727,7 +2727,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
               <div className="space-y-2">
                 {!cameraActive ? (
                   <div className="flex min-h-[220px] flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-roksal-navy/20 bg-white p-6 text-center">
-                    <Video className="h-8 w-8 text-roksal-navy/40" />
+                    <Video className="h-8 w-8 text-roksal-ink/40" />
                     <p className="text-xs text-muted-foreground">
                       Živi 2D CV predogled (frame-relative overlay, brez trackinga).
                     </p>
@@ -2831,7 +2831,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
               <div className="space-y-3">
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm text-roksal-navy">Zadnja analiza kadra</CardTitle>
+                    <CardTitle className="text-sm text-roksal-ink">Zadnja analiza kadra</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2" aria-live="polite">
                     {!liveAnalysis && !liveError && (
@@ -2889,7 +2889,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
             <div className="space-y-2">
               {!imageData ? (
                 <div className="flex min-h-[220px] flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-roksal-navy/20 bg-white p-6 text-center">
-                  <Upload className="h-8 w-8 text-roksal-navy/40" />
+                  <Upload className="h-8 w-8 text-roksal-ink/40" />
                   <p className="text-xs text-muted-foreground">
                     Ročni način (fail-safe): deluje BREZ CV rezultata — samo tvoje točke + referenca.
                   </p>
@@ -2963,7 +2963,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
 
               {imageData && (
                 <div className="space-y-2 rounded-lg border border-roksal-navy/15 bg-roksal-navy/5 p-3">
-                  <p className="text-xs font-semibold text-roksal-navy">
+                  <p className="text-xs font-semibold text-roksal-ink">
                     Korak: {mStep === 'ref' ? 'Referenca P1 → P2' : mStep === 'path' ? 'Spodnja linija (2+)' : mStep === 'top' ? 'Zgornja linija (enako točk)' : 'Stebri (opcijsko)'}
                   </p>
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -3069,7 +3069,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
 
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm text-roksal-navy">Potrditev meritve (ročno)</CardTitle>
+                  <CardTitle className="text-sm text-roksal-ink">Potrditev meritve (ročno)</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <Button

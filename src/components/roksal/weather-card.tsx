@@ -48,7 +48,7 @@ const RISK_STYLES: Record<
   },
   medium: {
     label: 'Previdno',
-    badge: 'bg-roksal-amber/15 text-roksal-navy hover:bg-roksal-amber/20',
+    badge: 'bg-roksal-amber/15 text-roksal-ink hover:bg-roksal-amber/20',
     hint: 'Montaža možna, višje panele postavljajte v dvojici.',
     accent: 'border-l-roksal-amber/70',
   },
@@ -116,7 +116,7 @@ export function WeatherCard({
     >
       <CardHeader className="pb-2 pt-4 px-4">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-1.5 text-sm font-semibold text-roksal-navy">
+          <CardTitle className="flex items-center gap-1.5 text-sm font-semibold text-roksal-ink">
             <CloudSun className="h-4 w-4 text-sky-500" aria-hidden="true" />
             Pogoji za montažo
           </CardTitle>
@@ -153,12 +153,12 @@ export function WeatherCard({
             {/* Glavna vrstica: temperatura + opis + kompasa smeri */}
             <div className="flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-full bg-sky-500/10">
-                <span className="text-lg font-bold text-roksal-navy tabular-nums">
+                <span className="text-lg font-bold text-roksal-ink tabular-nums">
                   {Math.round(weather.temperature)}°
                 </span>
               </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium capitalize text-roksal-navy">
+                <p className="truncate text-sm font-medium capitalize text-roksal-ink">
                   {weather.description || 'Vreme na lokaciji montaže'}
                 </p>
                 <p className="flex items-center gap-2 text-[11px] text-muted-foreground">
@@ -187,7 +187,7 @@ export function WeatherCard({
             <div className="grid grid-cols-2 gap-2 text-center">
               <div className="rounded-lg bg-muted/60 px-2 py-1.5">
                 <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Veter</p>
-                <p className="text-sm font-bold text-roksal-navy tabular-nums">
+                <p className="text-sm font-bold text-roksal-ink tabular-nums">
                   {mpsToKmh(weather.speed)} km/h
                   <span className="ml-1 text-[10px] font-normal text-muted-foreground">
                     ({weather.speed.toFixed(1)} m/s)
@@ -196,7 +196,7 @@ export function WeatherCard({
               </div>
               <div className="rounded-lg bg-muted/60 px-2 py-1.5">
                 <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Suniki</p>
-                <p className="text-sm font-bold text-roksal-navy tabular-nums">
+                <p className="text-sm font-bold text-roksal-ink tabular-nums">
                   {mpsToKmh(weather.gust)} km/h
                   <span className="ml-1 text-[10px] font-normal text-muted-foreground">
                     ({weather.gust.toFixed(1)} m/s)

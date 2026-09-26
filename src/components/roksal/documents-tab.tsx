@@ -74,7 +74,7 @@ const docTypeIcons: Record<string, React.ElementType> = {
 const statusConfig: Record<string, { label: string; color: string }> = {
   GENERIRANO: { label: 'Generirano', color: 'bg-roksal-green/15 text-roksal-green' },
   PODPISANO: { label: 'Podpisano', color: 'bg-blue-100 text-blue-800' },
-  POSLANO: { label: 'Poslano', color: 'bg-roksal-amber/15 text-roksal-navy' },
+  POSLANO: { label: 'Poslano', color: 'bg-roksal-amber/15 text-roksal-ink' },
 }
 
 const quickActions = [
@@ -241,7 +241,7 @@ export function DocumentsTab() {
   return (
     <div className="space-y-4 px-4 pb-4 pt-2">
       <div>
-        <h2 className="text-xl font-bold text-roksal-navy">Dokumenti</h2>
+        <h2 className="text-xl font-bold text-roksal-ink">Dokumenti</h2>
         <p className="text-sm text-muted-foreground">
           Tehnični listi, podpisi in računi
         </p>
@@ -251,7 +251,7 @@ export function DocumentsTab() {
       <Card className="card-hover transition-all duration-200 animate-fade-in-up" style={{ animationDelay: '0ms' }}>
         <CardContent className="p-4">
           <div className="flex items-center gap-3">
-            <FolderOpen className="h-4 w-4 text-roksal-navy" />
+            <FolderOpen className="h-4 w-4 text-roksal-ink" />
             <div className="flex-1">
               <Select value={selectedProject} onValueChange={setSelectedProject}>
                 <SelectTrigger className="w-full">
@@ -275,10 +275,10 @@ export function DocumentsTab() {
         <CardContent className="p-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-roksal-navy/10">
-              <FileStack className="h-5 w-5 text-roksal-navy" />
+              <FileStack className="h-5 w-5 text-roksal-ink" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-roksal-navy">
+              <p className="text-sm font-semibold text-roksal-ink">
                 {documents.length} {documents.length === 1 ? 'dokument' : documents.length === 2 ? 'dokumenta' : documents.length === 3 || documents.length === 4 ? 'dokumenti' : 'dokumentov'}
               </p>
               <div className="flex flex-wrap gap-1.5 mt-1">
@@ -296,7 +296,7 @@ export function DocumentsTab() {
       {/* Quick Actions */}
       <Card className="animate-fade-in-up transition-all duration-200" style={{ animationDelay: '120ms' }}>
         <CardHeader className="pb-2 pt-4 px-4">
-          <CardTitle className="text-sm font-semibold text-roksal-navy">
+          <CardTitle className="text-sm font-semibold text-roksal-ink">
             Hitra dejanja
           </CardTitle>
         </CardHeader>
@@ -313,11 +313,11 @@ export function DocumentsTab() {
                   disabled={docLoading}
                 >
                   {docLoading ? (
-                    <Loader2 className="h-5 w-5 text-roksal-navy animate-spin" />
+                    <Loader2 className="h-5 w-5 text-roksal-ink animate-spin" />
                   ) : (
-                    <Icon className="h-5 w-5 text-roksal-navy" />
+                    <Icon className="h-5 w-5 text-roksal-ink" />
                   )}
-                  <span className="text-xs font-medium text-roksal-navy">
+                  <span className="text-xs font-medium text-roksal-ink">
                     {action.label}
                   </span>
                   <span className="text-[10px] text-muted-foreground">
@@ -334,7 +334,7 @@ export function DocumentsTab() {
       <Card className="animate-fade-in-up transition-all duration-200" style={{ animationDelay: '180ms' }}>
         <CardHeader className="pb-2 pt-4 px-4">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-semibold text-roksal-navy">
+            <CardTitle className="text-sm font-semibold text-roksal-ink">
               Dokumenti
             </CardTitle>
             <Badge variant="secondary">{documents.length}</Badge>
@@ -362,10 +362,10 @@ export function DocumentsTab() {
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-roksal-navy/10">
-                        <Icon className="h-4.5 w-4.5 text-roksal-navy" />
+                        <Icon className="h-4.5 w-4.5 text-roksal-ink" />
                       </div>
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-medium text-roksal-navy">
+                        <p className="truncate text-sm font-medium text-roksal-ink">
                           {docTypeLabels[doc.tipDokumenta] || doc.tipDokumenta}
                         </p>
                         <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
@@ -432,7 +432,7 @@ export function DocumentsTab() {
           {previewDoc && (
             <>
               <DialogHeader>
-                <DialogTitle className="text-roksal-navy">
+                <DialogTitle className="text-roksal-ink">
                   {docTypeLabels[previewDoc.tipDokumenta] || previewDoc.tipDokumenta}
                 </DialogTitle>
                 <DialogDescription>
@@ -445,11 +445,11 @@ export function DocumentsTab() {
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-roksal-navy/10">
                     {(() => {
                       const Icon = docTypeIcons[previewDoc.tipDokumenta] || FileText
-                      return <Icon className="h-5 w-5 text-roksal-navy" />
+                      return <Icon className="h-5 w-5 text-roksal-ink" />
                     })()}
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-roksal-navy">
+                    <p className="text-sm font-semibold text-roksal-ink">
                       {docTypeLabels[previewDoc.tipDokumenta] || previewDoc.tipDokumenta}
                     </p>
                     <p className="text-xs text-muted-foreground">
@@ -472,7 +472,7 @@ export function DocumentsTab() {
                     <Clock className="h-3.5 w-3.5 text-muted-foreground" />
                     <span className="text-xs text-muted-foreground">Datum ustvarjanja</span>
                   </div>
-                  <span className="text-xs font-medium text-roksal-navy tabular-nums">
+                  <span className="text-xs font-medium text-roksal-ink tabular-nums">
                     {new Date(previewDoc.createdAt).toLocaleDateString('sl-SI', {
                       day: 'numeric',
                       month: 'long',
@@ -488,7 +488,7 @@ export function DocumentsTab() {
                       <FileStack className="h-3.5 w-3.5 text-muted-foreground" />
                       <span className="text-xs text-muted-foreground">Verzija</span>
                     </div>
-                    <span className="text-xs font-medium text-roksal-navy font-mono tabular-nums">
+                    <span className="text-xs font-medium text-roksal-ink font-mono tabular-nums">
                       v{verzijaOf(previewDoc)}
                     </span>
                   </div>
@@ -496,7 +496,7 @@ export function DocumentsTab() {
                 {previewDoc.sha256 && (
                   <div className="flex items-center justify-between rounded-lg border border-border/50 p-3">
                     <span className="text-xs text-muted-foreground">Odtis (SHA-256)</span>
-                    <span className="text-xs font-medium text-roksal-navy font-mono tabular-nums" title={`SHA-256: ${previewDoc.sha256}`}>
+                    <span className="text-xs font-medium text-roksal-ink font-mono tabular-nums" title={`SHA-256: ${previewDoc.sha256}`}>
                       {previewDoc.sha256.slice(0, 8)}…{previewDoc.sha256.slice(-4)}
                     </span>
                   </div>
@@ -508,7 +508,7 @@ export function DocumentsTab() {
                     <FolderOpen className="h-3.5 w-3.5 text-muted-foreground" />
                     <span className="text-xs text-muted-foreground">Projekt</span>
                   </div>
-                  <span className="text-xs font-medium text-roksal-navy">
+                  <span className="text-xs font-medium text-roksal-ink">
                     {projects.find((p) => p.id === previewDoc.projectId)?.nazivProjekta || 'Neznan projekt'}
                   </span>
                 </div>

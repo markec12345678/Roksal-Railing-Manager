@@ -410,10 +410,10 @@ export function PdfExport({ project }: { project: Project | null }) {
             {generating === 'work' ? (
               <Loader2 className="mr-3 h-5 w-5 animate-spin text-roksal-amber" />
             ) : (
-              <FileText className="mr-3 h-5 w-5 text-roksal-navy" />
+              <FileText className="mr-3 h-5 w-5 text-roksal-ink" />
             )}
             <div className="text-left">
-              <div className="text-sm font-semibold text-roksal-navy">Delovni list monterja</div>
+              <div className="text-sm font-semibold text-roksal-ink">Delovni list monterja</div>
               <div className="text-[10px] text-muted-foreground">Meritve, slike pred/med/po, opombe, podpisi</div>
             </div>
           </Button>
@@ -427,10 +427,10 @@ export function PdfExport({ project }: { project: Project | null }) {
             {generating === 'quote' ? (
               <Loader2 className="mr-3 h-5 w-5 animate-spin text-roksal-amber" />
             ) : (
-              <FileCheck2 className="mr-3 h-5 w-5 text-roksal-navy" />
+              <FileCheck2 className="mr-3 h-5 w-5 text-roksal-ink" />
             )}
             <div className="text-left">
-              <div className="text-sm font-semibold text-roksal-navy">Ponudba za stranko</div>
+              <div className="text-sm font-semibold text-roksal-ink">Ponudba za stranko</div>
               <div className="text-[10px] text-muted-foreground">Postavke, DDV, skupaj, pogoji, podpis</div>
             </div>
           </Button>

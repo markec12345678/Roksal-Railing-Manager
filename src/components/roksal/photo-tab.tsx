@@ -696,7 +696,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
           {projectId && photos.length > 0 && (
             <div className="grid grid-cols-4 gap-1.5">
               <div className="rounded-md border border-border bg-white p-1.5 text-center">
-                <div className="text-base font-bold text-roksal-navy tabular-nums">{stats.total}</div>
+                <div className="text-base font-bold text-roksal-ink tabular-nums">{stats.total}</div>
                 <div className="text-[9px] text-muted-foreground">Skupaj</div>
               </div>
               <div className="rounded-md border border-border bg-white p-1.5 text-center">
@@ -898,7 +898,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
             <CardContent className="p-3">
               <div className="flex items-center justify-between gap-2">
                 <div>
-                  <p className="text-xs font-medium text-roksal-navy">Pred/Po primerjave</p>
+                  <p className="text-xs font-medium text-roksal-ink">Pred/Po primerjave</p>
                   <p className="text-[10px] text-muted-foreground">
                     Poveži PRED in PO slike za predstavitev dela strankam.
                   </p>
@@ -977,7 +977,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
       {batchProgress && (
         <div className="fixed bottom-4 left-4 right-4 z-[70] rounded-lg border border-roksal-amber/40 bg-white p-3 shadow-lg md:left-auto md:w-96">
           <div className="mb-1.5 flex items-center justify-between text-xs">
-            <span className="font-medium text-roksal-navy">Nalaganje slik...</span>
+            <span className="font-medium text-roksal-ink">Nalaganje slik...</span>
             <span className="text-muted-foreground">
               {batchProgress.current} / {batchProgress.total}
             </span>
@@ -2044,7 +2044,7 @@ function AnnotationEditor({
           <div className="flex items-center justify-between gap-2 px-3 py-2">
             <div className="flex min-w-0 items-center gap-1.5">
               <Ruler className="h-4 w-4 shrink-0 text-roksal-amber" />
-              <span className="text-[11px] font-semibold text-roksal-navy">Umeritev reference</span>
+              <span className="text-[11px] font-semibold text-roksal-ink">Umeritev reference</span>
               {photoCalibration ? (
                 <Badge className="shrink-0 bg-green-100 text-[9px] text-green-800">
                   ✓ {photoCalibration.pixelsPerMm.toFixed(2)} px/mm
@@ -2203,7 +2203,7 @@ function AnnotationEditor({
           <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-border bg-white px-3 py-2">
             <div className="flex items-center gap-1.5">
               <Ruler className="h-4 w-4 text-roksal-green" />
-              <span className="text-[11px] font-semibold text-roksal-navy">Mere na sliki</span>
+              <span className="text-[11px] font-semibold text-roksal-ink">Mere na sliki</span>
               <Badge variant="secondary" className="text-[9px]">{measureList.length}</Badge>
             </div>
             <div className="flex gap-1">
@@ -2241,7 +2241,7 @@ function AnnotationEditor({
             <TableBody>
               {measureList.map((m) => (
                 <TableRow key={m.id} className="h-8">
-                  <TableCell className="px-2 py-1 text-[10px] font-semibold text-roksal-navy">M{m.seqNum}</TableCell>
+                  <TableCell className="px-2 py-1 text-[10px] font-semibold text-roksal-ink">M{m.seqNum}</TableCell>
                   <TableCell className="px-2 py-1 text-[10px]">
                     {m.oznaka || <span className="text-muted-foreground">—</span>}
                   </TableCell>
@@ -2265,7 +2265,7 @@ function AnnotationEditor({
                             isCalibration: false,
                           })
                         }
-                        className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-roksal-navy focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:outline-none"
+                        className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:outline-none"
                         aria-label="Uredi mero"
                       >
                         <Pencil className="h-3 w-3" />
@@ -2287,9 +2287,9 @@ function AnnotationEditor({
               <TableFooter>
                 <TableRow className="h-7 bg-muted/50">
                   <TableCell colSpan={3} className="px-2 py-1 text-[10px] text-muted-foreground">
-                    Skupna: <strong className="text-roksal-navy">{measureStats.total > 0 ? formatDistanceMulti(measureStats.total) : '—'}</strong>
-                    {' · '}Povprečna: <strong className="text-roksal-navy">{measureStats.avg > 0 ? formatLength(measureStats.avg) : '—'}</strong>
-                    {' · '}Št. mer: <strong className="text-roksal-navy">{measureStats.count}</strong>
+                    Skupna: <strong className="text-roksal-ink">{measureStats.total > 0 ? formatDistanceMulti(measureStats.total) : '—'}</strong>
+                    {' · '}Povprečna: <strong className="text-roksal-ink">{measureStats.avg > 0 ? formatLength(measureStats.avg) : '—'}</strong>
+                    {' · '}Št. mer: <strong className="text-roksal-ink">{measureStats.count}</strong>
                   </TableCell>
                   <TableCell />
                 </TableRow>
@@ -2326,7 +2326,7 @@ function AnnotationEditor({
       {transferring && (
         <div className="absolute bottom-16 left-4 right-4 z-[90] rounded-lg border border-roksal-amber/40 bg-white p-3 shadow-lg">
           <div className="mb-1.5 flex items-center justify-between text-xs">
-            <span className="font-medium text-roksal-navy">Prenos mer v Meritve...</span>
+            <span className="font-medium text-roksal-ink">Prenos mer v Meritve...</span>
             <span className="text-muted-foreground">
               {transferring.current} / {transferring.total}
             </span>
@@ -2350,7 +2350,7 @@ function AnnotationEditor({
               <div className="grid grid-cols-2 gap-2 rounded-md border border-border bg-muted/30 p-2 text-[11px]">
                 <div>
                   <p className="text-[10px] text-muted-foreground">Dolžina v pikslih</p>
-                  <p className="font-medium text-roksal-navy">{editMeasure.pixelLength.toFixed(1)} px</p>
+                  <p className="font-medium text-roksal-ink">{editMeasure.pixelLength.toFixed(1)} px</p>
                 </div>
                 <div>
                   <p className="text-[10px] text-muted-foreground">Realna dolžina</p>
@@ -2363,7 +2363,7 @@ function AnnotationEditor({
                 {photoCalibration && (
                   <div className="col-span-2">
                     <p className="text-[10px] text-muted-foreground">Uporabljena umeritev</p>
-                    <p className="font-medium text-roksal-navy">
+                    <p className="font-medium text-roksal-ink">
                       {photoCalibration.pixelsPerMm.toFixed(2)} px/mm
                       {photoCalibration.oznaka ? ` · ${photoCalibration.oznaka}` : ''}
                     </p>
@@ -2451,8 +2451,8 @@ function BeforeAfterSlider({
         style={{ left: `${pos}%` }}
       >
         <div className="absolute top-1/2 left-1/2 flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-roksal-navy bg-white shadow-lg">
-          <ChevronLeft className="h-3 w-3 text-roksal-navy" />
-          <ChevronRight className="h-3 w-3 text-roksal-navy" />
+          <ChevronLeft className="h-3 w-3 text-roksal-ink" />
+          <ChevronRight className="h-3 w-3 text-roksal-ink" />
         </div>
       </div>
       {/* Oznaki */}

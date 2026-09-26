@@ -41,10 +41,13 @@ interface JobsPayload {
   retryPolicy: { maxAttempts: number; window: string }
 }
 
+// R162 stil pass — dark: variante na STATUS chips/napaki/kartici (svetla
+// tema NESPREMENJENA; prej je v temni temi kartica ostala bela, FAILED
+// chip svetlo rdeč — neberljivo).
 const STATUS_CHIP: Record<string, string> = {
   SUCCEEDED: 'bg-roksal-green/10 text-roksal-green ring-1 ring-inset ring-roksal-green/25',
-  FAILED: 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-200',
-  RUNNING: 'bg-roksal-amber/15 text-amber-700 ring-1 ring-inset ring-roksal-amber/30',
+  FAILED: 'bg-red-100 text-red-700 ring-1 ring-inset ring-red-200 dark:bg-roksal-red/15 dark:text-roksal-red dark:ring-roksal-red/30',
+  RUNNING: 'bg-roksal-amber/15 text-amber-700 ring-1 ring-inset ring-roksal-amber/30 dark:text-roksal-amber',
 }
 
 const dtFmt = new Intl.DateTimeFormat('sl-SI', {
@@ -116,15 +119,15 @@ export function JobsPanel() {
   }
 
   return (
-    <div className="rounded-xl border border-border bg-white p-3 shadow-sm transition-all hover:shadow-md">
+    <div className="rounded-xl border border-border bg-card p-3 shadow-sm transition-all hover:shadow-md">
       {/* Glava kartice */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-roksal-navy/10">
-            <Wrench className="h-4 w-4 text-roksal-navy" />
+            <Wrench className="h-4 w-4 text-roksal-ink" />
           </div>
           <div>
-            <h3 className="text-[13px] font-bold text-roksal-navy">Vzdrževanje — posli v ozadju</h3>
+            <h3 className="text-[13px] font-bold text-roksal-ink">Vzdrževanje — posli v ozadju</h3>
             <p className="text-[11px] text-muted-foreground">
               Čiščenje idempotenčnih ključev, dostopov portala in starih sej. Samodejno dnevno ob 03:30 UTC.
             </p>
@@ -165,7 +168,7 @@ export function JobsPanel() {
             <li key={j.type} className="flex items-start gap-1.5 text-[11px] leading-relaxed">
               <span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-roksal-amber" aria-hidden="true" />
               <span className="text-muted-foreground">
-                <code className="rounded bg-secondary/60 px-1 py-0.5 font-mono text-[10px] text-roksal-navy">{j.type}</code>{' '}
+                <code className="rounded bg-secondary/60 px-1 py-0.5 font-mono text-[10px] text-roksal-ink">{j.type}</code>{' '}
                 — {j.opis}
               </span>
             </li>
@@ -179,7 +182,7 @@ export function JobsPanel() {
           <Loader2 className="h-5 w-5 animate-spin text-roksal-amber" />
         </div>
       ) : error ? (
-        <div className="mt-3 rounded-lg border border-red-200 bg-red-50/70 px-3 py-2.5 text-[11px] text-red-700">
+        <div className="mt-3 rounded-lg border border-roksal-red/40 bg-roksal-red/10 px-3 py-2.5 text-[11px] text-roksal-red" role="alert">
           {error} — poskusite osvežiti ali se prijavite kot administrator.
         </div>
       ) : !data || data.jobs.length === 0 ? (
@@ -191,20 +194,20 @@ export function JobsPanel() {
           {data.jobs.slice(0, 8).map((j) => (
             <div
               key={j.id}
-              className="flex items-center justify-between gap-2 rounded-lg border border-border/80 bg-white px-2.5 py-2 transition-colors hover:border-roksal-navy/25"
+              className="flex items-center justify-between gap-2 rounded-lg border border-border/80 bg-card px-2.5 py-2 transition-colors hover:border-roksal-navy/25"
             >
               <div className="flex min-w-0 items-center gap-2">
                 <Badge className={`shrink-0 border-0 text-[10px] font-semibold ${STATUS_CHIP[j.status] ?? 'bg-secondary text-muted-foreground'}`}>
                   {j.status === 'SUCCEEDED' ? 'uspešno' : j.status === 'FAILED' ? 'napaka' : j.status === 'RUNNING' ? 'teče' : j.status}
                 </Badge>
-                <code className="truncate font-mono text-[11px] text-roksal-navy">{j.type}</code>
+                <code className="truncate font-mono text-[11px] text-roksal-ink">{j.type}</code>
                 {j.attempts > 1 && (
-                  <span className="shrink-0 text-[10px] tabular-nums text-amber-700">
+                  <span className="shrink-0 text-[10px] tabular-nums text-amber-700 dark:text-roksal-amber">
                     poskus {j.attempts}/{j.maxAttempts}
                   </span>
                 )}
                 {j.lastError && (
-                  <span className="hidden truncate text-[10px] text-red-600 sm:inline" title={j.lastError}>
+                  <span className="hidden truncate text-[10px] text-red-600 dark:text-red-400 sm:inline" title={j.lastError}>
                     {j.lastError}
                   </span>
                 )}

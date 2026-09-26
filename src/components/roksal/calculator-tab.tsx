@@ -153,7 +153,7 @@ const railingTypeLabels: Record<RailingType, string> = {
 
 const riskColors: Record<string, string> = {
   LOW: 'bg-roksal-green/15 text-roksal-green border-roksal-green/30',
-  MEDIUM: 'bg-roksal-amber/15 text-roksal-navy border-roksal-amber/30',
+  MEDIUM: 'bg-roksal-amber/15 text-roksal-ink border-roksal-amber/30',
   HIGH: 'bg-roksal-red/15 text-roksal-red border-roksal-red/30',
   CRITICAL: 'bg-roksal-red/25 text-roksal-red border-roksal-red/50',
 }
@@ -1631,15 +1631,15 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
         <div className="relative">
           {/* Top dimension line with total length */}
           <div className="flex items-center justify-between mb-1 px-0.5">
-            <span className="text-[9px] font-mono text-roksal-navy font-semibold">0mm</span>
+            <span className="text-[9px] font-mono text-roksal-ink font-semibold">0mm</span>
             <div className="flex-1 mx-1">
               <div className="border-t border-dashed border-roksal-navy/40 relative">
-                <span className="absolute left-1/2 -top-2.5 -translate-x-1/2 text-[9px] font-mono font-bold text-roksal-navy bg-background px-1">
+                <span className="absolute left-1/2 -top-2.5 -translate-x-1/2 text-[9px] font-mono font-bold text-roksal-ink bg-background px-1">
                   {L}mm = {(L / 1000).toFixed(2)}m
                 </span>
               </div>
             </div>
-            <span className="text-[9px] font-mono text-roksal-navy font-semibold">{L}mm</span>
+            <span className="text-[9px] font-mono text-roksal-ink font-semibold">{L}mm</span>
           </div>
 
           {/* Railing cross-section */}
@@ -1729,7 +1729,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
     return (
       <Card className="overflow-hidden">
         <CardHeader className="pb-2 pt-4 px-4">
-          <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+          <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
             <Scissors className="h-4 w-4" />
             Seznam rezov — pozicije letvev
           </CardTitle>
@@ -1759,11 +1759,11 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                 <div key={i}>
                   {/* Slat row */}
                   <div className="grid grid-cols-12 gap-0 text-[10px] font-mono py-1 border-b border-border/20">
-                    <div className="col-span-1 text-center font-semibold text-roksal-navy">{item.num}</div>
-                    <div className="col-span-2 text-center"><Badge variant="outline" className="text-[8px] h-4 px-1 bg-roksal-navy/10 border-roksal-navy/30 text-roksal-navy">letva</Badge></div>
-                    <div className="col-span-3 text-center text-roksal-navy font-medium">{item.startPosMm}</div>
+                    <div className="col-span-1 text-center font-semibold text-roksal-ink">{item.num}</div>
+                    <div className="col-span-2 text-center"><Badge variant="outline" className="text-[8px] h-4 px-1 bg-roksal-navy/10 border-roksal-navy/30 text-roksal-ink">letva</Badge></div>
+                    <div className="col-span-3 text-center text-roksal-ink font-medium">{item.startPosMm}</div>
                     <div className="col-span-3 text-center font-medium">{item.widthMm}</div>
-                    <div className="col-span-3 text-center text-roksal-navy font-medium">{endPos}</div>
+                    <div className="col-span-3 text-center text-roksal-ink font-medium">{endPos}</div>
                   </div>
                   {/* Gap row after slat (not after last) */}
                   {i < cutList.length - 1 && (
@@ -1801,7 +1801,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
     <div className="space-y-4 px-4 pb-4 pt-2 md:space-y-5 md:px-6 md:pb-6">
       <div className="flex items-start justify-between">
         <div>
-          <h2 className="text-xl font-bold text-roksal-navy">Kalkulator ograj</h2>
+          <h2 className="text-xl font-bold text-roksal-ink">Kalkulator ograj</h2>
           <p className="text-sm text-muted-foreground">
             Izračuni za ograje, sidranje in vetrno obremenitev
           </p>
@@ -1810,7 +1810,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
           <button
             type="button"
             onClick={onBackToMeasurements}
-            className="flex items-center gap-1.5 rounded-lg border border-roksal-amber/30 bg-roksal-amber/10 px-2.5 py-1.5 text-[11px] font-medium text-roksal-navy hover:bg-roksal-amber/20 active:scale-[0.96] transition-all duration-150 press-scale shrink-0"
+            className="flex items-center gap-1.5 rounded-lg border border-roksal-amber/30 bg-roksal-amber/10 px-2.5 py-1.5 text-[11px] font-medium text-roksal-ink hover:bg-roksal-amber/20 active:scale-[0.96] transition-all duration-150 press-scale shrink-0"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
             <span>Nazaj na meritve</span>
@@ -1826,7 +1826,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
-              <span className="text-xs font-semibold text-roksal-navy">Uvoženo iz meritev</span>
+              <span className="text-xs font-semibold text-roksal-ink">Uvoženo iz meritev</span>
               <span className="rounded-full bg-roksal-amber/20 px-1.5 py-0.5 text-[9px] font-bold text-roksal-amber">MERITEV</span>
             </div>
             <p className="text-[11px] text-muted-foreground truncate">
@@ -1835,7 +1835,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
             {(importedFromMeasurement.podlaga || importedFromMeasurement.ralCode) && (
               <div className="mt-1 flex flex-wrap items-center gap-1">
                 {importedFromMeasurement.podlaga && (
-                  <span className="rounded-full bg-roksal-navy/10 px-2 py-0.5 text-[9px] font-bold text-roksal-navy">
+                  <span className="rounded-full bg-roksal-navy/10 px-2 py-0.5 text-[9px] font-bold text-roksal-ink">
                     Podlaga: {podlagaLabels[importedFromMeasurement.podlaga] ?? importedFromMeasurement.podlaga}
                   </span>
                 )}
@@ -1864,7 +1864,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
         <Card>
           <CardHeader className="pb-2 pt-4 px-4">
             <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
                 <Layers className="h-4 w-4 text-roksal-amber" />
                 Prihranjene predloge
                 <Badge variant="secondary" className="text-[10px] h-5 px-1.5">{templates.length}</Badge>
@@ -1905,12 +1905,12 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                       className="flex w-full items-start gap-2 text-left"
                     >
                       <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-roksal-navy/10">
-                        <Layers className="h-3.5 w-3.5 text-roksal-navy" />
+                        <Layers className="h-3.5 w-3.5 text-roksal-ink" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-xs font-semibold text-roksal-navy truncate">{tpl.naziv}</p>
+                        <p className="text-xs font-semibold text-roksal-ink truncate">{tpl.naziv}</p>
                         <div className="flex items-center gap-1.5 mt-0.5">
-                          <Badge variant="outline" className="text-[9px] h-4 px-1.5 bg-roksal-navy/5 border-roksal-navy/20 text-roksal-navy">
+                          <Badge variant="outline" className="text-[9px] h-4 px-1.5 bg-roksal-navy/5 border-roksal-navy/20 text-roksal-ink">
                             {templateModeLabels[tpl.mode]}
                           </Badge>
                           <span className="text-[9px] text-muted-foreground">
@@ -1990,7 +1990,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
           {/* Profile Type Selector */}
           <Card>
             <CardHeader className="pb-3 pt-4 px-4">
-              <CardTitle className="text-sm font-semibold text-roksal-navy">
+              <CardTitle className="text-sm font-semibold text-roksal-ink">
                 Tip profila
               </CardTitle>
             </CardHeader>
@@ -2014,7 +2014,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
           {/* Input Fields */}
           <Card>
             <CardHeader className="pb-3 pt-4 px-4">
-              <CardTitle className="text-sm font-semibold text-roksal-navy">
+              <CardTitle className="text-sm font-semibold text-roksal-ink">
                 Meritve
               </CardTitle>
             </CardHeader>
@@ -2094,7 +2094,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               </p>
               <ul className="mt-1.5 space-y-1">
                 {engineeringErrors.map((e, i) => (
-                  <li key={i} className="text-xs text-roksal-navy">• {e}</li>
+                  <li key={i} className="text-xs text-roksal-ink">• {e}</li>
                 ))}
               </ul>
             </div>
@@ -2115,7 +2115,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               {/* Visual Representation */}
               <Card>
                 <CardHeader className="pb-2 pt-4 px-4">
-                  <CardTitle className="text-sm font-semibold text-roksal-navy">
+                  <CardTitle className="text-sm font-semibold text-roksal-ink">
                     Vizualizacija — {profileLabels[profileType]}
                   </CardTitle>
                 </CardHeader>
@@ -2162,7 +2162,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
                     Število letvev
                   </p>
-                  <p className="text-2xl font-bold text-roksal-navy tabular-nums">
+                  <p className="text-2xl font-bold text-roksal-ink tabular-nums">
                     {railingResult.slatCount}
                   </p>
                   <p className="text-[10px] text-muted-foreground tabular-nums">
@@ -2173,7 +2173,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
                     Dejanski razmik
                   </p>
-                  <p className="text-2xl font-bold text-roksal-navy tabular-nums">
+                  <p className="text-2xl font-bold text-roksal-ink tabular-nums">
                     {railingResult.actualGapMm.toFixed(1)}
                   </p>
                   <p className="text-[10px] text-muted-foreground">mm</p>
@@ -2182,7 +2182,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
                     Skupna širina letvev
                   </p>
-                  <p className="text-lg font-bold text-roksal-navy tabular-nums">
+                  <p className="text-lg font-bold text-roksal-ink tabular-nums">
                     {(railingResult.totalSlatsLengthMm / 1000).toFixed(2)}m
                   </p>
                 </Card>
@@ -2190,7 +2190,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
                     Skupna širina razmikov
                   </p>
-                  <p className="text-lg font-bold text-roksal-navy tabular-nums">
+                  <p className="text-lg font-bold text-roksal-ink tabular-nums">
                     {(railingResult.totalGapsLengthMm / 1000).toFixed(2)}m
                   </p>
                 </Card>
@@ -2228,7 +2228,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               <div className="grid gap-4 md:grid-cols-2 md:items-start">
               <Card className="overflow-hidden border-l-4 border-l-roksal-navy">
                 <CardHeader className="pb-2 pt-4 px-4">
-                  <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+                  <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
                     <Package className="h-4 w-4" />
                     Skupaj material
                   </CardTitle>
@@ -2239,7 +2239,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                       <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
                         Skupaj tekoče metre letvev
                       </p>
-                      <p className="text-2xl font-bold text-roksal-navy">
+                      <p className="text-2xl font-bold text-roksal-ink">
                         {(railingResult.totalSlatsLengthMm / 1000).toFixed(2)}<span className="text-sm font-normal ml-0.5">m</span>
                       </p>
                     </div>
@@ -2254,7 +2254,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                   </div>
                   <p className="mt-2 text-[11px] text-muted-foreground">
                     Za dolžino {parseFloat(effectiveTotalLength)}m s širino letve {parseFloat(slatWidth)}mm je potrebnih{' '}
-                    <span className="font-semibold text-roksal-navy">{railingResult.totalSlatsLengthMm / 1000} tekočih metrov</span> materiala.
+                    <span className="font-semibold text-roksal-ink">{railingResult.totalSlatsLengthMm / 1000} tekočih metrov</span> materiala.
                   </p>
                 </CardContent>
               </Card>
@@ -2262,7 +2262,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               {/* Ocena stroškov */}
               <Card className="overflow-hidden border-l-4 border-l-roksal-amber">
                 <CardHeader className="pb-2 pt-4 px-4">
-                  <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+                  <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
                     <Euro className="h-4 w-4" />
                     Ocena stroškov
                   </CardTitle>
@@ -2283,7 +2283,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                             <Euro className="h-3.5 w-3.5 text-muted-foreground" />
                             <span className="text-muted-foreground">Letve ({slatTotalM.toFixed(2)}m × {slatPricePerM.toFixed(1)} €/m)</span>
                           </div>
-                          <span className="font-medium text-roksal-navy">{slatCost.toFixed(2)} €</span>
+                          <span className="font-medium text-roksal-ink">{slatCost.toFixed(2)} €</span>
                         </div>
                         {postsCount > 0 && (
                           <div className="flex items-center justify-between text-xs py-1.5 border-b border-border/30">
@@ -2291,7 +2291,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                               <Euro className="h-3.5 w-3.5 text-muted-foreground" />
                               <span className="text-muted-foreground">Stebri ({postsCount} × 25 €)</span>
                             </div>
-                            <span className="font-medium text-roksal-navy">{postsCost.toFixed(2)} €</span>
+                            <span className="font-medium text-roksal-ink">{postsCost.toFixed(2)} €</span>
                           </div>
                         )}
                         {anchoringCost > 0 && (
@@ -2300,12 +2300,12 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                               <Euro className="h-3.5 w-3.5 text-muted-foreground" />
                               <span className="text-muted-foreground">Smola/čepi ({anchoringResult!.cartridgesNeeded} × 12 €)</span>
                             </div>
-                            <span className="font-medium text-roksal-navy">{anchoringCost.toFixed(2)} €</span>
+                            <span className="font-medium text-roksal-ink">{anchoringCost.toFixed(2)} €</span>
                           </div>
                         )}
                         <div className="flex items-center justify-between text-sm pt-1.5">
-                          <span className="font-bold text-roksal-navy">Skupaj</span>
-                          <span className="font-bold text-roksal-navy text-base">{totalCost.toFixed(2)} €</span>
+                          <span className="font-bold text-roksal-ink">Skupaj</span>
+                          <span className="font-bold text-roksal-ink text-base">{totalCost.toFixed(2)} €</span>
                         </div>
                       </div>
                     )
@@ -2317,14 +2317,14 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               {/* Safety Info Box */}
               <Card className="bg-roksal-navy/5">
                 <CardContent className="flex gap-3 p-4">
-                  <Info className="h-5 w-5 shrink-0 text-roksal-navy" />
+                  <Info className="h-5 w-5 shrink-0 text-roksal-ink" />
                   <div className="text-xs text-muted-foreground">
-                    <p className="font-medium text-roksal-navy">
+                    <p className="font-medium text-roksal-ink">
                       Pravilnik o varstvu otrok (SIST EN 13485)
                     </p>
                     <p className="mt-1">
                       Maksimalni razmik med letvami za ograje na stopniščih in balkonih
-                      je <span className="font-bold text-roksal-navy">100mm</span>. Večji
+                      je <span className="font-bold text-roksal-ink">100mm</span>. Večji
                       razmiki predstavljajo nevarnost zapletanja (lestveni učinek).
                     </p>
                   </div>
@@ -2343,9 +2343,9 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
             <Card className={importedFromMeasurement.podlaga === 'estrih' ? 'border-amber-300 bg-amber-50/60' : 'border-roksal-navy/15'}>
               <CardContent className="p-4">
                 <div className="flex items-start gap-2.5">
-                  <AlertTriangle className={`mt-0.5 h-4 w-4 shrink-0 ${importedFromMeasurement.podlaga === 'estrih' ? 'text-amber-600' : 'text-roksal-navy/50'}`} />
+                  <AlertTriangle className={`mt-0.5 h-4 w-4 shrink-0 ${importedFromMeasurement.podlaga === 'estrih' ? 'text-amber-600' : 'text-roksal-ink/50'}`} />
                   <div className="min-w-0 flex-1">
-                    <p className="text-[11px] font-bold text-roksal-navy">
+                    <p className="text-[11px] font-bold text-roksal-ink">
                       Podlaga z terena: {podlagaLabels[importedFromMeasurement.podlaga] ?? importedFromMeasurement.podlaga}
                     </p>
                     <p className={`mt-0.5 text-[10px] leading-relaxed ${importedFromMeasurement.podlaga === 'estrih' ? 'font-medium text-amber-800' : 'text-muted-foreground'}`}>
@@ -2379,7 +2379,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
           {/* Anchor Type */}
           <Card>
             <CardHeader className="pb-3 pt-4 px-4">
-              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
                 <Anchor className="h-4 w-4" />
                 Tip sidra
               </CardTitle>
@@ -2406,7 +2406,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
           {/* Input Fields */}
           <Card>
             <CardHeader className="pb-3 pt-4 px-4">
-              <CardTitle className="text-sm font-semibold text-roksal-navy">
+              <CardTitle className="text-sm font-semibold text-roksal-ink">
                 Parametri sidranja
               </CardTitle>
             </CardHeader>
@@ -2499,7 +2499,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               </p>
               <ul className="mt-1.5 space-y-1">
                 {engineeringErrors.map((e, i) => (
-                  <li key={i} className="text-xs text-roksal-navy">• {e}</li>
+                  <li key={i} className="text-xs text-roksal-ink">• {e}</li>
                 ))}
               </ul>
             </div>
@@ -2523,7 +2523,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
                     Smola na luknjo
                   </p>
-                  <p className="text-2xl font-bold text-roksal-navy">
+                  <p className="text-2xl font-bold text-roksal-ink">
                     {anchoringResult.resinVolumeMl}
                   </p>
                   <p className="text-[10px] text-muted-foreground">ml</p>
@@ -2532,7 +2532,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
                     Skupaj smola
                   </p>
-                  <p className="text-2xl font-bold text-roksal-navy">
+                  <p className="text-2xl font-bold text-roksal-ink">
                     {anchoringResult.totalResinMl}
                   </p>
                   <p className="text-[10px] text-muted-foreground">ml</p>
@@ -2541,7 +2541,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
                     Čas strjevanja
                   </p>
-                  <p className="text-2xl font-bold text-roksal-navy">
+                  <p className="text-2xl font-bold text-roksal-ink">
                     {anchoringResult.curingTimeMin}
                   </p>
                   <p className="text-[10px] text-muted-foreground">min</p>
@@ -2587,9 +2587,9 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               {/* Info */}
               <Card className="bg-roksal-navy/5">
                 <CardContent className="flex gap-3 p-4">
-                  <Info className="h-5 w-5 shrink-0 text-roksal-navy" />
+                  <Info className="h-5 w-5 shrink-0 text-roksal-ink" />
                   <div className="text-xs text-muted-foreground">
-                    <p className="font-medium text-roksal-navy">
+                    <p className="font-medium text-roksal-ink">
                       Navodila za sidranje
                     </p>
                     <p className="mt-1">
@@ -2611,7 +2611,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
           {/* Railing Type */}
           <Card>
             <CardHeader className="pb-3 pt-4 px-4">
-              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
                 <Wind className="h-4 w-4" />
                 Tip ograje
               </CardTitle>
@@ -2638,7 +2638,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
           {/* Input Fields */}
           <Card>
             <CardHeader className="pb-3 pt-4 px-4">
-              <CardTitle className="text-sm font-semibold text-roksal-navy">
+              <CardTitle className="text-sm font-semibold text-roksal-ink">
                 Parametri vetra
               </CardTitle>
             </CardHeader>
@@ -2728,7 +2728,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               </p>
               <ul className="mt-1.5 space-y-1">
                 {engineeringErrors.map((e, i) => (
-                  <li key={i} className="text-xs text-roksal-navy">• {e}</li>
+                  <li key={i} className="text-xs text-roksal-ink">• {e}</li>
                 ))}
               </ul>
             </div>
@@ -2771,7 +2771,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
                     Tlak
                   </p>
-                  <p className="text-xl font-bold text-roksal-navy tabular-nums">
+                  <p className="text-xl font-bold text-roksal-ink tabular-nums">
                     {windResult.windPressureKpa.toFixed(2)}
                   </p>
                   <p className="text-[10px] text-muted-foreground">kPa</p>
@@ -2780,7 +2780,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
                     Skupna sila
                   </p>
-                  <p className="text-xl font-bold text-roksal-navy tabular-nums">
+                  <p className="text-xl font-bold text-roksal-ink tabular-nums">
                     {windResult.totalForceKn.toFixed(2)}
                   </p>
                   <p className="text-[10px] text-muted-foreground">kN</p>
@@ -2789,7 +2789,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
                     Sila/m
                   </p>
-                  <p className="text-xl font-bold text-roksal-navy tabular-nums">
+                  <p className="text-xl font-bold text-roksal-ink tabular-nums">
                     {windResult.forcePerMeterNm.toFixed(1)}
                   </p>
                   <p className="text-[10px] text-muted-foreground">N/m</p>
@@ -2824,9 +2824,9 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               {/* Info */}
               <Card className="bg-roksal-navy/5">
                 <CardContent className="flex gap-3 p-4">
-                  <Info className="h-5 w-5 shrink-0 text-roksal-navy" />
+                  <Info className="h-5 w-5 shrink-0 text-roksal-ink" />
                   <div className="text-xs text-muted-foreground">
-                    <p className="font-medium text-roksal-navy">
+                    <p className="font-medium text-roksal-ink">
                       Vetrna obremenitev (EVS EN 1991-1-4)
                     </p>
                     <p className="mt-1">
@@ -2846,7 +2846,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
         <>
           <Card>
             <CardHeader className="pb-3 pt-4 px-4">
-              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
                 <AlignJustify className="h-4 w-4" />
                 Razmak palic — enakomerna porazdelitev
               </CardTitle>
@@ -2909,7 +2909,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
           {/* P2: Rezerva materiala + DDV */}
           <Card>
             <CardHeader className="pb-3 pt-4 px-4">
-              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
                 <Percent className="h-4 w-4 text-roksal-amber" />
                 Rezerva materiala
               </CardTitle>
@@ -2949,7 +2949,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               type="button"
               variant="outline"
               onClick={saveTemplate}
-              className="w-full h-11 border-roksal-amber/40 text-roksal-navy hover:bg-roksal-amber/10"
+              className="w-full h-11 border-roksal-amber/40 text-roksal-ink hover:bg-roksal-amber/10"
             >
               <BookmarkPlus className="mr-2 h-4 w-4" />
               Shrani predlogo
@@ -2996,7 +2996,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
                     Število palic
                   </p>
-                  <p className="text-2xl font-bold text-roksal-navy">
+                  <p className="text-2xl font-bold text-roksal-ink">
                     {applyReserve(balusterResult.balusterCount, rezervaPctBaluster)}
                   </p>
                   <p className="text-[10px] text-muted-foreground">kos × {balWidth}mm</p>
@@ -3005,7 +3005,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
                     Dejanski razmik
                   </p>
-                  <p className="text-2xl font-bold text-roksal-navy">
+                  <p className="text-2xl font-bold text-roksal-ink">
                     {balusterResult.actualGapMm.toFixed(1)}
                   </p>
                   <p className="text-[10px] text-muted-foreground">mm</p>
@@ -3018,7 +3018,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                   <CardContent className="flex items-center gap-3 p-3">
                     <Percent className="h-5 w-5 shrink-0 text-roksal-amber" />
                     <div className="text-xs">
-                      <p className="font-semibold text-roksal-navy">Rezerva materiala: {rezervaPctBaluster}%</p>
+                      <p className="font-semibold text-roksal-ink">Rezerva materiala: {rezervaPctBaluster}%</p>
                       <p className="text-muted-foreground">
                         Brez rezerve: <span className="font-medium text-foreground">{balusterResult.balusterCount} kos</span>
                         {' → '}z rezervo: <span className="font-medium text-roksal-amber">{applyReserve(balusterResult.balusterCount, rezervaPctBaluster)} kos</span>
@@ -3032,7 +3032,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               {/* SVG diagram */}
               <Card>
                 <CardHeader className="pb-2 pt-4 px-4">
-                  <CardTitle className="text-sm font-semibold text-roksal-navy">
+                  <CardTitle className="text-sm font-semibold text-roksal-ink">
                     Vizualizacija — tehnična skica
                   </CardTitle>
                 </CardHeader>
@@ -3051,7 +3051,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               <Card>
                 <CardHeader className="pb-2 pt-4 px-4">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+                    <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
                       <Drill className="h-4 w-4" />
                       Pozicije od prve točke
                     </CardTitle>
@@ -3059,7 +3059,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                       type="button"
                       variant="outline"
                       size="sm"
-                      className="h-7 px-2 text-[10px] border-roksal-amber/30 text-roksal-navy hover:bg-roksal-amber/10"
+                      className="h-7 px-2 text-[10px] border-roksal-amber/30 text-roksal-ink hover:bg-roksal-amber/10"
                       onClick={exportBalusterPdf}
                     >
                       <FileDown className="mr-1 h-3 w-3" />
@@ -3081,7 +3081,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                       <TableBody>
                         {balusterResult.centers.map((c, i) => (
                           <TableRow key={i} className="even:bg-roksal-navy/5">
-                            <TableCell className="text-center font-semibold text-roksal-navy">
+                            <TableCell className="text-center font-semibold text-roksal-ink">
                               {i + 1}
                             </TableCell>
                             <TableCell className="text-right font-mono text-xs">
@@ -3138,7 +3138,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
         <>
           <Card>
             <CardHeader className="pb-3 pt-4 px-4">
-              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
                 <Triangle className="h-4 w-4" />
                 Kotni / stopniščni izračun
               </CardTitle>
@@ -3199,7 +3199,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               </div>
               <div className="rounded-lg bg-roksal-navy/5 p-3 text-[11px] text-muted-foreground">
                 <p>
-                  <span className="font-medium text-roksal-navy">Tipični koti:</span>{' '}
+                  <span className="font-medium text-roksal-ink">Tipični koti:</span>{' '}
                   30–35° (standardno stopnišče), 38–42° (strmo), 45°+ (zelo strmo, preverite statiko).
                 </p>
               </div>
@@ -3219,7 +3219,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               type="button"
               variant="outline"
               onClick={saveTemplate}
-              className="w-full h-11 border-roksal-amber/40 text-roksal-navy hover:bg-roksal-amber/10"
+              className="w-full h-11 border-roksal-amber/40 text-roksal-ink hover:bg-roksal-amber/10"
             >
               <BookmarkPlus className="mr-2 h-4 w-4" />
               Shrani predlogo
@@ -3234,7 +3234,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
                     Rake dolžina
                   </p>
-                  <p className="text-2xl font-bold text-roksal-navy">
+                  <p className="text-2xl font-bold text-roksal-ink">
                     {(angledResult.rakeLengthMm / 1000).toFixed(2)}
                   </p>
                   <p className="text-[10px] text-muted-foreground">m (poševno)</p>
@@ -3243,7 +3243,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
                     Kot stopnice
                   </p>
-                  <p className="text-2xl font-bold text-roksal-navy">
+                  <p className="text-2xl font-bold text-roksal-ink">
                     {angledResult.rakeAngleDeg.toFixed(1)}°
                   </p>
                   <p className="text-[10px] text-muted-foreground">
@@ -3254,7 +3254,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
                     Število palic
                   </p>
-                  <p className="text-2xl font-bold text-roksal-navy">
+                  <p className="text-2xl font-bold text-roksal-ink">
                     {angledResult.balusterCount}
                   </p>
                   <p className="text-[10px] text-muted-foreground">kos</p>
@@ -3263,7 +3263,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
                     Dejanski razmik (po rake)
                   </p>
-                  <p className="text-2xl font-bold text-roksal-navy">
+                  <p className="text-2xl font-bold text-roksal-ink">
                     {angledResult.actualGapMm.toFixed(1)}
                   </p>
                   <p className="text-[10px] text-muted-foreground">mm</p>
@@ -3305,7 +3305,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               {/* Angled SVG */}
               <Card>
                 <CardHeader className="pb-2 pt-4 px-4">
-                  <CardTitle className="text-sm font-semibold text-roksal-navy">
+                  <CardTitle className="text-sm font-semibold text-roksal-ink">
                     Vizualizacija — kose ograje
                   </CardTitle>
                 </CardHeader>
@@ -3323,7 +3323,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               {/* Positions table */}
               <Card>
                 <CardHeader className="pb-2 pt-4 px-4">
-                  <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+                  <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
                     <Drill className="h-4 w-4" />
                     Pozicije palic (po rake)
                   </CardTitle>
@@ -3342,7 +3342,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                       <TableBody>
                         {angledResult.centers.map((c, i) => (
                           <TableRow key={i} className="even:bg-roksal-navy/5">
-                            <TableCell className="text-center font-semibold text-roksal-navy">
+                            <TableCell className="text-center font-semibold text-roksal-ink">
                               {i + 1}
                             </TableCell>
                             <TableCell className="text-right font-mono text-xs">
@@ -3396,7 +3396,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
         <>
           <Card>
             <CardHeader className="pb-3 pt-4 px-4">
-              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
                 <Package className="h-4 w-4" />
                 Segmenti projekta
               </CardTitle>
@@ -3408,7 +3408,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                   className="rounded-lg border border-border/60 bg-background p-3 space-y-2"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-semibold text-roksal-navy">
+                    <span className="text-[11px] font-semibold text-roksal-ink">
                       Segment {i + 1}
                     </span>
                     <button
@@ -3509,7 +3509,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                 type="button"
                 variant="outline"
                 size="sm"
-                className="w-full h-9 border-dashed border-roksal-navy/30 text-roksal-navy hover:bg-roksal-navy/5"
+                className="w-full h-9 border-dashed border-roksal-navy/30 text-roksal-ink hover:bg-roksal-navy/5"
                 onClick={() => {
                   setSegments([
                     ...segments,
@@ -3526,7 +3526,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
           {/* Profile selector */}
           <Card>
             <CardHeader className="pb-3 pt-4 px-4">
-              <CardTitle className="text-sm font-semibold text-roksal-navy">
+              <CardTitle className="text-sm font-semibold text-roksal-ink">
                 Profil materiala
               </CardTitle>
             </CardHeader>
@@ -3555,7 +3555,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               {selectedProfileSifra && (
                 <p className="mt-2 text-[11px] text-muted-foreground">
                   Cena profila:{' '}
-                  <span className="font-medium text-roksal-navy">
+                  <span className="font-medium text-roksal-ink">
                     {profili.find((p) => p.sifra === selectedProfileSifra)?.cenaM.toFixed(2)} €/m
                   </span>
                 </p>
@@ -3564,7 +3564,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               {importedFromMeasurement?.ralCode && (
                 <div className="mt-2 flex items-center gap-2 rounded-md bg-roksal-amber/10 px-2 py-1.5">
                   <Palette className="h-3.5 w-3.5 shrink-0 text-roksal-amber" />
-                  <p className="text-[10px] font-medium text-roksal-navy">
+                  <p className="text-[10px] font-medium text-roksal-ink">
                     Naročilo: profil prašno lakiran v{' '}
                     <span className="font-bold">RAL {importedFromMeasurement.ralCode}</span>
                     {' '}
@@ -3578,7 +3578,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
           {/* P2: Strošek dela */}
           <Card>
             <CardHeader className="pb-3 pt-4 px-4">
-              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
                 <Users className="h-4 w-4 text-roksal-amber" />
                 Strošek dela
               </CardTitle>
@@ -3630,10 +3630,10 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               <div className="rounded-lg bg-roksal-navy/5 p-2.5 text-[11px] text-muted-foreground">
                 <div className="flex items-center justify-between">
                   <span className="flex items-center gap-1.5">
-                    <Timer className="h-3 w-3 text-roksal-navy" />
+                    <Timer className="h-3 w-3 text-roksal-ink" />
                     Predvideni čas montaže
                   </span>
-                  <span className="font-medium text-roksal-navy">
+                  <span className="font-medium text-roksal-ink">
                     {(parseFloat(stUr) || 0) * (parseFloat(stMonterjev) || 0)} ur ({(parseFloat(stUr) || 0)}h × {(parseFloat(stMonterjev) || 0)} monterjev)
                   </span>
                 </div>
@@ -3644,7 +3644,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
           {/* P2: Rezerva + DDV + Akontacija */}
           <Card>
             <CardHeader className="pb-3 pt-4 px-4">
-              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
                 <Wallet className="h-4 w-4 text-roksal-amber" />
                 Rezerva, DDV in akontacija
               </CardTitle>
@@ -3727,7 +3727,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               type="button"
               variant="outline"
               onClick={saveTemplate}
-              className="w-full h-11 border-roksal-amber/40 text-roksal-navy hover:bg-roksal-amber/10"
+              className="w-full h-11 border-roksal-amber/40 text-roksal-ink hover:bg-roksal-amber/10"
             >
               <BookmarkPlus className="mr-2 h-4 w-4" />
               Shrani predlogo
@@ -3742,7 +3742,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
                     Skupno tekoči metri profila
                   </p>
-                  <p className="text-3xl font-bold text-roksal-navy">
+                  <p className="text-3xl font-bold text-roksal-ink">
                     {materialResult.totalLinearMeters.toFixed(2)}
                     <span className="text-sm font-normal ml-1">m</span>
                   </p>
@@ -3754,7 +3754,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
                     Palice {rezervaPctMaterial > 0 ? '(z rezervo)' : ''}
                   </p>
-                  <p className="text-2xl font-bold text-roksal-navy">
+                  <p className="text-2xl font-bold text-roksal-ink">
                     {applyReserve(materialResult.balusterCount, rezervaPctMaterial)}
                   </p>
                   <p className="text-[10px] text-muted-foreground">
@@ -3767,7 +3767,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
                     Stebri {rezervaPctMaterial > 0 ? '(z rezervo)' : ''}
                   </p>
-                  <p className="text-2xl font-bold text-roksal-navy">
+                  <p className="text-2xl font-bold text-roksal-ink">
                     {applyReserve(materialResult.postCount, rezervaPctMaterial)}
                   </p>
                   <p className="text-[10px] text-muted-foreground">kos (×2 sidra)</p>
@@ -3776,7 +3776,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
                     Vijaki {rezervaPctMaterial > 0 ? '(z rezervo)' : ''}
                   </p>
-                  <p className="text-2xl font-bold text-roksal-navy">
+                  <p className="text-2xl font-bold text-roksal-ink">
                     {applyReserve(materialResult.screwCount, rezervaPctMaterial)}
                   </p>
                   <p className="text-[10px] text-muted-foreground">kos (A4 Inox)</p>
@@ -3785,7 +3785,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
                     Sidra {rezervaPctMaterial > 0 ? '(z rezervo)' : ''}
                   </p>
-                  <p className="text-2xl font-bold text-roksal-navy">
+                  <p className="text-2xl font-bold text-roksal-ink">
                     {applyReserve(materialResult.anchorCount, rezervaPctMaterial)}
                   </p>
                   {/* runda S — pravi tip sidra po podlagi z terena */}
@@ -3801,9 +3801,9 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               {importedFromMeasurement?.podlaga && (
                 <Card className={importedFromMeasurement.podlaga === 'estrih' ? 'border-amber-300 bg-amber-50/60' : 'border-roksal-navy/15'}>
                   <CardContent className="flex items-start gap-2.5 p-3">
-                    <Drill className={`mt-0.5 h-4 w-4 shrink-0 ${importedFromMeasurement.podlaga === 'estrih' ? 'text-amber-600' : 'text-roksal-navy/50'}`} />
+                    <Drill className={`mt-0.5 h-4 w-4 shrink-0 ${importedFromMeasurement.podlaga === 'estrih' ? 'text-amber-600' : 'text-roksal-ink/50'}`} />
                     <div className="min-w-0 flex-1">
-                      <p className="text-[11px] font-bold text-roksal-navy">
+                      <p className="text-[11px] font-bold text-roksal-ink">
                         Pritrditev: {podlagaSidraLabel[importedFromMeasurement.podlaga] ?? 'po meri'}
                         <span className="ml-1 font-normal text-muted-foreground">
                           (podlaga: {podlagaLabels[importedFromMeasurement.podlaga] ?? importedFromMeasurement.podlaga})
@@ -3823,7 +3823,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                   <CardContent className="flex items-center gap-3 p-3">
                     <Percent className="h-5 w-5 shrink-0 text-roksal-amber" />
                     <div className="text-xs flex-1">
-                      <p className="font-semibold text-roksal-navy">Rezerva materiala: {rezervaPctMaterial}%</p>
+                      <p className="font-semibold text-roksal-ink">Rezerva materiala: {rezervaPctMaterial}%</p>
                       <div className="text-muted-foreground grid grid-cols-2 sm:grid-cols-4 gap-1.5 mt-1">
                         <span>Palice: {materialResult.balusterCount} → <span className="font-medium text-roksal-amber">{applyReserve(materialResult.balusterCount, rezervaPctMaterial)}</span></span>
                         <span>Stebri: {materialResult.postCount} → <span className="font-medium text-roksal-amber">{applyReserve(materialResult.postCount, rezervaPctMaterial)}</span></span>
@@ -3850,7 +3850,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                 return (
                   <Card className="border-stone-300 bg-stone-50/60">
                     <CardHeader className="pb-2 pt-4 px-4">
-                      <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+                      <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
                         <Hammer className="h-4 w-4 text-roksal-amber" />
                         Betoniranje stebrov
                         <Badge variant="outline" className="ml-auto text-[10px]">
@@ -3895,7 +3895,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                       <div className="grid grid-cols-2 gap-2">
                         <Card className="px-3 py-2.5 bg-white">
                           <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Betona skupaj</p>
-                          <p className="text-xl font-bold text-roksal-navy">
+                          <p className="text-xl font-bold text-roksal-ink">
                             {totalL.toLocaleString('sl-SI')} <span className="text-sm font-medium">L</span>
                           </p>
                           <p className="text-[10px] text-muted-foreground">{Math.round(perPostL)} L / steber</p>
@@ -3921,7 +3921,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               {/* Per-segment breakdown */}
               <Card>
                 <CardHeader className="pb-2 pt-4 px-4">
-                  <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+                  <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
                     <Hammer className="h-4 w-4" />
                     Razdelitev po segmentih
                   </CardTitle>
@@ -3941,7 +3941,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                       <TableBody>
                         {materialResult.perSegment.map((s, i) => (
                           <TableRow key={i} className="even:bg-roksal-navy/5">
-                            <TableCell className="text-xs font-semibold text-roksal-navy">{i + 1}</TableCell>
+                            <TableCell className="text-xs font-semibold text-roksal-ink">{i + 1}</TableCell>
                             <TableCell className="text-xs">
                               <Badge variant="outline" className="text-[9px] h-4 px-1.5">
                                 {s.type === 'level' ? 'Ravno' : s.type === 'angled' ? 'Koso' : 'Stopnišče'}
@@ -3961,7 +3961,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               {/* Cost breakdown */}
               <Card className="overflow-hidden border-l-4 border-l-roksal-amber">
                 <CardHeader className="pb-2 pt-4 px-4">
-                  <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+                  <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
                     <Euro className="h-4 w-4" />
                     Stroški materiala
                   </CardTitle>
@@ -3973,7 +3973,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                         Profil ({materialResult.totalLinearMeters.toFixed(2)}m ×{' '}
                         {materialResult.selectedProfile?.cenaM.toFixed(2) ?? '0.00'} €/m)
                       </span>
-                      <span className="font-medium text-roksal-navy">
+                      <span className="font-medium text-roksal-ink">
                         {materialResult.profileCost.toFixed(2)} €
                       </span>
                     </div>
@@ -3981,7 +3981,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                       <span className="text-muted-foreground">
                         Stebri ({materialResult.postCount} × 25 €)
                       </span>
-                      <span className="font-medium text-roksal-navy">
+                      <span className="font-medium text-roksal-ink">
                         {materialResult.postsCost.toFixed(2)} €
                       </span>
                     </div>
@@ -3989,7 +3989,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                       <span className="text-muted-foreground">
                         Vijaki ({materialResult.screwCount} × 0,10 €)
                       </span>
-                      <span className="font-medium text-roksal-navy">
+                      <span className="font-medium text-roksal-ink">
                         {materialResult.screwsCost.toFixed(2)} €
                       </span>
                     </div>
@@ -3997,13 +3997,13 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                       <span className="text-muted-foreground">
                         Sidra ({materialResult.anchorCount} × 1,50 €)
                       </span>
-                      <span className="font-medium text-roksal-navy">
+                      <span className="font-medium text-roksal-ink">
                         {materialResult.anchorsCost.toFixed(2)} €
                       </span>
                     </div>
                     <Separator className="my-1" />
                     <div className="flex items-center justify-between pt-1">
-                      <span className="font-bold text-roksal-navy text-sm">SKUPAJ MATERIAL</span>
+                      <span className="font-bold text-roksal-ink text-sm">SKUPAJ MATERIAL</span>
                       <span className="font-bold text-roksal-amber text-lg">
                         {materialResult.totalCost.toFixed(2)} €
                       </span>
@@ -4025,7 +4025,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                       <>
                         <Separator className="my-3" />
                         <div className="space-y-2">
-                          <p className="text-[11px] font-semibold text-roksal-navy uppercase tracking-wide flex items-center gap-1.5">
+                          <p className="text-[11px] font-semibold text-roksal-ink uppercase tracking-wide flex items-center gap-1.5">
                             <Users className="h-3 w-3 text-roksal-amber" />
                             Strošek dela
                           </p>
@@ -4033,7 +4033,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                             <span className="text-muted-foreground">
                               Delo ({labor.urnaPostavka.toFixed(2)} €/h × {labor.stUr}h × {labor.stMonterjev} monterjev)
                             </span>
-                            <span className="font-medium text-roksal-navy">
+                            <span className="font-medium text-roksal-ink">
                               {labor.cistaDela.toFixed(2)} €
                             </span>
                           </div>
@@ -4042,7 +4042,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                               <Truck className="h-3 w-3" />
                               Transport
                             </span>
-                            <span className="font-medium text-roksal-navy">
+                            <span className="font-medium text-roksal-ink">
                               {labor.transport.toFixed(2)} €
                             </span>
                           </div>
@@ -4051,14 +4051,14 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                               <Timer className="h-3 w-3" />
                               Predvideni čas montaže
                             </span>
-                            <span className="font-medium text-roksal-navy">
+                            <span className="font-medium text-roksal-ink">
                               {labor.predvideniCas} ur
                             </span>
                           </div>
                           <Separator className="my-1" />
                           <div className="flex items-center justify-between pt-1">
-                            <span className="font-bold text-roksal-navy text-sm">SKUPAJ BREZ DDV</span>
-                            <span className="font-bold text-roksal-navy text-base">
+                            <span className="font-bold text-roksal-ink text-sm">SKUPAJ BREZ DDV</span>
+                            <span className="font-bold text-roksal-ink text-base">
                               {skupajBrezDdv.toFixed(2)} €
                             </span>
                           </div>
@@ -4067,12 +4067,12 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                             <span className="text-muted-foreground">
                               DDV ({formatSI(ddvPct, 1)}%)
                             </span>
-                            <span className="font-medium text-roksal-navy">
+                            <span className="font-medium text-roksal-ink">
                               {ddv.ddvAmount.toFixed(2)} €
                             </span>
                           </div>
                           <div className="flex items-center justify-between pt-1 pb-1 bg-roksal-navy/5 -mx-1 px-3 rounded">
-                            <span className="font-bold text-roksal-navy text-sm">SKUPAJ Z DDV</span>
+                            <span className="font-bold text-roksal-ink text-sm">SKUPAJ Z DDV</span>
                             <span className="font-bold text-roksal-amber text-xl">
                               {ddv.total.toFixed(2)} €
                             </span>
@@ -4084,7 +4084,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                           <>
                             <Separator className="my-3" />
                             <div className="space-y-2">
-                              <p className="text-[11px] font-semibold text-roksal-navy uppercase tracking-wide flex items-center gap-1.5">
+                              <p className="text-[11px] font-semibold text-roksal-ink uppercase tracking-wide flex items-center gap-1.5">
                                 <Wallet className="h-3 w-3 text-roksal-amber" />
                                 Akontacija
                               </p>
@@ -4100,7 +4100,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                                 <span className="text-muted-foreground">
                                   Preostanek ({100 - akontacijaPct}%) — ob prevzemu
                                 </span>
-                                <span className="font-medium text-roksal-navy">
+                                <span className="font-medium text-roksal-ink">
                                   {akon.preostanek.toFixed(2)} €
                                 </span>
                               </div>
@@ -4109,7 +4109,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                                   <Calendar className="h-3 w-3" />
                                   Predvideni datum plačila akontacije
                                 </span>
-                                <span className="font-medium text-roksal-navy">
+                                <span className="font-medium text-roksal-ink">
                                   {new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('sl-SI')}
                                 </span>
                               </div>
@@ -4123,7 +4123,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="w-full mt-3 h-9 border-roksal-navy/30 text-roksal-navy hover:bg-roksal-navy/5"
+                    className="w-full mt-3 h-9 border-roksal-navy/30 text-roksal-ink hover:bg-roksal-navy/5"
                     onClick={exportMaterialPdf}
                   >
                     <FileDown className="mr-1.5 h-3.5 w-3.5" />
@@ -4141,7 +4141,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
         <>
           <Card>
             <CardHeader className="pb-3 pt-4 px-4">
-              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
                 <ShieldCheck className="h-4 w-4" />
                 Preverjanje skladnosti s predpisi
               </CardTitle>
@@ -4231,7 +4231,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               type="button"
               variant="outline"
               onClick={saveTemplate}
-              className="w-full h-11 border-roksal-amber/40 text-roksal-navy hover:bg-roksal-amber/10"
+              className="w-full h-11 border-roksal-amber/40 text-roksal-ink hover:bg-roksal-amber/10"
             >
               <BookmarkPlus className="mr-2 h-4 w-4" />
               Shrani predlogo
@@ -4273,7 +4273,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
 
               <Card>
                 <CardHeader className="pb-2 pt-4 px-4">
-                  <CardTitle className="text-sm font-semibold text-roksal-navy">
+                  <CardTitle className="text-sm font-semibold text-roksal-ink">
                     Podrobne preverbe
                   </CardTitle>
                 </CardHeader>
@@ -4294,7 +4294,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                           <X className="h-5 w-5 shrink-0 text-roksal-red mt-0.5" />
                         )}
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-semibold text-roksal-navy">{check.name}</p>
+                          <p className="text-sm font-semibold text-roksal-ink">{check.name}</p>
                           <div className="mt-1 grid grid-cols-2 gap-2 text-[11px]">
                             <div>
                               <span className="text-muted-foreground">Zahtevano: </span>
@@ -4315,9 +4315,9 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
 
               <Card className="bg-roksal-navy/5">
                 <CardContent className="flex gap-3 p-4">
-                  <Info className="h-5 w-5 shrink-0 text-roksal-navy" />
+                  <Info className="h-5 w-5 shrink-0 text-roksal-ink" />
                   <div className="text-xs text-muted-foreground">
-                    <p className="font-medium text-roksal-navy">
+                    <p className="font-medium text-roksal-ink">
                       Sklic predpisov
                     </p>
                     <p className="mt-1">
@@ -4338,7 +4338,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
         <>
           <Card>
             <CardHeader className="pb-3 pt-4 px-4">
-              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
                 <Scissors className="h-4 w-4" />
                 CNC razrezni načrt — 1D bin packing
               </CardTitle>
@@ -4395,7 +4395,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
           <Card>
             <CardHeader className="pb-2 pt-4 px-4">
               <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+                <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
                   <AlignJustify className="h-4 w-4" />
                   Zahtevani odseki
                   <Badge variant="secondary" className="text-[10px] h-5 px-1.5">{cncSegments.length}</Badge>
@@ -4405,7 +4405,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="h-7 px-2 text-[10px] border-roksal-amber/40 text-roksal-navy hover:bg-roksal-amber/10"
+                    className="h-7 px-2 text-[10px] border-roksal-amber/40 text-roksal-ink hover:bg-roksal-amber/10"
                     onClick={() => {
                       // Uvozi iz materiala — uporabi trenutne segments iz material mode
                       if (segments.length === 0) {
@@ -4518,7 +4518,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               variant="outline"
               onClick={exportCncPdf}
               disabled={!cncResult}
-              className="w-full h-11 border-roksal-amber/40 text-roksal-navy hover:bg-roksal-amber/10 disabled:opacity-40"
+              className="w-full h-11 border-roksal-amber/40 text-roksal-ink hover:bg-roksal-amber/10 disabled:opacity-40"
             >
               <FileDown className="mr-2 h-4 w-4" />
               Izvozi PDF
@@ -4531,7 +4531,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               <div className="grid grid-cols-3 gap-3">
                 <Card className="px-3 py-3">
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Profilov</p>
-                  <p className="text-2xl font-bold text-roksal-navy">{cncResult.stockCount}</p>
+                  <p className="text-2xl font-bold text-roksal-ink">{cncResult.stockCount}</p>
                   <p className="text-[10px] text-muted-foreground">kos × {cncStockLength}mm</p>
                 </Card>
                 <Card className="px-3 py-3">
@@ -4571,7 +4571,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               {/* Razrezni načrt — visual */}
               <Card>
                 <CardHeader className="pb-2 pt-4 px-4">
-                  <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+                  <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
                     <Scissors className="h-4 w-4" />
                     Razrezni načrt (vizualno)
                   </CardTitle>
@@ -4584,7 +4584,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                     return (
                       <div key={plan.stockIndex} className="space-y-1">
                         <div className="flex items-center justify-between text-[10px]">
-                          <span className="font-mono font-semibold text-roksal-navy">Profil #{plan.stockIndex}</span>
+                          <span className="font-mono font-semibold text-roksal-ink">Profil #{plan.stockIndex}</span>
                           <span className="text-muted-foreground">
                             {plan.cuts.length} rezov · ostanek {plan.remainingMm}mm · izkoristek {plan.utilizationPct.toFixed(1)}%
                           </span>
@@ -4640,7 +4640,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               {/* Tabela razreza */}
               <Card>
                 <CardHeader className="pb-2 pt-4 px-4">
-                  <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+                  <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
                     <AlignJustify className="h-4 w-4" />
                     Tabela razreza
                   </CardTitle>
@@ -4659,7 +4659,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                       <TableBody>
                         {cncResult.plans.map((plan) => (
                           <TableRow key={plan.stockIndex}>
-                            <TableCell className="text-xs font-mono font-semibold text-roksal-navy">#{plan.stockIndex}</TableCell>
+                            <TableCell className="text-xs font-mono font-semibold text-roksal-ink">#{plan.stockIndex}</TableCell>
                             <TableCell className="text-xs">
                               {plan.cuts.map((c, i) => (
                                 <span key={i} className="inline-block mr-1 mb-0.5 px-1.5 py-0.5 rounded bg-secondary text-[10px] font-mono">
@@ -4686,7 +4686,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
         <>
           <Card>
             <CardHeader className="pb-3 pt-4 px-4">
-              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
                 <MapPin className="h-4 w-4" />
                 Lokacija
               </CardTitle>
@@ -4719,7 +4719,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               <Button
                 type="button"
                 variant="outline"
-                className="w-full border-roksal-amber/40 text-roksal-navy hover:bg-roksal-amber/10 h-10"
+                className="w-full border-roksal-amber/40 text-roksal-ink hover:bg-roksal-amber/10 h-10"
                 onClick={() => {
                   if (typeof navigator === 'undefined' || !navigator.geolocation) {
                     toast.error('Geolokacija ni podprta v tem brskalniku.')
@@ -4769,7 +4769,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
 
           <Card>
             <CardHeader className="pb-3 pt-4 px-4">
-              <CardTitle className="text-sm font-semibold text-roksal-navy">
+              <CardTitle className="text-sm font-semibold text-roksal-ink">
                 Parametri
               </CardTitle>
             </CardHeader>
@@ -4850,7 +4850,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               variant="outline"
               onClick={exportWindLocPdf}
               disabled={!windLocResult}
-              className="w-full h-11 border-roksal-amber/40 text-roksal-navy hover:bg-roksal-amber/10 disabled:opacity-40"
+              className="w-full h-11 border-roksal-amber/40 text-roksal-ink hover:bg-roksal-amber/10 disabled:opacity-40"
             >
               <FileDown className="mr-2 h-4 w-4" />
               Izvozi PDF
@@ -4865,7 +4865,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Lokacija</p>
-                      <p className="text-sm font-bold text-roksal-navy truncate">{windLocResult.locationDescription}</p>
+                      <p className="text-sm font-bold text-roksal-ink truncate">{windLocResult.locationDescription}</p>
                       <p className="text-[10px] text-muted-foreground font-mono">
                         {windLocLat}°N, {windLocLon}°E
                       </p>
@@ -4889,7 +4889,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                   )}
                   <div>
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Vetrna cona</p>
-                    <p className="text-2xl font-bold text-roksal-navy">{windLocResult.windZone}</p>
+                    <p className="text-2xl font-bold text-roksal-ink">{windLocResult.windZone}</p>
                     <p className="text-[10px] text-muted-foreground">
                       {windLocResult.windZone === 3 ? 'gore' : windLocResult.windZone === 2 ? 'obala' : 'celina'}
                     </p>
@@ -4897,7 +4897,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                 </Card>
                 <Card className="px-3 py-3">
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Osnovna hitrost</p>
-                  <p className="text-2xl font-bold text-roksal-navy">{windLocResult.basicWindSpeedMs}<span className="text-sm font-normal ml-0.5">m/s</span></p>
+                  <p className="text-2xl font-bold text-roksal-ink">{windLocResult.basicWindSpeedMs}<span className="text-sm font-normal ml-0.5">m/s</span></p>
                   <p className="text-[10px] text-muted-foreground">{windLocResult.basicPressureKpa.toFixed(3)} kPa</p>
                 </Card>
               </div>
@@ -4906,17 +4906,17 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               <div className="grid grid-cols-3 gap-3">
                 <Card className="px-3 py-3">
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Vrhnji tlak</p>
-                  <p className="text-xl font-bold text-roksal-navy">{windLocResult.designPressureKpa.toFixed(2)}</p>
+                  <p className="text-xl font-bold text-roksal-ink">{windLocResult.designPressureKpa.toFixed(2)}</p>
                   <p className="text-[10px] text-muted-foreground">kPa</p>
                 </Card>
                 <Card className="px-3 py-3">
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Skupna sila</p>
-                  <p className="text-xl font-bold text-roksal-navy">{windLocResult.totalForceKn.toFixed(2)}</p>
+                  <p className="text-xl font-bold text-roksal-ink">{windLocResult.totalForceKn.toFixed(2)}</p>
                   <p className="text-[10px] text-muted-foreground">kN</p>
                 </Card>
                 <Card className="px-3 py-3">
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Sila/m</p>
-                  <p className="text-xl font-bold text-roksal-navy">{windLocResult.forcePerMeterNm.toFixed(0)}</p>
+                  <p className="text-xl font-bold text-roksal-ink">{windLocResult.forcePerMeterNm.toFixed(0)}</p>
                   <p className="text-[10px] text-muted-foreground">N/m</p>
                 </Card>
               </div>
@@ -4924,7 +4924,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               {/* Slovenia map SVG */}
               <Card>
                 <CardHeader className="pb-2 pt-4 px-4">
-                  <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+                  <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
                     <MapPin className="h-4 w-4" />
                     Karta vetrnih con Slovenije
                   </CardTitle>
@@ -4962,9 +4962,9 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
 
               <Card className="bg-roksal-navy/5">
                 <CardContent className="flex gap-3 p-4">
-                  <Info className="h-5 w-5 shrink-0 text-roksal-navy" />
+                  <Info className="h-5 w-5 shrink-0 text-roksal-ink" />
                   <div className="text-xs text-muted-foreground">
-                    <p className="font-medium text-roksal-navy">
+                    <p className="font-medium text-roksal-ink">
                       SIST EN 1991-1-4 NA (Slovenija)
                     </p>
                     <p className="mt-1">
@@ -4986,7 +4986,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
         <>
           <Card>
             <CardHeader className="pb-3 pt-4 px-4">
-              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
                 <Square className="h-4 w-4" />
                 Steklena balustrada — poenostavljena metoda
               </CardTitle>
@@ -5069,7 +5069,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               variant="outline"
               onClick={exportGlassPdf}
               disabled={!glassResult}
-              className="w-full h-11 border-roksal-amber/40 text-roksal-navy hover:bg-roksal-amber/10 disabled:opacity-40"
+              className="w-full h-11 border-roksal-amber/40 text-roksal-ink hover:bg-roksal-amber/10 disabled:opacity-40"
             >
               <FileDown className="mr-2 h-4 w-4" />
               Izvozi PDF
@@ -5088,7 +5088,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                   )}
                   <div className="min-w-0 flex-1">
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Priporočena debelina</p>
-                    <p className="text-3xl font-bold text-roksal-navy">
+                    <p className="text-3xl font-bold text-roksal-ink">
                       {glassResult.recommendedThicknessMm}<span className="text-base font-normal ml-1">mm</span>
                     </p>
                     <p className="text-[10px] text-muted-foreground">
@@ -5109,17 +5109,17 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               <div className="grid grid-cols-3 gap-3">
                 <Card className="px-3 py-3">
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Napetost</p>
-                  <p className="text-xl font-bold text-roksal-navy">{glassResult.stressMpa.toFixed(1)}</p>
+                  <p className="text-xl font-bold text-roksal-ink">{glassResult.stressMpa.toFixed(1)}</p>
                   <p className="text-[10px] text-muted-foreground">MPa</p>
                 </Card>
                 <Card className="px-3 py-3">
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Dovoljena</p>
-                  <p className="text-xl font-bold text-roksal-navy">{glassResult.allowableStressMpa}</p>
+                  <p className="text-xl font-bold text-roksal-ink">{glassResult.allowableStressMpa}</p>
                   <p className="text-[10px] text-muted-foreground">MPa</p>
                 </Card>
                 <Card className="px-3 py-3">
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Max razpon</p>
-                  <p className="text-xl font-bold text-roksal-navy">{glassResult.maxSpanForThicknessMm}</p>
+                  <p className="text-xl font-bold text-roksal-ink">{glassResult.maxSpanForThicknessMm}</p>
                   <p className="text-[10px] text-muted-foreground">mm</p>
                 </Card>
               </div>
@@ -5128,7 +5128,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               {glassResult.layers === 2 && (
                 <Card>
                   <CardHeader className="pb-2 pt-4 px-4">
-                    <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+                    <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
                       <Layers className="h-4 w-4" />
                       Plasti laminiranega stekla
                     </CardTitle>
@@ -5145,7 +5145,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               {/* Alternative thicknesses table */}
               <Card>
                 <CardHeader className="pb-2 pt-4 px-4">
-                  <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+                  <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
                     <AlignJustify className="h-4 w-4" />
                     Alternativne debeline
                   </CardTitle>
@@ -5168,7 +5168,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                               {a.safe ? (
                                 <Badge className="bg-roksal-green/15 text-roksal-green border-roksal-green/30 border text-[9px]">VARNO</Badge>
                               ) : (
-                                <Badge className="bg-roksal-amber/15 text-roksal-navy border-roksal-amber/30 border text-[9px]">Tveganje</Badge>
+                                <Badge className="bg-roksal-amber/15 text-roksal-ink border-roksal-amber/30 border text-[9px]">Tveganje</Badge>
                               )}
                             </TableCell>
                             <TableCell className="text-[10px] text-muted-foreground">{a.reason}</TableCell>
@@ -5206,7 +5206,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               {glassResult.recommendations.length > 0 && (
                 <Card className="border-roksal-navy/20">
                   <CardHeader className="pb-2 pt-4 px-4">
-                    <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+                    <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
                       <Info className="h-4 w-4" />
                       Priporočila
                     </CardTitle>
@@ -5226,9 +5226,9 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
 
               <Card className="bg-roksal-navy/5">
                 <CardContent className="flex gap-3 p-4">
-                  <Info className="h-5 w-5 shrink-0 text-roksal-navy" />
+                  <Info className="h-5 w-5 shrink-0 text-roksal-ink" />
                   <div className="text-xs text-muted-foreground">
-                    <p className="font-medium text-roksal-navy">
+                    <p className="font-medium text-roksal-ink">
                       Poenostavljena metoda (SIST EN)
                     </p>
                     <p className="mt-1">
@@ -5324,7 +5324,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
         <Card className="card-hover transition-all duration-200">
           <CardHeader className="pb-2 pt-4 px-4">
             <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
                 <Clock className="h-4 w-4" />
                 Shrjeni izračuni
               </CardTitle>
@@ -5385,7 +5385,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                         {new Date(calc.date).toLocaleDateString('sl-SI', { day: 'numeric', month: 'short' })}
                       </span>
                     </div>
-                    <p className="mt-0.5 truncate text-xs font-medium text-roksal-navy">
+                    <p className="mt-0.5 truncate text-xs font-medium text-roksal-ink">
                       {calc.keyResult}
                     </p>
                   </div>
@@ -5406,7 +5406,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                 <button
                   type="button"
                   aria-expanded={historyOpen}
-                  className="flex items-center gap-2 rounded-lg text-sm font-semibold text-roksal-navy hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
+                  className="flex items-center gap-2 rounded-lg text-sm font-semibold text-roksal-ink hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
                 >
                   <History className="h-4 w-4 text-roksal-amber" />
                   Zgodovina izračunov
@@ -5420,7 +5420,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="h-7 px-2 text-[10px] text-roksal-navy hover:text-roksal-navy hover:bg-roksal-navy/5"
+                    className="h-7 px-2 text-[10px] text-roksal-ink hover:text-roksal-ink hover:bg-roksal-navy/5"
                     onClick={exportHistoryCsv}
                   >
                     <FileSpreadsheet className="mr-1 h-3 w-3" />
@@ -5461,11 +5461,11 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                         className="flex w-full items-start gap-3 rounded-lg border border-border/50 p-3 transition-colors hover:bg-secondary/30 hover:border-roksal-navy/30 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:border-roksal-navy/40"
                       >
                         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-roksal-navy/10">
-                          <Icon className="h-4 w-4 text-roksal-navy" />
+                          <Icon className="h-4 w-4 text-roksal-ink" />
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <Badge variant="outline" className="text-[9px] h-4 px-1.5 bg-roksal-navy/5 border-roksal-navy/20 text-roksal-navy">
+                            <Badge variant="outline" className="text-[9px] h-4 px-1.5 bg-roksal-navy/5 border-roksal-navy/20 text-roksal-ink">
                               {entry.modeLabel}
                             </Badge>
                             <span className="text-[9px] text-muted-foreground tabular-nums">
@@ -5483,7 +5483,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                               </Badge>
                             )}
                           </div>
-                          <p className="mt-1 text-xs font-medium text-roksal-navy">
+                          <p className="mt-1 text-xs font-medium text-roksal-ink">
                             {entry.keyResult}
                           </p>
                         </div>

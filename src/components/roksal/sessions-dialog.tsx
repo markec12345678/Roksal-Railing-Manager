@@ -138,7 +138,7 @@ export function SessionsDialog({ open, onOpenChange }: SessionsDialogProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-roksal-navy">
+          <DialogTitle className="flex items-center gap-2 text-roksal-ink">
             <ShieldCheck className="h-5 w-5 text-roksal-green" aria-hidden="true" />
             Aktivne seje
           </DialogTitle>
@@ -165,7 +165,7 @@ export function SessionsDialog({ open, onOpenChange }: SessionsDialogProps) {
             role="alert"
             className="flex items-start gap-3 rounded-xl border border-roksal-red/20 bg-roksal-red/5 p-3"
           >
-            <div className="min-w-0 flex-1 text-sm text-roksal-navy">{error}</div>
+            <div className="min-w-0 flex-1 text-sm text-roksal-ink">{error}</div>
             <Button
               variant="outline"
               size="sm"
@@ -190,14 +190,14 @@ export function SessionsDialog({ open, onOpenChange }: SessionsDialogProps) {
                     className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
                       s.current
                         ? 'bg-roksal-green/10 text-roksal-green'
-                        : 'bg-roksal-navy/5 text-roksal-navy'
+                        : 'bg-roksal-navy/5 text-roksal-ink'
                     }`}
                   >
                     <DeviceIcon ua={s.userAgent} className="h-4.5 w-4.5" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <p className="truncate text-sm font-medium text-roksal-navy">
+                      <p className="truncate text-sm font-medium text-roksal-ink">
                         {label.device}
                       </p>
                       {s.current && (

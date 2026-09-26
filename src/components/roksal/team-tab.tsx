@@ -86,7 +86,7 @@ interface TeamUser {
 }
 
 const ROLE_CHIP: Record<string, string> = {
-  ADMIN: 'bg-roksal-navy/10 text-roksal-navy ring-1 ring-inset ring-roksal-navy/20',
+  ADMIN: 'bg-roksal-navy/10 text-roksal-ink ring-1 ring-inset ring-roksal-navy/20',
   VODJA: 'bg-roksal-amber/15 text-amber-700 ring-1 ring-inset ring-roksal-amber/30',
   MONTER: 'bg-secondary text-muted-foreground ring-1 ring-inset ring-border',
   SKLADISCE: 'bg-roksal-green/10 text-roksal-green ring-1 ring-inset ring-roksal-green/25',
@@ -100,7 +100,7 @@ const ROLE_LABEL: Record<string, string> = EKIPA_VLOGE
  * izbrana po dolžini imena (isto ime = isti ton, brez naključja).
  */
 const AVATAR_TINT = [
-  'bg-roksal-navy/12 text-roksal-navy',
+  'bg-roksal-navy/12 text-roksal-ink',
   'bg-roksal-amber/18 text-amber-700',
   'bg-roksal-green/14 text-roksal-green',
   'bg-stone-200/70 text-stone-600',
@@ -313,10 +313,10 @@ export function TeamTab() {
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-roksal-navy/10">
-            <UserCog className="h-4.5 w-4.5 text-roksal-navy" />
+            <UserCog className="h-4.5 w-4.5 text-roksal-ink" />
           </div>
           <div>
-            <h2 className="text-sm font-bold text-roksal-navy">Ekipa — življenjski cikl računov</h2>
+            <h2 className="text-sm font-bold text-roksal-ink">Ekipa — življenjski cikl računov</h2>
             <p className="text-[11px] text-muted-foreground">
               Povabila, deaktivacija, zaklep, vloge. Vsako dejanje gre v dnevnik.
             </p>
@@ -409,7 +409,7 @@ export function TeamTab() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-1.5">
-                      <p className="truncate text-sm font-semibold text-roksal-navy">{u.ime}</p>
+                      <p className="truncate text-sm font-semibold text-roksal-ink">{u.ime}</p>
                       <Badge
                         className={`text-[10px] font-medium ${ROLE_CHIP[u.vloga] ?? 'bg-secondary'}`}
                         title={`Vloga: ${ROLE_LABEL[u.vloga] ?? u.vloga}`}
@@ -492,7 +492,7 @@ export function TeamTab() {
                         variant="ghost"
                         disabled={busyId === u.id}
                         onClick={() => void act({ action: 'unlock', userId: u.id }, `${u.ime} odklenjen`, u.id)}
-                        className="h-7 text-[11px] text-roksal-navy hover:bg-roksal-navy/10"
+                        className="h-7 text-[11px] text-roksal-ink hover:bg-roksal-navy/10"
                       >
                         <LockOpen className="mr-1 h-3 w-3" />
                         Odkleni
@@ -565,7 +565,7 @@ export function TeamTab() {
       <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle className="text-roksal-navy">Povabi člana ekipe</DialogTitle>
+            <DialogTitle className="text-roksal-ink">Povabi člana ekipe</DialogTitle>
             <DialogDescription className="text-xs">
               Račun nastane brez gesla. Aktivacijsko povezavo (velja 7 dni) si kopirate in pošljete po
               SMS/telefonu — uporabnik si na njej sam nastavi geslo.
@@ -635,7 +635,7 @@ export function TeamTab() {
       <Dialog open={oneTime !== null} onOpenChange={(open) => !open && setOneTime(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-roksal-navy">
+            <DialogTitle className="flex items-center gap-2 text-roksal-ink">
               <BadgeCheck className="h-4.5 w-4.5 text-roksal-green" />
               {oneTime?.kind === 'activation' ? 'Aktivacijska povezava' : 'Začasno geslo'}
             </DialogTitle>
@@ -647,7 +647,7 @@ export function TeamTab() {
           </DialogHeader>
           {oneTime?.kind === 'activation' && (
             <div className="flex items-center gap-1.5">
-              <div className="flex-1 min-w-0 truncate rounded-md border border-border bg-secondary/40 px-2.5 py-2 font-mono text-[11px] text-roksal-navy">
+              <div className="flex-1 min-w-0 truncate rounded-md border border-border bg-secondary/40 px-2.5 py-2 font-mono text-[11px] text-roksal-ink">
                 {typeof window !== 'undefined' ? `${window.location.origin}${oneTime.path}` : oneTime.path}
               </div>
               <Button type="button" size="sm" variant="outline" onClick={() => void copyText(`${window.location.origin}${oneTime.path}`)} className="h-9 shrink-0 focus-visible:ring-2 focus-visible:ring-roksal-navy/40" aria-label="Kopiraj aktivacijsko povezavo">
@@ -657,7 +657,7 @@ export function TeamTab() {
           )}
           {oneTime?.kind === 'tempPassword' && (
             <div className="flex items-center gap-1.5">
-              <div className="flex-1 rounded-md border border-roksal-amber/40 bg-roksal-amber/10 px-2.5 py-2 font-mono text-sm font-bold tracking-wider text-roksal-navy">
+              <div className="flex-1 rounded-md border border-roksal-amber/40 bg-roksal-amber/10 px-2.5 py-2 font-mono text-sm font-bold tracking-wider text-roksal-ink">
                 {oneTime.password}
               </div>
               <Button type="button" size="sm" variant="outline" onClick={() => void copyText(oneTime.password)} className="h-9 shrink-0 focus-visible:ring-2 focus-visible:ring-roksal-navy/40" aria-label="Kopiraj začasno geslo">

@@ -920,7 +920,7 @@ export function InvoiceManager() {
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="font-mono text-sm font-bold text-roksal-navy">{inv.stevilka}</span>
+                        <span className="font-mono text-sm font-bold text-roksal-ink">{inv.stevilka}</span>
                         <Badge variant="outline" className="text-[10px] px-1.5">
                           {TIP_META[inv.tip].label}
                         </Badge>
@@ -944,7 +944,7 @@ export function InvoiceManager() {
                       </div>
                     </div>
                     <div className="text-right shrink-0">
-                      <div className="text-sm font-bold tabular-nums text-roksal-navy">{eur(inv.znesek)}</div>
+                      <div className="text-sm font-bold tabular-nums text-roksal-ink">{eur(inv.znesek)}</div>
                       <div className="text-[10px] tabular-nums text-muted-foreground">z DDV {inv.ddv > 0 ? '22 %' : '0 %'}</div>
                     </div>
                   </div>
@@ -1224,7 +1224,7 @@ export function InvoiceManager() {
                     <span className="font-semibold">{eur(z)}</span>
                   </div>
                 ))}
-                <div className="mt-1 flex justify-between border-t border-amber-200 pt-1 text-sm font-bold text-roksal-navy">
+                <div className="mt-1 flex justify-between border-t border-amber-200 pt-1 text-sm font-bold text-roksal-ink">
                   <span>Za plačilo</span>
                   <span>{eur(formTotals.znesek)}</span>
                 </div>
@@ -1280,7 +1280,7 @@ export function InvoiceManager() {
                     <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                   </div>
                 )}
-                <p className="flex items-center gap-1.5 text-[11px] font-medium text-roksal-navy">
+                <p className="flex items-center gap-1.5 text-[11px] font-medium text-roksal-ink">
                   <Banknote className="h-3.5 w-3.5 text-emerald-600" />
                   Skeniraj z aplikacijo svoje banke — nalog se izpolni samodejno
                 </p>
@@ -1307,7 +1307,7 @@ export function InvoiceManager() {
                 </div>
                 <div className="flex items-center justify-between border-t border-border/60 pt-1.5">
                   <span className="text-muted-foreground">Za plačilo</span>
-                  <span className="text-base font-bold text-roksal-navy">{eur(qrInvoice.znesek)}</span>
+                  <span className="text-base font-bold text-roksal-ink">{eur(qrInvoice.znesek)}</span>
                 </div>
               </div>
 

@@ -102,7 +102,7 @@ export function BottomNav({ activeTab, onTabChange, badges = {}, moreActive = nu
 
   return (
     <>
-      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-white/95 backdrop-blur-md">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background/95 backdrop-blur-md">
         <div className="mx-auto flex max-w-lg items-center justify-around overflow-x-auto px-0.5 py-1 no-scrollbar md:max-w-3xl md:px-4 md:py-1.5 lg:max-w-5xl">
           {mainTabs.map((tab) => {
             const isActive = activeTab === tab.id
@@ -165,7 +165,7 @@ export function BottomNav({ activeTab, onTabChange, badges = {}, moreActive = nu
           {/* Ročaj za povleci (vizualen namig, kot pri nativnih listih) */}
           <div className="mx-auto mt-2.5 mb-1 h-1.5 w-10 shrink-0 rounded-full bg-roksal-navy/15" aria-hidden="true" />
           <SheetHeader className="sticky top-0 z-10 shrink-0 rounded-t-3xl bg-background/95 pb-2 pt-1 backdrop-blur-sm">
-            <SheetTitle className="text-center text-roksal-navy">Več funkcij</SheetTitle>
+            <SheetTitle className="text-center text-roksal-ink">Več funkcij</SheetTitle>
           </SheetHeader>
           <div
             className="grid grid-cols-2 gap-3 overflow-y-auto px-4 pt-1 pb-4 scrollbar-thin sm:gap-4 md:grid-cols-3 md:px-6 md:pt-2 md:pb-6"
@@ -185,14 +185,14 @@ export function BottomNav({ activeTab, onTabChange, badges = {}, moreActive = nu
                   className={`more-tile flex flex-col items-center gap-2 rounded-xl border-2 p-4 text-center transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm active:scale-[0.97] ${
                     active
                       ? 'border-roksal-amber bg-roksal-amber/10 shadow-[0_0_0_3px] shadow-roksal-amber/10'
-                      : 'border-roksal-navy/10 bg-white hover:border-roksal-navy/30'
+                      : 'border-border bg-card hover:border-roksal-navy/30'
                   }`}
                 >
-                  <div className={`flex h-12 w-12 items-center justify-center rounded-full transition-colors duration-200 ${active ? 'bg-roksal-amber text-white' : 'bg-roksal-navy/10 text-roksal-navy'}`}>
+                  <div className={`flex h-12 w-12 items-center justify-center rounded-full transition-colors duration-200 ${active ? 'bg-roksal-amber text-white' : 'bg-roksal-navy/10 text-roksal-ink'}`}>
                     <Icon className="h-6 w-6" />
                   </div>
                   <div>
-                    <div className="text-sm font-semibold text-roksal-navy">{t.label}</div>
+                    <div className="text-sm font-semibold text-roksal-ink">{t.label}</div>
                     <div className="text-[10px] text-muted-foreground">{t.description}</div>
                   </div>
                 </button>

@@ -184,7 +184,7 @@ export function MeasureClient({ token, nazivProjekta, stranka }: MeasureClientPr
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50">
             <CheckCircle2 className="h-9 w-9 text-emerald-600" />
           </div>
-          <h1 className="text-xl font-bold text-roksal-navy">Hvala, {ime.split(' ')[0]}!</h1>
+          <h1 className="text-xl font-bold text-roksal-ink">Hvala, {ime.split(' ')[0]}!</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Vaša meritev ({totalM >= 100 ? `${(totalM / 1000).toFixed(2)} km` : `${totalM.toFixed(1)} m`})
             je poslana. Kontaktirali vas bomo v 24 urah s predračunom.
@@ -226,7 +226,7 @@ export function MeasureClient({ token, nazivProjekta, stranka }: MeasureClientPr
       <div className="mx-auto max-w-xl space-y-4 px-4 pt-5">
         {/* Uvod */}
         <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
-          <h1 className="text-lg font-bold text-roksal-navy">
+          <h1 className="text-lg font-bold text-roksal-ink">
             {stranka ? `Pozdravljeni, ${stranka.split(' ')[0]}!` : 'Pozdravljeni!'}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -266,7 +266,7 @@ export function MeasureClient({ token, nazivProjekta, stranka }: MeasureClientPr
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-[11px] text-muted-foreground">Dolžina vaše ograje</p>
-              <p className="text-xl font-bold tabular-nums text-roksal-navy">
+              <p className="text-xl font-bold tabular-nums text-roksal-ink">
                 {totalM >= 1000 ? `${(totalM / 1000).toFixed(2)} km` : `${totalM.toFixed(1)} m`}
               </p>
             </div>
@@ -292,7 +292,7 @@ export function MeasureClient({ token, nazivProjekta, stranka }: MeasureClientPr
 
         {/* Obrazec */}
         <div className="space-y-3 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
-          <p className="text-sm font-semibold text-roksal-navy">Vaši podatki</p>
+          <p className="text-sm font-semibold text-roksal-ink">Vaši podatki</p>
           <input
             value={ime}
             onChange={(e) => setIme(e.target.value)}

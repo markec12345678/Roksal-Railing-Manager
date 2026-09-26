@@ -47,7 +47,7 @@ export function ProductHome() {
         </p>
         <h1
           id="hero-title"
-          className="mt-2 text-[1.65rem] font-bold leading-[1.15] tracking-tight text-roksal-navy sm:text-4xl"
+          className="mt-2 text-[1.65rem] font-bold leading-[1.15] tracking-tight text-roksal-ink sm:text-4xl"
         >
           Preverite, kako bo vaša nova ograja izgledala na vašem domu.
         </h1>
@@ -67,7 +67,7 @@ export function ProductHome() {
           <Button
             type="button"
             variant="outline"
-            className="h-12 border-roksal-navy/25 px-5 font-semibold text-roksal-navy hover:bg-roksal-navy/5"
+            className="h-12 border-roksal-navy/25 px-5 font-semibold text-roksal-ink hover:bg-roksal-navy/5"
             onClick={scrollToHow}
           >
             <CircleHelp className="mr-2 h-5 w-5" aria-hidden="true" />
@@ -88,7 +88,7 @@ export function ProductHome() {
           />
           <p className="px-2 pb-1 pt-2.5 text-center text-[11px] leading-snug text-muted-foreground">
             Dejanski rezultat aplikacije — povlecite, da primerjate{' '}
-            <span className="font-semibold text-roksal-navy">PREJ</span> in{' '}
+            <span className="font-semibold text-roksal-ink">PREJ</span> in{' '}
             <span className="font-semibold text-roksal-amber">POTEM</span>.
           </p>
         </div>
@@ -105,7 +105,7 @@ export function ProductHome() {
         className="mx-auto mt-10 w-full max-w-lg scroll-mt-20 px-4 sm:max-w-2xl"
         aria-labelledby="kako-title"
       >
-        <h2 id="kako-title" className="text-lg font-bold text-roksal-navy">
+        <h2 id="kako-title" className="text-lg font-bold text-roksal-ink">
           Kako deluje?
         </h2>
         <p className="mt-1 text-xs text-muted-foreground">
@@ -121,7 +121,7 @@ export function ProductHome() {
                 {s.n}
               </span>
               <span className="min-w-0">
-                <span className="block text-sm font-semibold text-roksal-navy">{s.title}</span>
+                <span className="block text-sm font-semibold text-roksal-ink">{s.title}</span>
                 <span className="block text-xs leading-snug text-muted-foreground">{s.text}</span>
               </span>
             </li>
@@ -144,7 +144,7 @@ export function ProductHome() {
           <button
             type="button"
             onClick={scrollToHow}
-            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-roksal-navy sm:hidden"
+            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-roksal-ink sm:hidden"
             aria-label="Nazaj na zgornji del strani"
           >
             <ChevronDown className="h-3.5 w-3.5 rotate-180" aria-hidden="true" />

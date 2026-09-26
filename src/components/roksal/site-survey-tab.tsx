@@ -520,18 +520,18 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
             <div className="mb-2 flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <ClipboardList className="h-4 w-4 text-roksal-amber" />
-                <h3 className="text-sm font-bold text-roksal-navy">Terenski pregled</h3>
+                <h3 className="text-sm font-bold text-roksal-ink">Terenski pregled</h3>
                 {data.zakljuceno && (
                   <Badge className="bg-green-100 text-green-700 hover:bg-green-100"><CheckCircle2 className="mr-1 h-3 w-3" /> zaključen</Badge>
                 )}
               </div>
               <div className="flex shrink-0 items-center gap-2">
-                <span className="text-[11px] font-bold text-roksal-navy">{completion}%</span>
+                <span className="text-[11px] font-bold text-roksal-ink">{completion}%</span>
                 <Button
                   type="button" size="sm" variant="outline"
                   onClick={() => void exportPdf()}
                   disabled={generating}
-                  className="h-8 gap-1.5 rounded-lg border-roksal-navy/20 px-2.5 text-[11px] font-bold text-roksal-navy hover:bg-roksal-amber/10 hover:text-roksal-navy"
+                  className="h-8 gap-1.5 rounded-lg border-roksal-navy/20 px-2.5 text-[11px] font-bold text-roksal-ink hover:bg-roksal-amber/10 hover:text-roksal-ink"
                   aria-label="Izvozi PDF zapisnik"
                 >
                   {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileDown className="h-3.5 w-3.5 text-roksal-amber" />}
@@ -568,8 +568,8 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
                       : 'border-roksal-navy/10 bg-white hover:border-roksal-navy/30'
                   }`}
                 >
-                  <t.icon className={`h-4 w-4 ${data.tipObjekta === t.id ? 'text-roksal-amber' : 'text-roksal-navy/60'}`} />
-                  <span className={`text-[10px] font-bold leading-tight ${data.tipObjekta === t.id ? 'text-roksal-amber' : 'text-roksal-navy'}`}>{t.label}</span>
+                  <t.icon className={`h-4 w-4 ${data.tipObjekta === t.id ? 'text-roksal-amber' : 'text-roksal-ink/60'}`} />
+                  <span className={`text-[10px] font-bold leading-tight ${data.tipObjekta === t.id ? 'text-roksal-amber' : 'text-roksal-ink'}`}>{t.label}</span>
                 </button>
               ))}
             </div>
@@ -593,7 +593,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
                       data.oblika === o.id ? 'border-roksal-amber bg-roksal-amber/10' : 'border-roksal-navy/10 hover:border-roksal-navy/30'
                     }`}
                   >
-                    <span className={`block text-[11px] font-bold ${data.oblika === o.id ? 'text-roksal-amber' : 'text-roksal-navy'}`}>{o.label}</span>
+                    <span className={`block text-[11px] font-bold ${data.oblika === o.id ? 'text-roksal-amber' : 'text-roksal-ink'}`}>{o.label}</span>
                     <span className="block text-[8px] text-muted-foreground">{o.opis}</span>
                   </button>
                 ))}
@@ -612,7 +612,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
                       data.pritrditev === p.id ? 'border-roksal-amber bg-roksal-amber/10' : 'border-roksal-navy/10 hover:border-roksal-navy/30'
                     }`}
                   >
-                    <span className={`block text-[11px] font-bold ${data.pritrditev === p.id ? 'text-roksal-amber' : 'text-roksal-navy'}`}>{p.label}</span>
+                    <span className={`block text-[11px] font-bold ${data.pritrditev === p.id ? 'text-roksal-amber' : 'text-roksal-ink'}`}>{p.label}</span>
                     <span className="block text-[8px] text-muted-foreground">{p.opis}</span>
                   </button>
                 ))}
@@ -641,7 +641,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
                         : p.barva === 'red'
                           ? 'border-red-300 bg-red-50 text-red-700'
                           : 'border-roksal-amber bg-roksal-amber/10 text-roksal-amber'
-                      : 'border-roksal-navy/10 text-roksal-navy/70 hover:border-roksal-navy/30'
+                      : 'border-roksal-navy/10 text-roksal-ink/70 hover:border-roksal-navy/30'
                   }`}
                 >
                   {p.label}
@@ -721,23 +721,23 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
             {(data.razponNajdaljsiMm != null || data.skupnaDolzinaMm != null) && (
               <div className="mt-2">
                 <p className="text-[10px] text-muted-foreground">
-                  Najdaljši razpon: <strong className="text-roksal-navy">{mm(data.razponNajdaljsiMm)}</strong>
-                  {data.skupnaDolzinaMm != null && <> · skupaj: <strong className="text-roksal-navy">{mm(data.skupnaDolzinaMm)}</strong></>}
+                  Najdaljši razpon: <strong className="text-roksal-ink">{mm(data.razponNajdaljsiMm)}</strong>
+                  {data.skupnaDolzinaMm != null && <> · skupaj: <strong className="text-roksal-ink">{mm(data.skupnaDolzinaMm)}</strong></>}
                 </p>
                 {izracun && (
                   <>
                     <div className="mt-2 grid grid-cols-3 gap-1.5">
                       <div className="rounded-lg bg-roksal-navy/[0.04] px-2 py-1.5 text-center ring-1 ring-roksal-navy/5">
                         <span className="block text-[8px] font-bold uppercase tracking-wide text-muted-foreground">Segmenti</span>
-                        <span className="block text-sm font-bold text-roksal-navy">~{izracun.segmentov}</span>
+                        <span className="block text-sm font-bold text-roksal-ink">~{izracun.segmentov}</span>
                       </div>
                       <div className="rounded-lg bg-roksal-navy/[0.04] px-2 py-1.5 text-center ring-1 ring-roksal-navy/5">
                         <span className="block text-[8px] font-bold uppercase tracking-wide text-muted-foreground">Stebri</span>
-                        <span className="block text-sm font-bold text-roksal-navy">~{izracun.stebri}</span>
+                        <span className="block text-sm font-bold text-roksal-ink">~{izracun.stebri}</span>
                       </div>
                       <div className="rounded-lg bg-roksal-navy/[0.04] px-2 py-1.5 text-center ring-1 ring-roksal-navy/5">
                         <span className="block text-[8px] font-bold uppercase tracking-wide text-muted-foreground">Kotni spoji</span>
-                        <span className="block text-sm font-bold text-roksal-navy">{izracun.koti}</span>
+                        <span className="block text-sm font-bold text-roksal-ink">{izracun.koti}</span>
                       </div>
                     </div>
                     <p className="mt-1 text-[9px] text-muted-foreground">
@@ -794,7 +794,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
           <CardContent className="space-y-3 p-4">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <Label className="text-[11px] font-bold text-roksal-navy">Dvigalo na voljo?</Label>
+                <Label className="text-[11px] font-bold text-roksal-ink">Dvigalo na voljo?</Label>
                 <p className="text-[10px] text-muted-foreground">Brez dvigala = plan ročnega dviga materiala</p>
               </div>
               <Switch checked={data.dvigalo} onCheckedChange={(v) => set('dvigalo', v)} aria-label="Dvigalo na voljo" />
@@ -837,7 +837,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
                       style={{ backgroundColor: r.hex }}
                     />
                     <span>
-                      <span className={`block text-[10px] font-bold leading-none ${on ? 'text-roksal-amber' : 'text-roksal-navy'}`}>RAL {r.code}</span>
+                      <span className={`block text-[10px] font-bold leading-none ${on ? 'text-roksal-amber' : 'text-roksal-ink'}`}>RAL {r.code}</span>
                       <span className="block text-[8px] text-muted-foreground">{r.ime}</span>
                     </span>
                     {on && <CheckCircle2 className="h-3.5 w-3.5 text-roksal-amber" />}
@@ -874,12 +874,12 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
                     }`}
                   >
                     <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
-                      done ? 'bg-green-500 text-white' : 'bg-roksal-navy/10 text-roksal-navy/60'
+                      done ? 'bg-green-500 text-white' : 'bg-roksal-navy/10 text-roksal-ink/60'
                     }`}>
                       {done ? <CheckCircle2 className="h-3.5 w-3.5" /> : i + 1}
                     </span>
                     <span className="min-w-0">
-                      <span className={`block text-[11px] font-bold ${done ? 'text-green-700' : 'text-roksal-navy'}`}>{f.label}</span>
+                      <span className={`block text-[11px] font-bold ${done ? 'text-green-700' : 'text-roksal-ink'}`}>{f.label}</span>
                       <span className="block text-[9px] text-muted-foreground">{f.opis}</span>
                     </span>
                   </button>
@@ -973,7 +973,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
                         className="mt-0.5 h-4 w-4 accent-[#f59e0b]"
                       />
                       <span className="min-w-0">
-                        <span className={`block text-[11px] font-bold leading-snug ${item.kind === 'warn' ? 'text-amber-800' : 'text-roksal-navy'}`}>{item.text}</span>
+                        <span className={`block text-[11px] font-bold leading-snug ${item.kind === 'warn' ? 'text-amber-800' : 'text-roksal-ink'}`}>{item.text}</span>
                         <span className="block text-[9px] text-muted-foreground">{item.reason}</span>
                       </span>
                     </label>

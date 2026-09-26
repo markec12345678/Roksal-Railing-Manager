@@ -87,7 +87,7 @@ export function SetupClient({ initialToken }: SetupClientProps) {
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50">
             <CheckCircle2 className="h-7 w-7 text-emerald-600" />
           </div>
-          <h1 className="text-xl font-bold text-roksal-navy">
+          <h1 className="text-xl font-bold text-roksal-ink">
             {done.mode === 'RECOVER' ? 'Račun je obnovljen!' : 'Račun je ustvarjen!'}
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
@@ -114,7 +114,7 @@ export function SetupClient({ initialToken }: SetupClientProps) {
           <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-roksal-amber/15">
             <Settings2 className="h-6 w-6 text-roksal-amber" aria-hidden="true" />
           </div>
-          <h1 className="text-xl font-bold text-roksal-navy">Nastavitvena konzola</h1>
+          <h1 className="text-xl font-bold text-roksal-ink">Nastavitvena konzola</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Za lastnika sistema: ustvarjanje ADMIN računa ali obnova izgubljenega gesla.
           </p>
@@ -126,7 +126,7 @@ export function SetupClient({ initialToken }: SetupClientProps) {
 
         {status === 'off' && (
           <div role="status" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-relaxed text-stone-700">
-            <p className="mb-2 flex items-center gap-2 font-semibold text-roksal-navy">
+            <p className="mb-2 flex items-center gap-2 font-semibold text-roksal-ink">
               <ShieldOff className="h-4 w-4 text-roksal-amber" aria-hidden="true" />
               Konzola je izklopljena
             </p>

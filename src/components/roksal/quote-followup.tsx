@@ -13,7 +13,7 @@
 //    kartici (prvih 12 vrst, isti statusi/stanja spomnika) — pisarniška raba.
 //  • STIL pass: trdo kodirane svetle barve (bg-red-50, bg-amber-50, bg-white,
 //    text-stone-*) so v temni temi bile neberljive → semantični žetoni
-//    (roksal-red/10, roksal-amber/10, bg-card, text-roksal-navy); focus-visible
+//    (roksal-red/10, roksal-amber/10, bg-card, text-roksal-ink); focus-visible
 //    ringi barvno skladni z okolico; dekorativne ikone aria-hidden; datumi
 //    tabular-nums.
 
@@ -214,7 +214,7 @@ export function QuoteFollowUp() {
   return (
     <Card className={overdueCount > 0 ? 'border-roksal-red/40' : undefined}>
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base text-roksal-navy">
+        <CardTitle className="flex items-center gap-2 text-base text-roksal-ink">
           <FileClock className="h-5 w-5 text-roksal-amber" aria-hidden="true" />
           Ponudbe — sledenje
           <span className="ml-auto flex items-center gap-2">
@@ -262,7 +262,7 @@ export function QuoteFollowUp() {
           >
             <div className="flex items-start gap-2">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-roksal-amber" aria-hidden="true" />
-              <p className="text-sm text-roksal-navy">{error}</p>
+              <p className="text-sm text-roksal-ink">{error}</p>
             </div>
             <Button
               type="button"
@@ -299,7 +299,7 @@ export function QuoteFollowUp() {
                 >
                   <div className="flex items-start gap-2">
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-roksal-navy">
+                      <p className="truncate text-sm font-semibold text-roksal-ink">
                         {p.nazivProjekta}
                       </p>
                       <p className="truncate text-xs text-muted-foreground">

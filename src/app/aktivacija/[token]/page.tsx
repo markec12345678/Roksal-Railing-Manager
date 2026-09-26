@@ -44,7 +44,7 @@ export default async function AktivacijaPage({ params }: PageProps) {
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-50">
             <ShieldX className="h-7 w-7 text-red-500" aria-hidden="true" />
           </div>
-          <h1 className="text-xl font-bold text-roksal-navy">Povezava ni več veljavna</h1>
+          <h1 className="text-xl font-bold text-roksal-ink">Povezava ni več veljavna</h1>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
             Aktivacijska povezava je potekla ali pa je bila že uporabljena.
             Za novo povabilo pokličite pisarno Roksal, tel. +386 4 237 05 50.

@@ -656,7 +656,7 @@ export function MaskEditor({
     <div className={cn('flex h-full min-h-0 flex-col gap-2', className)}>
       {(title || hint) && (
         <div className="space-y-1 px-1">
-          {title && <h3 className="text-sm font-bold text-roksal-navy">{title}</h3>}
+          {title && <h3 className="text-sm font-bold text-roksal-ink">{title}</h3>}
           {hint && <p className="text-xs leading-snug text-muted-foreground">{hint}</p>}
         </div>
       )}

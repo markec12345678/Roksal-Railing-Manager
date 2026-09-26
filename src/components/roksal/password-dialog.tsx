@@ -87,7 +87,7 @@ export function PasswordDialog({ open, onOpenChange }: PasswordDialogProps) {
     >
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-roksal-navy">
+          <DialogTitle className="flex items-center gap-2 text-roksal-ink">
             <KeyRound className="h-4.5 w-4.5 text-roksal-amber" aria-hidden="true" />
             Zamenjaj geslo
           </DialogTitle>

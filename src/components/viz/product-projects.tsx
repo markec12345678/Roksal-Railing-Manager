@@ -151,10 +151,10 @@ export function ProjectList({
     return (
       <div className="flex flex-col items-center gap-4 p-8 pt-16 text-center">
         <div className="flex h-14 w-14 items-center justify-center rounded-full bg-roksal-navy/5" aria-hidden="true">
-          <Wand2 className="h-6 w-6 text-roksal-navy/40" />
+          <Wand2 className="h-6 w-6 text-roksal-ink/40" />
         </div>
         <div>
-          <p className="text-sm font-semibold text-roksal-navy">Ni še shranjenih projektov</p>
+          <p className="text-sm font-semibold text-roksal-ink">Ni še shranjenih projektov</p>
           <p className="mt-1 text-xs text-muted-foreground">
             Ustvari prvo vizualizacijo — traja manj kot dve minuti.
           </p>
@@ -195,7 +195,7 @@ export function ProjectList({
                   </div>
                 )}
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-semibold text-roksal-navy">{p.name}</span>
+                  <span className="block truncate text-sm font-semibold text-roksal-ink">{p.name}</span>
                   <span className="block text-[11px] text-muted-foreground">{slDate(p.createdAt)}</span>
                 </span>
               </button>
@@ -203,7 +203,7 @@ export function ProjectList({
                 type="button"
                 onClick={() => onDuplicate(p.id)}
                 disabled={busyId === p.id}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-roksal-navy/10 hover:text-roksal-navy disabled:opacity-50"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-roksal-navy/10 hover:text-roksal-ink disabled:opacity-50"
                 aria-label={`Podvoji projekt ${p.name}`}
               >
                 {busyId === p.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Copy className="h-4 w-4" />}

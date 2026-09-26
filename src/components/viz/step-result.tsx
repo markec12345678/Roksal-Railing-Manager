@@ -190,7 +190,7 @@ export function StepResult() {
     <div className="space-y-4 p-4">
       {/* REZULTAT — headline (spec §14) */}
       <header className="text-center">
-        <h2 className="text-xl font-bold leading-snug text-roksal-navy">
+        <h2 className="text-xl font-bold leading-snug text-roksal-ink">
           Tako bi lahko izgledala vaša nova ograja.
         </h2>
       </header>
@@ -210,7 +210,7 @@ export function StepResult() {
               </DialogTrigger>
               <DialogContent className="max-h-[95dvh] w-[96vw] max-w-4xl p-4">
                 <DialogHeader>
-                  <DialogTitle className="text-roksal-navy">PREJ | POTEM — povečano</DialogTitle>
+                  <DialogTitle className="text-roksal-ink">PREJ | POTEM — povečano</DialogTitle>
                 </DialogHeader>
                 <div className="max-h-[80dvh] overflow-y-auto pb-2">
                   <BeforeAfter beforeUrl={balcony.url} afterUrl={preview.url} withZoom className="h-[60dvh]" />
@@ -225,7 +225,7 @@ export function StepResult() {
               </DialogTrigger>
               <DialogContent className="max-h-[95dvh] w-[96vw] max-w-4xl p-4">
                 <DialogHeader>
-                  <DialogTitle className="text-roksal-navy">PREJ | POTEM — cel zaslon</DialogTitle>
+                  <DialogTitle className="text-roksal-ink">PREJ | POTEM — cel zaslon</DialogTitle>
                 </DialogHeader>
                 <div className="max-h-[80dvh] overflow-y-auto pb-2">
                   <BeforeAfter beforeUrl={balcony.url} afterUrl={preview.url} withZoom className="h-[60dvh]" />
@@ -248,7 +248,7 @@ export function StepResult() {
       {/* AKCIJE (spec §14) — Shrani / Primerjaj drugo ograjo / Nova vizualizacija */}
       <Card>
         <CardHeader className="pb-1">
-          <CardTitle className="flex items-center gap-2 text-base text-roksal-navy">
+          <CardTitle className="flex items-center gap-2 text-base text-roksal-ink">
             <Save className="h-4 w-4" />
             Shrani projekt
           </CardTitle>
@@ -322,7 +322,7 @@ export function StepResult() {
       {variants.length > 1 && (
         <Card>
           <CardHeader className="pb-1">
-            <CardTitle className="text-base text-roksal-navy">Primerjava ograd</CardTitle>
+            <CardTitle className="text-base text-roksal-ink">Primerjava ograd</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div
@@ -367,7 +367,7 @@ export function StepResult() {
       {/* DOKAZILA (numerika, ne mnenje) — spec §18 */}
       <Card>
         <CardHeader className="pb-1">
-          <CardTitle className="flex items-center gap-2 text-base text-roksal-navy">
+          <CardTitle className="flex items-center gap-2 text-base text-roksal-ink">
             <ShieldCheck className="h-4 w-4 text-green-600" />
             Dokazila predogleda
           </CardTitle>
@@ -405,7 +405,7 @@ export function StepResult() {
       {/* AI FINISH (Qwen) — ISKRENO: planirano, čaka na GPU (spec §29) */}
       <Card className="border-dashed">
         <CardHeader className="pb-1">
-          <CardTitle className="flex items-center justify-between gap-2 text-base text-roksal-navy">
+          <CardTitle className="flex items-center justify-between gap-2 text-base text-roksal-ink">
             <span className="flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-roksal-amber" />
               Realistična končna vizualizacija
@@ -423,7 +423,7 @@ export function StepResult() {
           </p>
           {renderJob && (
             <div className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs">
-              <div className="font-semibold text-roksal-navy">Zaporedje {renderJob.jobId.slice(0, 8)}…</div>
+              <div className="font-semibold text-roksal-ink">Zaporedje {renderJob.jobId.slice(0, 8)}…</div>
               <div className="text-muted-foreground" aria-live="polite">
                 {renderJob.status === 'processing'
                   ? LOADING_TEXT.gpu
@@ -478,7 +478,7 @@ export function StepResultLoading() {
       <Skeleton className="h-80 w-full rounded-xl" />
       <Skeleton className="h-24 w-full rounded-xl" />
       <Skeleton className="h-12 w-full rounded-xl" />
-      <p className="text-center text-sm font-medium text-roksal-navy">{LOADING_TEXT.preview}</p>
+      <p className="text-center text-sm font-medium text-roksal-ink">{LOADING_TEXT.preview}</p>
     </div>
   )
 }

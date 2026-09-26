@@ -50,7 +50,7 @@ export function StepMask() {
   return (
     <div className="space-y-4">
       <header className="px-1">
-        <h2 className="text-lg font-bold text-roksal-navy">Označite staro ograjo</h2>
+        <h2 className="text-lg font-bold text-roksal-ink">Označite staro ograjo</h2>
         <p className="text-xs leading-snug text-muted-foreground">
           Povlecite s prstom čez območje stare ograje — to območje bo zamenjano z vašo novo ograjo.
         </p>

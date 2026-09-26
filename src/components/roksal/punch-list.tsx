@@ -364,7 +364,7 @@ export function PunchList({ project }: { project: Project | null }) {
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base text-roksal-navy">
+        <CardTitle className="flex items-center gap-2 text-base text-roksal-ink">
           <ClipboardCheck className="h-5 w-5 text-roksal-amber" />
           Prejemni zapisnik
           {items.length > 0 && (

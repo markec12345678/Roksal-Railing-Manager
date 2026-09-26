@@ -196,7 +196,7 @@ export function StepBalcony() {
       />
 
       <header className="px-1">
-        <h2 className="text-lg font-bold text-roksal-navy">Fotografirajte svoj balkon</h2>
+        <h2 className="text-lg font-bold text-roksal-ink">Fotografirajte svoj balkon</h2>
         <p className="text-xs leading-snug text-muted-foreground">
           Fotografirajte balkon čim bolj naravnost in pri dobri svetlobi.
         </p>
@@ -226,8 +226,8 @@ export function StepBalcony() {
                 if (e.key === 'Enter' || e.key === ' ') cameraInputRef.current?.click()
               }}
             >
-              <ImageUp className="h-8 w-8 text-roksal-navy/50" aria-hidden="true" />
-              <p className="text-sm font-semibold text-roksal-navy">Dodaj fotografijo balkona</p>
+              <ImageUp className="h-8 w-8 text-roksal-ink/50" aria-hidden="true" />
+              <p className="text-sm font-semibold text-roksal-ink">Dodaj fotografijo balkona</p>
               <p className="text-xs text-muted-foreground">ali jo povleci sem</p>
             </div>
 

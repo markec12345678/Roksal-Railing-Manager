@@ -234,14 +234,14 @@ export function TopBar({ onSync, syncing, onOpenPalette, hidden = false }: TopBa
                 onClick={() => setPwdOpen(true)}
                 className="gap-2 focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
               >
-                <KeyRound className="h-4 w-4 text-roksal-navy/70" aria-hidden="true" />
+                <KeyRound className="h-4 w-4 text-roksal-ink/70" aria-hidden="true" />
                 Zamenjaj geslo
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => setSessionsOpen(true)}
                 className="gap-2 focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
               >
-                <MonitorSmartphone className="h-4 w-4 text-roksal-navy/70" aria-hidden="true" />
+                <MonitorSmartphone className="h-4 w-4 text-roksal-ink/70" aria-hidden="true" />
                 Aktivne seje
               </DropdownMenuItem>
               <DropdownMenuSeparator />
@@ -249,14 +249,14 @@ export function TopBar({ onSync, syncing, onOpenPalette, hidden = false }: TopBa
                 onClick={() => void handleLogout(false)}
                 className="gap-2 focus-visible:ring-2 focus-visible:ring-roksal-red/40"
               >
-                <LogOut className="h-4 w-4 text-roksal-navy/70" aria-hidden="true" />
+                <LogOut className="h-4 w-4 text-roksal-ink/70" aria-hidden="true" />
                 Ta naprava
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => void handleLogout(true)}
                 className="gap-2 focus-visible:ring-2 focus-visible:ring-roksal-red/40"
               >
-                <LogOut className="h-4 w-4 text-roksal-navy/70" aria-hidden="true" />
+                <LogOut className="h-4 w-4 text-roksal-ink/70" aria-hidden="true" />
                 Vse naprave (tudi ta)
               </DropdownMenuItem>
             </DropdownMenuContent>

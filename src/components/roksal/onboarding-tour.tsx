@@ -161,7 +161,7 @@ export function OnboardingTour({ onClose, onNavigate }: { onClose: () => void; o
             <div className={`mx-auto flex h-16 w-16 items-center justify-center rounded-2xl ${current.barva} mb-4`}>
               <Icon className="h-8 w-8 text-white" />
             </div>
-            <h2 className="text-lg font-bold text-roksal-navy mb-2">{current.naslov}</h2>
+            <h2 className="text-lg font-bold text-roksal-ink mb-2">{current.naslov}</h2>
             <p className="text-sm text-muted-foreground leading-relaxed">{current.opis}</p>
           </div>
 

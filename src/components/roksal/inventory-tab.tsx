@@ -112,7 +112,7 @@ const movementLabels: Record<MovementType, string> = {
 }
 
 const movementColors: Record<MovementType, string> = {
-  PORABA: 'bg-roksal-amber/15 text-roksal-navy',
+  PORABA: 'bg-roksal-amber/15 text-roksal-ink',
   DOPOLNITEV: 'bg-roksal-green/15 text-roksal-green',
   ODPIS: 'bg-roksal-red/15 text-roksal-red',
 }
@@ -357,7 +357,7 @@ export function InventoryTab() {
     <div className="space-y-4 px-4 pb-4 pt-2 md:space-y-5 md:px-6 md:pb-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-roksal-navy">Zaloga</h2>
+          <h2 className="text-xl font-bold text-roksal-ink">Zaloga</h2>
           <p className="text-sm text-muted-foreground">
             Upravljanje materiala in inventarja
           </p>
@@ -376,7 +376,7 @@ export function InventoryTab() {
       {/* Mini Stock Chart */}
       <Card className="card-accent-left card-hover transition-all duration-200 animate-fade-in-up" style={{ animationDelay: '0ms' }}>
         <CardHeader className="pb-2 pt-4 px-4">
-          <CardTitle className="text-sm font-semibold text-roksal-navy">
+          <CardTitle className="text-sm font-semibold text-roksal-ink">
             Pregled zaloge po kategorijah
           </CardTitle>
         </CardHeader>
@@ -384,7 +384,7 @@ export function InventoryTab() {
           <div className="flex items-end justify-around gap-3 h-24">
             {categoryStock.map((cat) => (
               <div key={cat.category} className="flex flex-1 flex-col items-center gap-1.5">
-                <span className="text-[10px] font-medium tabular-nums text-roksal-navy">{cat.totalStock}</span>
+                <span className="text-[10px] font-medium tabular-nums text-roksal-ink">{cat.totalStock}</span>
                 <div className="relative w-full flex justify-center">
                   <div className="w-10 bg-secondary/50 rounded-t-sm relative overflow-hidden" style={{ height: '80px' }}>
                     <div
@@ -422,10 +422,10 @@ export function InventoryTab() {
           {/* Total Value Estimate Row */}
           <div className="mt-3 flex items-center justify-between rounded-lg bg-secondary/50 p-3">
             <div className="flex items-center gap-2">
-              <Euro className="h-4 w-4 text-roksal-navy" />
+              <Euro className="h-4 w-4 text-roksal-ink" />
               <span className="text-xs text-muted-foreground">Ocena vrednosti zaloge</span>
             </div>
-            <span className="text-sm font-bold tabular-nums text-roksal-navy">
+            <span className="text-sm font-bold tabular-nums text-roksal-ink">
               {totalValueEstimate.toLocaleString('sl-SI', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
             </span>
           </div>
@@ -438,13 +438,13 @@ export function InventoryTab() {
           <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
             Artikli
           </p>
-          <p className="text-xl font-bold tabular-nums text-roksal-navy">{totalItems}</p>
+          <p className="text-xl font-bold tabular-nums text-roksal-ink">{totalItems}</p>
         </Card>
         <Card className="px-3 py-3 card-hover transition-all duration-200 animate-fade-in-up" style={{ animationDelay: '120ms' }}>
           <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
             Skupna zaloga
           </p>
-          <p className="text-xl font-bold tabular-nums text-roksal-navy">
+          <p className="text-xl font-bold tabular-nums text-roksal-ink">
             {totalStock.toFixed(0)}
           </p>
         </Card>
@@ -463,7 +463,7 @@ export function InventoryTab() {
         <div className="flex items-center gap-3 rounded-xl border border-roksal-red/20 bg-roksal-red/5 p-3 slide-in-right">
           <AlertTriangle className="h-5 w-5 shrink-0 text-roksal-red" />
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium text-roksal-navy">
+            <p className="text-sm font-medium text-roksal-ink">
               Nizka zaloga!
             </p>
             <p className="truncate text-xs text-muted-foreground">
@@ -525,7 +525,7 @@ export function InventoryTab() {
                     <div className="flex items-center justify-between">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <p className="truncate text-sm font-medium text-roksal-navy">
+                          <p className="truncate text-sm font-medium text-roksal-ink">
                             {item.naziv}
                           </p>
                           {isLow && (
@@ -552,7 +552,7 @@ export function InventoryTab() {
                         <div className="text-right">
                           <p
                             className={`text-lg font-bold tabular-nums ${
-                              isLow ? 'text-roksal-red' : 'text-roksal-navy'
+                              isLow ? 'text-roksal-red' : 'text-roksal-ink'
                             }`}
                           >
                             {item.kolicinaZaloga}
@@ -589,7 +589,7 @@ export function InventoryTab() {
                         type="button"
                         onClick={() => void toggleLots(item)}
                         aria-expanded={lotsOpenId === item.id}
-                        className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 text-[10px] font-semibold text-roksal-navy/70 transition-colors hover:bg-secondary hover:text-roksal-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                        className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 text-[10px] font-semibold text-roksal-ink/70 transition-colors hover:bg-secondary hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
                         title="Od kod je ta material? Šarže, dobavitelji in poraba"
                       >
                         <PackageSearch className="h-3 w-3" aria-hidden="true" />
@@ -642,7 +642,7 @@ export function InventoryTab() {
                                           className={`h-1.5 w-1.5 shrink-0 rounded-full ${st.dot}`}
                                           aria-hidden="true"
                                         />
-                                        <p className="truncate font-mono text-[10px] font-semibold text-roksal-navy">
+                                        <p className="truncate font-mono text-[10px] font-semibold text-roksal-ink">
                                           {lot.lotNumber}
                                         </p>
                                       </div>
@@ -660,7 +660,7 @@ export function InventoryTab() {
                                           <span className="italic">poreklo neznano</span>
                                         )}
                                         {lot.purchasePrice != null && (
-                                          <span className="ml-1 tabular-nums text-roksal-navy/70">
+                                          <span className="ml-1 tabular-nums text-roksal-ink/70">
                                             · {lot.purchasePrice.toLocaleString('sl-SI', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €/{lotsData.inventory.enota}
                                           </span>
                                         )}
@@ -678,7 +678,7 @@ export function InventoryTab() {
                                           style={{ width: `${Math.min(pct, 100)}%` }}
                                         />
                                       </div>
-                                      <span className="shrink-0 text-[10px] font-semibold tabular-nums text-roksal-navy">
+                                      <span className="shrink-0 text-[10px] font-semibold tabular-nums text-roksal-ink">
                                         {lot.quantityRemaining}/{lot.quantityInitial} {lotsData.inventory.enota}
                                       </span>
                                     </div>
@@ -722,7 +722,7 @@ export function InventoryTab() {
             >
               <div className="flex items-start gap-2">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-roksal-amber" aria-hidden="true" />
-                <p className="text-xs text-roksal-navy">
+                <p className="text-xs text-roksal-ink">
                   {invError} Stanja zaloge ni izmišljeno — brez strežnika ni podatka.
                 </p>
               </div>
@@ -754,7 +754,7 @@ export function InventoryTab() {
       <Dialog open={movementOpen} onOpenChange={setMovementOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle className="text-roksal-navy">Premik zaloge</DialogTitle>
+            <DialogTitle className="text-roksal-ink">Premik zaloge</DialogTitle>
             <DialogDescription>
               Zabeležite premik inventarja — porabo, dopolnitev ali odpis.
             </DialogDescription>
@@ -770,7 +770,7 @@ export function InventoryTab() {
                     onClick={() => setMovementType(key)}
                     className={`rounded-lg border p-2 text-center text-xs font-medium transition-all press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 ${
                       movementType === key
-                        ? `border-roksal-navy bg-roksal-navy/10 text-roksal-navy shadow-sm`
+                        ? `border-roksal-navy bg-roksal-navy/10 text-roksal-ink shadow-sm`
                         : 'border-border bg-background text-muted-foreground hover:bg-secondary'
                     }`}
                   >
@@ -849,7 +849,7 @@ export function InventoryTab() {
                         ? 'text-roksal-green'
                         : (selectedItem.kolicinaZaloga - parseFloat(movementQuantity)) < selectedItem.minimalnaZaloga
                           ? 'text-roksal-red'
-                          : 'text-roksal-navy'
+                          : 'text-roksal-ink'
                     }`}>
                       {movementType === 'DOPOLNITEV'
                         ? (selectedItem.kolicinaZaloga + parseFloat(movementQuantity)).toFixed(1)

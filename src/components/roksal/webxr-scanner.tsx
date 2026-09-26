@@ -2308,14 +2308,14 @@ export function WebXrLauncher({ projectId }: { projectId: string | null }) {
             </div>
             <div className="min-w-0 flex-1">
               <div className="mb-1 flex flex-wrap items-center gap-2">
-                <h3 className="text-sm font-semibold text-roksal-navy">WebXR AR — pravi hit-test</h3>
+                <h3 className="text-sm font-semibold text-roksal-ink">WebXR AR — pravi hit-test</h3>
                 <span className="rounded-full bg-roksal-amber/10 px-1.5 py-0.5 text-[8px] font-bold text-roksal-amber">
                   XRFrame
                 </span>
-                <span className="rounded-full bg-roksal-navy/5 px-1.5 py-0.5 text-[8px] font-bold text-roksal-navy">
+                <span className="rounded-full bg-roksal-navy/5 px-1.5 py-0.5 text-[8px] font-bold text-roksal-ink">
                   Verižno
                 </span>
-                <span className="rounded-full bg-roksal-navy/5 px-1.5 py-0.5 text-[8px] font-bold text-roksal-navy">
+                <span className="rounded-full bg-roksal-navy/5 px-1.5 py-0.5 text-[8px] font-bold text-roksal-ink">
                   AR foto
                 </span>
                 <span className="rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[8px] font-bold text-emerald-600">
@@ -2324,20 +2324,20 @@ export function WebXrLauncher({ projectId }: { projectId: string | null }) {
               </div>
               <p className="mb-2 text-[11px] text-muted-foreground">
                 Pravi XRFrame hit-test + sidra (samokalibracija) + Depth API + glajena retikla.
-                Dvo-točkovno: A → B → mera v mm. <span className="font-medium text-roksal-navy">Verižno:</span> vogali ograje → obris Σ, št. stebrov (2,5 m), površina m².
-                <span className="font-medium text-roksal-navy"> Ravnine:</span> tla/stene kot poligoni z m² (Chrome 131+).
+                Dvo-točkovno: A → B → mera v mm. <span className="font-medium text-roksal-ink">Verižno:</span> vogali ograje → obris Σ, št. stebrov (2,5 m), površina m².
+                <span className="font-medium text-roksal-ink"> Ravnine:</span> tla/stene kot poligoni z m² (Chrome 131+).
               </p>
               <div className="mb-2 grid grid-cols-3 gap-1.5 text-center">
                 <div className="rounded-md bg-roksal-navy/[0.04] px-1 py-1.5 ring-1 ring-roksal-navy/10">
-                  <div className="text-[9px] font-bold text-roksal-navy">±1–2 cm</div>
+                  <div className="text-[9px] font-bold text-roksal-ink">±1–2 cm</div>
                   <div className="text-[8px] text-muted-foreground">natančnost</div>
                 </div>
                 <div className="rounded-md bg-roksal-navy/[0.04] px-1 py-1.5 ring-1 ring-roksal-navy/10">
-                  <div className="text-[9px] font-bold text-roksal-navy">obris + m²</div>
+                  <div className="text-[9px] font-bold text-roksal-ink">obris + m²</div>
                   <div className="text-[8px] text-muted-foreground">verižno</div>
                 </div>
                 <div className="rounded-md bg-roksal-navy/[0.04] px-1 py-1.5 ring-1 ring-roksal-navy/10">
-                  <div className="text-[9px] font-bold text-roksal-navy">foto + mere</div>
+                  <div className="text-[9px] font-bold text-roksal-ink">foto + mere</div>
                   <div className="text-[8px] text-muted-foreground">AR posnetki</div>
                 </div>
               </div>

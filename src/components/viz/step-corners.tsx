@@ -351,7 +351,7 @@ export function StepCorners() {
   return (
     <div className="space-y-4">
       <header className="px-1">
-        <h2 className="text-lg font-bold text-roksal-navy">Prilagodite položaj nove ograje</h2>
+        <h2 className="text-lg font-bold text-roksal-ink">Prilagodite položaj nove ograje</h2>
         <p className="text-xs leading-snug text-muted-foreground">
           Povlecite štiri vogale, da se ograja prilega balkonu.
         </p>
@@ -464,7 +464,7 @@ export function StepCorners() {
           </Button>
         </div>
         <div className="mt-3 flex items-center gap-3">
-          <Badge variant="secondary" className="shrink-0 bg-roksal-navy/10 text-[10px] text-roksal-navy">
+          <Badge variant="secondary" className="shrink-0 bg-roksal-navy/10 text-[10px] text-roksal-ink">
             Vogal {activeCorner + 1}
           </Badge>
           <div className="grid grid-cols-3 grid-rows-2 gap-1" role="group" aria-label="Fini premik aktivnega vogala">
@@ -507,7 +507,7 @@ export function StepCorners() {
       </div>
 
       {previewing && (
-        <p className="text-center text-sm font-medium text-roksal-navy" role="status" aria-live="polite">
+        <p className="text-center text-sm font-medium text-roksal-ink" role="status" aria-live="polite">
           Pripravljam predogled …
         </p>
       )}

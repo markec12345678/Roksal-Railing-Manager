@@ -42,6 +42,17 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
   --color-roksal-navy: #1d2b3e;
+  /* R162 — roksal-ink: BESEDILO, ki ga nosi navy v svetli temi in se v
+     temni temi obrne na svetlo nianso (kontrast na bg-card #1a2744).
+     bg-roksal-navy (površine/gumbi) OSTANE navy v obeh temah — zato
+     ločen token, ne override navy-ja. Preklicne izjeme (besedilo na
+     VEDNO svetlih površinah: beli platnani overlayji, solid amber)
+     uporabljajo še naprej text-roksal-navy.
+     ⚠ @theme inline vredišče MORA biti var() referenca (isti vzorec kot
+     --color-background: var(--background)) — če bi bila tukaj hex vrednost,
+     bi jo Tailwind vstAVIL v utility kot literál in .dark override NEBI
+     veljal. Raw vrednosti: --roksal-ink v :root in .dark spodaj. */
+  --color-roksal-ink: var(--roksal-ink);
   --color-roksal-amber: #f59e0b;
   --color-roksal-red: #ef4444;
   --color-roksal-green: #10b981;
@@ -51,6 +62,7 @@
 
 :root {
   --radius: 0.75rem;
+  --roksal-ink: #1d2b3e;
   --background: #f7f9ff;
   --foreground: #1d2b3e;
   --card: #ffffff;
@@ -85,6 +97,9 @@
 }
 
 .dark {
+  /* R162 — svetla niansa navy za besedilo: kontrast na temni kartici
+     (#1a2744) in ozadju (#0f1724) ≈ 10:1 (WCAG AAA za običajno besedilo). */
+  --roksal-ink: #d7e3f4;
   --background: #0f1724;
   --foreground: #e2e8f0;
   --card: #1a2744;
@@ -126,7 +141,10 @@
     scroll-behavior: smooth;
   }
   body {
-    @apply bg-[#f7f9ff] text-foreground;
+    /* R162 — bg-background namesto trdo kodirane svetle #f7f9ff: v temni
+       temi je platno ostalo SVETLO (vse transparentne površine — iskalnik,
+       chips, nav — so svetilele nad njim). V svetli temi vrednost ISTA. */
+    @apply bg-background text-foreground;
     -webkit-tap-highlight-color: transparent;
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;

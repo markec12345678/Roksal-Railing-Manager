@@ -245,14 +245,14 @@ export function InclinometerTab({ projectId }: { projectId: string | null }) {
           <div className="grid w-full grid-cols-2 gap-3">
             <div className="rounded-lg border border-roksal-navy/10 bg-white p-3 text-center transition-[border-color,box-shadow] duration-150 hover:border-roksal-navy/25 hover:shadow-sm">
               <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Levo ↔ Desno</div>
-              <div className="text-2xl font-bold tabular-nums text-roksal-navy">{reading ? angleX.toFixed(1) : '–'}°</div>
+              <div className="text-2xl font-bold tabular-nums text-roksal-ink">{reading ? angleX.toFixed(1) : '–'}°</div>
               <div className="text-[10px] text-muted-foreground">
                 {reading ? (Math.abs(reading.gamma) < 1.5 ? '↓ ravno' : reading.gamma > 0 ? '→ desno' : '← levo') : ''}
               </div>
             </div>
             <div className="rounded-lg border border-roksal-navy/10 bg-white p-3 text-center transition-[border-color,box-shadow] duration-150 hover:border-roksal-navy/25 hover:shadow-sm">
               <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Naprej ↔ Nazaj</div>
-              <div className="text-2xl font-bold tabular-nums text-roksal-navy">{reading ? angleY.toFixed(1) : '–'}°</div>
+              <div className="text-2xl font-bold tabular-nums text-roksal-ink">{reading ? angleY.toFixed(1) : '–'}°</div>
               <div className="text-[10px] text-muted-foreground">
                 {reading ? (angleY < 1.5 ? '↓ ravno' : reading.beta > 90 ? '↓ naprej' : '↑ nazaj') : ''}
               </div>
@@ -415,7 +415,7 @@ export function InclinometerTab({ projectId }: { projectId: string | null }) {
                 className="flex items-center justify-between rounded-lg border border-roksal-navy/10 bg-white p-2.5 text-xs transition-[border-color,box-shadow] duration-150 hover:border-roksal-navy/25 hover:shadow-sm"
               >
                 <div>
-                  <div className="font-medium tabular-nums text-roksal-navy">{s.kotStopinje.toFixed(1)}° ({s.smer === 'Y' ? 'L↔D' : 'N↔Z'})</div>
+                  <div className="font-medium tabular-nums text-roksal-ink">{s.kotStopinje.toFixed(1)}° ({s.smer === 'Y' ? 'L↔D' : 'N↔Z'})</div>
                   <div className="text-muted-foreground">{s.lokacija ?? 'Brez lokacije'}</div>
                 </div>
                 <div className="tabular-nums text-muted-foreground">{new Date(s.createdAt).toLocaleDateString('sl-SI', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</div>

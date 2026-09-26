@@ -33,13 +33,13 @@ export function EmptyState({ icon: Icon, title, description, action, tone = 'def
       <div
         className={cn(
           'flex h-12 w-12 shrink-0 items-center justify-center rounded-full',
-          tone === 'amber' ? 'bg-roksal-amber/10 text-roksal-amber' : 'bg-roksal-navy/5 text-roksal-navy'
+          tone === 'amber' ? 'bg-roksal-amber/10 text-roksal-amber' : 'bg-roksal-navy/5 text-roksal-ink'
         )}
       >
         <Icon className="h-5 w-5" aria-hidden="true" />
       </div>
       <div className="space-y-1">
-        <p className="text-sm font-semibold text-roksal-navy">{title}</p>
+        <p className="text-sm font-semibold text-roksal-ink">{title}</p>
         {description && (
           <p className="mx-auto max-w-[260px] text-xs text-muted-foreground">{description}</p>
         )}

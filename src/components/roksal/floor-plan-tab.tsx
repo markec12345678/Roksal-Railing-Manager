@@ -1583,7 +1583,7 @@ export function FloorPlanTab({ projectId }: FloorPlanTabProps) {
           size="sm"
           variant="outline"
           onClick={importFromMeasurements}
-          className="h-8 shrink-0 border-roksal-navy/20 text-roksal-navy"
+          className="h-8 shrink-0 border-roksal-navy/20 text-roksal-ink"
         >
           <Upload className="mr-1 h-3.5 w-3.5" />
           Uvozi iz meritev
@@ -1593,7 +1593,7 @@ export function FloorPlanTab({ projectId }: FloorPlanTabProps) {
           size="sm"
           variant="outline"
           onClick={() => setLayersOpen(true)}
-          className="h-8 shrink-0 border-roksal-navy/20 text-roksal-navy"
+          className="h-8 shrink-0 border-roksal-navy/20 text-roksal-ink"
         >
           <Layers className="mr-1 h-3.5 w-3.5" />
           Plasti
@@ -1603,7 +1603,7 @@ export function FloorPlanTab({ projectId }: FloorPlanTabProps) {
           size="sm"
           variant="outline"
           onClick={exportPDF}
-          className="h-8 shrink-0 border-roksal-navy/20 text-roksal-navy"
+          className="h-8 shrink-0 border-roksal-navy/20 text-roksal-ink"
         >
           <FileText className="mr-1 h-3.5 w-3.5" />
           PDF
@@ -1613,7 +1613,7 @@ export function FloorPlanTab({ projectId }: FloorPlanTabProps) {
           size="sm"
           variant="outline"
           onClick={exportDXF}
-          className="h-8 shrink-0 border-roksal-navy/20 text-roksal-navy"
+          className="h-8 shrink-0 border-roksal-navy/20 text-roksal-ink"
         >
           <Download className="mr-1 h-3.5 w-3.5" />
           DXF
@@ -1623,7 +1623,7 @@ export function FloorPlanTab({ projectId }: FloorPlanTabProps) {
           size="sm"
           variant="outline"
           onClick={exportPNG}
-          className="h-8 shrink-0 border-roksal-navy/20 text-roksal-navy"
+          className="h-8 shrink-0 border-roksal-navy/20 text-roksal-ink"
         >
           <FileImage className="mr-1 h-3.5 w-3.5" />
           PNG
@@ -1633,7 +1633,7 @@ export function FloorPlanTab({ projectId }: FloorPlanTabProps) {
           size="sm"
           variant="outline"
           onClick={saveAsSketch}
-          className="h-8 shrink-0 border-roksal-navy/20 text-roksal-navy"
+          className="h-8 shrink-0 border-roksal-navy/20 text-roksal-ink"
         >
           <Save className="mr-1 h-3.5 w-3.5" />
           Skica
@@ -1753,7 +1753,7 @@ export function FloorPlanTab({ projectId }: FloorPlanTabProps) {
                         className={`h-9 shrink-0 px-2.5 ${
                           active
                             ? 'bg-roksal-navy text-white hover:bg-roksal-navy/90'
-                            : 'border-roksal-navy/20 text-roksal-navy'
+                            : 'border-roksal-navy/20 text-roksal-ink'
                         }`}
                       >
                         <Icon className="h-4 w-4" />
@@ -1773,7 +1773,7 @@ export function FloorPlanTab({ projectId }: FloorPlanTabProps) {
       <Sheet open={!!selectedElement} onOpenChange={(o) => { if (!o) setSelectedId(null) }}>
         <SheetContent side="bottom" className="rounded-t-2xl max-h-[80vh] overflow-y-auto">
           <SheetHeader>
-            <SheetTitle className="text-roksal-navy">
+            <SheetTitle className="text-roksal-ink">
               {selectedElement ? elementLabel(selectedElement) : 'Lastnosti'}
             </SheetTitle>
             <SheetDescription>
@@ -1835,7 +1835,7 @@ export function FloorPlanTab({ projectId }: FloorPlanTabProps) {
       <Sheet open={layersOpen} onOpenChange={setLayersOpen}>
         <SheetContent side="bottom" className="rounded-t-2xl max-h-[85dvh] overflow-y-auto scrollbar-thin">
           <SheetHeader>
-            <SheetTitle className="text-roksal-navy">Plasti</SheetTitle>
+            <SheetTitle className="text-roksal-ink">Plasti</SheetTitle>
             <SheetDescription>Vidnost slojev v tlorisu.</SheetDescription>
           </SheetHeader>
           <div className="px-4 pb-6 space-y-3">
@@ -1856,7 +1856,7 @@ export function FloorPlanTab({ projectId }: FloorPlanTabProps) {
                     className="h-3 w-3 rounded-sm"
                     style={{ backgroundColor: layer.color }}
                   />
-                  <span className="text-sm font-medium text-roksal-navy">{layer.label}</span>
+                  <span className="text-sm font-medium text-roksal-ink">{layer.label}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   {layers[layer.key] ? (
@@ -1972,7 +1972,7 @@ function StatCard({
   accent: 'navy' | 'amber' | 'green'
 }) {
   const colors = {
-    navy: 'bg-roksal-navy/5 text-roksal-navy border-roksal-navy/15',
+    navy: 'bg-roksal-navy/5 text-roksal-ink border-roksal-navy/15',
     amber: 'bg-roksal-amber/10 text-roksal-amber border-roksal-amber/25',
     green: 'bg-roksal-green/10 text-roksal-green border-roksal-green/25',
   }

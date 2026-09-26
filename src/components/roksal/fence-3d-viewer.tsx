@@ -217,10 +217,10 @@ export function Fence3dViewer() {
           </div>
           <div className="min-w-0 flex-1">
             <div className="mb-1 flex flex-wrap items-center gap-2">
-              <h3 className="text-sm font-semibold text-roksal-navy">3D ograja v AR</h3>
+              <h3 className="text-sm font-semibold text-roksal-ink">3D ograja v AR</h3>
               <span className="rounded-full bg-roksal-amber/10 px-1.5 py-0.5 text-[8px] font-bold text-roksal-amber">model-viewer</span>
-              <span className="rounded-full bg-roksal-navy/5 px-1.5 py-0.5 text-[8px] font-bold text-roksal-navy">GLB</span>
-              <span className="rounded-full bg-roksal-navy/5 px-1.5 py-0.5 text-[8px] font-bold text-roksal-navy">USDZ · Quick Look</span>
+              <span className="rounded-full bg-roksal-navy/5 px-1.5 py-0.5 text-[8px] font-bold text-roksal-ink">GLB</span>
+              <span className="rounded-full bg-roksal-navy/5 px-1.5 py-0.5 text-[8px] font-bold text-roksal-ink">USDZ · Quick Look</span>
               <span className="rounded-full bg-roksal-amber/10 px-1.5 py-0.5 text-[8px] font-bold text-roksal-amber">5× RAL</span>
             </div>
             <p className="text-[11px] leading-relaxed text-muted-foreground">
@@ -289,7 +289,7 @@ export function Fence3dViewer() {
                     : 'border-roksal-navy/10 bg-white hover:border-roksal-navy/25 hover:bg-roksal-navy/[0.03]'
                 }`}
               >
-                <span className={`flex items-center gap-1.5 text-[12px] font-bold ${variant === v.id ? 'text-roksal-amber' : 'text-roksal-navy'}`}>
+                <span className={`flex items-center gap-1.5 text-[12px] font-bold ${variant === v.id ? 'text-roksal-amber' : 'text-roksal-ink'}`}>
                   {v.id === 'klasika' ? <Layers className="h-3.5 w-3.5" /> : <PanelTop className="h-3.5 w-3.5" />}
                   {v.label}
                   {isLoaded && variant === v.id && <CheckCircle2 className="ml-auto h-3 w-3 text-green-500" />}
@@ -322,13 +322,13 @@ export function Fence3dViewer() {
                   {r.code === '9016' && <span className="sr-only">bela</span>}
                   {ral === r.code && (
                     <CheckCircle2
-                      className={`h-4 w-4 ${r.code === '9016' ? 'text-roksal-navy' : 'text-white'}`}
+                      className={`h-4 w-4 ${r.code === '9016' ? 'text-roksal-ink' : 'text-white'}`}
                       strokeWidth={3}
                     />
                   )}
                 </button>
               ))}
-              <span className="ml-auto rounded-md bg-roksal-navy/[0.06] px-2 py-1 text-right text-[9px] font-bold leading-tight text-roksal-navy">
+              <span className="ml-auto rounded-md bg-roksal-navy/[0.06] px-2 py-1 text-right text-[9px] font-bold leading-tight text-roksal-ink">
                 {activeRal.code}
                 <span className="block font-medium text-muted-foreground">{activeRal.name}</span>
               </span>
@@ -366,15 +366,15 @@ export function Fence3dViewer() {
               <>
                 <Smartphone className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
                 <p className="text-[10px] leading-relaxed text-muted-foreground">
-                  AR gumb bo deloval na <strong className="text-roksal-navy">telefonu</strong> (Android: Scene Viewer · iPhone: Quick Look).
+                  AR gumb bo deloval na <strong className="text-roksal-ink">telefonu</strong> (Android: Scene Viewer · iPhone: Quick Look).
                   Na računalniku vrti 3D model s prstom/miško.
                 </p>
               </>
             ) : (
               <>
-                <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-roksal-navy/50" />
+                <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-roksal-ink/50" />
                 <p className="text-[10px] leading-relaxed text-muted-foreground">
-                  Klikni <strong className="text-roksal-navy">„Poglej v prostoru“</strong> — Scene Viewer/Quick Look
+                  Klikni <strong className="text-roksal-ink">„Poglej v prostoru“</strong> — Scene Viewer/Quick Look
                   namesti segment v pravi velikosti; stranka potrdi višino in barvo na mestu.
                 </p>
               </>

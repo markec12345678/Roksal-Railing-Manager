@@ -149,12 +149,12 @@ function PipelineCardVisual({
       <p className="mt-0.5 truncate text-[11px] text-muted-foreground">{p.customer?.ime ?? '—'}</p>
       <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
         {p.estimatedPrice != null && (
-          <span className="text-xs font-bold text-roksal-navy dark:text-roksal-amber">
+          <span className="text-xs font-bold text-roksal-ink dark:text-roksal-amber">
             {fmtEur(p.estimatedPrice)}
           </span>
         )}
         {p.dealLocked && (
-          <span title="Podpis — deal lock" className="inline-flex items-center gap-0.5 text-[10px] font-medium text-roksal-navy dark:text-roksal-amber">
+          <span title="Podpis — deal lock" className="inline-flex items-center gap-0.5 text-[10px] font-medium text-roksal-ink dark:text-roksal-amber">
             <Lock className="h-3 w-3" /> podpis
           </span>
         )}
@@ -456,7 +456,7 @@ export function DealPipeline() {
           </div>
           <div className="flex flex-wrap items-center gap-1.5 sm:justify-end">
             {vrednostPonudb > 0 && (
-              <Badge variant="outline" className="gap-1 border-roksal-navy/30 text-[11px] text-roksal-navy dark:text-roksal-amber">
+              <Badge variant="outline" className="gap-1 border-roksal-navy/30 text-[11px] text-roksal-ink dark:text-roksal-amber">
                 <Euro className="h-3 w-3" aria-hidden />
                 {fmtEur(vrednostPonudb)} v obdelavi
               </Badge>

@@ -77,7 +77,7 @@ export function RALColorPicker({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col gap-4 p-4 sm:p-6">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-roksal-navy dark:text-white">
+          <DialogTitle className="flex items-center gap-2 text-roksal-ink dark:text-white">
             <Palette className="w-5 h-5 text-roksal-amber" />
             Izberi RAL barvo
           </DialogTitle>
@@ -124,7 +124,7 @@ export function RALColorPicker({
               style={{ backgroundColor: selectedColor.hexColor }}
             />
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-semibold text-roksal-navy dark:text-white">
+              <div className="text-sm font-semibold text-roksal-ink dark:text-white">
                 RAL {selectedColor.code}
               </div>
               <div className="text-xs text-muted-foreground truncate">
@@ -179,7 +179,7 @@ export function RALColorPicker({
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="text-xs font-semibold truncate text-roksal-navy dark:text-white">
+                      <div className="text-xs font-semibold truncate text-roksal-ink dark:text-white">
                         RAL {color.code}
                       </div>
                       <div className="text-[10px] text-muted-foreground truncate">

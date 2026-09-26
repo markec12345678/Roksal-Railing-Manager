@@ -382,7 +382,7 @@ export default function Home() {
         <div className="mx-auto w-full max-w-lg px-3 pb-1 md:max-w-3xl lg:max-w-5xl">
           <div className="flex items-center gap-2 rounded-lg border border-roksal-amber/30 bg-roksal-amber/5 px-3 py-1.5 text-[11px]">
             <Camera className="h-3 w-3 text-roksal-amber" />
-            <span className="font-medium text-roksal-navy">{selectedProject.nazivProjekta}</span>
+            <span className="font-medium text-roksal-ink">{selectedProject.nazivProjekta}</span>
             <span className="text-muted-foreground">·</span>
             <span className="text-muted-foreground truncate">{selectedProject.customer?.naslov ?? 'Brez naslova'}</span>
           </div>
@@ -463,7 +463,7 @@ export default function Home() {
               <ChevronLeft className="mr-1 h-4 w-4" />
               Nazaj
             </Button>
-            <h2 className="mb-3 text-lg font-bold text-roksal-navy">{moreLabel}</h2>
+            <h2 className="mb-3 text-lg font-bold text-roksal-ink">{moreLabel}</h2>
             {moreTab === 'vodja' && <VodjaDashboard />}
         {moreTab === 'ekipa' && <TeamTab />}
             {moreTab === 'teren' && <SiteSurveyTab projectId={selectedProjectId} project={selectedProject} />}
