@@ -2488,16 +2488,20 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
       toast.error('Ni stebrov za izvoz')
       return
     }
-    const header = 'Oznaka,Tip,Pozicija(mm),Razmik(mm),Visina(mm),Material,Opomba'
+    // R156: Status stolpec — usklajen s splošnim CSV izvozom (P1 dodan tudi
+    // v per-segment izvoz; R154 odloženo, zdaj dopolnjeno. Vrednosti iz
+    // statusLabels jedra — enak vir resnice kot UI in strežniški filter).
+    const header = 'Oznaka,Tip,Status,Pozicija(mm),Razmik(mm),Visina(mm),Material,Opomba'
     const rows = stebri.map((m) => {
       const o = (m.steberOznaka || m.oznaka || '').replace(/"/g, '""')
       const t = m.tipStebra ? tipStebraLabels[m.tipStebra] : ''
+      const status = statusLabels[m.status || 'OSNUTEK']
       const poz = m.pozicijaMm ? String(Math.round(m.pozicijaMm)) : ''
       const raz = m.razmikMm ? String(Math.round(m.razmikMm)) : '—'
       const vis = m.visinaStebraMm ? String(Math.round(m.visinaStebraMm)) : ''
       const mat = m.materialStebra ? materialStebraLabels[m.materialStebra] : ''
       const op = (m.opomba || '').replace(/"/g, '""')
-      return `"${o}","${t}",${poz},${raz},${vis},"${mat}","${op}"`
+      return `"${o}","${t}","${status}",${poz},${raz},${vis},"${mat}","${op}"`
     })
     const csvContent = '\uFEFF' + header + '\n' + rows.join('\n')
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })

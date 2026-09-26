@@ -35,6 +35,7 @@ import {
   CheckCircle2,
   Building2,
   User,
+  Loader2,
 } from 'lucide-react'
 
 interface CrmCustomer {
@@ -179,15 +180,25 @@ export function CrmTab() {
           opombeCRM: editOpombe || null,
         }),
       })
+      // R156: fail-verbose — razlog iz odgovora (403 pravica, 400 validacija,
+      // 404 neznana stranka; prej generična napaka brez razloga).
       if (res.ok) {
         toast({ title: 'CRM posodobljen' })
         setEditOpen(false)
         loadCustomers()
       } else {
-        toast({ title: 'Napaka pri shranjevanju', variant: 'destructive' })
+        const reason = await res.json().catch(() => null)
+        toast({
+          title: 'Napaka pri shranjevanju',
+          description:
+            reason && typeof reason.error === 'string'
+              ? reason.error
+              : `Shranjevanje ni uspelo (HTTP ${res.status}).`,
+          variant: 'destructive',
+        })
       }
     } catch {
-      toast({ title: 'Omrežna napaka', variant: 'destructive' })
+      toast({ title: 'Omrežna napaka', description: 'Preveri povezavo in poskusi znova.', variant: 'destructive' })
     } finally {
       setSaving(false)
     }
@@ -301,7 +312,20 @@ export function CrmTab() {
       ) : (
         <div className="space-y-2">
           {filtered.map((c) => (
-            <Card key={c.id} className="cursor-pointer transition-[border-color,box-shadow] duration-150 hover:border-roksal-amber/40 hover:shadow-sm" onClick={() => handleOpenDetail(c)}>
+            <Card
+              key={c.id}
+              role="button"
+              tabIndex={0}
+              aria-label={`Stranka ${c.ime} — odpri podrobnosti (LTV ${formatLTV(c.ltv)}, ${c.skupajProjektov} projektov)`}
+              className="cursor-pointer outline-none transition-[border-color,box-shadow] duration-150 hover:border-roksal-amber/40 hover:shadow-sm focus-visible:border-roksal-amber focus-visible:ring-2 focus-visible:ring-roksal-amber focus-visible:ring-offset-2"
+              onClick={() => handleOpenDetail(c)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  handleOpenDetail(c)
+                }
+              }}
+            >
               <CardContent className="p-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
@@ -350,13 +374,14 @@ export function CrmTab() {
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="shrink-0 h-7 focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                    aria-label={`Uredi CRM: ${c.ime}`}
+                    className="shrink-0 h-7 outline-none focus-visible:ring-2 focus-visible:ring-roksal-amber focus-visible:ring-offset-2 hover:bg-amber-50 hover:text-roksal-navy"
                     onClick={(e) => {
                       e.stopPropagation()
                       handleOpenEdit(c)
                     }}
                   >
-                    <Edit className="h-3.5 w-3.5" />
+                    <Edit className="h-3.5 w-3.5" aria-hidden="true" />
                   </Button>
                 </div>
               </CardContent>
@@ -513,35 +538,55 @@ export function CrmTab() {
             </div>
 
             <div>
-              <Label className="text-xs">Kontaktna oseba</Label>
-              <Input value={editKontaktnaOseba} onChange={(e) => setEditKontaktnaOseba(e.target.value)} placeholder="npr. Janez Novak (predsednik uprave)" className="h-9" />
+              <Label htmlFor="crm-kontaktna" className="text-xs">Kontaktna oseba</Label>
+              <Input id="crm-kontaktna" value={editKontaktnaOseba} onChange={(e) => setEditKontaktnaOseba(e.target.value)} placeholder="npr. Janez Novak (predsednik uprave)" maxLength={120} className="h-9" />
             </div>
 
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <Label className="text-xs">Zadnji kontakt</Label>
-                <Input type="date" value={editZadnjiKontakt} onChange={(e) => setEditZadnjiKontakt(e.target.value)} className="h-9" />
+                <Label htmlFor="crm-zadnji-kontakt" className="text-xs">Zadnji kontakt</Label>
+                <Input id="crm-zadnji-kontakt" type="date" value={editZadnjiKontakt} onChange={(e) => setEditZadnjiKontakt(e.target.value)} className="h-9" />
               </div>
               <div>
-                <Label className="text-xs">Opomnik datum</Label>
-                <Input type="date" value={editOpomnikDatum} onChange={(e) => setEditOpomnikDatum(e.target.value)} className="h-9" />
+                <Label htmlFor="crm-opomnik-datum" className="text-xs">Opomnik datum</Label>
+                <Input id="crm-opomnik-datum" type="date" value={editOpomnikDatum} onChange={(e) => setEditOpomnikDatum(e.target.value)} className="h-9" />
               </div>
             </div>
 
             <div>
-              <Label className="text-xs">Opomnik opis</Label>
-              <Input value={editOpomnikOpis} onChange={(e) => setEditOpomnikOpis(e.target.value)} placeholder="npr. Letni pregled balkonov" className="h-9" />
+              <Label htmlFor="crm-opomnik-opis" className="text-xs">Opomnik opis</Label>
+              <Input id="crm-opomnik-opis" value={editOpomnikOpis} onChange={(e) => setEditOpomnikOpis(e.target.value)} placeholder="npr. Letni pregled balkonov" maxLength={300} className="h-9" />
             </div>
 
             <div>
-              <Label className="text-xs">Opombe (interne, ne za stranko)</Label>
-              <Textarea value={editOpombe} onChange={(e) => setEditOpombe(e.target.value)} placeholder="Interne opombe..." className="min-h-[60px]" />
+              <Label htmlFor="crm-opombe" className="text-xs">Opombe (interne, ne za stranko)</Label>
+              <Textarea id="crm-opombe" value={editOpombe} onChange={(e) => setEditOpombe(e.target.value)} placeholder="Interne opombe..." maxLength={2000} className="min-h-[60px]" />
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setEditOpen(false)}>Prekliči</Button>
-            <Button type="button" onClick={handleSaveEdit} disabled={saving} className="bg-roksal-navy text-white">
-              {saving ? 'Shranjujem...' : 'Shrani'}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setEditOpen(false)}
+              className="focus-visible:ring-2 focus-visible:ring-roksal-amber focus-visible:ring-offset-2"
+            >
+              Prekliči
+            </Button>
+            <Button
+              type="button"
+              onClick={handleSaveEdit}
+              disabled={saving}
+              aria-busy={saving}
+              className="bg-roksal-navy text-white focus-visible:ring-2 focus-visible:ring-roksal-amber focus-visible:ring-offset-2 disabled:opacity-50"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" aria-hidden="true" />
+                  Shranjujem…
+                </>
+              ) : (
+                'Shrani'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

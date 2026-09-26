@@ -488,7 +488,7 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `bun run dev` | Zažene Next.js dev server (port 3000) |
 | `bun run build` | Produkcijska build (build-prepare: generate + migrate deploy + seed) |
 | `bun run start` | Zažene produkcijski server |
-| `bun run test` | Vsi testi (vitest, 1075, embedded PG prek globalSetup) |
+| `bun run test` | Vsi testi (vitest, 1086, embedded PG prek globalSetup) |
 | `bun run check` | tsc --noEmit + vitest run (en ukaz za vse) |
 | `bunx tsc --noEmit` | Tipska kontrola celotnega projekta (trenutno 0 napak) |
 | `bun run lint` | ESLint preverjanje |
@@ -602,7 +602,7 @@ zahtevajo sejo ali servisni ključ + resource-level avtorizacijo — glej
 | `/api/material-prices` · `suppliers` · `material-orders` | CRUD | Ceniki, dobavitelji, naročila (vodstvo) |
 | `/api/documents` · `/api/invoices` (+`eslog`) · `/api/signature-audit` | CRUD | Dokumenti, računi, e-SLOG, podpisi |
 | `/api/crews` · `/api/schedules` | CRUD | Ekipe in koledar montaže |
-| `/api/crm` | GET, POST | CRM (LTV, opomniki) |
+| `/api/crm` | GET, PATCH | CRM (LTV, opomniki) — PATCH: customers.write vrata + stroga validacija + revizija (R156) |
 | `/api/punch` | GET, POST, PATCH, DELETE | Prejemni zapisnik |
 | `/api/deal-lock` | GET, POST | Zaklep dogovora (audit v transakciji) |
 | `/api/portal` | GET, POST | Portal stranke (clientToken) |

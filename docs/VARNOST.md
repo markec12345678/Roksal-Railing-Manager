@@ -297,3 +297,27 @@ stripanje izrecno odloženo), localStorage inventar + čiščenje ob odjavi,
 revizije brez gesel/IP/stackov, in tabela "kaj namenoma NE hranimo".
 Dokument je trditev-po-trditev vezan na datoteke — posodablja se v isti
 rundi kot koda (konvencija tega dokumenta).
+
+## CRM vrata + stroga validacija (R156)
+
+`/api/crm` PATCH je preverjal SAMO prijavo — SKLADISCE in API ključ sta
+lahko prepisala CRM polja (status, interne opombe, kontaktna oseba) KATERE
+KOLI stranke. Preverba ostalih kandidatov iz R155: `material-orders` GET
+je NAMERNO "vsi poslovni principalci" (naročila so družbeno nivojska
+nabava, dokumentirana R120 odločitev — brez kontradikcije tipa invoices)
+— brez popravka.
+
+| | Pravilo |
+|---|---|
+| **Vrata** | `canManageCustomers` (customers.write — isti prag kot POST /api/customers; matrika §10: MONTER+ piše, SKLADISCE samo bere, apikey nič). |
+| **Status STROGO enum** | `AKTIVEN|NEAKTIVEN|POTENCIALEN|ARHIVIRAN` — poljuben niz → 400 z izrecnim seznamom (prej: tiho zapisan → pokvarjeni GET filter). |
+| **Datumi strogo parsani** | `opomnikDatum`/`zadnjiKontakt` → neveljaven niz → 400 (prej: Prisma 500 ALI Invalid Date). `null` → počisti. |
+| **Besedilni stropi** | kontaktnaOseba 120, kategorija 80, opomnikOpis 300, opombeCRM 2000 znakov → 400 z razlogom; ne-niz tipi → 400. |
+| **404 PRED zapisom** | Neznana stranka → 404 (prej: Prisma 500). |
+| **Revizija §19** | `CRM_UPDATE` z PRAVIM akterjem (seja, prej userId 'system') + oldValue (stanje PRED) + newValue `spremembe` (dejansko uporabljene vrednosti). |
+
+UI (CRM tab): fail-verbose toasti z razlogom iz odgovora, `aria-busy` +
+Loader2 med shranjevanjem, Label/htmlFor vezave + maxLength na vseh poljih,
+strankina kartica `role="button"` + `tabIndex` + Enter/Space tipkovnica
+(prej samo div onClick — nedosegljiva s tipkovnico), Edit svinčnik z
+aria-label `Uredi CRM: {ime}`.
