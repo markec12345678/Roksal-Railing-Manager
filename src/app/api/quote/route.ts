@@ -14,6 +14,7 @@ import { lacksPermission } from '@/lib/access'
 import { auditAsync } from '@/lib/audit'
 import { defaultRailingSpec, layoutRailing, mergeSpec, perimeterOf, type Vec3 } from '@/lib/railing-layout'
 import { buildQuote, defaultPriceBook, mergePriceBook, quoteSummary } from '@/lib/quote'
+import { quoteInputFingerprint } from '@/lib/quote-repro'
 import { quoteSchema } from '@/lib/validations'
 
 export async function POST(request: Request) {
@@ -42,13 +43,24 @@ export async function POST(request: Request) {
     const layout = layoutRailing(perimeterOf(vecs, closed, overridesMm ?? {}), spec)
     const quote = buildQuote(layout, spec, priceBook)
 
+    // R151 (§35): reprodukcija — odtis nad UČINKOVITIMI vhodi (združena
+    // specifikacija + združen cenik, točke v vrstnem redu). Isti učinkoviti
+    // vhod + ista verzija formule = isti total (dokazljivo brez ugibanja).
+    const reproducibility = quoteInputFingerprint({
+      points: points.map((p) => ({ xM: p.xM, yM: p.yM ?? 0, zM: p.zM })),
+      closed,
+      overridesMm: overridesMm ?? {},
+      spec,
+      prices: priceBook,
+    })
+
     if (auth.kind === 'user') {
       auditAsync({
         request,
         session: auth.session,
         akcija: 'QUOTE_CALCULATED',
         projectId: projectId ?? null,
-        newValue: { total: quote.total, runM: quote.runM, lines: quote.items.length },
+        newValue: { total: quote.total, runM: quote.runM, lines: quote.items.length, inputHash: reproducibility.inputHash },
       })
     }
 
@@ -57,6 +69,7 @@ export async function POST(request: Request) {
       summary: quoteSummary(layout, spec, quote),
       warnings: layout.warnings,
       cutList: quote.cutList,
+      reproducibility,
     })
   } catch (error) {
     console.error('Quote POST error:', error)

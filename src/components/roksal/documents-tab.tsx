@@ -32,7 +32,7 @@ import {
   CheckCircle2,
   Loader2,
   FolderOpen,
-  X,
+
   FileStack,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -44,6 +44,12 @@ interface DocumentItem {
   status: string
   createdAt: string
   projectId: string
+  // R151 (§35): reprodukcija — verzija + sha256 odtis iz API-ja (iskreno;
+  // manjkajoča polja = podatka ni, ne izmišljujemo).
+  verzija?: number
+  sha256?: string | null
+  storageKey?: string | null
+  versions?: { version: number; storageKey?: string; sha256?: string }[]
 }
 
 interface Project {
@@ -102,24 +108,25 @@ export function DocumentsTab() {
             const docRes = await fetch(`/api/documents?projectId=${firstProjectId}`)
             if (docRes.ok) {
               const docData = await docRes.json()
-              if (docData.length > 0) {
-                setDocuments(docData)
-              } else {
-                setDocuments(demoDocuments)
-              }
+              setDocuments(docData)
             } else {
-              setDocuments(demoDocuments)
+              // R151: brez tihe degradacije — API napaka je izrecna, ne demo podatki.
+              setDocuments([])
+              toast.error('Dokumentov ni mogoče naložiti (napaka strežnika)')
             }
           } else {
-            setDocuments(demoDocuments)
+            setDocuments([])
           }
         } else {
-          setProjects(demoProjects)
-          setDocuments(demoDocuments)
+          // R151: brez demo projekatov/dokumentov — prazen + izrecna napaka.
+          setProjects([])
+          setDocuments([])
+          toast.error('Projektov ni mogoče naložiti (napaka strežnika)')
         }
       } catch {
-        setProjects(demoProjects)
-        setDocuments(demoDocuments)
+        setProjects([])
+        setDocuments([])
+        toast.error('Povezava ni uspela — podatki niso na voljo')
       } finally {
         setLoading(false)
       }
@@ -134,14 +141,14 @@ export function DocumentsTab() {
         const docRes = await fetch(`/api/documents?projectId=${selectedProject}`)
         if (docRes.ok) {
           const docData = await docRes.json()
-          if (docData.length > 0) {
-            setDocuments(docData)
-          } else {
-            setDocuments([])
-          }
+          setDocuments(docData)
+        } else {
+          // R151: napaka je izrecna — ne pusti zastarelih podatkov kot lažno varnost.
+          setDocuments([])
+          toast.error('Dokumentov ni mogoče naložiti (napaka strežnika)')
         }
       } catch {
-        // keep existing docs
+        toast.error('Povezava ni uspela — podatki niso na voljo')
       }
     }
     fetchDocs()
@@ -168,54 +175,57 @@ export function DocumentsTab() {
           {
             id: data.id,
             tipDokumenta: data.tipDokumenta,
-            pdfUrl: data.pdfUrl,
+            pdfUrl: data.url ?? null,
             status: data.status,
-            createdAt: data.createdAt,
-            projectId: data.projectId,
+            createdAt: data.createdAt ?? new Date().toISOString(),
+            projectId: data.projectId ?? selectedProject,
+            verzija: data.verzija,
+            sha256: data.sha256,
+            storageKey: data.storageKey ?? null,
           },
           ...prev,
         ])
-        toast.success(`Dokument "${docTypeLabels[type]}" ustvarjen`)
+        toast.success(`Dokument "${docTypeLabels[type]}" ustvarjen (v${data.verzija ?? 1})`)
       } else {
-        setDocuments((prev) => [
-          {
-            id: `local_${Date.now()}`,
-            tipDokumenta: type,
-            pdfUrl: null,
-            status: 'GENERIRANO',
-            createdAt: new Date().toISOString(),
-            projectId: selectedProject,
-          },
-          ...prev,
-        ])
-        toast.success(`Dokument "${docTypeLabels[type]}" ustvarjen (lokalno)`)
+        // R151 (popravek fail-open buga): nič izmišljenih vrstic — API napaka
+        // je izrecna, dokument NE OBSTAJA in seznam to iskreno pokaže.
+        let reason = 'napaka strežnika'
+        try {
+          const errData = await res.json()
+          if (typeof errData?.error === 'string') reason = errData.error
+        } catch { /* body brez JSON — keep reason */ }
+        toast.error(`Generiranje dokumenta ni uspelo: ${reason}`)
       }
-    } catch {
-      setDocuments((prev) => [
-        {
-          id: `local_${Date.now()}`,
-          tipDokumenta: type,
-          pdfUrl: null,
-          status: 'GENERIRANO',
-          createdAt: new Date().toISOString(),
-          projectId: selectedProject,
-        },
-        ...prev,
-      ])
-      toast.success(`Dokument "${docTypeLabels[type]}" ustvarjen (lokalno)`)
+    } catch (err) {
+      // R151: nič "lokalno ustvarjen" falsifikatov — povezava ni uspela.
+      toast.error(`Generiranje dokumenta ni uspelo: ${err instanceof Error ? err.message : 'povezava ni uspela'}`)
     } finally {
       setDocLoading(false)
     }
   }
 
-  function handleDeleteDoc(docId: string) {
-    setDocuments((prev) => prev.filter((d) => d.id !== docId))
-    toast.success('Dokument odstranjen')
-  }
+  // R151: handleDeleteDoc ODSTRANJEN — brisanje uradnih dokumentov ni delo
+  // klienta (dokumenti so revizijski artefakti z verzijami v object storage;
+  // DELETE API-ja ni, prejšnji gumb je bil no-op s success toastom = falsifikat).
 
   function openDocPreview(doc: DocumentItem) {
     setPreviewDoc(doc)
     setPreviewOpen(true)
+  }
+
+  // R151 (§35): verzija iz API-ja (POST) ali iz zadnje verzije (GET list).
+  function verzijaOf(doc: DocumentItem): number | undefined {
+    if (doc.verzija) return doc.verzija
+    const last = doc.versions?.[doc.versions.length - 1]?.version
+    return last
+  }
+
+  // R151: pravi PDF je v object storage — datoteka se prenese prek
+  // avtenticirane /api/files rute (brez stub toastov).
+  function fileUrlOf(doc: DocumentItem): string | null {
+    if (doc.storageKey) return `/api/files/${doc.storageKey}`
+    if (doc.pdfUrl && doc.pdfUrl.startsWith('/api/files/')) return doc.pdfUrl
+    return null
   }
 
   // Document count summary
@@ -342,10 +352,12 @@ export function DocumentsTab() {
               {documents.map((doc) => {
                 const Icon = docTypeIcons[doc.tipDokumenta] || FileText
                 const statusCfg = statusConfig[doc.status] || statusConfig.GENERIRANO
+                const verzija = verzijaOf(doc)
+                const fileUrl = fileUrlOf(doc)
                 return (
                   <div
                     key={doc.id}
-                    className="flex items-center justify-between rounded-lg border border-border/50 p-3 transition-colors hover:bg-secondary/30 slide-in-right cursor-pointer"
+                    className="flex items-center justify-between rounded-lg border border-border/50 p-3 transition-colors hover:bg-secondary/30 slide-in-right cursor-pointer focus-within:outline-none focus-within:ring-2 focus-within:ring-roksal-navy/40"
                     onClick={() => openDocPreview(doc)}
                   >
                     <div className="flex items-center gap-3 min-w-0">
@@ -358,46 +370,47 @@ export function DocumentsTab() {
                         </p>
                         <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                           <Clock className="h-3 w-3" />
-                          {new Date(doc.createdAt).toLocaleDateString('sl-SI', {
-                            day: 'numeric',
-                            month: 'short',
-                          })}
+                          <span className="tabular-nums">
+                            {new Date(doc.createdAt).toLocaleDateString('sl-SI', {
+                              day: 'numeric',
+                              month: 'short',
+                            })}
+                          </span>
+                          {/* R151 (§35): verzija + odtis — reprodukcija vidna na prvi pogled */}
+                          {verzija && (
+                            <span className="tabular-nums font-mono text-muted-foreground/80">v{verzija}</span>
+                          )}
+                          {doc.sha256 && (
+                            <span className="font-mono tabular-nums text-muted-foreground/80" title={`SHA-256: ${doc.sha256}`}>
+                              odtis {doc.sha256.slice(0, 8)}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <Badge className={`text-[10px] h-5 px-1.5 ${statusCfg.color}`}>
-                        {doc.pdfUrl ? (
+                        {fileUrl ? (
                           <Eye className="mr-1 h-2.5 w-2.5" />
                         ) : (
                           <CheckCircle2 className="mr-1 h-2.5 w-2.5" />
                         )}
                         {statusCfg.label}
                       </Badge>
-                      {doc.pdfUrl && (
+                      {fileUrl && (
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7"
+                          className="h-7 w-7 focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                          aria-label={`Prenesi PDF: ${docTypeLabels[doc.tipDokumenta] || doc.tipDokumenta}${verzija ? `, verzija ${verzija}` : ''}`}
                           onClick={(e) => {
                             e.stopPropagation()
-                            toast.info('PDF generiranje bo kmalu na voljo')
+                            window.open(fileUrl, '_blank', 'noopener')
                           }}
                         >
                           <Download className="h-3.5 w-3.5 text-muted-foreground" />
                         </Button>
                       )}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 text-muted-foreground hover:text-roksal-red"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleDeleteDoc(doc.id)
-                        }}
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </Button>
                     </div>
                   </div>
                 )
@@ -459,7 +472,7 @@ export function DocumentsTab() {
                     <Clock className="h-3.5 w-3.5 text-muted-foreground" />
                     <span className="text-xs text-muted-foreground">Datum ustvarjanja</span>
                   </div>
-                  <span className="text-xs font-medium text-roksal-navy">
+                  <span className="text-xs font-medium text-roksal-navy tabular-nums">
                     {new Date(previewDoc.createdAt).toLocaleDateString('sl-SI', {
                       day: 'numeric',
                       month: 'long',
@@ -467,6 +480,27 @@ export function DocumentsTab() {
                     })}
                   </span>
                 </div>
+
+                {/* R151 (§35): verzija + odtis — reprodukcija dokumenta */}
+                {verzijaOf(previewDoc) && (
+                  <div className="flex items-center justify-between rounded-lg border border-border/50 p-3">
+                    <div className="flex items-center gap-2">
+                      <FileStack className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">Verzija</span>
+                    </div>
+                    <span className="text-xs font-medium text-roksal-navy font-mono tabular-nums">
+                      v{verzijaOf(previewDoc)}
+                    </span>
+                  </div>
+                )}
+                {previewDoc.sha256 && (
+                  <div className="flex items-center justify-between rounded-lg border border-border/50 p-3">
+                    <span className="text-xs text-muted-foreground">Odtis (SHA-256)</span>
+                    <span className="text-xs font-medium text-roksal-navy font-mono tabular-nums" title={`SHA-256: ${previewDoc.sha256}`}>
+                      {previewDoc.sha256.slice(0, 8)}…{previewDoc.sha256.slice(-4)}
+                    </span>
+                  </div>
+                )}
 
                 {/* Project Name */}
                 <div className="flex items-center justify-between rounded-lg border border-border/50 p-3">
@@ -480,7 +514,7 @@ export function DocumentsTab() {
                 </div>
 
                 {/* PDF Available */}
-                {previewDoc.pdfUrl && (
+                {fileUrlOf(previewDoc) && (
                   <div className="flex items-center justify-between rounded-lg border border-border/50 p-3">
                     <div className="flex items-center gap-2">
                       <Eye className="h-3.5 w-3.5 text-roksal-green" />
@@ -491,16 +525,27 @@ export function DocumentsTab() {
                 )}
               </div>
               <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    toast.info('PDF generiranje bo kmalu na voljo')
-                  }}
-                  className="gap-1.5"
-                >
-                  <Download className="h-3.5 w-3.5" />
-                  Download PDF
-                </Button>
+                {fileUrlOf(previewDoc) ? (
+                  <Button
+                    variant="outline"
+                    onClick={() => window.open(fileUrlOf(previewDoc) as string, '_blank', 'noopener')}
+                    className="gap-1.5 focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                    aria-label="Prenesi PDF datoteko dokumenta"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                    Prenesi PDF
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    disabled
+                    className="gap-1.5"
+                    title="PDF datoteka ni na voljo (dokument brez shranjene datoteke)"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                    PDF ni na voljo
+                  </Button>
+                )}
                 <Button onClick={() => setPreviewOpen(false)}>Zapri</Button>
               </DialogFooter>
             </>
@@ -510,43 +555,3 @@ export function DocumentsTab() {
     </div>
   )
 }
-
-const demoProjects: Project[] = [
-  { id: 'demo1', nazivProjekta: 'Ograja Horjul - WPC Classic' },
-  { id: 'demo2', nazivProjekta: 'Terasa Kranj - Inox Z-line' },
-]
-
-const demoDocuments: DocumentItem[] = [
-  {
-    id: 'doc1',
-    tipDokumenta: 'TEHNICNI_LIST',
-    pdfUrl: '/docs/tl_001.pdf',
-    status: 'GENERIRANO',
-    createdAt: new Date(Date.now() - 86400000).toISOString(),
-    projectId: 'demo1',
-  },
-  {
-    id: 'doc2',
-    tipDokumenta: 'PRIMOPREDAJA',
-    pdfUrl: '/docs/pp_001.pdf',
-    status: 'PODPISANO',
-    createdAt: new Date(Date.now() - 172800000).toISOString(),
-    projectId: 'demo1',
-  },
-  {
-    id: 'doc3',
-    tipDokumenta: 'E_RACUN',
-    pdfUrl: null,
-    status: 'POSLANO',
-    createdAt: new Date(Date.now() - 259200000).toISOString(),
-    projectId: 'demo2',
-  },
-  {
-    id: 'doc4',
-    tipDokumenta: 'ZAPISNIK_NAVORA',
-    pdfUrl: null,
-    status: 'GENERIRANO',
-    createdAt: new Date(Date.now() - 345600000).toISOString(),
-    projectId: 'demo1',
-  },
-]

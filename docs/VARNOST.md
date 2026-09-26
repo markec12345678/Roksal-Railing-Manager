@@ -136,7 +136,7 @@ Tri vrzeli s seznama spodaj so zdaj zapolnjene:
 | **Revizijski dnevnik** | `src/lib/audit.ts` — enoten zapis, nikoli ne vrže in ne blokira zahtevka. `LOGIN`, `LOGIN_FAILED`, `PASSWORD_CHANGED`, `RAILING_LAYOUT`, `QUOTE_CALCULATED`. Branje prek `GET /api/audit?projectId=…` (VODJA/ADMIN ali dodeljeni monter). |
 
 Preverjeno v `tools/security-smoke.py`, razdelka [9] Vloge in [10] Omejevanje
-hitrosti — skupaj 139 preverjanj, tečejo v CI ob vsakem pushu.
+hitrosti — skupaj 141 preverjanj, tečejo v CI ob vsakem pushu.
 
 ## Upload security (R149 — issue #5 §37)
 
@@ -185,3 +185,16 @@ Kalkulator (razmiki, kemično sidranje, vetrna obremenitev) teče skozi
 | **Šifriranje baze v mirovanju** | SQLite datoteka je v jasni besedi. Na VPS reši šifriran disk (LUKS). |
 | **Odvisnosti** | `bun audit` / Dependabot. `npm audit` trenutno javlja ranljivosti v posrednih odvisnostih. |
 | **`examples/` in `tool-results/`** | Ostanki AI graditelja; `tool-results/` je zdaj izven gita, `examples/` izven `tsconfig`. |
+
+## Reproducibilnost ponudb (R151 — issue #5 §35)
+
+Dokumenti imajo sha256 + verzije že od R121; ponudbe so odslej povezane
+enako — `src/lib/quote-repro.ts` (čisto jedro, brez spremembe
+cenik/geometry jedra):
+
+| | Pravilo |
+|---|---|
+| **Odtis nad UČINKOVITIMI vhodi** | POST /api/quote vrne `reproducibility { quoteVersion, inputHash }` — izračunan nad ZDRUŽENO specifikacijo in ZDRUŽENIM cenikom (tisto, kar je dejansko dalo total), ne nad surovo zahtevo. Neznani preglasitveni ključi cenika ne spremenijo odtisa (učinkoviti vhod je isti — pravilno). |
+| **Verzija vezana v odtis** | `quote-v1` — sprememba matematike ponudbe = nova verzija; stare odtisi ostanejo interpretirani s svojo verzijo. |
+| **Vrstni red točk je del odtisa** | Ključi objektov so urejeni, vrstni red polja točk OHRANJEN — ista množica točk v drugem vrstnem redu je drugačna ograja in dobi drug odtis. |
+| **Revizija** | QUOTE_CALCULATED revizija nosi `inputHash` — vsak izračun je vezan na svoje vhode (audit). |

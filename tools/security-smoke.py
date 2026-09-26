@@ -2,7 +2,7 @@
 """
 Varnostni dimni test za Roksal Railing Manager.
 
-Preveri 139 stvari na ŽIVEM strežniku — ne na kodi, kar je edini način, da se
+Preveri 141 stvari na ŽIVEM strežniku — ne na kodi, kar je edini način, da se
 ujame napaka v plasteh (proxy, ruta, piškotek, baza). Napisan je bil prav zato,
 ker je prva različica proxy-ja blokirala prijavo samo: 32/36 testov je bilo
 zelenih, aplikacija pa neuporabna.
@@ -593,6 +593,16 @@ check("POST /api/calculator brez seje → 401 + correlation", ok, f"dobil {st}")
 st, h, body = call("/api/calculator", "GET", None)
 ok = st == 401 and len(h.get("x-correlation-id", "")) >= 8
 check("GET /api/calculator (register formul) brez seje → 401 + correlation", ok, f"dobil {st}")
+
+print("\n[34] Reproducibilnost ponudb/dokumentov (R151 — issue #5 §35)")
+# Rute po R151: POST /api/quote vrne reproducibility odtis (avtenticirano);
+# dokumenti imajo sha256 + verzije že od R121. Fail-closed red: brez seje 401.
+st, h, body = call("/api/quote", "POST", {"points": [{"xM": 0, "zM": 0}, {"xM": 5, "zM": 0}], "closed": False})
+ok = st == 401 and len(h.get("x-correlation-id", "")) >= 8
+check("POST /api/quote brez seje → 401 + correlation", ok, f"dobil {st}")
+st, h, body = call("/api/documents", "POST", {"projectId": "x", "tipDokumenta": "PRIMOPREDAJA"})
+ok = st == 401 and len(h.get("x-correlation-id", "")) >= 8
+check("POST /api/documents brez seje → 401 + correlation", ok, f"dobil {st}")
 
 
 print(f"\n{'=' * 60}")
