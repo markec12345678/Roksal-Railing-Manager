@@ -207,3 +207,37 @@ export function clientIp(request: Request): string {
     return 'unknown'
   }
 }
+
+/**
+ * R190 — omejevanje hitrosti na pisanju (val 1; VARNOST.md "Omejevanje
+ * hitrosti na drugih rutah" — WRITE_LIMIT je bil od R135 pripravljen, a
+ * ne vklopljen). Za mutirajoče rute: ključ `write:<ruta>:<ip>`, okno 60 s,
+ * 300 zahtevkov — velikodušno, lovi SAMO zankaste kliente (vzorec glave
+ * zgoraj), ne legitimnih uporabnikov niti sync serije.
+ *
+ * - ZAVRAGA telemetrijo (R184): zavržen zadetek = trip s kategorijo `write`
+ *   — ADMIN panel v Ekipi ga prikaže samodejno (kindBadge družina `write`).
+ * - 429 telo + `Retry-After` = ISTA družina kot prijava (R137/R189):
+ *   fail-verbose `detail: 'Poskusi znova čez N s.'`, brez tihe blokade.
+ * - Guard postavimo KOT PRVI stavek handlerja (vzorec /api/auth: omejitev
+ *   pred ponudbo dela) — ščiti tudi pred neavtenticirano spam industrijo;
+ *   pošten kompromis: deljeni IP (pisarna NAT) si deli proračun na rundo,
+ *   300/min po rundi pa je nad vsakim legitnim vzorcem.
+ *
+ * Vrne `Response` (429), kadar je blokirano, sicer `null` (nadaljuj handler).
+ */
+export function zapisOmejitev(request: Request, ruta: string): Response | null {
+  const key = `write:${ruta}:${clientIp(request)}`
+  const limit = checkRate(key, WRITE_LIMIT)
+  if (limit.ok) return null
+  return Response.json(
+    {
+      error: 'Preveč zahtev.',
+      detail: `Poskusi znova čez ${limit.retryAfterSeconds} s.`,
+    },
+    {
+      status: 429,
+      headers: { 'Retry-After': String(limit.retryAfterSeconds) },
+    },
+  )
+}

@@ -87,6 +87,15 @@ function kindBadge(kind: string): { label: string; className: string } {
         'bg-roksal-amber/15 text-amber-700 ring-1 ring-inset ring-roksal-amber/30 dark:text-roksal-amber',
     }
   }
+  // R190 — `write` družina (val 1 omejevanja pisanja): modra = zankasti
+  // klient na pisanju (tehnična blokada), ne napad na prijavo (jantar).
+  if (kind === 'write') {
+    return {
+      label: kind,
+      className:
+        'bg-blue-100 text-blue-800 ring-1 ring-inset ring-blue-300 dark:bg-blue-500/15 dark:text-blue-300 dark:ring-blue-500/30',
+    }
+  }
   return { label: kind, className: 'bg-secondary text-muted-foreground ring-1 ring-inset ring-border' }
 }
 

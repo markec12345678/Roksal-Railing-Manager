@@ -18,11 +18,15 @@ import {
 import { stagingKey, vizPut } from '@/lib/viz/storage'
 import type { StageResult } from '@/lib/viz/types'
 
+import { zapisOmejitev } from '@/lib/rate-limit'
 export const runtime = 'nodejs'
 
 const kindSchema = z.enum(['balcony', 'product', 'productMask', 'mask'])
 
 export async function POST(request: Request) {
+  // R190 — val 1 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'viz/stage')
+  if (zavrnjeno) return zavrnjeno
   // S+4: viz rute so vezane na prijavljenega uporabnika (API ključ = 403).
   const ctx = await vizOwner(request)
   if (ctx instanceof Response) return ctx

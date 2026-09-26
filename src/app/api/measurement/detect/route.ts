@@ -18,6 +18,7 @@ import {
 } from '@/lib/measurement'
 import type { ImageBuffer } from '@/lib/viz/types'
 
+import { zapisOmejitev } from '@/lib/rate-limit'
 export const runtime = 'nodejs'
 export const maxDuration = 30
 
@@ -54,6 +55,9 @@ async function dataUrlToImageBuffer(dataUrl: string): Promise<ImageBuffer> {
 }
 
 export async function POST(request: Request) {
+  // R190 — val 1 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'measurement/detect')
+  if (zavrnjeno) return zavrnjeno
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
 

@@ -36,7 +36,7 @@ export async function GET(request: Request): Promise<NextResponse> {
       // Zgornjih 10 je dovolj za diagnozo; panel prikaže 5 (rest je v API-ju).
       trips: detail.trips.slice(0, 10),
       note:
-        'Števeci so v pomnilniku trenutnega primerka (serverless) — prikazujejo vzorec, ne globalnih absolutnih vrednosti.',
+        'Števeci so v pomnilniku trenutnega primerka (serverless) — prikazujejo vzorec, ne globalnih absolutnih vrednosti. R190: kategorija `write` = zankasti klient na pisanju (val 1: calculator, quote, viz/*, measurement/*, sync).',
       generatedAt: new Date().toISOString(),
     })
     res.headers.set(CORRELATION_HEADER, correlationId)

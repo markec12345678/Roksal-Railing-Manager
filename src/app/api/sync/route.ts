@@ -67,6 +67,7 @@ import {
   isProjectStatus,
 } from '@/lib/project-state'
 import { auditInTx } from '@/lib/audit'
+import { zapisOmejitev } from '@/lib/rate-limit'
 import {
   beginIdempotency,
   storeResponse,
@@ -165,6 +166,9 @@ async function upsertSyncDevice(
 
 // POST - Sprejme podatke iz mobilne aplikacije in ustvari/posodobi projekte
 export async function POST(request: Request) {
+  // R190 — val 1 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'sync')
+  if (zavrnjeno) return zavrnjeno
   let body: unknown
   try {
     body = await request.json()
@@ -700,6 +704,9 @@ export async function GET(request: Request) {
 // Grobnica PREŽIVI brisanje projektne vrstice (SetNull) — ponovni sync
 // istega mobileProjectId ne ustvari dvojnika, ampak dobi iskren rezultat.
 export async function DELETE(request: Request) {
+  // R190 — val 1 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'sync')
+  if (zavrnjeno) return zavrnjeno
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
   // Isti scope kot vpis: ključ brez projects:write ne briše iz zrcala.

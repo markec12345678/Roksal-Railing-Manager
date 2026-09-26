@@ -45,6 +45,7 @@ import {
 } from '@/lib/measurement'
 import type { MeasurementSession } from '@/lib/measurement'
 
+import { zapisOmejitev } from '@/lib/rate-limit'
 export const runtime = 'nodejs'
 export const maxDuration = 30
 
@@ -118,6 +119,9 @@ const confirmSchema = z.object({
 })
 
 export async function POST(request: Request) {
+  // R190 — val 1 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'measurement/confirm')
+  if (zavrnjeno) return zavrnjeno
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
   // R126 (issue #5 §3): API ključ mora nositi scope `measurements:create`.

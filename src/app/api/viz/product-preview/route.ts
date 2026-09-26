@@ -27,6 +27,7 @@ import { VIZ_FILE_NAMES, stagingKey, vizGet, vizPut } from '@/lib/viz/storage'
 import { vizOwner } from '@/lib/viz/ownership'
 import { productSdk } from '@/lib/product-sdk'
 
+import { zapisOmejitev } from '@/lib/rate-limit'
 export const runtime = 'nodejs'
 
 /** S+8.1: lokalni validation error — loči 400 (vhod) od 500 (strežniška napaka). */
@@ -74,6 +75,9 @@ type RunPipelineFn = (input: {
 }) => { preview: ImageBuffer; metrics: PipelineMetrics }
 
 export async function POST(request: Request) {
+  // R190 — val 1 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'viz/product-preview')
+  if (zavrnjeno) return zavrnjeno
   // S+4: viz rute so vezane na prijavljenega uporabnika (API ključ = 403).
   const ctx = await vizOwner(request)
   if (ctx instanceof Response) return ctx

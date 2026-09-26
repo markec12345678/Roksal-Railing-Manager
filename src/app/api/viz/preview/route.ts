@@ -14,6 +14,7 @@ import { VIZ_FILE_NAMES, stagingKey, vizGet, vizPut } from '@/lib/viz/storage'
 import { z } from 'zod'
 import { vizOwner } from '@/lib/viz/ownership'
 
+import { zapisOmejitev } from '@/lib/rate-limit'
 export const runtime = 'nodejs'
 
 // Strukturni tip po dokumentirani pipeline signature (contracts) — ne vezan na
@@ -37,6 +38,9 @@ const previewSchema = z.object({
 })
 
 export async function POST(request: Request) {
+  // R190 — val 1 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'viz/preview')
+  if (zavrnjeno) return zavrnjeno
   // S+4: viz rute so vezane na prijavljenega uporabnika (API ključ = 403).
   const ctx = await vizOwner(request)
   if (ctx instanceof Response) return ctx

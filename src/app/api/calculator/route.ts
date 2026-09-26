@@ -17,6 +17,7 @@ import {
 import { railingCalcSchema, anchoringCalcSchema, windLoadCalcSchema } from '@/lib/validations'
 import { authenticate, unauthorized } from '@/lib/auth'
 
+import { zapisOmejitev } from '@/lib/rate-limit'
 export async function GET(request: Request) {
   // Zaščita: brez veljavne seje ali API ključa ni dostopa.
   const auth = await authenticate(request)
@@ -33,6 +34,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  // R190 — val 1 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'calculator')
+  if (zavrnjeno) return zavrnjeno
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
   const auth = await authenticate(request)
   if (!auth) return unauthorized()

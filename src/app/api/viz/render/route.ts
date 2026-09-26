@@ -10,6 +10,7 @@ import { z } from 'zod'
 import { vizOwner } from '@/lib/viz/ownership'
 import { createRenderJob, getProjectForOwner, transitionRenderJob } from '@/lib/viz/repository'
 
+import { zapisOmejitev } from '@/lib/rate-limit'
 export const runtime = 'nodejs'
 
 const renderSchema = z.object({
@@ -20,6 +21,9 @@ const renderSchema = z.object({
 const GPU_ERROR_UNSET = 'GPU backend ni nastavljen (VIZ_GPU_URL) — čaka na lasten GPU strežnik'
 
 export async function POST(request: Request) {
+  // R190 — val 1 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'viz/render')
+  if (zavrnjeno) return zavrnjeno
   // S+4: render job je vezan na prijavljenega uporabnika; tuj projekt = 404.
   const ctx = await vizOwner(request)
   if (ctx instanceof Response) return ctx

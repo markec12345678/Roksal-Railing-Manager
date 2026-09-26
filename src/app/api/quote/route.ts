@@ -17,7 +17,11 @@ import { buildQuote, defaultPriceBook, mergePriceBook, quoteSummary } from '@/li
 import { quoteInputFingerprint } from '@/lib/quote-repro'
 import { quoteSchema } from '@/lib/validations'
 
+import { zapisOmejitev } from '@/lib/rate-limit'
 export async function POST(request: Request) {
+  // R190 — val 1 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
+  const zavrnjeno = zapisOmejitev(request, 'quote')
+  if (zavrnjeno) return zavrnjeno
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
   // §10 (R135): izračun ponudbe = quotes.create (vse uporabniške vloge;
