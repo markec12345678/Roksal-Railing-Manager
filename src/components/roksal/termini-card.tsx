@@ -18,6 +18,9 @@
 //  • IZVOŽENO = ZASLON (R171, P1-d): CSV izvoz vsebuje NATAKO prikazane
 //    vrstice (filter 'Samo moje' že upoštevan), ISTI povzetek ur in pečat
 //    zadnje osvežitve — src/lib/termini-csv (vzorec R136/R139).
+//  • IZVOŽENO = ZASLON tudi v KOLEDAR (R172, P1-d): .ics (RFC 5545) iz ISTIH
+//    prikazanih vrstic — monter si 7-dnevno okno prenese v telefonov koledar;
+//    DTSTAMP = ISTI pečat (zdaj) kot CSV — src/lib/termini-ics.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
@@ -29,6 +32,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import {
   AlertTriangle,
   CalendarDays,
+  CalendarPlus,
   Clock,
   Copy,
   FileDown,
@@ -43,6 +47,8 @@ import {
 import { casOznaka } from '@/lib/osvezitev-fokus'
 import { downloadCsvText, todayStamp } from '@/lib/csv-export'
 import { buildTerminiCsv, terminiCsvFilename } from '@/lib/termini-csv'
+import { buildTerminiIcs, terminiIcsFilename } from '@/lib/termini-ics'
+import { downloadIcsText } from '@/lib/ics'
 import {
   buildTerminShareText,
   filtrirajTermini,
@@ -142,6 +148,22 @@ export function TerminiCard({ myUserId, onOpenProjectId }: TerminiCardProps) {
       description: `Izvožen seznam (${vrstic} ${terminBeseda(vrstic)}) v datoteko ${filename}.`,
     })
   }, [prikazane, urAgregat, zdaj, samoMoje])
+
+  // R172 (P1-d) — .ics koledarski izvoz PRIKAZANIH terminov (IZVOŽENO =
+  // ZASLON): ISTI prikazani vrstici (filter že upoštevan), DTSTAMP = ISTI
+  // pečat zdaj kot CSV — EN VIR RESNICE. Naloga: RFC 5545 zgenerira
+  // src/lib/termini-ics; tu samo vrata + prenos + iskren toast.
+  const izvoziIcs = useCallback(() => {
+    if (!prikazane) return
+    const vrstice = [...prikazane.danes, ...prikazane.kasneje]
+    const reference = zdaj ?? new Date()
+    const { ics, dogodkov } = buildTerminiIcs(vrstice, { zdaj: reference, now: reference })
+    const filename = terminiIcsFilename(todayStamp(reference))
+    downloadIcsText(filename, ics)
+    toast.success('Koledarska datoteka izvožena', {
+      description: `Izvožen seznam (${dogodkov} ${terminBeseda(dogodkov)}) v datoteko ${filename}.`,
+    })
+  }, [prikazane, zdaj])
 
   // Fetch je NEODVISEN od myUserId (branje terminov ne zahteva identitete;
   // "moja montaža" je izračun pri izrisu — least privilege, brez ponovnega branja).
@@ -398,7 +420,21 @@ export function TerminiCard({ myUserId, onOpenProjectId }: TerminiCardProps) {
               aria-label={`Izvozi prikazane termine v CSV (${prikazane ? prikazane.danes.length + prikazane.kasneje.length : 0} ${terminBeseda(prikazane ? prikazane.danes.length + prikazane.kasneje.length : 0)})`}
               title="Izvozi prikazane termine (upošteva filter Samo moje) kot CSV za Excel — vključno s povzetkom ur"
             >
-              <FileDown className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+              <FileDown className="h-4 w-4 text-muted-foreground transition-colors hover:text-roksal-ink dark:hover:text-roksal-ink" aria-hidden="true" />
+            </Button>
+            {/* R172 (P1-d) — isti prikazani termini v KOLEDAR (.ics, RFC 5545):
+                isti fail-closed vrata kot CSV (brez podatkov onemogočen) —
+                izvoz praznega koledarja bi bil lažni "uspeh brez vsebine". */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 dark:focus-visible:ring-roksal-ink/40"
+              onClick={izvoziIcs}
+              disabled={loading || !prikazane || skupnoSkupin === 0}
+              aria-label={`Izvozi prikazane termine v koledarsko datoteko (.ics) (${prikazane ? prikazane.danes.length + prikazane.kasneje.length : 0} ${terminBeseda(prikazane ? prikazane.danes.length + prikazane.kasneje.length : 0)})`}
+              title="Izvozi prikazane termine (upošteva filter Samo moje) v koledar — Google/Apple/Outlook jih uvozijo"
+            >
+              <CalendarPlus className="h-4 w-4 text-muted-foreground transition-colors hover:text-roksal-ink dark:hover:text-roksal-ink" aria-hidden="true" />
             </Button>
             <Button
               variant="ghost"

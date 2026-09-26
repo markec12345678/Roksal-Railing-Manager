@@ -6361,7 +6361,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                     className={`flex w-full items-start gap-3 rounded-lg border p-2.5 text-left transition-all duration-150 ${
                       isSelected
                         ? 'border-cyan-400 dark:border-cyan-700 bg-cyan-50 dark:bg-cyan-950/40'
-                        : 'border-border/50 bg-secondary/30 hover:border-cyan-300'
+                        : 'border-border/50 bg-secondary/30 hover:border-cyan-300 dark:hover:border-cyan-700'
                     }`}
                   >
                     <div className="h-14 w-14 shrink-0 rounded-md overflow-hidden border border-border/50 bg-secondary/50">

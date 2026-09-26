@@ -57,6 +57,14 @@ VZORCI = {
     'decoration': (re.compile(r"(?<![\w-])decoration-(?:roksal|gray|slate|stone|zinc|neutral|red|amber|green|blue|purple|violet|emerald|teal|cyan|sky|indigo|fuchsia|pink|rose|orange|lime)-\d+"), re.compile(r"dark:decoration-")),
     'caret': (re.compile(r"(?<![\w-])caret-(?:roksal|gray|slate|stone|zinc|neutral|red|amber|green|blue|purple|violet|emerald|teal|cyan|sky|indigo|fuchsia|pink|rose|orange|lime)-\d+"), re.compile(r"dark:caret-")),
     'shadow': (re.compile(r"(?<![\w-])shadow-(?:roksal|gray|slate|stone|zinc|neutral|red|amber|green|blue|purple|violet|emerald|teal|cyan|sky|indigo|fuchsia|pink|rose|orange|lime)-\d+"), re.compile(r"dark:shadow-")),
+    # R172 — nove BARVNE družine (gray/stone družine že pokrite zgoraj; to so
+    # kromatične palete — bg-red-50/border-amber-200/text-purple-800 brez
+    # dark: ogledala = svetel madež v temni). Mirror dovoljuje VARIJANTNE
+    # predpone (dark:hover:bg- — nauček R167: plain pravilo ne ulovi hover:).
+    'bg-barvni-svetli': (re.compile(r"(?<![\w-])bg-(?:red|amber|green|blue|purple|violet|emerald|teal|cyan|sky|indigo|fuchsia|pink|rose|orange|lime|yellow)-(?:50|100|200)\b"), re.compile(r"dark:(?:[\w-]+:)*bg-")),
+    'border-barvni': (re.compile(r"(?<![\w-])border-(?:red|amber|green|blue|purple|violet|emerald|teal|cyan|sky|indigo|fuchsia|pink|rose|orange|lime|yellow)-(?:100|200|300)\b"), re.compile(r"dark:(?:[\w-]+:)*border-")),
+    'text-barvni-temni': (re.compile(r"(?<![\w-])text-(?:red|amber|green|blue|purple|violet|emerald|teal|cyan|sky|indigo|fuchsia|pink|rose|orange|lime|yellow)-(?:600|700|800|900)\b"), re.compile(r"dark:(?:[\w-]+:)*text-")),
+    'selection': (re.compile(r"selection:(?:bg|text)-(?:roksal|gray|slate|stone|zinc|neutral|red|amber|green|blue|purple|violet|emerald|teal|cyan|sky|indigo|fuchsia|pink|rose|orange|lime)-\d+"), re.compile(r"dark:selection:|dark:(?:[\w-]+:)*(?:bg|text)-")),
 }
 
 def je_izjema(p: Path) -> bool:

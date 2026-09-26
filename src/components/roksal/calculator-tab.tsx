@@ -2340,7 +2340,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
         <>
           {/* runda S — priporočilo pritrditve iz terenskega pregleda */}
           {importedFromMeasurement?.podlaga && (
-            <Card className={importedFromMeasurement.podlaga === 'estrih' ? 'border-amber-300 bg-amber-50/60' : 'border-roksal-navy/15 dark:border-roksal-ink/15'}>
+            <Card className={importedFromMeasurement.podlaga === 'estrih' ? 'border-amber-300 bg-amber-50/60 dark:border-amber-700 dark:bg-amber-950/40' : 'border-roksal-navy/15 dark:border-roksal-ink/15'}>
               <CardContent className="p-4">
                 <div className="flex items-start gap-2.5">
                   <AlertTriangle className={`mt-0.5 h-4 w-4 shrink-0 ${importedFromMeasurement.podlaga === 'estrih' ? 'text-amber-600 dark:text-amber-400' : 'text-roksal-ink/50'}`} />
@@ -3799,7 +3799,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
 
               {/* runda S — pritrditev + barva z terena v BOM pogledu */}
               {importedFromMeasurement?.podlaga && (
-                <Card className={importedFromMeasurement.podlaga === 'estrih' ? 'border-amber-300 bg-amber-50/60' : 'border-roksal-navy/15 dark:border-roksal-ink/15'}>
+                <Card className={importedFromMeasurement.podlaga === 'estrih' ? 'border-amber-300 bg-amber-50/60 dark:border-amber-700 dark:bg-amber-950/40' : 'border-roksal-navy/15 dark:border-roksal-ink/15'}>
                   <CardContent className="flex items-start gap-2.5 p-3">
                     <Drill className={`mt-0.5 h-4 w-4 shrink-0 ${importedFromMeasurement.podlaga === 'estrih' ? 'text-amber-600 dark:text-amber-400' : 'text-roksal-ink/50'}`} />
                     <div className="min-w-0 flex-1">

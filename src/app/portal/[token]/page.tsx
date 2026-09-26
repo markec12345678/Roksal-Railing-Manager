@@ -49,30 +49,30 @@ const STATUS_CONFIG: Record<
 > = {
   NACRTOVANO: {
     label: 'Načrtovano',
-    bg: 'bg-amber-50',
+    bg: 'bg-amber-50 dark:bg-amber-950/40',
     text: 'text-roksal-ink',
-    ring: 'ring-amber-200',
+    ring: 'ring-amber-200 dark:ring-amber-800',
     icon: Clock,
   },
   V_TEKU: {
     label: 'V teku',
-    bg: 'bg-blue-50',
-    text: 'text-blue-700',
-    ring: 'ring-blue-200',
+    bg: 'bg-blue-50 dark:bg-blue-950/40',
+    text: 'text-blue-700 dark:text-blue-300',
+    ring: 'ring-blue-200 dark:ring-blue-800',
     icon: Wrench,
   },
   ZAKLJUCENO: {
     label: 'Zaključeno',
-    bg: 'bg-green-50',
+    bg: 'bg-green-50 dark:bg-green-950/40',
     text: 'text-roksal-green',
-    ring: 'ring-green-200',
+    ring: 'ring-green-200 dark:ring-green-800',
     icon: CheckCircle2,
   },
   USTAVLJENO: {
     label: 'Ustavljeno',
-    bg: 'bg-red-50',
+    bg: 'bg-red-50 dark:bg-red-950/40',
     text: 'text-roksal-red',
-    ring: 'ring-red-200',
+    ring: 'ring-red-200 dark:ring-red-800',
     icon: Pause,
   },
 }
@@ -337,7 +337,7 @@ export default async function PortalPage({ params }: PageProps) {
 
         {/* MONTER NOTES */}
         {project.clientNotes && (
-          <section className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+          <section className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/40">
             <div className="flex items-center gap-2 mb-2">
               <div className="flex h-7 w-7 items-center justify-center rounded-full bg-roksal-amber">
                 <MessageSquare className="h-3.5 w-3.5 text-white" />
@@ -471,7 +471,7 @@ function NotFoundPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#f7f9ff] p-4">
       <div className="max-w-md w-full rounded-xl border border-border bg-white p-6 text-center shadow-sm">
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-50">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-50 dark:bg-red-950/40">
           <ChevronRight className="h-7 w-7 text-roksal-red" />
         </div>
         <h1 className="text-lg font-bold text-roksal-ink mb-2">Stran ni na voljo</h1>

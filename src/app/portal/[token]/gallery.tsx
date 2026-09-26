@@ -190,9 +190,9 @@ export function PortalGallery({ sections }: PortalGalleryProps) {
 
 function SectionBadge({ id }: { id: 'PRED' | 'MED' | 'PO' }) {
   const config = {
-    PRED: { label: '1', color: 'bg-amber-100 text-roksal-navy' },
-    MED: { label: '2', color: 'bg-blue-100 text-roksal-ink' },
-    PO: { label: '3', color: 'bg-green-100 text-roksal-green' },
+    PRED: { label: '1', color: 'bg-amber-100 text-roksal-navy dark:bg-amber-500/15 dark:text-roksal-ink' },
+    MED: { label: '2', color: 'bg-blue-100 text-roksal-ink dark:bg-blue-500/15' },
+    PO: { label: '3', color: 'bg-green-100 text-roksal-green dark:bg-green-500/15 dark:text-green-300' },
   }
   const c = config[id]
   return (

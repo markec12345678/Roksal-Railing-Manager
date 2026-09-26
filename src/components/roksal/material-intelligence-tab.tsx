@@ -326,7 +326,7 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
                   </CardHeader>
                   <CardContent className="space-y-2">
                     {bomRefine.optimizacija.map((opt, i) => (
-                      <div key={opt.supplierId} className={`rounded-lg border p-2.5 transition-colors ${i === 0 ? 'border-green-300 bg-green-50' : 'border-border hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25'}`}>
+                      <div key={opt.supplierId} className={`rounded-lg border p-2.5 transition-colors ${i === 0 ? 'border-green-300 bg-green-50 dark:border-green-700 dark:bg-green-950/40' : 'border-border hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25'}`}>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             {i === 0 && <Badge className="bg-green-600 text-white text-[8px]">NAJBOLJŠI</Badge>}

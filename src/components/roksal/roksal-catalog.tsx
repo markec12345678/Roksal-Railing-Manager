@@ -190,7 +190,7 @@ function ProfilPreview({ profil }: { profil: Profil }) {
       : '#8b5a2b'
 
   if (isSteklo) {
-    return <div className="h-full w-full bg-cyan-200/40" style={{ backdropFilter: 'blur(2px)' }} />
+    return <div className="h-full w-full bg-cyan-200/40 dark:bg-cyan-500/20" style={{ backdropFilter: 'blur(2px)' }} />
   }
 
   return (

@@ -622,7 +622,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
         </Card>
 
         {/* 3. Podlaga — najpomembneje */}
-        <Card className={`border ${data.podlaga === 'estrih' ? 'border-amber-300 bg-amber-50/40' : 'border-roksal-navy/10 dark:border-roksal-ink/15'}`}>
+        <Card className={`border ${data.podlaga === 'estrih' ? 'border-amber-300 bg-amber-50/40 dark:border-amber-700 dark:bg-amber-950/40' : 'border-roksal-navy/10 dark:border-roksal-ink/15'}`}>
           <CardContent className="p-4">
             <Label className="mb-2 block text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
               3 · Podlaga (določa moznike!) 
@@ -870,7 +870,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
                     onClick={() => toggleFoto(f.id)}
                     aria-pressed={done}
                     className={`flex w-full items-center gap-2.5 rounded-lg border px-3 py-2 text-left transition-all ${
-                      done ? 'border-green-200 bg-green-50' : 'border-roksal-navy/10 dark:border-roksal-ink/15 hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25'
+                      done ? 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/40' : 'border-roksal-navy/10 dark:border-roksal-ink/15 hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25'
                     }`}
                   >
                     <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${

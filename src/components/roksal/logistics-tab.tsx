@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast'
 import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'
 import { casOznaka } from '@/lib/osvezitev-fokus'
 import { downloadCsv, todayStamp } from '@/lib/csv-export'
+import { icsEscape, icsFold, icsUtc } from '@/lib/ics'
 import { allowedTransitions } from '@/lib/equipment-lifecycle'
 import {
   normalizirajTermin,
@@ -178,23 +179,10 @@ function formatTime(d: string): string {
 // ICS izvoz (RFC 5545) — termine montaže v telefonov koledar (Google/Apple/
 // Outlook jih vsi uvozijo). Časi v UTC (Z), kar pomeni pravilen prikaz tudi
 // po časovnih pasovih; STATUS premeša Preklicano/Preloženo.
+// R172 — pomožniki (icsEscape/icsFold/icsUtc) izdvojeni v src/lib/ics.ts
+// (EN VIR RESNICE z novim .ics izvozom Termini kartice); vedenje
+// BYTE-IDENTIČNO R139 verziji — čist refaktor importa, nič spremembe formata.
 // ---------------------------------------------------------------------------
-
-function icsEscape(text: string): string {
-  return text.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n')
-}
-
-/** RFC 5545: vrstice največ 75 oktetov — nadaljevanje z začetnim presledkom. */
-function icsFold(line: string): string {
-  const out: string[] = []
-  let rest = line
-  while (rest.length > 73) {
-    out.push(rest.slice(0, 73))
-    rest = ' ' + rest.slice(73)
-  }
-  out.push(rest)
-  return out.join('\r\n')
-}
 
 // ---------------------------------------------------------------------------
 // R139 — CSV izvoz terminov (isti deterministični kontrakt kot Zaloga/Računi
@@ -218,20 +206,6 @@ function downloadSchedulesCsv(schedules: Schedule[]): number {
     ]),
   )
   return schedules.length
-}
-
-function icsUtc(d: string | Date): string {
-  const t = new Date(d)
-  return (
-    t.getUTCFullYear().toString().padStart(4, '0') +
-    String(t.getUTCMonth() + 1).padStart(2, '0') +
-    String(t.getUTCDate()).padStart(2, '0') +
-    'T' +
-    String(t.getUTCHours()).padStart(2, '0') +
-    String(t.getUTCMinutes()).padStart(2, '0') +
-    String(t.getUTCSeconds()).padStart(2, '0') +
-    'Z'
-  )
 }
 
 export function buildIcs(schedules: Schedule[]): string {
