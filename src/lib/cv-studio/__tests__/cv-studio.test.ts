@@ -140,7 +140,10 @@ describe('analyzeScene — neuspešni/adversarialni vhodi', () => {
       const run = JSON.stringify(analyzeScene(img))
       expect(sha(run)).toBe(firstHash)
     }
-  })
+    // R180 — ekspliciten timeout 60 s: zanka 101× analyzeScene porabi ~14,6 s
+    // (nožna meja privzetih 15 s — flaknilo ob vzporednem dev strežniku).
+    // TRDITEV NESPREMENJENA (še vedno 100× bajtno identično) — samo zalogovnik.
+  }, 60_000)
 })
 
 // ───────────────────────────────────────────────────────────────────────────

@@ -14,6 +14,8 @@
 //    žetoni; focus-visible ringi; dekorativne ikone aria-hidden; tabular-nums.
 
 import { useState, useEffect, useCallback } from 'react'
+import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'
+import { casOznaka } from '@/lib/osvezitev-fokus'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -25,6 +27,7 @@ import { todayStamp } from '@/lib/csv-export'
 import {
   TrendingUp, Clock, Users, Package, Euro, CheckCircle2,
   AlertTriangle, Calendar, Truck, Bell, FileDown, Loader2, Download,
+  History,
 } from 'lucide-react'
 
 interface VodjaStats {
@@ -136,6 +139,10 @@ export function VodjaDashboard() {
   const [loading, setLoading] = useState(true)
   // R163: fail-verbose — razlog, zakaj podatkov NI (namesto lažnih ničel).
   const [loadError, setLoadError] = useState<string | null>(null)
+  // R180 — pečat svežine: čas zadnjega USPEŠNEGA branja vseh 7 virov (vzorec
+  // R170/R177/R178). Napaka → clearOnFail počisti TUDI pečat (fail-closed —
+  // NIČ lažne svežine nad error panelom).
+  const [vodjaOsvezitev, setVodjaOsvezitev] = useState<Date | null>(null)
 
   const clearOnFail = useCallback(() => {
     // Fail-closed: brez podatkov NI prikaza — delna statistika bi izmišljala sliko
@@ -145,6 +152,9 @@ export function VodjaDashboard() {
     setPrihodki([])
     setAllProjects([])
     setAllInvoices([])
+    // R180: pečat brez podatkov = lažna svežina — počisti ga (vsi 3 fail
+    // poti: neuspešni odgovori, neveljaven odgovor, omrežna napaka).
+    setVodjaOsvezitev(null)
   }, [])
 
   const loadData = useCallback(async () => {
@@ -315,6 +325,8 @@ export function VodjaDashboard() {
       // celotne vhodne podatke si zapomnimo za izvoz PDF poročila (runda M)
       setAllProjects(projects as unknown as ProjectFull[])
       setAllInvoices(invoices as InvLite[])
+      // R180: pečat = vseh 7 virov uspešno prebranih (enoten trenutek svežine)
+      setVodjaOsvezitev(new Date())
     } catch {
       // R163: nič tihega ignore — omrežna napaka je vidna z razlogom.
       setLoadError('Ni povezave s strežnikom. Preverite omrežje in poskusite znova.')
@@ -390,6 +402,10 @@ export function VodjaDashboard() {
   }
 
   useEffect(() => { loadData() }, [loadData])
+  // R180 — ponovni bris ob vrnitvi v zavihek (družinski hook, 30 s vrata R170):
+  // vodjin pregled (prihodki, zapadli računi, termini) mora biti pri vrnitvi
+  // VEDNO svež — EN VIR: loadData je isti loader kot mount + "Poskusi znova".
+  useRefetchOnFocus(loadData)
 
   /** 🆕 R163: izvoz dnevnega pregleda v CSV — točno zaslonski podatki. */
   function exportDailyCsv() {
@@ -492,6 +508,20 @@ export function VodjaDashboard() {
         <Badge variant="outline" className="text-[9px] bg-roksal-amber/10 text-roksal-amber">
           {new Date().toLocaleDateString('sl-SI', { weekday: 'long', day: '2-digit', month: 'long' })}
         </Badge>
+        {/* R180 — pečat svežine (družina R170-R178, 9 površin): tight-header klasni
+            niz IDENTIČEN družini — Vodja pregled je 11. notranja površina
+            (Računi 10., portal stranke = dokumentirana stranska varianta);
+            viden TOČKO, ko so podatki dejansko sveži — napaka ga počisti. */}
+        {vodjaOsvezitev && (
+          <span
+            className="hidden items-center gap-1 text-[11px] text-muted-foreground sm:flex"
+            title="Čas zadnje uspešne osvežitve podatkov"
+          >
+            <History className="h-3 w-3 shrink-0" aria-hidden="true" />
+            Osveženo ob{' '}
+            <span className="tabular-nums">{casOznaka(vodjaOsvezitev)}</span>
+          </span>
+        )}
         {/* 🆕 R163: izvoz dnevnega pregleda v CSV — KPI + opozorila + termini */}
         <Button
           size="sm"

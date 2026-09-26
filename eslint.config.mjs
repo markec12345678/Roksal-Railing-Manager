@@ -55,7 +55,10 @@ const eslintConfig = [
 }, {
   // R137: enkratni CommonJS revizijski skripti (scripts/*.cjs) so istega razreda
   // kot tools/*.cjs — namensko CommonJS, brez ESM; ESLint jih ne vrednosti.
-  ignores: ["node_modules/**", ".next/**", "out/**", "build/**", "next-env.d.ts", "examples/**", "skills", "scripts/**/*.cjs"]
+  // R180: /roksal-repo/ je gitignored notranji arhivski klon (1,9 GB z lastnim
+  // .next gradbenim artefaktom) — ESLint ga ne sme skenirati (počasen + riziko
+  // OOM SIGKILL, reproduciran v tej rundi).
+  ignores: ["node_modules/**", ".next/**", "out/**", "build/**", "next-env.d.ts", "examples/**", "skills", "scripts/**/*.cjs", "roksal-repo/**"]
 }];
 
 export default eslintConfig;

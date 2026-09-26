@@ -77,15 +77,38 @@ export function biOsvjezitiObFokusu(vnos: FokusVnos): boolean {
 
 /** '14:05:09' — ISTI Intl klic kot terminCasLabel (sl-SI, 24-urno), z
  *  sekundami: pečat mora razločiti dve osvežitvi v isti minuti. Ura je
- *  določena z vnosom, ne z now — brez skritih ur. */
-export function casOznaka(d: Date): string {
+ *  določena z vnosom, ne z now — brez skritih ur.
+ *
+ *  R180 — opcijski `casovniPas` za STREŽNIŠKI izris (portal /[token]):
+ *  brez pasu Intl uporablja časovni pas GOSTITELJA — na strežniku (Vercel
+ *  funkcije v UTC) bi pečat lažno pokazal UTC uro namesto slovenske. Z
+ *  eksplicitnim pasom ('Europe/Ljubljana') je pečat determinističen ne glede
+ *  na regijo izrisa. Client-side klici (vseh 9 notranjih površin) ne podajo
+ *  pasu — enako vedenje kot prej (uporabnikova ura). Neveljaven pas → Intl
+ *  vrže RangeError (fail-closed: nikoli tihega napačnega izrisa). */
+export function casOznaka(
+  d: Date,
+  moznosti?: { casovniPas?: string },
+): string {
   if (!(d instanceof Date) || Number.isNaN(d.getTime())) {
     throw new TypeError(`casOznaka: pričakovan veljaven datum: Date, ne ${String(d)}`)
+  }
+  if (moznosti !== undefined) {
+    if (!moznosti || typeof moznosti !== 'object') {
+      throw new TypeError('casOznaka: pričakovane moznosti (objekt) ali undefined')
+    }
+    const { casovniPas } = moznosti
+    if (casovniPas !== undefined && (typeof casovniPas !== 'string' || casovniPas === '')) {
+      throw new TypeError(
+        `casOznaka: pričakovan casovniPas: ne-prazen string ali undefined, ne ${String(casovniPas)}`
+      )
+    }
   }
   return d.toLocaleTimeString('sl-SI', {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
+    ...(moznosti?.casovniPas ? { timeZone: moznosti.casovniPas } : {}),
   })
 }
 

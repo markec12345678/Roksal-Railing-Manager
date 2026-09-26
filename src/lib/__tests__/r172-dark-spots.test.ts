@@ -22,17 +22,20 @@ const stražar = (rel: string, st: number, svetli: string, dark: string) => ({
 
 const PRIMERI = [
   // portal/[token]/page.tsx — STATUS_CONFIG (bg/ring/text) + monter notes + 404
-  stražar('src/app/portal/[token]/page.tsx', 52, 'bg-amber-50', 'dark:bg-amber-950/40'),
-  stražar('src/app/portal/[token]/page.tsx', 54, 'ring-amber-200', 'dark:ring-amber-800'),
-  stražar('src/app/portal/[token]/page.tsx', 59, 'bg-blue-50', 'dark:bg-blue-950/40'),
-  stražar('src/app/portal/[token]/page.tsx', 60, 'text-blue-700', 'dark:text-blue-300'),
-  stražar('src/app/portal/[token]/page.tsx', 61, 'ring-blue-200', 'dark:ring-blue-800'),
-  stražar('src/app/portal/[token]/page.tsx', 66, 'bg-green-50', 'dark:bg-green-950/40'),
-  stražar('src/app/portal/[token]/page.tsx', 68, 'ring-green-200', 'dark:ring-green-800'),
-  stražar('src/app/portal/[token]/page.tsx', 73, 'bg-red-50', 'dark:bg-red-950/40'),
-  stražar('src/app/portal/[token]/page.tsx', 75, 'ring-red-200', 'dark:ring-red-800'),
-  stražar('src/app/portal/[token]/page.tsx', 343, 'bg-amber-50', 'dark:bg-amber-950/40'), // R179: vrstica +3 (tokenizacijski komentar)
-  stražar('src/app/portal/[token]/page.tsx', 477, 'bg-red-50', 'dark:bg-red-950/40'), // R179: vrstica +3 (tokenizacijski komentar)
+  // R180: vrstice +34 (glavni komentar+uvozi +7, osvezitevCas +9, banner +5,
+  // pečat +13) — vsa ogledala ŠE VEDNO obstojijo na ISTI vrstici (precedens
+  // R179 '+3': pomaknejo se samo številke, ni regresija).
+  stražar('src/app/portal/[token]/page.tsx', 59, 'bg-amber-50', 'dark:bg-amber-950/40'),
+  stražar('src/app/portal/[token]/page.tsx', 61, 'ring-amber-200', 'dark:ring-amber-800'),
+  stražar('src/app/portal/[token]/page.tsx', 66, 'bg-blue-50', 'dark:bg-blue-950/40'),
+  stražar('src/app/portal/[token]/page.tsx', 67, 'text-blue-700', 'dark:text-blue-300'),
+  stražar('src/app/portal/[token]/page.tsx', 68, 'ring-blue-200', 'dark:ring-blue-800'),
+  stražar('src/app/portal/[token]/page.tsx', 73, 'bg-green-50', 'dark:bg-green-950/40'),
+  stražar('src/app/portal/[token]/page.tsx', 75, 'ring-green-200', 'dark:ring-green-800'),
+  stražar('src/app/portal/[token]/page.tsx', 80, 'bg-red-50', 'dark:bg-red-950/40'),
+  stražar('src/app/portal/[token]/page.tsx', 82, 'ring-red-200', 'dark:ring-red-800'),
+  stražar('src/app/portal/[token]/page.tsx', 377, 'bg-amber-50', 'dark:bg-amber-950/40'), // R180: vrstica +34
+  stražar('src/app/portal/[token]/page.tsx', 511, 'bg-red-50', 'dark:bg-red-950/40'), // R180: vrstica +34
   // portal/[token]/gallery.tsx — PRED/MED/PO značke
   stražar('src/app/portal/[token]/gallery.tsx', 193, 'bg-amber-100', 'dark:bg-amber-500/15'),
   stražar('src/app/portal/[token]/gallery.tsx', 194, 'bg-blue-100', 'dark:bg-blue-500/15'),

@@ -33,6 +33,13 @@ import {
   Camera,
 } from 'lucide-react'
 import { PortalGallery, type PortalPhoto } from './gallery'
+// R180 — svežina tudi za STRANKO: (a) banner "na voljo je nova verzija" (isti
+// fail-closed žig-mehanizem kot v app R179 — long-lived tab stranke nosi
+// zastareli PortalGallery chunk do remonta); /api/version je javna (R179).
+// (b) pečat 'Osveženo ob' v statusni kartici — casOznaka EN VIR (vzorec
+// notranjih 9 površin), z EKSPlicitnim pasom (glej izris spodaj).
+import { UpdateBanner } from '@/components/roksal/update-banner'
+import { casOznaka } from '@/lib/osvezitev-fokus'
 
 const COMPANY = {
   ime: 'Roksal d.o.o. Kranj',
@@ -247,6 +254,15 @@ export default async function PortalPage({ params }: PageProps) {
 
   const totalPhotos = pred.length + med.length + po.length
 
+  // R180 — pečat svežine za stranko: stran je force-dynamic — vsak obisk je
+  // sveže branje (db + slike + timeline zgoraj); pečat zabeleži TOČKO izrisa
+  // PODATKOV (nastanjen šele po vsem branju). Tab, ki stoji odprt več dni,
+  // z pečatom iskreno pokaže starost podatkov (reload → nov pečat). Pas je
+  // EKSPlicitno 'Europe/Ljubljana': strežniški izris teče v UTC — brez pasu
+  // bi pečat lažno pokazal UTC uro namesto slovenske (stranke v SI). Na
+  // NotFound poteh pečata NI (ni naloženih podatkov — nikoli lažnega svežine).
+  const osvezitevCas = casOznaka(new Date(), { casovniPas: 'Europe/Ljubljana' })
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* R179 — page ozadje prej trdo `bg-[#f7f9ff]`: v temni temi (naprava
@@ -290,6 +306,11 @@ export default async function PortalPage({ params }: PageProps) {
       </header>
 
       <main className="flex-1 mx-auto max-w-2xl w-full px-4 py-5 space-y-5">
+        {/* R180 — banner "nova verzija" (worklog P1-d): strankin tab, odprt
+            med deployom, dobi isti diskreten pas kot osebje v app; Osveži =
+            reload te strani (žeton ostane v URL — reload varen). */}
+        <UpdateBanner />
+
         {/* STATUS CARD */}
         <section
           className={`rounded-xl border ${statusCfg.ring} ring-1 ${statusCfg.bg} p-4 shadow-sm`}
@@ -335,6 +356,19 @@ export default async function PortalPage({ params }: PageProps) {
                 </div>
               </div>
             )}
+          </div>
+          {/* R180 — pečat svežine (družina 'Osveženo ob', zdaj 10. površina):
+              vidno na VSIH širinah (portal nima tight-header omejitve notranjih
+              zavihkov — namerna dokumentirana varianta družine); ločilna vrsta
+              + tooltip razjasni semantiko (čas nalaganja TE strani). */}
+          <div
+            className="mt-3 flex items-center gap-1.5 border-t border-border pt-2.5"
+            title="Čas nalaganja podatkov te strani"
+          >
+            <History className="h-3 w-3 shrink-0 text-muted-foreground" aria-hidden="true" />
+            <p className="text-[11px] text-muted-foreground">
+              Osveženo ob <span className="tabular-nums">{osvezitevCas}</span>
+            </p>
           </div>
         </section>
 

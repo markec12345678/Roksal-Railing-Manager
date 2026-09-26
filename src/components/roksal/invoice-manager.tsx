@@ -7,6 +7,8 @@
 // rok plačila, TRR. Osnutki se urejajo, izdani so zaklenjeni (samo storno).
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'
+import { casOznaka } from '@/lib/osvezitev-fokus'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -52,6 +54,7 @@ import {
   Banknote,
   BellRing,
   Download,
+  History,
 } from 'lucide-react'
 import { downloadCsv, todayStamp } from '@/lib/csv-export'
 
@@ -218,6 +221,10 @@ export function InvoiceManager() {
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [projects, setProjects] = useState<ProjectLite[]>([])
   const [loading, setLoading] = useState(true)
+  // R180 — pečat svežine: čas zadnjega USPEŠNEGA branja /api/invoices (vzorec
+  // R170/R177/R178). Napaka/omrežje → null (fail-closed — NIČ lažne svežine;
+  // zastareli seznam ostane viden, a BREZ pečata = uporabnik ve, da ni svež).
+  const [racuniOsvezitev, setRacuniOsvezitev] = useState<Date | null>(null)
 
   // Nov račun dialog
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -238,9 +245,17 @@ export function InvoiceManager() {
   const loadInvoices = useCallback(async () => {
     try {
       const res = await fetch('/api/invoices')
-      if (res.ok) setInvoices(await res.json())
+      if (res.ok) {
+        setInvoices(await res.json())
+        // R180: pečat SAMO ob uspešnem branju (1×)
+        setRacuniOsvezitev(new Date())
+      } else {
+        // fail-closed pečat: napaka → zastarel seznam ostane, a brez pečata
+        setRacuniOsvezitev(null)
+      }
     } catch {
-      // offline — obdrži stanje
+      // offline — obdrži stanje; pečat počisti (NIČ lažne svežine)
+      setRacuniOsvezitev(null)
     } finally {
       setLoading(false)
     }
@@ -253,6 +268,10 @@ export function InvoiceManager() {
       .then((d) => setProjects(Array.isArray(d) ? d : []))
       .catch(() => {})
   }, [loadInvoices])
+  // R180 — ponovni bris ob vrnitvi v zavihek (družinski hook, 30 s vrata R170):
+  // računi so finančno kritični (zapadli rok plačila) — vrnitev v CRM pomeni
+  // svež seznam. EN VIR: loadInvoices je isti loader kot mount + mutacije.
+  useRefetchOnFocus(loadInvoices)
 
   // QR slika se generira, ko uporabnik odpre dialog (asinhrono, brez blokade)
   useEffect(() => {
@@ -819,6 +838,19 @@ export function InvoiceManager() {
             <Receipt className="h-4 w-4 text-amber-500 dark:text-amber-400" />
             Računi <span className="text-xs font-normal text-muted-foreground">(FURS)</span>
           </CardTitle>
+          {/* R180 — pečat svežine (družina R170-R178, 9 površin): tight-header klasni
+              niz IDENTIČEN družini — Računi so 10. notranja površina (portal
+              stranke = dokumentirana stranska varianta); skrit na xs. */}
+          {racuniOsvezitev && (
+            <span
+              className="hidden items-center gap-1 text-[11px] text-muted-foreground sm:flex"
+              title="Čas zadnje uspešne osvežitve podatkov"
+            >
+              <History className="h-3 w-3 shrink-0" aria-hidden="true" />
+              Osveženo ob{' '}
+              <span className="tabular-nums">{casOznaka(racuniOsvezitev)}</span>
+            </span>
+          )}
           <div className="flex shrink-0 items-center gap-2">
             {/* R136 — CSV izvoz seznama računov (pregled za pisarno/računovodstvo) */}
             <Button
