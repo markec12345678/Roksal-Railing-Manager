@@ -31,8 +31,8 @@ const PRIMERI = [
   stražar('src/app/portal/[token]/page.tsx', 68, 'ring-green-200', 'dark:ring-green-800'),
   stražar('src/app/portal/[token]/page.tsx', 73, 'bg-red-50', 'dark:bg-red-950/40'),
   stražar('src/app/portal/[token]/page.tsx', 75, 'ring-red-200', 'dark:ring-red-800'),
-  stražar('src/app/portal/[token]/page.tsx', 340, 'bg-amber-50', 'dark:bg-amber-950/40'),
-  stražar('src/app/portal/[token]/page.tsx', 474, 'bg-red-50', 'dark:bg-red-950/40'),
+  stražar('src/app/portal/[token]/page.tsx', 343, 'bg-amber-50', 'dark:bg-amber-950/40'), // R179: vrstica +3 (tokenizacijski komentar)
+  stražar('src/app/portal/[token]/page.tsx', 477, 'bg-red-50', 'dark:bg-red-950/40'), // R179: vrstica +3 (tokenizacijski komentar)
   // portal/[token]/gallery.tsx — PRED/MED/PO značke
   stražar('src/app/portal/[token]/gallery.tsx', 193, 'bg-amber-100', 'dark:bg-amber-500/15'),
   stražar('src/app/portal/[token]/gallery.tsx', 194, 'bg-blue-100', 'dark:bg-blue-500/15'),

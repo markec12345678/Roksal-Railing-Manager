@@ -1,6 +1,18 @@
 import type { NextConfig } from "next";
 
+// R179 — BUILD ŽIG: nastane TOČKO ENKRAT ob gradnji (next.config se ob buildu
+// izvrednoti enkrat). Vsak deploy dobi NOV žig; odprt tab ga ima vgrajenega v
+// svoje chunk-e (/api/version pa vrača žig TRENUTNEGA deploya) — razlika pomeni
+// "na voljo je nova verzija" in sproži diskreten banner z gumbom Osveži.
+// Fail-closed: če žig manjka (nastavitvena napaka), banner ostane SKRIT —
+// nikoli lažnega "nova verzija".
+const BUILD_STAMP = new Date().toISOString();
+
 const nextConfig: NextConfig = {
+  env: {
+    NEXT_PUBLIC_BUILD_STAMP: BUILD_STAMP,
+  },
+
   output: "standalone",
 
   // S+8.2 (čiščenje prehodne poti): `outputFileTracingIncludes` za ./db/** je

@@ -46,6 +46,10 @@ const PUBLIC_EXACT = new Set<string>([
   // Vercel Cron (GC staginga, S+4) pošilja Bearer CRON_SECRET, ne seje —
   // ruta SAMA fail-closed preveri CRON_SECRET ali ADMIN sejo.
   '/api/viz/gc',
+  // R179: javna preverba verzije za banner "nova verzija na voljo" —
+  // zastarel odprt tab (tudi ODJAVLJEN) mora vedeti, da je deploy novejši.
+  // Vrne IZKLJUČNO build žig (brez podatkov) — ničesar ne izdaja.
+  '/api/version',
   // R141 (§23): Vercel Cron za vzdrževalne posle (GC idempotenčnih ključev,
   // portal dostopov, starih sej) pošilja Bearer CRON_SECRET, ne seje —
   // ruta SAMA fail-closed preveri CRON_SECRET ali ADMIN sejo.

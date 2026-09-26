@@ -248,7 +248,10 @@ export default async function PortalPage({ params }: PageProps) {
   const totalPhotos = pred.length + med.length + po.length
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#f7f9ff]">
+    <div className="min-h-screen flex flex-col bg-background">
+      {/* R179 — page ozadje prej trdo `bg-[#f7f9ff]`: v temni temi (naprava
+          osebja z shranjeno temo) je bila stran SVETLA pege — token background
+          je v svetlobi BAJTNO enak (#f7f9ff), v temi pa pravilen (#0f1724). */}
       {/* HEADER */}
       <header className="bg-roksal-navy text-white shadow-lg">
         <div className="mx-auto max-w-2xl px-4 py-5">
@@ -293,7 +296,7 @@ export default async function PortalPage({ params }: PageProps) {
         >
           <div className="flex items-center justify-between gap-3 mb-3">
             <div className="flex items-center gap-2.5">
-              <div className={`flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm`}>
+              <div className={`flex h-10 w-10 items-center justify-center rounded-full bg-card shadow-sm`}>
                 <StatusIcon className={`h-5 w-5 ${statusCfg.text}`} />
               </div>
               <div>
@@ -306,7 +309,7 @@ export default async function PortalPage({ params }: PageProps) {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {project.datumMontaze && (
-              <div className="flex items-center gap-2 rounded-lg bg-white/70 px-3 py-2">
+              <div className="flex items-center gap-2 rounded-lg bg-card/70 px-3 py-2">
                 <Calendar className="h-4 w-4 text-roksal-amber shrink-0" />
                 <div className="min-w-0">
                   <p className="text-[10px] text-muted-foreground leading-tight">Datum montaže</p>
@@ -322,7 +325,7 @@ export default async function PortalPage({ params }: PageProps) {
               </div>
             )}
             {project.estimatedPrice !== null && project.estimatedPrice !== undefined && (
-              <div className="flex items-center gap-2 rounded-lg bg-white/70 px-3 py-2">
+              <div className="flex items-center gap-2 rounded-lg bg-card/70 px-3 py-2">
                 <Euro className="h-4 w-4 text-roksal-green shrink-0" />
                 <div className="min-w-0">
                   <p className="text-[10px] text-muted-foreground leading-tight">Predvidena cena</p>
@@ -366,7 +369,7 @@ export default async function PortalPage({ params }: PageProps) {
 
         {/* TIMELINE / STATUS HISTORY */}
         {timeline.length > 0 && (
-          <section className="rounded-xl border border-border bg-white p-4 shadow-sm">
+          <section className="rounded-xl border border-border bg-card p-4 shadow-sm">
             <div className="flex items-center gap-2 mb-3">
               <History className="h-4 w-4 text-roksal-ink" />
               <h2 className="text-base font-bold text-roksal-ink">Zgodovina projekta</h2>
@@ -379,7 +382,7 @@ export default async function PortalPage({ params }: PageProps) {
                   className="flex items-start gap-3 py-2 animate-fade-in-up"
                   style={{ animationDelay: `${i * 60}ms` }}
                 >
-                  <div className="relative z-10 flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-roksal-amber/15 ring-2 ring-white">
+                  <div className="relative z-10 flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-roksal-amber/15 ring-2 ring-card">
                     <div className="h-2 w-2 rounded-full bg-roksal-amber" />
                   </div>
                   <div className="min-w-0 flex-1 pt-0.5">
@@ -404,7 +407,7 @@ export default async function PortalPage({ params }: PageProps) {
         )}
 
         {/* CONTACT CTA */}
-        <section className="rounded-xl border border-roksal-navy/15 bg-white p-5 shadow-sm">
+        <section className="rounded-xl border border-roksal-navy/15 bg-card p-5 shadow-sm dark:border-roksal-ink/15">
           <h2 className="text-base font-bold text-roksal-ink mb-1">Imate vprašanja?</h2>
           <p className="text-xs text-muted-foreground mb-4">
             Naša ekipa je na voljo za vse informacije o vašem projektu.
@@ -469,8 +472,8 @@ export default async function PortalPage({ params }: PageProps) {
 
 function NotFoundPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f7f9ff] p-4">
-      <div className="max-w-md w-full rounded-xl border border-border bg-white p-6 text-center shadow-sm">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <div className="max-w-md w-full rounded-xl border border-border bg-card p-6 text-center shadow-sm">
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-50 dark:bg-red-950/40">
           <ChevronRight className="h-7 w-7 text-roksal-red" />
         </div>

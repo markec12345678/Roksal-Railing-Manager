@@ -8,6 +8,7 @@ import { BottomNav, type TabId, type MoreTabId } from '@/components/roksal/botto
 import { CommandPalette } from '@/components/roksal/command-palette'
 import { QuickActionsFab } from '@/components/roksal/quick-actions-fab'
 import { PwaStatus } from '@/components/roksal/pwa-status'
+import { UpdateBanner } from '@/components/roksal/update-banner'
 import { RefreshCw, Camera, ChevronLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -353,6 +354,10 @@ export default function Home() {
 
       {/* PWA status — offline pas + namestitev app (skrit v produktnem načinu) */}
       {activeTab !== 'viz' && <PwaStatus />}
+
+      {/* R179 — banner "nova verzija na voljo" po deployu (fail-closed: skrit,
+          razen ko je vgrajeni žig starejši od deployanega) */}
+      {activeTab !== 'viz' && <UpdateBanner />}
 
       {/* Sync status indicator */}
       {activeTab !== 'viz' && (
