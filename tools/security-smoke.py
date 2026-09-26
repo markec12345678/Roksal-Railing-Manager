@@ -2,7 +2,7 @@
 """
 Varnostni dimni test za Roksal Railing Manager.
 
-Preveri 141 stvari na ŽIVEM strežniku — ne na kodi, kar je edini način, da se
+Preveri 143 stvari na ŽIVEM strežniku — ne na kodi, kar je edini način, da se
 ujame napaka v plasteh (proxy, ruta, piškotek, baza). Napisan je bil prav zato,
 ker je prva različica proxy-ja blokirala prijavo samo: 32/36 testov je bilo
 zelenih, aplikacija pa neuporabna.
@@ -603,6 +603,20 @@ check("POST /api/quote brez seje → 401 + correlation", ok, f"dobil {st}")
 st, h, body = call("/api/documents", "POST", {"projectId": "x", "tipDokumenta": "PRIMOPREDAJA"})
 ok = st == 401 and len(h.get("x-correlation-id", "")) >= 8
 check("POST /api/documents brez seje → 401 + correlation", ok, f"dobil {st}")
+
+print("\n[35] Status meritev (R153 — issue #5 §19: perzistenten PATCH + revizija)")
+# Nova ruta R153: PATCH /api/measurements/[id] — sprememba statusa z
+# revizijsko sledjo. Fail-closed red: brez seje 401 + korelacija (validacija
+# statusa pride ZAPE po avtentikaciji).
+st, h, body = call("/api/measurements/r153-smoke-id", "PATCH", {"status": "POTRJENA"})
+ok = st == 401 and len(h.get("x-correlation-id", "")) >= 8
+check("PATCH /api/measurements/[id] brez seje → 401 + correlation", ok, f"dobil {st}")
+# DELETE ne obstaja (meritve so revizijski podatki — po zasnovi). Anon zahteva
+# ujame PROXY na robu (401, pred ločljivostjo metode — fail-closed red: najprej
+# kdo si); 405 je fingerprint AVTENTICIRANE zahteve ( testa/integracija).
+st, h, body = call("/api/measurements/r153-smoke-id", "DELETE", None)
+ok = st == 401 and len(h.get("x-correlation-id", "")) >= 8
+check("DELETE /api/measurements/[id] anon → 401 (proxy vrata) + correlation", ok, f"dobil {st}")
 
 
 print(f"\n{'=' * 60}")

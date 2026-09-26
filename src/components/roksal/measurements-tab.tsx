@@ -213,6 +213,9 @@ interface Measurement {
   segmentId?: string
   opomba?: string
   status?: MeasurementStatus
+  // R153 (§19) — revizijski kontekst statusa (PATCH /api/measurements/[id])
+  statusNote?: string | null
+  statusUpdatedAt?: string | null
   kotStopinje?: number | null
   // P3 — enote
   enota?: 'mm' | 'cm' | 'm'
@@ -878,6 +881,18 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
   const [bulkCopyTarget, setBulkCopyTarget] = useState('')
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
 
+  // R153 (§19) — perzistenten status meritev (PATCH /api/measurements/[id]):
+  // busy oznaka vrstice, dialog za ponovno odprtje arhiva (obvezna opomba)
+  // in busy zastava množičnega arhiviranja.
+  const [statusBusyId, setStatusBusyId] = useState<string | null>(null)
+  const [reopenTarget, setReopenTarget] = useState<{
+    measurement: Measurement
+    nextStatus: MeasurementStatus
+  } | null>(null)
+  const [reopenNote, setReopenNote] = useState('')
+  const [reopenBusy, setReopenBusy] = useState(false)
+  const [bulkArchiveBusy, setBulkArchiveBusy] = useState(false)
+
   // P1 — Status filter
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('VSE')
 
@@ -1392,7 +1407,9 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
         oznaka: ar.oznaka,
         segmentId: ar.segmentId,
         opomba: ar.opomba,
-        status: ar.status ?? m.status ?? 'OSNUTEK',
+        // R153: status pride iz baze (stolpec status) — strežnik je vir
+        // resnice; arMetadata.status samo za star vnose brez stolpca.
+        status: m.status ?? ar.status ?? 'OSNUTEK',
         kotStopinje: m.kotStopinje ?? ar.kotStopinje ?? null,
         // P3 — enote
         enota: ar.enota ?? m.enota,
@@ -1616,15 +1633,86 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
     }
   }
 
-  // P1 — cikliranje statusa meritve (OSNUTEK → POTRJENA → ARHIVIRANA → OSNUTEK)
-  // R152: API /api/measurements nima PATCH — prej je bila sprememba samo
-  // lokalna (po reloadu se je status tiho vrnil). Zdaj iskreno javimo.
-  function handleStatusCycle(m: Measurement) {
+  // R153 (§19) — cikliranje statusa meritve je zdaj PERZISTENTNO
+  // (PATCH /api/measurements/[id] z revizijsko sledjo MEASUREMENT_STATUS).
+  // Prej: sprememba samo lokalna (po reloadu izginila) → R152 iskren
+  // toast.error workaround — zdaj prava funkcionalnost.
+  // Fail-closed: neuspeh → status ostane nespremenjen + viden razlog;
+  // ponovno odprtje arhiva (ARHIVIRANA → OSNUTEK) zahteva opombo → dialog.
+  async function patchMeasurementStatus(
+    m: Measurement,
+    nextStatus: MeasurementStatus,
+    note?: string
+  ): Promise<boolean> {
+    const currentStatus: MeasurementStatus = m.status || 'OSNUTEK'
+    setStatusBusyId(m.id)
+    try {
+      const res = await fetch(`/api/measurements/${m.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: nextStatus, ...(note ? { note } : {}) }),
+      })
+      if (!res.ok) {
+        const data = (await res.json().catch(() => null)) as { error?: string } | null
+        toast.error(data?.error || `Sprememba statusa ni uspela (napaka ${res.status})`)
+        return false
+      }
+      const data = (await res.json()) as { changed: boolean; measurement: Measurement }
+      setMeasurements((prev) =>
+        prev.map((x) =>
+          x.id === m.id ? normalizeMeasurements([data.measurement])[0] : x
+        )
+      )
+      if (data.changed) {
+        const label = m.oznaka || m.lokacija || `#${m.id.slice(-4)}`
+        pushAudit({
+          akcija: 'STATUS',
+          meritevId: m.id,
+          opis: `Status meritve „${label}“: ${statusLabels[currentStatus]} → ${statusLabels[nextStatus]}`,
+          staraVrednost: statusLabels[currentStatus],
+          novaVrednost: statusLabels[nextStatus],
+        })
+        toast.success(`Status: ${statusLabels[currentStatus]} → ${statusLabels[nextStatus]}`)
+      }
+      return true
+    } catch {
+      toast.error('Sprememba statusa ni uspela — preverite povezavo. Status ostaja nespremenjen.')
+      return false
+    } finally {
+      setStatusBusyId(null)
+    }
+  }
+
+  async function handleStatusCycle(m: Measurement) {
     const currentStatus: MeasurementStatus = m.status || 'OSNUTEK'
     const nextStatus = statusCycle[currentStatus]
-    toast.error(
-      `Sprememba statusa ni na voljo (API ne podpira PATCH). Želeno: ${statusLabels[currentStatus]} → ${statusLabels[nextStatus]} — prijavite vodji.`
-    )
+    if (currentStatus === 'ARHIVIRANA') {
+      // R153 fail-closed: ponovno odprtje arhiva zahteva razlog (opomba ≥ 3
+      // znaki — arhivirane meritve so izključene iz aktivnih pregledov).
+      setReopenNote('')
+      setReopenTarget({ measurement: m, nextStatus })
+      return
+    }
+    await patchMeasurementStatus(m, nextStatus)
+  }
+
+  async function handleReopenConfirm() {
+    if (!reopenTarget) return
+    const reason = reopenNote.trim()
+    if (reason.length < 3) {
+      toast.error(
+        'Razlog je obvezen (vsaj 3 znaki) — arhivirana meritev se ne odpre brez utemeljitve.'
+      )
+      return
+    }
+    const { measurement, nextStatus } = reopenTarget
+    setReopenBusy(true)
+    const ok = await patchMeasurementStatus(measurement, nextStatus, reason)
+    setReopenBusy(false)
+    if (ok) {
+      setReopenTarget(null)
+      setReopenNote('')
+    }
   }
 
   // Hitri izračun razmikov
@@ -2990,19 +3078,65 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
     setBulkCopyTarget('')
   }
 
-  // R152: API nima DELETE/PATCH — prej je bilo "arhiviranje" samo lokalno
-  // (po reloadu so se meritve vratile neoznačene). Zdaj iskreno javimo.
-  function handleBulkDelete() {
+  // R153 (§19) — množično arhiviranje je zdaj PERZISTENTNO: zaporedni PATCH
+  // /api/measurements/[id] (determinističen vrstni red po seznamu meritev =
+  // createdAt desc). že arhivirane meritev končno stanje ustreza zahtevku —
+  // štejeta se kot opravljene (idempotentno, brez laži). Neuspehi → iskren
+  // povzetek s prvim razlogom. (Ime handlerja zgodovinsko — dialog arhivira.)
+  async function handleBulkDelete() {
     const selected = measurements.filter((m) => selectedIds.has(m.id))
     if (selected.length === 0) {
       toast.error('Ni izbranih meritev')
       return
     }
-    toast.error(
-      `Arhiviranje/brisanje ${selected.length} meritev ni na voljo (API ne podpira DELETE/PATCH). Meritve so revizijski podatki — prijavite spremembe vodji.`
-    )
+    setBulkArchiveBusy(true)
+    let okCount = 0
+    const failed: string[] = []
+    for (const m of selected) {
+      const label = m.oznaka || m.lokacija || `#${m.id.slice(-4)}`
+      if (m.status === 'ARHIVIRANA') {
+        okCount += 1
+        continue
+      }
+      try {
+        const res = await fetch(`/api/measurements/${m.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'ARHIVIRANA' }),
+        })
+        if (res.ok) {
+          const data = (await res.json()) as { changed: boolean; measurement: Measurement }
+          setMeasurements((prev) =>
+            prev.map((x) =>
+              x.id === m.id ? normalizeMeasurements([data.measurement])[0] : x
+            )
+          )
+          pushAudit({
+            akcija: 'STATUS',
+            meritevId: m.id,
+            opis: `Status meritve „${label}“: ${statusLabels[m.status || 'OSNUTEK']} → Arhivirana`,
+            staraVrednost: statusLabels[m.status || 'OSNUTEK'],
+            novaVrednost: 'Arhivirana',
+          })
+          okCount += 1
+        } else {
+          const err = (await res.json().catch(() => null)) as { error?: string } | null
+          failed.push(`${label}: ${err?.error || `napaka ${res.status}`}`)
+        }
+      } catch {
+        failed.push(`${label}: brez povezave`)
+      }
+    }
+    setBulkArchiveBusy(false)
     setSelectedIds(new Set())
     setBulkDeleteOpen(false)
+    if (failed.length === 0) {
+      toast.success(`Arhiviranih meritev: ${okCount}`)
+    } else if (okCount === 0) {
+      toast.error(`Arhiviranje ni uspelo (vseh ${failed.length}) — prvi razlog: ${failed[0]}`)
+    } else {
+      toast.warning(`Arhiviranih ${okCount}, neuspelih ${failed.length} — prvi razlog: ${failed[0]}`)
+    }
   }
 
   // ============================================
@@ -3778,16 +3912,18 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                     <TooltipContent>Vir: samomeritev stranke prek povezave</TooltipContent>
                   </Tooltip>
                 )}
-                {/* P1 — status badge (clickable) */}
+                {/* P1 — status badge (clickable) — R153: perzistenten PATCH */}
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
                       type="button"
                       onClick={() => handleStatusCycle(m)}
-                      className={`inline-flex items-center gap-0.5 rounded px-1 py-0 text-[8px] font-medium border transition-colors hover:opacity-80 ${
+                      disabled={statusBusyId === m.id}
+                      aria-label={`Status meritve ${m.oznaka || m.lokacija || `#${m.id.slice(-4)}`}: ${statusLabels[mStatus]}. Klik za spremembo v ${statusLabels[statusCycle[mStatus]]}`}
+                      className={`inline-flex items-center gap-0.5 rounded px-1 py-0 text-[8px] font-medium border transition-all hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-amber focus-visible:ring-offset-1 disabled:cursor-wait disabled:opacity-50 ${
                         statusColors[mStatus]
                       }`}
-                      title="Klikni za cikliranje statusa"
+                      title="Klikni za cikliranje statusa (shranjeno v bazo)"
                     >
                       {mStatus === 'POTRJENA' ? (
                         <CheckCircle2 className="h-2.5 w-2.5" />
@@ -3799,7 +3935,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                       {statusLabels[mStatus]}
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent>Spremeni status</TooltipContent>
+                  <TooltipContent>Spremeni status (perzistentno, z revizijsko sledjo)</TooltipContent>
                 </Tooltip>
                 {m.segmentId && (
                   <Badge variant="outline" className="text-[9px] h-4 px-1 shrink-0">
@@ -6069,14 +6205,15 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
         </Collapsible>
       </Card>
 
-      {/* P1 — POTRDITVENI DIALOG ZA SKUPINSKO BRISANJE */}
-      <Dialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+      {/* P1 — POTRDITVENI DIALOG ZA SKUPINSKO ARHIVIRANJE (R153: perzistentno) */}
+      <Dialog open={bulkDeleteOpen} onOpenChange={(o) => !bulkArchiveBusy && setBulkDeleteOpen(o)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Arhiviraj izbrane meritve?</DialogTitle>
             <DialogDescription>
-              Izbrane meritve ({selectedIds.size}) bodo arhivirane. Arhivirane meritve niso izbrisane
-              in jih lahko pozneje obnovite (cikliranje statusa). Želite nadaljevati?
+              Izbrane meritve ({selectedIds.size}) bodo arhivirane — sprememba se SHRANI v bazo (z
+              revizijsko sledjo). Arhivirane meritve niso izbrisane in jih lahko pozneje obnovite s
+              klikom na statusni badge (potreben razlog). Želite nadaljevati?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -6084,16 +6221,77 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               type="button"
               variant="outline"
               onClick={() => setBulkDeleteOpen(false)}
+              disabled={bulkArchiveBusy}
             >
               Prekliči
             </Button>
             <Button
               type="button"
               onClick={handleBulkDelete}
-              className="bg-red-600 text-white hover:bg-red-700"
+              disabled={bulkArchiveBusy}
+              className="bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-500 disabled:cursor-wait disabled:opacity-70"
             >
               <Archive className="mr-1.5 h-4 w-4" />
-              Arhiviraj ({selectedIds.size})
+              {bulkArchiveBusy ? 'Arhiviranje …' : `Arhiviraj (${selectedIds.size})`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* R153 (§19) — DIALOG: ponovno odprtje arhivirane meritve (obvezna opomba) */}
+      <Dialog
+        open={reopenTarget !== null}
+        onOpenChange={(o) => !o && !reopenBusy && setReopenTarget(null)}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Archive className="h-4 w-4 text-roksal-amber" />
+              Ponovno odpri arhivirano meritev?
+            </DialogTitle>
+            <DialogDescription>
+              Meritev „
+              {reopenTarget
+                ? reopenTarget.measurement.oznaka ||
+                  reopenTarget.measurement.lokacija ||
+                  `#${reopenTarget.measurement.id.slice(-4)}`
+                : ''}
+              “ bo spet {statusLabels[reopenTarget?.nextStatus ?? 'OSNUTEK'].toLowerCase()}. Navedite
+              razlog — vpisan v revizijsko sled (zgodovina sprememb).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="reopen-reason">Razlog (obvezen, vsaj 3 znaki)</Label>
+            <Textarea
+              id="reopen-reason"
+              value={reopenNote}
+              onChange={(e) => setReopenNote(e.target.value)}
+              placeholder="npr. napačno arhivirana — meritev je potrebna za ponudbo"
+              rows={3}
+              maxLength={500}
+              autoFocus
+              className="focus-visible:ring-roksal-amber"
+            />
+            <p className="text-xs text-muted-foreground tabular-nums">
+              {reopenNote.trim().length}/500 znakov
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setReopenTarget(null)}
+              disabled={reopenBusy}
+            >
+              Prekliči
+            </Button>
+            <Button
+              type="button"
+              onClick={handleReopenConfirm}
+              disabled={reopenBusy}
+              className="bg-roksal-amber text-white hover:bg-roksal-amber/90 focus-visible:ring-roksal-amber disabled:cursor-wait disabled:opacity-70"
+            >
+              {reopenBusy ? 'Shranjevanje …' : 'Odpri z razlogom'}
             </Button>
           </DialogFooter>
         </DialogContent>

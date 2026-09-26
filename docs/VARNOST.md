@@ -136,7 +136,7 @@ Tri vrzeli s seznama spodaj so zdaj zapolnjene:
 | **Revizijski dnevnik** | `src/lib/audit.ts` — enoten zapis, nikoli ne vrže in ne blokira zahtevka. `LOGIN`, `LOGIN_FAILED`, `PASSWORD_CHANGED`, `RAILING_LAYOUT`, `QUOTE_CALCULATED`. Branje prek `GET /api/audit?projectId=…` (VODJA/ADMIN ali dodeljeni monter). |
 
 Preverjeno v `tools/security-smoke.py`, razdelka [9] Vloge in [10] Omejevanje
-hitrosti — skupaj 141 preverjanj, tečejo v CI ob vsakem pushu.
+hitrosti — skupaj 143 preverjanj, tečejo v CI ob vsakem pushu.
 
 ## Upload security (R149 — issue #5 §37)
 
@@ -209,6 +209,21 @@ api napaka ali prazen seznam NI več nadomeščen z demo/fiktivnimi vrsticami.
 | **Nič demo podatkov** | `demoProjects` / `demoMeasurements` / `demoInventory` / `demoWindData` IZBRISANI. Napaka API-ja = prazen seznam + vidna napaka (role="alert" panel z "Poskusi znova" + toast.error). Prazno stanje ostane PRAZNO. |
 | **Varnost brez ugibanja (Varnost tab)** | Vremenski API neuspešen → EKSPliciten panel "Varnostna ocena ni mogoča" z retry gumbom. PREJ: fiktivni veter 7.2 m/s z `isSafeForInstallation: true` (varnostno kritična fail-open kršitev!). |
 | **Iskreni lokalni osnutki (Meritve)** | Neuspel POST meritve → ekspliciten OSNUTEK (localStorage per projekt, `src/lib/measurement-drafts.ts`), viden v ločenem rubinastem razdelku "Lokalni osnutki — ni v bazi" z sinhronizacijo in odstranjevanjem. PREJ: izmišljena vrstica `local_${Date.now()}` + fake-success "(lokalno)" toast — podatki izgubljeni ob reloadu. |
-| **Ni lažnega brisanja** | API /api/measurements nima DELETE/PATCH → UI ne laže več, da je brisanje/arhiviranje/status uspel (prej: lokalna sprememba, po reloadu vrnjeno). Zdaj iskren toast z razlago. |
+| **Ni lažnega brisanja** | API /api/measurements nima DELETE → UI ne laže, da je brisanje uspel (prej: lokalna sprememba, po reloadu vrnjeno). Status/arhiviranje je od R153 PERZISTENTNO prek PATCH (spodaj). |
 | **NEVIDNI toasti (P1)** | sonner `<Toaster>` NI bil nikoli montiran — vsi `toast.*()` klici iz 10+ komponent (R127–R151 vključno) so bili za uporabnika NEVIDNI. Zdaj montiran z `richColors` (semantične barve) + `closeButton`; radix Toaster ostane za `useToast()` klicatelje. |
 | **Regresijski stražarji** | Testa v `r152-measurement-drafts.test.ts`: (1) nobena roksal komponenta ne sme vsebovati `const demo[A-Z]` polja; (2) noben `id: \`local_${Date.now()}\`` vzorec. Kršitev = rdeči test. |
+
+## Status meritev — perzistenten + revizijska sled (R153 — issue #5 §19)
+
+Status meritve (OSNUTEK / POTRJENA / ARHIVIRANA) je bil do R153 izključno UI
+koncept — po reloadu je izginil. Zdaj je perzistenten prek
+`PATCH /api/measurements/[id]` in vsaka sprememba ima revizijsko sled.
+
+| | Pravilo |
+|---|---|
+| **Revizijski zapis** | Vsaka sprememba statusa → AuditLog `MEASUREMENT_STATUS` (oldValue `{status}` → newValue `{status, note, statusUpdatedAt}`), atomsko v isti transakciji kot posodobitev. |
+| **Ponovno odprtje arhiva = obvezna opomba** | ARHIVIRANA → OSNUTEK/POTRJENA brez razloga (≥ 3 znaki) → 400. Arhiv je izključen iz aktivnih pregledov — vrnitev mora biti utemeljena in je sledljiva. |
+| **Idempotenca** | Isti status → 200 `changed:false`, brez novega revizijskega zapisa (retry/dvakratni klik ne ustvarita šuma). |
+| **Dostop** | Isti vrata kot POST meritve: izvajalec projekta ali vodstvo; SKLADISCE samo bere (403). |
+| **Brisanje po zasnovni zavrnjeno** | DELETE ne obstaja (405) — meritve so revizijski podatki, ki napajajo BOM/dokazila. Popravek vrednosti gre skozi vodjo (nov vnos). |
+| **Iskren backfill** | Migracija nastavi obstoječim vrsticam `OSNUTEK` — nič izmišljene zgodovine statusov. |

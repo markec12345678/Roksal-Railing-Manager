@@ -234,10 +234,19 @@ model Measurement {
   // meritev (200, duplicate:true) namesto nove vrstice.
   dedupeHash String?
 
+  // R153 (§19): status meritve — perzistenten življenjski cikel
+  // OSNUTEK → POTRJENA → ARHIVIRANA (→ ponovno odprtje le z obvezno opombo).
+  // Prej izključno UI koncept (po reloadu izginil); zdaj stolpec + revizijska
+  // sled v AuditLog (MEASUREMENT_STATUS, oldValue/newValue).
+  status          String    @default("OSNUTEK")
+  statusNote      String?
+  statusUpdatedAt DateTime?
+
   project              Project                @relation(fields: [projectId], references: [id], onDelete: Cascade)
   installationEvidence InstallationEvidence[] // R147 §28 — merilni dokazi povezani z dokazili
 
   @@index([projectId, dedupeHash])
+  @@index([projectId, status])
 }
 
 // ============================================
