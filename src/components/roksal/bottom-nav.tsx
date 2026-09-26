@@ -185,7 +185,7 @@ export function BottomNav({ activeTab, onTabChange, badges = {}, moreActive = nu
                   className={`more-tile flex flex-col items-center gap-2 rounded-xl border-2 p-4 text-center transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm active:scale-[0.97] ${
                     active
                       ? 'border-roksal-amber bg-roksal-amber/10 shadow-[0_0_0_3px] shadow-roksal-amber/10'
-                      : 'border-border bg-card hover:border-roksal-navy/30'
+                      : 'border-border bg-card hover:border-roksal-navy/30 dark:hover:border-roksal-ink/30'
                   }`}
                 >
                   <div className={`flex h-12 w-12 items-center justify-center rounded-full transition-colors duration-200 ${active ? 'bg-roksal-amber text-white' : 'bg-roksal-navy/10 text-roksal-ink'}`}>

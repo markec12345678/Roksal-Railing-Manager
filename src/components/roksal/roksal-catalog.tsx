@@ -120,7 +120,7 @@ export function RoksalCatalog() {
           {filtered.map((p) => {
             const badge = MATERIAL_BADGE[p.material] ?? { label: p.material, cls: 'bg-gray-100 text-gray-800' }
             return (
-              <Card key={p.id} className="overflow-hidden transition-[border-color,box-shadow] duration-150 hover:border-roksal-navy/25 hover:shadow-sm">
+              <Card key={p.id} className="overflow-hidden transition-[border-color,box-shadow] duration-150 hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25 hover:shadow-sm">
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">

@@ -853,7 +853,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
                 return (
                   <div
                     key={p.id}
-                    className="group relative mb-2 break-inside-avoid overflow-hidden rounded-lg border border-border transition-all hover:border-roksal-navy/25 hover:shadow-sm focus-within:border-roksal-navy/30"
+                    className="group relative mb-2 break-inside-avoid overflow-hidden rounded-lg border border-border transition-all hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25 hover:shadow-sm focus-within:border-roksal-navy/30 dark:focus-within:border-roksal-ink/30"
                   >
                     { }
                     <img

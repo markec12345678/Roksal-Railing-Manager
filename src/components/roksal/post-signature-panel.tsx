@@ -414,7 +414,7 @@ export function PostSignaturePanel({ project }: { project: Project }) {
                   variant="outline"
                   className={
                     a.signatureType === 'CUSTOMER'
-                      ? 'text-[9px] bg-roksal-navy/10 text-roksal-ink border-roksal-navy/20'
+                      ? 'text-[9px] bg-roksal-navy/10 text-roksal-ink border-roksal-navy/20 dark:border-roksal-ink/20'
                       : 'text-[9px] bg-roksal-amber/10 text-roksal-amber border-roksal-amber/30'
                   }
                 >

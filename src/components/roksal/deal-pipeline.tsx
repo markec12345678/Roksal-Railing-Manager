@@ -456,7 +456,7 @@ export function DealPipeline() {
           </div>
           <div className="flex flex-wrap items-center gap-1.5 sm:justify-end">
             {vrednostPonudb > 0 && (
-              <Badge variant="outline" className="gap-1 border-roksal-navy/30 text-[11px] text-roksal-ink dark:text-roksal-amber">
+              <Badge variant="outline" className="gap-1 border-roksal-navy/30 dark:border-roksal-ink/30 text-[11px] text-roksal-ink dark:text-roksal-amber">
                 <Euro className="h-3 w-3" aria-hidden />
                 {fmtEur(vrednostPonudb)} v obdelavi
               </Badge>

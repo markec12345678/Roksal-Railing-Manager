@@ -913,7 +913,7 @@ export function InvoiceManager() {
               return (
                 <div
                   key={inv.id}
-                  className={`rounded-xl border border-l-4 p-3 transition-all hover:shadow-md hover:border-roksal-navy/25 ${rail} ${
+                  className={`rounded-xl border border-l-4 p-3 transition-all hover:shadow-md hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25 ${rail} ${
                     zapadlo ? 'border-red-300 bg-red-50/40' : 'border-border/70 bg-card'
                   }`}
                 >

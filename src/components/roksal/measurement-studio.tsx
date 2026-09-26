@@ -233,7 +233,7 @@ function QualityPanel({
   onSwitchToManual: () => void
 }) {
   return (
-    <div className="space-y-2 rounded-lg border border-roksal-navy/15 bg-white p-3" role="status">
+    <div className="space-y-2 rounded-lg border border-roksal-navy/15 dark:border-roksal-ink/15 bg-white p-3" role="status">
       <div className="flex items-center gap-2">
         <span className="text-xs font-semibold text-roksal-ink">Kakovost detekcije</span>
         <StateBadge state={state} className="ml-auto" />
@@ -546,7 +546,7 @@ function ResultsSection({ result, error }: { result: ConfirmResponse | null; err
   const g = session.geometry
 
   return (
-    <div className="space-y-3 rounded-lg border border-roksal-navy/15 bg-muted/20 p-3">
+    <div className="space-y-3 rounded-lg border border-roksal-navy/15 dark:border-roksal-ink/15 bg-muted/20 p-3">
       <div className="flex items-center gap-2">
         <CheckCircle2 className="h-4 w-4 text-green-600" />
         <span className="text-sm font-semibold text-roksal-ink">Rezultat meritve</span>
@@ -1379,7 +1379,7 @@ export function MeasurementStudio({ projectId }: { projectId?: string | null }) 
                   type="button"
                   variant="outline"
                   onClick={startCamera}
-                  className="min-h-[44px] flex-col gap-1 border-roksal-navy/20"
+                  className="min-h-[44px] flex-col gap-1 border-roksal-navy/20 dark:border-roksal-ink/20"
                   aria-label="Odpri kamero za zajem slike"
                 >
                   <Camera className="h-5 w-5 text-roksal-ink" />
@@ -1389,7 +1389,7 @@ export function MeasurementStudio({ projectId }: { projectId?: string | null }) 
                   type="button"
                   variant="outline"
                   onClick={() => fileInputRef.current?.click()}
-                  className="min-h-[44px] flex-col gap-1 border-roksal-navy/20"
+                  className="min-h-[44px] flex-col gap-1 border-roksal-navy/20 dark:border-roksal-ink/20"
                   aria-label="Naloži sliko iz datoteke"
                 >
                   <Upload className="h-5 w-5 text-roksal-ink" />
@@ -1495,7 +1495,7 @@ export function MeasurementStudio({ projectId }: { projectId?: string | null }) 
                   Izberite sliko, nato klikajte točke po korakih spodaj.
                 </p>
               )}
-              <div className="space-y-2 rounded-lg border border-roksal-navy/15 bg-roksal-navy/5 p-3">
+              <div className="space-y-2 rounded-lg border border-roksal-navy/15 dark:border-roksal-ink/15 bg-roksal-navy/5 p-3">
                 <p className="text-xs font-semibold text-roksal-ink">
                   Korak: {MANUAL_STEPS.find((s) => s.id === activeStep)?.label}
                 </p>

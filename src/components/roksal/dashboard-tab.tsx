@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Skeleton } from '@/components/ui/skeleton'
 import { WeatherCard } from '@/components/roksal/weather-card'
+import { TerminiCard } from '@/components/roksal/termini-card'
 import { AuditTrailDialog } from '@/components/roksal/audit-trail-dialog'
 import {
   Dialog,
@@ -225,7 +226,7 @@ function MiniRailingDiagram({ dolzina, visina }: { dolzina: number; visina: numb
   const gapPct = actualGap / dolzina * 100
 
   return (
-    <div className="relative rounded-md border border-roksal-navy/15 bg-gradient-to-b from-roksal-navy/3 to-roksal-navy/6 p-2" style={{ minHeight: `${Math.max(heightPct, 14)}px` }}>
+ <div className="relative rounded-md border border-roksal-navy/15 dark:border-roksal-ink/15 bg-gradient-to-b from-roksal-navy/3 to-roksal-navy/6 p-2" style={{ minHeight: `${Math.max(heightPct, 14)}px` }}>
       <div className="flex items-end h-full gap-0" style={{ height: `${Math.max(heightPct, 14)}px` }}>
         <div className="w-[3px] h-full bg-roksal-navy rounded-full" />
         <div className="flex-1 flex items-end h-full gap-0">
@@ -272,17 +273,23 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
   // ponuja SAMO prehode, ki jih strežnik (assertTransition) sprejme za to vlogo.
   // Neznana vloga (seja spodaj) = pot ne-vodstva (least privilege, fail-closed).
   const [myVloga, setMyVloga] = useState<string | null>(null)
+  // R166: Profile.id prijavljenega (GET /api/auth → user.id) — kartica Termini
+  // z njim iskreno označi "Moja montaža" (monter.id === user.id). null → brez
+  // poudarka (nikoli ugibanj, least privilege).
+  const [myUserId, setMyUserId] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
     fetch('/api/auth')
       .then((r) => (r.ok ? r.json() : null))
-      .then((data: { user?: { ime?: string; vloga?: string } } | null) => {
+      .then((data: { user?: { ime?: string; vloga?: string; id?: string } } | null) => {
         if (cancelled) return
         const ime = data?.user?.ime?.trim()
         if (ime) setDisplayName(ime.split(/\s+/)[0])
         const vloga = data?.user?.vloga?.trim()
         if (vloga) setMyVloga(vloga)
+        const uid = data?.user?.id
+        if (typeof uid === 'string' && uid.length > 0) setMyUserId(uid)
       })
       .catch(() => undefined) // pozdrav ostane privzet; vloga ostane null (least privilege)
     return () => {
@@ -759,12 +766,19 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
     setNewCustomerEmail('')
   }
 
+  // R166: klik na vrstico kartice Termini odpre podrobnosti projekta —
+  // SAMO, če je projekt že v naloženem seznamu (fail-closed: brez sintetiziranega
+  // Project objekta iz schedule vrstice; manjkajoča polja bi izmišljala stanje).
+  function openTerminiProject(projectId: string) {
+    const projekt = projects.find((p) => p.id === projectId)
+    if (projekt) openProjectDetail(projekt)
+  }
+
   function openProjectDetail(project: Project) {
     setDetailProject(project)
     setDetailOpen(true)
     setDetailMeasurementsExpanded(false)
     setStatusDropdownId(null)
-    // Reset portal state
     setPortalInfo(null)
     setPortalNotesInput('')
     setPortalPriceInput('')
@@ -1103,6 +1117,12 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
           )}
         </CardContent>
       </Card>
+
+      {/* R166: Termini (InstallationSchedule) — naslednjih 7 dni. Monter po
+          prijavi TAKOJ vidi današnjo/naslednjo montažo (ekipa, status,
+          "Moja montaža" poudarek), brez poti Več → Logistika → Koledar.
+          Fail-verbose: padec APIja je viden panel, ne lažno prazno stanje. */}
+      <TerminiCard myUserId={myUserId} onOpenProjectId={openTerminiProject} />
 
       {/* Danes & opozorila — montaže danes + zapadli projekti.
           Klik na vrstico odpre podrobnosti projekta. Kartica se izriše
@@ -1930,7 +1950,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="mt-1 w-full border-roksal-navy/20 text-roksal-ink hover:bg-roksal-navy/5 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+ className="mt-1 w-full border-roksal-navy/20 dark:border-roksal-ink/20 text-roksal-ink hover:bg-roksal-navy/5 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
                   aria-label="Odpri revizijsko sled projekta"
                   onClick={() => setAuditOpen(true)}
                 >
@@ -2005,7 +2025,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                     {detailProject.customer?.email && (
                       <a
                         href={`mailto:${detailProject.customer.email}`}
-                        className="flex items-center gap-1.5 rounded-lg bg-roksal-navy/10 border border-roksal-navy/20 px-2.5 py-1.5 text-[11px] font-medium text-roksal-ink hover:bg-roksal-navy/15 active:scale-[0.96] transition-all duration-150 press-scale"
+ className="flex items-center gap-1.5 rounded-lg bg-roksal-navy/10 border border-roksal-navy/20 dark:border-roksal-ink/20 px-2.5 py-1.5 text-[11px] font-medium text-roksal-ink hover:bg-roksal-navy/15 active:scale-[0.96] transition-all duration-150 press-scale"
                       >
                         <Mail className="h-3.5 w-3.5" />
                         <span>E-pošta</span>

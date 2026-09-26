@@ -491,7 +491,7 @@ export function SignatureQuote({ quoteData, monterName = 'Monter Roksal', projec
             <p className="text-xs text-muted-foreground">
               Stranka naj podpiše s prstom na spodnjem platnu. Podpis se uporabi za PDF ponudbo.
             </p>
-            <div className="rounded-lg border-2 border-roksal-navy/20 bg-white"> {/* PODPISNO PLATNO — belo v OBEH temah (črnilo + izvoz PDF), nič ne spreminjamo */}
+            <div className="rounded-lg border-2 border-roksal-navy/20 dark:border-roksal-ink/20 bg-white"> {/* PODPISNO PLATNO — belo v OBEH temah (črnilo + izvoz PDF), nič ne spreminjamo */}
               <SignatureCanvas
                 ref={(ref) => {
                   customerSigRef.current = ref

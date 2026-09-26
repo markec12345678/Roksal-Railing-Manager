@@ -280,7 +280,7 @@ function StatisticsCard({ items }: { items: GalleryItem[] }) {
   };
 
   return (
-    <Card className="border-roksal-navy/10">
+    <Card className="border-roksal-navy/10 dark:border-roksal-ink/15">
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-semibold text-roksal-ink dark:text-white flex items-center gap-2">
           <Layers className="w-4 h-4 text-roksal-amber" />
@@ -1262,7 +1262,7 @@ export function ReferenceGallery() {
 
       {/* Filter bar */}
       {!loading && items.length > 0 && (
-        <Card className="border-roksal-navy/10">
+        <Card className="border-roksal-navy/10 dark:border-roksal-ink/15">
           <CardContent className="p-3 sm:p-4 space-y-3">
             {/* Search + sort row */}
             <div className="flex flex-col sm:flex-row gap-2">
@@ -1525,7 +1525,7 @@ export function ReferenceGallery() {
             return (
               <Card
                 key={item.id}
-                className="break-inside-avoid mb-3 overflow-hidden cursor-pointer transition-[border-color,box-shadow] duration-150 hover:border-roksal-navy/25 hover:shadow-md group relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                className="break-inside-avoid mb-3 overflow-hidden cursor-pointer transition-[border-color,box-shadow] duration-150 hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25 hover:shadow-md group relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
                 tabIndex={0}
                 role="button"
                 aria-label={`Odpri realizacijo: ${item.naslov}`}

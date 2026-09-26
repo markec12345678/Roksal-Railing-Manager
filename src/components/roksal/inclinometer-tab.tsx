@@ -219,7 +219,7 @@ export function InclinometerTab({ projectId }: { projectId: string | null }) {
           {/* Libela — krožna (R150 vzorec: grafika z vlogo img + opisnim
               aria-labelom, ki ga bralniki lahko preberejo) */}
           <div
-            className="relative h-56 w-56 rounded-full border-4 border-roksal-navy/20 bg-gradient-to-br from-roksal-navy/5 to-roksal-amber/5"
+            className="relative h-56 w-56 rounded-full border-4 border-roksal-navy/20 dark:border-roksal-ink/20 bg-gradient-to-br from-roksal-navy/5 to-roksal-amber/5"
             role="img"
             aria-label={reading
               ? `Libela — odstopanje ${angleX.toFixed(1)} stopinj levo-desno, ${angleY.toFixed(1)} stopinj naprej-nazaj${isLevel ? ' — v vodoravni' : ''}`
@@ -228,7 +228,7 @@ export function InclinometerTab({ projectId }: { projectId: string | null }) {
             {/* križ */}
             <div className="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 bg-roksal-navy/15" />
             <div className="absolute top-1/2 left-0 w-full h-px -translate-y-1/2 bg-roksal-navy/15" />
-            <div className="absolute left-1/2 top-1/2 h-16 w-16 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-roksal-navy/30" />
+            <div className="absolute left-1/2 top-1/2 h-16 w-16 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-roksal-navy/30 dark:border-roksal-ink/30" />
             <div className="absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-roksal-navy" />
             {/* mehurček */}
             <div

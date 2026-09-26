@@ -873,7 +873,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
             </CardContent></Card>
           ) : (
             schedules.map((s) => (
-              <Card key={s.id} className="overflow-hidden transition-[border-color,box-shadow] duration-150 hover:border-roksal-navy/25 hover:shadow-sm focus-within:border-roksal-navy/25">
+              <Card key={s.id} className="overflow-hidden transition-[border-color,box-shadow] duration-150 hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25 hover:shadow-sm focus-within:border-roksal-navy/25 dark:focus-within:border-roksal-ink/25">
                 <div className="flex items-stretch">
                   <div className="w-1.5 shrink-0" style={{ backgroundColor: s.crew?.barva || '#1d2b3e' }} />
                   <CardContent className="p-3 flex-1">
@@ -969,7 +969,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
               <p className="text-sm">Ni ekip. Ustvari prvo ekipo.</p>
             </CardContent></Card>
           ) : crews.map((c) => (
-            <Card key={c.id} className="transition-[border-color,box-shadow] duration-150 hover:border-roksal-navy/25 hover:shadow-sm">
+            <Card key={c.id} className="transition-[border-color,box-shadow] duration-150 hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25 hover:shadow-sm">
               <CardContent className="p-3">
                 <div className="flex items-center gap-2 mb-1">
                   <div className="h-4 w-4 rounded-full ring-2 ring-white shadow-sm" style={{ backgroundColor: c.barva }} aria-hidden />
@@ -996,7 +996,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
               <p className="text-sm">Ni opreme. Dodaj prvo.</p>
             </CardContent></Card>
           ) : equipment.map((e) => (
-            <Card key={e.id} className="transition-[border-color,box-shadow] duration-150 hover:border-roksal-navy/25 hover:shadow-sm">
+            <Card key={e.id} className="transition-[border-color,box-shadow] duration-150 hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25 hover:shadow-sm">
               <CardContent className="p-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
@@ -1526,7 +1526,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
             </div>
             {/* Dokaz predaje — strežnik zavrača brez PRED+PO fotk (fail-closed 409). */}
             {evExisting && !evExisting.locked && (
-              <div className="rounded-md border border-roksal-navy/20 bg-roksal-navy/5 p-2">
+              <div className="rounded-md border border-roksal-navy/20 dark:border-roksal-ink/20 bg-roksal-navy/5 p-2">
                 <Label className="text-xs font-semibold">Potrditev predaje</Label>
                 <div className="mt-1 flex gap-2">
                   <Input

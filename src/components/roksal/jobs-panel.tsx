@@ -194,7 +194,7 @@ export function JobsPanel() {
           {data.jobs.slice(0, 8).map((j) => (
             <div
               key={j.id}
-              className="flex items-center justify-between gap-2 rounded-lg border border-border/80 bg-card px-2.5 py-2 transition-colors hover:border-roksal-navy/25"
+              className="flex items-center justify-between gap-2 rounded-lg border border-border/80 bg-card px-2.5 py-2 transition-colors hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25"
             >
               <div className="flex min-w-0 items-center gap-2">
                 <Badge className={`shrink-0 border-0 text-[10px] font-semibold ${STATUS_CHIP[j.status] ?? 'bg-secondary text-muted-foreground'}`}>

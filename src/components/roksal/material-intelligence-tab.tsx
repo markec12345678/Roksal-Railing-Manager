@@ -326,7 +326,7 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
                   </CardHeader>
                   <CardContent className="space-y-2">
                     {bomRefine.optimizacija.map((opt, i) => (
-                      <div key={opt.supplierId} className={`rounded-lg border p-2.5 transition-colors ${i === 0 ? 'border-green-300 bg-green-50' : 'border-border hover:border-roksal-navy/25'}`}>
+                      <div key={opt.supplierId} className={`rounded-lg border p-2.5 transition-colors ${i === 0 ? 'border-green-300 bg-green-50' : 'border-border hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25'}`}>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             {i === 0 && <Badge className="bg-green-600 text-white text-[8px]">NAJBOLJŠI</Badge>}
@@ -420,7 +420,7 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
                 return (
                   <Card
                     key={order.id}
-                    className="transition-colors hover:border-roksal-navy/25 hover:shadow-sm"
+                    className="transition-colors hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25 hover:shadow-sm"
                   >
                     <CardContent className="p-3">
                       <div className="flex items-start justify-between gap-2 mb-2">
@@ -516,7 +516,7 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
             </CardContent></Card>
           ) : (
             suppliers.map((sup) => (
-              <Card key={sup.id} className="transition-colors hover:border-roksal-navy/25 hover:shadow-sm">
+              <Card key={sup.id} className="transition-colors hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25 hover:shadow-sm">
                 <CardContent className="p-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">

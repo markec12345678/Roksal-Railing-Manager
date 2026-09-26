@@ -294,7 +294,7 @@ export function QuoteFollowUp() {
                       ? 'border-roksal-red/40 bg-roksal-red/10'
                       : isSoon
                         ? 'border-roksal-amber/40 bg-roksal-amber/10'
-                        : 'border-border bg-card hover:border-roksal-navy/30'
+                        : 'border-border bg-card hover:border-roksal-navy/30 dark:hover:border-roksal-ink/30'
                   }`}
                 >
                   <div className="flex items-start gap-2">

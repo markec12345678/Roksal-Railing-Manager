@@ -515,7 +515,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
           </div>
         )}
         {/* Status */}
-        <Card className="overflow-hidden border-roksal-navy/15">
+        <Card className="overflow-hidden border-roksal-navy/15 dark:border-roksal-ink/15">
           <CardContent className="p-4">
             <div className="mb-2 flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
@@ -531,7 +531,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
                   type="button" size="sm" variant="outline"
                   onClick={() => void exportPdf()}
                   disabled={generating}
-                  className="h-8 gap-1.5 rounded-lg border-roksal-navy/20 px-2.5 text-[11px] font-bold text-roksal-ink hover:bg-roksal-amber/10 hover:text-roksal-ink"
+                  className="h-8 gap-1.5 rounded-lg border-roksal-navy/20 dark:border-roksal-ink/20 px-2.5 text-[11px] font-bold text-roksal-ink hover:bg-roksal-amber/10 hover:text-roksal-ink"
                   aria-label="Izvozi PDF zapisnik"
                 >
                   {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileDown className="h-3.5 w-3.5 text-roksal-amber" />}
@@ -552,7 +552,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
         </Card>
 
         {/* 1. Tip objekta */}
-        <Card className="border-roksal-navy/10">
+        <Card className="border-roksal-navy/10 dark:border-roksal-ink/15">
           <CardContent className="p-4">
             <Label className="mb-2 block text-[10px] font-bold uppercase tracking-wide text-muted-foreground">1 · Kaj je objekt?</Label>
             <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
@@ -578,7 +578,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
         </Card>
 
         {/* 2. Oblika + pritrditev */}
-        <Card className="border-roksal-navy/10">
+        <Card className="border-roksal-navy/10 dark:border-roksal-ink/15">
           <CardContent className="space-y-3 p-4">
             <div>
               <Label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wide text-muted-foreground">2 · Oblika tlorisa</Label>
@@ -590,7 +590,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
                     onClick={() => set('oblika', o.id)}
                     aria-pressed={data.oblika === o.id}
                     className={`min-h-[44px] rounded-lg border px-2 py-1.5 text-center transition-all ${
-                      data.oblika === o.id ? 'border-roksal-amber bg-roksal-amber/10' : 'border-roksal-navy/10 hover:border-roksal-navy/30'
+                      data.oblika === o.id ? 'border-roksal-amber bg-roksal-amber/10' : 'border-roksal-navy/10 dark:border-roksal-ink/15 hover:border-roksal-navy/30 dark:hover:border-roksal-ink/30'
                     }`}
                   >
                     <span className={`block text-[11px] font-bold ${data.oblika === o.id ? 'text-roksal-amber' : 'text-roksal-ink'}`}>{o.label}</span>
@@ -609,7 +609,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
                     onClick={() => set('pritrditev', p.id)}
                     aria-pressed={data.pritrditev === p.id}
                     className={`min-h-[44px] rounded-lg border px-2 py-1.5 text-center transition-all ${
-                      data.pritrditev === p.id ? 'border-roksal-amber bg-roksal-amber/10' : 'border-roksal-navy/10 hover:border-roksal-navy/30'
+                      data.pritrditev === p.id ? 'border-roksal-amber bg-roksal-amber/10' : 'border-roksal-navy/10 dark:border-roksal-ink/15 hover:border-roksal-navy/30 dark:hover:border-roksal-ink/30'
                     }`}
                   >
                     <span className={`block text-[11px] font-bold ${data.pritrditev === p.id ? 'text-roksal-amber' : 'text-roksal-ink'}`}>{p.label}</span>
@@ -622,7 +622,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
         </Card>
 
         {/* 3. Podlaga — najpomembneje */}
-        <Card className={`border ${data.podlaga === 'estrih' ? 'border-amber-300 bg-amber-50/40' : 'border-roksal-navy/10'}`}>
+        <Card className={`border ${data.podlaga === 'estrih' ? 'border-amber-300 bg-amber-50/40' : 'border-roksal-navy/10 dark:border-roksal-ink/15'}`}>
           <CardContent className="p-4">
             <Label className="mb-2 block text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
               3 · Podlaga (določa moznike!) 
@@ -641,7 +641,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
                         : p.barva === 'red'
                           ? 'border-red-300 bg-red-50 text-red-700'
                           : 'border-roksal-amber bg-roksal-amber/10 text-roksal-amber'
-                      : 'border-roksal-navy/10 text-roksal-ink/70 hover:border-roksal-navy/30'
+                      : 'border-roksal-navy/10 dark:border-roksal-ink/15 text-roksal-ink/70 hover:border-roksal-navy/30 dark:hover:border-roksal-ink/30'
                   }`}
                 >
                   {p.label}
@@ -659,7 +659,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
         </Card>
 
         {/* 4. Mere */}
-        <Card className="border-roksal-navy/10">
+        <Card className="border-roksal-navy/10 dark:border-roksal-ink/15">
           <CardContent className="p-4">
             <Label className="mb-2 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
               <Ruler className="h-3 w-3" /> 4 · Mere (mm — iz AR skenerja ali traku)
@@ -761,7 +761,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
         </Card>
 
         {/* 5. Ovire */}
-        <Card className="border-roksal-navy/10">
+        <Card className="border-roksal-navy/10 dark:border-roksal-ink/15">
           <CardContent className="p-4">
             <Label className="mb-2 block text-[10px] font-bold uppercase tracking-wide text-muted-foreground">5 · Ovire na objektu</Label>
             <div className="flex flex-wrap gap-1.5">
@@ -790,7 +790,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
         </Card>
 
         {/* 6. Dostop */}
-        <Card className="border-roksal-navy/10">
+        <Card className="border-roksal-navy/10 dark:border-roksal-ink/15">
           <CardContent className="space-y-3 p-4">
             <div className="flex items-center justify-between gap-3">
               <div>
@@ -813,7 +813,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
         </Card>
 
         {/* 6 · RAL barva — izbira stranke na terenu (runda R) */}
-        <Card className="border-roksal-navy/10">
+        <Card className="border-roksal-navy/10 dark:border-roksal-ink/15">
           <CardContent className="p-4">
             <Label className="mb-2 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
               <Palette className="h-3 w-3" /> 6 · RAL barva prahu (izbira stranke)
@@ -852,7 +852,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
         </Card>
 
         {/* 7. Foto kontrolni seznam */}
-        <Card className="border-roksal-navy/10">
+        <Card className="border-roksal-navy/10 dark:border-roksal-ink/15">
           <CardContent className="p-4">
             <div className="mb-2 flex items-center justify-between">
               <Label className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
@@ -870,7 +870,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
                     onClick={() => toggleFoto(f.id)}
                     aria-pressed={done}
                     className={`flex w-full items-center gap-2.5 rounded-lg border px-3 py-2 text-left transition-all ${
-                      done ? 'border-green-200 bg-green-50' : 'border-roksal-navy/10 hover:border-roksal-navy/25'
+                      done ? 'border-green-200 bg-green-50' : 'border-roksal-navy/10 dark:border-roksal-ink/15 hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25'
                     }`}
                   >
                     <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
@@ -893,7 +893,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
         </Card>
 
         {/* 8. Opombe + shrani */}
-        <Card className="border-roksal-navy/10">
+        <Card className="border-roksal-navy/10 dark:border-roksal-ink/15">
           <CardContent className="space-y-3 p-4">
             <div>
               <Label className="text-[9px] text-muted-foreground">Opombe (nič ne pozabi…)</Label>
@@ -919,8 +919,8 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
 
       {/* ── DESNO: S seboj prinesti (sticky na desktopu) ──────────── */}
       <div className="lg:sticky lg:top-4 lg:self-start">
-        <Card className="overflow-hidden border-roksal-navy/20 shadow-sm">
-          <div className="flex items-center justify-between gap-2 border-b border-roksal-navy/10 bg-gradient-to-r from-roksal-navy to-roksal-navy/80 p-3.5">
+        <Card className="overflow-hidden border-roksal-navy/20 dark:border-roksal-ink/20 shadow-sm">
+          <div className="flex items-center justify-between gap-2 border-b border-roksal-navy/10 dark:border-roksal-ink/15 bg-gradient-to-r from-roksal-navy to-roksal-navy/80 p-3.5">
             <div className="flex items-center gap-2">
               <Package className="h-4 w-4 text-roksal-amber" />
               <div>
@@ -962,9 +962,9 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
                         item.kind === 'warn'
                           ? 'border-amber-200 bg-amber-50'
                           : item.kind === 'material'
-                            ? 'border-roksal-navy/10 bg-roksal-navy/[0.03]'
-                            : 'border-roksal-navy/10'
-                      } ${tools[item.id] ? 'opacity-45' : ''} hover:border-roksal-navy/30`}
+                            ? 'border-roksal-navy/10 dark:border-roksal-ink/15 bg-roksal-navy/[0.03]'
+                            : 'border-roksal-navy/10 dark:border-roksal-ink/15'
+                      } ${tools[item.id] ? 'opacity-45' : ''} hover:border-roksal-navy/30 dark:hover:border-roksal-ink/30`}
                     >
                       <input
                         type="checkbox"

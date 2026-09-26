@@ -496,7 +496,7 @@ export function VodjaDashboard() {
         <Button
           size="sm"
           variant="outline"
-          className="h-8 gap-1.5 border-roksal-navy/25 text-xs text-roksal-ink transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2"
+          className="h-8 gap-1.5 border-roksal-navy/25 dark:border-roksal-ink/25 text-xs text-roksal-ink transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2"
           onClick={exportDailyCsv}
           aria-label="Izvozi dnevni pregled vodje kot CSV"
           title="Izvozi dnevni pregled (KPI, opozorila in današnji termini) kot CSV za Excel"
@@ -508,7 +508,7 @@ export function VodjaDashboard() {
         <Button
           size="sm"
           variant="outline"
-          className="ml-auto h-8 gap-1.5 border-roksal-navy/25 text-xs text-roksal-ink transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2"
+          className="ml-auto h-8 gap-1.5 border-roksal-navy/25 dark:border-roksal-ink/25 text-xs text-roksal-ink transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2"
           onClick={downloadReport}
           disabled={reportLoading}
           aria-label="Prenesi mesečno PDF poročilo"

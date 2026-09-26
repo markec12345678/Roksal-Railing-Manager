@@ -405,7 +405,7 @@ export function PdfExport({ project }: { project: Project | null }) {
             onClick={generateWorkSheet}
             disabled={!project || generating !== null}
             variant="outline"
-            className="h-auto justify-start border-roksal-navy/20 py-3"
+            className="h-auto justify-start border-roksal-navy/20 dark:border-roksal-ink/20 py-3"
           >
             {generating === 'work' ? (
               <Loader2 className="mr-3 h-5 w-5 animate-spin text-roksal-amber" />
@@ -422,7 +422,7 @@ export function PdfExport({ project }: { project: Project | null }) {
             onClick={generateQuote}
             disabled={!project || generating !== null}
             variant="outline"
-            className="h-auto justify-start border-roksal-navy/20 py-3"
+            className="h-auto justify-start border-roksal-navy/20 dark:border-roksal-ink/20 py-3"
           >
             {generating === 'quote' ? (
               <Loader2 className="mr-3 h-5 w-5 animate-spin text-roksal-amber" />

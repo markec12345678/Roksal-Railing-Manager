@@ -1633,7 +1633,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
           <div className="flex items-center justify-between mb-1 px-0.5">
             <span className="text-[9px] font-mono text-roksal-ink font-semibold">0mm</span>
             <div className="flex-1 mx-1">
-              <div className="border-t border-dashed border-roksal-navy/40 relative">
+              <div className="border-t border-dashed border-roksal-navy/40 dark:border-roksal-ink/40 relative">
                 <span className="absolute left-1/2 -top-2.5 -translate-x-1/2 text-[9px] font-mono font-bold text-roksal-ink bg-background px-1">
                   {L}mm = {(L / 1000).toFixed(2)}m
                 </span>
@@ -1643,7 +1643,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
           </div>
 
           {/* Railing cross-section */}
-          <div className="relative flex items-end overflow-hidden rounded-lg border border-roksal-navy/20 bg-gradient-to-b from-roksal-navy/3 to-roksal-navy/8 p-3 pt-4 pb-2" style={{ minHeight: '52px' }}>
+          <div className="relative flex items-end overflow-hidden rounded-lg border border-roksal-navy/20 dark:border-roksal-ink/20 bg-gradient-to-b from-roksal-navy/3 to-roksal-navy/8 p-3 pt-4 pb-2" style={{ minHeight: '52px' }}>
             {/* Posts (background layer) */}
             {postPositions.length > 0 && (
               <div className="absolute inset-0 flex items-end pointer-events-none">
@@ -1665,7 +1665,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               {Array.from({ length: displayCount }).map((_, i) => (
                 <div key={i} className="flex h-full">
                   <div
-                    className={`h-[85%] rounded-[2px] ${profileType === 'z-line' ? 'bg-roksal-navy/80 border-r border-roksal-navy/20' : 'bg-roksal-navy'}`}
+                    className={`h-[85%] rounded-[2px] ${profileType === 'z-line' ? 'bg-roksal-navy/80 border-r border-roksal-navy/20 dark:bg-roksal-ink/85 dark:border-roksal-ink/20' : 'bg-roksal-navy dark:bg-roksal-ink'}`}
                     style={{ width: `${(W / L) * 100}%`, minWidth: '2px' }}
                   />
                   {i < displayCount - 1 && (
@@ -1760,7 +1760,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                   {/* Slat row */}
                   <div className="grid grid-cols-12 gap-0 text-[10px] font-mono py-1 border-b border-border/20">
                     <div className="col-span-1 text-center font-semibold text-roksal-ink">{item.num}</div>
-                    <div className="col-span-2 text-center"><Badge variant="outline" className="text-[8px] h-4 px-1 bg-roksal-navy/10 border-roksal-navy/30 text-roksal-ink">letva</Badge></div>
+                    <div className="col-span-2 text-center"><Badge variant="outline" className="text-[8px] h-4 px-1 bg-roksal-navy/10 border-roksal-navy/30 dark:border-roksal-ink/30 text-roksal-ink">letva</Badge></div>
                     <div className="col-span-3 text-center text-roksal-ink font-medium">{item.startPosMm}</div>
                     <div className="col-span-3 text-center font-medium">{item.widthMm}</div>
                     <div className="col-span-3 text-center text-roksal-ink font-medium">{endPos}</div>
@@ -1896,7 +1896,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                     className={`rounded-lg border p-2.5 transition-all ${
                       isActive
                         ? 'border-roksal-amber bg-roksal-amber/10 ring-1 ring-roksal-amber/30'
-                        : 'border-border/60 hover:border-roksal-navy/30 hover:bg-secondary/30'
+                        : 'border-border/60 hover:border-roksal-navy/30 dark:hover:border-roksal-ink/30 hover:bg-secondary/30'
                     }`}
                   >
                     <button
@@ -1910,7 +1910,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                       <div className="min-w-0 flex-1">
                         <p className="text-xs font-semibold text-roksal-ink truncate">{tpl.naziv}</p>
                         <div className="flex items-center gap-1.5 mt-0.5">
-                          <Badge variant="outline" className="text-[9px] h-4 px-1.5 bg-roksal-navy/5 border-roksal-navy/20 text-roksal-ink">
+                          <Badge variant="outline" className="text-[9px] h-4 px-1.5 bg-roksal-navy/5 border-roksal-navy/20 dark:border-roksal-ink/20 text-roksal-ink">
                             {templateModeLabels[tpl.mode]}
                           </Badge>
                           <span className="text-[9px] text-muted-foreground">
@@ -2340,7 +2340,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
         <>
           {/* runda S — priporočilo pritrditve iz terenskega pregleda */}
           {importedFromMeasurement?.podlaga && (
-            <Card className={importedFromMeasurement.podlaga === 'estrih' ? 'border-amber-300 bg-amber-50/60' : 'border-roksal-navy/15'}>
+            <Card className={importedFromMeasurement.podlaga === 'estrih' ? 'border-amber-300 bg-amber-50/60' : 'border-roksal-navy/15 dark:border-roksal-ink/15'}>
               <CardContent className="p-4">
                 <div className="flex items-start gap-2.5">
                   <AlertTriangle className={`mt-0.5 h-4 w-4 shrink-0 ${importedFromMeasurement.podlaga === 'estrih' ? 'text-amber-600' : 'text-roksal-ink/50'}`} />
@@ -3509,7 +3509,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                 type="button"
                 variant="outline"
                 size="sm"
-                className="w-full h-9 border-dashed border-roksal-navy/30 text-roksal-ink hover:bg-roksal-navy/5"
+                className="w-full h-9 border-dashed border-roksal-navy/30 dark:border-roksal-ink/30 text-roksal-ink hover:bg-roksal-navy/5"
                 onClick={() => {
                   setSegments([
                     ...segments,
@@ -3799,7 +3799,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
 
               {/* runda S — pritrditev + barva z terena v BOM pogledu */}
               {importedFromMeasurement?.podlaga && (
-                <Card className={importedFromMeasurement.podlaga === 'estrih' ? 'border-amber-300 bg-amber-50/60' : 'border-roksal-navy/15'}>
+                <Card className={importedFromMeasurement.podlaga === 'estrih' ? 'border-amber-300 bg-amber-50/60' : 'border-roksal-navy/15 dark:border-roksal-ink/15'}>
                   <CardContent className="flex items-start gap-2.5 p-3">
                     <Drill className={`mt-0.5 h-4 w-4 shrink-0 ${importedFromMeasurement.podlaga === 'estrih' ? 'text-amber-600' : 'text-roksal-ink/50'}`} />
                     <div className="min-w-0 flex-1">
@@ -4123,7 +4123,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="w-full mt-3 h-9 border-roksal-navy/30 text-roksal-ink hover:bg-roksal-navy/5"
+                    className="w-full mt-3 h-9 border-roksal-navy/30 dark:border-roksal-ink/30 text-roksal-ink hover:bg-roksal-navy/5"
                     onClick={exportMaterialPdf}
                   >
                     <FileDown className="mr-1.5 h-3.5 w-3.5" />
@@ -5204,7 +5204,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
 
               {/* Recommendations */}
               {glassResult.recommendations.length > 0 && (
-                <Card className="border-roksal-navy/20">
+                <Card className="border-roksal-navy/20 dark:border-roksal-ink/20">
                   <CardHeader className="pb-2 pt-4 px-4">
                     <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
                       <Info className="h-4 w-4" />
@@ -5458,14 +5458,14 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                         type="button"
                         onClick={() => loadFromHistory(entry)}
                         aria-label={`Naloži izračun: ${entry.modeLabel}, ${entry.keyResult}`}
-                        className="flex w-full items-start gap-3 rounded-lg border border-border/50 p-3 transition-colors hover:bg-secondary/30 hover:border-roksal-navy/30 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:border-roksal-navy/40"
+                        className="flex w-full items-start gap-3 rounded-lg border border-border/50 p-3 transition-colors hover:bg-secondary/30 hover:border-roksal-navy/30 dark:hover:border-roksal-ink/30 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                       >
                         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-roksal-navy/10">
                           <Icon className="h-4 w-4 text-roksal-ink" />
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <Badge variant="outline" className="text-[9px] h-4 px-1.5 bg-roksal-navy/5 border-roksal-navy/20 text-roksal-ink">
+                            <Badge variant="outline" className="text-[9px] h-4 px-1.5 bg-roksal-navy/5 border-roksal-navy/20 dark:border-roksal-ink/20 text-roksal-ink">
                               {entry.modeLabel}
                             </Badge>
                             <span className="text-[9px] text-muted-foreground tabular-nums">

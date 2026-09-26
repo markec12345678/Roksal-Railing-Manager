@@ -399,7 +399,7 @@ const tipMeritveIcons: Record<TipMeritve, typeof Ruler> = {
 }
 
 const tipMeritveColors: Record<TipMeritve, string> = {
-  RAZDALJA: 'bg-roksal-navy/10 text-roksal-ink border-roksal-navy/20',
+  RAZDALJA: 'bg-roksal-navy/10 text-roksal-ink border-roksal-navy/20 dark:border-roksal-ink/20',
   VISINA: 'bg-roksal-amber/10 text-roksal-amber border-roksal-amber/30',
   KOT: 'bg-purple-50 text-purple-700 border-purple-200',
   NAGIB: 'bg-orange-50 text-orange-700 border-orange-200',
@@ -409,7 +409,7 @@ const tipMeritveColors: Record<TipMeritve, string> = {
   // P3 — novi tipi
   KOT_VOGAL: 'bg-teal-50 text-teal-700 border-teal-200',
   KOT_STOPNISCE: 'bg-orange-50 text-orange-700 border-orange-200',
-  STEBR: 'bg-roksal-navy/10 text-roksal-ink border-roksal-navy/20',
+  STEBR: 'bg-roksal-navy/10 text-roksal-ink border-roksal-navy/20 dark:border-roksal-ink/20',
 }
 
 const groundTypeLabels: Record<GroundType, string> = {
@@ -516,7 +516,7 @@ const tipStebraLabels: Record<TipStebra, string> = {
 
 const tipStebraColors: Record<TipStebra, string> = {
   KONCNI: 'bg-roksal-amber/10 text-roksal-amber border-roksal-amber/30',
-  VMESNI: 'bg-roksal-navy/10 text-roksal-ink border-roksal-navy/20',
+  VMESNI: 'bg-roksal-navy/10 text-roksal-ink border-roksal-navy/20 dark:border-roksal-ink/20',
   VOGALNI: 'bg-teal-50 text-teal-700 border-teal-200',
 }
 
@@ -3773,7 +3773,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
 
     return (
       <div className="w-full">
-        <div className="relative rounded-lg border border-roksal-navy/20 bg-gradient-to-b from-roksal-navy/3 to-roksal-navy/8 p-3">
+        <div className="relative rounded-lg border border-roksal-navy/20 dark:border-roksal-ink/20 bg-gradient-to-b from-roksal-navy/3 to-roksal-navy/8 p-3">
           <div className="flex items-center justify-between mb-1">
             <span className="text-[9px] font-mono text-muted-foreground">0</span>
             <span className="text-[9px] font-mono text-muted-foreground">{formatDimension(dolzina)}</span>
@@ -3801,7 +3801,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   <div className="h-full bg-transparent" style={{ width: `${gapPct}%` }} />
                 </div>
               ) : (
-                <div className="flex-1 h-full border-t-2 border-dashed border-roksal-navy/30" />
+                <div className="flex-1 h-full border-t-2 border-dashed border-roksal-navy/30 dark:border-roksal-ink/30" />
               )}
             </div>
             <div className="w-[4px] h-full bg-roksal-navy rounded-full" />
@@ -3851,7 +3851,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
     return (
       <div
         key={m.id}
-        className={`rounded-xl border border-border/50 overflow-hidden transition-all hover:border-roksal-navy/20 hover:shadow-sm slide-in-right focus-within:border-roksal-navy/30 ${
+        className={`rounded-xl border border-border/50 overflow-hidden transition-all hover:border-roksal-navy/20 dark:hover:border-roksal-ink/20 hover:shadow-sm slide-in-right focus-within:border-roksal-navy/30 dark:focus-within:border-roksal-ink/30 ${
           isArchived ? 'opacity-60' : ''
         } ${isPhoto ? 'border-roksal-amber/30' : ''}`}
       >
@@ -4151,7 +4151,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
       </Card>
 
       {/* MERITVE-PRO — LASER + AR SINHRONIZACIJA orodna vrstica */}
-      <Card className="card-hover transition-all duration-200 animate-fade-in-up border-roksal-navy/15">
+      <Card className="card-hover transition-all duration-200 animate-fade-in-up border-roksal-navy/15 dark:border-roksal-ink/15">
         <CardContent className="p-3 space-y-2.5">
           {/* Laser povezava */}
           <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -4371,7 +4371,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   key={tip}
                   type="button"
                   onClick={() => handleQuickAdd(tip)}
-                  className={`flex flex-col items-center justify-center gap-1 rounded-lg border p-2.5 transition-all duration-150 active:scale-[0.96] hover:border-roksal-navy/40 ${tipMeritveColors[tip]}`}
+                  className={`flex flex-col items-center justify-center gap-1 rounded-lg border p-2.5 transition-all duration-150 active:scale-[0.96] hover:border-roksal-navy/40 dark:hover:border-roksal-ink/40 ${tipMeritveColors[tip]}`}
                 >
                   <Icon className="h-4 w-4" />
                   <span className="text-[10px] font-medium">{tipMeritveLabels[tip]}</span>
@@ -4392,7 +4392,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   key={tip}
                   type="button"
                   onClick={() => handleQuickAdd(tip)}
-                  className={`flex flex-col items-center justify-center gap-1 rounded-lg border p-2.5 transition-all duration-150 active:scale-[0.96] hover:border-roksal-navy/40 ${tipMeritveColors[tip]}`}
+                  className={`flex flex-col items-center justify-center gap-1 rounded-lg border p-2.5 transition-all duration-150 active:scale-[0.96] hover:border-roksal-navy/40 dark:hover:border-roksal-ink/40 ${tipMeritveColors[tip]}`}
                 >
                   <Icon className="h-4 w-4" />
                   <span className="text-[10px] font-medium">{tipMeritveLabels[tip]}</span>
@@ -4404,7 +4404,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
       </Card>
 
       {/* P3 — PRIMARNA ENOTA ZA PRIKAZ (pills) */}
-      <Card className="card-hover transition-all duration-200 animate-fade-in-up border-roksal-navy/15">
+      <Card className="card-hover transition-all duration-200 animate-fade-in-up border-roksal-navy/15 dark:border-roksal-ink/15">
         <CardContent className="p-3">
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2">
@@ -5058,7 +5058,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                         voiceListening
                           ? 'border-red-300 bg-red-50 text-red-600 animate-pulse'
                           : voiceSupported
-                            ? 'border-roksal-navy/20 bg-roksal-navy/5 text-roksal-ink hover:bg-roksal-navy/10'
+                            ? 'border-roksal-navy/20 dark:border-roksal-ink/20 bg-roksal-navy/5 text-roksal-ink hover:bg-roksal-navy/10'
                             : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
                       }`}
                     >
@@ -5295,7 +5295,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                               setFormOpen(true)
                               setAddSegmentOpen(false)
                             }}
-                            className="w-full rounded-lg border border-dashed border-roksal-navy/30 py-1.5 text-[10px] text-roksal-ink hover:bg-roksal-navy/5 transition-colors"
+                            className="w-full rounded-lg border border-dashed border-roksal-navy/30 dark:border-roksal-ink/30 py-1.5 text-[10px] text-roksal-ink hover:bg-roksal-navy/5 transition-colors"
                           >
                             <Plus className="inline h-3 w-3 mr-1" />
                             Dodaj meritev v ta segment
@@ -5744,7 +5744,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
 
           {/* Bulk toolbar (prikaže se samo v bulk mode z izborom) */}
           {bulkMode && (
-            <div className="rounded-lg border border-roksal-navy/20 bg-roksal-navy/5 p-2.5 space-y-2 slide-in-right">
+            <div className="rounded-lg border border-roksal-navy/20 dark:border-roksal-ink/20 bg-roksal-navy/5 p-2.5 space-y-2 slide-in-right">
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-1.5">
                   <button
@@ -5773,7 +5773,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   type="button"
                   onClick={handleBulkExportCSV}
                   disabled={selectedIds.size === 0}
-                  className="flex items-center justify-center gap-1 rounded-md border border-roksal-navy/20 bg-background px-2 py-1 text-[10px] font-medium text-roksal-ink hover:bg-roksal-navy/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  className="flex items-center justify-center gap-1 rounded-md border border-roksal-navy/20 dark:border-roksal-ink/20 bg-background px-2 py-1 text-[10px] font-medium text-roksal-ink hover:bg-roksal-navy/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
                   <Download className="h-3 w-3" />
                   Izvozi izbrane CSV
@@ -5843,7 +5843,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
           <CardContent className="space-y-3 px-4 pb-4">
             {/* Glavni kazalniki: merilec ↔ delta ↔ stranka */}
             <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-3">
-              <div className="rounded-lg border border-roksal-navy/15 bg-card px-2.5 py-2 text-center">
+              <div className="rounded-lg border border-roksal-navy/15 dark:border-roksal-ink/15 bg-card px-2.5 py-2 text-center">
                 <p className="text-[9px] font-medium uppercase tracking-wide text-muted-foreground">Merilec</p>
                 <p className="text-base font-bold text-roksal-ink sm:text-lg">
                   {strankaPrimerjava.merilecSkupajMm > 0 ? formatMultiUnit(strankaPrimerjava.merilecSkupajMm) : '—'}
@@ -5963,7 +5963,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   onClick={() => setDraftsOpen((o) => !o)}
                   aria-expanded={draftsOpen}
                   aria-label={draftsOpen ? 'Skrči seznam osnutkov' : 'Razširi seznam osnutkov'}
-                  className="rounded-lg border border-roksal-navy/20 bg-roksal-navy/5 px-2 py-1 text-[10px] font-medium text-roksal-ink hover:bg-roksal-navy/10 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 active:scale-[0.96] transition-all duration-150"
+                  className="rounded-lg border border-roksal-navy/20 dark:border-roksal-ink/20 bg-roksal-navy/5 px-2 py-1 text-[10px] font-medium text-roksal-ink hover:bg-roksal-navy/10 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 active:scale-[0.96] transition-all duration-150"
                 >
                   {draftsOpen ? 'Skrči' : 'Razširi'}
                 </button>
@@ -6012,7 +6012,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                           })}
                           disabled={syncingDrafts}
                           aria-label={`Sinhroniziraj osnutek ${d.label || 'brez oznake'} v bazo`}
-                          className="rounded-lg border border-roksal-navy/20 bg-roksal-navy/5 px-2 py-1 text-[10px] font-medium text-roksal-ink hover:bg-roksal-navy/10 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 active:scale-[0.96] transition-all duration-150 disabled:opacity-50"
+                          className="rounded-lg border border-roksal-navy/20 dark:border-roksal-ink/20 bg-roksal-navy/5 px-2 py-1 text-[10px] font-medium text-roksal-ink hover:bg-roksal-navy/10 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 active:scale-[0.96] transition-all duration-150 disabled:opacity-50"
                         >
                           Sinhroniziraj
                         </button>
@@ -6042,7 +6042,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               <button
                 type="button"
                 onClick={handleExportCSV}
-                className="flex items-center gap-1 rounded-lg border border-roksal-navy/20 bg-roksal-navy/5 px-2 py-1 text-[10px] font-medium text-roksal-ink hover:bg-roksal-navy/10 active:scale-[0.96] transition-all duration-150"
+                className="flex items-center gap-1 rounded-lg border border-roksal-navy/20 dark:border-roksal-ink/20 bg-roksal-navy/5 px-2 py-1 text-[10px] font-medium text-roksal-ink hover:bg-roksal-navy/10 active:scale-[0.96] transition-all duration-150"
                 disabled={loading || measurements.length === 0}
               >
                 <Download className="h-3 w-3" />
@@ -6788,10 +6788,10 @@ function InlineInclinometer({
       </CardHeader>
       <CardContent className="px-4 pb-4 flex flex-col items-center gap-3">
         {/* Libela */}
-        <div className="relative h-40 w-40 rounded-full border-4 border-roksal-navy/20 bg-gradient-to-br from-roksal-navy/5 to-roksal-amber/5">
+        <div className="relative h-40 w-40 rounded-full border-4 border-roksal-navy/20 dark:border-roksal-ink/20 bg-gradient-to-br from-roksal-navy/5 to-roksal-amber/5">
           <div className="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 bg-roksal-navy/15" />
           <div className="absolute top-1/2 left-0 w-full h-px -translate-y-1/2 bg-roksal-navy/15" />
-          <div className="absolute left-1/2 top-1/2 h-12 w-12 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-roksal-navy/30" />
+          <div className="absolute left-1/2 top-1/2 h-12 w-12 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-roksal-navy/30 dark:border-roksal-ink/30" />
           <div className="absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-roksal-navy" />
           <div
             className="absolute h-6 w-6 rounded-full bg-roksal-amber shadow-lg ring-2 ring-white transition-transform duration-100"
@@ -7377,7 +7377,7 @@ function InlineKotomer({
         </div>
 
         {/* Live senzor */}
-        <div className="rounded-lg border border-roksal-navy/10 bg-secondary/20 p-2.5 text-center">
+        <div className="rounded-lg border border-roksal-navy/10 dark:border-roksal-ink/15 bg-secondary/20 p-2.5 text-center">
           <p className="text-[9px] text-muted-foreground uppercase tracking-wide">
             Senzor naprave (beta/gamma)
           </p>
@@ -7560,7 +7560,7 @@ function SteberTable({
   })
 
   return (
-    <div className="rounded-lg border border-roksal-navy/15 bg-background overflow-hidden slide-in-right">
+    <div className="rounded-lg border border-roksal-navy/15 dark:border-roksal-ink/15 bg-background overflow-hidden slide-in-right">
       <div className="flex items-center justify-between p-2 border-b border-border/40 bg-roksal-navy/5">
         <div className="flex items-center gap-1.5">
           <Columns3 className="h-3.5 w-3.5 text-roksal-ink" />
@@ -7571,7 +7571,7 @@ function SteberTable({
         <button
           type="button"
           onClick={onExportCsv}
-          className="flex items-center gap-1 rounded-md border border-roksal-navy/20 bg-background px-1.5 py-0.5 text-[9px] font-medium text-roksal-ink hover:bg-roksal-navy/10 transition-colors"
+          className="flex items-center gap-1 rounded-md border border-roksal-navy/20 dark:border-roksal-ink/20 bg-background px-1.5 py-0.5 text-[9px] font-medium text-roksal-ink hover:bg-roksal-navy/10 transition-colors"
         >
           <Download className="h-2.5 w-2.5" />
           CSV

@@ -93,3 +93,6 @@ tmp/roksal-research/
 /.storage/
 benchmarks/vision-real/
 __pycache__/
+
+# notranji sandbox klon (arhiv, nikoli ne pushati kot gitlink)
+/roksal-repo/

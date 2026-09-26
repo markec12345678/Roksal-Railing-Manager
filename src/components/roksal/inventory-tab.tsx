@@ -520,7 +520,7 @@ export function InventoryTab() {
                 return (
                   <div
                     key={item.id}
-                    className="group flex flex-col gap-2 px-4 py-3 transition-all duration-200 hover:bg-secondary/20 md:rounded-lg md:border md:border-border/50 md:hover:border-roksal-navy/20 md:hover:shadow-sm"
+                    className="group flex flex-col gap-2 px-4 py-3 transition-all duration-200 hover:bg-secondary/20 md:rounded-lg md:border md:border-border/50 md:hover:border-roksal-navy/20 dark:md:hover:border-roksal-ink/20 md:hover:shadow-sm"
                   >
                     <div className="flex items-center justify-between">
                       <div className="min-w-0 flex-1">
