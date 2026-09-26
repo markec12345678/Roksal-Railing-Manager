@@ -599,7 +599,7 @@ export function SketchCanvas({ projectId, onClose }: SketchCanvasProps) {
                 variant="ghost"
                 onClick={handleClear}
                 disabled={strokes.length === 0}
-                className="h-8 w-8 p-0 text-red-600 hover:text-red-700 focus-visible:ring-2 focus-visible:ring-red-400/60"
+                className="h-8 w-8 p-0 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 focus-visible:ring-2 focus-visible:ring-red-400/60"
                 aria-label="Pobriši celotno skico"
               >
                 <Trash2 className="w-4 h-4" aria-hidden="true" />
@@ -658,7 +658,7 @@ export function SketchCanvas({ projectId, onClose }: SketchCanvasProps) {
         )}
 
         {mode === 'MEASURE' && (
-          <Badge variant="outline" className="ml-auto text-red-600 border-red-600/40">
+          <Badge variant="outline" className="ml-auto text-red-600 dark:text-red-400 border-red-600/40">
             <Ruler className="w-3 h-3 mr-1" />
             Način merjenja — potegni črto
           </Badge>

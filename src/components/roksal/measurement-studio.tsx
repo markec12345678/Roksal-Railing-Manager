@@ -152,16 +152,16 @@ const REF_KIND_OPTIONS: Array<{ value: ScaleSourceKind; label: string }> = [
 
 /** Barvno kodirani stanji kakovosti (issue #2 §4). */
 const STATE_BADGE: Record<MeasurementQualityState, { label: string; cls: string }> = {
-  INSUFFICIENT_DATA: { label: 'INSUFFICIENT_DATA', cls: 'bg-red-100 text-red-800 border-red-300' },
-  DETECTED: { label: 'DETECTED', cls: 'bg-amber-100 text-amber-800 border-amber-300' },
-  SCALE_REQUIRED: { label: 'SCALE_REQUIRED', cls: 'bg-amber-100 text-amber-800 border-amber-300' },
+  INSUFFICIENT_DATA: { label: 'INSUFFICIENT_DATA', cls: 'bg-red-100 dark:bg-red-500/15 text-red-800 dark:text-red-200 border-red-300 dark:border-red-800' },
+  DETECTED: { label: 'DETECTED', cls: 'bg-amber-100 dark:bg-amber-500/15 text-amber-800 dark:text-amber-200 border-amber-300 dark:border-amber-800' },
+  SCALE_REQUIRED: { label: 'SCALE_REQUIRED', cls: 'bg-amber-100 dark:bg-amber-500/15 text-amber-800 dark:text-amber-200 border-amber-300 dark:border-amber-800' },
   USER_REVIEW_REQUIRED: {
     label: 'USER_REVIEW_REQUIRED',
-    cls: 'bg-amber-100 text-amber-800 border-amber-300',
+    cls: 'bg-amber-100 dark:bg-amber-500/15 text-amber-800 dark:text-amber-200 border-amber-300 dark:border-amber-800',
   },
   MEASUREMENT_READY: {
     label: 'MEASUREMENT_READY',
-    cls: 'bg-green-100 text-green-800 border-green-300',
+    cls: 'bg-green-100 dark:bg-green-500/15 text-green-800 dark:text-green-200 border-green-300 dark:border-green-800',
   },
   VERIFIED: { label: 'VERIFIED', cls: 'bg-green-600 text-white border-green-700' },
 }
@@ -268,7 +268,7 @@ function QualityPanel({
       </div>
 
       {state === 'INSUFFICIENT_DATA' && (
-        <div className="flex items-start gap-2 rounded-lg border border-red-300 bg-red-50 p-2 text-[11px] text-red-800">
+        <div className="flex items-start gap-2 rounded-lg border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/40 p-2 text-[11px] text-red-800 dark:text-red-200">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           <div className="flex-1 space-y-2">
             <p>Detekcija ni zadostna za samodejno merjenje (fail-safe issue #2).</p>
@@ -341,7 +341,7 @@ function ReferenceSection({
         <p className="text-[11px] text-roksal-ink" role="status">
           Izmerjena razdalja: <b>{referenceDistancePct(refP1, refP2).toFixed(1)} % slike</b>
           {!refLenOk && (
-            <span className="ml-1 text-red-700">
+            <span className="ml-1 text-red-700 dark:text-red-300">
               — preveč blizu; označi daljšo znano dolžino (najmanj 2 % slike).
             </span>
           )}
@@ -436,7 +436,7 @@ function ProductSection({
       </div>
 
       {productsError ? (
-        <p className="text-[11px] text-amber-800">{productsError}</p>
+        <p className="text-[11px] text-amber-800 dark:text-amber-200">{productsError}</p>
       ) : products.length === 0 ? (
         <p className="text-[11px] text-muted-foreground">Katalog se nalaga …</p>
       ) : (
@@ -533,7 +533,7 @@ function ResultsSection({ result, error }: { result: ConfirmResponse | null; err
     return (
       <div
         role="status"
-        className="flex items-start gap-2 rounded-lg border border-red-300 bg-red-50 p-3 text-[11px] text-red-800"
+        className="flex items-start gap-2 rounded-lg border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/40 p-3 text-[11px] text-red-800 dark:text-red-200"
       >
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
         <span>{error}</span>
@@ -548,14 +548,14 @@ function ResultsSection({ result, error }: { result: ConfirmResponse | null; err
   return (
     <div className="space-y-3 rounded-lg border border-roksal-navy/15 dark:border-roksal-ink/15 bg-muted/20 p-3">
       <div className="flex items-center gap-2">
-        <CheckCircle2 className="h-4 w-4 text-green-600" />
+        <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
         <span className="text-sm font-semibold text-roksal-ink">Rezultat meritve</span>
         <StateBadge state={session.quality.state} className="ml-auto" />
       </div>
 
       {/* Brez merila → SCALE_REQUIRED (pravilno vedenje, NE napaka) */}
       {!g && (
-        <div className="space-y-1 rounded-lg border border-amber-300 bg-amber-50 p-3 text-[11px] text-amber-800">
+        <div className="space-y-1 rounded-lg border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-3 text-[11px] text-amber-800 dark:text-amber-200">
           <p className="flex items-center gap-2 font-semibold">
             <AlertTriangle className="h-4 w-4" />
             SCALE_REQUIRED — merilo ni bilo mogoče določiti
@@ -693,7 +693,7 @@ function ResultsSection({ result, error }: { result: ConfirmResponse | null; err
             </p>
           )}
           {layout?.warnings && layout.warnings.length > 0 && (
-            <div className="rounded border border-amber-300 bg-amber-50 p-2 text-[11px] text-amber-800">
+            <div className="rounded border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-2 text-[11px] text-amber-800 dark:text-amber-200">
               {layout.warnings.map((w, i) => (
                 <p key={i}>{w}</p>
               ))}
@@ -706,7 +706,7 @@ function ResultsSection({ result, error }: { result: ConfirmResponse | null; err
       {savedMeasurementId && (
         <div
           role="status"
-          className="flex items-center gap-2 rounded-lg border border-green-300 bg-green-50 p-2.5 text-[11px] font-medium text-green-800"
+          className="flex items-center gap-2 rounded-lg border border-green-300 dark:border-green-800 bg-green-50 dark:bg-green-950/40 p-2.5 text-[11px] font-medium text-green-800 dark:text-green-200"
         >
           <CheckCircle2 className="h-4 w-4 shrink-0" />
           Meritev shranjena v projekt (ID: {savedMeasurementId})
@@ -1407,7 +1407,7 @@ export function MeasurementStudio({ projectId }: { projectId?: string | null }) 
               {cameraError && (
                 <div
                   role="status"
-                  className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 p-2 text-[11px] text-amber-800"
+                  className="flex items-start gap-2 rounded-lg border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-2 text-[11px] text-amber-800 dark:text-amber-200"
                 >
                   <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                   <span>{cameraError}</span>
@@ -1472,7 +1472,7 @@ export function MeasurementStudio({ projectId }: { projectId?: string | null }) 
               {detectError && (
                 <div
                   role="status"
-                  className="flex items-start gap-2 rounded-lg border border-red-300 bg-red-50 p-3 text-[11px] text-red-800"
+                  className="flex items-start gap-2 rounded-lg border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/40 p-3 text-[11px] text-red-800 dark:text-red-200"
                 >
                   <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                   <span>{detectError}</span>
@@ -1543,17 +1543,17 @@ export function MeasurementStudio({ projectId }: { projectId?: string | null }) 
                   </Button>
                 </div>
                 <div className="flex flex-wrap gap-1.5 text-[10px]">
-                  <Badge variant="outline" className="border-rose-300 bg-rose-50 text-[9px] text-rose-700">
+                  <Badge variant="outline" className="border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 text-[9px] text-rose-700 dark:text-rose-300">
                     Spodnja linija: {manualPath.length}
                   </Badge>
-                  <Badge variant="outline" className="border-amber-300 bg-amber-50 text-[9px] text-amber-700">
+                  <Badge variant="outline" className="border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 text-[9px] text-amber-700 dark:text-amber-300">
                     Zgornja linija: {manualTop.length}
                   </Badge>
-                  <Badge variant="outline" className="border-pink-300 bg-pink-50 text-[9px] text-pink-700">
+                  <Badge variant="outline" className="border-pink-300 dark:border-pink-800 bg-pink-50 dark:bg-pink-950/40 text-[9px] text-pink-700 dark:text-pink-300">
                     Stebri: {manualPosts.length}
                   </Badge>
                   {manualPath.length >= 2 && !manualTopMatches && (
-                    <Badge variant="outline" className="border-red-300 bg-red-50 text-[9px] text-red-700">
+                    <Badge variant="outline" className="border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/40 text-[9px] text-red-700 dark:text-red-300">
                       Zgornja linija mora imeti {manualPath.length} točk!
                     </Badge>
                   )}

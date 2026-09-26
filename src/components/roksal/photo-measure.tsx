@@ -33,9 +33,9 @@ interface OcenaMer {
 }
 
 function confidenceBadge(z: number) {
-  if (z >= 0.7) return { label: 'visoko zaupanje', cls: 'bg-green-100 text-green-700' as const }
-  if (z >= 0.45) return { label: 'srednje zaupanje', cls: 'bg-amber-100 text-amber-700' as const }
-  return { label: 'nizko zaupanje — izmeri ročno', cls: 'bg-red-100 text-red-700' as const }
+  if (z >= 0.7) return { label: 'visoko zaupanje', cls: 'bg-green-100 dark:bg-green-500/15 text-green-700 dark:text-green-300' as const }
+  if (z >= 0.45) return { label: 'srednje zaupanje', cls: 'bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300' as const }
+  return { label: 'nizko zaupanje — izmeri ročno', cls: 'bg-red-100 dark:bg-red-500/15 text-red-700 dark:text-red-300' as const }
 }
 
 export function PhotoMeasure({ projectId }: { projectId: string | null }) {
@@ -151,11 +151,11 @@ export function PhotoMeasure({ projectId }: { projectId: string | null }) {
   const conf = ocena ? confidenceBadge(ocena.zaupanje) : null
 
   return (
-    <Card className="card-hover transition-all duration-200 animate-fade-in-up border-violet-200/60">
+    <Card className="card-hover transition-all duration-200 animate-fade-in-up border-violet-200/60 dark:border-violet-800/60">
       <CardContent className="px-4 py-4">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2 min-w-0">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-50 text-violet-700 shrink-0 border border-violet-200">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 shrink-0 border border-violet-200 dark:border-violet-800">
               <Sparkles className="h-4 w-4" />
             </div>
             <div className="min-w-0">
@@ -182,7 +182,7 @@ export function PhotoMeasure({ projectId }: { projectId: string | null }) {
             variant="outline"
             onClick={() => fileRef.current?.click()}
             disabled={analyzing}
-            className="h-8 px-3 text-[11px] border-violet-300 text-violet-700 hover:bg-violet-50"
+            className="h-8 px-3 text-[11px] border-violet-300 dark:border-violet-800 text-violet-700 dark:text-violet-300 hover:bg-violet-50 dark:hover:bg-violet-950/40"
           >
             {analyzing ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Camera className="mr-1 h-3.5 w-3.5" />}
             {analyzing ? 'Ocenjujem…' : 'Fotografiraj'}
@@ -198,7 +198,7 @@ export function PhotoMeasure({ projectId }: { projectId: string | null }) {
             />
             {analyzing && (
               <div className="flex flex-1 items-center gap-2 text-[11px] text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin text-violet-600" />
+                <Loader2 className="h-4 w-4 animate-spin text-violet-600 dark:text-violet-400" />
                 AI meri iz fotke… (nekaj sekund)
               </div>
             )}
@@ -267,7 +267,7 @@ export function PhotoMeasure({ projectId }: { projectId: string | null }) {
               </Button>
             </div>
             {!projectId && (
-              <p className="text-center text-[9px] text-amber-600">Za shranjevanje izberi projekt.</p>
+              <p className="text-center text-[9px] text-amber-600 dark:text-amber-400">Za shranjevanje izberi projekt.</p>
             )}
           </div>
         )}

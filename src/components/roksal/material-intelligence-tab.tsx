@@ -291,27 +291,27 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
           ) : loading ? (
             <Card><CardContent className="py-8 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto text-roksal-amber" /></CardContent></Card>
           ) : !bomRefine?.dealLocked ? (
-            <Card className="border-amber-300 bg-amber-50">
+            <Card className="border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40">
               <CardContent className="py-6 text-center">
-                <AlertTriangle className="h-8 w-8 mx-auto text-amber-500 mb-2" />
-                <p className="text-sm font-medium text-amber-900">Deal ni zaklenjen</p>
-                <p className="text-xs text-amber-700 mt-1">Zakleni deal po podpisu (V4.1) za BOM optimizacijo.</p>
+                <AlertTriangle className="h-8 w-8 mx-auto text-amber-500 dark:text-amber-400 mb-2" />
+                <p className="text-sm font-medium text-amber-900 dark:text-amber-200">Deal ni zaklenjen</p>
+                <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">Zakleni deal po podpisu (V4.1) za BOM optimizacijo.</p>
               </CardContent>
             </Card>
           ) : bomRefine ? (
             <>
               {/* Skupne statistike */}
               <div className="grid grid-cols-3 gap-2">
-                <Card className="border-green-200"><CardContent className="p-3">
-                  <div className="flex items-center gap-1 mb-1"><CheckCircle2 className="h-3 w-3 text-green-600" /><span className="text-[10px] text-muted-foreground">Skupaj</span></div>
+                <Card className="border-green-200 dark:border-green-800"><CardContent className="p-3">
+                  <div className="flex items-center gap-1 mb-1"><CheckCircle2 className="h-3 w-3 text-green-600 dark:text-green-400" /><span className="text-[10px] text-muted-foreground">Skupaj</span></div>
                   <div className="text-lg font-bold text-roksal-ink tabular-nums">{bomRefine.skupajCena.toFixed(0)} €</div>
                 </CardContent></Card>
-                <Card className="border-amber-200"><CardContent className="p-3">
-                  <div className="flex items-center gap-1 mb-1"><TrendingUp className="h-3 w-3 text-amber-600" /><span className="text-[10px] text-muted-foreground">Prihranek</span></div>
-                  <div className="text-lg font-bold text-amber-700 tabular-nums">{bomRefine.skupajPrihranek.toFixed(0)} €</div>
+                <Card className="border-amber-200 dark:border-amber-800"><CardContent className="p-3">
+                  <div className="flex items-center gap-1 mb-1"><TrendingUp className="h-3 w-3 text-amber-600 dark:text-amber-400" /><span className="text-[10px] text-muted-foreground">Prihranek</span></div>
+                  <div className="text-lg font-bold text-amber-700 dark:text-amber-300 tabular-nums">{bomRefine.skupajPrihranek.toFixed(0)} €</div>
                 </CardContent></Card>
-                <Card className="border-blue-200"><CardContent className="p-3">
-                  <div className="flex items-center gap-1 mb-1"><Package className="h-3 w-3 text-blue-600" /><span className="text-[10px] text-muted-foreground">Artikli</span></div>
+                <Card className="border-blue-200 dark:border-blue-800"><CardContent className="p-3">
+                  <div className="flex items-center gap-1 mb-1"><Package className="h-3 w-3 text-blue-600 dark:text-blue-400" /><span className="text-[10px] text-muted-foreground">Artikli</span></div>
                   <div className="text-lg font-bold text-roksal-ink tabular-nums">{bomRefine.matchedCount}/{bomRefine.totalCount}</div>
                 </CardContent></Card>
               </div>
@@ -363,11 +363,11 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
                               <div className="text-sm font-bold text-roksal-amber tabular-nums">{item.skupajCena.toFixed(0)} €</div>
                               <div className="text-[9px] text-muted-foreground">{item.bestPrice.supplier}</div>
                               {item.razlikaCen > 0 && (
-                                <div className="text-[9px] text-green-600 tabular-nums">−{item.razlikaCen.toFixed(2)} €/en</div>
+                                <div className="text-[9px] text-green-600 dark:text-green-400 tabular-nums">−{item.razlikaCen.toFixed(2)} €/en</div>
                               )}
                             </>
                           ) : (
-                            <Badge variant="outline" className="text-[8px] bg-red-50 text-red-700 border-red-300">Ni cene</Badge>
+                            <Badge variant="outline" className="text-[8px] bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border-red-300 dark:border-red-800">Ni cene</Badge>
                           )}
                         </div>
                       </div>
@@ -428,10 +428,10 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-semibold text-roksal-ink">{order.supplier.naziv}</span>
                             <Badge variant="outline" className={`text-[8px] ${
-                              order.status === 'DOBLJENO' ? 'bg-green-50 text-green-700 border-green-300' :
-                              order.status === 'POSLANO' ? 'bg-blue-50 text-blue-700 border-blue-300' :
-                              order.status === 'POTRJENO' ? 'bg-amber-50 text-amber-700 border-amber-300' :
-                              'bg-gray-50 text-gray-700 border-gray-300'
+                              order.status === 'DOBLJENO' ? 'bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300 border-green-300 dark:border-green-800' :
+                              order.status === 'POSLANO' ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-800' :
+                              order.status === 'POTRJENO' ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800' :
+                              'bg-gray-50 dark:bg-gray-950/40 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-800'
                             }`}>{order.status}</Badge>
                           </div>
                           <div className="text-[10px] text-muted-foreground mt-0.5 tabular-nums">
@@ -487,7 +487,7 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
                           </Button>
                         )}
                         {order.status === 'POTRJENO' && (
-                          <Button type="button" size="sm" variant="outline" className="h-6 text-[10px] bg-green-50 focus-visible:ring-2 focus-visible:ring-green-600/40 focus-visible:ring-offset-1" onClick={() => handleOrderStatus(order.id, 'DOBLJENO')}>
+                          <Button type="button" size="sm" variant="outline" className="h-6 text-[10px] bg-green-50 dark:bg-green-950/40 focus-visible:ring-2 focus-visible:ring-green-600/40 focus-visible:ring-offset-1" onClick={() => handleOrderStatus(order.id, 'DOBLJENO')}>
                             <CheckCircle2 className="h-3 w-3 mr-1" /> Dobljeno (v zalogo)
                           </Button>
                         )}
@@ -528,7 +528,7 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
                           title={sup.aktivna ? 'Aktiven dobavitelj' : 'Neaktiven dobavitelj'}
                         />
                         <span className="text-sm font-semibold text-roksal-ink truncate">{sup.naziv}</span>
-                        {sup.popust > 0 && <Badge variant="outline" className="text-[8px] bg-amber-50 text-amber-700">-{sup.popust}%</Badge>}
+                        {sup.popust > 0 && <Badge variant="outline" className="text-[8px] bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300">-{sup.popust}%</Badge>}
                       </div>
                       <div className="text-[10px] text-muted-foreground space-y-0.5 tabular-nums">
                         {sup.kontakt && <div>{sup.kontakt}</div>}

@@ -196,13 +196,13 @@ export function PwaStatus() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.2 }}
-            className="mb-1.5 flex items-center gap-2.5 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-amber-900 shadow-sm"
+            className="mb-1.5 flex items-center gap-2.5 rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 px-3 py-2 text-amber-900 dark:text-amber-200 shadow-sm"
             role="status"
           >
             <WifiOff className="h-4 w-4 shrink-0" />
             <div className="min-w-0 flex-1">
               <p className="text-[12px] font-semibold leading-tight">Ni povezave — aplikacija deluje naprej</p>
-              <p className="truncate text-[10px] leading-tight text-amber-800">
+              <p className="truncate text-[10px] leading-tight text-amber-800 dark:text-amber-200">
                 {pending > 0
                   ? `${pending} ${pending === 1 ? 'zapis čaka' : 'zapisov čaka'} na pošiljanje (samodejno ob povezavi)`
                   : 'Zapisi se vrstijo in pošljejo samodejno ob povezavi'}
@@ -223,7 +223,7 @@ export function PwaStatus() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.2 }}
-            className="mb-1.5 flex items-center gap-2.5 rounded-xl border border-violet-300 bg-violet-50 px-3 py-2 text-violet-900 shadow-sm"
+            className="mb-1.5 flex items-center gap-2.5 rounded-xl border border-violet-300 dark:border-violet-800 bg-violet-50 dark:bg-violet-950/40 px-3 py-2 text-violet-900 dark:text-violet-200 shadow-sm"
             role="status"
           >
             <UserCheck className="h-4 w-4 shrink-0" />
@@ -231,7 +231,7 @@ export function PwaStatus() {
               <p className="text-[12px] font-semibold leading-tight">
                 {held.length} {held.length === 1 ? 'zapis drugega uporabnika' : 'zapisov drugih uporabnikov'} — ni poslano
               </p>
-              <p className="truncate text-[10px] leading-tight text-violet-800">
+              <p className="truncate text-[10px] leading-tight text-violet-800 dark:text-violet-200">
                 Dodal(a): {heldOwners.join(', ')} · prevzemi in pošlji s svojo sejo ali pusti lastniku.
               </p>
             </div>
@@ -254,7 +254,7 @@ export function PwaStatus() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.2 }}
-            className="mb-1.5 rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-rose-900 shadow-sm"
+            className="mb-1.5 rounded-xl border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 px-3 py-2 text-rose-900 dark:text-rose-200 shadow-sm"
             role="alert"
           >
             <div className="flex items-center gap-2.5">
@@ -263,7 +263,7 @@ export function PwaStatus() {
                 <p className="text-[12px] font-semibold leading-tight">
                   {problems.length} {problems.length === 1 ? 'zapis NI bil poslan' : 'zapisov NI bilo poslanih'} — zahteva odločitev
                 </p>
-                <p className="truncate text-[10px] leading-tight text-rose-800">
+                <p className="truncate text-[10px] leading-tight text-rose-800 dark:text-rose-200">
                   Zapisi ostanejo ohranjeni; pošlji znova ali jih odstrani.
                 </p>
               </div>
@@ -279,7 +279,7 @@ export function PwaStatus() {
               <button
                 type="button"
                 onClick={() => setExpanded((v) => !v)}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-rose-700 hover:bg-rose-100"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-500/15"
                 aria-expanded={expanded}
                 aria-label={expanded ? 'Skrči seznam neuspelih zapisov' : 'Razširi seznam neuspelih zapisov'}
               >
@@ -287,17 +287,17 @@ export function PwaStatus() {
               </button>
             </div>
             {expanded && (
-              <ul className="mt-2 max-h-48 space-y-1.5 overflow-y-auto border-t border-rose-200 pt-2" aria-label="Seznam neuspelih zapisov">
+              <ul className="mt-2 max-h-48 space-y-1.5 overflow-y-auto border-t border-rose-200 dark:border-rose-800 pt-2" aria-label="Seznam neuspelih zapisov">
                 {problems.map((item) => (
                   <li key={item.id} className="flex items-start gap-2 rounded-lg bg-white/70 dark:bg-card/60 px-2 py-1.5">
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-[11px] font-semibold leading-tight">
                         {item.label ?? item.url}
-                        <span className="ml-1.5 rounded bg-rose-100 px-1 py-0.5 text-[9px] font-bold uppercase tracking-wide text-rose-700">
+                        <span className="ml-1.5 rounded bg-rose-100 dark:bg-rose-500/15 px-1 py-0.5 text-[9px] font-bold uppercase tracking-wide text-rose-700 dark:text-rose-300">
                           {item.status === 'conflict' ? 'Spor' : 'Napaka'}{item.statusCode ? ` ${item.statusCode}` : ''}
                         </span>
                       </p>
-                      <p className="truncate text-[10px] leading-tight text-rose-700/90" title={item.lastError}>
+                      <p className="truncate text-[10px] leading-tight text-rose-700/90 dark:text-rose-300/90" title={item.lastError}>
                         {item.lastError ?? 'Neznana napaka'} · {timeFmt.format(new Date(item.createdAt))}
                         {item.attempts > 1 ? ` · ${item.attempts} poizkusov` : ''}
                       </p>
@@ -305,7 +305,7 @@ export function PwaStatus() {
                     <button
                       type="button"
                       onClick={() => onRetryOne(item.id)}
-                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-rose-700 hover:bg-rose-100"
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-500/15"
                       aria-label={`Pošlji znova: ${item.label ?? item.url}`}
                     >
                       <RotateCcw className="h-3.5 w-3.5" />
@@ -313,7 +313,7 @@ export function PwaStatus() {
                     <button
                       type="button"
                       onClick={() => onDelete(item)}
-                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-rose-700 hover:bg-rose-100"
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-500/15"
                       aria-label={`Odstrani: ${item.label ?? item.url}`}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
@@ -332,7 +332,7 @@ export function PwaStatus() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="mb-1.5 flex items-center gap-2 rounded-xl border border-green-300 bg-green-50 px-3 py-2 text-green-800 shadow-sm"
+            className="mb-1.5 flex items-center gap-2 rounded-xl border border-green-300 dark:border-green-800 bg-green-50 dark:bg-green-950/40 px-3 py-2 text-green-800 dark:text-green-200 shadow-sm"
             role="status"
           >
             {flushing ? <Loader2 className="h-4 w-4 shrink-0 animate-spin" /> : <CheckCircle2 className="h-4 w-4 shrink-0" />}

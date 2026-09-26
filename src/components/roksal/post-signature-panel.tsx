@@ -249,11 +249,11 @@ export function PostSignaturePanel({ project }: { project: Project }) {
 
   if (!project.dealLocked) {
     return (
-      <Card className="border-amber-300 bg-amber-50">
+      <Card className="border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40">
         <CardContent className="py-6 text-center">
-          <Lock className="h-8 w-8 mx-auto text-amber-500 mb-2" />
-          <p className="text-sm font-medium text-amber-900">Deal še ni zaklenjen</p>
-          <p className="text-xs text-amber-700 mt-1">
+          <Lock className="h-8 w-8 mx-auto text-amber-500 dark:text-amber-400 mb-2" />
+          <p className="text-sm font-medium text-amber-900 dark:text-amber-200">Deal še ni zaklenjen</p>
+          <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
             Po podpisu ponudbe (V4) se deal samodejno zaklene in aktivirajo post-signature avtomatizacije.
           </p>
         </CardContent>
@@ -264,25 +264,25 @@ export function PostSignaturePanel({ project }: { project: Project }) {
   return (
     <div className="space-y-3">
       {/* Status: DEAL LOCKED */}
-      <Card className="border-green-300 bg-green-50">
+      <Card className="border-green-300 dark:border-green-800 bg-green-50 dark:bg-green-950/40">
         <CardContent className="p-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-              <Lock className="h-6 w-6 text-green-600" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-500/15">
+              <Lock className="h-6 w-6 text-green-600 dark:text-green-400" />
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-green-900">DEAL ZAKLENJEN</span>
+                <span className="text-sm font-bold text-green-900 dark:text-green-200">DEAL ZAKLENJEN</span>
                 <Badge className="bg-green-600 text-white text-[9px]">WON</Badge>
               </div>
-              <p className="text-[11px] text-green-700 mt-0.5">
+              <p className="text-[11px] text-green-700 dark:text-green-300 mt-0.5">
                 {project.dealLockedAt && new Date(project.dealLockedAt).toLocaleString('sl-SI')}
               </p>
-              <p className="text-[10px] text-green-600 mt-0.5">
+              <p className="text-[10px] text-green-600 dark:text-green-400 mt-0.5">
                 Stranka: {project.dealSignedBy} · Monter: {project.dealSignedByMonter}
               </p>
             </div>
-            <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">
+            <Badge variant="outline" className="bg-green-100 dark:bg-green-500/15 text-green-800 dark:text-green-200 border-green-300 dark:border-green-800">
               <ShieldCheck className="h-3 w-3 mr-1" />
               ZA_MONTAZO
             </Badge>
@@ -293,12 +293,12 @@ export function PostSignaturePanel({ project }: { project: Project }) {
       {/* 4 avtomatizacije */}
       <div className="grid grid-cols-2 gap-2">
         {/* 1. Deal Lock */}
-        <Card className="border-green-200">
+        <Card className="border-green-200 dark:border-green-800">
           <CardContent className="p-3">
             <div className="flex items-center gap-2 mb-1">
-              <Lock className="h-4 w-4 text-green-600" />
+              <Lock className="h-4 w-4 text-green-600 dark:text-green-400" />
               <span className="text-[11px] font-semibold text-roksal-ink">Deal Lock</span>
-              <CheckCircle2 className="h-3 w-3 text-green-600 ml-auto" />
+              <CheckCircle2 className="h-3 w-3 text-green-600 dark:text-green-400 ml-auto" />
             </div>
             <p className="text-[10px] text-muted-foreground">
               Ponudba zaklenjena. Nič več editanja.
@@ -307,13 +307,13 @@ export function PostSignaturePanel({ project }: { project: Project }) {
         </Card>
 
         {/* 2. BOM Draft */}
-        <Card className="border-blue-200">
+        <Card className="border-blue-200 dark:border-blue-800">
           <CardContent className="p-3">
             <div className="flex items-center gap-2 mb-1">
-              <Package className="h-4 w-4 text-blue-600" />
+              <Package className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               <span className="text-[11px] font-semibold text-roksal-ink">BOM Draft</span>
               {bomDraft && (
-                <Badge variant="outline" className="ml-auto text-[8px] bg-blue-50 text-blue-700">
+                <Badge variant="outline" className="ml-auto text-[8px] bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300">
                   {bomDraft.items.length} art.
                 </Badge>
               )}
@@ -325,12 +325,12 @@ export function PostSignaturePanel({ project }: { project: Project }) {
         </Card>
 
         {/* 3. Project auto-create (status ZA_MONTAZO) */}
-        <Card className="border-amber-200">
+        <Card className="border-amber-200 dark:border-amber-800">
           <CardContent className="p-3">
             <div className="flex items-center gap-2 mb-1">
-              <FileText className="h-4 w-4 text-amber-600" />
+              <FileText className="h-4 w-4 text-amber-600 dark:text-amber-400" />
               <span className="text-[11px] font-semibold text-roksal-ink">Projekt = ZA_MONTAZO</span>
-              <CheckCircle2 className="h-3 w-3 text-green-600 ml-auto" />
+              <CheckCircle2 className="h-3 w-3 text-green-600 dark:text-green-400 ml-auto" />
             </div>
             <p className="text-[10px] text-muted-foreground">
               Status samodejno spremenjen na &quot;Za montažo&quot;
@@ -339,13 +339,13 @@ export function PostSignaturePanel({ project }: { project: Project }) {
         </Card>
 
         {/* 4. Margin Lock */}
-        <Card className="border-purple-200">
+        <Card className="border-purple-200 dark:border-purple-800">
           <CardContent className="p-3">
             <div className="flex items-center gap-2 mb-1">
-              <TrendingUp className="h-4 w-4 text-purple-600" />
+              <TrendingUp className="h-4 w-4 text-purple-600 dark:text-purple-400" />
               <span className="text-[11px] font-semibold text-roksal-ink">Marža zaklenjena</span>
               {project.marginLocked && (
-                <Badge variant="outline" className="ml-auto text-[8px] bg-purple-50 text-purple-700">
+                <Badge variant="outline" className="ml-auto text-[8px] bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300">
                   {project.marginLocked.toFixed(0)} €
                 </Badge>
               )}
@@ -373,7 +373,7 @@ export function PostSignaturePanel({ project }: { project: Project }) {
             </div>
             <div className="space-y-1">
               {bomDraft.items.map((item, i) => (
-                <div key={i} className="flex items-center justify-between rounded border border-border bg-white p-2 text-[11px]">
+                <div key={i} className="flex items-center justify-between rounded border border-border bg-white dark:bg-card p-2 text-[11px]">
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="text-[8px] bg-muted/50">
                       {item.kategorija}
@@ -408,7 +408,7 @@ export function PostSignaturePanel({ project }: { project: Project }) {
         </CardHeader>
         <CardContent className="space-y-2">
           {audits.map((a) => (
-            <div key={a.id} className="rounded-lg border border-border bg-white p-2.5">
+            <div key={a.id} className="rounded-lg border border-border bg-white dark:bg-card p-2.5">
               <div className="flex items-center gap-2 mb-1">
                 <Badge
                   variant="outline"
@@ -421,7 +421,7 @@ export function PostSignaturePanel({ project }: { project: Project }) {
                   {a.signatureType === 'CUSTOMER' ? 'STRANKA' : 'MONTER'}
                 </Badge>
                 <span className="text-xs font-semibold text-roksal-ink">{a.signedByName}</span>
-                <CheckCircle2 className="h-3 w-3 text-green-600 ml-auto" />
+                <CheckCircle2 className="h-3 w-3 text-green-600 dark:text-green-400 ml-auto" />
               </div>
               <div className="grid grid-cols-2 gap-1 text-[10px] text-muted-foreground">
                 <div className="flex items-center gap-1">
@@ -467,7 +467,7 @@ export function PostSignaturePanel({ project }: { project: Project }) {
       </Button>
 
       {/* Legal disclaimer */}
-      <div className="rounded-lg border border-amber-300 bg-amber-50 p-2 text-[10px] text-amber-800">
+      <div className="rounded-lg border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-2 text-[10px] text-amber-800 dark:text-amber-200">
         <AlertTriangle className="h-3 w-3 inline mr-1" />
         Deal je zaklenjen z avtomatskim sistemom. Vsa dejanja so zabeležena v audit trail
         z IP, device fingerprint in časom. Podpisana PDF ponudba je pravno veljaven dokument.

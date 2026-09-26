@@ -98,7 +98,7 @@ export function PasswordDialog({ open, onOpenChange }: PasswordDialogProps) {
 
         <div className="space-y-3">
           <div>
-            <label htmlFor="pwd-current" className="mb-1 block text-xs font-medium text-stone-600">
+            <label htmlFor="pwd-current" className="mb-1 block text-xs font-medium text-stone-600 dark:text-stone-400">
               Trenutno geslo
             </label>
             <input
@@ -107,11 +107,11 @@ export function PasswordDialog({ open, onOpenChange }: PasswordDialogProps) {
               value={current}
               onChange={(e) => setCurrent(e.target.value)}
               autoComplete="current-password"
-              className="h-11 w-full rounded-xl border border-stone-300 px-3 text-sm outline-none focus:border-roksal-amber focus:ring-2 focus:ring-roksal-amber/30"
+              className="h-11 w-full rounded-xl border border-stone-300 dark:border-stone-800 px-3 text-sm outline-none focus:border-roksal-amber focus:ring-2 focus:ring-roksal-amber/30"
             />
           </div>
           <div>
-            <label htmlFor="pwd-next" className="mb-1 block text-xs font-medium text-stone-600">
+            <label htmlFor="pwd-next" className="mb-1 block text-xs font-medium text-stone-600 dark:text-stone-400">
               Novo geslo (vsaj 8 znakov)
             </label>
             <input
@@ -120,11 +120,11 @@ export function PasswordDialog({ open, onOpenChange }: PasswordDialogProps) {
               value={next}
               onChange={(e) => setNext(e.target.value)}
               autoComplete="new-password"
-              className="h-11 w-full rounded-xl border border-stone-300 px-3 text-sm outline-none focus:border-roksal-amber focus:ring-2 focus:ring-roksal-amber/30"
+              className="h-11 w-full rounded-xl border border-stone-300 dark:border-stone-800 px-3 text-sm outline-none focus:border-roksal-amber focus:ring-2 focus:ring-roksal-amber/30"
             />
           </div>
           <div>
-            <label htmlFor="pwd-repeat" className="mb-1 block text-xs font-medium text-stone-600">
+            <label htmlFor="pwd-repeat" className="mb-1 block text-xs font-medium text-stone-600 dark:text-stone-400">
               Ponovite novo geslo
             </label>
             <input
@@ -133,12 +133,12 @@ export function PasswordDialog({ open, onOpenChange }: PasswordDialogProps) {
               value={repeat}
               onChange={(e) => setRepeat(e.target.value)}
               autoComplete="new-password"
-              className="h-11 w-full rounded-xl border border-stone-300 px-3 text-sm outline-none focus:border-roksal-amber focus:ring-2 focus:ring-roksal-amber/30"
+              className="h-11 w-full rounded-xl border border-stone-300 dark:border-stone-800 px-3 text-sm outline-none focus:border-roksal-amber focus:ring-2 focus:ring-roksal-amber/30"
             />
           </div>
 
           {error && (
-            <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-roksal-red">
+            <p role="alert" className="rounded-lg bg-red-50 dark:bg-red-950/40 px-3 py-2 text-xs font-medium text-roksal-red">
               {error}
             </p>
           )}

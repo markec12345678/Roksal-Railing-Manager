@@ -418,14 +418,14 @@ export function SafetyTab() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 rounded-lg bg-secondary/50 p-2">
-                  <CloudRain className="h-4 w-4 text-blue-500" />
+                  <CloudRain className="h-4 w-4 text-blue-500 dark:text-blue-400" />
                   <div>
                     <p className="text-xs font-medium text-roksal-ink tabular-nums">{windData.humidity}%</p>
                     <p className="text-[10px] text-muted-foreground">Vlažnost</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 rounded-lg bg-secondary/50 p-2">
-                  <Gauge className="h-4 w-4 text-purple-500" />
+                  <Gauge className="h-4 w-4 text-purple-500 dark:text-purple-400" />
                   <div>
                     <p className="text-xs font-medium text-roksal-ink tabular-nums">{windData.pressure} hPa</p>
                     <p className="text-[10px] text-muted-foreground">Pritisnik</p>

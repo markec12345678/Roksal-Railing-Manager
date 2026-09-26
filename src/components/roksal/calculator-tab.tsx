@@ -2343,12 +2343,12 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
             <Card className={importedFromMeasurement.podlaga === 'estrih' ? 'border-amber-300 bg-amber-50/60' : 'border-roksal-navy/15 dark:border-roksal-ink/15'}>
               <CardContent className="p-4">
                 <div className="flex items-start gap-2.5">
-                  <AlertTriangle className={`mt-0.5 h-4 w-4 shrink-0 ${importedFromMeasurement.podlaga === 'estrih' ? 'text-amber-600' : 'text-roksal-ink/50'}`} />
+                  <AlertTriangle className={`mt-0.5 h-4 w-4 shrink-0 ${importedFromMeasurement.podlaga === 'estrih' ? 'text-amber-600 dark:text-amber-400' : 'text-roksal-ink/50'}`} />
                   <div className="min-w-0 flex-1">
                     <p className="text-[11px] font-bold text-roksal-ink">
                       Podlaga z terena: {podlagaLabels[importedFromMeasurement.podlaga] ?? importedFromMeasurement.podlaga}
                     </p>
-                    <p className={`mt-0.5 text-[10px] leading-relaxed ${importedFromMeasurement.podlaga === 'estrih' ? 'font-medium text-amber-800' : 'text-muted-foreground'}`}>
+                    <p className={`mt-0.5 text-[10px] leading-relaxed ${importedFromMeasurement.podlaga === 'estrih' ? 'font-medium text-amber-800 dark:text-amber-200' : 'text-muted-foreground'}`}>
                       {podlagaAnchorAdvice[importedFromMeasurement.podlaga] ?? 'Preveri podlago na terenu.'}
                     </p>
                     {importedFromMeasurement.podlaga === 'estrih' && (
@@ -3801,7 +3801,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               {importedFromMeasurement?.podlaga && (
                 <Card className={importedFromMeasurement.podlaga === 'estrih' ? 'border-amber-300 bg-amber-50/60' : 'border-roksal-navy/15 dark:border-roksal-ink/15'}>
                   <CardContent className="flex items-start gap-2.5 p-3">
-                    <Drill className={`mt-0.5 h-4 w-4 shrink-0 ${importedFromMeasurement.podlaga === 'estrih' ? 'text-amber-600' : 'text-roksal-ink/50'}`} />
+                    <Drill className={`mt-0.5 h-4 w-4 shrink-0 ${importedFromMeasurement.podlaga === 'estrih' ? 'text-amber-600 dark:text-amber-400' : 'text-roksal-ink/50'}`} />
                     <div className="min-w-0 flex-1">
                       <p className="text-[11px] font-bold text-roksal-ink">
                         Pritrditev: {podlagaSidraLabel[importedFromMeasurement.podlaga] ?? 'po meri'}
@@ -3809,7 +3809,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                           (podlaga: {podlagaLabels[importedFromMeasurement.podlaga] ?? importedFromMeasurement.podlaga})
                         </span>
                       </p>
-                      <p className={`mt-0.5 text-[10px] leading-relaxed ${importedFromMeasurement.podlaga === 'estrih' ? 'font-medium text-amber-800' : 'text-muted-foreground'}`}>
+                      <p className={`mt-0.5 text-[10px] leading-relaxed ${importedFromMeasurement.podlaga === 'estrih' ? 'font-medium text-amber-800 dark:text-amber-200' : 'text-muted-foreground'}`}>
                         {podlagaAnchorAdvice[importedFromMeasurement.podlaga] ?? 'Preveri podlago na terenu.'}
                       </p>
                     </div>
@@ -3848,7 +3848,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                 const totalL = Math.round(perPostL * posts)
                 const bags25 = Math.ceil(totalL / 12) // 25 kg vreča suhe zmesi ≈ 12 L betona
                 return (
-                  <Card className="border-stone-300 bg-stone-50/60">
+                  <Card className="border-stone-300 dark:border-stone-800 bg-stone-50 dark:bg-stone-950/40/60">
                     <CardHeader className="pb-2 pt-4 px-4">
                       <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
                         <Hammer className="h-4 w-4 text-roksal-amber" />
@@ -3907,7 +3907,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                         </Card>
                       </div>
                       {parseInt(concreteHoleDepthMm) < 800 && (
-                        <p className="flex items-start gap-1.5 text-[11px] leading-snug text-amber-700">
+                        <p className="flex items-start gap-1.5 text-[11px] leading-snug text-amber-700 dark:text-amber-300">
                           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                           Globina pod 800 mm — v Sloveniji je priporočena zmrzovalna globina ≈ 80 cm,
                           sicer lahko zmrzal dviguje stebre.

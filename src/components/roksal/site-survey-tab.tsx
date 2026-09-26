@@ -505,12 +505,12 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
         {loadError && (
           <div
             role="alert"
-            className="flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 p-3"
+            className="flex items-start gap-3 rounded-lg border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-3"
           >
-            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" aria-hidden="true" />
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden="true" />
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-amber-900">Zapisnika ni bilo mogoče naložiti</p>
-              <p className="mt-0.5 break-words text-xs text-amber-800">{loadError}</p>
+              <p className="text-sm font-medium text-amber-900 dark:text-amber-200">Zapisnika ni bilo mogoče naložiti</p>
+              <p className="mt-0.5 break-words text-xs text-amber-800 dark:text-amber-200">{loadError}</p>
             </div>
           </div>
         )}
@@ -522,7 +522,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
                 <ClipboardList className="h-4 w-4 text-roksal-amber" />
                 <h3 className="text-sm font-bold text-roksal-ink">Terenski pregled</h3>
                 {data.zakljuceno && (
-                  <Badge className="bg-green-100 text-green-700 hover:bg-green-100"><CheckCircle2 className="mr-1 h-3 w-3" /> zaključen</Badge>
+                  <Badge className="bg-green-100 dark:bg-green-500/15 text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-500/15"><CheckCircle2 className="mr-1 h-3 w-3" /> zaključen</Badge>
                 )}
               </div>
               <div className="flex shrink-0 items-center gap-2">
@@ -541,9 +541,9 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
             </div>
             <Progress value={completion} className="h-2" />
             {warnings.length > 0 && (
-              <div className="mt-3 flex items-start gap-2 rounded-lg bg-amber-50 px-3 py-2 ring-1 ring-amber-200">
-                <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" />
-                <p className="text-[11px] leading-relaxed text-amber-800">
+              <div className="mt-3 flex items-start gap-2 rounded-lg bg-amber-50 dark:bg-amber-950/40 px-3 py-2 ring-1 ring-amber-200">
+                <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+                <p className="text-[11px] leading-relaxed text-amber-800 dark:text-amber-200">
                   <strong>{warnings.length} opozorilo(i):</strong> {warnings.map((w) => w.text.toLowerCase()).slice(0, 2).join(' · ')}
                 </p>
               </div>
@@ -637,9 +637,9 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
                   className={`min-h-[44px] rounded-lg border px-1 py-1.5 text-[10px] font-bold transition-all ${
                     data.podlaga === p.id
                       ? p.barva === 'amber'
-                        ? 'border-amber-400 bg-amber-100 text-amber-800'
+                        ? 'border-amber-400 dark:border-amber-700 bg-amber-100 dark:bg-amber-500/15 text-amber-800 dark:text-amber-200'
                         : p.barva === 'red'
-                          ? 'border-red-300 bg-red-50 text-red-700'
+                          ? 'border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300'
                           : 'border-roksal-amber bg-roksal-amber/10 text-roksal-amber'
                       : 'border-roksal-navy/10 dark:border-roksal-ink/15 text-roksal-ink/70 hover:border-roksal-navy/30 dark:hover:border-roksal-ink/30'
                   }`}
@@ -649,7 +649,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
               ))}
             </div>
             {data.podlaga === 'estrih' && (
-              <p className="mt-2 flex items-start gap-1.5 rounded-lg bg-amber-100 px-2.5 py-2 text-[10px] font-medium leading-relaxed text-amber-900">
+              <p className="mt-2 flex items-start gap-1.5 rounded-lg bg-amber-100 dark:bg-amber-500/15 px-2.5 py-2 text-[10px] font-medium leading-relaxed text-amber-900 dark:text-amber-200">
                 <TriangleAlert className="mt-0.5 h-3 w-3 shrink-0" />
                 Estrih + folija = hidroizolacija. Ekspanzijski moznik je VDRA do folije →
                 kemija + tesnilna masa, sicer vlaga uniči ploščo (reklamacija!).
@@ -879,7 +879,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
                       {done ? <CheckCircle2 className="h-3.5 w-3.5" /> : i + 1}
                     </span>
                     <span className="min-w-0">
-                      <span className={`block text-[11px] font-bold ${done ? 'text-green-700' : 'text-roksal-ink'}`}>{f.label}</span>
+                      <span className={`block text-[11px] font-bold ${done ? 'text-green-700 dark:text-green-300' : 'text-roksal-ink'}`}>{f.label}</span>
                       <span className="block text-[9px] text-muted-foreground">{f.opis}</span>
                     </span>
                   </button>
@@ -960,7 +960,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
                       key={item.id}
                       className={`flex cursor-pointer items-start gap-2 rounded-lg border px-2.5 py-2 transition-all ${
                         item.kind === 'warn'
-                          ? 'border-amber-200 bg-amber-50'
+                          ? 'border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40'
                           : item.kind === 'material'
                             ? 'border-roksal-navy/10 dark:border-roksal-ink/15 bg-roksal-navy/[0.03]'
                             : 'border-roksal-navy/10 dark:border-roksal-ink/15'
@@ -973,7 +973,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
                         className="mt-0.5 h-4 w-4 accent-[#f59e0b]"
                       />
                       <span className="min-w-0">
-                        <span className={`block text-[11px] font-bold leading-snug ${item.kind === 'warn' ? 'text-amber-800' : 'text-roksal-ink'}`}>{item.text}</span>
+                        <span className={`block text-[11px] font-bold leading-snug ${item.kind === 'warn' ? 'text-amber-800 dark:text-amber-200' : 'text-roksal-ink'}`}>{item.text}</span>
                         <span className="block text-[9px] text-muted-foreground">{item.reason}</span>
                       </span>
                     </label>

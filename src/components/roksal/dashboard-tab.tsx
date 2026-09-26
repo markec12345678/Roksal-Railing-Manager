@@ -2245,7 +2245,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                             <div className="grid grid-cols-2 gap-1.5 rounded-md border border-border bg-secondary/30 px-2 py-1.5">
                               <div className="flex items-center gap-1.5 min-w-0">
                                 <CalendarClock
-                                  className={`h-3.5 w-3.5 shrink-0 ${expCritical ? 'text-amber-600' : 'text-muted-foreground'}`}
+                                  className={`h-3.5 w-3.5 shrink-0 ${expCritical ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}
                                 />
                                 <div className="min-w-0">
                                   <p className="text-[9px] uppercase tracking-wide text-muted-foreground leading-tight">
@@ -2253,7 +2253,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                                   </p>
                                   <p
                                     className={`text-[10px] font-semibold leading-tight truncate ${
-                                      expCritical ? 'text-amber-600' : 'text-roksal-ink'
+                                      expCritical ? 'text-amber-600 dark:text-amber-400' : 'text-roksal-ink'
                                     }`}
                                     title={portalInfo.revokedAt ? 'Povezava je preklicana' : exp ? exp.toLocaleDateString('sl-SI') : 'Brez poteka'}
                                   >
@@ -2323,7 +2323,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                           </Button>
                         </div>
                         {(!detailProject?.customer?.telefon || !detailProject?.customer?.email) && (
-                          <p className="text-[10px] text-amber-600 leading-tight">
+                          <p className="text-[10px] text-amber-600 dark:text-amber-400 leading-tight">
                             {!detailProject?.customer?.telefon && 'Stranka nima telefona. '}
                             {!detailProject?.customer?.email && 'Stranka nima e-pošte.'}
                           </p>
@@ -2446,7 +2446,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                         {!canManagePortal && (
                           // §10 (R135): stanje namesto akcij za nosilca brez pravice
                           <div className="flex items-center gap-1.5 border-t border-border pt-2">
-                            <Info className="h-3.5 w-3.5 shrink-0 text-amber-600" />
+                            <Info className="h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
                             <span className="text-[11px] text-muted-foreground">
                               Ureja pisarna (pravica portal.manage)
                             </span>
@@ -2468,7 +2468,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                     {portalLoading ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
                     ) : portalInfo?.measure?.enabled ? (
-                      <Badge className="bg-roksal-amber/15 text-amber-700 hover:bg-roksal-amber/25 text-[10px]">
+                      <Badge className="bg-roksal-amber/15 text-amber-700 dark:text-amber-300 hover:bg-roksal-amber/25 text-[10px]">
                         <ShieldCheck className="mr-1 h-3 w-3" />
                         Izdana
                       </Badge>
@@ -2550,7 +2550,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                             <div className="grid grid-cols-2 gap-1.5 rounded-md border border-border bg-secondary/30 px-2 py-1.5">
                               <div className="flex items-center gap-1.5 min-w-0">
                                 <CalendarClock
-                                  className={`h-3.5 w-3.5 shrink-0 ${mCritical ? 'text-amber-600' : 'text-muted-foreground'}`}
+                                  className={`h-3.5 w-3.5 shrink-0 ${mCritical ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}
                                 />
                                 <div className="min-w-0">
                                   <p className="text-[9px] uppercase tracking-wide text-muted-foreground leading-tight">
@@ -2558,7 +2558,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                                   </p>
                                   <p
                                     className={`text-[10px] font-semibold leading-tight truncate ${
-                                      mCritical ? 'text-amber-600' : 'text-roksal-ink'
+                                      mCritical ? 'text-amber-600 dark:text-amber-400' : 'text-roksal-ink'
                                     }`}
                                     title={m.revokedAt ? 'Povezava je preklicana' : mexp ? mexp.toLocaleDateString('sl-SI') : 'Brez poteka'}
                                   >
@@ -2672,7 +2672,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                         {!canManagePortal && (
                           // §10 (R135): stanje namesto akcij za nosilca brez pravice
                           <div className="flex items-center gap-1.5 border-t border-border pt-2">
-                            <Info className="h-3.5 w-3.5 shrink-0 text-amber-600" />
+                            <Info className="h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
                             <span className="text-[11px] text-muted-foreground">
                               Ureja pisarna (pravica portal.manage)
                             </span>

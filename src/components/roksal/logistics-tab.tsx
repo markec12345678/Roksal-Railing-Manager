@@ -119,11 +119,11 @@ const STATUS_LABELS: Record<string, string> = {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  NAVRTENO: 'bg-blue-100 text-blue-800 border-blue-300',
-  V_TEKU: 'bg-amber-100 text-amber-800 border-amber-300',
-  ZAKLJUCENO: 'bg-green-100 text-green-800 border-green-300',
-  PREKlicANO: 'bg-red-100 text-red-700 border-red-300',
-  PRELOZENO: 'bg-purple-100 text-purple-700 border-purple-300',
+  NAVRTENO: 'bg-blue-100 dark:bg-blue-500/15 text-blue-800 dark:text-blue-200 border-blue-300 dark:border-blue-800',
+  V_TEKU: 'bg-amber-100 dark:bg-amber-500/15 text-amber-800 dark:text-amber-200 border-amber-300 dark:border-amber-800',
+  ZAKLJUCENO: 'bg-green-100 dark:bg-green-500/15 text-green-800 dark:text-green-200 border-green-300 dark:border-green-800',
+  PREKlicANO: 'bg-red-100 dark:bg-red-500/15 text-red-700 dark:text-red-300 border-red-300 dark:border-red-800',
+  PRELOZENO: 'bg-purple-100 dark:bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-800',
 }
 
 const EQUIPMENT_TYPES: Record<string, string> = {
@@ -144,11 +144,11 @@ const EQUIPMENT_STATUS_LABELS: Record<string, string> = {
 }
 
 const EQUIPMENT_STATUS_COLORS: Record<string, string> = {
-  NA_VOLJO: 'bg-green-50 text-green-700 border-green-300',
-  V_UPORABI: 'bg-blue-100 text-blue-800 border-blue-300',
-  V_SERVISU: 'bg-amber-100 text-amber-800 border-amber-300',
-  IZGUBLJENO: 'bg-red-100 text-red-700 border-red-300',
-  UPOKOJENO: 'bg-gray-100 text-gray-600 border-gray-300',
+  NA_VOLJO: 'bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300 border-green-300 dark:border-green-800',
+  V_UPORABI: 'bg-blue-100 dark:bg-blue-500/15 text-blue-800 dark:text-blue-200 border-blue-300 dark:border-blue-800',
+  V_SERVISU: 'bg-amber-100 dark:bg-amber-500/15 text-amber-800 dark:text-amber-200 border-amber-300 dark:border-amber-800',
+  IZGUBLJENO: 'bg-red-100 dark:bg-red-500/15 text-red-700 dark:text-red-300 border-red-300 dark:border-red-800',
+  UPOKOJENO: 'bg-gray-100 dark:bg-gray-500/15 text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-800',
 }
 
 const EQUIPMENT_EVENT_LABELS: Record<string, string> = {
@@ -898,7 +898,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                     {/* Status actions */}
                     {s.status === 'NAVRTENO' && (
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <Button type="button" size="sm" variant="outline" className="h-6 text-[10px] bg-amber-50 focus-visible:ring-2 focus-visible:ring-roksal-amber/50" onClick={() => handleStatusChange(s.id, 'V_TEKU')}>
+                        <Button type="button" size="sm" variant="outline" className="h-6 text-[10px] bg-amber-50 dark:bg-amber-950/40 focus-visible:ring-2 focus-visible:ring-roksal-amber/50" onClick={() => handleStatusChange(s.id, 'V_TEKU')}>
                           Začni montažo
                         </Button>
                         <Button
@@ -922,7 +922,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                     )}
                     {s.status === 'V_TEKU' && (
                       <>
-                        <Button type="button" size="sm" variant="outline" className="h-6 text-[10px] bg-green-50 focus-visible:ring-2 focus-visible:ring-roksal-navy/40" aria-label={`Zaključi termin ${s.project.nazivProjekta} s preverbo kakovosti`} onClick={() => openQcDialog(s.id, s.project.id, s.project.nazivProjekta)}>
+                        <Button type="button" size="sm" variant="outline" className="h-6 text-[10px] bg-green-50 dark:bg-green-950/40 focus-visible:ring-2 focus-visible:ring-roksal-navy/40" aria-label={`Zaključi termin ${s.project.nazivProjekta} s preverbo kakovosti`} onClick={() => openQcDialog(s.id, s.project.id, s.project.nazivProjekta)}>
                           <CheckCircle2 className="h-3 w-3 mr-1" /> Zaključi (preverba + odštej material)
                         </Button>
                         <Button type="button" size="sm" variant="outline" className="h-6 text-[10px] focus-visible:ring-2 focus-visible:ring-roksal-navy/40" aria-label={`Montažno dokazilo za ${s.project.nazivProjekta} (pred/po, checklist, predaja)`} onClick={() => void openEvidenceDialog(s.id, s.project.id, s.project.nazivProjekta)}>
@@ -1015,16 +1015,16 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                     {e.calibrationRequired && (
                       <div className="mt-1 text-[10px] tabular-nums">
                         {e.calibrationOverdue ? (
-                          <span className="inline-flex items-center gap-1 rounded border border-red-300 bg-red-50 px-1.5 py-0.5 font-semibold text-red-700">
+                          <span className="inline-flex items-center gap-1 rounded border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/40 px-1.5 py-0.5 font-semibold text-red-700 dark:text-red-300">
                             <AlertTriangle className="h-3 w-3" aria-hidden /> Kalibracija potečena ({e.calibrationDueDate ? formatDate(e.calibrationDueDate) : '—'})
                           </span>
                         ) : e.calibrationMissing ? (
-                          <span className="inline-flex items-center gap-1 rounded border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-amber-800">
+                          <span className="inline-flex items-center gap-1 rounded border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.5 text-amber-800 dark:text-amber-200">
                             <AlertTriangle className="h-3 w-3" aria-hidden /> Manjka potrdilo/rok kalibracije
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 text-muted-foreground">
-                            <ShieldCheck className="h-3 w-3 text-green-600" aria-hidden />
+                            <ShieldCheck className="h-3 w-3 text-green-600 dark:text-green-400" aria-hidden />
                             Kalibracija do {e.calibrationDueDate ? formatDate(e.calibrationDueDate) : '—'}{e.calibrationCertificate ? ` · ${e.calibrationCertificate}` : ''}
                           </span>
                         )}
@@ -1033,9 +1033,9 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                     {e.inspectionIntervalDays !== null && (
                       <div className="mt-0.5 text-[10px] tabular-nums text-muted-foreground">
                         {e.inspectionDue ? (
-                          <span className="font-semibold text-amber-700">Pregled zadelju{e.nextInspectionAt ? ` (rok ${formatDate(e.nextInspectionAt)})` : ''}</span>
+                          <span className="font-semibold text-amber-700 dark:text-amber-300">Pregled zadelju{e.nextInspectionAt ? ` (rok ${formatDate(e.nextInspectionAt)})` : ''}</span>
                         ) : e.inspectionUnknown ? (
-                          <span className="text-amber-700">Pregled ni še zabeležen (interval {e.inspectionIntervalDays} dni)</span>
+                          <span className="text-amber-700 dark:text-amber-300">Pregled ni še zabeležen (interval {e.inspectionIntervalDays} dni)</span>
                         ) : (
                           <span>Naslednji pregled: {e.nextInspectionAt ? formatDate(e.nextInspectionAt) : '—'}</span>
                         )}
@@ -1066,7 +1066,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                         type="button"
                         size="sm"
                         variant="outline"
-                        className="h-6 text-[10px] border-red-300 text-red-700 hover:bg-red-50 focus-visible:ring-2 focus-visible:ring-red-400/50"
+                        className="h-6 text-[10px] border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/40 focus-visible:ring-2 focus-visible:ring-red-400/50"
                         aria-label={`Upokoji ${e.naziv} (terminalno — ni mogoče razveljaviti)`}
                         title="Upokojitev je terminalna — ni mogoče razveljaviti"
                         onClick={() => void handleEquipmentStatus(e, 'UPOKOJENO')}
@@ -1278,7 +1278,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                     <div key={h.id} className="flex items-center gap-2 text-[10px] tabular-nums">
                       <span className="font-semibold text-roksal-ink">{EQUIPMENT_EVENT_LABELS[h.type] ?? h.type}</span>
                       <span className="text-muted-foreground">{formatDate(h.performedAt)}</span>
-                      {h.result === 'NAPAKA' && <span className="font-semibold text-red-700">NAPAKA</span>}
+                      {h.result === 'NAPAKA' && <span className="font-semibold text-red-700 dark:text-red-300">NAPAKA</span>}
                       {h.certificate && <span className="truncate text-muted-foreground">· {h.certificate}</span>}
                     </div>
                   ))}
@@ -1348,26 +1348,26 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
             </div>
             <div className="flex items-center justify-between text-[11px] tabular-nums">
               {qcPassed ? (
-                <span className="inline-flex items-center gap-1 font-semibold text-green-700">
+                <span className="inline-flex items-center gap-1 font-semibold text-green-700 dark:text-green-300">
                   <CheckCircle2 className="h-3.5 w-3.5" /> Preverba prehaja — vse izpolnjeno
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1 font-semibold text-amber-700">
+                <span className="inline-flex items-center gap-1 font-semibold text-amber-700 dark:text-amber-300">
                   <AlertTriangle className="h-3.5 w-3.5" /> Napake: {qcDefects} — zaključitev ne bo prehajala
                 </span>
               )}
             </div>
             {/* Override — izrecna, ločena pot (razlog gre v revizijo QC_OVERRIDE). */}
             {qcOverrideMode ? (
-              <div className="rounded-md border border-red-200 bg-red-50/60 p-2">
-                <Label className="text-xs font-semibold text-red-700">Zaključi brez preverbe (override)</Label>
+              <div className="rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40/60 p-2">
+                <Label className="text-xs font-semibold text-red-700 dark:text-red-300">Zaključi brez preverbe (override)</Label>
                 <Input
                   value={qcOverrideReason}
                   onChange={(e) => setQcOverrideReason(e.target.value)}
                   placeholder="Razlog (obvezen, reviziran kot QC_OVERRIDE)"
                   className="mt-1 h-8 text-xs"
                 />
-                <p className="mt-1 text-[10px] text-red-700/80">Razlog se nespremenljivo zapiše v revizijsko sled skupaj z zaključitvijo.</p>
+                <p className="mt-1 text-[10px] text-red-700/80 dark:text-red-300/80">Razlog se nespremenljivo zapiše v revizijsko sled skupaj z zaključitvijo.</p>
                 <div className="mt-2 flex gap-2">
                   <Button type="button" size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => setQcOverrideMode(false)}>Nazaj na preverbo</Button>
                   <Button
@@ -1385,7 +1385,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
             ) : (
               <button
                 type="button"
-                className="text-left text-[10px] text-muted-foreground underline underline-offset-2 hover:text-red-700"
+                className="text-left text-[10px] text-muted-foreground underline underline-offset-2 hover:text-red-700 dark:hover:text-red-300"
                 onClick={() => setQcOverrideMode(true)}
               >
                 Preverba ni mogoča — zaključi z izrecnim override (razlog se revizira) →
@@ -1426,7 +1426,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
           )}
           <div className="space-y-3">
             {evExisting?.locked ? (
-              <div className="flex items-center gap-2 rounded-md border border-green-200 bg-green-50/60 p-2 text-[11px] font-semibold text-green-700">
+              <div className="flex items-center gap-2 rounded-md border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/40/60 p-2 text-[11px] font-semibold text-green-700 dark:text-green-300">
                 <Lock className="h-3.5 w-3.5" /> Zaklenjeno s predajo ({evExisting.handoverName ?? '—'})
               </div>
             ) : null}
@@ -1548,7 +1548,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                   </Button>
                 </div>
                 {(!evExisting.hasBefore || !evExisting.hasAfter) && (
-                  <p className="mt-1 text-[10px] text-amber-700">
+                  <p className="mt-1 text-[10px] text-amber-700 dark:text-amber-300">
                     Predaja zahteva PRED in PO fotografijo — {(!evExisting.hasBefore && !evExisting.hasAfter) ? 'manjkata oba' : 'manjka ena'} (shranite dokazilo z izbranimi fotkami).
                   </p>
                 )}
@@ -1556,11 +1556,11 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
             )}
             <div className="flex items-center justify-between text-[11px] tabular-nums">
               {evValid ? (
-                <span className="inline-flex items-center gap-1 font-semibold text-green-700">
+                <span className="inline-flex items-center gap-1 font-semibold text-green-700 dark:text-green-300">
                   <CheckCircle2 className="h-3.5 w-3.5" /> {evAllChecked ? 'Checklist polno' : `Checklist: ${IEV_TEMPLATE.filter((t) => evChecked[t.key] === true).length}/${IEV_TEMPLATE.length}`} · napake: {evDefectsList.length}
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1 font-semibold text-amber-700">
+                <span className="inline-flex items-center gap-1 font-semibold text-amber-700 dark:text-amber-300">
                   <AlertTriangle className="h-3.5 w-3.5" /> Neizpolnjene postavke potrebujejo opombo
                 </span>
               )}

@@ -113,9 +113,9 @@ function followUpBadge(d: string | null): { label: string; cls: string } | null 
   const target = new Date(d)
   target.setHours(0, 0, 0, 0)
   const diff = Math.round((target.getTime() - today.getTime()) / 86_400_000)
-  if (diff < 0) return { label: `Spomnik zapadel ${Math.abs(diff)} dni`, cls: 'bg-red-100 text-red-700 border-red-300' }
-  if (diff === 0) return { label: 'Spomnik DANES', cls: 'bg-amber-100 text-amber-800 border-amber-300' }
-  if (diff <= 3) return { label: `Spomnik čez ${diff} dne`, cls: 'bg-amber-50 text-amber-700 border-amber-200' }
+  if (diff < 0) return { label: `Spomnik zapadel ${Math.abs(diff)} dni`, cls: 'bg-red-100 dark:bg-red-500/15 text-red-700 dark:text-red-300 border-red-300 dark:border-red-800' }
+  if (diff === 0) return { label: 'Spomnik DANES', cls: 'bg-amber-100 dark:bg-amber-500/15 text-amber-800 dark:text-amber-200 border-amber-300 dark:border-amber-800' }
+  if (diff <= 3) return { label: `Spomnik čez ${diff} dne`, cls: 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800' }
   return null
 }
 

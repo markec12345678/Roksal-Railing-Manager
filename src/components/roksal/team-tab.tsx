@@ -87,7 +87,7 @@ interface TeamUser {
 
 const ROLE_CHIP: Record<string, string> = {
   ADMIN: 'bg-roksal-navy/10 text-roksal-ink ring-1 ring-inset ring-roksal-navy/20',
-  VODJA: 'bg-roksal-amber/15 text-amber-700 ring-1 ring-inset ring-roksal-amber/30',
+  VODJA: 'bg-roksal-amber/15 text-amber-700 dark:text-amber-300 ring-1 ring-inset ring-roksal-amber/30',
   MONTER: 'bg-secondary text-muted-foreground ring-1 ring-inset ring-border',
   SKLADISCE: 'bg-roksal-green/10 text-roksal-green ring-1 ring-inset ring-roksal-green/25',
 }
@@ -101,9 +101,9 @@ const ROLE_LABEL: Record<string, string> = EKIPA_VLOGE
  */
 const AVATAR_TINT = [
   'bg-roksal-navy/12 text-roksal-ink',
-  'bg-roksal-amber/18 text-amber-700',
+  'bg-roksal-amber/18 text-amber-700 dark:text-amber-300',
   'bg-roksal-green/14 text-roksal-green',
-  'bg-stone-200/70 text-stone-600',
+  'bg-stone-200/70 text-stone-600 dark:text-stone-400',
 ] as const
 
 function initialsOf(ime: string): string {
@@ -126,7 +126,7 @@ type OneTime =
 // tu je samo zaslonska meta (chip, ikona, title) na status.
 const STATUS_META: Record<EkipaStatus, { chip: string; icon: LucideIcon; title: string }> = {
   Deaktiviran: {
-    chip: 'bg-stone-100 text-stone-500',
+    chip: 'bg-stone-100 dark:bg-stone-500/15 text-stone-500 dark:text-stone-400',
     icon: Trash2,
     title: 'Offboarding — prijava in že izdani žetoni so takoj mrtvi',
   },
@@ -136,12 +136,12 @@ const STATUS_META: Record<EkipaStatus, { chip: string; icon: LucideIcon; title: 
     title: 'Varnostni zaklep — prijava blokirana',
   },
   'Povabilo poteklo': {
-    chip: 'bg-amber-50 text-amber-700',
+    chip: 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300',
     icon: CalendarClock,
     title: 'Račun še ni aktiviran prek povabila',
   },
   'Čaka aktivacijo': {
-    chip: 'bg-amber-50 text-amber-700',
+    chip: 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300',
     icon: CalendarClock,
     title: 'Račun še ni aktiviran prek povabila',
   },
@@ -372,11 +372,11 @@ export function TeamTab() {
           </div>
         ) : (
           // §10 (R135): pošteno stanje namesto praznega seznama (strežnik: 403 users.read)
-          <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50/70 px-3.5 py-3">
-            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+          <div className="flex items-start gap-2 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40/70 px-3.5 py-3">
+            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
             <div className="space-y-0.5">
-              <p className="text-xs font-semibold text-amber-800">Ekipa — ureja pisarna</p>
-              <p className="text-[11px] text-amber-700/90 leading-relaxed">
+              <p className="text-xs font-semibold text-amber-800 dark:text-amber-200">Ekipa — ureja pisarna</p>
+              <p className="text-[11px] text-amber-700/90 dark:text-amber-300/90 leading-relaxed">
                 Pregled računov je pravica users.read (pisarna). Za povabilo ali
                 spremembo vloge kontaktirajte administratorja.
               </p>
@@ -442,7 +442,7 @@ export function TeamTab() {
                     Zadnja aktivnost: {u.lastActive ? new Date(u.lastActive).toLocaleDateString('sl-SI') : 'nikoli'}
                   </span>
                   {u.lifecycle.mustChangePassword && (
-                    <span className="inline-flex items-center gap-1 text-amber-600">
+                    <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400">
                       <ShieldAlert className="h-3 w-3" />
                       mora zamenjati geslo
                     </span>
@@ -477,7 +477,7 @@ export function TeamTab() {
                           )
                           if (ok) void act({ action: 'deactivate', userId: u.id }, `${u.ime} deaktiviran`, u.id)
                         }}
-                        className="h-7 text-[11px] text-stone-500 hover:bg-secondary"
+                        className="h-7 text-[11px] text-stone-500 dark:text-stone-400 hover:bg-secondary"
                         title="Offboarding — prijava + žetoni takoj mrtevi"
                       >
                         <Trash2 className="mr-1 h-3 w-3" />
@@ -520,7 +520,7 @@ export function TeamTab() {
                       variant="ghost"
                       disabled={busyId === u.id}
                       onClick={() => void resetPassword(u)}
-                      className="h-7 text-[11px] text-amber-700 hover:bg-roksal-amber/10"
+                      className="h-7 text-[11px] text-amber-700 dark:text-amber-300 hover:bg-roksal-amber/10"
                       title="Začasno geslo (prikaže se ENKRAT) + prisilna zamenjava"
                     >
                       <ShieldAlert className="mr-1 h-3 w-3" />

@@ -73,7 +73,7 @@ const docTypeIcons: Record<string, React.ElementType> = {
 
 const statusConfig: Record<string, { label: string; color: string }> = {
   GENERIRANO: { label: 'Generirano', color: 'bg-roksal-green/15 text-roksal-green' },
-  PODPISANO: { label: 'Podpisano', color: 'bg-blue-100 text-blue-800' },
+  PODPISANO: { label: 'Podpisano', color: 'bg-blue-100 dark:bg-blue-500/15 text-blue-800 dark:text-blue-200' },
   POSLANO: { label: 'Poslano', color: 'bg-roksal-amber/15 text-roksal-ink' },
 }
 

@@ -25,12 +25,12 @@ interface Profil {
 const KATEGORIJE = ['Vse', 'WPC vodoravno', 'WPC pokončno', 'WPC panel', 'Kombinirano', 'Inox', 'Inox vrvi', 'Alu klasično', 'Alu moderno', 'Steklo']
 
 const MATERIAL_BADGE: Record<string, { label: string; cls: string }> = {
-  'WPC + ALU': { label: 'WPC+ALU', cls: 'bg-amber-100 text-amber-800' },
-  'WPC Panel': { label: 'WPC Panel', cls: 'bg-amber-100 text-amber-800' },
-  'WPC + Steklo': { label: 'WPC+Steklo', cls: 'bg-purple-100 text-purple-800' },
-  Inox: { label: 'Inox', cls: 'bg-slate-200 text-slate-800' },
-  Aluminij: { label: 'ALU', cls: 'bg-blue-100 text-blue-800' },
-  Steklo: { label: 'Steklo', cls: 'bg-cyan-100 text-cyan-800' },
+  'WPC + ALU': { label: 'WPC+ALU', cls: 'bg-amber-100 dark:bg-amber-500/15 text-amber-800 dark:text-amber-200' },
+  'WPC Panel': { label: 'WPC Panel', cls: 'bg-amber-100 dark:bg-amber-500/15 text-amber-800 dark:text-amber-200' },
+  'WPC + Steklo': { label: 'WPC+Steklo', cls: 'bg-purple-100 dark:bg-purple-500/15 text-purple-800 dark:text-purple-200' },
+  Inox: { label: 'Inox', cls: 'bg-slate-200 text-slate-800 dark:text-slate-200' },
+  Aluminij: { label: 'ALU', cls: 'bg-blue-100 dark:bg-blue-500/15 text-blue-800 dark:text-blue-200' },
+  Steklo: { label: 'Steklo', cls: 'bg-cyan-100 dark:bg-cyan-500/15 text-cyan-800 dark:text-cyan-200' },
 }
 
 export function RoksalCatalog() {
@@ -118,7 +118,7 @@ export function RoksalCatalog() {
       ) : (
         <div className="space-y-3">
           {filtered.map((p) => {
-            const badge = MATERIAL_BADGE[p.material] ?? { label: p.material, cls: 'bg-gray-100 text-gray-800' }
+            const badge = MATERIAL_BADGE[p.material] ?? { label: p.material, cls: 'bg-gray-100 dark:bg-gray-500/15 text-gray-800 dark:text-gray-200' }
             return (
               <Card key={p.id} className="overflow-hidden transition-[border-color,box-shadow] duration-150 hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25 hover:shadow-sm">
                 <CardContent className="p-4">

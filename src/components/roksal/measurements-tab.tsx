@@ -401,14 +401,14 @@ const tipMeritveIcons: Record<TipMeritve, typeof Ruler> = {
 const tipMeritveColors: Record<TipMeritve, string> = {
   RAZDALJA: 'bg-roksal-navy/10 text-roksal-ink border-roksal-navy/20 dark:border-roksal-ink/20',
   VISINA: 'bg-roksal-amber/10 text-roksal-amber border-roksal-amber/30',
-  KOT: 'bg-purple-50 text-purple-700 border-purple-200',
-  NAGIB: 'bg-orange-50 text-orange-700 border-orange-200',
-  GLOBINA: 'bg-cyan-50 text-cyan-700 border-cyan-200',
-  PREMER: 'bg-teal-50 text-teal-700 border-teal-200',
-  SEGMENT: 'bg-gray-50 text-gray-700 border-gray-200',
+  KOT: 'bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800',
+  NAGIB: 'bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800',
+  GLOBINA: 'bg-cyan-50 dark:bg-cyan-950/40 text-cyan-700 dark:text-cyan-300 border-cyan-200 dark:border-cyan-800',
+  PREMER: 'bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 border-teal-200 dark:border-teal-800',
+  SEGMENT: 'bg-gray-50 dark:bg-gray-950/40 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-800',
   // P3 — novi tipi
-  KOT_VOGAL: 'bg-teal-50 text-teal-700 border-teal-200',
-  KOT_STOPNISCE: 'bg-orange-50 text-orange-700 border-orange-200',
+  KOT_VOGAL: 'bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 border-teal-200 dark:border-teal-800',
+  KOT_STOPNISCE: 'bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800',
   STEBR: 'bg-roksal-navy/10 text-roksal-ink border-roksal-navy/20 dark:border-roksal-ink/20',
 }
 
@@ -421,11 +421,11 @@ const groundTypeLabels: Record<GroundType, string> = {
 }
 
 const groundTypeColors: Record<GroundType, string> = {
-  beton: 'bg-gray-100 text-gray-700 border-gray-300',
-  les: 'bg-amber-50 text-amber-700 border-amber-300',
-  plosca: 'bg-green-50 text-green-700 border-green-300',
-  gramoz: 'bg-orange-50 text-orange-700 border-orange-300',
-  metal: 'bg-slate-100 text-slate-700 border-slate-300',
+  beton: 'bg-gray-100 dark:bg-gray-500/15 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-800',
+  les: 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800',
+  plosca: 'bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300 border-green-300 dark:border-green-800',
+  gramoz: 'bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300 border-orange-300 dark:border-orange-800',
+  metal: 'bg-slate-100 dark:bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-800',
 }
 
 const segmentTypeLabels: Record<Segment['type'], string> = {
@@ -446,9 +446,9 @@ const statusLabels: Record<MeasurementStatus, string> = {
 }
 
 const statusColors: Record<MeasurementStatus, string> = {
-  OSNUTEK: 'bg-gray-100 text-gray-600 border-gray-300',
-  POTRJENA: 'bg-green-50 text-green-700 border-green-300',
-  ARHIVIRANA: 'bg-gray-50 text-gray-400 border-gray-200 line-through',
+  OSNUTEK: 'bg-gray-100 dark:bg-gray-500/15 text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-800',
+  POTRJENA: 'bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300 border-green-300 dark:border-green-800',
+  ARHIVIRANA: 'bg-gray-50 dark:bg-gray-950/40 text-gray-400 border-gray-200 dark:border-gray-800 line-through',
 }
 
 const statusCycle: Record<MeasurementStatus, MeasurementStatus> = {
@@ -472,10 +472,10 @@ const auditIcons: Record<AuditEntry['akcija'], typeof Ruler> = {
 }
 
 const auditColors: Record<AuditEntry['akcija'], string> = {
-  ADD: 'bg-green-50 text-green-700',
-  EDIT: 'bg-blue-50 text-blue-700',
-  DELETE: 'bg-red-50 text-red-700',
-  STATUS: 'bg-amber-50 text-amber-700',
+  ADD: 'bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300',
+  EDIT: 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300',
+  DELETE: 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300',
+  STATUS: 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300',
 }
 
 const PREDLOGE: PredlogaDef[] = [
@@ -517,7 +517,7 @@ const tipStebraLabels: Record<TipStebra, string> = {
 const tipStebraColors: Record<TipStebra, string> = {
   KONCNI: 'bg-roksal-amber/10 text-roksal-amber border-roksal-amber/30',
   VMESNI: 'bg-roksal-navy/10 text-roksal-ink border-roksal-navy/20 dark:border-roksal-ink/20',
-  VOGALNI: 'bg-teal-50 text-teal-700 border-teal-200',
+  VOGALNI: 'bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 border-teal-200 dark:border-teal-800',
 }
 
 const materialStebraLabels: Record<MaterialStebra, string> = {
@@ -528,10 +528,10 @@ const materialStebraLabels: Record<MaterialStebra, string> = {
 }
 
 const materialStebraColors: Record<MaterialStebra, string> = {
-  ALU: 'bg-slate-100 text-slate-700 border-slate-300',
-  INOX: 'bg-cyan-50 text-cyan-700 border-cyan-200',
-  WPC: 'bg-amber-50 text-amber-700 border-amber-200',
-  DRUGO: 'bg-gray-50 text-gray-600 border-gray-200',
+  ALU: 'bg-slate-100 dark:bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-800',
+  INOX: 'bg-cyan-50 dark:bg-cyan-950/40 text-cyan-700 dark:text-cyan-300 border-cyan-200 dark:border-cyan-800',
+  WPC: 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800',
+  DRUGO: 'bg-gray-50 dark:bg-gray-950/40 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-800',
 }
 
 // P3 — konstante za WPC
@@ -679,16 +679,16 @@ function calculateStairDimensions(
   const rezerva = sirinaStopniceMm ? sirinaStopniceMm * 0.5 : 200 // dodaten rob
   const skupnaDolzina = dolzinaKosa + rezerva
   let priporocilo = 'Standardni kot 30–35°'
-  let priporociloColor = 'text-green-700'
+  let priporociloColor = 'text-green-700 dark:text-green-300'
   if (kotStopinje > 40) {
     priporocilo = 'Nevarno: >40° (prestrmo!)'
-    priporociloColor = 'text-red-600'
+    priporociloColor = 'text-red-600 dark:text-red-400'
   } else if (kotStopinje > 37) {
     priporocilo = 'Prestrmo: >37°'
-    priporociloColor = 'text-orange-600'
+    priporociloColor = 'text-orange-600 dark:text-orange-400'
   } else if (kotStopinje < 25) {
     priporocilo = 'Ploščato: <25°'
-    priporociloColor = 'text-amber-600'
+    priporociloColor = 'text-amber-600 dark:text-amber-400'
   }
   return {
     visinaPosamezne,
@@ -957,7 +957,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
         title={voice.supported ? 'Glasovni vnos (slovenščina)' : 'Glasovni vnos ni podprt v tem brskalniku (Chrome/Edge)'}
         className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-md border transition-colors ${
           active
-            ? 'border-red-300 bg-red-50 text-red-600 animate-pulse'
+            ? 'border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 animate-pulse'
             : 'border-border bg-background text-muted-foreground hover:bg-secondary'
         } ${voice.supported ? '' : 'opacity-40'}`}
       >
@@ -1845,13 +1845,13 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
 
     let verdict: { label: string; cls: string; icon: typeof CheckCircle2 }
     if (deltaPct == null) {
-      verdict = { label: 'Ni uradnih meritev za primerjavo', cls: 'bg-stone-100 text-stone-700 border-stone-300', icon: Info }
+      verdict = { label: 'Ni uradnih meritev za primerjavo', cls: 'bg-stone-100 dark:bg-stone-500/15 text-stone-700 dark:text-stone-300 border-stone-300 dark:border-stone-800', icon: Info }
     } else if (Math.abs(deltaPct) <= 5) {
-      verdict = { label: 'V okviru — zanesljiva orientacija', cls: 'bg-emerald-50 text-emerald-700 border-emerald-300', icon: CheckCircle2 }
+      verdict = { label: 'V okviru — zanesljiva orientacija', cls: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800', icon: CheckCircle2 }
     } else if (Math.abs(deltaPct) <= 15) {
-      verdict = { label: 'Orientacija — preveri na terenu pred izdelavo', cls: 'bg-amber-50 text-amber-800 border-amber-300', icon: AlertTriangle }
+      verdict = { label: 'Orientacija — preveri na terenu pred izdelavo', cls: 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-200 border-amber-300 dark:border-amber-800', icon: AlertTriangle }
     } else {
-      verdict = { label: 'Veliko odstopanje — obvezen obisk na terenu', cls: 'bg-red-50 text-red-700 border-red-300', icon: AlertTriangle }
+      verdict = { label: 'Veliko odstopanje — obvezen obisk na terenu', cls: 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border-red-300 dark:border-red-800', icon: AlertTriangle }
     }
 
     return {
@@ -3897,7 +3897,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                 {isArSnapshot && (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <span className="inline-flex items-center gap-0.5 rounded px-1 py-0 text-[8px] font-medium border bg-cyan-50 text-cyan-700 border-cyan-200">
+                      <span className="inline-flex items-center gap-0.5 rounded px-1 py-0 text-[8px] font-medium border bg-cyan-50 dark:bg-cyan-950/40 text-cyan-700 dark:text-cyan-300 border-cyan-200 dark:border-cyan-800">
                         <Boxes className="h-2.5 w-2.5" />
                         AR
                       </span>
@@ -3908,7 +3908,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                 {m.source === 'customer-map' && (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <span className="inline-flex items-center gap-0.5 rounded px-1 py-0 text-[8px] font-medium border bg-orange-50 text-orange-700 border-orange-200">
+                      <span className="inline-flex items-center gap-0.5 rounded px-1 py-0 text-[8px] font-medium border bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800">
                         <UserRound className="h-2.5 w-2.5" />
                         Stranka
                       </span>
@@ -3987,7 +3987,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   <span
                     className={`inline-flex items-center rounded px-1 py-0 text-[8px] font-medium border ${
                       groundTypeColors[m.tipPodlage as GroundType] ||
-                      'bg-gray-50 text-gray-600 border-gray-200'
+                      'bg-gray-50 dark:bg-gray-950/40 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-800'
                     }`}
                   >
                     {groundTypeLabels[m.tipPodlage as GroundType] || m.tipPodlage}
@@ -4222,7 +4222,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
             </div>
           </div>
           {!laserSupported && (
-            <div className="rounded-md bg-amber-50 border border-amber-200 p-2 text-[10px] text-amber-700 flex items-start gap-1.5">
+            <div className="rounded-md bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 p-2 text-[10px] text-amber-700 dark:text-amber-300 flex items-start gap-1.5">
               <AlertCircle className="h-3 w-3 mt-0.5 shrink-0" />
               <span>
                 Web Bluetooth ni podprt v tem brskalniku. Uporabite Chrome na Androidu ali računalniku.
@@ -4242,7 +4242,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
           {/* AR sinhronizacija */}
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2 min-w-0">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-50 text-cyan-700 shrink-0 border border-cyan-200">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-50 dark:bg-cyan-950/40 text-cyan-700 dark:text-cyan-300 shrink-0 border border-cyan-200 dark:border-cyan-800">
                 <Boxes className="h-4 w-4" />
               </div>
               <div className="min-w-0">
@@ -4257,7 +4257,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               variant="outline"
               onClick={handleOpenArImport}
               disabled={!selectedProject}
-              className="h-8 px-3 text-[11px] border-cyan-300 text-cyan-700 hover:bg-cyan-50"
+              className="h-8 px-3 text-[11px] border-cyan-300 dark:border-cyan-800 text-cyan-700 dark:text-cyan-300 hover:bg-cyan-50 dark:hover:bg-cyan-950/40"
             >
               <Boxes className="mr-1 h-3.5 w-3.5" />
               Uvozi iz AR
@@ -4341,15 +4341,15 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
           {/* P1 — števci statusov */}
           <Separator className="my-2.5" />
           <div className="grid grid-cols-3 gap-2">
-            <div className="rounded-lg bg-gray-50 border border-gray-200 p-2 text-center">
-              <p className="text-[9px] text-gray-500 uppercase tracking-wide">Osnutki</p>
-              <p className="text-sm font-bold text-gray-600">{statusCounts.OSNUTEK}</p>
+            <div className="rounded-lg bg-gray-50 dark:bg-gray-950/40 border border-gray-200 dark:border-gray-800 p-2 text-center">
+              <p className="text-[9px] text-gray-500 dark:text-gray-400 uppercase tracking-wide">Osnutki</p>
+              <p className="text-sm font-bold text-gray-600 dark:text-gray-400">{statusCounts.OSNUTEK}</p>
             </div>
-            <div className="rounded-lg bg-green-50 border border-green-200 p-2 text-center">
-              <p className="text-[9px] text-green-600 uppercase tracking-wide">Potrjene</p>
-              <p className="text-sm font-bold text-green-700">{statusCounts.POTRJENA}</p>
+            <div className="rounded-lg bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800 p-2 text-center">
+              <p className="text-[9px] text-green-600 dark:text-green-400 uppercase tracking-wide">Potrjene</p>
+              <p className="text-sm font-bold text-green-700 dark:text-green-300">{statusCounts.POTRJENA}</p>
             </div>
-            <div className="rounded-lg bg-gray-50 border border-gray-200 p-2 text-center">
+            <div className="rounded-lg bg-gray-50 dark:bg-gray-950/40 border border-gray-200 dark:border-gray-800 p-2 text-center">
               <p className="text-[9px] text-gray-400 uppercase tracking-wide">Arhivirane</p>
               <p className="text-sm font-bold text-gray-400 line-through">{statusCounts.ARHIVIRANA}</p>
             </div>
@@ -4630,7 +4630,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                           <button
                             type="button"
                             onClick={() => handleDeleteStairTemplate(t.id)}
-                            className="p-1 rounded hover:bg-red-50 transition-colors shrink-0 focus-visible:ring-2 focus-visible:ring-roksal-red/40"
+                            className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors shrink-0 focus-visible:ring-2 focus-visible:ring-roksal-red/40"
                             title="Izbriši predlogo"
                             aria-label={`Izbriši predlogo ${t.naziv}`}
                           >
@@ -5056,10 +5056,10 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                       title={voiceSupported ? 'Vnos z glasom' : 'Vnos z glasom ni podprt v tem brskalniku'}
                       className={`flex items-center gap-1 rounded-lg border px-2 py-1 text-[10px] font-medium transition-all duration-150 active:scale-[0.96] ${
                         voiceListening
-                          ? 'border-red-300 bg-red-50 text-red-600 animate-pulse'
+                          ? 'border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 animate-pulse'
                           : voiceSupported
                             ? 'border-roksal-navy/20 dark:border-roksal-ink/20 bg-roksal-navy/5 text-roksal-ink hover:bg-roksal-navy/10'
-                            : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+                            : 'border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950/40 text-gray-400 cursor-not-allowed'
                       }`}
                     >
                       <Mic className="h-3 w-3" />
@@ -5319,7 +5319,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                             <button
                               type="button"
                               onClick={() => handleAddWpcPaliceAsStebri(seg)}
-                              className="w-full rounded-lg border border-dashed border-amber-400/50 py-1.5 text-[10px] text-amber-700 hover:bg-amber-50 transition-colors"
+                              className="w-full rounded-lg border border-dashed border-amber-400/50 dark:border-amber-700/50 py-1.5 text-[10px] text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40 transition-colors"
                             >
                               <Fence className="inline h-3 w-3 mr-1" />
                               Dodaj WPC palice kot materiale
@@ -5509,7 +5509,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
           s.type === 'WPC_VODORAVNE' ||
           s.type === 'WPC_POSEVNE'
       ) && (
-        <Card className="card-hover animate-fade-in-up border-amber-200">
+        <Card className="card-hover animate-fade-in-up border-amber-200 dark:border-amber-800">
           <Collapsible open={wpcConfigOpen} onOpenChange={setWpcConfigOpen}>
             <CollapsibleTrigger asChild>
               <button
@@ -5592,13 +5592,13 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   </div>
                 </div>
                 {wpcRazmikPalic > 110 && (
-                  <div className="rounded-lg border border-amber-300 bg-amber-50 p-2.5 text-[10px] text-amber-700 flex items-center gap-1.5">
+                  <div className="rounded-lg border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-2.5 text-[10px] text-amber-700 dark:text-amber-300 flex items-center gap-1.5">
                     <AlertCircle className="h-3.5 w-3.5 shrink-0" />
                     Razmik {wpcRazmikPalic}mm presega 110mm — preverite skladnost s predpisi!
                   </div>
                 )}
                 {wpcRazmikPalic <= 110 && (
-                  <div className="rounded-lg border border-green-200 bg-green-50 p-2.5 text-[10px] text-green-700 flex items-center gap-1.5">
+                  <div className="rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/40 p-2.5 text-[10px] text-green-700 dark:text-green-300 flex items-center gap-1.5">
                     <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
                     Razmik {wpcRazmikPalic}mm ustreza predpisom (≤110mm)
                   </div>
@@ -5688,14 +5688,14 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   : f === 'OSNUTEK'
                     ? isActive
                       ? 'bg-gray-600 text-white border-gray-600'
-                      : 'bg-gray-50 text-gray-600 border-gray-200'
+                      : 'bg-gray-50 dark:bg-gray-950/40 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-800'
                     : f === 'POTRJENA'
                       ? isActive
                         ? 'bg-green-600 text-white border-green-600'
-                        : 'bg-green-50 text-green-700 border-green-200'
+                        : 'bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800'
                       : isActive
-                        ? 'bg-gray-400 text-white border-gray-400'
-                        : 'bg-gray-50 text-gray-400 border-gray-200'
+                        ? 'bg-gray-400 text-white border-gray-400 dark:border-gray-700'
+                        : 'bg-gray-50 dark:bg-gray-950/40 text-gray-400 border-gray-200 dark:border-gray-800'
               return (
                 <button
                   key={f}
@@ -5805,7 +5805,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   type="button"
                   onClick={() => setBulkDeleteOpen(true)}
                   disabled={selectedIds.size === 0}
-                  className="flex items-center justify-center gap-1 rounded-md border border-red-200 bg-red-50 px-2 py-1 text-[10px] font-medium text-red-600 hover:bg-red-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  className="flex items-center justify-center gap-1 rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 px-2 py-1 text-[10px] font-medium text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/15 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
                   <Trash2 className="h-3 w-3" />
                   Izbriši izbrane
@@ -5857,12 +5857,12 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   className={cn(
                     'rounded-full px-2 py-0.5 text-[10px] font-bold',
                     strankaPrimerjava.deltaPct == null
-                      ? 'bg-stone-100 text-stone-600'
+                      ? 'bg-stone-100 dark:bg-stone-500/15 text-stone-600 dark:text-stone-400'
                       : Math.abs(strankaPrimerjava.deltaPct) <= 5
-                        ? 'bg-emerald-100 text-emerald-700'
+                        ? 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
                         : Math.abs(strankaPrimerjava.deltaPct) <= 15
-                          ? 'bg-amber-100 text-amber-800'
-                          : 'bg-red-100 text-red-700',
+                          ? 'bg-amber-100 dark:bg-amber-500/15 text-amber-800 dark:text-amber-200'
+                          : 'bg-red-100 dark:bg-red-500/15 text-red-700 dark:text-red-300',
                   )}
                 >
                   {strankaPrimerjava.deltaPct == null
@@ -6310,7 +6310,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Boxes className="h-4 w-4 text-cyan-600" />
+              <Boxes className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
               Uvozi mere iz AR posnetka
             </DialogTitle>
             <DialogDescription>
@@ -6360,7 +6360,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                     onClick={() => setArSelectedSnapshotId(snap.id)}
                     className={`flex w-full items-start gap-3 rounded-lg border p-2.5 text-left transition-all duration-150 ${
                       isSelected
-                        ? 'border-cyan-400 bg-cyan-50'
+                        ? 'border-cyan-400 dark:border-cyan-700 bg-cyan-50 dark:bg-cyan-950/40'
                         : 'border-border/50 bg-secondary/30 hover:border-cyan-300'
                     }`}
                   >
@@ -6392,7 +6392,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                             Umerjeno
                           </Badge>
                         ) : (
-                          <Badge className="text-[8px] h-3.5 px-1 bg-amber-50 text-amber-700 border border-amber-200">
+                          <Badge className="text-[8px] h-3.5 px-1 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
                             Ni umeritve
                           </Badge>
                         )}
@@ -6410,7 +6410,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                       )}
                     </div>
                     {isSelected && (
-                      <CheckCircle2 className="h-4 w-4 text-cyan-600 shrink-0" />
+                      <CheckCircle2 className="h-4 w-4 text-cyan-600 dark:text-cyan-400 shrink-0" />
                     )}
                   </button>
                 )
@@ -6418,10 +6418,10 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
             )}
           </div>
           {arImportProgress && (
-            <div className="space-y-1.5 rounded-lg border border-cyan-200 bg-cyan-50 p-2.5">
+            <div className="space-y-1.5 rounded-lg border border-cyan-200 dark:border-cyan-800 bg-cyan-50 dark:bg-cyan-950/40 p-2.5">
               <div className="flex items-center justify-between text-[11px]">
-                <span className="text-cyan-800 font-medium">Prenašam...</span>
-                <span className="font-mono text-cyan-700">
+                <span className="text-cyan-800 dark:text-cyan-200 font-medium">Prenašam...</span>
+                <span className="font-mono text-cyan-700 dark:text-cyan-300">
                   {arImportProgress.current}/{arImportProgress.total}
                 </span>
               </div>
@@ -6429,7 +6429,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                 value={(arImportProgress.current / Math.max(1, arImportProgress.total)) * 100}
                 className="h-2"
               />
-              <p className="text-[10px] text-cyan-700 text-center">
+              <p className="text-[10px] text-cyan-700 dark:text-cyan-300 text-center">
                 {arImportProgress.current} mer prenesenih...
               </p>
             </div>
@@ -6868,12 +6868,12 @@ function InlineInclinometer({
           </Button>
         )}
         {permission === 'denied' && (
-          <p className="text-center text-[11px] text-red-600">
+          <p className="text-center text-[11px] text-red-600 dark:text-red-400">
             Dostop do senzorjev je zavrnjen.
           </p>
         )}
         {permission === 'unsupported' && (
-          <p className="text-center text-[11px] text-amber-600">
+          <p className="text-center text-[11px] text-amber-600 dark:text-amber-400">
             Ta naprava ne podpira senzorjev orientacije.
           </p>
         )}
@@ -7425,12 +7425,12 @@ function InlineKotomer({
           </div>
         )}
         {permission === 'denied' && (
-          <p className="text-center text-[11px] text-red-600">
+          <p className="text-center text-[11px] text-red-600 dark:text-red-400">
             Dostop do senzorjev je zavrnjen.
           </p>
         )}
         {permission === 'unsupported' && (
-          <p className="text-center text-[11px] text-amber-600">
+          <p className="text-center text-[11px] text-amber-600 dark:text-amber-400">
             Ta naprava ne podpira senzorjev orientacije — uporabite ročni vnos.
           </p>
         )}
@@ -7612,7 +7612,7 @@ function SteberTable({
                   </TableCell>
                   <TableCell
                     className={`py-1 px-1.5 text-right font-mono ${
-                      razmikPrevelik ? 'text-red-600 font-bold' : ''
+                      razmikPrevelik ? 'text-red-600 dark:text-red-400 font-bold' : ''
                     }`}
                   >
                     {razmik != null ? Math.round(razmik) : '—'}
@@ -7637,7 +7637,7 @@ function SteberTable({
       </div>
       {/* Warnings */}
       {maxRazmik > 1500 && (
-        <div className="border-t border-red-200 bg-red-50 p-1.5 text-[9px] text-red-700 flex items-center gap-1">
+        <div className="border-t border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 p-1.5 text-[9px] text-red-700 dark:text-red-300 flex items-center gap-1">
           <AlertCircle className="h-3 w-3 shrink-0" />
           Razmik {Math.round(maxRazmik)}mm presega 1500mm — preveri statiko!
         </div>
@@ -7654,7 +7654,7 @@ function SteberTable({
         </div>
         <div className="rounded bg-secondary/30 p-1.5">
           <p className="text-muted-foreground">Max razmik</p>
-          <p className={`font-bold ${maxRazmik > 1500 ? 'text-red-600' : 'text-roksal-ink'}`}>
+          <p className={`font-bold ${maxRazmik > 1500 ? 'text-red-600 dark:text-red-400' : 'text-roksal-ink'}`}>
             {Math.round(maxRazmik)}mm
           </p>
         </div>
@@ -7756,13 +7756,13 @@ function WpcDiagram({
         : `Poševne (${kotPosevnih}°)`
 
   return (
-    <div className="rounded-lg border border-amber-200 bg-amber-50/30 p-2 slide-in-right">
+    <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40/30 p-2 slide-in-right">
       <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-1.5">
-          <Fence className="h-3.5 w-3.5 text-amber-700" />
+          <Fence className="h-3.5 w-3.5 text-amber-700 dark:text-amber-300" />
           <span className="text-[11px] font-semibold text-roksal-ink">{orientacijaLabel}</span>
         </div>
-        <Badge variant="outline" className="text-[9px] h-4 px-1 border-amber-300 text-amber-700">
+        <Badge variant="outline" className="text-[9px] h-4 px-1 border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-300">
           {stPalic} palic
         </Badge>
       </div>
@@ -7836,7 +7836,7 @@ function WpcDiagram({
         </p>
       )}
       {razmikPalic > 110 && (
-        <p className="text-[9px] text-amber-700 mt-0.5 text-center">
+        <p className="text-[9px] text-amber-700 dark:text-amber-300 mt-0.5 text-center">
           <AlertCircle className="inline h-2.5 w-2.5 mr-0.5" />
           Razmik {razmikPalic}mm presega 110mm — preveri predpise!
         </p>

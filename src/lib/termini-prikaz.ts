@@ -218,6 +218,61 @@ export function groupTermini(
   return skupine
 }
 
+/** R167 — filter "samo moje termine": če je vklopljen, ostanejo SAMO vnosi,
+ *  katerih monterId je natanko enak prijavljenemu uporabniku. Fail-closed:
+ *  vklopljen filter brez znane identitete (myUserId null/prazen) → PRAZEN
+ *  seznam (nikoli "vsi" — to bi lažno trdilo, da so vsi termini moji).
+ *  Vrne NOVO polje (vnosi ostanejo nespremenjeni — determinizem). */
+export function filtrirajTermini(
+  vnosi: readonly TerminPrikazVnos[],
+  samoMoje: boolean,
+  myUserId: string | null
+): TerminPrikazVnos[] {
+  if (!Array.isArray(vnosi)) {
+    throw new TypeError('filtrirajTermini: pričakovano polje prikaznih vrstic')
+  }
+  if (!samoMoje) return [...vnosi]
+  if (typeof myUserId !== 'string' || myUserId.length === 0) return []
+  return vnosi.filter((v) => v.monterId !== null && v.monterId === myUserId)
+}
+
+/** R167 — deterministično besedilo termina za odložišče (delitev prek
+ *  SMS/WhatsApp ali arhiv v zapisniku). EN VIR RESNICE: datum/ura/status so
+ *  ISTE funkcije kot na kartici (terminDatumLabel/terminCasLabel/
+ *  scheduleTerminiStatusLabel) — deljeno besedilo = prikazano besedilo.
+ *  Manjkajoči podatki → vrstica se IZPUSTI (nikoli izmišljenih 'Ni …' nizov
+ *  v deljenem besedilu — prejemnik vidi samo resnične podatke). Vrstni red
+ *  vrstic je fiksiran = determinizem; ista vhoda (vnos, now) → isti niz. */
+export function buildTerminShareText(
+  vnos: TerminPrikazVnos,
+  now: Date
+): string {
+  if (!vnos || typeof vnos !== 'object' || typeof vnos.id !== 'string' || vnos.id.length === 0) {
+    throw new TypeError(
+      'buildTerminShareText: pričakovan prikazni vnos (TerminPrikazVnos)'
+    )
+  }
+  if (!(now instanceof Date) || Number.isNaN(now.getTime())) {
+    throw new TypeError('buildTerminShareText: pričakovan veljaven now: Date')
+  }
+  // Fail-closed brezplačno: label funkcije vržejo TypeError na neveljaven
+  // datum/status — pokvarjen vnos ne more postati zavajajoče besedilo.
+  const datum = terminDatumLabel(vnos.datumZacetka, now)
+  const ura = terminCasLabel(vnos.datumZacetka)
+  const status = scheduleTerminiStatusLabel(vnos.status)
+
+  const vrstice: string[] = []
+  vrstice.push(`Termin montaže — ${datum} ob ${ura}`)
+  if (vnos.projektIme) vrstice.push(`Projekt: ${vnos.projektIme}`)
+  if (vnos.strankaIme) vrstice.push(`Stranka: ${vnos.strankaIme}`)
+  if (vnos.strankaNaslov) vrstice.push(`Naslov: ${vnos.strankaNaslov}`)
+  if (vnos.lokacija) vrstice.push(`Lokacija: ${vnos.lokacija}`)
+  if (vnos.ekipaIme) vrstice.push(`Ekipa: ${vnos.ekipaIme}`)
+  if (vnos.monterIme) vrstice.push(`Monter: ${vnos.monterIme}`)
+  vrstice.push(`Status: ${status}`)
+  return vrstice.join('\n')
+}
+
 /** '08:00' — ISTI Intl klic kot nagibi-csv (ura določena z vnosom, ne z now). */
 export function terminCasLabel(iso: string): string {
   const d = new Date(iso)

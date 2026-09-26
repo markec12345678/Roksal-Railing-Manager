@@ -215,7 +215,7 @@ export function AuditTrailDialog({
             <Loader2 className="h-6 w-6 animate-spin mx-auto text-roksal-amber" aria-label="Nalagam sled" />
           </div>
         ) : error ? (
-          <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700" role="alert">
+          <div className="rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 px-3 py-2.5 text-sm text-red-700 dark:text-red-300" role="alert">
             {error}
           </div>
         ) : !entries || entries.length === 0 ? (
@@ -268,12 +268,12 @@ export function AuditTrailDialog({
                           <div className="mt-1.5 space-y-1 rounded bg-muted/60 px-2 py-1.5">
                             {e.oldValue ? (
                               <p className="break-all font-mono text-[10px] text-muted-foreground">
-                                <span className="font-semibold text-red-700">−</span> {e.oldValue}
+                                <span className="font-semibold text-red-700 dark:text-red-300">−</span> {e.oldValue}
                               </p>
                             ) : null}
                             {e.newValue ? (
                               <p className="break-all font-mono text-[10px] text-roksal-ink">
-                                <span className="font-semibold text-green-700">+</span> {e.newValue}
+                                <span className="font-semibold text-green-700 dark:text-green-300">+</span> {e.newValue}
                               </p>
                             ) : null}
                           </div>

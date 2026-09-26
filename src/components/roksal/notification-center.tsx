@@ -75,9 +75,9 @@ const STATUS_STYLE: Record<
   { label: string; dot: string; text: string }
 > = {
   QUEUED: { label: 'V vrsti', dot: 'bg-muted-foreground/40', text: 'text-muted-foreground' },
-  SENT: { label: 'Poslano', dot: 'bg-sky-500', text: 'text-sky-700' },
+  SENT: { label: 'Poslano', dot: 'bg-sky-500', text: 'text-sky-700 dark:text-sky-300' },
   DELIVERED: { label: 'Dostavljeno', dot: 'bg-roksal-amber', text: 'text-roksal-amber' },
-  OPENED: { label: 'Odprto', dot: 'bg-green-500', text: 'text-green-700' },
+  OPENED: { label: 'Odprto', dot: 'bg-green-500', text: 'text-green-700 dark:text-green-300' },
   FAILED: { label: 'Napaka', dot: 'bg-roksal-red', text: 'text-roksal-red' },
 }
 
@@ -290,11 +290,11 @@ export function NotificationCenter() {
   }
 
   const KIND_STYLE: Record<NotificationItem['kind'], { icon: React.ElementType; bg: string; fg: string }> = {
-    stock: { icon: Package, bg: 'bg-red-100', fg: 'text-red-600' },
+    stock: { icon: Package, bg: 'bg-red-100 dark:bg-red-500/15', fg: 'text-red-600 dark:text-red-400' },
     install: { icon: CalendarDays, bg: 'bg-roksal-amber/15', fg: 'text-roksal-amber' },
-    weather: { icon: CloudLightning, bg: 'bg-sky-100', fg: 'text-sky-700' },
-    followup: { icon: FileClock, bg: 'bg-orange-100', fg: 'text-orange-700' },
-    invoice: { icon: Receipt, bg: 'bg-red-100', fg: 'text-red-700' },
+    weather: { icon: CloudLightning, bg: 'bg-sky-100 dark:bg-sky-500/15', fg: 'text-sky-700 dark:text-sky-300' },
+    followup: { icon: FileClock, bg: 'bg-orange-100 dark:bg-orange-500/15', fg: 'text-orange-700 dark:text-orange-300' },
+    invoice: { icon: Receipt, bg: 'bg-red-100 dark:bg-red-500/15', fg: 'text-red-700 dark:text-red-300' },
   }
 
   return (
@@ -328,8 +328,8 @@ export function NotificationCenter() {
           <div className="max-h-[calc(100dvh-8rem)] overflow-y-auto px-3 py-3 scrollbar-thin">
             {items.length === 0 && persisted.length === 0 && !loading && !persistedError && (
               <div className="flex flex-col items-center gap-2 py-12 text-center">
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-100">
-                  <CheckCheck className="h-7 w-7 text-green-600" />
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-100 dark:bg-green-500/15">
+                  <CheckCheck className="h-7 w-7 text-green-600 dark:text-green-400" />
                 </div>
                 <p className="text-sm font-semibold text-roksal-ink">Vse je pod nadzorom</p>
                 <p className="max-w-[220px] text-xs text-muted-foreground">
@@ -378,7 +378,7 @@ export function NotificationCenter() {
                             </span>
                           )}
                           {item.kind === 'weather' && (
-                            <AlertTriangle className="h-3 w-3 shrink-0 text-amber-500" />
+                            <AlertTriangle className="h-3 w-3 shrink-0 text-amber-500 dark:text-amber-400" />
                           )}
                         </div>
                         <p className="truncate text-[11px] text-muted-foreground">{item.subtitle}</p>

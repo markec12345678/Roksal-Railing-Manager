@@ -19,6 +19,7 @@
 //    kar vrne API v oknu [danes, +6 dni], razvrščeno po času.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { toast } from 'sonner'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -27,6 +28,8 @@ import {
   AlertTriangle,
   CalendarDays,
   Clock,
+  Copy,
+  Filter,
   MapPin,
   RefreshCw,
   User,
@@ -34,6 +37,8 @@ import {
   Wrench,
 } from 'lucide-react'
 import {
+  buildTerminShareText,
+  filtrirajTermini,
   groupTermini,
   scheduleTerminiStatusColor,
   scheduleTerminiStatusLabel,
@@ -77,12 +82,27 @@ export function TerminiCard({ myUserId, onOpenProjectId }: TerminiCardProps) {
   const [loading, setLoading] = useState(true)
   const [napaka, setNapaka] = useState<NapakaNalaganja | null>(null)
   const [osvezujem, setOsvezujem] = useState(false)
+  // R167 — "samo moje termine" filter (client-side, brez novega fetcha).
+  // Stikalo se sploh ne izriše brez znane identitete (myUserId) — least
+  // privilege; lib je tudi brez identitete fail-closed (prazen seznam).
+  const [samoMoje, setSamoMoje] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
 
   const skupine = useMemo(
     () => (vrstice && zdaj ? groupTermini(vrstice, zdaj, myUserId) : null),
     [vrstice, zdaj, myUserId]
   )
+
+  // R167 — filtrirani prikaz: skupine (in preskočeni števec) ostanejo
+  // RAWSKI (podatkovna resnica), prikazane vrstice pa filtrirane. Filter je
+  // čista funkcija iz lib (fail-closed, testirana) — brez nove logike tu.
+  const prikazane = useMemo(() => {
+    if (!skupine) return null
+    return {
+      danes: filtrirajTermini(skupine.danes, samoMoje, myUserId),
+      kasneje: filtrirajTermini(skupine.kasneje, samoMoje, myUserId),
+    }
+  }, [skupine, samoMoje, myUserId])
 
   // Fetch je NEODVISEN od myUserId (branje terminov ne zahteva identitete;
   // "moja montaža" je izračun pri izrisu — least privilege, brez ponovnega branja).
@@ -147,11 +167,34 @@ export function TerminiCard({ myUserId, onOpenProjectId }: TerminiCardProps) {
   }, [nalozi])
 
   const skupnoSkupin =
-    (skupine?.danes.length ?? 0) + (skupine?.kasneje.length ?? 0)
+    (prikazane?.danes.length ?? 0) + (prikazane?.kasneje.length ?? 0)
   const preskoceni =
     (skupine?.preskoceniNeveljaven ?? 0) + (skupine?.preskoceniNeznanStatus ?? 0)
 
+  // R167 — kopiraj podrobnosti termina v odložišče (delitev SMS/WhatsApp).
+  // Fail-verbose: napaka odložišča je viden toast, ne tihi uspeh/neuspeh.
+  const kopiraj = useCallback(
+    async (t: TerminPrikazVnos) => {
+      try {
+        const besedilo = buildTerminShareText(t, zdaj ?? new Date())
+        await navigator.clipboard.writeText(besedilo)
+        toast.success('Termin kopiran v odložišče')
+      } catch (err) {
+        toast.error(
+          err instanceof DOMException && err.name === 'NotAllowedError'
+            ? 'Brskalnik je zavrnil dostop do odložišča (dovoljenje).'
+            : `Kopiranje ni uspelo (${err instanceof Error ? err.name : 'neznana napaka'}).`
+        )
+      }
+    },
+    [zdaj]
+  )
+
   const vrstica = (t: TerminPrikazVnos) => {
+    // R167 — a11y: label izračunan IZVEN JSX (nauček R165: skener prepozna
+    // samo {ident}/{ident[key]} oblike) — isti fallback besedilo kot vidna
+    // vrstica ('Ni imena projekta'), nikoli sintetiziranih podatkov.
+    const kopirajLabel = `Kopiraj podrobnosti termina: ${t.projektIme ?? 'Ni imena projekta'}`
     const vsebina = (
       <>
         <div className="flex w-16 shrink-0 flex-col items-start">
@@ -213,25 +256,36 @@ export function TerminiCard({ myUserId, onOpenProjectId }: TerminiCardProps) {
       ? 'border-l-2 border-l-roksal-amber bg-roksal-amber/10 hover:bg-roksal-amber/15 dark:bg-roksal-amber/15 dark:hover:bg-roksal-amber/20'
       : 'border-l-2 border-l-transparent hover:bg-accent/50'
 
-    if (!onOpenProjectId || !t.projectId) {
-      return (
-        <div
-          key={t.id}
-          className={`flex items-start gap-3 rounded-lg px-3 py-2.5 transition-colors ${obrobe}`}
-        >
-          {vsebina}
-        </div>
-      )
-    }
+    // R167 — vrstica = ovojnica (relative) + vrstica-button + KOPIRAJ gumb kot
+    // SIBLING (ne otrok) — gnezdeni gumbi so neveljavni HTML in hidracijsko
+    // tveganje; klik na kopiraj ne sproži odprtja projekta (ločena elementa).
     return (
-      <button
-        key={t.id}
-        type="button"
-        onClick={() => onOpenProjectId(t.projectId)}
-        className={`flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 dark:focus-visible:ring-roksal-ink/40 active:scale-[0.99] ${obrobe}`}
-      >
-        {vsebina}
-      </button>
+      <div key={t.id} className="relative">
+        {onOpenProjectId && t.projectId ? (
+          <button
+            type="button"
+            onClick={() => onOpenProjectId(t.projectId)}
+            className={`flex w-full items-start gap-3 rounded-lg py-2.5 pl-3 pr-12 text-left transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 dark:focus-visible:ring-roksal-ink/40 active:scale-[0.99] ${obrobe}`}
+          >
+            {vsebina}
+          </button>
+        ) : (
+          <div
+            className={`flex items-start gap-3 rounded-lg py-2.5 pl-3 pr-12 transition-colors ${obrobe}`}
+          >
+            {vsebina}
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={() => void kopiraj(t)}
+          aria-label={kopirajLabel}
+          title="Kopiraj v odložišče (za SMS/WhatsApp)"
+          className="absolute right-1.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 dark:focus-visible:ring-roksal-ink/40 dark:hover:text-roksal-ink"
+        >
+          <Copy className="h-3.5 w-3.5" aria-hidden="true" />
+        </button>
+      </div>
     )
   }
 
@@ -251,6 +305,25 @@ export function TerminiCard({ myUserId, onOpenProjectId }: TerminiCardProps) {
               <Badge className="bg-roksal-navy/10 text-roksal-ink hover:bg-roksal-navy/15 tabular-nums">
                 {skupnoSkupin}
               </Badge>
+            )}
+            {/* R167 — "Samo moje" filter: samo z znano identiteto (least
+                privilege); aria-pressed = pravo stikalo, ne skriti meni. */}
+            {myUserId && (
+              <Button
+                variant={samoMoje ? 'secondary' : 'ghost'}
+                size="sm"
+                className="h-8 gap-1.5 px-2.5 text-[11px] font-medium focus-visible:ring-2 focus-visible:ring-roksal-navy/40 dark:focus-visible:ring-roksal-ink/40"
+                onClick={() => setSamoMoje((v) => !v)}
+                aria-pressed={samoMoje}
+                aria-label="Samo moje termine"
+                title="Pokaže samo termine, kjer sem določen za monterja"
+              >
+                <Filter
+                  className={`h-3.5 w-3.5 ${samoMoje ? 'text-roksal-amber' : 'text-muted-foreground'}`}
+                  aria-hidden="true"
+                />
+                Samo moje
+              </Button>
             )}
             <Button
               variant="ghost"
@@ -298,26 +371,30 @@ export function TerminiCard({ myUserId, onOpenProjectId }: TerminiCardProps) {
         ) : skupnoSkupin === 0 ? (
           <div className="flex items-center gap-2 py-4 text-muted-foreground">
             <CalendarDays className="h-5 w-5 text-roksal-green" aria-hidden="true" />
-            <span className="text-sm">Ni terminov v naslednjih 7 dneh.</span>
+            <span className="text-sm">
+              {samoMoje
+                ? 'Ni vaših terminov v naslednjih 7 dneh.'
+                : 'Ni terminov v naslednjih 7 dneh.'}
+            </span>
           </div>
         ) : (
           <div className="space-y-3">
-            {skupine && skupine.danes.length > 0 && (
+            {prikazane && prikazane.danes.length > 0 && (
               <div>
                 <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                   Danes
-                  <span className="tabular-nums">{skupine.danes.length}</span>
+                  <span className="tabular-nums">{prikazane.danes.length}</span>
                 </p>
-                <div className="space-y-1.5">{skupine.danes.map(vrstica)}</div>
+                <div className="space-y-1.5">{prikazane.danes.map(vrstica)}</div>
               </div>
             )}
-            {skupine && skupine.kasneje.length > 0 && (
+            {prikazane && prikazane.kasneje.length > 0 && (
               <div>
                 <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                   Naslednjih 6 dni
-                  <span className="tabular-nums">{skupine.kasneje.length}</span>
+                  <span className="tabular-nums">{prikazane.kasneje.length}</span>
                 </p>
-                <div className="space-y-1.5">{skupine.kasneje.map(vrstica)}</div>
+                <div className="space-y-1.5">{prikazane.kasneje.map(vrstica)}</div>
               </div>
             )}
             {preskoceni > 0 && (

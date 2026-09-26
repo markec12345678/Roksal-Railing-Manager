@@ -117,7 +117,7 @@ export function WeatherCard({
       <CardHeader className="pb-2 pt-4 px-4">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-1.5 text-sm font-semibold text-roksal-ink">
-            <CloudSun className="h-4 w-4 text-sky-500" aria-hidden="true" />
+            <CloudSun className="h-4 w-4 text-sky-500 dark:text-sky-400" aria-hidden="true" />
             Pogoji za montažo
           </CardTitle>
           {locationLabel && (
@@ -173,7 +173,7 @@ export function WeatherCard({
               {/* Veterni kompas */}
               <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border bg-background">
                 <Navigation
-                  className="h-5 w-5 text-sky-500 transition-transform duration-500"
+                  className="h-5 w-5 text-sky-500 dark:text-sky-400 transition-transform duration-500"
                   style={{ transform: `rotate(${weather.direction}deg)` }}
                   aria-label={`Smer vetra ${weather.directionLabel}`}
                 />
@@ -228,7 +228,7 @@ export function WeatherCard({
             {weather.source === 'demo' && (
               <div
                 role="alert"
-                className="flex items-start gap-2 rounded-lg border border-roksal-amber/40 bg-roksal-amber/10 px-2.5 py-2 text-[11px] font-medium text-amber-800"
+                className="flex items-start gap-2 rounded-lg border border-roksal-amber/40 bg-roksal-amber/10 px-2.5 py-2 text-[11px] font-medium text-amber-800 dark:text-amber-200"
               >
                 <CloudSun className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                 <span>

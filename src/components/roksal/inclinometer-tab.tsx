@@ -286,10 +286,10 @@ export function InclinometerTab({ projectId }: { projectId: string | null }) {
             </Button>
           )}
           {permission === 'denied' && (
-            <p className="text-center text-sm text-red-600">Dostop do senzorjev je zavrnjen. Omogočite ga v nastavitvah brskalnika.</p>
+            <p className="text-center text-sm text-red-600 dark:text-red-400">Dostop do senzorjev je zavrnjen. Omogočite ga v nastavitvah brskalnika.</p>
           )}
           {permission === 'unsupported' && (
-            <p className="text-center text-sm text-amber-600">Ta naprava/brskalnik ne podpira senzorjev orientacije.</p>
+            <p className="text-center text-sm text-amber-600 dark:text-amber-400">Ta naprava/brskalnik ne podpira senzorjev orientacije.</p>
           )}
 
           {/* Shranjevanje */}
@@ -332,7 +332,7 @@ export function InclinometerTab({ projectId }: { projectId: string | null }) {
                 )}
                 {saving ? 'Shranjujem …' : 'Shrani nagib'}
               </Button>
-              {!projectId && <p className="text-center text-[10px] text-amber-600">Izberite projekt v zavihku Domov.</p>}
+              {!projectId && <p className="text-center text-[10px] text-amber-600 dark:text-amber-400">Izberite projekt v zavihku Domov.</p>}
             </div>
           )}
         </CardContent>
@@ -352,13 +352,13 @@ export function InclinometerTab({ projectId }: { projectId: string | null }) {
           <CardContent className="p-3">
             <div
               role="alert"
-              className="flex flex-col gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between"
+              className="flex flex-col gap-2 rounded-lg border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between"
             >
               <div className="flex items-start gap-2">
-                <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" aria-hidden="true" />
+                <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden="true" />
                 <div>
-                  <p className="text-xs font-medium text-amber-800">Zgodovine nagibov ni mogoče prikazati</p>
-                  <p className="text-[11px] text-amber-700">{historyError}</p>
+                  <p className="text-xs font-medium text-amber-800 dark:text-amber-200">Zgodovine nagibov ni mogoče prikazati</p>
+                  <p className="text-[11px] text-amber-700 dark:text-amber-300">{historyError}</p>
                 </div>
               </div>
               <Button

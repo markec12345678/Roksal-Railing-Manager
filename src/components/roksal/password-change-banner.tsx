@@ -67,8 +67,8 @@ export function PasswordChangeBanner() {
   return (
     <div role="alert" className="border-b border-roksal-amber/30 bg-roksal-amber/10 px-4 py-2">
       <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-2">
-        <ShieldAlert className="h-4 w-4 shrink-0 text-amber-600" />
-        <p className="min-w-0 flex-1 text-[12px] font-medium text-amber-800">
+        <ShieldAlert className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+        <p className="min-w-0 flex-1 text-[12px] font-medium text-amber-800 dark:text-amber-200">
           Vaše geslo je bilo ponastavljeno s strani administratorja — nastavite svoje novo geslo.
         </p>
         <Button
@@ -90,7 +90,7 @@ export function PasswordChangeBanner() {
             onChange={(e) => setCurrent(e.target.value)}
             placeholder="Začasno geslo (od admina)"
             autoComplete="current-password"
-            className="h-9 w-full rounded-lg border border-stone-300 px-3 text-xs outline-none focus:border-roksal-amber"
+            className="h-9 w-full rounded-lg border border-stone-300 dark:border-stone-800 px-3 text-xs outline-none focus:border-roksal-amber"
           />
           <input
             type="password"
@@ -98,7 +98,7 @@ export function PasswordChangeBanner() {
             onChange={(e) => setNext(e.target.value)}
             placeholder="Novo geslo (vsaj 8 znakov)"
             autoComplete="new-password"
-            className="h-9 w-full rounded-lg border border-stone-300 px-3 text-xs outline-none focus:border-roksal-amber"
+            className="h-9 w-full rounded-lg border border-stone-300 dark:border-stone-800 px-3 text-xs outline-none focus:border-roksal-amber"
           />
           <input
             type="password"
@@ -106,7 +106,7 @@ export function PasswordChangeBanner() {
             onChange={(e) => setRepeat(e.target.value)}
             placeholder="Ponovite novo geslo"
             autoComplete="new-password"
-            className="h-9 w-full rounded-lg border border-stone-300 px-3 text-xs outline-none focus:border-roksal-amber"
+            className="h-9 w-full rounded-lg border border-stone-300 dark:border-stone-800 px-3 text-xs outline-none focus:border-roksal-amber"
           />
           <Button
             type="button"
