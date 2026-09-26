@@ -137,6 +137,18 @@
   * {
     @apply border-border outline-ring/50;
   }
+  /* R168 — ring-offset privzeti BELO (Tailwind v4 @property initial #fff,
+     inherits: false) pusti 1 px beli halo okoli vsakega fokusa/flash/drag
+     prstana v temni temi (40 rab v 19 datotekah — deal-pipeline drag-over,
+     kalkulator, crm-tab …). E2E R168 dokazal: nastavitev na .dark NE
+     deduje (@property inherits: false) — zato univerzalni selektor. Pravilo
+     je v @layer base → eksplicitni ring-offset-X utility (utilities layer)
+     še vedno prevlada na elementih, ki ga namerno nastavijo. */
+  .dark *,
+  .dark::before,
+  .dark::after {
+    --tw-ring-offset-color: var(--background);
+  }
   html {
     scroll-behavior: smooth;
   }

@@ -87,13 +87,13 @@ interface PipeColumn {
 }
 
 const PIPELINE: PipeColumn[] = [
-  { id: 'NACRTOVANO', label: 'Načrtovano', icon: ClipboardList, dot: 'bg-stone-400', bar: 'border-l-stone-400', head: 'from-stone-100', over: 'ring-stone-400/70' },
-  { id: 'V_TEKU', label: 'V teku', icon: Hammer, dot: 'bg-amber-500', bar: 'border-l-amber-500', head: 'from-amber-100', over: 'ring-amber-400/70' },
-  { id: 'ZA_MONTAZO', label: 'Za montažo', icon: CalendarClock, dot: 'bg-orange-500', bar: 'border-l-orange-500', head: 'from-orange-100', over: 'ring-orange-400/70' },
-  { id: 'V_IZDELAVI', label: 'V izdelavi', icon: Factory, dot: 'bg-violet-500', bar: 'border-l-violet-500', head: 'from-violet-100', over: 'ring-violet-400/70' },
-  { id: 'MONTIRANO', label: 'Montirano', icon: Wrench, dot: 'bg-teal-500', bar: 'border-l-teal-500', head: 'from-teal-100', over: 'ring-teal-400/70' },
-  { id: 'ZAKLJUCENO', label: 'Zaključeno', icon: BadgeCheck, dot: 'bg-emerald-600', bar: 'border-l-emerald-600', head: 'from-emerald-100', over: 'ring-emerald-400/70' },
-  { id: 'USTAVLJENO', label: 'Ustavljeno', icon: CircleSlash2, dot: 'bg-rose-400', bar: 'border-l-rose-400', head: 'from-rose-100', over: 'ring-rose-400/70' },
+  { id: 'NACRTOVANO', label: 'Načrtovano', icon: ClipboardList, dot: 'bg-stone-400', bar: 'border-l-stone-400', head: 'from-stone-100 dark:from-stone-500/15', over: 'ring-stone-400/70 dark:ring-stone-500/70' },
+  { id: 'V_TEKU', label: 'V teku', icon: Hammer, dot: 'bg-amber-500', bar: 'border-l-amber-500', head: 'from-amber-100 dark:from-amber-500/15', over: 'ring-amber-400/70 dark:ring-amber-500/70' },
+  { id: 'ZA_MONTAZO', label: 'Za montažo', icon: CalendarClock, dot: 'bg-orange-500', bar: 'border-l-orange-500', head: 'from-orange-100 dark:from-orange-500/15', over: 'ring-orange-400/70 dark:ring-orange-500/70' },
+  { id: 'V_IZDELAVI', label: 'V izdelavi', icon: Factory, dot: 'bg-violet-500', bar: 'border-l-violet-500', head: 'from-violet-100 dark:from-violet-500/15', over: 'ring-violet-400/70 dark:ring-violet-500/70' },
+  { id: 'MONTIRANO', label: 'Montirano', icon: Wrench, dot: 'bg-teal-500', bar: 'border-l-teal-500', head: 'from-teal-100 dark:from-teal-500/15', over: 'ring-teal-400/70 dark:ring-teal-500/70' },
+  { id: 'ZAKLJUCENO', label: 'Zaključeno', icon: BadgeCheck, dot: 'bg-emerald-600', bar: 'border-l-emerald-600', head: 'from-emerald-100 dark:from-emerald-500/15', over: 'ring-emerald-400/70 dark:ring-emerald-500/70' },
+  { id: 'USTAVLJENO', label: 'Ustavljeno', icon: CircleSlash2, dot: 'bg-rose-400', bar: 'border-l-rose-400', head: 'from-rose-100 dark:from-rose-500/15', over: 'ring-rose-400/70 dark:ring-rose-500/70' },
 ]
 
 function fmtEur(n: number): string {

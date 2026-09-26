@@ -41,6 +41,7 @@ function vnos(overrides: Partial<TerminPrikazVnos> = {}): TerminPrikazVnos {
     monterIme: 'Miha',
     status: 'NAVRTENO',
     datumZacetka: danesOsem,
+    predvideneUre: 8,
     moja: false,
     ...overrides,
   }

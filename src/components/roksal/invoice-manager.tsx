@@ -872,7 +872,7 @@ export function InvoiceManager() {
             {/* Razmerje plačanega k izdanemu — hitri vpogled v cashflow */}
             {summary.izdano > 0 && (
               <div className="space-y-1">
-                <div className="h-1.5 overflow-hidden rounded-full bg-stone-200">
+                <div className="h-1.5 overflow-hidden rounded-full bg-stone-200 dark:bg-stone-800">
                   <div
                     className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-500"
                     style={{ width: `${Math.min(100, Math.max(0, (summary.placano / summary.izdano) * 100))}%` }}

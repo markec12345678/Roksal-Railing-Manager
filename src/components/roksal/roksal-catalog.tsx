@@ -28,7 +28,7 @@ const MATERIAL_BADGE: Record<string, { label: string; cls: string }> = {
   'WPC + ALU': { label: 'WPC+ALU', cls: 'bg-amber-100 dark:bg-amber-500/15 text-amber-800 dark:text-amber-200' },
   'WPC Panel': { label: 'WPC Panel', cls: 'bg-amber-100 dark:bg-amber-500/15 text-amber-800 dark:text-amber-200' },
   'WPC + Steklo': { label: 'WPC+Steklo', cls: 'bg-purple-100 dark:bg-purple-500/15 text-purple-800 dark:text-purple-200' },
-  Inox: { label: 'Inox', cls: 'bg-slate-200 text-slate-800 dark:text-slate-200' },
+  Inox: { label: 'Inox', cls: 'bg-slate-200 dark:bg-slate-500/15 text-slate-800 dark:text-slate-200' },
   Aluminij: { label: 'ALU', cls: 'bg-blue-100 dark:bg-blue-500/15 text-blue-800 dark:text-blue-200' },
   Steklo: { label: 'Steklo', cls: 'bg-cyan-100 dark:bg-cyan-500/15 text-cyan-800 dark:text-cyan-200' },
 }

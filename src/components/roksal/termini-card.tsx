@@ -45,6 +45,8 @@ import {
   terminCasLabel,
   terminDatumLabel,
   terminiOkno,
+  terminUrPovzetek,
+  vsotaPredvidenihUr,
   type TerminPrikazVnos,
 } from '@/lib/termini-prikaz'
 
@@ -103,6 +105,14 @@ export function TerminiCard({ myUserId, onOpenProjectId }: TerminiCardProps) {
       kasneje: filtrirajTermini(skupine.kasneje, samoMoje, myUserId),
     }
   }, [skupine, samoMoje, myUserId])
+
+  // R168 — agregat predvidenih ur nad FILTRIRANIM pogledom ("kar vidiš, to
+  // se sešteje"): stikalo 'Samo moje' samodejno prešteje vsoto. Čista lib
+  // funkcija (PREKlicANO izključen + vidno preštet; brez ure → '≥' meja).
+  const urAgregat = useMemo(() => {
+    if (!prikazane) return null
+    return vsotaPredvidenihUr([...prikazane.danes, ...prikazane.kasneje])
+  }, [prikazane])
 
   // Fetch je NEODVISEN od myUserId (branje terminov ne zahteva identitete;
   // "moja montaža" je izračun pri izrisu — least privilege, brez ponovnega branja).
@@ -379,6 +389,20 @@ export function TerminiCard({ myUserId, onOpenProjectId }: TerminiCardProps) {
           </div>
         ) : (
           <div className="space-y-3">
+            {/* R168 — povzetek predvidenih ur nad prikazanimi (filtriranimi)
+                termini. Izračunan iz ISTIH vrstic, ki so prikazane spodaj —
+                vsota odraža stikalo 'Samo moje' (kar vidiš, to se sešteje).
+                PREKlicANO izključen + vidno omenjen; brez znane ure → '≥'
+                (matematično resnična spodnja meja, nikoli izmišljene ure). */}
+            {urAgregat && (
+              <p
+                className="flex flex-wrap items-center gap-x-2 gap-y-0.5 rounded-md bg-muted/60 px-2.5 py-1.5 text-[11px] text-muted-foreground"
+                title="Vsota predvidenih ur prikazanih terminov (preklicani so izključeni)"
+              >
+                <Clock className="h-3 w-3 shrink-0 text-roksal-amber" aria-hidden="true" />
+                <span className="tabular-nums font-medium">{terminUrPovzetek(urAgregat)}</span>
+              </p>
+            )}
             {prikazane && prikazane.danes.length > 0 && (
               <div>
                 <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">

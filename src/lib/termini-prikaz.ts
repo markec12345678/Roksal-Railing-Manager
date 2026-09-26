@@ -117,6 +117,11 @@ export interface TerminPrikazVnos {
   monterIme: string | null
   status: ScheduleTerminStatus
   datumZacetka: string
+  /** R168 — predvidene ure dela (schema InstallationSchedule.predvideneUre,
+   *  Int @default(8)). Pomožni podatek: manjkajoči/pokvarjen → null (izključen
+   *  iz vsote, NIKOLI izmišljen kot 0 — "brez podatka" ≠ "nič ur"); NE
+   *  razveljavi sicer veljavne vrstice (jedro = datum/status/id). */
+  predvideneUre: number | null
   /** monterId je natanko enak prijavljenemu uporabniku (moja montaža). */
   moja: boolean
 }
@@ -160,6 +165,16 @@ export function normalizirajTermin(
   const moja =
     typeof myUserId === 'string' && myUserId.length > 0 && monterId !== null && monterId === myUserId
 
+  // R168 — predvidene ure: samo celo število ≥ 0 je zaupanja vredno. Karkoli
+  // drugega (string, decimalno, negativno, manjkajoče) → null (pomožni podatek,
+  // ne jedro vrstice — vrstica ostane prikazana, le iz vsote ur je izključena).
+  const ure =
+    typeof r.predvideneUre === 'number' &&
+    Number.isInteger(r.predvideneUre) &&
+    r.predvideneUre >= 0
+      ? r.predvideneUre
+      : null
+
   return {
     vnos: {
       id: r.id,
@@ -173,6 +188,7 @@ export function normalizirajTermin(
       monterIme: typeof monter?.ime === 'string' ? monter.ime : null,
       status: r.status,
       datumZacetka: r.datumZacetka,
+      predvideneUre: ure,
       moja,
     },
   }
@@ -234,6 +250,108 @@ export function filtrirajTermini(
   if (!samoMoje) return [...vnosi]
   if (typeof myUserId !== 'string' || myUserId.length === 0) return []
   return vnosi.filter((v) => v.monterId !== null && v.monterId === myUserId)
+}
+
+/** R168 — vsota predvidenih ur PRIKAZANIH (filtriranih) terminov. Agregat je
+ *  bralni izračun nad isto vrstico, ki jo kartica pokaže — "kar vidiš, to se
+ *  sešteje". Pravila:
+ *   • PREKlicANO → IZKLJUČEN iz vsote (preklicano delo ne porabi ur) in
+ *     vidno preštet v preklicanih (nič tihega izginjanja);
+ *   • PRELOZENO → ŠTEJE SE (preloženo delo še vedno časa);
+ *   • vrstica brez znane ure (predvideneUre null) → ne prispeva h vsoti,
+ *     šteje se v brezUre → vsota je samo ŠE VEDNO matematicno resnična
+ *     spodnja meja (UI pokaže '≥') — nikoli izmišljenih '0 h';
+ *   • čista funkcija: vhod ostane nespremenjen, isti vhod → isti izhod. */
+export interface UrAgregat {
+  /** Vsota znanih predvidenih ur (ne-preklicanih, z znano uro). */
+  ure: number
+  /** Št. ne-preklicanih terminov v agregatu (z in brez znane ure). */
+  stTerminov: number
+  /** Št. ne-preklicanih terminov BREZ znane ure (izključeni iz vsote). */
+  brezUre: number
+  /** Št. izključenih preklicanih (transparenca, ne tihi popavek). */
+  preklicanih: number
+}
+
+export function vsotaPredvidenihUr(
+  vnosi: readonly TerminPrikazVnos[]
+): UrAgregat {
+  if (!Array.isArray(vnosi)) {
+    throw new TypeError('vsotaPredvidenihUr: pričakovano polje prikaznih vrstic')
+  }
+  const ag: UrAgregat = { ure: 0, stTerminov: 0, brezUre: 0, preklicanih: 0 }
+  for (const v of vnosi) {
+    if (
+      !v ||
+      typeof v !== 'object' ||
+      typeof v.id !== 'string' ||
+      v.id.length === 0
+    ) {
+      throw new TypeError('vsotaPredvidenihUr: pričakovan prikazni vnos (TerminPrikazVnos)')
+    }
+    if (v.status === 'PREKlicANO') {
+      ag.preklicanih += 1
+      continue
+    }
+    ag.stTerminov += 1
+    if (typeof v.predvideneUre === 'number' && Number.isInteger(v.predvideneUre) && v.predvideneUre >= 0) {
+      ag.ure += v.predvideneUre
+    } else {
+      ag.brezUre += 1
+    }
+  }
+  return ag
+}
+
+/** R168 — 'termin' / 'termina' / 'termini' / 'terminov' po slovenskih pravilih
+ *  in po obstoječi konvenciji repo (projektiLabel/revizijaLabel): 1 termin;
+ *  2 termina (dvojina); 3, 4 termini (množina); 0, 5+ terminov (rodilnik);
+ *  izjeme po zadnjih dveh: 11–14 → terminov (11, 12, 113 …), 21 → termin,
+ *  22 → termina, 23/24 → termini. */
+export function terminBeseda(n: number): string {
+  if (!Number.isInteger(n) || n < 0) {
+    throw new TypeError(`terminBeseda: pričakovano ne-negativno celo število, ne ${String(n)}`)
+  }
+  const enice = n % 10
+  const zadnjiDve = n % 100
+  if (enice === 1 && zadnjiDve !== 11) return 'termin'
+  if (enice === 2 && zadnjiDve !== 12) return 'termina'
+  if ((enice === 3 || enice === 4) && zadnjiDve !== 13 && zadnjiDve !== 14) return 'termini'
+  return 'terminov'
+}
+
+/** R168 — povzetek agregata za kartico; EN VIR RESNICE za besedilo
+ *  (ista logika v UI, testih in morebitnem prihodnjem izvozu):
+ *   • 'Skupaj 24 h · 3 termini'
+ *   • 'Skupaj ≥ 24 h · 3 termini · 1 brez ure' (vsota = spodnja meja)
+ *   • 'Skupaj 24 h · 3 termini · brez 2 preklicanih'
+ *   • vseh preklicanih, brez veljavnih: 'Samo preklicani termini (2) — brez predvidenih ur'. */
+export function terminUrPovzetek(a: UrAgregat): string {
+  if (
+    !a ||
+    typeof a !== 'object' ||
+    !Number.isInteger(a.ure) ||
+    a.ure < 0 ||
+    !Number.isInteger(a.stTerminov) ||
+    a.stTerminov < 0 ||
+    !Number.isInteger(a.brezUre) ||
+    a.brezUre < 0 ||
+    !Number.isInteger(a.preklicanih) ||
+    a.preklicanih < 0 ||
+    a.stTerminov < a.brezUre
+  ) {
+    throw new TypeError('terminUrPovzetek: pričakovan veljaven UrAgregat')
+  }
+  if (a.stTerminov === 0 && a.preklicanih > 0) {
+    return `Samo preklicani termini (${a.preklicanih}) — brez predvidenih ur`
+  }
+  const meja = a.brezUre > 0 ? '≥ ' : ''
+  let besedilo = `Skupaj ${meja}${a.ure} h · ${a.stTerminov} ${terminBeseda(a.stTerminov)}`
+  if (a.brezUre > 0) besedilo += ` · ${a.brezUre} brez ure`
+  if (a.preklicanih > 0) {
+    besedilo += ` · brez ${a.preklicanih} ${a.preklicanih === 1 ? 'preklicanega' : 'preklicanih'}`
+  }
+  return besedilo
 }
 
 /** R167 — deterministično besedilo termina za odložišče (delitev prek

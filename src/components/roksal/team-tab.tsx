@@ -103,7 +103,7 @@ const AVATAR_TINT = [
   'bg-roksal-navy/12 text-roksal-ink',
   'bg-roksal-amber/18 text-amber-700 dark:text-amber-300',
   'bg-roksal-green/14 text-roksal-green',
-  'bg-stone-200/70 text-stone-600 dark:text-stone-400',
+  'bg-stone-200/70 dark:bg-stone-500/15 text-stone-600 dark:text-stone-400',
 ] as const
 
 function initialsOf(ime: string): string {
