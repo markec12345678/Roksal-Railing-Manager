@@ -2,7 +2,7 @@
 """
 Varnostni dimni test za Roksal Railing Manager.
 
-Preveri 135 stvari na ŽIVEM strežniku — ne na kodi, kar je edini način, da se
+Preveri 137 stvari na ŽIVEM strežniku — ne na kodi, kar je edini način, da se
 ujame napaka v plasteh (proxy, ruta, piškotek, baza). Napisan je bil prav zato,
 ker je prva različica proxy-ja blokirala prijavo samo: 32/36 testov je bilo
 zelenih, aplikacija pa neuporabna.
@@ -573,6 +573,16 @@ check("DELETE /api/sync brez seje → 401 + correlation", ok, f"dobil {st}")
 st, h, body = call("/api/sync?sinceRevision=0")
 ok = st == 401 and len(h.get("x-correlation-id", "")) >= 8
 check("GET /api/sync?sinceRevision=0 brez seje → 401 + correlation", ok, f"dobil {st}")
+
+print("\n[31] Upload security (R149 — issue #5 §37: MIME + magični bajti)")
+# Rute po R149: POST brez seje → 401 + korelacija (validacija vsebine pride
+# ZAPE po avtentikaciji — fail-closed red: najprej kdo si, nato kaj pošiljaš).
+st, h, body = call("/api/photos", "POST", {"projectId": "x", "imageData": "abc"})
+ok = st == 401 and len(h.get("x-correlation-id", "")) >= 8
+check("POST /api/photos brez seje → 401 + correlation", ok, f"dobil {st}")
+st, h, body = call("/api/gallery", "POST", {"naziv": "x"})
+ok = st == 401 and len(h.get("x-correlation-id", "")) >= 8
+check("POST /api/gallery brez seje → 401 + correlation", ok, f"dobil {st}")
 
 
 print(f"\n{'=' * 60}")

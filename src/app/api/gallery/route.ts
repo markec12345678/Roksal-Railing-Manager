@@ -18,6 +18,7 @@ import {
   parseDataUri,
   putObject,
 } from '@/lib/object-storage'
+import { validateUploadContent } from '@/lib/upload-security'
 
 function accessErrorResponse(error: unknown): NextResponse | null {
   if (error instanceof AccessDeniedError) {
@@ -115,6 +116,11 @@ export async function POST(request: Request) {
           { error: `${label} mora biti veljaven data URI ali URL (do 15 MB)` },
           { status: 400 }
         )
+      }
+      // R149 (§37 Upload security): deklaracija se preveri proti magičnim bajtom.
+      const contentCheck = validateUploadContent(parsed.mime, parsed.bytes)
+      if (!contentCheck.ok) {
+        return NextResponse.json({ error: `${label}: ${contentCheck.reason}` }, { status: 400 })
       }
       parsedSlots[field] = parsed
     }

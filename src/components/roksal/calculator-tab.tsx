@@ -2084,6 +2084,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                   value={maxGap}
                   onChange={(e) => setMaxGap(e.target.value)}
                   placeholder="100"
+                  className="tabular-nums"
                 />
               </div>
               <div className="space-y-1.5">
@@ -2096,6 +2097,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                   value={postCount}
                   onChange={(e) => setPostCount(e.target.value)}
                   placeholder="3"
+                  className="tabular-nums"
                 />
               </div>
             </CardContent>
@@ -2149,7 +2151,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                         ? 'SKLADNO s standardom'
                         : 'NESKLADNO — Presežen razmik!'}
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-muted-foreground tabular-nums">
                       Razmik {railingResult.actualGapMm.toFixed(1)}mm{' '}
                       {railingResult.isCompliant ? '≤' : '>'} 100mm
                     </p>
@@ -2159,39 +2161,39 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
 
               {/* Results Grid */}
               <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
-                <Card className="px-3 py-3">
+                <Card className="px-3 py-3 transition-shadow hover:shadow-sm">
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
                     Število letvev
                   </p>
-                  <p className="text-2xl font-bold text-roksal-navy">
+                  <p className="text-2xl font-bold text-roksal-navy tabular-nums">
                     {railingResult.slatCount}
                   </p>
-                  <p className="text-[10px] text-muted-foreground">
+                  <p className="text-[10px] text-muted-foreground tabular-nums">
                     kos × {parseFloat(slatWidth)}mm
                   </p>
                 </Card>
-                <Card className="px-3 py-3">
+                <Card className="px-3 py-3 transition-shadow hover:shadow-sm">
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
                     Dejanski razmik
                   </p>
-                  <p className="text-2xl font-bold text-roksal-navy">
+                  <p className="text-2xl font-bold text-roksal-navy tabular-nums">
                     {railingResult.actualGapMm.toFixed(1)}
                   </p>
                   <p className="text-[10px] text-muted-foreground">mm</p>
                 </Card>
-                <Card className="px-3 py-3">
+                <Card className="px-3 py-3 transition-shadow hover:shadow-sm">
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
                     Skupna širina letvev
                   </p>
-                  <p className="text-lg font-bold text-roksal-navy">
+                  <p className="text-lg font-bold text-roksal-navy tabular-nums">
                     {(railingResult.totalSlatsLengthMm / 1000).toFixed(2)}m
                   </p>
                 </Card>
-                <Card className="px-3 py-3">
+                <Card className="px-3 py-3 transition-shadow hover:shadow-sm">
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
                     Skupna širina razmikov
                   </p>
-                  <p className="text-lg font-bold text-roksal-navy">
+                  <p className="text-lg font-bold text-roksal-navy tabular-nums">
                     {(railingResult.totalGapsLengthMm / 1000).toFixed(2)}m
                   </p>
                 </Card>
@@ -2714,29 +2716,29 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
 
               {/* Main Results */}
               <div className="grid grid-cols-3 gap-3">
-                <Card className="px-3 py-3">
+                <Card className="px-3 py-3 transition-shadow hover:shadow-sm">
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
                     Tlak
                   </p>
-                  <p className="text-xl font-bold text-roksal-navy">
+                  <p className="text-xl font-bold text-roksal-navy tabular-nums">
                     {windResult.windPressureKpa.toFixed(2)}
                   </p>
                   <p className="text-[10px] text-muted-foreground">kPa</p>
                 </Card>
-                <Card className="px-3 py-3">
+                <Card className="px-3 py-3 transition-shadow hover:shadow-sm">
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
                     Skupna sila
                   </p>
-                  <p className="text-xl font-bold text-roksal-navy">
+                  <p className="text-xl font-bold text-roksal-navy tabular-nums">
                     {windResult.totalForceKn.toFixed(2)}
                   </p>
                   <p className="text-[10px] text-muted-foreground">kN</p>
                 </Card>
-                <Card className="px-3 py-3">
+                <Card className="px-3 py-3 transition-shadow hover:shadow-sm">
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
                     Sila/m
                   </p>
-                  <p className="text-xl font-bold text-roksal-navy">
+                  <p className="text-xl font-bold text-roksal-navy tabular-nums">
                     {windResult.forcePerMeterNm.toFixed(1)}
                   </p>
                   <p className="text-[10px] text-muted-foreground">N/m</p>
@@ -5352,11 +5354,12 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               <CollapsibleTrigger asChild>
                 <button
                   type="button"
-                  className="flex items-center gap-2 text-sm font-semibold text-roksal-navy hover:opacity-80 transition-opacity"
+                  aria-expanded={historyOpen}
+                  className="flex items-center gap-2 rounded-lg text-sm font-semibold text-roksal-navy hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
                 >
                   <History className="h-4 w-4 text-roksal-amber" />
                   Zgodovina izračunov
-                  <Badge variant="secondary" className="text-[10px] h-5 px-1.5">{history.length}</Badge>
+                  <Badge variant="secondary" className="text-[10px] h-5 px-1.5 tabular-nums">{history.length}</Badge>
                   {historyOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
                 </button>
               </CollapsibleTrigger>
@@ -5403,7 +5406,8 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                         key={entry.id}
                         type="button"
                         onClick={() => loadFromHistory(entry)}
-                        className="flex w-full items-start gap-3 rounded-lg border border-border/50 p-3 transition-colors hover:bg-secondary/30 hover:border-roksal-navy/30 text-left"
+                        aria-label={`Naloži izračun: ${entry.modeLabel}, ${entry.keyResult}`}
+                        className="flex w-full items-start gap-3 rounded-lg border border-border/50 p-3 transition-colors hover:bg-secondary/30 hover:border-roksal-navy/30 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:border-roksal-navy/40"
                       >
                         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-roksal-navy/10">
                           <Icon className="h-4 w-4 text-roksal-navy" />
@@ -5413,7 +5417,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                             <Badge variant="outline" className="text-[9px] h-4 px-1.5 bg-roksal-navy/5 border-roksal-navy/20 text-roksal-navy">
                               {entry.modeLabel}
                             </Badge>
-                            <span className="text-[9px] text-muted-foreground">
+                            <span className="text-[9px] text-muted-foreground tabular-nums">
                               {new Date(entry.timestamp).toLocaleString('sl-SI', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                             </span>
                             {entry.projectName && (

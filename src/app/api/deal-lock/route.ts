@@ -19,6 +19,7 @@ import {
   parseDataUri,
   putObject,
 } from '@/lib/object-storage'
+import { validateUploadContent } from '@/lib/upload-security'
 
 interface DealLockRequest {
   projectId: string
@@ -114,6 +115,19 @@ export async function POST(request: Request) {
         { error: 'Neveljaven podpis (pričakovan base64 PNG data URI, ≤2 MB).' },
         { status: 400 },
       )
+    }
+    // R149 (§37 Upload security): podpis je PNG poteza — deklaracija se
+    // preveri proti magičnim bajtom (SVG/HTML/okoromanjan bajti zavrnjeni).
+    const customerCheck = validateUploadContent(customerParsed.mime, customerParsed.bytes)
+    if (!customerCheck.ok) {
+      return NextResponse.json(
+        { error: `Podpis stranke: ${customerCheck.reason}` },
+        { status: 400 },
+      )
+    }
+    const monterCheck = validateUploadContent(monterParsed.mime, monterParsed.bytes)
+    if (!monterCheck.ok) {
+      return NextResponse.json({ error: `Podpis monterja: ${monterCheck.reason}` }, { status: 400 })
     }
     const customerSigId = crypto.randomUUID()
     const monterSigId = crypto.randomUUID()

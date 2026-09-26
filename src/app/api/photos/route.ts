@@ -32,6 +32,7 @@ import {
   parseDataUri,
   putObject,
 } from '@/lib/object-storage'
+import { validateUploadContent } from '@/lib/upload-security'
 
 /** Zavij resource napake v 403/404 odgovor (politika: 404 ne obstaja, 403 prepovedano). */
 function accessErrorResponse(error: unknown): NextResponse | null {
@@ -150,6 +151,14 @@ export async function POST(request: Request) {
         { error: 'imageData mora biti veljaven data URI ali base64 (do 15 MB)' },
         { status: 400 }
       )
+    }
+
+    // R149 (§37 Upload security): klient ni zaupan — deklarirana vrsta se
+    // PREVERI proti magičnim bajtom (SVG/HTML/GIF zavrnjeni, image bomb
+    // zaščita iz glave brez dekodiranja). Fail-closed 400 z izrecnim razlogom.
+    const contentCheck = validateUploadContent(parsedImage.mime, parsedImage.bytes)
+    if (!contentCheck.ok) {
+      return NextResponse.json({ error: contentCheck.reason }, { status: 400 })
     }
 
     // METADATA = TOČKA ZAVEZE (isti vzorc kot viz save-flow): najprej bajti v

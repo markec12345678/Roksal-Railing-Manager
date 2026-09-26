@@ -21,6 +21,7 @@ import {
   parseDataUri,
   putObject,
 } from '@/lib/object-storage'
+import { validateUploadContent } from '@/lib/upload-security'
 import {
   beginIdempotency,
   idempotencyConflictResponse,
@@ -106,6 +107,12 @@ export async function POST(request: Request) {
         { error: 'imageUrl mora biti veljaven data URI ali base64 (do 15 MB)' },
         { status: 400 }
       )
+    }
+
+    // R149 (§37 Upload security): deklaracija se preveri proti magičnim bajtom.
+    const contentCheck = validateUploadContent(parsed.mime, parsed.bytes)
+    if (!contentCheck.ok) {
+      return NextResponse.json({ error: contentCheck.reason }, { status: 400 })
     }
 
     // R128 (issue #5 §4): idempotenca AR posnetkov — rezervacija ključa

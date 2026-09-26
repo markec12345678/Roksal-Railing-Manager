@@ -136,12 +136,35 @@ Tri vrzeli s seznama spodaj so zdaj zapolnjene:
 | **Revizijski dnevnik** | `src/lib/audit.ts` — enoten zapis, nikoli ne vrže in ne blokira zahtevka. `LOGIN`, `LOGIN_FAILED`, `PASSWORD_CHANGED`, `RAILING_LAYOUT`, `QUOTE_CALCULATED`. Branje prek `GET /api/audit?projectId=…` (VODJA/ADMIN ali dodeljeni monter). |
 
 Preverjeno v `tools/security-smoke.py`, razdelka [9] Vloge in [10] Omejevanje
-hitrosti — skupaj 135 preverjanj, tečejo v CI ob vsakem pushu.
+hitrosti — skupaj 137 preverjanj, tečejo v CI ob vsakem pushu.
+
+## Upload security (R149 — issue #5 §37)
+
+Vsi uploadi (fotodokumentacija, galerija, skice, AR posnetki, podpisi pri
+zaklepu posla) gredo skozi `validateUploadContent`
+(`src/lib/upload-security.ts`) — čisto, deterministično jedro:
+
+| | Pravilo |
+|---|---|
+| **MIME + magični bajti** | Deklarirana vrsta se PREVERI proti magičnim bajtom; neskladje → 400 z izrecnim razlogom (`prijavljeno X, dejansko Y`). Klient NI zaupan — prej je bila specifična deklaracija sprejeta brez preverjanja (vrzel). |
+| **Zaprto dovoljen seznam** | Samo PNG, JPEG, WebP, PDF. SVG in HTML sta izrecno prepovedana (nosilca skript); GIF/ZIP/… zavrnjeni. |
+| **Image bomb zaščita** | Dimenzije se preberejo IZ GLAVE (PNG IHDR, JPEG SOF, WebP VP8/VP8L/VP8X) brez dekodiranja; strop 12000 px na stran oz. 40 MP. |
+| **Max size** | Ostaja v `parseDataUri` (fotografije/AR/skice/galerija ≤ 15 MB, podpisi ≤ 2 MB). |
+| **Imena + ključi** | Naključni UUID object keys (`objectKey`), končnica izverjena iz vrste; path traversal preverja `assertSafeObjectKey`. |
+| **Private-by-default** | Bajti se servirajo IZKLJUČNO prek avtenticiranih rut (data URI hydrate ali `/api/files`), nikoli javno. |
+| **Fail-closed red** | Najprej avtentikacija (401), nato scope, nato validacija vsebine (400) — vrsta napake ne pušča podatkov o vsebini nepooblaščenim. |
+
+Zakaj brez tihega prevzemanja: če deklaracija ne ustreza bajtom, je klient
+pokvarjen ALI zlonamernen — v obeh primerih je pravi odgovor odklonitev z
+razlogom, ne tiho »popravljanje«. Brskalnikov canvas `toDataURL` vedno
+pošlje pravo deklaracijo, zato legitimni tokovi ne pridejo v stik z vrati.
 
 ## Kaj še NI narejeno
 
 | | Zakaj je pomembno |
 |---|---|
+| **EXIF stripping na strežniku (§37)** | Uploadi iz canvas data URI so brez EXIF (canvas re-enkodira), neposredni API uploadi JPEG pa EXIF lahko ohranijo. Strežniško stripanje zahteva dekodiranje (sharp) — izrecno odloženo, ne utišano; GPS polja so pri fotodokumentaciji izrecna klientova izbira (opt-in), ne EXIF prenos. |
+| **Malware scanning (§37)** | Policy: magični bajti + dovoljen seznam + stropi preprečijo skriptne nosilce (SVG/HTML) in dekompresijske bombe; pravi AV sken bajtov ni implementiran (zahteva zunanji servis) — dokumentirano kot odloženo. |
 | **CSRF** | `SameSite=Lax` pokriva večino, ne pa vseh primerov (GET z vrhnje ravni). Za mutacije je `SameSite=Strict` ali dvojni žeton varnejši. |
 | **Omejevanje hitrosti na drugih rutah** | Zaščitena je prijava; pisanje po ostalih rutah ima pripravljen `WRITE_LIMIT`, a še ni vklopljen. |
 | **Revizijski dnevnik na vseh mutacijah** | Piše se na prijavi, geslu, razporedu in ponudbi; `deal-lock`, `measurements` in `projects` imajo svoje stare klice, ki jih velja poenotiti. |
