@@ -12,6 +12,7 @@ import { authenticate, unauthorized } from '@/lib/auth'
 import { assertProjectAccess, actorIdOf, principalBindingOf, AccessDeniedError } from '@/lib/access'
 import { assertTransition, InvalidTransitionError } from '@/lib/project-state'
 import { zapisOmejitev } from '@/lib/rate-limit'
+import { auditInTx } from '@/lib/audit'
 import {
   MEASUREMENT_STATUS_VALUES,
   isValidMeasurementStatus,
@@ -81,13 +82,11 @@ export async function POST(request: Request) {
         })
       }
 
-      await tx.auditLog.create({
-        data: {
-          userId: actor,
-          projectId: validated.projectId,
-          akcija: 'CREATE_MEASUREMENT',
-          newValue: JSON.stringify({ dolzinaMm: validated.dolzinaMm, visinaMm: validated.visinaMm }),
-        }
+      await auditInTx(tx, {
+        userId: actor,
+        projectId: validated.projectId,
+        akcija: 'CREATE_MEASUREMENT',
+        newValue: JSON.stringify({ dolzinaMm: validated.dolzinaMm, visinaMm: validated.visinaMm }),
       })
 
       // R128: snapshot odgovora v isti transakciji — retry istega ključa

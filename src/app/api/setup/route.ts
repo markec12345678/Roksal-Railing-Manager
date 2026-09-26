@@ -21,6 +21,7 @@ import {
   setupTokenFromEnv,
   tokenMatches,
 } from '@/lib/setup'
+import { auditInTx, auditStrict } from '@/lib/audit'
 
 const schema = z.object({
   email: z.string().trim().min(3).max(254).email('Neveljaven e-naslov'),
@@ -55,14 +56,12 @@ export async function POST(request: Request) {
   const deny = async (akcija: 'SETUP_DENIED' | 'SETUP_FAILED', podrobnosti: string) => {
     // Vzdržljiv dnevnik (nauček R132): napaka pisanja se javi, ne taji.
     try {
-      await db.auditLog.create({
-        data: {
-          userId: null, // javni dogodek brez seje (null = sistemski, FK varen)
-          akcija,
-          newValue: podrobnosti,
-          ipAddress: ipHash,
-          userAgent: userAgent?.slice(0, 255) ?? null,
-        },
+      await auditStrict({
+        userId: null, // javni dogodek brez seje (null = sistemski, FK varen)
+        akcija,
+        newValue: podrobnosti,
+        ipOverride: ipHash,
+        uaOverride: userAgent?.slice(0, 255) ?? null,
       })
     } catch (error) {
       console.error('Setup audit napaka:', error)
@@ -118,14 +117,12 @@ export async function POST(request: Request) {
             mustChangePassword: false,
           },
         })
-        await tx.auditLog.create({
-          data: {
-            userId: created.id,
-            akcija: 'SETUP_BOOTSTRAP',
-            newValue: JSON.stringify({ email, mode: 'BOOTSTRAP', vloga: 'ADMIN' }),
-            ipAddress: ipHash,
-            userAgent: userAgent?.slice(0, 255) ?? null,
-          },
+        await auditInTx(tx, {
+          userId: created.id,
+          akcija: 'SETUP_BOOTSTRAP',
+          newValue: JSON.stringify({ email, mode: 'BOOTSTRAP', vloga: 'ADMIN' }),
+          ipOverride: ipHash,
+          uaOverride: userAgent?.slice(0, 255) ?? null,
         })
         return created
       })
@@ -154,20 +151,18 @@ export async function POST(request: Request) {
         where: { profileId: existingId, revokedAt: null },
         data: { revokedAt: new Date() },
       })
-      await tx.auditLog.create({
-        data: {
-          userId: existingId,
-          akcija: 'SETUP_RECOVER',
-          oldValue: JSON.stringify({ vloga: previousRole }),
-          newValue: JSON.stringify({
-            email,
-            mode: 'RECOVER',
-            vloga: 'ADMIN',
-            revokedSessions: sessions.count,
-          }),
-          ipAddress: ipHash,
-          userAgent: userAgent?.slice(0, 255) ?? null,
-        },
+      await auditInTx(tx, {
+        userId: existingId,
+        akcija: 'SETUP_RECOVER',
+        oldValue: JSON.stringify({ vloga: previousRole }),
+        newValue: JSON.stringify({
+          email,
+          mode: 'RECOVER',
+          vloga: 'ADMIN',
+          revokedSessions: sessions.count,
+        }),
+        ipOverride: ipHash,
+        uaOverride: userAgent?.slice(0, 255) ?? null,
       })
       return sessions.count
     })

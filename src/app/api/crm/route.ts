@@ -22,6 +22,7 @@ import { authenticate, unauthorized } from '@/lib/auth'
 import { canManageCustomers, actorIdOf } from '@/lib/access'
 
 import { zapisOmejitev } from '@/lib/rate-limit'
+import { audit } from '@/lib/audit'
 const CRM_STATUSI = ['AKTIVEN', 'NEAKTIVEN', 'POTENCIALEN', 'ARHIVIRAN'] as const
 const MAX_KONTAKTNA = 120
 const MAX_KATEGORIJA = 80
@@ -283,13 +284,11 @@ export async function PATCH(request: Request) {
     if (kategorija.value !== undefined) spremembe.kategorija = kategorija.value
 
     // AuditLog — R156: pravi akter (seja) + oldValue/newValue.
-    await db.auditLog.create({
-      data: {
-        userId: actorIdOf(auth),
-        akcija: 'CRM_UPDATE',
-        oldValue: JSON.stringify(before),
-        newValue: JSON.stringify({ customerId: id, spremembe }),
-      },
+    await audit({
+      userId: actorIdOf(auth),
+      akcija: 'CRM_UPDATE',
+      oldValue: JSON.stringify(before),
+      newValue: JSON.stringify({ customerId: id, spremembe }),
     })
 
     return NextResponse.json({ success: true, customer: updated })

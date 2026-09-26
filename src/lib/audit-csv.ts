@@ -128,3 +128,28 @@ export function auditCsvFilename(projectId: string, isoDatum: string): string {
   }
   return `revizija_${projectId}_${isoDatum}.csv`
 }
+
+/** R192 — družine akcij revizijske sledi (EN VIR RESNICE za značke in filtre
+ * v AuditTrailDialog; klasifikacijski vrstni red je ISTI kot dozdajšnji
+ * akcijaBadge: LOGIN → DELETE/REVOKE/STORNO → CREATE/ISSUE/BOOTSTRAP →
+ * DEAL/SIGN/LOCK → ostalo, da barvna semantika ostane vrstično enaka). */
+export type AkcijaDruzina = 'prijava' | 'brisanje' | 'ustvarjanje' | 'zaklep' | 'ostalo'
+
+/** Družinski chip oznaki (sl-SI, deterministično — brez sklanjanja). */
+export const AKCIJA_DRUZINA_OMEJKE: Readonly<Record<AkcijaDruzina | 'vse', string>> = {
+  vse: 'Vse',
+  prijava: 'Prijava',
+  brisanje: 'Brisanje',
+  ustvarjanje: 'Ustvarjanje',
+  zaklep: 'Zaklep',
+  ostalo: 'Ostalo',
+}
+
+export function akcijaDruzina(akcija: string): AkcijaDruzina {
+  const upper = typeof akcija === 'string' ? akcija.toUpperCase() : ''
+  if (upper.includes('LOGIN')) return 'prijava'
+  if (upper.includes('DELETE') || upper.includes('REVOKE') || upper.includes('STORNO')) return 'brisanje'
+  if (upper.includes('CREATE') || upper.includes('ISSUE') || upper.includes('BOOTSTRAP')) return 'ustvarjanje'
+  if (upper.includes('DEAL') || upper.includes('SIGN') || upper.includes('LOCK')) return 'zaklep'
+  return 'ostalo'
+}

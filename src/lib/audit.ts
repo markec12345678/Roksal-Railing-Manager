@@ -38,6 +38,15 @@ export interface AuditInput {
   projectId?: string | null
   oldValue?: unknown
   newValue?: unknown
+  /**
+   * R192 (poenotitev): eksplicitna vrednost IP — za javne končne točke, ki
+   * IZRECNO shranjujejo HASH IP (ne surovega): /api/setup in javne meritve
+   * (measure.ts). Če je podana (!== undefined), se uporabi TOČNO ta vrednost;
+   * če je izpuščena, se izpelje iz requesta (clientIp) kot doslej.
+   */
+  ipOverride?: string | null
+  /** Analogno ipOverride — eksplicitni User-Agent (odrezan na 300 znakov). */
+  uaOverride?: string | null
 }
 
 function stringify(value: unknown): string | null {
@@ -54,6 +63,20 @@ function stringify(value: unknown): string | null {
 }
 
 /**
+ * R192 — skupna izpelja IP/User-Agent za oba vpisna klica (auditInTx in audit):
+ * eksplicitni overrides (javni hash-IP pisci: setup, measure) imajo prednost
+ * pred izpeljavo iz requesta. EN VIR RESNICE za oba vpisa.
+ */
+function izpeljiPrikaz(
+  input: Pick<AuditInput, 'request' | 'ipOverride' | 'uaOverride'>,
+): { ipAddress: string | null; userAgent: string | null } {
+  const ipAddress = input.ipOverride !== undefined ? input.ipOverride : input.request ? clientIp(input.request) : null
+  const rawUa = input.uaOverride !== undefined ? input.uaOverride : input.request?.headers.get('user-agent') ?? null
+  const userAgent = rawUa ? rawUa.slice(0, 300) : null
+  return { ipAddress, userAgent }
+}
+
+/**
  * Vpis v AuditLog znotraj obstoječe transakcije — za pravno/finančno pomembne
  * dogodke (prejem materiala, izdaja računa, deal-lock, sprememba statusa).
  * NE požira napak: če audit pade, pade tudi poslovni dogodek (isti commit) —
@@ -63,6 +86,7 @@ function stringify(value: unknown): string | null {
  */
 export async function auditInTx(tx: AuditTx, input: AuditInput): Promise<void> {
   const userId = input.userId ?? input.session?.sub ?? null
+  const { ipAddress, userAgent } = izpeljiPrikaz(input)
   await tx.auditLog.create({
     data: {
       userId,
@@ -70,8 +94,8 @@ export async function auditInTx(tx: AuditTx, input: AuditInput): Promise<void> {
       akcija: input.akcija,
       oldValue: stringify(input.oldValue),
       newValue: stringify(input.newValue),
-      ipAddress: input.request ? clientIp(input.request) : null,
-      userAgent: input.request?.headers.get('user-agent')?.slice(0, 300) ?? null,
+      ipAddress,
+      userAgent,
     },
   })
 }
@@ -80,21 +104,10 @@ export async function auditInTx(tx: AuditTx, input: AuditInput): Promise<void> {
 export async function audit(input: AuditInput): Promise<void> {
   try {
     const userId = input.userId ?? input.session?.sub ?? null
-    if (!userId) {
-      // Sistemski dogodek brez uporabnika — vpši z userId null (schema S+9).
-      await db.auditLog.create({
-        data: {
-          userId: null,
-          projectId: input.projectId ?? null,
-          akcija: input.akcija,
-          oldValue: stringify(input.oldValue),
-          newValue: stringify(input.newValue),
-          ipAddress: input.request ? clientIp(input.request) : null,
-          userAgent: input.request?.headers.get('user-agent')?.slice(0, 300) ?? null,
-        },
-      })
-      return
-    }
+    const { ipAddress, userAgent } = izpeljiPrikaz(input)
+    // Sistemski dogodek (userId null — schema S+9: 'system' string NI obstajal
+    // v Profile in je padal na FK constraint) in uporabniški dogodek imata
+    // ENAK vpisni obrazec — edina razlika je userId (null ali sub).
     await db.auditLog.create({
       data: {
         userId,
@@ -102,8 +115,8 @@ export async function audit(input: AuditInput): Promise<void> {
         akcija: input.akcija,
         oldValue: stringify(input.oldValue),
         newValue: stringify(input.newValue),
-        ipAddress: input.request ? clientIp(input.request) : null,
-        userAgent: input.request?.headers.get('user-agent')?.slice(0, 300) ?? null,
+        ipAddress,
+        userAgent,
       },
     })
   } catch (error) {
@@ -114,6 +127,32 @@ export async function audit(input: AuditInput): Promise<void> {
 /** Nečakajoča različica za poti, kjer dnevnik ne sme podaljšati odzivnega časa. */
 export function auditAsync(input: AuditInput): void {
   void audit(input).catch(() => undefined)
+}
+
+/**
+ * R192 (poenotitev) — fail-verbose ne-transakcijska različica: napaka dnevnika
+ * SE NE TAJI — klicatelj dobi napako (vzdržljiv dnevnik, nauček R132: javne
+ * meritve v measure.ts in setup namenoma JAVIJO napako pisanja, ne utišajo).
+ * Ista izpelja IP/UA kot ostala dva vpisa (izpeljiPrikaz — podpora hash-IP
+ * overrides). Trojica klicatelja:
+ *   audit()      → best-effort, dnevnik ne sme podreti posla,
+ *   auditInTx()  → kritični dogodki, atomsko s poslom,
+ *   auditStrict()→ dnevnik je POGOJ uspeha, a brez transakcije (javne poti).
+ */
+export async function auditStrict(input: AuditInput): Promise<void> {
+  const userId = input.userId ?? input.session?.sub ?? null
+  const { ipAddress, userAgent } = izpeljiPrikaz(input)
+  await db.auditLog.create({
+    data: {
+      userId,
+      projectId: input.projectId ?? null,
+      akcija: input.akcija,
+      oldValue: stringify(input.oldValue),
+      newValue: stringify(input.newValue),
+      ipAddress,
+      userAgent,
+    },
+  })
 }
 
 /**

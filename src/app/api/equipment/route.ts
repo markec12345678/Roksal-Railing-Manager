@@ -26,6 +26,7 @@ import {
   isInspectionUnknown,
   nextInspectionAt,
 } from '@/lib/equipment-lifecycle'
+import { auditInTx } from '@/lib/audit'
 
 const DEFAULT_LIMIT = 100
 const MAX_LIMIT = 100
@@ -216,24 +217,22 @@ export async function PATCH(request: Request) {
       // Revizija ATOMSKO s spremembo (§19) — oldValue = stanje pred spremembo.
       let auditUserId: string | null = null
       if (auth.kind === 'user') auditUserId = auth.session.sub
-      await tx.auditLog.create({
-        data: {
-          userId: auditUserId,
-          akcija: isTransition ? 'EQUIPMENT_STATUS' : 'EQUIPMENT_UPDATE',
-          oldValue: JSON.stringify({
-            equipmentId: id,
-            status: current.status,
-            serijskaStevilka: current.serijskaStevilka,
-            inspectionIntervalDays: current.inspectionIntervalDays,
-            calibrationDueDate: current.calibrationDueDate?.toISOString() ?? null,
-            calibrationCertificate: current.calibrationCertificate,
-          }),
-          newValue: JSON.stringify({
-            equipmentId: id,
-            status: updated.status,
-            ...(isTransition ? { from: current.status, to: updated.status } : {}),
-          }),
-        },
+      await auditInTx(tx, {
+        userId: auditUserId,
+        akcija: isTransition ? 'EQUIPMENT_STATUS' : 'EQUIPMENT_UPDATE',
+        oldValue: JSON.stringify({
+          equipmentId: id,
+          status: current.status,
+          serijskaStevilka: current.serijskaStevilka,
+          inspectionIntervalDays: current.inspectionIntervalDays,
+          calibrationDueDate: current.calibrationDueDate?.toISOString() ?? null,
+          calibrationCertificate: current.calibrationCertificate,
+        }),
+        newValue: JSON.stringify({
+          equipmentId: id,
+          status: updated.status,
+          ...(isTransition ? { from: current.status, to: updated.status } : {}),
+        }),
       })
 
       return { kind: 'updated', row: updated } as const

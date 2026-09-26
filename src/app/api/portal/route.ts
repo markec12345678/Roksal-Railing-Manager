@@ -25,6 +25,7 @@ import { db } from '@/lib/db'
 import { authenticate, unauthorized } from '@/lib/auth'
 import { assertProjectAccess, AccessDeniedError, lacksPermission } from '@/lib/access'
 import { zapisOmejitev } from '@/lib/rate-limit'
+import { auditInTx } from '@/lib/audit'
 import {
   DEFAULT_PORTAL_EXPIRY_DAYS,
   MAX_PORTAL_EXPIRY_DAYS,
@@ -288,27 +289,25 @@ export async function POST(request: Request) {
         select: PORTAL_SELECT,
       })
 
-      await tx.auditLog.create({
-        data: {
-          // R132: pravi akter (prej 'system', ki je padal na FK konvencijo).
-          userId: auth.session.sub,
-          projectId: row.id,
-          // Portal akcije ohranijo PORTAL_ predpono (R132 pogodba); merilne
-          // akcije nosijo MEASURE_ z podčrtajem (R133).
-          akcija: action.startsWith('measure')
-            ? action.replace(/^measure/, 'MEASURE_').toUpperCase()
-            : `PORTAL_${action.toUpperCase()}`,
-          newValue: JSON.stringify({
-            enabled: row.clientPortalEnabled,
-            hasToken: !!row.clientToken,
-            expiresAt: row.clientTokenExpiresAt?.toISOString() ?? null,
-            revokedAt: row.clientTokenRevokedAt?.toISOString() ?? null,
-            measureEnabled: row.measureEnabled,
-            hasMeasureToken: !!row.measureToken,
-            measureExpiresAt: row.measureTokenExpiresAt?.toISOString() ?? null,
-            measureRevokedAt: row.measureTokenRevokedAt?.toISOString() ?? null,
-          }),
-        },
+      await auditInTx(tx, {
+        // R132: pravi akter (prej 'system', ki je padal na FK konvencijo).
+        userId: auth.session.sub,
+        projectId: row.id,
+        // Portal akcije ohranijo PORTAL_ predpono (R132 pogodba); merilne
+        // akcije nosijo MEASURE_ z podčrtajem (R133).
+        akcija: action.startsWith('measure')
+          ? action.replace(/^measure/, 'MEASURE_').toUpperCase()
+          : `PORTAL_${action.toUpperCase()}`,
+        newValue: JSON.stringify({
+          enabled: row.clientPortalEnabled,
+          hasToken: !!row.clientToken,
+          expiresAt: row.clientTokenExpiresAt?.toISOString() ?? null,
+          revokedAt: row.clientTokenRevokedAt?.toISOString() ?? null,
+          measureEnabled: row.measureEnabled,
+          hasMeasureToken: !!row.measureToken,
+          measureExpiresAt: row.measureTokenExpiresAt?.toISOString() ?? null,
+          measureRevokedAt: row.measureTokenRevokedAt?.toISOString() ?? null,
+        }),
       })
 
       return row

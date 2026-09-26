@@ -24,6 +24,7 @@ import {
   type EquipmentEventType,
   type EquipmentEventResult,
 } from '@/lib/equipment-lifecycle'
+import { auditInTx } from '@/lib/audit'
 
 const MAX_EVENTS = 20
 
@@ -186,18 +187,16 @@ export async function POST(request: Request) {
 
       let auditUserId: string | null = null
       if (auth.kind === 'user') auditUserId = auth.session.sub
-      await tx.auditLog.create({
-        data: {
-          userId: auditUserId,
-          akcija: 'EQUIPMENT_EVENT',
-          oldValue: JSON.stringify({
-            equipmentId,
-            status: equipment.status,
-            lastInspectionAt: equipment.lastInspectionAt?.toISOString() ?? null,
-            calibrationDueDate: equipment.calibrationDueDate?.toISOString() ?? null,
-          }),
-          newValue: JSON.stringify({ eventId: event.id, type, result, performedAt: performedAt.toISOString() }),
-        },
+      await auditInTx(tx, {
+        userId: auditUserId,
+        akcija: 'EQUIPMENT_EVENT',
+        oldValue: JSON.stringify({
+          equipmentId,
+          status: equipment.status,
+          lastInspectionAt: equipment.lastInspectionAt?.toISOString() ?? null,
+          calibrationDueDate: equipment.calibrationDueDate?.toISOString() ?? null,
+        }),
+        newValue: JSON.stringify({ eventId: event.id, type, result, performedAt: performedAt.toISOString() }),
       })
 
       return { kind: 'created', event, equipment: updated } as const

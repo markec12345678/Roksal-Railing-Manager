@@ -6,6 +6,7 @@ import { db } from '@/lib/db'
 import { authenticate, unauthorized } from '@/lib/auth'
 
 import { zapisOmejitev } from '@/lib/rate-limit'
+import { audit } from '@/lib/audit'
 // GET — pridobi BOM draft
 export async function GET(request: Request) {
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
@@ -94,13 +95,11 @@ export async function PATCH(request: Request) {
     })
 
     // AuditLog
-    await db.auditLog.create({
-      data: {
-        userId: 'system',
-        projectId,
-        akcija: 'BOM_DRAFT_UPDATED',
-        newValue: JSON.stringify({ itemCount: updated.items.length }),
-      },
+    await audit({
+      userId: null, // R192 FIX: 'system' NI obstajal v Profile (FK constraint, issue #4 §13) — null = sistemski dogodek (schema S+9)
+      projectId,
+      akcija: 'BOM_DRAFT_UPDATED',
+      newValue: JSON.stringify({ itemCount: updated.items.length }),
     })
 
     return NextResponse.json({ success: true, bomDraft: updated })

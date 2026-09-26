@@ -31,6 +31,7 @@ import {
 import { isValidOverrideReason } from '@/lib/qc-gate'
 
 import { zapisOmejitev } from '@/lib/rate-limit'
+import { auditInTx } from '@/lib/audit'
 // R145 (§31): dodeljevanje opreme terminu — max 20 kosov na termin (§17
 // strop; več kot 20 kosov opreme na EN termin je patološki vnos).
 const MAX_EQUIPMENT_PER_SCHEDULE = 20
@@ -275,13 +276,11 @@ export async function POST(request: Request) {
         const fallback = await tx.profile.findFirst({ where: { vloga: 'ADMIN' }, select: { id: true } })
         auditUserId = fallback?.id ?? null
       }
-      await tx.auditLog.create({
-        data: {
-          userId: auditUserId,
-          projectId,
-          akcija: 'SCHEDULE_CREATED',
-          newValue: JSON.stringify({ scheduleId: created.id, datumZacetka, crewId }),
-        },
+      await auditInTx(tx, {
+        userId: auditUserId,
+        projectId,
+        akcija: 'SCHEDULE_CREATED',
+        newValue: JSON.stringify({ scheduleId: created.id, datumZacetka, crewId }),
       })
 
       // R140 (§20): odgovor se shrani v ISTI transakciji — replay vrne
@@ -479,17 +478,15 @@ export async function PATCH(request: Request) {
             qcOverridden = true
             let auditUserId0: string | null = null
             if (auth.kind === 'user') auditUserId0 = auth.session.sub
-            await tx.auditLog.create({
-              data: {
-                userId: auditUserId0,
-                projectId: gateProjectId,
-                akcija: 'QC_OVERRIDE',
-                oldValue: null,
-                newValue: JSON.stringify({
-                  scheduleId: id,
-                  razlog: String(qcOverrideRaw).trim(),
-                }),
-              },
+            await auditInTx(tx, {
+              userId: auditUserId0,
+              projectId: gateProjectId,
+              akcija: 'QC_OVERRIDE',
+              oldValue: null,
+              newValue: JSON.stringify({
+                scheduleId: id,
+                razlog: String(qcOverrideRaw).trim(),
+              }),
             })
           } else {
             return {
@@ -580,18 +577,16 @@ export async function PATCH(request: Request) {
         const fallback = await tx.profile.findFirst({ where: { vloga: 'ADMIN' }, select: { id: true } })
         auditUserId = fallback?.id ?? null
       }
-      await tx.auditLog.create({
-        data: {
-          userId: auditUserId,
-          projectId: row.projectId,
-          akcija: moving ? 'SCHEDULE_RESCHEDULED' : 'SCHEDULE_STATUS',
-          oldValue: moving && preMove
-            ? JSON.stringify({ scheduleId: row.id, datumZacetka: preMove.datumZacetka, datumKonca: preMove.datumKonca, crewId: preMove.crewId, monterId: preMove.monterId })
-            : null,
-          newValue: moving
-            ? JSON.stringify({ scheduleId: row.id, datumZacetka: newStart, datumKonca: newEnd, crewId: crewId ?? undefined, monterId: monterId ?? undefined, status })
-            : JSON.stringify({ scheduleId: row.id, status, ...(status === 'ZAKLJUCENO' ? { qcOverridden } : {}) }),
-        },
+      await auditInTx(tx, {
+        userId: auditUserId,
+        projectId: row.projectId,
+        akcija: moving ? 'SCHEDULE_RESCHEDULED' : 'SCHEDULE_STATUS',
+        oldValue: moving && preMove
+          ? JSON.stringify({ scheduleId: row.id, datumZacetka: preMove.datumZacetka, datumKonca: preMove.datumKonca, crewId: preMove.crewId, monterId: preMove.monterId })
+          : null,
+        newValue: moving
+          ? JSON.stringify({ scheduleId: row.id, datumZacetka: newStart, datumKonca: newEnd, crewId: crewId ?? undefined, monterId: monterId ?? undefined, status })
+          : JSON.stringify({ scheduleId: row.id, status, ...(status === 'ZAKLJUCENO' ? { qcOverridden } : {}) }),
       })
 
       return { kind: 'updated', row } as const

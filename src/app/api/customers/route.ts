@@ -16,6 +16,7 @@ import {
   idempotencyReplayResponse,
   idempotencyConflictResponse,
 } from '@/lib/idempotency'
+import { auditInTx } from '@/lib/audit'
 
 // Meje strani (issue #5 §17): brez parametrov se vedno vrne
 // POPOLN seznam (zadržljivost s starimi klienti); z ?limit=&offset=
@@ -132,12 +133,10 @@ export async function POST(request: Request) {
           _count: { select: { projects: true } },
         },
       })
-      await tx.auditLog.create({
-        data: {
-          userId: auth.kind === 'user' ? auth.session.sub : null,
-          akcija: 'CUSTOMER_CREATED',
-          newValue: JSON.stringify({ customerId: created.id, ime: created.ime, naslov: created.naslov }),
-        },
+      await auditInTx(tx, {
+        userId: auth.kind === 'user' ? auth.session.sub : null,
+        akcija: 'CUSTOMER_CREATED',
+        newValue: JSON.stringify({ customerId: created.id, ime: created.ime, naslov: created.naslov }),
       })
 
       // R139 (§20): odgovor se shrani v ISTI transakciji — replay vrne

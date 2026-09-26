@@ -77,13 +77,11 @@ export async function POST(request: Request) {
           monter: { select: { id: true, ime: true } },
         }
       })
-      await tx.auditLog.create({
-        data: {
-          userId: actor,
-          projectId: created.id,
-          akcija: 'CREATE_PROJECT',
-          newValue: JSON.stringify({ nazivProjekta: validated.nazivProjekta }),
-        }
+      await auditInTx(tx, {
+        userId: actor,
+        projectId: created.id,
+        akcija: 'CREATE_PROJECT',
+        newValue: JSON.stringify({ nazivProjekta: validated.nazivProjekta }),
       })
       return created
     })
@@ -156,14 +154,12 @@ export async function PATCH(request: Request) {
         }
       })
       if (statusChanged) {
-        await tx.auditLog.create({
-          data: {
-            userId: actor,
-            projectId: id,
-            akcija: 'STATUS_SPREMENJEN',
-            oldValue: existing.status,
-            newValue: String(data.status),
-          },
+        await auditInTx(tx, {
+          userId: actor,
+          projectId: id,
+          akcija: 'STATUS_SPREMENJEN',
+          oldValue: existing.status,
+          newValue: String(data.status),
         })
       }
       return result

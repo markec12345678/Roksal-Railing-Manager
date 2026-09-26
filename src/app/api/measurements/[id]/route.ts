@@ -24,6 +24,7 @@ import { authenticate, unauthorized } from '@/lib/auth'
 import { assertProjectAccess, actorIdOf, AccessDeniedError } from '@/lib/access'
 
 import { zapisOmejitev } from '@/lib/rate-limit'
+import { auditInTx } from '@/lib/audit'
 const MEASUREMENT_STATUSES = ['OSNUTEK', 'POTRJENA', 'ARHIVIRANA'] as const
 
 const patchMeasurementStatusSchema = z.object({
@@ -94,18 +95,16 @@ export async function PATCH(
           statusUpdatedAt,
         },
       })
-      await tx.auditLog.create({
-        data: {
-          userId: actor,
-          projectId: measurement.projectId,
-          akcija: 'MEASUREMENT_STATUS',
-          oldValue: JSON.stringify({ status: oldStatus }),
-          newValue: JSON.stringify({
-            status: newStatus,
-            note: validated.note?.trim() || null,
-            statusUpdatedAt: statusUpdatedAt.toISOString(),
-          }),
-        },
+      await auditInTx(tx, {
+        userId: actor,
+        projectId: measurement.projectId,
+        akcija: 'MEASUREMENT_STATUS',
+        oldValue: JSON.stringify({ status: oldStatus }),
+        newValue: JSON.stringify({
+          status: newStatus,
+          note: validated.note?.trim() || null,
+          statusUpdatedAt: statusUpdatedAt.toISOString(),
+        }),
       })
       return row
     })

@@ -24,6 +24,7 @@
 // vrednosti").
 import { NextResponse } from 'next/server'
 import { createHash } from 'node:crypto'
+import { CORRELATION_HEADER, correlationFromRequest } from './correlation'
 
 export interface RateLimitOptions {
   /** Število dovoljenih zadetkov v oknu. */
@@ -220,6 +221,9 @@ export function clientIp(request: Request): string {
  *   — ADMIN panel v Ekipi ga prikaže samodejno (kindBadge družina `write`).
  * - 429 telo + `Retry-After` = ISTA družina kot prijava (R137/R189):
  *   fail-verbose `detail: 'Poskusi znova čez N s.'`, brez tihe blokade.
+ * - R192 (§22 družinska enotnost): 429 odmeva `x-correlation-id` iz requesta
+ *   (ali ustvari novega) — dnevniška vrstica strežnika in odgovor klientu
+ *   nosita ISTI korelacijo kot vsi ostali error odgovori (vzorec health 503).
  * - Guard postavimo KOT PRVI stavek handlerja (vzorec /api/auth: omejitev
  *   pred ponudbo dela) — ščiti tudi pred neavtenticirano spam industrijo;
  *   pošten kompromis: deljeni IP (pisarna NAT) si deli proračun na rundo,
@@ -231,14 +235,19 @@ export function zapisOmejitev(request: Request, ruta: string): NextResponse | nu
   const key = `write:${ruta}:${clientIp(request)}`
   const limit = checkRate(key, WRITE_LIMIT)
   if (limit.ok) return null
-  return NextResponse.json(
+  const correlationId = correlationFromRequest(request)
+  const res = NextResponse.json(
     {
       error: 'Preveč zahtev.',
       detail: `Poskusi znova čez ${limit.retryAfterSeconds} s.`,
     },
     {
       status: 429,
-      headers: { 'Retry-After': String(limit.retryAfterSeconds) },
+      headers: {
+        'Retry-After': String(limit.retryAfterSeconds),
+        [CORRELATION_HEADER]: correlationId,
+      },
     },
   )
+  return res
 }

@@ -36,6 +36,7 @@ import {
   hashIp,
   portalExpiryFromDays,
 } from '@/lib/portal'
+import { auditStrict } from '@/lib/audit'
 
 export {
   MIN_TOKEN_LENGTH,
@@ -156,15 +157,13 @@ export async function logMeasureEvent(entry: {
   userAgent: string | null
   podrobnosti?: string
 }): Promise<void> {
-  await db.auditLog.create({
-    data: {
-      userId: null, // javni dogodek brez uporabnika (null = sistemski, FK varen)
-      projectId: entry.projectId,
-      akcija: entry.akcija,
-      newValue: entry.podrobnosti ?? null,
-      ipAddress: entry.ipHash,
-      userAgent: entry.userAgent?.slice(0, 255) ?? null,
-    },
+  await auditStrict({
+    userId: null, // javni dogodek brez uporabnika (null = sistemski, FK varen)
+    projectId: entry.projectId,
+    akcija: entry.akcija,
+    newValue: entry.podrobnosti ?? null,
+    ipOverride: entry.ipHash,
+    uaOverride: entry.userAgent?.slice(0, 255) ?? null,
   })
 }
 

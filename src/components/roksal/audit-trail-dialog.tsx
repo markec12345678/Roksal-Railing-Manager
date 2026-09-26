@@ -27,7 +27,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useToast } from '@/hooks/use-toast'
-import { buildAuditCsv, auditCsvFilename, revizijaLabel } from '@/lib/audit-csv'
+import { buildAuditCsv, auditCsvFilename, revizijaLabel, akcijaDruzina, AKCIJA_DRUZINA_OMEJKE, type AkcijaDruzina } from '@/lib/audit-csv'
 import { History, Loader2, ShieldCheck, ChevronDown, ChevronRight, Download } from 'lucide-react'
 
 interface AuditEntry {
@@ -41,24 +41,22 @@ interface AuditEntry {
   user: { id: string; ime: string; email: string; vloga: string } | null
 }
 
-/** Barvne kategorije po pomenu akcije — prva beseda določi razred.
+/** Barvne kategorije po pomenu akcije — EN VIR RESNICE je akcijaDruzina()
+ * (src/lib/audit-csv.ts, R192): isti razred uporabita značka IN družinski chip
+ * (filter), da barvna semantika ostane vrstično enaka.
  * R162 stil pass — dark: variante (svetla tema NESPREMENJENA, temna dobi
  * berljive polprosojne značke namesto svetlih 100-barv). */
+const druzinaRazred: Record<AkcijaDruzina, string> = {
+  prijava: 'bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-500/15 dark:text-blue-300 dark:border-blue-500/30',
+  brisanje: 'bg-red-100 text-red-700 border-red-300 dark:bg-roksal-red/15 dark:text-roksal-red dark:border-roksal-red/30',
+  ustvarjanje: 'bg-green-100 text-green-800 border-green-300 dark:bg-roksal-green/15 dark:text-roksal-green dark:border-roksal-green/30',
+  zaklep: 'bg-roksal-amber/20 text-roksal-navy border-roksal-amber/50 dark:bg-roksal-amber/15 dark:text-roksal-amber dark:border-roksal-amber/30',
+  ostalo: 'bg-muted text-muted-foreground border-border',
+}
+
 function akcijaBadge(akcija: string): { label: string; className: string } {
-  const upper = akcija.toUpperCase()
-  if (upper.includes('LOGIN')) {
-    return { label: akcija, className: 'bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-500/15 dark:text-blue-300 dark:border-blue-500/30' }
-  }
-  if (upper.includes('DELETE') || upper.includes('REVOKE') || upper.includes('STORNO')) {
-    return { label: akcija, className: 'bg-red-100 text-red-700 border-red-300 dark:bg-roksal-red/15 dark:text-roksal-red dark:border-roksal-red/30' }
-  }
-  if (upper.includes('CREATE') || upper.includes('ISSUE') || upper.includes('BOOTSTRAP')) {
-    return { label: akcija, className: 'bg-green-100 text-green-800 border-green-300 dark:bg-roksal-green/15 dark:text-roksal-green dark:border-roksal-green/30' }
-  }
-  if (upper.includes('DEAL') || upper.includes('SIGN') || upper.includes('LOCK')) {
-    return { label: akcija, className: 'bg-roksal-amber/20 text-roksal-navy border-roksal-amber/50 dark:bg-roksal-amber/15 dark:text-roksal-amber dark:border-roksal-amber/30' }
-  }
-  return { label: akcija, className: 'bg-muted text-muted-foreground border-border' }
+  const druzina = akcijaDruzina(akcija)
+  return { label: akcija, className: druzinaRazred[druzina] }
 }
 
 function formatCas(ts: string): string {
@@ -94,6 +92,8 @@ export function AuditTrailDialog({
   const [error, setError] = useState<string | null>(null)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [exporting, setExporting] = useState(false)
+  // R192 — družinski filter (chips): privzeto 'vse', reset ob vsakem odpiranju.
+  const [filter, setFilter] = useState<AkcijaDruzina | 'vse'>('vse')
   const { toast } = useToast()
 
   useEffect(() => {
@@ -106,6 +106,7 @@ export function AuditTrailDialog({
       setError(null)
       setEntries(null)
       setExpanded(new Set())
+      setFilter('vse')
       try {
         const res = await fetch(`/api/audit?projectId=${encodeURIComponent(projectId)}&limit=100`)
         const data = await res.json().catch(() => null)
@@ -178,6 +179,28 @@ export function AuditTrailDialog({
     }
   }
 
+  // R192 — števeci po družinah (deterministični vrstni red: vse, prijava,
+  // ustvarjanje, brisanje, zaklep, ostalo) + filtriran seznam za izris.
+  const druzine: Array<{ key: AkcijaDruzina | 'vse'; stevilo: number }> = []
+  if (entries && entries.length > 0) {
+    const stevci = new Map<AkcijaDruzina, number>()
+    for (const e of entries) {
+      const d = akcijaDruzina(e.akcija)
+      stevci.set(d, (stevci.get(d) ?? 0) + 1)
+    }
+    const vrstniRed: AkcijaDruzina[] = ['prijava', 'ustvarjanje', 'brisanje', 'zaklep', 'ostalo']
+    druzine.push({ key: 'vse', stevilo: entries.length })
+    for (const k of vrstniRed) {
+      const n = stevci.get(k) ?? 0
+      if (n > 0) druzine.push({ key: k, stevilo: n })
+    }
+  }
+  const prikazani: AuditEntry[] = !entries
+    ? []
+    : filter === 'vse'
+      ? entries
+      : entries.filter((e) => akcijaDruzina(e.akcija) === filter)
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[480px]">
@@ -210,6 +233,31 @@ export function AuditTrailDialog({
           </DialogDescription>
         </DialogHeader>
 
+        {/* R192 — družinski filtri (chips): isti barvni razredi kot značke;
+            aria-pressed = stanje filtra, tabular-nums na števcih. */}
+        {druzine.length > 0 ? (
+          <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Filter revizijskih vpisov po družini akcije">
+            {druzine.map(({ key, stevilo }) => {
+              const aktiv = filter === key
+              const razred = key === 'vse' ? 'bg-muted text-muted-foreground border-border' : druzinaRazred[key as AkcijaDruzina]
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setFilter(key)}
+                  aria-pressed={aktiv}
+                  className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 ${
+                    aktiv ? razred : 'bg-muted text-muted-foreground border-border opacity-70 hover:opacity-100'
+                  }`}
+                >
+                  {AKCIJA_DRUZINA_OMEJKE[key]}
+                  <span className="tabular-nums font-medium">{stevilo}</span>
+                </button>
+              )
+            })}
+          </div>
+        ) : null}
+
         {loading ? (
           <div className="py-10 text-center">
             <Loader2 className="h-6 w-6 animate-spin mx-auto text-roksal-amber" aria-label="Nalagam sled" />
@@ -223,10 +271,14 @@ export function AuditTrailDialog({
             <ShieldCheck className="h-10 w-10 mx-auto mb-2 opacity-30" aria-hidden />
             <p className="text-sm">Ni še revizijskih vpisov za ta projekt.</p>
           </div>
+        ) : prikazani.length === 0 ? (
+          <div className="py-8 text-center text-muted-foreground">
+            <p className="text-sm">Ni vpisov v družini „{AKCIJA_DRUZINA_OMEJKE[filter]}”. Izberi drug chip ali „Vse”.</p>
+          </div>
         ) : (
           <ScrollArea className="max-h-[360px] pr-2">
             <ol className="space-y-2" aria-label="Seznam revizijskih vpisov">
-              {entries.map((e) => {
+              {prikazani.map((e) => {
                 const badge = akcijaBadge(e.akcija)
                 const isOpen = expanded.has(e.id)
                 const hasDetail = Boolean(e.oldValue || e.newValue)

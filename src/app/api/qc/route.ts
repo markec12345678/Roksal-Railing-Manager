@@ -24,6 +24,7 @@ import {
   computePassed,
   countDefects,
 } from '@/lib/qc-gate'
+import { auditInTx } from '@/lib/audit'
 
 const MAX_NOTE = 500
 
@@ -165,20 +166,18 @@ export async function POST(request: Request) {
 
       let auditUserId: string | null = null
       if (auth.kind === 'user') auditUserId = auth.session.sub
-      await tx.auditLog.create({
-        data: {
-          userId: auditUserId,
-          projectId,
-          akcija: 'QC_SUBMITTED',
-          oldValue: null,
-          newValue: JSON.stringify({
-            qcId: created.id,
-            templateVersion: QC_TEMPLATE_VERSION,
-            passed,
-            defectsCount,
-            ...(scheduleId ? { scheduleId } : {}),
-          }),
-        },
+      await auditInTx(tx, {
+        userId: auditUserId,
+        projectId,
+        akcija: 'QC_SUBMITTED',
+        oldValue: null,
+        newValue: JSON.stringify({
+          qcId: created.id,
+          templateVersion: QC_TEMPLATE_VERSION,
+          passed,
+          defectsCount,
+          ...(scheduleId ? { scheduleId } : {}),
+        }),
       })
 
       return { kind: 'created', created } as const

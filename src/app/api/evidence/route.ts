@@ -34,6 +34,7 @@ import {
   validateIEVLocation,
   computeIEVFlags,
 } from '@/lib/installation-evidence'
+import { auditInTx } from '@/lib/audit'
 
 const MAX_NOTE = 500
 const DEFAULT_LIMIT = 100
@@ -295,22 +296,20 @@ export async function POST(request: Request) {
 
       let auditUserId: string | null = null
       if (auth.kind === 'user') auditUserId = auth.session.sub
-      await tx.auditLog.create({
-        data: {
-          userId: auditUserId,
-          projectId,
-          akcija: 'INSTALLATION_EVIDENCE_SUBMITTED',
-          oldValue: null,
-          newValue: JSON.stringify({
-            evidenceId: created.id,
-            templateVersion: IEV_TEMPLATE_VERSION,
-            ...(scheduleId ? { scheduleId } : {}),
-            hasBefore: beforePhotoId !== null,
-            hasAfter: afterPhotoId !== null,
-            gpsConsent: gps.gps.withConsent,
-            defectsCount: defects.defects.length,
-          }),
-        },
+      await auditInTx(tx, {
+        userId: auditUserId,
+        projectId,
+        akcija: 'INSTALLATION_EVIDENCE_SUBMITTED',
+        oldValue: null,
+        newValue: JSON.stringify({
+          evidenceId: created.id,
+          templateVersion: IEV_TEMPLATE_VERSION,
+          ...(scheduleId ? { scheduleId } : {}),
+          hasBefore: beforePhotoId !== null,
+          hasAfter: afterPhotoId !== null,
+          gpsConsent: gps.gps.withConsent,
+          defectsCount: defects.defects.length,
+        }),
       })
       return { kind: 'created', created } as const
     })
@@ -483,19 +482,17 @@ export async function PATCH(request: Request) {
 
       let auditUserId: string | null = null
       if (auth.kind === 'user') auditUserId = auth.session.sub
-      await tx.auditLog.create({
-        data: {
-          userId: auditUserId,
-          projectId: existing.projectId,
-          akcija: confirmHandover ? 'INSTALLATION_EVIDENCE_HANDOVER' : 'INSTALLATION_EVIDENCE_UPDATED',
-          oldValue: null,
-          newValue: JSON.stringify({
-            evidenceId: id,
-            ...(confirmHandover ? { handoverName } : {}),
-            ...(checklistAllChecked !== null ? { checklistAllChecked } : {}),
-            ...(defectsJson !== null ? { defectsCount } : {}),
-          }),
-        },
+      await auditInTx(tx, {
+        userId: auditUserId,
+        projectId: existing.projectId,
+        akcija: confirmHandover ? 'INSTALLATION_EVIDENCE_HANDOVER' : 'INSTALLATION_EVIDENCE_UPDATED',
+        oldValue: null,
+        newValue: JSON.stringify({
+          evidenceId: id,
+          ...(confirmHandover ? { handoverName } : {}),
+          ...(checklistAllChecked !== null ? { checklistAllChecked } : {}),
+          ...(defectsJson !== null ? { defectsCount } : {}),
+        }),
       })
       return { kind: 'updated', updated } as const
     })
