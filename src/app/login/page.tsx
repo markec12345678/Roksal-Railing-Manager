@@ -14,6 +14,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Loader2, ShieldAlert, Zap } from 'lucide-react'
+// R189 — EN VIR izpis build žiga ('Zgrajeno DD.MM.YYYY ob HH:MM:SS (pas)'):
+// login footer pokaže ISTI izpis kot banner/zdravje kartica — komponenta NE
+// formatiraja časa sama (družinsko pravilo EN VIR, R185/R187 vzorec).
+import { zigIzpis } from '@/lib/posodobitev-jedro'
 
 // `useSearchParams()` brez <Suspense> pade samo v produkcijski gradnji:
 //   ⨯ useSearchParams() should be wrapped in a suspense boundary at page "/login"
@@ -28,8 +32,19 @@ function LoginForm() {
   const [email, setEmail] = React.useState('')
   const [password, setPassword] = React.useState('')
   const [error, setError] = React.useState<string | null>(null)
+  // R189 — podrobnost iz API-ja (npr. 429: 'Poskusi znova čez N s.'): API jo
+  // pošlje že od R137, UI pa jo je TIHO izgubil — uporabnik je videl 'Preveč
+  // poskusov prijave.' brez čakalnega časa. Fail-verbose: prikaži TOČNO to,
+  // kar strežnik pove — nič izmišljenega, nič ugibanja (null = skrito).
+  const [podrobnost, setPodrobnost] = React.useState<string | null>(null)
   const [busy, setBusy] = React.useState(false)
   const [demoBusy, setDemoBusy] = React.useState(false)
+  // R189 — 'Zgrajeno' v nogi prijave: terenska diagnostika ŠE PRED prijavo
+  // (MONTER pokliče pisarno, ker se ne more prijaviti → obe veta 'kateri
+  // build te servira'). Javna ruta /api/public/version (R181 dvojček,
+  // deluje tudi pod starim middleware artefaktom); fail-soft: pokvaren žig
+  // ALI omrežje → null → noga SKRITA (nikoli lažnega ali surovega ISO niza).
+  const [zgrajeno, setZgrajeno] = React.useState<string | null>(null)
   // R127 (#5 §1): demo dostop je na produkciji privzeto IZKLOPLJEN. Prijavna
   // stran vpraša javno zastavico GET /api/auth/demo in gumb pokaže samo,
   // kadar je dostop res omogočen (null = še ne vemo → ne prikaži, da ne
@@ -51,6 +66,32 @@ function LoginForm() {
     }
   }, [])
 
+  // R189 — javni build žig (EEN klic ob montiranju; no-store iz next.config,
+  // nič cache laži). Fail-soft po celotni verigi: ne-ok odgovor, pokvaren
+  // JSON, prazen žig, neveljaven datum (zigIzpis TypeError) → noga ostane
+  // SKRITA — nikoli surovega ISO niza in nikoli izmišljenega 'Zgrajeno'.
+  React.useEffect(() => {
+    let cancelled = false
+    fetch('/api/public/version')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { build?: unknown } | null) => {
+        if (cancelled) return
+        const zig = data?.build
+        if (typeof zig !== 'string' || zig === '') return
+        try {
+          setZgrajeno(zigIzpis(zig))
+        } catch {
+          setZgrajeno(null)
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setZgrajeno(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   // `/next` je lahko samo relativna pot — sicer bi `?next=https://zlobna.stran`
   // postal odprta preusmeritev takoj po prijavi.
   const next = React.useMemo(() => {
@@ -58,9 +99,17 @@ function LoginForm() {
     return raw.startsWith('/') && !raw.startsWith('//') ? raw : '/'
   }, [searchParams])
 
+  // R189 — podrobnost se ČISTI ob vsakem novem poskusu (stara 429 sekunda
+  // ne sme viseti pod svežo napako — vzorec setError(null)).
+  function postaviNapako(sporocilo: string, detail: unknown) {
+    setError(sporocilo)
+    setPodrobnost(typeof detail === 'string' && detail !== '' ? detail : null)
+  }
+
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault()
     setError(null)
+    setPodrobnost(null)
     setBusy(true)
     try {
       const response = await fetch('/api/auth', {
@@ -69,14 +118,14 @@ function LoginForm() {
         body: JSON.stringify({ email, password }),
       })
       if (!response.ok) {
-        const data = (await response.json().catch(() => null)) as { error?: string } | null
-        setError(data?.error ?? 'Prijava ni uspela.')
+        const data = (await response.json().catch(() => null)) as { error?: string; detail?: unknown } | null
+        postaviNapako(data?.error ?? 'Prijava ni uspela.', data?.detail)
         return
       }
       router.replace(next)
       router.refresh()
     } catch {
-      setError('Omrežna napaka. Preveri povezavo.')
+      postaviNapako('Omrežna napaka. Preveri povezavo.', null)
     } finally {
       setBusy(false)
     }
@@ -86,25 +135,26 @@ function LoginForm() {
   // poznati — uporabno za lastnika na svežem deployu in za hitro demonstracijo.
   async function onDemoAccess() {
     setError(null)
+    setPodrobnost(null)
     setDemoBusy(true)
     try {
       const response = await fetch('/api/auth/demo', { method: 'POST' })
       if (!response.ok) {
-        const data = (await response.json().catch(() => null)) as { error?: string } | null
-        setError(data?.error ?? 'Demo dostop ni uspel.')
+        const data = (await response.json().catch(() => null)) as { error?: string; detail?: unknown } | null
+        postaviNapako(data?.error ?? 'Demo dostop ni uspel.', data?.detail)
         return
       }
       router.replace(next)
       router.refresh()
     } catch {
-      setError('Omrežna napaka. Preveri povezavo.')
+      postaviNapako('Omrežna napaka. Preveri povezavo.', null)
     } finally {
       setDemoBusy(false)
     }
   }
 
   return (
-    <main className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-[#0f1a2b] p-4 md:p-8">
+    <main className="relative flex min-h-dvh flex-col items-center justify-center overflow-hidden bg-[#0f1a2b] p-4 md:p-8">
       {/* Ozadje: navy gradient + roksal vzorec + amber svetlobe */}
       <div className="roksal-bg-pattern pointer-events-none absolute inset-0 opacity-40" aria-hidden />
       <div
@@ -163,7 +213,17 @@ function LoginForm() {
                 className="animate-shake flex items-start gap-2 rounded-lg bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950/40 dark:text-red-200"
               >
                 <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
-                <span>{error}</span>
+                {/* R189 — fail-verbose: pod API napako TUDI podrobnost (429:
+                    'Poskusi znova čez N s.'), ki jo je UI prej tiho izgubil;
+                    null → vrstica odsotna (nič praznih obljub). */}
+                <span className="min-w-0">
+                  {error}
+                  {podrobnost && (
+                    <span className="mt-0.5 block text-xs font-medium text-red-700 dark:text-red-300">
+                      {podrobnost}
+                    </span>
+                  )}
+                </span>
               </div>
             )}
 
@@ -209,6 +269,18 @@ function LoginForm() {
           </form>
         </CardContent>
       </Card>
+
+      {/* R189 — terenska diagnostika build žiga ŠE PRED prijavo (ISTI EN VIR
+          zigIzpis kot banner/zdravje kartica). Fail-soft: skrito, kadar žig
+          ni na voljo — nikoli surovega ISO niza. */}
+      {zgrajeno && (
+        <p
+          className="relative mt-4 text-center text-[11px] text-white/50 tabular-nums"
+          title="Build žig te namestitve"
+        >
+          {zgrajeno}
+        </p>
+      )}
     </main>
   )
 }

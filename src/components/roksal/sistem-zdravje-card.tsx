@@ -28,12 +28,15 @@ import { casOznaka } from '@/lib/osvezitev-fokus'
 import { zigIzpis } from '@/lib/posodobitev-jedro'
 // R188 — zgodovina odzivnih časov te seje: VSA odločitev v čistem jedru
 // (ring, sklanjatev, povzetek, višina palice) — komponenta je samo žičenje.
+// R189 — številčni povzetek (min/povp./max) iz ISTEGA en vihra zgodovine.
 import {
   ZGODOVINA_MAX,
   obsegZgodovine,
   odziviPovzetek,
+  odziviStatistika,
   sejaZgodovinaDodaj,
   sejaZgodovinaPreber,
+  type OdziviStatistika,
   visinaPalice,
 } from '@/lib/zdravje-zgodovina'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -63,6 +66,11 @@ export function SistemZdravjeCard() {
   // vsebino) — komponentni useState bi zgodovino stalno izgubil; seja shrama
   // preživi remonte znotraj istega dokumenta (initializacija lenoba spodaj).
   const [zgodovina, setZgodovina] = useState<number[]>(() => [...sejaZgodovinaPreber()])
+  // R189 — številčni povzetek zgodovine (min/povp./max): NASVETNA podrobnost
+  // ob traku (vzorec fail-soft 'Zgrajeno' R187) — vhod je po konstrukciji
+  // validiran (samo realne meritve skozi sejaZgodovinaDodaj), a pokvarjen
+  // izračun NE sme podreti kartice: null → vrstica odsotna, trak ostane.
+  const [statistika, setStatistika] = useState<OdziviStatistika | null>(null)
 
   const load = useCallback(async () => {
     const zacetek = performance.now()
@@ -85,6 +93,13 @@ export function SistemZdravjeCard() {
         // kot napaka preverbe — nikoli tiho izmišljena palica); lokalni
         // state = kopija za render, shrama preživi remonte dashboarda.
         setZgodovina([...sejaZgodovinaDodaj(Math.round(performance.now() - zacetek))])
+        // R189 — povzetek iz ISTEGA stanja zgodovine (EN VIR); fail-soft:
+        // odličen vhod po konstrukciji, a nikoli tihega napačnega števila.
+        try {
+          setStatistika(odziviStatistika(sejaZgodovinaPreber()))
+        } catch {
+          setStatistika(null)
+        }
         setZdravjeOsvezitev(new Date())
       } else {
         setData(null)
@@ -95,12 +110,17 @@ export function SistemZdravjeCard() {
             : `Zdravja sistema ni bilo mogoče preveriti (napaka ${res.status}).`,
         )
         setZdravjeOsvezitev(null)
+        // R189 — napaka NE doda palice (R188 pravilo) in NE statistike:
+        // povzetek pripada uspešnim meritvam; ob napaki je trak skrit (R188
+        // fail-closed), ob ozdravitvi pa se oba osvežita iz EN vihra.
+        setStatistika(null)
       }
     } catch {
       setData(null)
       setZgrajeno(null)
       setNapaka('Zdravja sistema ni bilo mogoče preveriti — preverite povezavo.')
       setZdravjeOsvezitev(null)
+      setStatistika(null)
     } finally {
       setLoading(false)
     }
@@ -209,6 +229,12 @@ export function SistemZdravjeCard() {
             <span className="text-[10px] leading-tight text-muted-foreground/70">
               Odzivni časi ({obsegZgodovine(zgodovina.length)}, ring {ZGODOVINA_MAX})
             </span>
+            {/* R189 — številčni povzetek (nasvetna vrstica; null → odsotna): */}
+            {statistika && (
+              <span className="text-[10px] leading-tight text-muted-foreground/70 tabular-nums">
+                {statistika.najhitrejsa}–{statistika.najpocasnejsa} ms, povp. {statistika.povprecna}
+              </span>
+            )}
           </div>
         )}
       </CardContent>

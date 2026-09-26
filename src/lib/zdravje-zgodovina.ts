@@ -86,6 +86,37 @@ export function visinaPalice(ms: number, maxMs: number): number {
   return Math.max(PALICA_MIN_PX, Math.round((ms / maxMs) * PALICA_MAX_PX))
 }
 
+// ── R189 — številčni povzetek zgodovine (ob traku palic) ────────────────────
+// Trak pokaže OBRIS odzivnih časov; vodja ob množici meritev rabi še tri
+// točke: najhitrejšo, povprečno in najpočasnejšo. EN VIR z trakom (ista
+// zgodovina, ista validacija) — nič novega branja, nič druge resnice.
+
+/** Številčni povzetek zgodovine (vse v zaokroženih ms). */
+export interface OdziviStatistika {
+  najhitrejsa: number
+  povprecna: number
+  najpocasnejsa: number
+}
+
+/**
+ * Izračunaj številčni povzetek zgodovine (čisto): min / povprečje / max,
+ * zaokroženo na celo ms. Fail-closed TypeError na prazni zgodovini (ničesa
+ * ni povzeti — klicatelj pas že ne izriše) in na neveljavni meritvi.
+ */
+export function odziviStatistika(zgodovina: readonly number[]): OdziviStatistika {
+  if (zgodovina.length === 0) {
+    throw new TypeError('odziviStatistika: zgodovina je prazna — ničesar ni povzeti.')
+  }
+  if (!zgodovina.every((ms) => Number.isFinite(ms) && ms >= 0)) {
+    throw new TypeError('odziviStatistika: zgodovina vsebuje neveljavno meritev (ms).')
+  }
+  const najhitrejsa = Math.round(Math.min(...zgodovina))
+  const najpocasnejsa = Math.round(Math.max(...zgodovina))
+  const vsota = zgodovina.reduce((vsota, ms) => vsota + ms, 0)
+  const povprecna = Math.round(vsota / zgodovina.length)
+  return { najhitrejsa, povprecna, najpocasnejsa }
+}
+
 // ── Seja shrama (modul-level) ────────────────────────────────────────────────
 // E2E nauček R188: vodja dashboard je SAM po sebi refetch-on-focus površina in
 // med nalaganjem SKRIJE celotno vsebino (`if (loading)`) → kartica se ob vsaki
