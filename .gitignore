@@ -96,3 +96,7 @@ __pycache__/
 
 # notranji sandbox klon (arhiv, nikoli ne pushati kot gitlink)
 /roksal-repo/
+
+# QA screenshoti (agent-browser E2E dokaz) — samo lokalni artefakti; commit 63f20a0
+# je bil po pomoti vseboval zgolj screenshot (cron ime) — odstranjen z R181.
+/screenshots/
