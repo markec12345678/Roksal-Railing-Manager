@@ -162,45 +162,6 @@ describe('R181 P1 — ponudbe — sledenje (quote-followup)', () => {
   })
 })
 
-describe('R181 P1 — družina pečatov: 3 nove pod-površine (skupaj 14 od R170)', () => {
-  const DRUZINA_R181: Array<[string, string, string]> = [
-    ['zapisnik', 'src/components/roksal/punch-list.tsx', 'zapisnikOsvezitev'],
-    ['posli', 'src/components/roksal/jobs-panel.tsx', 'posliOsvezitev'],
-    ['ponudbe', 'src/components/roksal/quote-followup.tsx', 'ponudbeOsvezitev'],
-  ]
-
-  it.each(DRUZINA_R181)('%s: pečat ima EN VIR casOznaka + družinski hook + standardni tooltip', (_ime, pot, stanje) => {
-    const src = srcOf(pot)
-    expect(src).toContain("import { casOznaka } from '@/lib/osvezitev-fokus'")
-    expect(src).toContain(`{casOznaka(${stanje})}`)
-    expect(src).toContain("import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'")
-    expect(src).toContain(TIGHT_HEADER_CLASS)
-    expect(src).toContain(TOOLTIP)
-    expect(src).toMatch(HISTORY_ICON)
-    // fail-closed: vsaj 2× null (napaka + omrežje) ob natanko 1× set
-    const setter = `set${stanje.charAt(0).toUpperCase()}${stanje.slice(1)}`
-    expect(src.split(`${setter}(null)`).length - 1).toBeGreaterThanOrEqual(2)
-    expect(src.split(`${setter}(new Date())`).length - 1).toBe(1)
-  })
-
-  it('skupna družina: vseh 14 površin (11 iz R180 + 3 nove) uporablja EN VIR casOznaka import', () => {
-    const POVRSINE = [
-      'src/components/roksal/termini-card.tsx',
-      'src/components/roksal/logistics-tab.tsx',
-      'src/components/roksal/dashboard-tab.tsx',
-      'src/components/roksal/inventory-tab.tsx',
-      'src/components/roksal/documents-tab.tsx',
-      'src/components/roksal/safety-tab.tsx',
-      'src/components/roksal/crm-tab.tsx',
-      'src/components/roksal/deal-pipeline.tsx',
-      'src/components/roksal/team-tab.tsx',
-      'src/components/roksal/vodja-dashboard.tsx',
-      'src/components/roksal/invoice-manager.tsx',
-      ...DRUZINA_R181.map(([, pot]) => pot),
-    ]
-    expect(POVRSINE).toHaveLength(14)
-    for (const pot of POVRSINE) {
-      expect(srcOf(pot)).toContain("import { casOznaka } from '@/lib/osvezitev-fokus'")
-    }
-  })
-})
+// R186 konsolidacija: kumulativna družinska tabela (3 nove pod-površine +
+// skupni seznam 14) preseljena v kanonično datoteko zivostna-druzina.test.ts
+// (per-površinski opisi zgoraj ostanejo avtoriteta za SCOPED vzorce).

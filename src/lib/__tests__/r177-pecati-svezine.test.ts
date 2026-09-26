@@ -135,37 +135,6 @@ describe('R177 P1 — varnost pečat (safety-tab)', () => {
   })
 })
 
-describe('R177 P1 — družinska popolnost: pečat svežine na VSEH 6 površinah', () => {
-  const površine: Array<[string, string]> = [
-    ['Termini (R170)', 'src/components/roksal/termini-card.tsx'],
-    ['Logistika (R170)', 'src/components/roksal/logistics-tab.tsx'],
-    ['Dashboard projekti (R171)', 'src/components/roksal/dashboard-tab.tsx'],
-    ['Zaloga (R177)', 'src/components/roksal/inventory-tab.tsx'],
-    ['Dokumenti (R177)', 'src/components/roksal/documents-tab.tsx'],
-    ['Varnost (R177)', 'src/components/roksal/safety-tab.tsx'],
-  ]
-
-  it.each(površine)('%s — vsebuje pečat (besedilo + History ikona + tabular-nums + tooltip)', (_ime, pot) => {
-    const src = srcOf(pot)
-    expect(src).toContain('Osveženo ob')
-    expect(src).toMatch(/<History className="h-3 w-3 shrink-0" aria-hidden="true" \/>/)
-    expect(src).toMatch(/Osveženo ob <span className="tabular-nums">/)
-    expect(src).toMatch(/title="Čas zadnje uspešne osvežitve podatkov/)
-  })
-
-  it('tight-header varianti (vse razen Logistike) uporabljajo IDENTIČEN klasni niz hidden sm:flex', () => {
-    for (const [, pot] of površine.filter(([ime]) => !ime.startsWith('Logistika'))) {
-      expect(srcOf(pot)).toContain(
-        'className="hidden items-center gap-1 text-[11px] text-muted-foreground sm:flex"',
-      )
-    }
-  })
-
-  it('EN VIR RESNICE: vsi 3 novi pečati izhajajo iz casOznaka (osvezitev-fokus) — brez novih Intl klicev v komponentah pečatov', () => {
-    for (const [, pot] of površine.filter(([ime]) => ime.includes('R177'))) {
-      const src = srcOf(pot)
-      expect(src).toContain("import { casOznaka } from '@/lib/osvezitev-fokus'")
-      expect(src.match(/casOznaka\(/g)!.length).toBeGreaterThanOrEqual(1)
-    }
-  })
-})
+// R186 konsolidacija: kumulativna družinska tabela (6 površin) preseljena v
+// kanonično datoteko zivostna-druzina.test.ts (per-površinski opisi zgoraj
+// ostanejo avtoriteta za SCOPED vzorce).

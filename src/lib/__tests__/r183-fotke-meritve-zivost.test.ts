@@ -34,29 +34,8 @@ const HISTORY_ICON = /<History className="h-3 w-3 shrink-0" aria-hidden="true" \
 const HOOK_IMPORT = "import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'"
 const CAS_IMPORT = "import { casOznaka } from '@/lib/osvezitev-fokus'"
 
-// Družina 18 površin (R170-R183): 16 iz R182 + fotografije + meritve.
-// Logistika = dokumentirana polnvrstična varianta (R170) — tight-header brez
-// klasnega niza, zato je v posebni listi brez TIGHT trditve.
-const DRUŽINA_18: Array<[string, string]> = [
-  ['termini-card', 'termini'],
-  ['logistics-tab', 'logistika'],
-  ['dashboard-tab', 'dashboard'],
-  ['inventory-tab', 'zaloga'],
-  ['documents-tab', 'dokumenti'],
-  ['safety-tab', 'varnost'],
-  ['crm-tab', 'CRM'],
-  ['deal-pipeline', 'plošča'],
-  ['team-tab', 'ekipa'],
-  ['vodja-dashboard', 'vodja'],
-  ['invoice-manager', 'računi'],
-  ['punch-list', 'zapisnik'],
-  ['jobs-panel', 'posli'],
-  ['quote-followup', 'ponudbe'],
-  ['notification-center', 'obvestila'],
-  ['material-intelligence-tab', 'material'],
-  ['photo-tab', 'fotografije'],
-  ['measurements-tab', 'meritve'],
-]
+// (R183: družinska tabela 18 površin je po R186 preseljena v kanon
+// zivostna-druzina.test.ts — per-površinski opisi spodaj ostanejo.)
 
 describe('R183 — fotografije (photo-tab): fail-verbose + živost', () => {
   it('EN VIR RESNICE: casOznaka + družinski hook + History ikona (brez lokalnega formatiranja pečata)', () => {
@@ -186,25 +165,6 @@ describe('R183 — meritve (measurements-tab): refetch-on-focus + pečat + EN VI
   })
 })
 
-describe('R183 — živostna družina 18 površin (EN VIR casOznaka + hook)', () => {
-  it.each(DRUŽINA_18)('površina %s (%s): casOznaka EN VIR + družinski hook', (datoteka) => {
-    const src = srcOf(`src/components/roksal/${datoteka}.tsx`)
-    expect(src).toContain(CAS_IMPORT)
-    expect(src).toContain(HOOK_IMPORT)
-    // opomba: toLocaleTimeString za DOMENSKE podatke (zapisniki, logistika,
-    // vodja) je dovoljen — PREPOVEDAN je SAMO za PEČAT (r182 vzorec);
-    // per-surface trditve v zgornjih describe blokih pokrivajo fotke+meritve.
-  })
-
-  it('tight-header klasni niz IDENTIČEN na 17 površin (Logistika = dokumentirana polnvrstična varianta R170)', () => {
-    const brezLogistike = DRUŽINA_18.filter(([f]) => f !== 'logistics-tab')
-    expect(brezLogistike).toHaveLength(17)
-    for (const [datoteka] of brezLogistike) {
-      expect(srcOf(`src/components/roksal/${datoteka}.tsx`)).toContain(TIGHT_HEADER_CLASS)
-    }
-    // tooltip enotnoster vseh 17
-    for (const [datoteka] of brezLogistike) {
-      expect(srcOf(`src/components/roksal/${datoteka}.tsx`)).toContain(TOOLTIP)
-    }
-  })
-})
+// R186 konsolidacija: kumulativna družinska tabela (18 površin) preseljena v
+// kanonično datoteko zivostna-druzina.test.ts (per-površinski opisi zgoraj
+// ostanejo avtoriteta za SCOPED vzorce).

@@ -43,6 +43,10 @@ import {
 // casOznaka — komponenta NE formatiraj časa sama; vzorec R170-R182).
 import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'
 import { casOznaka } from '@/lib/osvezitev-fokus'
+// R186 — izvoz VIDNIH meritev kot CSV (vzorec zaloga 'Izvozi vidno zalogo',
+// čisto jedro meritve-csv = družina vodja-csv R157-R163).
+import { meritveCsv, meritveCsvFilename } from '@/lib/meritve-csv'
+import { downloadCsvText } from '@/lib/csv-export'
 import {
   Dialog,
   DialogContent,
@@ -1855,6 +1859,28 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
     () => measurements.filter((m) => m.source === 'photo').length,
     [measurements]
   )
+
+  // R186 — izvoz VIDNIH meritev (upošteva status + foto filter) kot CSV.
+  // Fail-closed: prazen seznam → viden toast (nič praznih datotek);
+  // pokvaren vnos → viden toast z razlogom (fail-verbose — nič tihega izvoza
+  // polpdatkov). Jedro meritve-csv je deterministično (družina vodja-csv).
+  function izvoziMeritveCsv() {
+    if (filteredMeasurements.length === 0) {
+      toast.error('Ni meritev za izvoz.')
+      return
+    }
+    try {
+      const { csv } = meritveCsv(filteredMeasurements)
+      downloadCsvText(meritveCsvFilename(new Date().toISOString().slice(0, 10)), csv)
+      toast.success(`Izvoženih ${filteredMeasurements.length} meritev v CSV.`)
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? `Izvoza ni bilo mogoče ustvariti: ${error.message}`
+          : 'Izvoza ni bilo mogoče ustvariti.',
+      )
+    }
+  }
 
   // ── Primerjava "Stranka vs merilec" ───────────────────────────────────────
   // Stranka je prek javne povezave /m/[token] narisala svojo ograjo na karti
@@ -5773,6 +5799,17 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               <Camera className="h-3 w-3" />
               Foto mere
               <span className="rounded-full bg-black/10 px-1 text-[9px]">{fotoMeasurementsCount}</span>
+            </button>
+            {/* R186 — izvoz vidnih meritev (isto mesto kot zaloga CSV gumb) */}
+            <button
+              type="button"
+              onClick={izvoziMeritveCsv}
+              className="flex shrink-0 items-center gap-1 rounded-lg border border-border/50 bg-secondary/50 px-2 py-1 text-[10px] font-medium text-muted-foreground transition-all duration-150 active:scale-[0.96] hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              aria-label="Izvozi vidne meritve kot CSV"
+              title="Izvozi vidne meritve (upošteva filter) kot CSV za Excel"
+            >
+              <Download className="h-3 w-3" />
+              CSV
             </button>
             <div className="flex-1" />
             {/* Bulk mode toggle */}

@@ -115,38 +115,6 @@ describe('R180 P1 — računi (invoice-manager)', () => {
   })
 })
 
-describe('R180 P1 — družina pečatov: 11 površin (9 iz R170–R178 + 2 nove)', () => {
-  const DRUZINA: Array<[string, string, string]> = [
-    ['termini', 'src/components/roksal/termini-card.tsx', 'zdaj'],
-    ['logistika', 'src/components/roksal/logistics-tab.tsx', 'zadnjaOsvezitev'],
-    ['dashboard', 'src/components/roksal/dashboard-tab.tsx', 'projektiOsvezitev'],
-    ['zaloga', 'src/components/roksal/inventory-tab.tsx', 'zalogaOsvezitev'],
-    ['dokumenti', 'src/components/roksal/documents-tab.tsx', 'dokumentiOsvezitev'],
-    ['varnost', 'src/components/roksal/safety-tab.tsx', 'vremeOsvezitev'],
-    ['CRM stranke', 'src/components/roksal/crm-tab.tsx', 'strankeOsvezitev'],
-    ['plošča', 'src/components/roksal/deal-pipeline.tsx', 'ploscaOsvezitev'],
-    ['ekipa', 'src/components/roksal/team-tab.tsx', 'ekipaOsvezitev'],
-    ['vodja', 'src/components/roksal/vodja-dashboard.tsx', 'vodjaOsvezitev'],
-    ['računi', 'src/components/roksal/invoice-manager.tsx', 'racuniOsvezitev'],
-  ]
-
-  it.each(DRUZINA)('%s: pečat ima EN VIR casOznaka', (_ime, pot, stanje) => {
-    const src = srcOf(pot)
-    expect(src).toContain("import { casOznaka } from '@/lib/osvezitev-fokus'")
-    expect(src).toContain(`{casOznaka(${stanje})}`)
-    // tooltip: standardni niz POVŠOD; Logistika ima dokumentirano podaljšano
-    // varianto ('... podatkov logistike' — R170 polnvrstična)
-    expect(
-      src.includes(TOOLTIP) || src.includes('title="Čas zadnje uspešne osvežitve podatkov logistike"'),
-    ).toBe(true)
-  })
-
-  it('tight-header klasni niz na 10 od 11 površin (Logistika = dokumentirana polnvrstična varianta R170, ni defect)', () => {
-    const brezLogistike = DRUZINA.filter(([ime]) => ime !== 'logistika')
-    for (const [_ime, pot] of brezLogistike) {
-      expect(srcOf(pot)).toContain(TIGHT_HEADER_CLASS)
-    }
-    // in Logistika ima SVOJO dokumentirano varianto (polna vrstica z besedilom)
-    expect(srcOf('src/components/roksal/logistics-tab.tsx')).toContain('Osveženo ob')
-  })
-})
+// R186 konsolidacija: kumulativna družinska tabela (11 površin) preseljena v
+// kanonično datoteko zivostna-druzina.test.ts (per-površinski opisi zgoraj
+// ostanejo avtoriteta za SCOPED vzorce).

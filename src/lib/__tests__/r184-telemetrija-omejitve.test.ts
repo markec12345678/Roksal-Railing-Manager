@@ -33,29 +33,8 @@ const HISTORY_ICON = /<History className="h-3 w-3 shrink-0" aria-hidden="true" \
 const HOOK_IMPORT = "import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'"
 const CAS_IMPORT = "import { casOznaka } from '@/lib/osvezitev-fokus'"
 
-// Družina 20 površin (R170–R183): 18 iz r183 + omejitve (rate-limit-panel) + seje (sessions-dialog).
-const DRUŽINA_20: Array<[string, string]> = [
-  ['termini-card', 'termini'],
-  ['logistics-tab', 'logistika'],
-  ['dashboard-tab', 'dashboard'],
-  ['inventory-tab', 'zaloga'],
-  ['documents-tab', 'dokumenti'],
-  ['safety-tab', 'varnost'],
-  ['crm-tab', 'CRM'],
-  ['deal-pipeline', 'plošča'],
-  ['team-tab', 'ekipa'],
-  ['vodja-dashboard', 'vodja'],
-  ['invoice-manager', 'računi'],
-  ['punch-list', 'zapisnik'],
-  ['jobs-panel', 'posli'],
-  ['quote-followup', 'ponudbe'],
-  ['notification-center', 'obvestila'],
-  ['material-intelligence-tab', 'material'],
-  ['photo-tab', 'fotografije'],
-  ['measurements-tab', 'meritve'],
-  ['rate-limit-panel', 'omejitve'],
-  ['sessions-dialog', 'seje'],
-]
+// (R184: družinska tabela 20 površin je po R186 preseljena v kanon
+// zivostna-druzina.test.ts — per-površinski opisi zgoraj ostanejo.)
 
 describe('R184 — jedro (rate-limit.ts): trip števec + redakcija + determinizem', () => {
   beforeEach(() => resetRateLimit())
@@ -274,23 +253,5 @@ describe('R184 — montaža: panel je ADMIN-only v Ekipi (zraven poslov)', () =>
   })
 })
 
-describe('R184 — živostna družina 20 površin (EN VIR casOznaka + hook)', () => {
-  it.each(DRUŽINA_20)('površina %s (%s): casOznaka EN VIR + družinski hook', (datoteka) => {
-    const src = srcOf(`src/components/roksal/${datoteka}.tsx`)
-    expect(src).toContain(CAS_IMPORT)
-    expect(src).toContain(HOOK_IMPORT)
-    // opomba: toLocaleTimeString za DOMENSKE podatke je dovoljen — PREPOVEDAN
-    // je SAMO za PEČAT (r182/r183 vzorec); per-surface trditve zgoraj.
-  })
-
-  it('tight-header klasni niz IDENTIČEN na 19 površin (Logistika = dokumentirana polnvrstična varianta R170)', () => {
-    const brezLogistike = DRUŽINA_20.filter(([f]) => f !== 'logistics-tab')
-    expect(brezLogistike).toHaveLength(19)
-    for (const [datoteka] of brezLogistike) {
-      expect(srcOf(`src/components/roksal/${datoteka}.tsx`)).toContain(TIGHT_HEADER_CLASS)
-    }
-    for (const [datoteka] of brezLogistike) {
-      expect(srcOf(`src/components/roksal/${datoteka}.tsx`)).toContain(TOOLTIP)
-    }
-  })
-})
+// R186 konsolidacija: kumulativna družinska tabela (20 površin) preseljena v
+// kanonično datoteko zivostna-druzina.test.ts.
