@@ -136,7 +136,7 @@ Tri vrzeli s seznama spodaj so zdaj zapolnjene:
 | **Revizijski dnevnik** | `src/lib/audit.ts` — enoten zapis, nikoli ne vrže in ne blokira zahtevka. `LOGIN`, `LOGIN_FAILED`, `PASSWORD_CHANGED`, `RAILING_LAYOUT`, `QUOTE_CALCULATED`. Branje prek `GET /api/audit?projectId=…` (VODJA/ADMIN ali dodeljeni monter). |
 
 Preverjeno v `tools/security-smoke.py`, razdelka [9] Vloge in [10] Omejevanje
-hitrosti — skupaj 137 preverjanj, tečejo v CI ob vsakem pushu.
+hitrosti — skupaj 139 preverjanj, tečejo v CI ob vsakem pushu.
 
 ## Upload security (R149 — issue #5 §37)
 
@@ -158,6 +158,19 @@ Zakaj brez tihega prevzemanja: če deklaracija ne ustreza bajtom, je klient
 pokvarjen ALI zlonamernen — v obeh primerih je pravi odgovor odklonitev z
 razlogom, ne tiho »popravljanje«. Brskalnikov canvas `toDataURL` vedno
 pošlje pravo deklaracijo, zato legitimni tokovi ne pridejo v stik z vrati.
+
+## Inženirska ovojnica kalkulatorja (R150 — issue #5 §32–34)
+
+Kalkulator (razmiki, kemično sidranje, vetrna obremenitev) teče skozi
+`src/lib/calc-engineering.ts` — čisto, deterministično jedro:
+
+| | Pravilo |
+|---|---|
+| **Fail-closed območje umerjenosti** | Vnos izven dokumentiranih mej (npr. ograja 0,1–100 m, veter 0,5–200 m) → eksplicitna napaka, NIČ se ne izračuna. Prej: višina 0 m je tiho dala `heightFactor = 0` → tlak 0 → LOW tveganje (nevaren tihi rezultat); Infinity je preživel do rezultata (`slatCount: Infinity`). |
+| **Verzionirane formule** | `CALC_FORMULA_VERSIONS` (rail-v1 / anch-v1 / wind-v1) — sprememba matematike = nova verzija; stare prstne odtisi ostanejo interpretirani s svojo verzijo. Verzija je vezana v hash. |
+| **Deterministični prstni odtis** | Kanonični vhod (urejeni ključi, normalizirana števila) + FNV-1a 32-bit; isti vhod + ista verzija = isti odtis (reproducibilnost/audit). Ne-končne vrednosti so vidno označene v odtisu (nNaN), nikoli tiho. |
+| **Obrambna plast za klienta** | Zod (v4) že zavrne NaN/Infinity na API-ju; ovojnica dodaja meje umerjenosti in je ista plast v brskalniku, kjer `parseFloat('1e999')` → Infinity (klient NE gre skozi Zod). |
+| **API** | POST /api/calculator → 400 z izrecnimi napakami (nič tihega nonsensa), 200 nosi `formulaVersion` + `inputHash`; GET = register formul z mejami (anon → 401). |
 
 ## Kaj še NI narejeno
 

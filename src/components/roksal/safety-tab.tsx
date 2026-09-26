@@ -196,9 +196,10 @@ export function SafetyTab() {
         </div>
         <Button
           size="sm"
-          className="h-9 px-3 bg-roksal-navy hover:bg-roksal-navy/90 text-white gap-1.5 transition-transform duration-200 active:scale-95"
+          className="h-9 px-3 bg-roksal-navy hover:bg-roksal-navy/90 text-white gap-1.5 transition-transform duration-200 active:scale-95 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
           onClick={handleShareReport}
           disabled={!windData}
+          aria-label="Kopiraj varnostno poročilo na odložišče"
         >
           <FileText className="h-3.5 w-3.5" />
           Poročilo
@@ -270,14 +271,18 @@ export function SafetyTab() {
               <div className="flex items-center gap-4">
                 <div className="text-center">
                   <div className="flex h-16 w-16 items-center justify-center rounded-full bg-roksal-surface shadow-inner">
-                    <span className="text-2xl font-bold text-roksal-navy">
+                    <span className="text-2xl font-bold text-roksal-navy tabular-nums">
                       {windData.speed.toFixed(1)}
                     </span>
                   </div>
                   <p className="mt-1 text-[10px] text-muted-foreground">m/s</p>
                 </div>
                 {/* Wind Compass */}
-                <div className="relative flex h-20 w-20 shrink-0 items-center justify-center">
+                <div
+                  className="relative flex h-20 w-20 shrink-0 items-center justify-center"
+                  role="img"
+                  aria-label={`Smer vetra: ${windData.directionLabel}, ${windData.direction} stopinj`}
+                >
                   <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full">
                     {/* Compass circle */}
                     <circle cx="50" cy="50" r="44" fill="none" stroke="#e2e8f0" strokeWidth="1.5" />
@@ -310,13 +315,13 @@ export function SafetyTab() {
                   <div className="flex items-center gap-2 text-sm">
                     <Gauge className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                     <span className="text-muted-foreground">
-                      Pih: <span className="font-medium text-roksal-navy">{windData.gust.toFixed(1)} m/s</span>
+                      Pih: <span className="font-medium text-roksal-navy tabular-nums">{windData.gust.toFixed(1)} m/s</span>
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <Compass className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                     <span className="text-muted-foreground">
-                      {windData.directionLabel} <span className="font-medium text-roksal-navy">{windData.direction}°</span>
+                      {windData.directionLabel} <span className="font-medium text-roksal-navy tabular-nums">{windData.direction}°</span>
                     </span>
                   </div>
                 </div>
@@ -330,16 +335,16 @@ export function SafetyTab() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold text-roksal-navy">
-                      Beaufort {beaufort.scale}
+                      Beaufort <span className="tabular-nums">{beaufort.scale}</span>
                     </span>
-                    <span className="text-xs text-muted-foreground">/ 12</span>
+                    <span className="text-xs text-muted-foreground tabular-nums">/ 12</span>
                   </div>
                   <p className="text-xs text-muted-foreground">
                     {beaufort.name}
                   </p>
                 </div>
-                {/* Beaufort mini scale */}
-                <div className="flex gap-px">
+                {/* Beaufort mini scale (dekorativno — vrednost je v besedilu zgoraj) */}
+                <div className="flex gap-px" aria-hidden="true">
                   {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((i) => (
                     <div
                       key={i}
@@ -362,21 +367,21 @@ export function SafetyTab() {
                 <div className="flex items-center gap-2 rounded-lg bg-secondary/50 p-2">
                   <Thermometer className="h-4 w-4 text-roksal-amber" />
                   <div>
-                    <p className="text-xs font-medium text-roksal-navy">{windData.temperature}°C</p>
+                    <p className="text-xs font-medium text-roksal-navy tabular-nums">{windData.temperature}°C</p>
                     <p className="text-[10px] text-muted-foreground">Temperatura</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 rounded-lg bg-secondary/50 p-2">
                   <CloudRain className="h-4 w-4 text-blue-500" />
                   <div>
-                    <p className="text-xs font-medium text-roksal-navy">{windData.humidity}%</p>
+                    <p className="text-xs font-medium text-roksal-navy tabular-nums">{windData.humidity}%</p>
                     <p className="text-[10px] text-muted-foreground">Vlažnost</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 rounded-lg bg-secondary/50 p-2">
                   <Gauge className="h-4 w-4 text-purple-500" />
                   <div>
-                    <p className="text-xs font-medium text-roksal-navy">{windData.pressure} hPa</p>
+                    <p className="text-xs font-medium text-roksal-navy tabular-nums">{windData.pressure} hPa</p>
                     <p className="text-[10px] text-muted-foreground">Pritisnik</p>
                   </div>
                 </div>
@@ -390,7 +395,7 @@ export function SafetyTab() {
                     Vlažnost zraka
                   </span>
                   <div className="flex items-center gap-1.5">
-                    <span className={`text-xs font-medium ${
+                    <span className={`text-xs font-medium tabular-nums ${
                       windData.humidity < 60 ? 'text-roksal-green' : windData.humidity <= 80 ? 'text-roksal-amber' : 'text-roksal-red'
                     }`}>
                       {getHumidityLabel(windData.humidity)}
@@ -439,7 +444,7 @@ export function SafetyTab() {
                       ? 'VARNOSTNA DELA DOVOLJENA'
                       : 'NEVARNOST ZA MONTAŽO'}
                   </p>
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-[11px] text-muted-foreground tabular-nums">
                     {windData.isSafeForInstallation
                       ? `Maks. višina ograje: ${windData.maxRailingHeight}mm`
                       : `Maks. višina ograje: ${windData.maxRailingHeight}mm — Počakajte na boljše razmere.`}
@@ -504,7 +509,7 @@ export function SafetyTab() {
               {/* Temperature Info */}
               <div className="flex-1 space-y-2">
                 <div className="text-center sm:text-left">
-                  <span className="text-3xl font-bold text-roksal-navy">{windData.temperature}</span>
+                  <span className="text-3xl font-bold text-roksal-navy tabular-nums">{windData.temperature}</span>
                   <span className="text-lg text-muted-foreground">°C</span>
                 </div>
                 <div
@@ -575,6 +580,7 @@ export function SafetyTab() {
           <Switch
             checked={ghostMode}
             onCheckedChange={setGhostMode}
+            aria-label="Ghost Mode — varnostno stanje brez beleženja"
           />
         </CardContent>
       </Card>
@@ -588,7 +594,7 @@ export function SafetyTab() {
               Seznam preverjanj
             </CardTitle>
             <Badge
-              className={`text-[10px] ${
+              className={`text-[10px] tabular-nums ${
                 progressPct === 100
                   ? 'bg-roksal-green/15 text-roksal-green'
                   : 'bg-secondary text-muted-foreground'
@@ -603,7 +609,7 @@ export function SafetyTab() {
           <div className="mb-4 space-y-1">
             <div className="flex items-center justify-between text-[11px] text-muted-foreground">
               <span>Dokončanost</span>
-              <span className="font-medium text-roksal-navy">
+              <span className="font-medium text-roksal-navy tabular-nums">
                 {Math.round(progressPct)}%
               </span>
             </div>
@@ -623,7 +629,7 @@ export function SafetyTab() {
               <label
                 key={item.id}
                 htmlFor={item.id}
-                className="flex cursor-pointer items-center gap-3 rounded-lg p-2.5 transition-colors hover:bg-secondary/50"
+                className="flex cursor-pointer items-center gap-3 rounded-lg p-2.5 transition-colors hover:bg-secondary/50 focus-within:outline-none focus-within:ring-2 focus-within:ring-roksal-navy/40 focus-within:ring-offset-1"
               >
                 <Checkbox
                   id={item.id}

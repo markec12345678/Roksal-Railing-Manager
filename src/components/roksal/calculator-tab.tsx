@@ -54,6 +54,11 @@ import {
   type Profil as LibProfil,
   type MaterialSegment,
 } from '@/lib/calculator'
+import {
+  runRailingCalcV1,
+  runAnchoringCalcV1,
+  runWindCalcV1,
+} from '@/lib/calc-engineering'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 
@@ -188,6 +193,11 @@ interface HistoryEntry {
   keyResult: string
   inputs: Record<string, string>
   projectName?: string
+  // R150: prstni odtis (verzija formule + hash vhodov) — samo railing/
+  // anchoring/wind prek inženirske ovojnice; starejši vnoski ga nimajo
+  // (iskreno prikazano brez odtisa, ni izmišljenega).
+  formulaVersion?: string
+  inputHash?: string
 }
 
 const templateModeLabels: Record<TemplateMode, string> = {
@@ -409,6 +419,12 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
   const [calcNonce, setCalcNonce] = useState(0)
   const skipHistoryRef = useRef(false)
 
+  // ===== R150 (§32–34): inženirska validacija — fail-closed napake (vnos
+  // izven območja umerjenosti → eksplicitne napake, NIČ rezultata) in
+  // prstni odtis (verzija formule + hash vhodov) za reproducibilnost. =====
+  const [engineeringErrors, setEngineeringErrors] = useState<string[]>([])
+  const [lastFingerprint, setLastFingerprint] = useState<{ formulaVersion: string; inputHash: string } | null>(null)
+
   const profileLabels: Record<ProfileType, string> = {
     classic: 'Classic',
     'z-line': 'Z-line',
@@ -416,6 +432,9 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
   }
 
   function handleCalculate() {
+    // R150: vsak izračun počisti prejšnje inženirske napake in odtis.
+    setEngineeringErrors([])
+    setLastFingerprint(null)
     if (mode === 'railing') {
       calculateRailingClientSide()
     } else if (mode === 'anchoring') {
@@ -711,6 +730,9 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
       keyResult: getCurrentKeyResult(),
       inputs: collectCurrentInputs(),
       projectName: projectName.trim() || undefined,
+      // R150: prstni odtis samo če obstaja (railing/anchoring/wind prek
+      // ovojnice); brez izmišljanja za ostale načine.
+      ...(lastFingerprint ?? {}),
     }
     const updated = [entry, ...history].slice(0, 30)
     setHistory(updated)
@@ -750,12 +772,14 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
       toast.error('Zgodovina je prazna')
       return
     }
-    const headers = ['Datum', 'Način', 'Ključni rezultat', 'Projekt', 'Vhodni podatki']
+    const headers = ['Datum', 'Način', 'Ključni rezultat', 'Projekt', 'Formula', 'Odtis vhodov', 'Vhodni podatki']
     const rows = history.map((h) => [
       new Date(h.timestamp).toLocaleString('sl-SI'),
       h.modeLabel,
       h.keyResult,
       h.projectName ?? '',
+      h.formulaVersion ?? '',
+      h.inputHash ?? '',
       JSON.stringify(h.inputs),
     ])
     const csv = [headers, ...rows]
@@ -787,121 +811,66 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
   }
 
   function calculateRailingClientSide() {
+    // R150: inženirska ovojnica — fail-closed validacija (izven območja
+    // umerjenosti → eksplicitne napake, NIČ rezultata) + prstni odtis.
     const L = parseFloat(effectiveTotalLength) * 1000
     const W = parseFloat(slatWidth)
     const G = parseFloat(maxGap)
-    const n = Math.ceil((L - G) / (G + W))
-    const actualGap = (L - n * W) / (n + 1)
-    const warnings: string[] = []
-
-    if (actualGap > 100) {
-      warnings.push('RAZMIK PRESEGA 100mm — Prepovedano za stanovanjske objekte!')
-    }
-    if (profileType === 'z-line') {
-      warnings.push('Z-line profil: Prekrivanje zagotavlja 100% vizualno zasebnost.')
-    }
-    if (actualGap < 10) {
-      warnings.push('Razmik zelo majhen (<10mm). Preverite dilatacijo WPC materiala.')
-    }
-
-    setRailingResult({
-      slatCount: n,
-      actualGapMm: Math.round(actualGap * 10) / 10,
-      totalSlatsLengthMm: n * W,
-      totalGapsLengthMm: Math.round((n + 1) * actualGap),
-      isCompliant: actualGap <= 100,
-      warnings,
+    const envelope = runRailingCalcV1({
+      totalLengthMm: L,
+      slatWidthMm: W,
+      maxGapMm: G,
+      profileType,
     })
+    if (!envelope.ok) {
+      setEngineeringErrors(envelope.errors)
+      return
+    }
+    setLastFingerprint({ formulaVersion: envelope.formulaVersion, inputHash: envelope.inputHash })
+    setRailingResult(envelope.result)
   }
 
   function calculateAnchoringClientSide() {
+    // R150: inženirska ovojnica — fail-closed validacija + prstni odtis.
     const hc = parseInt(holeCount)
     const depth = parseFloat(holeDepthMm)
     const dia = parseFloat(holeDiameterMm)
     const temp = parseFloat(temperature)
-    const warnings: string[] = []
-
-    const radiusMm = dia / 2
-    const holeVolumeMm3 = Math.PI * Math.pow(radiusMm, 2) * depth
-    const holeVolumeMl = holeVolumeMm3 / 1000
-    const resinPerHole = holeVolumeMl * 1.2
-    const totalResin = resinPerHole * hc
-
-    let curingTimeMin: number
-    if (temp >= 20) {
-      curingTimeMin = 30
-    } else if (temp >= 10) {
-      curingTimeMin = 60
-      warnings.push('Temperatura < 20°C: Podaljšan čas strjevanja. Počakajte vsaj 1 uro.')
-    } else if (temp >= 5) {
-      curingTimeMin = 120
-      warnings.push('Temperatura < 10°C: Zelo podaljšan čas strjevanja (2 uri). Uporabite zimsko formulo smole.')
-    } else {
-      curingTimeMin = 0
-      warnings.push('Temperatura < 5°C: Kemično sidranje NI priporočljivo!')
-    }
-
-    const cartridgeSize = anchorType === 'hilti-hit' ? 330 : 300
-    const cartridgesNeeded = Math.ceil(totalResin / cartridgeSize)
-
-    if (depth < 70) {
-      warnings.push('Globina vrtanja < 70mm. Priporočena minimalna globina za M12 sidro je 70mm.')
-    }
-
-    setAnchoringResult({
-      resinVolumeMl: Math.round(resinPerHole * 10) / 10,
-      totalResinMl: Math.round(totalResin * 10) / 10,
-      curingTimeMin,
-      cartridgesNeeded,
-      warnings,
+    const envelope = runAnchoringCalcV1({
+      holeCount: hc,
+      holeDepthMm: depth,
+      holeDiameterMm: dia,
+      temperature: temp,
+      anchorType,
     })
+    if (!envelope.ok) {
+      setEngineeringErrors(envelope.errors)
+      return
+    }
+    setLastFingerprint({ formulaVersion: envelope.formulaVersion, inputHash: envelope.inputHash })
+    setAnchoringResult(envelope.result)
   }
 
   function calculateWindClientSide() {
+    // R150: inženirska ovojnica — višina 0 m (prej tiho LOW tveganje!),
+    // negativna/neskončna hitrost in nesmiselna površina so ZDAJ eksplicitne
+    // napake, ne tihi rezultat.
     const h = parseFloat(heightAboveGround)
-    const terrainFactors: Record<string, number> = { I: 1.0, II: 0.91, III: 0.82, IV: 0.73 }
-    const kTerrain = terrainFactors[terrainCategory] || 0.91
-    const heightFactor = Math.pow(h / 10, 0.2)
-    const aeroFactors: Record<string, number> = { solid: 1.3, slatted: 0.8, 'z-line': 0.6 }
-    const cAero = aeroFactors[railingType] || 0.8
-
     const ws = parseFloat(windSpeedMs)
     const area = parseFloat(railingAreaM2)
-    const recommendations: string[] = []
-
-    const basePressure = 0.5 * 1.25 * Math.pow(ws, 2)
-    const designPressure = basePressure * kTerrain * heightFactor * cAero
-    const totalForce = designPressure * area
-    const railingLength = Math.sqrt(area)
-    const forcePerMeter = totalForce / railingLength
-
-    let riskLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
-    if (designPressure < 0.5) {
-      riskLevel = 'LOW'
-    } else if (designPressure < 1.0) {
-      riskLevel = 'MEDIUM'
-      recommendations.push('Preverite pritrdilne elemente. Uporabite A4 Inox vijake.')
-    } else if (designPressure < 1.5) {
-      riskLevel = 'HIGH'
-      recommendations.push('Visoka vetrna obremenitev! Uporabite kemično sidranje in dodatne stebre.')
-      recommendations.push('Priporočljivo: Z-line profil za zmanjšanje veternega upora.')
-    } else {
-      riskLevel = 'CRITICAL'
-      recommendations.push('KRITIČNA vetrna obremenitev! Potrebna statična analiza.')
-      recommendations.push('Obvezno: Kemično sidranje vseh stebrov, zmanjšan razmik med stebri.')
-    }
-
-    if (railingType === 'solid' && h > 20) {
-      recommendations.push('Polna ograja nad 20m: Tveganje harmoničnih vibracij. Vgradite dušilna tesnila.')
-    }
-
-    setWindResult({
-      windPressureKpa: Math.round(designPressure * 100) / 100,
-      totalForceKn: Math.round(totalForce * 100) / 100,
-      forcePerMeterNm: Math.round(forcePerMeter * 10) / 10,
-      riskLevel,
-      recommendations,
+    const envelope = runWindCalcV1({
+      heightAboveGround: h,
+      terrainCategory,
+      windSpeedMs: ws,
+      railingAreaM2: area,
+      railingType,
     })
+    if (!envelope.ok) {
+      setEngineeringErrors(envelope.errors)
+      return
+    }
+    setLastFingerprint({ formulaVersion: envelope.formulaVersion, inputHash: envelope.inputHash })
+    setWindResult(envelope.result)
   }
 
   // ===== Baluster calculation =====
@@ -2112,9 +2081,36 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
             Izračunaj razmike
           </Button>
 
+          {/* R150: inženirske validacijske napake (fail-closed — brez tihega nonsensa) */}
+          {engineeringErrors.length > 0 && mode === 'railing' && (
+            <div
+              role="alert"
+              className="rounded-lg border border-roksal-amber/30 bg-roksal-amber/10 p-3 animate-in fade-in slide-in-from-bottom-2 duration-200"
+            >
+              <p className="flex items-center gap-1.5 text-xs font-semibold text-roksal-amber">
+                <AlertTriangle className="h-3.5 w-3.5" />
+                Izračun zavrnjen — vnos izven območja umerjenosti formule:
+              </p>
+              <ul className="mt-1.5 space-y-1">
+                {engineeringErrors.map((e, i) => (
+                  <li key={i} className="text-xs text-roksal-navy">• {e}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {/* Results */}
           {railingResult && (
             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
+              {/* R150: prstni odtis — deterministična vezava vhodov na verzijo formule */}
+              {lastFingerprint && (
+                <p
+                  className="text-center text-[10px] text-muted-foreground font-mono tabular-nums"
+                  title="Deterministični prstni odtis: isti vhod + ista verzija formule = isti rezultat"
+                >
+                  Formula {lastFingerprint.formulaVersion} · vhod {lastFingerprint.inputHash}
+                </p>
+              )}
               {/* Visual Representation */}
               <Card>
                 <CardHeader className="pb-2 pt-4 px-4">
@@ -2490,9 +2486,36 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
             Izračunaj sidranje
           </Button>
 
+          {/* R150: inženirske validacijske napake (fail-closed) */}
+          {engineeringErrors.length > 0 && mode === 'anchoring' && (
+            <div
+              role="alert"
+              className="rounded-lg border border-roksal-amber/30 bg-roksal-amber/10 p-3 animate-in fade-in slide-in-from-bottom-2 duration-200"
+            >
+              <p className="flex items-center gap-1.5 text-xs font-semibold text-roksal-amber">
+                <AlertTriangle className="h-3.5 w-3.5" />
+                Izračun zavrnjen — vnos izven območja umerjenosti formule:
+              </p>
+              <ul className="mt-1.5 space-y-1">
+                {engineeringErrors.map((e, i) => (
+                  <li key={i} className="text-xs text-roksal-navy">• {e}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {/* Results */}
           {anchoringResult && (
             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
+              {/* R150: prstni odtis — deterministična vezava vhodov na verzijo formule */}
+              {lastFingerprint && (
+                <p
+                  className="text-center text-[10px] text-muted-foreground font-mono tabular-nums"
+                  title="Deterministični prstni odtis: isti vhod + ista verzija formule = isti rezultat"
+                >
+                  Formula {lastFingerprint.formulaVersion} · vhod {lastFingerprint.inputHash}
+                </p>
+              )}
               {/* Main Results */}
               <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
                 <Card className="px-3 py-3">
@@ -2692,9 +2715,36 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
             Izračunaj vetrno obremenitev
           </Button>
 
+          {/* R150: inženirske validacijske napake (fail-closed) */}
+          {engineeringErrors.length > 0 && mode === 'wind' && (
+            <div
+              role="alert"
+              className="rounded-lg border border-roksal-amber/30 bg-roksal-amber/10 p-3 animate-in fade-in slide-in-from-bottom-2 duration-200"
+            >
+              <p className="flex items-center gap-1.5 text-xs font-semibold text-roksal-amber">
+                <AlertTriangle className="h-3.5 w-3.5" />
+                Izračun zavrnjen — vnos izven območja umerjenosti formule:
+              </p>
+              <ul className="mt-1.5 space-y-1">
+                {engineeringErrors.map((e, i) => (
+                  <li key={i} className="text-xs text-roksal-navy">• {e}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {/* Results */}
           {windResult && (
             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
+              {/* R150: prstni odtis — deterministična vezava vhodov na verzijo formule */}
+              {lastFingerprint && (
+                <p
+                  className="text-center text-[10px] text-muted-foreground font-mono tabular-nums"
+                  title="Deterministični prstni odtis: isti vhod + ista verzija formule = isti rezultat"
+                >
+                  Formula {lastFingerprint.formulaVersion} · vhod {lastFingerprint.inputHash}
+                </p>
+              )}
               {/* Risk Level */}
               <Card className={`overflow-hidden border ${riskColors[windResult.riskLevel]}`}>
                 <CardContent className="flex items-center gap-3 p-4">
@@ -5423,6 +5473,12 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                             {entry.projectName && (
                               <Badge variant="secondary" className="text-[9px] h-4 px-1.5 bg-roksal-amber/10 text-roksal-amber border-roksal-amber/20">
                                 {entry.projectName}
+                              </Badge>
+                            )}
+                            {/* R150: prstni odtis izračuna (samo novejši vnoski — starejši ostanejo brez, iskreno) */}
+                            {entry.formulaVersion && entry.inputHash && (
+                              <Badge variant="outline" className="text-[9px] h-4 px-1.5 font-mono tabular-nums bg-secondary/50 text-muted-foreground border-border">
+                                {entry.formulaVersion}·{entry.inputHash}
                               </Badge>
                             )}
                           </div>
