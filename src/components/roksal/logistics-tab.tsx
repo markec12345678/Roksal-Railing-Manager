@@ -285,6 +285,8 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
   const [equipment, setEquipment] = useState<Equipment[]>([])
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(false)
+  // R163 fail-verbose: razlog, zakaj podatkov NI (prej catch ignore + stale state).
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [newScheduleOpen, setNewScheduleOpen] = useState(false)
   const [newCrewOpen, setNewCrewOpen] = useState(false)
   const [newEquipOpen, setNewEquipOpen] = useState(false)
@@ -347,24 +349,65 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
 
   const loadData = useCallback(async () => {
     setLoading(true)
+    setLoadError(null)
     try {
       const [schedRes, crewRes, equipRes, projRes] = await Promise.all([
-        fetch('/api/schedules' + (projectId ? `?projectId=${projectId}` : '')),
-        fetch('/api/crews'),
+        fetch('/api/schedules' + (projectId ? `?projectId=${projectId}` : ''), { credentials: 'same-origin' }),
+        fetch('/api/crews', { credentials: 'same-origin' }),
         // R145 (§31): lifecycle DTO (zastavice kalibracije/pregledov) —
         // /api/equipment, ne starejši /api/crews?type=equipment (brez cikla).
-        fetch('/api/equipment'),
-        fetch('/api/projects'),
+        fetch('/api/equipment', { credentials: 'same-origin' }),
+        fetch('/api/projects', { credentials: 'same-origin' }),
       ])
-      if (schedRes.ok) setSchedules(await schedRes.json())
-      if (crewRes.ok) setCrews(await crewRes.json())
-      if (equipRes.ok) setEquipment(await equipRes.json())
-      if (projRes.ok) {
-        const p = await projRes.json()
-        setProjects(p)
-        if (!schedProject && p.length > 0) setSchedProject(projectId || p[0].id)
+      // R163 fail-verbose: prej `if (res.ok) set…` brez else + `catch ignore` —
+      // pri padcu APIja TIHO staro/prazno stanje (pisarna misli, da ni terminov).
+      const sources: Array<[string, Response]> = [
+        ['terminov', schedRes],
+        ['ekip', crewRes],
+        ['opreme', equipRes],
+        ['projektov', projRes],
+      ]
+      const failed = sources.filter(([, r]) => !r.ok)
+      if (failed.length > 0) {
+        const st = failed[0][1].status
+        setLoadError(
+          st === 401
+            ? 'Prijava je potekla. Ponovno se prijavite.'
+            : `Strežnik ni vrnil podatkov (${failed.map(([n]) => n).join(', ')}; napaka ${st}).`,
+        )
+        setSchedules([])
+        setCrews([])
+        setEquipment([])
+        setProjects([])
+        return
       }
-    } catch { /* ignore */ } finally { setLoading(false) }
+      const [schedJson, crewJson, equipJson, projJson] = (await Promise.all([
+        schedRes.json().catch(() => null),
+        crewRes.json().catch(() => null),
+        equipRes.json().catch(() => null),
+        projRes.json().catch(() => null),
+      ])) as unknown[]
+      if (!Array.isArray(schedJson) || !Array.isArray(crewJson) || !Array.isArray(equipJson) || !Array.isArray(projJson)) {
+        setLoadError('Neveljaven odgovor strežnika.')
+        setSchedules([])
+        setCrews([])
+        setEquipment([])
+        setProjects([])
+        return
+      }
+      setSchedules(schedJson as Schedule[])
+      setCrews(crewJson as Crew[])
+      setEquipment(equipJson as Equipment[])
+      setProjects(projJson as Project[])
+      if (!schedProject && projJson.length > 0) setSchedProject(projectId || (projJson as Project[])[0].id)
+    } catch {
+      // R163: nič tihega ignore — omrežna napaka je vidna z razlogom.
+      setLoadError('Ni povezave s strežnikom. Preverite omrežje in poskusite znova.')
+      setSchedules([])
+      setCrews([])
+      setEquipment([])
+      setProjects([])
+    } finally { setLoading(false) }
   }, [projectId, schedProject])
 
   useEffect(() => { loadData() }, [loadData])
@@ -740,6 +783,33 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
       const res = await fetch('/api/crews', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'equipment', naziv: equipNaziv, tip: equipTip }) })
       if (res.ok) { toast({ title: 'Oprema dodana' }); setNewEquipOpen(false); setEquipNaziv(''); loadData() }
     } catch { toast({ title: 'Napaka', variant: 'destructive' }) }
+  }
+
+  // R163 fail-verbose: viden panel z razlogom + poskus znova — NE lažnega praznega stanja.
+  if (loadError) {
+    return (
+      <div className="space-y-4">
+        <div
+          role="alert"
+          className="flex flex-col gap-2 rounded-xl border border-roksal-amber/40 bg-roksal-amber/10 p-3 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-roksal-amber" aria-hidden="true" />
+            <p className="text-sm break-words text-roksal-ink">{loadError}</p>
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => void loadData()}
+            className="shrink-0 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+            aria-label="Ponovno naloži logistiko"
+          >
+            Poskusi znova
+          </Button>
+        </div>
+      </div>
+    )
   }
 
   return (
