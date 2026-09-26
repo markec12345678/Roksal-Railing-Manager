@@ -198,3 +198,17 @@ cenik/geometry jedra):
 | **Verzija vezana v odtis** | `quote-v1` — sprememba matematike ponudbe = nova verzija; stare odtisi ostanejo interpretirani s svojo verzijo. |
 | **Vrstni red točk je del odtisa** | Ključi objektov so urejeni, vrstni red polja točk OHRANJEN — ista množica točk v drugem vrstnem redu je drugačna ograja in dobi drug odtis. |
 | **Revizija** | QUOTE_CALCULATED revizija nosi `inputHash` — vsak izračun je vezan na svoje vhode (audit). |
+
+## Iskreni podatki (R152 — fail-open vzorci odstranjeni)
+
+Celo komponentno fronto je prečiščen vzorec "napaka → izmišljeni podatki":
+api napaka ali prazen seznam NI več nadomeščen z demo/fiktivnimi vrsticami.
+
+| | Pravilo |
+|---|---|
+| **Nič demo podatkov** | `demoProjects` / `demoMeasurements` / `demoInventory` / `demoWindData` IZBRISANI. Napaka API-ja = prazen seznam + vidna napaka (role="alert" panel z "Poskusi znova" + toast.error). Prazno stanje ostane PRAZNO. |
+| **Varnost brez ugibanja (Varnost tab)** | Vremenski API neuspešen → EKSPliciten panel "Varnostna ocena ni mogoča" z retry gumbom. PREJ: fiktivni veter 7.2 m/s z `isSafeForInstallation: true` (varnostno kritična fail-open kršitev!). |
+| **Iskreni lokalni osnutki (Meritve)** | Neuspel POST meritve → ekspliciten OSNUTEK (localStorage per projekt, `src/lib/measurement-drafts.ts`), viden v ločenem rubinastem razdelku "Lokalni osnutki — ni v bazi" z sinhronizacijo in odstranjevanjem. PREJ: izmišljena vrstica `local_${Date.now()}` + fake-success "(lokalno)" toast — podatki izgubljeni ob reloadu. |
+| **Ni lažnega brisanja** | API /api/measurements nima DELETE/PATCH → UI ne laže več, da je brisanje/arhiviranje/status uspel (prej: lokalna sprememba, po reloadu vrnjeno). Zdaj iskren toast z razlago. |
+| **NEVIDNI toasti (P1)** | sonner `<Toaster>` NI bil nikoli montiran — vsi `toast.*()` klici iz 10+ komponent (R127–R151 vključno) so bili za uporabnika NEVIDNI. Zdaj montiran z `richColors` (semantične barve) + `closeButton`; radix Toaster ostane za `useToast()` klicatelje. |
+| **Regresijski stražarji** | Testa v `r152-measurement-drafts.test.ts`: (1) nobena roksal komponenta ne sme vsebovati `const demo[A-Z]` polja; (2) noben `id: \`local_${Date.now()}\`` vzorec. Kršitev = rdeči test. |

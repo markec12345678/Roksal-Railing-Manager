@@ -143,6 +143,8 @@ export function InventoryTab() {
   const [lotsData, setLotsData] = useState<LotsResponse | null>(null)
   const [lotsLoading, setLotsLoading] = useState(false)
   const [lotsError, setLotsError] = useState<string | null>(null)
+  // R152: napaka nalaganja zaloge je EKSPlicitna (nič izmišljenih artiklov).
+  const [invError, setInvError] = useState<string | null>(null)
 
   useEffect(() => {
     async function fetchData() {
@@ -153,20 +155,22 @@ export function InventoryTab() {
         ])
         if (invRes.ok) {
           const data = await invRes.json()
-          if (data.length > 0) {
-            setInventory(data)
-          } else {
-            setInventory(demoInventory)
-          }
+          // R152: prazna zaloga ostane PRAZNA (iskreno stanje) — ni demo artiklov.
+          setInventory(data)
+          setInvError(null)
         } else {
-          setInventory(demoInventory)
+          setInventory([])
+          setInvError(`Zaloge ni bilo mogoče naložiti (napaka ${invRes.status}).`)
+          toast.error(`Zaloge ni bilo mogoče naložiti (napaka ${invRes.status})`)
         }
         if (projRes.ok) {
           const projData = await projRes.json()
           setProjects(projData)
         }
       } catch {
-        setInventory(demoInventory)
+        setInventory([])
+        setInvError('Zaloge ni bilo mogoče naložiti — preverite povezavo.')
+        toast.error('Zaloge ni bilo mogoče naložiti — preverite povezavo.')
       } finally {
         setLoading(false)
       }
@@ -179,12 +183,15 @@ export function InventoryTab() {
       const res = await fetch('/api/inventory')
       if (res.ok) {
         const data = await res.json()
-        if (data.length > 0) {
-          setInventory(data)
-        }
+        setInventory(data)
+        setInvError(null)
+      } else {
+        setInvError(`Zaloge ni bilo mogoče osvežiti (napaka ${res.status}).`)
+        toast.error(`Zaloge ni bilo mogoče osvežiti (napaka ${res.status})`)
       }
     } catch {
-      // keep existing
+      setInvError('Zaloge ni bilo mogoče osvežiti — preverite povezavo.')
+      toast.error('Zaloge ni bilo mogoče osvežiti — preverite povezavo.')
     }
   }
 
@@ -706,6 +713,27 @@ export function InventoryTab() {
                 )
               })}
             </div>
+          ) : inventory.length === 0 && invError ? (
+            <div
+              role="alert"
+              className="flex flex-col gap-2 rounded-lg border border-roksal-amber/40 bg-roksal-amber/10 px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-roksal-amber" aria-hidden="true" />
+                <p className="text-xs text-roksal-navy">
+                  {invError} Stanja zaloge ni izmišljeno — brez strežnika ni podatka.
+                </p>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => { setInvError(null); void fetchInventory() }}
+                className="shrink-0 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+                aria-label="Ponovno naloži zalogo"
+              >
+                Poskusi znova
+              </Button>
+            </div>
           ) : inventory.length === 0 ? (
             <EmptyState
               icon={Package}
@@ -866,93 +894,6 @@ export function InventoryTab() {
   )
 }
 
-const demoInventory: InventoryItem[] = [
-  {
-    id: 'inv1',
-    sifraMateriala: 'WPC-C80-BRN',
-    naziv: 'WPC Classic deska 80mm — Rjava',
-    tip: 'WPC_deska',
-    kolicinaZaloga: 245,
-    enota: 'm',
-    minimalnaZaloga: 100,
-    cenaEur: 12.5,
-    _count: { usages: 12, movements: 8 },
-  },
-  {
-    id: 'inv2',
-    sifraMateriala: 'WPC-C80-ANT',
-    naziv: 'WPC Classic deska 80mm — Antik',
-    tip: 'WPC_deska',
-    kolicinaZaloga: 38,
-    enota: 'm',
-    minimalnaZaloga: 50,
-    cenaEur: 12.5,
-    _count: { usages: 5, movements: 3 },
-  },
-  {
-    id: 'inv3',
-    sifraMateriala: 'INOX-M12-A4',
-    naziv: 'Inox vijak M12 × 100 A4',
-    tip: 'Inox_vijak',
-    kolicinaZaloga: 180,
-    enota: 'kos',
-    minimalnaZaloga: 50,
-    cenaEur: 2.8,
-    _count: { usages: 24, movements: 6 },
-  },
-  {
-    id: 'inv4',
-    sifraMateriala: 'INOX-M8-A4',
-    naziv: 'Inox vijak M8 × 60 A4',
-    tip: 'Inox_vijak',
-    kolicinaZaloga: 12,
-    enota: 'kos',
-    minimalnaZaloga: 30,
-    cenaEur: 2.8,
-    _count: { usages: 18, movements: 4 },
-  },
-  {
-    id: 'inv5',
-    sifraMateriala: 'CHEM-HIT-330',
-    naziv: 'Hilti HIT-RE 500 smola 330ml',
-    tip: 'Kemicno_sidro',
-    kolicinaZaloga: 8,
-    enota: 'kos',
-    minimalnaZaloga: 10,
-    cenaEur: 28.0,
-    _count: { usages: 3, movements: 2 },
-  },
-  {
-    id: 'inv6',
-    sifraMateriala: 'CHEM-FIS-300',
-    naziv: 'Fischer FIS V smola 300ml',
-    tip: 'Kemicno_sidro',
-    kolicinaZaloga: 15,
-    enota: 'kos',
-    minimalnaZaloga: 10,
-    cenaEur: 22.0,
-    _count: { usages: 2, movements: 1 },
-  },
-  {
-    id: 'inv7',
-    sifraMateriala: 'ALU-P40-ANT',
-    naziv: 'Alu profil Z-line 40mm — Antik',
-    tip: 'Alu_profil',
-    kolicinaZaloga: 120,
-    enota: 'm',
-    minimalnaZaloga: 50,
-    cenaEur: 18.0,
-    _count: { usages: 7, movements: 3 },
-  },
-  {
-    id: 'inv8',
-    sifraMateriala: 'ALU-P40-WHT',
-    naziv: 'Alu profil Z-line 40mm — Bela',
-    tip: 'Alu_profil',
-    kolicinaZaloga: 65,
-    enota: 'm',
-    minimalnaZaloga: 30,
-    cenaEur: 18.0,
-    _count: { usages: 4, movements: 2 },
-  },
-]
+// R152: demoInventory IZBRISAN — napaka/prazna zaloga ni več prikazala
+// izmišljenih artiklov (fail-open). Zdaj: prazno + vidna napaka.
+

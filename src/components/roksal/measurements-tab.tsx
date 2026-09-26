@@ -11,6 +11,13 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { parseSlDimension, useSpeechRecognition } from '@/lib/sl-speech'
+import {
+  loadDrafts,
+  saveDraft,
+  removeDraft,
+  makeDraftId,
+  type MeasurementDraft,
+} from '@/lib/measurement-drafts'
 import { PhotoMeasure } from '@/components/roksal/photo-measure'
 import { Separator } from '@/components/ui/separator'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -104,6 +111,7 @@ import {
   AlertTriangle,
   Info,
   Phone,
+  CloudUpload,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
@@ -1039,24 +1047,26 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
             const measRes = await fetch(`/api/measurements?projectId=${firstProjectId}`)
             if (measRes.ok) {
               const measData = await measRes.json()
-              if (measData.length > 0) {
-                setMeasurements(normalizeMeasurements(measData))
-              } else {
-                setMeasurements(demoMeasurements)
-              }
+              // R152: prazen projekt ostane PRAZEN — ni izmišljenih meritev.
+              setMeasurements(normalizeMeasurements(measData))
             } else {
-              setMeasurements(demoMeasurements)
+              // R152 fail-closed: napaka API-ja je vidna, nič demo meritev.
+              setMeasurements([])
+              toast.error(`Meritev ni bilo mogoče naložiti (napaka ${measRes.status})`)
             }
           } else {
-            setMeasurements(demoMeasurements)
+            setMeasurements([])
           }
         } else {
-          setMeasurements(demoMeasurements)
-          setProjects(demoProjects)
+          // R152 fail-closed: ni izmišljenih projektov/meritev — napaka je vidna.
+          setMeasurements([])
+          setProjects([])
+          toast.error(`Projektov ni bilo mogoče naložiti (napaka ${projRes.status})`)
         }
       } catch {
-        setMeasurements(demoMeasurements)
-        setProjects(demoProjects)
+        setMeasurements([])
+        setProjects([])
+        toast.error('Meritev ni bilo mogoče naložiti — preverite povezavo.')
       } finally {
         setLoading(false)
       }
@@ -1081,18 +1091,137 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
         const measRes = await fetch(`/api/measurements?projectId=${selectedProject}`)
         if (measRes.ok) {
           const measData = await measRes.json()
-          setMeasurements(
-            measData.length > 0
-              ? normalizeMeasurements(measData)
-              : demoMeasurements.filter((m) => m.projectId === selectedProject)
-          )
+          // R152: prazen projekt ostane PRAZEN — ni izmišljenih meritev.
+          setMeasurements(normalizeMeasurements(measData))
+        } else {
+          setMeasurements([])
+          toast.error(`Meritev ni bilo mogoče osvežiti (napaka ${measRes.status})`)
         }
       } catch {
-        // keep existing
+        setMeasurements([])
+        toast.error('Meritev ni bilo mogoče osvežiti — preverite povezavo.')
       }
     }
     fetchMeasurements()
   }, [selectedProject, loading])
+
+  // ============================================
+  // R152 — ISKRENI LOKALNI OSNUTKI (fail-closed offline)
+  // ============================================
+  // Meritev, ki je POST na strežnik NI uspel, NE izgine in NE laže, da je
+  // shranjena: gre v ekspliciten osnutek (localStorage, per projekt), ki je
+  // vedno vidno označen in ročno sinhroniziran. Nič izmišljenih vrstic,
+  // nič tihega izgubljanja.
+
+  const [drafts, setDrafts] = useState<MeasurementDraft[]>([])
+  const [draftsOpen, setDraftsOpen] = useState(true)
+  const [syncingDrafts, setSyncingDrafts] = useState(false)
+
+  // Naloži osnutke ob spremembi projekta (localStorage → stanje)
+  useEffect(() => {
+    if (!selectedProject) {
+      setDrafts([])
+      return
+    }
+    try {
+      const { drafts: loaded, skipped } = loadDrafts(selectedProject)
+      setDrafts(loaded)
+      if (skipped > 0) {
+        toast.warning(
+          `${skipped} osnutek(ov) s pokvarjenim zapisom je preskočenih — ostali so ohranjeni.`
+        )
+      }
+    } catch {
+      setDrafts([])
+      toast.error('Lokalnih osnutkov ni bilo mogoče prebrati (shramba ni dostopna).')
+    }
+  }, [selectedProject])
+
+  /** Ustvari ekspliciten osnutek iz NEUSPELEGA POST tela. Iskren toast. */
+  function createMeasurementDraft(payload: Record<string, unknown>, label: string) {
+    const draft: MeasurementDraft = {
+      draftId: makeDraftId(),
+      createdAt: new Date().toISOString(),
+      label,
+      payload,
+    }
+    try {
+      saveDraft(selectedProject, draft)
+      setDrafts((prev) => [draft, ...prev])
+      toast.warning(
+        `„${label}" NI shranjena v bazo (strežnik ni dosegljiv) — shranjena kot lokalni osnutek. Sinhronizirajte jo v razdelku osnutkov.`,
+        { duration: 8000 }
+      )
+      pushAudit({
+        akcija: 'ADD',
+        meritevId: draft.draftId,
+        opis: `Lokalni osnutek „${label}" ustvarjen (ni sinhroniziran)`,
+      })
+    } catch {
+      toast.error(
+        `„${label}" NI shranjena — niti v bazo niti lokalno (napaka shrambe). Vpišite jo znova.`,
+        { duration: 10000 }
+      )
+    }
+  }
+
+  /** Odstrani osnutek brez sinhronizacije (uporabnikova odločitev). */
+  function discardMeasurementDraft(draftId: string) {
+    try {
+      const next = removeDraft(selectedProject, draftId)
+      setDrafts(next)
+      toast.info('Osnutek odstranjen (ni bil nikoli v bazi).')
+    } catch {
+      toast.error('Osnutka ni bilo mogoče odstraniti (shramba ni dostopna).')
+    }
+  }
+
+  /** Poskusi sinhronizirati enega osnutek. Vrne true ob uspehu. */
+  async function syncSingleDraft(draft: MeasurementDraft): Promise<boolean> {
+    try {
+      const res = await fetch('/api/measurements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(draft.payload),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setMeasurements((prev) => [normalizeMeasurements([data])[0], ...prev])
+        const next = removeDraft(selectedProject, draft.draftId)
+        setDrafts(next)
+        pushAudit({
+          akcija: 'ADD',
+          meritevId: data.id,
+          opis: `Osnutek „${draft.label}" sinhroniziran v bazo`,
+        })
+        return true
+      }
+      return false
+    } catch {
+      return false
+    }
+  }
+
+  /** Sinhroniziraj vse osnutke (zaporedno, determinističen vrstni red). */
+  async function syncAllDrafts() {
+    if (syncingDrafts || drafts.length === 0) return
+    setSyncingDrafts(true)
+    let ok = 0
+    let fail = 0
+    for (const draft of [...drafts].sort((a, b) => a.createdAt.localeCompare(b.createdAt))) {
+      const success = await syncSingleDraft(draft)
+      if (success) ok += 1
+      else fail += 1
+    }
+    setSyncingDrafts(false)
+    if (ok > 0 && fail === 0) {
+      toast.success(`Sinhroniziranih ${ok} osnutek(ov) v bazo.`)
+    } else if (ok > 0 && fail > 0) {
+      toast.warning(`Sinhroniziranih ${ok}, NEUSPEŠNIH ${fail} — ostajajo kot osnutki.`)
+    } else {
+      toast.error(`Sinhronizacija ni uspela (vseh ${fail}) — preverite povezavo in poskusite znova.`)
+    }
+  }
 
   // Naloži segmente iz localStorage
   useEffect(() => {
@@ -1366,16 +1495,17 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
     }
 
     try {
+      const postPayload = {
+        projectId: selectedProject,
+        dolzinaMm,
+        visinaMm,
+        arMetadata,
+        gpsLokacija: { lat: 46.2397, lng: 14.3556 },
+      }
       const res = await fetch('/api/measurements', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          projectId: selectedProject,
-          dolzinaMm,
-          visinaMm,
-          arMetadata,
-          gpsLokacija: { lat: 46.2397, lng: 14.3556 },
-        }),
+        body: JSON.stringify(postPayload),
       })
       if (res.ok) {
         const data = await res.json()
@@ -1405,97 +1535,96 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
         setFormOpen(false)
         toast.success('Meritev dodana!')
       } else {
-        // Server error — save locally as fallback
-        saveLocalMeasurement(arMetadata, dolzinaMm, visinaMm, rawLength)
-        toast.error('Napaka strežnika — meritev shranjena lokalno')
+        // R152: neuspeh → ekspliciten lokalni osnutek (ni izmišljene vrstice,
+        // ni lažnega "uspešno shranjeno").
+        createMeasurementDraft(
+          postPayload,
+          formOznaka || formLocation || formatMultiUnit(dolzinaMm)
+        )
       }
     } catch {
-      saveLocalMeasurement(arMetadata, dolzinaMm, visinaMm, rawLength)
-      toast.success('Meritev dodana (lokalno)!')
+      createMeasurementDraft(
+        {
+          projectId: selectedProject,
+          dolzinaMm,
+          visinaMm,
+          arMetadata,
+          gpsLokacija: { lat: 46.2397, lng: 14.3556 },
+        },
+        formOznaka || formLocation || formatMultiUnit(dolzinaMm)
+      )
     } finally {
       setSubmitting(false)
     }
   }
 
-  function saveLocalMeasurement(ar: ArMetadata, dolzinaMm: number, visinaMm: number, originalnaVrednost: number) {
-    const newMeasurement: Measurement = {
-      id: `local_${Date.now()}`,
-      dolzinaMm,
-      visinaMm,
-      lidarScanUrl: null,
-      gpsLokacija: JSON.stringify({ lat: 46.2397, lng: 14.3556 }),
-      createdAt: new Date().toISOString(),
-      projectId: selectedProject,
-      lokacija: formLocation || null,
-      steviloStebrov: formPosts ? parseInt(formPosts) : null,
-      tipPodlage: formGround,
-      kot: formAngle ? parseFloat(formAngle) : null,
-      opombe: formNotes || null,
-      arMetadata: JSON.stringify({ ...ar, status: 'OSNUTEK' }),
-      tipMeritve: formTipMeritve,
-      oznaka: formOznaka || undefined,
-      segmentId: formSegmentId || undefined,
-      opomba: formOpomba || undefined,
-      status: 'OSNUTEK',
-      // P3
-      enota: ar.enota,
-      originalnaVrednost,
-    }
-    setMeasurements((prev) => [newMeasurement, ...prev])
-    pushAudit({
-      akcija: 'ADD',
-      meritevId: newMeasurement.id,
-      opis: `Nova meritev \"${formOznaka || formLocation || newMeasurement.id.slice(-4)}\" dodana (lokalno) — ${formatMultiUnit(dolzinaMm)}`,
-    })
-    resetForm()
-    setFormOpen(false)
-  }
-
+  // R152: saveLocalMeasurement IZBRISAN — izmišljena lokalna vrstica z
+  // fake-success toastom je kršila fail-closed pravila. Namesto nje:
+  // createMeasurementDraft() (ekspliciten osnutek z vidnim badgeom in
+  // sinhronizacijo).
   function handleDeleteMeasurement(id: string) {
     const m = measurements.find((x) => x.id === id)
-    setMeasurements((prev) => prev.filter((m) => m.id !== id))
     if (m) {
-      pushAudit({
-        akcija: 'DELETE',
-        meritevId: id,
-        opis: `Meritev \"${m.oznaka || m.lokacija || id.slice(-4)}\" izbrisana`,
-      })
+      // R152: API /api/measurements nima DELETE — ni lažnega brisanja
+      // (prej: izbris iz lokalnega stanja + toast.success, po reloadu
+      // je meritev prišla nazaj).
+      toast.error(
+        'Brisanje meritev ni na voljo — meritve so revizijski podatki. Neuporabne meritve označite z opombo ali jih prijavite vodji.'
+      )
+      return
     }
-    toast.success('Meritev izbrisana')
+    toast.error('Meritve ni bilo mogoče najti (morda je že bila odstranjena).')
   }
 
-  function handleDuplicateMeasurement(m: Measurement) {
-    const duplicate: Measurement = {
-      ...m,
-      id: `local_${Date.now()}`,
-      createdAt: new Date().toISOString(),
-      lokacija: m.lokacija ? `${m.lokacija} (kopija)` : 'Kopija',
-      oznaka: m.oznaka ? `${m.oznaka} (kopija)` : undefined,
-      status: 'OSNUTEK',
+  // R152: podvajanje POSKUSI resnični POST; ob neuspehu → ekspliciten
+  // osnutek (prej: izmišljena lokalna vrstica, izgubljena ob reloadu).
+  async function handleDuplicateMeasurement(m: Measurement) {
+    const label = `${m.oznaka || m.lokacija || 'meritev'} (kopija)`
+    const payload: Record<string, unknown> = {
+      projectId: m.projectId || selectedProject,
+      dolzinaMm: m.dolzinaMm,
+      visinaMm: m.visinaMm,
+      arMetadata: m.arMetadata ? JSON.parse(m.arMetadata) : null,
+      gpsLokacija: m.gpsLokacija ? JSON.parse(m.gpsLokacija) : null,
     }
-    setMeasurements((prev) => [duplicate, ...prev])
-    pushAudit({
-      akcija: 'ADD',
-      meritevId: duplicate.id,
-      opis: `Meritev \"${m.oznaka || m.lokacija || m.id.slice(-4)}\" podvojena`,
-    })
-    toast.success('Meritev podvojena!')
+    try {
+      const res = await fetch('/api/measurements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        const duplicate: Measurement = {
+          ...data,
+          lokacija: m.lokacija ? `${m.lokacija} (kopija)` : 'Kopija',
+          oznaka: m.oznaka ? `${m.oznaka} (kopija)` : undefined,
+          status: 'OSNUTEK',
+        }
+        setMeasurements((prev) => [duplicate, ...prev])
+        pushAudit({
+          akcija: 'ADD',
+          meritevId: duplicate.id,
+          opis: `Meritev \"${m.oznaka || m.lokacija || m.id.slice(-4)}\" podvojena`,
+        })
+        toast.success('Meritev podvojena!')
+        return
+      }
+      createMeasurementDraft(payload, label)
+    } catch {
+      createMeasurementDraft(payload, label)
+    }
   }
 
   // P1 — cikliranje statusa meritve (OSNUTEK → POTRJENA → ARHIVIRANA → OSNUTEK)
+  // R152: API /api/measurements nima PATCH — prej je bila sprememba samo
+  // lokalna (po reloadu se je status tiho vrnil). Zdaj iskreno javimo.
   function handleStatusCycle(m: Measurement) {
     const currentStatus: MeasurementStatus = m.status || 'OSNUTEK'
     const nextStatus = statusCycle[currentStatus]
-    const updated: Measurement = { ...m, status: nextStatus }
-    setMeasurements((prev) => prev.map((x) => (x.id === m.id ? updated : x)))
-    pushAudit({
-      akcija: 'STATUS',
-      meritevId: m.id,
-      opis: `Status meritve \"${m.oznaka || m.lokacija || m.id.slice(-4)}\" spremenjen`,
-      staraVrednost: statusLabels[currentStatus],
-      novaVrednost: statusLabels[nextStatus],
-    })
-    toast.info(`Status: ${statusLabels[currentStatus]} → ${statusLabels[nextStatus]}`)
+    toast.error(
+      `Sprememba statusa ni na voljo (API ne podpira PATCH). Želeno: ${statusLabels[currentStatus]} → ${statusLabels[nextStatus]} — prijavite vodji.`
+    )
   }
 
   // Hitri izračun razmikov
@@ -1804,16 +1933,17 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
     }
 
     try {
+      const postPayload = {
+        projectId: selectedProject,
+        dolzinaMm: 1,
+        visinaMm: 1,
+        arMetadata,
+        gpsLokacija: { lat: 46.2397, lng: 14.3556 },
+      }
       const res = await fetch('/api/measurements', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          projectId: selectedProject,
-          dolzinaMm: 1,
-          visinaMm: 1,
-          arMetadata,
-          gpsLokacija: { lat: 46.2397, lng: 14.3556 },
-        }),
+        body: JSON.stringify(postPayload),
       })
       if (res.ok) {
         const data = await res.json()
@@ -1835,32 +1965,23 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
         toast.success(`${inclinometerMode === 'KOT' ? 'Kot' : 'Nagib'} ${kotStopinje}° shranjen`)
         setInclinometerOpen(false)
       } else {
-        // fallback lokalno
-        const newMeasurement: Measurement = {
-          id: `local_${Date.now()}`,
-          dolzinaMm: 1,
-          visinaMm: 1,
-          createdAt: new Date().toISOString(),
-          projectId: selectedProject,
-          lokacija,
-          arMetadata: JSON.stringify({ ...arMetadata, status: 'OSNUTEK' }),
-          tipMeritve: inclinometerMode,
-          oznaka: arMetadata.oznaka,
-          opomba: arMetadata.opomba,
-          status: 'OSNUTEK',
-          kotStopinje,
-        }
-        setMeasurements((prev) => [newMeasurement, ...prev])
-        pushAudit({
-          akcija: 'ADD',
-          meritevId: newMeasurement.id,
-          opis: `${inclinometerMode === 'KOT' ? 'Kot' : 'Nagib'} ${kotStopinje}° shranjen (lokalno) — ${lokacija}`,
-        })
-        toast.success(`${inclinometerMode === 'KOT' ? 'Kot' : 'Nagib'} ${kotStopinje}° shranjen (lokalno)`)
-        setInclinometerOpen(false)
+        // R152: neuspeh → ekspliciten osnutek, ni fake-success "(lokalno)".
+        createMeasurementDraft(
+          postPayload,
+          `${inclinometerMode === 'KOT' ? 'Kot' : 'Nagib'} ${kotStopinje}° — ${lokacija}`
+        )
       }
     } catch {
-      toast.error('Napaka pri shranjevanju')
+      createMeasurementDraft(
+        {
+          projectId: selectedProject,
+          dolzinaMm: 1,
+          visinaMm: 1,
+          arMetadata,
+          gpsLokacija: { lat: 46.2397, lng: 14.3556 },
+        },
+        `${inclinometerMode === 'KOT' ? 'Kot' : 'Nagib'} ${kotStopinje}° — ${lokacija}`
+      )
     }
   }
 
@@ -1997,55 +2118,30 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
           setMeasurements((prev) => [newM, ...prev])
           okCount++
         } else {
-          const localM: Measurement = {
-            id: `local_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-            dolzinaMm: item.dolzinaMm,
-            visinaMm: item.visinaMm,
-            lidarScanUrl: null,
-            gpsLokacija: JSON.stringify({ lat: 46.2397, lng: 14.3556 }),
-            createdAt: new Date().toISOString(),
-            projectId: selectedProject,
-            lokacija: null,
-            steviloStebrov: null,
-            tipPodlage: null,
-            kot: null,
-            opombe: null,
-            arMetadata: JSON.stringify(item.ar),
-            tipMeritve: item.ar.tipMeritve,
-            oznaka: item.ar.oznaka,
-            segmentId: item.ar.segmentId,
-            opomba: item.ar.opomba,
-            status: 'OSNUTEK',
-            enota: 'mm',
-            kotStopinje: item.ar.kotStopinje ?? null,
-          }
-          setMeasurements((prev) => [localM, ...prev])
+          // R152: neuspeh → ekspliciten osnutek (ni fake-success).
+          createMeasurementDraft(
+            {
+              projectId: selectedProject,
+              dolzinaMm: item.dolzinaMm,
+              visinaMm: item.visinaMm,
+              arMetadata: item.ar,
+              gpsLokacija: { lat: 46.2397, lng: 14.3556 },
+            },
+            item.ar.oznaka || 'stopnica'
+          )
           localCount++
         }
       } catch {
-        const localM: Measurement = {
-          id: `local_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-          dolzinaMm: item.dolzinaMm,
-          visinaMm: item.visinaMm,
-          lidarScanUrl: null,
-          gpsLokacija: JSON.stringify({ lat: 46.2397, lng: 14.3556 }),
-          createdAt: new Date().toISOString(),
-          projectId: selectedProject,
-          lokacija: null,
-          steviloStebrov: null,
-          tipPodlage: null,
-          kot: null,
-          opombe: null,
-          arMetadata: JSON.stringify(item.ar),
-          tipMeritve: item.ar.tipMeritve,
-          oznaka: item.ar.oznaka,
-          segmentId: item.ar.segmentId,
-          opomba: item.ar.opomba,
-          status: 'OSNUTEK',
-          enota: 'mm',
-          kotStopinje: item.ar.kotStopinje ?? null,
-        }
-        setMeasurements((prev) => [localM, ...prev])
+        createMeasurementDraft(
+          {
+            projectId: selectedProject,
+            dolzinaMm: item.dolzinaMm,
+            visinaMm: item.visinaMm,
+            arMetadata: item.ar,
+            gpsLokacija: { lat: 46.2397, lng: 14.3556 },
+          },
+          item.ar.oznaka || 'stopnica'
+        )
         localCount++
       }
     }
@@ -2055,9 +2151,13 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
       meritevId: 'stair-wizard',
       opis: `Stopniščni čarovnik: ${stStopnic} stopnic, ${Math.round(skupnaVisinaMm)}mm višine, kot ${stairCalc.kotStopinje.toFixed(1)}° — ${newMeas.length} meritev kreiranih`,
     })
-    toast.success(
-      `Ustvarjeno ${newMeas.length} meritev${localCount > 0 ? ` (${okCount} sinhroniziranih, ${localCount} lokalno)` : ''}`
-    )
+    if (localCount > 0) {
+      toast.warning(
+        `Ustvarjeno ${newMeas.length} meritev: ${okCount} v bazi, ${localCount} NISO v bazi — ostajo kot lokalni osnutki za sinhronizacijo.`
+      )
+    } else {
+      toast.success(`Ustvarjeno ${newMeas.length} meritev v bazo.`)
+    }
     setStairWizardOpen(false)
   }
 
@@ -2133,16 +2233,17 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
     }
 
     try {
+      const postPayload = {
+        projectId: selectedProject,
+        dolzinaMm: 1,
+        visinaMm: 1,
+        arMetadata,
+        gpsLokacija: { lat: 46.2397, lng: 14.3556 },
+      }
       const res = await fetch('/api/measurements', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          projectId: selectedProject,
-          dolzinaMm: 1,
-          visinaMm: 1,
-          arMetadata,
-          gpsLokacija: { lat: 46.2397, lng: 14.3556 },
-        }),
+        body: JSON.stringify(postPayload),
       })
       if (res.ok) {
         const data = await res.json()
@@ -2166,33 +2267,22 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
         toast.success(`${oznaka} shranjen`)
         setKotomerOpen(false)
       } else {
-        const newM: Measurement = {
-          id: `local_${Date.now()}`,
-          dolzinaMm: 1,
-          visinaMm: 1,
-          createdAt: new Date().toISOString(),
-          projectId: selectedProject,
-          lokacija,
-          arMetadata: JSON.stringify({ ...arMetadata, status: 'OSNUTEK' }),
-          tipMeritve: kotomerMode,
-          oznaka,
-          opomba: arMetadata.opomba,
-          status: 'OSNUTEK',
-          kotStopinje,
-          notranjiKot: notranjiKot ?? null,
-          zunanjiKot: zunanjiKot ?? null,
-        }
-        setMeasurements((prev) => [newM, ...prev])
-        pushAudit({
-          akcija: 'ADD',
-          meritevId: newM.id,
-          opis: `${oznaka} shranjen (lokalno) — ${kotStopinje}°`,
-        })
-        toast.success(`${oznaka} shranjen (lokalno)`)
+        // R152: neuspeh → ekspliciten osnutek, ni fake-success "(lokalno)".
+        createMeasurementDraft(postPayload, oznaka)
         setKotomerOpen(false)
       }
     } catch {
-      toast.error('Napaka pri shranjevanju')
+      createMeasurementDraft(
+        {
+          projectId: selectedProject,
+          dolzinaMm: 1,
+          visinaMm: 1,
+          arMetadata,
+          gpsLokacija: { lat: 46.2397, lng: 14.3556 },
+        },
+        oznaka
+      )
+      setKotomerOpen(false)
     }
   }
 
@@ -2273,40 +2363,29 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
         })
         toast.success(`Stebriček ${oznaka} dodan!`)
       } else {
-        const newM: Measurement = {
-          id: `local_${Date.now()}`,
-          dolzinaMm: Math.max(1, Math.round(pozicijaMm)),
-          visinaMm: visinaStebra,
-          lidarScanUrl: null,
-          gpsLokacija: JSON.stringify({ lat: 46.2397, lng: 14.3556 }),
-          createdAt: new Date().toISOString(),
-          projectId: selectedProject,
-          lokacija: null,
-          arMetadata: JSON.stringify({ ...arMetadata, status: 'OSNUTEK' }),
-          tipMeritve: 'STEBR',
-          oznaka,
-          segmentId: stebriSegmentId,
-          opomba: arMetadata.opomba,
-          status: 'OSNUTEK',
-          tipStebra: stebriTipStebra,
-          materialStebra: stebriMaterial,
-          visinaStebraMm: visinaStebra,
-          pozicijaMm: Math.round(pozicijaMm),
-          razmikMm: razmikMm || null,
-          steberOznaka: oznaka,
-          enota: stebriPozicijaUnit,
-          originalnaVrednost: parseFloat(stebriPozicija) || 0,
-        }
-        setMeasurements((prev) => [newM, ...prev])
-        pushAudit({
-          akcija: 'ADD',
-          meritevId: newM.id,
-          opis: `Stebriček ${oznaka} dodan (lokalno) — pozicija ${Math.round(pozicijaMm)}mm`,
-        })
-        toast.success(`Stebriček ${oznaka} dodan (lokalno)!`)
+        // R152: neuspeh → ekspliciten osnutek, ni fake-success "(lokalno)".
+        createMeasurementDraft(
+          {
+            projectId: selectedProject,
+            dolzinaMm: Math.max(1, Math.round(pozicijaMm)),
+            visinaMm: visinaStebra,
+            arMetadata,
+            gpsLokacija: { lat: 46.2397, lng: 14.3556 },
+          },
+          `Stebriček ${oznaka}`
+        )
       }
     } catch {
-      toast.error('Napaka pri shranjevanju stebra')
+      createMeasurementDraft(
+        {
+          projectId: selectedProject,
+          dolzinaMm: Math.max(1, Math.round(pozicijaMm)),
+          visinaMm: visinaStebra,
+          arMetadata,
+          gpsLokacija: { lat: 46.2397, lng: 14.3556 },
+        },
+        `Stebriček ${oznaka}`
+      )
     }
     // reset forme
     setStebriPozicija('')
@@ -2449,67 +2528,30 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
           setMeasurements((prev) => [newM, ...prev])
           okCount++
         } else {
-          const localM: Measurement = {
-            id: `local_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-            dolzinaMm: Math.max(1, Math.round(pozicijaMm)),
-            visinaMm: visinaMm || 1100,
-            lidarScanUrl: null,
-            gpsLokacija: JSON.stringify({ lat: 46.2397, lng: 14.3556 }),
-            createdAt: new Date().toISOString(),
-            projectId: selectedProject,
-            lokacija: null,
-            arMetadata: JSON.stringify({ ...arMetadata, status: 'OSNUTEK' }),
-            tipMeritve: 'STEBR',
-            oznaka,
-            segmentId: segment.id,
-            opomba: arMetadata.opomba,
-            status: 'OSNUTEK',
-            tipStebra: 'VMESNI',
-            materialStebra: 'WPC',
-            visinaStebraMm: visinaMm || 1100,
-            pozicijaMm: Math.round(pozicijaMm),
-            steberOznaka: oznaka,
-            orientacijaPalic: orientacija,
-            sirinaPalice: wpcSirinaPalice,
-            debelinaPalice: wpcDebelinaPalice,
-            razmikPalic: wpcRazmikPalic,
-            kotPosevnih: segment.type === 'WPC_POSEVNE' ? wpcKotPosevnih : undefined,
-            stPalic,
-            enota: 'mm',
-          }
-          setMeasurements((prev) => [localM, ...prev])
+          // R152: neuspeh → ekspliciten osnutek (ni fake-success).
+          createMeasurementDraft(
+            {
+              projectId: selectedProject,
+              dolzinaMm: Math.max(1, Math.round(pozicijaMm)),
+              visinaMm: visinaMm || 1100,
+              arMetadata,
+              gpsLokacija: { lat: 46.2397, lng: 14.3556 },
+            },
+            `WPC stebriček ${oznaka}`
+          )
           localCount++
         }
       } catch {
-        const localM: Measurement = {
-          id: `local_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-          dolzinaMm: Math.max(1, Math.round(pozicijaMm)),
-          visinaMm: visinaMm || 1100,
-          lidarScanUrl: null,
-          gpsLokacija: JSON.stringify({ lat: 46.2397, lng: 14.3556 }),
-          createdAt: new Date().toISOString(),
-          projectId: selectedProject,
-          lokacija: null,
-          arMetadata: JSON.stringify({ ...arMetadata, status: 'OSNUTEK' }),
-          tipMeritve: 'STEBR',
-          oznaka,
-          segmentId: segment.id,
-          opomba: arMetadata.opomba,
-          status: 'OSNUTEK',
-          tipStebra: 'VMESNI',
-          materialStebra: 'WPC',
-          visinaStebraMm: visinaMm || 1100,
-          pozicijaMm: Math.round(pozicijaMm),
-          steberOznaka: oznaka,
-          orientacijaPalic: orientacija,
-          sirinaPalice: wpcSirinaPalice,
-          debelinaPalice: wpcDebelinaPalice,
-          razmikPalic: wpcRazmikPalic,
-          kotPosevnih: segment.type === 'WPC_POSEVNE' ? wpcKotPosevnih : undefined,
-          stPalic,
-          enota: 'mm',
-        }
-        setMeasurements((prev) => [localM, ...prev])
+        createMeasurementDraft(
+          {
+            projectId: selectedProject,
+            dolzinaMm: Math.max(1, Math.round(pozicijaMm)),
+            visinaMm: visinaMm || 1100,
+            arMetadata,
+            gpsLokacija: { lat: 46.2397, lng: 14.3556 },
+          },
+          `WPC stebriček ${oznaka}`
+        )
         localCount++
       }
     }
@@ -2519,9 +2561,13 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
       meritevId: 'wpc-palice',
       opis: `WPC palice dodane: ${stPalic} kos (${segmentTypeLabels[segment.type]}, ${wpcSirinaPalice}×${wpcDebelinaPalice}mm, razmak ${wpcRazmikPalic}mm) v segment ${segment.id}`,
     })
-    toast.success(
-      `Dodanih ${stPalic} WPC palic${localCount > 0 ? ` (${okCount} sinhroniziranih, ${localCount} lokalno)` : ''}`
-    )
+    if (localCount > 0) {
+      toast.warning(
+        `Dodanih ${stPalic} WPC palic: ${okCount} v bazi, ${localCount} NISO — ostajo kot lokalni osnutki za sinhronizacijo.`
+      )
+    } else {
+      toast.success(`Dodanih ${stPalic} WPC palic v bazo.`)
+    }
   }
 
   function handleExportCSV() {
@@ -2771,51 +2817,30 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
           setMeasurements((prev) => [newM, ...prev])
           successCount++
         } else {
-          const localM: Measurement = {
-            id: `local_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-            dolzinaMm: item.dolzinaMm,
-            visinaMm: item.visinaMm,
-            lidarScanUrl: null,
-            gpsLokacija: JSON.stringify({ lat: 46.2397, lng: 14.3556 }),
-            createdAt: new Date().toISOString(),
-            projectId: selectedProject,
-            lokacija: null,
-            steviloStebrov: null,
-            tipPodlage: null,
-            kot: null,
-            opombe: null,
-            arMetadata: JSON.stringify(item.ar),
-            tipMeritve: item.ar.tipMeritve,
-            oznaka: item.ar.oznaka,
-            segmentId: item.ar.segmentId,
-            opomba: item.ar.opomba,
-            status: item.ar.status || 'OSNUTEK',
-          }
-          setMeasurements((prev) => [localM, ...prev])
+          // R152: neuspeh → ekspliciten osnutek (ni fake-success).
+          createMeasurementDraft(
+            {
+              projectId: selectedProject,
+              dolzinaMm: item.dolzinaMm,
+              visinaMm: item.visinaMm,
+              arMetadata: item.ar,
+              gpsLokacija: { lat: 46.2397, lng: 14.3556 },
+            },
+            item.ar.oznaka || 'predloga'
+          )
           localCount++
         }
       } catch {
-        const localM: Measurement = {
-          id: `local_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-          dolzinaMm: item.dolzinaMm,
-          visinaMm: item.visinaMm,
-          lidarScanUrl: null,
-          gpsLokacija: JSON.stringify({ lat: 46.2397, lng: 14.3556 }),
-          createdAt: new Date().toISOString(),
-          projectId: selectedProject,
-          lokacija: null,
-          steviloStebrov: null,
-          tipPodlage: null,
-          kot: null,
-          opombe: null,
-          arMetadata: JSON.stringify(item.ar),
-          tipMeritve: item.ar.tipMeritve,
-          oznaka: item.ar.oznaka,
-          segmentId: item.ar.segmentId,
-          opomba: item.ar.opomba,
-          status: item.ar.status || 'OSNUTEK',
-        }
-        setMeasurements((prev) => [localM, ...prev])
+        createMeasurementDraft(
+          {
+            projectId: selectedProject,
+            dolzinaMm: item.dolzinaMm,
+            visinaMm: item.visinaMm,
+            arMetadata: item.ar,
+            gpsLokacija: { lat: 46.2397, lng: 14.3556 },
+          },
+          item.ar.oznaka || 'predloga'
+        )
         localCount++
       }
     }
@@ -2826,11 +2851,13 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
       meritevId: 'predloga',
       opis: `Predloga \"${predloga?.naziv || predlogaId}\" uporabljena — ${newMeas.length} meritev, ${newSegs.length} segmentov`,
     })
-    toast.success(
-      `Predloga uporabljena: ${predloga?.naziv || predlogaId}${
-        localCount > 0 ? ` (${successCount} sinhroniziranih, ${localCount} lokalno)` : ''
-      }`
-    )
+    if (localCount > 0) {
+      toast.warning(
+        `Predloga ${predloga?.naziv || predlogaId}: ${successCount} sinhroniziranih, ${localCount} NISO v bazi — ostajo kot lokalni osnutki za sinhronizacijo.`
+      )
+    } else {
+      toast.success(`Predloga uporabljena: ${predloga?.naziv || predlogaId} (${successCount} meritev)`)
+    }
   }
 
   // ============================================
@@ -2899,7 +2926,10 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
     toast.success(`Izvozenih ${selected.length} meritev (CSV)`)
   }
 
-  function handleBulkCopyToSegment() {
+  // R152: kopiranje v segment POSKUSI resnični POST za vsako meritev;
+  // neuspele gredo v eksplicitne osnutke (prej: samo izmišljene lokalne
+  // vrstice, izgubljene ob reloadu).
+  async function handleBulkCopyToSegment() {
     if (!bulkCopyTarget) {
       toast.error('Izberite ciljni segment')
       return
@@ -2909,45 +2939,68 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
       toast.error('Ni izbranih meritev')
       return
     }
-    const copies: Measurement[] = selected.map((m) => ({
-      ...m,
-      id: `local_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-      createdAt: new Date().toISOString(),
-      segmentId: bulkCopyTarget,
-      oznaka: m.oznaka ? `${m.oznaka} (kopija)` : 'Kopija',
-      status: 'OSNUTEK' as MeasurementStatus,
-    }))
-    setMeasurements((prev) => [...copies, ...prev])
+    let okCount = 0
+    let draftCount = 0
+    for (const m of selected) {
+      const payload: Record<string, unknown> = {
+        projectId: m.projectId || selectedProject,
+        dolzinaMm: m.dolzinaMm,
+        visinaMm: m.visinaMm,
+        arMetadata: m.arMetadata ? JSON.parse(m.arMetadata) : null,
+        gpsLokacija: m.gpsLokacija ? JSON.parse(m.gpsLokacija) : null,
+      }
+      try {
+        const res = await fetch('/api/measurements', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+        if (res.ok) {
+          const data = await res.json()
+          const copy: Measurement = {
+            ...data,
+            lokacija: m.lokacija,
+            tipMeritve: m.tipMeritve,
+            segmentId: bulkCopyTarget,
+            oznaka: m.oznaka ? `${m.oznaka} (kopija)` : 'Kopija',
+            status: 'OSNUTEK' as MeasurementStatus,
+          }
+          setMeasurements((prev) => [copy, ...prev])
+          okCount++
+          continue
+        }
+        createMeasurementDraft(payload, `${m.oznaka || 'meritev'} (kopija → ${bulkCopyTarget})`)
+        draftCount++
+      } catch {
+        createMeasurementDraft(payload, `${m.oznaka || 'meritev'} (kopija → ${bulkCopyTarget})`)
+        draftCount++
+      }
+    }
     pushAudit({
       akcija: 'ADD',
       meritevId: 'bulk',
-      opis: `Kopirano ${selected.length} meritev v segment \"${bulkCopyTarget}\"`,
+      opis: `Kopirano ${selected.length} meritev v segment \"${bulkCopyTarget}\" (${okCount} strežnik, ${draftCount} osnutki)`,
     })
-    toast.success(`${selected.length} meritev kopiranih v \"${bulkCopyTarget}\"`)
+    if (draftCount > 0) {
+      toast.warning(`${okCount} kopiranih v bazo, ${draftCount} NISO — ostajajo kot lokalni osnutki.`)
+    } else {
+      toast.success(`${selected.length} meritev kopiranih v \"${bulkCopyTarget}\"`)
+    }
     setSelectedIds(new Set())
     setBulkCopyTarget('')
   }
 
+  // R152: API nima DELETE/PATCH — prej je bilo "arhiviranje" samo lokalno
+  // (po reloadu so se meritve vratile neoznačene). Zdaj iskreno javimo.
   function handleBulkDelete() {
     const selected = measurements.filter((m) => selectedIds.has(m.id))
     if (selected.length === 0) {
       toast.error('Ni izbranih meritev')
       return
     }
-    // Ker API nima DELETE, meritve označimo kot ARHIVIRANE (ne izgubijo se)
-    setMeasurements((prev) =>
-      prev.map((m) =>
-        selectedIds.has(m.id) ? { ...m, status: 'ARHIVIRANA' as MeasurementStatus } : m
-      )
+    toast.error(
+      `Arhiviranje/brisanje ${selected.length} meritev ni na voljo (API ne podpira DELETE/PATCH). Meritve so revizijski podatki — prijavite spremembe vodji.`
     )
-    selected.forEach((m) => {
-      pushAudit({
-        akcija: 'DELETE',
-        meritevId: m.id,
-        opis: `Meritev \"${m.oznaka || m.lokacija || m.id.slice(-4)}\" arhivirana (skupinsko)`,
-      })
-    })
-    toast.success(`${selected.length} meritev arhiviranih`)
     setSelectedIds(new Set())
     setBulkDeleteOpen(false)
   }
@@ -3386,28 +3439,30 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
           setMeasurements((prev) => [newM, ...prev])
           okCount++
         } else {
-          const localM: Measurement = {
-            id: `local_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-            dolzinaMm: Math.max(1, p.dolzinaMm),
-            visinaMm: 1100,
-            lidarScanUrl: null,
-            gpsLokacija: JSON.stringify({ lat: 46.2397, lng: 14.3556 }),
-            createdAt: new Date().toISOString(),
-            projectId: selectedProject,
-            lokacija: null,
-            arMetadata: JSON.stringify({ ...arMetadata, status: 'OSNUTEK' }),
-            tipMeritve: 'RAZDALJA',
-            oznaka: arMetadata.oznaka,
-            opomba: arMetadata.opomba,
-            status: 'OSNUTEK',
-            source: 'ar_snapshot',
-            snapshotId: snapshot.id,
-            enota: 'mm',
-          }
-          setMeasurements((prev) => [localM, ...prev])
+          // R152: neuspeh → ekspliciten osnutek (ni fake-success).
+          createMeasurementDraft(
+            {
+              projectId: selectedProject,
+              dolzinaMm: Math.max(1, p.dolzinaMm),
+              visinaMm: 1100,
+              arMetadata,
+              gpsLokacija: { lat: 46.2397, lng: 14.3556 },
+            },
+            arMetadata.oznaka || 'AR uvoz'
+          )
           localCount++
         }
       } catch {
+        createMeasurementDraft(
+          {
+            projectId: selectedProject,
+            dolzinaMm: Math.max(1, p.dolzinaMm),
+            visinaMm: 1100,
+            arMetadata,
+            gpsLokacija: { lat: 46.2397, lng: 14.3556 },
+          },
+          arMetadata.oznaka || 'AR uvoz'
+        )
         localCount++
       }
       created++
@@ -3467,33 +3522,30 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
           setMeasurements((prev) => [newM, ...prev])
           okCount++
         } else {
-          const localM: Measurement = {
-            id: `local_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-            dolzinaMm: 1,
-            visinaMm: 1100,
-            lidarScanUrl: null,
-            gpsLokacija: JSON.stringify({ lat: 46.2397, lng: 14.3556 }),
-            createdAt: new Date().toISOString(),
-            projectId: selectedProject,
-            lokacija: null,
-            arMetadata: JSON.stringify({ ...arMetadata, status: 'OSNUTEK' }),
-            tipMeritve: 'STEBR',
-            oznaka: arMetadata.oznaka,
-            opomba: arMetadata.opomba,
-            status: 'OSNUTEK',
-            source: 'ar_snapshot',
-            snapshotId: snapshot.id,
-            enota: 'mm',
-            tipStebra: 'VMESNI',
-            materialStebra: 'ALU',
-            visinaStebraMm: 1100,
-            pozicijaMm: 0,
-            steberOznaka: `AR-${label}`,
-          }
-          setMeasurements((prev) => [localM, ...prev])
+          // R152: neuspeh → ekspliciten osnutek (ni fake-success).
+          createMeasurementDraft(
+            {
+              projectId: selectedProject,
+              dolzinaMm: 1,
+              visinaMm: 1100,
+              arMetadata,
+              gpsLokacija: { lat: 46.2397, lng: 14.3556 },
+            },
+            arMetadata.oznaka || `AR-${label}`
+          )
           localCount++
         }
       } catch {
+        createMeasurementDraft(
+          {
+            projectId: selectedProject,
+            dolzinaMm: 1,
+            visinaMm: 1100,
+            arMetadata,
+            gpsLokacija: { lat: 46.2397, lng: 14.3556 },
+          },
+          arMetadata.oznaka || `AR-${label}`
+        )
         localCount++
       }
       created++
@@ -3505,9 +3557,14 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
       meritevId: 'ar-import',
       opis: `AR uvoz: ${pairs.length} mer + ${tocke.length} stebrov iz AR posnetka ${snapshot.id.slice(-6)}${noCalibration ? ' (brez umeritve)' : ''}`,
     })
-    toast.success(`${pairs.length} mer in ${tocke.length} stebrov uvoženih iz AR posnetka`, {
-      description: localCount > 0 ? `${okCount} sinhroniziranih, ${localCount} lokalno` : undefined,
-    })
+    if (localCount > 0) {
+      toast.warning(
+        `AR uvoz: ${okCount} shranjenih v bazo, ${localCount} NISO v bazi — ostajo kot lokalni osnutki.`,
+        { duration: 8000 }
+      )
+    } else {
+      toast.success(`${pairs.length} mer in ${tocke.length} stebrov uvoženih iz AR posnetka`)
+    }
     setArImportProgress(null)
     setArImportOpen(false)
   }
@@ -5739,6 +5796,99 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
         </Card>
       )}
 
+      {/* R152 — Lokalni osnutki (iskreni offline podatki, NI v bazi) */}
+      {drafts.length > 0 && (
+        <Card
+          className="card-hover animate-fade-in-up border border-roksal-amber/40 bg-roksal-amber/5"
+          style={{ animationDelay: '240ms' }}
+          role="region"
+          aria-label={`Lokalni osnutki: ${drafts.length} meritev ni sinhroniziranih z bazo`}
+        >
+          <CardHeader className="pb-2 pt-4 px-4">
+            <div className="flex items-center justify-between gap-2">
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-navy">
+                <AlertTriangle className="h-4 w-4 text-roksal-amber" aria-hidden="true" />
+                Lokalni osnutki — ni v bazi
+                <Badge className="bg-roksal-amber/20 text-roksal-navy hover:bg-roksal-amber/20 tabular-nums">
+                  {drafts.length}
+                </Badge>
+              </CardTitle>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setDraftsOpen((o) => !o)}
+                  aria-expanded={draftsOpen}
+                  aria-label={draftsOpen ? 'Skrči seznam osnutkov' : 'Razširi seznam osnutkov'}
+                  className="rounded-lg border border-roksal-navy/20 bg-roksal-navy/5 px-2 py-1 text-[10px] font-medium text-roksal-navy hover:bg-roksal-navy/10 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 active:scale-[0.96] transition-all duration-150"
+                >
+                  {draftsOpen ? 'Skrči' : 'Razširi'}
+                </button>
+                <button
+                  type="button"
+                  onClick={syncAllDrafts}
+                  disabled={syncingDrafts}
+                  aria-label={`Sinhroniziraj vse osnutke (${drafts.length}) v bazo`}
+                  className="flex items-center gap-1 rounded-lg bg-roksal-navy px-2.5 py-1 text-[10px] font-semibold text-white hover:bg-roksal-navy/90 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 active:scale-[0.96] transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <CloudUpload className="h-3 w-3" aria-hidden="true" />
+                  {syncingDrafts ? 'Sinhronizacija …' : 'Sinhroniziraj vse'}
+                </button>
+              </div>
+            </div>
+            <p className="mt-1 text-[11px] leading-snug text-muted-foreground">
+              Te meritve <span className="font-semibold">NISO shranjene v bazo</span> (strežnik ob
+              vnosu ni bil dosegljiv). Ohranjene so lokalno na tej napravi. Sinhronizirajte jih, ko
+              je povezava spet na voljo.
+            </p>
+          </CardHeader>
+          {draftsOpen && (
+            <CardContent className="px-4 pb-4">
+              <ul className="space-y-2">
+                {[...drafts]
+                  .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+                  .map((d) => (
+                    <li
+                      key={d.draftId}
+                      className="flex items-center justify-between gap-2 rounded-lg border border-roksal-amber/30 bg-white/70 px-3 py-2 transition-all hover:shadow-sm focus-within:ring-2 focus-within:ring-roksal-navy/30"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-xs font-semibold text-roksal-navy">
+                          {d.label || 'Meritev brez oznake'}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground tabular-nums">
+                          {new Date(d.createdAt).toLocaleString('sl-SI')} · lokalni osnutek
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => void syncSingleDraft(d).then((ok) => {
+                            if (ok) toast.success(`Osnutek „${d.label}" sinhroniziran v bazo.`)
+                            else toast.error(`Sinhronizacija osnutka „${d.label}" ni uspela — preverite povezavo.`)
+                          })}
+                          disabled={syncingDrafts}
+                          aria-label={`Sinhroniziraj osnutek ${d.label || 'brez oznake'} v bazo`}
+                          className="rounded-lg border border-roksal-navy/20 bg-roksal-navy/5 px-2 py-1 text-[10px] font-medium text-roksal-navy hover:bg-roksal-navy/10 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 active:scale-[0.96] transition-all duration-150 disabled:opacity-50"
+                        >
+                          Sinhroniziraj
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => discardMeasurementDraft(d.draftId)}
+                          aria-label={`Odstrani osnutek ${d.label || 'brez oznake'} (ni bil nikoli v bazi)`}
+                          className="rounded-lg border border-roksal-red/30 bg-roksal-red/5 p-1 text-roksal-red hover:bg-roksal-red/10 focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2 active:scale-[0.96] transition-all duration-150"
+                        >
+                          <X className="h-3.5 w-3.5" aria-hidden="true" />
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+              </ul>
+            </CardContent>
+          )}
+        </Card>
+      )}
+
       {/* Measurements List */}
       <Card className="card-hover animate-fade-in-up" style={{ animationDelay: '300ms' }}>
         <CardHeader className="pb-2 pt-4 px-4">
@@ -7490,334 +7640,7 @@ function WpcDiagram({
 // ============================================
 // DEMO PODATKI
 // ============================================
+// R152: demoMeasurements IZBRISANI — izmišljeni podatki na mestu praznega/neuspešnega nalaganja so kršili fail-closed pravila.
 
-const demoMeasurements: Measurement[] = [
-  {
-    id: 'm1',
-    dolzinaMm: 4200,
-    visinaMm: 900,
-    lidarScanUrl: '/lidar/scan001.las',
-    gpsLokacija: JSON.stringify({ lat: 46.2397, lng: 14.3556 }),
-    createdAt: new Date(Date.now() - 3600000).toISOString(),
-    projectId: 'demo1',
-    lokacija: 'Balkon leva stran',
-    steviloStebrov: 4,
-    tipPodlage: 'beton',
-    kot: 90,
-    opombe: 'Stari podbeton je v dobrem stanju',
-    arMetadata: JSON.stringify({
-      tipMeritve: 'RAZDALJA',
-      oznaka: 'dolžina balkona — sever',
-      segmentId: 'severni',
-      opomba: 'Glavna razdalja severnega dela',
-      lokacija: 'Balkon leva stran',
-      steviloStebrov: 4,
-      tipPodlage: 'beton',
-      kot: 90,
-      opombe: 'Stari podbeton je v dobrem stanju',
-    }),
-    tipMeritve: 'RAZDALJA',
-    oznaka: 'dolžina balkona — sever',
-    segmentId: 'severni',
-    opomba: 'Glavna razdalja severnega dela',
-    status: 'POTRJENA',
-  },
-  {
-    id: 'm2',
-    dolzinaMm: 2100,
-    visinaMm: 1050,
-    lidarScanUrl: null,
-    gpsLokacija: JSON.stringify({ lat: 46.2397, lng: 14.356 }),
-    createdAt: new Date(Date.now() - 7200000).toISOString(),
-    projectId: 'demo1',
-    lokacija: 'Balkon desna stran',
-    steviloStebrov: 3,
-    tipPodlage: 'plosca',
-    kot: 45,
-    opombe: 'Kotna povezava z levim balkonom',
-    arMetadata: JSON.stringify({
-      tipMeritve: 'RAZDALJA',
-      oznaka: 'vzhodni del — razdalja',
-      segmentId: 'vzhodni',
-      lokacija: 'Balkon desna stran',
-      steviloStebrov: 3,
-      tipPodlage: 'plosca',
-      kot: 45,
-      opombe: 'Kotna povezava z levim balkonom',
-    }),
-    tipMeritve: 'RAZDALJA',
-    oznaka: 'vzhodni del — razdalja',
-    segmentId: 'vzhodni',
-    status: 'OSNUTEK',
-  },
-  {
-    id: 'm3',
-    dolzinaMm: 5800,
-    visinaMm: 1200,
-    lidarScanUrl: '/lidar/scan003.las',
-    gpsLokacija: JSON.stringify({ lat: 46.24, lng: 14.354 }),
-    createdAt: new Date(Date.now() - 86400000).toISOString(),
-    projectId: 'demo1',
-    lokacija: 'Terasa - sprednja stran',
-    steviloStebrov: 6,
-    tipPodlage: 'gramoz',
-    kot: 90,
-    opombe: null,
-    arMetadata: JSON.stringify({
-      tipMeritve: 'RAZDALJA',
-      oznaka: 'terasa — spredaj',
-      segmentId: 'severni',
-      lokacija: 'Terasa - sprednja stran',
-      steviloStebrov: 6,
-      tipPodlage: 'gramoz',
-      kot: 90,
-    }),
-    tipMeritve: 'RAZDALJA',
-    oznaka: 'terasa — spredaj',
-    segmentId: 'severni',
-    status: 'POTRJENA',
-  },
-  {
-    id: 'm4',
-    dolzinaMm: 3400,
-    visinaMm: 900,
-    lidarScanUrl: null,
-    gpsLokacija: JSON.stringify({ lat: 46.24, lng: 14.354 }),
-    createdAt: new Date(Date.now() - 86400000).toISOString(),
-    projectId: 'demo1',
-    lokacija: 'Stopnišče - zgornje nadstropje',
-    steviloStebrov: 3,
-    tipPodlage: 'les',
-    kot: 90,
-    opombe: 'Preveriti nosilnost lesa',
-    arMetadata: JSON.stringify({
-      tipMeritve: 'VISINA',
-      oznaka: 'višina ograje — stopnišče',
-      segmentId: 'stopniscje',
-      opomba: 'Preveriti nosilnost lesa — prag je star',
-      lokacija: 'Stopnišče - zgornje nadstropje',
-      steviloStebrov: 3,
-      tipPodlage: 'les',
-      kot: 90,
-      opombe: 'Preveriti nosilnost lesa',
-    }),
-    tipMeritve: 'VISINA',
-    oznaka: 'višina ograje — stopnišče',
-    segmentId: 'stopniscje',
-    opomba: 'Preveriti nosilnost lesa — prag je star',
-    status: 'OSNUTEK',
-  },
-  {
-    id: 'm5',
-    dolzinaMm: 1,
-    visinaMm: 1,
-    lidarScanUrl: null,
-    gpsLokacija: null,
-    createdAt: new Date(Date.now() - 172800000).toISOString(),
-    projectId: 'demo1',
-    lokacija: 'Talna plošča balkona',
-    arMetadata: JSON.stringify({
-      tipMeritve: 'NAGIB',
-      oznaka: 'Nagib — Talna plošča balkona',
-      opomba: 'Nagib 2.5° (levo-desno)',
-      kotStopinje: 2.5,
-      smer: 'Y',
-      lokacija: 'Talna plošča balkona',
-      status: 'ARHIVIRANA',
-    }),
-    tipMeritve: 'NAGIB',
-    oznaka: 'Nagib — Talna plošča balkona',
-    opomba: 'Nagib 2.5° (levo-desno)',
-    status: 'ARHIVIRANA',
-    kotStopinje: 2.5,
-  },
-  // P3 — demo stebriček
-  {
-    id: 'm6',
-    dolzinaMm: 0,
-    visinaMm: 1100,
-    lidarScanUrl: null,
-    gpsLokacija: JSON.stringify({ lat: 46.2397, lng: 14.3556 }),
-    createdAt: new Date(Date.now() - 3600000).toISOString(),
-    projectId: 'demo1',
-    lokacija: 'Začetek balkona',
-    arMetadata: JSON.stringify({
-      tipMeritve: 'STEBR',
-      oznaka: 'S1',
-      segmentId: 'severni',
-      opomba: 'Stebriček S1 — Končni (ALU), višina 1100mm, pozicija 0mm',
-      status: 'POTRJENA',
-      tipStebra: 'KONCNI',
-      materialStebra: 'ALU',
-      visinaStebraMm: 1100,
-      pozicijaMm: 0,
-      steberOznaka: 'S1',
-      enota: 'mm',
-    }),
-    tipMeritve: 'STEBR',
-    oznaka: 'S1',
-    segmentId: 'severni',
-    opomba: 'Stebriček S1 — Končni (ALU), pozicija 0mm',
-    status: 'POTRJENA',
-    tipStebra: 'KONCNI',
-    materialStebra: 'ALU',
-    visinaStebraMm: 1100,
-    pozicijaMm: 0,
-    steberOznaka: 'S1',
-    enota: 'mm',
-  },
-  {
-    id: 'm7',
-    dolzinaMm: 1500,
-    visinaMm: 1100,
-    lidarScanUrl: null,
-    gpsLokacija: JSON.stringify({ lat: 46.2397, lng: 14.3556 }),
-    createdAt: new Date(Date.now() - 3600000).toISOString(),
-    projectId: 'demo1',
-    lokacija: 'Vmesni steber',
-    arMetadata: JSON.stringify({
-      tipMeritve: 'STEBR',
-      oznaka: 'S2',
-      segmentId: 'severni',
-      opomba: 'Stebriček S2 — Vmesni (ALU), višina 1100mm, pozicija 1500mm',
-      status: 'OSNUTEK',
-      tipStebra: 'VMESNI',
-      materialStebra: 'ALU',
-      visinaStebraMm: 1100,
-      pozicijaMm: 1500,
-      razmikMm: 1500,
-      steberOznaka: 'S2',
-      enota: 'mm',
-    }),
-    tipMeritve: 'STEBR',
-    oznaka: 'S2',
-    segmentId: 'severni',
-    opomba: 'Stebriček S2 — Vmesni (ALU), pozicija 1500mm',
-    status: 'OSNUTEK',
-    tipStebra: 'VMESNI',
-    materialStebra: 'ALU',
-    visinaStebraMm: 1100,
-    pozicijaMm: 1500,
-    razmikMm: 1500,
-    steberOznaka: 'S2',
-    enota: 'mm',
-  },
-  {
-    id: 'm8',
-    dolzinaMm: 3000,
-    visinaMm: 1100,
-    lidarScanUrl: null,
-    gpsLokacija: JSON.stringify({ lat: 46.2397, lng: 14.3556 }),
-    createdAt: new Date(Date.now() - 3600000).toISOString(),
-    projectId: 'demo1',
-    lokacija: 'Vogalni steber',
-    arMetadata: JSON.stringify({
-      tipMeritve: 'STEBR',
-      oznaka: 'S3',
-      segmentId: 'severni',
-      opomba: 'Stebriček S3 — Vogalni (INOX), višina 1100mm, pozicija 3000mm',
-      status: 'OSNUTEK',
-      tipStebra: 'VOGALNI',
-      materialStebra: 'INOX',
-      visinaStebraMm: 1100,
-      pozicijaMm: 3000,
-      razmikMm: 1500,
-      steberOznaka: 'S3',
-      enota: 'mm',
-    }),
-    tipMeritve: 'STEBR',
-    oznaka: 'S3',
-    segmentId: 'severni',
-    opomba: 'Stebriček S3 — Vogalni (INOX), pozicija 3000mm',
-    status: 'OSNUTEK',
-    tipStebra: 'VOGALNI',
-    materialStebra: 'INOX',
-    visinaStebraMm: 1100,
-    pozicijaMm: 3000,
-    razmikMm: 1500,
-    steberOznaka: 'S3',
-    enota: 'mm',
-  },
-  // P3 — demo KOT_VOGAL meritev
-  {
-    id: 'm9',
-    dolzinaMm: 1,
-    visinaMm: 1,
-    lidarScanUrl: null,
-    gpsLokacija: null,
-    createdAt: new Date(Date.now() - 7200000).toISOString(),
-    projectId: 'demo1',
-    lokacija: 'Vogal L-oblike',
-    arMetadata: JSON.stringify({
-      tipMeritve: 'KOT_VOGAL',
-      oznaka: 'Vogal — Vogal L-oblike',
-      opomba: 'Notranji kot: 90°, Zunanji kot: 90°',
-      kotStopinje: 90,
-      notranjiKot: 90,
-      zunanjiKot: 90,
-      lokacija: 'Vogal L-oblike',
-      status: 'OSNUTEK',
-    }),
-    tipMeritve: 'KOT_VOGAL',
-    oznaka: 'Vogal — Vogal L-oblike',
-    opomba: 'Notranji kot: 90°, Zunanji kot: 90°',
-    status: 'OSNUTEK',
-    kotStopinje: 90,
-    notranjiKot: 90,
-    zunanjiKot: 90,
-  },
-  // P3 — demo KOT_STOPNISCE
-  {
-    id: 'm10',
-    dolzinaMm: 1,
-    visinaMm: 1,
-    lidarScanUrl: null,
-    gpsLokacija: null,
-    createdAt: new Date(Date.now() - 86400000).toISOString(),
-    projectId: 'demo1',
-    lokacija: 'Stopnišče',
-    arMetadata: JSON.stringify({
-      tipMeritve: 'KOT_STOPNISCE',
-      oznaka: 'Kot stopnice — Stopnišče',
-      opomba: 'Kot: 33° (Stopnišče)',
-      kotStopinje: 33,
-      lokacija: 'Stopnišče',
-      status: 'OSNUTEK',
-    }),
-    tipMeritve: 'KOT_STOPNISCE',
-    oznaka: 'Kot stopnice — Stopnišče',
-    opomba: 'Kot: 33° (Stopnišče)',
-    status: 'OSNUTEK',
-    kotStopinje: 33,
-  },
-  // P3 — demo WPC terasa — dimenzije za WPC diagram
-  {
-    id: 'm11',
-    dolzinaMm: 4200,
-    visinaMm: 1100,
-    lidarScanUrl: null,
-    gpsLokacija: JSON.stringify({ lat: 46.2397, lng: 14.3556 }),
-    createdAt: new Date(Date.now() - 7200000).toISOString(),
-    projectId: 'demo1',
-    lokacija: 'WPC terasa — dolžina',
-    arMetadata: JSON.stringify({
-      tipMeritve: 'RAZDALJA',
-      oznaka: 'WPC terasa — dolžina',
-      segmentId: 'wpc-terasa',
-      opomba: 'Dolžina WPC terase — pokončne palice',
-      status: 'OSNUTEK',
-      enota: 'mm',
-    }),
-    tipMeritve: 'RAZDALJA',
-    oznaka: 'WPC terasa — dolžina',
-    segmentId: 'wpc-terasa',
-    opomba: 'Dolžina WPC terase — pokončne palice',
-    status: 'OSNUTEK',
-    enota: 'mm',
-  },
-]
+// R152: demoProjects IZBRISANI — izmišljeni podatki na mestu praznega/neuspešnega nalaganja so kršili fail-closed pravila.
 
-const demoProjects: Project[] = [
-  { id: 'demo1', nazivProjekta: 'Ograja Horjul - WPC Classic' },
-  { id: 'demo2', nazivProjekta: 'Terasa Kranj - Inox Z-line' },
-]

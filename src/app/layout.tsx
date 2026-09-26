@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
+import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "next-themes";
 import { ServiceWorkerRegister } from "@/components/roksal/sw-register";
 
@@ -58,6 +59,14 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           {children}
+          {/* R152 (P1 bug fix): sonner <Toaster> NI bil nikoli montiran — vsi
+              toast.*() klici iz 10+ komponent (dashboard, inventory, safety,
+              documents, measurements, calculator …) so bili NEVIDNI. Klienti
+              so NEVIDELI napak in opozoril (fail-closed sporočila so tiho
+              izginila). Zdaj je montiran z richColors (rdeča napaka, zelena
+              uspeh, rumeno opozorilo — semantično ločljivi). Radix Toaster
+              zgoraj ostaja za starejše useToast() klicatelje. */}
+          <SonnerToaster richColors closeButton />
         </ThemeProvider>
         <ServiceWorkerRegister />
         <Toaster />

@@ -246,6 +246,8 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
   const [customers, setCustomers] = useState<Customer[]>([])
   const [loading, setLoading] = useState(true)
   const [invLoading, setInvLoading] = useState(true)
+  // R152: napaka nalaganja projektov je EKSPlicitna (nič izmišljenih demo vrstic).
+  const [projectsError, setProjectsError] = useState<string | null>(null)
   // R138: pravo ime prijavljenega (GET /api/auth) — pozdrav ni več vedno
   // "Monter!". Fallback ostaja vloga-neodvisen "Monter" (nič ne fali, če
   // je seja spodaj — pozdrav ni kritična pot).
@@ -358,9 +360,17 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
       if (res.ok) {
         const data = await res.json()
         setProjects(data)
+        setProjectsError(null)
+      } else {
+        // Fail-closed: napaka je vidna, nič izmišljenih projektov.
+        setProjects([])
+        setProjectsError(`Projektov ni bilo mogoče naložiti (napaka ${res.status}).`)
+        toast.error(`Projektov ni bilo mogoče naložiti (napaka ${res.status})`)
       }
     } catch {
-      setProjects(demoProjects)
+      setProjects([])
+      setProjectsError('Projektov ni bilo mogoče naložiti — preverite povezavo.')
+      toast.error('Projektov ni bilo mogoče naložiti — preverite povezavo.')
     }
   }, [])
 
@@ -395,8 +405,6 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
     async function fetchAll() {
       try {
         await Promise.all([fetchProjects(), fetchInventory(), fetchCustomers()])
-      } catch {
-        setProjects(demoProjects)
       } finally {
         setLoading(false)
       }
@@ -1488,6 +1496,27 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                 )
               })}
             </div>
+          ) : projectsError ? (
+            <div
+              role="alert"
+              className="flex flex-col gap-2 rounded-lg border border-roksal-amber/40 bg-roksal-amber/10 px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-roksal-amber" aria-hidden="true" />
+                <p className="text-xs text-roksal-navy">
+                  {projectsError} Podatki projektov niso izmišljeni — prazen seznam pomeni, da jih ni bilo mogoče prebrati.
+                </p>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => { setProjectsError(null); void fetchProjects() }}
+                className="shrink-0 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+                aria-label="Ponovno naloži projekte"
+              >
+                Poskusi znova
+              </Button>
+            </div>
           ) : (
             <p className="py-6 text-center text-sm text-muted-foreground">
               {searchQuery ? 'Ni rezultatov za "' + searchQuery + '"' : 'Ni aktivnih projektov'}
@@ -2530,33 +2559,5 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
   )
 }
 
-// Demo data for when API is not available
-const demoProjects: Project[] = [
-  {
-    id: 'demo1',
-    nazivProjekta: 'Ograja Horjul - WPC Classic',
-    status: 'V_TEKU',
-    datumMontaze: new Date().toISOString(),
-    customer: { id: 'cust1', ime: 'Janez Novak', naslov: 'Horjul 12, 4224 Horjul' },
-    monter: { id: 'm1', ime: 'Marko Horvat', vloga: 'MONTER' },
-    _count: { documents: 2, auditLogs: 5 },
-  },
-  {
-    id: 'demo2',
-    nazivProjekta: 'Terasa Kranj - Inox Z-line',
-    status: 'V_TEKU',
-    datumMontaze: new Date(Date.now() + 86400000).toISOString(),
-    customer: { id: 'cust2', ime: 'Ana Kovačič', naslov: 'Slovenski trg 5, 4000 Kranj' },
-    monter: { id: 'm2', ime: 'Luka Bizjak', vloga: 'MONTER' },
-    _count: { documents: 1, auditLogs: 3 },
-  },
-  {
-    id: 'demo3',
-    nazivProjekta: 'Balkon Železniki - WPC Vertical',
-    status: 'NACRTOVANO',
-    datumMontaze: new Date(Date.now() + 172800000).toISOString(),
-    customer: { id: 'cust3', ime: 'Petra Zupan', naslov: 'Cankarjeva 8, 4227 Železniki' },
-    monter: { id: 'm1', ime: 'Marko Horvat', vloga: 'MONTER' },
-    _count: { documents: 0, auditLogs: 1 },
-  },
-]
+// R152: demoProjects IZBRISAN — napaka API-ja ni več prikazala izmišljenih
+// projektov (fail-open). Zdaj: prazen seznam + vidna napaka + toast.error.

@@ -107,27 +107,43 @@ function getHumidityLabel(humidity: number): string {
 export function SafetyTab() {
   const [windData, setWindData] = useState<WindData | null>(null)
   const [loading, setLoading] = useState(true)
+  // R152: vremenska napaka je EKSPlicitna — brez izmišljenih varnih vrednosti.
+  const [weatherError, setWeatherError] = useState<string | null>(null)
+  const [reloadKey, setReloadKey] = useState(0)
   const [ghostMode, setGhostMode] = useState(false)
   const [checklist, setChecklist] = useState<ChecklistItem[]>(defaultChecklist)
 
   useEffect(() => {
+    let alive = true
     async function fetchWeather() {
+      setLoading(true)
+      setWeatherError(null)
       try {
         const res = await fetch('/api/weather?lat=46.2397&lon=14.3556')
+        if (!alive) return
         if (res.ok) {
           const data = await res.json()
           setWindData(data)
         } else {
-          setWindData(demoWindData)
+          // Fail-closed: NI izmišljenih podatkov — ocena ni mogoča je vidna.
+          setWindData(null)
+          setWeatherError(`Vremenska storitev ni odgovorila (napaka ${res.status}).`)
         }
       } catch {
-        setWindData(demoWindData)
+        if (!alive) return
+        setWindData(null)
+        setWeatherError('Vremenskih podatkov ni mogoče pridobiti — preverite povezavo.')
       } finally {
-        setLoading(false)
+        if (alive) setLoading(false)
       }
     }
     fetchWeather()
-  }, [])
+    return () => { alive = false }
+  }, [reloadKey])
+
+  function retryWeather() {
+    setReloadKey((k) => k + 1)
+  }
 
   function toggleChecklist(id: string) {
     setChecklist((prev) =>
@@ -206,9 +222,35 @@ export function SafetyTab() {
         </Button>
       </div>
 
-      {/* "Danes je varen dan" Summary Banner */}
+      {/* "Danes je varen dan" Summary Banner — R152: brez podatkov NI ocene */}
       {loading ? (
         <Skeleton className="h-16 w-full" />
+      ) : weatherError && !windData ? (
+        <div
+          role="alert"
+          className="flex flex-col gap-2 rounded-xl border border-roksal-amber/40 bg-roksal-amber/10 p-4 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-roksal-amber" aria-hidden="true" />
+            <div>
+              <p className="text-sm font-bold text-roksal-navy">
+                Varnostna ocena ni mogoča — vremenski podatki niso na voljo
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {weatherError} Ne odločajte o montaži brez dejanskih meritev vetra.
+              </p>
+            </div>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={retryWeather}
+            className="focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+            aria-label="Ponovno poskusi pridobiti vremenske podatke"
+          >
+            Poskusi znova
+          </Button>
+        </div>
       ) : windData && (
         <div
           className={`flex items-center gap-3 rounded-xl p-4 transition-all ${
@@ -265,7 +307,11 @@ export function SafetyTab() {
         <CardContent className="px-4 pb-4">
           {loading ? (
             <Skeleton className="h-32 w-full" />
-          ) : windData ? (
+          ) : !windData ? (
+            <p className="py-8 text-center text-sm text-muted-foreground" role="status">
+              Podatki o vetru niso na voljo{weatherError ? ` — ${weatherError}` : ''}
+            </p>
+          ) : (
             <div className="space-y-3">
               {/* Main wind display with compass */}
               <div className="flex items-center gap-4">
@@ -452,7 +498,7 @@ export function SafetyTab() {
                 </div>
               </div>
             </div>
-          ) : null}
+          )}
         </CardContent>
       </Card>
 
@@ -668,22 +714,7 @@ export function SafetyTab() {
     </div>
   )
 }
-
-const demoWindData: WindData = {
-  speed: 7.2,
-  gust: 11.8,
-  direction: 225,
-  directionLabel: 'SW',
-  temperature: 18,
-  humidity: 65,
-  pressure: 1015,
-  description: 'Deloma oblačno',
-  isSafeForInstallation: true,
-  riskLevel: 'medium',
-  maxRailingHeight: 1000,
-  calculations: {
-    windPressure: 32.4,
-    windForce: 77.8,
-    railingArea: 2,
-  },
-}
+// R152: demoWindData IZBRISAN — izmišljeni "varni" vremenski podatki na
+// varnostnem zaslonu so bila fail-open kršitev (napaka API-ja je pokazala
+// fiktivni veter 7.2 m/s z isSafeForInstallation: true). Zdaj: fail-closed
+// error panel + retry, NIČ ocene brez dejanskih podatkov.
