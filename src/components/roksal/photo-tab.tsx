@@ -24,7 +24,7 @@ import {
   ArrowRight, Minus, Square, Circle as CircleIcon, Type, Pencil, Ruler, Eraser,
   Upload, Copy, Download, ChevronLeft, ChevronRight, Images, Layers, Search,
   ExternalLink, Save, Undo2, Calendar, Sparkles, Columns, Trash,
-  ChevronDown, Lightbulb, FileText, Send, Info, History,
+  ChevronDown, Lightbulb, FileText, Send, Info, History, ShieldCheck,
 } from 'lucide-react'
 
 // ============================================================
@@ -614,7 +614,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
     setBatchProgress(null)
     toast({
       title: `${success} slik dodanih`,
-      description: `Kategorija: ${KATEGORIJE.find((k) => k.id === kat)?.label}`,
+      description: `Kategorija: ${KATEGORIJE.find((k) => k.id === kat)?.label} · EXIF/GPS odstranjeno na strežniku.`,
     })
     loadPhotos()
   }
@@ -752,6 +752,16 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
                 }
               }}
             />
+          </div>
+
+          {/* R193 — vidna politika zasebnosti (§37): strežnik samodejno odstrani
+              EXIF/GPS iz JPEG uploadov — isti vic kot zasebnost javnih meritev.
+              Družinske klase (card/border/muted), brez novih barv. */}
+          <div className="flex items-center gap-1.5 rounded-md border border-roksal-navy/10 bg-card px-2 py-1 dark:border-roksal-ink/15">
+            <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-roksal-green" aria-hidden="true" />
+            <span className="text-[10px] text-muted-foreground">
+              Zasebnost: EXIF/GPS metapodatki se pri nalaganju samodejno odstranijo na strežniku.
+            </span>
           </div>
 
           {/* Statistika */}

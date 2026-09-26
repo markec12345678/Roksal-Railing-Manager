@@ -19,6 +19,7 @@ import {
   putObject,
 } from '@/lib/object-storage'
 import { validateUploadContent } from '@/lib/upload-security'
+import { stripExifJpeg } from '@/lib/exif-strip'
 
 import { zapisOmejitev } from '@/lib/rate-limit'
 function accessErrorResponse(error: unknown): NextResponse | null {
@@ -115,7 +116,7 @@ export async function POST(request: Request) {
         parsedSlots[field] = undefined
         continue
       }
-      const parsed = parseDataUri(value)
+      let parsed = parseDataUri(value)
       if (!parsed) {
         return NextResponse.json(
           { error: `${label} mora biti veljaven data URI ali URL (do 15 MB)` },
@@ -126,6 +127,16 @@ export async function POST(request: Request) {
       const contentCheck = validateUploadContent(parsed.mime, parsed.bytes)
       if (!contentCheck.ok) {
         return NextResponse.json({ error: `${label}: ${contentCheck.reason}` }, { status: 400 })
+      }
+      // R193 (§37 EXIF/GPS stripping): isti strežniški kanonizem kot /api/photos
+      // — direktni JPEG upload se re-enkodira (EXIF/GPS odpadejo, orientacija
+      // zapečena, ICC ohranjen); dekodiranje ne uspe → 400 (fail-closed).
+      if (parsed.mime === 'image/jpeg') {
+        const stripped = await stripExifJpeg(parsed.bytes)
+        if (!stripped.ok) {
+          return NextResponse.json({ error: `${label}: ${stripped.reason}` }, { status: 400 })
+        }
+        parsed = { ...parsed, bytes: stripped.bytes }
       }
       parsedSlots[field] = parsed
     }

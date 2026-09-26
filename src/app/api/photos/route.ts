@@ -33,6 +33,7 @@ import {
   putObject,
 } from '@/lib/object-storage'
 import { validateUploadContent } from '@/lib/upload-security'
+import { stripExifJpeg } from '@/lib/exif-strip'
 
 import { zapisOmejitev } from '@/lib/rate-limit'
 /** Zavij resource napake v 403/404 odgovor (politika: 404 ne obstaja, 403 prepovedano). */
@@ -166,11 +167,26 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: contentCheck.reason }, { status: 400 })
     }
 
+    // R193 (§37 EXIF/GPS stripping): neposredni API JPEG upload je izrecni
+    // nosilec EXIF/GPS — strežnik ga re-enkodira (orientacija zapečena,
+    // ICC ohranjen, EXIF/GPS/IPTC/XMP odpadejo). Fail-closed: dekodiranje
+    // ne uspe → 400 z izrecnim razlogom (NIKOLI tihi prehod originala).
+    let shranjenoBajte = parsedImage.bytes
+    let exifStripped = false
+    if (parsedImage.mime === 'image/jpeg') {
+      const stripped = await stripExifJpeg(parsedImage.bytes)
+      if (!stripped.ok) {
+        return NextResponse.json({ error: stripped.reason }, { status: 400 })
+      }
+      shranjenoBajte = stripped.bytes
+      exifStripped = true
+    }
+
     // METADATA = TOČKA ZAVEZE (isti vzorc kot viz save-flow): najprej bajti v
     // object storage, nato vrstica v DB; DB napaka → kompenzacija (0 sirot).
     const id = randomUUID()
     const key = objectKey('photos', id, `slika.${extensionForMime(parsedImage.mime)}`)
-    const put = await putObject(key, parsedImage.bytes, parsedImage.mime)
+    const put = await putObject(key, shranjenoBajte, parsedImage.mime)
     try {
       const photo = await db.projectPhoto.create({
         data: {
@@ -186,7 +202,10 @@ export async function POST(request: Request) {
           longitude: body.longitude ?? null,
         },
       })
-      return NextResponse.json(photo, { status: 201 })
+      return NextResponse.json(photo, {
+        status: 201,
+        headers: exifStripped ? { 'x-exif-stripped': '1' } : undefined,
+      })
     } catch (dbError) {
       await deleteObject(key)
       throw dbError

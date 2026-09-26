@@ -955,7 +955,7 @@ export function ReferenceGallery() {
       if (!res.ok) throw new Error('Napaka pri shranjevanju');
       toast({
         title: 'Dodano v galerijo',
-        description: `Vnos "${formNaziv}" je bil uspešno dodan v galerijo.`,
+        description: `Vnos "${formNaziv}" je bil uspešno dodan v galerijo. EXIF/GPS odstranjeno na strežniku.`,
       });
       resetForm();
       setAddOpen(false);
