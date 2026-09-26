@@ -13,6 +13,8 @@ import { Input } from '@/components/ui/input'
 import { Progress } from '@/components/ui/progress'
 import { EmptyState } from '@/components/ui/empty-state'
 import { useToast } from '@/hooks/use-toast'
+import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'
+import { casOznaka } from '@/lib/osvezitev-fokus'
 import {
   ClipboardCheck,
   Download,
@@ -21,6 +23,7 @@ import {
   FileDown,
   Loader2,
   AlertTriangle,
+  History,
   ListChecks,
   Sparkles,
 } from 'lucide-react'
@@ -63,6 +66,10 @@ export function PunchList({ project }: { project: Project | null }) {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [newTitle, setNewTitle] = useState('')
   const [generating, setGenerating] = useState(false)
+  // R181 — pečat svežine: čas zadnjega USPEŠNEGA branja /api/punch (vzorec
+  // R170/R177/R178/R180). Napaka/omrežje → null (fail-closed — NIČ lažne
+  // svežine; zapisnik ostane viden, a BREZ pečata = uporabnik ve, da ni svež).
+  const [zapisnikOsvezitev, setZapisnikOsvezitev] = useState<Date | null>(null)
   const { toast } = useToast()
   const projectIdRef = useRef<string | null>(null)
 
@@ -82,12 +89,18 @@ export function PunchList({ project }: { project: Project | null }) {
             : `Nalaganje zapisnika ni uspelo (HTTP ${res.status}).`,
         )
         setItems([])
+        // R181: fail-closed pečat — napaka → BREZ pečata (v paru s čiščenjem)
+        setZapisnikOsvezitev(null)
         return
       }
       setItems((await res.json()) as PunchItem[])
+      // R181: pečat SAMO ob uspešnem branju (1×)
+      setZapisnikOsvezitev(new Date())
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : 'Nalaganje zapisnika ni uspelo.')
       setItems([])
+      // R181: omrežje → BREZ pečata (v paru s čiščenjem)
+      setZapisnikOsvezitev(null)
     } finally {
       setLoading(false)
     }
@@ -99,6 +112,15 @@ export function PunchList({ project }: { project: Project | null }) {
       void fetchItems(project.id)
     }
   }, [project?.id, fetchItems])
+
+  // R181 — ponovni bris ob vrnitvi v zavihek (družinski hook, 30 s vrata R170):
+  // zapisnik predaje si monter pogleda na telefonu na terenu — vrnitev v app
+  // pomeni svež seznam točk (pisarna lahko medtem dodala/oddaljila točke).
+  // EN VIR: fetchItems je isti loader kot mount + "Poskusi znova".
+  useRefetchOnFocus(() => {
+    const pid = projectIdRef.current
+    if (pid) void fetchItems(pid)
+  })
 
   const doneCount = useMemo(() => items.filter((i) => i.status === 'done').length, [items])
   const issueCount = useMemo(() => items.filter((i) => i.status === 'issue').length, [items])
@@ -364,9 +386,19 @@ export function PunchList({ project }: { project: Project | null }) {
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base text-roksal-ink">
+        <CardTitle className="flex flex-wrap items-center gap-2 text-base text-roksal-ink">
           <ClipboardCheck className="h-5 w-5 text-roksal-amber" />
           Prejemni zapisnik
+          {zapisnikOsvezitev && (
+            <span
+              className="hidden items-center gap-1 text-[11px] text-muted-foreground sm:flex"
+              title="Čas zadnje uspešne osvežitve podatkov"
+            >
+              <History className="h-3 w-3 shrink-0" aria-hidden="true" />
+              Osveženo ob{' '}
+              <span className="tabular-nums">{casOznaka(zapisnikOsvezitev)}</span>
+            </span>
+          )}
           {items.length > 0 && (
             <Badge variant="outline" className="ml-auto">
               {doneCount}/{items.length}

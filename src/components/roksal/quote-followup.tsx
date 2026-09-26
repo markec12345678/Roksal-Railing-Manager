@@ -23,11 +23,14 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
+import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'
+import { casOznaka } from '@/lib/osvezitev-fokus'
 import { buildPonudbeCsv, ponudbeCsvFilename, ponudbeLabel, PONUDBE_STATUS_LABELS } from '@/lib/ponudbe-csv'
 import { todayStamp } from '@/lib/csv-export'
 import {
   Download,
   FileClock,
+  History,
   Loader2,
   Phone,
   X,
@@ -64,6 +67,10 @@ export function QuoteFollowUp() {
   const [error, setError] = useState<string | null>(null)
   const [exporting, setExporting] = useState(false)
   const [busyId, setBusyId] = useState<string | null>(null)
+  // R181 — pečat svežine: čas zadnjega USPEŠNEGA branja /api/projects (vzorec
+  // R170/R177/R178/R180). Napaka/omrežje → null (fail-closed — NIČ lažne
+  // svežine; zastarel seznam ostane viden, a BREZ pečata).
+  const [ponudbeOsvezitev, setPonudbeOsvezitev] = useState<Date | null>(null)
   const { toast } = useToast()
 
   const load = useCallback(async () => {
@@ -79,18 +86,26 @@ export function QuoteFollowUp() {
             : `Strežnik ni vrnil ponudb (napaka ${res.status}).`,
         )
         setProjects([])
+        // R181: fail-closed pečat — napaka → BREZ pečata (v paru s čiščenjem)
+        setPonudbeOsvezitev(null)
         return
       }
       const all = (await res.json().catch(() => null)) as FollowProject[] | null
       if (!Array.isArray(all)) {
         setError('Neveljaven odgovor strežnika.')
         setProjects([])
+        // R181: fail-closed pečat — neveljaven odgovor → BREZ pečata
+        setPonudbeOsvezitev(null)
         return
       }
       setProjects(all.filter((p) => !p.dealLocked))
+      // R181: pečat SAMO ob uspešnem branju (1×)
+      setPonudbeOsvezitev(new Date())
     } catch {
       setError('Ni povezave s strežnikom. Preverite omrežje in poskusite znova.')
       setProjects([])
+      // R181: omrežje → BREZ pečata (v paru s čiščenjem)
+      setPonudbeOsvezitev(null)
     } finally {
       setLoading(false)
     }
@@ -99,6 +114,11 @@ export function QuoteFollowUp() {
   useEffect(() => {
     void load()
   }, [load])
+
+  // R181 — ponovni bris ob vrnitvi v zavihek (družinski hook, 30 s vrata R170):
+  // spomniki follow-upa so časovno kritični (zapadli klic stranke) — vrnitev v
+  // CRM pomeni svež seznam. EN VIR: load = mount + "Poskusi znova" + fokus.
+  useRefetchOnFocus(load)
 
   const today = useMemo(() => new Date(), [])
   const nowMs = today.getTime()
@@ -214,9 +234,19 @@ export function QuoteFollowUp() {
   return (
     <Card className={overdueCount > 0 ? 'border-roksal-red/40' : undefined}>
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base text-roksal-ink">
+        <CardTitle className="flex flex-wrap items-center gap-2 text-base text-roksal-ink">
           <FileClock className="h-5 w-5 text-roksal-amber" aria-hidden="true" />
           Ponudbe — sledenje
+          {ponudbeOsvezitev && (
+            <span
+              className="hidden items-center gap-1 text-[11px] text-muted-foreground sm:flex"
+              title="Čas zadnje uspešne osvežitve podatkov"
+            >
+              <History className="h-3 w-3 shrink-0" aria-hidden="true" />
+              Osveženo ob{' '}
+              <span className="tabular-nums">{casOznaka(ponudbeOsvezitev)}</span>
+            </span>
+          )}
           <span className="ml-auto flex items-center gap-2">
             {overdueCount > 0 && (
               <Badge className="border border-roksal-red/40 bg-roksal-red/15 text-roksal-red hover:bg-roksal-red/15">

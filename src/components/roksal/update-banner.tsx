@@ -39,9 +39,21 @@ export function UpdateBanner() {
 
   // R179 — EN VIR preverbe (ob mountu + ob fokusu prek družinskega hooka).
   // Odločitev je v čistem jedru; tukaj je samo žičenje (vzorec osvezitev-fokus).
+  //
+  // R181 — DVOPOTNA preverba: primarna ruta /api/public/version (prefix
+  // /api/public je v proxy PUBLIC_PREFIXES vsaj od R141 — deluje TUDI pod
+  // starim middleware artefaktom na produkciji, glej
+  // src/app/api/public/version/route.ts); rezervna /api/version (R179,
+  // PUBLIC_EXACT — deluje ob svežem middleware-u). Vsaj ena pot odgovori v
+  // obeh svetovih; neuspeh obeh → žig ostane null → banner SKRIT (fail-closed,
+  // nič lažnega "nova verzija").
   const checkVersion = useCallback(async () => {
     try {
-      const res = await fetch('/api/version')
+      let res = await fetch('/api/public/version')
+      if (!res.ok) {
+        // rezervna pot (npr. starejši deploy brez R181 dvojčka)
+        res = await fetch('/api/version')
+      }
       if (!res.ok) return
       const json = (await res.json().catch(() => null)) as VersionResponse | null
       const zig = typeof json?.build === 'string' && json.build ? json.build : null

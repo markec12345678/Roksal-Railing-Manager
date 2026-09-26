@@ -15,10 +15,12 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
-import { Loader2, PlayCircle, RefreshCw, Timer, Wrench } from 'lucide-react'
+import { History, Loader2, PlayCircle, RefreshCw, Timer, Wrench } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
+import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'
+import { casOznaka } from '@/lib/osvezitev-fokus'
 
 interface JobRunRow {
   id: string
@@ -67,6 +69,10 @@ export function JobsPanel() {
   const [running, setRunning] = useState(false)
   const [data, setData] = useState<JobsPayload | null>(null)
   const [error, setError] = useState<string | null>(null)
+  // R181 — pečat svežine: čas zadnjega USPEŠNEGA branja /api/jobs (vzorec
+  // R170/R177/R178/R180). Napaka/omrežje/403 → null (fail-closed — NIČ lažne
+  // svežine; ledger ostane viden, a BREZ pečata).
+  const [posliOsvezitev, setPosliOsvezitev] = useState<Date | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -77,11 +83,17 @@ export function JobsPanel() {
       if (!res.ok) {
         setData(null)
         setError(json?.error ?? `Napaka ${res.status}`)
+        // R181: fail-closed pečat — napaka → BREZ pečata (v paru s čiščenjem)
+        setPosliOsvezitev(null)
         return
       }
       setData({ jobs: json?.jobs ?? [], registry: json?.registry ?? [], retryPolicy: json?.retryPolicy ?? { maxAttempts: 3, window: 'dan' } })
+      // R181: pečat SAMO ob uspešnem branju (1×)
+      setPosliOsvezitev(new Date())
     } catch {
       setError('Napaka pri povezavi s strežnikom')
+      // R181: omrežje → BREZ pečata (v paru z napako)
+      setPosliOsvezitev(null)
     } finally {
       setLoading(false)
     }
@@ -90,6 +102,11 @@ export function JobsPanel() {
   useEffect(() => {
     void load()
   }, [load])
+
+  // R181 — ponovni bris ob vrnitvi v zavihek (družinski hook, 30 s vrata R170):
+  // ledger poslov je odvisen od casa (dnevni cron ob 03:30 UTC) — vrnitev v
+  // Ekipa zavihek pomeni sveže zagonove. EN VIR: load = mount + Osveži + fokus.
+  useRefetchOnFocus(load)
 
   async function runNow() {
     setRunning(true)
@@ -128,8 +145,20 @@ export function JobsPanel() {
           </div>
           <div>
             <h3 className="text-[13px] font-bold text-roksal-ink">Vzdrževanje — posli v ozadju</h3>
-            <p className="text-[11px] text-muted-foreground">
-              Čiščenje idempotenčnih ključev, dostopov portala in starih sej. Samodejno dnevno ob 03:30 UTC.
+            <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
+              <span>
+                Čiščenje idempotenčnih ključev, dostopov portala in starih sej. Samodejno dnevno ob 03:30 UTC.
+              </span>
+              {posliOsvezitev && (
+                <span
+                  className="hidden items-center gap-1 text-[11px] text-muted-foreground sm:flex"
+                  title="Čas zadnje uspešne osvežitve podatkov"
+                >
+                  <History className="h-3 w-3 shrink-0" aria-hidden="true" />
+                  Osveženo ob{' '}
+                  <span className="tabular-nums">{casOznaka(posliOsvezitev)}</span>
+                </span>
+              )}
             </p>
           </div>
         </div>
