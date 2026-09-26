@@ -4,6 +4,10 @@
 // predvidenih ur kot dashboard Termini kartica — prek ISTIH lib funkcij
 // (normalizirajTermin → vsotaPredvidenihUr → terminUrPovzetek). Nič nove
 // agregacijske logike — samo žičenje + preskočeni števec (fail-verbose).
+// R173 — nadgrajevanje: razširjeni niz (povzetek + preskočeni priponka) je
+// zdaj EN VIR RESNICE v lib funkciji terminUrPovzetekRazsirjen (zaslon in
+// CSV meta vrstica 'Povzetek' klicata ISTO funkcijo z ISTIMA argumentoma —
+// brez ročnega formatiranja priponke v komponenti).
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -13,6 +17,9 @@ const logistics = (): string =>
 
 const terminiCard = (): string =>
   readFileSync(join(process.cwd(), 'src/components/roksal/termini-card.tsx'), 'utf8')
+
+const terminiPrikaz = (): string =>
+  readFileSync(join(process.cwd(), 'src/lib/termini-prikaz.ts'), 'utf8')
 
 describe('R169 Koledar povzetek — EN VIR RESNICE z dashboard Termini kartico', () => {
   it('logistics-tab importira ISTE lib funkcije kot termini-card (vsota/povzetek + normalizacija po isti poti)', () => {
@@ -43,20 +50,26 @@ describe('R169 Koledar povzetek — EN VIR RESNICE z dashboard Termini kartico',
     expect(body).toContain('vsotaPredvidenihUr(prikazne)')
   })
 
-  it('povzetek je izrisan SAMO v veji z termini (nikoli ob nalaganju/praznem stanju)', () => {
+  it('povzetek je izrisan SAMO v veji z termini (nikoli ob nalaganju/praznem stanju) — R173 razsirjen niz', () => {
     const log = logistics()
     const nalaganjeIdx = log.indexOf('Ni terminov. Ustvari nov termin montaže.')
-    const povzetekIdx = log.indexOf('{terminUrPovzetek(urPovzetek.ag)}')
+    const povzetekIdx = log.indexOf('{terminUrPovzetekRazsirjen(urPovzetek.ag, urPovzetek.preskoceni)}')
     expect(nalaganjeIdx).toBeGreaterThan(-1)
     expect(povzetekIdx).toBeGreaterThan(-1)
     expect(povzetekIdx).toBeGreaterThan(nalaganjeIdx)
   })
 
-  it('preskočeni vnosi VIDNO omenjeni v povzetku (fail-verbose, vzorec TerminiCard)', () => {
+  it('preskočeni vnosi VIDNO omenjeni — EN VIR RESNICE prek terminUrPovzetekRazsirjen (R173: brez ročne priponke v komponenti)', () => {
     const log = logistics()
-    expect(log).toContain('urPovzetek.preskoceni > 0')
-    expect(log).toContain("'vnos preskočen'")
-    expect(log).toContain("'vnosov preskočenih'")
+    const lib = terminiPrikaz()
+    // komponenta podaja preskočene števec ISTI lib funkciji (zaslon + CSV)
+    expect(log).toContain('terminUrPovzetekRazsirjen(urPovzetek.ag, urPovzetek.preskoceni)')
+    // priponka živi v lib (EN VIR), ne več ročno v komponenti:
+    expect(lib).toContain("'vnos preskočen'")
+    expect(lib).toContain("'vnosov preskočenih'")
+    expect(lib).toContain('(neveljaven vnos)')
+    expect(log).not.toContain("'vnos preskočen'")
+    expect(log).not.toContain("'vnosov preskočenih'")
   })
 
   it('povzetek: Clock ikona + tabular-nums + title dokumentira izključitev preklicanih', () => {

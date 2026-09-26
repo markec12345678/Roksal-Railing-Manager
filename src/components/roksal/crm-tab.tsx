@@ -13,6 +13,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { useToast } from '@/hooks/use-toast'
+import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'
 import { EmptyState } from '@/components/ui/empty-state'
 import { QuoteFollowUp } from '@/components/roksal/quote-followup'
 import { InvoiceManager } from '@/components/roksal/invoice-manager'
@@ -157,6 +158,14 @@ export function CrmTab() {
   useEffect(() => {
     loadCustomers()
   }, [loadCustomers])
+
+  // R173 (P1-c iz R172) — vrnitev v zavihek/okno → ponovno naloži CRM
+  // (pisarna lahko medtem doda/spremeni stranko v drugi seji; seznam ostane
+  // zastarel do remonta). loadCustomers je že fail-verbose (R162) — hook ne
+  // požira napak, error panel ostane EDINI vir resnice o napakah. Seznam
+  // med osvežitvijo OSTANE viden (render vrata spodaj: loading && prazno —
+  // isti vzorec kot termini-card R170), nikoli utrip skeletov.
+  useRefetchOnFocus(loadCustomers)
 
   const filtered = customers.filter((c) => {
     const matchSearch =
@@ -373,7 +382,7 @@ export function CrmTab() {
       </div>
 
       {/* Seznam strank */}
-      {loading ? (
+      {loading && customers.length === 0 ? (
         <div className="space-y-2" aria-busy="true" aria-live="polite">
           {[1, 2, 3].map((i) => (
             <div key={i} className="h-24 animate-pulse rounded-lg bg-muted" />
@@ -393,7 +402,7 @@ export function CrmTab() {
             size="sm"
             variant="outline"
             onClick={() => void loadCustomers()}
-            className="shrink-0 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+            className="shrink-0 transition-colors hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
             aria-label="Ponovno naloži seznam strank"
           >
             Poskusi znova

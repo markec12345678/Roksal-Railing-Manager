@@ -354,6 +354,24 @@ export function terminUrPovzetek(a: UrAgregat): string {
   return besedilo
 }
 
+/** R173 — RAZŠIRJEN povzetek: ista EN VIR RESNICE logika kot terminUrPovzetek,
+ *  dopolnjena z vidno štetjem preskočenih (pokvarjenih) vnosov — ista oblika
+ *  besedila za ZASLON (logistika povzetek vrstica) in IZVOZ (CSV metapodatek
+ *  'Povzetek'), tako da je izvoženi povzetek bajtno enak prikazanemu.
+ *   • preskoceni = 0 → natanko terminUrPovzetek(a) (nič dodanega)
+ *   • preskoceni = 1 → '… · 1 vnos preskočen (neveljaven vnos)'
+ *   • preskoceni = 3 → '… · 3 vnosov preskočenih (neveljaven vnos)'
+ *  Fail-closed: preskoceni mora biti ne-negativno celo število (TypeError),
+ *  agregat gre skozi ISTO strogo validacijo kot terminUrPovzetek. */
+export function terminUrPovzetekRazsirjen(a: UrAgregat, preskoceni: number): string {
+  if (!Number.isInteger(preskoceni) || preskoceni < 0) {
+    throw new TypeError(`terminUrPovzetekRazsirjen: pričakovano ne-negativno celo število preskoceni, ne ${String(preskoceni)}`)
+  }
+  const osnova = terminUrPovzetek(a)
+  if (preskoceni === 0) return osnova
+  return `${osnova} · ${preskoceni} ${preskoceni === 1 ? 'vnos preskočen' : 'vnosov preskočenih'} (neveljaven vnos)`
+}
+
 /** R167 — deterministično besedilo termina za odložišče (delitev prek
  *  SMS/WhatsApp ali arhiv v zapisniku). EN VIR RESNICE: datum/ura/status so
  *  ISTE funkcije kot na kartici (terminDatumLabel/terminCasLabel/

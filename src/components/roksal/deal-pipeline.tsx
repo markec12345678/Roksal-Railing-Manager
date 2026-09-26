@@ -35,6 +35,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ToastAction } from '@/components/ui/toast'
 import { useToast } from '@/hooks/use-toast'
+import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'
 import { cn } from '@/lib/utils'
 import {
   BadgeCheck,
@@ -48,6 +49,7 @@ import {
   Euro,
   Factory,
   Hammer,
+  AlertCircle,
   Lock,
   MoreVertical,
   Trello,
@@ -308,6 +310,11 @@ function PipelineColumn({
 export function DealPipeline() {
   const [items, setItems] = useState<PipeProject[]>([])
   const [loading, setLoading] = useState(true)
+  // R173 — fail-verbose (R162 vzorec CRM): prej `if (res.ok)` brez else +
+  // `catch {/* ignore */}` — pri padcu APIja je plošča TIHO ostala
+  // stara/prazna (vodja je mislil, da projektov ni, medtem ko je API padel).
+  // Zdaj ločen error state z razlogom + gumb "Poskusi znova".
+  const [error, setError] = useState<string | null>(null)
   const [open, setOpen] = useState(true)
   const [activeId, setActiveId] = useState<string | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
@@ -323,15 +330,29 @@ export function DealPipeline() {
 
   const loadProjects = useCallback(async () => {
     setLoading(true)
+    setError(null)
     try {
       const res = await fetch('/api/projects')
-      if (res.ok) {
-        const data = (await res.json()) as PipeProject[]
-        setItems(data)
-        itemsRef.current = data
+      const json = (await res.json().catch(() => null)) as (PipeProject[] | { error?: string } | null)
+      if (!res.ok) {
+        setItems([])
+        itemsRef.current = []
+        setError(
+          res.status === 401
+            ? 'Prijava je potekla — ponovno se prijavite (napaka 401).'
+            : json && !Array.isArray(json) && typeof json.error === 'string' && json.error
+              ? `Strežnik ni vrnil projektov: ${json.error} (napaka ${res.status}).`
+              : `Strežnik ni vrnil projektov (napaka ${res.status}).`,
+        )
+        return
       }
+      const data = Array.isArray(json) ? json : []
+      setItems(data)
+      itemsRef.current = data
     } catch {
-      /* omrežna napaka — pustimo prazno ploščo */
+      setItems([])
+      itemsRef.current = []
+      setError('Ni povezave s strežnikom — preverite omrežje in poskusite znova.')
     } finally {
       setLoading(false)
     }
@@ -340,6 +361,13 @@ export function DealPipeline() {
   useEffect(() => {
     void loadProjects()
   }, [loadProjects])
+
+  // R173 (P1-c iz R172) — vrnitev v zavihek/okno → ponovno naloži ploščo
+  // (montažer/pisarna premakne status v drugi seji; kanban ostane zastarel
+  // do remonta). loadProjects je zdaj fail-verbose — hook ne požira napak.
+  // Plošča med osvežitvijo OSTANE vidna (render vrata spodaj: loading &&
+  // prazno — isti vzorec kot termini-card R170), nikoli utrip vrtiljaka.
+  useRefetchOnFocus(loadProjects)
 
   const handleMove = useCallback(
     async (projectId: string, next: PipeStatus) => {
@@ -495,11 +523,31 @@ export function DealPipeline() {
         </div>
       </CardHeader>
       {open && (
-        <CardContent className="pt-0">
-          {loading ? (
+        <CardContent className="pt-0" aria-busy={loading || undefined}>
+          {loading && items.length === 0 ? (
             <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
               <span className="h-4 w-4 animate-spin rounded-full border-2 border-roksal-amber border-t-transparent" aria-hidden />
               Nalaganje projektov …
+            </div>
+          ) : error ? (
+            <div
+              role="alert"
+              className="flex flex-col gap-2 rounded-xl border border-roksal-amber/40 bg-roksal-amber/10 p-3 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div className="flex items-start gap-2">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-roksal-amber" aria-hidden="true" />
+                <p className="text-sm text-foreground">{error}</p>
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => void loadProjects()}
+                className="shrink-0 transition-colors hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+                aria-label="Ponovno naloži prodajno ploščo"
+              >
+                Poskusi znova
+              </Button>
             </div>
           ) : (
             <DndContext

@@ -17,7 +17,7 @@ import { icsEscape, icsFold, icsUtc } from '@/lib/ics'
 import { allowedTransitions } from '@/lib/equipment-lifecycle'
 import {
   normalizirajTermin,
-  terminUrPovzetek,
+  terminUrPovzetekRazsirjen,
   vsotaPredvidenihUr,
   type TerminPrikazVnos,
 } from '@/lib/termini-prikaz'
@@ -188,22 +188,44 @@ function formatTime(d: string): string {
 // R139 — CSV izvoz terminov (isti deterministični kontrakt kot Zaloga/Računi
 // iz R136: BOM, podpičje, decimalna vejica, CRLF — src/lib/csv-export.ts).
 // Pisarna dobi termini kot preglednico (mesečna poročila, urni list).
+// R173 — metapodatki obsega (konsistentno z R171 Termini kartico CSV):
+// IZVOŽENO = ZASLON — povzetek je ISTI terminUrPovzetekRazsirjen niz kot v
+// vrstici nad seznamom (EN VIR RESNICE), 'Izvoženo ob' je ISTI casOznaka pečat
+// zadnjega uspešnega branja (R170; null → vrstica IZPUŠČENA — nikoli lažne
+// svežine) in 'Obseg' je realen obseg poizvedbe (projektni filter ali vsi).
 // ---------------------------------------------------------------------------
-function downloadSchedulesCsv(schedules: Schedule[]): number {
+interface LogistikaCsvMetapodatki {
+  povzetek: string
+  osvezitev: Date | null
+  obseg: string
+}
+
+function downloadSchedulesCsv(schedules: Schedule[], metapodatki: LogistikaCsvMetapodatki): number {
   downloadCsv(
     `Termini-${todayStamp()}.csv`,
     ['Datum', 'Od', 'Do', 'Projekt', 'Stranka', 'Ekipa', 'Status', 'Lokacija', 'Ure'],
-    schedules.map((s) => [
-      formatDate(s.datumZacetka),
-      formatTime(s.datumZacetka),
-      formatTime(s.datumKonca || s.datumZacetka),
-      s.project.nazivProjekta,
-      s.project.customer.ime,
-      s.crew?.naziv ?? '',
-      STATUS_LABELS[s.status] || s.status,
-      s.lokacija ?? '',
-      s.predvideneUre,
-    ]),
+    [
+      ...schedules.map((s) => [
+        formatDate(s.datumZacetka),
+        formatTime(s.datumZacetka),
+        formatTime(s.datumKonca || s.datumZacetka),
+        s.project.nazivProjekta,
+        s.project.customer.ime,
+        s.crew?.naziv ?? '',
+        STATUS_LABELS[s.status] || s.status,
+        s.lokacija ?? '',
+        s.predvideneUre,
+      ]),
+      // R173 — meta vrstice (ISTA struktura kot R171: prazna ločilna vrstica,
+      // obseg, povzetek, pečat) — prejemnik ve TOČNO, kaj in KDAJ je bilo
+      // prikazano izvozniku.
+      [],
+      ['Obseg', metapodatki.obseg],
+      ['Povzetek', metapodatki.povzetek],
+      ...(metapodatki.osvezitev !== null
+        ? [['Izvoženo ob (čas zadnje osvežitve)', casOznaka(metapodatki.osvezitev)] as (string | number)[]]
+        : []),
+    ],
   )
   return schedules.length
 }
@@ -858,7 +880,14 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
               title="Termine kot preglednico (Excel)"
               className="shrink-0 focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
               onClick={() => {
-                const n = downloadSchedulesCsv(schedules)
+                // R173 — EN VIR RESNICE: povzetek = ISTI lib klic kot vrstica
+                // nad seznamom; osvezitev = ISTI pečat kot glava; obseg =
+                // realen obseg poizvedbe (/api/schedules[?projectId=…]).
+                const n = downloadSchedulesCsv(schedules, {
+                  povzetek: terminUrPovzetekRazsirjen(urPovzetek.ag, urPovzetek.preskoceni),
+                  osvezitev: zadnjaOsvezitev,
+                  obseg: projectId ? 'Filtrirano na projekt' : 'Vsi termini',
+                })
                 if (n > 0) toast({ title: `CSV izvožen (${n} terminov)`, description: 'Datoteka vsebuje vidne termine — odpravite jo v Excelu.' })
               }}
             >
@@ -903,21 +932,17 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
             </CardContent></Card>
           ) : (
             <div className="space-y-2">
-              {/* R169 — povzetek predvidenih ur nad vidnimi termini (EN VIR
-                  RESNICE z dashboard Termini kartico — isti lib). PREKlicani
-                  so izključeni in vidno omenjeni; preskočeni (pokvarjeni)
-                  vnosi so vidno preštet — nikoli tihega izginjanja. */}
+              {/* R169/R173 — povzetek predvidenih ur nad vidnimi termini (EN VIR
+                  RESNICE z dashboard Termini kartico — isti lib; R173: ISTI
+                  razsirjen niz gre tudi v CSV metapodatek 'Povzetek').
+                  PREKlicani so izključeni in vidno omenjeni; preskočeni
+                  (pokvarjeni) vnosi so vidno preštet — nikoli tihega izginjanja. */}
               <p
                 className="flex flex-wrap items-center gap-x-2 gap-y-0.5 rounded-md bg-muted/60 px-2.5 py-1.5 text-[11px] text-muted-foreground"
                 title="Vsota predvidenih ur vidnih terminov (preklicani so izključeni)"
               >
                 <Clock className="h-3 w-3 shrink-0 text-roksal-amber" aria-hidden="true" />
-                <span className="tabular-nums font-medium">{terminUrPovzetek(urPovzetek.ag)}</span>
-                {urPovzetek.preskoceni > 0 && (
-                  <span className="tabular-nums">
-                    · {urPovzetek.preskoceni} {urPovzetek.preskoceni === 1 ? 'vnos preskočen' : 'vnosov preskočenih'} (neveljaven vnos)
-                  </span>
-                )}
+                <span className="tabular-nums font-medium">{terminUrPovzetekRazsirjen(urPovzetek.ag, urPovzetek.preskoceni)}</span>
               </p>
               {schedules.map((s) => (
               <Card key={s.id} className="overflow-hidden transition-[border-color,box-shadow] duration-150 hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25 hover:shadow-sm focus-within:border-roksal-navy/25 dark:focus-within:border-roksal-ink/25">
