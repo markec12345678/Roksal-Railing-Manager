@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
+import { useCallback, useEffect, useState, useMemo } from 'react'
+import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -146,54 +147,54 @@ export function InventoryTab() {
   // R152: napaka nalaganja zaloge je EKSPlicitna (nič izmišljenih artiklov).
   const [invError, setInvError] = useState<string | null>(null)
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const [invRes, projRes] = await Promise.all([
-          fetch('/api/inventory'),
-          fetch('/api/projects'),
-        ])
-        if (invRes.ok) {
-          const data = await invRes.json()
-          // R152: prazna zaloga ostane PRAZNA (iskreno stanje) — ni demo artiklov.
-          setInventory(data)
-          setInvError(null)
-        } else {
-          setInventory([])
-          setInvError(`Zaloge ni bilo mogoče naložiti (napaka ${invRes.status}).`)
-          toast.error(`Zaloge ni bilo mogoče naložiti (napaka ${invRes.status})`)
-        }
-        if (projRes.ok) {
-          const projData = await projRes.json()
-          setProjects(projData)
-        }
-      } catch {
-        setInventory([])
-        setInvError('Zaloge ni bilo mogoče naložiti — preverite povezavo.')
-        toast.error('Zaloge ni bilo mogoče naložiti — preverite povezavo.')
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchData()
-  }, [])
-
-  async function fetchInventory() {
+  // R175 — stabilen fail-verbose loader (EN VIR napak, žičen tudi na
+  // useRefetchOnFocus): zaloga (R152 že fail-verbose) + projekti (prej TIHA
+  // veja `if (projRes.ok)` brez else — dropdown premikov bi ostal prazen brez
+  // signala; zdaj viden toast + čiščenje starega stanja).
+  const loadAll = useCallback(async () => {
     try {
-      const res = await fetch('/api/inventory')
-      if (res.ok) {
-        const data = await res.json()
+      const [invRes, projRes] = await Promise.all([
+        fetch('/api/inventory'),
+        fetch('/api/projects'),
+      ])
+      if (invRes.ok) {
+        const data = await invRes.json()
+        // R152: prazna zaloga ostane PRAZNA (iskreno stanje) — ni demo artiklov.
         setInventory(data)
         setInvError(null)
       } else {
-        setInvError(`Zaloge ni bilo mogoče osvežiti (napaka ${res.status}).`)
-        toast.error(`Zaloge ni bilo mogoče osvežiti (napaka ${res.status})`)
+        setInventory([])
+        setInvError(`Zaloge ni bilo mogoče naložiti (napaka ${invRes.status}).`)
+        toast.error(`Zaloge ni bilo mogoče naložiti (napaka ${invRes.status})`)
+      }
+      if (projRes.ok) {
+        const projData = await projRes.json()
+        setProjects(projData)
+      } else {
+        setProjects([])
+        toast.error(`Seznam projektov ni bil naložen (napaka ${projRes.status}).`)
       }
     } catch {
-      setInvError('Zaloge ni bilo mogoče osvežiti — preverite povezavo.')
-      toast.error('Zaloge ni bilo mogoče osvežiti — preverite povezavo.')
+      setInventory([])
+      setProjects([])
+      setInvError('Zaloge ni bilo mogoče naložiti — preverite povezavo.')
+      toast.error('Zaloge ni bilo mogoče naložiti — preverite povezavo.')
+    } finally {
+      setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    void loadAll()
+  }, [loadAll])
+
+  // R175 (iz R174 kandidatov) — vrnitev v zavihek/okno → ponovno naloži zalogo
+  // (skladišče/pisarna beleži premike v drugi seji; pregled razpoložljivosti
+  // ostane zastarel do remonta). loadAll je fail-verbose — hook ne požira napak.
+  useRefetchOnFocus(loadAll)
+
+  // R175: fetchInventory izbrisana — EN VIR RESNICE je loadAll (žičen tudi na
+  // refetch-on-focus); premik artikla osveži ZALOGO + PROJEKTE z enim klicem.
 
   async function handleMovement() {
     if (!movementInventoryId || !movementQuantity || parseFloat(movementQuantity) <= 0) {
@@ -221,7 +222,7 @@ export function InventoryTab() {
         setMovementQuantity('')
         setMovementProjectId('')
         setMovementType('PORABA')
-        await fetchInventory()
+        await loadAll()
       } else {
         toast.error('Napaka pri zapisovanju premika')
       }
@@ -506,8 +507,10 @@ export function InventoryTab() {
 
       {/* Inventory List */}
       <Card className="animate-fade-in-up transition-all duration-200" style={{ animationDelay: '240ms' }}>
-        <CardContent className="p-0">
-          {loading ? (
+        {/* R175 render vrata: skelet SAMO na prvem loadu (loading && prazno,
+            vzorec termini-card R170) — osvežitev ob fokusu ne utripa. */}
+        <CardContent className="p-0" aria-busy={loading || undefined}>
+          {loading && inventory.length === 0 ? (
             <div className="space-y-0 p-4">
               {[1, 2, 3, 4].map((i) => (
                 <Skeleton key={i} className="h-16 w-full mb-2" />
@@ -729,8 +732,8 @@ export function InventoryTab() {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => { setInvError(null); void fetchInventory() }}
-                className="shrink-0 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+                onClick={() => { setInvError(null); void loadAll() }}
+                className="shrink-0 transition-colors hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
                 aria-label="Ponovno naloži zalogo"
               >
                 Poskusi znova

@@ -1667,7 +1667,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                 size="sm"
                 variant="outline"
                 onClick={() => { setProjectsError(null); void fetchProjects() }}
-                className="shrink-0 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+                className="shrink-0 transition-colors hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
                 aria-label="Ponovno naloži projekte"
               >
                 Poskusi znova

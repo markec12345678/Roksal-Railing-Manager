@@ -187,13 +187,19 @@ export function TeamTab() {
       const json = (await res.json().catch(() => null)) as (TeamUser[] | { error?: string } | null)
       if (!res.ok) {
         setUsers([])
-        setError(
-          res.status === 401
-            ? 'Prijava je potekla — ponovno se prijavite (napaka 401).'
-            : json && !Array.isArray(json) && typeof json.error === 'string' && json.error
-              ? `Strežnik ni vrnil ekipe: ${json.error} (napaka ${res.status}).`
-              : `Strežnik ni vrnil ekipe (napaka ${res.status}).`,
-        )
+        // R175 (produkcija QA spot MONTER): 403 users.read je PRAVIČNA MEJA
+        // (§10/R135), NE napaka — zasnovan odgovor je pošteno stanje
+        // 'Ekipa — ureja pisarna' spodaj; error panel bi bil lažen alarm.
+        // Fail-verbose ostane za realne napake: 401 / 5xx / omrežje.
+        if (res.status !== 403) {
+          setError(
+            res.status === 401
+              ? 'Prijava je potekla — ponovno se prijavite (napaka 401).'
+              : json && !Array.isArray(json) && typeof json.error === 'string' && json.error
+                ? `Strežnik ni vrnil ekipe: ${json.error} (napaka ${res.status}).`
+                : `Strežnik ni vrnil ekipe (napaka ${res.status}).`,
+          )
+        }
         return
       }
       const data = Array.isArray(json) ? json : []

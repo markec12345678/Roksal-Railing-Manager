@@ -20,6 +20,9 @@
 //    + team-tab (`dark:bg-amber-950/40/70`). Scan r168-dark-scan.py dobi
 //    novo družino 'pokvarjen-mirror'; test je stražar na ravni virov.
 // Varnostni pas (R165/R167 nauček): vsi source grepi imajo SCOPED vzorce.
+// R175 DODATEK: 403 users.read NI error — produkcija QA (spot MONTER) je
+// ulovila lažen alarm: error panel je prekril zasnovano pošteno stanje
+// 'Ekipa — ureja pisarna' (§10/R135). Fail-verbose ostane za 401/5xx/omrežje.
 import { describe, expect, it } from 'vitest'
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
@@ -28,11 +31,20 @@ const team = (): string =>
   readFileSync(join(process.cwd(), 'src/components/roksal/team-tab.tsx'), 'utf8')
 
 describe('R174 FIX — team-tab fail-silent → fail-verbose (R162/R173 vzorec)', () => {
-  it('!res.ok VEJA nastavi error + počisti users (nikoli tihega starega stanja)', () => {
+  it('!res.ok VEJA počisti users; error SAMO za realne napake (403 = pravična meja, ne napaka)', () => {
     const src = team()
     expect(src).toMatch(
-      /if \(!res\.ok\) \{\s*\n\s*setUsers\(\[\]\)\s*\n\s*setError\(/,
+      /if \(!res\.ok\) \{\s*\n\s*setUsers\(\[\]\)\s*\n[\s\S]*?if \(res\.status !== 403\) \{\s*\n\s*setError\(/,
     )
+  })
+
+  it('403 users.read NI error — pošteno stanje R135 (Ekipa — ureja pisarna) ostane ŽIVO', () => {
+    const src = team()
+    // 403 izjema pred setError (produkcija QA spot MONTER — lažen alarm)
+    expect(src).toContain('if (res.status !== 403) {')
+    // pošteno stanje panel je ohranjen (canRead=false veja)
+    expect(src).toContain('Ekipa — ureja pisarna')
+    expect(src).toContain('Pregled računov je pravica users.read (pisarna).')
   })
 
   it('401 ima lastno sporočilo (isti vzorec kot CRM R162 + plošča R173)', () => {
@@ -65,6 +77,13 @@ describe('R174 FIX — team-tab fail-silent → fail-verbose (R162/R173 vzorec)'
     expect(src).toContain('<AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-roksal-amber" aria-hidden="true" />')
     expect(src).toContain('Poskusi znova')
     expect(src).toContain('aria-label="Ponovno naloži seznam ekipe"')
+  })
+
+  it('fail-verbose 401/5xx sporočila ostanejo (samo 403 je izjema)', () => {
+    const src = team()
+    expect(src).toContain("'Prijava je potekla — ponovno se prijavite (napaka 401).'")
+    expect(src).toContain('`Strežnik ni vrnil ekipe: ${json.error} (napaka ${res.status}).`')
+    expect(src).toContain('`Strežnik ni vrnil ekipe (napaka ${res.status}).`')
   })
 
   it('Poskusi znova gumb ima hover detail (transition-colors hover:text-roksal-ink — R172/R173 vzorec)', () => {
