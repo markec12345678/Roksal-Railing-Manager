@@ -847,17 +847,17 @@ export function InvoiceManager() {
         {!loading && invoices.length > 0 && (
           <div className="space-y-2">
             <div className="grid grid-cols-3 gap-2">
-              <div className="rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40/60 p-2 text-center transition-all hover:shadow-sm hover:border-emerald-300/70">
+              <div className="rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 p-2 text-center transition-all hover:shadow-sm hover:border-emerald-300/70">
                 <div className="text-[10px] uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Plačano</div>
                 <div className="text-sm font-bold tabular-nums text-emerald-800 dark:text-emerald-200">{eur(summary.placano)}</div>
               </div>
-              <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40/60 p-2 text-center transition-all hover:shadow-sm hover:border-amber-300/70">
+              <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-2 text-center transition-all hover:shadow-sm hover:border-amber-300/70">
                 <div className="text-[10px] uppercase tracking-wide text-amber-700 dark:text-amber-300">Odprto</div>
                 <div className="text-sm font-bold tabular-nums text-amber-800 dark:text-amber-200">
                   {eur(Math.max(0, summary.izdano - summary.placano))}
                 </div>
               </div>
-              <div className={`rounded-lg border p-2 text-center transition-all hover:shadow-sm ${summary.zapadloN > 0 ? 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40/60 hover:border-red-300/70' : 'border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-950/40/60 hover:border-stone-300'}`}>
+              <div className={`rounded-lg border p-2 text-center transition-all hover:shadow-sm ${summary.zapadloN > 0 ? 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 hover:border-red-300/70' : 'border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-950/40 hover:border-stone-300'}`}>
                 <div className={`text-[10px] uppercase tracking-wide ${summary.zapadloN > 0 ? 'text-red-700 dark:text-red-300' : 'text-stone-500 dark:text-stone-400'}`}>
                   Zapadlo
                 </div>
@@ -914,7 +914,7 @@ export function InvoiceManager() {
                 <div
                   key={inv.id}
                   className={`rounded-xl border border-l-4 p-3 transition-all hover:shadow-md hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25 ${rail} ${
-                    zapadlo ? 'border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/40/40' : 'border-border/70 bg-card'
+                    zapadlo ? 'border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/40' : 'border-border/70 bg-card'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">
@@ -1213,7 +1213,7 @@ export function InvoiceManager() {
                   onChange={(e) => setFormRok(e.target.value)}
                 />
               </div>
-              <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40/70 p-2">
+              <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-2">
                 <div className="flex justify-between text-xs">
                   <span className="text-muted-foreground">Osnova</span>
                   <span className="font-semibold">{eur(formTotals.osnova)}</span>

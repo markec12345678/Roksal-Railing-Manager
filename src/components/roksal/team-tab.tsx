@@ -15,6 +15,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
 import {
+  AlertCircle,
   BadgeCheck,
   CalendarClock,
   Copy,
@@ -31,6 +32,7 @@ import {
   UserCheck,
   type LucideIcon,
 } from 'lucide-react'
+import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'
 import {
   buildEkipaCsv,
   ekipaCsvFilename,
@@ -160,6 +162,11 @@ export function TeamTab() {
   // ne na vloge — isti jezik kot strežniška vrata (fail-closed enako).
   const [myPermissions, setMyPermissions] = useState<readonly string[]>([])
   const [users, setUsers] = useState<TeamUser[]>([])
+  // R174 — fail-verbose (R162 CRM / R173 plošča vzorec): prej `if (res.ok)` brez
+  // verbose else + `catch { setUsers([]) }` — pri padcu APIja je seznam TIHO
+  // ostal star/prazen (admin je mislil, da ekipe ni, medtem ko je API padel).
+  // Zdaj ločen error state z razlogom + gumb "Poskusi znova".
+  const [error, setError] = useState<string | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
   const [inviteOpen, setInviteOpen] = useState(false)
   const [inviteEmail, setInviteEmail] = useState('')
@@ -170,20 +177,30 @@ export function TeamTab() {
 
   const load = useCallback(async () => {
     setLoading(true)
+    setError(null)
     try {
       const me = await fetch('/api/auth').then((r) => (r.ok ? r.json() : null))
       setMyRole(me?.user?.vloga ?? null)
       setMyId(me?.user?.id ?? null)
       setMyPermissions(Array.isArray(me?.permissions) ? (me.permissions as string[]) : [])
       const res = await fetch('/api/users')
-      if (res.ok) {
-        const data = (await res.json()) as TeamUser[]
-        setUsers(Array.isArray(data) ? data : [])
-      } else {
+      const json = (await res.json().catch(() => null)) as (TeamUser[] | { error?: string } | null)
+      if (!res.ok) {
         setUsers([])
+        setError(
+          res.status === 401
+            ? 'Prijava je potekla — ponovno se prijavite (napaka 401).'
+            : json && !Array.isArray(json) && typeof json.error === 'string' && json.error
+              ? `Strežnik ni vrnil ekipe: ${json.error} (napaka ${res.status}).`
+              : `Strežnik ni vrnil ekipe (napaka ${res.status}).`,
+        )
+        return
       }
+      const data = Array.isArray(json) ? json : []
+      setUsers(data)
     } catch {
       setUsers([])
+      setError('Ni povezave s strežnikom — preverite omrežje in poskusite znova.')
     } finally {
       setLoading(false)
     }
@@ -192,6 +209,12 @@ export function TeamTab() {
   useEffect(() => {
     void load()
   }, [load])
+
+  // R174 (iz R173 P1 kandidat) — vrnitev v zavihek/okno → ponovno naloži
+  // seznam ekipe (pisarna/admin spreminja vloge, povablja ali zaklepa račune
+  // v drugi seji; VODJA-in pregled ostane zastarel do remonta). load je zdaj
+  // fail-verbose — hook ne požira napak (EN VIR napak = loader).
+  useRefetchOnFocus(load)
 
   async function act(body: Record<string, unknown>, okMsg: string, busyId: string | null) {
     setBusyId(busyId)
@@ -360,8 +383,31 @@ export function TeamTab() {
         </div>
       )}
 
-      {/* Seznam */}
-      {loading ? (
+      {/* Seznam — R174 render vrata: vrtiljak SAMO na prvi load (loading &&
+          prazno, vzorec termini-card R170 / CRM R173); ob osvežitvi ob fokusu
+          ostane obstoječi seznam VIDEN (aria-busy signalizira osvežitev);
+          error panel ima prednost — nikoli lažnega "Ni podatkov". */}
+      {error ? (
+        <div
+          role="alert"
+          className="flex flex-col gap-2 rounded-xl border border-roksal-amber/40 bg-roksal-amber/10 p-3 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div className="flex items-start gap-2">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-roksal-amber" aria-hidden="true" />
+            <p className="text-sm text-foreground">{error}</p>
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => void load()}
+            className="shrink-0 transition-colors hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+            aria-label="Ponovno naloži seznam ekipe"
+          >
+            Poskusi znova
+          </Button>
+        </div>
+      ) : loading && users.length === 0 ? (
         <div className="flex items-center justify-center rounded-xl border border-border bg-card p-10">
           <Loader2 className="h-6 w-6 animate-spin text-roksal-amber" />
         </div>
@@ -372,7 +418,7 @@ export function TeamTab() {
           </div>
         ) : (
           // §10 (R135): pošteno stanje namesto praznega seznama (strežnik: 403 users.read)
-          <div className="flex items-start gap-2 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40/70 px-3.5 py-3">
+          <div className="flex items-start gap-2 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 px-3.5 py-3">
             <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
             <div className="space-y-0.5">
               <p className="text-xs font-semibold text-amber-800 dark:text-amber-200">Ekipa — ureja pisarna</p>
@@ -384,7 +430,7 @@ export function TeamTab() {
           </div>
         )
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-2" aria-busy={loading || undefined}>
           {users.map((u) => {
             const self = u.id === myId
             const status = ekipaStatusOf(u.lifecycle)

@@ -7756,7 +7756,7 @@ function WpcDiagram({
         : `Poševne (${kotPosevnih}°)`
 
   return (
-    <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40/30 p-2 slide-in-right">
+    <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-2 slide-in-right">
       <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-1.5">
           <Fence className="h-3.5 w-3.5 text-amber-700 dark:text-amber-300" />

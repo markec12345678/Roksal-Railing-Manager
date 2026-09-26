@@ -86,6 +86,13 @@ def main() -> None:
         for i, vrsta in enumerate(vrstice, 1):
             if vrsta.strip().startswith('*') or vrsta.strip().startswith('//'):
                 continue  # komentarji
+            # R174 — POKVARJEN MIRROR (novo družina): dvojni poševnici v
+            # opacity modifierju (`dark:bg-X-950/40/60`) = Tailwind ne generira
+            # razreda → svetel madež v temni temi. Vedno napaka (noben legitimen
+            # primer ne obstaja) — mirror ni potreben.
+            for m in re.finditer(r"dark:[\w-]+-[\w-]+/\d+/\d+", vrsta):
+                zadetki.setdefault('pokvarjen-mirror', []).append(
+                    (p, i, m.group(0), vrsta.strip()[:110]))
             for druzina, (vz, mirror) in VZORCI.items():
                 for m in vz.finditer(vrsta):
                     zeton = m.group(0)

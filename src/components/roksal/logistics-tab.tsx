@@ -1432,7 +1432,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
             </div>
             {/* Override — izrecna, ločena pot (razlog gre v revizijo QC_OVERRIDE). */}
             {qcOverrideMode ? (
-              <div className="rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40/60 p-2">
+              <div className="rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 p-2">
                 <Label className="text-xs font-semibold text-red-700 dark:text-red-300">Zaključi brez preverbe (override)</Label>
                 <Input
                   value={qcOverrideReason}
@@ -1499,7 +1499,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
           )}
           <div className="space-y-3">
             {evExisting?.locked ? (
-              <div className="flex items-center gap-2 rounded-md border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/40/60 p-2 text-[11px] font-semibold text-green-700 dark:text-green-300">
+              <div className="flex items-center gap-2 rounded-md border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/40 p-2 text-[11px] font-semibold text-green-700 dark:text-green-300">
                 <Lock className="h-3.5 w-3.5" /> Zaklenjeno s predajo ({evExisting.handoverName ?? '—'})
               </div>
             ) : null}
