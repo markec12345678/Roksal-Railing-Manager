@@ -102,7 +102,8 @@ describe('R173 P1-c žičenje — prodajna plošča refetch-on-focus + fail-verb
 
   it('fail-verbose: !res.ok VEJA nastavi error + počisti items (nikoli tihega starega stanja)', () => {
     const src = pipeline()
-    expect(src).toMatch(/if \(!res\.ok\) \{\s*\n\s*setItems\(\[\]\)\s*\n\s*itemsRef\.current = \[\]\s*\n\s*setError\(/)
+    // R178: med vstavljeno še fail-closed čiščenje pečata (setPloscaOsvezitev(null))
+    expect(src).toMatch(/if \(!res\.ok\) \{\s*\n\s*setItems\(\[\]\)\s*\n\s*itemsRef\.current = \[\]\s*\n\s*setPloscaOsvezitev\(null\)\s*\n\s*setError\(/)
     // 401 ima lastno sporočilo (vzorec R162 CRM)
     expect(src).toContain("'Prijava je potekla — ponovno se prijavite (napaka 401).'")
   })

@@ -40,7 +40,11 @@ import {
   User,
   Loader2,
   Download,
+  History,
 } from 'lucide-react'
+// R178 — EN VIR RESNICE za pečat 'Osveženo ob' (vzorec R170/R171/R177):
+// komponenta NE formatira časa sama.
+import { casOznaka } from '@/lib/osvezitev-fokus'
 
 interface CrmCustomer {
   id: string
@@ -105,6 +109,10 @@ export function CrmTab() {
   const [stats, setStats] = useState<CrmStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  // R178 — pečat 'Osveženo ob' = čas zadnjega USPEŠNEGA branja /api/crm
+  // (primarni vir te površine, vzorec R177). Napaka/omrežje → null: pečat
+  // brez podatkov bi lažno trdil svežino (fail-closed pečat).
+  const [strankeOsvezitev, setStrankeOsvezitev] = useState<Date | null>(null)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('ALL')
   const [selectedCustomer, setSelectedCustomer] = useState<CrmCustomer | null>(null)
@@ -135,6 +143,7 @@ export function CrmTab() {
       if (!res.ok) {
         setCustomers([])
         setStats(null)
+        setStrankeOsvezitev(null)
         setError(
           res.status === 401
             ? 'Prijava je potekla — ponovno se prijavite (napaka 401).'
@@ -146,9 +155,11 @@ export function CrmTab() {
       }
       setCustomers(json?.customers ?? [])
       setStats(json?.stats ?? null)
+      setStrankeOsvezitev(new Date())
     } catch {
       setCustomers([])
       setStats(null)
+      setStrankeOsvezitev(null)
       setError('Ni povezave s strežnikom — preverite omrežje in poskusite znova.')
     } finally {
       setLoading(false)
@@ -338,6 +349,27 @@ export function CrmTab() {
           </Card>
         </div>
       )}
+
+      {/* R178 — glava seznama strank s pečatom svežine (družina R170/R171/R177):
+          tab 'CRM stranke' je sklad kart — ta naslov jasno loči seznam strank
+          od zgornjih kart (plošča/follow-up/računi) in nosi pečat svežine. */}
+      <div>
+        <h2 className="text-xl font-bold text-roksal-ink">CRM stranke</h2>
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+          <p className="text-sm text-muted-foreground">
+            Seznam strank, opomniki in zgodovina sodelovanja
+          </p>
+          {strankeOsvezitev && (
+            <span
+              className="hidden items-center gap-1 text-[11px] text-muted-foreground sm:flex"
+              title="Čas zadnje uspešne osvežitve podatkov"
+            >
+              <History className="h-3 w-3 shrink-0" aria-hidden="true" />
+              Osveženo ob <span className="tabular-nums">{casOznaka(strankeOsvezitev)}</span>
+            </span>
+          )}
+        </div>
+      </div>
 
       {/* Iskalnik + filter */}
       <div className="space-y-2">

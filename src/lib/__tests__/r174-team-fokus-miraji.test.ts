@@ -61,8 +61,9 @@ describe('R174 FIX — team-tab fail-silent → fail-verbose (R162/R173 vzorec)'
   it('catch NIČ tihega ignore — omrežna napaka je vidna', () => {
     const src = team()
     // catch blok v load() nastavi error (ne samo setUsers([]))
+    // R178: med vstavljen še fail-closed čiščenje pečata (setEkipaOsvezitev(null))
     expect(src).toMatch(
-      /\} catch \{\s*\n\s*setUsers\(\[\]\)\s*\n\s*setError\('Ni povezave s strežnikom/,
+      /\} catch \{\s*\n\s*setUsers\(\[\]\)\s*\n\s*setEkipaOsvezitev\(null\)\s*\n\s*setError\('Ni povezave s strežnikom/,
     )
   })
 

@@ -55,8 +55,12 @@ import {
   Trello,
   Users,
   Wrench,
+  History,
   type LucideIcon,
 } from 'lucide-react'
+// R178 — EN VIR RESNICE za pečat 'Osveženo ob' (vzorec R170/R171/R177):
+// komponenta NE formatira časa sama.
+import { casOznaka } from '@/lib/osvezitev-fokus'
 
 type PipeStatus =
   | 'NACRTOVANO'
@@ -315,6 +319,10 @@ export function DealPipeline() {
   // stara/prazna (vodja je mislil, da projektov ni, medtem ko je API padel).
   // Zdaj ločen error state z razlogom + gumb "Poskusi znova".
   const [error, setError] = useState<string | null>(null)
+  // R178 — pečat 'Osveženo ob' = čas zadnjega USPEŠNEGA branja /api/projects
+  // za PLOŠČO (primarni vir te površine, vzorec R177). Napaka/omrežje → null:
+  // pečat brez podatkov bi lažno trdil svežino (fail-closed pečat).
+  const [ploscaOsvezitev, setPloscaOsvezitev] = useState<Date | null>(null)
   const [open, setOpen] = useState(true)
   const [activeId, setActiveId] = useState<string | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
@@ -337,6 +345,7 @@ export function DealPipeline() {
       if (!res.ok) {
         setItems([])
         itemsRef.current = []
+        setPloscaOsvezitev(null)
         setError(
           res.status === 401
             ? 'Prijava je potekla — ponovno se prijavite (napaka 401).'
@@ -349,9 +358,11 @@ export function DealPipeline() {
       const data = Array.isArray(json) ? json : []
       setItems(data)
       itemsRef.current = data
+      setPloscaOsvezitev(new Date())
     } catch {
       setItems([])
       itemsRef.current = []
+      setPloscaOsvezitev(null)
       setError('Ni povezave s strežnikom — preverite omrežje in poskusite znova.')
     } finally {
       setLoading(false)
@@ -478,9 +489,22 @@ export function DealPipeline() {
               <Trello className="h-4 w-4 shrink-0 text-roksal-amber" aria-hidden />
               Prodajna plošča
             </CardTitle>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Povlecite projekt na novo stopnjo — sprememba se zabeleži v revijo. Nespremišnjen premik lahko takoj razveljavite.
-            </p>
+            {/* R178 — pečat 'Osveženo ob HH:MM:SS' (vzorec R177; skrit na ozkih
+                zaslonih; flex-wrap — pri sm širini se lepo prilega ob podnaslov). */}
+            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+              <p className="text-xs text-muted-foreground">
+                Povlecite projekt na novo stopnjo — sprememba se zabeleži v revijo. Nespremišnjen premik lahko takoj razveljavite.
+              </p>
+              {ploscaOsvezitev && (
+                <span
+                  className="hidden items-center gap-1 text-[11px] text-muted-foreground sm:flex"
+                  title="Čas zadnje uspešne osvežitve podatkov"
+                >
+                  <History className="h-3 w-3 shrink-0" aria-hidden="true" />
+                  Osveženo ob <span className="tabular-nums">{casOznaka(ploscaOsvezitev)}</span>
+                </span>
+              )}
+            </div>
           </div>
           <div className="flex flex-wrap items-center gap-1.5 sm:justify-end">
             {vrednostPonudb > 0 && (

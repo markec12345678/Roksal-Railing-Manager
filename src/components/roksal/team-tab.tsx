@@ -30,9 +30,13 @@ import {
   UserCog,
   UserPlus,
   UserCheck,
+  History,
   type LucideIcon,
 } from 'lucide-react'
 import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'
+// R178 — EN VIR RESNICE za pečat 'Osveženo ob' (vzorec R170/R171/R177):
+// komponenta NE formatira časa sama.
+import { casOznaka } from '@/lib/osvezitev-fokus'
 import {
   buildEkipaCsv,
   ekipaCsvFilename,
@@ -167,6 +171,11 @@ export function TeamTab() {
   // ostal star/prazen (admin je mislil, da ekipe ni, medtem ko je API padel).
   // Zdaj ločen error state z razlogom + gumb "Poskusi znova".
   const [error, setError] = useState<string | null>(null)
+  // R178 — pečat 'Osveženo ob' = čas zadnjega USPEŠNEGA branja /api/users
+  // (primarni vir površine, vzorec R177). Napaka/omrežje/403 → null: pečat
+  // brez podatkov bi lažno trdil svežino (fail-closed pečat; 403 = poštno
+  // stanje 'ureja pisarna' brez seznama — tam NIČ za pečat).
+  const [ekipaOsvezitev, setEkipaOsvezitev] = useState<Date | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
   const [inviteOpen, setInviteOpen] = useState(false)
   const [inviteEmail, setInviteEmail] = useState('')
@@ -191,6 +200,7 @@ export function TeamTab() {
         // (§10/R135), NE napaka — zasnovan odgovor je pošteno stanje
         // 'Ekipa — ureja pisarna' spodaj; error panel bi bil lažen alarm.
         // Fail-verbose ostane za realne napake: 401 / 5xx / omrežje.
+        setEkipaOsvezitev(null)
         if (res.status !== 403) {
           setError(
             res.status === 401
@@ -204,8 +214,10 @@ export function TeamTab() {
       }
       const data = Array.isArray(json) ? json : []
       setUsers(data)
+      setEkipaOsvezitev(new Date())
     } catch {
       setUsers([])
+      setEkipaOsvezitev(null)
       setError('Ni povezave s strežnikom — preverite omrežje in poskusite znova.')
     } finally {
       setLoading(false)
@@ -346,9 +358,22 @@ export function TeamTab() {
           </div>
           <div>
             <h2 className="text-sm font-bold text-roksal-ink">Ekipa — življenjski cikl računov</h2>
-            <p className="text-[11px] text-muted-foreground">
-              Povabila, deaktivacija, zaklep, vloge. Vsako dejanje gre v dnevnik.
-            </p>
+            {/* R178 — pečat 'Osveženo ob HH:MM:SS' (vzorec R177; skrit na ozkih
+                zaslonih; flex-wrap — pri sm širini se lepo prilega ob podnaslov). */}
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+              <p className="text-[11px] text-muted-foreground">
+                Povabila, deaktivacija, zaklep, vloge. Vsako dejanje gre v dnevnik.
+              </p>
+              {ekipaOsvezitev && (
+                <span
+                  className="hidden items-center gap-1 text-[11px] text-muted-foreground sm:flex"
+                  title="Čas zadnje uspešne osvežitve podatkov"
+                >
+                  <History className="h-3 w-3 shrink-0" aria-hidden="true" />
+                  Osveženo ob <span className="tabular-nums">{casOznaka(ekipaOsvezitev)}</span>
+                </span>
+              )}
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-1.5">
