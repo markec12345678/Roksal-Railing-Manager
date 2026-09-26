@@ -2086,9 +2086,10 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                               size="sm"
                               variant="outline"
                               onClick={copyPortalUrl}
-                              className="h-8 px-2.5 shrink-0"
+                              className="h-8 px-2.5 shrink-0 focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                              aria-label="Kopiraj povezavo portala"
                             >
-                              <Copy className="h-3.5 w-3.5" />
+                              <Copy className="h-3.5 w-3.5" aria-hidden="true" />
                             </Button>
                           </div>
                         </div>
@@ -2388,9 +2389,10 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                               size="sm"
                               variant="outline"
                               onClick={copyMeasureUrl}
-                              className="h-8 px-2.5 shrink-0"
+                              className="h-8 px-2.5 shrink-0 focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                              aria-label="Kopiraj merilno povezavo"
                             >
-                              <Copy className="h-3.5 w-3.5" />
+                              <Copy className="h-3.5 w-3.5" aria-hidden="true" />
                             </Button>
                           </div>
                         </div>

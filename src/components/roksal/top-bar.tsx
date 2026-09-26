@@ -185,26 +185,31 @@ export function TopBar({ onSync, syncing, onOpenPalette, hidden = false }: TopBa
             <Button
               variant="ghost"
               size="icon"
-              className="text-white/70 hover:text-white hover:bg-white/10 h-9 w-9"
+              className="text-white/70 hover:text-white hover:bg-white/10 h-9 w-9 focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-0"
               onClick={toggleTheme}
+              aria-label={resolvedTheme === 'dark' ? 'Preklopi na svetlo temo' : 'Preklopi na temno temo'}
+              title={resolvedTheme === 'dark' ? 'Svetla tema' : 'Temna tema'}
             >
               {resolvedTheme === 'dark' ? (
-                <Sun className="h-4 w-4" />
+                <Sun className="h-4 w-4" aria-hidden="true" />
               ) : (
-                <Moon className="h-4 w-4" />
+                <Moon className="h-4 w-4" aria-hidden="true" />
               )}
             </Button>
           )}
           <Button
             variant="ghost"
             size="icon"
-            className={`text-white/70 hover:text-white hover:bg-white/10 h-9 w-9 ${
+            className={`text-white/70 hover:text-white hover:bg-white/10 h-9 w-9 focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-0 ${
               needsSyncPulse ? 'animate-pulse-soft' : ''
             }`}
             onClick={handleSync}
             disabled={syncing}
+            aria-label="Sinhroniziraj podatke"
+            aria-busy={syncing}
+            title="Sinhronizacija podatkov"
           >
-            <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} aria-hidden="true" />
           </Button>
           {/* Odjava (#5 §2) — seja se prekliče v registru, ne le piškotek */}
           <DropdownMenu>

@@ -8,7 +8,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
-import { Compass, RefreshCw, Save, TriangleAlert, CheckCircle2, Loader2 } from 'lucide-react'
+import { buildNagibiCsv, nagibiCsvFilename } from '@/lib/nagibi-csv'
+import { Compass, Download, RefreshCw, Save, TriangleAlert, CheckCircle2, Loader2 } from 'lucide-react'
 
 interface SlopeReading {
   beta: number // X front-back tilt (-180 to 180)
@@ -167,6 +168,29 @@ export function InclinometerTab({ projectId }: { projectId: string | null }) {
       toast({ title: 'Napaka', description: 'Omrežna napaka.', variant: 'destructive' })
     } finally {
       setSaving(false)
+    }
+  }
+
+  // R157 — izvoz zgodovine nagibov v CSV (dopolnitev odloženega iz R156 (c);
+  // logika v src/lib/nagibi-csv.ts — deterministično, testirljivo, iskreno).
+  function handleExportCSV() {
+    if (saved.length === 0) return
+    try {
+      const { csv, vrstic } = buildNagibiCsv(saved)
+      const filename = nagibiCsvFilename(projectId ?? 'brez-projekta', new Date().toISOString().slice(0, 10))
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+      toast({ title: 'CSV izvožen', description: `${vrstic} nagibov izvoženih v datoteko ${filename}.` })
+    } catch {
+      // Fail-verbose: izvoz ne sme tiho spodleteti (npr. pokvarjen datum v bazi).
+      toast({ title: 'Izvoz ni uspel', description: 'Podatki o nagibih vsebujejo neveljavno vrednost — osvežite zgodovino in poskusite znova.', variant: 'destructive' })
     }
   }
 
@@ -367,7 +391,20 @@ export function InclinometerTab({ projectId }: { projectId: string | null }) {
       ) : (
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm">Zabeleženi nagibi ({saved.length})</CardTitle>
+            <div className="flex items-center justify-between gap-2">
+              <CardTitle className="text-sm">Zabeleženi nagibi ({saved.length})</CardTitle>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={handleExportCSV}
+                className="shrink-0 h-8 px-2.5 text-xs focus-visible:ring-2 focus-visible:ring-roksal-amber/50"
+                aria-label={`Izvozi ${saved.length} nagibov kot CSV datoteko`}
+              >
+                <Download className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
+                Izvozi CSV
+              </Button>
+            </div>
           </CardHeader>
           <CardContent role="list" className="space-y-2">
             {saved.map((s) => (

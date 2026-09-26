@@ -504,12 +504,13 @@ export function SketchCanvas({ projectId, onClose }: SketchCanvasProps) {
                 size="icon"
                 onClick={loadSketches}
                 disabled={loadingSketches}
-                className="text-white hover:bg-white/10 h-8 w-8"
+                className="text-white hover:bg-white/10 h-8 w-8 focus-visible:ring-2 focus-visible:ring-white/60"
+                aria-label="Naloži shranjene skice"
               >
                 {loadingSketches ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
                 ) : (
-                  <FolderOpen className="w-4 h-4" />
+                  <FolderOpen className="w-4 h-4" aria-hidden="true" />
                 )}
               </Button>
             </TooltipTrigger>
@@ -582,9 +583,10 @@ export function SketchCanvas({ projectId, onClose }: SketchCanvasProps) {
                 variant="ghost"
                 onClick={handleUndo}
                 disabled={strokes.length === 0}
-                className="h-8 w-8 p-0"
+                className="h-8 w-8 p-0 focus-visible:ring-2 focus-visible:ring-white/60"
+                aria-label="Razveljavi zadnjo potezo skice"
               >
-                <Undo2 className="w-4 h-4" />
+                <Undo2 className="w-4 h-4" aria-hidden="true" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Razveljavi</TooltipContent>
@@ -597,9 +599,10 @@ export function SketchCanvas({ projectId, onClose }: SketchCanvasProps) {
                 variant="ghost"
                 onClick={handleClear}
                 disabled={strokes.length === 0}
-                className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                className="h-8 w-8 p-0 text-red-600 hover:text-red-700 focus-visible:ring-2 focus-visible:ring-red-400/60"
+                aria-label="Pobriši celotno skico"
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-4 h-4" aria-hidden="true" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Počisti platno</TooltipContent>

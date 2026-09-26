@@ -114,6 +114,13 @@ dialogom; ni tihe izgube podatkov).
 - Revizije meritev (R153 `MEASUREMENT_STATUS`), ponudb (R151 `inputHash`) in računov
   (R135) so poslovna sled — hranijo se namenoma (revizijski podatki); brisanje meritev po
   zasnovi ne obstaja.
+- CRM spremembe (R156 `CRM_UPDATE`): `userId` je vedno seja akterja (nikoli `'system'`),
+  `oldValue` vsebuje polno stanje stranke PRED spremembo, `newValue` samo spremenjena
+  polja z novimi vrednostmi (`{customerId, spremembe}`). CRM polja so poslovni podatki
+  (status, kontakt, kategorija, interne opombe) — sled je namenoma podrobna, saj gre pri
+  internih opombah za občutljivo kategorijo, kjer je treba vedeti, kdo je kaj spremenil
+  in kakšno je bilo prejšnje stanje. Vrne 403 pred zapisom (SKLADISCE/apikey), zato
+  revizija ne nastane za zavrnjene poskuse.
 
 ## 10. Dostop na ravni vira (IDOR zaključek — R120 → R155)
 

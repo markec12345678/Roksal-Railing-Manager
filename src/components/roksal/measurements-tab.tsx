@@ -4744,9 +4744,10 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                     type="button"
                     variant="outline"
                     onClick={handleClearCalibration}
-                    className="h-9 px-3"
+                    className="h-9 px-3 focus-visible:ring-2 focus-visible:ring-roksal-amber/50"
+                    aria-label="Počisti umeritev"
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
+                    <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                   </Button>
                 )}
               </div>
@@ -5192,10 +5193,11 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                 <Button
                   type="button"
                   variant="outline"
-                  className="h-8 px-3"
+                  className="h-8 px-3 focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
                   onClick={() => setAddSegmentOpen(false)}
+                  aria-label="Zapri dodajanje segmenta"
                 >
-                  <X className="h-3.5 w-3.5" />
+                  <X className="h-3.5 w-3.5" aria-hidden="true" />
                 </Button>
               </div>
             </div>

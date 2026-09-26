@@ -2061,9 +2061,13 @@ function AnnotationEditor({
                 </Button>
               )}
               <CollapsibleTrigger asChild>
-                <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0">
+                <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0 focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                  aria-label={calibrationExpanded ? 'Skrij hitre reference umeritve' : 'Prikaži hitre reference umeritve'}
+                  aria-expanded={calibrationExpanded}
+                >
                   <ChevronDown
                     className={`h-4 w-4 transition-transform ${calibrationExpanded ? '' : '-rotate-90'}`}
+                    aria-hidden="true"
                   />
                 </Button>
               </CollapsibleTrigger>

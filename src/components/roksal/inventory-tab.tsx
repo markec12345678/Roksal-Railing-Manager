@@ -364,10 +364,12 @@ export function InventoryTab() {
         </div>
         <Button
           size="icon"
-          className="h-9 w-9 bg-roksal-amber hover:bg-roksal-amber/90 text-roksal-navy shadow-sm"
+          className="h-9 w-9 bg-roksal-amber hover:bg-roksal-amber/90 text-roksal-navy shadow-sm focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-1"
           onClick={() => setMovementOpen(true)}
+          aria-label="Dodaj gibanje zaloge"
+          title="Dodaj gibanje zaloge"
         >
-          <Plus className="h-4 w-4" />
+          <Plus className="h-4 w-4" aria-hidden="true" />
         </Button>
       </div>
 

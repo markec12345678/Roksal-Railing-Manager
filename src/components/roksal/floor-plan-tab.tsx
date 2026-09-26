@@ -1537,9 +1537,10 @@ export function FloorPlanTab({ projectId }: FloorPlanTabProps) {
                     variant="ghost"
                     onClick={undo}
                     disabled={historyIdx <= 0}
-                    className="h-8 w-8 text-white hover:bg-white/10"
+                    className="h-8 w-8 text-white hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-white/60"
+                    aria-label="Razveljavi zadnje dejanje načrta"
                   >
-                    <Undo2 className="h-4 w-4" />
+                    <Undo2 className="h-4 w-4" aria-hidden="true" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Razveljavi</TooltipContent>
@@ -1552,9 +1553,10 @@ export function FloorPlanTab({ projectId }: FloorPlanTabProps) {
                     variant="ghost"
                     onClick={redo}
                     disabled={historyIdx >= history.length - 1}
-                    className="h-8 w-8 text-white hover:bg-white/10"
+                    className="h-8 w-8 text-white hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-white/60"
+                    aria-label="Uveljavi ponovljeno dejanje načrta"
                   >
-                    <Redo2 className="h-4 w-4" />
+                    <Redo2 className="h-4 w-4" aria-hidden="true" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Ponovi</TooltipContent>
@@ -1672,27 +1674,30 @@ export function FloorPlanTab({ projectId }: FloorPlanTabProps) {
                   size="icon"
                   variant="outline"
                   onClick={() => zoomBy(1 / 1.2)}
-                  className="h-7 w-7 border-roksal-navy/20 bg-white/90"
+                  className="h-7 w-7 border-roksal-navy/20 bg-white/90 focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                  aria-label="Pomanjšaj načrt"
                 >
-                  <ZoomOut className="h-3.5 w-3.5" />
+                  <ZoomOut className="h-3.5 w-3.5" aria-hidden="true" />
                 </Button>
                 <Button
                   type="button"
                   size="icon"
                   variant="outline"
                   onClick={() => zoomBy(1.2)}
-                  className="h-7 w-7 border-roksal-navy/20 bg-white/90"
+                  className="h-7 w-7 border-roksal-navy/20 bg-white/90 focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                  aria-label="Povečaj načrt"
                 >
-                  <ZoomIn className="h-3.5 w-3.5" />
+                  <ZoomIn className="h-3.5 w-3.5" aria-hidden="true" />
                 </Button>
                 <Button
                   type="button"
                   size="icon"
                   variant="outline"
                   onClick={resetView}
-                  className="h-7 w-7 border-roksal-navy/20 bg-white/90"
+                  className="h-7 w-7 border-roksal-navy/20 bg-white/90 focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                  aria-label="Ponastavi pogled načrta"
                 >
-                  <Maximize className="h-3.5 w-3.5" />
+                  <Maximize className="h-3.5 w-3.5" aria-hidden="true" />
                 </Button>
               </div>
             </div>
@@ -1718,9 +1723,10 @@ export function FloorPlanTab({ projectId }: FloorPlanTabProps) {
               size="icon"
               variant="outline"
               onClick={clearAll}
-              className="absolute top-2 left-2 h-7 w-7 border-roksal-red/30 text-roksal-red bg-white/90"
+              className="absolute top-2 left-2 h-7 w-7 border-roksal-red/30 text-roksal-red bg-white/90 focus-visible:ring-2 focus-visible:ring-roksal-red/40"
+              aria-label="Pobriši vse točke načrta"
             >
-              <Trash2 className="h-3.5 w-3.5" />
+              <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
             </Button>
           </div>
 
