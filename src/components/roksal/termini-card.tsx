@@ -15,8 +15,9 @@
 //    štejejo se v vidno "preskočeno" opombo (lib/termini-prikaz).
 //  • Temna tema od začetka: samo semantični žetoni (bg-card, roksal-ink,
 //    roksal-amber …) z dark: variantami — nauček R162–R165.
-//  • IZVOŽENO = ZASLON tu ne velja (ni izvoza); kartica pokaže točno tisto,
-//    kar vrne API v oknu [danes, +6 dni], razvrščeno po času.
+//  • IZVOŽENO = ZASLON (R171, P1-d): CSV izvoz vsebuje NATAKO prikazane
+//    vrstice (filter 'Samo moje' že upoštevan), ISTI povzetek ur in pečat
+//    zadnje osvežitve — src/lib/termini-csv (vzorec R136/R139).
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
@@ -30,6 +31,7 @@ import {
   CalendarDays,
   Clock,
   Copy,
+  FileDown,
   Filter,
   History,
   MapPin,
@@ -39,12 +41,15 @@ import {
   Wrench,
 } from 'lucide-react'
 import { casOznaka } from '@/lib/osvezitev-fokus'
+import { downloadCsvText, todayStamp } from '@/lib/csv-export'
+import { buildTerminiCsv, terminiCsvFilename } from '@/lib/termini-csv'
 import {
   buildTerminShareText,
   filtrirajTermini,
   groupTermini,
   scheduleTerminiStatusColor,
   scheduleTerminiStatusLabel,
+  terminBeseda,
   terminCasLabel,
   terminDatumLabel,
   terminiOkno,
@@ -116,6 +121,27 @@ export function TerminiCard({ myUserId, onOpenProjectId }: TerminiCardProps) {
     if (!prikazane) return null
     return vsotaPredvidenihUr([...prikazane.danes, ...prikazane.kasneje])
   }, [prikazane])
+
+  // R171 (P1-d) — CSV izvoz PRIKAZANIH terminov (IZVOŽENO = ZASLON): iste
+  // vrstice (filter 'Samo moje' že upoštevan), ISTI povzetek (urAgregat) in
+  // pečat zadnje uspešne osvežitve (zdaj) — EN VIR RESNICE z zaslonom.
+  // Manjkajoče ure v CSV ostanejo prazne (nikoli izmišljenih 0 — iskrenost).
+  const izvoziCsv = useCallback(() => {
+    if (!prikazane || !urAgregat) return
+    const vrstice = [...prikazane.danes, ...prikazane.kasneje]
+    const reference = zdaj ?? new Date()
+    const { csv, vrstic } = buildTerminiCsv(vrstice, {
+      urAgregat,
+      osvezitev: zdaj,
+      now: reference,
+      samoMoje,
+    })
+    const filename = terminiCsvFilename(todayStamp(reference))
+    downloadCsvText(filename, csv)
+    toast.success('CSV izvožen', {
+      description: `Izvožen seznam (${vrstic} ${terminBeseda(vrstic)}) v datoteko ${filename}.`,
+    })
+  }, [prikazane, urAgregat, zdaj, samoMoje])
 
   // Fetch je NEODVISEN od myUserId (branje terminov ne zahteva identitete;
   // "moja montaža" je izračun pri izrisu — least privilege, brez ponovnega branja).
@@ -320,7 +346,9 @@ export function TerminiCard({ myUserId, onOpenProjectId }: TerminiCardProps) {
             <CalendarDays className="h-4 w-4 text-roksal-amber" aria-hidden="true" />
             Termini — naslednjih 7 dni
           </CardTitle>
-          <div className="flex items-center gap-1.5">
+          {/* R171 stil detail — flex-wrap: pri sm širini se pečat + značka +
+              2 gumba elegantno prelomita v drugo vrstico (brez prelivanja). */}
+          <div className="flex flex-wrap items-center justify-end gap-1.5">
             {/* R170 — pečat 'Osveženo ob HH:MM:SS' = čas ZADNJEGA uspešnega
                 branja (zdaj je nastavljen samo v uspešni veji nalozi — EN VIR
                 RESNICE, brez novega stanja). Napaka/nalaganje → brez pečata
@@ -358,6 +386,20 @@ export function TerminiCard({ myUserId, onOpenProjectId }: TerminiCardProps) {
                 Samo moje
               </Button>
             )}
+            {/* R171 (P1-d) — izvoz PRIKAZANIH terminov v CSV (IZVOŽENO =
+                ZASLON). Onemogočen brez podatkov (nalaganje/napaka/prazno) —
+                izvoz praznega seznama bi bil lažni "povzetek brez vsebine". */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 dark:focus-visible:ring-roksal-ink/40"
+              onClick={izvoziCsv}
+              disabled={loading || !prikazane || skupnoSkupin === 0}
+              aria-label={`Izvozi prikazane termine v CSV (${prikazane ? prikazane.danes.length + prikazane.kasneje.length : 0} ${terminBeseda(prikazane ? prikazane.danes.length + prikazane.kasneje.length : 0)})`}
+              title="Izvozi prikazane termine (upošteva filter Samo moje) kot CSV za Excel — vključno s povzetkom ur"
+            >
+              <FileDown className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+            </Button>
             <Button
               variant="ghost"
               size="icon"

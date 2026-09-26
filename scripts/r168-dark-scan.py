@@ -48,6 +48,15 @@ VZORCI = {
     # R170 — izrecni SVETLI ring-offset (R168 fix nastavi privzeti na
     # --background; izrecen ring-offset-X/white ga PREZRI in vrne beli halo)
     'ring-offset': (re.compile(r"(?<![\w-])ring-offset-(?:white|(?:gray|slate|stone|zinc|neutral)-\d+)"), re.compile(r"dark:ring-offset-")),
+    # R171 — nove družine: border-X-200 (vrzel med obstoječima 100/300),
+    # temna besedila text-X-700/800/900 (na temnem ozadju neberljiva brez
+    # dark: ogledala), decoration-/caret- barvne družine + senca z barvno
+    # sestavino shadow-X-... (svetle sence na temnem = neviden/umazan rob).
+    'border-200': (re.compile(r"(?<![\w-])border-(?:gray|slate|stone|zinc|neutral)-(?:200)\b"), re.compile(r"dark:border-")),
+    'text-temni': (re.compile(r"(?<![\w-])text-(?:gray|slate|stone|zinc|neutral)-(?:700|800|900)\b"), re.compile(r"dark:text-")),
+    'decoration': (re.compile(r"(?<![\w-])decoration-(?:roksal|gray|slate|stone|zinc|neutral|red|amber|green|blue|purple|violet|emerald|teal|cyan|sky|indigo|fuchsia|pink|rose|orange|lime)-\d+"), re.compile(r"dark:decoration-")),
+    'caret': (re.compile(r"(?<![\w-])caret-(?:roksal|gray|slate|stone|zinc|neutral|red|amber|green|blue|purple|violet|emerald|teal|cyan|sky|indigo|fuchsia|pink|rose|orange|lime)-\d+"), re.compile(r"dark:caret-")),
+    'shadow': (re.compile(r"(?<![\w-])shadow-(?:roksal|gray|slate|stone|zinc|neutral|red|amber|green|blue|purple|violet|emerald|teal|cyan|sky|indigo|fuchsia|pink|rose|orange|lime)-\d+"), re.compile(r"dark:shadow-")),
 }
 
 def je_izjema(p: Path) -> bool:

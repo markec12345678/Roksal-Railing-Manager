@@ -70,6 +70,8 @@ import {
   FileDown,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'
+import { casOznaka } from '@/lib/osvezitev-fokus'
 import { buildProjektiCsv, projektiCsvFilename, projektiLabel, PROJEKTI_STATUS_LABELS } from '@/lib/projekti-csv'
 import { todayStamp } from '@/lib/csv-export'
 import { statusOptionsFor, statusOptionsHint } from '@/lib/status-options'
@@ -262,6 +264,10 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
   const [inventory, setInventory] = useState<InventoryItem[]>([])
   const [customers, setCustomers] = useState<Customer[]>([])
   const [loading, setLoading] = useState(true)
+  // R171 — pečat 'Osveženo ob HH:MM:SS' za projektni seznam (čas zadnjega
+  // USPEŠNEGA branja /api/projects; vzorec R170 — napaka/nalaganje → null,
+  // nikoli lažne svežine).
+  const [projektiOsvezitev, setProjektiOsvezitev] = useState<Date | null>(null)
   const [invLoading, setInvLoading] = useState(true)
   // R152: napaka nalaganja projektov je EKSPlicitna (nič izmišljenih demo vrstic).
   const [projectsError, setProjectsError] = useState<string | null>(null)
@@ -427,15 +433,21 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
         const data = await res.json()
         setProjects(data)
         setProjectsError(null)
+        // R171 — pečat zadnjega uspešnega branja projektnega seznama (EN VIR
+        // RESNICE: nastavljen SAMO v uspešni veji — napaka ga počisti, nikoli
+        // lažne svežine nad zastarelimi/odsotnimi podatki, vzorec R170).
+        setProjektiOsvezitev(new Date())
       } else {
         // Fail-closed: napaka je vidna, nič izmišljenih projektov.
         setProjects([])
         setProjectsError(`Projektov ni bilo mogoče naložiti (napaka ${res.status}).`)
+        setProjektiOsvezitev(null)
         toast.error(`Projektov ni bilo mogoče naložiti (napaka ${res.status})`)
       }
     } catch {
       setProjects([])
       setProjectsError('Projektov ni bilo mogoče naložiti — preverite povezavo.')
+      setProjektiOsvezitev(null)
       toast.error('Projektov ni bilo mogoče naložiti — preverite povezavo.')
     }
   }, [])
@@ -467,16 +479,28 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
     }
   }, [])
 
-  useEffect(() => {
-    async function fetchAll() {
-      try {
-        await Promise.all([fetchProjects(), fetchInventory(), fetchCustomers()])
-      } finally {
-        setLoading(false)
-      }
+  // R171 (P1-b iz R170) — EN zavijalka za začetni nosiljko IN osvežitev ob
+  // vrnitvi v zavihek/okno: vsi trije viri (projekti, zaloga, stranke) v
+  // Promise.all, kot pri prvem nalaganju. Vsi trije fetchi so stabilni
+  // useCallback([]) → fetchAll je stabilen; nič ne registrira listenerjev
+  // znova. Napake ostanejo vidne (fail-verbose — fetchProjects že pokaže
+  // toast + error panel; hook sam nikoli ne požira napak).
+  const fetchAll = useCallback(async () => {
+    try {
+      await Promise.all([fetchProjects(), fetchInventory(), fetchCustomers()])
+    } finally {
+      setLoading(false)
     }
-    fetchAll()
   }, [fetchProjects, fetchInventory, fetchCustomers])
+
+  useEffect(() => {
+    void fetchAll()
+  }, [fetchAll])
+
+  // Okno, odprto medtem ko pisarna spremeni projekt/zalogo, NI več zastarel
+  // do remonta (isti vzorec kot termini-card/logistics-tab R170; rate-limit
+  // FOKUS_MIN_INTERVAL_MS je notranjost hooka — ena odločitev, brez dedupa).
+  useRefetchOnFocus(fetchAll)
 
   // Filtered & searched projects
   const filteredProjects = useMemo(() => {
@@ -1474,6 +1498,17 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
               Projekti
             </CardTitle>
             <div className="flex items-center gap-1.5">
+              {/* R171 — pečat zadnjega uspešnega branja projektnega seznama
+                  (vzorec R170 Termini kartica; skrit na ozkih zaslonih). */}
+              {projektiOsvezitev && (
+                <span
+                  className="hidden items-center gap-1 text-[11px] text-muted-foreground sm:flex"
+                  title="Čas zadnje uspešne osvežitve podatkov"
+                >
+                  <History className="h-3 w-3 shrink-0" aria-hidden="true" />
+                  Osveženo ob <span className="tabular-nums">{casOznaka(projektiOsvezitev)}</span>
+                </span>
+              )}
               <Button
                 type="button"
                 size="sm"

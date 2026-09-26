@@ -38,11 +38,11 @@ export function toCsv(headers: string[], rows: CsvValue[][]): string {
 }
 
 /**
- * Sproži prenos CSV datoteke v brskalniku. Datum v imenu je `danes` —
- * klicatelj poda že oblikovano `YYYY-MM-DD` (determinizem na ravni UI).
+ * Sproži prenos ŽE zgrajenega CSV besedila (R171 — izvozi, ki vključujejo
+ * povzetke/metapodatke, ki jih oblika headers+rows ne more izraziti;
+ * vzorec: Termini kartica P1-d). Isti kontrakt kot downloadCsv.
  */
-export function downloadCsv(filename: string, headers: string[], rows: CsvValue[][]): void {
-  const csv = toCsv(headers, rows)
+export function downloadCsvText(filename: string, csv: string): void {
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
@@ -52,6 +52,14 @@ export function downloadCsv(filename: string, headers: string[], rows: CsvValue[
   a.click()
   a.remove()
   URL.revokeObjectURL(url)
+}
+
+/**
+ * Sproži prenos CSV datoteke v brskalniku. Datum v imenu je `danes` —
+ * klicatelj poda že oblikovano `YYYY-MM-DD` (determinizem na ravni UI).
+ */
+export function downloadCsv(filename: string, headers: string[], rows: CsvValue[][]): void {
+  downloadCsvText(filename, toCsv(headers, rows))
 }
 
 /** Današnji datum kot `YYYY-MM-DD` (lokalni čas, deterministično oblikovan). */
