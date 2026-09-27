@@ -40,6 +40,7 @@ import {
   ChevronDown,
   ChevronUp,
   ClipboardList,
+  FileDown,
   History,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -47,6 +48,8 @@ import { downloadCsv, todayStamp } from '@/lib/csv-export'
 import { casOznaka } from '@/lib/osvezitev-fokus'
 import {
   buildZalogaPovzetek,
+  narocilnicaCsvVrstice,
+  narociloKolicina,
   zalogaPovzetekBeseda,
   type ZalogaArtikelZaNarocilo,
 } from '@/lib/zaloga-povzetek'
@@ -158,6 +161,19 @@ export function InventoryTab() {
   // vir te površine, vzorec R170/R171). Napaka/omrežje → null (pečat brez
   // podatkov bi lažno trdil svežino).
   const [zalogaOsvezitev, setZalogaOsvezitev] = useState<Date | null>(null)
+  // R205 — osnutek naročila: naročilnica vidnih artiklov pod minimumom se
+  // shrani kot SLEDLJIV MaterialOrder (status OSNUTEK) — dobavitelja izbere
+  // uporabnik (nič izmišljenega), aplikacija trdi LE 'shranjen osnutek',
+  // NIKOLI 'poslano'. Dobavitelje nalagamo ob odpiranju (R182 fail-verbose
+  // trojna veja: napaka/iskreno prazno/seznam).
+  const [osnutekOpen, setOsnutekOpen] = useState(false)
+  const [osnutekArtikli, setOsnutekArtikli] = useState<ZalogaArtikelZaNarocilo[]>([])
+  const [dobavitelji, setDobavitelji] = useState<Array<{ id: string; naziv: string }>>([])
+  const [dobaviteljiStanje, setDobaviteljiStanje] = useState<'prazno' | 'nalagam' | 'napaka' | 'ok'>('prazno')
+  const [dobaviteljiNapaka, setDobaviteljiNapaka] = useState<string | null>(null)
+  const [osnutekDobavitelj, setOsnutekDobavitelj] = useState('')
+  const [osnutekOpombe, setOsnutekOpombe] = useState('')
+  const [osnutekSubmitting, setOsnutekSubmitting] = useState(false)
 
   // R175 — stabilen fail-verbose loader (EN VIR napak, žičen tudi na
   // useRefetchOnFocus): zaloga (R152 že fail-verbose) + projekti (prej TIHA
@@ -210,6 +226,35 @@ export function InventoryTab() {
 
   // R175: fetchInventory izbrisana — EN VIR RESNICE je loadAll (žičen tudi na
   // refetch-on-focus); premik artikla osveži ZALOGO + PROJEKTE z enim klicem.
+
+  // R205 — naloziDobavitelje: fail-verbose trojna veja (vzorec R182 material-
+  // intelligence): napaka → role=alert + Poskusi znova; iskreno prazno →
+  // 'Ni dobaviteljev' (brez lažnega seznama); seznam → Select. 403 ne more
+  // nastopati (GET /api/suppliers = vsaka prijavljena seja).
+  const naloziDobavitelje = useCallback(async () => {
+    setDobaviteljiStanje('nalagam')
+    setDobaviteljiNapaka(null)
+    try {
+      const res = await fetch('/api/suppliers')
+      if (!res.ok) {
+        setDobavitelji([])
+        setDobaviteljiNapaka(`Dobavitelje ni bilo mogoče naložiti (napaka ${res.status}).`)
+        setDobaviteljiStanje('napaka')
+        return
+      }
+      const data = (await res.json()) as Array<{ id: string; naziv: string }>
+      setDobavitelji(data)
+      setDobaviteljiStanje('ok')
+    } catch {
+      setDobavitelji([])
+      setDobaviteljiNapaka('Dobavitelje ni bilo mogoče naložiti — preverite povezavo.')
+      setDobaviteljiStanje('napaka')
+    }
+  }, [])
+
+  useEffect(() => {
+    if (osnutekOpen) void naloziDobavitelje()
+  }, [osnutekOpen, naloziDobavitelje])
 
   async function handleMovement() {
     if (!movementInventoryId || !movementQuantity || parseFloat(movementQuantity) <= 0) {
@@ -362,6 +407,81 @@ export function InventoryTab() {
     if (item.kolicinaZaloga <= item.minimalnaZaloga) return 'bg-roksal-red'
     if (item.kolicinaZaloga <= item.minimalnaZaloga * 1.5) return 'bg-roksal-amber'
     return 'bg-roksal-green'
+  }
+
+  // R205 — odpri dialog osnutka: isti WYSIWYG seznam vidnih artiklov pod
+  // minimumom kot naročilnica R204. Iskren prazen seznam → dialog se NE odpre
+  // (nič izmišljenega naročila).
+  function openOsnutekDialog() {
+    const podMin = filtered.filter((i) => i.kolicinaZaloga <= i.minimalnaZaloga)
+    if (podMin.length === 0) {
+      toast.error('Ni artiklov pod minimalno zalogo — nič za naročilo.')
+      return
+    }
+    setOsnutekArtikli(podMin)
+    setOsnutekOpen(true)
+  }
+
+  // R205 — shrani osnutek: POST /api/material-orders ustvari MaterialOrder s
+  // statusom OSNUTEK (strežnik ga vsili). Količine = narociloKolicina (EN VIR
+  // RESNICE, lib zaloga-povzetek — ista formula kot odložišče R204). Pošiljamo
+  // LE id + količino (brez vrednosti iz UI): strežnik vzame realno vrednost
+  // dobavitelja iz MaterialPrice, če obstaja, sicer 0 — brez izmišljenih
+  // vrednosti. Fail-verbose z razlogom iz odgovora (vzorec R140/R163/R203/R204):
+  // 403 pokaže manjkajočo pravico + vlogo, 400/409/500 svet razlog.
+  async function handleShraniOsnutek() {
+    if (!osnutekDobavitelj || osnutekArtikli.length === 0) {
+      toast.error('Izberite dobavitelja za osnutek naročila.')
+      return
+    }
+    setOsnutekSubmitting(true)
+    try {
+      const res = await fetch('/api/material-orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          supplierId: osnutekDobavitelj,
+          items: osnutekArtikli.map((a) => ({
+            inventoryId: a.id,
+            kolicina: narociloKolicina(a),
+          })),
+          ...(osnutekOpombe.trim() ? { opombe: osnutekOpombe.trim() } : {}),
+        }),
+      })
+      if (res.ok) {
+        toast.success('Osnutek naročila shranjen (status OSNUTEK)', {
+          description: `${osnutekArtikli.length} ${zalogaPovzetekBeseda(osnutekArtikli.length)} — najdeš ga v Material → Naročila. Nič še ni poslano dobavitelju.`,
+        })
+        setOsnutekOpen(false)
+        setOsnutekDobavitelj('')
+        setOsnutekOpombe('')
+        setOsnutekArtikli([])
+      } else {
+        const data = (await res.json().catch(() => null)) as { error?: string } | null
+        toast.error(data?.error?.trim() || `Napaka pri shranjevanju osnutka (${res.status})`)
+      }
+    } catch {
+      toast.error('Napaka pri povezavi s strežnikom')
+    } finally {
+      setOsnutekSubmitting(false)
+    }
+  }
+
+  // R205 — CSV priloga: ista vsebina kot odložišče R204 v tabelarni obliki
+  // (narocilnicaCsvVrstice, EN VIR RESNICE; glavo poda downloadCsv).
+  function prenesiNarocilnicoCsv() {
+    if (osnutekArtikli.length === 0) {
+      toast.error('Ni artiklov pod minimalno zalogo — nič za naročilo.')
+      return
+    }
+    downloadCsv(
+      `narocilnica-${todayStamp()}.csv`,
+      ['Šifra', 'Naziv', 'Enota', 'Zaloga', 'Min. zaloga', 'Naroči'],
+      narocilnicaCsvVrstice(osnutekArtikli),
+    )
+    toast.success(
+      `Naročilnica CSV prenesena — ${osnutekArtikli.length} ${zalogaPovzetekBeseda(osnutekArtikli.length)}.`,
+    )
   }
 
   const selectedItem = inventory.find((i) => i.id === movementInventoryId)
@@ -574,6 +694,21 @@ export function InventoryTab() {
         >
           <ClipboardList className="h-3.5 w-3.5" aria-hidden="true" />
           Naročilnica
+        </Button>
+        {/* R205 — osnutek naročila: naročilnica vidnih artiklov pod minimumom
+            se shrani kot SLEDLJIV MaterialOrder OSNUTEK (dobavitelja izbere
+            uporabnik; aplikacija trdi LE 'shranjen', NIKOLI 'poslano'). Isti
+            pill družina kot Naročilnica R204 / CSV R136. */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={openOsnutekDialog}
+          className="h-8 shrink-0 gap-1.5 text-[11px] font-medium tabular-nums press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+          aria-label="Shrani naročilnico vidnih artiklov kot osnutek naročila"
+          title="Shrani naročilnico (vidni artikli pod minimumom) kot osnutek naročila — Material → Naročila"
+        >
+          <FileDown className="h-3.5 w-3.5" aria-hidden="true" />
+          Osnutek
         </Button>
         <Button
           variant="outline"
@@ -974,6 +1109,118 @@ export function InventoryTab() {
                 <Package className="mr-2 h-4 w-4" />
               )}
               Potrdi premik
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* R205 — osnutek naročila dialog (družina premik-dialoga: tokeni, 0 novih
+          hex; pregled artiklov = WYSIWYG isti seznam kot odložišče R204;
+          dobavitelji R182 fail-verbose trojna veja). */}
+      <Dialog open={osnutekOpen} onOpenChange={setOsnutekOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="text-roksal-ink">Naročilnica kot osnutek naročila</DialogTitle>
+            <DialogDescription>
+              {osnutekArtikli.length} {zalogaPovzetekBeseda(osnutekArtikli.length)} pod minimumom se shrani med naročila (status OSNUTEK) — sledljivo v Material → Naročila. Nič še ni poslano dobavitelju.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            {/* Pregled artiklov (EN VIR količin: narociloKolicina, lib) */}
+            <div className="max-h-32 space-y-1 overflow-y-auto rounded-lg border border-border/60 bg-secondary/30 p-2.5 scrollbar-thin">
+              {osnutekArtikli.map((a) => (
+                <div key={a.id} className="flex items-center justify-between gap-2 text-xs">
+                  <span className="min-w-0 truncate text-roksal-ink">{a.naziv}</span>
+                  <span className="shrink-0 tabular-nums text-muted-foreground">
+                    naroči {narociloKolicina(a)} {a.enota}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* Dobavitelj — R182 fail-verbose trojna veja */}
+            <div className="space-y-1.5">
+              <Label className="text-xs">Dobavitelj</Label>
+              {dobaviteljiStanje === 'nalagam' ? (
+                <div className="flex items-center gap-2 py-2 text-xs text-muted-foreground">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                  Nalagam dobavitelje…
+                </div>
+              ) : dobaviteljiStanje === 'napaka' ? (
+                <div role="alert" className="space-y-2">
+                  <p className="text-xs text-roksal-red">{dobaviteljiNapaka}</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => void naloziDobavitelje()}
+                    className="h-8 gap-1.5 text-[11px] press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                  >
+                    Poskusi znova
+                  </Button>
+                </div>
+              ) : dobavitelji.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  Ni dobaviteljev — najprej dodaj dobavitelja (Material → Dobavitelji).
+                </p>
+              ) : (
+                <Select value={osnutekDobavitelj} onValueChange={setOsnutekDobavitelj}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Izberite dobavitelja" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {dobavitelji.map((d) => (
+                      <SelectItem key={d.id} value={d.id}>
+                        {d.naziv}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+
+            {/* Opombe (neobvezno) */}
+            <div className="space-y-1.5">
+              <Label htmlFor="osnutek-opombe" className="text-xs">
+                Opombe <span className="text-muted-foreground">(neobvezno)</span>
+              </Label>
+              <Input
+                id="osnutek-opombe"
+                value={osnutekOpombe}
+                onChange={(e) => setOsnutekOpombe(e.target.value)}
+                placeholder="npr. dostava do petka"
+                className="focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={prenesiNarocilnicoCsv}
+              disabled={osnutekArtikli.length === 0}
+              className="gap-1.5 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 disabled:opacity-50"
+              aria-label="Prenesi naročilnico vidnih artiklov kot CSV"
+            >
+              <Download className="h-4 w-4" aria-hidden="true" />
+              CSV
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setOsnutekOpen(false)}
+              className="focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+            >
+              Prekliči
+            </Button>
+            <Button
+              onClick={handleShraniOsnutek}
+              disabled={osnutekSubmitting || !osnutekDobavitelj || dobaviteljiStanje !== 'ok' || dobavitelji.length === 0}
+              className="bg-roksal-navy hover:bg-roksal-navy/90 text-white shadow-sm transition-all focus-visible:ring-2 focus-visible:ring-roksal-navy/40 disabled:opacity-50"
+            >
+              {osnutekSubmitting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <FileDown className="mr-2 h-4 w-4" aria-hidden="true" />
+              )}
+              Shrani osnutek
             </Button>
           </DialogFooter>
         </DialogContent>

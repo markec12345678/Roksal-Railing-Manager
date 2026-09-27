@@ -172,3 +172,40 @@ export function buildZalogaPovzetek(
 
   return vrstice.join('\n')
 }
+
+// ---------------------------------------------------------------------------
+// R205 F2 — CSV vrstice naročilnice (priloga za dobavitelja; ista vsebina kot
+// besedilna naročilnica R204, le v tabelarni obliki za Excel/e-pošto).
+// EN VIR RESNICE: količina = narociloKolicina (ISTA formula kot odložišče).
+// BREZ CEN: ista pravila kot R204 — cenaEur je pogosto null, UI-jeva ocena po
+// tipu je izrecno 'demo' približek; ocenjene vrednosti NE smejo v dokument za
+// dobavitelja. (Stvarne cene vnese strežnik iz realnih MaterialPrice zapisov,
+// če obstajajo — glej POST /api/material-orders.)
+// ---------------------------------------------------------------------------
+
+/** CSV vrstice (BREZ glave — glavo poda klicatelj prek downloadCsv) za vidne
+ *  artikle pod minimumom:
+ *    [šifra, naziv, enota, zaloga, min. zaloga, naroči]
+ *  Števila gredo kot number (csvField: decimalna vejica, SI Excel).
+ *  Fail-closed: pokvaren vnos ALI artikel nad minimumom → TypeError (narociloKolicina
+ *  poganja isto preverbo kot buildZalogaPovzetek). Prazen seznam → prazne vrstice. */
+export function narocilnicaCsvVrstice(
+  artikli: readonly ZalogaArtikelZaNarocilo[],
+): Array<[string, string, string, number, number, number]> {
+  if (!Array.isArray(artikli)) {
+    throw new TypeError(
+      'narocilnicaCsvVrstice: pričakovano polje artiklov (ZalogaArtikelZaNarocilo[])',
+    )
+  }
+  return artikli.map((a) => {
+    const kolicina = narociloKolicina(a)
+    return [
+      a.sifraMateriala.trim(),
+      a.naziv.trim(),
+      a.enota.trim(),
+      a.kolicinaZaloga,
+      a.minimalnaZaloga,
+      kolicina,
+    ] as [string, string, string, number, number, number]
+  })
+}
