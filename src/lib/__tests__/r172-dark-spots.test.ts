@@ -57,7 +57,7 @@ const PRIMERI = [
   // flex-wrap vrstica; ogledalo na ISTI vsebinski vrstici, precedens R180/R182.
   // R186: +37 vrstic — uvoz izvoza CSV + handler izvoziMeritveCsv + gumb CSV;
   // ogledalo na ISTI vsebinski vrstici, precedens R180/R182/R183)
-  stražar('src/components/roksal/measurements-tab.tsx', 6452, 'hover:border-cyan-300', 'dark:hover:border-cyan-700'),
+  stražar('src/components/roksal/measurements-tab.tsx', 6510, 'hover:border-cyan-300', 'dark:hover:border-cyan-700'), // R201: premaknjeno iz 6452 (izkren prazni stolpec vstavil ~58 vrstic)
 ]
 
 describe('R172 dark-spot stražar — vsak svetli barvni žeton ima dark: ogledalo na ISTI vrstici', () => {

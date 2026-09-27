@@ -121,6 +121,8 @@ import {
   Info,
   Phone,
   CloudUpload,
+  // R201 — iskren prazni stolpec (ni projektov)
+  FolderX,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
@@ -4172,6 +4174,11 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
     )
   }
 
+  // R201 — iskren prazni stolpec: brez projektov so vsi kontrolniki mrtvi
+  // (predloge/uvoz/CSV brez predmeta). Izpeljanka ENKRAT, uporabljena na
+  // izbirniku, seznamu in predlogah — ni izmišljenih podatkov (družina R152).
+  const brezProjektov = !loading && projects.length === 0
+
   // ============================================
   // RENDER
   // ============================================
@@ -4198,32 +4205,64 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
         </div>
       </div>
 
-      {/* Project Selector */}
+      {/* Project Selector — R201: brez projektov = iskren prazni stolpec
+          namesto slepega izbrnika (R200 P1 (b)); monter projektov NE ustvari,
+          zato brez CTA — samo poštena razlaga in 'kaj naprej' koraki. */}
       <Card className="card-hover transition-all duration-200 animate-fade-in-up" style={{ animationDelay: '0ms' }}>
         <CardContent className="p-4">
-          <div className="flex items-center gap-3">
-            <FolderOpen className="h-4 w-4 text-roksal-ink" />
-            <div className="flex-1">
-              <Select value={selectedProject} onValueChange={setSelectedProject}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Izberi projekt" />
-                </SelectTrigger>
-                <SelectContent>
-                  {projects.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.nazivProjekta}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {brezProjektov ? (
+            <div className="space-y-3" data-testid="meritve-brez-projektov">
+              <EmptyState
+                icon={FolderX}
+                title="Ni projektov"
+                description="Meritve se vežejo na projekt — ko vodja ustvari projekt in ga dodeli tebi, se pojavi tukaj."
+              />
+              <ol
+                className="mx-auto grid w-full max-w-[340px] gap-1.5 text-left"
+                aria-label="Kaj naprej"
+              >
+                {[
+                  'Vodja ustvari projekt v pisarniškem pogledu.',
+                  'Projekt se samodejno pojavi v tem zavihku.',
+                  'Zajemi meritve z AR kamero ali jih dodaj ročno.',
+                ].map((korak, i) => (
+                  <li
+                    key={korak}
+                    className="flex items-start gap-2 text-[11px] text-muted-foreground"
+                  >
+                    <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-roksal-navy/10 text-[9px] font-bold tabular-nums text-roksal-ink">
+                      {i + 1}
+                    </span>
+                    {korak}
+                  </li>
+                ))}
+              </ol>
             </div>
-            {calibration.pixelsPerMm && (
-              <Badge className="bg-roksal-amber/15 text-roksal-amber border border-roksal-amber/30">
-                <Crosshair className="h-3 w-3 mr-1" />
-                {calibration.pixelsPerMm.toFixed(2)} px/mm
-              </Badge>
-            )}
-          </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <FolderOpen className="h-4 w-4 text-roksal-ink" />
+              <div className="flex-1">
+                <Select value={selectedProject} onValueChange={setSelectedProject}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Izberi projekt" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projects.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.nazivProjekta}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {calibration.pixelsPerMm && (
+                <Badge className="bg-roksal-amber/15 text-roksal-amber border border-roksal-amber/30">
+                  <Crosshair className="h-3 w-3 mr-1" />
+                  {calibration.pixelsPerMm.toFixed(2)} px/mm
+                </Badge>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -4355,6 +4394,13 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
           </CardTitle>
         </CardHeader>
         <CardContent className="px-4 pb-4">
+          {/* R201 — onemogočene predloge brez projekta so razložene (ni mrtvih gumbov brez konteksta) */}
+          {brezProjektov && (
+            <p role="note" className="mb-2 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              <Info className="h-3 w-3 shrink-0" aria-hidden="true" />
+              Predloge so na voljo, ko je izbran projekt.
+            </p>
+          )}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {PREDLOGE.map((p) => {
               const Icon = p.ikona
@@ -6177,12 +6223,22 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               ))}
             </div>
           ) : measurements.length === 0 ? (
-            <EmptyState
-              icon={Ruler}
-              title="Ni še meritev"
-              description="Zajemi z AR kamero ali dodaj ročno."
-              action={{ label: 'Dodaj meritev', onClick: () => setFormOpen(true) }}
-            />
+            /* R201 — iskreno: brez projekta 'Dodaj meritev' ne more delovati,
+               zato brez akcije (navidezni poziv = izmišljeni podatki UI). */
+            brezProjektov ? (
+              <EmptyState
+                icon={FolderX}
+                title="Meritve čakajo na projekt"
+                description="Meritve se vežejo na projekt. Ko vodja ustvari projekt, lahko zajameš prvo meritev."
+              />
+            ) : (
+              <EmptyState
+                icon={Ruler}
+                title="Ni še meritev"
+                description="Zajemi z AR kamero ali dodaj ročno."
+                action={{ label: 'Dodaj meritev', onClick: () => setFormOpen(true) }}
+              />
+            )
           ) : (
             <div className="py-8 text-center">
               <Ruler className="mx-auto h-8 w-8 text-muted-foreground/30" />
@@ -6208,7 +6264,9 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                 <div>
                   <span className="text-sm font-medium text-roksal-ink">Zgodovina sprememb</span>
                   <p className="text-[10px] text-muted-foreground">
-                    {auditEntries.length} {auditEntries.length === 1 ? 'sprememba' : 'sprememb'} • zadnjih {Math.min(auditEntries.length, 20)} prikazanih
+                    {auditEntries.length === 0
+                      ? 'Ni sprememb — zgodovina se zapiše ob prvih meritvah.'
+                      : `${auditEntries.length} ${auditEntries.length === 1 ? 'sprememba' : 'sprememb'} • zadnjih ${Math.min(auditEntries.length, 20)} prikazanih`}
                   </p>
                 </div>
               </div>
