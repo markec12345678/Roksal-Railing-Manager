@@ -61,9 +61,9 @@ describe('R212 — zvonček: aktivna naročila digest (6. signalna družina)', (
     expect(blok).not.toMatch(/#[0-9a-fA-F]{3,8}\b/)
   })
 
-  it('SheetDescription + iskreno prazno stanje omenjata naročila (brez lažnega vse-pod-nadzorom)', () => {
+  it('SheetDescription + iskreno prazno stanje omenjata naročila (brez lažnega vse-pod-nadzorom; R222 — tudi brez dobavitelja)', () => {
     expect(src).toContain('Nizka zaloga, današnje montaže, naročila, vreme, računi in poslana obvestila.')
-    expect(src).toContain('Ni nizke zaloge, danes ni montaž, ni aktivnih naročil in vreme ne povzroča skrbi.')
+    expect(src).toContain('Ni nizke zaloge, ni artiklov brez dobavitelja, danes ni montaž, ni aktivnih naročil in vreme ne povzroča skrbi.')
   })
 
   it('regresija R200: more: ekipa navigacija + ack ostajata nedotaknjena', () => {

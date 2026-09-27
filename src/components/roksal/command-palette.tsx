@@ -25,7 +25,10 @@ import { zalogaPovzetekBeseda, type ZalogaArtikelZaNarocilo } from '@/lib/zaloga
 // brez popolnih polj NE trdi nizke zaloge in NE ponudi deep-linka).
 // R218 — EN VIR zgodovine z opcijskim žigom (4. signalec konvergence;
 // fail-closed: goli niz iz sheme pred R218 = brez žiga, NIKOLI lažni).
+// R222 — brezDobaviteljaIzIskanja: druga dimenzija (nabavna pripravljenost)
+// dobi glas v ISTIH signalcih (Material zadetek + zgodovina; zvonček spodaj).
 import {
+  brezDobaviteljaIzIskanja,
   osnutekIzIskanja,
   preberiZgodovinoVnose,
   zdruziZgodovino,
@@ -38,6 +41,9 @@ import type { InventoryFilterHint } from '@/lib/inventory-filter'
 // R219 (P1-e) — badge EN VIR komponenta (izluščena iz te datoteke — zvonček
 // digest je 5. signalec konvergence in nosi ISTI vizual).
 import { BadgeNizkaZaloga } from '@/components/roksal/badge-nizka-zaloga'
+// R222 — sorojeniški badge 'Brez dobavitelja' (roksal-amber — druga
+// dimenzija; definicija TOČNO ENKRAT, ISTI vizual čez vse signalce).
+import { BadgeBrezDobavitelja } from '@/components/roksal/badge-brez-dobavitelja'
 import {
   Boxes,
   ClipboardList,
@@ -195,9 +201,11 @@ function writeRecent(next: RecentSearchVnos[]): void {
 }
 
 /** R218 — žig je opcijski 2. argument (Material zadetek z osnutkom ga
- * zabeleži; stranke/navadni izbori ne). Logika združevanja = EN VIR lib. */
-function saveRecentSearch(q: string, nizkaZaloga?: boolean): void {
-  writeRecent(zdruziZgodovino(readRecentFromStorage(), q, nizkaZaloga, RECENT_MAX))
+ * zabeleži; stranke/navadni izbori ne). Logika združevanja = EN VIR lib.
+ * R222 — tretji neobvezen argument `brezDobavitelja` (drugi neodvisni žig —
+ * nabavna pripravljenost; ISTA dobesedna strogost v lib). */
+function saveRecentSearch(q: string, nizkaZaloga?: boolean, brezDobavitelja?: boolean): void {
+  writeRecent(zdruziZgodovino(readRecentFromStorage(), q, nizkaZaloga, RECENT_MAX, brezDobavitelja))
 }
 
 function clearRecentSearches(): void {
@@ -385,8 +393,8 @@ export function CommandPalette({ open, onOpenChange, onNavigate, onSync }: Comma
 
   /** Izbor rezultata iskanja = zapiši poizvedbo v zgodovino. R218 —
    * opcijski žig (Material zadetek z osnutkom ga zabeleži). */
-  function rememberSearch(q: string, nizkaZaloga?: boolean) {
-    saveRecentSearch(q, nizkaZaloga)
+  function rememberSearch(q: string, nizkaZaloga?: boolean, brezDobavitelja?: boolean) {
+    saveRecentSearch(q, nizkaZaloga, brezDobavitelja)
   }
 
   function selectProject(id: string) {
@@ -449,6 +457,10 @@ export function CommandPalette({ open, onOpenChange, onNavigate, onSync }: Comma
                   <History className="mr-2 h-4 w-4 text-muted-foreground" />
                   <span className="truncate">{r.q}</span>
                   {r.nizkaZaloga === true && <BadgeNizkaZaloga />}
+                  {/* R222 — drugi neodvisni žig zgodovine (amber — nabavna
+                      pripravljenost); lahko soboji z rdečim na istem vnosu —
+                      vsak žig pove SVOJE (nizka zaloga ≠ brez dobavitelja). */}
+                  {r.brezDobavitelja === true && <BadgeBrezDobavitelja />}
                 </CommandItem>
               ))}
               <CommandItem
@@ -690,30 +702,43 @@ export function CommandPalette({ open, onOpenChange, onNavigate, onSync }: Comma
             dialog z TOČNO TIM artikelom — centralNavigate 4. argument:
             monotonski n + počistitev v page.tsx). Fail-closed: starejši
             odgovor brez zaloga polj → osnutekIzIskanja vrne null → navadna
-            navigacija (obnašanje pred R217, brez lažnega badgea). */}
+            navigacija (obnašanje pred R217, brez lažnega badgea).
+            R222 — druga dimenzija (nabavna pripravljenost) dobi ISTI
+            signalce: zadetek brez VPISANE cene pri katerem koli dobavitelju
+            nosi amber badge 'Brez dobavitelja' (=== 0, fail-closed —
+            manjkajoči števec NIKOLI ni 'brez'); žig se zabeleži v zgodovino
+            (neodvisno od nizke zaloge — lahko SOBOJITA). Klik ostane
+            nespremenjen: deep-link nosi SAMO osnutek (badge brez je
+            informativni — pove, da naročilni tok postavke ne more oceniti). */}
         {searchActive && search.inventory.length > 0 && (
           <>
             <CommandSeparator />
             <CommandGroup heading={countHeading('Material', search.inventory.length)}>
               {search.inventory.map((m) => {
                 const osnutek = osnutekIzIskanja(m)
+                const brez = brezDobaviteljaIzIskanja(m)
                 return (
                   <CommandItem
                     key={m.id}
                     value={`${m.naziv} ${m.sifra}`}
                     onSelect={() => {
-                      rememberSearch(q, osnutek !== null)
+                      rememberSearch(q, osnutek !== null, brez)
                       if (osnutek) onNavigate('inventory', null, null, osnutek)
                       else onNavigate('inventory')
                       close()
                     }}
                     aria-label={osnutek
-                      ? `${m.naziv} — nizka zaloga, odpre naročilni tok`
-                      : undefined}
+                      ? brez
+                        ? `${m.naziv} — nizka zaloga brez vpisane dobaviteljske cene, odpre naročilni tok`
+                        : `${m.naziv} — nizka zaloga, odpre naročilni tok`
+                      : brez
+                        ? `${m.naziv} — brez vpisane dobaviteljske cene, odpre Zalogo`
+                        : undefined}
                   >
                     <Package className="mr-2 h-4 w-4 text-roksal-amber" />
                     <MatchedText text={m.naziv} q={q} />
                     {osnutek && <BadgeNizkaZaloga />}
+                    {brez && <BadgeBrezDobavitelja />}
                     <span className="ml-2 shrink-0 text-xs text-muted-foreground">{m.sifra}</span>
                     {osnutek && (
                       <span className="ml-2 hidden shrink-0 text-xs text-muted-foreground sm:inline">

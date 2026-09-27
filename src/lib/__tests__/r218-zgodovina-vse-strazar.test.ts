@@ -167,13 +167,13 @@ describe("R218 — paleta: badge EN VIR + zgodovina + 'Vse' vrstica (command-pal
     expect(src).toContain('{r.nizkaZaloga === true && <BadgeNizkaZaloga />}')
   })
 
-  it('Material izbor zabeleži žig (rememberSearch z osnutek !== null)', () => {
-    expect(src).toContain('rememberSearch(q, osnutek !== null)')
+  it('Material izbor zabeleži žig (rememberSearch z osnutek !== null; R222 — + neodvisni žig brez)', () => {
+    expect(src).toContain('rememberSearch(q, osnutek !== null, brez)')
   })
 
-  it('saveRecentSearch nosi opcijski žig prek EN VIR zdruziZgodovino', () => {
-    expect(src).toContain('function saveRecentSearch(q: string, nizkaZaloga?: boolean): void')
-    expect(src).toContain('writeRecent(zdruziZgodovino(readRecentFromStorage(), q, nizkaZaloga, RECENT_MAX))')
+  it('saveRecentSearch nosi opcijski žig prek EN VIR zdruziZgodovino (R222 — tretji neobvezen argument)', () => {
+    expect(src).toContain('function saveRecentSearch(q: string, nizkaZaloga?: boolean, brezDobavitelja?: boolean): void')
+    expect(src).toContain('writeRecent(zdruziZgodovino(readRecentFromStorage(), q, nizkaZaloga, RECENT_MAX, brezDobavitelja))')
   })
 
   it('branje prek fail-closed razčlenjevalnika (gol niz iz sheme pred R218 preživi)', () => {

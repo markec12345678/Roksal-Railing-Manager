@@ -6,6 +6,9 @@
  * Združi štiri najpomembnejše signale za monterja, ki so prej raztreseni
  * po zavihkih:
  *  1. ⚠️ nizka zaloga (material pod minimalno stanje)
+ *  1b. 📦 brez dobavitelja (R222 — artikel brez VPISANE cene pri katerem
+ *      koli dobavitelju — druga dimenzija, nabavna pripravljenost; klik →
+ *      Zaloga z aktivnim čipom 'Brez dobavitelja', R221 filter protokol)
  *  2. 📅 današnje montaže (kdo, kje, status)
  *  3. 🌩️ vremensko opozorilo (vetrní duši / nevarno za montažo)
  *  4. 📞 zapadli follow-upi ponudb (stranka še ni odgovorila)
@@ -23,7 +26,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import {
-  Bell, Package, CalendarDays, CloudLightning, CheckCheck,
+  Bell, Package, PackageX, CalendarDays, CloudLightning, CheckCheck,
   ChevronRight, RefreshCw, AlertTriangle, Loader2, FileClock, Receipt,
   UserCog, Inbox, Wrench, History, ShieldCheck, ShoppingCart,
 } from 'lucide-react'
@@ -35,10 +38,15 @@ import type { ZalogaArtikelZaNarocilo } from '@/lib/zaloga-povzetek'
 // ISTI badge 'Nizka zaloga' kot iskalni Material zadetek + zgodovina (paleta)
 // — EN VIR komponenta, ENA definicija stila (0 novih tokenov).
 import { BadgeNizkaZaloga } from '@/components/roksal/badge-nizka-zaloga'
+// R222 — sorojeniški badge 'Brez dobavitelja' (roksal-amber — druga dimenzija:
+// nabavna pripravljenost; zvonček dobi lastne vrstice artiklov brez vpisane
+// cene iz ISTEGA /api/inventory fetcha — brez nove zahteve, EN VIR zasidranja
+// _count.prices === 0, dobesedna strogost kot R221 čip).
+import { BadgeBrezDobavitelja } from '@/components/roksal/badge-brez-dobavitelja'
 
 interface NotificationItem {
   id: string
-  kind: 'stock' | 'install' | 'weather' | 'followup' | 'invoice' | 'order'
+  kind: 'stock' | 'install' | 'weather' | 'followup' | 'invoice' | 'order' | 'brez'
   title: string
   subtitle: string
   meta?: string
@@ -136,7 +144,11 @@ export function NotificationCenter() {
       // 1) Nizka zaloga
       if (invRes.ok) {
         const inv = (await invRes.json()) as {
-          id: string; sifraMateriala: string; naziv: string; kolicinaZaloga: number; minimalnaZaloga: number; enota: string
+          id: string; sifraMateriala: string; naziv: string; kolicinaZaloga: number; minimalnaZaloga: number; enota: string;
+          // R222 — števec zasidranj pri dobaviteljih (R221 API ŽE vrača
+          // _count.prices — ISTI fetch, nič nove zahteve). Opcijsko v tipu:
+          // starejši odgovor brez _count = "ne moremo presoditi" (fail-closed).
+          _count?: { prices?: number }
         }[]
         const low = (inv || []).filter((i) => i.kolicinaZaloga <= i.minimalnaZaloga)
         for (const i of low.slice(0, 8)) {
@@ -157,6 +169,23 @@ export function NotificationCenter() {
               enota: i.enota,
               minimalnaZaloga: i.minimalnaZaloga,
             },
+          })
+        }
+        // R222 (P1-c nadaljevanje) — 'Brez dobavitelja' vrstice (druga
+        // dimenzija — nabavna pripravljenost): artikel brez VPISANE cene
+        // pri katerem koli dobavitelju (MaterialPrice števec === 0 — ISTA
+        // dobesedna strogost kot R221 čip/paleta: manjkajoči števec NIKOLI
+        // ni 'brez'; brez `?? 0` / `<= 0` ohlapnosti). Artikel lahko SMO
+        // nizko zalogi IN brez dobavitelja — dvema vrsticama, vsaka s svojim
+        // dejanjem (iskreno: dve vprašanji, dva odgovora).
+        const brez = (inv || []).filter((i) => i._count?.prices === 0)
+        for (const i of brez.slice(0, 8)) {
+          out.push({
+            id: `brez-${i.id}`,
+            kind: 'brez',
+            title: i.naziv,
+            subtitle: 'Brez vpisane cene pri katerem koli dobavitelju',
+            meta: 'Preveri nabavne cene',
           })
         }
       } else if (invRes.status !== 403) {
@@ -393,6 +422,11 @@ export function NotificationCenter() {
       // R213 — subTab:'orders' = direktno Naročila podzavihek (digest povedal,
       // DA so aktivna naročila — uporabnik pristane na pravem mestu, ne na BOM).
       window.dispatchEvent(new CustomEvent('roksal:navigate', { detail: { tab: 'more', more: 'material', subTab: 'orders' } }))
+    } else if (item.kind === 'brez') {
+      // R222 — druga dimenzija v zvončku: klik → Zaloga z AKTIVNIM čipom
+      // 'Brez dobavitelja' (R221 filter deep-link protokol — detail.filter,
+      // whitelist guard v page.tsx; monotonski n — zadnji namig zmaga).
+      window.dispatchEvent(new CustomEvent('roksal:navigate', { detail: { tab: 'inventory', filter: 'brez-dobavitelja' } }))
     } else {
       window.dispatchEvent(new CustomEvent('roksal:navigate', { detail: { tab: 'dashboard' } }))
     }
@@ -464,6 +498,9 @@ export function NotificationCenter() {
     followup: { icon: FileClock, bg: 'bg-orange-100 dark:bg-orange-500/15', fg: 'text-orange-700 dark:text-orange-300' },
     invoice: { icon: Receipt, bg: 'bg-red-100 dark:bg-red-500/15', fg: 'text-red-700 dark:text-red-300' },
     order: { icon: ShoppingCart, bg: 'bg-roksal-amber/15', fg: 'text-roksal-amber' },
+    // R222 — druga dimenzija (nabavna pripravljenost): PackageX + amber
+    // družina (pozornost, ne alarm — ISTA semantika kot R221 čip/paleta).
+    brez: { icon: PackageX, bg: 'bg-roksal-amber/15', fg: 'text-roksal-amber' },
   }
 
   return (
@@ -533,7 +570,7 @@ export function NotificationCenter() {
                 </div>
                 <p className="text-sm font-semibold text-roksal-ink">Vse je pod nadzorom</p>
                 <p className="max-w-[220px] text-xs text-muted-foreground">
-                  Ni nizke zaloge, danes ni montaž, ni aktivnih naročil in vreme ne povzroča skrbi.
+                  Ni nizke zaloge, ni artiklov brez dobavitelja, danes ni montaž, ni aktivnih naročil in vreme ne povzroča skrbi.
                 </p>
                 <Button variant="outline" size="sm" className="mt-1 min-h-[40px]" onClick={() => void load()}>
                   <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Osveži
@@ -573,7 +610,9 @@ export function NotificationCenter() {
                         ? item.osnutek
                           ? `${item.title} — odpre Zalogo in naročilni tok`
                           : `${item.title} — odpre Zalogo`
-                        : undefined}
+                        : item.kind === 'brez'
+                          ? `${item.title} — odpre Zalogo s filtrom brez dobavitelja`
+                          : undefined}
                     >
                       <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${style.bg}`}>
                         <Icon className={`h-5 w-5 ${style.fg}`} />
@@ -587,6 +626,10 @@ export function NotificationCenter() {
                               konvergence; vsebina digesta je ŽE pod minimum
                               (badge resničen, ni okrasek). */}
                           {item.kind === 'stock' && <BadgeNizkaZaloga />}
+                          {/* R222 — druga dimenzija v zvončku: brez vrstica nosi
+                              sorojeniški badge (amber; vsebina digesta je ŽE
+                              brez cene — badge resničen, ni okrasek). */}
+                          {item.kind === 'brez' && <BadgeBrezDobavitelja />}
                           {(item.count ?? 1) > 1 && (
                             <span className="shrink-0 rounded-full bg-roksal-amber/15 px-1.5 text-[9px] font-bold text-roksal-amber">
                               ×{item.count}

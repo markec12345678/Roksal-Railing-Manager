@@ -72,6 +72,10 @@ export async function GET(request: Request) {
         ? db.inventory.findMany({
             where: { OR: [{ naziv: insensitive }, { sifraMateriala: insensitive }] },
             // R217 — zaloga polja za iskren badge + deep-link (glej zgoraj).
+            // R222 — _count.prices za iskren badge 'Brez dobavitelja' (druga
+            // dimenzija — nabavna pripravljenost; ISTI EN VIR zasidranja kot
+            // R221 /api/inventory: `prices` back-relation, šteje VSE vrstice
+            // — pretečena cena je še vedno zasidran dobavitelj, iskreno).
             select: {
               id: true,
               naziv: true,
@@ -79,6 +83,7 @@ export async function GET(request: Request) {
               kolicinaZaloga: true,
               minimalnaZaloga: true,
               enota: true,
+              _count: { select: { prices: true } },
             },
             orderBy: { naziv: 'asc' },
             take: SECTION_LIMIT,
@@ -117,6 +122,9 @@ export async function GET(request: Request) {
         kolicinaZaloga: i.kolicinaZaloga,
         minimalnaZaloga: i.minimalnaZaloga,
         enota: i.enota,
+        // R222 — števec zasidranj (MaterialPrice) za badge 'Brez dobavitelja'
+        // (=== 0 → nihče ni vpisan; paleta sodi prek lib brezDobaviteljaIzIskanja).
+        cenaVrstic: i._count.prices,
       })),
       projects: projects.map((p) => ({
         id: p.id,
