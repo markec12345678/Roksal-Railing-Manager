@@ -56,6 +56,14 @@ export const NOTIFICATION_TEMPLATES = {
   // ACCOUNT_ACTIVATED — vrstica čaka naslovnika). Tuja menjava = takojšen
   // klic skrbniku.
   PASSWORD_CHANGED: { version: 1 },
+  // R199 — pregled neuspešnih prijav za ADMIN (R198 P1 (a)): ob uspešni
+  // prijavi ADMIN dobi AGREGAT neuspešnih prijav po CELOTNI ekipi v zadnjih
+  // 24 h (R197 FAILED_LOGINS pokrije samo lastne). Nizka šumnost po zasnovi:
+  // vrstica nastane IZKLJUČNO ob ADMIN prijavi IN samo ko je števec > 0
+  // (čisto obdobje = brez vrstice). Lastni tipkarski spodrsljaji so vključeni
+  // (iskren skupni pregled); tuji poskusi po tujih profilih so klic k
+  // pregledu 'Ekipa' / zaklepu računa.
+  FAILED_LOGINS_OVERVIEW: { version: 1 },
 } as const
 
 export type NotificationTemplate = keyof typeof NOTIFICATION_TEMPLATES

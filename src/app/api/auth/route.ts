@@ -139,6 +139,38 @@ export async function POST(request: Request) {
       }).catch((error) => console.error('FAILED_LOGINS notification failed:', error))
     }
 
+    // R199 — pregled neuspešnih prijav po ekipi (samo ADMIN): R197 FAILED_LOGINS
+    // pokrije lastne poskuse; ADMIN si zasluži še SKUPNI pregled, da tuje
+    // poskuse po profilih ekipe vidi BREZ ročnega kopanja po reviziji. Nizka
+    // šumnost po zasnovi: vrstica nastane samo ob ADMIN prijavi IN samo ko je
+    // števec > 0. Oba odčitka sta best-effort (izpada → 0 → brez vrstice,
+    // prijava ostane nedotaknjena — isti vzorec kot zgoraj).
+    if (profile.vloga === 'ADMIN') {
+      const predDneviEkipa = new Date(Date.now() - 24 * 60 * 60 * 1000)
+      const [neuspesneSkupaj, profilPoProfilih] = await Promise.all([
+        db.auditLog
+          .count({ where: { akcija: 'LOGIN_FAILED', timestamp: { gte: predDneviEkipa } } })
+          .catch(() => 0),
+        db.auditLog
+          .findMany({
+            where: { akcija: 'LOGIN_FAILED', timestamp: { gte: predDneviEkipa }, userId: { not: null } },
+            select: { userId: true },
+            distinct: ['userId'],
+          })
+          .catch(() => [] as { userId: string }[]),
+      ])
+      if (neuspesneSkupaj > 0) {
+        await queueNotifications({
+          template: 'FAILED_LOGINS_OVERVIEW',
+          recipients: [{ userId: profile.id }],
+          naslov: 'Pregled neuspešnih prijav (24 h)',
+          sporocilo: `${neuspesneSkupaj} × napačno geslo po celotni ekipi (${profilPoProfilih.length} ${profilPoProfilih.length === 1 ? 'profilu' : 'profilov'}) · ${casOznaka(new Date())}`,
+          entity: { type: 'profile', id: profile.id },
+          correlationId: correlationFromRequest(request),
+        }).catch((error) => console.error('FAILED_LOGINS_OVERVIEW notification failed:', error))
+      }
+    }
+
     const response = NextResponse.json({
       user: { id: profile.id, email: profile.email, ime: profile.ime, vloga: profile.vloga },
       // R134 (§9): admin reset gesla → uporabnik mora geslo zamenjati.

@@ -232,7 +232,8 @@ describe('R198 — masovno označevanje prebrano (markAllNotificationsOpened + {
 describe('R198 — zvonček source kontrakt (ščit + masovni gumb)', () => {
   it('VARNOSTNE_PREDLOGE vsebuje PASSWORD_CHANGED; masovni gumb vezan na neprebrane', () => {
     const src = srcOf('src/components/roksal/notification-center.tsx')
-    expect(src).toMatch(/new Set\(\['NEW_LOGIN', 'FAILED_LOGINS', 'ACCOUNT_ACTIVATED', 'PASSWORD_CHANGED'\]\)/)
+    // R199: FAILED_LOGINS_OVERVIEW se pridruži (ADMIN ekipni pregled)
+    expect(src).toMatch(/new Set\(\['NEW_LOGIN', 'FAILED_LOGINS', 'ACCOUNT_ACTIVATED', 'PASSWORD_CHANGED', 'FAILED_LOGINS_OVERVIEW'\]\)/)
     expect(src).toContain('bg-roksal-amber/10')
     expect(src).toContain("body: JSON.stringify({ all: true })")
     expect(src).toContain('Označi vse')

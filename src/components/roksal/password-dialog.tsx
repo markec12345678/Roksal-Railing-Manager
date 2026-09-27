@@ -9,6 +9,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { KeyRound, Loader2, ShieldCheck } from 'lucide-react'
+import { gesloJakost } from '@/lib/password-jakost'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -131,6 +132,33 @@ export function PasswordDialog({ open, onOpenChange }: PasswordDialogProps) {
               autoComplete="new-password"
               className="h-11 w-full rounded-xl border border-stone-300 dark:border-stone-800 px-3 text-sm outline-none focus:border-roksal-amber focus:ring-2 focus:ring-roksal-amber/30"
             />
+            {/* R199 — živa povratna informacija o jakosti: 3 segmenti + oznaka;
+              ocena 0 (neustrezno/krajše od 8) = vrstica skrita (gumb je že
+              zaklenjen, brez dvojnega opozorjanja). Token družine: roksal-red
+              / roksal-amber / green-500 (obstoječe, brez novih hex). */}
+            {(() => {
+              const j = gesloJakost(next)
+              if (j.ocena === 0) return null
+              const barva =
+                j.ocena === 1 ? 'bg-roksal-red' : j.ocena === 2 ? 'bg-roksal-amber' : 'bg-green-500'
+              const besedilo =
+                j.ocena === 1 ? 'text-roksal-red' : j.ocena === 2 ? 'text-roksal-amber' : 'text-green-600 dark:text-green-400'
+              return (
+                <div className="mt-1.5 flex items-center gap-2" aria-live="polite">
+                  <div className="flex flex-1 gap-1" aria-hidden="true">
+                    {[1, 2, 3].map((s) => (
+                      <span
+                        key={s}
+                        className={`h-1 flex-1 rounded-full transition-colors ${s <= j.ocena ? barva : 'bg-stone-200 dark:bg-stone-800'}`}
+                      />
+                    ))}
+                  </div>
+                  <span className={`text-[10px] font-bold uppercase tracking-wide ${besedilo}`}>
+                    {j.oznaka}
+                  </span>
+                </div>
+              )
+            })()}
           </div>
           <div>
             <label htmlFor="pwd-repeat" className="mb-1 block text-xs font-medium text-stone-600 dark:text-stone-400">

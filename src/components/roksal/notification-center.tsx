@@ -40,7 +40,7 @@ interface NotificationItem {
 /** R197 — varnostne predloge v zvončku dobijo ŠČIT + jantarno barvo (razločevanje
  * varnostnih vrstic od poslovnih: zaloga/montaže/računi). Sinhrono z
  * NOTIFICATION_TEMPLATES (fail-closed seznam v src/lib/notifications.ts). */
-const VARNOSTNE_PREDLOGE: ReadonlySet<string> = new Set(['NEW_LOGIN', 'FAILED_LOGINS', 'ACCOUNT_ACTIVATED', 'PASSWORD_CHANGED'])
+const VARNOSTNE_PREDLOGE: ReadonlySet<string> = new Set(['NEW_LOGIN', 'FAILED_LOGINS', 'ACCOUNT_ACTIVATED', 'PASSWORD_CHANGED', 'FAILED_LOGINS_OVERVIEW'])
 
 /** R143 (§29): zapisano obvestilo z življenjskim ciklom (GET /api/notifications). */
 interface PersistedNotification {

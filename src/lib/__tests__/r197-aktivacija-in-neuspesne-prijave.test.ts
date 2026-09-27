@@ -146,7 +146,8 @@ describe('R197 — aktivacijsko obvestilo + opozorilo o neuspešnih prijavah', (
     const src = srcOf('src/components/roksal/notification-center.tsx')
     // en vir resnice: množica varnostnih predlog + ščit ikona + jantarna površina
     // R198: PASSWORD_CHANGED se pridruži ščitovim predlogam (isti stil, novi dogodek)
-    expect(src).toContain("new Set(['NEW_LOGIN', 'FAILED_LOGINS', 'ACCOUNT_ACTIVATED', 'PASSWORD_CHANGED'])")
+    // R199: FAILED_LOGINS_OVERVIEW (ADMIN ekipni pregled) prav tako
+    expect(src).toContain("new Set(['NEW_LOGIN', 'FAILED_LOGINS', 'ACCOUNT_ACTIVATED', 'PASSWORD_CHANGED', 'FAILED_LOGINS_OVERVIEW'])")
     expect(src).toContain('VARNOSTNE_PREDLOGE.has(n.template)')
     expect(src).toContain('<ShieldCheck className="h-4 w-4 text-roksal-amber" aria-hidden="true" />')
     expect(src).toContain("varnostna ? 'bg-roksal-amber/10' : 'bg-roksal-navy/5'")
