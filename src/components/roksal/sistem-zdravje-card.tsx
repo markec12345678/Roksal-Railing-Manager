@@ -185,8 +185,11 @@ export function SistemZdravjeCard() {
         )}
         {!napaka && data && (
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            {/* R225 — token harmonizacija (družina R224): 'Baza odgovarja'
+                = POZITIVNO stanje → roksal-green opacity žetoni (delujejo v
+                OBEH temah, brez dark: dvojčkov; prej green-50 hardcoded). */}
             <span
-              className="inline-flex items-center gap-1 rounded-md border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/40 px-2 py-0.5 text-[10px] font-semibold text-green-700 dark:text-green-300"
+              className="inline-flex items-center gap-1 rounded-md border border-roksal-green/30 bg-roksal-green/10 px-2 py-0.5 text-[10px] font-semibold text-roksal-green"
             >
               Baza odgovarja
             </span>

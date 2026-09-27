@@ -57,6 +57,10 @@ import {
 // R219 — tip filtra 'pod minimumom' (EN VIR lib inventory-filter — samo TIP;
 // whitelist guard je del page.tsx centralNavigate, ne komponente).
 import type { InventoryFilterNamig } from '@/lib/inventory-filter'
+// R225 — OSMI signalec konvergence: badge 'Brez dobavitelja' na vrstici
+// Zaloge (definicija TOČNO ENKRAT — badge-brez-dobavitelja.tsx R222, ISTA
+// komponenta kot paleta ⌘K + zvonček; en vizual en pomen).
+import { BadgeBrezDobavitelja } from './badge-brez-dobavitelja'
 
 type InventoryType = 'ALL' | 'WPC_deska' | 'Inox_vijak' | 'Kemicno_sidro' | 'Alu_profil'
 type MovementType = 'PORABA' | 'DOPOLNITEV' | 'ODPIS'
@@ -1055,6 +1059,16 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
                           <Archive className="mr-1 h-2.5 w-2.5" />
                           {typeLabels[item.tip] || item.tip}
                         </Badge>
+                        {/* R225 — OSMI signalec konvergence: per-vrstica
+                            resnica o nabavni pripravljenosti (EN VIR —
+                            _count.prices je na ISTEMU /api/inventory
+                            odgovoru od R221, nič nove zahteve). STROGOST
+                            dobesedna === 0 — manjkajoči števec NIKOLI ni
+                            'brez' (ISTA enačba kot čip R221, zvonček R222,
+                            Domov R223, vodja R224). Badge je informativen
+                            (sorojeni čip zgoraj počne filtriranje) — dobeseden
+                            tekst je hkrati iskren aria-tekst. */}
+                        {item._count?.prices === 0 && <BadgeBrezDobavitelja />}
                         <span className="text-[10px] text-muted-foreground">
                           {item._count?.usages || 0} uporab
                         </span>

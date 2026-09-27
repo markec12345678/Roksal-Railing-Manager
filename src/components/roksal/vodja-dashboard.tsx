@@ -9,9 +9,10 @@
 //    brez prikaza statistike (fail-closed — delni podatki bi izmišljali sliko).
 //  • 🆕 IZVOZ DNEVNEGA PREGLEDA v CSV (vodja-csv.ts): KPI + opozorila +
 //    današnji termini — točno to, kar je videti na zaslonu (IZVOŽENO = ZASLON).
-//  • STIL pass: trdo kodirane svetle barve (bg-green-50, border-red-300,
-//    bg-blue-50 …) so v temni temi ostale svetle → dark: variante / semantični
-//    žetoni; focus-visible ringi; dekorativne ikone aria-hidden; tabular-nums.
+//  • STIL pass: trdo kodirane svetle barve (svetlo zeleno/rdeče/modro
+//    ozadje in obrobe) so v temni temi ostale svetle → dark: variante /
+//    semantični žetoni; focus-visible ringi; dekorativne ikone aria-hidden;
+//    tabular-nums. (R225: zadnje take barve v tej datoteki → žetoni.)
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'
@@ -575,24 +576,26 @@ export function VodjaDashboard() {
       <div>
         <h3 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Danes</h3>
         <div className="grid grid-cols-3 gap-2">
-          <Card className="group border-blue-200 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-blue-300 dark:border-blue-800/60 dark:hover:border-blue-700">
+          <Card className="group border-roksal-navy/20 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-roksal-navy/40 dark:border-roksal-ink/20 dark:hover:border-roksal-ink/30">
             <CardContent className="p-3 text-center">
-              <Calendar className="h-4 w-4 mx-auto text-blue-600 mb-1 transition-transform duration-200 group-hover:scale-110 dark:text-blue-400" aria-hidden="true" />
+              <Calendar className="h-4 w-4 mx-auto text-roksal-ink mb-1 transition-transform duration-200 group-hover:scale-110" aria-hidden="true" />
               <div className="text-xl font-bold tabular-nums text-roksal-ink">{stats.danasTermini}</div>
               <div className="text-[9px] text-muted-foreground">Termini</div>
             </CardContent>
           </Card>
-          <Card className="group border-amber-200 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-amber-300 dark:border-amber-800/60 dark:hover:border-amber-700">
+          {/* R225 — token harmonizacija (družina R224): roksal-amber/ink/green
+              — opacity žetoni delujejo v OBEH temah (brez dark: dvojčkov). */}
+          <Card className="group border-roksal-amber/30 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-roksal-amber/50">
             <CardContent className="p-3 text-center">
-              <Clock className="h-4 w-4 mx-auto text-amber-600 mb-1 transition-transform duration-200 group-hover:scale-110 dark:text-amber-400" aria-hidden="true" />
-              <div className="text-xl font-bold tabular-nums text-amber-700 dark:text-amber-400">{stats.danasVpripravi}</div>
+              <Clock className="h-4 w-4 mx-auto text-roksal-amber mb-1 transition-transform duration-200 group-hover:scale-110" aria-hidden="true" />
+              <div className="text-xl font-bold tabular-nums text-roksal-amber">{stats.danasVpripravi}</div>
               <div className="text-[9px] text-muted-foreground">V teku</div>
             </CardContent>
           </Card>
-          <Card className="group border-green-200 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-green-300 dark:border-green-800/60 dark:hover:border-green-700">
+          <Card className="group border-roksal-green/30 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-roksal-green/50">
             <CardContent className="p-3 text-center">
-              <CheckCircle2 className="h-4 w-4 mx-auto text-green-600 mb-1 transition-transform duration-200 group-hover:scale-110 dark:text-green-400" aria-hidden="true" />
-              <div className="text-xl font-bold tabular-nums text-green-700 dark:text-green-400">{stats.danasZakljuceni}</div>
+              <CheckCircle2 className="h-4 w-4 mx-auto text-roksal-green mb-1 transition-transform duration-200 group-hover:scale-110" aria-hidden="true" />
+              <div className="text-xl font-bold tabular-nums text-roksal-green">{stats.danasZakljuceni}</div>
               <div className="text-[9px] text-muted-foreground">Zaključeni</div>
             </CardContent>
           </Card>
@@ -618,10 +621,12 @@ export function VodjaDashboard() {
                     {formatTime(t.datumZacetka)} · {t.project.customer.ime} · {t.crew?.naziv || 'Brez ekipe'}
                   </div>
                 </div>
+                {/* R225 — žetoni na žetone (ISTO strukturo kot Domov
+                    STATUS_ZETONI): opacity žetoni brez dark: dvojčkov. */}
                 <Badge variant="outline" className={`text-[8px] shrink-0 ${
-                  t.status === 'ZAKLJUCENO' ? 'bg-green-50 text-green-700 border-green-300 dark:bg-green-950/40 dark:text-green-300 dark:border-green-800' :
-                  t.status === 'V_TEKU' ? 'bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800' :
-                  'bg-blue-50 text-blue-700 border-blue-300 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800'
+                  t.status === 'ZAKLJUCENO' ? 'bg-roksal-green/15 text-roksal-green border-roksal-green/30' :
+                  t.status === 'V_TEKU' ? 'bg-roksal-amber/15 text-roksal-amber border-roksal-amber/30' :
+                  'bg-roksal-navy/10 text-roksal-ink border-roksal-navy/25 dark:border-roksal-ink/25'
                 }`}>
                   {terminStatusLabel(t.status)}
                 </Badge>
@@ -645,28 +650,30 @@ export function VodjaDashboard() {
               <div className="text-[9px] text-muted-foreground">iz plačanih računov</div>
             </CardContent>
           </Card>
-          <Card className="border-green-200 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-green-800/60">
+          <Card className="border-roksal-green/25 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
             <CardContent className="p-3">
               <div className="flex items-center gap-1 mb-1">
-                <TrendingUp className="h-3 w-3 text-green-600 dark:text-green-400" aria-hidden="true" />
+                <TrendingUp className="h-3 w-3 text-roksal-green" aria-hidden="true" />
                 <span className="text-[10px] text-muted-foreground">Marža (25%)</span>
               </div>
-              <div className="text-lg font-bold tabular-nums text-green-700 dark:text-green-400">{formatEUR(stats.mesecnaMarza)}</div>
+              <div className="text-lg font-bold tabular-nums text-roksal-green">{formatEUR(stats.mesecnaMarza)}</div>
             </CardContent>
           </Card>
-          <Card className="border-purple-200 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-purple-800/60">
+          {/* R225 — vijolična NI tokenna družina → navy (informacija; ISTO
+              kot Prihodek kartica — navy obroba z dark dvojčkom). */}
+          <Card className="border-roksal-navy/20 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-border">
             <CardContent className="p-3">
               <div className="flex items-center gap-1 mb-1">
-                <Package className="h-3 w-3 text-purple-600 dark:text-purple-400" aria-hidden="true" />
+                <Package className="h-3 w-3 text-roksal-ink" aria-hidden="true" />
                 <span className="text-[10px] text-muted-foreground">Projektov</span>
               </div>
               <div className="text-lg font-bold tabular-nums text-roksal-ink">{stats.mesecnoProjektov}</div>
             </CardContent>
           </Card>
-          <Card className="border-amber-200 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-amber-800/60">
+          <Card className="border-roksal-amber/30 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
             <CardContent className="p-3">
               <div className="flex items-center gap-1 mb-1">
-                <Clock className="h-3 w-3 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+                <Clock className="h-3 w-3 text-roksal-amber" aria-hidden="true" />
                 <span className="text-[10px] text-muted-foreground">Ure</span>
               </div>
               <div className="text-lg font-bold tabular-nums text-roksal-ink">{stats.mesecnoUr}h</div>
@@ -725,12 +732,12 @@ export function VodjaDashboard() {
                 </div>
               </div>
               <div className={`flex items-center gap-2 rounded-lg border px-2.5 py-1.5 ${
-                  stats.zapadloSt > 0 ? 'border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/40' : 'border-border bg-muted/40'
+                  stats.zapadloSt > 0 ? 'border-roksal-red/20 bg-roksal-red/5' : 'border-border bg-muted/40'
                 }`}>
                 <span className={`h-2 w-2 shrink-0 rounded-full ${stats.zapadloSt > 0 ? 'bg-roksal-red' : 'bg-stone-400 dark:bg-stone-600'}`} aria-hidden />
                 <div className="min-w-0">
-                  <p className={`text-[9px] ${stats.zapadloSt > 0 ? 'text-red-700 dark:text-red-300' : 'text-muted-foreground'}`}>Zapadlo</p>
-                  <p className={`text-xs font-bold tabular-nums ${stats.zapadloSt > 0 ? 'text-red-700 dark:text-red-300' : 'text-roksal-ink'}`}>
+                  <p className={`text-[9px] ${stats.zapadloSt > 0 ? 'text-roksal-red' : 'text-muted-foreground'}`}>Zapadlo</p>
+                  <p className={`text-xs font-bold tabular-nums ${stats.zapadloSt > 0 ? 'text-roksal-red' : 'text-roksal-ink'}`}>
                     {formatEUR(stats.zapadloZnesek)}
                     {stats.zapadloSt > 0 && <span className="ml-1 font-medium">({stats.zapadloSt})</span>}
                   </p>
@@ -745,13 +752,20 @@ export function VodjaDashboard() {
       <div>
         <h3 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Opozorila</h3>
         <div className="space-y-2">
+          {/* R225 — token harmonizacija Opozoril (družina R224): vsa tri
+              preostala trdo kodirana svetla ozadja (red-50/blue-50/green-50
+              + dark: dvojčki) → opacity žetoni, ki delujejo v OBEH temah.
+              Semantika: potekli opomniki = ALARM (roksal-red, ISTO kot nizka
+              zaloga R224); odprta naročila = INFORMACIJA (navy — čaka
+              dobavo, ni napaka); 'vse v redu' = POZITIVNO (roksal-green).
+              0 novih hex. */}
           {stats.potekliOpomniki > 0 && (
-            <Card className="border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/40">
+            <Card className="border-roksal-red/20 bg-roksal-red/5">
               <CardContent className="p-3 flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-red-600 shrink-0 dark:text-red-400" aria-hidden="true" />
+                <AlertTriangle className="h-4 w-4 text-roksal-red shrink-0" aria-hidden="true" />
                 <div className="flex-1">
-                  <div className="text-xs font-medium text-red-900 dark:text-red-200">{stats.potekliOpomniki} poteklih opomnikov</div>
-                  <div className="text-[10px] text-red-700 dark:text-red-300">Preveri v CRM → Stranke</div>
+                  <div className="text-xs font-medium text-roksal-ink"><span className="tabular-nums">{stats.potekliOpomniki}</span> poteklih opomnikov</div>
+                  <div className="text-[10px] text-roksal-red">Preveri v CRM → Stranke</div>
                 </div>
               </CardContent>
             </Card>
@@ -805,12 +819,12 @@ export function VodjaDashboard() {
             </button>
           )}
           {stats.odprtaNarocila > 0 && (
-            <Card className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/40">
+            <Card className="border-roksal-navy/20 bg-roksal-navy/5 dark:border-roksal-ink/20">
               <CardContent className="p-3 flex items-center gap-2">
-                <Truck className="h-4 w-4 text-blue-600 shrink-0 dark:text-blue-400" aria-hidden="true" />
+                <Truck className="h-4 w-4 text-roksal-navy dark:text-roksal-ink shrink-0" aria-hidden="true" />
                 <div className="flex-1">
-                  <div className="text-xs font-medium text-blue-900 dark:text-blue-200">{stats.odprtaNarocila} odprtih naročil</div>
-                  <div className="text-[10px] text-blue-700 dark:text-blue-300">Čaka na dobavo</div>
+                  <div className="text-xs font-medium text-roksal-ink"><span className="tabular-nums">{stats.odprtaNarocila}</span> odprtih naročil</div>
+                  <div className="text-[10px] text-roksal-navy dark:text-roksal-ink/80">Čaka na dobavo</div>
                 </div>
               </CardContent>
             </Card>
@@ -820,10 +834,10 @@ export function VodjaDashboard() {
               vpisane cene samo skriti — ISTA iskrenost kot Zaloga per-čip
               prazna stanja R221). */}
           {stats.potekliOpomniki === 0 && stats.nizkaZaloga === 0 && stats.odprtaNarocila === 0 && stats.brezDobavitelja === 0 && (
-            <Card className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/40">
+            <Card className="border-roksal-green/20 bg-roksal-green/5">
               <CardContent className="p-3 flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0 dark:text-green-400" aria-hidden="true" />
-                <div className="text-xs font-medium text-green-900 dark:text-green-200">Vse v redu — ni opozoril</div>
+                <CheckCircle2 className="h-4 w-4 text-roksal-green shrink-0" aria-hidden="true" />
+                <div className="text-xs font-medium text-roksal-green">Vse v redu — ni opozoril</div>
               </CardContent>
             </Card>
           )}
