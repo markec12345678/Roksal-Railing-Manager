@@ -30,7 +30,7 @@ import { SistemZdravjeCard } from '@/components/roksal/sistem-zdravje-card'
 import {
   TrendingUp, Clock, Users, Package, Euro, CheckCircle2,
   AlertTriangle, Calendar, Truck, Bell, FileDown, Loader2, Download,
-  History,
+  History, PackageX,
 } from 'lucide-react'
 
 interface VodjaStats {
@@ -56,6 +56,10 @@ interface VodjaStats {
   // Material
   nizkaZaloga: number
   odprtaNarocila: number
+  // R224 — sedmi signalec konvergence: artikli brez VPISANE nabavne cene
+  // (R221 dimenzija 'brez dobavitelja' v vodjinem pregledu — ISTA dimenzija,
+  // ISTI vir; naročilni tok takih postavk ne more oceniti).
+  brezDobavitelja: number
   // Splošno
   skupajProjektov: number
   skupajStrank: number
@@ -298,6 +302,19 @@ export function VodjaDashboard() {
       const nizkaZaloga = inventory.filter((i: { kolicinaZaloga: number; minimalnaZaloga: number }) =>
         i.kolicinaZaloga <= i.minimalnaZaloga).length
 
+      // R224 (P1-c nadaljevanje) — SEDMI signalec konvergence: 'Brez
+      // dobavitelja' v vodjinem pregledu (sorojenica 'nizka zaloga', DRUGA
+      // dimenzija: nabavna pripravljenost). Izpeljanka iz ISTEGA /api/inventory
+      // fetcha (EN VIR zasidranja — nič nove zahteve; _count.prices je na
+      // odgovoru od R221). STROGOST brez izmišljanja: manjkajoči števec
+      // (starejši predpomnjeni odgovor brez polja) NIKOLI ni 'brez
+      // dobavitelja' — le izrecna 0 pomeni 'nihče vpisan' (fail-closed
+      // konservativno; ISTA dobesedna enačba kot čip R221, zvonček R222 in
+      // Domov kartica R223 — brez `?? 0` / `<= 0` ohlapnosti).
+      const brezDobavitelja = inventory.filter(
+        (i: { _count?: { prices?: number } }) => i._count?.prices === 0,
+      ).length
+
       // Odprta naročila
       const odprtaNarocila = orders.filter((o: { status: string }) =>
         ['OSNUTEK', 'POSLANO', 'POTRJENO'].includes(o.status)).length
@@ -319,6 +336,7 @@ export function VodjaDashboard() {
         aktivniOpomniki: crmStats.zOpomniki || 0,
         nizkaZaloga,
         odprtaNarocila,
+        brezDobavitelja,
         skupajProjektov: projects.length,
         skupajStrank: customers.length,
         skupniLTV,
@@ -384,6 +402,7 @@ export function VodjaDashboard() {
           skupniLTV: stats.skupniLTV,
           nizkaZaloga: stats.nizkaZaloga,
           odprtaNarocila: stats.odprtaNarocila,
+          brezDobavitelja: stats.brezDobavitelja,
           potekliOpomniki: stats.potekliOpomniki,
         },
         prihodki6: prihodki,
@@ -430,6 +449,7 @@ export function VodjaDashboard() {
           potekliOpomniki: stats.potekliOpomniki,
           nizkaZaloga: stats.nizkaZaloga,
           odprtaNarocila: stats.odprtaNarocila,
+          brezDobavitelja: stats.brezDobavitelja,
           skupajProjektov: stats.skupajProjektov,
           skupajStrank: stats.skupajStrank,
           skupniLTV: stats.skupniLTV,
@@ -737,15 +757,52 @@ export function VodjaDashboard() {
             </Card>
           )}
           {stats.nizkaZaloga > 0 && (
-            <Card className="border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40">
+            // R224 — semantična harmonizacija: nizka zaloga = roksal-red
+            // družina (ISTO pomenovskjo barvo kot Domov kartica 'Nizka zaloga
+            // materiala' + Zaloga čipa 'Pod/Na minimumu' R219/R220 — barva je
+            // APP-WIDE pomen, ne dekoracija prejšnje odločitve). Opacity
+            // žetoni delujejo v OBEH temah (brez dark: dvojčkov).
+            <Card className="border-roksal-red/20 bg-roksal-red/5">
               <CardContent className="p-3 flex items-center gap-2">
-                <Package className="h-4 w-4 text-amber-600 shrink-0 dark:text-amber-400" aria-hidden="true" />
+                <Package className="h-4 w-4 text-roksal-red shrink-0" aria-hidden="true" />
                 <div className="flex-1">
-                  <div className="text-xs font-medium text-amber-900 dark:text-amber-200">{stats.nizkaZaloga} materialov z nizko zalogo</div>
-                  <div className="text-[10px] text-amber-700 dark:text-amber-300">Naroči pri dobavitelju</div>
+                  <div className="text-xs font-medium text-roksal-ink"><span className="tabular-nums">{stats.nizkaZaloga}</span> materialov z nizko zalogo</div>
+                  <div className="text-[10px] text-roksal-red">Naroči pri dobavitelju</div>
                 </div>
               </CardContent>
             </Card>
+          )}
+          {stats.brezDobavitelja > 0 && (
+            // R224 (P1-c nadaljevanje) — SEDMI signalec konvergence: kartica
+            // 'Brez dobavitelja' v vodjinem pregledu (sorojenica Domov kartice
+            // R223 — ISTA dimenzija, ISTI vir, ISTA navigacija). Vidna LE ko
+            // je števec > 0 (iskreno — nalagalna napaka je svoja fail-verbose
+            // veja zgoraj, lažnega 0 NI). roksal-amber = pozornost, ne alarm
+            // (rdeča ostane nizki zalogi). Barva NI edini nosilec: dobeseden
+            // naslov + tabular-nums števec + PackageX (en vizual en pomen —
+            // ISTA ikona kot čip/zvonček/Domov) + iskren aria-label + title.
+            // Klik → Zaloga s filtrom 'brez-dobavitelja' (R221 protokol, ISTI
+            // dispatch kot Domov kartica R223 — centralNavigate zapre več-
+            // list in poniža stare namige).
+            <button
+              type="button"
+              className="flex w-full cursor-pointer items-center gap-2 rounded-xl border border-roksal-amber/40 bg-roksal-amber/5 p-3 text-left shadow-sm animate-fade-in-up transition-colors hover:bg-roksal-amber/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-amber/40 focus-visible:ring-offset-1"
+              aria-label={`Brez dobavitelja (${stats.brezDobavitelja}) — odpre Zalogo s filtrom brez dobavitelja`}
+              title="Artikli brez vpisane nabavne cene — klik odpre Zalogo s filtrom 'Brez dobavitelja'"
+              onClick={() =>
+                window.dispatchEvent(
+                  new CustomEvent('roksal:navigate', {
+                    detail: { tab: 'inventory', filter: 'brez-dobavitelja' },
+                  }),
+                )
+              }
+            >
+              <PackageX className="h-4 w-4 shrink-0 text-roksal-amber" aria-hidden="true" />
+              <div className="flex-1">
+                <div className="text-xs font-medium text-roksal-ink">Brez dobavitelja — <span className="tabular-nums">{stats.brezDobavitelja}</span> artiklov brez vpisane cene</div>
+                <div className="text-[10px] text-roksal-amber">Naročilni tok postavke ne more oceniti — klik odpre Zalogo s filtrom</div>
+              </div>
+            </button>
           )}
           {stats.odprtaNarocila > 0 && (
             <Card className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/40">
@@ -758,7 +815,11 @@ export function VodjaDashboard() {
               </CardContent>
             </Card>
           )}
-          {stats.potekliOpomniki === 0 && stats.nizkaZaloga === 0 && stats.odprtaNarocila === 0 && (
+          {/* R224 — iskreno 'vse v redu': TUDI brez-dobavitelja mora biti 0
+              (prej bi kartica lažno trdila 'vse v redu', čeprav so artikli brez
+              vpisane cene samo skriti — ISTA iskrenost kot Zaloga per-čip
+              prazna stanja R221). */}
+          {stats.potekliOpomniki === 0 && stats.nizkaZaloga === 0 && stats.odprtaNarocila === 0 && stats.brezDobavitelja === 0 && (
             <Card className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/40">
               <CardContent className="p-3 flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0 dark:text-green-400" aria-hidden="true" />

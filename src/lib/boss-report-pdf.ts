@@ -53,6 +53,9 @@ export interface ReportData {
     skupniLTV: number
     nizkaZaloga: number
     odprtaNarocila: number
+    // R224 — sedmi signalec: artikli brez vpisane nabavne cene (R221
+    // dimenzija 'brez dobavitelja' v vodjinem PDF poročilu).
+    brezDobavitelja: number
     potekliOpomniki: number
   }
   /** Zadnjih 6 mesecev plačanih računov (label = kratko ime meseca). */
@@ -290,6 +293,8 @@ export function generateMonthlyReport(data: ReportData): void {
   if (s.zapadloSt > 0) opozorila.push(`${s.zapadloSt} zapadl(ih) račun(ov) — ${eur0(s.zapadloZnesek)} (pošlji opomnike)`)
   if (s.nizkaZaloga > 0) opozorila.push(`${s.nizkaZaloga} material(ov) z nizko zalogo — naroči pri dobavitelju`)
   if (s.odprtaNarocila > 0) opozorila.push(`${s.odprtaNarocila} odprt(ih) naročil — čaka dobavo`)
+  // R224 — sedmi signalec (ISTO besedilo dimenzije kot zaslon/CSV)
+  if (s.brezDobavitelja > 0) opozorila.push(`${s.brezDobavitelja} artikel(ov) brez vpisane nabavne cene — naročilni tok jih ne more oceniti`)
   if (s.potekliOpomniki > 0) opozorila.push(`${s.potekliOpomniki} potekl(ih) opomnik(ov) strank v CRM`)
   if (opozorila.length > 0) {
     y = sectionTitle(doc, y, 'Opozorila')

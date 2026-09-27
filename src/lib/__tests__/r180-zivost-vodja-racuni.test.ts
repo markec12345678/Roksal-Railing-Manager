@@ -34,7 +34,7 @@ describe('R180 P1 — pregled za vodjo (vodja-dashboard)', () => {
     const src = vodja()
     expect(src).toContain("import { casOznaka } from '@/lib/osvezitev-fokus'")
     expect(src).toContain("import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'")
-    expect(src).toMatch(/\n  History,\n\} from 'lucide-react'/)
+    expect(src).toMatch(/\n  History, PackageX,\n\} from 'lucide-react'/) // R224: PackageX (sedmi signalec) pride v ISTI blok — History pečat ostaja
     expect(src).toContain('{casOznaka(vodjaOsvezitev)}')
     // OPOMBA: vodja ima pre-existing formatTime() (termin listing) — to je
     // domensko formatiranje časa termina, NE pečata; EN VIR pravilo velja za

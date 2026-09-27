@@ -52,6 +52,9 @@ export interface VodjaKpi {
   potekliOpomniki: number
   nizkaZaloga: number
   odprtaNarocila: number
+  // R224 — sedmi signalec: artikli brez vpisane nabavne cene (v arhivu tudi
+  // ko je 0 — ISTA arhivska resnica kot ostala opozorilna števca).
+  brezDobavitelja: number
   skupajProjektov: number
   skupajStrank: number
   skupniLTV: number
@@ -178,6 +181,8 @@ export function buildVodjaCsv(input: {
   lines.push(kpiLine('Opozorila', 'Potekli opomniki', String(counter(kpi.potekliOpomniki, 'potekliOpomniki'))))
   lines.push(kpiLine('Opozorila', 'Nizka zaloga', String(counter(kpi.nizkaZaloga, 'nizkaZaloga'))))
   lines.push(kpiLine('Opozorila', 'Odprta naročila', String(counter(kpi.odprtaNarocila, 'odprtaNarocila'))))
+  // R224 — sedmi signalec (IZVOŽENO = ZASLON: tudi ko je 0 — arhivska resnica)
+  lines.push(kpiLine('Opozorila', 'Brez dobavitelja', String(counter(kpi.brezDobavitelja, 'brezDobavitelja'))))
 
   // Skupno
   lines.push(kpiLine('Skupno', 'Projektov', String(counter(kpi.skupajProjektov, 'skupajProjektov'))))
