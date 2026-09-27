@@ -163,6 +163,14 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
   // (klik) — stale namig nikoli ne preseneti (effect samo PRIŽIGA, ne
   // ugaša — R216 vzorec: hint je namig, ne lastništvo nad stanjem).
   const [podMinOnly, setPodMinOnly] = useState(false)
+  // R220 — čip 'na minimumu' (zaloga === minimum): ožji sorojeni pogled
+  // ISTEGA vprašanja (=== je podmnožica <= — artikli TOČNO na tleh; naslednja
+  // poraba jih spusti pod). MEDSEBOJNO IZKLJUČEN s 'pod minimumom': dva
+  // sorojena pogleda, ne dveh neodvisnih stikal — vsak čipov števec pove
+  // TOČNO kar prikaže (iskren števec R219 brez intersekcijske zmede),
+  // deep-link iz palete obljubi TOČNO ta pogled. Whitelist vrednost:
+  // 'na-minimumu' (EN VIR lib inventory-filter).
+  const [naMinOnly, setNaMinOnly] = useState(false)
 
   // Movement dialog
   const [movementOpen, setMovementOpen] = useState(false)
@@ -427,15 +435,29 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
     ? inventory
     : inventory.filter((item) => item.tip === filter)
 
+  // R220 — TRI vejice: čip 'pod' (<=) ima prednost, čip 'na' (===) je ožja
+  // rezerva, brez čipov = ves tip. Medsebojna izključnost zagotavlja, da je
+  // izračun determinističen (nikoli obe hkrati). Ime 'filtered' ostane
+  // KONČNO vidna množica — vsi porabniki (CSV R136, Naročilnica R204,
+  // Osnutek R205, seznam, prazno stanje) SAMODEJNO spoštujejo oba čipa
+  // (WYSIWYG — 'vidni artikli' so resnično vidni; čip ne laže).
   const filtered = podMinOnly
     ? typeFiltered.filter((item) => item.kolicinaZaloga <= item.minimalnaZaloga)
-    : typeFiltered
+    : naMinOnly
+      ? typeFiltered.filter((item) => item.kolicinaZaloga === item.minimalnaZaloga)
+      : typeFiltered
 
   // R219 — števec na čipu: koliko artiklov je pod minimumom ZNOTRAJ aktivnega
   // filtra tipa (iskreno število — pove, koliko jih čip POKAŽE, ne koliko jih
   // je v celotni zalogi; tabular-nums, ISTI vzorec kot R218 countHeading).
   const podMinCount = typeFiltered.filter(
     (item) => item.kolicinaZaloga <= item.minimalnaZaloga,
+  ).length
+
+  // R220 — iskren števec za 'na minimumu' čip (ZNOTRAJ filtra tipa — ISTI
+  // vzorec; ob medsebojni izključnosti = TOČNO koliko vrstic čip pokaže).
+  const naMinCount = typeFiltered.filter(
+    (item) => item.kolicinaZaloga === item.minimalnaZaloga,
   ).length
 
   const totalItems = inventory.length
@@ -492,10 +514,20 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
   // stale namig je vseeno nemogčen: page.tsx počisti hint ob vsaki drugi
   // navigaciji, komponenta pa se ob preklopu zavihka odmontira (čip =
   // stanje seje v Zalogi, kot filter tipa).
+  // R220 — namig 'na-minimumu' prižge drugi čip in ugasne 'pod' (medsebojna
+  // izključnost — deep-link iz palete obljubi TOČNO ta pogled, zato ta veja
+  // namerno vsebuje izklop sorojenega čipa; to NI počistitev namiga —
+  // počistitev (null) še VEDNO ne ugasne ničesar).
   const hintFilter = filterHint?.filter ?? null
   const hintFilterNonce = filterHint?.n ?? 0
   useEffect(() => {
-    if (hintFilter) setPodMinOnly(true)
+    if (hintFilter === 'na-minimumu') {
+      setNaMinOnly(true)
+      setPodMinOnly(false) // medsebojna izključnost — NE počistitev namiga
+    } else if (hintFilter) {
+      setPodMinOnly(true)
+      setNaMinOnly(false)
+    }
   }, [hintFilter, hintFilterNonce])
 
   // R205 — shrani osnutek: POST /api/material-orders ustvari MaterialOrder s
@@ -775,7 +807,10 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
               Naročilnica / Osnutek / seznam) — WYSIWYG. */}
           <button
             type="button"
-            onClick={() => setPodMinOnly((v) => !v)}
+            onClick={() => { setPodMinOnly((v) => !v); setNaMinOnly(false) }}
+            /* R220 — medsebojna izključnost: prižig 'pod' ugasne sorojeni
+               'na' čip (in obratno spodaj) — vsak čipov iskren števec pove
+               TOČNO koliko vrstic prikaže; nobena kombinacija ne zmede. */
             aria-pressed={podMinOnly}
             aria-label={
               podMinOnly
@@ -792,6 +827,37 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
             Pod minimumom
             {podMinOnly && (
               <span className="ml-1 tabular-nums font-semibold">{podMinCount}</span>
+            )}
+          </button>
+          {/* R220 — čip 'na minimumu' (===): ožji sorojeni pogled ISTEGA
+              vprašanja nizke zaloge (=== je podmnožica <= — artikli TOČNO na
+              tleh; naslednja poraba jih spusti pod). MEDSEBOJNO IZKLJUČEN s
+              čipom 'pod' (klik poniža sorojenega — vsak čipov iskren števec
+              pove TOČNO koliko vrstic prikaže; deep-link iz palete obljubi
+              TOČNO ta pogled). ISTA roksal-red družina (artikli na minimumu
+              SO del pod-minimum množice — ista semantika; razliko nosita
+              dobeseden tekst + števec, ne drugačna barva — R219 pravilo).
+              Tudi ta čip spreminja VSE porabnike 'vidnih artiklov'
+              (CSV / Naročilnica / Osnutek / seznam) — WYSIWYG. */}
+          <button
+            type="button"
+            onClick={() => { setNaMinOnly((v) => !v); setPodMinOnly(false) }}
+            aria-pressed={naMinOnly}
+            aria-label={
+              naMinOnly
+                ? `Pokaži samo artikle na minimalni zalogi — aktiven (${naMinCount}); klik za izklop`
+                : 'Pokaži samo artikle na minimalni zalogi'
+            }
+            title="Pokaži samo artikle, katerih zaloga je točno na minimumu"
+            className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 ${
+              naMinOnly
+                ? 'border-roksal-red/30 bg-roksal-red/10 text-roksal-red'
+                : 'border-transparent bg-secondary text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Na minimumu
+            {naMinOnly && (
+              <span className="ml-1 tabular-nums font-semibold">{naMinCount}</span>
             )}
           </button>
         </div>
@@ -1088,6 +1154,17 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
               title="Zaloga je prazna"
               description="Dodaj material v zalogo."
             />
+          ) : podMinOnly ? (
+            /* R220 — iskreno prazno stanje PER čip: pove, KATERI filter je
+               prazen (ne generično 'za ta filter' — uporabnik ve, da je
+               prazno stanje rezultat čipa, ne manjkajočih podatkov). */
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              Ni artiklov pod minimalno zalogo v izbranem tipu
+            </p>
+          ) : naMinOnly ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              Ni artiklov točno na minimalni zalogi v izbranem tipu
+            </p>
           ) : (
             <p className="py-8 text-center text-sm text-muted-foreground">
               Ni artiklov za ta filter

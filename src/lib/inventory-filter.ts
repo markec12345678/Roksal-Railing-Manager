@@ -14,11 +14,14 @@
 // R213). Fail-closed po duhu projekta: neznan niz NIKOLI ne ugasne kot filter
 // (whitelist — brez proizvoljnih nizov v URL/state protokolu).
 
-/** Edini trenutno podprti filter Zaloge. Razširitve (npr. 'na minimumu',
- * 'brez dobavitelja') dodajo vrednost TUKAJ + v whitelist — nikjer drugje. */
-export type InventoryFilterHint = 'pod-minimumom'
+/** R220 — DVA podprta filtra Zaloge: 'pod-minimumom' (zaloga <= minimum —
+ * R219 čip) in 'na-minimumu' (zaloga === minimum — R220 drugi čip; saj je
+ * `===` podmnožica `<=`, je to ožji sorojeni pogled ISTEGA vprašanja nizke
+ * zaloge). Razširitve (npr. 'brez dobavitelja') dodajo vrednost TUKAJ + v
+ * whitelist — nikjer drugje. */
+export type InventoryFilterHint = 'pod-minimumom' | 'na-minimumu'
 
-export const INVENTORY_FILTERS = ['pod-minimumom'] as const
+export const INVENTORY_FILTERS = ['pod-minimumom', 'na-minimumu'] as const
 
 /** Whitelist type guard (ISTI vzorec kot isMaterialSubTab R213): namig iz
  * centralne navigacije je niz — neznan/praazen niz = brez namiga, ne napaka. */

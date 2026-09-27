@@ -20,7 +20,7 @@ import type { MoreTabId, TabId } from '@/components/roksal/bottom-nav'
 import type { MaterialSubTab } from '@/lib/material-sub-tab'
 import type { Project } from '@/lib/types'
 // R216 — tip artikla za deep-link osnutek (samo TIP; lib ostaja nedotaknjen).
-import type { ZalogaArtikelZaNarocilo } from '@/lib/zaloga-povzetek'
+import { zalogaPovzetekBeseda, type ZalogaArtikelZaNarocilo } from '@/lib/zaloga-povzetek'
 // R217 — EN VIR presojanja iskalnega zadetka kot nizke zaloge (fail-closed:
 // brez popolnih polj NE trdi nizke zaloge in NE ponudi deep-linka).
 // R218 — EN VIR zgodovine z opcijskim žigom (4. signalec konvergence;
@@ -155,8 +155,21 @@ function readRecentFromStorage(): RecentSearchVnos[] {
 
 function subscribeRecent(onChange: () => void): () => void {
   recentListeners.add(onChange)
+  // R220 (P1-e ostanek) — CROSS-TAB sinhronizacija zgodovine: 'storage'
+  // dogodek sliši SAMO tuj zavihek (isti tab obvesti writeRecent direktno —
+  // 'storage' v istem tabu NE sproži). Brez tega poslušalca je paleta v
+  // DRUGEM zavihku pokazala STALE zgodovino do naslednjega lastnega zapisa.
+  // key = null pomeni localStorage.clear() — tudi to osvežimo (zgodovina
+  // je morda izginila); tuji ključi so brez zanimanja (deterministično).
+  const onStorage = (e: StorageEvent): void => {
+    if (e.key !== null && e.key !== RECENT_KEY) return
+    recentCache = null // vsili svežo branje iz storage v getSnapshot
+    onChange()
+  }
+  window.addEventListener('storage', onStorage)
   return () => {
     recentListeners.delete(onChange)
+    window.removeEventListener('storage', onStorage)
   }
 }
 
@@ -245,6 +258,10 @@ export function CommandPalette({ open, onOpenChange, onNavigate, onSync }: Comma
   // ISTIH realnih podatkov kot seznam; seznam ostane top 5, števec pa je
   // ISKREN — pove koliko jih JE, ne koliko jih paleta pokaže).
   const [nizkaZalogaSkupaj, setNizkaZalogaSkupaj] = useState(0)
+  // R220 — SKUPNO število artiklov TOČNO na minimumu (=== — podmnožica
+  // pod-minimum množice; ISTA izpeljanka iz ISTIH podatkov, iskren števec
+  // za drugo 'Vse'-družinsko vrstico).
+  const [naMinimumuSkupaj, setNaMinimumuSkupaj] = useState(0)
   const [query, setQuery] = useState('')
   const [search, setSearch] = useState<SearchResults>(EMPTY_SEARCH)
   const [searching, setSearching] = useState(false)
@@ -274,6 +291,10 @@ export function CommandPalette({ open, onOpenChange, onNavigate, onSync }: Comma
         const pod = zalogaArr.filter((i) => i.kolicinaZaloga <= i.minimalnaZaloga)
         setNizkaZaloga(pod.slice(0, 5))
         setNizkaZalogaSkupaj(pod.length)
+        // R220 — ISTA izpeljanka, TRETJI izhod: števec artiklov TOČNO na
+        // minimumu (===; vrstica 'Na minimumu' — ožji sorojeni pogled).
+        const na = zalogaArr.filter((i) => i.kolicinaZaloga === i.minimalnaZaloga)
+        setNaMinimumuSkupaj(na.length)
       })
       .catch(() => undefined)
     return () => {
@@ -520,6 +541,38 @@ export function CommandPalette({ open, onOpenChange, onNavigate, onSync }: Comma
                   </span>
                   <span className="ml-2 shrink-0 text-xs tabular-nums text-muted-foreground">
                     {nizkaZalogaSkupaj}
+                  </span>
+                </CommandItem>
+              )}
+              {/* R220 — 'Na minimumu' vrstica: ožji sorojeni pogled ISTEGA
+                  vprašanja (=== je podmnožica <= — artikli TOČNO na tleh;
+                  naslednja poraba jih spusti pod). Vidna LE ko obstaja vsak
+                  en artikel na minimumu (> 0 — nič izmišljenega), števec
+                  ISKREN iz ISTIH podatkov kot 'Vse' vrstica (beseda prek EN
+                  VIR zalogaPovzetekBeseda — prave slovenske oblike, NOMINATIV
+                  v oklepaju — pravilno za vse n). ISTA R214 hierarhija
+                  (pl-8 + utišan napis + tabular-nums). Klik → deep-link Z
+                  NAMIGOM 'na-minimumu' (whitelist lib inventory-filter —
+                  R219 protokol; Zaloga se odpre z aktivnim čipom 'Na
+                  minimumu' in ugasnjenim 'pod' — medsebojna izključnost).
+                  Dialog ostane ZA EN artikel (hint enega artikla ostane
+                  null). */}
+              {naMinimumuSkupaj > 0 && (
+                <CommandItem
+                  value="nizka zaloga na minimumu"
+                  aria-label={`Pokaži artikle točno na minimalni zalogi v Zalogi (${naMinimumuSkupaj} ${zalogaPovzetekBeseda(naMinimumuSkupaj)})`}
+                  onSelect={() => {
+                    onNavigate('inventory', null, null, null, 'na-minimumu')
+                    close()
+                  }}
+                  className="pl-8"
+                >
+                  <Package className="mr-2 h-4 w-4 text-roksal-amber/70" />
+                  <span className="text-[13px] text-muted-foreground">
+                    Na minimumu — pokaži v Zalogi
+                  </span>
+                  <span className="ml-2 shrink-0 text-xs tabular-nums text-muted-foreground">
+                    {naMinimumuSkupaj}
                   </span>
                 </CommandItem>
               )}

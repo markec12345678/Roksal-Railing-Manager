@@ -37,8 +37,8 @@ describe('R219 — isInventoryFilter (EN VIR whitelist, fail-closed)', () => {
     expect(isInventoryFilter(null)).toBe(false)
   })
 
-  it('whitelist je ENOČLEN (razširitve gredo TUKAJ, nikjer drugje)', () => {
-    expect(INVENTORY_FILTERS).toEqual(['pod-minimumom'])
+  it('whitelist je DVOČLEN (R220 razširitev uporabila TO pripravljeno mesto — nikjer drugje)', () => {
+    expect(INVENTORY_FILTERS).toEqual(['pod-minimumom', 'na-minimumu'])
   })
 
   it('type guard zoži tip (posledica whitelist implementacije)', () => {
@@ -109,14 +109,21 @@ describe('R219 — Zaloga: čip + dvostopenjsko filtriranje (inventory-tab.tsx)'
     expect(src).toContain('({ osnutekHint, filterHint }: InventoryTabProps)')
   })
 
-  it('effect prižge čip na nov namig; počistitev NE ugasne (namig ≠ lastništvo — R216 vzorec)', () => {
+  it("effect preslika namig na PRAVI čip (R220); počistitev (null) še VEDNO ne ugasne ničesar (namig ≠ lastništvo — R216 vzorec)", () => {
     expect(src).toContain('const hintFilter = filterHint?.filter ?? null')
     expect(src).toContain('const hintFilterNonce = filterHint?.n ?? 0')
     const zac = src.indexOf('const hintFilter = filterHint?.filter ?? null')
     const okno = src.slice(zac, src.indexOf('// R205 — shrani osnutek', zac))
-    expect(okno).toContain('if (hintFilter) setPodMinOnly(true)')
+    // R220 — namig 'na-minimumu' prižge drugi čip in ugasne sorojenega
+    // (deep-link obljubi TOČNO ta pogled — medsebojna izključnost);
+    // 'pod-minimumom' namig obratno. Počistitev (null) NE ugasne ničesar.
+    expect(okno).toContain("if (hintFilter === 'na-minimumu') {")
+    expect(okno).toContain('setNaMinOnly(true)')
+    expect(okno).toContain('setPodMinOnly(false) // medsebojna izključnost — NE počistitev namiga')
+    expect(okno).toContain('} else if (hintFilter) {')
+    expect(okno).toContain('setNaMinOnly(false)')
     expect(okno).toContain('[hintFilter, hintFilterNonce]')
-    expect(okno).not.toContain('setPodMinOnly(false)')
+    expect(okno).not.toContain('if (!hintFilter)')
   })
 
   it('dvostopenjsko filtriranje: filtered = KONČNO vidna množica (vsi porabniki spoštujejo čip)', () => {
@@ -131,11 +138,11 @@ describe('R219 — Zaloga: čip + dvostopenjsko filtriranje (inventory-tab.tsx)'
     expect(src).toContain('const podMinCount = typeFiltered.filter(')
   })
 
-  it('čip = pravi toggle: aria-pressed + iskren aria-label s števcem', () => {
+  it("čip = pravi toggle: aria-pressed + iskren aria-label s števcem (R220 — klik poniža sorojenega)", () => {
     expect(src).toContain('aria-pressed={podMinOnly}')
     expect(src).toContain('Pokaži samo artikle pod minimalno zalogo')
     expect(src).toContain('klik za izklop')
-    expect(src).toContain('onClick={() => setPodMinOnly((v) => !v)}')
+    expect(src).toContain('onClick={() => { setPodMinOnly((v) => !v); setNaMinOnly(false) }}')
   })
 
   it('čip stil: roksal-red družina ko aktiven (barva ni edini nosilec — števec + tekst)', () => {
