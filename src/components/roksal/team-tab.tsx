@@ -37,6 +37,7 @@ import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'
 // R178 — EN VIR RESNICE za pečat 'Osveženo ob' (vzorec R170/R171/R177):
 // komponenta NE formatira časa sama.
 import { casOznaka } from '@/lib/osvezitev-fokus'
+import { aktivnostOznaka } from '@/lib/aktivnost-oznaka'
 import {
   buildEkipaCsv,
   ekipaCsvFilename,
@@ -522,7 +523,11 @@ export function TeamTab() {
                 <div className="mt-1.5 flex flex-wrap items-center gap-3 text-[10px] text-muted-foreground">
                   <span className="inline-flex items-center gap-1">
                     <CalendarClock className="h-3 w-3" />
-                    Zadnja aktivnost: {u.lastActive ? new Date(u.lastActive).toLocaleDateString('sl-SI') : 'nikoli'}
+                    {/* R200 — 'Zadnja aktivnost' z uro (R199 P1 (e)): prej SAMO
+                        datum (admin ni videl, ali je aktivnost bila danes ob
+                        08:03 ali lani); zdaj EN VIR aktivnostOznaka:
+                        'danes ob HH:MM:SS' / 'včeraj ob …' / 'DD. MM. YYYY ob …'. */}
+                    Zadnja aktivnost: {aktivnostOznaka(u.lastActive) ?? 'nikoli'}
                   </span>
                   {u.lifecycle.mustChangePassword && (
                     <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400">

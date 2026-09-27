@@ -22,7 +22,7 @@ import { Button } from '@/components/ui/button'
 import {
   Bell, Package, CalendarDays, CloudLightning, CheckCheck,
   ChevronRight, RefreshCw, AlertTriangle, Loader2, FileClock, Receipt,
-  Inbox, Wrench, History, ShieldCheck,
+  UserCog, Inbox, Wrench, History, ShieldCheck,
 } from 'lucide-react'
 import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'
 import { casOznaka } from '@/lib/osvezitev-fokus'
@@ -348,6 +348,20 @@ export function NotificationCenter() {
     }
   }
 
+  /** R200 — varnostna zanka: FAILED_LOGINS_OVERVIEW → 'Odpri Ekipa'.
+   *  Pregled pravi “N × napačno geslo po celotni ekipi” — brez akcije je ADMIN
+   *  ostal pred praznim zidom (zaklep računa R134 je v Ekipa zavihku).
+   *  Navigacija = obstoječi vzorec roksal:navigate { more: 'ekipa' } (kot CRM,
+   *  R182); ack = isti openPersisted tok (vrstica postane Odprto).
+   *  Vrstica FAILED_LOGINS_OVERVIEW nastaja IZKLJUČNO za ADMIN (r199, vloga
+   *  pregrata) — Ekipa zavihek je RBAC-varovan (r190 meja) — akcija ne more
+   *  priti v 403. Fail-verbose: napaka ack-a je vidna (persistedError). */
+  async function odpriEkipoZaPregled(n: PersistedNotification) {
+    setOpen(false)
+    window.dispatchEvent(new CustomEvent('roksal:navigate', { detail: { tab: 'more', more: 'ekipa' } }))
+    await openPersisted(n)
+  }
+
   /** R198 — masovni open ack: { all: true } → VSE vidne SENT|DELIVERED → OPENED;
    * fail-verbose (isti vzorec kot openPersisted); po uspehu osveži seznam
    * (badge in vrstice konvergirata prek istega load). */
@@ -607,6 +621,22 @@ export function NotificationCenter() {
                             </p>
                           </div>
                         </button>
+                        {/* R200 — akcija kot SOSED gumba (veljaven HTML, ni
+                            gnezdenja gumbov): samo FAILED_LOGINS_OVERVIEW —
+                            edina varnostna vrstica z ekipnim obsegom. ml-11
+                            poravna z vsebino vrstice (ikona 32px + gap 12px). */}
+                        {n.template === 'FAILED_LOGINS_OVERVIEW' && (
+                          <button
+                            type="button"
+                            onClick={() => void odpriEkipoZaPregled(n)}
+                            className="ml-11 mt-1.5 inline-flex items-center gap-1 rounded-full bg-roksal-navy/5 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-roksal-navy transition-colors hover:bg-roksal-navy/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 active:scale-[0.97] dark:bg-roksal-ink/10 dark:text-roksal-ink dark:hover:bg-roksal-ink/20 dark:focus-visible:ring-roksal-ink/40"
+                            aria-label="Odpri Ekipa — pregled ekipnih računov"
+                            title="Pregled ekipnih računov (zaklep, vloge, aktivnost)"
+                          >
+                            <UserCog className="h-3 w-3 shrink-0" aria-hidden="true" />
+                            Odpri Ekipa
+                          </button>
+                        )}
                       </li>
                     )
                   })}
