@@ -146,7 +146,15 @@ function statusZnackaCls(status: string | null): string {
   return 'bg-gray-50 dark:bg-gray-950/40 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-800'
 }
 
-function downloadOrdersCsv(orders: MaterialOrder[]): number {
+// R231 (P1-e) — ENAJSTI signalec konvergence: stolpec 'Pretekel rok' (DA/NE)
+// kot ZADNJI stolpec (analogija R226 'Brez dobavitelja' v Zalogi — arhivska
+// resnica v polnem izvozu; WYSIWYG: stolpec VEDNO prisoten, tudi ko je vseh
+// NE). ENA resnica: ISTI lib jeZamujenaDobava (R228) kot badge R229 / vodja
+// R228 / zvonček R229 / Domov R230 — zaprta stanja, manjkajoča/pokvarena
+// obljuba NIKOLI 'DA' (fail-closed). `danas` je IZRECEN argument
+// (determinizem: isti vhod + isti dan = isti izid; brez skrite ure — lib
+// pogodba).
+function downloadOrdersCsv(orders: MaterialOrder[], danas: Date): number {
   const rows: CsvValue[][] = []
   for (const o of orders) {
     for (const item of o.items) {
@@ -161,12 +169,13 @@ function downloadOrdersCsv(orders: MaterialOrder[]): number {
         item.cena * item.kolicina,
         o.skupajCena,
         o.opombe ?? '',
+        jeZamujenaDobava(o, danas) ? 'DA' : 'NE',
       ])
     }
   }
   downloadCsv(
     `Narocila-${todayStamp()}.csv`,
-    ['Datum', 'Dobavitelj', 'Status', 'Artikel', 'Količina', 'Enota', 'Cena', 'Vrednost', 'Naročilo skupaj', 'Opombe'],
+    ['Datum', 'Dobavitelj', 'Status', 'Artikel', 'Količina', 'Enota', 'Cena', 'Vrednost', 'Naročilo skupaj', 'Opombe', 'Pretekel rok'],
     rows,
   )
   return rows.length
@@ -521,10 +530,11 @@ export function MaterialIntelligenceTab({
     }
   }
 
-  // R140: izvoz vidnih naročil v CSV (pisarniški pregled).
+  // R140 — izvoz naročil v CSV (pisarniški pregled). R231 — podaja IZRECNO
+  // danasZamude (polnoč, ISTI dan kot badge — ENA resnica za zaslon IN izvoz).
   const handleOrdersCsv = () => {
     if (orders.length === 0) return
-    const count = downloadOrdersCsv(orders)
+    const count = downloadOrdersCsv(orders, danasZamude)
     toast({ title: 'CSV prenesen', description: `${count} postavk v Narocila-${todayStamp()}.csv` })
   }
 
@@ -714,13 +724,17 @@ export function MaterialIntelligenceTab({
             )
           ) : (
             <>
-              {/* R140: CSV izvoz — isti kontrakt kot Zaloga/Računi/Termini. */}
+              {/* R140: CSV izvoz — isti kontrakt kot Zaloga/Računi/Termini.
+                  R231: aria-label + title (a11y družina izvozov — vsi ostali
+                  izvozi ju imajo; kontrakt R140 nespremenjen: VSA naročila). */}
               <div className="flex justify-end">
                 <Button
                   type="button"
                   size="sm"
                   variant="outline"
                   onClick={handleOrdersCsv}
+                  aria-label="Izvozi naročila kot CSV"
+                  title="Izvozi vsa naročila (neodvisno od statusnega filtra) kot CSV za Excel"
                   className="h-8 text-xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
                 >
                   <Download className="h-3.5 w-3.5 mr-1 text-roksal-amber" /> CSV

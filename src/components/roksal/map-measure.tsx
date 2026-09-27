@@ -359,7 +359,7 @@ ${tocke}
       </CardHeader>
       <CardContent className="space-y-3">
         {/* Zemljevid */}
-        <div className="relative h-[280px] w-full overflow-hidden rounded-lg border border-stone-200 sm:h-[340px]">
+        <div className="relative h-[280px] w-full overflow-hidden rounded-lg border border-border sm:h-[340px]">
           <div ref={mapElRef} className="h-full w-full" aria-label="Satelitski zemljevid za merjenje" />
           <div className="roksal-map-hint pointer-events-none absolute left-2 top-2 z-[500] rounded-md bg-roksal-navy/90 px-2.5 py-1.5 text-xs font-medium text-white shadow">
             {points.length === 0
@@ -379,7 +379,7 @@ ${tocke}
         </div>
 
         {/* Rezultati */}
-        <div className="flex items-center gap-3 rounded-lg bg-stone-50 p-3">
+        <div className="flex items-center gap-3 rounded-lg bg-muted p-3">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-roksal-amber/15">
             <Ruler className="h-5 w-5 text-roksal-amber" />
           </div>
@@ -397,13 +397,13 @@ ${tocke}
         </div>
 
         {segmentsM.length > 1 && (
-          <div className="max-h-24 space-y-1 overflow-y-auto rounded-lg border border-stone-200 p-2">
+          <div className="max-h-24 space-y-1 overflow-y-auto rounded-lg border border-border p-2">
             {segmentsM.map((s, i) => (
               <div key={i} className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">
                   Segment {i + 1} ({i + 1} → {i + 2})
                 </span>
-                <span className="font-medium tabular-nums text-stone-700">{s.toFixed(1)} m</span>
+                <span className="font-medium tabular-nums text-roksal-ink">{s.toFixed(1)} m</span>
               </div>
             ))}
           </div>
@@ -495,7 +495,7 @@ ${tocke}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-3">
-              <div className="break-all rounded-lg border border-stone-200 bg-stone-50 p-3 text-xs text-stone-700">
+              <div className="break-all rounded-lg border border-border bg-muted p-3 text-xs text-roksal-ink">
                 {shareUrl ?? 'Projekt nima žetona — izberite projekt.'}
               </div>
               <div className="grid grid-cols-2 gap-2">

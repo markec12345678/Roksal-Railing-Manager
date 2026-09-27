@@ -107,11 +107,13 @@ describe('R207 stražar: CSV kontrakt R140 nespremenjen', () => {
     const src = beri('src/components/roksal/material-intelligence-tab.tsx')
     const okno = oknoMed(
       src,
-      '// R140: izvoz vidnih naročil v CSV (pisarniški pregled).',
+      '// R140 — izvoz naročil v CSV (pisarniški pregled).',
       '  return (',
     )
-    expect(okno).toContain('downloadOrdersCsv(orders)')
-    expect(okno).not.toContain('downloadOrdersCsv(vidnaNarocila)')
+    // R231 sinhronizacija: downloadOrdersCsv dobi IZRECEN danas (polnoč —
+    // ENA resnica za zaslon IN izvoz); kontrakt VSA naročila NESPREMENJEN.
+    expect(okno).toContain('downloadOrdersCsv(orders, danasZamude)')
+    expect(okno).not.toContain('downloadOrdersCsv(vidnaNarocila')
   })
 
   it('res-prazno stanje ostane (ločeno od filter-praznega)', () => {

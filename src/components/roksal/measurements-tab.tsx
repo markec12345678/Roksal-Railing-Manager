@@ -1945,7 +1945,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
 
     let verdict: { label: string; cls: string; icon: typeof CheckCircle2 }
     if (deltaPct == null) {
-      verdict = { label: 'Ni uradnih meritev za primerjavo', cls: 'bg-stone-100 dark:bg-stone-500/15 text-stone-700 dark:text-stone-300 border-stone-300 dark:border-stone-800', icon: Info }
+      verdict = { label: 'Ni uradnih meritev za primerjavo', cls: 'bg-muted text-muted-foreground border-border', icon: Info }
     } else if (Math.abs(deltaPct) <= 5) {
       verdict = { label: 'V okviru — zanesljiva orientacija', cls: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800', icon: CheckCircle2 }
     } else if (Math.abs(deltaPct) <= 15) {
@@ -6037,7 +6037,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   className={cn(
                     'rounded-full px-2 py-0.5 text-[10px] font-bold',
                     strankaPrimerjava.deltaPct == null
-                      ? 'bg-stone-100 dark:bg-stone-500/15 text-stone-600 dark:text-stone-400'
+                      ? 'bg-muted text-muted-foreground'
                       : Math.abs(strankaPrimerjava.deltaPct) <= 5
                         ? 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
                         : Math.abs(strankaPrimerjava.deltaPct) <= 15

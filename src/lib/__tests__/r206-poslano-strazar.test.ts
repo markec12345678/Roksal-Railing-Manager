@@ -84,7 +84,7 @@ describe('R206 stražar: naročilnica iz naročila (regeneracija dokumenta)', ()
     const okno = oknoMed(
       src,
       '  // R206 — naročilnica iz naročila: regeneracija dokumenta iz SLEDLJIVIH',
-      '  // R140: izvoz vidnih naročil v CSV (pisarniški pregled).',
+      '  // R140 — izvoz naročil v CSV (pisarniški pregled). R231 — podaja IZRECNO',
     )
     expect(okno).toContain('buildNarocilnicaIzNarocila(order, { now: new Date() })')
     expect(okno).toContain('navigator.clipboard.writeText(besedilo)')
