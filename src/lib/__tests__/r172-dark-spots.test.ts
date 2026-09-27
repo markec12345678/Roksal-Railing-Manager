@@ -53,7 +53,9 @@ const PRIMERI = [
   // + PREKlicANO naslovi/description + F2 badge na zavihku +33).
   // R209: 524→602 (ZgodovinaVnos + akcijaOznaka/statusZnackaCls pomožnika
   // + zgodovina stanja + prinesi/odpri + gumb/timeline na kartici +78).
-  stražar('src/components/roksal/material-intelligence-tab.tsx', 602, 'bg-green-50', 'dark:bg-green-950/40'),
+  // R213: 602→624 (tip-only uvoz material-sub-tab +3, initialSubTab prop
+  // podpis +8, subTab namig effect +11; aria-pressed/Prikaži Vse za ogledalom).
+  stražar('src/components/roksal/material-intelligence-tab.tsx', 624, 'bg-green-50', 'dark:bg-green-950/40'),
   // roksal-catalog — steklo tint (vzorec Inox fix R171)
   // R203: 193→228 (fail-verbose fetchProfili + trojna veja +35).
   stražar('src/components/roksal/roksal-catalog.tsx', 228, 'bg-cyan-200/40', 'dark:bg-cyan-500/20'),

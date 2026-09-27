@@ -12,6 +12,9 @@ import { UpdateBanner } from '@/components/roksal/update-banner'
 import { RefreshCw, Camera, ChevronLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+// R213 — EN VIR podzavihkov Material zavihka (mikromodul, NE komponenta —
+// MaterialIntelligenceTab mora ostati LAZY dynamic import, r212 lekcija).
+import { isMaterialSubTab, type MaterialSubTabHint } from '@/lib/material-sub-tab'
 
 // ── Dinamični importi (code-splitting) ───────────────────────────────────────
 //
@@ -220,12 +223,23 @@ export default function Home() {
   }, [])
 
   // ── Centralna navigacija (FAB, obvestilni center, kasneje tudi AR) ────────
-  // detail = { tab: TabId, more?: MoreTabId | null } — 'sketches' odpre overlay
+  // detail = { tab: TabId, more?: MoreTabId | null, subTab?: string } —
+  // 'sketches' odpre overlay. R213 — subTab: namig za podzavihek Material
+  // (zvonček digest → Naročila); whitelist via isMaterialSubTab (determinizem,
+  // brez proizvoljnih nizov), monotonski n (preklop tudi, ko je komponenta
+  // že montirana); navadne navigacije počistijo namig (privzeto BOM).
+  const [materialSubTab, setMaterialSubTab] = useState<MaterialSubTabHint | null>(null)
   useEffect(() => {
     function onNavigate(e: Event) {
-      const d = (e as CustomEvent<{ tab?: string; more?: string | null }>).detail
+      const d = (e as CustomEvent<{ tab?: string; more?: string | null; subTab?: string | null }>).detail
       if (!d?.tab) return
       if (d.tab === 'more' && d.more) {
+        // namig v const: type guard zoži tip tudi znotraj updaterja (closures
+        // ne ohranjajo zožitve na lastnostih objekta).
+        const namig = d.subTab
+        setMaterialSubTab((prev) =>
+          isMaterialSubTab(namig) ? { tab: namig, n: (prev?.n ?? 0) + 1 } : null,
+        )
         handleMoreSelect(d.more as MoreTabId)
       } else if (MAIN_TAB_IDS.includes(d.tab as TabId)) {
         handleTabChange(d.tab as TabId)
@@ -501,7 +515,7 @@ export default function Home() {
               <PostSignaturePanel project={selectedProject} />
             )}
             {moreTab === 'crm' && <CrmTab />}
-            {moreTab === 'material' && <MaterialIntelligenceTab projectId={selectedProjectId} />}
+            {moreTab === 'material' && <MaterialIntelligenceTab projectId={selectedProjectId} initialSubTab={materialSubTab} />}
             {moreTab === 'logistics' && <LogisticsTab projectId={selectedProjectId} />}
             {moreTab === 'pdf' && <PdfExport project={selectedProject} />}
             {moreTab === 'gallery' && <ReferenceGallery />}

@@ -12,6 +12,9 @@ import { Separator } from '@/components/ui/separator'
 import { useToast } from '@/hooks/use-toast'
 import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'
 import { casOznaka } from '@/lib/osvezitev-fokus'
+// R213 — EN VIR podzavihkov (tip-only uvoz: komponenta ostane LAZY dynamic
+// import, r212 lekcija).
+import type { MaterialSubTab, MaterialSubTabHint } from '@/lib/material-sub-tab'
 import { downloadCsv, todayStamp, type CsvValue } from '@/lib/csv-export'
 import {
   buildNarocilnicaIzNarocila,
@@ -174,8 +177,16 @@ function chipCls(aktiven: boolean): string {
   }`
 }
 
-export function MaterialIntelligenceTab({ projectId }: { projectId: string | null }) {
-  const [tab, setTab] = useState<'bom' | 'orders' | 'suppliers'>('bom')
+export function MaterialIntelligenceTab({
+  projectId,
+  initialSubTab,
+}: {
+  projectId: string | null
+  /** R213 — namig iz centralne navigacije (zvonček digest → Naročila):
+   * začetni podzavihek + monotonski n (glej MaterialSubTabHint). */
+  initialSubTab?: MaterialSubTabHint | null
+}) {
+  const [tab, setTab] = useState<MaterialSubTab>(initialSubTab?.tab ?? 'bom')
   const [bomRefine, setBomRefine] = useState<BomRefineData | null>(null)
   const [orders, setOrders] = useState<MaterialOrder[]>([])
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
@@ -285,6 +296,17 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
   // R182 — vrnitev v zavihek → ponovno naloži (pisarna spreminja cene, naročila
   // in dobavitelje v drugi seji). loadData je fail-verbose — hook ne požira napak.
   useRefetchOnFocus(loadData)
+
+  // R213 — zvonček digest → direktno Naročila podzavihek (P1-h): page.tsx pošlje
+  // namig { tab, n } prek roksal:navigate subTab; n se monotono poveča na vsak
+  // namig, zato preklop deluje TUDI, ko je komponenta že montirana (enak tab
+  // dvakrat = vseeno nov dogodek). Brez namiga (initialSubTab null — navadna
+  // navigacija prek Več/FAB) se ročno izbrani podzavihek NE pregazi.
+  const subTabNamig = initialSubTab?.tab
+  const subTabNonce = initialSubTab?.n ?? 0
+  useEffect(() => {
+    if (subTabNamig) setTab(subTabNamig)
+  }, [subTabNamig, subTabNonce])
 
   const handleConvertToOrder = async (supplierId?: string) => {
     if (!projectId) return
@@ -497,10 +519,10 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
     <div className="space-y-4">
       {/* Tab switcher */}
       <div className="grid grid-cols-3 gap-1 rounded-lg bg-muted p-1">
-        <Button type="button" variant={tab === 'bom' ? 'default' : 'ghost'} size="sm" onClick={() => setTab('bom')} className={tab === 'bom' ? 'bg-roksal-navy text-white' : ''}>
+        <Button type="button" variant={tab === 'bom' ? 'default' : 'ghost'} size="sm" aria-pressed={tab === 'bom'} onClick={() => setTab('bom')} className={tab === 'bom' ? 'bg-roksal-navy text-white' : ''}>
           <Sparkles className="h-3.5 w-3.5 mr-1" /> BOM Refine
         </Button>
-        <Button type="button" variant={tab === 'orders' ? 'default' : 'ghost'} size="sm" onClick={() => setTab('orders')} className={tab === 'orders' ? 'bg-roksal-navy text-white' : ''}>
+        <Button type="button" variant={tab === 'orders' ? 'default' : 'ghost'} size="sm" aria-pressed={tab === 'orders'} onClick={() => setTab('orders')} className={tab === 'orders' ? 'bg-roksal-navy text-white' : ''}>
           <ShoppingCart className="h-3.5 w-3.5 mr-1" /> Naročila
           {/* R208 — F2: števec aktivnih naročil (OSNUTEK/POSLANO/POTRJENO) na
               zavihku — opozorilo pred dejanjem; izpeljanka iz realnih naročil
@@ -514,7 +536,7 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
             </span>
           )}
         </Button>
-        <Button type="button" variant={tab === 'suppliers' ? 'default' : 'ghost'} size="sm" onClick={() => setTab('suppliers')} className={tab === 'suppliers' ? 'bg-roksal-navy text-white' : ''}>
+        <Button type="button" variant={tab === 'suppliers' ? 'default' : 'ghost'} size="sm" aria-pressed={tab === 'suppliers'} onClick={() => setTab('suppliers')} className={tab === 'suppliers' ? 'bg-roksal-navy text-white' : ''}>
           <Truck className="h-3.5 w-3.5 mr-1" /> Dobavitelji
         </Button>
       </div>
@@ -724,6 +746,17 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
                   <ShoppingCart className="h-10 w-10 mx-auto mb-2 opacity-30" />
                   <p className="text-sm">Ni naročil s statusom {statusFilter}.</p>
                   <p className="mt-1 text-xs">Izberi drug status ali prikaži Vse.</p>
+                  {/* R213 — besedilni izhod je dobil DEJANSKI gumb: EN klik
+                      nazaj na Vsi (družina CSV/Poskusi znova focus ringov). */}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setStatusFilter('VSI')}
+                    className="mt-3 h-8 text-xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
+                  >
+                    Prikaži Vse
+                  </Button>
                 </CardContent></Card>
               ) : vidnaNarocila.map((order) => {
                 const expanded = expandedOrder === order.id

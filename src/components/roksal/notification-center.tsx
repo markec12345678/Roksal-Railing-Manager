@@ -363,7 +363,9 @@ export function NotificationCenter() {
     } else if (item.kind === 'order') {
       // R212 — Material je za 'Več' sheetom (R206 lekcija): more:'material'
       // je obstoječi MoreTabId (page.tsx handleMoreSelect → MaterialIntelligenceTab).
-      window.dispatchEvent(new CustomEvent('roksal:navigate', { detail: { tab: 'more', more: 'material' } }))
+      // R213 — subTab:'orders' = direktno Naročila podzavihek (digest povedal,
+      // DA so aktivna naročila — uporabnik pristane na pravem mestu, ne na BOM).
+      window.dispatchEvent(new CustomEvent('roksal:navigate', { detail: { tab: 'more', more: 'material', subTab: 'orders' } }))
     } else {
       window.dispatchEvent(new CustomEvent('roksal:navigate', { detail: { tab: 'dashboard' } }))
     }

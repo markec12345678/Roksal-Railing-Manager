@@ -52,8 +52,8 @@ describe('R212 — zvonček: aktivna naročila digest (6. signalna družina)', (
     expect(blok).toContain("kind: 'order',")
   })
 
-  it('navigacija: obstoječi roksal:navigate { more: material } vzorec (R206 lekcija — Material za Več sheetom)', () => {
-    expect(src).toContain("new CustomEvent('roksal:navigate', { detail: { tab: 'more', more: 'material' } })")
+  it('navigacija: roksal:navigate { more: material, subTab: orders } (R206 lekcija — Material za Več sheetom; R213 direktno Naročila podzavihek)', () => {
+    expect(src).toContain("new CustomEvent('roksal:navigate', { detail: { tab: 'more', more: 'material', subTab: 'orders' } })")
   })
 
   it('KIND_STYLE: ShoppingCart + roksal-amber (ogledalo R210 kartice) — 0 novih hex', () => {
