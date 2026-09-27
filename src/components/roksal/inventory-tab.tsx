@@ -28,6 +28,7 @@ import {
 import {
   Package,
   PackageSearch,
+  PackageX,
   AlertTriangle,
   Filter,
   TrendingDown,
@@ -69,7 +70,7 @@ interface InventoryItem {
   enota: string
   minimalnaZaloga: number
   cenaEur?: number | null
-  _count?: { usages: number; movements: number }
+  _count?: { usages: number; movements: number; prices?: number }
 }
 
 interface Project {
@@ -171,6 +172,14 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
   // deep-link iz palete obljubi TOČNO ta pogled. Whitelist vrednost:
   // 'na-minimumu' (EN VIR lib inventory-filter).
   const [naMinOnly, setNaMinOnly] = useState(false)
+  // R221 (P1-f) — čip 'brez dobavitelja' (TRETJI whitelist vnos 'brez-
+  // dobavitelja' — EN VIR lib inventory-filter; DRUGA dimenzija: nabavna
+  // pripravljenost, NE nizka zaloga). Artikel je 'brez dobavitelja', ko mu
+  // NIKDO ni vpisan kot vir cene (MaterialPrice števec === 0) — naročilni
+  // tok potem ne more ceniti postavke (osnutek bi nesel ceno 0). Isti
+  // medsebojno-izključni vzorec kot sorojenca: klik poniža oba sorojena
+  // čipa — vsak čipov iskren števec pove TOČNO kar prikaže.
+  const [brezDobaviteljaOnly, setBrezDobaviteljaOnly] = useState(false)
 
   // Movement dialog
   const [movementOpen, setMovementOpen] = useState(false)
@@ -435,17 +444,21 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
     ? inventory
     : inventory.filter((item) => item.tip === filter)
 
-  // R220 — TRI vejice: čip 'pod' (<=) ima prednost, čip 'na' (===) je ožja
-  // rezerva, brez čipov = ves tip. Medsebojna izključnost zagotavlja, da je
-  // izračun determinističen (nikoli obe hkrati). Ime 'filtered' ostane
-  // KONČNO vidna množica — vsi porabniki (CSV R136, Naročilnica R204,
-  // Osnutek R205, seznam, prazno stanje) SAMODEJNO spoštujejo oba čipa
-  // (WYSIWYG — 'vidni artikli' so resnično vidni; čip ne laže).
+  // R221 — STIRI vejice: čip 'pod' (<=) ima prednost, čip 'na' (===) je ožja
+  // rezerva, čip 'brez dobavitelja' (MaterialPrice števec === 0 — DRUGA
+  // dimenzija: nabavna pripravljenost), brez čipov = ves tip. Medsebojna
+  // izključnost zagotavlja, da je izračun determinističen (nikoli več kot
+  // en čip hkrati). Ime 'filtered' ostane KONČNO vidna množica — vsi
+  // porabniki (CSV R136, Naročilnica R204, Osnutek R205, seznam, prazno
+  // stanje) SAMODEJNO spoštujejo vse čipe (WYSIWYG — 'vidni artikli' so
+  // resnično vidni; čip ne laže).
   const filtered = podMinOnly
     ? typeFiltered.filter((item) => item.kolicinaZaloga <= item.minimalnaZaloga)
     : naMinOnly
       ? typeFiltered.filter((item) => item.kolicinaZaloga === item.minimalnaZaloga)
-      : typeFiltered
+      : brezDobaviteljaOnly
+        ? typeFiltered.filter((item) => item._count?.prices === 0)
+        : typeFiltered
 
   // R219 — števec na čipu: koliko artiklov je pod minimumom ZNOTRAJ aktivnega
   // filtra tipa (iskreno število — pove, koliko jih čip POKAŽE, ne koliko jih
@@ -458,6 +471,14 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
   // vzorec; ob medsebojni izključnosti = TOČNO koliko vrstic čip pokaže).
   const naMinCount = typeFiltered.filter(
     (item) => item.kolicinaZaloga === item.minimalnaZaloga,
+  ).length
+
+  // R221 — iskren števec za 'brez dobavitelja' čip (ZNOTRAJ filtra tipa —
+  // ISTI vzorec). STROGOST brez izmišljevanja: manjkajoči števec (stari
+  // predpomnjeni odgovor brez polja) NIKOLI ni 'brez dobavitelja' — le
+  // izrecna 0 pomeni 'nihče vpisan' (fail-closed konservativno).
+  const brezDobaviteljaCount = typeFiltered.filter(
+    (item) => item._count?.prices === 0,
   ).length
 
   const totalItems = inventory.length
@@ -518,15 +539,25 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
   // izključnost — deep-link iz palete obljubi TOČNO ta pogled, zato ta veja
   // namerno vsebuje izklop sorojenega čipa; to NI počistitev namiga —
   // počistitev (null) še VEDNO ne ugasne ničesar).
+  // R221 — namig 'brez-dobavitelja' prižge tretji čip in ugasne OBA
+  // sorojena (ENA leča na enkrat — deep-link obljubi TOČNO ta pogled);
+  // veji 'pod'/'na' pač ugasnejo tudi tretjega. null še VEDNO ne ugasne
+  // ničesar (R216 vzorec ostaja nespremenjen).
   const hintFilter = filterHint?.filter ?? null
   const hintFilterNonce = filterHint?.n ?? 0
   useEffect(() => {
     if (hintFilter === 'na-minimumu') {
       setNaMinOnly(true)
       setPodMinOnly(false) // medsebojna izključnost — NE počistitev namiga
+      setBrezDobaviteljaOnly(false)
+    } else if (hintFilter === 'brez-dobavitelja') {
+      setBrezDobaviteljaOnly(true)
+      setPodMinOnly(false) // medsebojna izključnost — NE počistitev namiga
+      setNaMinOnly(false)
     } else if (hintFilter) {
       setPodMinOnly(true)
       setNaMinOnly(false)
+      setBrezDobaviteljaOnly(false)
     }
   }, [hintFilter, hintFilterNonce])
 
@@ -807,10 +838,12 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
               Naročilnica / Osnutek / seznam) — WYSIWYG. */}
           <button
             type="button"
-            onClick={() => { setPodMinOnly((v) => !v); setNaMinOnly(false) }}
+            onClick={() => { setPodMinOnly((v) => !v); setNaMinOnly(false); setBrezDobaviteljaOnly(false) }}
             /* R220 — medsebojna izključnost: prižig 'pod' ugasne sorojeni
                'na' čip (in obratno spodaj) — vsak čipov iskren števec pove
-               TOČNO koliko vrstic prikaže; nobena kombinacija ne zmede. */
+               TOČNO koliko vrstic prikaže; nobena kombinacija ne zmede.
+               R221 — izključnost se raztegne na TRETJI čip 'brez
+               dobavitelja' (ENA leča na enkrat — isti determinizem). */
             aria-pressed={podMinOnly}
             aria-label={
               podMinOnly
@@ -841,7 +874,7 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
               (CSV / Naročilnica / Osnutek / seznam) — WYSIWYG. */}
           <button
             type="button"
-            onClick={() => { setNaMinOnly((v) => !v); setPodMinOnly(false) }}
+            onClick={() => { setNaMinOnly((v) => !v); setPodMinOnly(false); setBrezDobaviteljaOnly(false) }}
             aria-pressed={naMinOnly}
             aria-label={
               naMinOnly
@@ -858,6 +891,39 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
             Na minimumu
             {naMinOnly && (
               <span className="ml-1 tabular-nums font-semibold">{naMinCount}</span>
+            )}
+          </button>
+          {/* R221 — čip 'brez dobavitelja' (TRETJI whitelist vnos 'brez-
+              dobavitelja'; DRUGA dimenzija — nabavna pripravljenost):
+              artikel brez VPISANE cene pri katerem koli dobavitelju
+              (MaterialPrice števec === 0 — EN VIR podatkov, /api/inventory
+              _count) — naročilni tok ne more ceniti postavke. Drugačna
+              semantika kot nizka zaloga → AKTIVNO stanje v roksal-amber
+              družini (pozornost, ne alarm; rdeča ostane rezervirana za
+              nizko zalogo — barva NI edini nosilec: dobeseden tekst +
+              iskren števec + aria-pressed + title). ISTI strogi vzorec:
+              manjkajoči števec NIKOLI ni 'brez' (fail-closed). Tudi ta
+              čip spreminja VSE porabnike 'vidnih artiklov' (CSV /
+              Naročilnica / Osnutek / seznam) — WYSIWYG. */}
+          <button
+            type="button"
+            onClick={() => { setBrezDobaviteljaOnly((v) => !v); setPodMinOnly(false); setNaMinOnly(false) }}
+            aria-pressed={brezDobaviteljaOnly}
+            aria-label={
+              brezDobaviteljaOnly
+                ? `Pokaži samo artikle brez vpisane dobaviteljske cene — aktiven (${brezDobaviteljaCount}); klik za izklop`
+                : 'Pokaži samo artikle brez vpisane dobaviteljske cene'
+            }
+            title="Pokaži samo artikle, za katere ni vpisana cena pri nobenem dobavitelju"
+            className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 ${
+              brezDobaviteljaOnly
+                ? 'border-roksal-amber/40 bg-roksal-amber/10 text-roksal-amber'
+                : 'border-transparent bg-secondary text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Brez dobavitelja
+            {brezDobaviteljaOnly && (
+              <span className="ml-1 tabular-nums font-semibold">{brezDobaviteljaCount}</span>
             )}
           </button>
         </div>
@@ -1157,14 +1223,30 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
           ) : podMinOnly ? (
             /* R220 — iskreno prazno stanje PER čip: pove, KATERI filter je
                prazen (ne generično 'za ta filter' — uporabnik ve, da je
-               prazno stanje rezultat čipa, ne manjkajočih podatkov). */
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              Ni artiklov pod minimalno zalogo v izbranem tipu
-            </p>
+               prazno stanje rezultat čipa, ne manjkajočih podatkov).
+               R221 [stil] — ISTA EmptyState družina kot ostali prazni
+               seznami (črtkani rob + mehak krog z ikono; teksti NESPREMENJENI
+               — le predstavitev se povzdigne na družinski standard). */
+            <EmptyState
+              icon={Package}
+              title="Ni artiklov pod minimalno zalogo v izbranem tipu"
+              description="Čip pokaže le artikle, katerih zaloga je pod ali na minimumu."
+            />
           ) : naMinOnly ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              Ni artiklov točno na minimalni zalogi v izbranem tipu
-            </p>
+            <EmptyState
+              icon={Package}
+              title="Ni artiklov točno na minimalni zalogi v izbranem tipu"
+              description="Čip pokaže le artikle, katerih zaloga je točno na minimumu."
+            />
+          ) : brezDobaviteljaOnly ? (
+            /* R221 — iskreno prazno stanje tudi za tretji čip + amber ton
+               (ISTA družina kot čip — pozornost, ne alarm). */
+            <EmptyState
+              icon={PackageX}
+              tone="amber"
+              title="Ni artiklov brez vpisane dobaviteljske cene v izbranem tipu"
+              description="Čip pokaže le artikle, za katere ni vpisana cena pri nobenem dobavitelju."
+            />
           ) : (
             <p className="py-8 text-center text-sm text-muted-foreground">
               Ni artiklov za ta filter

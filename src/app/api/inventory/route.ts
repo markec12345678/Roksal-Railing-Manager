@@ -68,7 +68,11 @@ export async function GET(request: Request) {
       include: {
         usages: { take: 5, orderBy: { datumVpisa: 'desc' } },
         movements: { take: 10, orderBy: { createdAt: 'desc' } },
-        _count: { select: { usages: true, movements: true } },
+        // R221 — števec zasidranj pri dobaviteljih (MaterialPrice po artikel):
+        // EN VIR za čip/paleto 'brez dobavitelja' (=== 0 → nihče ni vpisan).
+        // Štetje VSEH vrstic (tudi pretečenih) — čip pove 'brez VPISANE
+        // cene'; pretečena cena je še vedno zasidran dobavitelj (iskreno).
+        _count: { select: { usages: true, movements: true, prices: true } },
       },
       orderBy: { naziv: 'asc' },
     })

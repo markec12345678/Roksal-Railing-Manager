@@ -45,8 +45,8 @@ describe('R220 — isInventoryFilter: drugi whitelist vnos (fail-closed ostaja)'
     expect(isInventoryFilter(null)).toBe(false)
   })
 
-  it('whitelist je DVOČLEN — vrstni red stabilen (pod prej, na potem)', () => {
-    expect([...INVENTORY_FILTERS]).toEqual(['pod-minimumom', 'na-minimumu'])
+  it('whitelist je TRIČLEN — vrstni red stabilen (pod prej, na potem, brez-dobavitelja nazadnje — R221)', () => {
+    expect([...INVENTORY_FILTERS]).toEqual(['pod-minimumom', 'na-minimumu', 'brez-dobavitelja'])
   })
 })
 
@@ -60,8 +60,8 @@ describe("R220 — Zaloga: čip 'Na minimumu' (inventory-tab.tsx)", () => {
   })
 
   it('medsebojna izključnost v OBEH onClick (klik poniža sorojenega)', () => {
-    expect(src).toContain('onClick={() => { setPodMinOnly((v) => !v); setNaMinOnly(false) }}')
-    expect(src).toContain('onClick={() => { setNaMinOnly((v) => !v); setPodMinOnly(false) }}')
+    expect(src).toContain('onClick={() => { setPodMinOnly((v) => !v); setNaMinOnly(false); setBrezDobaviteljaOnly(false) }}')
+    expect(src).toContain('onClick={() => { setNaMinOnly((v) => !v); setPodMinOnly(false); setBrezDobaviteljaOnly(false) }}')
   })
 
   it('filtered = TRI vejice (pod <= → na === → ves tip); porabniki spoštujejo', () => {

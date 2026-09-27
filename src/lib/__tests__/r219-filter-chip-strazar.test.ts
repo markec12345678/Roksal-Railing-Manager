@@ -37,8 +37,8 @@ describe('R219 — isInventoryFilter (EN VIR whitelist, fail-closed)', () => {
     expect(isInventoryFilter(null)).toBe(false)
   })
 
-  it('whitelist je DVOČLEN (R220 razširitev uporabila TO pripravljeno mesto — nikjer drugje)', () => {
-    expect(INVENTORY_FILTERS).toEqual(['pod-minimumom', 'na-minimumu'])
+  it('whitelist je TRIČLEN (R220 drugi + R221 tretji vnos uporabila TO pripravljeno mesto — nikjer drugje)', () => {
+    expect(INVENTORY_FILTERS).toEqual(['pod-minimumom', 'na-minimumu', 'brez-dobavitelja'])
   })
 
   it('type guard zoži tip (posledica whitelist implementacije)', () => {
@@ -142,7 +142,7 @@ describe('R219 — Zaloga: čip + dvostopenjsko filtriranje (inventory-tab.tsx)'
     expect(src).toContain('aria-pressed={podMinOnly}')
     expect(src).toContain('Pokaži samo artikle pod minimalno zalogo')
     expect(src).toContain('klik za izklop')
-    expect(src).toContain('onClick={() => { setPodMinOnly((v) => !v); setNaMinOnly(false) }}')
+    expect(src).toContain('onClick={() => { setPodMinOnly((v) => !v); setNaMinOnly(false); setBrezDobaviteljaOnly(false) }}')
   })
 
   it('čip stil: roksal-red družina ko aktiven (barva ni edini nosilec — števec + tekst)', () => {

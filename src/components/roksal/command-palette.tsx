@@ -49,6 +49,7 @@ import {
   LayoutDashboard,
   Loader2,
   Package,
+  PackageX,
   PencilRuler,
   RefreshCw,
   Ruler,
@@ -262,6 +263,11 @@ export function CommandPalette({ open, onOpenChange, onNavigate, onSync }: Comma
   // pod-minimum množice; ISTA izpeljanka iz ISTIH podatkov, iskren števec
   // za drugo 'Vse'-družinsko vrstico).
   const [naMinimumuSkupaj, setNaMinimumuSkupaj] = useState(0)
+  // R221 — SKUPNO število artiklov brez vpisane dobaviteljske cene
+  // (MaterialPrice števec === 0 — DRUGA dimenzija; ISTA izpeljanka iz ISTIH
+  // podatkov, iskren števec za lastno skupino; strogost: manjkajoči števec
+  // NIKOLI ni 'brez' — samo izrecna 0).
+  const [brezDobaviteljaSkupaj, setBrezDobaviteljaSkupaj] = useState(0)
   const [query, setQuery] = useState('')
   const [search, setSearch] = useState<SearchResults>(EMPTY_SEARCH)
   const [searching, setSearching] = useState(false)
@@ -282,7 +288,7 @@ export function CommandPalette({ open, onOpenChange, onNavigate, onSync }: Comma
       fetch('/api/projects').then((r) => (r.ok ? r.json() : [])),
       fetch('/api/inventory').then((r) => (r.ok ? r.json() : [])),
     ])
-      .then(([projekti, zaloga]: [Project[], { id: string; sifraMateriala: string; naziv: string; kolicinaZaloga: number; minimalnaZaloga: number; enota: string }[]]) => {
+      .then(([projekti, zaloga]: [Project[], { id: string; sifraMateriala: string; naziv: string; kolicinaZaloga: number; minimalnaZaloga: number; enota: string; _count?: { prices?: number } }[]]) => {
         if (cancelled) return
         setProjects(Array.isArray(projekti) ? projekti.slice(0, 25) : [])
         const zalogaArr = Array.isArray(zaloga) ? zaloga : []
@@ -295,6 +301,12 @@ export function CommandPalette({ open, onOpenChange, onNavigate, onSync }: Comma
         // minimumu (===; vrstica 'Na minimumu' — ožji sorojeni pogled).
         const na = zalogaArr.filter((i) => i.kolicinaZaloga === i.minimalnaZaloga)
         setNaMinimumuSkupaj(na.length)
+        // R221 — ISTA izpeljanka, ČETRTI izhod: števec artiklov brez vpisane
+        // dobaviteljske cene (MaterialPrice === 0; strogost: manjkajoče
+        // polje NIKOLI ni 'brez' — samo izrecna 0, fail-closed).
+        setBrezDobaviteljaSkupaj(
+          zalogaArr.filter((i) => i._count?.prices === 0).length,
+        )
       })
       .catch(() => undefined)
     return () => {
@@ -576,6 +588,40 @@ export function CommandPalette({ open, onOpenChange, onNavigate, onSync }: Comma
                   </span>
                 </CommandItem>
               )}
+            </CommandGroup>
+          </>
+        )}
+
+        {/* R221 — 'Brez dobavitelja': LASTNA skupina (DRUGA dimenzija —
+            nabavna pripravenost, NE nizka zaloga — ločena skupina je iskreno
+            grupiranje; vrstica v 'Nizka zaloga' bi lažno trdila sorodstvo).
+            Vidna LE ko obstaja vsaj en artikel brez vpisane dobaviteljske
+            cene (> 0 — nič izmišljene skupine), števec iz ISTIH podatkov
+            kot preostale vrstice (EN fetch — ENA izpeljanka), slovenske
+            oblike prek EN VIR zalogaPovzetekBeseda. Klik → deep-link Z
+            NAMIGOM 'brez-dobavitelja' (peti argument — R219/R220 protokol;
+            whitelist lib inventory-filter). Ikona PackageX + roksal-amber
+            (pozornost, ne alarm — rdeča ostane nizki zalogi). */}
+        {brezDobaviteljaSkupaj > 0 && (
+          <>
+            <CommandSeparator />
+            <CommandGroup heading={countHeading('Brez dobavitelja', brezDobaviteljaSkupaj)}>
+              <CommandItem
+                value="brez dobavitelja pokaži v Zalogi"
+                aria-label={`Pokaži artikle brez vpisane dobaviteljske cene v Zalogi (${brezDobaviteljaSkupaj} ${zalogaPovzetekBeseda(brezDobaviteljaSkupaj)})`}
+                onSelect={() => {
+                  onNavigate('inventory', null, null, null, 'brez-dobavitelja')
+                  close()
+                }}
+              >
+                <PackageX className="mr-2 h-4 w-4 text-roksal-amber" />
+                <span className="truncate">
+                  Brez dobavitelja — pokaži v Zalogi
+                </span>
+                <span className="ml-2 shrink-0 text-xs tabular-nums text-muted-foreground">
+                  {brezDobaviteljaSkupaj}
+                </span>
+              </CommandItem>
             </CommandGroup>
           </>
         )}
