@@ -67,7 +67,7 @@ remount_zaloga() {  # dokazana pot (r221 lekcija 5 + r222 prod probe2): paleta q
   odpri_palet > /dev/null 2>&1
   sleep 1
   agent-browser eval "(()=>{const vr=[...document.querySelectorAll('[cmdk-item]')].filter(e=>e.textContent.trim()==='Zaloga'); if(vr.length){vr[0].dispatchEvent(new MouseEvent('click',{bubbles:true})); return 'klik quick Zaloga';} return 'ni quick vrstice';})()" 2>&1 | tail -1
-  pocakaj_na "(()=>{return [...document.querySelectorAll('button')].some(b=>b.getAttribute('aria-pressed')!==null&&b.textContent.includes('Pod minimumom'));})" 12
+  pocakaj_na "(()=>{return [...document.querySelectorAll('button')].some(b=>b.getAttribute('aria-pressed')!==null&&b.textContent.includes('Pod minimumom'));})()" 12
 }
 
 echo "--- Z0: prijava ---"
@@ -77,20 +77,20 @@ sleep 1
 agent-browser fill 'input[type="email"]' 'ci@roksal.si' > /dev/null 2>&1
 agent-browser fill 'input[type="password"]' 'DimniSmoke139!' > /dev/null 2>&1
 agent-browser click 'button[type="submit"]' > /dev/null 2>&1
-pocakaj_na "(()=>{return [...document.querySelectorAll('button')].some(b=>(b.getAttribute('aria-label')||'').includes('Odpri iskalnik'));})" 20
+pocakaj_na "(()=>{return [...document.querySelectorAll('button')].some(b=>(b.getAttribute('aria-label')||'').includes('Odpri iskalnik'));})()" 20
 zapri_vodic
 
 echo "--- Z1 (F1 ŽIVO): Material zadetki 'WPC' nosita amber badge (rdeči SOBOJ na na-min) ---"
 odpri_palet
 vnesi_iskalni 'WPC'
-pocakaj_na "(()=>{return [...document.querySelectorAll('[cmdk-item]')].some(e=>e.getAttribute('data-value')&&e.getAttribute('data-value').includes('WPC-120-A'));})" 12
+pocakaj_na "(()=>{return [...document.querySelectorAll('[cmdk-item]')].some(e=>e.getAttribute('data-value')&&e.getAttribute('data-value').includes('WPC-120-A'));})()" 12
 sleep 2
 agent-browser eval "(()=>{const hit=v=>{const e=[...document.querySelectorAll('[cmdk-item]')].find(x=>x.getAttribute('data-value')===v); if(!e) return null; return {rdec:e.textContent.includes('Nizka zaloga'), amber:e.textContent.includes('Brez dobavitelja'), aria:e.getAttribute('aria-label')||''};}; return JSON.stringify({wpcA:hit('WPC-120-A WPC-120-A')||hit('WPC Desk WPC-120-A')||(()=>{const e=[...document.querySelectorAll('[cmdk-item]')].find(x=>x.getAttribute('data-value')&&x.getAttribute('data-value').includes('WPC-120-A')); return e?{rdec:e.textContent.includes('Nizka zaloga'),amber:e.textContent.includes('Brez dobavitelja'),aria:e.getAttribute('aria-label')||''}:null})(), wpcB:(()=>{const e=[...document.querySelectorAll('[cmdk-item]')].find(x=>x.getAttribute('data-value')&&x.getAttribute('data-value').includes('WPC-120-B')); return e?{rdec:e.textContent.includes('Nizka zaloga'),amber:e.textContent.includes('Brez dobavitelja'),aria:e.getAttribute('aria-label')||''}:null})(), err:window.__err??null});})()" 2>&1 | tail -1
 agent-browser screenshot "$SS/qa-r222-material-badge.png" > /dev/null 2>&1
 
 echo "--- Z2: izbor WPC-120-B → Osnutek dialog (deep-link) → zgodovina z OBEMA žigoma ---"
 agent-browser eval "(()=>{const e=[...document.querySelectorAll('[cmdk-item]')].find(x=>x.getAttribute('data-value')&&x.getAttribute('data-value').includes('WPC-120-B')); if(!e) return 'ni zadetka'; e.dispatchEvent(new MouseEvent('click',{bubbles:true})); return 'klik WPC-120-B';})()" 2>&1 | tail -1
-pocakaj_na "(()=>{return !!document.querySelector('[role=dialog]')&&document.body.textContent.includes('Naročilnica kot osnutek naročila');})" 10
+pocakaj_na "(()=>{return !!document.querySelector('[role=dialog]')&&document.body.textContent.includes('Naročilnica kot osnutek naročila');})()" 10
 agent-browser screenshot "$SS/qa-r222-osnutek-dialog.png" > /dev/null 2>&1
 agent-browser press Escape > /dev/null 2>&1
 sleep 1
@@ -102,11 +102,11 @@ sleep 1
 
 echo "--- Z3: zvonček — brez vrstice (ISTI fetch) + klik → Zaloga z aktivnim čipom ---"
 agent-browser eval "(()=>{const b=[...document.querySelectorAll('button')].find(x=>(x.getAttribute('aria-label')||'').startsWith('Obvestila')); if(!b) return 'ni zvončka'; b.click(); return 'zvonček odprt';})()" 2>&1 | tail -1
-pocakaj_na "(()=>{return [...document.querySelectorAll('li button')].some(x=>x.textContent.includes('Brez vpisane cene pri katerem koli dobavitelju'));})" 15
+pocakaj_na "(()=>{return [...document.querySelectorAll('li button')].some(x=>x.textContent.includes('Brez vpisane cene pri katerem koli dobavitelju'));})()" 15
 agent-browser eval "(()=>{const vrstice=[...document.querySelectorAll('li button')].filter(x=>x.textContent.includes('Brez vpisane cene pri katerem koli dobavitelju')); const zB=vrstice.filter(x=>x.textContent.includes('Brez dobavitelja')); const aria=vrstice.length?vrstice[0].getAttribute('aria-label'):null; return JSON.stringify({brezVrstic:vrstice.length, zBadgeom:zB.length, prvaAria:aria, err:window.__err??null});})()" 2>&1 | tail -1
 agent-browser screenshot "$SS/qa-r222-zvoncek-brez.png" > /dev/null 2>&1
 agent-browser eval "(()=>{const vr=[...document.querySelectorAll('li button')].find(x=>x.textContent.includes('Brez vpisane cene pri katerem koli dobavitelju')); if(!vr) return 'ni vrstice'; vr.click(); return 'klik brez vrstica';})()" 2>&1 | tail -1
-pocakaj_na "(()=>{const c=[...document.querySelectorAll('button')].find(b=>b.getAttribute('aria-pressed')!==null&&b.textContent.includes('Brez dobavitelja')); return !!c&&c.getAttribute('aria-pressed')==='true';})" 12
+pocakaj_na "(()=>{const c=[...document.querySelectorAll('button')].find(b=>b.getAttribute('aria-pressed')!==null&&b.textContent.includes('Brez dobavitelja')); return !!c&&c.getAttribute('aria-pressed')==='true';})()" 12
 agent-browser eval "(()=>{const c=[...document.querySelectorAll('button')].find(b=>b.getAttribute('aria-pressed')!==null&&b.textContent.includes('Brez dobavitelja')); const pod=[...document.querySelectorAll('button')].find(b=>b.getAttribute('aria-pressed')!==null&&b.textContent.includes('Pod minimumom')); return JSON.stringify({brezPritisnjen:c?c.getAttribute('aria-pressed'):null, brezAmber:!!(c&&c.className.includes('amber')), podPonizen:pod?pod.getAttribute('aria-pressed'):null, vrstic:[...document.querySelectorAll('.divide-y > div')].filter(d=>!d.textContent.includes('Ni artiklov')).length, err:window.__err??null});})()" 2>&1 | tail -1
 agent-browser screenshot "$SS/qa-r222-deeplink-chip.png" > /dev/null 2>&1
 
@@ -115,7 +115,7 @@ node scripts/r221-brez-tmp.cjs raise || { echo "RAISE221 FAIL — abort"; node s
 remount_zaloga
 odpri_palet
 vnesi_iskalni 'WPC'
-pocakaj_na "(()=>{return [...document.querySelectorAll('[cmdk-item]')].some(e=>e.getAttribute('data-value')&&e.getAttribute('data-value').includes('WPC-120-A'));})" 12
+pocakaj_na "(()=>{return [...document.querySelectorAll('[cmdk-item]')].some(e=>e.getAttribute('data-value')&&e.getAttribute('data-value').includes('WPC-120-A'));})()" 12
 sleep 2
 agent-browser eval "(()=>{const a=[...document.querySelectorAll('[cmdk-item]')].find(x=>x.getAttribute('data-value')&&x.getAttribute('data-value').includes('WPC-120-A')); const b=[...document.querySelectorAll('[cmdk-item]')].find(x=>x.getAttribute('data-value')&&x.getAttribute('data-value').includes('WPC-120-B')); return JSON.stringify({wpcA_amber:a?a.textContent.includes('Brez dobavitelja'):null, wpcB_amber:b?b.textContent.includes('Brez dobavitelja'):null});})()" 2>&1 | tail -1
 agent-browser press Escape > /dev/null 2>&1

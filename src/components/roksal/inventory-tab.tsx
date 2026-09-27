@@ -425,7 +425,7 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
     }
     downloadCsv(
       `zaloga-${todayStamp()}.csv`,
-      ['Šifra', 'Naziv', 'Tip', 'Enota', 'Zaloga', 'Min. zaloga', 'Nizka'],
+      ['Šifra', 'Naziv', 'Tip', 'Enota', 'Zaloga', 'Min. zaloga', 'Nizka', 'Brez dobavitelja'],
       filtered.map((item) => [
         item.sifraMateriala,
         item.naziv,
@@ -434,6 +434,13 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
         item.kolicinaZaloga,
         item.minimalnaZaloga,
         item.kolicinaZaloga <= item.minimalnaZaloga ? 'DA' : 'NE',
+        // R226 (P1-c) — deveti signalec konvergence: stolpec 'Brez
+        // dobavitelja' (DA/NE) — arhivska resnica v polnem izvozu (analogija
+        // R224 vodja CSV vrstici; WYSIWYG: stolpec VEDNO prisoten, vrednost
+        // iz dobesedne === 0 — ISTA strogost kot čip R221 / zvonček R222 /
+        // Domov R223 / vodja R224 / vrstica R225; manjkajoči števec NIKOLI
+        // ni 'DA' — fail-closed, brez ?? 0 / <= 0).
+        item._count?.prices === 0 ? 'DA' : 'NE',
       ]),
     )
     toast.success(`Izvoženih ${filtered.length} artiklov v CSV.`)

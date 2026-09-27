@@ -97,7 +97,7 @@ node scripts/r221-brez-tmp.cjs raise || { echo "RAISE221 FAIL — abort"; node s
 agent-browser eval "(()=>{const n=[...document.querySelectorAll('nav button, nav a')].find(b=>b.textContent.trim()==='Moji projekti'); if(n){n.click(); return 'domov';} return 'ni nav';})()" > /dev/null 2>&1
 sleep 2
 agent-browser eval "(()=>{const z=[...document.querySelectorAll('nav button, nav a')].find(b=>b.textContent.trim()==='Zaloga'); if(z){z.click(); return 'zaloga';} return 'ni nav';})()" > /dev/null 2>&1
-pocakaj_na "(()=>{return [...document.querySelectorAll('button')].some(b=>b.getAttribute('aria-pressed')!==null&&b.textContent.includes('Brez dobavitelja'));})" 10
+pocakaj_na "(()=>{return [...document.querySelectorAll('button')].some(b=>b.getAttribute('aria-pressed')!==null&&b.textContent.includes('Brez dobavitelja'));})()" 10
 agent-browser eval "(()=>{const brez=[...document.querySelectorAll('button')].find(b=>b.getAttribute('aria-pressed')!==null&&b.textContent.includes('Brez dobavitelja')); brez.click(); return 'klik brez ON';})()" > /dev/null 2>&1
 sleep 2
 agent-browser eval "(()=>{const brez=[...document.querySelectorAll('button')].find(b=>b.getAttribute('aria-pressed')!==null&&b.textContent.includes('Brez dobavitelja')); const vrstice=[...document.querySelectorAll('.divide-y > div')].filter(d=>!d.textContent.includes('Ni artiklov')); return JSON.stringify({brezStevilo:brez?brez.textContent.trim():null, vrstic:vrstice.length, wpcA:vrstice.some(d=>d.textContent.includes('WPC-120-A')), wpcB:vrstice.some(d=>d.textContent.includes('WPC-120-B'))});})()" 2>&1 | tail -1

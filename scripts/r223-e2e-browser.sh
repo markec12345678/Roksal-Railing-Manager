@@ -51,7 +51,7 @@ pocakaj_na() {
 }
 domov() {  # navigacija na Domov (roksal:navigate — EN VIR usmerjanja)
   agent-browser eval "(()=>{window.dispatchEvent(new CustomEvent('roksal:navigate',{detail:{tab:'dashboard'}})); return 'domov dispatch';})()" > /dev/null 2>&1
-  pocakaj_na "(()=>{return !!document.querySelector('button[aria-label^=\"Brez dobavitelja (\"]');})" 12
+  pocakaj_na "(()=>{return !!document.querySelector('button[aria-label^=\"Brez dobavitelja (\"]');})()" 12
 }
 
 echo "--- Z0: prijava ---"
@@ -61,7 +61,7 @@ sleep 1
 agent-browser fill 'input[type="email"]' 'ci@roksal.si' > /dev/null 2>&1
 agent-browser fill 'input[type="password"]' 'DimniSmoke139!' > /dev/null 2>&1
 agent-browser click 'button[type="submit"]' > /dev/null 2>&1
-pocakaj_na "(()=>{return [...document.querySelectorAll('button')].some(b=>(b.getAttribute('aria-label')||'').includes('Odpri iskalnik'));})" 20
+pocakaj_na "(()=>{return [...document.querySelectorAll('button')].some(b=>(b.getAttribute('aria-label')||'').includes('Odpri iskalnik'));})()" 20
 zapri_vodic
 
 echo "--- Z1: Domov — kartica 'Brez dobavitelja' (8) SOBOJ z 'Nizka zaloga materiala' ---"
@@ -71,14 +71,14 @@ agent-browser screenshot "$SS/qa-r223-domov-kartica.png" > /dev/null 2>&1
 
 echo "--- Z2: klik kartice → Zaloga z AKTIVNIM čipom 'Brez dobavitelja' (R221 protokol ŽIVO) ---"
 agent-browser eval "(()=>{const k=document.querySelector('button[aria-label^=\"Brez dobavitelja (\"]'); if(!k) return 'ni kartice'; k.click(); return 'klik kartice';})()" 2>&1 | tail -1
-pocakaj_na "(()=>{const c=[...document.querySelectorAll('button')].find(b=>b.getAttribute('aria-pressed')!==null&&b.textContent.includes('Brez dobavitelja')); return !!c&&c.getAttribute('aria-pressed')==='true';})" 12
+pocakaj_na "(()=>{const c=[...document.querySelectorAll('button')].find(b=>b.getAttribute('aria-pressed')!==null&&b.textContent.includes('Brez dobavitelja')); return !!c&&c.getAttribute('aria-pressed')==='true';})()" 12
 agent-browser eval "(()=>{const c=[...document.querySelectorAll('button')].find(b=>b.getAttribute('aria-pressed')!==null&&b.textContent.includes('Brez dobavitelja')); const pod=[...document.querySelectorAll('button')].find(b=>b.getAttribute('aria-pressed')!==null&&b.textContent.includes('Pod minimumom')); const na=[...document.querySelectorAll('button')].find(b=>b.getAttribute('aria-pressed')!==null&&b.textContent.includes('Na minimumu')); return JSON.stringify({brezPritisnjen:c?c.getAttribute('aria-pressed'):null, brezAmber:!!(c&&c.className.includes('amber')), podPonizen:pod?pod.getAttribute('aria-pressed'):null, naPonizen:na?na.getAttribute('aria-pressed'):null, err:window.__err??null});})()" 2>&1 | tail -1
 agent-browser screenshot "$SS/qa-r223-deeplink-chip.png" > /dev/null 2>&1
 
 echo "--- Z3: EN VIR ŽIVO — temp cena na WPC-120-A → reload → števec 8→7 ---"
 node scripts/r221-brez-tmp.cjs raise || { echo "RAISE221 FAIL — abort"; node scripts/r220-min-tmp.cjs restore; node scripts/r218-min-tmp.cjs restore; exit 1; }
 agent-browser open "http://127.0.0.1:3100/" > /dev/null 2>&1
-pocakaj_na "(()=>{return [...document.querySelectorAll('button')].some(b=>(b.getAttribute('aria-label')||'').includes('Odpri iskalnik'));})" 20
+pocakaj_na "(()=>{return [...document.querySelectorAll('button')].some(b=>(b.getAttribute('aria-label')||'').includes('Odpri iskalnik'));})()" 20
 zapri_vodic
 domov
 agent-browser eval "(()=>{const k=document.querySelector('button[aria-label^=\"Brez dobavitelja (\"]'); if(!k) return JSON.stringify({kartica:false}); const pill=k.querySelector('span.tabular-nums'); return JSON.stringify({kartica:true, stevec:pill?pill.textContent.trim():null, aria:k.getAttribute('aria-label')});})()" 2>&1 | tail -1

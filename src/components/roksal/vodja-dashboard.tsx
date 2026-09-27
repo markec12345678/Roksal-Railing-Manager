@@ -734,7 +734,7 @@ export function VodjaDashboard() {
               <div className={`flex items-center gap-2 rounded-lg border px-2.5 py-1.5 ${
                   stats.zapadloSt > 0 ? 'border-roksal-red/20 bg-roksal-red/5' : 'border-border bg-muted/40'
                 }`}>
-                <span className={`h-2 w-2 shrink-0 rounded-full ${stats.zapadloSt > 0 ? 'bg-roksal-red' : 'bg-stone-400 dark:bg-stone-600'}`} aria-hidden />
+                <span className={`h-2 w-2 shrink-0 rounded-full ${stats.zapadloSt > 0 ? 'bg-roksal-red' : 'bg-muted-foreground'}`} aria-hidden />
                 <div className="min-w-0">
                   <p className={`text-[9px] ${stats.zapadloSt > 0 ? 'text-roksal-red' : 'text-muted-foreground'}`}>Zapadlo</p>
                   <p className={`text-xs font-bold tabular-nums ${stats.zapadloSt > 0 ? 'text-roksal-red' : 'text-roksal-ink'}`}>
