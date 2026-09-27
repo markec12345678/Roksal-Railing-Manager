@@ -286,14 +286,18 @@ export async function PATCH(request: Request) {
         where: { id },
         include: { supplier: true, items: { include: { inventory: true } } },
       })
+      // R209 — zgodovina prehodov: dogodek nosi orderId (oldValue/newValue
+      // JSON), sicer sled NE more povedati, KATERO naročilo je prejelo.
+      // Oblika: { orderId, status } — zgodovinska ruta post-filtrira po
+      // točni enakosti parsed orderId (determinizem, brez podnizov).
       await audit({
         request,
         session: auth.kind === 'user' ? auth.session : null,
         userId: actor,
         projectId: existing.projectId,
         akcija: result.alreadyReceived ? 'MATERIAL_RECEIPT_DUPLICATE' : 'MATERIAL_RECEIPT',
-        oldValue: existing.status,
-        newValue: 'DOBLJENO',
+        oldValue: { orderId: id, status: existing.status },
+        newValue: { orderId: id, status: 'DOBLJENO' },
       })
       return NextResponse.json({ ...updated, alreadyReceived: result.alreadyReceived })
     }
@@ -304,14 +308,17 @@ export async function PATCH(request: Request) {
       include: { supplier: true, items: true },
     })
 
+    // R209 — zgodovina prehodov: statusni dogodek nosi orderId (JSON), da ga
+    // /api/material-orders/history pripše TOČNO temu naročilu (prej je bil
+    // oldValue/newValue gol status — sled brez povezave na naročilo).
     await audit({
       request,
       session: auth.kind === 'user' ? auth.session : null,
       userId: actor,
       projectId: existing.projectId,
       akcija: 'MATERIAL_ORDER_STATUS',
-      oldValue: existing.status,
-      newValue: status,
+      oldValue: { orderId: id, status: existing.status },
+      newValue: { orderId: id, status },
     })
 
     return NextResponse.json(updated)

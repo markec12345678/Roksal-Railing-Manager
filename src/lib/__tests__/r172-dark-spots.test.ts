@@ -51,7 +51,9 @@ const PRIMERI = [
   // R207: 446→491 (chipCls + dialog prejema + alreadyReceived toasti +45).
   // R208: 491→524 (XCircle uvoz + cancel stanja + izpeljanke preklica/števec
   // + PREKlicANO naslovi/description + F2 badge na zavihku +33).
-  stražar('src/components/roksal/material-intelligence-tab.tsx', 524, 'bg-green-50', 'dark:bg-green-950/40'),
+  // R209: 524→602 (ZgodovinaVnos + akcijaOznaka/statusZnackaCls pomožnika
+  // + zgodovina stanja + prinesi/odpri + gumb/timeline na kartici +78).
+  stražar('src/components/roksal/material-intelligence-tab.tsx', 602, 'bg-green-50', 'dark:bg-green-950/40'),
   // roksal-catalog — steklo tint (vzorec Inox fix R171)
   // R203: 193→228 (fail-verbose fetchProfili + trojna veja +35).
   stražar('src/components/roksal/roksal-catalog.tsx', 228, 'bg-cyan-200/40', 'dark:bg-cyan-500/20'),

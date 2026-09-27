@@ -91,6 +91,18 @@ interface MaterialOrder {
   items: Array<{ naziv: string; kolicina: number; enota: string; cena: number }>
 }
 
+// R209 — zgodovina prehodov naročila: dogodek iz /api/material-orders/history
+// (statusPrej/statusPotem odloči strežnik po TOČNI enakosti orderId — UI samo
+// prikaže; brez razčlenjevanja v odjemalcu, EN vir resnice na strežniku).
+interface ZgodovinaVnos {
+  id: string
+  timestamp: string
+  akcija: string
+  statusPrej: string | null
+  statusPotem: string | null
+  uporabnik: { ime: string; email: string; vloga: string } | null
+}
+
 // ---------------------------------------------------------------------------
 // R140 — pomožniki prikaza + izvoza (Material Intelligence).
 //   • fmtDate: sl-SI datum (dd.mm.llll) — isti prikaz kot logistics.
@@ -102,6 +114,28 @@ interface MaterialOrder {
 // ---------------------------------------------------------------------------
 function fmtDate(d: string): string {
   return new Date(d).toLocaleDateString('sl-SI', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
+// R209 — človeška oznaka audit akcije (neznan akcija → surovi string,
+// iskreno — brez ugibanja).
+function akcijaOznaka(akcija: string): string {
+  const zemljevid: Record<string, string> = {
+    MATERIAL_ORDER_CREATED: 'Ustvarjeno',
+    MATERIAL_ORDER_STATUS: 'Sprememba statusa',
+    MATERIAL_RECEIPT: 'Prejem v zalogo',
+    MATERIAL_RECEIPT_DUPLICATE: 'Podvojen prejem zavrnjen (idempotentno)',
+  }
+  return zemljevid[akcija] ?? akcija
+}
+
+// R209 — barvna družina statusnih značk (ISTA ogledala kot značka na kartici
+// — vsi dark: na isti vrstici, 0 novih hex, r166/r172 družina).
+function statusZnackaCls(status: string | null): string {
+  if (status === 'PREKlicANO') return 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border-red-300 dark:border-red-800'
+  if (status === 'DOBLJENO') return 'bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300 border-green-300 dark:border-green-800'
+  if (status === 'POSLANO') return 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-800'
+  if (status === 'POTRJENO') return 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800'
+  return 'bg-gray-50 dark:bg-gray-950/40 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-800'
 }
 
 function downloadOrdersCsv(orders: MaterialOrder[]): number {
@@ -169,6 +203,13 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
   // R198/R207) + dvoklik zaščita (cancelSending) + fail-verbose.
   const [cancelDialogOrderId, setCancelDialogOrderId] = useState<string | null>(null)
   const [cancelSending, setCancelSending] = useState(false)
+  // R209 — zgodovina prehodov: lenar odpiranje na kartico; vsako odpiranje
+  // prinese SVEŽE dogodke (brez predpomnilnika — sled pravno pomembna,
+  // zastarela bi lažala, R182 pečat semantika).
+  const [zgodovinaOrderId, setZgodovinaOrderId] = useState<string | null>(null)
+  const [zgodovina, setZgodovina] = useState<Record<string, ZgodovinaVnos[]>>({})
+  const [zgodovinaNalaganje, setZgodovinaNalaganje] = useState(false)
+  const [zgodovinaNapaka, setZgodovinaNapaka] = useState<string | null>(null)
   const { toast } = useToast()
 
   // Nov dobavitelj form
@@ -369,6 +410,9 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
         if (status === 'DOBLJENO') setReceiveDialogOrderId(null)
         if (status === 'PREKlicANO') setCancelDialogOrderId(null)
         loadData()
+        // R209 — če je panel zgodovine tega naročila odprt, ga sveže pridobi
+        // (nov prehod NI v predpomnjenem odzivu — panel ostane iskren).
+        if (zgodovinaOrderId === orderId) void prinesiZgodovino(orderId)
       } else {
         // R140: fail-verbose — 403/409 napake se POKAŽEJO (prej tiho ugasil
         // gumb brez razlage; npr. MONTER ni videl zakaj "Dobljeno" ne dela).
@@ -382,6 +426,40 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
       if (status === 'DOBLJENO') setReceiveSending(false)
       if (status === 'PREKlicANO') setCancelSending(false)
     }
+  }
+
+  // R209 — zgodovina prehodov: prinese SVEŽE dogodke naročila (vedno nov
+  // fetch — brez predpomnilnika). Fail-verbose: napaka viden razlog, ponoven
+  // poskus = zapri/odpri ali nov prehod (panel se sam sveži).
+  const prinesiZgodovino = async (orderId: string) => {
+    setZgodovinaNalaganje(true)
+    setZgodovinaNapaka(null)
+    try {
+      const res = await fetch(`/api/material-orders/history?orderId=${encodeURIComponent(orderId)}`)
+      if (res.ok) {
+        const data = (await res.json().catch(() => null)) as { dogodki?: ZgodovinaVnos[] } | null
+        const dogodki = data?.dogodki
+        setZgodovina((prej) => ({ ...prej, [orderId]: Array.isArray(dogodki) ? dogodki : [] }))
+      } else {
+        // R140 družina — 4xx/5xx se vidijo (prej tiho prazno bi lažalo).
+        const data = (await res.json().catch(() => null)) as { error?: string } | null
+        setZgodovinaNapaka(data?.error?.trim() || `Napaka ${res.status}`)
+      }
+    } catch {
+      setZgodovinaNapaka('Omrežna napaka')
+    } finally {
+      setZgodovinaNalaganje(false)
+    }
+  }
+
+  // R209 — toggle zgodovine na kartici (pravi aria-expanded preklopnik).
+  const odpriZgodovino = (orderId: string) => {
+    if (zgodovinaOrderId === orderId) {
+      setZgodovinaOrderId(null)
+      return
+    }
+    setZgodovinaOrderId(orderId)
+    void prinesiZgodovino(orderId)
   }
 
   // R206 — naročilnica iz naročila: regeneracija dokumenta iz SLEDLJIVIH
@@ -724,6 +802,22 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
                           <ClipboardList className="h-3 w-3" aria-hidden="true" />
                           Naročilnica
                         </Button>
+                        {/* R209 — zgodovina prehodov: pravi aria-expanded
+                            preklopnik; odpiranje vedno prinese sveže dogodke
+                            (brez predpomnilnika — sled pravno pomembna). */}
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          aria-expanded={zgodovinaOrderId === order.id}
+                          className="h-6 gap-1 text-[10px] focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
+                          onClick={() => odpriZgodovino(order.id)}
+                          aria-label={`Zgodovina prehodov naročila pri ${order.supplier.naziv}`}
+                          title="Sled prehodov statusa (kdo, kdaj) — sveže pridobljena ob vsakem odpiranju"
+                        >
+                          <History className="h-3 w-3" aria-hidden="true" />
+                          Zgodovina
+                        </Button>
                         {order.status === 'OSNUTEK' && (
                           <Button type="button" size="sm" variant="outline" className="h-6 text-[10px] focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1" onClick={() => handleOrderStatus(order.id, 'POSLANO')} title="Označi, da si naročilo poslal sam (aplikacija ne pošilja dokumentov)">
                             Označi kot poslano
@@ -749,6 +843,64 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
                           </Button>
                         )}
                       </div>
+                      {/* R209 — zgodovina prehodov (timeline): nalaganje /
+                          fail-verbose napaka / iskreno prazno (starejši zapisi
+                          brez orderId jih NE izmišljujemo) / dogodki z
+                          statusno značko (ista barvna družina kot kartica). */}
+                      {zgodovinaOrderId === order.id && (
+                        <div
+                          role="region"
+                          aria-label={`Zgodovina prehodov naročila pri ${order.supplier.naziv}`}
+                          className="mt-2 border-t border-border pt-2"
+                        >
+                          {zgodovinaNalaganje ? (
+                            <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                              <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
+                              Nalaganje zgodovine …
+                            </div>
+                          ) : zgodovinaNapaka ? (
+                            <div role="alert" className="text-[11px] text-red-700 dark:text-red-300">
+                              Zgodovine ni mogoče prikazati: {zgodovinaNapaka}
+                            </div>
+                          ) : (zgodovina[order.id]?.length ?? 0) === 0 ? (
+                            <div className="text-[11px] text-muted-foreground">
+                              <p>Še ni zapisanih prehodov za to naročilo.</p>
+                              <p className="mt-0.5 text-[10px]">
+                                Sledenje prehodov beleži dogodke od uvedbe — starejši zapisi nimajo povezave na naročilo in jih ne izmišljujemo.
+                              </p>
+                            </div>
+                          ) : (
+                            <ol className="space-y-1.5">
+                              {zgodovina[order.id].map((d) => (
+                                <li
+                                  key={d.id}
+                                  className="flex items-start justify-between gap-2 rounded border border-border/60 bg-muted/40 px-2 py-1"
+                                >
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex flex-wrap items-center gap-1">
+                                      <span className="text-[11px] font-medium text-roksal-ink">{akcijaOznaka(d.akcija)}</span>
+                                      {d.statusPotem && (
+                                        <Badge variant="outline" className={`text-[8px] ${statusZnackaCls(d.statusPotem)}`}>
+                                          {d.statusPotem}
+                                        </Badge>
+                                      )}
+                                      {d.statusPrej && d.statusPotem && (
+                                        <span className="text-[9px] text-muted-foreground tabular-nums">iz {d.statusPrej}</span>
+                                      )}
+                                    </div>
+                                    <div className="text-[9px] text-muted-foreground tabular-nums">
+                                      {/* R209 + r182 EN VIR: čas dogodka prek
+                                          casOznaka (ne lokalni formatter). */}
+                                      {fmtDate(d.timestamp)} ob {casOznaka(new Date(d.timestamp))}
+                                      {d.uporabnik && ` · ${d.uporabnik.ime || d.uporabnik.email}`}
+                                    </div>
+                                  </div>
+                                </li>
+                              ))}
+                            </ol>
+                          )}
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 )
