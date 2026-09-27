@@ -229,25 +229,36 @@ export default function Home() {
   // brez proizvoljnih nizov), monotonski n (preklop tudi, ko je komponenta
   // že montirana); navadne navigacije počistijo namig (privzeto BOM).
   const [materialSubTab, setMaterialSubTab] = useState<MaterialSubTabHint | null>(null)
+  // R214 — EN VIR usmerjanja: roksal:navigate dogodek (FAB/zvonček) IN ukazna
+  // paleta (⌘K) hodita čez ISTO funkcijo centralNavigate. Prej je paleta šla
+  // POVRH protokola (setMoreTab direktno) — brez whitelist/monotonskega n IN z
+  // bugom: 'Skice' je prižigala setMoreTab('sketches'), čeprav več-vsebina NIMA
+  // skic modula (skice = overlay prek setSketchOpen) → prazen panel.
+  const centralNavigate = useCallback(
+    (tab: TabId, more?: MoreTabId | null, subTab?: string | null) => {
+      if (tab === 'more' && more) {
+        // namig v const: type guard zoži tip tudi znotraj updaterja (closures
+        // ne ohranjajo zožitve na lastnostih objekta).
+        const namig = subTab
+        setMaterialSubTab((prev) =>
+          isMaterialSubTab(namig) ? { tab: namig, n: (prev?.n ?? 0) + 1 } : null,
+        )
+        handleMoreSelect(more)
+      } else if (MAIN_TAB_IDS.includes(tab as TabId)) {
+        handleTabChange(tab)
+      }
+    },
+    [handleMoreSelect, handleTabChange],
+  )
   useEffect(() => {
     function onNavigate(e: Event) {
       const d = (e as CustomEvent<{ tab?: string; more?: string | null; subTab?: string | null }>).detail
       if (!d?.tab) return
-      if (d.tab === 'more' && d.more) {
-        // namig v const: type guard zoži tip tudi znotraj updaterja (closures
-        // ne ohranjajo zožitve na lastnostih objekta).
-        const namig = d.subTab
-        setMaterialSubTab((prev) =>
-          isMaterialSubTab(namig) ? { tab: namig, n: (prev?.n ?? 0) + 1 } : null,
-        )
-        handleMoreSelect(d.more as MoreTabId)
-      } else if (MAIN_TAB_IDS.includes(d.tab as TabId)) {
-        handleTabChange(d.tab as TabId)
-      }
+      centralNavigate(d.tab as TabId, (d.more ?? null) as MoreTabId | null, d.subTab ?? null)
     }
     window.addEventListener('roksal:navigate', onNavigate)
     return () => window.removeEventListener('roksal:navigate', onNavigate)
-  }, [handleMoreSelect, handleTabChange])
+  }, [centralNavigate])
 
   // AR WebXR / Terenski pregled → Kalkulator ("Uporabi v kalkulatorju")
   useEffect(() => {
@@ -539,18 +550,12 @@ export default function Home() {
         )}
       </main>
 
-      {/* Ukazna paleta — skok kamorkoli (⌘K) */}
+      {/* Ukazna paleta — skok kamorkoli (⌘K); R214: hodí čez centralNavigate
+          (EN VIR — isti whitelist/monotonski n kot dogodek; Skice overlay fix) */}
       <CommandPalette
         open={paletteOpen}
         onOpenChange={setPaletteOpen}
-        onNavigate={(tab, more) => {
-          if (more) {
-            setMoreTab(more)
-            setActiveTab('more')
-          } else {
-            handleTabChange(tab)
-          }
-        }}
+        onNavigate={centralNavigate}
         onSync={handleSync}
       />
 

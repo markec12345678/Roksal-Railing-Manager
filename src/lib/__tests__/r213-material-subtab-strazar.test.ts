@@ -64,7 +64,9 @@ describe('R213 — usmerjevalnik (app/page.tsx)', () => {
   const src = beri('src/app/page.tsx')
 
   it('onNavigate bere subTab in ga pretvori v hint (whitelist + monotonski n)', () => {
-    expect(src).toContain('const namig = d.subTab')
+    // R214 PIN posodobitev: page.tsx zdaj usmerja prek EN VIR centralNavigate —
+    // namig je parameter funkcije (subTab), ne več dogodek-lastnina (d.subTab).
+    expect(src).toContain('const namig = subTab')
     expect(src).toContain('isMaterialSubTab(namig) ? { tab: namig, n: (prev?.n ?? 0) + 1 } : null')
   })
 

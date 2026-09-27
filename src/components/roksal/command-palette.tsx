@@ -17,6 +17,7 @@
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from '@/components/ui/command'
 import type { MoreTabId, TabId } from '@/components/roksal/bottom-nav'
+import type { MaterialSubTab } from '@/lib/material-sub-tab'
 import type { Project } from '@/lib/types'
 import {
   Boxes,
@@ -34,6 +35,7 @@ import {
   Ruler,
   ScanLine,
   ShieldCheck,
+  ShoppingCart,
   Signature,
   Sun,
   Truck,
@@ -45,8 +47,10 @@ import { useTheme } from 'next-themes'
 interface CommandPaletteProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  /** Skok na glavni zavihek in/ali "Več" modul. */
-  onNavigate: (tab: TabId, more?: MoreTabId | null) => void
+  /** Skok na glavni zavihek in/ali "Več" modul. R214 — tretji argument
+   * subTab: namig za podzavihek Material (isti protokol kot zvonček —
+   * MaterialSubTabHint whitelist + monotonski n v page.tsx). */
+  onNavigate: (tab: TabId, more?: MoreTabId | null, subTab?: MaterialSubTab | null) => void
   onSync: () => void
 }
 
@@ -55,6 +59,7 @@ interface NavItem {
   icon: React.ComponentType<{ className?: string }>
   tab: TabId
   more?: MoreTabId | null
+  subTab?: MaterialSubTab
 }
 
 const MAIN_NAV: NavItem[] = [
@@ -75,6 +80,11 @@ const MORE_NAV: NavItem[] = [
   { label: 'Post-Signature (V4.1)', icon: ClipboardList, tab: 'more', more: 'postsig' },
   { label: 'CRM stranke (V4.2)', icon: Users, tab: 'more', more: 'crm' },
   { label: 'Material Intelligence (V5)', icon: Truck, tab: 'more', more: 'material' },
+  // R214 (P1-f) — direktni podzavihki Materiala (isti MaterialSubTab protokol
+  // kot zvonček digest): hijerarhija z zamikom, palette ostane EN vir za skok.
+  { label: 'Material — Naročila (V5)', icon: ShoppingCart, tab: 'more', more: 'material', subTab: 'orders' },
+  { label: 'Material — Dobavitelji (V5)', icon: Truck, tab: 'more', more: 'material', subTab: 'suppliers' },
+  { label: 'Material — BOM Refine (V5)', icon: Boxes, tab: 'more', more: 'material', subTab: 'bom' },
   { label: 'Logistika (V6)', icon: Truck, tab: 'more', more: 'logistics' },
   { label: 'Izvoz PDF', icon: FileText, tab: 'more', more: 'pdf' },
   { label: 'Galerija realizacij', icon: FolderOpen, tab: 'more', more: 'gallery' },
@@ -291,7 +301,7 @@ export function CommandPalette({ open, onOpenChange, onNavigate, onSync }: Comma
   }
 
   function run(item: NavItem) {
-    onNavigate(item.tab, item.more ?? null)
+    onNavigate(item.tab, item.more ?? null, item.subTab ?? null)
     close()
   }
 
@@ -382,9 +392,15 @@ export function CommandPalette({ open, onOpenChange, onNavigate, onSync }: Comma
 
         <CommandGroup heading="Več modulov">
           {MORE_NAV.map((item) => (
-            <CommandItem key={item.label} onSelect={() => run(item)}>
-              <item.icon className="mr-2 h-4 w-4 text-roksal-amber" />
-              {item.label}
+            <CommandItem
+              key={item.label}
+              onSelect={() => run(item)}
+              className={item.subTab ? 'pl-8' : undefined}
+            >
+              <item.icon className={item.subTab ? 'mr-2 h-4 w-4 text-roksal-amber/70' : 'mr-2 h-4 w-4 text-roksal-amber'} />
+              <span className={item.subTab ? 'text-[13px] text-muted-foreground' : undefined}>
+                {item.label}
+              </span>
             </CommandItem>
           ))}
         </CommandGroup>

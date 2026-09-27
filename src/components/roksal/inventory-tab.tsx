@@ -449,8 +449,21 @@ export function InventoryTab() {
         }),
       })
       if (res.ok) {
+        // R214 — deep-link akcija v toastu (P1-družina R213 subTab protokol):
+        // prej je opis LE povedal 'najdeš ga v Material → Naročila' — uporabnik
+        // je moral sam klikniti Več → Material → Naročila. Zdaj gumb 'Odpri
+        // naročila' pošlje isti roksal:navigate { subTab: 'orders' } kot
+        // zvonček digest (whitelist + monotonski n v page.tsx centralNavigate).
         toast.success('Osnutek naročila shranjen (status OSNUTEK)', {
           description: `${osnutekArtikli.length} ${zalogaPovzetekBeseda(osnutekArtikli.length)} — najdeš ga v Material → Naročila. Nič še ni poslano dobavitelju.`,
+          action: {
+            label: 'Odpri naročila',
+            onClick: () => {
+              window.dispatchEvent(
+                new CustomEvent('roksal:navigate', { detail: { tab: 'more', more: 'material', subTab: 'orders' } }),
+              )
+            },
+          },
         })
         setOsnutekOpen(false)
         setOsnutekDobavitelj('')
