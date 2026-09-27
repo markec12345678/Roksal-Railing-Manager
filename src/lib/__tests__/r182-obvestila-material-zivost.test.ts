@@ -43,7 +43,8 @@ describe('R182 — obvestila (notification-center): fail-verbose agregacije + ž
     expect(src).toContain("import { casOznaka } from '@/lib/osvezitev-fokus'")
     // R197: ShieldCheck (varnostne vrstice zvončka) je dodan v isti import —
     // vsi še naprej iz ENEGA lucide-react uvoza (EN VIR ikon).
-    expect(src).toMatch(/Wrench, History, ShieldCheck,\n\} from 'lucide-react'/)
+    // R212: ShoppingCart (aktivna naročila digest) v istem uvozu.
+    expect(src).toMatch(/Wrench, History, ShieldCheck, ShoppingCart,\n\} from 'lucide-react'/)
     expect(src).toContain('{casOznaka(obvestilaOsvezitev)}')
     // toLocaleString (persisted createdAt) je domensko formatiranje — dovoljeno;
     // toLocaleTimeString za PEČAT je prepovedan (EN VIR casOznaka)
@@ -62,13 +63,15 @@ describe('R182 — obvestila (notification-center): fail-verbose agregacije + ž
     expect(src).toMatch(/onClick=\{\(\) => \{ setOpen\(true\); void load\(\) \}\}/)
   })
 
-  it('fail-verbose: 4× status !== 403 (zaloga, projekti, računi, vreme) — 403 meja tiho (R175)', () => {
+  it('fail-verbose: 5× status !== 403 (zaloga, projekti, računi, naročila, vreme) — 403 meja tiho (R175)', () => {
     const src = obvestila()
-    // 4 virov × non-403 guard (računi in vreme imata tudi catch vejo)
-    expect(src.match(/\.status !== 403/g)).toHaveLength(4)
+    // 5 virov × non-403 guard (računi/naročila/vreme imajo tudi catch vejo)
+    // R212: naročila = 5. vir (aktivna naročila digest)
+    expect(src.match(/\.status !== 403/g)).toHaveLength(5)
     expect(src).toContain("neuspeliViri.push('zaloga')")
     expect(src).toContain("neuspeliViri.push('projekti')")
     expect(src.split("neuspeliViri.push('računi')").length - 1).toBe(2) // !res.ok + catch
+    expect(src.split("neuspeliViri.push('naročila')").length - 1).toBe(2) // R212: !res.ok + catch
     expect(src.split("neuspeliViri.push('vreme')").length - 1).toBe(2) // !res.ok + catch
   })
 

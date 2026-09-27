@@ -10,6 +10,9 @@
  *  3. 🌩️ vremensko opozorilo (vetrní duši / nevarno za montažo)
  *  4. 📞 zapadli follow-upi ponudb (stranka še ni odgovorila)
  *  5. 💶 zapadli računi (izdan + rok plačila pretekel) — FURS layer
+ *  6. 🛒 aktivna naročila (OSNUTEK/POSLANO/POTRJENO — EN digest, R212):
+ *     prej so signalizirala LE na zavihku (R208 badge), Domov (R210 kartica)
+ *     in pečatu (R211) — zvonček je ostal slep.
  *
  * Podatki se poberejo le ob odprtju panela + ob dogodku 'roksal:refresh'
  * (ki ga sproži sync v page.tsx) — ni dodatnih intervalov.
@@ -22,14 +25,14 @@ import { Button } from '@/components/ui/button'
 import {
   Bell, Package, CalendarDays, CloudLightning, CheckCheck,
   ChevronRight, RefreshCw, AlertTriangle, Loader2, FileClock, Receipt,
-  UserCog, Inbox, Wrench, History, ShieldCheck,
+  UserCog, Inbox, Wrench, History, ShieldCheck, ShoppingCart,
 } from 'lucide-react'
 import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'
 import { casOznaka } from '@/lib/osvezitev-fokus'
 
 interface NotificationItem {
   id: string
-  kind: 'stock' | 'install' | 'weather' | 'followup' | 'invoice'
+  kind: 'stock' | 'install' | 'weather' | 'followup' | 'invoice' | 'order'
   title: string
   subtitle: string
   meta?: string
@@ -218,6 +221,40 @@ export function NotificationCenter() {
         neuspeliViri.push('računi')
       }
 
+      // 6) R212 — aktivna naročila kot EN združen digest (EN vir resnice:
+      // ista ruta kot Material → Naročila in R210 Domov kartica — R208/R210/
+      // R211 družina). Vidno LE ko aktivnih > 0 (brez lažnega 0). Statusi so
+      // dobesedne oznake chipov (R208) — determinizem, brez sklanjatev.
+      // Fail-verbose R182: 403 = meja vloge (tiho, R175), ostalo = vidna
+      // vrstica 'naročila' + brez pečata (nikoli lažne 'vse pod nadzorom').
+      try {
+        const oRes = await fetch('/api/material-orders')
+        if (oRes.ok) {
+          const orders = (await oRes.json()) as { id: string; status: string }[]
+          const aktivna = (orders || []).filter(
+            (o) => o.status === 'OSNUTEK' || o.status === 'POSLANO' || o.status === 'POTRJENO',
+          )
+          if (aktivna.length > 0) {
+            const deli: string[] = []
+            for (const status of ['OSNUTEK', 'POSLANO', 'POTRJENO'] as const) {
+              const n = aktivna.filter((o) => o.status === status).length
+              if (n > 0) deli.push(`${status} ${n}`)
+            }
+            out.push({
+              id: 'orders-active',
+              kind: 'order',
+              title: 'Naročila, ki čakajo na dejanje',
+              subtitle: `${deli.join(' · ')} — iz zadnjega nalaganja`,
+              meta: 'Pregled: Material → Naročila',
+            })
+          }
+        } else if (oRes.status !== 403) {
+          neuspeliViri.push('naročila')
+        }
+      } catch {
+        neuspeliViri.push('naročila')
+      }
+
       // 3) Vremensko opozorilo (samo če ni "low")
       try {
         const wRes = await fetch('/api/weather')
@@ -323,6 +360,10 @@ export function NotificationCenter() {
       window.dispatchEvent(new CustomEvent('roksal:select-project', { detail: item.id.replace('install-', '') }))
     } else if (item.kind === 'followup' || item.kind === 'invoice') {
       window.dispatchEvent(new CustomEvent('roksal:navigate', { detail: { tab: 'more', more: 'crm' } }))
+    } else if (item.kind === 'order') {
+      // R212 — Material je za 'Več' sheetom (R206 lekcija): more:'material'
+      // je obstoječi MoreTabId (page.tsx handleMoreSelect → MaterialIntelligenceTab).
+      window.dispatchEvent(new CustomEvent('roksal:navigate', { detail: { tab: 'more', more: 'material' } }))
     } else {
       window.dispatchEvent(new CustomEvent('roksal:navigate', { detail: { tab: 'dashboard' } }))
     }
@@ -393,6 +434,7 @@ export function NotificationCenter() {
     weather: { icon: CloudLightning, bg: 'bg-sky-100 dark:bg-sky-500/15', fg: 'text-sky-700 dark:text-sky-300' },
     followup: { icon: FileClock, bg: 'bg-orange-100 dark:bg-orange-500/15', fg: 'text-orange-700 dark:text-orange-300' },
     invoice: { icon: Receipt, bg: 'bg-red-100 dark:bg-red-500/15', fg: 'text-red-700 dark:text-red-300' },
+    order: { icon: ShoppingCart, bg: 'bg-roksal-amber/15', fg: 'text-roksal-amber' },
   }
 
   return (
@@ -422,7 +464,7 @@ export function NotificationCenter() {
               {loading && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
             </SheetTitle>
             <SheetDescription className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
-              <span>Nizka zaloga, današnje montaže, vreme, računi in poslana obvestila.</span>
+              <span>Nizka zaloga, današnje montaže, naročila, vreme, računi in poslana obvestila.</span>
               {obvestilaOsvezitev && (
                 <span
                   className="hidden items-center gap-1 text-[11px] text-muted-foreground sm:flex"
@@ -462,7 +504,7 @@ export function NotificationCenter() {
                 </div>
                 <p className="text-sm font-semibold text-roksal-ink">Vse je pod nadzorom</p>
                 <p className="max-w-[220px] text-xs text-muted-foreground">
-                  Ni nizke zaloge, danes ni montaž in vreme ne povzroča skrbi.
+                  Ni nizke zaloge, danes ni montaž, ni aktivnih naročil in vreme ne povzroča skrbi.
                 </p>
                 <Button variant="outline" size="sm" className="mt-1 min-h-[40px]" onClick={() => void load()}>
                   <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Osveži
@@ -493,7 +535,7 @@ export function NotificationCenter() {
                     <button
                       type="button"
                       onClick={() => handleClick(item)}
-                      className="group flex w-full items-center gap-3 rounded-xl border border-border/60 bg-card p-3 text-left transition-all hover:-translate-y-0.5 hover:border-roksal-amber/40 hover:shadow-sm active:scale-[0.98]"
+                      className="group flex w-full items-center gap-3 rounded-xl border border-border/60 bg-card p-3 text-left transition-all hover:-translate-y-0.5 hover:border-roksal-amber/40 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-amber/60 dark:focus-visible:ring-roksal-amber/40 active:scale-[0.98]"
                     >
                       <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${style.bg}`}>
                         <Icon className={`h-5 w-5 ${style.fg}`} />

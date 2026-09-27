@@ -72,7 +72,8 @@ describe('R200 — zvonček: "Odpri Ekipa" akcija na FAILED_LOGINS_OVERVIEW (sou
   it('UserCog je uvožen iz ENEGA lucide-react vira; r182 kontraktna vrstica ostane nedotaknjena', () => {
     expect(src).toContain('UserCog, Inbox, Wrench, History, ShieldCheck,')
     // r182: EN VIR ikon — zaporedje pred zapiranjem uvoza se ohrani
-    expect(src).toMatch(/Wrench, History, ShieldCheck,\n\} from 'lucide-react'/)
+    // R212: ShoppingCart (aktivna naročila digest) dodan v isti import
+    expect(src).toMatch(/Wrench, History, ShieldCheck, ShoppingCart,\n\} from 'lucide-react'/)
   })
 
   it('akcija obstaja, navigira po obstoječem roksal:navigate vzoru (more: ekipa) in ack-a isto vrstico', () => {
