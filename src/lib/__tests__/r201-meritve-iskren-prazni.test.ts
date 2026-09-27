@@ -38,7 +38,7 @@ describe('R201 — izpeljanka brezProjektov (en vir resnice)', () => {
     const s = src()
     const uvozi = s.match(/\bFolderX\b/g) ?? []
     expect(uvozi.length).toBeGreaterThanOrEqual(2) // uvoz + vsaj ena uporaba
-    expect(s).toMatch(/import \{[^}]*FolderX[^}]*\} from 'lucide-react'/s)
+    expect(s).toMatch(/import \{[^}]*FolderX[^}]*\} from 'lucide-react'/)
   })
 
   it('data-testid meritve-brez-projektov prisoten (E2E prijemka)', () => {
@@ -49,16 +49,20 @@ describe('R201 — izpeljanka brezProjektov (en vir resnice)', () => {
 describe('R201 — izbirnik: iskren prazni stolpec namesto slepega izbrika', () => {
   const src = () => srcOf(TAB)
 
-  it('iskren naslov in razlaga (ni izmišljenih podatkov)', () => {
+  it('iskren naslov in razlaga (ni izmišljenih podatkov; vlogovo-neodvisna oblika — R202 uskladitev z realnostjo UI)', () => {
     const s = src()
     expect(s).toContain('title="Ni projektov"')
-    expect(s).toContain('Meritve se vežejo na projekt — ko vodja ustvari projekt in ga dodeli tebi, se pojavi tukaj.')
+    expect(s).toContain('Meritve se vežejo na projekt — ko je projekt ustvarjen in dodeljen tebi, se pojavi tukaj.')
+    // R202: stara vlogova trditev ('ko vodja ustvari') ODSTRANJENA — POST
+    // /api/projects je seja-omejen (vsakdo z sejo), UI pa prikazuje gumb
+    // 'Nov projekt' vsem — besedilo ne sme izmišljati omejitve.
+    expect(s).not.toContain('ko vodja ustvari projekt')
   })
 
-  it("'Kaj naprej' vodič: aria-label + natanko 3 koraki v pravilnem vrstnem redu", () => {
+  it("'Kaj naprej' vodič: aria-label + natanko 3 koraki v pravilnem vrstnem redu (R202 uskladjeni z realnostjo UI)", () => {
     const s = src()
     expect(s).toContain('aria-label="Kaj naprej"')
-    expect(s).toContain('Vodja ustvari projekt v pisarniškem pogledu.')
+    expect(s).toContain('Projekt ustvariš v zavihku Domov (gumb »Nov projekt«).')
     expect(s).toContain('Projekt se samodejno pojavi v tem zavihku.')
     expect(s).toContain('Zajemi meritve z AR kamero ali jih dodaj ročno.')
   })

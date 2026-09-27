@@ -68,7 +68,10 @@ import {
   History,
   CalendarClock,
   FileDown,
+  // R202 — iskren prazni stolpec (družina R201)
+  FolderX,
 } from 'lucide-react'
+import { EmptyState } from '@/components/ui/empty-state'
 import { toast } from 'sonner'
 import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'
 import { casOznaka } from '@/lib/osvezitev-fokus'
@@ -1673,9 +1676,44 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                 Poskusi znova
               </Button>
             </div>
+          ) : projects.length === 0 ? (
+            /* R202 — iskren prazni stolpec (družina R201): Domov je vozlišče,
+               kamor kažejo Fotke/Nagib/Tloris ('Izberite projekt v zavihku
+               Domov'). Vodič kaže na REALNOST UI — gumb 'Nov projekt' je zgoraj
+               in ustvarjanje je na voljo prijavljenim (POST /api/projects =
+               seja, brez vlogovih omejitev) — ni izmišljenih omejitev. */
+            <div className="space-y-3" data-testid="domov-brez-projektov">
+              <EmptyState
+                icon={FolderX}
+                title="Ni projektov"
+                description="Projekti so osnova vseh orodij — meritve, fotke, nagibi in tloris se vežejo na izbrani projekt."
+              />
+              <ol
+                className="mx-auto grid w-full max-w-[340px] gap-1.5 text-left"
+                aria-label="Kaj naprej"
+              >
+                {[
+                  'Ustvari projekt z gumbom Nov projekt (zgoraj).',
+                  'Klikni projekt na seznamu — izbira velja za vsa orodja.',
+                  'Zajemi meritve, fotke ali nagibe za projekt.',
+                ].map((korak, i) => (
+                  <li
+                    key={korak}
+                    className="flex items-start gap-2 text-[11px] text-muted-foreground"
+                  >
+                    <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-roksal-navy/10 text-[9px] font-bold tabular-nums text-roksal-ink">
+                      {i + 1}
+                    </span>
+                    {korak}
+                  </li>
+                ))}
+              </ol>
+            </div>
           ) : (
             <p className="py-6 text-center text-sm text-muted-foreground">
-              {searchQuery ? 'Ni rezultatov za "' + searchQuery + '"' : 'Ni aktivnih projektov'}
+              {searchQuery
+                ? 'Ni rezultatov za "' + searchQuery + '"'
+                : 'Ni projektov za izbrani filter'}
             </p>
           )}
         </CardContent>

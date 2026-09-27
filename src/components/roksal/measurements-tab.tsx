@@ -4215,14 +4215,14 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               <EmptyState
                 icon={FolderX}
                 title="Ni projektov"
-                description="Meritve se vežejo na projekt — ko vodja ustvari projekt in ga dodeli tebi, se pojavi tukaj."
+                description="Meritve se vežejo na projekt — ko je projekt ustvarjen in dodeljen tebi, se pojavi tukaj."
               />
               <ol
                 className="mx-auto grid w-full max-w-[340px] gap-1.5 text-left"
                 aria-label="Kaj naprej"
               >
                 {[
-                  'Vodja ustvari projekt v pisarniškem pogledu.',
+                  'Projekt ustvariš v zavihku Domov (gumb »Nov projekt«).',
                   'Projekt se samodejno pojavi v tem zavihku.',
                   'Zajemi meritve z AR kamero ali jih dodaj ročno.',
                 ].map((korak, i) => (
@@ -6229,7 +6229,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               <EmptyState
                 icon={FolderX}
                 title="Meritve čakajo na projekt"
-                description="Meritve se vežejo na projekt. Ko vodja ustvari projekt, lahko zajameš prvo meritev."
+                description="Meritve se vežejo na projekt. Ko je projekt izbran, lahko zajameš prvo meritev."
               />
             ) : (
               <EmptyState
