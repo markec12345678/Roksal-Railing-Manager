@@ -108,6 +108,11 @@ interface InventoryItem {
   minimalnaZaloga: number
   enota: string
   tip: string
+  // R223 — števec zasidranj pri dobaviteljih (R221 API ŽE vrača _count.prices
+  // na VSAKEM /api/inventory odgovoru — ISTI fetch kot nizka zaloga, nič nove
+  // zahteve). Opcijsko v tipu: starejši odgovor brez _count = "ne moremo
+  // presoditi" (fail-closed, ISTA strogost kot zvonček R222).
+  _count?: { prices?: number }
 }
 
 interface Customer {
@@ -620,6 +625,18 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
     (i) => i.kolicinaZaloga <= i.minimalnaZaloga
   )
   const lowStockCount = lowStockItems.length
+
+  // R223 (P1-c nadaljevanje) — ŠESTI signalec konvergence: kartica 'Brez
+  // dobavitelja' na Domovu (sorojenica 'Nizka zaloga materiala' — ISTA vrstica
+  // opozoril, DRUGA dimenzija: nabavna pripravljenost). Izpeljanka iz ISTEGA
+  // /api/inventory fetcha (EN VIR zasidranja — nič nove zahteve, _count.prices
+  // je na odgovoru od R221). STROGOST brez izmišljevanja: manjkajoči števec
+  // (stari predpomnjeni odgovor brez polja) NIKOLI ni 'brez dobavitelja' — le
+  // izrecna 0 pomeni 'nihče vpisan' (fail-closed konservativno; ISTA dobesedna
+  // enačba kot zvonček R222 in čip R221 — brez `?? 0` / `<= 0` ohlapnosti).
+  const brezDobaviteljaCount = inventory.filter(
+    (i) => i._count?.prices === 0,
+  ).length
 
   // ── Danes & opozorila ────────────────────────────────────────────────────
   // Termini z montažo danes + zapadli projekti (datum montaže je mimo,
@@ -1857,6 +1874,47 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
             </p>
           </div>
         </div>
+      ) : null}
+
+      {/* R223 — ŠESTI signalec konvergence: kartica 'Brez dobavitelja' na
+          Domovu (družina Low Stock Alert + R210 naročilna kartica). Vidna LE
+          ko so podatki res naloženi in je števec > 0 (iskreno — brez lažnega
+          0; nalagalna napaka je vidna posebej zgoraj, fail-verbose). DRUGA
+          dimenzija — nabavna pripravljenost, zato roksal-amber (pozornost, ne
+          alarm; rdeča ostane nizki zalogi). Barva ni edini nosilec: dobeseden
+          naslov + opis + tabular-nums števec + iskren aria-label. Klik odpre
+          Zalogo z AKTIVNIM čipom 'Brez dobavitelja' (R221 filter deep-link
+          protokol — ISTI dispatch kot zvonček R222). */}
+      {!invLoading && !invError && brezDobaviteljaCount > 0 ? (
+        <button
+          type="button"
+          className="flex w-full items-center gap-3 rounded-xl border border-roksal-amber/40 bg-roksal-amber/5 p-3 text-left animate-fade-in-up cursor-pointer transition-colors hover:bg-roksal-amber/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-amber/40 focus-visible:ring-offset-1"
+          aria-label={`Brez dobavitelja (${brezDobaviteljaCount}) — odpre Zalogo s filtrom brez dobavitelja`}
+          title="Artikli brez vpisane nabavne cene — klik odpre Zalogo s filtrom 'Brez dobavitelja'"
+          onClick={() =>
+            window.dispatchEvent(
+              new CustomEvent('roksal:navigate', {
+                detail: { tab: 'inventory', filter: 'brez-dobavitelja' },
+              }),
+            )
+          }
+        >
+          <PackageX className="h-5 w-5 shrink-0 text-roksal-amber" aria-hidden="true" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium text-roksal-ink">
+              Brez dobavitelja
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Brez vpisane cene pri katerem koli dobavitelju — naročilni tok postavke ne more oceniti. Klik odpre Zalogo s filtrom.
+            </p>
+          </div>
+          <span
+            className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-roksal-amber px-1.5 text-xs font-semibold leading-none text-roksal-ink tabular-nums"
+            title="Artikli brez vpisane cene pri katerem koli dobavitelju"
+          >
+            {brezDobaviteljaCount}
+          </span>
+        </button>
       ) : null}
 
       {/* R210 — Naročila, ki čakajo na dejanje (družina Low Stock Alert +
