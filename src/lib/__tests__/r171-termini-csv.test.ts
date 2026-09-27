@@ -248,15 +248,16 @@ describe('R171 P1-d žičenje — Termini kartica izvozi PRIKAZANE', () => {
 })
 
 describe('R171 P1-b žičenje — dashboard refetch-on-focus + pečat', () => {
-  it('fetchAll = ENA ovojnica (Promise.all ×3 + setLoading(false)) — začetni load IN fokus', () => {
+  it('fetchAll = ENA ovojnica (Promise.all ×4 + setLoading(false)) — začetni load IN fokus', () => {
     const dash = dashboard()
     expect(dash).toContain('const fetchAll = useCallback(')
-    expect(dash).toContain('await Promise.all([fetchProjects(), fetchInventory(), fetchCustomers()])')
+    // R210: 4. vir (fetchNarocila) — Domov kartica 'Naročila, ki čakajo na dejanje'.
+    expect(dash).toContain('await Promise.all([fetchProjects(), fetchInventory(), fetchCustomers(), fetchNarocila()])')
     expect(dash).toContain('useRefetchOnFocus(fetchAll)')
     const idx = dash.indexOf('const fetchAll = useCallback(')
     const body = dash.slice(idx, idx + 400)
     expect(body).toContain('setLoading(false)')
-    expect(body).toContain('[fetchProjects, fetchInventory, fetchCustomers]')
+    expect(body).toContain('[fetchProjects, fetchInventory, fetchCustomers, fetchNarocila]')
   })
 
   it('pečat projektnega seznama: History + tabular-nums + title + hidden sm:flex (vzorec R170)', () => {

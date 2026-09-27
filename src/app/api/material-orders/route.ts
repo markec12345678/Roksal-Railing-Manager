@@ -198,16 +198,21 @@ export async function POST(request: Request) {
         },
       })
 
-      if (projectId) {
-        await auditInTx(tx, {
-          request,
-          session: auth.kind === 'user' ? auth.session : null,
-          userId: actor,
-          projectId,
-          akcija: 'MATERIAL_ORDER_CREATED',
-          newValue: { orderId: created.id, supplierId, skupajCena, items: orderItems.length },
-        })
-      }
+      // R210 — CREATED audit za VSA naročila: prej le z projectId (sled je za
+      // naročila brez projekta ostala brez 'Ustvarjeno' dogodka — R209 zgodovina
+      // na kartici ga ni nikoli pokazala). AuditLog.projectId je nullable —
+      // brez migracije; prehodni stroj + receiveOrder NESPREMENJENA.
+      // status 'OSNUTEK' v newValue: zgodovinska ruta (R209) pripisuje dogodke
+      // po TOČNI enakosti parsed orderId in zahteva vsaj EN znani status —
+      // ustvarjeno naročilo je realno OSNUTEK (dejstvo, ne izmišljija).
+      await auditInTx(tx, {
+        request,
+        session: auth.kind === 'user' ? auth.session : null,
+        userId: actor,
+        projectId: projectId || null,
+        akcija: 'MATERIAL_ORDER_CREATED',
+        newValue: { orderId: created.id, status: 'OSNUTEK', supplierId, skupajCena, items: orderItems.length },
+      })
 
       // R140 (§20): odgovor se shrani v ISTI transakciji — replay vrne
       // originalni 201 z originalnim telesom (exactly-once).

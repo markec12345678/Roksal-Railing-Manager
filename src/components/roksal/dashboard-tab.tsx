@@ -70,6 +70,8 @@ import {
   FileDown,
   // R202 — iskren prazni stolpec (družina R201)
   FolderX,
+  // R210 — naročila, ki čakajo na dejanje (Domov kartica)
+  ShoppingCart,
 } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import { toast } from 'sonner'
@@ -273,6 +275,12 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
   // "Nov projekt" lažno pokazal "Še ni strank" (R161 QuoteFollowUp vzorec)
   // → uporabnik bi vnašal duplikate. Sedaj vidna napaka + Poskusi znova.
   const [customersError, setCustomersError] = useState<string | null>(null)
+  // R210 — naročila na Domov: OSNUTEK/POSLANO/POTRJENO čakajo na dejanje.
+  // Fail-verbose (družina R203): padec GET /api/material-orders NI tih —
+  // kartica pokaže viden error + Poskusi znova, nič lažnega "vse v redu".
+  const [narocila, setNarocila] = useState<Array<{ id: string; status: string }>>([])
+  const [narocilaError, setNarocilaError] = useState<string | null>(null)
+  const [narocilaLoading, setNarocilaLoading] = useState(true)
   const [loading, setLoading] = useState(true)
   // R171 — pečat 'Osveženo ob HH:MM:SS' za projektni seznam (čas zadnjega
   // USPEŠNEGA branja /api/projects; vzorec R170 — napaka/nalaganje → null,
@@ -501,19 +509,42 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
     }
   }, [])
 
+  // R210 — naročila za Domov (EN vir resnice: ista ruta kot Material →
+  // Naročila). Fail-verbose vzorec fetchInventory zgoraj: napaka vidna,
+  // nič izmišljenih "brez aktivnih" stanj nad odsotnimi podatki.
+  const fetchNarocila = useCallback(async () => {
+    setNarocilaLoading(true)
+    try {
+      const res = await fetch('/api/material-orders')
+      if (res.ok) {
+        const data = await res.json()
+        setNarocila(Array.isArray(data) ? data : [])
+        setNarocilaError(null)
+      } else {
+        setNarocila([])
+        setNarocilaError(`Naročil ni bilo mogoče naložiti (napaka ${res.status}).`)
+      }
+    } catch {
+      setNarocila([])
+      setNarocilaError('Naročil ni bilo mogoče naložiti — preverite povezavo.')
+    } finally {
+      setNarocilaLoading(false)
+    }
+  }, [])
+
   // R171 (P1-b iz R170) — EN zavijalka za začetni nosiljko IN osvežitev ob
-  // vrnitvi v zavihek/okno: vsi trije viri (projekti, zaloga, stranke) v
-  // Promise.all, kot pri prvem nalaganju. Vsi trije fetchi so stabilni
+  // vrnitvi v zavihek/okno: viri (projekti, zaloga, stranke; R210: tudi
+  // naročila) v Promise.all, kot pri prvem nalaganju. Vsi fetchi so stabilni
   // useCallback([]) → fetchAll je stabilen; nič ne registrira listenerjev
   // znova. Napake ostanejo vidne (fail-verbose — fetchProjects že pokaže
   // toast + error panel; hook sam nikoli ne požira napak).
   const fetchAll = useCallback(async () => {
     try {
-      await Promise.all([fetchProjects(), fetchInventory(), fetchCustomers()])
+      await Promise.all([fetchProjects(), fetchInventory(), fetchCustomers(), fetchNarocila()])
     } finally {
       setLoading(false)
     }
-  }, [fetchProjects, fetchInventory, fetchCustomers])
+  }, [fetchProjects, fetchInventory, fetchCustomers, fetchNarocila])
 
   useEffect(() => {
     void fetchAll()
@@ -560,6 +591,13 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
   const completedCount = projects.filter((p) => p.status === 'ZAKLJUCENO').length
   const totalProjects = projects.length
   const totalInventoryItems = inventory.length
+  // R210 — izpeljanka (EN vir resnice, R208 vzorec): AKTIVNA naročila
+  // (OSNUTEK/POSLANO/POTRJENO) čakajo na dejanje; DOBLJENO/PREKlicANO so
+  // zaključena. Prikazana LE ko > 0 (brez lažnega 0 — nalagalna napaka je
+  // vidna posebej, fail-verbose zgoraj).
+  const aktivnaNarocilaDomov = narocila.filter(
+    (o) => o.status === 'OSNUTEK' || o.status === 'POSLANO' || o.status === 'POTRJENO',
+  ).length
 
   const nextInstallation = projects.find((p) => p.status === 'V_TEKU') || projects.find((p) => p.status === 'NACRTOVANO')
 
@@ -1781,6 +1819,49 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
               Vsi artikli so nad minimalno zalogo.
             </p>
           </div>
+        </div>
+      ) : null}
+
+      {/* R210 — Naročila, ki čakajo na dejanje (družina Low Stock Alert +
+          R202): vidna LE ko aktivnih > 0; brez lažnega 0 — nalagalna napaka
+          je svoja vidna veja (fail-verbose zgoraj). Brez izmišljenega gumba
+          "odpri" — navigacija na Material je 'Več' sheet, naslov pove pot. */}
+      {aktivnaNarocilaDomov > 0 ? (
+        <div className="flex items-center gap-3 rounded-xl border border-roksal-amber/40 bg-roksal-amber/5 p-3 animate-fade-in-up">
+          <ShoppingCart className="h-5 w-5 shrink-0 text-roksal-amber" aria-hidden="true" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium text-roksal-ink">
+              Naročila, ki čakajo na dejanje
+            </p>
+            <p className="text-xs text-muted-foreground">
+              OSNUTEK/POSLANO/POTRJENO — iz zadnjega nalaganja. Pregled: Material → Naročila.
+            </p>
+          </div>
+          <span
+            className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-roksal-amber px-1.5 text-xs font-semibold leading-none text-roksal-ink tabular-nums"
+            title="Aktivna naročila (OSNUTEK/POSLANO/POTRJENO) — iz zadnjega nalaganja"
+          >
+            {aktivnaNarocilaDomov}
+          </span>
+        </div>
+      ) : !narocilaLoading && narocilaError ? (
+        <div
+          role="alert"
+          className="flex items-center gap-3 rounded-xl border border-roksal-red/20 bg-roksal-red/5 p-3"
+        >
+          <AlertTriangle className="h-5 w-5 shrink-0 text-roksal-red" aria-hidden="true" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium text-roksal-ink">Naročila niso na voljo</p>
+            <p className="text-xs text-roksal-red">{narocilaError}</p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 border-roksal-red/40 text-roksal-red hover:bg-roksal-red/10 hover:text-roksal-red focus-visible:ring-2 focus-visible:ring-roksal-red/40"
+            onClick={() => void fetchNarocila()}
+          >
+            Poskusi znova
+          </Button>
         </div>
       ) : null}
 
