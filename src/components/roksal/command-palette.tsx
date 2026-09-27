@@ -32,6 +32,12 @@ import {
   type IskalniMaterial,
   type RecentSearchVnos,
 } from '@/lib/search-osnutek'
+// R219 (P1-f) — tip filtra 'pod minimumom' (EN VIR whitelist lib — ISTI
+// vzorec kot MaterialSubTab R213): 'Vse' vrstica ZDAJ RES nosi filter s seboj.
+import type { InventoryFilterHint } from '@/lib/inventory-filter'
+// R219 (P1-e) — badge EN VIR komponenta (izluščena iz te datoteke — zvonček
+// digest je 5. signalec konvergence in nosi ISTI vizual).
+import { BadgeNizkaZaloga } from '@/components/roksal/badge-nizka-zaloga'
 import {
   Boxes,
   ClipboardList,
@@ -64,8 +70,10 @@ interface CommandPaletteProps {
    * subTab: namig za podzavihek Material (isti protokol kot zvonček —
    * MaterialSubTabHint whitelist + monotonski n v page.tsx). R216 —
    * četrti argument osnutek: deep-link artikel (Nizka zaloga klik →
-   * Osnutek dialog v Zalogi; page.tsx počisti hint ob drugih navigacijah). */
-  onNavigate: (tab: TabId, more?: MoreTabId | null, subTab?: MaterialSubTab | null, osnutek?: ZalogaArtikelZaNarocilo | null) => void
+   * Osnutek dialog v Zalogi; page.tsx počisti hint ob drugih navigacijah).
+   * R219 — peti argument filter: deep-link 'pod minimumom' ('Vse' vrstica
+   * ZDAJ RES pokaže vse s nizko zalogo — Zaloga se odpre s aktivnim čipom). */
+  onNavigate: (tab: TabId, more?: MoreTabId | null, subTab?: MaterialSubTab | null, osnutek?: ZalogaArtikelZaNarocilo | null, filter?: InventoryFilterHint | null) => void
   onSync: () => void
 }
 
@@ -205,17 +213,6 @@ function splitMatch(
     hit: text.slice(idx, idx + q.length),
     after: text.slice(idx + q.length),
   }
-}
-
-/** R218 — EN VIR badgea 'Nizka zaloga' (iskalni Material zadetek + zgodovina
- * iskanj — ISTI vizualni pomen, ENA definicija; roksal-red + obroba = isti
- * družinski stil, brez novih tokenov). */
-function BadgeNizkaZaloga() {
-  return (
-    <span className="ml-1.5 shrink-0 rounded border border-roksal-red/30 bg-roksal-red/10 px-1 py-px text-[9px] font-bold uppercase tracking-wide text-roksal-red">
-      Nizka zaloga
-    </span>
-  )
 }
 
 /** Primarni napis z označenim ujemanjem (React text node = XSS varno). */
@@ -502,15 +499,17 @@ export function CommandPalette({ open, onOpenChange, onNavigate, onSync }: Comma
               ))}
               {/* R218 (P1-f) — 'Vse' vrstica: samo ko skupno število preseže
                   prikazanih 5 (drugače je vrstica šum). Hijerarhija = R214
-                  družina (pl-8 + utišan napis), števec tabular-nums. Klik →
-                  navadna navigacija v Zalogo (EN VIR onNavigate — brez
-                  osnutka, dialog je za EN artikel). */}
+                  družina (pl-8 + utišan napis), števec tabular-nums. R219 —
+                  klik → deep-link Z NAMIGOM 'pod minimumom' (peti argument,
+                  whitelist lib inventory-filter): Zaloga se odpre s aktivnim
+                  čipom — vrstica ne obljublja ničesar, česar Zaloga ne pokaže
+                  (dialog ostane ZA EN artikel — osnutek hint ostane null). */}
               {nizkaZalogaSkupaj > nizkaZaloga.length && (
                 <CommandItem
                   value="nizka zaloga pokaži vse"
                   aria-label={`Pokaži vseh ${nizkaZalogaSkupaj} artiklov s nizko zalogo v Zalogi`}
                   onSelect={() => {
-                    onNavigate('inventory')
+                    onNavigate('inventory', null, null, null, 'pod-minimumom')
                     close()
                   }}
                   className="pl-8"

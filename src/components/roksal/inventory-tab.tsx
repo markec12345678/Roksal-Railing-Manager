@@ -53,6 +53,9 @@ import {
   zalogaPovzetekBeseda,
   type ZalogaArtikelZaNarocilo,
 } from '@/lib/zaloga-povzetek'
+// R219 — tip filtra 'pod minimumom' (EN VIR lib inventory-filter — samo TIP;
+// whitelist guard je del page.tsx centralNavigate, ne komponente).
+import type { InventoryFilterNamig } from '@/lib/inventory-filter'
 
 type InventoryType = 'ALL' | 'WPC_deska' | 'Inox_vijak' | 'Kemicno_sidro' | 'Alu_profil'
 type MovementType = 'PORABA' | 'DOPOLNITEV' | 'ODPIS'
@@ -144,13 +147,22 @@ const lotStatusStyle: Record<string, { dot: string; text: string; label: string 
 export interface InventoryTabProps {
   /** Deep-link hint iz page.tsx (monotonski n — R213 družina). */
   osnutekHint?: { artikel: ZalogaArtikelZaNarocilo; n: number } | null
+  /** R219 (P1-f) — filter hint 'pod minimumom' (paleta ⌘K 'Vse' vrstica →
+   * Zaloga z AKTIVNIM čipom; ISTI protokol monotonskega n kot osnutekHint). */
+  filterHint?: InventoryFilterNamig | null
 }
 
-export function InventoryTab({ osnutekHint }: InventoryTabProps) {
+export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
   const [inventory, setInventory] = useState<InventoryItem[]>([])
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<InventoryType>('ALL')
+  // R219 (P1-f) — čip 'pod minimumom': drugostopenjski filter, ki se ZLOŽI
+  // z obstoječim filtrom tipa (vidno = tip AND pod-minimum). Priženjen LE
+  // prek namiga (paleta 'Vse') ali ročno (klik na čip); ugasi ga uporabnik
+  // (klik) — stale namig nikoli ne preseneti (effect samo PRIŽIGA, ne
+  // ugaša — R216 vzorec: hint je namig, ne lastništvo nad stanjem).
+  const [podMinOnly, setPodMinOnly] = useState(false)
 
   // Movement dialog
   const [movementOpen, setMovementOpen] = useState(false)
@@ -406,9 +418,25 @@ export function InventoryTab({ osnutekHint }: InventoryTabProps) {
     toast.success(`Izvoženih ${filtered.length} artiklov v CSV.`)
   }
 
-  const filtered = filter === 'ALL'
+  // R219 (P1-f) — dvostopenjsko filtriranje: PRVA stopnja = tip (kot pred
+  // R219), DRUGA = čip 'pod minimumom'. Ime 'filtered' ostane KONČNO vidna
+  // množica — vsi porabniki (CSV R136, Naročilnica R204, Osnutek R205,
+  // seznam, prazno stanje) SAMODEJNO spoštujejo čip (WYSIWYG — 'vidni
+  // artikli' so resnično vidni; čip ne laže).
+  const typeFiltered = filter === 'ALL'
     ? inventory
     : inventory.filter((item) => item.tip === filter)
+
+  const filtered = podMinOnly
+    ? typeFiltered.filter((item) => item.kolicinaZaloga <= item.minimalnaZaloga)
+    : typeFiltered
+
+  // R219 — števec na čipu: koliko artiklov je pod minimumom ZNOTRAJ aktivnega
+  // filtra tipa (iskreno število — pove, koliko jih čip POKAŽE, ne koliko jih
+  // je v celotni zalogi; tabular-nums, ISTI vzorec kot R218 countHeading).
+  const podMinCount = typeFiltered.filter(
+    (item) => item.kolicinaZaloga <= item.minimalnaZaloga,
+  ).length
 
   const totalItems = inventory.length
   const totalStock = inventory.reduce((s, i) => s + i.kolicinaZaloga, 0)
@@ -456,6 +484,19 @@ export function InventoryTab({ osnutekHint }: InventoryTabProps) {
   useEffect(() => {
     if (hintArtikel) openOsnutekDialog([hintArtikel])
   }, [hintArtikel, hintNonce])
+
+  // R219 (P1-f) — filter hint: namig 'pod minimumom' PRIŽGE čip (tudi, ko
+  // je komponenta že montirana — monotonski n; zadnji klik zmaga). Počistitev
+  // namiga (null) čipa NE ugasne — uporabnik ga ugasi sam (namig je namig,
+  // ne lastništvo nad stanjem; R216 vzorec: počistitev dialoga NE zapira);
+  // stale namig je vseeno nemogčen: page.tsx počisti hint ob vsaki drugi
+  // navigaciji, komponenta pa se ob preklopu zavihka odmontira (čip =
+  // stanje seje v Zalogi, kot filter tipa).
+  const hintFilter = filterHint?.filter ?? null
+  const hintFilterNonce = filterHint?.n ?? 0
+  useEffect(() => {
+    if (hintFilter) setPodMinOnly(true)
+  }, [hintFilter, hintFilterNonce])
 
   // R205 — shrani osnutek: POST /api/material-orders ustvari MaterialOrder s
   // statusom OSNUTEK (strežnik ga vsili). Količine = narociloKolicina (EN VIR
@@ -723,6 +764,36 @@ export function InventoryTab({ osnutekHint }: InventoryTabProps) {
               {tab.label}
             </button>
           ))}
+          {/* R219 (P1-f) — čip 'pod minimumom': drugostopenjski filter, vedno
+              na voljo (ročni klik) IN samodejno prižgan prek namiga (paleta
+              'Vse'). aria-pressed = pravi toggle (struktura, ne samo izgled —
+              R215 družina); ko je aktiven, nosi ISKREN števec (koliko jih
+              res pokaže znotraj filtra tipa, tabular-nums R138) in roksal-red
+              družino (isti semantični pomen kot barvni stolpci in badge —
+              barva ni edini nosilec, števec + dobeseden tekst sta nosilca).
+              Aktiven čip spreminja VSE porabnike 'vidnih artiklov' (CSV /
+              Naročilnica / Osnutek / seznam) — WYSIWYG. */}
+          <button
+            type="button"
+            onClick={() => setPodMinOnly((v) => !v)}
+            aria-pressed={podMinOnly}
+            aria-label={
+              podMinOnly
+                ? `Pokaži samo artikle pod minimalno zalogo — aktiven (${podMinCount}); klik za izklop`
+                : 'Pokaži samo artikle pod minimalno zalogo'
+            }
+            title="Pokaži samo artikle, katerih zaloga je pod ali na minimumu"
+            className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 ${
+              podMinOnly
+                ? 'border-roksal-red/30 bg-roksal-red/10 text-roksal-red'
+                : 'border-transparent bg-secondary text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Pod minimumom
+            {podMinOnly && (
+              <span className="ml-1 tabular-nums font-semibold">{podMinCount}</span>
+            )}
+          </button>
         </div>
         {/* R204 — naročilnica vidnih artiklov pod minimumom (istá pill
             družina kot CSV R136 / Povzetek R203; iskren prazen seznam =

@@ -33,9 +33,9 @@ function oknoMed(src: string, od: string, do_: string): string {
 describe('R216 — page.tsx: centralNavigate osnutek hint (protokolni center)', () => {
   const src = beri('src/app/page.tsx')
 
-  it('centralNavigate sprejme četrti argument osnutek (ZalogaArtikelZaNarocilo | null)', () => {
+  it('centralNavigate sprejme četrti argument osnutek + peti filter (R219 razširitev, ZalogaArtikelZaNarocilo | null)', () => {
     expect(src).toContain(
-      '(tab: TabId, more?: MoreTabId | null, subTab?: string | null, osnutek?: ZalogaArtikelZaNarocilo | null) => {',
+      '(tab: TabId, more?: MoreTabId | null, subTab?: string | null, osnutek?: ZalogaArtikelZaNarocilo | null, filter?: InventoryFilterHint | null) => {',
     )
   })
 
@@ -50,15 +50,15 @@ describe('R216 — page.tsx: centralNavigate osnutek hint (protokolni center)', 
     expect(src).toMatch(/setInventoryOsnutekHint\(\(prev\) =>\s*\n\s*tab === 'inventory' && osnutek/)
   })
 
-  it('dogodek roksal:navigate prenaša osnutek polje (4. argument)', () => {
+  it('dogodek roksal:navigate prenaša osnutek polje (4. argument) + filter (R219, 5. argument)', () => {
     expect(src).toContain(
-      'centralNavigate(d.tab as TabId, (d.more ?? null) as MoreTabId | null, d.subTab ?? null, d.osnutek ?? null)',
+      'centralNavigate(d.tab as TabId, (d.more ?? null) as MoreTabId | null, d.subTab ?? null, d.osnutek ?? null, (d.filter ?? null) as InventoryFilterHint | null)',
     )
     expect(src).toContain('osnutek?: ZalogaArtikelZaNarocilo | null')
   })
 
-  it('InventoryTab dobi osnutekHint prop (EN VIR povezava)', () => {
-    expect(src).toContain('<InventoryTab osnutekHint={inventoryOsnutekHint} />')
+  it('InventoryTab dobi osnutekHint prop (EN VIR povezava; R219 — tudi filterHint)', () => {
+    expect(src).toContain('<InventoryTab osnutekHint={inventoryOsnutekHint} filterHint={inventoryFilterNamig} />')
   })
 
   it('TIP-only uvoz iz lib zaloga-povzetek (lib NI modificiran)', () => {
@@ -80,10 +80,10 @@ describe('R216 — page.tsx: centralNavigate osnutek hint (protokolni center)', 
 describe('R216 — InventoryTab: osnutekHint prop → Osnutek dialog (deep-link)', () => {
   const src = beri('src/components/roksal/inventory-tab.tsx')
 
-  it('InventoryTabProps z opcijskim osnutekHint { artikel, n }', () => {
+  it('InventoryTabProps z opcijskim osnutekHint { artikel, n } (R219 — filterHint ostaja ločen prop)', () => {
     expect(src).toContain('export interface InventoryTabProps {')
     expect(src).toContain('osnutekHint?: { artikel: ZalogaArtikelZaNarocilo; n: number } | null')
-    expect(src).toContain('export function InventoryTab({ osnutekHint }: InventoryTabProps) {')
+    expect(src).toContain('export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {')
   })
 
   it('hint effect odpre dialog z TOČNO TIM enim artikelom (passthrough)', () => {
@@ -114,9 +114,9 @@ describe('R216 — InventoryTab: osnutekHint prop → Osnutek dialog (deep-link)
 describe('R216 — paleta ⌘K: Nizka zaloga deep-link (P1-d)', () => {
   const src = beri('src/components/roksal/command-palette.tsx')
 
-  it('onNavigate podpis ima četrti argument osnutek', () => {
+  it('onNavigate podpis ima četrti argument osnutek + peti filter (R219)', () => {
     expect(src).toContain(
-      'onNavigate: (tab: TabId, more?: MoreTabId | null, subTab?: MaterialSubTab | null, osnutek?: ZalogaArtikelZaNarocilo | null) => void',
+      'onNavigate: (tab: TabId, more?: MoreTabId | null, subTab?: MaterialSubTab | null, osnutek?: ZalogaArtikelZaNarocilo | null, filter?: InventoryFilterHint | null) => void',
     )
   })
 

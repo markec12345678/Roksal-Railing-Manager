@@ -96,7 +96,12 @@ describe('R217 — paleta Material deep-link (command-palette.tsx)', () => {
   })
 
   it('iskren badge + podnapis (barva ni edini nosilec, tabular-nums)', () => {
-    expect(src).toMatch(/>\s*Nizka zaloga\s*<\/span>/)
+    // R219 PIN posodobitev: badge tekst je EN VIR komponenta
+    // (badge-nizka-zaloga.tsx — dobesedni 'Nizka zaloga' tam; paleta jo uvozi)
+    expect(src).toContain('{osnutek && <BadgeNizkaZaloga />}')
+    const badge = beri('src/components/roksal/badge-nizka-zaloga.tsx')
+    expect(badge).toMatch(/>\s*Nizka zaloga\s*<\/span>/)
+    // podnapis (zaloge/minimum, tabular-nums) ostane v paleti
     expect(src).toMatch(/font-medium tabular-nums text-roksal-red">\{osnutek\.kolicinaZaloga\}/)
     expect(src).toContain('minimum <span className="tabular-nums">{osnutek.minimalnaZaloga}</span>')
   })

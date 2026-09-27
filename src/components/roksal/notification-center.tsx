@@ -31,6 +31,10 @@ import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'
 import { casOznaka } from '@/lib/osvezitev-fokus'
 // R216 — tip artikla za deep-link osnutek (samo TIP; lib ostaja nedotaknjen).
 import type { ZalogaArtikelZaNarocilo } from '@/lib/zaloga-povzetek'
+// R219 (P1-e) — PETI signalec konvergence: stock vrstice v zvončku nosijo
+// ISTI badge 'Nizka zaloga' kot iskalni Material zadetek + zgodovina (paleta)
+// — EN VIR komponenta, ENA definicija stila (0 novih tokenov).
+import { BadgeNizkaZaloga } from '@/components/roksal/badge-nizka-zaloga'
 
 interface NotificationItem {
   id: string
@@ -577,6 +581,12 @@ export function NotificationCenter() {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
                           <p className="truncate text-[13px] font-semibold text-roksal-ink">{item.title}</p>
+                          {/* R219 (P1-e) — 5. signalec: stock vrstica nosi
+                              ISTI badge kot paleta (iskalni zadetek + zgodovina)
+                              — isti vizualni pomen čez vse signalce
+                              konvergence; vsebina digesta je ŽE pod minimum
+                              (badge resničen, ni okrasek). */}
+                          {item.kind === 'stock' && <BadgeNizkaZaloga />}
                           {(item.count ?? 1) > 1 && (
                             <span className="shrink-0 rounded-full bg-roksal-amber/15 px-1.5 text-[9px] font-bold text-roksal-amber">
                               ×{item.count}

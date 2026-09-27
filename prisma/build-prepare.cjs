@@ -56,7 +56,13 @@ if (!url) {
 run('bunx prisma generate')
 run('bunx prisma migrate deploy', { DATABASE_URL: url })
 if (process.env.SEED_ON_DEPLOY !== 'false') {
-  run('node prisma/seed.cjs')
+  // R219 — seed dobi ISTI razrešen URL kot migrate deploy. Prej je goli
+  // `node prisma/seed.cjs` prebiral SAMO process.env (Vercel vstavi
+  // DATABASE_URL samodejno, zato tam ni bilo vidno), lokalna gradnja brez
+  // izvoženega spremenljivke pa je padla s "the URL must start with the
+  // protocol `postgresql://`" — nekonsistentno z migrate korakom ZGORAJ,
+  // ki URL razreši prek .env fallbacka. ISTA pravila, ISTI vir (readEnvUrl).
+  run('node prisma/seed.cjs', { DATABASE_URL: url })
 } else {
   console.log('[build-prepare] SEED_ON_DEPLOY=false — seed preskočen.')
 }

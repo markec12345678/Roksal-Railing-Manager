@@ -156,10 +156,11 @@ describe("R218 — paleta: badge EN VIR + zgodovina + 'Vse' vrstica (command-pal
     expect(src).toContain('type RecentSearchVnos,')
   })
 
-  it('BadgeNizkaZaloga komponenta — ENA definicija badgea (dva uporaba)', () => {
-    expect(src).toContain('function BadgeNizkaZaloga()')
-    // EN VIR dokaz: družinski stil badgea je definiran TOČNO ENKRAT
-    expect((src.match(/border-roksal-red\/30 bg-roksal-red\/10/g) ?? []).length).toBe(1)
+  it('BadgeNizkaZaloga — EN VIR komponenta (R219 izluščena v svojo datoteko; zvonček = 5. signalec nosi ISTI vizual)', () => {
+    // paleta jo UVOZI (ni več lokalne definicije — ENA definicija v
+    // badge-nizka-zaloga.tsx, ki jo deli z zvončkom notification-center)
+    expect(src).toContain("import { BadgeNizkaZaloga } from '@/components/roksal/badge-nizka-zaloga'")
+    expect(src).not.toContain('function BadgeNizkaZaloga()')
     // Material zadetek ga uporablja ob osnutku
     expect(src).toContain('{osnutek && <BadgeNizkaZaloga />}')
     // zgodovina ga uporablja ob zabeleženem žigu
@@ -184,19 +185,21 @@ describe("R218 — paleta: badge EN VIR + zgodovina + 'Vse' vrstica (command-pal
     expect(src).toContain('setNizkaZalogaSkupaj(pod.length)')
   })
 
-  it("'Vse' vrstica: samo ob > 5, hierarhija pl-8, tabular-nums, brez dialoga", () => {
+  it("'Vse' vrstica: samo ob > 5, hierarhija pl-8, tabular-nums; R219 — deep-link Z filtrom 'pod minimumom'", () => {
     expect(src).toContain('{nizkaZalogaSkupaj > nizkaZaloga.length && (')
     expect(src).toContain('value="nizka zaloga pokaži vse"')
     expect(src).toContain('aria-label={`Pokaži vseh ${nizkaZalogaSkupaj} artiklov s nizko zalogo v Zalogi`}')
     expect(src).toContain('Pokaži vse s nizko zalogo v Zalogi')
     expect(src).toContain('className="pl-8"')
-    // klik → navadna navigacija (dialog je za EN artikel — ne lažemo);
-    // okno je omejeno NA 'Vse' vrstico (do konca skupine — Material zadetki
-    // s deep-linkom so zakoniti in živijo v svoji sekciji)
+    // R219 (P1-f): klik → Zaloga z AKTIVNIM čipom 'pod minimumom' (peti
+    // argument, EN VIR lib inventory-filter) — vrstica ne obljublja ničesar,
+    // česar Zaloga ne pokaže; dialog ostane ZA EN artikel (osnutek hint =
+    // null). Okno je omejeno NA 'Vse' vrstico (do konca skupine — Material
+    // zadetki s svojim deep-linkom so zakoniti in živijo v svoji sekciji).
     const zac = src.indexOf("value=\"nizka zaloga pokaži vse\"")
     const okno = src.slice(zac, src.indexOf('</CommandGroup>', zac))
-    expect(okno).toContain("onNavigate('inventory')")
-    expect(okno).not.toContain('onNavigate(\'inventory\', null, null')
+    expect(okno).toContain("onNavigate('inventory', null, null, null, 'pod-minimumom')")
+    expect(okno).not.toContain('osnutek')
   })
 
   it('zgodovina klik = ponovno iskanje (setQuery r.q — žig je namig, ne ukaz)', () => {

@@ -18,6 +18,9 @@ import { isMaterialSubTab, type MaterialSubTabHint } from '@/lib/material-sub-ta
 // R216 — tip artikla za osnutek hint (client-safe lib, samo TIP — lib zaloge
 // povzetka ostaja nedotaknjen; EN VIR oblike artikla med paleto/zvonček/dialog).
 import type { ZalogaArtikelZaNarocilo } from '@/lib/zaloga-povzetek'
+// R219 — EN VIR filtra 'pod minimumom' (mikromodul, NE komponenta — ISTI
+// vzorec kot material-sub-tab R213: whitelist guard + tip namiga).
+import { isInventoryFilter, type InventoryFilterHint, type InventoryFilterNamig } from '@/lib/inventory-filter'
 
 // ── Dinamični importi (code-splitting) ───────────────────────────────────────
 //
@@ -241,19 +244,35 @@ export default function Home() {
   const [inventoryOsnutekHint, setInventoryOsnutekHint] = useState<{
     artikel: ZalogaArtikelZaNarocilo; n: number
   } | null>(null)
+  // R219 (P1-f) — filter hint za Zalogo ('Vse' vrstica v paleti → Zaloga z
+  // aktivnim čipom 'pod minimumom'). ISTI vzorec kot osnutek hint R216:
+  // monotonski n (nov namig tudi, ko je komponenta že montirana — zadnji klik
+  // zmaga) + počistitev ob vsaki drugi navigaciji (stale namig nikoli ne
+  // preseneti uporabnika). Whitelist prek EN VIR isInventoryFilter.
+  const [inventoryFilterNamig, setInventoryFilterNamig] = useState<InventoryFilterNamig | null>(null)
   // R214 — EN VIR usmerjanja: roksal:navigate dogodek (FAB/zvonček) IN ukazna
   // paleta (⌘K) hodita čez ISTO funkcijo centralNavigate. Prej je paleta šla
   // POVRH protokola (setMoreTab direktno) — brez whitelist/monotonskega n IN z
   // bugom: 'Skice' je prižigala setMoreTab('sketches'), čeprav več-vsebina NIMA
   // skic modula (skice = overlay prek setSketchOpen) → prazen panel.
   const centralNavigate = useCallback(
-    (tab: TabId, more?: MoreTabId | null, subTab?: string | null, osnutek?: ZalogaArtikelZaNarocilo | null) => {
+    (tab: TabId, more?: MoreTabId | null, subTab?: string | null, osnutek?: ZalogaArtikelZaNarocilo | null, filter?: InventoryFilterHint | null) => {
       // R216 — osnutek hint: nastavljen LE ob navigaciji na Zalogo Z artiklom
       // (deep-link); vsaka druga navigacija ga počisti (R213 vzorec — stale
       // namig nikoli ne preživi naslednje navigacije).
       setInventoryOsnutekHint((prev) =>
         tab === 'inventory' && osnutek
           ? { artikel: osnutek, n: (prev?.n ?? 0) + 1 }
+          : null,
+      )
+      // R219 — filter hint ('pod minimumom'): ISTA čistilna semantika kot
+      // osnutek hint — nastavljen LE ob navigaciji na Zalogo Z namigom,
+      // vsaka druga navigacija ga počisti (stale čip ne sme presenetiti).
+      // Whitelist: neznan niz iz dogodka = brez namiga (fail-closed).
+      const namigFiltra = filter
+      setInventoryFilterNamig((prev) =>
+        tab === 'inventory' && isInventoryFilter(namigFiltra)
+          ? { filter: namigFiltra, n: (prev?.n ?? 0) + 1 }
           : null,
       )
       if (tab === 'more' && more) {
@@ -272,9 +291,9 @@ export default function Home() {
   )
   useEffect(() => {
     function onNavigate(e: Event) {
-      const d = (e as CustomEvent<{ tab?: string; more?: string | null; subTab?: string | null; osnutek?: ZalogaArtikelZaNarocilo | null }>).detail
+      const d = (e as CustomEvent<{ tab?: string; more?: string | null; subTab?: string | null; osnutek?: ZalogaArtikelZaNarocilo | null; filter?: string | null }>).detail
       if (!d?.tab) return
-      centralNavigate(d.tab as TabId, (d.more ?? null) as MoreTabId | null, d.subTab ?? null, d.osnutek ?? null)
+      centralNavigate(d.tab as TabId, (d.more ?? null) as MoreTabId | null, d.subTab ?? null, d.osnutek ?? null, (d.filter ?? null) as InventoryFilterHint | null)
     }
     window.addEventListener('roksal:navigate', onNavigate)
     return () => window.removeEventListener('roksal:navigate', onNavigate)
@@ -495,7 +514,7 @@ export default function Home() {
           />
         )}
         {activeTab === 'inclinometer' && <InclinometerTab projectId={selectedProjectId} />}
-        {activeTab === 'inventory' && <InventoryTab osnutekHint={inventoryOsnutekHint} />}
+        {activeTab === 'inventory' && <InventoryTab osnutekHint={inventoryOsnutekHint} filterHint={inventoryFilterNamig} />}
 
         {/* "Več" zavihki */}
         {activeTab === 'more' && moreTab && moreTab !== 'sketches' && (

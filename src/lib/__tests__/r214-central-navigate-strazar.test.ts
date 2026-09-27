@@ -26,16 +26,18 @@ function oknoMed(src: string, od: string, do_: string): string {
 describe('R214 — centralNavigate EN VIR (app/page.tsx)', () => {
   const src = beri('src/app/page.tsx')
 
-  it('centralNavigate obstaja kot useCallback z (tab, more?, subTab?, osnutek?) podpisom', () => {
+  it('centralNavigate obstaja kot useCallback z (tab, more?, subTab?, osnutek?, filter?) podpisom', () => {
     // R216 PIN posodobitev: 4. argument osnutek (deep-link Zaloga dialog, P1-d/e)
+    // R219 PIN posodobitev: 5. argument filter (čip 'pod minimumom', P1-f)
     expect(src).toContain('const centralNavigate = useCallback(')
-    expect(src).toContain('(tab: TabId, more?: MoreTabId | null, subTab?: string | null, osnutek?: ZalogaArtikelZaNarocilo | null) => {')
+    expect(src).toContain('(tab: TabId, more?: MoreTabId | null, subTab?: string | null, osnutek?: ZalogaArtikelZaNarocilo | null, filter?: InventoryFilterHint | null) => {')
   })
 
   it('dogodek roksal:navigate hodí čez centralNavigate (brez podvojenega usmerjanja)', () => {
     // R216 PIN posodobitev: dispatch prenaša tudi osnutek polje (4. argument)
+    // R219 PIN posodobitev: dispatch prenaša tudi filter polje (5. argument)
     expect(src).toContain(
-      'centralNavigate(d.tab as TabId, (d.more ?? null) as MoreTabId | null, d.subTab ?? null, d.osnutek ?? null)',
+      'centralNavigate(d.tab as TabId, (d.more ?? null) as MoreTabId | null, d.subTab ?? null, d.osnutek ?? null, (d.filter ?? null) as InventoryFilterHint | null)',
     )
     expect(src).toContain('}, [centralNavigate])')
   })
@@ -91,7 +93,8 @@ describe('R214 — ukazna paleta: direktni podzavihki Materiala (command-palette
   it('NavItem + onNavigate tipa nosita MaterialSubTab (type-only uvoz, brez any)', () => {
     expect(src).toContain('subTab?: MaterialSubTab')
     // R216 PIN posodobitev: onNavigate nosi tudi osnutek (deep-link artikel)
-    expect(src).toContain('subTab?: MaterialSubTab | null, osnutek?: ZalogaArtikelZaNarocilo | null) => void')
+    // R219 PIN posodobitev: onNavigate nosi tudi filter (5. argument)
+    expect(src).toContain('subTab?: MaterialSubTab | null, osnutek?: ZalogaArtikelZaNarocilo | null, filter?: InventoryFilterHint | null) => void')
     expect(src).toContain("import type { MaterialSubTab } from '@/lib/material-sub-tab'")
   })
 
