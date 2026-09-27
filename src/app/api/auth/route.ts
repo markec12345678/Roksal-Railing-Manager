@@ -22,6 +22,10 @@ import { audit } from '@/lib/audit'
 import { LOGIN_LIMIT, checkRate, clientIp, releaseRate } from '@/lib/rate-limit'
 import { accountBlock, BLOCK_MESSAGES } from '@/lib/user-lifecycle'
 import { permissionsForRole } from '@/lib/permissions'
+import { queueNotifications } from '@/lib/notifications'
+import { deviceLabelLine } from '@/lib/device-label'
+import { casOznaka } from '@/lib/osvezitev-fokus'
+import { correlationFromRequest } from '@/lib/correlation'
 
 const loginSchema = z.object({
   email: z.string().trim().min(3).max(254),
@@ -93,6 +97,23 @@ export async function POST(request: Request) {
       .update({ where: { id: profile.id }, data: { lastActive: new Date() } })
       .catch(() => undefined)
     await audit({ request, userId: profile.id, akcija: 'LOGIN', newValue: { vloga: profile.vloga } })
+
+    // R196 — obvestilo o novi prijavi (industrijski standard 'login alert'):
+    // vsaka uspešna prijava z geslom ustvari NEW_LOGIN vrstico za prijavljeni
+    // profil — tuja naprava na računu je vidna v zvončku, samooskrba pa teče
+    // prek 'Aktivne seje' (R195 masovna odjava). Best-effort: napaka
+    // obvestila NIKOLI ne podre prijave (pisarniško kritična pot ostane
+    // nedotaknjena; napaka gre v konzolo — brez tihe izgube). Demo profil
+    // (auth/demo, R127 — brez gesla) namenoma NE pošilja obvestila —
+    // efemerni račun brez lastnika je samo šum.
+    await queueNotifications({
+      template: 'NEW_LOGIN',
+      recipients: [{ userId: profile.id }],
+      naslov: 'Nova prijava v vaš račun',
+      sporocilo: `${deviceLabelLine(request.headers.get('user-agent'))} · ${casOznaka(new Date())}`,
+      entity: { type: 'session', id: issued.jti },
+      correlationId: correlationFromRequest(request),
+    }).catch((error) => console.error('NEW_LOGIN notification failed:', error))
 
     const response = NextResponse.json({
       user: { id: profile.id, email: profile.email, ime: profile.ime, vloga: profile.vloga },

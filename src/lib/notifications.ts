@@ -34,6 +34,10 @@ import type { UserRole } from '@prisma/client'
 export const NOTIFICATION_TEMPLATES = {
   LOW_STOCK: { version: 1 },
   JOB_FAILED: { version: 1 },
+  // R196 — varnostno obvestilo: uspešna prijava z geslom ustvari vrstico za
+  // prijavljeni profil (industrijski standard 'login alert'). In-app kanal
+  // (QUEUED → SENT ob lenobnem dispatchu) — brez zunanjih odvisnosti.
+  NEW_LOGIN: { version: 1 },
 } as const
 
 export type NotificationTemplate = keyof typeof NOTIFICATION_TEMPLATES
