@@ -79,7 +79,11 @@ describe('R217 — paleta Material deep-link (command-palette.tsx)', () => {
   const src = beri('src/components/roksal/command-palette.tsx')
 
   it('EN VIR uvoz osnutekIzIskanja (+ tip za iskalne zadetke)', () => {
-    expect(src).toContain("import { osnutekIzIskanja, type IskalniMaterial } from '@/lib/search-osnutek'")
+    // R218 PIN posodobitev: uvoz je zdaj večvrstični blok (prišla zgodovina —
+    // preberiZgodovinoVnose/zdruziZgodovino); R217 simboli ostajajo EN VIR.
+    expect(src).toContain("} from '@/lib/search-osnutek'")
+    expect(src).toContain('  osnutekIzIskanja,')
+    expect(src).toContain('  type IskalniMaterial,')
     expect(src).toContain('inventory: IskalniMaterial[]')
   })
 

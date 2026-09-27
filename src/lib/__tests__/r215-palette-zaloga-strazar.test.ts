@@ -26,13 +26,18 @@ describe('R215 — ⌘K paleta Nizka zaloga skupina (command-palette.tsx)', () =
     expect(src).toContain('Promise.all([')
   })
 
-  it('izpeljanka iz REALNIH podatkov: kolicinaZaloga <= minimalnaZaloga, top 5', () => {
-    expect(src).toContain('zalogaArr.filter((i) => i.kolicinaZaloga <= i.minimalnaZaloga).slice(0, 5)')
+  it('izpeljanka iz REALNIH podatkov: kolicinaZaloga <= minimalnaZaloga, top 5 + skupni števec (R218)', () => {
+    // R218 PIN posodobitev: ENA izpeljanka, DVA izhoda — seznam top 5 + ISKREN
+    // skupni števec (nizkaZalogaSkupaj = koliko jih JE, ne koliko jih pokaže).
+    expect(src).toContain('const pod = zalogaArr.filter((i) => i.kolicinaZaloga <= i.minimalnaZaloga)')
+    expect(src).toContain('setNizkaZaloga(pod.slice(0, 5))')
+    expect(src).toContain('setNizkaZalogaSkupaj(pod.length)')
   })
 
   it('skupina vidna LE ko nizka zaloga obstaja (brez lažne prazne skupine)', () => {
+    // R218 PIN posodobitev: heading števec ISKREN (skupno število, ne top 5).
     expect(src).toContain('{nizkaZaloga.length > 0 && (')
-    expect(src).toContain("countHeading('Nizka zaloga', nizkaZaloga.length)")
+    expect(src).toContain("countHeading('Nizka zaloga', nizkaZalogaSkupaj)")
   })
 
   it('klik → Zaloga prek EN VIR onNavigate + close (isti vzorec kot Material search)', () => {

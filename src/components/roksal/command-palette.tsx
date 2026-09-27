@@ -23,7 +23,15 @@ import type { Project } from '@/lib/types'
 import type { ZalogaArtikelZaNarocilo } from '@/lib/zaloga-povzetek'
 // R217 — EN VIR presojanja iskalnega zadetka kot nizke zaloge (fail-closed:
 // brez popolnih polj NE trdi nizke zaloge in NE ponudi deep-linka).
-import { osnutekIzIskanja, type IskalniMaterial } from '@/lib/search-osnutek'
+// R218 — EN VIR zgodovine z opcijskim žigom (4. signalec konvergence;
+// fail-closed: goli niz iz sheme pred R218 = brez žiga, NIKOLI lažni).
+import {
+  osnutekIzIskanja,
+  preberiZgodovinoVnose,
+  zdruziZgodovino,
+  type IskalniMaterial,
+  type RecentSearchVnos,
+} from '@/lib/search-osnutek'
 import {
   Boxes,
   ClipboardList,
@@ -114,24 +122,24 @@ interface SearchResults {
 const EMPTY_SEARCH: SearchResults = { customers: [], inventory: [], projects: [] }
 
 // Nedavna iskanja — localStorage kot zunanji store (max 5, najnovejše prej).
-// Deterministično: dedup po malih črkah, urejeno po vstavitvi, brez meta
-// podatkov. Branje gre prek useSyncExternalStore (pravilno SSR snapshot =
-// prazno, brez hydration razlik); pisanje obvesti naročnike.
+// Deterministično: dedup po malih črkah, urejeno po vstavitvi. R218 — vnosi
+// so {q, nizkaZaloga?} (žig zabeležen ob izboru Material zadetka z osnutkom);
+// razčlenjevanje/združevanje gre prek EN VIR lib (fail-closed — shema pred
+// R218 in pokvarjen JSON = brez žiga, nič ne pade). Branje gre prek
+// useSyncExternalStore (pravilno SSR snapshot = prazno, brez hydration
+// razlik); pisanje obvesti naročnike.
 const RECENT_KEY = 'roksal:recent-searches'
 const RECENT_MAX = 5
 
-let recentCache: string[] | null = null
+let recentCache: RecentSearchVnos[] | null = null
 const recentListeners = new Set<() => void>()
 
-function readRecentFromStorage(): string[] {
+function readRecentFromStorage(): RecentSearchVnos[] {
   try {
     const raw = window.localStorage.getItem(RECENT_KEY)
     if (!raw) return []
     const parsed: unknown = JSON.parse(raw)
-    if (!Array.isArray(parsed)) return []
-    return parsed
-      .filter((v): v is string => typeof v === 'string' && v.trim().length >= 2)
-      .slice(0, RECENT_MAX)
+    return preberiZgodovinoVnose(parsed, RECENT_MAX)
   } catch {
     return [] // pokvarjen/nezazen localStorage — nič ne fali, samo brez zgodovine
   }
@@ -144,17 +152,17 @@ function subscribeRecent(onChange: () => void): () => void {
   }
 }
 
-function getRecentSnapshot(): string[] {
+function getRecentSnapshot(): RecentSearchVnos[] {
   if (recentCache === null) recentCache = readRecentFromStorage()
   return recentCache
 }
 
-const EMPTY_RECENT: string[] = []
-function getRecentServerSnapshot(): string[] {
+const EMPTY_RECENT: RecentSearchVnos[] = []
+function getRecentServerSnapshot(): RecentSearchVnos[] {
   return EMPTY_RECENT
 }
 
-function writeRecent(next: string[]): void {
+function writeRecent(next: RecentSearchVnos[]): void {
   try {
     window.localStorage.setItem(RECENT_KEY, JSON.stringify(next))
   } catch {
@@ -164,13 +172,10 @@ function writeRecent(next: string[]): void {
   recentListeners.forEach((l) => l())
 }
 
-function saveRecentSearch(q: string): void {
-  const trimmed = q.trim()
-  if (trimmed.length < 2) return
-  writeRecent([
-    trimmed,
-    ...readRecentFromStorage().filter((v) => v.toLowerCase() !== trimmed.toLowerCase()),
-  ].slice(0, RECENT_MAX))
+/** R218 — žig je opcijski 2. argument (Material zadetek z osnutkom ga
+ * zabeleži; stranke/navadni izbori ne). Logika združevanja = EN VIR lib. */
+function saveRecentSearch(q: string, nizkaZaloga?: boolean): void {
+  writeRecent(zdruziZgodovino(readRecentFromStorage(), q, nizkaZaloga, RECENT_MAX))
 }
 
 function clearRecentSearches(): void {
@@ -202,6 +207,17 @@ function splitMatch(
   }
 }
 
+/** R218 — EN VIR badgea 'Nizka zaloga' (iskalni Material zadetek + zgodovina
+ * iskanj — ISTI vizualni pomen, ENA definicija; roksal-red + obroba = isti
+ * družinski stil, brez novih tokenov). */
+function BadgeNizkaZaloga() {
+  return (
+    <span className="ml-1.5 shrink-0 rounded border border-roksal-red/30 bg-roksal-red/10 px-1 py-px text-[9px] font-bold uppercase tracking-wide text-roksal-red">
+      Nizka zaloga
+    </span>
+  )
+}
+
 /** Primarni napis z označenim ujemanjem (React text node = XSS varno). */
 function MatchedText({ text, q }: { text: string; q: string }) {
   const parts = splitMatch(text, q)
@@ -228,10 +244,15 @@ export function CommandPalette({ open, onOpenChange, onNavigate, onSync }: Comma
   const [nizkaZaloga, setNizkaZaloga] = useState<{
     id: string; sifraMateriala: string; naziv: string; kolicinaZaloga: number; minimalnaZaloga: number; enota: string
   }[]>([])
+  // R218 (P1-f) — SKUPNO število artiklov pod minimumom (izpeljanka iz
+  // ISTIH realnih podatkov kot seznam; seznam ostane top 5, števec pa je
+  // ISKREN — pove koliko jih JE, ne koliko jih paleta pokaže).
+  const [nizkaZalogaSkupaj, setNizkaZalogaSkupaj] = useState(0)
   const [query, setQuery] = useState('')
   const [search, setSearch] = useState<SearchResults>(EMPTY_SEARCH)
   const [searching, setSearching] = useState(false)
   // Nedavna iskanja: localStorage kot zunanji store (brez setState v efektu).
+  // R218 — vnosi {q, nizkaZaloga?} (glej lib — fail-closed razčlenjevalnik).
   const recent = useSyncExternalStore(
     subscribeRecent,
     getRecentSnapshot,
@@ -251,9 +272,11 @@ export function CommandPalette({ open, onOpenChange, onNavigate, onSync }: Comma
         if (cancelled) return
         setProjects(Array.isArray(projekti) ? projekti.slice(0, 25) : [])
         const zalogaArr = Array.isArray(zaloga) ? zaloga : []
-        setNizkaZaloga(
-          zalogaArr.filter((i) => i.kolicinaZaloga <= i.minimalnaZaloga).slice(0, 5),
-        )
+        // R218 — ENA izpeljanka, DVA izhoda: seznam top 5 (paleta ne preraste)
+        // + skupni števec (iskren heading + 'Vse' povezava ob > 5).
+        const pod = zalogaArr.filter((i) => i.kolicinaZaloga <= i.minimalnaZaloga)
+        setNizkaZaloga(pod.slice(0, 5))
+        setNizkaZalogaSkupaj(pod.length)
       })
       .catch(() => undefined)
     return () => {
@@ -330,9 +353,10 @@ export function CommandPalette({ open, onOpenChange, onNavigate, onSync }: Comma
     close()
   }
 
-  /** Izbor rezultata iskanja = zapiši poizvedbo v zgodovino. */
-  function rememberSearch(q: string) {
-    saveRecentSearch(q)
+  /** Izbor rezultata iskanja = zapiši poizvedbo v zgodovino. R218 —
+   * opcijski žig (Material zadetek z osnutkom ga zabeleži). */
+  function rememberSearch(q: string, nizkaZaloga?: boolean) {
+    saveRecentSearch(q, nizkaZaloga)
   }
 
   function selectProject(id: string) {
@@ -377,18 +401,24 @@ export function CommandPalette({ open, onOpenChange, onNavigate, onSync }: Comma
           )}
         </CommandEmpty>
 
-        {/* R138: nedavna iskanja — samo ob odprti paleti in PRAZNI poizvedbi. */}
+        {/* R138: nedavna iskanja — samo ob odprti paleti in PRAZNI poizvedbi.
+            R218 (P1-e): vnos z zabeleženim žigom nosi EN VIR badgea (ISTI
+            vizual kot Material zadetek) — ZGODOVINA je 4. signalec, ki poveže
+            poizvedbo z naročilnim tokom. Žig je namig: klik zgodovine ponovno
+            požene iskanje → badgei iz SVEŽIH podatkov (zgodovina nikoli ne
+            trdi stanja zaloge, ki ga ne more vedeti). */}
         {open && query.trim().length === 0 && recent.length > 0 && (
           <>
             <CommandGroup heading="Nedavna iskanja">
               {recent.map((r) => (
                 <CommandItem
-                  key={r}
-                  value={`nedavno ${r}`}
-                  onSelect={() => setQuery(r)}
+                  key={r.q}
+                  value={`nedavno ${r.q}`}
+                  onSelect={() => setQuery(r.q)}
                 >
                   <History className="mr-2 h-4 w-4 text-muted-foreground" />
-                  <span className="truncate">{r}</span>
+                  <span className="truncate">{r.q}</span>
+                  {r.nizkaZaloga === true && <BadgeNizkaZaloga />}
                 </CommandItem>
               ))}
               <CommandItem
@@ -435,13 +465,18 @@ export function CommandPalette({ open, onOpenChange, onNavigate, onSync }: Comma
             skupine). R216 — klik → DEEP-LINK: Zaloga + Osnutek dialog z
             TOČNO TIM artikelom (osnutek passthrough — page.tsx centralNavigate;
             monotonski n, stale hint počiščen ob drugih navigacijah).
+            R218 (P1-f) — ISKREN heading: števec pove SKUPNO število pod
+            minimumom (seznam ostane top 5), ob > 5 pa 'Vse' vrstica →
+            navadna navigacija v Zalogo (kjer je vidna celotna slika s
+            barvnimi stolpci; dialog je za EN artikel — ne lažemo z
+            'vse v enem dialogu').
             Stil: dejanska zaloga v roksal-red (≤ minimum — isti semantični
             pomen kot barvni stolpci v Zalogi, barva ni edini nosilec —
             tudi podnapis pove 'minimum'), številke tabular-nums. */}
         {nizkaZaloga.length > 0 && (
           <>
             <CommandSeparator />
-            <CommandGroup heading={countHeading('Nizka zaloga', nizkaZaloga.length)}>
+            <CommandGroup heading={countHeading('Nizka zaloga', nizkaZalogaSkupaj)}>
               {nizkaZaloga.map((i) => (
                 <CommandItem
                   key={i.id}
@@ -465,6 +500,30 @@ export function CommandPalette({ open, onOpenChange, onNavigate, onSync }: Comma
                   </span>
                 </CommandItem>
               ))}
+              {/* R218 (P1-f) — 'Vse' vrstica: samo ko skupno število preseže
+                  prikazanih 5 (drugače je vrstica šum). Hijerarhija = R214
+                  družina (pl-8 + utišan napis), števec tabular-nums. Klik →
+                  navadna navigacija v Zalogo (EN VIR onNavigate — brez
+                  osnutka, dialog je za EN artikel). */}
+              {nizkaZalogaSkupaj > nizkaZaloga.length && (
+                <CommandItem
+                  value="nizka zaloga pokaži vse"
+                  aria-label={`Pokaži vseh ${nizkaZalogaSkupaj} artiklov s nizko zalogo v Zalogi`}
+                  onSelect={() => {
+                    onNavigate('inventory')
+                    close()
+                  }}
+                  className="pl-8"
+                >
+                  <Package className="mr-2 h-4 w-4 text-roksal-amber/70" />
+                  <span className="text-[13px] text-muted-foreground">
+                    Pokaži vse s nizko zalogo v Zalogi
+                  </span>
+                  <span className="ml-2 shrink-0 text-xs tabular-nums text-muted-foreground">
+                    {nizkaZalogaSkupaj}
+                  </span>
+                </CommandItem>
+              )}
             </CommandGroup>
           </>
         )}
@@ -545,7 +604,7 @@ export function CommandPalette({ open, onOpenChange, onNavigate, onSync }: Comma
                     key={m.id}
                     value={`${m.naziv} ${m.sifra}`}
                     onSelect={() => {
-                      rememberSearch(q)
+                      rememberSearch(q, osnutek !== null)
                       if (osnutek) onNavigate('inventory', null, null, osnutek)
                       else onNavigate('inventory')
                       close()
@@ -556,11 +615,7 @@ export function CommandPalette({ open, onOpenChange, onNavigate, onSync }: Comma
                   >
                     <Package className="mr-2 h-4 w-4 text-roksal-amber" />
                     <MatchedText text={m.naziv} q={q} />
-                    {osnutek && (
-                      <span className="ml-1.5 shrink-0 rounded border border-roksal-red/30 bg-roksal-red/10 px-1 py-px text-[9px] font-bold uppercase tracking-wide text-roksal-red">
-                        Nizka zaloga
-                      </span>
-                    )}
+                    {osnutek && <BadgeNizkaZaloga />}
                     <span className="ml-2 shrink-0 text-xs text-muted-foreground">{m.sifra}</span>
                     {osnutek && (
                       <span className="ml-2 hidden shrink-0 text-xs text-muted-foreground sm:inline">

@@ -141,8 +141,10 @@ describe('R216 — paleta ⌘K: Nizka zaloga deep-link (P1-d)', () => {
   })
 
   it('R215 skupina-pogoj OSTANE (brez lažne prazne skupine) — regresija', () => {
+    // R218 PIN posodobitev: heading števec zdaj ISKREN — skupno število pod
+    // minimumom (nizkaZalogaSkupaj), ne števec prikazanih top 5.
     expect(src).toContain('{nizkaZaloga.length > 0 && (')
-    expect(src).toContain("countHeading('Nizka zaloga', nizkaZaloga.length)")
+    expect(src).toContain("countHeading('Nizka zaloga', nizkaZalogaSkupaj)")
   })
 
   it('0 novih hex (družina)', () => {

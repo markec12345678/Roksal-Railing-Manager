@@ -15,6 +15,75 @@
 // Brez React odvisnosti — čisto enota, testirljivo brez montiranja komponent.
 import type { ZalogaArtikelZaNarocilo } from '@/lib/zaloga-povzetek'
 
+// ---------------------------------------------------------------------------
+// R218 (P1-e) — ZGODOVINA kot ČETRTI signalec konvergence. Nedavna iskanja
+// (⌘K 'Nedavna iskanja') so do zdaj nosila SAMO niz poizvedbe — uporabnik,
+// ki je včeraj prek iskanja naletel na artikel z nizko zalogo, danes v
+// zgodovini te sledi NE vidi. Ta sekcija je EN VIR shranjevanja/ branja
+// vnosov zgodovine z OPCIJSKIM 'nizkaZaloga' žigom (zabeleženim ob izboru
+// Material zadetka, ki je imel osnutek). Fail-closed po duhu projekta:
+// starejši vnos (gol niz — shema pred R218) ali pokvarjen localStorage
+// pomenita "brez žiga" — NIKOLI pa lažnega žiga (žig nosi SAMO dobesedna
+// `true`; vse ostalo je nevtralno). Žig je NAMIG (klik zgodovine ponovno
+// požene iskanje → badgei iz SVEŽIH podatkov) — zgodovina nikoli ne trdi
+// stanja zaloge, ki ga ne more vedeti.
+// ---------------------------------------------------------------------------
+
+/** EN vnos zgodovine iskanja. `nizkaZaloga` je opcijski žig (samo dobesedna
+ * `true` — glej zgoraj); ključ se NE zapiše, ko ni resničen (deterministična
+ * oblika brez šuma). */
+export interface RecentSearchVnos {
+  q: string
+  nizkaZaloga?: true
+}
+
+/** Fail-closed razčlenjevalnik shranjene zgodovine (localStorage JSON).
+ * Sprejme mešanico starih (goli niz) in novih ({q, nizkaZaloga?}) vnosov;
+ * pokvarjene/prehkratke vnose NEPADIče spusti (noben vnos ne more pokvariti
+ * ostalih), počisti presledke, omeji na max. `unknown` vhod — poljuben
+ * pokvarjen JSON je pričakovan vhod, ne napaka. */
+export function preberiZgodovinoVnose(raw: unknown, max: number): RecentSearchVnos[] {
+  if (!Array.isArray(raw)) return []
+  const vnosi: RecentSearchVnos[] = []
+  for (const el of raw) {
+    if (typeof el === 'string') {
+      if (el.trim().length >= 2) vnosi.push({ q: el.trim() })
+    } else if (typeof el === 'object' && el !== null && 'q' in el) {
+      const kandidat = el as { q?: unknown; nizkaZaloga?: unknown }
+      if (typeof kandidat.q === 'string' && kandidat.q.trim().length >= 2) {
+        vnosi.push(
+          kandidat.nizkaZaloga === true
+            ? { q: kandidat.q.trim(), nizkaZaloga: true }
+            : { q: kandidat.q.trim() },
+        )
+      }
+    }
+    if (vnosi.length >= max) break
+  }
+  return vnosi.slice(0, max)
+}
+
+/** ENA združitev novega vnosa z obstoječo zgodovino: na začetek, dedup po
+ * malih črkah (ISTI vzorec kot pred R218 — ničesar ne spreminjamo v
+ * vedenju, samo nosilec se razširi z opcijskim žigom), omejitev na max.
+ * Poizvedbe krajše od 2 znakov zgodovino NE spreminjajo (vrne kopijo —
+ * klicalec lahko varno nadaljuje z rezultatom). */
+export function zdruziZgodovino(
+  obstojeca: readonly RecentSearchVnos[],
+  q: string,
+  nizkaZaloga: boolean | undefined,
+  max: number,
+): RecentSearchVnos[] {
+  const trimmed = q.trim()
+  if (trimmed.length < 2) return [...obstojeca]
+  const vnos: RecentSearchVnos =
+    nizkaZaloga === true ? { q: trimmed, nizkaZaloga: true } : { q: trimmed }
+  return [
+    vnos,
+    ...obstojeca.filter((v) => v.q.toLowerCase() !== trimmed.toLowerCase()),
+  ].slice(0, max)
+}
+
 /** Iskalni zadetek Materiala iz /api/search. Zaloga polja so opcijska:
  * prisotna so od R217 dalje (API jih vrača za iskren badge + deep-link);
  * njihova odsotnost pomeni "ne moremo presoditi" — NI enako "ni nizke". */
