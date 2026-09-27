@@ -73,3 +73,20 @@ eb_odpri_in_prijavi() {
 
 # Uspavanje z obrazložitvijo (readability dolgih skript).
 eb_cakaj() { local sek="$1"; sleep "$sek"; }
+
+# R232 (P1-d) — zajem CSV izvoza: patcha URL.createObjectURL, da vsebino
+# Bloba shrani v globalno spremenljivko `window.__<varname>` (vzorec se
+# ponavlja od r226 — zdaj zaprt v knjižnici). UPORABA:
+#   eb_csv_capture csv          # patch; kasneje: window.__csv
+#   eb_klik ...                 # klik na izvozni gumb
+#   eb_pocakaj_na "(()=>{return typeof window.__csv==='string';})()" 10
+eb_csv_capture() {
+  local varname="$1"
+  agent-browser eval "(()=>{const orig=URL.createObjectURL.bind(URL); URL.createObjectURL=function(b){ new Response(b).text().then(t=>{window.__$varname=t;}); return orig(b); }; return 'patched';})()" 2>&1 | tail -1
+}
+
+# R232 (P1-d) — reset zajetega CSV (pred klikom: __<varname>=null).
+eb_csv_reset() {
+  local varname="$1"
+  agent-browser eval "(()=>{window.__$varname=null; return 'reset';})()" 2>&1 | tail -1
+}

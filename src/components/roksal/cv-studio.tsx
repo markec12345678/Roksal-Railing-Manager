@@ -200,9 +200,9 @@ const ELEMENT_LABELS: Record<SceneElementType, string> = {
 }
 
 const STATE_BADGE: Record<string, { label: string; cls: string }> = {
-  PROPOSED: { label: 'PREDLOG', cls: 'border-stone-300 bg-stone-100 text-stone-700' },
+  PROPOSED: { label: 'PREDLOG', cls: 'border-border bg-muted text-roksal-ink' },
   NEEDS_CONFIRMATION: { label: 'POTRDITEV', cls: 'border-amber-300 bg-amber-100 text-amber-800' },
-  UNKNOWN: { label: 'NEZNANO', cls: 'border-stone-300 bg-stone-100 text-stone-500' },
+  UNKNOWN: { label: 'NEZNANO', cls: 'border-border bg-muted text-muted-foreground' },
 }
 
 function round4(v: number): number {
@@ -731,13 +731,13 @@ function renderSceneOverlay(
 // ── Manjše UI pod-komponente ─────────────────────────────────────────────────
 
 function CapsBadge({ ok, label }: { ok: boolean | 'unknown'; label: string }) {
-  const variant = ok === true ? 'emerald' : ok === false ? 'stone' : 'amber'
+  const variant = ok === true ? 'emerald' : ok === false ? 'neutral' : 'amber'
   const cls =
     variant === 'emerald'
       ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
       : variant === 'amber'
         ? 'border-amber-300 bg-amber-50 text-amber-800'
-        : 'border-stone-300 bg-stone-100 text-stone-600'
+        : 'border-border bg-muted text-muted-foreground'
   return (
     <Badge variant="outline" className={`text-[10px] ${cls}`}>
       {label}: {ok === true ? 'da' : ok === false ? 'ne' : 'neznano'}
@@ -772,7 +772,7 @@ function ElementCard({
           {stCfg.label}
         </Badge>
         {isManual && (
-          <Badge variant="outline" className="border-stone-300 bg-stone-50 text-[9px] text-stone-600">
+          <Badge variant="outline" className="border-border bg-muted text-[9px] text-muted-foreground">
             ročno
           </Badge>
         )}
@@ -845,7 +845,7 @@ function ElementCard({
             type="button"
             size="sm"
             variant="outline"
-            className="min-h-[36px] border-stone-300 text-[11px] text-stone-600 hover:bg-stone-50"
+            className="min-h-[36px] border-border text-[11px] text-muted-foreground hover:bg-muted"
             onClick={onDelete}
             aria-label={`Briši ročno zaznavo ${el.id}`}
           >
@@ -896,10 +896,10 @@ function ReferenceSection({
         </AlertDescription>
       </Alert>
       <div className="flex flex-wrap items-center gap-2 text-[11px]">
-        <Badge variant="outline" className={`text-[9px] ${refP1 ? 'border-emerald-300 bg-emerald-50 text-emerald-800' : 'border-stone-300 bg-stone-50 text-stone-500'}`}>
+        <Badge variant="outline" className={`text-[9px] ${refP1 ? 'border-emerald-300 bg-emerald-50 text-emerald-800' : 'border-border bg-muted text-muted-foreground'}`}>
           P1 {refP1 ? `(${refP1.x}, ${refP1.y})` : '—'}
         </Badge>
-        <Badge variant="outline" className={`text-[9px] ${refP2 ? 'border-emerald-300 bg-emerald-50 text-emerald-800' : 'border-stone-300 bg-stone-50 text-stone-500'}`}>
+        <Badge variant="outline" className={`text-[9px] ${refP2 ? 'border-emerald-300 bg-emerald-50 text-emerald-800' : 'border-border bg-muted text-muted-foreground'}`}>
           P2 {refP2 ? `(${refP2.x}, ${refP2.y})` : '—'}
         </Badge>
         {refP1 && refP2 && !refLenOk && (
@@ -2093,7 +2093,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                     <span className="text-teal-600">teal</span> = stebri ·{' '}
                     <span className="text-amber-600">amber</span> = stopnice ·{' '}
                     <span className="text-red-600">rdeča</span> = ovira/referenca ·{' '}
-                    <span className="text-stone-500">sivo</span> = ročne površine ·{' '}
+                    <span className="text-muted-foreground">sivo</span> = ročne površine ·{' '}
                     <span className="text-orange-600">oranžno</span> = kotniki ·{' '}
                     <span className="text-teal-700">teal točke</span> = segment A–B
                   </p>
@@ -2191,7 +2191,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                       type="button"
                       size="sm"
                       variant={clickMode === 'bbox' ? 'default' : 'outline'}
-                      className={`min-h-[44px] text-[11px] ${clickMode === 'bbox' ? 'bg-stone-600 text-white hover:bg-stone-700' : ''}`}
+                      className={`min-h-[44px] text-[11px] ${clickMode === 'bbox' ? 'bg-roksal-navy text-white hover:bg-roksal-navy/90' : ''}`}
                       onClick={() => {
                         if (clickMode === 'bbox') {
                           setClickMode('none')
@@ -2343,7 +2343,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-xs font-semibold text-roksal-ink">Kakovost prizora</span>
                     {analyzeMs !== null && (
-                      <Badge variant="outline" className="ml-auto border-stone-300 bg-stone-50 text-[9px] text-stone-600">
+                      <Badge variant="outline" className="ml-auto border-border bg-muted text-[9px] text-muted-foreground">
                         Analiza: {analyzeMs} ms
                       </Badge>
                     )}
@@ -2686,7 +2686,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                     <Badge variant="outline" className={`text-[9px] ${fotoHasStructure ? 'border-emerald-300 bg-emerald-50 text-emerald-800' : 'border-amber-300 bg-amber-50 text-amber-800'}`}>
                       struktura {fotoHasStructure ? '✓' : '—'}
                     </Badge>
-                    <Badge variant="outline" className="border-stone-300 bg-stone-50 text-[9px] text-stone-600">
+                    <Badge variant="outline" className="border-border bg-muted text-[9px] text-muted-foreground">
                       popravki: {corrections}
                     </Badge>
                   </div>
@@ -2853,7 +2853,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                             {liveAnalysis.elements.length} zaznav
                           </Badge>
                           {liveMs !== null && (
-                            <Badge variant="outline" className="border-stone-300 bg-stone-50 text-[9px] text-stone-600">
+                            <Badge variant="outline" className="border-border bg-muted text-[9px] text-muted-foreground">
                               Analiza: {liveMs} ms
                             </Badge>
                           )}

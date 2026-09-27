@@ -8,8 +8,8 @@
 //   žetoni (en razred obe temi, 0 novih hex): punch-list (Odprto chip + vrstice
 //   + krogci + tekst), deal-pipeline (NACRTOVANO head/over/dot/bar), calculator
 //   (betoniranje Card), material-intelligence (advisory teksti). Javni portali
-//   (setup/aktivacija/m-token) in cv-studio ostanejo NAMERNE izjeme (lastna
-//   estetika zunaj app-lupine).
+//   (setup/aktivacija/m-token) ostanejo NAMERNE izjeme (lastna estetika zunaj
+//   app-lupine); cv-studio je R232 konvertiran na žetone (r232 odločitev).
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -105,15 +105,16 @@ describe('R230 — [Mandatory] stil: zadnji stone dvojčki v operativnem jedru �
     }
   })
 
-  it('namerne izjeme ostanejo DOKUMENTIRANE: javni portali + cv-studio niso del app-lupine', () => {
-    // setup/aktivacija/m-token/cv-studio imajo lastno estetiko — ta test
+  it('namerne izjeme ostanejo DOKUMENTIRANE: javni portali niso del app-lupine (cv-studio R232 konvertiran)', () => {
+    // setup/aktivacija/m-token imajo lastno estetiko — ta test
     // dokumentira, da NISO spregledane, ampak izrecno izvzete (r230 odločitev).
+    // cv-studio NI več izjema: R232 je konvertiran na žetone (r232 test ga pina).
     for (const rel of [
       'src/app/setup/setup-client.tsx',
       'src/app/aktivacija/[token]/activation-client.tsx',
-      'src/components/roksal/cv-studio.tsx',
     ]) {
       expect(beri(rel)).toMatch(/stone-[0-9]/) // še vedno na stone — namerne izjeme
     }
+    expect(beri('src/components/roksal/cv-studio.tsx')).not.toMatch(/stone-[0-9]/) // R232 žetoni
   })
 })

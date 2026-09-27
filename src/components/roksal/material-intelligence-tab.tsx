@@ -532,8 +532,16 @@ export function MaterialIntelligenceTab({
 
   // R140 — izvoz naročil v CSV (pisarniški pregled). R231 — podaja IZRECNO
   // danasZamude (polnoč, ISTI dan kot badge — ENA resnica za zaslon IN izvoz).
+  // R232 — gumb je VEDNO viden (družina vodja-CSV R228: izvozni gumb ne skriva
+  // praznega stanja), klik pa ostane fail-closed: 0 naročil → NIČ se ne izvozi
+  // (ni prazne datoteke — iskren toast namesto tihega gumba), nalaganje →
+  // onemogočen (prepreči izvoz NEpopolnega seznama sredi fetcha).
   const handleOrdersCsv = () => {
-    if (orders.length === 0) return
+    if (loading) return
+    if (orders.length === 0) {
+      toast({ title: 'Ni naročil za izvoz', description: 'CSV se izvozi, ko je dodano prvo naročilo.' })
+      return
+    }
     const count = downloadOrdersCsv(orders, danasZamude)
     toast({ title: 'CSV prenesen', description: `${count} postavk v Narocila-${todayStamp()}.csv` })
   }
@@ -712,6 +720,26 @@ export function MaterialIntelligenceTab({
       {/* Orders tab */}
       {tab === 'orders' && (
         <div className="space-y-2">
+          {/* R232 — CSV gumb VEDNO viden (družina vodja-CSV R228: izvozni gumb
+              ne skriva praznega stanja — dokazljivo v prodi tudi pri 0 naročil).
+              R140/R231: aria-label + title (a11y družina izvozov — vsi ostali
+              izvozi ju imajo; kontrakt R140 nespremenjen: VSA naročila).
+              Klik fail-closed (handleOrdersCsv): 0 naročil → NIČ se ne izvozi;
+              nalaganje → onemogočen (ne izvozi NEpopolnega seznama). */}
+          <div className="flex justify-end">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={handleOrdersCsv}
+              disabled={loading}
+              aria-label="Izvozi naročila kot CSV"
+              title="Izvozi vsa naročila (neodvisno od statusnega filtra) kot CSV za Excel"
+              className="h-8 text-xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
+            >
+              <Download className="h-3.5 w-3.5 mr-1 text-roksal-amber" /> CSV
+            </Button>
+          </div>
           {loading && orders.length === 0 ? (
             <Card><CardContent className="py-8 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto text-roksal-amber" /></CardContent></Card>
           ) : orders.length === 0 ? (
@@ -724,22 +752,6 @@ export function MaterialIntelligenceTab({
             )
           ) : (
             <>
-              {/* R140: CSV izvoz — isti kontrakt kot Zaloga/Računi/Termini.
-                  R231: aria-label + title (a11y družina izvozov — vsi ostali
-                  izvozi ju imajo; kontrakt R140 nespremenjen: VSA naročila). */}
-              <div className="flex justify-end">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={handleOrdersCsv}
-                  aria-label="Izvozi naročila kot CSV"
-                  title="Izvozi vsa naročila (neodvisno od statusnega filtra) kot CSV za Excel"
-                  className="h-8 text-xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
-                >
-                  <Download className="h-3.5 w-3.5 mr-1 text-roksal-amber" /> CSV
-                </Button>
-              </div>
               {/* R207 — statusni filter (pill družina R136/R204/R206): števci iz
                   realnih naročil; CSV ostaja VSA naročila (kontrakt R140
                   nespremenjen — brez prikrite vezave na filter). */}

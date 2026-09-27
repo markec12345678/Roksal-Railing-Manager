@@ -113,14 +113,15 @@ describe('R231 — [Mandatory] stil (P1-f): map-measure + measurements neutralne
     expect(measurements).toContain("ALU: 'bg-slate-100 dark:bg-slate-500/15")
   })
 
-  it('javni portali + cv-studio ostanejo izjeme (regresija r230 dokumentacije)', () => {
+  it('javni portali ostanejo izjeme (regresija r230 dokumentacije); cv-studio R232 konvertiran', () => {
     for (const rel of [
       'src/app/setup/setup-client.tsx',
       'src/app/aktivacija/[token]/activation-client.tsx',
-      'src/components/roksal/cv-studio.tsx',
     ]) {
       expect(beri(rel)).toMatch(/stone-[0-9]/) // še vedno na stone — namerne izjeme (r230)
     }
+    // cv-studio NI več izjema — R232 žetoni (r232 test pina podrobnosti)
+    expect(beri('src/components/roksal/cv-studio.tsx')).not.toMatch(/stone-[0-9]/)
   })
 })
 
