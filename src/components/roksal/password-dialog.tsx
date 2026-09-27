@@ -100,7 +100,7 @@ export function PasswordDialog({ open, onOpenChange }: PasswordDialogProps) {
             (PASSWORD_CHANGED, ščit). Vez med dejanjem in posledico je VIDNA. */}
           <div className="flex items-start gap-2 rounded-lg bg-roksal-amber/10 px-3 py-2">
             <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-roksal-amber" aria-hidden="true" />
-            <p className="text-[11px] font-medium leading-snug text-stone-700 dark:text-stone-300">
+            <p className="text-[11px] font-medium leading-snug text-roksal-ink">
               Vse naprave bodo odjavljene — potrditvena vrstica vas bo čakala v zvončku ob naslednji prijavi.
             </p>
           </div>
@@ -108,7 +108,7 @@ export function PasswordDialog({ open, onOpenChange }: PasswordDialogProps) {
 
         <div className="space-y-3">
           <div>
-            <label htmlFor="pwd-current" className="mb-1 block text-xs font-medium text-stone-600 dark:text-stone-400">
+            <label htmlFor="pwd-current" className="mb-1 block text-xs font-medium text-muted-foreground">
               Trenutno geslo
             </label>
             <input
@@ -117,11 +117,11 @@ export function PasswordDialog({ open, onOpenChange }: PasswordDialogProps) {
               value={current}
               onChange={(e) => setCurrent(e.target.value)}
               autoComplete="current-password"
-              className="h-11 w-full rounded-xl border border-stone-300 dark:border-stone-800 px-3 text-sm outline-none focus:border-roksal-amber focus:ring-2 focus:ring-roksal-amber/30"
+              className="h-11 w-full rounded-xl border border-border px-3 text-sm outline-none focus:border-roksal-amber focus:ring-2 focus:ring-roksal-amber/30"
             />
           </div>
           <div>
-            <label htmlFor="pwd-next" className="mb-1 block text-xs font-medium text-stone-600 dark:text-stone-400">
+            <label htmlFor="pwd-next" className="mb-1 block text-xs font-medium text-muted-foreground">
               Novo geslo (vsaj 8 znakov)
             </label>
             <input
@@ -130,7 +130,7 @@ export function PasswordDialog({ open, onOpenChange }: PasswordDialogProps) {
               value={next}
               onChange={(e) => setNext(e.target.value)}
               autoComplete="new-password"
-              className="h-11 w-full rounded-xl border border-stone-300 dark:border-stone-800 px-3 text-sm outline-none focus:border-roksal-amber focus:ring-2 focus:ring-roksal-amber/30"
+              className="h-11 w-full rounded-xl border border-border px-3 text-sm outline-none focus:border-roksal-amber focus:ring-2 focus:ring-roksal-amber/30"
             />
             {/* R199 — živa povratna informacija o jakosti: 3 segmenti + oznaka;
               ocena 0 (neustrezno/krajše od 8) = vrstica skrita (gumb je že
@@ -149,7 +149,7 @@ export function PasswordDialog({ open, onOpenChange }: PasswordDialogProps) {
                     {[1, 2, 3].map((s) => (
                       <span
                         key={s}
-                        className={`h-1 flex-1 rounded-full transition-colors ${s <= j.ocena ? barva : 'bg-stone-200 dark:bg-stone-800'}`}
+                        className={`h-1 flex-1 rounded-full transition-colors ${s <= j.ocena ? barva : 'bg-muted'}`}
                       />
                     ))}
                   </div>
@@ -161,7 +161,7 @@ export function PasswordDialog({ open, onOpenChange }: PasswordDialogProps) {
             })()}
           </div>
           <div>
-            <label htmlFor="pwd-repeat" className="mb-1 block text-xs font-medium text-stone-600 dark:text-stone-400">
+            <label htmlFor="pwd-repeat" className="mb-1 block text-xs font-medium text-muted-foreground">
               Ponovite novo geslo
             </label>
             <input
@@ -170,7 +170,7 @@ export function PasswordDialog({ open, onOpenChange }: PasswordDialogProps) {
               value={repeat}
               onChange={(e) => setRepeat(e.target.value)}
               autoComplete="new-password"
-              className="h-11 w-full rounded-xl border border-stone-300 dark:border-stone-800 px-3 text-sm outline-none focus:border-roksal-amber focus:ring-2 focus:ring-roksal-amber/30"
+              className="h-11 w-full rounded-xl border border-border px-3 text-sm outline-none focus:border-roksal-amber focus:ring-2 focus:ring-roksal-amber/30"
             />
           </div>
 

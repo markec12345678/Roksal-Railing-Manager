@@ -165,7 +165,9 @@ describe('R199 — dialog source kontrakt (jakost + token družine)', () => {
     expect(src).toContain('bg-roksal-red')
     expect(src).toContain('bg-roksal-amber')
     expect(src).toContain('bg-green-500')
-    expect(src).toContain('bg-stone-200 dark:bg-stone-800')
+    // R227 — prazni segmenti jakostne vrstice na žetonu bg-muted (en razred
+    // obe temi; prej bg-stone-200 dark:bg-stone-800 — trdo kodirana klasa).
+    expect(src).toContain("'bg-muted'")
     // auth ruta: ADMIN pregrata + distinct + omejitev na eno vrstico na prijavo
     const ruta = srcOf('src/app/api/auth/route.ts')
     expect(ruta).toContain("template: 'FAILED_LOGINS_OVERVIEW'")

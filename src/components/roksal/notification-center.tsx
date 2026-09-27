@@ -161,6 +161,11 @@ export function NotificationCenter() {
             // R216 — konvergence signalcev (P1-e): klik → Zaloga + Osnutek
             // dialog z TOČNO TIM artikelom (EN VIR passthrough — isti objekt
             // kot paleta ⌘K R216; brez ponovnega filtra, brez izmišljevanja).
+            // R227 — deseti signalec: passthrough nosi TUDI `_count` (ISTI
+            // fetch ga že vrača, R221) — Osnutek dialog/naročilnica pokažeta
+            // nabavno pripravljenost per vrstica (ISTI objekt = ISTA
+            // resnica v VSEH signalcih; fail-closed — brez polja = brez
+            // oznake, NIKOLI lažnega žiga).
             osnutek: {
               id: i.id,
               sifraMateriala: i.sifraMateriala,
@@ -168,6 +173,7 @@ export function NotificationCenter() {
               kolicinaZaloga: i.kolicinaZaloga,
               enota: i.enota,
               minimalnaZaloga: i.minimalnaZaloga,
+              _count: i._count,
             },
           })
         }

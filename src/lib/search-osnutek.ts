@@ -132,7 +132,13 @@ export function brezDobaviteljaIzIskanja(m: IskalniMaterial): boolean {
  * R215/R216 izpeljanka v paleti in zvončku (en podatkovni jezik čez
  * signalce). Preslikava sifra → sifraMateriala (IskalniMaterial je oblika
  * iskalnega odgovora, artikel pa oblika Zaloge — ENA preslikava tu, nikjer
- * drugje). */
+ * drugje).
+ * R227 (P1-c nadaljevanje) — deseti signalec: preslikava nosi TUDI
+ * nabavno pripravljenost per postavka — `cenaVrstic` (iskalni odgovor za
+ * `_count.prices`, R222) gre passthrough v `_count.prices` ISTEGA artikla
+ * (ista resnica, ISTA strogost `=== 0` tokrat v Osnutku/naročilnici);
+ * manjkajoči `cenaVrstic` = artikel brez `_count` (fail-closed — brez
+ * oznake, NIKOLI lažnega žiga). */
 export function osnutekIzIskanja(m: IskalniMaterial): ZalogaArtikelZaNarocilo | null {
   const { kolicinaZaloga, minimalnaZaloga, enota } = m
   if (typeof kolicinaZaloga !== 'number' || !Number.isFinite(kolicinaZaloga)) return null
@@ -146,5 +152,8 @@ export function osnutekIzIskanja(m: IskalniMaterial): ZalogaArtikelZaNarocilo | 
     kolicinaZaloga,
     enota,
     minimalnaZaloga,
+    ...(typeof m.cenaVrstic === 'number'
+      ? { _count: { prices: m.cenaVrstic } }
+      : {}),
   }
 }

@@ -31,7 +31,17 @@
 //    oblika, ne arhiv).
 
 /** Najmanjši potrebni prerez artikla inventarja za naročilnico (podmnožica
- *  InventoryItem iz inventory-tab — client-safe, brez uvozov). */
+ *  InventoryItem iz inventory-tab — client-safe, brez uvozov).
+ *
+ *  R227 (P1-c nadaljevanje) — DESETI signalec konvergence: opcijski
+ *  `_count` (ISTI prerez kot /api/inventory odgovor od R221) nosi
+ *  nabavno pripravljenost per postavka — vrstica naročilnice z
+ *  `_count.prices === 0` (DOBESLEDNO; manjkajoči števec NIKOLI ni
+ *  'brez' — fail-closed, brez ?? 0 / <= 0) dobi v besedilnem dokumentu
+ *  oznako '— brez vpisane nabavne cene' (ISKRENOST: pisarna in
+ *  dobavitelj vidita, da aplikacija postavke ne more oceniti — cena ni
+ *  izmišljena niti v besedilu). Producers brez polja (starejši hint,
+ *  sekanc med deployema) = brez oznake — NIKOLI lažnega žiga. */
 export interface ZalogaArtikelZaNarocilo {
   id: string
   sifraMateriala: string
@@ -39,6 +49,7 @@ export interface ZalogaArtikelZaNarocilo {
   kolicinaZaloga: number
   enota: string
   minimalnaZaloga: number
+  _count?: { prices?: number }
 }
 
 export interface ZalogaPovzetekOptions {
@@ -125,8 +136,16 @@ export function zalogaPovzetekCasOznaka(now: Date): string {
  *    Naročilnica — Zaloga pod minimumom
  *    {n} {artikel/artikla/artikli/artiklov} · osveženo {datum} ob {ura}[ · filter: {kategorija}]
  *
- *    1. {naziv} ({šifra}): naroči {k} {enota} (zaloga {z} / min. {m})
+ *    1. {naziv} ({šifra}): naroči {k} {enota} (zaloga {z} / min. {m})[ — brez vpisane nabavne cene]
  *    …
+ *
+ *  R227 — oznaka '— brez vpisane nabavne cene' po vrstici prideta LE pri
+ *  `_count?.prices === 0` (dobesledno; ISTA strogost kot čip R221 /
+ *  zvonček R222 / Domov R223 / vodja R224 / vrstica R225 / CSV R226 —
+ *  deseti signalec istega jezika). Manjkajoči/pokvaren števec = brez
+ *  oznake (fail-closed). Naročilnica CSV (narocilnicaCsvVrstice) ostaja
+ *  NESPREMENJENA — dobaviteljska priloga ostane čista; notranji Zaloga
+ *  CSV že nosi stolpec od R226.
  *
  *  Fail-closed: pokvaren vnos ALI artikel nad minimumom → TypeError.
  *  Prazen seznam je VELJAVEN (iskreno 'Ni artiklov za naročilo.'). */
@@ -165,8 +184,14 @@ export function buildZalogaPovzetek(
   }
 
   artikli.forEach((a, i) => {
+    // R227 — deseti signalec: oznaka per vrstica LE pri dobeslednem
+    // `_count?.prices === 0` (nabavna pripravljenost — naročilni tok
+    // postavke ne more oceniti; iskreno v dokumentu za dobavitelja,
+    // ne le v UI). Vse ostale vrednosti (vključno z manjkajočim
+    // števcem) = brez oznake — NIKOLI lažnega žiga.
+    const brezCene = a._count?.prices === 0
     vrstice.push(
-      `${i + 1}. ${a.naziv.trim()} (${a.sifraMateriala.trim()}): naroči ${narociloKolicina(a)} ${a.enota.trim()} (zaloga ${a.kolicinaZaloga} / min. ${a.minimalnaZaloga})`,
+      `${i + 1}. ${a.naziv.trim()} (${a.sifraMateriala.trim()}): naroči ${narociloKolicina(a)} ${a.enota.trim()} (zaloga ${a.kolicinaZaloga} / min. ${a.minimalnaZaloga})${brezCene ? ' — brez vpisane nabavne cene' : ''}`,
     )
   })
 

@@ -1431,11 +1431,22 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
-            {/* Pregled artiklov (EN VIR količin: narociloKolicina, lib) */}
+            {/* Pregled artiklov (EN VIR količin: narociloKolicina, lib).
+                R227 — deseti signalec: vrstica brez VPISANE nabavne cene
+                (`_count?.prices === 0` dobesedno — ISTA strogost kot čip
+                R221 / zvonček R222 / Domov R223 / vodja R224 / vrstica R225 /
+                CSV R226 / naročilnica R227) nosi ISTI badge kot vrstica
+                Zaloge (ena definicija BadgeBrezDobavitelja) — pri izbiri
+                dobavitelja je vidno, katere postavke naročilni tok ne more
+                oceniti. Fail-closed: manjkajoči števec (starejši hint,
+                sekanc med deployema) = brez badgea, NIKOLI lažnega. */}
             <div className="max-h-32 space-y-1 overflow-y-auto rounded-lg border border-border/60 bg-secondary/30 p-2.5 scrollbar-thin">
               {osnutekArtikli.map((a) => (
                 <div key={a.id} className="flex items-center justify-between gap-2 text-xs">
-                  <span className="min-w-0 truncate text-roksal-ink">{a.naziv}</span>
+                  <span className="min-w-0 truncate text-roksal-ink">
+                    {a.naziv}
+                    {a._count?.prices === 0 && <BadgeBrezDobavitelja />}
+                  </span>
                   <span className="shrink-0 tabular-nums text-muted-foreground">
                     naroči {narociloKolicina(a)} {a.enota}
                   </span>

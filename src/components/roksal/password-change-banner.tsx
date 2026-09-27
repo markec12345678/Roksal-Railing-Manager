@@ -90,7 +90,7 @@ export function PasswordChangeBanner() {
             onChange={(e) => setCurrent(e.target.value)}
             placeholder="Začasno geslo (od admina)"
             autoComplete="current-password"
-            className="h-9 w-full rounded-lg border border-stone-300 dark:border-stone-800 px-3 text-xs outline-none focus:border-roksal-amber"
+            className="h-9 w-full rounded-lg border border-border px-3 text-xs outline-none focus:border-roksal-amber"
           />
           <input
             type="password"
@@ -98,7 +98,7 @@ export function PasswordChangeBanner() {
             onChange={(e) => setNext(e.target.value)}
             placeholder="Novo geslo (vsaj 8 znakov)"
             autoComplete="new-password"
-            className="h-9 w-full rounded-lg border border-stone-300 dark:border-stone-800 px-3 text-xs outline-none focus:border-roksal-amber"
+            className="h-9 w-full rounded-lg border border-border px-3 text-xs outline-none focus:border-roksal-amber"
           />
           <input
             type="password"
@@ -106,7 +106,7 @@ export function PasswordChangeBanner() {
             onChange={(e) => setRepeat(e.target.value)}
             placeholder="Ponovite novo geslo"
             autoComplete="new-password"
-            className="h-9 w-full rounded-lg border border-stone-300 dark:border-stone-800 px-3 text-xs outline-none focus:border-roksal-amber"
+            className="h-9 w-full rounded-lg border border-border px-3 text-xs outline-none focus:border-roksal-amber"
           />
           <Button
             type="button"
