@@ -3,8 +3,9 @@
 // ---------------------------------------------------------------------------
 // R190 (val 1) je aktiviral WRITE_LIMIT na 9 računsko intenzivnih rutah (10
 // handlerjev). R191 (val 2) zapre VARNOST.md "Omejevanje hitrosti na drugih
-// rutah" do konca: vsaka PREOSTALA mutirajoča ruta (42 datotek, 57 handlerjev)
-// dobi ENAK guard kot prvi stavek handlerja. Skupaj: 51 datotek / 67 handlerjev
+// rutah" do konca: vsaka PREOSTALA mutirajoča ruta (43 datotek, 58 handlerjev
+// od R195 — sessions DELETE 'odjavi ostale' se pridruži množici)
+// dobi ENAK guard kot prvi stavek handlerja. Skupaj: 52 datotek / 68 handlerjev
 // z `zapisOmejitev` + 11 datotek z lastnim `checkRate` (auth družina, setup,
 // aktivacija, javna merjenja, portal žeton) = 100 % mutirajočih rut omejenih.
 //
@@ -44,11 +45,11 @@ const stHandlerjev = (src: string): number =>
   (src.match(/export async function (?:POST|PATCH|DELETE|PUT)\(/g) ?? []).length
 const stGuardov = (src: string): number => (src.match(/const zavrnjeno = zapisOmejitev\(request, /g) ?? []).length
 
-describe('R191 — val 2 žičenje (42 datotek / 57 handlerjev, ENAK vzorec kot val 1)', () => {
-  it('val 2 dejansko pokriva pričakovano množico (42 datotek, 57 handlerjev)', () => {
-    expect(val2.length).toBe(42)
+describe('R191 — val 2 žičenje (43 datotek / 58 handlerjev od R195, ENAK vzorec kot val 1)', () => {
+  it('val 2 dejansko pokriva pričakovano množico (43 datotek, 58 handlerjev)', () => {
+    expect(val2.length).toBe(43)
     const handlerji = val2.reduce((n, p) => n + stHandlerjev(srcOf(p)), 0)
-    expect(handlerji).toBe(57)
+    expect(handlerji).toBe(58)
     // vsaka val-2 datoteka: št. guardov == št. handlerjev
     for (const p of val2) {
       const src = srcOf(p)
@@ -106,8 +107,8 @@ describe('R191 — INVENTARNI STRAŽAR: 100 % mutirajočih rut omejenih (trajno)
     expect(brez).toEqual([])
   })
 
-  it('množice se štejejo konsistentno (51 z zapisOmejitev = val1 9 + val2 42; preostanek z checkRate)', () => {
-    expect(zZapisOmejitev.length).toBe(51)
+  it('množice se štejejo konsistentno (52 z zapisOmejitev = val1 9 + val2 43; preostanek z checkRate)', () => {
+    expect(zZapisOmejitev.length).toBe(52)
     const zCheckRate = vseMutirajoce.filter((p) => srcOf(p).includes('checkRate('))
     expect(zZapisOmejitev.length + zCheckRate.length).toBe(vseMutirajoce.length)
     expect(zCheckRate.length).toBe(10)
@@ -128,6 +129,6 @@ describe('R191 — VARNOST.md: postavka "Omejevanje hitrosti na drugih rutah" ZA
     expect(odsekNi).not.toContain('Omejevanje hitrosti')
     // zaključna sekcija obstaja in nosi val 1+2 pokritje:
     expect(src).toContain('## Omejevanje hitrosti na pisanju — ZAPRTO (R190/R191 — val 1+2)')
-    expect(src).toContain('51 datotek / 67 handlerjev')
+    expect(src).toContain('52 datotek / 68 handlerjev')
   })
 })

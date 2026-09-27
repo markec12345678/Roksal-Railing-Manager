@@ -175,6 +175,7 @@ function stubWindow(cookie: string, crossOrigin: boolean = false): CsrfWindow & 
     fetch: spiedFetch as unknown as CsrfWindow['fetch'],
     location: { href: `${origin}/`, origin },
     document: { cookie },
+    dispatchEvent: () => true, // R195: ovoj lahko sproži csrf-zavrnitev — R195 testi jo špijonirajo
     __spiedFetch: spiedFetch,
   }
 }

@@ -8,6 +8,12 @@
 // samooskrbna poteza (poleg menjave gesla, ki jo je R137 prej prinesel prek
 // PasswordDialog).
 //
+// R195 — gumb 'Odjavi ostale naprave' (DELETE /api/auth/sessions): en klik
+// umakne vse druge žive seje, TRENUTNA ostane prijavljena ('počisti druge,
+// jaz ostam'). Dvojna potrditev (prvi klik le oboroži gumb) — množičen
+// dejanje ne sme slediti zamikanci. Uspeh → sonner toast + osvežitev seznama;
+// napaka → viden error state (fail-verbose, NIČ tihega).
+//
 // Kontraktno:
 //   • Vrne SAMO svoje seje (strežnik filtrira po profileId) — UI ne more
 //     prikazati tujega. Tuj id na DELETE → 404, UI pokaže sporočilo in
@@ -23,12 +29,14 @@ import {
   HelpCircle,
   History,
   Loader2,
+  LogOut,
   Monitor,
   ShieldCheck,
   Smartphone,
   Tablet,
   X,
 } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -85,6 +93,8 @@ export function SessionsDialog({ open, onOpenChange }: SessionsDialogProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [revokingId, setRevokingId] = useState<string | null>(null)
+  // R195 — oboroženost masovnega gumba (prvi klik = potrditev, ne dejanje)
+  const [ostaliArmed, setOstaliArmed] = useState(false)
   // R184 — pečat svežine (20. površina družine R170–R183): čas zadnjega
   // USPEŠNEGA branja /api/auth/sessions. Napaka/omrežje/401/404 → null
   // (fail-closed — NIČ lažne svežine; napaka ostane vidna, BREZ pečata).
@@ -130,6 +140,8 @@ export function SessionsDialog({ open, onOpenChange }: SessionsDialogProps) {
   useEffect(() => {
     // Vsako odpirje = sveža poizvedba (stanje sej se lahko spremeni zunaj).
     if (open) void load()
+    // R195: zaprtje dialoga razoroži masovni gumb (stanje ne preživi odpirja).
+    else setOstaliArmed(false)
   }, [open, load])
 
   // R184 — ponovni bris ob vrnitvi v ospredje, MEDTEM KO je dialog odprt
@@ -151,6 +163,46 @@ export function SessionsDialog({ open, onOpenChange }: SessionsDialogProps) {
       await load()
     } catch {
       setError('Preklic seje ni uspel. Poskusite znova.')
+    } finally {
+      setRevokingId(null)
+    }
+  }
+
+  // R195 — masovna odjava ostalih naprav. Prvi klik SAMO oboroži (potrditev),
+  // šele drugi izvede. Uspeh → toast z številom + osvežitev; napaka → error
+  // state (fail-verbose). Med izvedbo je sentinel '__ostali__' v revokingId,
+  // tako da so tudi posamezni gumbi onemogočeni (en vir zaklepa).
+  const ostaliCount = sessions ? sessions.filter((s) => !s.current).length : 0
+
+  async function revokeOstale() {
+    if (!ostaliArmed) {
+      setOstaliArmed(true)
+      return
+    }
+    setOstaliArmed(false)
+    setRevokingId('__ostali__')
+    try {
+      const res = await fetch('/api/auth/sessions', {
+        method: 'DELETE',
+        credentials: 'same-origin',
+      })
+      if (!res.ok) {
+        const data = (await res.json().catch(() => null)) as { error?: string } | null
+        setError(
+          data?.error
+            ? `Odjava ostalih naprav ni uspela: ${data.error}`
+            : `Odjava ostalih naprav ni uspela (napaka ${res.status}).`,
+        )
+        return
+      }
+      const data = (await res.json().catch(() => null)) as { revoked?: number } | null
+      const n = typeof data?.revoked === 'number' ? data.revoked : 0
+      toast.success('Ostale naprave so odjavljene', {
+        description: n === 1 ? 'Odjavljena je 1 seja.' : `Odjavljenih sej: ${n}.`,
+      })
+      await load()
+    } catch {
+      setError('Odjava ostalih naprav ni uspela. Preverite omrežje in poskusite znova.')
     } finally {
       setRevokingId(null)
     }
@@ -285,13 +337,34 @@ export function SessionsDialog({ open, onOpenChange }: SessionsDialogProps) {
           <p className="text-[10px] text-muted-foreground tabular-nums">
             {sessions ? `${sessions.length} ${sessions.length === 1 ? 'aktivna seja' : 'aktivnih sej'}` : ''}
           </p>
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            className="press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
-          >
-            Zapri
-          </Button>
+          <div className="flex items-center gap-2">
+            {ostaliCount > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => void revokeOstale()}
+                disabled={revokingId !== null}
+                aria-label={`Odjavi vse ostale naprave (${ostaliCount}) — ta naprava ostaja prijavljena`}
+                className="h-8 gap-1.5 border-roksal-red/30 px-2.5 text-xs text-roksal-red hover:bg-roksal-red/10 press-scale focus-visible:ring-2 focus-visible:ring-roksal-red/40"
+              >
+                {revokingId === '__ostali__' ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                ) : (
+                  <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
+                )}
+                {ostaliArmed
+                  ? `Potrdi — odjavi ${ostaliCount} ${ostaliCount === 1 ? 'napravo' : 'naprav'}?`
+                  : `Odjavi ostale naprave (${ostaliCount})`}
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              className="press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+            >
+              Zapri
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

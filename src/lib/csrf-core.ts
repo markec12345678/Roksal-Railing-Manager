@@ -30,6 +30,21 @@ export const CSRF_COOKIE = 'roksal_csrf'
 /** Glava, v kateri klient pošlje žeton nazaj strežniku. */
 export const CSRF_HEADER = 'x-csrf-token'
 
+/**
+ * Dogodek (R195), ki ga brskalniški ovoj sproži ob 403 'dvojni podpis' —
+ * posluša ga csrf-guard (montažni člen) in pokaže viden toast z vabilom k
+ * osvežitvi. Ime je konstanta, da ovoj, poslušalec in testi ostanejo EN VIR.
+ */
+export const CSRF_REJECTION_EVENT = 'roksal:csrf-zavrnjen'
+
+/**
+ * Niz v telesu 403 odgovora, ki ga strežnik vrne SAMO pri zavrnitvi dvojnega
+ * žetona (`403 … dvojni podpis`). RBAC 403 ('dostop ni dovoljen') in R130
+ * preverba izvora imata drugačno sporočilo — marker loči CSRF zavrnitev od
+ * drugih 403, da toast ne lažno zatreste za permisije.
+ */
+export const CSRF_REJECTION_MARKER = 'dvojni podpis'
+
 /** Življenjska doba žetona — poravnana s sejo (ob prijavi se izda nov). */
 export const CSRF_TTL_SECONDS = SESSION_TTL_SECONDS
 
