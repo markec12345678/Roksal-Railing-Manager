@@ -21,10 +21,21 @@
 // Cross-site napadalec prav tako NE more nastaviti lastne glave Authorization
 // (brskalnik jo šteje za prepovedano brez CORS odobritve), zato je izjema varna.
 //
+// R194 (issue #5 §6): NA TO plast je vezan še dvojni žeton (double-submit
+// cookie) — `csrfTokenVerdict` (čisto jedro v `csrf-core.ts`, brskalniški paket
+// ga uvaža prek `csrf-client.ts`). Vrstni red: najprej preverba izvora (R130
+// sporočila ostanejo primarni diagnostični signal), nato žeton — samo za seje,
+// ki ga sploh imajo (stare seje pred uvedbo ostanejo na R130 plasti, grace je
+// dokumentiran v VARNOST.md).
+//
 // Edge-safe: samo nizčin in URL razčlenjevanje — nič od node:crypto ali baze.
-// Jedro (`isMutationOriginAllowed`) je čista funkcija → enotsko testirano.
+// Jedro (`isMutationOriginAllowed`, `csrfTokenVerdict`) je čista funkcija →
+// enotsko testirano.
 
 import { NextResponse, type NextRequest } from 'next/server'
+import { CSRF_COOKIE, CSRF_HEADER, csrfTokenVerdict } from '@/lib/csrf-core'
+
+export { CSRF_COOKIE, CSRF_HEADER } from '@/lib/csrf-core'
 
 /** Metode, ki ne spreminjajo podatkov — CSRF ni relevanten. */
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
@@ -174,21 +185,43 @@ export function csrfGuard(request: NextRequest): NextResponse | null {
     forwardedHost: firstForwardedHost(request.headers.get('x-forwarded-host')),
     allowlist: parseAllowlist(process.env.CSRF_ALLOWED_ORIGINS),
   })
-  if (ok) return null
+  if (!ok) {
+    console.warn('[csrf] zavrnjena mutacija brez veljavnega izvora:', {
+      path: request.nextUrl.pathname,
+      method,
+      origin: origin ?? '(manjka)',
+      referer: referer ?? '(manjka)',
+    })
+    return NextResponse.json(
+      {
+        error: 'Zavrnjeno — preverba izvora ni uspela (CSRF).',
+        detail:
+          'Zahteve, ki spreminjajo podatke, morajo prihajati iz iste izvorne strani ' +
+          '(glava Origin) ali nositi Authorization: Bearer žeton.',
+      },
+      { status: 403 },
+    )
+  }
 
-  console.warn('[csrf] zavrnjena mutacija brez veljavnega izvora:', {
-    path: request.nextUrl.pathname,
-    method,
-    origin: origin ?? '(manjka)',
-    referer: referer ?? '(manjka)',
-  })
-  return NextResponse.json(
-    {
-      error: 'Zavrnjeno — preverba izvora ni uspela (CSRF).',
-      detail:
-        'Zahteve, ki spreminjajo podatke, morajo prihajati iz iste izvorne strani ' +
-        '(glava Origin) ali nositi Authorization: Bearer žeton.',
-    },
-    { status: 403 },
-  )
+  // R194 — dvojni žeton: seja z žetonom v piškotu mora žeton poslati tudi v
+  // glavi. Bearer klienti in seje brez žetona (stare pred uvedbo) so že
+  // obravnavani zgoraj / vrnejo 'not-required' v jedru.
+  const verdict = csrfTokenVerdict(request.headers.get('cookie'), request.headers.get(CSRF_HEADER))
+  if (verdict === 'rejected') {
+    console.warn('[csrf] zavrnjena mutacija z neujemajočim žetonom:', {
+      path: request.nextUrl.pathname,
+      method,
+      hasHeader: request.headers.get(CSRF_HEADER) !== null,
+    })
+    return NextResponse.json(
+      {
+        error: 'Zavrnjeno — CSRF žeton manjka ali ne ujema (dvojni podpis).',
+        detail:
+          'Seja z žetonom mora pri mutaciji poslati žeton iz piškotka ' +
+          `${CSRF_COOKIE} v glavi ${CSRF_HEADER}. Osvežite stran in poskusite znova.`,
+      },
+      { status: 403 },
+    )
+  }
+  return null
 }

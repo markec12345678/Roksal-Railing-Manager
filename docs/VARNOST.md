@@ -189,13 +189,26 @@ VARNOST.md prej: "pisanje po ostalih rutah ima pripravljen `WRITE_LIMIT`, a še 
 
 Preverjeno v vitestu (r190 + r191 testi) in dimnem smoči.
 
+## CSRF dvojni žeton — ZAPRTO (R194 — issue #5 §6)
+
+VARNOST.md prej: "`SameSite=Lax` pokriva večino, ne pa vseh primerov. Za mutacije je `SameSite=Strict` ali dvojni žeton varnejši." Zdaj je dvojni žeton (double-submit cookie) vklopljen POVSEK, kot druga, neodvisna plast ob R130 preverbi izvora.
+
+| | |
+|---|---|
+| **Mehanizem** | Ob prijavi izda `/api/auth` poleg seje še piškotek `roksal_csrf` (berljiv iz JS — namenoma BREZ HttpOnly, ker ga klient pošilja nazaj v glavi; vrednost `crypto.randomUUID()`, 122 bitov; SameSite=Lax, Max-Age poravnan s sejo 12 h, Secure na HTTPS). Brskalniški ovoj `installCsrfFetch` (`src/lib/csrf-client.ts`, montaža v root layoutu) isti-izvornim mutacijam (POST/PATCH/PUT/DELETE) samodejno doda glavo `x-csrf-token` — vseh 43+ točk klicev brez spremembe kode. Strežnik v `csrfGuard` (proxy, prva vrsta) odloči prek čistega jedra `csrfTokenVerdict` (`src/lib/csrf-core.ts`). |
+| **Zakaj je varno** | Cross-site napadalec piškote sicer POŠLJE (brskalnik ga prilepi sam), a ga NE more PREBRATI (same-origin policy) — glave ne more sestaviti → 403. Žeton se prilepi SAMO isti-izvornim klicem (nikoli ne odteče tretji strani); obstoječa glava klicatelja ni preglašena; ovoj je fail-open (napaka → originalni fetch), strežnik pa fail-closed. |
+| **Vezava (odločitev ob zahtevi)** | Bearer klienti → izjema (kot pri R130 — ni ambientnega piškotka). Brez seje → žeton ni zahtevan (R130 plast ostaja edina). Stara seja brez žetona → grace (R130 jo ščiti na istem nivoju kot doslej); žeton izdata prijava ALI GET /api/auth (bootstrap brez rotacije, da vzporedna mutacija ne ostane z zastarelim žetonom) — seje konvergirajo ob prvem obisku. Sea + žeton → glava MORA ujemati, sicer 403 `{ error: 'Zavrnjeno — CSRF žeton manjka ali ne ujema (dvojni podpis).' }`. |
+| **Vrstni red plasti** | R130 preverba izvora ostane PRVA (njena 403 sporočila so primarni diagnostični signal — curl brez Origin se spremeni), žeton je druga. Rate limit in avtentikacija nespremenjena. |
+| **Odjava** | `/api/auth/logout` pobriše oba piškotka (sea + žeton); nov žeton izda prijava. |
+| **Trajni testi** | `r194-csrf-double-token.test.ts` — trije nivoji: čisto jedro (razčlenjevanje, vezava, atributi), prava vstopna točka (NextRequest: vezaja, grace, Bearer izjema, varne metode, R130 vrstni red), brskalniški ovoj (špionirano okno: prilepi/nikoli cross-origin/nikoli preglaši/idempotentno/fail-open). |
+
 ## Kaj še NI narejeno
 
 | | Zakaj je pomembno |
 |---|---|
 | **EXIF stripping na strežniku (§37)** | R193 ZAPRTA: neposredni API uploadi JPEG (`/api/photos`, `/api/gallery`) se re-enkodirajo s `sharp` (`src/lib/exif-strip.ts`) — EXIF/GPS/IPTC/XMP in vgrajeni thumbnail odpadejo, EXIF orientacija se zapeče v piksle (`rotate`), ICC profil ostane (`keepIccProfile`), kvaliteta 90. Fail-closed: dekodiranje ne uspe → 400 z izrecnim razlogom (nikoli tihi prehod originala); deterministično (isti vhod → isti izhod); isti §37 strop pikslov kot glavna preverba. PNG/WebP ostajajo validate-only (dokumentirana izbira: PNG je canvas-dominanten in lossless re-enkodiranje lahko bloatira; EXIF v WebP je redkost brez terenske poti). GPS polja pri fotodokumentaciji ostanejo izrecna klientova izbira (opt-in) — strežnik jih iz shranjenih bajtov vedno odstrani. |
 | **Malware scanning (§37)** | Policy: magični bajti + dovoljen seznam + stropi preprečijo skriptne nosilce (SVG/HTML) in dekompresijske bombe; pravi AV sken bajtov ni implementiran (zahteva zunanji servis) — dokumentirano kot odloženo. |
-| **CSRF** | `SameSite=Lax` pokriva večino, ne pa vseh primerov (GET z vrhnje ravni). Za mutacije je `SameSite=Strict` ali dvojni žeton varnejši. |
+| **CSRF** | R194 ZAPRTA: dvojni žeton (double-submit cookie) na vseh mutacijah — piškotek `roksal_csrf` izdaja prijava/bootstrap, klient ga pošlje v glavi `x-csrf-token`, `csrfGuard` preveri ujemanje za seje z žetonom (fail-closed 403). Bearer izjema in R130 preverba izvora ostajata; stare seje imajo dokumentiran grace do prvega obiska. Glej "CSRF dvojni žeton — ZAPRTO (R194)" zgoraj. |
 | **Revizijski dnevnik na vseh mutacijah** | R192 POENOTITEV ZAPRTA: vsi vpisi grede skozi `src/lib/audit.ts` (`auditInTx` transakcijsko, `audit` best-effort, `auditStrict` fail-verbose za javne poti) — 20 starejših inline klicev v 13 rutah + `measure.ts` pretvorjenih, bom-draft FK bug (`userId: 'system'` — profil ni obstajal, padal na constraint PO uspešnem zapisu) popravljen; stražar test jamči, da `auditLog.create` ne obstaja nikjer drugje. Pokritost: prijava/geslo/seje, ponudbe, razporedi, projekti, meritve, oprema, QC, evidence, portal, CRM, kupci, dokumenti, sync, deal-lock, setup, javne meritve. NISKOvredni dogodki (npr. `notifications/read`) namenoma BREZ dnevnika — polna pokritost vseh 67 mutirajočih handlerjev bi dnevnik spremenila v šum; to ostaja dokumentirana izbira, ne luknja. |
 | **Rotacija `SESSION_SECRET`** | Menjava razveljavi vse seje naenkrat. To je v redu, a mora biti znano. |
 | **Šifriranje baze v mirovanju** | SQLite datoteka je v jasni besedi. Na VPS reši šifriran disk (LUKS). |

@@ -103,7 +103,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 45 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **1897** (110 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **1922** (111 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 143 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -366,7 +366,7 @@ Sheet z 6 podzavihki:
 | **PWA** | Service Worker + Web Manifest |
 | **Temnitveni način** | [next-themes](https://github.com/pacocoursey/next-themes) |
 | **Validacija** | [Zod 4](https://zod.dev/) |
-| **Testiranje** | [Vitest 4](https://vitest.dev/) (1897 testov + globalSetup embedded PG) |
+| **Testiranje** | [Vitest 4](https://vitest.dev/) (1922 testov + globalSetup embedded PG) |
 | **Paketni upravitelj** | [Bun](https://bun.sh/) |
 | **Linting** | ESLint 9 + eslint-config-next |
 
@@ -488,7 +488,7 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `bun run dev` | Zažene Next.js dev server (port 3000) |
 | `bun run build` | Produkcijska build (build-prepare: generate + migrate deploy + seed) |
 | `bun run start` | Zažene produkcijski server |
-| `bun run test` | Vsi testi (vitest, 1897, embedded PG prek globalSetup) |
+| `bun run test` | Vsi testi (vitest, 1922, embedded PG prek globalSetup) |
 | `bun run check` | tsc --noEmit + vitest run (en ukaz za vse) |
 | `bunx tsc --noEmit` | Tipska kontrola celotnega projekta (trenutno 0 napak) |
 | `bun run lint` | ESLint preverjanje |
@@ -773,6 +773,11 @@ Potrebne env spremenljivke na Vercelu: `DATABASE_URL` (postgres:// URL,
   mora dokazati izvor — glava `Origin` (ali `Referer` rezerva) se preveri proti gostitelju;
   manjkata → 403 fail-closed; Bearer/API-key klienti so izjema (ni ambientnega piškotka);
   razširljivo z `CSRF_ALLOWED_ORIGINS` — `src/lib/csrf.ts`, prva vrsta v proxy
+- **CSRF dvojni žeton** (R194, issue #5 §6): poleg preverbe izvora še double-submit cookie —
+  prijava/bootstrap izda `roksal_csrf` (berljiv iz JS), isti-izvorne mutacije samodejno nosijo
+  glavo `x-csrf-token` (fetch ovoj, 43+ točk brez spremembe kode), `csrfGuard` zahteva
+  ujemanje za seje z žetonom (fail-closed 403); Bearer izjema in grace za stare seje
+  dokumentirana — `src/lib/csrf-core.ts` + `src/lib/csrf-client.ts`
 - Gesla: **scrypt** (N=16384, r=8, p=1) z `timingSafeEqual` primerjavo
 - Brute-force zaščita: 10 poskusov / 15 min na (IP, e-mail) par — `src/lib/rate-limit.ts`
 - API ključi `rkm_…` samo s pepper-hashem v bazi, preklicljivi

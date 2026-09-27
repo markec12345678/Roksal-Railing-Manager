@@ -15,6 +15,7 @@ import { z } from 'zod'
 import { db } from '@/lib/db'
 import { verifyPassword } from '@/lib/password'
 import { SESSION_COOKIE, isSecureRequest, sessionCookieAttributes } from '@/lib/session'
+import { CSRF_COOKIE, csrfCookieAttributes } from '@/lib/csrf-core'
 import { createUserSession } from '@/lib/session-registry'
 import { authenticate } from '@/lib/auth'
 import { audit } from '@/lib/audit'
@@ -99,6 +100,12 @@ export async function POST(request: Request) {
       mustChangePassword: profile.mustChangePassword,
     })
     response.headers.set('Set-Cookie', `${SESSION_COOKIE}=${issued.token}; ${sessionCookieAttributes(isSecureRequest(request))}`)
+    // R194 (§6): dvojni žeton — ob prijavi izdajemo žeton za dvojni podpis
+    // (berljiv iz JS, brez HttpOnly; vrednost kriptografsko naključna, 122 bitov).
+    response.headers.append(
+      'Set-Cookie',
+      csrfCookieAttributes(crypto.randomUUID(), isSecureRequest(request)),
+    )
     return response
   } catch (error) {
     console.error('Auth login error:', error)
@@ -119,7 +126,7 @@ export async function GET(request: Request) {
     .findUnique({ where: { id: session.sub }, select: { mustChangePassword: true } })
     .then((p) => p?.mustChangePassword ?? false)
     .catch(() => false)
-  return NextResponse.json({
+  const response = NextResponse.json({
     user: { id: session.sub, email: session.email, ime: session.ime, vloga: session.vloga },
     expiresAt: session.exp * 1000,
     mustChangePassword,
@@ -127,4 +134,20 @@ export async function GET(request: Request) {
     // akcije po dovoljenjih (ne po vlogah) in pošteno pokaže, kaj mu manjka.
     permissions: permissionsForRole(session.vloga),
   })
+  // R194 (§6): bootstrap za stare seje — žeton izdaj, če ga piškotek še nima.
+  const bootstrap = bootstrapCsrfCookie(request)
+  if (bootstrap) response.headers.append('Set-Cookie', bootstrap)
+  return response
+}
+
+// Pomožnik: R194 bootstrap izdaja žetona za STARE seje (pred uvedbo dvojnega
+// žetona) — ob prvem obisku aplikacije GET /api/auth žeton izda, če ga
+// piškotek še nima. Samo če manjka (brez rotacije med delovanjem — mutacija,
+// ki bi letela vzporedno, ne sme ostati z zastarelim žetonom).
+function bootstrapCsrfCookie(request: Request): string | null {
+  const existing = request.headers.get('cookie')
+  if (existing && existing.split(';').some((p) => p.trim().startsWith(`${CSRF_COOKIE}=`))) {
+    return null
+  }
+  return csrfCookieAttributes(crypto.randomUUID(), isSecureRequest(request))
 }

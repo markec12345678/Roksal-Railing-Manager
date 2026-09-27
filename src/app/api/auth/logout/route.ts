@@ -14,6 +14,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { SESSION_COOKIE } from '@/lib/session'
+import { CSRF_COOKIE } from '@/lib/csrf-core'
 import { authenticate } from '@/lib/auth'
 import { revokeAllForUser, revokeSession } from '@/lib/session-registry'
 import { audit } from '@/lib/audit'
@@ -54,5 +55,7 @@ export async function POST(request: Request) {
 
   const response = NextResponse.json({ success: true, all: Boolean(opts.all) })
   response.headers.set('Set-Cookie', `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`)
+  // R194 (§6): žeton za dvojni podpis se ob odjavi pobriše (nov ga izda prijava).
+  response.headers.append('Set-Cookie', `${CSRF_COOKIE}=; Path=/; SameSite=Lax; Max-Age=0`)
   return response
 }

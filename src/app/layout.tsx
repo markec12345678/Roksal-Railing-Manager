@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "next-themes";
 import { ServiceWorkerRegister } from "@/components/roksal/sw-register";
+import { CsrfFetchGuard } from "@/components/roksal/csrf-guard";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -69,6 +70,9 @@ export default function RootLayout({
           <SonnerToaster richColors closeButton />
         </ThemeProvider>
         <ServiceWorkerRegister />
+        {/* R194 (§6): dvojni žeton — isti-izvorne mutacije samodejno nosijo
+            x-csrf-token (idempotentna namestitev, brez UI). */}
+        <CsrfFetchGuard />
         <Toaster />
       </body>
     </html>
