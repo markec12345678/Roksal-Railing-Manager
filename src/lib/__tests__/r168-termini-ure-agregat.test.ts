@@ -300,14 +300,29 @@ describe('R168 DARK stil pass — gradient/ring/bg-200 družine + ring-offset ha
     expect(src).toContain(over)
   })
 
-  it.each([
-    ['src/components/roksal/invoice-manager.tsx', 'bg-stone-200 dark:bg-stone-800'],
-    ['src/components/roksal/roksal-catalog.tsx', 'bg-slate-200 dark:bg-slate-500/15 text-slate-800 dark:text-slate-200'],
-    // R228: team-tab izvzet — AVATAR_TINT[3] in Deaktiviran chip zdaj na
-    // žetonu bg-muted (EN razred obe temi — žeton se sam prilagodi, dark:
-    // ogledalo NI več potrebno; r165/r227/r228 PINi to dokazujejo).
-  ])('%s: svetli bg žeton ima dark: ogledalo', (rel, zeton) => {
-    expect(read(rel)).toContain(zeton)
+  // R229: invoice-manager in roksal-catalog IZVZETI iz it.each — OSNUTEK
+  // chip, Zapadlo povzetek, cashflow letvica in Inox chip so zdaj na
+  // žetonih bg-muted/border-border (EN razred obe temi — žeton se sam
+  // prilagodi, dark: ogledalo NI več potrebno; ISTA pot kot team-tab R228).
+  it('invoice-manager: R229 žetoni — OSNUTEK chip + Zapadlo povzetek + cashflow letvica (bg-muted, en razred obe temi)', () => {
+    const src = read('src/components/roksal/invoice-manager.tsx')
+    expect(src).toContain("'bg-muted text-muted-foreground border-border'")
+    expect(src).toContain('dot: \'bg-muted-foreground\'')
+    expect(src).toContain("'border-border bg-muted/40'")
+    expect(src).toContain('bg-muted">')
+    expect(src).toContain("'border-l-muted-foreground/40'")
+    // stone dvojčki izbrisani (brez lažnih ostankov)
+    expect(src).not.toContain('bg-stone-100')
+    expect(src).not.toContain('border-stone-200 dark:border-stone-800')
+    expect(src).not.toContain('bg-stone-200 dark:bg-stone-800')
+    expect(src).not.toContain('border-l-stone-300')
+  })
+
+  it('roksal-catalog: R229 žetoni — Inox chip bg-muted + roksal-ink (slate dvojček izbrisan)', () => {
+    const src = read('src/components/roksal/roksal-catalog.tsx')
+    expect(src).toContain("'bg-muted text-roksal-ink'")
+    expect(src).not.toContain('bg-slate-200')
+    expect(src).not.toContain('text-slate-800')
   })
 
   it('team-tab: R228 žetoni — bg-muted (en razred obe temi), dark: ogledalo odveč', () => {

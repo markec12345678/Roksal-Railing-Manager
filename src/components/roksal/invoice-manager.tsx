@@ -135,7 +135,10 @@ const TIP_META: Record<Invoice['tip'], { label: string; short: string }> = {
 }
 
 const STATUS_META: Record<Invoice['status'], { label: string; className: string; dot: string }> = {
-  OSNUTEK: { label: 'Osnutek', className: 'bg-stone-100 dark:bg-stone-500/15 text-stone-700 dark:text-stone-300 border-stone-300 dark:border-stone-800', dot: 'bg-stone-400' },
+  // R229 — OSNUTEK na žetonih (en razred obe temi; stone dvojček izbrisan —
+  // ISTA pot kot team-tab R228 / geselne površine R227: osnutek je NEVTRALNO
+  // stanje — žetoni se sami prilagodijo; pika muted-foreground, R226 vzorec).
+  OSNUTEK: { label: 'Osnutek', className: 'bg-muted text-muted-foreground border-border', dot: 'bg-muted-foreground' },
   IZDAN: { label: 'Izdan', className: 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800', dot: 'bg-amber-500' },
   PLACAN: { label: 'Plačan', className: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800', dot: 'bg-emerald-500' },
   STORNIRAN: { label: 'Storniran', className: 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border-red-300 dark:border-red-800', dot: 'bg-red-500' },
@@ -889,11 +892,11 @@ export function InvoiceManager() {
                   {eur(Math.max(0, summary.izdano - summary.placano))}
                 </div>
               </div>
-              <div className={`rounded-lg border p-2 text-center transition-all hover:shadow-sm ${summary.zapadloN > 0 ? 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 hover:border-red-300/70' : 'border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-950/40 hover:border-stone-300'}`}>
-                <div className={`text-[10px] uppercase tracking-wide ${summary.zapadloN > 0 ? 'text-red-700 dark:text-red-300' : 'text-stone-500 dark:text-stone-400'}`}>
+              <div className={`rounded-lg border p-2 text-center transition-all hover:shadow-sm ${summary.zapadloN > 0 ? 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 hover:border-red-300/70' : 'border-border bg-muted/40'}`}>
+                <div className={`text-[10px] uppercase tracking-wide ${summary.zapadloN > 0 ? 'text-red-700 dark:text-red-300' : 'text-muted-foreground'}`}>
                   Zapadlo
                 </div>
-                <div className={`text-sm font-bold tabular-nums ${summary.zapadloN > 0 ? 'text-red-800 dark:text-red-200' : 'text-stone-600 dark:text-stone-400'}`}>
+                <div className={`text-sm font-bold tabular-nums ${summary.zapadloN > 0 ? 'text-red-800 dark:text-red-200' : 'text-muted-foreground'}`}>
                   {summary.zapadloN > 0 ? eur(summary.zapadlo) : '—'}
                 </div>
                 {summary.zapadloN > 0 && (
@@ -904,7 +907,7 @@ export function InvoiceManager() {
             {/* Razmerje plačanega k izdanemu — hitri vpogled v cashflow */}
             {summary.izdano > 0 && (
               <div className="space-y-1">
-                <div className="h-1.5 overflow-hidden rounded-full bg-stone-200 dark:bg-stone-800">
+                <div className="h-1.5 overflow-hidden rounded-full bg-muted">
                   <div
                     className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-500"
                     style={{ width: `${Math.min(100, Math.max(0, (summary.placano / summary.izdano) * 100))}%` }}
@@ -941,7 +944,7 @@ export function InvoiceManager() {
                     ? 'border-l-emerald-500'
                     : inv.status === 'IZDAN'
                       ? 'border-l-amber-500'
-                      : 'border-l-stone-300'
+                      : 'border-l-muted-foreground/40'
               return (
                 <div
                   key={inv.id}

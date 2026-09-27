@@ -5,8 +5,12 @@ set -u
 cd /home/z/my-project
 FAIL=0
 
-need() { # $1 = needle, $2 = opis
-  if grep -rqF -- "$1" .next 2>/dev/null; then
+need() { # $1 = needle, $2 = opis — R229 lekcija: SAMO odposlani čanki
+  # (.next/static + .next/server); .next/standalone vsebuje KOPIJE virov
+  # (E2E setup), .next/cache ostanke prejšnjih gradnj — oboje da LAŽNO
+  # pozitivne needleje (R229 ujela: dve r228 needleji sta hitili standalone
+  # src kopije, ne kompiliranega rezultata).
+  if grep -rqF -- "$1" .next/static .next/server 2>/dev/null; then
     echo "OK   : $2"
   else
     echo "MISS : $2  (needle: $1)"
@@ -18,9 +22,14 @@ echo "--- R228 needleji (nova tema: zamujena dobava + team-tab žetoni) ---"
 need "Zamujena dobava — " "R228 vodja kartica naslov"
 need "odpre Material → Naročila" "R228 kartica aria dejanje"
 need "Obljubljeni datum dobave je pretekel, naročilo pa še ni prejeto" "R228 kartica title"
-need "lucide-calendar-x" "R228 CalendarX ikona (build chunk)"
-need "steviloZamujenihDobav" "R228 lib števec (server bundle)"
-need "'Opozorila', 'Zamujena dobava'" "R228 CSV vrstica (IZVOŽENO = ZASLON)"
+need "(\"calendar-x\"," "R228 CalendarX ikona (lucide registrska oblika — pripona 'lucide-' se doklepa med izvajanjem)"
+# R229 popavek: simbolno ime steviloZamujenihDobav se v kompiliranih
+# čankih minificira (prejšnja oblika je lažno pozitivno hitila standalone
+# src kopijo) — zanesljiva R228-specifična oblika je TypeError sporočilo
+# iz liba (preživi minifikacijo). CSV vrstica: minificirana oblika brez
+# presledkov, dvojni navedki (kompiliran JS, ne vira).
+need "R228: orders mora biti seznam naročil" "R228 lib števec (kompilirana oblika)"
+need '"Opozorila","Zamujena dobava"' "R228 CSV vrstica (kompilirana oblika, IZVOŽENO = ZASLON)"
 need "z pretečenim rokom dobave — izterjaj dobavo pri dobavitelju" "R228 PDF opozorila vrstica"
 need "bg-muted text-muted-foreground" "R228 team-tab žetoni (avatar + chip)"
 
@@ -40,7 +49,7 @@ fi
 echo "--- Regresije (R219-R227) ---"
 need "a._count?.prices === 0" "R227 naročilnica dobesedna === 0"
 need "— brez vpisane nabavne cene" "R227 naročilnica oznaka"
-need "item._count?.prices === 0 ? 'DA' : 'NE'" "R226 CSV dobesedna === 0 (DA/NE)"
+need "prices===0?\"DA\":\"NE\"" "R226 CSV dobesedna === 0 (DA/NE, kompilirana oblika)"
 need "bg-muted-foreground" "R226 Zapadlo pika → žeton"
 need "Brez dobavitelja — pokaži v Zalogi" "R221 paleta vrstica"
 need "border-roksal-amber/30 bg-roksal-amber/10" "R225 badge na vrstici"

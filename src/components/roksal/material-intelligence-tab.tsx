@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -15,6 +15,11 @@ import { casOznaka } from '@/lib/osvezitev-fokus'
 // R213 — EN VIR podzavihkov (tip-only uvoz: komponenta ostane LAZY dynamic
 // import, r212 lekcija).
 import type { MaterialSubTab, MaterialSubTabHint } from '@/lib/material-sub-tab'
+// R229 — ZAMUJENA tema per-vrstična oznaka: lib R228 (client-safe, brez
+// uvozov) — danas je IZRECEN argument (determinizem, kot vodja R228).
+import { jeZamujenaDobava } from '@/lib/zamujena-dobava'
+// R229 — ENA definicija badgea 'Pretekel rok' (ISTA komponenta kot zvonček).
+import { BadgeZamujenaDobava } from '@/components/roksal/badge-zamujena-dobava'
 import { downloadCsv, todayStamp, type CsvValue } from '@/lib/csv-export'
 import {
   buildNarocilnicaIzNarocila,
@@ -244,6 +249,14 @@ export function MaterialIntelligenceTab({
   const aktivnaNarocila = orders.filter(
     (o) => o.status === 'OSNUTEK' || o.status === 'POSLANO' || o.status === 'POTRJENO',
   ).length
+  // R229 — danas (polnoč) za per-vrstično oznako 'Pretekel rok' (ISTI
+  // datumski jezik kot vodja R228 — danas je izrecen argument liba,
+  // determinizem; useMemo: en izračun na montajo komponente, ne per vrstica).
+  const danasZamude = useMemo(() => {
+    const d = new Date()
+    d.setHours(0, 0, 0, 0)
+    return d
+  }, [])
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -777,6 +790,15 @@ export function MaterialIntelligenceTab({
                               order.status === 'POTRJENO' ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800' :
                               'bg-gray-50 dark:bg-gray-950/40 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-800'
                             }`}>{order.status}</Badge>
+                            {/* R229 — per-vrstična oznaka 'Pretekel rok':
+                                obljubljeni datum dobave je pretekel, status pa
+                                je ŠE odprt (jeZamujenaDobava R228 — dobesedna
+                                strogost; DOBLJENO/PREKlicANO NIKOLI nosijo
+                                žiga — prejeto/preklicano naročilo ni zamujeno;
+                                manjkajoč datum NIKOLI ni žiga). Badge NI edini
+                                nosilec pomena — datum je viden tudi v vrstici
+                                '→ dobava …' zraven. */}
+                            {jeZamujenaDobava(order, danasZamude) && <BadgeZamujenaDobava />}
                           </div>
                           <div className="text-[10px] text-muted-foreground mt-0.5 tabular-nums">
                             {fmtDate(order.datumNarocila)}

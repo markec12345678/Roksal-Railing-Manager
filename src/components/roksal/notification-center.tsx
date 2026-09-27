@@ -16,6 +16,11 @@
  *  6. 🛒 aktivna naročila (OSNUTEK/POSLANO/POTRJENO — EN digest, R212):
  *     prej so signalizirala LE na zavihku (R208 badge), Domov (R210 kartica)
  *     in pečatu (R211) — zvonček je ostal slep.
+ *  6b. ⏰ zamujene dobave (R229 — per-naročilo vrstice): naročilo z IZRECNO
+ *      obljubljenim datumDobave, ki je pretekel, status pa ŠE odprt — ISTA
+ *      strogost kot vodja kartica R228 (lib zamujena-dobava, fail-closed:
+ *      manjkajoča/pokvarena obljuba NIKOLI ni zamuda). Klik → Material →
+ *      Naročila (ISTI protokol kot digest 6).
  *
  * Podatki se poberejo le ob odprtju panela + ob dogodku 'roksal:refresh'
  * (ki ga sproži sync v page.tsx) — ni dodatnih intervalov.
@@ -26,7 +31,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import {
-  Bell, Package, PackageX, CalendarDays, CloudLightning, CheckCheck,
+  Bell, Package, PackageX, CalendarDays, CalendarX, CloudLightning, CheckCheck,
   ChevronRight, RefreshCw, AlertTriangle, Loader2, FileClock, Receipt,
   UserCog, Inbox, Wrench, History, ShieldCheck, ShoppingCart,
 } from 'lucide-react'
@@ -43,10 +48,16 @@ import { BadgeNizkaZaloga } from '@/components/roksal/badge-nizka-zaloga'
 // cene iz ISTEGA /api/inventory fetcha — brez nove zahteve, EN VIR zasidranja
 // _count.prices === 0, dobesedna strogost kot R221 čip).
 import { BadgeBrezDobavitelja } from '@/components/roksal/badge-brez-dobavitelja'
+// R229 — tretja dimenzija (zanesljivost dobav): badge 'Pretekel rok'
+// (roksal-red — ENA definicija komponente, ISTA kot na Naročilih).
+import { BadgeZamujenaDobava } from '@/components/roksal/badge-zamujena-dobava'
+// R229 — lib zamujena-dobava (R228): jeZamujenaDobava je client-safe (brez
+// uvozov) — danas je IZRECEN argument (determinizem, kot vodja R228).
+import { jeZamujenaDobava } from '@/lib/zamujena-dobava'
 
 interface NotificationItem {
   id: string
-  kind: 'stock' | 'install' | 'weather' | 'followup' | 'invoice' | 'order' | 'brez'
+  kind: 'stock' | 'install' | 'weather' | 'followup' | 'invoice' | 'order' | 'brez' | 'zamujena'
   title: string
   subtitle: string
   meta?: string
@@ -287,7 +298,13 @@ export function NotificationCenter() {
       try {
         const oRes = await fetch('/api/material-orders')
         if (oRes.ok) {
-          const orders = (await oRes.json()) as { id: string; status: string }[]
+          // R229 — tip razširjen z datumDobave + supplier (ISTA include že
+          // vrača celoten model — EN VIR, nič nove zahteve; opcijska polja:
+          // starejši/čuden odgovor = "ne moremo presoditi", fail-closed).
+          const orders = (await oRes.json()) as {
+            id: string; status: string; datumDobave?: string | null;
+            supplier?: { naziv: string } | null;
+          }[]
           const aktivna = (orders || []).filter(
             (o) => o.status === 'OSNUTEK' || o.status === 'POSLANO' || o.status === 'POTRJENO',
           )
@@ -303,6 +320,25 @@ export function NotificationCenter() {
               title: 'Naročila, ki čakajo na dejanje',
               subtitle: `${deli.join(' · ')} — iz zadnjega nalaganja`,
               meta: 'Pregled: Material → Naročila',
+            })
+          }
+          // R229 (6b) — per-naročilo vrstice 'zamujena dobava' (TRETJA
+          // dimenzija — zanesljivost dobav, sorojenica R222 'brez' vrstic):
+          // ISTI fetch (EN VIR), ISTA lib strogost kot vodja kartica R228
+          // (jeZamujenaDobava: dobesedna trojica odprtih statusov + IZRECEN
+          // datum + STROGO pred današnjo polnočjo; manjkajoča/pokvarena
+          // obljuba NIKOLI ni zamuda — fail-closed). danas = polnoč (ISTI
+          // datumski jezik kot vodja R228 — danas je izrecen argument).
+          const danasZamude = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+          const zamujena = (orders || []).filter((o) => jeZamujenaDobava(o, danasZamude))
+          for (const o of zamujena.slice(0, 8)) {
+            const d = o.datumDobave ? new Date(o.datumDobave) : null
+            out.push({
+              id: `zamujena-${o.id}`,
+              kind: 'zamujena',
+              title: o.supplier?.naziv ? `Naročilo pri ${o.supplier.naziv}` : 'Naročilo brez dobavitelja',
+              subtitle: `Obljubljen datum dobave ${d ? d.toLocaleDateString('sl-SI') : '—'} je pretekel — naročilo še ni prejeto`,
+              meta: 'Izterjaj dobavo pri dobavitelju',
             })
           }
         } else if (oRes.status !== 403) {
@@ -422,11 +458,13 @@ export function NotificationCenter() {
       window.dispatchEvent(new CustomEvent('roksal:select-project', { detail: item.id.replace('install-', '') }))
     } else if (item.kind === 'followup' || item.kind === 'invoice') {
       window.dispatchEvent(new CustomEvent('roksal:navigate', { detail: { tab: 'more', more: 'crm' } }))
-    } else if (item.kind === 'order') {
+    } else if (item.kind === 'order' || item.kind === 'zamujena') {
       // R212 — Material je za 'Več' sheetom (R206 lekcija): more:'material'
       // je obstoječi MoreTabId (page.tsx handleMoreSelect → MaterialIntelligenceTab).
       // R213 — subTab:'orders' = direktno Naročila podzavihek (digest povedal,
       // DA so aktivna naročila — uporabnik pristane na pravem mestu, ne na BOM).
+      // R229 — 'zamujena' vrstica dela ISTI skok (obljuba je pretekel —
+      // dejanje je izterjava pri dobavitelju, na Naročilih).
       window.dispatchEvent(new CustomEvent('roksal:navigate', { detail: { tab: 'more', more: 'material', subTab: 'orders' } }))
     } else if (item.kind === 'brez') {
       // R222 — druga dimenzija v zvončku: klik → Zaloga z AKTIVNIM čipom
@@ -507,6 +545,11 @@ export function NotificationCenter() {
     // R222 — druga dimenzija (nabavna pripravljenost): PackageX + amber
     // družina (pozornost, ne alarm — ISTA semantika kot R221 čip/paleta).
     brez: { icon: PackageX, bg: 'bg-roksal-amber/15', fg: 'text-roksal-amber' },
+    // R229 — tretja dimenzija (zanesljivost dobav): CalendarX + roksal-red
+    // družina (ALARM — pretečen obljubljeni rok, ISTA semantika kot potekli
+    // opomniki/nizka zaloga/vodja kartica R228; en vizual en pomen — datum,
+    // ki ni bil izpolnjen).
+    zamujena: { icon: CalendarX, bg: 'bg-roksal-red/15', fg: 'text-roksal-red' },
   }
 
   return (
@@ -618,7 +661,9 @@ export function NotificationCenter() {
                           : `${item.title} — odpre Zalogo`
                         : item.kind === 'brez'
                           ? `${item.title} — odpre Zalogo s filtrom brez dobavitelja`
-                          : undefined}
+                          : item.kind === 'zamujena'
+                            ? `${item.title} — odpre Material → Naročila`
+                            : undefined}
                     >
                       <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${style.bg}`}>
                         <Icon className={`h-5 w-5 ${style.fg}`} />
@@ -636,6 +681,11 @@ export function NotificationCenter() {
                               sorojeniški badge (amber; vsebina digesta je ŽE
                               brez cene — badge resničen, ni okrasek). */}
                           {item.kind === 'brez' && <BadgeBrezDobavitelja />}
+                          {/* R229 — tretja dimenzija: zamujena vrstica nosi
+                              sorojeniški badge (roksal-red; vsebina digesta je
+                              ŽE naročilo s pretečenim datumom — badge
+                              resničen, ni okrasek). */}
+                          {item.kind === 'zamujena' && <BadgeZamujenaDobava />}
                           {(item.count ?? 1) > 1 && (
                             <span className="shrink-0 rounded-full bg-roksal-amber/15 px-1.5 text-[9px] font-bold text-roksal-amber">
                               ×{item.count}
