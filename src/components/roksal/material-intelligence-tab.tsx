@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
 import { useToast } from '@/hooks/use-toast'
 import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'
@@ -129,6 +129,16 @@ function downloadOrdersCsv(orders: MaterialOrder[]): number {
   return rows.length
 }
 
+// R207 — stil statusnega filtra (pill družina R136/R204/R206; 0 novih hex,
+// tokeni + focus ring; aria-pressed namesto aria-selected — pravi toggle).
+function chipCls(aktiven: boolean): string {
+  return `h-7 rounded-full border px-3 text-[11px] font-medium tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1 ${
+    aktiven
+      ? 'border-roksal-navy bg-roksal-navy text-white'
+      : 'border-border bg-background text-muted-foreground hover:border-roksal-navy/40 dark:hover:border-roksal-ink/40 hover:text-roksal-ink'
+  }`
+}
+
 export function MaterialIntelligenceTab({ projectId }: { projectId: string | null }) {
   const [tab, setTab] = useState<'bom' | 'orders' | 'suppliers'>('bom')
   const [bomRefine, setBomRefine] = useState<BomRefineData | null>(null)
@@ -147,12 +157,27 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
   const [viriNapaka, setViriNapaka] = useState<string | null>(null)
   // R140: razprta postavka naročila (en hkrati — preglednost na telefonu).
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null)
+  // R207 — statusni filter (pill družina) + potrditveni dialog prejema
+  // (družina R198): DOBLJENO je EDINI prehod z resnično stransko resnico
+  // (receiveOrder res popravi zalogo, idempotentno) → potrditev PRED
+  // dejanjem, postavke so vidne.
+  const [statusFilter, setStatusFilter] = useState<'VSI' | 'OSNUTEK' | 'POSLANO' | 'POTRJENO' | 'DOBLJENO'>('VSI')
+  const [receiveDialogOrderId, setReceiveDialogOrderId] = useState<string | null>(null)
+  const [receiveSending, setReceiveSending] = useState(false)
   const { toast } = useToast()
 
   // Nov dobavitelj form
   const [newSupplier, setNewSupplier] = useState({ naziv: '', kontakt: '', email: '', telefon: '', dobavniRok: 7, popust: 0 })
   // Nova cena form
   const [newPrice, setNewPrice] = useState({ supplierId: '', cena: '', opomba: '' })
+
+  // R207 — izpeljanke statusnega filtra (EN vir resnice, izpeljanka R201 vzorec):
+  // števci iz REALNIH naročil; chipi samo za statuse, ki obstajajo.
+  const statusStevci = (['OSNUTEK', 'POSLANO', 'POTRJENO', 'DOBLJENO'] as const)
+    .map((s) => ({ status: s, n: orders.filter((o) => o.status === s).length }))
+    .filter(({ n }) => n > 0)
+  const vidnaNarocila = statusFilter === 'VSI' ? orders : orders.filter((o) => o.status === statusFilter)
+  const receiveDialogOrder = orders.find((o) => o.id === receiveDialogOrderId) ?? null
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -283,6 +308,7 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
   }
 
   const handleOrderStatus = async (orderId: string, status: string) => {
+    if (status === 'DOBLJENO') setReceiveSending(true)
     try {
       const res = await fetch('/api/material-orders', {
         method: 'PATCH',
@@ -293,27 +319,46 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
         // R206 — iskrni naslovi prehodov: aplikacija NE pošilja dokumentov
         // dobavitelju (integracije ni) — POSLANO je OZNAČBA človeškega dejanja
         // ('označi kot poslano'), ne obljuba aplikacije (družina R204/R205).
+        // R207 — PATCH odgovor nosi alreadyReceived (idempotenten prejem,
+        // src/lib/inventory.ts): konkurenca/dvojni klik NE sme lažno trditi
+        // 'material v zalogi' (družina R204 — brez izmišljenih uspehov).
+        const data = (await res.json().catch(() => null)) as
+          | { alreadyReceived?: boolean }
+          | null
         const naslovi: Record<string, string> = {
           POSLANO: 'Označeno kot poslano (status POSLANO)',
           POTRJENO: 'Status → POTRJENO',
           DOBLJENO: 'Dobljeno — material v zalogi',
         }
-        toast({
-          title: naslovi[status] ?? `Status → ${status}`,
-          description:
-            status === 'POSLANO'
-              ? 'Aplikacija ne pošilja dokumentov — naročilnico dostaviš sam (gumb »Naročilnica« na naročilu).'
-              : undefined,
-        })
+        if (status === 'DOBLJENO' && data?.alreadyReceived) {
+          toast({
+            title: 'Naročilo je bilo že prejeto',
+            description: 'Zaloga ni bila podvojena (idempotenten prejem).',
+          })
+        } else {
+          toast({
+            title: naslovi[status] ?? `Status → ${status}`,
+            description:
+              status === 'POSLANO'
+                ? 'Aplikacija ne pošilja dokumentov — naročilnico dostaviš sam (gumb »Naročilnica« na naročilu).'
+                : status === 'DOBLJENO'
+                  ? 'Zaloga je posodobljena.'
+                  : undefined,
+          })
+        }
+        if (status === 'DOBLJENO') setReceiveDialogOrderId(null)
         loadData()
       } else {
         // R140: fail-verbose — 403/409 napake se POKAŽEJO (prej tiho ugasil
         // gumb brez razlage; npr. MONTER ni videl zakaj "Dobljeno" ne dela).
+        // R207 — dialog prejema OSTANE odprt: razlog je viden, Prekliči možen.
         const data = await res.json().catch(() => null)
         toast({ title: 'Napaka', description: data?.error ?? `HTTP ${res.status}`, variant: 'destructive' })
       }
     } catch {
       toast({ title: 'Omrežna napaka', variant: 'destructive' })
+    } finally {
+      if (status === 'DOBLJENO') setReceiveSending(false)
     }
   }
 
@@ -535,7 +580,41 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
                   <Download className="h-3.5 w-3.5 mr-1 text-roksal-amber" /> CSV
                 </Button>
               </div>
-              {orders.map((order) => {
+              {/* R207 — statusni filter (pill družina R136/R204/R206): števci iz
+                  realnih naročil; CSV ostaja VSA naročila (kontrakt R140
+                  nespremenjen — brez prikrite vezave na filter). */}
+              {statusStevci.length > 0 && (
+                <div className="flex flex-wrap gap-1" role="group" aria-label="Filter naročil po statusu">
+                  <button
+                    type="button"
+                    aria-pressed={statusFilter === 'VSI'}
+                    onClick={() => setStatusFilter('VSI')}
+                    className={chipCls(statusFilter === 'VSI')}
+                  >
+                    Vsi ({orders.length})
+                  </button>
+                  {statusStevci.map(({ status, n }) => (
+                    <button
+                      key={status}
+                      type="button"
+                      aria-pressed={statusFilter === status}
+                      onClick={() => setStatusFilter(status)}
+                      className={chipCls(statusFilter === status)}
+                    >
+                      {status} ({n})
+                    </button>
+                  ))}
+                </div>
+              )}
+              {vidnaNarocila.length === 0 && statusFilter !== 'VSI' ? (
+                // R202 družina — prazno ZARADI filtra ≠ res prazno: iskren razlog
+                // + izhod (brez lažnega 'Ni naročil', ki bi lagal o bazi).
+                <Card><CardContent className="py-8 text-center text-muted-foreground">
+                  <ShoppingCart className="h-10 w-10 mx-auto mb-2 opacity-30" />
+                  <p className="text-sm">Ni naročil s statusom {statusFilter}.</p>
+                  <p className="mt-1 text-xs">Izberi drug status ali prikaži Vse.</p>
+                </CardContent></Card>
+              ) : vidnaNarocila.map((order) => {
                 const expanded = expandedOrder === order.id
                 return (
                   <Card
@@ -622,7 +701,7 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
                           </Button>
                         )}
                         {order.status === 'POTRJENO' && (
-                          <Button type="button" size="sm" variant="outline" className="h-6 text-[10px] bg-green-50 dark:bg-green-950/40 focus-visible:ring-2 focus-visible:ring-green-600/40 focus-visible:ring-offset-1" onClick={() => handleOrderStatus(order.id, 'DOBLJENO')}>
+                          <Button type="button" size="sm" variant="outline" className="h-6 text-[10px] bg-green-50 dark:bg-green-950/40 focus-visible:ring-2 focus-visible:ring-green-600/40 focus-visible:ring-offset-1" onClick={() => setReceiveDialogOrderId(order.id)} title="Prejem v zalogo — potrditev s prikazom postavk">
                             <CheckCircle2 className="h-3 w-3 mr-1" /> Dobljeno (v zalogo)
                           </Button>
                         )}
@@ -748,6 +827,78 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setPriceDialogOpen(false)}>Prekliči</Button>
             <Button type="button" onClick={handleAddPrice} className="bg-roksal-navy text-white">Shrani ceno</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* R207 — potrditveni dialog prejema (družina R198, password-dialog
+          vzorec): DOBLJENO je edini prehod, ki RES popravi zalogo (receiveOrder,
+          idempotentno — atomic guard NOT status DOBLJENO) → postavke so vidne
+          PRED potrditvijo; Prekliči NE pošlje nič; fail-verbose: napaka
+          pusti dialog odprt (razlog viden). */}
+      <Dialog
+        open={receiveDialogOrderId !== null}
+        onOpenChange={(o) => {
+          if (!receiveSending && !o) setReceiveDialogOrderId(null)
+        }}
+      >
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-roksal-ink">
+              <Package className="h-4 w-4 text-roksal-amber" aria-hidden="true" />
+              Prejem materiala v zalogo
+            </DialogTitle>
+            <DialogDescription>
+              {receiveDialogOrder
+                ? `Naročilo pri ${receiveDialogOrder.supplier.naziv} bo označeno kot DOBLJENO.`
+                : 'Naročilo bo označeno kot DOBLJENO.'}
+            </DialogDescription>
+            <div className="flex items-start gap-2 rounded-lg bg-roksal-amber/10 px-3 py-2">
+              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-roksal-amber" aria-hidden="true" />
+              <p className="text-[11px] font-medium leading-snug text-stone-700 dark:text-stone-300">
+                Zaloga se bo povečala za prikazane količine. Prejem je idempotenten — če je bilo naročilo že prejeto, se zaloga ne podvoji.
+              </p>
+            </div>
+          </DialogHeader>
+          {receiveDialogOrder && (
+            <div className="max-h-40 space-y-1 overflow-y-auto scrollbar-thin" aria-label="Postavke za prejem v zalogo">
+              {receiveDialogOrder.items.map((item, i) => (
+                <div key={i} className="flex items-center justify-between gap-2 rounded border border-border/60 bg-muted/40 px-2 py-1">
+                  <span className="min-w-0 flex-1 truncate text-[11px] text-roksal-ink">{item.naziv}</span>
+                  <span className="shrink-0 text-[10px] text-muted-foreground tabular-nums">
+                    {item.kolicina} {item.enota}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+          <DialogFooter className="gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setReceiveDialogOrderId(null)}
+              disabled={receiveSending}
+              className="focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
+            >
+              Prekliči
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              disabled={receiveSending || !receiveDialogOrder}
+              onClick={() => {
+                if (receiveDialogOrder) void handleOrderStatus(receiveDialogOrder.id, 'DOBLJENO')
+              }}
+              className="bg-roksal-navy text-white focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
+            >
+              {receiveSending ? (
+                <Loader2 className="mr-1 h-3 w-3 animate-spin" aria-hidden="true" />
+              ) : (
+                <CheckCircle2 className="mr-1 h-3 w-3" aria-hidden="true" />
+              )}
+              Potrdi prejem
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

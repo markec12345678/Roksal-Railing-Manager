@@ -46,7 +46,7 @@ describe('R206 stražar: iskren prehod POSLANO (stara oznaka gumba je GONE)', ()
     expect(okno).toContain('aplikacija ne pošilja dokumentov')
   })
 
-  it('POTRJENO/DOBLJENO prehoda nespremenjena (obstoječe vedenje)', () => {
+  it('POTRJENO nespremenjen; DOBLJENO gre prek potrditvenega dialoga (R207 — edini prehod z resnično stransko resnico)', () => {
     const okno = oknoMed(
       src,
       "{order.status === 'POSLANO' && (",
@@ -54,8 +54,12 @@ describe('R206 stražar: iskren prehod POSLANO (stara oznaka gumba je GONE)', ()
     )
     expect(okno).toContain("handleOrderStatus(order.id, 'POTRJENO')")
     expect(okno).toContain('Potrdi')
-    expect(okno).toContain("handleOrderStatus(order.id, 'DOBLJENO')")
+    // R207: DOBLJENO NE kliče PATCH takoj — odpre potrditveni dialog
+    // (receiveOrder res popravi zalogo → postavke vidne PRED dejanjem)
+    expect(okno).not.toContain("handleOrderStatus(order.id, 'DOBLJENO')")
+    expect(okno).toContain('setReceiveDialogOrderId(order.id)')
     expect(okno).toContain('Dobljeno (v zalogo)')
+    expect(okno).toContain('Prejem v zalogo — potrditev s prikazom postavk')
   })
 
   it('iskrni naslovi prehodov + razlaga za POSLANO (aplikacija ni kurir)', () => {
