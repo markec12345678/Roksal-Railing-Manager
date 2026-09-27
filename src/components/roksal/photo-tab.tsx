@@ -490,6 +490,11 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
         const newPairs = pairs.filter((p) => p.predId !== id && p.poId !== id)
         if (newPairs.length !== pairs.length) savePairs(newPairs)
         loadPhotos()
+      } else {
+        // R203 — fail-verbose: 403/404/500 se POKAŽEJO (prej tiho — uporabnik
+        // misli, da je klik zapostavljen, slika ostane v seznamu).
+        const data = (await res.json().catch(() => null)) as { error?: string } | null
+        toast({ title: 'Brisanje ni uspelo', description: data?.error?.trim() || `Napaka ${res.status}`, variant: 'destructive' })
       }
     } catch {
       toast({ title: 'Napaka pri brisanju', variant: 'destructive' })
@@ -514,6 +519,10 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
       if (res.ok) {
         toast({ title: 'Kopija ustvarjena' })
         loadPhotos()
+      } else {
+        // R203 — fail-verbose: neuspešen duplikat je viden z razlogom.
+        const data = (await res.json().catch(() => null)) as { error?: string } | null
+        toast({ title: 'Kopiranje ni uspelo', description: data?.error?.trim() || `Napaka ${res.status}`, variant: 'destructive' })
       }
     } catch {
       toast({ title: 'Napaka pri kopiranju', variant: 'destructive' })
@@ -550,19 +559,33 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
       })
       if (res.ok) {
         const newPhoto = (await res.json()) as Photo
-        // Izbriši staro
-        await fetch(`/api/photos?id=${photo.id}`, { method: 'DELETE' })
+        // Izbriši staro — R203: neuspeh brisanja NI tih (prej bi ostali
+        // podvojeni sliki brez opozorila — stara + anotirana).
+        const delRes = await fetch(`/api/photos?id=${photo.id}`, { method: 'DELETE' })
         // Prenesi pare
         const newPairs = pairs.map((p) =>
           p.predId === photo.id ? { ...p, predId: newPhoto.id } :
           p.poId === photo.id ? { ...p, poId: newPhoto.id } : p
         )
         if (JSON.stringify(newPairs) !== JSON.stringify(pairs)) savePairs(newPairs)
-        toast({ title: 'Anotacije shranjene' })
+        if (delRes.ok) {
+          toast({ title: 'Anotacije shranjene' })
+        } else {
+          toast({
+            title: 'Anotacije shranjene — brisanje stare slike ni uspelo',
+            description: `Nova različica je shranjena; stara je še vedno v seznamu (napaka ${delRes.status}) — izbrišite jo ročno.`,
+            variant: 'destructive',
+          })
+        }
         setAnnotationPhoto(null)
         setAnnotationNewImage(null)
         await loadPhotos()
         setPreviewPhoto(newPhoto)
+      } else {
+        // R203 — fail-verbose: npr. 413 (prevelika slika) / 403 / 500 se vidijo;
+        // dialog ostane odprt za ponovni poskus.
+        const data = (await res.json().catch(() => null)) as { error?: string } | null
+        toast({ title: 'Shranjevanje anotacij ni uspelo', description: data?.error?.trim() || `Napaka ${res.status}`, variant: 'destructive' })
       }
     } catch {
       toast({ title: 'Napaka pri shranjevanju', variant: 'destructive' })
@@ -612,9 +635,16 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
     }
 
     setBatchProgress(null)
+    // R203 — ISKREN povzetek (vzorec prenosa mer :1914): skriti neuspehi so
+    // laž — število neuspelih se POKAŽE + destructive, kadar je > 0.
+    const napake = files.length - success
     toast({
-      title: `${success} slik dodanih`,
-      description: `Kategorija: ${KATEGORIJE.find((k) => k.id === kat)?.label} · EXIF/GPS odstranjeno na strežniku.`,
+      title: napake === 0 ? `${success} slik dodanih` : `${success}/${files.length} slik dodanih`,
+      description:
+        napake === 0
+          ? `Kategorija: ${KATEGORIJE.find((k) => k.id === kat)?.label} · EXIF/GPS odstranjeno na strežniku.`
+          : `${KATEGORIJE.find((k) => k.id === kat)?.label} · Neuspešnih prenosov: ${napake} (omrežje/strežnik) — poskusite znova.`,
+      variant: napake > 0 ? 'destructive' : undefined,
     })
     loadPhotos()
   }

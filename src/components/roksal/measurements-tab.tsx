@@ -46,6 +46,7 @@ import { casOznaka } from '@/lib/osvezitev-fokus'
 // R186 — izvoz VIDNIH meritev kot CSV (vzorec zaloga 'Izvozi vidno zalogo',
 // čisto jedro meritve-csv = družina vodja-csv R157-R163).
 import { meritveCsv, meritveCsvFilename } from '@/lib/meritve-csv'
+import { buildMeritvePovzetek, meritvePovzetekBeseda } from '@/lib/meritve-povzetek'
 import { downloadCsvText } from '@/lib/csv-export'
 import {
   Dialog,
@@ -1883,6 +1884,39 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
       )
     }
   }
+
+  // R203 — povzetek VIDNIH meritev v odložišče (delitev SMS/WhatsApp; vzorec
+  // kopiraj termina R167). Fail-verbose: napaka odložišča je viden toast;
+  // pokvaren vnos (fail-closed jedro) → viden toast z razlogom.
+  const kopirajMeritvePovzetek = useCallback(async () => {
+    if (filteredMeasurements.length === 0) {
+      toast.error('Ni meritev za kopiranje.')
+      return
+    }
+    // Ime projekta = točno to, kar pokaže izbirnik; brez izbire → null
+    // (jedro pošteno pokaže 'Brez imena projekta' — brez izmišljenih imen).
+    const projektIme = projects.find((p) => p.id === selectedProject)?.nazivProjekta || null
+    try {
+      const besedilo = buildMeritvePovzetek(filteredMeasurements, {
+        projektIme,
+        now: new Date(),
+      })
+      await navigator.clipboard.writeText(besedilo)
+      toast.success('Povzetek meritev kopiran v odložišče', {
+        description: `${filteredMeasurements.length} ${meritvePovzetekBeseda(filteredMeasurements.length)} — prilepi v SMS/WhatsApp.`,
+      })
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'NotAllowedError') {
+        toast.error('Brskalnik je zavrnil dostop do odložišča (dovoljenje).')
+      } else {
+        toast.error(
+          err instanceof Error
+            ? `Kopiranje ni uspelo: ${err.message}`
+            : 'Kopiranje ni uspelo.',
+        )
+      }
+    }
+  }, [filteredMeasurements, projects, selectedProject])
 
   // ── Primerjava "Stranka vs merilec" ───────────────────────────────────────
   // Stranka je prek javne povezave /m/[token] narisala svojo ograjo na karti
@@ -5856,6 +5890,18 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
             >
               <Download className="h-3 w-3" />
               CSV
+            </button>
+            {/* R203 — povzetek vidnih meritev v odložišče (SMS/WhatsApp) —
+                isti seznam kot CSV (IZVOŽENO = ZASLON), samo človeška oblika. */}
+            <button
+              type="button"
+              onClick={() => void kopirajMeritvePovzetek()}
+              className="flex shrink-0 items-center gap-1 rounded-lg border border-border/50 bg-secondary/50 px-2 py-1 text-[10px] font-medium text-muted-foreground transition-all duration-150 active:scale-[0.96] hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              aria-label="Kopiraj povzetek vidnih meritev v odložišče"
+              title="Kopiraj vidne meritve (upošteva filter) kot besedilo za SMS/WhatsApp"
+            >
+              <Copy className="h-3 w-3" />
+              Povzetek
             </button>
             <div className="flex-1" />
             {/* Bulk mode toggle */}

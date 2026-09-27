@@ -350,6 +350,9 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
   const [eventBusy, setEventBusy] = useState(false)
   const [eventHistory, setEventHistory] = useState<EquipmentEventRow[]>([])
   const [eventHistoryFor, setEventHistoryFor] = useState<string | null>(null)
+  // R203 — fail-verbose: padec branja zgodovine NI tih — vidna opomba v dialogu
+  // (prej: prazen seznam = lažni "ni dogodkov", čeprav so obstajali).
+  const [eventHistoryNapaka, setEventHistoryNapaka] = useState<string | null>(null)
   // R146 (§27): preverba kakovosti PRED zaključitvijo — vrata so na strežniku
   // (ZAKLJUCENO brez prešle preverbe → 409; override z razlogom reviziran).
   const [qcTarget, setQcTarget] = useState<{ id: string; projectId: string; project: string } | null>(null)
@@ -509,11 +512,21 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
     const p = (n: number) => String(n).padStart(2, '0')
     setEventDate(`${now.getFullYear()}-${p(now.getMonth() + 1)}-${p(now.getDate())}T${p(now.getHours())}:${p(now.getMinutes())}`)
     setEventHistory([])
+    setEventHistoryNapaka(null)
     setEventHistoryFor(e0.id)
     try {
       const res = await fetch(`/api/equipment/events?equipmentId=${e0.id}`)
-      if (res.ok) setEventHistory(await res.json())
-    } catch { /* zgodovina je naknadna — dialog ostane uporaben */ }
+      if (res.ok) {
+        setEventHistory(await res.json())
+        setEventHistoryNapaka(null)
+      } else {
+        // R203 — zgodovina je naknadna (dialog ostane uporaben), a prazen
+        // seznam brez razlage bi lažno trdil "ni dogodkov" — vidna opomba.
+        setEventHistoryNapaka(`Zgodovina ni bila naložena (napaka ${res.status}).`)
+      }
+    } catch {
+      setEventHistoryNapaka('Zgodovina ni bila naložena (omrežna napaka).')
+    }
   }
 
   /** R145 (§31): zabeleži dogodek (fail-verbose — 400/403/404/500 se pokažejo). */
@@ -807,12 +820,20 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
     finally { setMoveBusy(false) }
   }
 
+  // R203 — fail-verbose (vzorec R140/R163): uspeh NI edini možen izid.
+  // 409 (podvojeno ime) / 401 / 500 se POKAŽEJO z razlogom iz odgovora —
+  // prej tiho: dialog ostane odprt brez razlage, uporabnik misli, da klik
+  // ni deloval, in ponavlja (duplikati).
   const handleCreateCrew = async () => {
     if (!crewNaziv) return
     try {
       const res = await fetch('/api/crews', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ naziv: crewNaziv }) })
       if (res.ok) { toast({ title: 'Ekipa ustvarjena' }); setNewCrewOpen(false); setCrewNaziv(''); loadData() }
-    } catch { toast({ title: 'Napaka', variant: 'destructive' }) }
+      else {
+        const data = (await res.json().catch(() => null)) as { error?: string } | null
+        toast({ title: 'Ustvarjanje ekipe ni uspelo', description: data?.error?.trim() || `Napaka ${res.status}`, variant: 'destructive' })
+      }
+    } catch { toast({ title: 'Omrežna napaka', variant: 'destructive' }) }
   }
 
   const handleCreateEquip = async () => {
@@ -820,7 +841,11 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
     try {
       const res = await fetch('/api/crews', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'equipment', naziv: equipNaziv, tip: equipTip }) })
       if (res.ok) { toast({ title: 'Oprema dodana' }); setNewEquipOpen(false); setEquipNaziv(''); loadData() }
-    } catch { toast({ title: 'Napaka', variant: 'destructive' }) }
+      else {
+        const data = (await res.json().catch(() => null)) as { error?: string } | null
+        toast({ title: 'Dodajanje opreme ni uspelo', description: data?.error?.trim() || `Napaka ${res.status}`, variant: 'destructive' })
+      }
+    } catch { toast({ title: 'Omrežna napaka', variant: 'destructive' }) }
   }
 
   // R163 fail-verbose: viden panel z razlogom + poskus znova — NE lažnega praznega stanja.
@@ -1357,6 +1382,15 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                   ))}
                 </div>
               </div>
+            )}
+            {/* R203 — fail-verbose opomba: zgodovina ob padcu NI tiho prazna. */}
+            {eventHistoryFor === eventTarget?.id && eventHistoryNapaka && (
+              <p
+                role="note"
+                className="rounded-md border border-roksal-amber/40 bg-roksal-amber/10 px-2.5 py-1.5 text-[10px] text-roksal-ink dark:text-roksal-amber"
+              >
+                {eventHistoryNapaka}
+              </p>
             )}
             <p className="text-[10px] leading-relaxed text-muted-foreground">
               Dogodek v prihodnosti ni mogoč (preverba na strežniku). Kalibracija merske opreme zahteva potrdilo — sicer zavržena (400).

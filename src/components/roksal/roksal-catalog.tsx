@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Search, Package, Ruler, Euro, Filter } from 'lucide-react'
+import { AlertTriangle, RefreshCw, Search, Package, Ruler, Euro, Filter } from 'lucide-react'
 
 interface Profil {
   id: string
@@ -36,6 +36,10 @@ const MATERIAL_BADGE: Record<string, { label: string; cls: string }> = {
 export function RoksalCatalog() {
   const [profili, setProfili] = useState<Profil[]>([])
   const [loading, setLoading] = useState(true)
+  // R203 — fail-verbose: padec GET /api/profili NI tih — prej je katalog
+  // lažno pokazal "Ni profilov, ki ustrezajo iskanju" (tudi brez iskanja),
+  // čeprav so profili obstajali — sedaj vidna napaka + Poskusi znova.
+  const [napaka, setNapaka] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [kategorija, setKategorija] = useState('Vse')
 
@@ -43,9 +47,17 @@ export function RoksalCatalog() {
     setLoading(true)
     try {
       const res = await fetch('/api/profili?aktivne=true')
-      if (res.ok) setProfili(await res.json())
+      if (res.ok) {
+        const data = await res.json()
+        setProfili(Array.isArray(data) ? data : [])
+        setNapaka(null)
+      } else {
+        setProfili([])
+        setNapaka(`Profilov ni bilo mogoče naložiti (napaka ${res.status}).`)
+      }
     } catch {
-      /* ignore */
+      setProfili([])
+      setNapaka('Profilov ni bilo mogoče naložiti — preverite povezavo.')
     } finally {
       setLoading(false)
     }
@@ -169,12 +181,35 @@ export function RoksalCatalog() {
         </div>
       )}
 
-      {!loading && filtered.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
-          <Package className="mb-2 h-10 w-10 opacity-30" />
-          <p className="text-sm">Ni profilov, ki ustrezajo iskanju.</p>
+      {napaka ? (
+        <div
+          role="alert"
+          className="flex items-start gap-2 rounded-lg border border-roksal-red/30 bg-roksal-red/10 px-3 py-2.5"
+        >
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-roksal-red" aria-hidden="true" />
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-medium text-roksal-red">{napaka}</p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-2 h-7 border-roksal-red/40 text-roksal-red hover:bg-roksal-red/10 hover:text-roksal-red focus-visible:ring-2 focus-visible:ring-roksal-red/40"
+              onClick={() => void fetchProfili()}
+            >
+              <RefreshCw className="mr-1.5 h-3 w-3" aria-hidden="true" />
+              Poskusi znova
+            </Button>
+          </div>
         </div>
-      )}
+      ) : !loading && filtered.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
+          <Package className="mb-2 h-10 w-10 opacity-30" aria-hidden="true" />
+          <p className="text-sm">
+            {search.trim()
+              ? 'Ni profilov, ki ustrezajo iskanju.'
+              : 'Ni aktivnih profilov v katalogu.'}
+          </p>
+        </div>
+      ) : null}
     </div>
   )
 }

@@ -265,7 +265,14 @@ interface DashboardTabProps {
 export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTabProps) {
   const [projects, setProjects] = useState<Project[]>([])
   const [inventory, setInventory] = useState<InventoryItem[]>([])
+  // R203 — fail-verbose: padec GET /api/inventory NI tih — prej je panel
+  // o nizki zalogi TAIHO IZGINIL (kot da je "vse v redu"), brez podatkov.
+  const [invError, setInvError] = useState<string | null>(null)
   const [customers, setCustomers] = useState<Customer[]>([])
+  // R203 — fail-verbose: padec GET /api/customers NI tih — prej je dialog
+  // "Nov projekt" lažno pokazal "Še ni strank" (R161 QuoteFollowUp vzorec)
+  // → uporabnik bi vnašal duplikate. Sedaj vidna napaka + Poskusi znova.
+  const [customersError, setCustomersError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   // R171 — pečat 'Osveženo ob HH:MM:SS' za projektni seznam (čas zadnjega
   // USPEŠNEGA branja /api/projects; vzorec R170 — napaka/nalaganje → null,
@@ -461,10 +468,17 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
       const res = await fetch('/api/inventory')
       if (res.ok) {
         const data = await res.json()
-        setInventory(data)
+        setInventory(Array.isArray(data) ? data : [])
+        setInvError(null)
+      } else {
+        // Fail-verbose (vzorec fetchProjects zgoraj): napaka je vidna,
+        // brez izmišljenih "vse v redu" stanj nad odsotnimi podatki.
+        setInventory([])
+        setInvError(`Zaloge ni bilo mogoče naložiti (napaka ${res.status}).`)
       }
     } catch {
-      // keep empty
+      setInventory([])
+      setInvError('Zaloge ni bilo mogoče naložiti — preverite povezavo.')
     } finally {
       setInvLoading(false)
     }
@@ -475,10 +489,15 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
       const res = await fetch('/api/customers')
       if (res.ok) {
         const data = await res.json()
-        setCustomers(data)
+        setCustomers(Array.isArray(data) ? data : [])
+        setCustomersError(null)
+      } else {
+        setCustomers([])
+        setCustomersError(`Strank ni bilo mogoče naložiti (napaka ${res.status}).`)
       }
     } catch {
       setCustomers([])
+      setCustomersError('Strank ni bilo mogoče naložiti — preverite povezavo.')
     }
   }, [])
 
@@ -1732,6 +1751,25 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
             </p>
           </div>
         </div>
+      ) : !invLoading && invError ? (
+        <div
+          role="alert"
+          className="flex items-center gap-3 rounded-xl border border-roksal-red/20 bg-roksal-red/5 p-3"
+        >
+          <AlertTriangle className="h-5 w-5 shrink-0 text-roksal-red" aria-hidden="true" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium text-roksal-ink">Zaloga ni na voljo</p>
+            <p className="text-xs text-roksal-red">{invError}</p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 border-roksal-red/40 text-roksal-red hover:bg-roksal-red/10 hover:text-roksal-red focus-visible:ring-2 focus-visible:ring-roksal-red/40"
+            onClick={() => void fetchInventory()}
+          >
+            Poskusi znova
+          </Button>
+        </div>
       ) : !invLoading && inventory.length > 0 ? (
         <div className="flex items-center gap-3 rounded-xl border border-roksal-green/20 bg-roksal-green/5 p-3">
           <CheckCircle2 className="h-5 w-5 shrink-0 text-roksal-green" />
@@ -1854,11 +1892,24 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                   )}
                 </SelectContent>
               </Select>
-              {customers.length === 0 && (
+              {customersError ? (
+                <div className="flex items-center justify-between gap-2 rounded-md border border-roksal-red/30 bg-roksal-red/10 px-2.5 py-1.5">
+                  <p className="text-[11px] font-medium text-roksal-red">{customersError}</p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-6 shrink-0 border-roksal-red/40 px-2 text-[10px] text-roksal-red hover:bg-roksal-red/10 hover:text-roksal-red focus-visible:ring-2 focus-visible:ring-roksal-red/40"
+                    onClick={() => void fetchCustomers()}
+                  >
+                    Poskusi znova
+                  </Button>
+                </div>
+              ) : customers.length === 0 ? (
                 <p className="text-[11px] text-muted-foreground">
                   Še ni strank. Kliknite »Nova« za dodajanje.
                 </p>
-              )}
+              ) : null}
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="proj-date" className="text-xs">

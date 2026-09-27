@@ -225,6 +225,8 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
     }
   }
 
+  // R203 — fail-verbose (vzorec R140): 409/401/500 se POKAŽEJO z razlogom
+  // iz odgovora — prej tiho: dialog ostane odprt brez razlage.
   const handleCreateSupplier = async () => {
     if (!newSupplier.naziv) return
     try {
@@ -238,6 +240,9 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
         setSupplierDialogOpen(false)
         setNewSupplier({ naziv: '', kontakt: '', email: '', telefon: '', dobavniRok: 7, popust: 0 })
         loadData()
+      } else {
+        const data = (await res.json().catch(() => null)) as { error?: string } | null
+        toast({ title: 'Ustvarjanje dobavitelja ni uspelo', description: data?.error?.trim() || `Napaka ${res.status}`, variant: 'destructive' })
       }
     } catch {
       toast({ title: 'Napaka', variant: 'destructive' })
@@ -262,6 +267,10 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
         setPriceDialogOpen(false)
         setNewPrice({ supplierId: '', cena: '', opomba: '' })
         loadData()
+      } else {
+        // R203 — fail-verbose: npr. 400 (neveljavna cena) / 403 / 409 se vidijo.
+        const data = (await res.json().catch(() => null)) as { error?: string } | null
+        toast({ title: 'Dodajanje cene ni uspelo', description: data?.error?.trim() || `Napaka ${res.status}`, variant: 'destructive' })
       }
     } catch {
       toast({ title: 'Napaka', variant: 'destructive' })
