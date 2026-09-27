@@ -281,6 +281,9 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
   const [narocila, setNarocila] = useState<Array<{ id: string; status: string }>>([])
   const [narocilaError, setNarocilaError] = useState<string | null>(null)
   const [narocilaLoading, setNarocilaLoading] = useState(true)
+  // R211 — pečat svežine naročilnega vira (R171 vzorec): kartica pokaže
+  // 'Osveženo ob' iz ISTEGA vira, ne le splošnega title 'iz zadnjega nalaganja'.
+  const [narocilaOsvezitev, setNarocilaOsvezitev] = useState<Date | null>(null)
   const [loading, setLoading] = useState(true)
   // R171 — pečat 'Osveženo ob HH:MM:SS' za projektni seznam (čas zadnjega
   // USPEŠNEGA branja /api/projects; vzorec R170 — napaka/nalaganje → null,
@@ -394,6 +397,9 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
     id: string; dolzinaMm: number; visinaMm: number; lokacija?: string | null; createdAt: string; tipPodlage?: string | null
   }>>([])
   const [detailMeasurementsLoading, setDetailMeasurementsLoading] = useState(false)
+  // R211: fail-verbose — neuspel fetch meritev je VIDEN (prej tihi `return []`
+  // = lažno 'Ni meritev za ta projekt' nad neznanim dejanskim stanjem).
+  const [detailMeasurementsError, setDetailMeasurementsError] = useState<string | null>(null)
   const [detailMeasurementsExpanded, setDetailMeasurementsExpanded] = useState(false)
 
   // Portal stranke (client portal management)
@@ -419,6 +425,9 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
   }
   const [portalInfo, setPortalInfo] = useState<PortalInfo | null>(null)
   const [portalLoading, setPortalLoading] = useState(false)
+  // R211: fail-verbose — neuspel fetch portala je VIDEN (prej tihi `return null`
+  // = lažno 'Onemogočen' stanje nad neznanim dejanskim stanjem).
+  const [portalError, setPortalError] = useState<string | null>(null)
   const [portalActionLoading, setPortalActionLoading] = useState(false)
   const [portalNotesInput, setPortalNotesInput] = useState('')
   const [portalPriceInput, setPortalPriceInput] = useState('')
@@ -520,13 +529,19 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
         const data = await res.json()
         setNarocila(Array.isArray(data) ? data : [])
         setNarocilaError(null)
+        // R211 — pečat zadnjega uspešnega branja naročil (EN VIR RESNICE:
+        // nastavljen SAMO v uspešni veji — napaka/nalaganje ga počisti,
+        // nikoli lažne svežine nad zastarelimi/odsotnimi podatki, vzorec R170/R171).
+        setNarocilaOsvezitev(new Date())
       } else {
         setNarocila([])
         setNarocilaError(`Naročil ni bilo mogoče naložiti (napaka ${res.status}).`)
+        setNarocilaOsvezitev(null)
       }
     } catch {
       setNarocila([])
       setNarocilaError('Naročil ni bilo mogoče naložiti — preverite povezavo.')
+      setNarocilaOsvezitev(null)
     } finally {
       setNarocilaLoading(false)
     }
@@ -867,25 +882,44 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
     setPortalNotesInput('')
     setPortalPriceInput('')
     setPortalShowPrice(false)
-    // Fetch measurements for this project
+    refetchDetailMeasurements(project)
+    refetchPortal(project)
+  }
+
+  // R211: fail-verbose viri v projektu-detail dialogu (R203 inventar ostanki —
+  // prej `return []/null` pri neuspehu = TIHO lažno prazno stanje). Neuspel
+  // fetch je VIDEN (role=alert + Poskusi znova), ne izmišljen 'Ni meritev' /
+  // 'Onemogočen' — ista družina kot R163/R202/R210. Ločena funkcija za vsak
+  // vir → 'Poskusi znova' osveži SAMO napovedani vir, brez ponastavitve
+  // celotnega dialoga (razpiranje meritev ostane, kjer je).
+  function refetchDetailMeasurements(project: Project) {
     setDetailMeasurementsLoading(true)
     setDetailMeasurements([])
+    setDetailMeasurementsError(null)
     fetch(`/api/measurements?projectId=${project.id}`)
-      .then(res => {
+      .then(async (res) => {
         if (res.ok) return res.json()
-        return []
+        const err = (await res.json().catch(() => null)) as { error?: string } | null
+        throw new Error(err?.error || `Napaka strežnika (${res.status}).`)
       })
-      .then(data => setDetailMeasurements(Array.isArray(data) ? data : []))
-      .catch(() => setDetailMeasurements([]))
+      .then((data) => setDetailMeasurements(Array.isArray(data) ? data : []))
+      .catch((e: unknown) => {
+        setDetailMeasurements([])
+        setDetailMeasurementsError(e instanceof Error ? e.message : 'Napaka pri povezavi s strežnikom.')
+      })
       .finally(() => setDetailMeasurementsLoading(false))
-    // Fetch portal info
+  }
+
+  function refetchPortal(project: Project) {
     setPortalLoading(true)
+    setPortalError(null)
     fetch(`/api/portal?projectId=${project.id}`)
-      .then(res => {
+      .then(async (res) => {
         if (res.ok) return res.json()
-        return null
+        const err = (await res.json().catch(() => null)) as { error?: string } | null
+        throw new Error(err?.error || `Napaka strežnika (${res.status}).`)
       })
-      .then(data => {
+      .then((data) => {
         if (data) {
           setPortalInfo(data)
           setPortalNotesInput(data.clientNotes ?? '')
@@ -893,7 +927,10 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
           setPortalShowPrice(data.estimatedPrice != null)
         }
       })
-      .catch(() => setPortalInfo(null))
+      .catch((e: unknown) => {
+        setPortalInfo(null)
+        setPortalError(e instanceof Error ? e.message : 'Napaka pri povezavi s strežnikom.')
+      })
       .finally(() => setPortalLoading(false))
   }
 
@@ -1836,6 +1873,14 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
             <p className="text-xs text-muted-foreground">
               OSNUTEK/POSLANO/POTRJENO — iz zadnjega nalaganja. Pregled: Material → Naročila.
             </p>
+            {narocilaOsvezitev && (
+              // R211 — pečat svežine (R171 vzorec): EN VIR RESNICE, nastavljen
+              // LE v uspešni veji fetchNarocila — nikoli lažne svežine.
+              <p className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground" title="Čas zadnje uspešne osvežitve naročil">
+                <History className="h-3 w-3 shrink-0" aria-hidden="true" />
+                Osveženo ob <span className="tabular-nums">{casOznaka(narocilaOsvezitev)}</span>
+              </p>
+            )}
           </div>
           <span
             className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-roksal-amber px-1.5 text-xs font-semibold leading-none text-roksal-ink tabular-nums"
@@ -2253,7 +2298,11 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                       <span className="text-xs font-medium text-roksal-ink">Meritve tega projekta</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className="text-[11px]">{detailMeasurements.length}</Badge>
+                      {detailMeasurementsError ? (
+                        <Badge variant="secondary" className="text-[11px] bg-roksal-red/15 text-roksal-red hover:bg-roksal-red/20" title={detailMeasurementsError}>!</Badge>
+                      ) : (
+                        <Badge variant="secondary" className="text-[11px]">{detailMeasurements.length}</Badge>
+                      )}
                       {detailMeasurementsExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
                     </div>
                   </div>
@@ -2263,6 +2312,30 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                       {detailMeasurementsLoading ? (
                         <div className="flex items-center justify-center py-4">
                           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                        </div>
+                      ) : detailMeasurementsError ? (
+                        // R211: fail-verbose — napaka NIKOLI ni prikazana kot 'Ni meritev';
+                        // role=alert + Poskusi znova (družina R163/R202/R209).
+                        <div
+                          role="alert"
+                          className="rounded-md border border-roksal-red/30 bg-roksal-red/5 px-2.5 py-2"
+                        >
+                          <div className="flex items-start gap-2">
+                            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-roksal-red" aria-hidden="true" />
+                            <div className="space-y-0.5">
+                              <p className="text-[11px] font-medium text-roksal-ink">Meritev ni bilo mogoče naložiti</p>
+                              <p className="text-[11px] text-roksal-red leading-relaxed">{detailMeasurementsError}</p>
+                            </div>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="mt-2 h-7 text-[11px] border-roksal-red/40 text-roksal-red hover:bg-roksal-red/10 hover:text-roksal-red focus-visible:ring-2 focus-visible:ring-roksal-red/40"
+                            onClick={() => detailProject && refetchDetailMeasurements(detailProject)}
+                          >
+                            Poskusi znova
+                          </Button>
                         </div>
                       ) : detailMeasurements.length > 0 ? (
                         detailMeasurements.map((m) => (
@@ -2368,6 +2441,11 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                     </div>
                     {portalLoading ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                    ) : portalError ? (
+                      <Badge className="bg-roksal-red/15 text-roksal-red hover:bg-roksal-red/20 text-[10px]" title={portalError}>
+                        <AlertTriangle className="mr-1 h-3 w-3" aria-hidden="true" />
+                        Napaka
+                      </Badge>
                     ) : portalInfo?.enabled ? (
                       <Badge className="bg-roksal-green/15 text-roksal-green hover:bg-roksal-green/20 text-[10px]">
                         <ShieldCheck className="mr-1 h-3 w-3" />
@@ -2379,7 +2457,32 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                   </div>
 
                   <div className="px-3 pb-3 pt-2 space-y-3">
-                    {!portalLoading && !portalInfo?.enabled && !canManagePortal && (
+                    {!portalLoading && portalError && (
+                      // R211: fail-verbose — napaka NIKOLI ni prikazana kot 'Onemogočen';
+                      // akcije (omogoči) so SKRITE dokler vir ne odgovori (fail-closed UI).
+                      <div role="alert" className="rounded-md border border-roksal-red/30 bg-roksal-red/5 px-2.5 py-2">
+                        <div className="flex items-start gap-2">
+                          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-roksal-red" aria-hidden="true" />
+                          <div className="space-y-0.5">
+                            <p className="text-[11px] font-medium text-roksal-ink">Portala ni bilo mogoče naložiti</p>
+                            <p className="text-[11px] text-roksal-red leading-relaxed">{portalError}</p>
+                            <p className="text-[11px] text-muted-foreground leading-relaxed">
+                              Stanja ne izmišljujemo — dokler vir ne odgovori, ne vemo, ali je portal omogočen.
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="mt-2 h-7 text-[11px] border-roksal-red/40 text-roksal-red hover:bg-roksal-red/10 hover:text-roksal-red focus-visible:ring-2 focus-visible:ring-roksal-red/40"
+                          onClick={() => detailProject && refetchPortal(detailProject)}
+                        >
+                          Poskusi znova
+                        </Button>
+                      </div>
+                    )}
+                    {!portalLoading && !portalError && !portalInfo?.enabled && !canManagePortal && (
                       // §10 (R135): monter brez pravice portal.manage — pošteno
                       // stanje namesto mrtvega gumba (strežnik bi vrnil 403).
                       <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50/70 px-2.5 py-2 dark:border-roksal-amber/25 dark:bg-roksal-amber/10">
@@ -2393,7 +2496,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                         </div>
                       </div>
                     )}
-                    {!portalLoading && !portalInfo?.enabled && canManagePortal && (
+                    {!portalLoading && !portalError && !portalInfo?.enabled && canManagePortal && (
                       <div className="space-y-2">
                         <p className="text-[11px] text-muted-foreground leading-relaxed">
                           Omogočite javno stran, kjer stranka v realnem času spremlja status, slike
@@ -2672,6 +2775,11 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                     </div>
                     {portalLoading ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                    ) : portalError ? (
+                      <Badge className="bg-roksal-red/15 text-roksal-red hover:bg-roksal-red/20 text-[10px]" title={portalError}>
+                        <AlertTriangle className="mr-1 h-3 w-3" aria-hidden="true" />
+                        Napaka
+                      </Badge>
                     ) : portalInfo?.measure?.enabled ? (
                       <Badge className="bg-roksal-amber/15 text-amber-700 dark:text-amber-300 hover:bg-roksal-amber/25 text-[10px]">
                         <ShieldCheck className="mr-1 h-3 w-3" />
@@ -2683,7 +2791,18 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                   </div>
 
                   <div className="px-3 pb-3 pt-2 space-y-3">
-                    {!portalLoading && !portalInfo?.measure?.enabled && !canManagePortal && (
+                    {!portalLoading && portalError && (
+                      <div role="alert" className="rounded-md border border-roksal-red/30 bg-roksal-red/5 px-2.5 py-2">
+                        <div className="flex items-start gap-2">
+                          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-roksal-red" aria-hidden="true" />
+                          <div className="space-y-0.5">
+                            <p className="text-[11px] font-medium text-roksal-ink">Merilne povezave ni bilo mogoče naložiti</p>
+                            <p className="text-[11px] text-roksal-red leading-relaxed">{portalError}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {!portalLoading && !portalError && !portalInfo?.measure?.enabled && !canManagePortal && (
                       // §10 (R135): pošteno stanje namesto gumba, ki bi vrnil 403
                       <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50/70 px-2.5 py-2 dark:border-roksal-amber/25 dark:bg-roksal-amber/10">
                         <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-roksal-amber" />
@@ -2695,7 +2814,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                         </div>
                       </div>
                     )}
-                    {!portalLoading && !portalInfo?.measure?.enabled && canManagePortal && (
+                    {!portalLoading && !portalError && !portalInfo?.measure?.enabled && canManagePortal && (
                       <div className="space-y-2">
                         <p className="text-[11px] text-muted-foreground leading-relaxed">
                           Stranka dobi povezavo, na kateri sama nariše črto ograje na satelitski karti in
