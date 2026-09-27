@@ -48,6 +48,14 @@ export const NOTIFICATION_TEMPLATES = {
   // spodrsljaji so vidni tudi kot potrditev; TUJI poskusi so klic k zamenjavi
   // gesla prek 'Aktivne seje'.
   FAILED_LOGINS: { version: 1 },
+  // R198 — obvestilo o menjavi gesla (industrijski standard 'password change
+  // alert'): uspešna menjava lastnega gesla (/api/auth/password) ustvari
+  // vrstico za lastnika profila. Menjava POCEJA VSE seje (fail-closed, R137)
+  // — uporabnik je takoj odjavljen in brez vrstice bi bil zmeden, zakaj;
+  // vrstica ga čaka v zvončku ob naslednji prijavi (isti vzorec kot
+  // ACCOUNT_ACTIVATED — vrstica čaka naslovnika). Tuja menjava = takojšen
+  // klic skrbniku.
+  PASSWORD_CHANGED: { version: 1 },
 } as const
 
 export type NotificationTemplate = keyof typeof NOTIFICATION_TEMPLATES
@@ -242,6 +250,30 @@ export async function markNotificationsDelivered(opts: {
       ...visibleScope({ userId: opts.userId, vloga: opts.vloga }),
     },
     data: { status: 'DELIVERED', deliveredAt: now },
+  })
+  return res.count
+}
+
+/**
+ * R198 — masovno odpiranje („Označi vse kot prebrano“): VSE vidne vrstice v
+ * stanju SENT ali DELIVERED gredo → OPENED (isRead=true, openedAt). Stroga
+ * tabela prehodov ostaja NEDOTAKNJENA — oba prehoda sta dovoljena per-row,
+ * updateMany je samo paketna oblika istih prehodov z ISTIM obsegom
+ * (visibleScope: lastne + vložne vrstice). QUEUED/FAILED se NE dotakne
+ * (fail-closed: odpreti se da samo oddano obvestilo); že OPENED se izključi
+ * z where — idempotentno, drugi klic vrne 0.
+ */
+export async function markAllNotificationsOpened(opts: {
+  userId: string
+  vloga: UserRole
+  now?: Date
+}): Promise<number> {
+  const res = await db.notification.updateMany({
+    where: {
+      status: { in: ['SENT', 'DELIVERED'] },
+      ...visibleScope({ userId: opts.userId, vloga: opts.vloga }),
+    },
+    data: { status: 'OPENED', isRead: true, openedAt: opts.now ?? new Date() },
   })
   return res.count
 }

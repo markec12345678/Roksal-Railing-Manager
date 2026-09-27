@@ -11,6 +11,9 @@ import { hashPassword, verifyPassword } from '@/lib/password'
 import { authenticate, unauthorized } from '@/lib/auth'
 import { audit } from '@/lib/audit'
 import { checkRate, clientIp, LOGIN_LIMIT } from '@/lib/rate-limit'
+import { queueNotifications } from '@/lib/notifications'
+import { casOznaka } from '@/lib/osvezitev-fokus'
+import { correlationFromRequest } from '@/lib/correlation'
 
 const schema = z.object({
   currentPassword: z.string().min(1),
@@ -82,6 +85,23 @@ export async function POST(request: Request) {
     ])
     releaseOnFailure(limitKey)
     await audit({ request, session: auth.session, akcija: 'PASSWORD_CHANGED', newValue: { revokedSessions: revokedSessions.count } })
+
+    // R198 — obvestilo o menjavi gesla (industrijski standard): uspešna
+    // menjava POCEJA VSE seje (zgoraj) — uporabnik je takoj odjavljen;
+    // vrstica v zvončku mu ob naslednji prijavi razloži ZAKAJ (isti vzorec
+    // kot ACCOUNT_ACTIVATED — vrstica čaka naslovnika) in vsebuje število
+    // odjavljenih naprav. Tuja menjava = takojšen klic skrbniku. Best-effort:
+    // napaka obvestila NIKOLI ne podre menjave gesla (že opravljena,
+    // transakcija zaključena; napaka gre v konzolo — brez tihe izgube).
+    await queueNotifications({
+      template: 'PASSWORD_CHANGED',
+      recipients: [{ userId: profile.id }],
+      naslov: 'Vaše geslo je bilo spremenjeno',
+      sporocilo: `Vse seje so odjavljene (${revokedSessions.count} naprav) · če to niste bili vi, takoj obvestite skrbnika · ${casOznaka(new Date())}`,
+      entity: { type: 'profile', id: profile.id },
+      correlationId: correlationFromRequest(request),
+    }).catch((error) => console.error('PASSWORD_CHANGED notification failed:', error))
+
     return NextResponse.json({ ok: true, relogin: true })
   } catch (error) {
     console.error('Password change error:', error)

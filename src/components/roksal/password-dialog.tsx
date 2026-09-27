@@ -8,7 +8,7 @@
 // seje (tudi to) → klient preusmeri na prijavo (relogin: true).
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { KeyRound, Loader2 } from 'lucide-react'
+import { KeyRound, Loader2, ShieldCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -94,6 +94,15 @@ export function PasswordDialog({ open, onOpenChange }: PasswordDialogProps) {
           <DialogDescription>
             Po uspešni menjavi se odjavite na vseh napravah in se prijavite z novim geslom.
           </DialogDescription>
+          {/* R198 — iskren pričakovalni okvir: menjava poče vse seje (R137),
+            zvonček pa ob naslednji prijavi pokaže potrditveno vrstico
+            (PASSWORD_CHANGED, ščit). Vez med dejanjem in posledico je VIDNA. */}
+          <div className="flex items-start gap-2 rounded-lg bg-roksal-amber/10 px-3 py-2">
+            <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-roksal-amber" aria-hidden="true" />
+            <p className="text-[11px] font-medium leading-snug text-stone-700 dark:text-stone-300">
+              Vse naprave bodo odjavljene — potrditvena vrstica vas bo čakala v zvončku ob naslednji prijavi.
+            </p>
+          </div>
         </DialogHeader>
 
         <div className="space-y-3">

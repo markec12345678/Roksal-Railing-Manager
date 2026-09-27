@@ -40,7 +40,7 @@ interface NotificationItem {
 /** R197 — varnostne predloge v zvončku dobijo ŠČIT + jantarno barvo (razločevanje
  * varnostnih vrstic od poslovnih: zaloga/montaže/računi). Sinhrono z
  * NOTIFICATION_TEMPLATES (fail-closed seznam v src/lib/notifications.ts). */
-const VARNOSTNE_PREDLOGE: ReadonlySet<string> = new Set(['NEW_LOGIN', 'FAILED_LOGINS', 'ACCOUNT_ACTIVATED'])
+const VARNOSTNE_PREDLOGE: ReadonlySet<string> = new Set(['NEW_LOGIN', 'FAILED_LOGINS', 'ACCOUNT_ACTIVATED', 'PASSWORD_CHANGED'])
 
 /** R143 (§29): zapisano obvestilo z življenjskim ciklom (GET /api/notifications). */
 interface PersistedNotification {
@@ -104,6 +104,9 @@ export function NotificationCenter() {
   // 'nizka zaloga NEVIDNA' = lažno 'Vse je pod nadzorom' (isti vzorec R162/R174).
   const [viriNapaka, setViriNapaka] = useState<string | null>(null)
   const loadedOnce = useRef(false)
+  // R198 — masovno „Označi vse kot prebrano“: zaklep gumba med potekom
+  // (dvoklik = dva klica, drugi vrača opened:0 — neškodljivo, ampak grdo).
+  const [oznacujemVse, setOznacujemVse] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -345,6 +348,31 @@ export function NotificationCenter() {
     }
   }
 
+  /** R198 — masovni open ack: { all: true } → VSE vidne SENT|DELIVERED → OPENED;
+   * fail-verbose (isti vzorec kot openPersisted); po uspehu osveži seznam
+   * (badge in vrstice konvergirata prek istega load). */
+  async function oznaciVsePrebrano() {
+    setOznacujemVse(true)
+    try {
+      const res = await fetch('/api/notifications/read', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ all: true }),
+      })
+      if (!res.ok) {
+        const err = (await res.json().catch(() => null)) as { error?: string } | null
+        setPersistedError(`${res.status}: ${err?.error ?? 'označevanje ni uspelo'}`)
+        return
+      }
+      setPersistedError(null)
+      void load()
+    } catch {
+      setPersistedError('Zahteve ni bilo mogoče poslati (omrežje).')
+    } finally {
+      setOznacujemVse(false)
+    }
+  }
+
   const KIND_STYLE: Record<NotificationItem['kind'], { icon: React.ElementType; bg: string; fg: string }> = {
     stock: { icon: Package, bg: 'bg-red-100 dark:bg-red-500/15', fg: 'text-red-600 dark:text-red-400' },
     install: { icon: CalendarDays, bg: 'bg-roksal-amber/15', fg: 'text-roksal-amber' },
@@ -486,10 +514,36 @@ export function NotificationCenter() {
                 QUEUED → SENT → DELIVERED → OPENED / FAILED (retry politika). */}
             {persisted.length > 0 && (
               <div className="mt-3 border-t border-border/60 pt-3">
-                <p className="mb-2 flex items-center gap-1.5 px-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                  <Inbox className="h-3 w-3" aria-hidden="true" />
-                  Poslana obvestila ({persisted.length})
-                </p>
+                <div className="mb-2 flex items-center gap-1.5 px-1">
+                  <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                    <Inbox className="h-3 w-3" aria-hidden="true" />
+                    Poslana obvestila ({persisted.length})
+                  </p>
+                  {/* R198 — masovno označevanje: samo ko je kaj neprebranega;
+                    OPENED je terminalen (stroga tabela prehodov), zato gumb
+                    po označitvi izgine (neprebrana = 0) — brez mrtvega gumba. */}
+                  {(() => {
+                    const neprebrana = persisted.filter((n) => !n.isRead).length
+                    if (neprebrana === 0) return null
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => void oznaciVsePrebrano()}
+                        disabled={oznacujemVse}
+                        className="ml-auto flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground transition-colors hover:bg-roksal-navy/5 hover:text-roksal-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 disabled:cursor-not-allowed disabled:opacity-50 dark:text-muted-foreground dark:hover:bg-roksal-ink/10 dark:hover:text-roksal-ink dark:focus-visible:ring-roksal-ink/40"
+                        aria-label={`Označi vse kot prebrano (${neprebrana})`}
+                        title={`Označi vse kot prebrano (${neprebrana})`}
+                      >
+                        {oznacujemVse ? (
+                          <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
+                        ) : (
+                          <CheckCheck className="h-3 w-3" aria-hidden="true" />
+                        )}
+                        Označi vse ({neprebrana})
+                      </button>
+                    )
+                  })()}
+                </div>
                 <ul className="space-y-2" role="list">
                   {persisted.map((n) => {
                     const st = STATUS_STYLE[n.status]
