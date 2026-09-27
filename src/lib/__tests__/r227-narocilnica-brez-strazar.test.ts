@@ -180,8 +180,9 @@ describe('R227 — [Mandatory] stil: geselne površine 100% na žetonih (0 novih
     expect(pwdBanner).toContain('border border-border px-3')
   })
 
-  it('r165 PIN ni kršen: team-tab deaktivirani člani ostajajo nespremenjeni (izven obsega)', () => {
+  it('r165 PIN sinhorniziran R228: team-tab žetoni (stone dvojček izbrisan, vrstica na border-border)', () => {
     const team = beri('src/components/roksal/team-tab.tsx')
-    expect(team).toContain('border-stone-200 dark:border-stone-700')
+    expect(team).not.toContain('border-stone-200 dark:border-stone-700')
+    expect(team).toContain("'border-border opacity-75'")
   })
 })

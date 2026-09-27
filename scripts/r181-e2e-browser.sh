@@ -26,12 +26,12 @@ ss -tlnp 2>/dev/null | grep ':3100' | head -1 || echo "!!! 3100 NI poslušal"
 agent-browser close --all > /dev/null 2>&1 || true
 agent-browser open "http://127.0.0.1:3100/login" > /dev/null 2>&1
 agent-browser wait 'input[type="email"]' > /dev/null 2>&1
-echo "login page stanje: $(agent-browser eval "JSON.stringify({url: location.pathname, imaFormo: !!document.querySelector('input[type=email]'), text: document.body.innerText.slice(0,60)})" 2>&1 | tail -1)"
+echo "login page stanje: $(agent-browser eval "JSON.stringify({url: location.pathname, imaFormo: !!document.querySelector('input[type=email]'), text: document.body.innerText.slice(0,60)})()" 2>&1 | tail -1)"
 agent-browser fill 'input[type="email"]' 'ci@roksal.si' > /dev/null 2>&1
 agent-browser fill 'input[type="password"]' 'DimniSmoke139!' > /dev/null 2>&1
 agent-browser click 'button[type="submit"]' > /dev/null 2>&1
 sleep 6
-echo "po prijavi: $(agent-browser eval "JSON.stringify({url: location.pathname, bodyLen: document.body.innerText.length})" 2>&1 | tail -1)"
+echo "po prijavi: $(agent-browser eval "JSON.stringify({url: location.pathname, bodyLen: document.body.innerText.length})()" 2>&1 | tail -1)"
 
 for i in 1 2 3; do
   agent-browser eval "(()=>{const t=[...document.querySelectorAll('button,a')].find(b=>(b.getAttribute('aria-label')||'').startsWith('Montažna orodja')); if(t) t.click(); return !!t;})()" 2>&1 | tail -1
@@ -95,7 +95,7 @@ sleep 5
 agent-browser eval "document.documentElement.classList.add('dark'); 'temna'" 2>&1 | tail -1
 sleep 2
 agent-browser eval "(()=>{const pecati=[...document.querySelectorAll('span')].filter(e=>e.textContent.trim().startsWith('Osveženo ob')); const barve=pecati.slice(0,3).map(p=>getComputedStyle(p).color); return JSON.stringify({pečatiVidni: pecati.length, barveTemna: barve, pageBg: getComputedStyle(document.body).backgroundColor});})()" 2>&1 | tail -1
-agent-browser eval "JSON.stringify({err: window.__err ?? null})" 2>&1 | tail -1
+agent-browser eval "JSON.stringify({err: window.__err ?? null})()" 2>&1 | tail -1
 agent-browser screenshot /home/z/my-project/screenshots/qa-r181-temna.png > /dev/null 2>&1 && echo "screenshot TEMNA OK"
 
 agent-browser close --all > /dev/null 2>&1 || true

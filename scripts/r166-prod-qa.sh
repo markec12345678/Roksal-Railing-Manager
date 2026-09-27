@@ -15,7 +15,7 @@ agent-browser fill 'input[type="email"]' 'spot-r165@roksal.si' > /dev/null 2>&1
 agent-browser fill 'input[type="password"]' 'SpotR165Qa!Pass' > /dev/null 2>&1
 agent-browser click 'button[type="submit"]' > /dev/null 2>&1
 sleep 6
-agent-browser eval "JSON.stringify({url: location.pathname, err: window.__err || null})" 2>&1 | tail -1
+agent-browser eval "JSON.stringify({url: location.pathname, err: window.__err || null})()" 2>&1 | tail -1
 
 echo "--- QA 0b: prehod na Montažna orodja (obvezni korak) ---"
 agent-browser eval "(()=>{const t=[...document.querySelectorAll('button,a')].find(b=>(b.getAttribute('aria-label')||'').startsWith('Montažna orodja')); if(t) t.click(); return t?(t.getAttribute('aria-label')||'').slice(0,30):null;})()" 2>&1 | tail -1
@@ -24,7 +24,7 @@ sleep 5
 echo "--- QA 1: temna tema ---"
 agent-browser eval "(()=>{const b=[...document.querySelectorAll('button')].find(x=>(x.getAttribute('aria-label')||'').includes('temo')); if(b) b.click(); return b?b.getAttribute('aria-label'):null;})()" 2>&1 | tail -1
 sleep 2
-agent-browser eval "JSON.stringify({bodyBg: getComputedStyle(document.body).backgroundColor})" 2>&1 | tail -1
+agent-browser eval "JSON.stringify({bodyBg: getComputedStyle(document.body).backgroundColor})()" 2>&1 | tail -1
 
 echo "--- QA 2: R165 DEPLOY PROBE — notifikacijska kartica bg-card v temni ---"
 agent-browser eval "(()=>{const b=[...document.querySelectorAll('button')].find(x=>(x.getAttribute('aria-label')||'').startsWith('Obvestila')); if(!b) return 'NO_BELL'; b.click(); return 'OPENED';})()" 2>&1 | tail -1
@@ -44,7 +44,7 @@ sleep 4
 agent-browser eval "(()=>{const alerts=[...document.querySelectorAll('[role=\"alert\"]')].map(a=>a.textContent.slice(0,80)); const subtabs=[...document.querySelectorAll('button')].filter(b=>/Koledar|Ekip|Oprem/.test(b.textContent||'')).map(b=>b.textContent.trim().slice(0,16)); return JSON.stringify({errorPanels: alerts, subtabs: subtabs});})()" 2>&1 | tail -1
 
 echo "--- QA 5: konzola + screenshot ---"
-agent-browser eval "JSON.stringify({err: window.__err || null})" 2>&1 | tail -1
+agent-browser eval "JSON.stringify({err: window.__err || null})()" 2>&1 | tail -1
 agent-browser screenshot /home/z/my-project/screenshots/qa-r166-prod-dark.png > /dev/null 2>&1 && echo "screenshot OK"
 agent-browser close --all > /dev/null 2>&1 || true
 echo "R166 QA KONEC"

@@ -37,7 +37,7 @@ echo "--- E2E 2: intercept odložišča + klik kopiraj → deterministično bese
 agent-browser eval "(()=>{navigator.clipboard.writeText=(t)=>{window.__r167copied=t;return Promise.resolve();}; return 'intercept postavljen';})()" 2>&1 | tail -1
 agent-browser eval "(()=>{const b=document.querySelector('button[aria-label^=\"Kopiraj podrobnosti termina\"]'); if(!b) return 'ni gumba'; b.click(); return b.getAttribute('aria-label');})()" 2>&1 | tail -1
 sleep 2
-agent-browser eval "JSON.stringify({kopirano: window.__r167copied ? window.__r167copied.split('\\n').slice(0,3) : null, vrstic: window.__r167copied ? window.__r167copied.split('\\n').length : 0})" 2>&1 | tail -1
+agent-browser eval "JSON.stringify({kopirano: window.__r167copied ? window.__r167copied.split('\\n').slice(0,3) : null, vrstic: window.__r167copied ? window.__r167copied.split('\\n').length : 0})()" 2>&1 | tail -1
 
 echo "--- E2E 3: stanje pred filtrom (število vrstic v kartici) ---"
 agent-browser eval "(()=>{const kartica=[...document.querySelectorAll('[data-slot=card]')].find(c=>(c.textContent||'').includes('Termini — naslednjih 7 dni')); if(!kartica) return 'ni kartice'; const vrstice=kartica.querySelectorAll('button[aria-label^=\"Kopiraj podrobnosti termina\"]').length; const moja=(kartica.textContent||'').includes('Moja montaža'); return JSON.stringify({vrstice: vrstice, mojaMontazaVidna: moja});})()" 2>&1 | tail -1
@@ -54,7 +54,7 @@ agent-browser eval "(()=>{const opake=[...document.querySelectorAll('[class*=bg-
 agent-browser screenshot /home/z/my-project/screenshots/qa-r167-local-termini-filtri.png > /dev/null 2>&1 && echo "screenshot OK"
 
 echo "--- E2E 6: konzola + pospravljanje ---"
-agent-browser eval "JSON.stringify({err: window.__err || null})" 2>&1 | tail -1
+agent-browser eval "JSON.stringify({err: window.__err || null})()" 2>&1 | tail -1
 agent-browser close --all > /dev/null 2>&1 || true
 for pid in $(ss -tlnp 2>/dev/null | grep ':3100' | grep -oP 'pid=\K[0-9]+' | sort -u); do
   kill -9 "$pid" 2>/dev/null

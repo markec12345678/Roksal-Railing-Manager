@@ -60,7 +60,7 @@ agent-browser eval "(()=>{const blok=document.querySelector('[data-testid=\"domo
 agent-browser screenshot "$SS/qa-r202-e2e-domov-prazno2.png" > /dev/null 2>&1 && echo "screenshot DOMOV PRAZNO2 OK"
 
 echo "--- 3) temna ---"
-agent-browser eval "document.documentElement.classList.add('dark'); JSON.stringify({bg:getComputedStyle(document.body).backgroundColor,err:window.__err??null})" 2>&1 | tail -1
+agent-browser eval "document.documentElement.classList.add('dark'); JSON.stringify({bg:getComputedStyle(document.body).backgroundColor,err:window.__err??null})()" 2>&1 | tail -1
 agent-browser screenshot "$SS/qa-r202-e2e-domov-prazno2-temna.png" > /dev/null 2>&1 && echo "screenshot TEMNA OK"
 
 agent-browser eval "(async()=>{const r=await fetch('/api/auth/logout',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}); return JSON.stringify({logout:r.status});})()" 2>&1 | tail -1

@@ -17,7 +17,7 @@ agent-browser fill 'input[type="email"]' 'spot-r165@roksal.si' > /dev/null 2>&1
 agent-browser fill 'input[type="password"]' 'SpotR165Qa!Pass' > /dev/null 2>&1
 agent-browser click 'button[type="submit"]' > /dev/null 2>&1
 sleep 8
-agent-browser eval "JSON.stringify({url: location.pathname, err: window.__err || null})" 2>&1 | tail -1
+agent-browser eval "JSON.stringify({url: location.pathname, err: window.__err || null})()" 2>&1 | tail -1
 
 echo "--- QA 1: R166+R167 fingerprint — kartica TERMINI + filter + kopiraj (dashboard) ---"
 agent-browser eval "(()=>{const txt=document.body.innerText; const kartica=txt.includes('Termini — naslednjih 7 dni'); const osvezi=!!document.querySelector('button[aria-label=\"Osveži termine\"]'); const toggle=[...document.querySelectorAll('button')].find(b=>/Samo moje termine/.test(b.getAttribute('aria-label')||b.textContent||'')); const kopiraj=[...document.querySelectorAll('button')].map(b=>b.getAttribute('aria-label')||'').filter(a=>a.startsWith('Kopiraj podrobnosti termina')); const alerts=[...document.querySelectorAll('[role=\"alert\"]')].map(a=>a.textContent.slice(0,80)); return JSON.stringify({kartica, osvezi, toggle: toggle?{viden: !!toggle.offsetParent, pressed: toggle.getAttribute('aria-pressed')}:null, kopirajGumbi: kopiraj.length, kopirajPrvi: kopiraj[0]||null, errorPanels: alerts});})()" 2>&1 | tail -1
@@ -40,7 +40,7 @@ sleep 4
 agent-browser eval "(()=>{const alerts=[...document.querySelectorAll('[role=\"alert\"]')].map(a=>a.textContent.slice(0,80)); const subtabs=[...document.querySelectorAll('button')].filter(b=>/Koledar|Ekip|Oprem/.test(b.textContent||'')).map(b=>b.textContent.trim().slice(0,16)); return JSON.stringify({errorPanels: alerts, subtabs});})()" 2>&1 | tail -1
 
 echo "--- QA 5: konzola + screenshot ---"
-agent-browser eval "JSON.stringify({err: window.__err || null})" 2>&1 | tail -1
+agent-browser eval "JSON.stringify({err: window.__err || null})()" 2>&1 | tail -1
 agent-browser screenshot /home/z/my-project/screenshots/qa-r168-prod.png > /dev/null 2>&1 && echo "screenshot OK"
 agent-browser close --all > /dev/null 2>&1 || true
 echo "R168 QA KONEC"

@@ -45,7 +45,7 @@ pocakaj_na() {
 
 echo "=== Z1 R220 ŽIVO: Zaloga — čip 'Na minimumu' medsebojna izključnost ==="
 agent-browser eval "(()=>{const n=[...document.querySelectorAll('nav button, nav a')].find(b=>b.textContent.trim()==='Zaloga'); if(n){n.click(); return 'klik Zaloga';} return 'ni Zaloga v nav';})()" 2>&1 | tail -1
-pocakaj_na "(()=>{return [...document.querySelectorAll('button')].some(b=>b.getAttribute('aria-pressed')!==null&&b.textContent.includes('Pod minimumom'));})" 12
+pocakaj_na "(()=>{return [...document.querySelectorAll('button')].some(b=>b.getAttribute('aria-pressed')!==null&&b.textContent.includes('Pod minimumom'));})()" 12
 agent-browser eval "(()=>{const pod=[...document.querySelectorAll('button')].find(b=>b.getAttribute('aria-pressed')!==null&&b.textContent.includes('Pod minimumom')); const na=[...document.querySelectorAll('button')].find(b=>b.getAttribute('aria-pressed')!==null&&b.textContent.includes('Na minimumu')); return JSON.stringify({podAria:pod?pod.getAttribute('aria-pressed'):'BREZ',podTekst:pod?pod.textContent.trim():null,naAria:na?na.getAttribute('aria-pressed'):'BREZ',naTekst:na?na.textContent.trim():null,naTitle:na?na.getAttribute('title'):null,naLabel:na?na.getAttribute('aria-label'):null});})()" 2>&1 | tail -1
 agent-browser eval "(()=>{const na=[...document.querySelectorAll('button')].find(b=>b.getAttribute('aria-pressed')!==null&&b.textContent.includes('Na minimumu')); if(!na) return 'ni čipa'; na.click(); return 'klik Na minimumu';})()" 2>&1 | tail -1
 sleep 3
@@ -56,7 +56,7 @@ sleep 2
 
 echo "=== Z3 paleta: 'nizka zaloga na minimumu' vrstica + R219 regresija ==="
 agent-browser eval "(()=>{const t=[...document.querySelectorAll('button')].find(b=>(b.getAttribute('aria-label')||'').includes('Odpri iskalnik')); if(t){t.click(); return 'paleta';} return 'ni iskalnika';})()" 2>&1 | tail -1
-pocakaj_na "(()=>{return !!document.querySelector('[cmdk-input]');})" 8
+pocakaj_na "(()=>{return !!document.querySelector('[cmdk-input]');})()" 8
 sleep 3
 agent-browser eval "(()=>{const na=[...document.querySelectorAll('[cmdk-item]')].find(e=>e.getAttribute('data-value')==='nizka zaloga na minimumu'); const vse=[...document.querySelectorAll('[cmdk-item]')].find(e=>e.getAttribute('data-value')==='nizka zaloga pokaži vse'); return JSON.stringify({naVrstica:na?na.textContent.trim().slice(0,70):'SKRITA (naMin=0 v prod — po oblikovanju)',vseVrstica:vse?vse.textContent.trim().slice(0,70):'SKRITA'});})()" 2>&1 | tail -1
 agent-browser press Escape > /dev/null 2>&1

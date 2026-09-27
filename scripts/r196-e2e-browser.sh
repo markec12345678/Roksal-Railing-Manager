@@ -30,7 +30,7 @@ agent-browser fill 'input[type="password"]' 'DimniSmoke139!' > /dev/null 2>&1
 agent-browser click 'button[type="submit"]' > /dev/null 2>&1
 sleep 12
 echo "--- Z0: prijava ---"
-agent-browser eval "JSON.stringify({url:location.pathname, err:window.__err??null})" 2>&1 | tail -1
+agent-browser eval "JSON.stringify({url:location.pathname, err:window.__err??null})()" 2>&1 | tail -1
 
 echo "--- Z1: zvonček — NEW_LOGIN viden (ta prijava ga je ustvarila) ---"
 agent-browser eval "(()=>{const b=[...document.querySelectorAll('button')].find(x=>(x.getAttribute('aria-label')||'').startsWith('Obvestila')); if(!b) return 'brez zvoncka'; const r=b.getBoundingClientRect(); const o={bubbles:true,cancelable:true,view:window,clientX:r.x+r.width/2,clientY:r.y+r.height/2,button:0}; b.dispatchEvent(new PointerEvent('pointerdown',o)); b.dispatchEvent(new PointerEvent('pointerup',o)); b.dispatchEvent(new MouseEvent('click',o)); return 'zvoncek poslan';})()" 2>&1 | tail -1

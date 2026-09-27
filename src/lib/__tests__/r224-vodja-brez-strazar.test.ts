@@ -141,7 +141,7 @@ describe('R224 — CSV (IZVOŽENO = ZASLON): vodja-csv', () => {
       danasTermini: 0, danasZakljuceni: 0, danasVpripravi: 0,
       mesecnoProjektov: 0, mesecniPrihodek: 0, mesecnaMarza: 0, mesecnoUr: 0,
       odprtoZnesek: 0, zapadloZnesek: 0, zapadloSt: 0, potekliOpomniki: 0,
-      nizkaZaloga: 0, odprtaNarocila: 0, brezDobavitelja: 5,
+      nizkaZaloga: 0, odprtaNarocila: 0, brezDobavitelja: 5, zamujeneDobave: 5,
       skupajProjektov: 0, skupajStrank: 0, skupniLTV: 0,
     }
     const { csv } = buildVodjaCsv({ kpi, termini: [], prihodki: [], danesIso: '2026-09-28' })
@@ -153,7 +153,7 @@ describe('R224 — CSV (IZVOŽENO = ZASLON): vodja-csv', () => {
       danasTermini: 0, danasZakljuceni: 0, danasVpripravi: 0,
       mesecnoProjektov: 0, mesecniPrihodek: 0, mesecnaMarza: 0, mesecnoUr: 0,
       odprtoZnesek: 0, zapadloZnesek: 0, zapadloSt: 0, potekliOpomniki: 0,
-      nizkaZaloga: 0, odprtaNarocila: 0, brezDobavitelja: 0,
+      nizkaZaloga: 0, odprtaNarocila: 0, brezDobavitelja: 0, zamujeneDobave: 0,
       skupajProjektov: 0, skupajStrank: 0, skupniLTV: 0,
     }
     const { csv } = buildVodjaCsv({ kpi, termini: [], prihodki: [], danesIso: '2026-09-28' })
@@ -165,7 +165,7 @@ describe('R224 — CSV (IZVOŽENO = ZASLON): vodja-csv', () => {
       danasTermini: 0, danasZakljuceni: 0, danasVpripravi: 0,
       mesecnoProjektov: 0, mesecniPrihodek: 0, mesecnaMarza: 0, mesecnoUr: 0,
       odprtoZnesek: 0, zapadloZnesek: 0, zapadloSt: 0, potekliOpomniki: 0,
-      nizkaZaloga: 0, odprtaNarocila: 0, brezDobavitelja: -1,
+      nizkaZaloga: 0, odprtaNarocila: 0, brezDobavitelja: -1, zamujeneDobave: -1,
       skupajProjektov: 0, skupajStrank: 0, skupniLTV: 0,
     }
     expect(() => buildVodjaCsv({ kpi, termini: [], prihodki: [], danesIso: '2026-09-28' }))

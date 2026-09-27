@@ -33,7 +33,7 @@ sleep 4
 echo "--- E2E 1: temna tema (R162 fingerprint v okolju) ---"
 agent-browser eval "(()=>{const b=[...document.querySelectorAll('button')].find(x=>(x.getAttribute('aria-label')||'').includes('temo')); if(b) b.click(); return b?b.getAttribute('aria-label'):null;})()" 2>&1 | tail -1
 sleep 2
-agent-browser eval "JSON.stringify({bodyBg: getComputedStyle(document.body).backgroundColor, dark: document.documentElement.className.includes('dark')})" 2>&1 | tail -1
+agent-browser eval "JSON.stringify({bodyBg: getComputedStyle(document.body).backgroundColor, dark: document.documentElement.className.includes('dark')})()" 2>&1 | tail -1
 
 echo "--- E2E 2: Več → Pregled za vodjo tab ---"
 agent-browser eval "(()=>{const v=[...document.querySelectorAll('button')].find(b=>b.getAttribute('aria-label')==='Več'); if(v) v.click(); return !!v;})()" 2>&1 | tail -1
@@ -57,7 +57,7 @@ sleep 4
 agent-browser eval "(()=>{const alert=[...document.querySelectorAll('[role=\"alert\"]')].map(a=>a.textContent.slice(0,80)); const koledar=[...document.querySelectorAll('button')].find(x=>x.textContent&&x.textContent.includes('Koledar')); return JSON.stringify({errorPanels: alert, subtabs: !!koledar});})()" 2>&1 | tail -1
 
 echo "--- E2E 6: konzola čista ---"
-agent-browser eval "JSON.stringify({err: window.__err || null})" 2>&1 | tail -1
+agent-browser eval "JSON.stringify({err: window.__err || null})()" 2>&1 | tail -1
 
 agent-browser close --all > /dev/null 2>&1
 for pid in $(ss -tlnp 2>/dev/null | grep ':3100' | grep -oP 'pid=\K[0-9]+' | sort -u); do

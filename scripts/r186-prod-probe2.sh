@@ -18,7 +18,7 @@ agent-browser click 'button[type="submit"]' > /dev/null 2>&1
 sleep 10
 
 echo "-- D0: diagnostika — ali smo prijavljeni? kateri gumbi? --"
-agent-browser eval "JSON.stringify({url: location.pathname, bodyLen: document.body.innerText.length, tabi: [...document.querySelectorAll('nav button, [role=tablist] button')].map(b=>b.textContent.trim()).slice(0,12)})" 2>&1 | tail -1
+agent-browser eval "JSON.stringify({url: location.pathname, bodyLen: document.body.innerText.length, tabi: [...document.querySelectorAll('nav button, [role=tablist] button')].map(b=>b.textContent.trim()).slice(0,12)})()" 2>&1 | tail -1
 
 echo "-- D1: Ekipa tab — poskus 1: 'Montažna orodja' povezava --"
 agent-browser eval "(()=>{const c=[...document.querySelectorAll('button,a')].map(b=>({t:(b.textContent||'').trim().slice(0,30), a:b.getAttribute('aria-label')})); return JSON.stringify(c.filter(x=>(x.t||'').includes('Montažn')||(x.a||'').includes('Montažn')||(x.t||'').includes('Ekipa')||(x.a||'').includes('Ekipa')).slice(0,8));})()" 2>&1 | tail -1

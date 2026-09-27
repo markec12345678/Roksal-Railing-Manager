@@ -33,7 +33,7 @@ agent-browser click 'button[type="submit"]' > /dev/null 2>&1
 sleep 12
 
 echo "--- Z0: prijava + povabilo (UI fetch) ---"
-agent-browser eval "JSON.stringify({url:location.pathname, err:window.__err??null})" 2>&1 | tail -1
+agent-browser eval "JSON.stringify({url:location.pathname, err:window.__err??null})()" 2>&1 | tail -1
 PATH_ACT=$(agent-browser eval "(async()=>{const r=await fetch('/api/users',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'invite',email:'$NOVI',ime:'R197 E2E',vloga:'MONTER'})}); const b=await r.json().catch(()=>({})); return JSON.stringify({status:r.status, path:b.activationPath??null});})()" 2>&1 | tail -1)
 echo "POVABILO: $PATH_ACT"
 TOKEN=$(echo "$PATH_ACT" | grep -oE '/aktivacija/[A-Za-z0-9_-]+' | cut -d/ -f3)
@@ -74,7 +74,7 @@ agent-browser fill 'input[type="email"]' "$NOVI" > /dev/null 2>&1
 agent-browser fill 'input[type="password"]' 'NarobnoGeslo1' > /dev/null 2>&1
 agent-browser click 'button[type="submit"]' > /dev/null 2>&1
 sleep 4
-NAPACNO=$(agent-browser eval "JSON.stringify({napakaViden:document.body.textContent.includes('Napačen e-naslov ali geslo.')})" 2>&1 | tail -1)
+NAPACNO=$(agent-browser eval "JSON.stringify({napakaViden:document.body.textContent.includes('Napačen e-naslov ali geslo.')})()" 2>&1 | tail -1)
 echo "NAPAČNA PRIJAVA: $NAPACNO"
 agent-browser fill 'input[type="password"]' "$GESLO" > /dev/null 2>&1
 agent-browser click 'button[type="submit"]' > /dev/null 2>&1

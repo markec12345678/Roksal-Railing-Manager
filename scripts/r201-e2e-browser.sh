@@ -40,7 +40,7 @@ agent-browser click 'button[type="submit"]' > /dev/null 2>&1
 sleep 12
 
 echo "--- Z0: prijava ADMIN + povabilo MONTER (UI fetch) + aktivacija ---"
-agent-browser eval "JSON.stringify({url:location.pathname, err:window.__err??null})" 2>&1 | tail -1
+agent-browser eval "JSON.stringify({url:location.pathname, err:window.__err??null})()" 2>&1 | tail -1
 PATH_ACT=$(agent-browser eval "(async()=>{const r=await fetch('/api/users',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'invite',email:'$NOVI',ime:'R201 E2E',vloga:'MONTER'})}); const b=await r.json().catch(()=>({})); return JSON.stringify({status:r.status, path:b.activationPath??null});})()" 2>&1 | tail -1)
 echo "POVABILO: $PATH_ACT"
 TOKEN=$(echo "$PATH_ACT" | grep -oE '/aktivacija/[A-Za-z0-9_-]+' | cut -d/ -f3)
@@ -61,7 +61,7 @@ agent-browser fill 'input[type="email"]' "$NOVI" > /dev/null 2>&1
 agent-browser fill 'input[type="password"]' "$GESLO" > /dev/null 2>&1
 agent-browser click 'button[type="submit"]' > /dev/null 2>&1
 sleep 10
-agent-browser eval "JSON.stringify({url:location.pathname, err:window.__err??null})" 2>&1 | tail -1
+agent-browser eval "JSON.stringify({url:location.pathname, err:window.__err??null})()" 2>&1 | tail -1
 
 echo "--- Z1b: Meritve — ISKREN PRAZNI STOLPEC (R201 F1) ---"
 agent-browser eval "(()=>{const t=[...document.querySelectorAll('button,a')].find(b=>(b.getAttribute('aria-label')||'').startsWith('Montažna orodja')); if(t) t.click(); return !!t;})()" > /dev/null 2>&1
@@ -75,7 +75,7 @@ agent-browser eval "(()=>{const caka=[...document.querySelectorAll('*')].filter(
 agent-browser screenshot "$SS/qa-r201-e2e-prazni-stolpec.png" > /dev/null 2>&1 && echo "screenshot PRAZNI OK"
 
 echo "--- Z2: temna tema na praznem stolpcu ---"
-agent-browser eval "document.documentElement.classList.add('dark'); JSON.stringify({bg:getComputedStyle(document.body).backgroundColor,err:window.__err??null})" 2>&1 | tail -1
+agent-browser eval "document.documentElement.classList.add('dark'); JSON.stringify({bg:getComputedStyle(document.body).backgroundColor,err:window.__err??null})()" 2>&1 | tail -1
 agent-browser screenshot "$SS/qa-r201-e2e-temna-prazno.png" > /dev/null 2>&1 && echo "screenshot TEMNA PRAZNO OK"
 
 echo "--- Z3: ADMIN regresija — veja s projekti ohranjena ---"

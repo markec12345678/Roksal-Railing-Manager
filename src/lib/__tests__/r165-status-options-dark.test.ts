@@ -212,10 +212,12 @@ describe('R165 DARK strazar — sistematični bg-white sweep (14 komponent)', ()
     expect(src).toMatch(/border-red-300 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950\/40 dark:text-red-300/)
   })
 
-  it('team-tab: deaktivirani/zaaklenjeni člani imajo dark: obrobe', () => {
+  it('team-tab: deaktivirani/zaaklenjeni člani — R228 žetoni (stone dvojček izbrisan), zaklenjen ohrani rdečo', () => {
     const raw = readFileSync(join(process.cwd(), 'src/components/roksal/team-tab.tsx'), 'utf8')
     const src = raw.split('\n').map((l) => l.replace(/\/\/.*$/, '')).join('\n')
-    expect(src).toContain('border-stone-200 dark:border-stone-700')
+    // R228: stone obroba → žeton border-border (deaktiviranost nosita chip +
+    // ikona + title — barvni dvojček ni več potreben); rdeča Zaklenjen ostane.
+    expect(src).not.toContain('border-stone-200 dark:border-stone-700')
     expect(src).toContain('border-roksal-red/40 dark:border-roksal-red/50')
   })
 

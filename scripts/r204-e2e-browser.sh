@@ -72,7 +72,7 @@ sleep 2
 agent-browser eval "(()=>{const p=window.__naroc; const t=document.querySelector('[data-sonner-toast]'); return JSON.stringify({vsebujeFilter:p?p.includes('filter: WPC'):null,glava:p?p.split('\n')[1]:null,toast:t?t.textContent.trim().slice(0,90):null,err:window.__err??null});})()" 2>&1 | tail -1
 
 echo "--- Z5: temna + javne poti + odjava ---"
-agent-browser eval "document.documentElement.classList.add('dark'); JSON.stringify({bg:getComputedStyle(document.body).backgroundColor,err:window.__err??null})" 2>&1 | tail -1
+agent-browser eval "document.documentElement.classList.add('dark'); JSON.stringify({bg:getComputedStyle(document.body).backgroundColor,err:window.__err??null})()" 2>&1 | tail -1
 agent-browser screenshot "$SS/qa-r204-e2e-temna.png" > /dev/null 2>&1 && echo "screenshot TEMNA OK"
 agent-browser click 'button[aria-label="Odjava"]' > /dev/null 2>&1
 sleep 3

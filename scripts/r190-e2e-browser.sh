@@ -28,7 +28,7 @@ agent-browser fill 'input[type="password"]' 'DimniSmoke139!' > /dev/null 2>&1
 agent-browser click 'button[type="submit"]' > /dev/null 2>&1
 sleep 12
 echo "--- prijava ---"
-agent-browser eval "JSON.stringify({url:location.pathname, err:window.__err??null})" 2>&1 | tail -1
+agent-browser eval "JSON.stringify({url:location.pathname, err:window.__err??null})()" 2>&1 | tail -1
 
 echo "--- Z1: 301× realni POST /api/calculator (guard PRED auth+validacijo) ---"
 agent-browser eval "(async()=>{const izidi={}; let zadnjiTel=null; let retry=null; for(let i=1;i<=301;i++){ const r=await fetch('/api/calculator',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}); izidi[r.status]=(izidi[r.status]||0)+1; if(r.status===429){ retry=r.headers.get('Retry-After'); zadnjiTel=await r.json(); } } return JSON.stringify({izidi, retry, telo:zadnjiTel});})()" 2>&1 | tail -1

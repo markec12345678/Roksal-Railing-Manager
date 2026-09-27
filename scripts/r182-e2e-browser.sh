@@ -32,7 +32,7 @@ agent-browser fill 'input[type="email"]' 'ci@roksal.si' > /dev/null 2>&1
 agent-browser fill 'input[type="password"]' 'DimniSmoke139!' > /dev/null 2>&1
 agent-browser click 'button[type="submit"]' > /dev/null 2>&1
 sleep 6
-echo "po prijavi: $(agent-browser eval "JSON.stringify({url: location.pathname, bodyLen: document.body.innerText.length})" 2>&1 | tail -1)"
+echo "po prijavi: $(agent-browser eval "JSON.stringify({url: location.pathname, bodyLen: document.body.innerText.length})()" 2>&1 | tail -1)"
 
 for i in 1 2 3; do
   agent-browser eval "(()=>{const t=[...document.querySelectorAll('button,a')].find(b=>(b.getAttribute('aria-label')||'').startsWith('Montažna orodja')); if(t) t.click(); return !!t;})()" 2>&1 | tail -1
@@ -97,7 +97,7 @@ sleep 5
 agent-browser eval "document.documentElement.classList.add('dark'); 'temna'" 2>&1 | tail -1
 sleep 2
 agent-browser eval "(()=>{const p=[...document.querySelectorAll('span')].find(e=>e.textContent.trim().startsWith('Osveženo ob')); const barva=p?getComputedStyle(p).color:null; const w=[...document.querySelectorAll('[role=\"alert\"]')].length; return JSON.stringify({pecatVidna: !!p, barvaTemna: barva, pageBg: getComputedStyle(document.body).backgroundColor, warningPaneli: w});})()" 2>&1 | tail -1
-agent-browser eval "JSON.stringify({err: window.__err ?? null})" 2>&1 | tail -1
+agent-browser eval "JSON.stringify({err: window.__err ?? null})()" 2>&1 | tail -1
 agent-browser screenshot /home/z/my-project/screenshots/qa-r182-temna.png > /dev/null 2>&1 && echo "screenshot TEMNA OK"
 
 agent-browser close --all > /dev/null 2>&1 || true

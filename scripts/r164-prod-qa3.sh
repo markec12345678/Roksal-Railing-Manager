@@ -18,7 +18,7 @@ sleep 5
 echo "--- QA 2: temna tema + app shell ---"
 agent-browser eval "(()=>{const b=[...document.querySelectorAll('button')].find(x=>(x.getAttribute('aria-label')||'').includes('temo')); if(b) b.click(); return b?b.getAttribute('aria-label'):null;})()" 2>&1 | tail -1
 sleep 2
-agent-browser eval "JSON.stringify({bodyBg: getComputedStyle(document.body).backgroundColor, vecBtn: !!document.querySelector('button[aria-label=\\'Več\\']')})" 2>&1 | tail -1
+agent-browser eval "JSON.stringify({bodyBg: getComputedStyle(document.body).backgroundColor, vecBtn: !!document.querySelector('button[aria-label=\\'Več\\']')})()" 2>&1 | tail -1
 
 echo "--- QA 3: Več → CRM izvozni gumbi ---"
 agent-browser eval "(()=>{const v=document.querySelector('button[aria-label=\\'Več\\']'); if(v) v.click(); return !!v;})()" 2>&1 | tail -1
@@ -35,7 +35,7 @@ sleep 4
 agent-browser eval "(()=>{const alerts=[...document.querySelectorAll('[role=\"alert\"]')].map(a=>a.textContent.slice(0,80)); const subtabs=[...document.querySelectorAll('button')].filter(b=>/Koledar|Ekip|Oprem/.test(b.textContent||'')).map(b=>b.textContent.trim().slice(0,16)); return JSON.stringify({errorPanels: alerts, subtabs: subtabs});})()" 2>&1 | tail -1
 
 echo "--- QA 5: konzola + screenshot ---"
-agent-browser eval "JSON.stringify({err: window.__err || null})" 2>&1 | tail -1
+agent-browser eval "JSON.stringify({err: window.__err || null})()" 2>&1 | tail -1
 agent-browser screenshot /home/z/my-project/screenshots/qa-r164-prod-dark-logistics.png > /dev/null 2>&1 && echo "screenshot OK"
 agent-browser close --all > /dev/null 2>&1 || true
 echo "FINAL KONEC"

@@ -85,7 +85,7 @@ agent-browser eval "(()=>{const b=[...document.querySelectorAll('div')].find(e=>
 agent-browser eval "document.documentElement.classList.add('dark'); 'temna'" > /dev/null 2>&1
 sleep 2
 agent-browser eval "(()=>{const p=[...document.querySelectorAll('span')].find(e=>e.textContent.trim().startsWith('Osveženo ob')); return JSON.stringify({pageBg: getComputedStyle(document.body).backgroundColor, pecatBarva: p?getComputedStyle(p).color:null});})()" 2>&1 | tail -1
-agent-browser eval "JSON.stringify({err: window.__err ?? null})" 2>&1 | tail -1
+agent-browser eval "JSON.stringify({err: window.__err ?? null})()" 2>&1 | tail -1
 agent-browser screenshot /home/z/my-project/screenshots/qa-r182-prod-temna.png > /dev/null 2>&1 && echo "screenshot PROD TEMNA OK"
 
 agent-browser close --all > /dev/null 2>&1 || true

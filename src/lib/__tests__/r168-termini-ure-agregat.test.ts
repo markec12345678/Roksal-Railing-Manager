@@ -303,9 +303,18 @@ describe('R168 DARK stil pass — gradient/ring/bg-200 družine + ring-offset ha
   it.each([
     ['src/components/roksal/invoice-manager.tsx', 'bg-stone-200 dark:bg-stone-800'],
     ['src/components/roksal/roksal-catalog.tsx', 'bg-slate-200 dark:bg-slate-500/15 text-slate-800 dark:text-slate-200'],
-    ['src/components/roksal/team-tab.tsx', 'bg-stone-200/70 dark:bg-stone-500/15 text-stone-600 dark:text-stone-400'],
+    // R228: team-tab izvzet — AVATAR_TINT[3] in Deaktiviran chip zdaj na
+    // žetonu bg-muted (EN razred obe temi — žeton se sam prilagodi, dark:
+    // ogledalo NI več potrebno; r165/r227/r228 PINi to dokazujejo).
   ])('%s: svetli bg žeton ima dark: ogledalo', (rel, zeton) => {
     expect(read(rel)).toContain(zeton)
+  })
+
+  it('team-tab: R228 žetoni — bg-muted (en razred obe temi), dark: ogledalo odveč', () => {
+    const src = read('src/components/roksal/team-tab.tsx')
+    expect(src).toContain("'bg-muted text-muted-foreground',")
+    expect(src).not.toContain('bg-stone-200/70')
+    expect(src).not.toContain('bg-stone-100')
   })
 
   it('globals.css: .dark * definira --tw-ring-offset-color (bela obroba halo fix — 40 rab v 19 datotekah; @property inherits:false → univerzalni selektor)', () => {

@@ -57,7 +57,7 @@ sleep 2
 agent-browser eval "(()=>{const pas=[...document.querySelectorAll('div')].filter(e=>e.textContent.trim().startsWith('Ni povezave — aplikacija deluje naprej')).length; return JSON.stringify({pasPoOnline:pas});})()" 2>&1 | tail -1
 
 echo "--- 6) temna tema + __err ---"
-agent-browser eval "document.documentElement.classList.add('dark'); JSON.stringify({bg:getComputedStyle(document.body).backgroundColor, err:window.__err??null})" 2>&1 | tail -1
+agent-browser eval "document.documentElement.classList.add('dark'); JSON.stringify({bg:getComputedStyle(document.body).backgroundColor, err:window.__err??null})()" 2>&1 | tail -1
 agent-browser screenshot "$SS/qa-r192-temna.png" > /dev/null 2>&1 && echo "screenshot TEMNA OK"
 
 agent-browser close --all > /dev/null 2>&1 || true

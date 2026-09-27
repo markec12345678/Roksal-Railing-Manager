@@ -56,6 +56,9 @@ export interface ReportData {
     // R224 — sedmi signalec: artikli brez vpisane nabavne cene (R221
     // dimenzija 'brez dobavitelja' v vodjinem PDF poročilu).
     brezDobavitelja: number
+    // R228 — NOVA tema: zamujena dobava (odprta naročila z izrecno
+    // pretečenim datumom dobave — ISTO besedilo dimenzije kot zaslon/CSV).
+    zamujeneDobave: number
     potekliOpomniki: number
   }
   /** Zadnjih 6 mesecev plačanih računov (label = kratko ime meseca). */
@@ -295,6 +298,8 @@ export function generateMonthlyReport(data: ReportData): void {
   if (s.odprtaNarocila > 0) opozorila.push(`${s.odprtaNarocila} odprt(ih) naročil — čaka dobavo`)
   // R224 — sedmi signalec (ISTO besedilo dimenzije kot zaslon/CSV)
   if (s.brezDobavitelja > 0) opozorila.push(`${s.brezDobavitelja} artikel(ov) brez vpisane nabavne cene — naročilni tok jih ne more oceniti`)
+  // R228 — nova tema: zamujena dobava (ISTO besedilo dimenzije kot zaslon/CSV)
+  if (s.zamujeneDobave > 0) opozorila.push(`${s.zamujeneDobave} naročil(o/a) z pretečenim rokom dobave — izterjaj dobavo pri dobavitelju`)
   if (s.potekliOpomniki > 0) opozorila.push(`${s.potekliOpomniki} potekl(ih) opomnik(ov) strank v CRM`)
   if (opozorila.length > 0) {
     y = sectionTitle(doc, y, 'Opozorila')

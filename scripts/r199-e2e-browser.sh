@@ -34,7 +34,7 @@ agent-browser click 'button[type="submit"]' > /dev/null 2>&1
 sleep 12
 
 echo "--- Z0: prijava ADMIN + povabilo (UI fetch) ---"
-agent-browser eval "JSON.stringify({url:location.pathname, err:window.__err??null})" 2>&1 | tail -1
+agent-browser eval "JSON.stringify({url:location.pathname, err:window.__err??null})()" 2>&1 | tail -1
 PATH_ACT=$(agent-browser eval "(async()=>{const r=await fetch('/api/users',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'invite',email:'$NOVI',ime:'R199 E2E',vloga:'MONTER'})}); const b=await r.json().catch(()=>({})); return JSON.stringify({status:r.status, path:b.activationPath??null});})()" 2>&1 | tail -1)
 echo "POVABILO: $PATH_ACT"
 TOKEN=$(echo "$PATH_ACT" | grep -oE '/aktivacija/[A-Za-z0-9_-]+' | cut -d/ -f3)
@@ -64,7 +64,7 @@ agent-browser fill 'input[type="email"]' "$NOVI" > /dev/null 2>&1
 agent-browser fill 'input[type="password"]' 'NarobnoGeslo199' > /dev/null 2>&1
 agent-browser click 'button[type="submit"]' > /dev/null 2>&1
 sleep 4
-NAPACNO=$(agent-browser eval "JSON.stringify({napaka:document.body.textContent.includes('Napačen e-naslov ali geslo.')})" 2>&1 | tail -1)
+NAPACNO=$(agent-browser eval "JSON.stringify({napaka:document.body.textContent.includes('Napačen e-naslov ali geslo.')})()" 2>&1 | tail -1)
 echo "NAPAČNA PRIJAVA (garantira LOGIN_FAILED): $NAPACNO"
 
 echo "--- Z2 (R199): ADMIN prijava → zvonček 'Pregled neuspešnih prijav (24 h)' ---"
@@ -88,7 +88,7 @@ sleep 2
 agent-browser fill '#pwd-current' 'DimniSmoke139!' > /dev/null 2>&1
 # (a) kratko geslo (< 8) → lestvica SKRITA
 agent-browser fill '#pwd-next' 'Ab1!' > /dev/null 2>&1
-A=$(agent-browser eval "JSON.stringify({skrito:!document.body.textContent.includes('Močno')&&!document.body.textContent.includes('Šibko')&&!document.body.textContent.includes('Sprejemljivo')})" 2>&1 | tail -1)
+A=$(agent-browser eval "JSON.stringify({skrito:!document.body.textContent.includes('Močno')&&!document.body.textContent.includes('Šibko')&&!document.body.textContent.includes('Sprejemljivo')})()" 2>&1 | tail -1)
 # (b) šibko (≥ 8, 2 razreda) → 'Šibko' rdeča
 agent-browser fill '#pwd-next' 'sibkogeslo1' > /dev/null 2>&1
 B=$(agent-browser eval "(()=>{const v=document.body.textContent; const rdeca=!!document.querySelector('.bg-roksal-red'); return JSON.stringify({sibko:v.includes('Šibko'), rdecaBarva:rdeca});})()" 2>&1 | tail -1)

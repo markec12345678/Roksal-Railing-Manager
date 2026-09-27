@@ -33,7 +33,7 @@ agent-browser fill 'input[type="password"]' 'DimniSmoke139!' > /dev/null 2>&1
 agent-browser click 'button[type="submit"]' > /dev/null 2>&1
 sleep 12
 echo "--- prijava ---"
-agent-browser eval "JSON.stringify({url:location.pathname, err:window.__err??null})" 2>&1 | tail -1
+agent-browser eval "JSON.stringify({url:location.pathname, err:window.__err??null})()" 2>&1 | tail -1
 
 echo "--- Z1: roksal_csrf izdan ob prijavi (berljiv, neprazen) ---"
 agent-browser eval "(()=>{const m=document.cookie.split(';').map(s=>s.trim()).find(s=>s.startsWith('roksal_csrf=')); return JSON.stringify({izdan:!!m, neprazen:!!m&&m.length>'roksal_csrf='.length, dolzina:m?m.length:0});})()" 2>&1 | tail -1

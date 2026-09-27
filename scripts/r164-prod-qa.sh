@@ -16,7 +16,7 @@ agent-browser fill 'input[type="email"]' 'spot-r164@roksal.si' > /dev/null 2>&1
 agent-browser fill 'input[type="password"]' 'SpotR164Qa!Pass' > /dev/null 2>&1
 agent-browser click 'button[type="submit"]' > /dev/null 2>&1
 sleep 5
-agent-browser eval "JSON.stringify({url: location.pathname, err: window.__err || null})" 2>&1 | tail -1
+agent-browser eval "JSON.stringify({url: location.pathname, err: window.__err || null})()" 2>&1 | tail -1
 
 echo "--- QA 1: dashboard živ (vreme/artikli/top-bar) ---"
 agent-browser eval "(()=>{const body=document.body.textContent||''; return JSON.stringify({artikli: /artikel|Artikli/i.test(body), vreme: /°/.test(body), odjava: !!document.querySelector('[aria-haspopup=\\'menu\\']')});})()" 2>&1 | tail -1
@@ -24,7 +24,7 @@ agent-browser eval "(()=>{const body=document.body.textContent||''; return JSON.
 echo "--- QA 2: temna tema (R162 fingerprint) ---"
 agent-browser eval "(()=>{const b=[...document.querySelectorAll('button')].find(x=>(x.getAttribute('aria-label')||'').includes('temo')); if(b) b.click(); return b?b.getAttribute('aria-label'):null;})()" 2>&1 | tail -1
 sleep 2
-agent-browser eval "JSON.stringify({bodyBg: getComputedStyle(document.body).backgroundColor})" 2>&1 | tail -1
+agent-browser eval "JSON.stringify({bodyBg: getComputedStyle(document.body).backgroundColor})()" 2>&1 | tail -1
 
 echo "--- QA 3: Več sheet odprem ---"
 agent-browser eval "(()=>{const v=[...document.querySelectorAll('button')].find(b=>b.getAttribute('aria-label')==='Več'); if(v) v.click(); return !!v;})()" 2>&1 | tail -1
@@ -44,7 +44,7 @@ sleep 4
 agent-browser eval "(()=>{const alerts=[...document.querySelectorAll('[role=\"alert\"]')].map(a=>a.textContent.slice(0,70)); const h2=[...document.querySelectorAll('h2')].map(x=>x.textContent).slice(0,4); const subtabs=[...document.querySelectorAll('button')].filter(b=>/Koledar|Ekip|Oprem/.test(b.textContent||'')).length; return JSON.stringify({errorPanels: alerts, h2: h2, subtabs: subtabs});})()" 2>&1 | tail -1
 
 echo "--- QA 6: konzola čista + screenshot ---"
-agent-browser eval "JSON.stringify({err: window.__err || null})" 2>&1 | tail -1
+agent-browser eval "JSON.stringify({err: window.__err || null})()" 2>&1 | tail -1
 agent-browser screenshot /home/z/my-project/screenshots/qa-r164-prod-dark.png > /dev/null 2>&1 && echo "screenshot OK"
 
 echo "--- QA 7: odjava + session zapri ---"

@@ -36,7 +36,7 @@ agent-browser fill 'input[type="email"]' 'spot-r165@roksal.si' > /dev/null 2>&1
 agent-browser fill 'input[type="password"]' 'SpotR165Qa!Pass' > /dev/null 2>&1
 agent-browser click 'button[type="submit"]' > /dev/null 2>&1
 sleep 12
-ERRJ=$(agent-browser eval "JSON.stringify({__err:!!window.__err, msg: window.__err? String(window.__err.message||window.__err).slice(0,80):null})" 2>&1 | tail -1)
+ERRJ=$(agent-browser eval "JSON.stringify({__err:!!window.__err, msg: window.__err? String(window.__err.message||window.__err).slice(0,80):null})()" 2>&1 | tail -1)
 echo "__ERR: $ERRJ"
 ZVONCEK=$(agent-browser eval "(()=>{const b=[...document.querySelectorAll('button')].find(x=>(x.getAttribute('aria-label')||'').startsWith('Obvestila')); return JSON.stringify({zvoncek:!!b, aria:b?b.getAttribute('aria-label'):null});})()" 2>&1 | tail -1)
 echo "ZVONCEK: $ZVONCEK"

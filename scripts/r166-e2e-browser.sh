@@ -48,7 +48,7 @@ agent-browser eval "(()=>{const opake=[...document.querySelectorAll('[class*=bg-
 agent-browser screenshot /home/z/my-project/screenshots/qa-r166-local-termini-card.png > /dev/null 2>&1 && echo "screenshot OK"
 
 echo "--- E2E 5: konzola ---"
-agent-browser eval "JSON.stringify({err: window.__err || null})" 2>&1 | tail -1
+agent-browser eval "JSON.stringify({err: window.__err || null})()" 2>&1 | tail -1
 agent-browser close --all > /dev/null 2>&1 || true
 
 for pid in $(ss -tlnp 2>/dev/null | grep ':3100' | grep -oP 'pid=\K[0-9]+' | sort -u); do

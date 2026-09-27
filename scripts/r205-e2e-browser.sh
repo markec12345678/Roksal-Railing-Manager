@@ -63,7 +63,7 @@ sleep 2
 agent-browser eval "(()=>{const D=[...document.querySelectorAll('[role=dialog]')].find(x=>x.textContent.includes('Naročilnica kot osnutek naročila')); if(!D) return JSON.stringify({mojDialog:false,odprtiDialogi:[...document.querySelectorAll('[role=dialog]')].map(x=>(x.querySelector('h2')?.textContent||'').slice(0,30))}); const pregled=[...D.querySelectorAll('*')].filter(e=>e.childElementCount===0&&/naroči \\d+(\\.\\d+)? \\S+/.test(e.textContent.trim())).length; const combobox=!!D.querySelector('button[role=combobox]'); const niDob=[...D.querySelectorAll('p')].some(e=>e.textContent.includes('Ni dobaviteljev')); const opombe=!!D.querySelector('#osnutek-opombe'); return JSON.stringify({mojDialog:true,pregled,combobox,niDobaviteljev:niDob,opombe});})()" 2>&1 | tail -1
 agent-browser eval "(async()=>{try{const r=await fetch('/api/material-orders?status=OSNUTEK'); const d=await r.json(); window.__pred=Array.isArray(d)?d.length:-1;}catch(e){window.__pred=-2}})()" > /dev/null 2>&1
 sleep 2
-agent-browser eval "JSON.stringify({osnutekPred:window.__pred??null})" 2>&1 | tail -1
+agent-browser eval "JSON.stringify({osnutekPred:window.__pred??null})()" 2>&1 | tail -1
 # contingency: prazen seznam dobaviteljev → ustvari ENEGA realnega + ponovno odpri
 agent-browser eval "(()=>{const D=[...document.querySelectorAll('[role=dialog]')].find(x=>x.textContent.includes('Naročilnica kot osnutek naročila')); if(!D) return 'ni dialoga'; const ni=[...D.querySelectorAll('p')].some(e=>e.textContent.includes('Ni dobaviteljev')); if(!ni) return 'dobavitelji OK'; return 'prazno';})()" 2>&1 | tail -1 > /tmp/r205-dob.txt
 if grep -q prazno /tmp/r205-dob.txt; then
@@ -89,7 +89,7 @@ sleep 3
 agent-browser eval "(()=>{const t=document.querySelector('[data-sonner-toast]'); const moj=[...document.querySelectorAll('[role=dialog]')].some(x=>x.textContent.includes('Naročilnica kot osnutek naročila')); return JSON.stringify({toast:t?t.textContent.trim().slice(0,140):null,mojDialogSeOdprt:moj,err:window.__err??null});})()" 2>&1 | tail -1
 agent-browser eval "(async()=>{try{const r=await fetch('/api/material-orders?status=OSNUTEK'); const d=await r.json(); window.__po={n:Array.isArray(d)?d.length:-1,zadnji:Array.isArray(d)&&d[0]?{status:d[0].status,dobavitelj:d[0].supplier?.naziv??null,postavke:(d[0].items||[]).length,kolicina0:(d[0].items||[])[0]?.kolicina??null,opombe:d[0].opombe??null}:null};}catch(e){window.__po={err:String(e)}}})()" > /dev/null 2>&1
 sleep 2
-agent-browser eval "JSON.stringify({osnutekPo:window.__po??null,pred:window.__pred??null})" 2>&1 | tail -1
+agent-browser eval "JSON.stringify({osnutekPo:window.__po??null,pred:window.__pred??null})()" 2>&1 | tail -1
 
 echo "--- Z4: CSV priloga v dialogu ---"
 agent-browser eval "(()=>{const b=[...document.querySelectorAll('button')].find(x=>(x.getAttribute('aria-label')||'')==='Shrani naročilnico vidnih artiklov kot osnutek naročila'); if(b){b.click(); return 'klik';} return 'ni';})()" > /dev/null 2>&1
@@ -114,7 +114,7 @@ sleep 2
 agent-browser eval "(()=>{const t=document.querySelector('[data-sonner-toast]'); const moj=[...document.querySelectorAll('[role=dialog]')].some(x=>x.textContent.includes('Naročilnica kot osnutek naročila')); return JSON.stringify({toast:t?t.textContent.trim().slice(0,90):null,mojDialogSeOdprt:moj,err:window.__err??null});})()" 2>&1 | tail -1
 
 echo "--- Z7: temna + odjava + javne poti ---"
-agent-browser eval "document.documentElement.classList.add('dark'); JSON.stringify({bg:getComputedStyle(document.body).backgroundColor,err:window.__err??null})" 2>&1 | tail -1
+agent-browser eval "document.documentElement.classList.add('dark'); JSON.stringify({bg:getComputedStyle(document.body).backgroundColor,err:window.__err??null})()" 2>&1 | tail -1
 agent-browser screenshot "$SS/qa-r205-e2e-temna.png" > /dev/null 2>&1 && echo "screenshot TEMNA OK"
 agent-browser click 'button[aria-label="Odjava"]' > /dev/null 2>&1
 sleep 3

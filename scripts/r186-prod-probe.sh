@@ -30,7 +30,7 @@ agent-browser fill 'input[type="email"]' 'spot-r165@roksal.si' > /dev/null 2>&1
 agent-browser fill 'input[type="password"]' 'SpotR165Qa!Pass' > /dev/null 2>&1
 agent-browser click 'button[type="submit"]' > /dev/null 2>&1
 sleep 8
-echo "po prijavi: $(agent-browser eval "JSON.stringify({url: location.pathname, dom: document.body.innerText.includes('Moji projekti')})" 2>&1 | tail -1)"
+echo "po prijavi: $(agent-browser eval "JSON.stringify({url: location.pathname, dom: document.body.innerText.includes('Moji projekti')})()" 2>&1 | tail -1)"
 
 echo "=== FP7: banner fetch-patch tuj žig (MONTER dom) — patch → 31 s okno → fokus ==="
 agent-browser eval "window.__r186OrigFetch=window.fetch; window.fetch=(u,o)=>{ if(typeof u==='string'&&(u.includes('/api/public/version')||u.includes('/api/version'))){ return Promise.resolve(new Response(JSON.stringify({build:'1999-01-01T00:00:00.000Z'}),{status:200,headers:{'Content-Type':'application/json'}})); } return window.__r186OrigFetch(u,o); }; 'patched'" 2>&1 | tail -1

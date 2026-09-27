@@ -62,7 +62,7 @@ for i in 1 2 3; do
 done
 agent-browser eval "(()=>{const blok=document.querySelector('[data-testid=\"domov-brez-projektov\"]'); const niP=[...document.querySelectorAll('*')].filter(e=>e.childElementCount===0&&e.textContent.trim()==='Ni projektov').length; const ol=document.querySelector('ol[aria-label=\"Kaj naprej\"]'); const koraki=ol?ol.querySelectorAll('li').length:null; const korak1=ol?ol.querySelectorAll('li')[0]?.textContent.trim():null; const novG=[...document.querySelectorAll('button')].filter(b=>b.textContent.trim().includes('Nov projekt')).length; const naslovi=[...document.querySelectorAll('h1,h2,h3')].map(e=>e.textContent.trim()).slice(0,6); return JSON.stringify({blok:!!blok,niProjektov:niP,kajNaprej:!!ol,koraki,korak1,novProjektGumb:novG,naslovi,err:window.__err??null});})()" 2>&1 | tail -1
 agent-browser screenshot "$SS/qa-r202-e2e-domov-prazno3.png" > /dev/null 2>&1 && echo "screenshot DOMOV PRAZNO3 OK"
-agent-browser eval "document.documentElement.classList.add('dark'); JSON.stringify({bg:getComputedStyle(document.body).backgroundColor,err:window.__err??null})" 2>&1 | tail -1
+agent-browser eval "document.documentElement.classList.add('dark'); JSON.stringify({bg:getComputedStyle(document.body).backgroundColor,err:window.__err??null})()" 2>&1 | tail -1
 agent-browser screenshot "$SS/qa-r202-e2e-domov-prazno3-temna.png" > /dev/null 2>&1 && echo "screenshot TEMNA OK"
 
 agent-browser eval "(async()=>{const r=await fetch('/api/auth/logout',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}); return JSON.stringify({logout:r.status});})()" 2>&1 | tail -1

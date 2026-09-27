@@ -53,7 +53,7 @@ ERR1=$(agent-browser eval "(()=>{const e=[...document.querySelectorAll('[data-ne
 echo "__ERR/alerti (Meritve): $ERR1"
 TEMNA=$(agent-browser eval "(()=>{const h=document.documentElement; const prej=h.classList.contains('dark'); const t=[...document.querySelectorAll('button')].find(b=>(b.getAttribute('aria-label')||'').toLowerCase().includes('tema')||(b.getAttribute('aria-label')||'').toLowerCase().includes('temn')); if(t) t.click(); return JSON.stringify({gumb:!!t, prej});})()" 2>&1 | tail -1)
 sleep 2
-TEMNA2=$(agent-browser eval "JSON.stringify({darkZdaj:document.documentElement.classList.contains('dark'), ozadje:getComputedStyle(document.body).backgroundColor})" 2>&1 | tail -1)
+TEMNA2=$(agent-browser eval "JSON.stringify({darkZdaj:document.documentElement.classList.contains('dark'), ozadje:getComputedStyle(document.body).backgroundColor})()" 2>&1 | tail -1)
 echo "TEMNA: $TEMNA → $TEMNA2"
 agent-browser screenshot "$SS/qa-r197-prod-temna.png" > /dev/null 2>&1 && echo "screenshot TEMNA OK"
 agent-browser eval "(()=>{const t=[...document.querySelectorAll('button')].find(b=>(b.getAttribute('aria-label')||'').toLowerCase().includes('tema')||(b.getAttribute('aria-label')||'').toLowerCase().includes('temn')); if(t) t.click(); return 'nazaj';})()" > /dev/null 2>&1

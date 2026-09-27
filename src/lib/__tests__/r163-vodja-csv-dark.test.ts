@@ -44,6 +44,7 @@ const kpi = (over: Partial<VodjaKpi> = {}): VodjaKpi => ({
   nizkaZaloga: 2,
   odprtaNarocila: 3,
   brezDobavitelja: 8, // R224 — sedmi signalec (osnovni fixtura > 0)
+  zamujeneDobave: 1, // R228 — nova tema (fixtura > 0)
   skupajProjektov: 42,
   skupajStrank: 17,
   skupniLTV: 98765,

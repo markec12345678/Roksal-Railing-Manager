@@ -76,7 +76,7 @@ sleep 2
 agent-browser eval "(()=>{const toast=document.querySelector('[data-sonner-toast]'); return JSON.stringify({toast: toast?toast.textContent.slice(0,70):null});})()" 2>&1 | tail -1
 
 echo "--- E2E 7: konzola + screenshot ---"
-agent-browser eval "JSON.stringify({err: window.__err || null})" 2>&1 | tail -1
+agent-browser eval "JSON.stringify({err: window.__err || null})()" 2>&1 | tail -1
 agent-browser screenshot /home/z/my-project/screenshots/qa-r165-local-dark-dropdown.png > /dev/null 2>&1 && echo "screenshot OK"
 agent-browser close --all > /dev/null 2>&1 || true
 

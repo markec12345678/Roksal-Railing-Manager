@@ -15,7 +15,7 @@ agent-browser fill 'input[type="email"]' 'spot-r165@roksal.si' > /dev/null 2>&1
 agent-browser fill 'input[type="password"]' 'SpotR165Qa!Pass' > /dev/null 2>&1
 agent-browser click 'button[type="submit"]' > /dev/null 2>&1
 sleep 12
-echo "po prijavi: $(agent-browser eval "JSON.stringify({url: location.pathname, bodyLen: document.body.innerText.length})" 2>&1 | tail -1)"
+echo "po prijavi: $(agent-browser eval "JSON.stringify({url: location.pathname, bodyLen: document.body.innerText.length})()" 2>&1 | tail -1)"
 
 echo "-- S0fix: meni → 'Aktivne seje' (preverjeno odpiranje menija) --"
 agent-browser eval "(()=>{const g=[...document.querySelectorAll('button')].find(b=>(b.getAttribute('aria-label')||'')==='Odjava'); if(!g) return JSON.stringify({sprozilec:false, meni:false}); g.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true})); g.click(); return JSON.stringify({sprozilec:true});})()" 2>&1 | tail -1

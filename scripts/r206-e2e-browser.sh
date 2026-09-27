@@ -67,7 +67,7 @@ sleep 3
 agent-browser eval "(()=>{const t=[...document.querySelectorAll('[data-sonner-toast]')].map(e=>e.textContent.trim()).find(x=>x.includes('Označeno kot poslano'))||null; const oznaci=[...document.querySelectorAll('button')].filter(b=>b.textContent.trim()==='Označi kot poslano').length; const potrdi=[...document.querySelectorAll('button')].filter(b=>b.textContent.trim()==='Potrdi').length; return JSON.stringify({toast:t,oznaciGumbiPo:oznaci,potrdiGumbiPo:potrdi,err:window.__err??null});})()" 2>&1 | tail -1
 
 echo "--- Z4: temna + odjava + javne poti ---"
-agent-browser eval "document.documentElement.classList.add('dark'); JSON.stringify({bg:getComputedStyle(document.body).backgroundColor,err:window.__err??null})" 2>&1 | tail -1
+agent-browser eval "document.documentElement.classList.add('dark'); JSON.stringify({bg:getComputedStyle(document.body).backgroundColor,err:window.__err??null})()" 2>&1 | tail -1
 agent-browser screenshot "$SS/qa-r206-e2e-temna.png" > /dev/null 2>&1 && echo "screenshot TEMNA OK"
 agent-browser click 'button[aria-label="Odjava"]' > /dev/null 2>&1
 sleep 3

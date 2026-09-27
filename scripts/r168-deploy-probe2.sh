@@ -21,14 +21,14 @@ agent-browser eval "(()=>{const t=[...document.querySelectorAll('button,a')].fin
 sleep 8
 
 echo "--- kje smo + ali obstaja 'Domov' tab:"
-agent-browser eval "JSON.stringify({domov: !![...document.querySelectorAll('button')].find(b=>(b.getAttribute('aria-label')||'')==='Domov'), bodyStart: document.body.innerText.slice(0,120).replace(/\\n/g,' | ')})" 2>&1 | tail -1
+agent-browser eval "JSON.stringify({domov: !![...document.querySelectorAll('button')].find(b=>(b.getAttribute('aria-label')||'')==='Domov'), bodyStart: document.body.innerText.slice(0,120).replace(/\\n/g,' | ')})()" 2>&1 | tail -1
 
 echo "--- klik 'Domov' (dashboard):"
 agent-browser eval "(()=>{const t=[...document.querySelectorAll('button')].find(b=>(b.getAttribute('aria-label')||'')==='Domov'); if(t) t.click(); return t?'klik OK':'NI najden';})()" 2>&1 | tail -1
 sleep 8
 
 echo "--- DOM igle na dashboard tabu (unicode-escape):"
-agent-browser eval "JSON.stringify({terminiKartica: document.body.innerText.includes('Termini \\u2014 naslednjih 7 dni'), osvezi: !!document.querySelector('button[aria-label=\"Osve\\u017ei termine\"]'), samoMoje: !![...document.querySelectorAll('button')].find(b=>(b.getAttribute('aria-label')||'').includes('Samo moje termine')||(b.textContent||'').includes('Samo moje termine')), kopiraj: [...document.querySelectorAll('button')].filter(b=>(b.getAttribute('aria-label')||'').startsWith('Kopiraj podrobnosti termina')).length, mojaMontaza: document.body.innerText.includes('Moja monta'), errorPanels: [...document.querySelectorAll('[role=\"alert\"]')].map(a=>a.textContent.slice(0,70))})" 2>&1 | tail -1
+agent-browser eval "JSON.stringify({terminiKartica: document.body.innerText.includes('Termini \\u2014 naslednjih 7 dni'), osvezi: !!document.querySelector('button[aria-label=\"Osve\\u017ei termine\"]'), samoMoje: !![...document.querySelectorAll('button')].find(b=>(b.getAttribute('aria-label')||'').includes('Samo moje termine')||(b.textContent||'').includes('Samo moje termine')), kopiraj: [...document.querySelectorAll('button')].filter(b=>(b.getAttribute('aria-label')||'').startsWith('Kopiraj podrobnosti termina')).length, mojaMontaza: document.body.innerText.includes('Moja monta'), errorPanels: [...document.querySelectorAll('[role=\"alert\"]')].map(a=>a.textContent.slice(0,70))})()" 2>&1 | tail -1
 
 echo "--- chunk kolekcija PO dashboard nalaganju:"
 agent-browser eval "JSON.stringify(performance.getEntriesByType('resource').map(e=>e.name).filter(u=>u.includes('/_next/static/chunks/')&&u.endsWith('.js')))" 2>&1 | tail -1 | tr -d '"\\' | tr ',' '\n' | sed 's/^\[//;s/\]$//' | grep -v '^$' > "$OUT"/chunk-urls.txt

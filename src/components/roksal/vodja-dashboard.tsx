@@ -25,13 +25,16 @@ import { useToast } from '@/hooks/use-toast'
 import { generateMonthlyReport } from '@/lib/boss-report-pdf'
 import { buildVodjaCsv, vodjaCsvFilename, terminStatusLabel } from '@/lib/vodja-csv'
 import { todayStamp } from '@/lib/csv-export'
+// R228 — NOVA tema: zamujena dobava (obljubljeni datum pretekel, naročilo
+// še odprto — sorojenec poteklih opomnikov; ISTI /api/material-orders fetch).
+import { steviloZamujenihDobav, narociloBeseda } from '@/lib/zamujena-dobava'
 // R187 — Sistem — zdravje kartica (21. površina živostne družine; javna
 // sonda /api/public/health R186 iz vodjinega pogleda).
 import { SistemZdravjeCard } from '@/components/roksal/sistem-zdravje-card'
 import {
   TrendingUp, Clock, Users, Package, Euro, CheckCircle2,
   AlertTriangle, Calendar, Truck, Bell, FileDown, Loader2, Download,
-  History, PackageX,
+  History, PackageX, CalendarX,
 } from 'lucide-react'
 
 interface VodjaStats {
@@ -61,6 +64,10 @@ interface VodjaStats {
   // (R221 dimenzija 'brez dobavitelja' v vodjinem pregledu — ISTA dimenzija,
   // ISTI vir; naročilni tok takih postavk ne more oceniti).
   brezDobavitelja: number
+  // R228 — NOVA tema: zanesljivost dobav. Odprta naročila z IZRECNO
+  // pretečenim datumom dobave (obljuba brez izpolnitve — fail-closed:
+  // brez datuma NIKOLI ni zamude; ISTI /api/material-orders fetch).
+  zamujeneDobave: number
   // Splošno
   skupajProjektov: number
   skupajStrank: number
@@ -320,6 +327,16 @@ export function VodjaDashboard() {
       const odprtaNarocila = orders.filter((o: { status: string }) =>
         ['OSNUTEK', 'POSLANO', 'POTRJENO'].includes(o.status)).length
 
+      // R228 — zamujena dobava: ISTI orders fetch (EN VIR) — odprta
+      // naročila z IZRECNO pretečenim datumDobave. danas (polnoč) je
+      // zgoraj že izračunan (ISTI datumski jezik kot danasTermini).
+      // Fail-closed: brez izrecnega datuma NIKOLI ni zamude (manjkajoča
+      // obljuba ni prekršek) — steviloZamujenihDobav lib (strogo === veje).
+      const zamujeneDobave = steviloZamujenihDobav(
+        orders as { status: string; datumDobave?: string | null }[],
+        danas,
+      )
+
       setStats({
         danasTermini: vsiTerminiDanes.length,
         danasZakljuceni,
@@ -337,6 +354,7 @@ export function VodjaDashboard() {
         aktivniOpomniki: crmStats.zOpomniki || 0,
         nizkaZaloga,
         odprtaNarocila,
+        zamujeneDobave,
         brezDobavitelja,
         skupajProjektov: projects.length,
         skupajStrank: customers.length,
@@ -404,6 +422,7 @@ export function VodjaDashboard() {
           nizkaZaloga: stats.nizkaZaloga,
           odprtaNarocila: stats.odprtaNarocila,
           brezDobavitelja: stats.brezDobavitelja,
+          zamujeneDobave: stats.zamujeneDobave,
           potekliOpomniki: stats.potekliOpomniki,
         },
         prihodki6: prihodki,
@@ -451,6 +470,7 @@ export function VodjaDashboard() {
           nizkaZaloga: stats.nizkaZaloga,
           odprtaNarocila: stats.odprtaNarocila,
           brezDobavitelja: stats.brezDobavitelja,
+          zamujeneDobave: stats.zamujeneDobave,
           skupajProjektov: stats.skupajProjektov,
           skupajStrank: stats.skupajStrank,
           skupniLTV: stats.skupniLTV,
@@ -818,6 +838,35 @@ export function VodjaDashboard() {
               </div>
             </button>
           )}
+          {stats.zamujeneDobave > 0 && (
+            // R228 — NOVA tema: zamujena dobava (ALARM — pretečen rok, ISTA
+            // rdeča družina kot potekli opomniki/nizka zaloga: barva je
+            // pomen, ne dekoracija). Barva NI edini nosilec: dobeseden
+            // naslov + slovenske oblike (narociloBeseda R220 vzorec) +
+            // tabular-nums števec + CalendarX (en vizual en pomen — datum,
+            // ki ni bil izpolnjen) + iskren aria-label + title. Klik →
+            // Material → Naročila (ISTI dispatch protokol kot zvonček
+            // digest R208 — subTab whitelist isMaterialSubTab).
+            <button
+              type="button"
+              className="flex w-full cursor-pointer items-center gap-2 rounded-xl border border-roksal-red/20 bg-roksal-red/5 p-3 text-left shadow-sm animate-fade-in-up transition-colors hover:bg-roksal-red/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-1"
+              aria-label={`Zamujena dobava (${stats.zamujeneDobave}) — odpre Material → Naročila`}
+              title="Obljubljeni datum dobave je pretekel, naročilo pa še ni prejeto"
+              onClick={() =>
+                window.dispatchEvent(
+                  new CustomEvent('roksal:navigate', {
+                    detail: { tab: 'more', more: 'material', subTab: 'orders' },
+                  }),
+                )
+              }
+            >
+              <CalendarX className="h-4 w-4 shrink-0 text-roksal-red" aria-hidden="true" />
+              <div className="flex-1">
+                <div className="text-xs font-medium text-roksal-ink">Zamujena dobava — <span className="tabular-nums">{stats.zamujeneDobave}</span> {narociloBeseda(stats.zamujeneDobave)} z pretečenim rokom</div>
+                <div className="text-[10px] text-roksal-red">Obljubljeni datum je pretekel — klik odpre Naročila</div>
+              </div>
+            </button>
+          )}
           {stats.odprtaNarocila > 0 && (
             <Card className="border-roksal-navy/20 bg-roksal-navy/5 dark:border-roksal-ink/20">
               <CardContent className="p-3 flex items-center gap-2">
@@ -832,8 +881,9 @@ export function VodjaDashboard() {
           {/* R224 — iskreno 'vse v redu': TUDI brez-dobavitelja mora biti 0
               (prej bi kartica lažno trdila 'vse v redu', čeprav so artikli brez
               vpisane cene samo skriti — ISTA iskrenost kot Zaloga per-čip
-              prazna stanja R221). */}
-          {stats.potekliOpomniki === 0 && stats.nizkaZaloga === 0 && stats.odprtaNarocila === 0 && stats.brezDobavitelja === 0 && (
+              prazna stanja R221). R228 — TUDI zamujeneDobave mora biti 0
+              (pretečen rok je alarm, ki ga kartica ne sme zamolčati). */}
+          {stats.potekliOpomniki === 0 && stats.nizkaZaloga === 0 && stats.odprtaNarocila === 0 && stats.brezDobavitelja === 0 && stats.zamujeneDobave === 0 && (
             <Card className="border-roksal-green/20 bg-roksal-green/5">
               <CardContent className="p-3 flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-roksal-green shrink-0" aria-hidden="true" />

@@ -21,7 +21,7 @@ for i in 1 2 3; do
 done
 
 echo "-- izberi prvi projekt (roksal:select-project) --"
-agent-browser eval "fetch('/api/projects').then(r=>r.json()).then(j=>{const arr=Array.isArray(j)?j:(j.projects||[]); if(!arr.length) return JSON.stringify({projektov:0}); window.dispatchEvent(new CustomEvent('roksal:select-project',{detail:arr[0].id})); return JSON.stringify({projektov:arr.length, izbran:arr[0].id, ime:(arr[0].ime||arr[0].name||'').slice(0,30)});})" 2>&1 | tail -1
+agent-browser eval "fetch('/api/projects').then(r=>r.json()).then(j=>{const arr=Array.isArray(j)?j:(j.projects||[]); if(!arr.length) return JSON.stringify({projektov:0}); window.dispatchEvent(new CustomEvent('roksal:select-project',{detail:arr[0].id})); return JSON.stringify({projektov:arr.length, izbran:arr[0].id, ime:(arr[0].ime||arr[0].name||'').slice(0,30)});})()" 2>&1 | tail -1
 sleep 5
 
 VECPOMOC='(()=>{const v=[...document.querySelectorAll("button")].find(x=>x.textContent.trim()==="Več"||(x.getAttribute("aria-label")||"")==="Več"); if(v) v.click(); return !!v;})()'

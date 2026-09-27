@@ -62,7 +62,7 @@ pocakaj_na() {
 }
 
 echo "=== Z1 R220 ŽIVO (regresija): čip 'Na minimumu' + 'Brez dobavitelja' čaka R221 ==="
-pocakaj_na "(()=>{return [...document.querySelectorAll('button')].some(b=>b.getAttribute('aria-pressed')!==null&&b.textContent.includes('Pod minimumom'));})" 12
+pocakaj_na "(()=>{return [...document.querySelectorAll('button')].some(b=>b.getAttribute('aria-pressed')!==null&&b.textContent.includes('Pod minimumom'));})()" 12
 agent-browser eval "(()=>{const st=t=>{const b=[...document.querySelectorAll('button')].find(x=>x.getAttribute('aria-pressed')!==null&&x.textContent.includes(t)); return b?{aria:b.getAttribute('aria-pressed'),tekst:b.textContent.trim().slice(0,40),amber:b.className.includes('amber'),title:b.getAttribute('title')}:null}; return JSON.stringify({pod:st('Pod minimumom'),na:st('Na minimumu'),brez:st('Brez dobavitelja'),err:window.__err??null});})()" 2>&1 | tail -1
 
 echo "=== Z2 trio izključnost (R220 dežela; R221 trio bo recheck naslednji deploy) ==="

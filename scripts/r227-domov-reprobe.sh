@@ -36,7 +36,7 @@ done
 
 echo "=== Z3-re: dispatch dashboard (R223 dokazana pot) ==="
 agent-browser eval "(()=>{window.dispatchEvent(new CustomEvent('roksal:navigate',{detail:{tab:'dashboard',more:null,subTab:null,osnutek:null,filter:null}})); return 'nav';})()" > /dev/null 2>&1
-pocakaj_na "(()=>{return document.body.textContent.includes('Brez dobavitelja');})" 15
+pocakaj_na "(()=>{return document.body.textContent.includes('Brez dobavitelja');})()" 15
 echo "--- diag: kje smo? (h1/h2 naslovi) ---"
 agent-browser eval "(()=>{const hs=[...document.querySelectorAll('h1,h2')].map(h=>h.textContent.trim().slice(0,40)).slice(0,8); return JSON.stringify({naslovi:hs, err:window.__err??null});})()" 2>&1 | tail -1
 echo "--- kartica (toleranten regex na body) ---"

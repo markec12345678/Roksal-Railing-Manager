@@ -43,7 +43,7 @@ done
 
 # DOM preverba z unicode-escape em-dash (byte varno skozi pipeline):
 echo "--- DOM preverba (unicode-escape):"
-agent-browser eval "JSON.stringify({termini: document.body.innerText.includes('Termini \\u2014 naslednjih 7 dni'), naslednjih: document.body.innerText.includes('naslednjih 7 dni'), tabAktiven: !!document.querySelector('[role=\"tabpanel\"], .bg-card')})" 2>&1 | tail -1
+agent-browser eval "JSON.stringify({termini: document.body.innerText.includes('Termini \\u2014 naslednjih 7 dni'), naslednjih: document.body.innerText.includes('naslednjih 7 dni'), tabAktiven: !!document.querySelector('[role=\"tabpanel\"], .bg-card')})()" 2>&1 | tail -1
 
 agent-browser close --all > /dev/null 2>&1 || true
 echo "R168 CHUNK PROBE KONEC"

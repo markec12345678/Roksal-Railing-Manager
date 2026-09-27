@@ -29,7 +29,7 @@ agent-browser fill 'input[type="password"]' 'DimniSmoke139!' > /dev/null 2>&1
 agent-browser click 'button[type="submit"]' > /dev/null 2>&1
 sleep 12
 echo "--- prijava ---"
-agent-browser eval "JSON.stringify({url:location.pathname, err:window.__err??null})" 2>&1 | tail -1
+agent-browser eval "JSON.stringify({url:location.pathname, err:window.__err??null})()" 2>&1 | tail -1
 
 echo "--- Z1: R192 regresija — 429 korelacija ostane (301x calculator) ---"
 agent-browser eval "(async()=>{const izidi={}; let cid=null; for(let i=1;i<=301;i++){ const r=await fetch('/api/calculator',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}); izidi[r.status]=(izidi[r.status]||0)+1; if(r.status===429) cid=r.headers.get('x-correlation-id'); } return JSON.stringify({izidi, korelacijaNeprazen:!!cid});})()" 2>&1 | tail -1

@@ -29,7 +29,7 @@ for i in 1 2 3; do
   sleep 1
 done
 echo "--- stanje po prijavi ---"
-agent-browser eval "JSON.stringify({url:location.pathname,title:document.title,stGumbov:document.querySelectorAll('button').length,iskalnik:!![...document.querySelectorAll('button')].find(b=>(b.getAttribute('aria-label')||'').includes('Odpri iskalnik')),dialogi:[...document.querySelectorAll('[role=dialog]')].map(d=>d.textContent.slice(0,40))})" 2>&1 | tail -1
+agent-browser eval "JSON.stringify({url:location.pathname,title:document.title,stGumbov:document.querySelectorAll('button').length,iskalnik:!![...document.querySelectorAll('button')].find(b=>(b.getAttribute('aria-label')||'').includes('Odpri iskalnik')),dialogi:[...document.querySelectorAll('[role=dialog]')].map(d=>d.textContent.slice(0,40))})()" 2>&1 | tail -1
 
 echo "--- odpri palet ---"
 for i in 1 2 3 4; do
@@ -40,11 +40,11 @@ for i in 1 2 3 4; do
 done
 
 echo "--- dump 1 (takoj) ---"
-agent-browser eval "JSON.stringify({url:location.pathname, heads:[...document.querySelectorAll('[cmdk-group-heading]')].map(e=>e.textContent), nItems:document.querySelectorAll('[cmdk-item]').length, vrednosti:[...document.querySelectorAll('[cmdk-item]')].map(e=>e.getAttribute('value')).slice(0,20)})" 2>&1 | tail -1
+agent-browser eval "JSON.stringify({url:location.pathname, heads:[...document.querySelectorAll('[cmdk-group-heading]')].map(e=>e.textContent), nItems:document.querySelectorAll('[cmdk-item]').length, vrednosti:[...document.querySelectorAll('[cmdk-item]')].map(e=>e.getAttribute('value')).slice(0,20)})()" 2>&1 | tail -1
 
 sleep 6
 echo "--- dump 2 (+6 s) ---"
-agent-browser eval "JSON.stringify({url:location.pathname, heads:[...document.querySelectorAll('[cmdk-group-heading]')].map(e=>e.textContent), nItems:document.querySelectorAll('[cmdk-item]').length, vrednosti:[...document.querySelectorAll('[cmdk-item]')].map(e=>e.getAttribute('value')).slice(0,20)})" 2>&1 | tail -1
+agent-browser eval "JSON.stringify({url:location.pathname, heads:[...document.querySelectorAll('[cmdk-group-heading]')].map(e=>e.textContent), nItems:document.querySelectorAll('[cmdk-item]').length, vrednosti:[...document.querySelectorAll('[cmdk-item]')].map(e=>e.getAttribute('value')).slice(0,20)})()" 2>&1 | tail -1
 
 echo "--- fetch /api/inventory ročno (iz konteksta strani) ---"
 agent-browser eval "(async()=>{try{const r=await fetch('/api/inventory'); const st=r.status; const d=await r.json(); const arr=Array.isArray(d)?d:[]; const pod=arr.filter(i=>i.kolicinaZaloga<=i.minimalnaZaloga).length; const na=arr.filter(i=>i.kolicinaZaloga===i.minimalnaZaloga).length; return JSON.stringify({st,n:arr.length,pod,na});}catch(e){return 'napaka: '+e.message;}})()" 2>&1 | tail -1

@@ -71,7 +71,7 @@ sleep 8
 agent-browser eval "(()=>{const invNapaka=[...document.querySelectorAll('[role=alert]')].map(e=>e.textContent).filter(t=>t.includes('Zaloga ni na voljo')).length; const niProjektov=[...document.querySelectorAll('*')].filter(e=>e.childElementCount===0&&e.textContent.trim()==='Ni projektov').length; const staraVrstica=[...document.querySelectorAll('*')].filter(e=>e.childElementCount===0&&e.textContent.trim()==='Ni aktivnih projektov').length; const blok=!!document.querySelector('[data-testid=\"domov-brez-projektov\"]'); return JSON.stringify({invNapakaPanel:invNapaka,niProjektov:niProjektov,staraVrstica,blokPrazni:blok,err:window.__err??null});})()" 2>&1 | tail -1
 
 echo "--- Z3: temna tema ---"
-agent-browser eval "document.documentElement.classList.add('dark'); JSON.stringify({bg:getComputedStyle(document.body).backgroundColor,err:window.__err??null})" 2>&1 | tail -1
+agent-browser eval "document.documentElement.classList.add('dark'); JSON.stringify({bg:getComputedStyle(document.body).backgroundColor,err:window.__err??null})()" 2>&1 | tail -1
 agent-browser screenshot "$SS/qa-r203-e2e-temna.png" > /dev/null 2>&1 && echo "screenshot TEMNA OK"
 
 echo "--- Z4: odjava + javne poti ---"

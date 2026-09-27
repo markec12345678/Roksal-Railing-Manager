@@ -51,26 +51,26 @@ nav_koledar() {
 
 echo "--- S0: povzetek ob zagonu (1. tek je pustil 1 PREKlicANO termin) ---"
 nav_koledar
-agent-browser eval "JSON.stringify({povzetek: ([...document.querySelectorAll('p')].find(x=>(x.textContent||'').startsWith('Skupaj'))||{textContent:null}).textContent})" 2>&1 | tail -1
+agent-browser eval "JSON.stringify({povzetek: ([...document.querySelectorAll('p')].find(x=>(x.textContent||'').startsWith('Skupaj'))||{textContent:null}).textContent})()" 2>&1 | tail -1
 
 echo "--- A1: PATCH testni termin → NAVRTENO (ure se VKLJUČIJO) ---"
 agent-browser eval "(async()=>{const r=await fetch('/api/schedules',{credentials:'same-origin'}); const rows=await r.json(); const t=rows.find(x=>x.lokacija==='R169 E2E preklic'); if(!t) return JSON.stringify({napaka:'testni termin ni najden'}); const p=await fetch('/api/schedules',{method:'PATCH',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:t.id,status:'NAVRTENO'})}); return JSON.stringify({patch:p.status, id:t.id});})()" 2>&1 | tail -1
 sleep 1
 nav_koledar
-agent-browser eval "JSON.stringify({s1: ([...document.querySelectorAll('p')].find(x=>(x.textContent||'').startsWith('Skupaj'))||{textContent:null}).textContent})" 2>&1 | tail -1
+agent-browser eval "JSON.stringify({s1: ([...document.querySelectorAll('p')].find(x=>(x.textContent||'').startsWith('Skupaj'))||{textContent:null}).textContent})()" 2>&1 | tail -1
 
 echo "--- A2: PATCH nazaj → PREKlicANO (ure izključene, 'brez 1 preklicanega') ---"
 agent-browser eval "(async()=>{const r=await fetch('/api/schedules',{credentials:'same-origin'}); const rows=await r.json(); const t=rows.find(x=>x.lokacija==='R169 E2E preklic'); if(!t) return JSON.stringify({napaka:'testni termin ni najden'}); const p=await fetch('/api/schedules',{method:'PATCH',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:t.id,status:'PREKlicANO'})}); return JSON.stringify({patch:p.status});})()" 2>&1 | tail -1
 sleep 1
 nav_koledar
-agent-browser eval "JSON.stringify({s2: ([...document.querySelectorAll('p')].find(x=>(x.textContent||'').startsWith('Skupaj'))||{textContent:null}).textContent})" 2>&1 | tail -1
+agent-browser eval "JSON.stringify({s2: ([...document.querySelectorAll('p')].find(x=>(x.textContent||'').startsWith('Skupaj'))||{textContent:null}).textContent})()" 2>&1 | tail -1
 
 echo "--- A3: dashboard Termini kartica — isti povzetek (EN VIR RESNICE) ---"
 agent-browser eval "(()=>{const v=document.querySelector('button[aria-label=\\'Več\\']'); if(v) v.click(); return !!v;})()" 2>&1 | tail -1
 sleep 2
 agent-browser eval "(()=>{const b=[...document.querySelectorAll('button')].find(x=>(x.getAttribute('aria-label')||'')==='Domov'); if(b) b.click(); return !!b;})()" 2>&1 | tail -1
 sleep 5
-agent-browser eval "JSON.stringify({dashboard: ([...document.querySelectorAll('p')].find(x=>(x.textContent||'').startsWith('Skupaj'))||{textContent:null}).textContent})" 2>&1 | tail -1
+agent-browser eval "JSON.stringify({dashboard: ([...document.querySelectorAll('p')].find(x=>(x.textContent||'').startsWith('Skupaj'))||{textContent:null}).textContent})()" 2>&1 | tail -1
 
 echo "--- A4: temna tema + ring-offset + konzola ---"
 agent-browser eval "(()=>{const b=[...document.querySelectorAll('button')].find(x=>(x.getAttribute('aria-label')||'').includes('temo')); if(b) b.click(); return !!b;})()" 2>&1 | tail -1

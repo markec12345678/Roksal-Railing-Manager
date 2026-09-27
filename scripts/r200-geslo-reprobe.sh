@@ -17,7 +17,7 @@ agent-browser fill 'input[type="email"]' 'spot-r165@roksal.si' > /dev/null 2>&1
 agent-browser fill 'input[type="password"]' 'SpotR165Qa!Pass' > /dev/null 2>&1
 agent-browser click 'button[type="submit"]' > /dev/null 2>&1
 sleep 10
-agent-browser eval "JSON.stringify({url:location.pathname,err:window.__err??null})" 2>&1 | tail -1
+agent-browser eval "JSON.stringify({url:location.pathname,err:window.__err??null})()" 2>&1 | tail -1
 
 echo "--- 1) dropdown odprtje: pointerdown sekvencA (lekcija R195) ---"
 agent-browser eval "(()=>{const t=[...document.querySelectorAll('button')].find(x=>(x.getAttribute('aria-label')||'')==='Odjava'); if(!t) return 'ni gumba'; const opt={bubbles:true,cancelable:true,pointerId:1,pointerType:'mouse',isPrimary:true,buttons:1,button:0}; t.dispatchEvent(new PointerEvent('pointerdown',opt)); t.dispatchEvent(new PointerEvent('pointerup',opt)); t.dispatchEvent(new MouseEvent('click',opt)); return 'poslano';})()" 2>&1 | tail -1
@@ -49,6 +49,6 @@ agent-browser screenshot "$SS/qa-r200-geslo-mocno.png" > /dev/null 2>&1 && echo 
 echo "--- 6) Prekliči → zapri, brez pošiljanja (spot geslo nespremenjeno) ---"
 agent-browser eval "(()=>{const b=[...document.querySelectorAll('[role=dialog] button')].find(x=>x.textContent.trim()==='Prekliči'); if(b) b.click(); return !!b;})()" > /dev/null 2>&1
 sleep 2
-agent-browser eval "JSON.stringify({dialogZaprt:!document.querySelector('#pwd-next'),url:location.pathname,err:window.__err??null})" 2>&1 | tail -1
+agent-browser eval "JSON.stringify({dialogZaprt:!document.querySelector('#pwd-next'),url:location.pathname,err:window.__err??null})()" 2>&1 | tail -1
 agent-browser close --all > /dev/null 2>&1 || true
 echo "R200 REPROBE KONEC"

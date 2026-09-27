@@ -60,7 +60,7 @@ agent-browser eval "(()=>{const t=document.querySelector('button[aria-label=\"Sa
 agent-browser eval "(()=>{const b=[...document.querySelectorAll('button')].find(x=>(x.getAttribute('aria-label')||'').includes('temo')); if(b) b.click(); return !!b;})()" 2>&1 | tail -1
 sleep 2
 agent-browser eval "(()=>{const body=getComputedStyle(document.body).backgroundColor; const ringOffset=getComputedStyle(document.body).getPropertyValue('--tw-ring-offset-color').trim(); const p=[...document.querySelectorAll('p')].find(x=>(x.textContent||'').startsWith('Skupaj')); const povzetekBarva=p?getComputedStyle(p).backgroundColor:null; return JSON.stringify({bodyBg: body, ringOffsetVar: ringOffset, povzetekBarva, belihOpakih: (()=>{let n=0; for(const e of document.querySelectorAll('div,span,p,button')){const bg=getComputedStyle(e).backgroundColor; if(bg&&bg.startsWith('rgb(255, 255, 255)')&&e.offsetParent) n++;} return n;})()});})()" 2>&1 | tail -1
-agent-browser eval "JSON.stringify({err: window.__err || null})" 2>&1 | tail -1
+agent-browser eval "JSON.stringify({err: window.__err || null})()" 2>&1 | tail -1
 
 agent-browser screenshot /home/z/my-project/screenshots/qa-r168-e2e-termini-ure.png > /dev/null 2>&1 && echo "screenshot OK"
 agent-browser close --all > /dev/null 2>&1 || true

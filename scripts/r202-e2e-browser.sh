@@ -84,7 +84,7 @@ done
 agent-browser eval "(()=>{const blok=document.querySelector('[data-testid=\"meritve-brez-projektov\"]'); const ol=document.querySelector('ol[aria-label=\"Kaj naprej\"]'); const korak1=ol?ol.querySelectorAll('li')[0]?.textContent.trim():null; const dodaj=[...document.querySelectorAll('button')].filter(b=>b.textContent.trim()==='Dodaj meritev').length; return JSON.stringify({blok:!!blok,korak1,dodajMeritev:dodaj,err:window.__err??null});})()" 2>&1 | tail -1
 
 echo "--- Z3: temna + javne poti + odjava ---"
-agent-browser eval "document.documentElement.classList.add('dark'); JSON.stringify({bg:getComputedStyle(document.body).backgroundColor,err:window.__err??null})" 2>&1 | tail -1
+agent-browser eval "document.documentElement.classList.add('dark'); JSON.stringify({bg:getComputedStyle(document.body).backgroundColor,err:window.__err??null})()" 2>&1 | tail -1
 agent-browser screenshot "$SS/qa-r202-e2e-temna.png" > /dev/null 2>&1 && echo "screenshot TEMNA OK"
 agent-browser eval "(async()=>{const h=await fetch('/api/public/health'); const v=await fetch('/api/public/version'); const r=await fetch('/api/auth/logout',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}); return JSON.stringify({health:h.status,version:v.status,logout:r.status});})()" 2>&1 | tail -1
 

@@ -94,7 +94,7 @@ sleep 2
 agent-browser eval "(()=>{return JSON.stringify({dialogZaprt:!document.querySelector('#pwd-next'),url:location.pathname,err:window.__err??null});})()" 2>&1 | tail -1
 
 echo "--- 8) temna tema ---"
-agent-browser eval "document.documentElement.classList.add('dark'); JSON.stringify({bg:getComputedStyle(document.body).backgroundColor,err:window.__err??null})" 2>&1 | tail -1
+agent-browser eval "document.documentElement.classList.add('dark'); JSON.stringify({bg:getComputedStyle(document.body).backgroundColor,err:window.__err??null})()" 2>&1 | tail -1
 agent-browser screenshot "$SS/qa-r200-temna.png" > /dev/null 2>&1 && echo "screenshot TEMNA OK"
 
 agent-browser close --all > /dev/null 2>&1 || true

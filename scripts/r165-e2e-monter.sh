@@ -68,7 +68,7 @@ echo "--- E2E M5: preostala opaka bela površina v temni temi (diagnoza) ---"
 agent-browser eval "(()=>{const opake=[...document.querySelectorAll('[class*=bg-white]')].filter(el=>!/bg-white\\//.test(el.className)); return JSON.stringify(opake.map(el=>({cls: el.className.slice(0,80), tag: el.tagName, text: el.textContent.replace(/\\s+/g,' ').slice(0,40)})));})()" 2>&1 | tail -1
 
 echo "--- E2E M6: konzola + screenshot ---"
-agent-browser eval "JSON.stringify({err: window.__err || null})" 2>&1 | tail -1
+agent-browser eval "JSON.stringify({err: window.__err || null})()" 2>&1 | tail -1
 agent-browser screenshot /home/z/my-project/screenshots/qa-r165-local-monter-dropdown.png > /dev/null 2>&1 && echo "screenshot OK"
 agent-browser close --all > /dev/null 2>&1 || true
 

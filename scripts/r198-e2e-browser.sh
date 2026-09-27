@@ -37,7 +37,7 @@ agent-browser click 'button[type="submit"]' > /dev/null 2>&1
 sleep 12
 
 echo "--- Z0: prijava + povabilo (UI fetch) ---"
-agent-browser eval "JSON.stringify({url:location.pathname, err:window.__err??null, napaka:[...document.querySelectorAll('[role=alert],p,span')].map(e=>e.textContent.trim()).filter(t=>t.includes('Preveč')||t.includes('Napačen')||t.includes('geslo')).slice(0,3)})" 2>&1 | tail -1
+agent-browser eval "JSON.stringify({url:location.pathname, err:window.__err??null, napaka:[...document.querySelectorAll('[role=alert],p,span')].map(e=>e.textContent.trim()).filter(t=>t.includes('Preveč')||t.includes('Napačen')||t.includes('geslo')).slice(0,3)})()" 2>&1 | tail -1
 PATH_ACT=$(agent-browser eval "(async()=>{const r=await fetch('/api/users',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'invite',email:'$NOVI',ime:'R198 E2E',vloga:'MONTER'})}); const b=await r.json().catch(()=>({})); return JSON.stringify({status:r.status, path:b.activationPath??null});})()" 2>&1 | tail -1)
 echo "POVABILO: $PATH_ACT"
 TOKEN=$(echo "$PATH_ACT" | grep -oE '/aktivacija/[A-Za-z0-9_-]+' | cut -d/ -f3)
@@ -85,12 +85,12 @@ sleep 2
 agent-browser fill '#pwd-current' "$GESLO" > /dev/null 2>&1
 agent-browser fill '#pwd-next' "$NOVOGESLO" > /dev/null 2>&1
 agent-browser fill '#pwd-repeat' "$NOVOGESLO" > /dev/null 2>&1
-POV=$(agent-browser eval "JSON.stringify({okvir:document.body.textContent.includes('Vse naprave bodo odjavljene')})" 2>&1 | tail -1)
+POV=$(agent-browser eval "JSON.stringify({okvir:document.body.textContent.includes('Vse naprave bodo odjavljene')})()" 2>&1 | tail -1)
 echo "Z4 OKVIR (ščit informacija): $POV"
 agent-browser screenshot "$SS/e2e-r198-geslo-dialog.png" > /dev/null 2>&1 && echo "screenshot DIALOG OK"
 agent-browser eval "(()=>{const g=[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='Zamenjaj geslo'); if(!g) return 'brez gumba'; g.click(); return 'poslan';})()" 2>&1 | tail -1
 sleep 6
-Z4A=$(agent-browser eval "JSON.stringify({url:location.pathname, err:window.__err??null})" 2>&1 | tail -1)
+Z4A=$(agent-browser eval "JSON.stringify({url:location.pathname, err:window.__err??null})()" 2>&1 | tail -1)
 echo "Z4 PO MENJAVI (pričakovano /login): $Z4A"
 agent-browser wait 'input[type="email"]' > /dev/null 2>&1
 agent-browser fill 'input[type="email"]' "$NOVI" > /dev/null 2>&1

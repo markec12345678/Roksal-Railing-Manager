@@ -51,7 +51,7 @@ sleep 2
 agent-browser eval "(()=>{const toast=document.querySelector('[data-sonner-toast]'); return JSON.stringify({toastText: toast?toast.textContent.slice(0,90):null});})()" 2>&1 | tail -1
 
 echo "--- E2E 6: konzola čista ---"
-agent-browser eval "JSON.stringify({err: window.__err || null})" 2>&1 | tail -1
+agent-browser eval "JSON.stringify({err: window.__err || null})()" 2>&1 | tail -1
 
 agent-browser close --all > /dev/null 2>&1
 for pid in $(ss -tlnp 2>/dev/null | grep ':3100' | grep -oP 'pid=\K[0-9]+' | sort -u); do

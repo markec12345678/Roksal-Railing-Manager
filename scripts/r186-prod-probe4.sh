@@ -15,7 +15,7 @@ agent-browser fill 'input[type="email"]' 'spot-r165@roksal.si' > /dev/null 2>&1
 agent-browser fill 'input[type="password"]' 'SpotR165Qa!Pass' > /dev/null 2>&1
 agent-browser click 'button[type="submit"]' > /dev/null 2>&1
 sleep 12
-echo "po prijavi: $(agent-browser eval "JSON.stringify({url: location.pathname, bodyLen: document.body.innerText.length})" 2>&1 | tail -1)"
+echo "po prijavi: $(agent-browser eval "JSON.stringify({url: location.pathname, bodyLen: document.body.innerText.length})()" 2>&1 | tail -1)"
 
 echo "-- N1: 'Montažna orodja' → VizTab --"
 agent-browser eval "(()=>{const t=[...document.querySelectorAll('button,a')].find(b=>(b.getAttribute('aria-label')||'').startsWith('Montažna orodja')); if(t){t.click(); return true;} return false;})()" > /dev/null 2>&1
@@ -28,7 +28,7 @@ for i in 1 2 3; do
   sleep 2
 done
 sleep 4
-echo "po izhodu: $(agent-browser eval "JSON.stringify({bodyLen: document.body.innerText.length, več: [...document.querySelectorAll('button')].some(b=>b.textContent.trim()==='Več')})" 2>&1 | tail -1)"
+echo "po izhodu: $(agent-browser eval "JSON.stringify({bodyLen: document.body.innerText.length, več: [...document.querySelectorAll('button')].some(b=>b.textContent.trim()==='Več')})()" 2>&1 | tail -1)"
 
 echo "-- S0: meni → 'Aktivne seje' (pointerdown+click) --"
 agent-browser eval "(()=>{const g=[...document.querySelectorAll('button')].find(b=>(b.getAttribute('aria-label')||'')==='Odjava'); if(!g) return JSON.stringify({sprozilec:false}); g.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true})); g.click(); return JSON.stringify({sprozilec:true});})()" 2>&1 | tail -1
