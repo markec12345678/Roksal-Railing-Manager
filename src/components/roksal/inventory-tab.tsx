@@ -813,6 +813,12 @@ export function InventoryTab({ osnutekHint }: InventoryTabProps) {
                             size="sm"
                             className="h-7 px-2.5 text-[10px] gap-1 border-roksal-red/30 text-roksal-red hover:bg-roksal-red/10 press-scale focus-visible:ring-2 focus-visible:ring-roksal-red/40"
                             onClick={() => handleReorder(item)}
+                            /* R217 (P1-f) — dostopnost je RESNICA: gumb ne
+                               odpre naročila, ampak KPIRA naročilnico
+                               (besedilo za e-pošto/SMS). Vidni napis 'Naroči'
+                               ostaja, zaslonski bralnik pa dobi točen
+                               dejanje + artikel (brez ugibanja). */
+                            aria-label={`Kopiraj naročilnico za artikel ${item.naziv} — besedilo za e-pošto/SMS`}
                           >
                             <ShoppingCart className="h-3 w-3" />
                             Naroči

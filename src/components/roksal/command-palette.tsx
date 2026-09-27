@@ -21,6 +21,9 @@ import type { MaterialSubTab } from '@/lib/material-sub-tab'
 import type { Project } from '@/lib/types'
 // R216 — tip artikla za deep-link osnutek (samo TIP; lib ostaja nedotaknjen).
 import type { ZalogaArtikelZaNarocilo } from '@/lib/zaloga-povzetek'
+// R217 — EN VIR presojanja iskalnega zadetka kot nizke zaloge (fail-closed:
+// brez popolnih polj NE trdi nizke zaloge in NE ponudi deep-linka).
+import { osnutekIzIskanja, type IskalniMaterial } from '@/lib/search-osnutek'
 import {
   Boxes,
   ClipboardList,
@@ -99,10 +102,12 @@ const MORE_NAV: NavItem[] = [
   { label: 'Skice', icon: PencilRuler, tab: 'more', more: 'sketches' },
 ]
 
-// Zadetki globalnega iskanja (/api/search) — po 5 na vrsto.
+// Zadetki globalnega iskanja (/api/search) — po 5 na vrsto. R217 —
+// inventory zadetki nosijo opcijska zaloga polja (od R217 API vrača; prejšnji
+// odgovori brez njih → fail-closed brez badgea/deep-linka, brez laži).
 interface SearchResults {
   customers: { id: string; ime: string; naslov: string }[]
-  inventory: { id: string; naziv: string; sifra: string }[]
+  inventory: IskalniMaterial[]
   projects: { id: string; nazivProjekta: string; customerIme: string }[]
 }
 
@@ -520,25 +525,51 @@ export function CommandPalette({ open, onOpenChange, onNavigate, onSync }: Comma
           </>
         )}
 
+        {/* R217 (P1-d) — TRETJI signalec konvergence: Material zadetek pod
+            minimumom nosi iskren badge 'Nizka zaloga' + podnapis (ista
+            semantika kot R215/R216 skupina: roksal-red na dejanski zalogi,
+            barva ni edini nosilec — podnapis pove 'minimum'; številke
+            tabular-nums) in klik → deep-link v naročilni tok (Osnutek
+            dialog z TOČNO TIM artikelom — centralNavigate 4. argument:
+            monotonski n + počistitev v page.tsx). Fail-closed: starejši
+            odgovor brez zaloga polj → osnutekIzIskanja vrne null → navadna
+            navigacija (obnašanje pred R217, brez lažnega badgea). */}
         {searchActive && search.inventory.length > 0 && (
           <>
             <CommandSeparator />
             <CommandGroup heading={countHeading('Material', search.inventory.length)}>
-              {search.inventory.map((m) => (
-                <CommandItem
-                  key={m.id}
-                  value={`${m.naziv} ${m.sifra}`}
-                  onSelect={() => {
-                    rememberSearch(q)
-                    onNavigate('inventory')
-                    close()
-                  }}
-                >
-                  <Package className="mr-2 h-4 w-4 text-roksal-amber" />
-                  <MatchedText text={m.naziv} q={q} />
-                  <span className="ml-2 shrink-0 text-xs text-muted-foreground">{m.sifra}</span>
-                </CommandItem>
-              ))}
+              {search.inventory.map((m) => {
+                const osnutek = osnutekIzIskanja(m)
+                return (
+                  <CommandItem
+                    key={m.id}
+                    value={`${m.naziv} ${m.sifra}`}
+                    onSelect={() => {
+                      rememberSearch(q)
+                      if (osnutek) onNavigate('inventory', null, null, osnutek)
+                      else onNavigate('inventory')
+                      close()
+                    }}
+                    aria-label={osnutek
+                      ? `${m.naziv} — nizka zaloga, odpre naročilni tok`
+                      : undefined}
+                  >
+                    <Package className="mr-2 h-4 w-4 text-roksal-amber" />
+                    <MatchedText text={m.naziv} q={q} />
+                    {osnutek && (
+                      <span className="ml-1.5 shrink-0 rounded border border-roksal-red/30 bg-roksal-red/10 px-1 py-px text-[9px] font-bold uppercase tracking-wide text-roksal-red">
+                        Nizka zaloga
+                      </span>
+                    )}
+                    <span className="ml-2 shrink-0 text-xs text-muted-foreground">{m.sifra}</span>
+                    {osnutek && (
+                      <span className="ml-2 hidden shrink-0 text-xs text-muted-foreground sm:inline">
+                        Zaloga <span className="font-medium tabular-nums text-roksal-red">{osnutek.kolicinaZaloga}</span> {osnutek.enota} · minimum <span className="tabular-nums">{osnutek.minimalnaZaloga}</span>
+                      </span>
+                    )}
+                  </CommandItem>
+                )
+              })}
             </CommandGroup>
           </>
         )}

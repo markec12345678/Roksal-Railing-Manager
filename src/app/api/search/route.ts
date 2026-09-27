@@ -16,6 +16,13 @@
 // Iskanje poteka ZDAJ v bazi (PostgreSQL `contains` + mode: 'insensitive'),
 // ne v JS vzorcu take 200/300 — prej so zadetki lahko manjkali, če je bila
 // vrstica zunaj vzorca (nedeterministično glede na velikost podatkov).
+//
+// R217 (P1-d): zalogaMateriala zadetki nosijo tudi zaloga polja
+// (kolicinaZaloga, minimalnaZaloga, enota) — paleta iz njih iskreno
+// prikaže 'Nizka zaloga' badge in ponudi deep-link v naročilni tok
+// (osnutekIzIskanja EN VIR presojanja). Niso PII — to so ista polja, ki jih
+// /api/inventory že vrača vsakemu z inventory dostopom; visibility.inventory
+// meja ostane ista (fail-closed, samo seje).
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { authenticate, unauthorized } from '@/lib/auth'
@@ -64,7 +71,15 @@ export async function GET(request: Request) {
       visibility.inventory
         ? db.inventory.findMany({
             where: { OR: [{ naziv: insensitive }, { sifraMateriala: insensitive }] },
-            select: { id: true, naziv: true, sifraMateriala: true },
+            // R217 — zaloga polja za iskren badge + deep-link (glej zgoraj).
+            select: {
+              id: true,
+              naziv: true,
+              sifraMateriala: true,
+              kolicinaZaloga: true,
+              minimalnaZaloga: true,
+              enota: true,
+            },
             orderBy: { naziv: 'asc' },
             take: SECTION_LIMIT,
           })
@@ -99,6 +114,9 @@ export async function GET(request: Request) {
         id: i.id,
         naziv: i.naziv,
         sifra: i.sifraMateriala,
+        kolicinaZaloga: i.kolicinaZaloga,
+        minimalnaZaloga: i.minimalnaZaloga,
+        enota: i.enota,
       })),
       projects: projects.map((p) => ({
         id: p.id,

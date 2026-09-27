@@ -561,6 +561,15 @@ export function NotificationCenter() {
                       type="button"
                       onClick={() => handleClick(item)}
                       className="group flex w-full items-center gap-3 rounded-xl border border-border/60 bg-card p-3 text-left transition-all hover:-translate-y-0.5 hover:border-roksal-amber/40 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-amber/60 dark:focus-visible:ring-roksal-amber/40 active:scale-[0.98]"
+                      /* R217 (P1-f) — dostopnost: stock vrstica naj v
+                         zaslonskem bralniku pove, kam dejanje vodi (odpre
+                         naročilni tok), namesto da samo prebere napis.
+                         Fail-closed: brez osnutka samo 'odpre Zalogo'. */
+                      aria-label={item.kind === 'stock'
+                        ? item.osnutek
+                          ? `${item.title} — odpre Zalogo in naročilni tok`
+                          : `${item.title} — odpre Zalogo`
+                        : undefined}
                     >
                       <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${style.bg}`}>
                         <Icon className={`h-5 w-5 ${style.fg}`} />
