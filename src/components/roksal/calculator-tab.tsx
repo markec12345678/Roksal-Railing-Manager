@@ -3847,8 +3847,10 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                 const perPostL = Math.max(holeL - postL, 0)
                 const totalL = Math.round(perPostL * posts)
                 const bags25 = Math.ceil(totalL / 12) // 25 kg vreča suhe zmesi ≈ 12 L betona
+                // R230 — žetoni (border-border + bg-muted/40 — R229 Zapadlo
+                // nevtralna veja vzorec; stone dvojček izbrisan)
                 return (
-                  <Card className="border-stone-300 dark:border-stone-800 bg-stone-50 dark:bg-stone-950/40">
+                  <Card className="border-border bg-muted/40">
                     <CardHeader className="pb-2 pt-4 px-4">
                       <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
                         <Hammer className="h-4 w-4 text-roksal-amber" />

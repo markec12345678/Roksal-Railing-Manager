@@ -54,7 +54,9 @@ const STANDARDNE_TOCKE = [
 ]
 
 const STATUS_META: Record<PunchItem['status'], { label: string; className: string }> = {
-  open: { label: 'Odprto', className: 'bg-stone-100 dark:bg-stone-500/15 text-stone-700 dark:text-stone-300 border-stone-300 dark:border-stone-800' },
+  // R230 — Odprto na žetonih (en razred obe temi — ISTA pot kot OSNUTEK
+  // invoice-manager R229 / team-tab R228: nevtralno stanje = nevtralni žetoni).
+  open: { label: 'Odprto', className: 'bg-muted text-muted-foreground border-border' },
   done: { label: 'Rešeno', className: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800' },
   issue: { label: 'Napaka', className: 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800' },
 }
@@ -457,7 +459,7 @@ export function PunchList({ project }: { project: Project | null }) {
               {items.map((item) => (
                 <li
                   key={item.id}
-                  className="flex items-start gap-2 rounded-lg border border-stone-200 dark:border-stone-800 bg-white dark:bg-card p-2.5"
+                  className="flex items-start gap-2 rounded-lg border border-border bg-card p-2.5"
                 >
                   <button
                     type="button"
@@ -468,7 +470,7 @@ export function PunchList({ project }: { project: Project | null }) {
                         ? 'border-emerald-500 bg-emerald-500 text-white'
                         : item.status === 'issue'
                           ? 'border-amber-500 bg-amber-100 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400'
-                          : 'border-stone-300 dark:border-stone-800 bg-white dark:bg-card text-transparent hover:border-roksal-amber'
+                          : 'border-border bg-card text-transparent hover:border-roksal-amber'
                     }`}
                   >
                     {item.status === 'done' ? (
@@ -482,7 +484,7 @@ export function PunchList({ project }: { project: Project | null }) {
                   <div className="min-w-0 flex-1">
                     <p
                       className={`truncate text-sm font-medium ${
-                        item.status === 'done' ? 'text-stone-400 line-through' : 'text-stone-800 dark:text-stone-200'
+                        item.status === 'done' ? 'text-muted-foreground line-through' : 'text-roksal-ink'
                       }`}
                     >
                       {item.naslov}
@@ -498,7 +500,7 @@ export function PunchList({ project }: { project: Project | null }) {
                     type="button"
                     onClick={() => void removeItem(item)}
                     aria-label={`Izbriši: ${item.naslov}`}
-                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-stone-400 outline-none transition-colors hover:bg-red-50 dark:hover:bg-red-950/40 hover:text-red-500 focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground outline-none transition-colors hover:bg-red-50 dark:hover:bg-red-950/40 hover:text-red-500 focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
                   >
                     <Trash2 className="h-4 w-4" aria-hidden="true" />
                   </button>

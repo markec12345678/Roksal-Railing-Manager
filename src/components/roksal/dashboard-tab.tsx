@@ -72,8 +72,15 @@ import {
   FolderX,
   // R210 — naročila, ki čakajo na dejanje (Domov kartica)
   ShoppingCart,
+  // R230 — zamujena dobava (Domov kartica, sorojenica vodje R228 —
+  // en vizual en pomen: datum, ki ni bil izpolnjen)
+  CalendarX,
 } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
+// R230 — ZAMUJENA tema Domov kartica: lib R228 (client-safe — danas je
+// IZRECEN argument; ISTA strogost kot vodja R228 / zvonček R229 / Naročila
+// R229 — ena definicija pomena 'zamujena dobava').
+import { jeZamujenaDobava } from '@/lib/zamujena-dobava'
 import { toast } from 'sonner'
 import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'
 import { casOznaka } from '@/lib/osvezitev-fokus'
@@ -283,7 +290,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
   // R210 — naročila na Domov: OSNUTEK/POSLANO/POTRJENO čakajo na dejanje.
   // Fail-verbose (družina R203): padec GET /api/material-orders NI tih —
   // kartica pokaže viden error + Poskusi znova, nič lažnega "vse v redu".
-  const [narocila, setNarocila] = useState<Array<{ id: string; status: string }>>([])
+  const [narocila, setNarocila] = useState<Array<{ id: string; status: string; datumDobave?: string | null }>>([])
   const [narocilaError, setNarocilaError] = useState<string | null>(null)
   const [narocilaLoading, setNarocilaLoading] = useState(true)
   // R211 — pečat svežine naročilnega vira (R171 vzorec): kartica pokaže
@@ -636,6 +643,23 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
   // enačba kot zvonček R222 in čip R221 — brez `?? 0` / `<= 0` ohlapnosti).
   const brezDobaviteljaCount = inventory.filter(
     (i) => i._count?.prices === 0,
+  ).length
+
+  // R230 — ZAMUJENA tema zaključek: kartica 'Zamujena dobava' na Domovu
+  // (sorojenica vodje kartice R228 — ISTA dimenzija: zanesljivost dobav;
+  // ISTI vir: narocila iz /api/material-orders fetcha R210, nič nove
+  // zahteve). STROGOST = lib R228 (jeZamujenaDobava: dobesedna trojica
+  // odprtih statusov + IZRECEN datum + STROGO pred današnjo polnočjo;
+  // fail-closed — manjkajoča/pokvarena obljuba NIKOLI ni zamuda; opcijski
+  // tip datumDobave: čuden odgovor = ne moremo presoditi). danas = izrecna
+  // polnoč (determinizem — ISTI datumski jezik kot todayInstallations).
+  const danasDomov = useMemo(() => {
+    const d = new Date()
+    d.setHours(0, 0, 0, 0)
+    return d
+  }, [])
+  const zamujeneDobaveDomov = narocila.filter(
+    (o) => jeZamujenaDobava(o, danasDomov),
   ).length
 
   // ── Danes & opozorila ────────────────────────────────────────────────────
@@ -1913,6 +1937,47 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
             title="Artikli brez vpisane cene pri katerem koli dobavitelju"
           >
             {brezDobaviteljaCount}
+          </span>
+        </button>
+      ) : null}
+
+      {/* R230 — ZAMUJENA tema zaključek: kartica 'Zamujena dobava' na Domovu
+          (sorojenica vodje kartice R228 — ALARM, roksal-red družina, ISTA kot
+          Low Stock Alert; barva je pomen, ne dekoracija). Vidna LE ko so
+          podatki naloženi in je števec > 0 (iskreno — brez lažnega 0;
+          nalagalna napaka je vidna posebej, fail-verbose). Barva NI edini
+          nosilec: dobeseden naslov + opis + tabular-nums števec + CalendarX
+          (en vizual en pomen) + iskren aria-label + title. Klik → Material →
+          Naročila (ISTI dispatch protokol kot zvonček R229 / vodja R228 —
+          subTab 'orders', R208 whitelist). */}
+      {!narocilaLoading && !narocilaError && zamujeneDobaveDomov > 0 ? (
+        <button
+          type="button"
+          className="flex w-full items-center gap-3 rounded-xl border border-roksal-red/20 bg-roksal-red/5 p-3 text-left animate-fade-in-up cursor-pointer transition-colors hover:bg-roksal-red/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-1"
+          aria-label={`Zamujena dobava (${zamujeneDobaveDomov}) — odpre Material → Naročila`}
+          title="Obljubljeni datum dobave je pretekel, naročilo pa še ni prejeto — klik odpre Naročila"
+          onClick={() =>
+            window.dispatchEvent(
+              new CustomEvent('roksal:navigate', {
+                detail: { tab: 'more', more: 'material', subTab: 'orders' },
+              }),
+            )
+          }
+        >
+          <CalendarX className="h-5 w-5 shrink-0 text-roksal-red" aria-hidden="true" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium text-roksal-ink">
+              Zamujena dobava
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Obljubljeni datum dobave je pretekel, naročilo pa še ni prejeto — izterjaj dobavo pri dobavitelju. Klik odpre Naročila.
+            </p>
+          </div>
+          <span
+            className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-roksal-red px-1.5 text-xs font-semibold leading-none text-roksal-ink tabular-nums"
+            title="Naročila s pretečenim obljubljenim datumom dobave"
+          >
+            {zamujeneDobaveDomov}
           </span>
         </button>
       ) : null}

@@ -287,7 +287,9 @@ describe('R168 DARK stil pass — gradient/ring/bg-200 družine + ring-offset ha
     readFileSync(join(process.cwd(), rel), 'utf8')
 
   it.each([
-    ['NACRTOVANO', 'from-stone-100 dark:from-stone-500/15', 'ring-stone-400/70 dark:ring-stone-500/70'],
+    // R230: NACRTOVANO izvzet — head/over zdaj na žetonih (from-muted /
+    // ring-muted-foreground/70 — en razred obe temi, dark ogledalo odveč;
+    // ISTA pot kot team-tab R228 / invoice-manager R229).
     ['V_TEKU', 'from-amber-100 dark:from-amber-500/15', 'ring-amber-400/70 dark:ring-amber-500/70'],
     ['ZA_MONTAZO', 'from-orange-100 dark:from-orange-500/15', 'ring-orange-400/70 dark:ring-orange-500/70'],
     ['V_IZDELAVI', 'from-violet-100 dark:from-violet-500/15', 'ring-violet-400/70 dark:ring-violet-500/70'],
@@ -304,6 +306,19 @@ describe('R168 DARK stil pass — gradient/ring/bg-200 družine + ring-offset ha
   // chip, Zapadlo povzetek, cashflow letvica in Inox chip so zdaj na
   // žetonih bg-muted/border-border (EN razred obe temi — žeton se sam
   // prilagodi, dark: ogledalo NI več potrebno; ISTA pot kot team-tab R228).
+  it('deal-pipeline: R230 žetoni — NACRTOVANO head/over/dot/bar na žetonih (stone dvojček izbrisan)', () => {
+    const src = read('src/components/roksal/deal-pipeline.tsx')
+    expect(src).toContain("'from-muted'")
+    expect(src).toContain("'ring-muted-foreground/70'")
+    expect(src).toContain("dot: 'bg-muted-foreground'")
+    expect(src).toContain("bar: 'border-l-muted-foreground'")
+    // stone dvojčki izbrisani (brez lažnih ostankov)
+    expect(src).not.toContain('from-stone-100')
+    expect(src).not.toContain('ring-stone-400')
+    expect(src).not.toContain('bg-stone-400')
+    expect(src).not.toContain('border-l-stone-400')
+  })
+
   it('invoice-manager: R229 žetoni — OSNUTEK chip + Zapadlo povzetek + cashflow letvica (bg-muted, en razred obe temi)', () => {
     const src = read('src/components/roksal/invoice-manager.tsx')
     expect(src).toContain("'bg-muted text-muted-foreground border-border'")

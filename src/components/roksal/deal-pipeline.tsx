@@ -93,7 +93,11 @@ interface PipeColumn {
 }
 
 const PIPELINE: PipeColumn[] = [
-  { id: 'NACRTOVANO', label: 'Načrtovano', icon: ClipboardList, dot: 'bg-stone-400', bar: 'border-l-stone-400', head: 'from-stone-100 dark:from-stone-500/15', over: 'ring-stone-400/70 dark:ring-stone-500/70' },
+  // R230 — Načrtovano na žetonih (en razred obe temi — žeton se sam
+  // prilagodi; dot/bar muted-foreground R226 vzorec; ISTA pot kot team-tab
+  // R228 / OSNUTEK R229: nevtralno stanje = nevtralni žetoni, dark ogledalo
+  // odveč).
+  { id: 'NACRTOVANO', label: 'Načrtovano', icon: ClipboardList, dot: 'bg-muted-foreground', bar: 'border-l-muted-foreground', head: 'from-muted', over: 'ring-muted-foreground/70' },
   { id: 'V_TEKU', label: 'V teku', icon: Hammer, dot: 'bg-amber-500', bar: 'border-l-amber-500', head: 'from-amber-100 dark:from-amber-500/15', over: 'ring-amber-400/70 dark:ring-amber-500/70' },
   { id: 'ZA_MONTAZO', label: 'Za montažo', icon: CalendarClock, dot: 'bg-orange-500', bar: 'border-l-orange-500', head: 'from-orange-100 dark:from-orange-500/15', over: 'ring-orange-400/70 dark:ring-orange-500/70' },
   { id: 'V_IZDELAVI', label: 'V izdelavi', icon: Factory, dot: 'bg-violet-500', bar: 'border-l-violet-500', head: 'from-violet-100 dark:from-violet-500/15', over: 'ring-violet-400/70 dark:ring-violet-500/70' },

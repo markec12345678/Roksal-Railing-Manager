@@ -1105,7 +1105,7 @@ export function MaterialIntelligenceTab({
             </DialogDescription>
             <div className="flex items-start gap-2 rounded-lg bg-roksal-amber/10 px-3 py-2">
               <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-roksal-amber" aria-hidden="true" />
-              <p className="text-[11px] font-medium leading-snug text-stone-700 dark:text-stone-300">
+              <p className="text-[11px] font-medium leading-snug text-roksal-ink">
                 Zaloga se bo povečala za prikazane količine. Prejem je idempotenten — če je bilo naročilo že prejeto, se zaloga ne podvoji.
               </p>
             </div>
@@ -1177,7 +1177,7 @@ export function MaterialIntelligenceTab({
             </DialogDescription>
             <div className="flex items-start gap-2 rounded-lg bg-red-50 px-3 py-2 dark:bg-red-950/40">
               <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-roksal-red" aria-hidden="true" />
-              <p className="text-[11px] font-medium leading-snug text-stone-700 dark:text-stone-300">
+              <p className="text-[11px] font-medium leading-snug text-roksal-ink">
                 Preklic je končno stanje — nazaj v OSNUTEK, POSLANO ali POTRJENO ni mogoče. Aplikacija ne obvesti dobavitelja — preklic sporoči sam (telefon/e-pošta).
               </p>
             </div>
