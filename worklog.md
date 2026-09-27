@@ -3894,3 +3894,44 @@ Task: QA (R212 fingerprinti ŽIVO po checklisti iz R212 zaključka) + P1 kandida
 - Naslednja runda P1 kandidati: (a) 🔴 LASTNIŠKA: RBAC na POST /api/projects; (b) CSRF žeton strežniška vezava (csrfHash kolona — migracija); (c) #12 Render kartica / #7 Neon backfill --commit / Next.js nadgradnja (2 criticala) — lastniško; (d) opcijsko: osnutek toast deep-link TUDI v odložišče-Naročilnica tok (R204) — isti vzorec; (e) opcijsko: paleta Fuzzy skupina 'Naročila' tudi za search zadetke material-orders (⌘K + iskalnik EN VIR); (f) opcijsko: r211/r212 E2E preklop na skupni fetch-intercept helper (F2 deduplikacija ostanka, P1-g).
 - ⏰ OPOMNIK (obvezno v vsaki rundi do rešitve): roksal-fallback-db (dpg-dar3hd17lnhs739tdn7g-a) POTEČE 2026-10-25 (~4 tedne) — obvestiti lastnika, da se razglodi obnova ali umik.
 - Ostanki (nespremenjeni): #8 R118-real fotke; #12 Render kartica (lastniško); baza po rundi: 12 naročil (PREKlicANO 9, POTRJENO 2, DOBLJENO 1) — testni ostanki iskreno PREKlicANO, aktivnih 0.
+
+# R215 — v TEKU (tick 19:15:00 +08, Job 413422, trace 1a0d7c0831c23029-cron-agent-loop-202609271915)
+
+## Status ob zagonu
+- HEAD ba3b66b (R214) == origin/main, drevo čisto, worklog rep = R214; ta tick = R215.
+- PRODUKCIJA: žig ŠE VEDNO R213 build 10:27:24 (probe 11:16 — R214 push šele ~11:12, deploy v TEKU, pričakovano 15-40 min; RECHECK na koncu runde). Chunk scan (25): R213 needleji VSE + 'aria-current' ×1 (VizTab — obstoječ); R214 needleji ('Material — Naročila (V5)', 'Odpri naročila') ŠE NI v serving buildu — konsistentno z žigom. spot MONTER zdrav (pečati 11:16:49, temna, offline pas 0, __err null). NI produkcijskih bugov → razvoj.
+
+## Cilj runde + opravljene spremembe (v teku)
+- 🆕 F1 (worklog R214 (e)) ⌘K 'Nizka zaloga' skupina: paleta zdaj ob odprtju vzporedno fetcha projects + inventory (Promise.all, ENA runda — R138 vzorec z cancelled flag); izpeljanka kolicinaZaloga <= minimalnaZaloga (top 5, R208 izpeljanke ogledalo); skupina s števcem (countHeading družina R138) vidna LE ko artikli pod minimumom OBSTAJAJO (brez lažne prazne skupine); iskren podnapis 'Zaloga X enota · minimum Y' (dobrežne enote, brez sklanjatev); klik → Zaloga prek EN VIR onNavigate (isti vzorec kot Material search zadetki).
+- 🆕 F2 (worklog R214 (d)) R204 naročilnica toast akcija 'Shrani kot osnutek': kopiranje za e-pošto/SMS NE ustvari sledi — akcija odpre R205 dialog s TOČNO istimi artikli (openOsnutekDialog zdaj sprejme opcijske artikle; brez njih derivira iz filtered — R205 regresija); WYSIWYG EN VIR, brez ponovnega izvajanja filtra; MouseEvent zaščita: Osnutek gumb kliče onClick={() => openOsnutekDialog()} (tsc ulovil prvotno napako).
+- 🎨 F3 (Mandatory stil) top-bar: iskalnik gumb dobi focus-visible ring white/60 (družina sorojencev — prej EDINI brez); FAB a11y STRUKTURA: aria-haspopup="menu" zdaj kaže na pravi role="menu" vsebnik (aria-label 'Hitre akcije') + role="menuitem" na akcijah; 0 novih hex (top-bar #2a3f5f gradient iz prejšnjih rund ostane edini).
+- TESTI: r215-palette-zaloga-strazar ×19 (Promise.all, izpeljanka, skupina-pogoj, EN VIR navigacija, iskren podnapis, cancelled flag, toast akcija WYSIWYG, openOsnutekDialog opcijski arg, R214 regresija, menu struktura, focus ringi, hex nadzor).
+
+## Verifikacija (v teku)
+- tsc 0 ✓ · eslint 0 (4 datoteke) ✓ · r215 strazar ×19 ✓
+- ŠE ODPRTO: full vitest · build + needleji · dimni · E2E ŽIVO · deploy recheck · worklog zaključek · commit+push
+
+## Verifikacija (KONČNA — vse ZELENO)
+- tsc 0 ✓ · eslint 0 (5 datotek + test) ✓ · vitest **2251/2251 (139)** full-run ZELENO ✓ (2232 + 19) · build ✓
+- build needleji: R215 'Nizka zaloga' ×4 datotek, 'Shrani kot osnutek' ×1; R214 regresije 'Material — Naročila (V5)' ×1, 'Odpri naročila' ×1, 'aria-current' ×2; R213/R211/R210 regresije vse ('Prikaži Vse' ×1, 'orders-active' ×1, 'Preklic naročila' ×1, 'Osveženo ob' ×15)
+- dimni **137/0/2** (r215-run-smoke.sh) ✓
+- E2E ŽIVO (r215-e2e-browser.sh, ENA teka — končni ZELEN):
+  - **Z1 KLJUČNI DOKAZ (F1)**: PORABA 201 (199<200) → paleta ⌘K → **'Nizka zaloga' skupina VIDA** (glava + TOČNO ta artikel 'Inox Vijak M8 A2' + iskren podnapis '· minimum') → klik artikel → **Zaloga AKTIVEN (aria-current='page')**; screenshot qa-r215-e2e-paleta-nizka.png + qa-r215-e2e-zaloga-aktivna.png.
+  - **Z2 regresija R214**: paleta → 'Material — Naročila (V5)' → **Naročila podzavihek AKTIVEN (aria-pressed=true)** ✓.
+  - **Z3 (F2)**: clipboard stub (headless pravice — fetch-intercept družina) → 'Naročilnica' → **toast 'Naročilnica (…vidni artikli pod minimumom) kopirana v odložišče' z akcijo 'Shrani kot osnutek' → klik → R205 dialog ODPRT z TOČNO istim artikelom (istiArtikel=true)** → Prekliči (BREZ DB zapisa — tok je dialog); screenshot qa-r215-e2e-toast-osnutek-dialog.png.
+  - **Z4 (F3)**: FAB → **role="menu" (aria-label 'Hitre akcije') + 5× role="menuitem"** ('AR meritev' prvi) — aria-haspopup zdaj kaže na pravi menu; screenshot qa-r215-e2e-fab-menu.png.
+  - **Z5 čiščenje**: DOPOLNITEV povratek 201 → zaloga nazaj 800 ✓; temna rgb(15,23,36), __err null, health 200 db:'ok' (build 11:27:11 = R214 build ŽIVO!), odjava, port 3100 sproščen. 🔴 probe pripomba: statusni eval je imel ne-stražen o.opombe.includes (null guard manjkal) → probe napaka, NI produkt — naročila niso bila ustvarjena (Z3 Prekliči), osnova nespremenjena.
+- **DEPLOY RECHECK (obljubljen ob zagonu)**: R214 deploy ŽIVO SREDI runde — žig build **2026-09-27T11:17:03.111Z** (> R213 10:27:24) + sejni chunk scan (25): **R214 needleji VSE** ('Material — Naročila/Dobavitelji/BOM Refine (V5)' ×1 vsak, 'aria-current' ×2) + regresije ×6, spot MONTER __err null ✓ (r215-reprobe-prod2.sh; /login-javni scan = 0 je pričakovano — LAZY chunki niso v /login HTML, R190 lekcija; 'Odpri naročila' ×0 v tem sejnem scanu je pričakovano — inventory chunk ni bil obiskan v spot toku, v LOCAL buildu dokazan ×1).
+
+## 🔴 Lekcije runde
+1. **Lazy chunki v produkcijskem scanu**: /login javni scan NE vidi lazy chunkov (R190 lekcija), TUDI sejni scan vidi LE chunke obiskanih rut — 'Odpri naročila' (inventory chunk) je ×0, če spot tok ne obišče Zaloge. Needle dokaz je treba iskati v buildu (lokalno) ALI v scanu po obisku prave rute.
+2. **Clipboard v headless**: navigator.clipboard.writeText lahko zavre (NotAllowedError) — E2E stub `navigator.clipboard.writeText=async()=>{}` (fetch-intercept družina) pred klikom 'Naročilnica'.
+3. **tsc ulovi MouseEvent uhajanje**: onClick={openOsnutekDialog} z novim opcijskim parametrom pošlje event kot artikel — vedno `onClick={() => fn()}` ko fn dobi opcijske args.
+4. Deploy timing: R214 push ~11:12 → ŽIVO do 11:16-11:17 (~4-5 min v tej rundi; zgodovinsko 15-40 min — NE predpostavljaj, vedno RECHECK žiga).
+
+## Zaključek runde
+- HIGIENA: brez sheme/migracij (1 Promise.all fetch + 1 izpeljanka + 1 skupina + 1 opcijski parameter + 1 toast akcija + 1 focus ring + role menu/menuitem + 1 test ×19 + README ×3 + 4 skript). BOM/pricing/geometry core nedotaknjen. OgrajaVizija nič. PATCH prehodni stroj + receiveOrder NESPREMENJENA. 0 novih hex (top-bar #2a3f5f iz prejšnjih rund ostane edini).
+- Fingerprints za R216 (deploy ob pushu R215): (a) žig prek /api/public/version (R214 build 11:17:03 do tedaj — R215 build pride po pushu); (b) javni/sejni chunki: 'Nizka zaloga' v palette chunku (countHeading skupina) + 'Shrani kot osnutek' (inventory chunk — obiskati Zalogo v spot toku!); regresije: 'Material — Naročila (V5)' ≥1, 'aria-current' ≥1, 'Prikaži Vse' ≥1, 'orders-active' ≥1; (c) spot MONTER: Material/Zaloga pečati, temna, __err null; (d) ADMIN produkcija: paleta ⌘K → 'Nizka zaloga' skupina (če spot baza ima artikle pod min!) → Zaloga; Zaloga → Naročilnica → toast 'Shrani kot osnutek' → dialog; FAB menu struktura.
+- Naslednja runda P1 kandidati: (a) 🔴 LASTNIŠKA: RBAC na POST /api/projects; (b) CSRF žeton strežniška vezava (csrfHash kolona — migracija); (c) #12 Render kartica / #7 Neon backfill --commit / Next.js nadgradnja (2 criticala) — lastniško; (d) opcijsko: paleta 'Nizka zaloga' klik → direktno Osnutek dialog za TA artikel (globlji deep-link, zahteva hint protokol za inventory); (e) opcijsko: zvonček nizka zaloga klik → isti osnutek tok (konvergenca signalcev); (f) opcijsko: r211/r212 E2E preklop na skupni fetch-intercept helper (P1-g ostank).
+- ⏰ OPOMNIK (obvezno v vsaki rundi do rešitve): roksal-fallback-db (dpg-dar3hd17lnhs739tdn7g-a) POTEČE 2026-10-25 (~4 tedne) — obvestiti lastnika, da se razglodi obnova ali umik.
+- Ostanki (nespremenjeni): #8 R118-real fotke; #12 Render kartica (lastniško); baza po rundi: 12 naročil (PREKlicANO 9, POTRJENO 2, DOBLJENO 1), zaloga Inox Vijak M8 A2 vračena na 800 (PORABA/DOPOLNITEV par ječično v ravnovesju), aktivnih testnih ostankov 0.

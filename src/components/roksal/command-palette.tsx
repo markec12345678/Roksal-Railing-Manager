@@ -211,6 +211,12 @@ function MatchedText({ text, q }: { text: string; q: string }) {
 export function CommandPalette({ open, onOpenChange, onNavigate, onSync }: CommandPaletteProps) {
   const { resolvedTheme, setTheme } = useTheme()
   const [projects, setProjects] = useState<Project[]>([])
+  // R215 — nizka zaloga (⌘K kot center ukazov): isti vzorec kot projekti —
+  // fetch ob prvem odprtju, izpeljanka iz REALNIH podatkov, skupina vidna LE
+  // ko obstajajo artikli pod minimumom (brez lažne prazne skupine).
+  const [nizkaZaloga, setNizkaZaloga] = useState<{
+    id: string; naziv: string; kolicinaZaloga: number; minimalnaZaloga: number; enota: string
+  }[]>([])
   const [query, setQuery] = useState('')
   const [search, setSearch] = useState<SearchResults>(EMPTY_SEARCH)
   const [searching, setSearching] = useState(false)
@@ -221,14 +227,22 @@ export function CommandPalette({ open, onOpenChange, onNavigate, onSync }: Comma
     getRecentServerSnapshot
   )
 
-  // Projekte pobere šele ob prvem odprtju — nič nepotreznih zahtev.
+  // Projekte in nizko zalogo pobere šele ob prvem odprtju — nič nepotreznih
+  // zahtev. R215: OBA fetcha vzporedno (Promise.all — ENA runda).
   useEffect(() => {
     if (!open) return
     let cancelled = false
-    fetch('/api/projects')
-      .then((r) => (r.ok ? r.json() : []))
-      .then((data: Project[]) => {
-        if (!cancelled) setProjects(Array.isArray(data) ? data.slice(0, 25) : [])
+    Promise.all([
+      fetch('/api/projects').then((r) => (r.ok ? r.json() : [])),
+      fetch('/api/inventory').then((r) => (r.ok ? r.json() : [])),
+    ])
+      .then(([projekti, zaloga]: [Project[], { id: string; naziv: string; kolicinaZaloga: number; minimalnaZaloga: number; enota: string }[]]) => {
+        if (cancelled) return
+        setProjects(Array.isArray(projekti) ? projekti.slice(0, 25) : [])
+        const zalogaArr = Array.isArray(zaloga) ? zaloga : []
+        setNizkaZaloga(
+          zalogaArr.filter((i) => i.kolicinaZaloga <= i.minimalnaZaloga).slice(0, 5),
+        )
       })
       .catch(() => undefined)
     return () => {
@@ -404,6 +418,33 @@ export function CommandPalette({ open, onOpenChange, onNavigate, onSync }: Comma
             </CommandItem>
           ))}
         </CommandGroup>
+
+        {/* R215 — nizka zaloga: skupina vidna LE ko obstajajo artikli pod
+            minimumom (izpeljanka iz realnih podatkov — brez lažne prazne
+            skupine); klik → Zaloga (isti EN VIR onNavigate kot search). */}
+        {nizkaZaloga.length > 0 && (
+          <>
+            <CommandSeparator />
+            <CommandGroup heading={countHeading('Nizka zaloga', nizkaZaloga.length)}>
+              {nizkaZaloga.map((i) => (
+                <CommandItem
+                  key={i.id}
+                  value={`nizka zaloga ${i.naziv}`}
+                  onSelect={() => {
+                    onNavigate('inventory')
+                    close()
+                  }}
+                >
+                  <Package className="mr-2 h-4 w-4 text-roksal-amber" />
+                  <span className="truncate">{i.naziv}</span>
+                  <span className="ml-2 shrink-0 text-xs text-muted-foreground">
+                    Zaloga {i.kolicinaZaloga} {i.enota} · minimum {i.minimalnaZaloga}
+                  </span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </>
+        )}
 
         {(projects.length > 0 || searchProjectHits.length > 0) && (
           <>

@@ -317,8 +317,16 @@ export function InventoryTab() {
           kategorija: filter === 'ALL' ? null : (typeLabels[filter] ?? filter),
         })
         await navigator.clipboard.writeText(besedilo)
+        // R215 — deep-link akcija v toastu (družina R214 'Odpri naročila'):
+        // kopiranje za e-pošto/SMS NE ustvari sledi — akcija 'Shrani kot
+        // osnutek' ponudi ista posta kot sledljiv MaterialOrder OSNUTEK
+        // (R205 dialog, TOČNO isti artikli — WYSIWYG).
         toast.success(`Naročilnica (${opis}) kopirana v odložišče`, {
           description: `${artikli.length} ${zalogaPovzetekBeseda(artikli.length)} — prilepi v e-pošto/SMS dobavitelju.`,
+          action: {
+            label: 'Shrani kot osnutek',
+            onClick: () => openOsnutekDialog(artikli),
+          },
         })
       } catch (err) {
         if (err instanceof DOMException && err.name === 'NotAllowedError') {
@@ -411,9 +419,14 @@ export function InventoryTab() {
 
   // R205 — odpri dialog osnutka: isti WYSIWYG seznam vidnih artiklov pod
   // minimumom kot naročilnica R204. Iskren prazen seznam → dialog se NE odpre
-  // (nič izmišljenega naročila).
-  function openOsnutekDialog() {
-    const podMin = filtered.filter((i) => i.kolicinaZaloga <= i.minimalnaZaloga)
+  // (nič izmišljenega naročila). R215 — opcijski argument: toast akcija 'Shrani
+  // kot osnutek' (R204 kopiranje) pošlje TOČNO iste artikle, ki so bili
+  // kopirani (WYSIWYG EN VIR — brez ponovnega izvajanja filtra, ki bi med
+  // tem lahko zdrsel; determinizem).
+  function openOsnutekDialog(artikli?: readonly ZalogaArtikelZaNarocilo[]) {
+    const podMin = artikli
+      ? [...artikli]
+      : filtered.filter((i) => i.kolicinaZaloga <= i.minimalnaZaloga)
     if (podMin.length === 0) {
       toast.error('Ni artiklov pod minimalno zalogo — nič za naročilo.')
       return
@@ -715,7 +728,7 @@ export function InventoryTab() {
         <Button
           variant="outline"
           size="sm"
-          onClick={openOsnutekDialog}
+          onClick={() => openOsnutekDialog()}
           className="h-8 shrink-0 gap-1.5 text-[11px] font-medium tabular-nums press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
           aria-label="Shrani naročilnico vidnih artiklov kot osnutek naročila"
           title="Shrani naročilnico (vidni artikli pod minimumom) kot osnutek naročila — Material → Naročila"

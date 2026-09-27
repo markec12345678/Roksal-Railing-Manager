@@ -71,16 +71,19 @@ export function QuickActionsFab() {
       </AnimatePresence>
 
       <div className="fixed bottom-[76px] right-4 z-[46] flex flex-col items-end gap-2.5 md:bottom-[84px] md:right-6">
-        {/* Akcije — rastejo navzgor */}
+        {/* Akcije — rastejo navzgor. R215 (a11y): aria-haspopup="menu" na
+            glavnem gumbu zdaj KAŽE na pravi menu — role="menu" vsebnik +
+            role="menuitem" na akcijah (struktura, ne samo izgled). */}
         <AnimatePresence>
           {open && (
-            <>
+            <div role="menu" aria-label="Hitre akcije" className="flex flex-col items-end gap-2.5">
               {ACTIONS.map((action, i) => {
                 const Icon = action.icon
                 return (
                   <motion.button
                     key={action.id}
                     type="button"
+                    role="menuitem"
                     onClick={() => run(action)}
                     initial={{ opacity: 0, y: 16, scale: 0.85 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -95,7 +98,7 @@ export function QuickActionsFab() {
                   </motion.button>
                 )
               })}
-            </>
+            </div>
           )}
         </AnimatePresence>
 
