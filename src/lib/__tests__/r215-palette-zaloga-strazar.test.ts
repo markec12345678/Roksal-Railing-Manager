@@ -40,7 +40,11 @@ describe('R215 — ⌘K paleta Nizka zaloga skupina (command-palette.tsx)', () =
   })
 
   it('iskren podnapis: Zaloga X enota · minimum Y (dobrežni podatki, brez sklanjatev)', () => {
-    expect(src).toContain('Zaloga {i.kolicinaZaloga} {i.enota} · minimum {i.minimalnaZaloga}')
+    // R216 PIN posodobitev: podnapis zdaj nosi tabular-nums + roksal-red na
+    // dejanski zalogi (barvni pomen ≤ minimum — isti kot stolpci Zaloge);
+    // vsebina besedila ostane ISTER ('Zaloga X enota · minimum Y').
+    expect(src).toContain('{i.kolicinaZaloga}</span> {i.enota} · minimum <span className="tabular-nums">{i.minimalnaZaloga}</span>')
+    expect(src).toMatch(/Zaloga <span className="font-medium tabular-nums text-roksal-red">/)
   })
 
   it('cancelled flag ohranjen (brez setState po unmountu — regresija R138 vzorca)', () => {

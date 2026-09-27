@@ -51,7 +51,8 @@ describe('R213 — pošiljatelj (notification-center.tsx)', () => {
   })
 
   it('ostale navigacije BREZ subTab (regresija: inventory/dashboard/crm/ekipa)', () => {
-    expect(src).toContain("new CustomEvent('roksal:navigate', { detail: { tab: 'inventory' } })")
+    // R216 PIN posodobitev: stock klik ima fail-safe vejo item.osnutek ? deep-link : { tab: 'inventory' }
+    expect(src).toContain("? { tab: 'inventory', osnutek: item.osnutek } : { tab: 'inventory' },")
     expect(src).toContain("new CustomEvent('roksal:navigate', { detail: { tab: 'dashboard' } })")
     expect(src).toContain("new CustomEvent('roksal:navigate', { detail: { tab: 'more', more: 'crm' } })")
     expect(src).toContain("new CustomEvent('roksal:navigate', { detail: { tab: 'more', more: 'ekipa' } })")

@@ -19,6 +19,8 @@ import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, C
 import type { MoreTabId, TabId } from '@/components/roksal/bottom-nav'
 import type { MaterialSubTab } from '@/lib/material-sub-tab'
 import type { Project } from '@/lib/types'
+// R216 — tip artikla za deep-link osnutek (samo TIP; lib ostaja nedotaknjen).
+import type { ZalogaArtikelZaNarocilo } from '@/lib/zaloga-povzetek'
 import {
   Boxes,
   ClipboardList,
@@ -49,8 +51,10 @@ interface CommandPaletteProps {
   onOpenChange: (open: boolean) => void
   /** Skok na glavni zavihek in/ali "Več" modul. R214 — tretji argument
    * subTab: namig za podzavihek Material (isti protokol kot zvonček —
-   * MaterialSubTabHint whitelist + monotonski n v page.tsx). */
-  onNavigate: (tab: TabId, more?: MoreTabId | null, subTab?: MaterialSubTab | null) => void
+   * MaterialSubTabHint whitelist + monotonski n v page.tsx). R216 —
+   * četrti argument osnutek: deep-link artikel (Nizka zaloga klik →
+   * Osnutek dialog v Zalogi; page.tsx počisti hint ob drugih navigacijah). */
+  onNavigate: (tab: TabId, more?: MoreTabId | null, subTab?: MaterialSubTab | null, osnutek?: ZalogaArtikelZaNarocilo | null) => void
   onSync: () => void
 }
 
@@ -214,8 +218,10 @@ export function CommandPalette({ open, onOpenChange, onNavigate, onSync }: Comma
   // R215 — nizka zaloga (⌘K kot center ukazov): isti vzorec kot projekti —
   // fetch ob prvem odprtju, izpeljanka iz REALNIH podatkov, skupina vidna LE
   // ko obstajajo artikli pod minimumom (brez lažne prazne skupine).
+  // R216 — tip razširjen s sifraMateriala (passthrough za osnutek deep-link:
+  // /api/inventory ga vrača že danes — brez novega fetcha, EN VIR).
   const [nizkaZaloga, setNizkaZaloga] = useState<{
-    id: string; naziv: string; kolicinaZaloga: number; minimalnaZaloga: number; enota: string
+    id: string; sifraMateriala: string; naziv: string; kolicinaZaloga: number; minimalnaZaloga: number; enota: string
   }[]>([])
   const [query, setQuery] = useState('')
   const [search, setSearch] = useState<SearchResults>(EMPTY_SEARCH)
@@ -236,7 +242,7 @@ export function CommandPalette({ open, onOpenChange, onNavigate, onSync }: Comma
       fetch('/api/projects').then((r) => (r.ok ? r.json() : [])),
       fetch('/api/inventory').then((r) => (r.ok ? r.json() : [])),
     ])
-      .then(([projekti, zaloga]: [Project[], { id: string; naziv: string; kolicinaZaloga: number; minimalnaZaloga: number; enota: string }[]]) => {
+      .then(([projekti, zaloga]: [Project[], { id: string; sifraMateriala: string; naziv: string; kolicinaZaloga: number; minimalnaZaloga: number; enota: string }[]]) => {
         if (cancelled) return
         setProjects(Array.isArray(projekti) ? projekti.slice(0, 25) : [])
         const zalogaArr = Array.isArray(zaloga) ? zaloga : []
@@ -421,7 +427,12 @@ export function CommandPalette({ open, onOpenChange, onNavigate, onSync }: Comma
 
         {/* R215 — nizka zaloga: skupina vidna LE ko obstajajo artikli pod
             minimumom (izpeljanka iz realnih podatkov — brez lažne prazne
-            skupine); klik → Zaloga (isti EN VIR onNavigate kot search). */}
+            skupine). R216 — klik → DEEP-LINK: Zaloga + Osnutek dialog z
+            TOČNO TIM artikelom (osnutek passthrough — page.tsx centralNavigate;
+            monotonski n, stale hint počiščen ob drugih navigacijah).
+            Stil: dejanska zaloga v roksal-red (≤ minimum — isti semantični
+            pomen kot barvni stolpci v Zalogi, barva ni edini nosilec —
+            tudi podnapis pove 'minimum'), številke tabular-nums. */}
         {nizkaZaloga.length > 0 && (
           <>
             <CommandSeparator />
@@ -431,14 +442,21 @@ export function CommandPalette({ open, onOpenChange, onNavigate, onSync }: Comma
                   key={i.id}
                   value={`nizka zaloga ${i.naziv}`}
                   onSelect={() => {
-                    onNavigate('inventory')
+                    onNavigate('inventory', null, null, {
+                      id: i.id,
+                      sifraMateriala: i.sifraMateriala,
+                      naziv: i.naziv,
+                      kolicinaZaloga: i.kolicinaZaloga,
+                      enota: i.enota,
+                      minimalnaZaloga: i.minimalnaZaloga,
+                    })
                     close()
                   }}
                 >
                   <Package className="mr-2 h-4 w-4 text-roksal-amber" />
                   <span className="truncate">{i.naziv}</span>
                   <span className="ml-2 shrink-0 text-xs text-muted-foreground">
-                    Zaloga {i.kolicinaZaloga} {i.enota} · minimum {i.minimalnaZaloga}
+                    Zaloga <span className="font-medium tabular-nums text-roksal-red">{i.kolicinaZaloga}</span> {i.enota} · minimum <span className="tabular-nums">{i.minimalnaZaloga}</span>
                   </span>
                 </CommandItem>
               ))}

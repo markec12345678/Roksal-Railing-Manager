@@ -136,7 +136,17 @@ const lotStatusStyle: Record<string, { dot: string; text: string; label: string 
   CLOSED: { dot: 'bg-muted-foreground', text: 'text-muted-foreground', label: 'Zaprta' },
 }
 
-export function InventoryTab() {
+// R216 — props za deep-link hint (P1-d/e): paleta ⌘K 'Nizka zaloga' in
+// zvonček 'stock' klik pošljeta artikel prek page.tsx centralNavigate
+// (roksal:navigate osnutek polje); InventoryTab ga ob mountu/novem hintu
+// odpre kot Osnutek dialog z TOČNO TIM artikelom. EN VIR passthrough —
+// brez ponovnega filtra (WYSIWYG, R215 vzorec), brez izmišljenih artiklov.
+export interface InventoryTabProps {
+  /** Deep-link hint iz page.tsx (monotonski n — R213 družina). */
+  osnutekHint?: { artikel: ZalogaArtikelZaNarocilo; n: number } | null
+}
+
+export function InventoryTab({ osnutekHint }: InventoryTabProps) {
   const [inventory, setInventory] = useState<InventoryItem[]>([])
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
@@ -434,6 +444,18 @@ export function InventoryTab() {
     setOsnutekArtikli(podMin)
     setOsnutekOpen(true)
   }
+
+  // R216 — deep-link hint (P1-d/e): paleto ⌘K 'Nizka zaloga' in zvonček
+  // 'stock' klik → Osnutek dialog z TOČNO TIM enim artiklom (EN VIR
+  // passthrough iz page.tsx centralNavigate). Monotonski n (R213 družina):
+  // nov n = nov hint (zadnji klik zmaga — deterministično); enak hint
+  // (isti objekt) ne ponovno odpre dialoga. Počistitev (null) dialoga NE
+  // zapira — samo stale hint ne sme biti porabljen.
+  const hintArtikel = osnutekHint?.artikel ?? null
+  const hintNonce = osnutekHint?.n ?? 0
+  useEffect(() => {
+    if (hintArtikel) openOsnutekDialog([hintArtikel])
+  }, [hintArtikel, hintNonce])
 
   // R205 — shrani osnutek: POST /api/material-orders ustvari MaterialOrder s
   // statusom OSNUTEK (strežnik ga vsili). Količine = narociloKolicina (EN VIR

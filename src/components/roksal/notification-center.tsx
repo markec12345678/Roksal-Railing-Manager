@@ -29,6 +29,8 @@ import {
 } from 'lucide-react'
 import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'
 import { casOznaka } from '@/lib/osvezitev-fokus'
+// R216 — tip artikla za deep-link osnutek (samo TIP; lib ostaja nedotaknjen).
+import type { ZalogaArtikelZaNarocilo } from '@/lib/zaloga-povzetek'
 
 interface NotificationItem {
   id: string
@@ -38,6 +40,11 @@ interface NotificationItem {
   meta?: string
   /** Koliko enakih obvestil je združenih (duplikati projektov z istim imenom) */
   count?: number
+  /** R216 — deep-link za 'stock': artikel prek page.tsx centralNavigate
+   * (roksal:navigate osnutek polje) → Zaloga + Osnutek dialog z TOČNO TIM
+   * artikelom (konvergence signalcev — P1-e). Fail-safe: brez osnutka →
+   * navadna navigacija na Zalogo (vedenje pred R216). */
+  osnutek?: ZalogaArtikelZaNarocilo
 }
 
 /** R197 — varnostne predloge v zvončku dobijo ŠČIT + jantarno barvo (razločevanje
@@ -125,7 +132,7 @@ export function NotificationCenter() {
       // 1) Nizka zaloga
       if (invRes.ok) {
         const inv = (await invRes.json()) as {
-          id: string; naziv: string; kolicinaZaloga: number; minimalnaZaloga: number; enota: string
+          id: string; sifraMateriala: string; naziv: string; kolicinaZaloga: number; minimalnaZaloga: number; enota: string
         }[]
         const low = (inv || []).filter((i) => i.kolicinaZaloga <= i.minimalnaZaloga)
         for (const i of low.slice(0, 8)) {
@@ -135,6 +142,17 @@ export function NotificationCenter() {
             title: i.naziv,
             subtitle: `Zaloga ${i.kolicinaZaloga} ${i.enota} · minimum ${i.minimalnaZaloga}`,
             meta: 'Naroči material',
+            // R216 — konvergence signalcev (P1-e): klik → Zaloga + Osnutek
+            // dialog z TOČNO TIM artikelom (EN VIR passthrough — isti objekt
+            // kot paleta ⌘K R216; brez ponovnega filtra, brez izmišljevanja).
+            osnutek: {
+              id: i.id,
+              sifraMateriala: i.sifraMateriala,
+              naziv: i.naziv,
+              kolicinaZaloga: i.kolicinaZaloga,
+              enota: i.enota,
+              minimalnaZaloga: i.minimalnaZaloga,
+            },
           })
         }
       } else if (invRes.status !== 403) {
@@ -354,7 +372,12 @@ export function NotificationCenter() {
   function handleClick(item: NotificationItem) {
     setOpen(false)
     if (item.kind === 'stock') {
-      window.dispatchEvent(new CustomEvent('roksal:navigate', { detail: { tab: 'inventory' } }))
+      // R216 — konvergence signalcev (P1-e): z obstoječim osnutkom → deep-link
+      // (Zaloga + Osnutek dialog z artikelom — ISTI protokol kot paleta ⌘K);
+      // brez (fail-safe, ne sme se zgoditi) → navadna navigacija (pred-R216).
+      window.dispatchEvent(new CustomEvent('roksal:navigate', {
+        detail: item.osnutek ? { tab: 'inventory', osnutek: item.osnutek } : { tab: 'inventory' },
+      }))
     } else if (item.kind === 'install') {
       window.dispatchEvent(new CustomEvent('roksal:navigate', { detail: { tab: 'dashboard' } }))
       window.dispatchEvent(new CustomEvent('roksal:select-project', { detail: item.id.replace('install-', '') }))
@@ -554,7 +577,10 @@ export function NotificationCenter() {
                             <AlertTriangle className="h-3 w-3 shrink-0 text-amber-500 dark:text-amber-400" />
                           )}
                         </div>
-                        <p className="truncate text-[11px] text-muted-foreground">{item.subtitle}</p>
+                        {/* R216 stil — stock številke tabular-nums (zaloge in
+                            minimumi so primerljivi po širinkah — družina R138
+                            števcev; vsebina ostane ista, brez sklanjatev). */}
+                        <p className={`truncate text-[11px] text-muted-foreground ${item.kind === 'stock' ? 'tabular-nums' : ''}`}>{item.subtitle}</p>
                         {item.meta && (
                           <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide text-roksal-amber">
                             {item.meta}

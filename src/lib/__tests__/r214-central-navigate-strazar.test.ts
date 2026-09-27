@@ -26,14 +26,16 @@ function oknoMed(src: string, od: string, do_: string): string {
 describe('R214 — centralNavigate EN VIR (app/page.tsx)', () => {
   const src = beri('src/app/page.tsx')
 
-  it('centralNavigate obstaja kot useCallback z (tab, more?, subTab?) podpisom', () => {
+  it('centralNavigate obstaja kot useCallback z (tab, more?, subTab?, osnutek?) podpisom', () => {
+    // R216 PIN posodobitev: 4. argument osnutek (deep-link Zaloga dialog, P1-d/e)
     expect(src).toContain('const centralNavigate = useCallback(')
-    expect(src).toContain('(tab: TabId, more?: MoreTabId | null, subTab?: string | null) => {')
+    expect(src).toContain('(tab: TabId, more?: MoreTabId | null, subTab?: string | null, osnutek?: ZalogaArtikelZaNarocilo | null) => {')
   })
 
   it('dogodek roksal:navigate hodí čez centralNavigate (brez podvojenega usmerjanja)', () => {
+    // R216 PIN posodobitev: dispatch prenaša tudi osnutek polje (4. argument)
     expect(src).toContain(
-      'centralNavigate(d.tab as TabId, (d.more ?? null) as MoreTabId | null, d.subTab ?? null)',
+      'centralNavigate(d.tab as TabId, (d.more ?? null) as MoreTabId | null, d.subTab ?? null, d.osnutek ?? null)',
     )
     expect(src).toContain('}, [centralNavigate])')
   })
@@ -88,7 +90,8 @@ describe('R214 — ukazna paleta: direktni podzavihki Materiala (command-palette
 
   it('NavItem + onNavigate tipa nosita MaterialSubTab (type-only uvoz, brez any)', () => {
     expect(src).toContain('subTab?: MaterialSubTab')
-    expect(src).toContain('subTab?: MaterialSubTab | null) => void')
+    // R216 PIN posodobitev: onNavigate nosi tudi osnutek (deep-link artikel)
+    expect(src).toContain('subTab?: MaterialSubTab | null, osnutek?: ZalogaArtikelZaNarocilo | null) => void')
     expect(src).toContain("import type { MaterialSubTab } from '@/lib/material-sub-tab'")
   })
 

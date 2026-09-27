@@ -15,6 +15,9 @@ import { Skeleton } from '@/components/ui/skeleton'
 // R213 — EN VIR podzavihkov Material zavihka (mikromodul, NE komponenta —
 // MaterialIntelligenceTab mora ostati LAZY dynamic import, r212 lekcija).
 import { isMaterialSubTab, type MaterialSubTabHint } from '@/lib/material-sub-tab'
+// R216 — tip artikla za osnutek hint (client-safe lib, samo TIP — lib zaloge
+// povzetka ostaja nedotaknjen; EN VIR oblike artikla med paleto/zvonček/dialog).
+import type { ZalogaArtikelZaNarocilo } from '@/lib/zaloga-povzetek'
 
 // ── Dinamični importi (code-splitting) ───────────────────────────────────────
 //
@@ -229,13 +232,30 @@ export default function Home() {
   // brez proizvoljnih nizov), monotonski n (preklop tudi, ko je komponenta
   // že montirana); navadne navigacije počistijo namig (privzeto BOM).
   const [materialSubTab, setMaterialSubTab] = useState<MaterialSubTabHint | null>(null)
+  // R216 — osnutek hint za Zalogo (P1-d/e: deep-link iz palete ⌘K 'Nizka
+  // zaloga' in zvončka 'stock' → Osnutek dialog z TOČNO TIM artiklom). Isti
+  // vzorec kot materialSubTab: monotonski n (ponovni klik tudi, ko je dialog
+  // že bil odprt — zadnji klik zmaga, deterministično) + počistitev ob vsaki
+  // navadni navigaciji (stale hint ne sme nikoli presenetiti uporabnika —
+  // prvi vstop v Zalogo MORA ostati čist).
+  const [inventoryOsnutekHint, setInventoryOsnutekHint] = useState<{
+    artikel: ZalogaArtikelZaNarocilo; n: number
+  } | null>(null)
   // R214 — EN VIR usmerjanja: roksal:navigate dogodek (FAB/zvonček) IN ukazna
   // paleta (⌘K) hodita čez ISTO funkcijo centralNavigate. Prej je paleta šla
   // POVRH protokola (setMoreTab direktno) — brez whitelist/monotonskega n IN z
   // bugom: 'Skice' je prižigala setMoreTab('sketches'), čeprav več-vsebina NIMA
   // skic modula (skice = overlay prek setSketchOpen) → prazen panel.
   const centralNavigate = useCallback(
-    (tab: TabId, more?: MoreTabId | null, subTab?: string | null) => {
+    (tab: TabId, more?: MoreTabId | null, subTab?: string | null, osnutek?: ZalogaArtikelZaNarocilo | null) => {
+      // R216 — osnutek hint: nastavljen LE ob navigaciji na Zalogo Z artiklom
+      // (deep-link); vsaka druga navigacija ga počisti (R213 vzorec — stale
+      // namig nikoli ne preživi naslednje navigacije).
+      setInventoryOsnutekHint((prev) =>
+        tab === 'inventory' && osnutek
+          ? { artikel: osnutek, n: (prev?.n ?? 0) + 1 }
+          : null,
+      )
       if (tab === 'more' && more) {
         // namig v const: type guard zoži tip tudi znotraj updaterja (closures
         // ne ohranjajo zožitve na lastnostih objekta).
@@ -252,9 +272,9 @@ export default function Home() {
   )
   useEffect(() => {
     function onNavigate(e: Event) {
-      const d = (e as CustomEvent<{ tab?: string; more?: string | null; subTab?: string | null }>).detail
+      const d = (e as CustomEvent<{ tab?: string; more?: string | null; subTab?: string | null; osnutek?: ZalogaArtikelZaNarocilo | null }>).detail
       if (!d?.tab) return
-      centralNavigate(d.tab as TabId, (d.more ?? null) as MoreTabId | null, d.subTab ?? null)
+      centralNavigate(d.tab as TabId, (d.more ?? null) as MoreTabId | null, d.subTab ?? null, d.osnutek ?? null)
     }
     window.addEventListener('roksal:navigate', onNavigate)
     return () => window.removeEventListener('roksal:navigate', onNavigate)
@@ -475,7 +495,7 @@ export default function Home() {
           />
         )}
         {activeTab === 'inclinometer' && <InclinometerTab projectId={selectedProjectId} />}
-        {activeTab === 'inventory' && <InventoryTab />}
+        {activeTab === 'inventory' && <InventoryTab osnutekHint={inventoryOsnutekHint} />}
 
         {/* "Več" zavihki */}
         {activeTab === 'more' && moreTab && moreTab !== 'sketches' && (
