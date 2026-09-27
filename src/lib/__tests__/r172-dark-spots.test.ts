@@ -47,7 +47,8 @@ const PRIMERI = [
   // R182: vrstica +65 (uvozi+stanja+fail-verbose loadData +47, pečat+warning
   // vrstica +18) — ogledalo ŠE VEDNO na ISTI vrstici (precedens R180 '+34').
   // R203: 394→403 (fail-verbose handleCreateSupplier/handleAddPrice +9).
-  stražar('src/components/roksal/material-intelligence-tab.tsx', 403, 'bg-green-50', 'dark:bg-green-950/40'),
+  // R206: 403→446 (iskren prehod POSLANO + gumb naročilnice iz naročila +43).
+  stražar('src/components/roksal/material-intelligence-tab.tsx', 446, 'bg-green-50', 'dark:bg-green-950/40'),
   // roksal-catalog — steklo tint (vzorec Inox fix R171)
   // R203: 193→228 (fail-verbose fetchProfili + trojna veja +35).
   stražar('src/components/roksal/roksal-catalog.tsx', 228, 'bg-cyan-200/40', 'dark:bg-cyan-500/20'),

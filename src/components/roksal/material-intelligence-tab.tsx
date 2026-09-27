@@ -14,6 +14,10 @@ import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'
 import { casOznaka } from '@/lib/osvezitev-fokus'
 import { downloadCsv, todayStamp, type CsvValue } from '@/lib/csv-export'
 import {
+  buildNarocilnicaIzNarocila,
+  narociloPostavkaBeseda,
+} from '@/lib/zaloga-povzetek'
+import {
   Package,
   TrendingUp,
   ShoppingCart,
@@ -28,6 +32,7 @@ import {
   Download,
   ChevronDown,
   ChevronRight,
+  ClipboardList,
   History,
 } from 'lucide-react'
 
@@ -285,7 +290,21 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
         body: JSON.stringify({ id: orderId, status }),
       })
       if (res.ok) {
-        toast({ title: `Status → ${status}` })
+        // R206 — iskrni naslovi prehodov: aplikacija NE pošilja dokumentov
+        // dobavitelju (integracije ni) — POSLANO je OZNAČBA človeškega dejanja
+        // ('označi kot poslano'), ne obljuba aplikacije (družina R204/R205).
+        const naslovi: Record<string, string> = {
+          POSLANO: 'Označeno kot poslano (status POSLANO)',
+          POTRJENO: 'Status → POTRJENO',
+          DOBLJENO: 'Dobljeno — material v zalogi',
+        }
+        toast({
+          title: naslovi[status] ?? `Status → ${status}`,
+          description:
+            status === 'POSLANO'
+              ? 'Aplikacija ne pošilja dokumentov — naročilnico dostaviš sam (gumb »Naročilnica« na naročilu).'
+              : undefined,
+        })
         loadData()
       } else {
         // R140: fail-verbose — 403/409 napake se POKAŽEJO (prej tiho ugasil
@@ -295,6 +314,30 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
       }
     } catch {
       toast({ title: 'Omrežna napaka', variant: 'destructive' })
+    }
+  }
+
+  // R206 — naročilnica iz naročila: regeneracija dokumenta iz SLEDLJIVIH
+  // postavk naročila (lib zaloga-povzetek — ista družina kot odložišče R204 /
+  // CSV priloga R205; brez vrednosti iz UI). Fail-verbose odložišče (vzorec
+  // R167/R203/R204/R205). Aplikacija trdi LE 'kopirana v odložišče'.
+  const kopirajNarocilnicoIzNarocila = async (order: MaterialOrder) => {
+    try {
+      const besedilo = buildNarocilnicaIzNarocila(order, { now: new Date() })
+      await navigator.clipboard.writeText(besedilo)
+      toast({
+        title: `Naročilnica (${order.supplier.naziv}) kopirana v odložišče`,
+        description: `${order.items.length} ${narociloPostavkaBeseda(order.items.length)} — prilepi v e-pošto/SMS dobavitelju.`,
+      })
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'NotAllowedError') {
+        toast({ title: 'Brskalnik je zavrnil dostop do odložišča (dovoljenje).', variant: 'destructive' })
+      } else if (err instanceof TypeError) {
+        // fail-closed jedro: pokvareno naročilo → viden razlog (nič izmišljenega dokumenta)
+        toast({ title: 'Naročilnice ni mogoče sestaviti iz tega naročila', description: err.message, variant: 'destructive' })
+      } else {
+        toast({ title: 'Kopiranje ni uspelo', variant: 'destructive' })
+      }
     }
   }
 
@@ -551,11 +594,26 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
                           )}
                         </div>
                       )}
-                      {/* Status actions */}
-                      <div className="flex gap-1 pt-2 border-t border-border">
+                      {/* Status actions — R206: iskren gumb prehoda POSLANO
+                          (aplikacija NE pošilja dokumentov; uporabnik OZNAČI,
+                          da jih je poslal sam — družina R204/R205) + gumb
+                          'Naročilnica' (regeneracija dokumenta iz postavk). */}
+                      <div className="flex flex-wrap gap-1 pt-2 border-t border-border">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="h-6 gap-1 text-[10px] focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
+                          onClick={() => void kopirajNarocilnicoIzNarocila(order)}
+                          aria-label={`Kopiraj naročilnico naročila pri ${order.supplier.naziv} v odložišče`}
+                          title="Naročilnica za dobavitelja iz postavk tega naročila — prilepi v e-pošto/SMS"
+                        >
+                          <ClipboardList className="h-3 w-3" aria-hidden="true" />
+                          Naročilnica
+                        </Button>
                         {order.status === 'OSNUTEK' && (
-                          <Button type="button" size="sm" variant="outline" className="h-6 text-[10px] focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1" onClick={() => handleOrderStatus(order.id, 'POSLANO')}>
-                            Pošlji
+                          <Button type="button" size="sm" variant="outline" className="h-6 text-[10px] focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1" onClick={() => handleOrderStatus(order.id, 'POSLANO')} title="Označi, da si naročilo poslal sam (aplikacija ne pošilja dokumentov)">
+                            Označi kot poslano
                           </Button>
                         )}
                         {order.status === 'POSLANO' && (

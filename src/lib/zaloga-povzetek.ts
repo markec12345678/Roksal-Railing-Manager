@@ -209,3 +209,113 @@ export function narocilnicaCsvVrstice(
     ] as [string, string, string, number, number, number]
   })
 }
+
+// ---------------------------------------------------------------------------
+// R206 F2 — naročilnica IZ SLEDLJIVEGA naročila (Material → Naročila): isti
+// dokument kot R204, le da izvira iz realnih postavk naročila (MaterialOrder)
+// — regeneracija pozneje (npr. ob označevanju prehoda POSLANO ali ponovnem
+// prigotavljanju dokumenta). ENA družina dokumentov: odložišče (R204), CSV
+// priloga (R205), regeneracija iz naročila (R206).
+// ---------------------------------------------------------------------------
+
+/** Client-safe prerez naročila za regeneracijo dokumenta (podmnožica
+ *  MaterialOrder iz material-intelligence-tab — brez uvozov). */
+export interface NarociloZaDokument {
+  supplier: { naziv: string }
+  items: ReadonlyArray<{ naziv: string; kolicina: number; enota: string }>
+  opombe?: string | null
+}
+
+/** Sklanjatev besede 'postavka' (1 postavka, 2 postavki, 3/4 postavke,
+ *  5+ postavk) — vzorec zalogaPovzetekBeseda. */
+export function narociloPostavkaBeseda(n: number): string {
+  if (!Number.isInteger(n) || n < 0) {
+    throw new TypeError(
+      `narociloPostavkaBeseda: pričakovano ne-negativno celo število, ne ${String(n)}`,
+    )
+  }
+  if (n === 1) return 'postavka'
+  if (n === 2) return 'postavki'
+  if (n === 3 || n === 4) return 'postavke'
+  return 'postavk'
+}
+
+function preveriPostavko(
+  p: NarociloZaDokument['items'][number],
+  i: number,
+): void {
+  if (!p || typeof p !== 'object') {
+    throw new TypeError(`preveriPostavko (${i}): pričakovana postavka (naziv/količina/enota)`)
+  }
+  if (typeof p.naziv !== 'string' || p.naziv.trim() === '') {
+    throw new TypeError(`preveriPostavko (${i}): postavka mora imeti ne-prazen naziv`)
+  }
+  if (typeof p.enota !== 'string' || p.enota.trim() === '') {
+    throw new TypeError(`preveriPostavko (${i}): postavka mora imeti ne-prazno enoto`)
+  }
+  if (typeof p.kolicina !== 'number' || !Number.isFinite(p.kolicina) || p.kolicina <= 0) {
+    throw new TypeError(
+      `preveriPostavko (${i}): količina mora biti pozitivno končno število, ne ${String(p.kolicina)}`,
+    )
+  }
+}
+
+/** Besedilna naročilnica iz SLEDLJIVEGA naročila (za dobavitelja).
+ *
+ *  Struktura:
+ *    Naročilnica — {dobavitelj}
+ *    {n} {postavka/postavki/postavke/postavk} · osveženo {datum} ob {ura}
+ *
+ *    1. {naziv}: {količina} {enota}
+ *    …
+ *    [Opomba: {opombe}]
+ *
+ *  BREZ VREDNOSTI IZ UI (družinsko pravilo R204): postavke naročila nosijo
+ *  vrednost, a manjkajoče (0) in realne se bi v skupnem dokumentu ZMEŠALE —
+ *  vrednosti ostanejo v aplikaciji (Material → Naročila), dokument nosi le
+ *  količine. Fail-closed: prazen dobavitelj, naročilo BREZ postavk (strežnik
+ *  zahteva ≥1 — prazno bi pomenilo pokvarene podatke) ALI pokvarena postavka
+ *  → TypeError. Determinizem: `now` pride KOT parameter. */
+export function buildNarocilnicaIzNarocila(
+  order: NarociloZaDokument,
+  options: { now: Date },
+): string {
+  if (!order || typeof order !== 'object') {
+    throw new TypeError('buildNarocilnicaIzNarocila: pričakovano naročilo (NarociloZaDokument)')
+  }
+  if (
+    !options ||
+    typeof options !== 'object' ||
+    !(options.now instanceof Date) ||
+    Number.isNaN(options.now.getTime())
+  ) {
+    throw new TypeError('buildNarocilnicaIzNarocila: pričakovan veljaven now: Date')
+  }
+  const dobavitelj =
+    typeof order.supplier?.naziv === 'string' ? order.supplier.naziv.trim() : ''
+  if (dobavitelj === '') {
+    throw new TypeError('buildNarocilnicaIzNarocila: naročilo mora imeti ne-praznega dobavitelja')
+  }
+  if (!Array.isArray(order.items) || order.items.length === 0) {
+    throw new TypeError(
+      'buildNarocilnicaIzNarocila: naročilo brez postavk (strežnik zahteva ≥1) — dokument ne sme nastajati iz praznine',
+    )
+  }
+  order.items.forEach((p, i) => preveriPostavko(p, i))
+
+  const vrstice: string[] = []
+  vrstice.push(`Naročilnica — ${dobavitelj}`)
+  vrstice.push(
+    `${order.items.length} ${narociloPostavkaBeseda(order.items.length)} · osveženo ${zalogaPovzetekCasOznaka(options.now)}`,
+  )
+  vrstice.push('')
+  order.items.forEach((p, i) => {
+    vrstice.push(`${i + 1}. ${p.naziv.trim()}: ${p.kolicina} ${p.enota.trim()}`)
+  })
+  const opombe = typeof order.opombe === 'string' ? order.opombe.trim() : ''
+  if (opombe !== '') {
+    vrstice.push('')
+    vrstice.push(`Opomba: ${opombe}`)
+  }
+  return vrstice.join('\n')
+}
