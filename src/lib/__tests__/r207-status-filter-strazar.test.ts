@@ -32,7 +32,7 @@ describe('R207 stražar: izpeljanke filtra (EN vir resnice)', () => {
       '// R207 — izpeljanke statusnega filtra (EN vir resnice, izpeljanka R201 vzorec):',
       'const receiveDialogOrder =',
     )
-    expect(okno).toContain("(['OSNUTEK', 'POSLANO', 'POTRJENO', 'DOBLJENO'] as const)")
+    expect(okno).toContain("(['OSNUTEK', 'POSLANO', 'POTRJENO', 'DOBLJENO', 'PREKlicANO'] as const)")
     expect(okno).toContain('orders.filter((o) => o.status === s).length')
     expect(okno).toContain('.filter(({ n }) => n > 0)')
   })
@@ -52,7 +52,7 @@ describe('R207 stražar: izpeljanke filtra (EN vir resnice)', () => {
       '// R207 — statusni filter (pill družina) + potrditveni dialog prejema',
       'const { toast } = useToast()',
     )
-    expect(okno).toContain("useState<'VSI' | 'OSNUTEK' | 'POSLANO' | 'POTRJENO' | 'DOBLJENO'>('VSI')")
+    expect(okno).toContain("useState<'VSI' | 'OSNUTEK' | 'POSLANO' | 'POTRJENO' | 'DOBLJENO' | 'PREKlicANO'>('VSI')")
     expect(okno).toContain('useState<string | null>(null)')
     expect(okno).toContain('useState(false)')
   })

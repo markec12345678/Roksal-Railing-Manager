@@ -119,9 +119,9 @@ describe('R206 stražar: naročilnica iz naročila (regeneracija dokumenta)', ()
 })
 
 describe('R206 stražar: R177 lucide pin', () => {
-  it('ClipboardList je vstavljen pred pinano vrstico History (pin brez premika)', () => {
+  it('ClipboardList je vstavljen pred pinano vrstico History (pin brez premika) — R208: XCircle tudi pred History', () => {
     const src = beri('src/components/roksal/material-intelligence-tab.tsx')
-    expect(src).toContain("  ClipboardList,\n  History,\n} from 'lucide-react'")
+    expect(src).toContain("  XCircle,\n  History,\n} from 'lucide-react'")
     expect(src.indexOf('ClipboardList')).toBeLessThan(src.indexOf('  History,\n}'))
   })
 })

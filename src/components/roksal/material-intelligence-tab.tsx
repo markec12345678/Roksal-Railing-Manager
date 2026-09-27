@@ -33,6 +33,7 @@ import {
   ChevronDown,
   ChevronRight,
   ClipboardList,
+  XCircle,
   History,
 } from 'lucide-react'
 
@@ -161,9 +162,13 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
   // (družina R198): DOBLJENO je EDINI prehod z resnično stransko resnico
   // (receiveOrder res popravi zalogo, idempotentno) → potrditev PRED
   // dejanjem, postavke so vidne.
-  const [statusFilter, setStatusFilter] = useState<'VSI' | 'OSNUTEK' | 'POSLANO' | 'POTRJENO' | 'DOBLJENO'>('VSI')
+  const [statusFilter, setStatusFilter] = useState<'VSI' | 'OSNUTEK' | 'POSLANO' | 'POTRJENO' | 'DOBLJENO' | 'PREKlicANO'>('VSI')
   const [receiveDialogOrderId, setReceiveDialogOrderId] = useState<string | null>(null)
   const [receiveSending, setReceiveSending] = useState(false)
+  // R208 — preklic naročila (končno stanje): potrditveni dialog (družina
+  // R198/R207) + dvoklik zaščita (cancelSending) + fail-verbose.
+  const [cancelDialogOrderId, setCancelDialogOrderId] = useState<string | null>(null)
+  const [cancelSending, setCancelSending] = useState(false)
   const { toast } = useToast()
 
   // Nov dobavitelj form
@@ -173,11 +178,20 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
 
   // R207 — izpeljanke statusnega filtra (EN vir resnice, izpeljanka R201 vzorec):
   // števci iz REALNIH naročil; chipi samo za statuse, ki obstajajo.
-  const statusStevci = (['OSNUTEK', 'POSLANO', 'POTRJENO', 'DOBLJENO'] as const)
+  // R208 — PREKlicANO v filtru/chipih (preklicano naročilo mora ostati vidno).
+  const statusStevci = (['OSNUTEK', 'POSLANO', 'POTRJENO', 'DOBLJENO', 'PREKlicANO'] as const)
     .map((s) => ({ status: s, n: orders.filter((o) => o.status === s).length }))
     .filter(({ n }) => n > 0)
   const vidnaNarocila = statusFilter === 'VSI' ? orders : orders.filter((o) => o.status === statusFilter)
   const receiveDialogOrder = orders.find((o) => o.id === receiveDialogOrderId) ?? null
+  const cancelDialogOrder = orders.find((o) => o.id === cancelDialogOrderId) ?? null
+  // R208 — F2: števec AKTIVNIH naročil (čakajo na dejanje: OSNUTEK/POSLANO/
+  // POTRJENO; DOBLJENO/PREKlicANO so zaključena) — izpeljanka iz realnih
+  // naročil (EN vir resnice, R207 vzorec), prikazana LE ko > 0 (brez lažnega 0
+  // — naročila se naložijo ob prvem obisku zavihka, pečat pokaže svežino).
+  const aktivnaNarocila = orders.filter(
+    (o) => o.status === 'OSNUTEK' || o.status === 'POSLANO' || o.status === 'POTRJENO',
+  ).length
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -309,6 +323,9 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
 
   const handleOrderStatus = async (orderId: string, status: string) => {
     if (status === 'DOBLJENO') setReceiveSending(true)
+    // R208 — preklic: dvoklik zaščita (drugi PATCH bi bil 409 — prehod je
+    // enkraten; vrata zaklenemo kot pri prejemu, dialog ostane odprt).
+    if (status === 'PREKlicANO') setCancelSending(true)
     try {
       const res = await fetch('/api/material-orders', {
         method: 'PATCH',
@@ -329,6 +346,7 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
           POSLANO: 'Označeno kot poslano (status POSLANO)',
           POTRJENO: 'Status → POTRJENO',
           DOBLJENO: 'Dobljeno — material v zalogi',
+          PREKlicANO: 'Označeno kot preklicano (status PREKlicANO)',
         }
         if (status === 'DOBLJENO' && data?.alreadyReceived) {
           toast({
@@ -343,10 +361,13 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
                 ? 'Aplikacija ne pošilja dokumentov — naročilnico dostaviš sam (gumb »Naročilnica« na naročilu).'
                 : status === 'DOBLJENO'
                   ? 'Zaloga je posodobljena.'
-                  : undefined,
+                  : status === 'PREKlicANO'
+                    ? 'Brez stranskih učinkov — zaloga ni spremenjena, dobavitelj ni obveščen (sporoči sam).'
+                    : undefined,
           })
         }
         if (status === 'DOBLJENO') setReceiveDialogOrderId(null)
+        if (status === 'PREKlicANO') setCancelDialogOrderId(null)
         loadData()
       } else {
         // R140: fail-verbose — 403/409 napake se POKAŽEJO (prej tiho ugasil
@@ -359,6 +380,7 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
       toast({ title: 'Omrežna napaka', variant: 'destructive' })
     } finally {
       if (status === 'DOBLJENO') setReceiveSending(false)
+      if (status === 'PREKlicANO') setCancelSending(false)
     }
   }
 
@@ -402,6 +424,17 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
         </Button>
         <Button type="button" variant={tab === 'orders' ? 'default' : 'ghost'} size="sm" onClick={() => setTab('orders')} className={tab === 'orders' ? 'bg-roksal-navy text-white' : ''}>
           <ShoppingCart className="h-3.5 w-3.5 mr-1" /> Naročila
+          {/* R208 — F2: števec aktivnih naročil (OSNUTEK/POSLANO/POTRJENO) na
+              zavihku — opozorilo pred dejanjem; izpeljanka iz realnih naročil
+              (R207 vzorec), viden LE ko > 0 (brez lažnega 0). */}
+          {aktivnaNarocila > 0 && (
+            <span
+              className="ml-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-roksal-amber px-1 text-[9px] font-semibold leading-none text-roksal-ink tabular-nums"
+              title="Naročila, ki čakajo na dejanje (OSNUTEK/POSLANO/POTRJENO) — iz zadnjega nalaganja"
+            >
+              {aktivnaNarocila}
+            </span>
+          )}
         </Button>
         <Button type="button" variant={tab === 'suppliers' ? 'default' : 'ghost'} size="sm" onClick={() => setTab('suppliers')} className={tab === 'suppliers' ? 'bg-roksal-navy text-white' : ''}>
           <Truck className="h-3.5 w-3.5 mr-1" /> Dobavitelji
@@ -627,6 +660,7 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-semibold text-roksal-ink">{order.supplier.naziv}</span>
                             <Badge variant="outline" className={`text-[8px] ${
+                              order.status === 'PREKlicANO' ? 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border-red-300 dark:border-red-800' :
                               order.status === 'DOBLJENO' ? 'bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300 border-green-300 dark:border-green-800' :
                               order.status === 'POSLANO' ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-800' :
                               order.status === 'POTRJENO' ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800' :
@@ -703,6 +737,15 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
                         {order.status === 'POTRJENO' && (
                           <Button type="button" size="sm" variant="outline" className="h-6 text-[10px] bg-green-50 dark:bg-green-950/40 focus-visible:ring-2 focus-visible:ring-green-600/40 focus-visible:ring-offset-1" onClick={() => setReceiveDialogOrderId(order.id)} title="Prejem v zalogo — potrditev s prikazom postavk">
                             <CheckCircle2 className="h-3 w-3 mr-1" /> Dobljeno (v zalogo)
+                          </Button>
+                        )}
+                        {/* R208 — preklic (končno stanje, brez stranskih učinkov):
+                            potrditveni dialog (družina R198/R207) — odpre se,
+                            PATCH gre šele prek 'Potrdi preklic'. */}
+                        {(order.status === 'OSNUTEK' || order.status === 'POSLANO' || order.status === 'POTRJENO') && (
+                          <Button type="button" size="sm" variant="outline" className="h-6 gap-1 text-[10px] focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1" onClick={() => setCancelDialogOrderId(order.id)} title="Preklic naročila — KONČNO stanje, ni razveljavljivo (dobavitelja obvestiš sam)">
+                            <XCircle className="h-3 w-3" aria-hidden="true" />
+                            Prekliči
                           </Button>
                         )}
                       </div>
@@ -898,6 +941,72 @@ export function MaterialIntelligenceTab({ projectId }: { projectId: string | nul
                 <CheckCircle2 className="mr-1 h-3 w-3" aria-hidden="true" />
               )}
               Potrdi prejem
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* R208 — potrditveni dialog preklica (družina R198/R207): PREKlicANO je
+          KONČNO stanje (ORDER_TRANSITIONS: brez izhodnih prehodov) brez
+          stranskih učinkov (zaloga NI spremenjena, dobavitelj NI obveščen —
+          sporočiš sam). Prekliči (dialog) NE pošlje nič; fail-verbose: napaka
+          pusti dialog odprt (razlog viden); dvoklik zaščita prek cancelSending. */}
+      <Dialog
+        open={cancelDialogOrderId !== null}
+        onOpenChange={(o) => {
+          if (!cancelSending && !o) setCancelDialogOrderId(null)
+        }}
+      >
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-roksal-ink">
+              <XCircle className="h-4 w-4 text-roksal-red" aria-hidden="true" />
+              Preklic naročila
+            </DialogTitle>
+            <DialogDescription>
+              {cancelDialogOrder
+                ? `Naročilo pri ${cancelDialogOrder.supplier.naziv} bo označeno kot PREKlicANO.`
+                : 'Naročilo bo označeno kot PREKlicANO.'}
+            </DialogDescription>
+            <div className="flex items-start gap-2 rounded-lg bg-red-50 px-3 py-2 dark:bg-red-950/40">
+              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-roksal-red" aria-hidden="true" />
+              <p className="text-[11px] font-medium leading-snug text-stone-700 dark:text-stone-300">
+                Preklic je končno stanje — nazaj v OSNUTEK, POSLANO ali POTRJENO ni mogoče. Aplikacija ne obvesti dobavitelja — preklic sporoči sam (telefon/e-pošta).
+              </p>
+            </div>
+          </DialogHeader>
+          {cancelDialogOrder && (
+            <p className="text-[11px] text-muted-foreground tabular-nums">
+              {cancelDialogOrder.items.length} artiklov · {cancelDialogOrder.skupajCena.toFixed(0)} € — brez stranskih učinkov (zaloga ostane nespremenjena).
+            </p>
+          )}
+          <DialogFooter className="gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setCancelDialogOrderId(null)}
+              disabled={cancelSending}
+              className="focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
+            >
+              Prekliči
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="destructive"
+              disabled={cancelSending || !cancelDialogOrder}
+              onClick={() => {
+                if (cancelDialogOrder) void handleOrderStatus(cancelDialogOrder.id, 'PREKlicANO')
+              }}
+              className="focus-visible:ring-2 focus-visible:ring-red-600/40 focus-visible:ring-offset-1"
+            >
+              {cancelSending ? (
+                <Loader2 className="mr-1 h-3 w-3 animate-spin" aria-hidden="true" />
+              ) : (
+                <XCircle className="mr-1 h-3 w-3" aria-hidden="true" />
+              )}
+              Potrdi preklic
             </Button>
           </DialogFooter>
         </DialogContent>
