@@ -39,11 +39,17 @@ import {
   Download,
   ChevronDown,
   ChevronUp,
+  ClipboardList,
   History,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { downloadCsv, todayStamp } from '@/lib/csv-export'
 import { casOznaka } from '@/lib/osvezitev-fokus'
+import {
+  buildZalogaPovzetek,
+  zalogaPovzetekBeseda,
+  type ZalogaArtikelZaNarocilo,
+} from '@/lib/zaloga-povzetek'
 
 type InventoryType = 'ALL' | 'WPC_deska' | 'Inox_vijak' | 'Kemicno_sidro' | 'Alu_profil'
 type MovementType = 'PORABA' | 'DOPOLNITEV' | 'ODPIS'
@@ -233,7 +239,10 @@ export function InventoryTab() {
         setMovementType('PORABA')
         await loadAll()
       } else {
-        toast.error('Napaka pri zapisovanju premika')
+        // R204 — fail-verbose z razlogom iz odgovora (vzorec R140/R163/R203):
+        // 409/400/500 pokažejo SVET razlog, ne generične sporočilo brez konteksta.
+        const data = (await res.json().catch(() => null)) as { error?: string } | null
+        toast.error(data?.error?.trim() || `Napaka pri zapisovanju premika (${res.status})`)
       }
     } catch {
       toast.error('Napaka pri povezavi s strežnikom')
@@ -242,15 +251,47 @@ export function InventoryTab() {
     }
   }
 
+  // R204 — naročilnica = PRAVI izhod namesto izmišljenega toasta. Prej je
+  // 'Naroči' pokazal LAŽNI uspeh (obljuba o pošiljanju dobavitelju, ki se
+  // NI zgodila — integracije ni). Zdaj: besedilo naročilnice (šifra/naziv/enota/zaloga/
+  // min. + EN VIR priporočena količina po isti formuli kot prej, lib
+  // zaloga-povzetek) v odložišče — uporabnik jo SAM prilepi v e-pošto/SMS/
+  // WhatsApp. Aplikacija trdi LE 'kopirana v odložišče'. Fail-verbose
+  // odložišče (vzorec kopiraj termina R167 / povzetka meritev R203).
+  const kopirajNarocilnico = useCallback(
+    async (artikli: readonly ZalogaArtikelZaNarocilo[], opis: string) => {
+      if (artikli.length === 0) {
+        toast.error('Ni artiklov pod minimalno zalogo — nič za naročilo.')
+        return
+      }
+      try {
+        const besedilo = buildZalogaPovzetek(artikli, {
+          now: new Date(),
+          // Kategorija LE, če je dejansko aktiven filter (brez izmišljenega
+          // konteksta; 'Vse' → brez omembe).
+          kategorija: filter === 'ALL' ? null : (typeLabels[filter] ?? filter),
+        })
+        await navigator.clipboard.writeText(besedilo)
+        toast.success(`Naročilnica (${opis}) kopirana v odložišče`, {
+          description: `${artikli.length} ${zalogaPovzetekBeseda(artikli.length)} — prilepi v e-pošto/SMS dobavitelju.`,
+        })
+      } catch (err) {
+        if (err instanceof DOMException && err.name === 'NotAllowedError') {
+          toast.error('Brskalnik je zavrnil dostop do odložišča (dovoljenje).')
+        } else {
+          toast.error(
+            err instanceof Error
+              ? `Kopiranje ni uspelo: ${err.message}`
+              : 'Kopiranje ni uspelo.',
+          )
+        }
+      }
+    },
+    [filter],
+  )
+
   function handleReorder(item: InventoryItem) {
-    const deficit = item.minimalnaZaloga - item.kolicinaZaloga
-    toast.info(`Naročilo za "${item.naziv}" — priporočeno: ${Math.max(deficit, item.minimalnaZaloga)} ${item.enota}`, {
-      description: 'Naročilo bo poslano dobavitelju.',
-      action: {
-        label: 'V redu',
-        onClick: () => {},
-      },
-    })
+    void kopirajNarocilnico([item], item.naziv)
   }
 
   // R144 (§24) — odpri/zapri šarže artikla (živi GET /api/inventory/lots).
@@ -515,6 +556,25 @@ export function InventoryTab() {
             </button>
           ))}
         </div>
+        {/* R204 — naročilnica vidnih artiklov pod minimumom (istá pill
+            družina kot CSV R136 / Povzetek R203; iskren prazen seznam =
+            viden toast, nič izmišljenega). */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() =>
+            void kopirajNarocilnico(
+              filtered.filter((i) => i.kolicinaZaloga <= i.minimalnaZaloga),
+              'vidni artikli pod minimumom',
+            )
+          }
+          className="h-8 shrink-0 gap-1.5 text-[11px] font-medium tabular-nums press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+          aria-label="Kopiraj naročilnico vidnih artiklov pod minimalno zalogo"
+          title="Naročilnica za dobavitelja (vidni artikli pod minimumom) — prilepi v e-pošto/SMS"
+        >
+          <ClipboardList className="h-3.5 w-3.5" aria-hidden="true" />
+          Naročilnica
+        </Button>
         <Button
           variant="outline"
           size="sm"
@@ -523,7 +583,7 @@ export function InventoryTab() {
           aria-label="Izvozi vidno zalogo kot CSV"
           title="Izvozi vidno zalogo (upošteva filter) kot CSV za Excel"
         >
-          <Download className="h-3.5 w-3.5" />
+          <Download className="h-3.5 w-3.5" aria-hidden="true" />
           CSV
         </Button>
       </div>
