@@ -41,7 +41,9 @@ describe('R182 — obvestila (notification-center): fail-verbose agregacije + ž
     const src = obvestila()
     expect(src).toContain("import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'")
     expect(src).toContain("import { casOznaka } from '@/lib/osvezitev-fokus'")
-    expect(src).toMatch(/Wrench, History,\n\} from 'lucide-react'/)
+    // R197: ShieldCheck (varnostne vrstice zvončka) je dodan v isti import —
+    // vsi še naprej iz ENEGA lucide-react uvoza (EN VIR ikon).
+    expect(src).toMatch(/Wrench, History, ShieldCheck,\n\} from 'lucide-react'/)
     expect(src).toContain('{casOznaka(obvestilaOsvezitev)}')
     // toLocaleString (persisted createdAt) je domensko formatiranje — dovoljeno;
     // toLocaleTimeString za PEČAT je prepovedan (EN VIR casOznaka)

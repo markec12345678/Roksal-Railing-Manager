@@ -38,6 +38,16 @@ export const NOTIFICATION_TEMPLATES = {
   // prijavljeni profil (industrijski standard 'login alert'). In-app kanal
   // (QUEUED → SENT ob lenobnem dispatchu) — brez zunanjih odvisnosti.
   NEW_LOGIN: { version: 1 },
+  // R197 — aktivacija povabljenega računa: aktivacija ŠE ne ustvari seje,
+  // zato vrstica čaka naslovnika v zvončku ob PRVI prijavi (življenjski cikel
+  // povabila viden na enem mestu skupaj z NEW_LOGIN vrstico).
+  ACCOUNT_ACTIVATED: { version: 1 },
+  // R197 — opozorilo o neuspešnih prijavah: uspešna prijava, pred katero je
+  // bilo v zadnjih 24 h zabeleženih ≥ 1 LOGIN_FAILED poskus istega profila
+  // (industrijski standard — Google 'N neuspešnih poskusov'). Lastni tipkarski
+  // spodrsljaji so vidni tudi kot potrditev; TUJI poskusi so klic k zamenjavi
+  // gesla prek 'Aktivne seje'.
+  FAILED_LOGINS: { version: 1 },
 } as const
 
 export type NotificationTemplate = keyof typeof NOTIFICATION_TEMPLATES

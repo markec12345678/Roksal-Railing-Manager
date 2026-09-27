@@ -115,6 +115,30 @@ export async function POST(request: Request) {
       correlationId: correlationFromRequest(request),
     }).catch((error) => console.error('NEW_LOGIN notification failed:', error))
 
+    // R197 — opozorilo o neuspešnih prijavah (industrijski standard): če je
+    // bilo pred to uspešno prijavo v zadnjih 24 h zabeleženih ≥ 1 LOGIN_FAILED
+    // poskus ISTEGA profila, naslovnik dobi vrstico v zvončku. Lastni
+    // tipkarski spodrsljaji so vidni kot potrditev ('ja, to sem bil jaz');
+    // tuji poskusi pa so jasen klic k zamenjavi gesla. Štetje je best-effort
+    // (izpada → 0 → brez vrstice), obvestilo prav tako nikoli ne podre
+    // prijave.
+    const predDnevi = new Date(Date.now() - 24 * 60 * 60 * 1000)
+    const neuspesnePrijave = await db.auditLog
+      .count({
+        where: { userId: profile.id, akcija: 'LOGIN_FAILED', timestamp: { gte: predDnevi } },
+      })
+      .catch(() => 0)
+    if (neuspesnePrijave > 0) {
+      await queueNotifications({
+        template: 'FAILED_LOGINS',
+        recipients: [{ userId: profile.id }],
+        naslov: 'Neuspešni poskusi prijave pred to prijavo',
+        sporocilo: `${neuspesnePrijave} × napačno geslo v zadnjih 24 urah · ${casOznaka(new Date())}`,
+        entity: { type: 'profile', id: profile.id },
+        correlationId: correlationFromRequest(request),
+      }).catch((error) => console.error('FAILED_LOGINS notification failed:', error))
+    }
+
     const response = NextResponse.json({
       user: { id: profile.id, email: profile.email, ime: profile.ime, vloga: profile.vloga },
       // R134 (§9): admin reset gesla → uporabnik mora geslo zamenjati.

@@ -19,6 +19,9 @@ import { hashPassword } from '@/lib/password'
 import { audit } from '@/lib/audit'
 import { checkRate, clientIp } from '@/lib/rate-limit'
 import { hashInviteToken } from '@/lib/user-lifecycle'
+import { queueNotifications } from '@/lib/notifications'
+import { casOznaka } from '@/lib/osvezitev-fokus'
+import { correlationFromRequest } from '@/lib/correlation'
 
 const activateSchema = z.object({
   token: z.string().min(16).max(64),
@@ -84,6 +87,20 @@ export async function POST(request: Request) {
     // Audit: aktiverjeva seja ne obstaja — userId = aktiviran račun (lastnik
     // dejanja je račun sam; prijava še ni potekala).
     await audit({ request, userId: profile.id, akcija: 'USER_ACTIVATED', newValue: { email: profile.email } })
+
+    // R197 — obvestilo o aktivaciji (best-effort): aktivacija ŠE ne ustvari
+    // seje, zato vrstica čaka naslovnika v zvončku ob PRVI prijavi —
+    // življenjski cikel povabila (povabilo → aktivacija → prijava) je viden
+    // na enem mestu. Napaka obvestila NIKOLI ne podre aktivacije (console.error,
+    // brez tihe izgube — isti vzorec kot NEW_LOGIN v auth ruti).
+    await queueNotifications({
+      template: 'ACCOUNT_ACTIVATED',
+      recipients: [{ userId: profile.id }],
+      naslov: 'Vaš račun je aktiviran',
+      sporocilo: `Prijava je zdaj možna z vašim geslom · ${casOznaka(new Date())}`,
+      entity: { type: 'profile', id: profile.id },
+      correlationId: correlationFromRequest(request),
+    }).catch((error) => console.error('ACCOUNT_ACTIVATED notification failed:', error))
 
     return NextResponse.json({ ok: true })
   } catch (error) {

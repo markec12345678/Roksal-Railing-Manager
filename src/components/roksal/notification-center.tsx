@@ -22,7 +22,7 @@ import { Button } from '@/components/ui/button'
 import {
   Bell, Package, CalendarDays, CloudLightning, CheckCheck,
   ChevronRight, RefreshCw, AlertTriangle, Loader2, FileClock, Receipt,
-  Inbox, Wrench, History,
+  Inbox, Wrench, History, ShieldCheck,
 } from 'lucide-react'
 import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'
 import { casOznaka } from '@/lib/osvezitev-fokus'
@@ -36,6 +36,11 @@ interface NotificationItem {
   /** Koliko enakih obvestil je združenih (duplikati projektov z istim imenom) */
   count?: number
 }
+
+/** R197 — varnostne predloge v zvončku dobijo ŠČIT + jantarno barvo (razločevanje
+ * varnostnih vrstic od poslovnih: zaloga/montaže/računi). Sinhrono z
+ * NOTIFICATION_TEMPLATES (fail-closed seznam v src/lib/notifications.ts). */
+const VARNOSTNE_PREDLOGE: ReadonlySet<string> = new Set(['NEW_LOGIN', 'FAILED_LOGINS', 'ACCOUNT_ACTIVATED'])
 
 /** R143 (§29): zapisano obvestilo z življenjskim ciklom (GET /api/notifications). */
 interface PersistedNotification {
@@ -488,6 +493,10 @@ export function NotificationCenter() {
                 <ul className="space-y-2" role="list">
                   {persisted.map((n) => {
                     const st = STATUS_STYLE[n.status]
+                    // R197 — varnostne vrstice (nova prijava, neuspešni poskusi,
+                    // aktivacija) nosijo ščit in jantarno površino, da so na
+                    // prvi pogled razločne od poslovnih obvestil.
+                    const varnostna = VARNOSTNE_PREDLOGE.has(n.template)
                     return (
                       <li key={n.id}>
                         <button
@@ -496,8 +505,10 @@ export function NotificationCenter() {
                           className="group flex w-full items-start gap-3 rounded-xl border border-border/60 bg-card p-3 text-left transition-all hover:-translate-y-0.5 hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 dark:focus-visible:ring-roksal-ink/40 active:scale-[0.98]"
                           aria-label={`${n.naslov} — ${st.label}`}
                         >
-                          <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-roksal-navy/5">
-                            {n.entityType === 'jobrun' ? (
+                          <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${varnostna ? 'bg-roksal-amber/10' : 'bg-roksal-navy/5'}`}>
+                            {varnostna ? (
+                              <ShieldCheck className="h-4 w-4 text-roksal-amber" aria-hidden="true" />
+                            ) : n.entityType === 'jobrun' ? (
                               <Wrench className="h-4 w-4 text-roksal-ink" aria-hidden="true" />
                             ) : (
                               <Bell className="h-4 w-4 text-roksal-ink" aria-hidden="true" />
