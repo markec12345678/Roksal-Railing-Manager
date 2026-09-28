@@ -28,6 +28,12 @@ import {
   type OpomnikPdfVnos,
 } from '@/lib/opomnik-pdf'
 import {
+  buildPotekliOpomnikiPdfDoc,
+  potekliOpomnikiPdfFilename,
+  potekliPovzetek,
+  type PotekelOpomnikVnos,
+} from '@/lib/potekli-opomniki-pdf'
+import {
   Users,
   Search,
   Phone,
@@ -141,6 +147,8 @@ export function CrmTab() {
   const [editOpombe, setEditOpombe] = useState('')
   // R251 — dvoklik guard opomnika PDF (ISTI vzorec kot prihodkiVTeku R250).
   const [opomnikVTeku, setOpomnikVTeku] = useState(false)
+  // R252 — dvoklik guard poteklih opomnikov PDF (ISTA družina).
+  const [potekliVTeku, setPotekliVTeku] = useState(false)
 
   // R162 — fail-verbose (isti razred kot R161 QuoteFollowUp): GET /api/crm
   // je pri neuspehu TIHO pokazal staro/prazno stanje (if (res.ok) brez else +
@@ -266,6 +274,60 @@ export function CrmTab() {
       }
     } finally {
       setOpomnikVTeku(false)
+    }
+  }
+
+  // R252 — POTEKELI OPOMNIKI PDF (9. člen 'izvozi' družine): akcijski seznam
+  // za pisarno iz ISTEGA odgovora /api/crm. Izbira = opomnikStatus === 'POTEKEL'
+  // (VERBATIM iz API-ja — ISTI izračun kot žig na kartici); sort najstarejši
+  // prvi; fail-closed: 0 poteklih → iskren toast, NI dokumenta (družinsko
+  // pravilo). Bralni dokument VEDNO viden (P1-k precedens). EN now za žig +
+  // ime + dni; toast pove REALNO agregatno resnico (potekli + najstarejši +
+  // povprečje — ISTI izpeljava kot PDF KPI; WYSIWYG).
+  const handlePotekliOpomnikiPdf = () => {
+    if (potekliVTeku) return
+    const potekli = customers.filter(
+      (c): c is CrmCustomer & { opomnikStatus: 'POTEKEL' } => c.opomnikStatus === 'POTEKEL',
+    )
+    if (potekli.length === 0) {
+      // Fail-closed jedro: prazen seznam ne nastaja dokumenta — iskren toast.
+      toast({ title: 'Ni poteklih opomnikov', description: 'PDF se izvozi, ko opomnik preteče.' })
+      return
+    }
+    setPotekliVTeku(true)
+    try {
+      const now = new Date()
+      const vnosi: PotekelOpomnikVnos[] = potekli.map((c) => ({
+        ime: c.ime,
+        naslov: c.naslov,
+        telefon: c.telefon,
+        kontaktnaOseba: c.kontaktnaOseba,
+        // POTEKEL ⇒ opomnikDatum obstaja (API nastavi status SAMO znotraj
+        // if (opomnikDatum)) — invarianta + runtime fail-closed preverba v libu.
+        opomnikDatum: c.opomnikDatum as string,
+        opomnikOpis: c.opomnikOpis,
+        // Status VERBATIM iz API-ja (žig na kartici — lib še enkrat zavrne
+        // nepotečen vnos: pokvarena izpeljava → viden razlog).
+        opomnikStatus: c.opomnikStatus,
+      }))
+      const doc = buildPotekliOpomnikiPdfDoc(vnosi, { now })
+      doc.save(potekliOpomnikiPdfFilename(now))
+      // Toast pove REALNO agregatno resnico (ISTI trikot kot PDF KPI IN
+      // '(X poteklo)' zapis na stats — WYSIWYG; ',' ločilo — R248 lekcija).
+      const pov = potekliPovzetek(vnosi, now)
+      toast({
+        title: 'Potekli opomniki prenešeni v PDF',
+        description: `Potekli-opomniki-…pdf — ${pov.potekliN} poteklih, najstarejši ${pov.najstarejsi} dni prek, povprečno ${pov.povprecjeNiz} dni.`,
+      })
+    } catch (err) {
+      if (err instanceof TypeError) {
+        // fail-closed jedro: pokvaren vnos → viden razlog (nič izmišljenega dokumenta)
+        toast({ title: 'Potekli opomniki PDF ni mogoče sestaviti iz teh podatkov', description: err instanceof Error ? err.message : String(err), variant: 'destructive' })
+      } else {
+        toast({ title: `Izvoz PDF ni uspel: ${err instanceof Error ? err.message : String(err)}`, variant: 'destructive' })
+      }
+    } finally {
+      setPotekliVTeku(false)
     }
   }
 
@@ -473,8 +535,32 @@ export function CrmTab() {
               <Download className="h-3 w-3" aria-hidden="true" />
               Izvozi CSV
             </Button>
+            {/* R252 — potekli opomniki PDF (9. člen 'izvozi' družine): akcijski
+                seznam za pisarno. Bralni dokument VEDNO viden (P1-k precedens);
+                fail-closed toast pri 0 poteklih. ISTI žetoni kot CSV pill —
+                0 novih hex. */}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handlePotekliOpomnikiPdf}
+              disabled={potekliVTeku}
+              className="h-7 shrink-0 gap-1.5 text-[11px] press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              aria-label="Izvozi potekle opomnike kot PDF"
+              title="Potekli opomniki kot akcijski PDF seznam za pisarno (najstarejši prvi)"
+            >
+              <FileDown className="h-3 w-3" aria-hidden="true" />
+              PDF
+            </Button>
           </div>
         </ScrollArea>
+        {/* R252 — legenda izvozne skupine (pili povejo svojo resnico; žetoni,
+            0 novih hex; JSX tekst ohrani '·' dobesedno — r248 lekcija).
+            Imenuje ISTO izpeljavo kot PDF KPI IN '(X poteklo)' na stats —
+            ENA resnica na treh mestih. */}
+        <p className="text-right text-2xs text-muted-foreground">
+          CSV = prikazani seznam · PDF = potekli opomniki (akcija) · Potekel = prek datuma
+        </p>
       </div>
 
       {/* Seznam strank */}
