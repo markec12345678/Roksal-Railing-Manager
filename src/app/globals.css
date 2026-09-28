@@ -77,6 +77,11 @@
   --color-roksal-green: #10b981;
   --color-roksal-bg: #f7f9ff;
   --color-roksal-surface: #eef1f6;
+  /* R255 — roksal-navy-soft: SVETLEJŠI navy za gradientna omembe (from-roksal-navy
+     to-…): prej 2× literal to-[#2a3f5f] (top-bar + floor-plan CardHeader) —
+     EXACT ista vrednost kot žeton = NIČ vizualno spremenjeno, 1 arbitrary hex
+     manj (vzorec R244 accent / R254 bg žetonov). Tema-neodvisen (kot navy). */
+  --color-roksal-navy-soft: #2a3f5f;
 }
 
 :root {

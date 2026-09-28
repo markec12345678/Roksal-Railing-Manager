@@ -21,6 +21,12 @@ import {
   vsotaPredvidenihUr,
   type TerminPrikazVnos,
 } from '@/lib/termini-prikaz'
+import {
+  generateVozniRedPdf,
+  vozniRedPovzetek,
+  vozniRedUreKpi,
+  type VozniRedTermin,
+} from '@/lib/logistika-vozni-red-pdf'
 import { QC_TEMPLATE, computePassed, countDefects } from '@/lib/qc-gate'
 import { IEV_TEMPLATE } from '@/lib/installation-evidence'
 import {
@@ -292,6 +298,9 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
   // dashboard Termini kartico: ISTI normalizirajTermin → vsotaPredvidenihUr
   // → terminUrPovzetek). PREKlicano izključen + vidno preštet; '≥' ko ure
   // manjkajo; pokvarjen vnos → vidno preštet kot preskočen (ne tiho izgubljen).
+  // R255 — memo VRAČA tudi prikazne vrstice: ISTI normalizirani vir je
+  // hkrati vhod za vozni red DTO (ENA resnica — zaslon IN PDF iz ISTEGA
+  // izračuna, nič dvojnega štetja).
   const urPovzetek = useMemo(() => {
     let preskoceni = 0
     const prikazne: TerminPrikazVnos[] = []
@@ -303,8 +312,36 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
       }
       prikazne.push(res.vnos)
     }
-    return { ag: vsotaPredvidenihUr(prikazne), preskoceni }
+    return { ag: vsotaPredvidenihUr(prikazne), preskoceni, prikazne }
   }, [schedules])
+
+  // R255 — vozni red DTO iz ISTEGA normaliziranega vira (EN VIR RESNICE:
+  // prikazne vrstice = TOČNO to, kar seznam izriše; preskočeni ostanejo
+  // vidno prešteti na zaslonu; null polja = iskrena '—' resnica na listu,
+  // NIKOLI izmišljeni podatki). datumKonca pride iz surove vrstice po id —
+  // normalizacija ga ne nosi, vzorec je enak CSV/ICS izvozu ('Do' je
+  // prikazan samo, ko je res vpisan).
+  const vozniRedVnosi = useMemo<VozniRedTermin[]>(
+    () =>
+      urPovzetek.prikazne.map((v) => {
+        const raw = schedules.find((s) => s.id === v.id)
+        const konec =
+          raw && typeof raw.datumKonca === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(raw.datumKonca)
+            ? raw.datumKonca
+            : null
+        return {
+          datumZacetka: v.datumZacetka,
+          datumKonca: konec,
+          status: v.status,
+          predvideneUre: v.predvideneUre,
+          projekt: v.projektIme,
+          stranka: v.strankaIme,
+          ekipa: v.ekipaIme,
+          lokacija: v.lokacija,
+        }
+      }),
+    [urPovzetek.prikazne, schedules],
+  )
   const [crews, setCrews] = useState<Crew[]>([])
   const [equipment, setEquipment] = useState<Equipment[]>([])
   const [projects, setProjects] = useState<Project[]>([])
@@ -959,7 +996,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
               disabled={schedules.length === 0}
               aria-label="Izvozi vidne termine kot CSV"
               title="Termine kot preglednico (Excel)"
-              className="shrink-0 focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              className="shrink-0 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
               onClick={() => {
                 // R173 — EN VIR RESNICE: povzetek = ISTI lib klic kot vrstica
                 // nad seznamom; osvezitev = ISTI pečat kot glava; obseg =
@@ -980,7 +1017,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
               disabled={schedules.length === 0}
               aria-label="Izvozi termine montaže kot koledarsko datoteko (.ics)"
               title="Termine odpri v Google/Apple/Outlook koledarju"
-              className="shrink-0 focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              className="shrink-0 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
               onClick={() => {
                 const n = downloadIcs(schedules)
                 if (n > 0) toast({ title: `Koledar izvožen (${n} terminov)`, description: 'Datoteko odpri v telefonu — dogodki se dodajo v koledar.' })
@@ -988,7 +1025,44 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
             >
               <Download aria-hidden="true" className="h-4 w-4 mr-1"  /> .ics
             </Button>
+            {/* R255 — 11. člen 'izvozi' družine (P1-f): VOZNI RED MONTAŽ PDF —
+                terenski list ekipe (kronološki red, ISTI vir kot seznam:
+                normalizirajTermin). VEDNO viden (P1-k precedens R251–R253):
+                prazen seznam → iskren fail-closed toast, NIKOLI prazna
+                datoteka; agregat v toastu = ISTI lib povzetek kot KPI/sklep
+                na listu (WYSIWYG). */}
+            <Button
+              type="button"
+              variant="outline"
+              aria-label="Izvozi vozni red montaž kot PDF"
+              title="Vozni red montaž kot terenski list (kronološki red)"
+              className="shrink-0 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              onClick={() => {
+                if (vozniRedVnosi.length === 0) {
+                  toast({
+                    title: 'Ni vidnih terminov montaže',
+                    description: 'PDF se izvozi, ko je vpisan prvi termin montaže.',
+                  })
+                  return
+                }
+                const pov = vozniRedPovzetek(vozniRedVnosi)
+                generateVozniRedPdf(vozniRedVnosi, { now: new Date() })
+                toast({
+                  title: 'Vozni red prenešen v PDF',
+                  description: `${pov.terminovN} terminov, ${vozniRedUreKpi(pov)} h, ${pov.ekipN} ekip.`,
+                })
+              }}
+            >
+              <Truck aria-hidden="true" className="h-4 w-4 mr-1" /> PDF
+            </Button>
           </div>
+
+          {/* R255 — legenda izvozne skupine (ISTI vzorec kot R250–R253
+              legende na CRM/računih): vsak izvoz = svoja resnica, ločilnik
+              '·' + poimenovana razlika. */}
+          <p className="text-2xs text-muted-foreground">
+            CSV = prikazani termini · ICS = koledar v telefonu · PDF = vozni red (kronološki)
+          </p>
 
           {/* R244 — vlogo-osveščen vodič (R242/R243 recept): viden SAMO, ko
               uporabnik nima production.manage IN je seznam pravic znan.

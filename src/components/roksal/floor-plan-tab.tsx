@@ -1517,7 +1517,7 @@ export function FloorPlanTab({ projectId }: FloorPlanTabProps) {
     <div className="flex flex-col gap-3">
       {/* Glava */}
       <Card className="overflow-hidden">
-        <CardHeader className="bg-gradient-to-r from-roksal-navy to-[#2a3f5f] text-white py-3 px-4">
+        <CardHeader className="bg-gradient-to-r from-roksal-navy to-roksal-navy-soft text-white py-3 px-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-md bg-roksal-amber">

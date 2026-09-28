@@ -144,7 +144,7 @@ export function TopBar({ onSync, syncing, onOpenPalette, hidden = false }: TopBa
 
   return (
     <header
-      className="sticky top-0 z-50 bg-gradient-to-r from-roksal-navy to-[#2a3f5f] text-white shine-effect"
+      className="sticky top-0 z-50 bg-gradient-to-r from-roksal-navy to-roksal-navy-soft text-white shine-effect"
       hidden={hidden}
       aria-hidden={hidden || undefined}
     >
