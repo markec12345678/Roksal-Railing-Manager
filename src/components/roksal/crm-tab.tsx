@@ -33,6 +33,15 @@ import {
   potekliPovzetek,
   type PotekelOpomnikVnos,
 } from '@/lib/potekli-opomniki-pdf'
+// R253 — koledar pregledov (10. člen 'izvozi' družine): časovna vrsta VSEH
+// vpisanih pregledov (AKTIVEN + POTEKEL) iz ISTEGA /api/crm odgovora —
+// route NIČ (client+lib only); EN now za žig + ime + dni (lekcija R121/R235).
+import {
+  buildKoledarPregledovPdfDoc,
+  koledarPregledovPdfFilename,
+  koledarPovzetek,
+  type KoledarPregledVnos,
+} from '@/lib/koledar-pregledov-pdf'
 import {
   Users,
   Search,
@@ -55,6 +64,7 @@ import {
   Download,
   History,
   FileDown,
+  CalendarDays,
 } from 'lucide-react'
 // R178 — EN VIR RESNICE za pečat 'Osveženo ob' (vzorec R170/R171/R177):
 // komponenta NE formatira časa sama.
@@ -149,6 +159,8 @@ export function CrmTab() {
   const [opomnikVTeku, setOpomnikVTeku] = useState(false)
   // R252 — dvoklik guard poteklih opomnikov PDF (ISTA družina).
   const [potekliVTeku, setPotekliVTeku] = useState(false)
+  // R253 — dvoklik guard koledarja pregledov PDF (ISTA družina).
+  const [koledarVTeku, setKoledarVTeku] = useState(false)
 
   // R162 — fail-verbose (isti razred kot R161 QuoteFollowUp): GET /api/crm
   // je pri neuspehu TIHO pokazal staro/prazno stanje (if (res.ok) brez else +
@@ -328,6 +340,63 @@ export function CrmTab() {
       }
     } finally {
       setPotekliVTeku(false)
+    }
+  }
+
+  // R253 — KOLEDAR PREGLEDOV PDF (10. člen 'izvozi' družine): časovna vrsta
+  // VSEH vpisanih pregledov (AKTIVEN + POTEKEL) iz ISTEGA odgovora /api/crm.
+  // Izbira = opomnikStatus !== 'NI' (VERBATIM iz API-ja — 'NI' = brez vpisanega
+  // datuma → NIČ na koledarju, izmišljen pregled NE obstaja — fail-closed do
+  // resnice); sort koledarski (datum ASC — najbližji pregled prvi); fail-closed:
+  // 0 vpisanih → iskren toast, NI dokumenta (družinsko pravilo). Bralni
+  // dokument VEDNO viden (P1-k precedens). EN now za žig + ime + dni; toast
+  // pove REALNO agregatno resnico (pregledi + v tem tednu + potekli — ISTI
+  // izpeljava kot PDF KPI; WYSIWYG).
+  const handleKoledarPregledovPdf = () => {
+    if (koledarVTeku) return
+    const pregledi = customers.filter(
+      (c): c is CrmCustomer & { opomnikStatus: 'AKTIVEN' | 'POTEKEL' } =>
+        c.opomnikStatus === 'AKTIVEN' || c.opomnikStatus === 'POTEKEL',
+    )
+    if (pregledi.length === 0) {
+      // Fail-closed jedro: prazen koledar ne nastaja dokumenta — iskren toast.
+      toast({ title: 'Ni vpisanih pregledov', description: 'PDF se izvozi, ko je vpisan prvi datum pregleda.' })
+      return
+    }
+    setKoledarVTeku(true)
+    try {
+      const now = new Date()
+      const vnosi: KoledarPregledVnos[] = pregledi.map((c) => ({
+        ime: c.ime,
+        naslov: c.naslov,
+        telefon: c.telefon,
+        kontaktnaOseba: c.kontaktnaOseba,
+        // AKTIVEN/POTEKEL ⇒ opomnikDatum obstaja (API nastavi status SAMO
+        // znotraj if (opomnikDatum)) — invarianta + runtime fail-closed preverba v libu.
+        opomnikDatum: c.opomnikDatum as string,
+        opomnikOpis: c.opomnikOpis,
+        // Status VERBATIM iz API-ja (žig na kartici — lib še enkrat zavrne
+        // 'NI' vnos: pokvarena izpeljava → viden razlog).
+        opomnikStatus: c.opomnikStatus,
+      }))
+      const doc = buildKoledarPregledovPdfDoc(vnosi, { now })
+      doc.save(koledarPregledovPdfFilename(now))
+      // Toast pove REALNO agregatno resnico (ISTI trikot kot PDF KPI —
+      // WYSIWYG; ',' ločilo — R248 lekcija).
+      const pov = koledarPovzetek(vnosi)
+      toast({
+        title: 'Koledar pregledov prenešen v PDF',
+        description: `Koledar-pregledov-…pdf — ${pov.preglediN} pregledov, ${pov.vTemTednu} v tem tednu, ${pov.poteklih} poteklih.`,
+      })
+    } catch (err) {
+      if (err instanceof TypeError) {
+        // fail-closed jedro: pokvaren vnos → viden razlog (nič izmišljenega dokumenta)
+        toast({ title: 'Koledar pregledov PDF ni mogoče sestaviti iz teh podatkov', description: err instanceof Error ? err.message : String(err), variant: 'destructive' })
+      } else {
+        toast({ title: `Izvoz PDF ni uspel: ${err instanceof Error ? err.message : String(err)}`, variant: 'destructive' })
+      }
+    } finally {
+      setKoledarVTeku(false)
     }
   }
 
@@ -552,6 +621,23 @@ export function CrmTab() {
               <FileDown className="h-3 w-3" aria-hidden="true" />
               PDF
             </Button>
+            {/* R253 — koledar pregledov PDF (10. člen 'izvozi' družine):
+                časovna vrsta vpisanih pregledov. Bralni dokument VEDNO viden
+                (P1-k precedens); fail-closed toast pri 0 vpisanih. ISTI žetoni
+                kot ostali pilli — 0 novih hex. */}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleKoledarPregledovPdf}
+              disabled={koledarVTeku}
+              className="h-7 shrink-0 gap-1.5 text-[11px] press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              aria-label="Izvozi koledar pregledov kot PDF"
+              title="Koledar pregledov kot PDF časovna vrsta (vsi vpisani datumi, najbližji prvi)"
+            >
+              <CalendarDays className="h-3 w-3" aria-hidden="true" />
+              Koledar
+            </Button>
           </div>
         </ScrollArea>
         {/* R252 — legenda izvozne skupine (pili povejo svojo resnico; žetoni,
@@ -559,7 +645,7 @@ export function CrmTab() {
             Imenuje ISTO izpeljavo kot PDF KPI IN '(X poteklo)' na stats —
             ENA resnica na treh mestih. */}
         <p className="text-right text-2xs text-muted-foreground">
-          CSV = prikazani seznam · PDF = potekli opomniki (akcija) · Potekel = prek datuma
+          CSV = prikazani seznam · PDF = potekli opomniki (akcija) · Potekel = prek datuma · Koledar = vsi vpisani pregledi (časovna vrsta)
         </p>
       </div>
 
