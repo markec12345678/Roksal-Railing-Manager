@@ -40,6 +40,15 @@ import {
   dobaviteljiPdfFilename,
   dobaviteljBeseda,
 } from '@/lib/dobavitelji-pdf'
+// R257 (P1-f, 'izvozi' družina — 13. člen) — NAROČILA PREGLED PDF (ločen
+// agregatni dokument od CSV R140/R232: ENA vrstica per NAROČILO; vir = ISTI
+// DTO GET /api/material-orders — route NIČ; 'odprto' + pretekel rok = EN VIR
+// zamujena-dobava R228; fail-closed, bajtni determinizem, soli 0x79–0x7c).
+import {
+  buildNarocilaPregledPdfDoc,
+  narocilaPregledPdfFilename,
+  narocilaPregledPovzetek,
+} from '@/lib/narocila-pregled-pdf'
 // R244 (P1 'izvozi' družina — 5. člen) — CENIK MATERIALA PDF (pravi PDF brat
 // CSV cenika R244 — ISTI prerez vrstic, fail-closed, bajtni determinizem;
 // ISTI PDF pill družina kot Zaloga R234 / Naročilnica R235 / Dobavitelji R236).
@@ -852,6 +861,50 @@ export function MaterialIntelligenceTab({
     toast({ title: 'CSV prenesen', description: `${count} dobaviteljev v Dobavitelji-${todayStamp()}.csv` })
   }
 
+  // R257 (P1-f, 13. člen) — NAROČILA PREGLED PDF (agregatna resnica za
+  // pisarno: ENA vrstica per naročilo — CSV R140/R232 ostaja vrstica per
+  // postavka, DVE iskreni resnici vsako svoje dokumento; legenda na zaslonu
+  // pove razliko). ENA resnica: ISTI orders odgovor (route NIČ); 'Pretekel
+  // rok' = ISTI jeZamujenaDobava z ISTIM danasZamude kot badge IN CSV
+  // (determinizem — ENA resnica za zaslon, CSV IN PDF). Determinizem: EN
+  // `now` za dokument IN ime datoteke (lekcija R121/R235). Fail-closed: 0
+  // naročil → NIČ se ne sestavi (ni prazne datoteke — R232–R256 družina);
+  // fail-verbose: TypeError (pokvaren vnos) → viden razlog; ostalo →
+  // 'Izvoz PDF ni uspel: {razlog}' (R234/R250 družina). Bralni dokument —
+  // brez pravice gate (P1-k precedens; CSV kontrakt R140 nespremenjen:
+  // VSA naročila, neodvisno od statusnega filtra).
+  const [narocilaVTeku, setNarocilaVTeku] = useState(false)
+  const handleNarocilaPdf = () => {
+    if (narocilaVTeku || loading) return
+    setNarocilaVTeku(true)
+    try {
+      if (orders.length === 0) {
+        toast({ title: 'Ni naročil za izvoz', description: 'PDF se izvozi, ko je dodano prvo naročilo.' })
+        return
+      }
+      const now = new Date()
+      const doc = buildNarocilaPregledPdfDoc(orders, { now, danas: danasZamude })
+      doc.save(narocilaPregledPdfFilename(now))
+      // Toast pove REALNO agregatno resnico (ISTI izpeljava kot PDF KPI IN
+      // sklep — WYSIWYG; ',' ločilo — minifier ubeži '·' v template
+      // literalih, R248 lekcija).
+      const pov = narocilaPregledPovzetek(orders, danasZamude)
+      toast({
+        title: 'Naročila prenešena v PDF',
+        description: `Narocila-…pdf — ${pov.vseh} naročil, odprtih ${pov.odprtih}, pretekel rok ${pov.zamujenih}, vrednost ne-preklicanih ${pov.vrednostNePreklicanih.toFixed(2)} €.`,
+      })
+    } catch (err) {
+      if (err instanceof TypeError) {
+        // fail-closed jedro: pokvaren vnos → viden razlog (nič izmišljenega dokumenta)
+        toast({ title: 'Naročila PDF ni mogoče sestaviti iz tega seznama', description: err instanceof Error ? err.message : String(err), variant: 'destructive' })
+      } else {
+        toast({ title: `Izvoz PDF ni uspel: ${err instanceof Error ? err.message : String(err)}`, variant: 'destructive' })
+      }
+    } finally {
+      setNarocilaVTeku(false)
+    }
+  }
+
   // R236 (P1-c) — DOBAVITELJI PDF (pravi dokument za arhiv/sodelovanje).
   // ENA resnica: ISTI vrstice kot CSV R233 (zavihek suppliers — celoten
   // vidni seznam); determinizem: EN `now` za dokument IN ime datoteke
@@ -1222,8 +1275,11 @@ export function MaterialIntelligenceTab({
               R140/R231: aria-label + title (a11y družina izvozov — vsi ostali
               izvozi ju imajo; kontrakt R140 nespremenjen: VSA naročila).
               Klik fail-closed (handleOrdersCsv): 0 naročil → NIČ se ne izvozi;
-              nalaganje → onemogočen (ne izvozi NEpopolnega seznama). */}
-          <div className="flex justify-end">
+              nalaganje → onemogočen (ne izvozi NEpopolnega seznama).
+              R257 — PDF pill (13. člen 'izvozi' družine): bralni dokument,
+              VEDNO viden (P1-k precedens), ISTI pill družina kot Dobavitelji
+              R236 / Cenik R244 — CSV+PDF brata ob gumbu, ISTI fail-closed). */}
+          <div className="flex justify-end gap-2">
             <Button
               type="button"
               size="sm"
@@ -1236,7 +1292,26 @@ export function MaterialIntelligenceTab({
             >
               <Download aria-hidden="true" className="h-3.5 w-3.5 mr-1 text-roksal-amber" /> CSV
             </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={handleNarocilaPdf}
+              disabled={loading || narocilaVTeku}
+              aria-label="Izvozi naročila kot PDF"
+              title="Naročila kot pravi PDF — pregled (vrstica per naročilo) z žigom preteklenga roka"
+              className="h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
+            >
+              <FileText className="h-3 w-3" aria-hidden="true" />
+              PDF
+            </Button>
           </div>
+          {/* R257 — legenda izvozne skupine (želona pariteta R245/R252/R255:
+              vsak dokument pove svojo resnico — vrstica per postavka (CSV)
+              ≠ vrstica per naročilo (PDF); žetoni, 0 novih hex). */}
+          <p className="text-right text-2xs text-muted-foreground">
+            CSV = vrstica per postavka · PDF = vrstica per naročilo · Pretekel rok = pretekljena obljuba, status še odprt
+          </p>
           {/* R242 — vlogo-osveščen vodič (R241 Računi precedens): viden SAMO,
               ko uporabnik NIMA nobene pisalne pravice nad naročili IN je seznam
               pravic znan (tišina med nalaganjem je iskrena). Navaja TOČNO
