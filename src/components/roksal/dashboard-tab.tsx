@@ -1558,7 +1558,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
         <Button
           type="button"
           onClick={() => setNewProjectOpen(true)}
-          className="w-full bg-roksal-amber hover:bg-roksal-amber/90 text-roksal-navy h-11 shadow-sm transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98] btn-shine md:w-auto md:px-8"
+          className="w-full bg-roksal-amber hover:bg-roksal-amber/90 text-roksal-navy h-11 shadow-sm press-scale btn-shine md:w-auto md:px-8"
         >
           <Plus className="mr-2 h-4 w-4" />
           Nov projekt

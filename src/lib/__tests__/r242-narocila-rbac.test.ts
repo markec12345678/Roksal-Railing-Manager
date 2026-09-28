@@ -158,10 +158,11 @@ describe('R242 — [Mandatory] stil: press-scale pariteta ISTIH akcij čez konte
   })
 
   it('material-intelligence: vsi štirje statusni prehodi nosijo mikro-pritisk (8× press-scale)', () => {
-    // R243 sinhronizacija: 8 (R242: 3 izvozi + CTA + 4 statusni prehodi)
-    // + 2 wave 5 (dialog 'Shrani' dobavitelja + 'Shrani ceno') = 10
+    // R244 sinhronizacija: 10 (R242 8 + R243 wave 5: dialog 'Shrani'
+    // dobavitelja + 'Shrani ceno') + 2 cenik pilli (CSV + PDF, ISTI pill
+    // razredi kot Dobavitelji) = 12
     const stevec = (uiSrc.match(/press-scale/g) ?? []).length
-    expect(stevec).toBe(10)
+    expect(stevec).toBe(12)
   })
 
   it('inventory Osnutek dialog footer: CSV/PDF/Shrani = ISTI jezik kot header pilule sorojenci', () => {

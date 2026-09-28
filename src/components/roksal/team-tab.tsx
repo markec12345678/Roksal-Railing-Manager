@@ -406,7 +406,7 @@ export function TeamTab() {
               type="button"
               size="sm"
               onClick={() => setInviteOpen(true)}
-              className="h-8 bg-roksal-navy hover:bg-roksal-navy/90 text-white"
+              className="h-8 bg-roksal-navy hover:bg-roksal-navy/90 text-white press-scale"
             >
               <UserPlus className="mr-1.5 h-3.5 w-3.5" />
               Povabi
@@ -717,7 +717,7 @@ export function TeamTab() {
               size="sm"
               onClick={() => void submitInvite()}
               disabled={busyId === 'invite' || !inviteEmail.trim() || !inviteIme.trim()}
-              className="bg-roksal-navy hover:bg-roksal-navy/90 text-white"
+              className="bg-roksal-navy hover:bg-roksal-navy/90 text-white press-scale"
             >
               {busyId === 'invite' ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <UserPlus className="mr-1.5 h-3.5 w-3.5" />}
               Ustvari povabilo
@@ -765,7 +765,7 @@ export function TeamTab() {
               type="button"
               size="sm"
               onClick={() => setOneTime(null)}
-              className="bg-roksal-navy hover:bg-roksal-navy/90 text-white"
+              className="bg-roksal-navy hover:bg-roksal-navy/90 text-white press-scale"
             >
               Skopirano — zapri
             </Button>

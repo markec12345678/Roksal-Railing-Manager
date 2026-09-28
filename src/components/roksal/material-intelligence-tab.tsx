@@ -40,6 +40,16 @@ import {
   dobaviteljiPdfFilename,
   dobaviteljBeseda,
 } from '@/lib/dobavitelji-pdf'
+// R244 (P1 'izvozi' družina — 5. člen) — CENIK MATERIALA PDF (pravi PDF brat
+// CSV cenika R244 — ISTI prerez vrstic, fail-closed, bajtni determinizem;
+// ISTI PDF pill družina kot Zaloga R234 / Naročilnica R235 / Dobavitelji R236).
+import {
+  buildCenikPdfDoc,
+  cenikPdfFilename,
+  cenikDatumIso,
+  cenaBeseda,
+  type CenikPdfVnos,
+} from '@/lib/cenik-pdf'
 import {
   Package,
   TrendingUp,
@@ -71,6 +81,23 @@ interface Supplier {
   popust: number
   aktivna: boolean
   _count?: { materialPrices: number; orders: number }
+}
+
+// R244 — client-safe prerez ENE cenovne vrstice iz GET /api/material-prices
+// (brez filtrov: include inventory + supplier, SAMO trenutno veljavne —
+// route filtrira veljavnostDo: null). Niz datumov (JSON) — pretvorba v
+// DD.MM.YYYY gre čisto prek cenikDatumIso (brez časovnih con — determinizem).
+interface CenikCena {
+  id: string
+  inventoryId: string
+  supplierId: string
+  cena: number
+  veljavnostOd: string
+  veljavnostDo: string | null
+  opomba: string | null
+  createdAt: string
+  inventory: { naziv: string; sifraMateriala: string; enota: string }
+  supplier: { naziv: string }
 }
 
 interface Inventory {
@@ -227,6 +254,49 @@ function downloadSuppliersCsv(suppliers: Supplier[]): number {
     rows,
   )
   return rows.length
+}
+
+// R244 — CENIK CSV (brat PDF cenika, ISTI prerez stolpcev: Artikel, Šifra,
+// Enota, Dobavitelj, Cena (EUR/enota), Opomba, Vpisan). Vir = GET
+// /api/material-prices (samo trenutno veljavne cene — route filtrira
+// veljavnostDo: null; iskren podpis v PDF nogi). Manjkajoča opomba = prazna
+// celica — NIKOLI izmišljen '—' (R233/R227 strogost). Fail-closed oblike
+// odgovora rešuje cenikVnosi (TypeError z indeksom krivca).
+function downloadCenikCsv(cene: CenikCena[]): number {
+  const rows: CsvValue[][] = cene.map((c) => [
+    c.inventory.naziv,
+    c.inventory.sifraMateriala,
+    c.inventory.enota,
+    c.supplier.naziv,
+    c.cena,
+    c.opomba ?? '',
+    cenikDatumIso(c.createdAt),
+  ])
+  downloadCsv(
+    `Cenik-materiala-${todayStamp()}.csv`,
+    ['Artikel', 'Šifra', 'Enota', 'Dobavitelj', 'Cena (EUR/enota)', 'Opomba', 'Vpisan'],
+    rows,
+  )
+  return rows.length
+}
+
+/** R244 — fail-closed preslikava API vrstic v CenikPdfVnos (pokvarjena
+ *  oblika → TypeError z indeksom krivca; NIKOLI tiho izmišljevanje polj). */
+function cenikVnosi(cene: CenikCena[]): CenikPdfVnos[] {
+  return cene.map((c, i) => {
+    if (!c || typeof c !== 'object' || !c.inventory || !c.supplier) {
+      throw new TypeError(`cenik vrstica ${i}: manjkajoči inventory/supplier v odgovoru API-ja`)
+    }
+    return {
+      artikel: c.inventory.naziv,
+      sifra: c.inventory.sifraMateriala,
+      enota: c.inventory.enota,
+      dobavitelj: c.supplier.naziv,
+      cena: c.cena,
+      opomba: c.opomba,
+      vpisan: c.createdAt,
+    }
+  })
 }
 
 // R207 — stil statusnega filtra (pill družina R136/R204/R206; 0 novih hex,
@@ -722,6 +792,71 @@ export function MaterialIntelligenceTab({
       } else {
         toast({ title: `Izvoz PDF ni uspel: ${err instanceof Error ? err.message : String(err)}`, variant: 'destructive' })
       }
+    }
+  }
+
+  // R244 — CENIK izvoz (CSV + PDF): linijsko pridobivanje FRESH podatkov ob
+  // kliku (ni dodatne mreže ob odprtju zavihka; ISTA resnica kot API).
+  // Fail-verbose: !res.ok → HTTP status v opisu; pokvarjena oblika →
+  // TypeError z razlogom; 0 cen → iskren toast (ni prazne datoteke —
+  // R232–R236 družina). cenikVTeku zavira dvoklik (ISTI gumb dvakrat).
+  const [cenikVTeku, setCenikVTeku] = useState(false)
+  const pridobiCenik = useCallback(async (): Promise<CenikCena[]> => {
+    const res = await fetch('/api/material-prices')
+    if (!res.ok) {
+      throw new Error(`GET /api/material-prices → HTTP ${res.status}`)
+    }
+    const data: unknown = await res.json()
+    if (!data || typeof data !== 'object' || !Array.isArray((data as { prices?: unknown }).prices)) {
+      throw new TypeError('Odgovora /api/material-prices ni mogoče prebrati (manjka polje prices).')
+    }
+    return (data as { prices: CenikCena[] }).prices
+  }, [])
+
+  const handleCenikCsv = async () => {
+    if (cenikVTeku) return
+    setCenikVTeku(true)
+    try {
+      const cene = await pridobiCenik()
+      if (cene.length === 0) {
+        toast({ title: 'Ni vpisanih cen za izvoz', description: 'Cenik se izvozi, ko je vpisana prva nabavna cena.' })
+        return
+      }
+      const count = downloadCenikCsv(cene)
+      toast({ title: 'Cenik prenešen', description: `${count} ${cenaBeseda(count)} v Cenik-materiala-${todayStamp()}.csv` })
+    } catch (err) {
+      toast({ title: 'Izvoz cenika ni uspel', description: err instanceof Error ? err.message : String(err), variant: 'destructive' })
+    } finally {
+      setCenikVTeku(false)
+    }
+  }
+
+  const handleCenikPdf = async () => {
+    if (cenikVTeku) return
+    setCenikVTeku(true)
+    try {
+      const cene = await pridobiCenik()
+      if (cene.length === 0) {
+        toast({ title: 'Ni vpisanih cen za izvoz', description: 'PDF se izvozi, ko je vpisana prva nabavna cena.' })
+        return
+      }
+      // Determinizem: EN `now` za žig IN ime datoteke (lekcija R121/R235).
+      const now = new Date()
+      const doc = buildCenikPdfDoc(cenikVnosi(cene), { now })
+      doc.save(cenikPdfFilename(now))
+      toast({
+        title: 'Cenik prenešen v PDF',
+        description: 'Cenik-materiala-…pdf — pregled veljavnih nabavnih cen po dobaviteljih.',
+      })
+    } catch (err) {
+      if (err instanceof TypeError) {
+        // fail-closed jedro: pokvaren vnos → viden razlog (nič izmišljenega dokumenta)
+        toast({ title: 'Cenik PDF ni mogoče sestaviti iz teh podatkov', description: err.message, variant: 'destructive' })
+      } else {
+        toast({ title: `Izvoz PDF ni uspel: ${err instanceof Error ? err.message : String(err)}`, variant: 'destructive' })
+      }
+    } finally {
+      setCenikVTeku(false)
     }
   }
 
@@ -1308,6 +1443,38 @@ export function MaterialIntelligenceTab({
               <CardTitle className="text-sm flex items-center gap-2"><Euro className="h-4 w-4 text-roksal-amber" /> Cene materiala</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
+              {/* R244 — CENIK izvoz (CSV + PDF pill pair, ISTA družina kot
+                  Dobavitelji R233/R236): VEDNO viden (bralni tok — P1-k
+                  precedens; izvozni gumb ne skriva praznega stanja, klik
+                  fail-closed — 0 cen → iskren toast). Vir: GET
+                  /api/material-prices (samo trenutno veljavne cene). */}
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={handleCenikCsv}
+                  disabled={loading || cenikVTeku}
+                  aria-label="Izvozi cenik materiala kot CSV"
+                  title="Izvozi vse trenutno veljavne nabavne cene kot CSV za Excel"
+                  className="h-8 text-xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
+                >
+                  <Download className="h-3.5 w-3.5 mr-1 text-roksal-amber" /> CSV
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={handleCenikPdf}
+                  disabled={loading || cenikVTeku}
+                  aria-label="Izvozi cenik materiala kot PDF"
+                  title="Cenik materiala kot pravi PDF — pregled veljavnih nabavnih cen po dobaviteljih"
+                  className="h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
+                >
+                  <FileText className="h-3 w-3" aria-hidden="true" />
+                  PDF
+                </Button>
+              </div>
               <Label className="text-xs">Izberi material za dodajanje cene</Label>
               {/* R243 — wave 5 RBAC ogledalo: izbira materiala (vhod v dialog
                   cene) je VIDENA samo pravici price.override (API POST

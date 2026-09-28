@@ -378,6 +378,34 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
   const [evPhotos, setEvPhotos] = useState<{ pred: PhotoRow[]; po: PhotoRow[] }>({ pred: [], po: [] })
   const [evHandoverName, setEvHandoverName] = useState('')
   const [evBusy, setEvBusy] = useState(false)
+  // R244 — wave 6 RBAC ogledalo (TOČNO R239/R241/R242/R243 vzorec): pravice
+  // prebere z GET /api/auth (R135 EN VIR RESNICE; fetch on mount z alive
+  // guardom, napaka → []) in skrije akcije, ki bi končale s 403. API matrika
+  // (TOČNO iz route datotek): POST /api/schedules (termin) → production.manage;
+  // POST /api/crews {type:'equipment'} (nova oprema) → production.manage;
+  // PATCH /api/equipment (statusni prehodi) → production.manage;
+  // POST /api/equipment/events (dogodek) → production.manage. ENA seja
+  // pravic, EN fetch — ogledalo samo bere, API route datoteke se NE spreminjajo.
+  const [myPermissions, setMyPermissions] = useState<readonly string[] | null>(null)
+  useEffect(() => {
+    let alive = true
+    fetch('/api/auth')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (alive && data?.permissions) setMyPermissions(data.permissions as readonly string[])
+        else if (alive) setMyPermissions([])
+      })
+      .catch(() => {
+        if (alive) setMyPermissions([])
+      })
+    return () => {
+      alive = false
+    }
+  }, [])
+  // Fail-closed izpeljava (R242/R243 vzorec — izrecno na false, NIKOLI tiha
+  // inflacija pravic): med nalaganjem (null) in ob napaki so VSE pisalne
+  // akcije skrite — least privilege, nikoli lažni gumb, ki bi končal s 403.
+  const lahkoUpravljaProizvodnjo = myPermissions?.includes('production.manage') ?? false
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -456,6 +484,9 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
   useRefetchOnFocus(loadData)
 
   const handleCreateSchedule = async () => {
+    // R244 — obrambni AND (R242/R243 vzorec: vrata v vratah): gumb je skrit,
+    // ta AND je druga plast (naključni klic ne zažene upehanske toke).
+    if (!lahkoUpravljaProizvodnjo) return
     if (!schedProject || !schedDate) return
     const start = new Date(`${schedDate}T${schedTime}`)
     const end = new Date(start.getTime() + parseInt(schedHours) * 3600000)
@@ -487,6 +518,8 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
 
   /** R145 (§31): statusna tranzicija opreme (409 z dovoljenimi cilji). */
   const handleEquipmentStatus = async (e0: Equipment, to: string) => {
+    // R244 — obrambni AND (vrata v vratah): PATCH /api/equipment je gated.
+    if (!lahkoUpravljaProizvodnjo) return
     try {
       const res = await fetch('/api/equipment', {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
@@ -533,6 +566,8 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
 
   /** R145 (§31): zabeleži dogodek (fail-verbose — 400/403/404/500 se pokažejo). */
   const handleLogEvent = async () => {
+    // R244 — obrambni AND (vrata v vratah): POST /api/equipment/events je gated.
+    if (!lahkoUpravljaProizvodnjo) return
     if (!eventTarget || !eventDate) return
     setEventBusy(true)
     try {
@@ -717,6 +752,10 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
 
   /** R146 (§27): shrani preverbo → če je prešla, zaključi termin (PATCH). */
   const handleQcSubmit = async () => {
+    // R244 — obrambni AND (vrata v vratah): glavna pot dialoga zaključi
+    // termin (PATCH /api/schedules = production.manage); QC zapis brez
+    // zaključitve je sledeč zapis — celoten tok je gated kot finalize vrata.
+    if (!lahkoUpravljaProizvodnjo) return
     if (!qcTarget || !qcValid) return
     setQcBusy(true)
     try {
@@ -770,6 +809,8 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
   }
 
   const handleQcOverride = async () => {
+    // R244 — obrambni AND (vrata v vratah): override zaključi termin (PATCH).
+    if (!lahkoUpravljaProizvodnjo) return
     if (!qcTarget || !qcOverrideReason.trim()) return
     setQcBusy(true)
     try {
@@ -781,6 +822,8 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
   }
 
   const handleStatusChange = async (id: string, status: string, dejanskeUre?: number) => {
+    // R244 — obrambni AND (vrata v vratah): PATCH /api/schedules je gated.
+    if (!lahkoUpravljaProizvodnjo) return
     try {
       const res = await fetch('/api/schedules', {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
@@ -800,6 +843,8 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
 
   /** R142 (§30): preloži termin na nov datum/uro (PATCH z novim intervalom). */
   const handleMoveSchedule = async () => {
+    // R244 — obrambni AND (vrata v vratah): PATCH /api/schedules je gated.
+    if (!lahkoUpravljaProizvodnjo) return
     if (!moveTarget || !moveDate) return
     const start = new Date(`${moveDate}T${moveTime}`)
     const end = new Date(start.getTime() + parseInt(moveHours) * 3600000)
@@ -839,6 +884,9 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
   }
 
   const handleCreateEquip = async () => {
+    // R244 — obrambni AND (vrata v vratah): POST /api/crews je gated
+    // (production.manage — isti katalog kot ostale pisalne akcije logistike).
+    if (!lahkoUpravljaProizvodnjo) return
     if (!equipNaziv) return
     try {
       const res = await fetch('/api/crews', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'equipment', naziv: equipNaziv, tip: equipTip }) })
@@ -896,9 +944,15 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
       {subtab === 'calendar' && (
         <div className="space-y-3">
           <div className="flex gap-2">
-            <Button type="button" onClick={() => setNewScheduleOpen(true)} className="flex-1 bg-roksal-navy text-white">
-              <Plus className="h-4 w-4 mr-2" /> Nov termin montaže
-            </Button>
+            {/* R244 — wave 6 RBAC ogledalo: CTA 'Nov termin montaže' je VIDEN
+                samo vlogi s pravico production.manage (API POST /api/schedules).
+                Med nalaganjem (null) skrit — tišina je iskrena, least privilege
+                (R242); bralni CSV izvoz ostaja (odjemalski dokument, P1-k). */}
+            {lahkoUpravljaProizvodnjo && (
+              <Button type="button" onClick={() => setNewScheduleOpen(true)} className="flex-1 bg-roksal-navy text-white shadow-sm press-scale hover:bg-roksal-navy/90 transition-all">
+                <Plus className="h-4 w-4 mr-2" /> Nov termin montaže
+              </Button>
+            )}
             <Button
               type="button"
               variant="outline"
@@ -935,6 +989,23 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
               <Download className="h-4 w-4 mr-1" aria-hidden /> .ics
             </Button>
           </div>
+
+          {/* R244 — vlogo-osveščen vodič (R242/R243 recept): viden SAMO, ko
+              uporabnik nima production.manage IN je seznam pravic znan.
+              Iskren umik na CSV/ICS izvoz (bralni tok ohranjen, P1-k). */}
+          {myPermissions !== null && !lahkoUpravljaProizvodnjo && (
+            <div
+              className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-2xs text-muted-foreground"
+              role="note"
+              aria-label="Ustvarjanje terminov zahteva pravico"
+            >
+              Pregled terminov je samo za branje. Ustvarjanje terminov in
+              statusni prehodi (začetek, preložitev, zaključitev) so pravica{' '}
+              <span className="font-semibold text-roksal-ink">production.manage</span>{' '}
+              — vodstvo ali proizvodnja. Termine lahko še vedno izvozite kot CSV
+              ali koledarsko datoteko.
+            </div>
+          )}
 
           {/* R170 — pečat 'Osveženo ob HH:MM:SS' = čas zadnjega uspešnega
               branja vseh virov (zadnjaOsvezitev je nastavljen samo v uspešni
@@ -994,12 +1065,18 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                         </div>
                       </div>
                     </div>
-                    {/* Status actions */}
+                    {/* Status actions — R244: pisalni prehidi (začetek /
+                        preložitev / zaključitev = PATCH /api/schedules) so
+                        VIDNI samo pravici production.manage; bralni izvozi
+                        ostajajo (P1-k). */}
                     {s.status === 'NAVRTENO' && (
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <Button type="button" size="sm" variant="outline" className="h-6 text-2xs bg-amber-50 dark:bg-amber-950/40 focus-visible:ring-2 focus-visible:ring-roksal-navy/40" onClick={() => handleStatusChange(s.id, 'V_TEKU')}>
-                          Začni montažo
-                        </Button>
+                        {lahkoUpravljaProizvodnjo && (
+                          <Button type="button" size="sm" variant="outline" className="h-6 text-2xs bg-amber-50 dark:bg-amber-950/40 focus-visible:ring-2 focus-visible:ring-roksal-navy/40" onClick={() => handleStatusChange(s.id, 'V_TEKU')}>
+                            Začni montažo
+                          </Button>
+                        )}
+                        {lahkoUpravljaProizvodnjo && (
                         <Button
                           type="button"
                           size="sm"
@@ -1017,19 +1094,22 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                         >
                           <CalendarClock className="h-3 w-3 mr-1" /> Preloži
                         </Button>
+                        )}
                       </div>
                     )}
                     {s.status === 'V_TEKU' && (
                       <>
-                        <Button type="button" size="sm" variant="outline" className="h-6 text-2xs bg-green-50 dark:bg-green-950/40 focus-visible:ring-2 focus-visible:ring-roksal-navy/40" aria-label={`Zaključi termin ${s.project.nazivProjekta} s preverbo kakovosti`} onClick={() => openQcDialog(s.id, s.project.id, s.project.nazivProjekta)}>
-                          <CheckCircle2 className="h-3 w-3 mr-1" /> Zaključi (preverba + odštej material)
-                        </Button>
+                        {lahkoUpravljaProizvodnjo && (
+                          <Button type="button" size="sm" variant="outline" className="h-6 text-2xs bg-green-50 dark:bg-green-950/40 focus-visible:ring-2 focus-visible:ring-roksal-navy/40" aria-label={`Zaključi termin ${s.project.nazivProjekta} s preverbo kakovosti`} onClick={() => openQcDialog(s.id, s.project.id, s.project.nazivProjekta)}>
+                            <CheckCircle2 className="h-3 w-3 mr-1" /> Zaključi (preverba + odštej material)
+                          </Button>
+                        )}
                         <Button type="button" size="sm" variant="outline" className="h-6 text-2xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40" aria-label={`Montažno dokazilo za ${s.project.nazivProjekta} (pred/po, checklist, predaja)`} onClick={() => void openEvidenceDialog(s.id, s.project.id, s.project.nazivProjekta)}>
                           <FileCheck2 className="h-3 w-3 mr-1" /> Montažno dokazilo
                         </Button>
                       </>
                     )}
-                    {s.status === 'PRELOZENO' && (
+                    {s.status === 'PRELOZENO' && lahkoUpravljaProizvodnjo && (
                       <Button
                         type="button"
                         size="sm"
@@ -1087,9 +1167,26 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
       {/* Equipment tab */}
       {subtab === 'equipment' && (
         <div className="space-y-3">
-          <Button type="button" onClick={() => setNewEquipOpen(true)} className="w-full bg-roksal-navy text-white">
-            <Plus className="h-4 w-4 mr-2" /> Nova oprema
-          </Button>
+          {/* R244 — wave 6 RBAC ogledalo: CTA 'Nova oprema' je VIDEN samo
+              vlogi s pravico production.manage (API POST /api/crews z
+              type:'equipment'). Med nalaganjem (null) skrit — R242. */}
+          {lahkoUpravljaProizvodnjo && (
+            <Button type="button" onClick={() => setNewEquipOpen(true)} className="w-full bg-roksal-navy text-white shadow-sm press-scale hover:bg-roksal-navy/90 transition-all">
+              <Plus className="h-4 w-4 mr-2" /> Nova oprema
+            </Button>
+          )}
+          {myPermissions !== null && !lahkoUpravljaProizvodnjo && (
+            <div
+              className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-2xs text-muted-foreground"
+              role="note"
+              aria-label="Upravljanje opreme zahteva pravico"
+            >
+              Pregled opreme je samo za branje. Dodajanje opreme in statusni
+              prehodi so pravica{' '}
+              <span className="font-semibold text-roksal-ink">production.manage</span>.
+              Zgodovino dogodkov lahko še vedno odprete z Zabeleži.
+            </div>
+          )}
           {equipment.length === 0 ? (
             <Card><CardContent className="py-8 text-center text-muted-foreground">
               <Wrench className="h-10 w-10 mx-auto mb-2 opacity-30" />
@@ -1145,10 +1242,13 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                 </div>
                 {/* Statusne tranzicije (matrika §31 — samo dovoljeni cilji;
                     UPOKOJENO je izpostavljeno ločeno (terminalno — rdeče) in
-                    zahteva zaveden klik). */}
+                    zahteva zaveden klik). R244 — pisalni prehodi so VIDNI samo
+                    pravici production.manage (PATCH /api/equipment); bralni
+                    vstop 'Zabeleži' (zgodovina dogodkov) ostaja VSEM (P1-k
+                    precedens — gated je samo pisalni submit v dialogu). */}
                 {e.status !== 'UPOKOJENO' && (
                   <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                    {allowedTransitions(e.status).filter((s) => s !== 'UPOKOJENO').map((s) => (
+                    {lahkoUpravljaProizvodnjo && allowedTransitions(e.status).filter((s) => s !== 'UPOKOJENO').map((s) => (
                       <Button
                         key={s}
                         type="button"
@@ -1161,7 +1261,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                         {s === 'V_SERVISU' ? 'V servis' : EQUIPMENT_STATUS_LABELS[s] ?? s}
                       </Button>
                     ))}
-                    {allowedTransitions(e.status).includes('UPOKOJENO') && (
+                    {lahkoUpravljaProizvodnjo && allowedTransitions(e.status).includes('UPOKOJENO') && (
                       <Button
                         type="button"
                         size="sm"
@@ -1229,7 +1329,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                     <label key={e0.id} className="flex cursor-pointer items-center gap-2 text-xs">
                       <input
                         type="checkbox"
-                        className="h-3.5 w-3.5 accent-[#1d2b3e] focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                        className="h-3.5 w-3.5 accent-roksal-navy focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
                         checked={schedEquipment.includes(e0.id)}
                         onChange={(ev) => {
                           setSchedEquipment((prev) => ev.target.checked ? [...prev, e0.id] : prev.filter((x) => x !== e0.id))
@@ -1245,7 +1345,11 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setNewScheduleOpen(false)}>Prekliči</Button>
-            <Button type="button" onClick={handleCreateSchedule} className="bg-roksal-navy text-white">Shrani</Button>
+            {/* R244 — pisalni submit viden SAMO s pravico (R243 Osnutek
+                precedens); mikro-pritisk = družina ostalih dialogov. */}
+            {lahkoUpravljaProizvodnjo && (
+              <Button type="button" onClick={handleCreateSchedule} className="bg-roksal-navy hover:bg-roksal-navy/90 text-white shadow-sm transition-all press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 disabled:opacity-50">Shrani</Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1278,15 +1382,18 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setMoveTarget(null)}>Prekliči</Button>
+            {/* R244 — pisalni submit viden SAMO s pravico + mikro-pritisk. */}
+            {lahkoUpravljaProizvodnjo && (
             <Button
               type="button"
               onClick={() => void handleMoveSchedule()}
               disabled={moveBusy || !moveDate}
-              className="bg-roksal-navy hover:bg-roksal-navy/90 text-white focus-visible:ring-roksal-navy/40"
+              className="bg-roksal-navy hover:bg-roksal-navy/90 text-white shadow-sm transition-all press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 disabled:opacity-50"
             >
               {moveBusy && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
               Preloži
             </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1318,7 +1425,10 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setNewEquipOpen(false)}>Prekliči</Button>
-            <Button type="button" onClick={handleCreateEquip} className="bg-roksal-navy text-white">Shrani</Button>
+            {/* R244 — pisalni submit viden SAMO s pravico + mikro-pritisk. */}
+            {lahkoUpravljaProizvodnjo && (
+              <Button type="button" onClick={handleCreateEquip} className="bg-roksal-navy hover:bg-roksal-navy/90 text-white shadow-sm transition-all press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 disabled:opacity-50">Shrani</Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1398,17 +1508,32 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
               Dogodek v prihodnosti ni mogoč (preverba na strežniku). Kalibracija merske opreme zahteva potrdilo — sicer zavržena (400).
             </p>
           </div>
+          {/* R244 — vlogo-osveščen vodič v dialogu (Osnutek precedens):
+              zgodovina ostane za branje VSEM; pisalni submit je gated. */}
+          {myPermissions !== null && !lahkoUpravljaProizvodnjo && (
+            <div
+              className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-2xs text-muted-foreground"
+              role="note"
+              aria-label="Beleženje dogodkov zahteva pravico"
+            >
+              Zgodovina dogodkov ostaja za branje. Beleženje pregledov,
+              kalibracij in servisov je pravica{' '}
+              <span className="font-semibold text-roksal-ink">production.manage</span>.
+            </div>
+          )}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setEventTarget(null)}>Prekliči</Button>
-            <Button
-              type="button"
-              onClick={() => void handleLogEvent()}
-              disabled={eventBusy || !eventDate || (eventType === 'KALIBRACIJA' && eventTarget?.calibrationRequired && !eventCertificate)}
-              className="bg-roksal-navy hover:bg-roksal-navy/90 text-white focus-visible:ring-roksal-navy/40"
-            >
-              {eventBusy && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
-              Zabeleži
-            </Button>
+            {lahkoUpravljaProizvodnjo && (
+              <Button
+                type="button"
+                onClick={() => void handleLogEvent()}
+                disabled={eventBusy || !eventDate || (eventType === 'KALIBRACIJA' && eventTarget?.calibrationRequired && !eventCertificate)}
+                className="bg-roksal-navy hover:bg-roksal-navy/90 text-white shadow-sm transition-all press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 disabled:opacity-50"
+              >
+                {eventBusy && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
+                Zabeleži
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1437,7 +1562,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                   <label className="flex cursor-pointer items-start gap-2 text-xs">
                     <input
                       type="checkbox"
-                      className="mt-0.5 h-3.5 w-3.5 accent-[#1d2b3e] focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                      className="mt-0.5 h-3.5 w-3.5 accent-roksal-navy focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
                       checked={qcChecked[t.key] === true}
                       aria-label={t.label}
                       onChange={(e) => setQcChecked((prev) => ({ ...prev, [t.key]: e.target.checked }))}
@@ -1479,16 +1604,21 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                 <p className="mt-1 text-2xs text-red-700/80 dark:text-red-300/80">Razlog se nespremenljivo zapiše v revizijsko sled skupaj z zaključitvijo.</p>
                 <div className="mt-2 flex gap-2">
                   <Button type="button" size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => setQcOverrideMode(false)}>Nazaj na preverbo</Button>
+                  {/* R244 — override zaključi termin (PATCH) → samo s pravico;
+                      mikro-pritisk = družina. Rdeča = destruktivni trenutek
+                      (terminalni prehod z revizijo), obstoječa semantika. */}
+                  {lahkoUpravljaProizvodnjo && (
                   <Button
                     type="button"
                     size="sm"
                     disabled={qcBusy || !qcOverrideReason.trim()}
-                    className="h-7 bg-red-600 text-[11px] text-white hover:bg-red-700 focus-visible:ring-red-400/50"
+                    className="h-7 bg-red-600 text-[11px] text-white hover:bg-red-700 focus-visible:ring-red-400/50 press-scale"
                     onClick={() => void handleQcOverride()}
                   >
                     {qcBusy && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
                     Zaključi z override
                   </Button>
+                  )}
                 </div>
               </div>
             ) : (
@@ -1503,15 +1633,19 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setQcTarget(null)}>Prekliči</Button>
+            {/* R244 — pisalni submit viden SAMO s pravico (dialog je vstop
+                k zaključitvi termina = PATCH) + mikro-pritisk. */}
+            {lahkoUpravljaProizvodnjo && (
             <Button
               type="button"
               onClick={() => void handleQcSubmit()}
               disabled={qcBusy || !qcValid}
-              className="bg-roksal-navy hover:bg-roksal-navy/90 text-white focus-visible:ring-roksal-navy/40"
+              className="bg-roksal-navy hover:bg-roksal-navy/90 text-white shadow-sm transition-all press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 disabled:opacity-50"
             >
               {qcBusy && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
               {qcPassed ? 'Preverba + zaključi' : 'Shrani preverbo (z napakami)'}
             </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1583,7 +1717,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
             <label className="flex cursor-pointer items-start gap-2 text-xs">
               <input
                 type="checkbox"
-                className="mt-0.5 h-3.5 w-3.5 accent-[#1d2b3e] focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                className="mt-0.5 h-3.5 w-3.5 accent-roksal-navy focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
                 checked={evGpsConsent}
                 aria-label="Z dovoljenjem zabeleži GPS lokacijo"
                 onChange={(e) => handleEvGpsConsent(e.target.checked)}
@@ -1603,7 +1737,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                     <label className="flex cursor-pointer items-start gap-2 text-xs">
                       <input
                         type="checkbox"
-                        className="mt-0.5 h-3.5 w-3.5 accent-[#1d2b3e] focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                        className="mt-0.5 h-3.5 w-3.5 accent-roksal-navy focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
                         checked={evChecked[t.key] === true}
                         aria-label={t.label}
                         onChange={(e) => setEvChecked((prev) => ({ ...prev, [t.key]: e.target.checked }))}

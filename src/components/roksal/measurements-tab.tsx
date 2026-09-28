@@ -5280,7 +5280,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               <Button
                 type="button"
                 onClick={handleSubmitMeasurement}
-                className="flex-1 h-9 bg-roksal-navy hover:bg-roksal-navy/90 text-white transition-transform duration-200 active:scale-[0.98]"
+                className="flex-1 h-9 bg-roksal-navy hover:bg-roksal-navy/90 text-white press-scale"
                 disabled={submitting || !formLength || !formHeight}
               >
                 {submitting ? (
