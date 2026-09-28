@@ -136,7 +136,7 @@ export function OnboardingTour({ onClose, onNavigate }: { onClose: () => void; o
               <Badge variant="outline" className="text-[9px] bg-roksal-amber/10 text-roksal-amber">
                 {korak + 1} / {KORAKI.length}
               </Badge>
-              <span className="text-[10px] text-muted-foreground">Onboarding</span>
+              <span className="text-2xs text-muted-foreground">Onboarding</span>
             </div>
             <button
               type="button"

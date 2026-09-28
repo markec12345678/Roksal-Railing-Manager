@@ -186,19 +186,19 @@ export function WeatherCard({
             {/* Veter: trenutni + suniki */}
             <div className="grid grid-cols-2 gap-2 text-center">
               <div className="rounded-lg bg-muted/60 px-2 py-1.5">
-                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Veter</p>
+                <p className="text-2xs uppercase tracking-wide text-muted-foreground">Veter</p>
                 <p className="text-sm font-bold text-roksal-ink tabular-nums">
                   {mpsToKmh(weather.speed)} km/h
-                  <span className="ml-1 text-[10px] font-normal text-muted-foreground">
+                  <span className="ml-1 text-2xs font-normal text-muted-foreground">
                     ({weather.speed.toFixed(1)} m/s)
                   </span>
                 </p>
               </div>
               <div className="rounded-lg bg-muted/60 px-2 py-1.5">
-                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Suniki</p>
+                <p className="text-2xs uppercase tracking-wide text-muted-foreground">Suniki</p>
                 <p className="text-sm font-bold text-roksal-ink tabular-nums">
                   {mpsToKmh(weather.gust)} km/h
-                  <span className="ml-1 text-[10px] font-normal text-muted-foreground">
+                  <span className="ml-1 text-2xs font-normal text-muted-foreground">
                     ({weather.gust.toFixed(1)} m/s)
                   </span>
                 </p>
@@ -211,7 +211,7 @@ export function WeatherCard({
               role={weather.riskLevel === 'high' || weather.riskLevel === 'dangerous' ? 'alert' : undefined}
               className="flex items-start gap-2 rounded-lg bg-muted/40 p-2.5"
             >
-              <Badge className={`shrink-0 text-[10px] px-2 py-0.5 ${RISK_STYLES[weather.riskLevel].badge}`}>
+              <Badge className={`shrink-0 text-2xs px-2 py-0.5 ${RISK_STYLES[weather.riskLevel].badge}`}>
                 {RISK_STYLES[weather.riskLevel].label}
               </Badge>
               <p className="text-[11px] leading-snug text-muted-foreground">

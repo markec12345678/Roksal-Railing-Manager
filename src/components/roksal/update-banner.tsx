@@ -111,7 +111,7 @@ export function UpdateBanner() {
         <p className="text-xs font-semibold text-roksal-ink leading-tight">
           Na voljo je nova verzija aplikacije.
         </p>
-        <p className="text-[10px] text-muted-foreground leading-tight">
+        <p className="text-2xs text-muted-foreground leading-tight">
           {zgrajeno ? `${zgrajeno} — ` : ''}Osvežite za najnovejše funkcije in popravke.
         </p>
       </div>

@@ -157,11 +157,11 @@ export function RateLimitPanel() {
     <div className="mt-2.5 grid grid-cols-3 gap-1.5">
       <div className="rounded-lg border border-border/80 bg-secondary/30 px-2 py-1.5 text-center">
         <p className="text-[15px] font-bold leading-none tabular-nums text-roksal-ink">{data?.stats.keys ?? '—'}</p>
-        <p className="mt-1 text-[10px] leading-none text-muted-foreground">aktivnih ključev</p>
+        <p className="mt-1 text-2xs leading-none text-muted-foreground">aktivnih ključev</p>
       </div>
       <div className="rounded-lg border border-border/80 bg-secondary/30 px-2 py-1.5 text-center">
         <p className="text-[15px] font-bold leading-none tabular-nums text-roksal-ink">{data?.stats.hits ?? '—'}</p>
-        <p className="mt-1 text-[10px] leading-none text-muted-foreground">zadetkov v oknih</p>
+        <p className="mt-1 text-2xs leading-none text-muted-foreground">zadetkov v oknih</p>
       </div>
       <div
         className={`rounded-lg border px-2 py-1.5 text-center ${
@@ -177,7 +177,7 @@ export function RateLimitPanel() {
         >
           {data?.tripsTotal ?? '—'}
         </p>
-        <p className="mt-1 text-[10px] leading-none text-muted-foreground">blokad skupaj</p>
+        <p className="mt-1 text-2xs leading-none text-muted-foreground">blokad skupaj</p>
       </div>
     </div>
   )
@@ -259,7 +259,7 @@ export function RateLimitPanel() {
             size="sm"
             variant="outline"
             onClick={() => void load()}
-            className="h-7 shrink-0 text-[10px] transition-colors hover:text-roksal-ink focus-visible:ring-roksal-navy/40"
+            className="h-7 shrink-0 text-2xs transition-colors hover:text-roksal-ink focus-visible:ring-roksal-navy/40"
             aria-label="Ponovno naloži telemetrijo omejevanja hitrosti"
           >
             Poskusi znova
@@ -278,14 +278,14 @@ export function RateLimitPanel() {
                     className="flex items-center justify-between gap-2 rounded-lg border border-border/80 bg-card px-2.5 py-2 transition-colors hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25"
                   >
                     <div className="flex min-w-0 items-center gap-2">
-                      <Badge className={`shrink-0 border-0 font-mono text-[10px] font-semibold ${badge.className}`}>
+                      <Badge className={`shrink-0 border-0 font-mono text-2xs font-semibold ${badge.className}`}>
                         {badge.label}
                       </Badge>
-                      <code className="truncate font-mono text-[10px] text-muted-foreground" title="Prstni odtis ključa (SHA-256, 10 znakov) — ključ ni prikazan">
+                      <code className="truncate font-mono text-2xs text-muted-foreground" title="Prstni odtis ključa (SHA-256, 10 znakov) — ključ ni prikazan">
                         {t.keyHash}
                       </code>
                     </div>
-                    <div className="flex shrink-0 items-center gap-2.5 text-[10px] tabular-nums text-muted-foreground">
+                    <div className="flex shrink-0 items-center gap-2.5 text-2xs tabular-nums text-muted-foreground">
                       <span className="font-semibold text-roksal-red">{t.count}×</span>
                       <span>{dtFmt.format(new Date(t.lastAt))}</span>
                     </div>
@@ -293,7 +293,7 @@ export function RateLimitPanel() {
                 )
               })}
               {data.trips.length > 5 && (
-                <li className="pt-0.5 text-right text-[10px] text-muted-foreground">
+                <li className="pt-0.5 text-right text-2xs text-muted-foreground">
                   … in še {data.trips.length - 5} v API-ju (GET /api/security/rate-limit)
                 </li>
               )}
@@ -304,7 +304,7 @@ export function RateLimitPanel() {
             </div>
           )}
           {data?.note && (
-            <p className="mt-2 text-[10px] leading-relaxed text-muted-foreground" title={data.generatedAt}>
+            <p className="mt-2 text-2xs leading-relaxed text-muted-foreground" title={data.generatedAt}>
               {data.note}
             </p>
           )}

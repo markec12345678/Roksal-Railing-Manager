@@ -289,7 +289,7 @@ export function SessionsDialog({ open, onOpenChange }: SessionsDialogProps) {
                         {label.device}
                       </p>
                       {s.current && (
-                        <Badge className="h-5 shrink-0 bg-roksal-green/15 px-1.5 text-[10px] text-roksal-green hover:bg-roksal-green/15">
+                        <Badge className="h-5 shrink-0 bg-roksal-green/15 px-1.5 text-2xs text-roksal-green hover:bg-roksal-green/15">
                           Ta naprava
                         </Badge>
                       )}
@@ -297,10 +297,10 @@ export function SessionsDialog({ open, onOpenChange }: SessionsDialogProps) {
                     <p className="truncate text-[11px] text-muted-foreground">
                       {label.os} · {label.browser}
                     </p>
-                    <p className="mt-1 text-[10px] tabular-nums text-muted-foreground">
+                    <p className="mt-1 text-2xs tabular-nums text-muted-foreground">
                       Prijava: {fmt(s.createdAt)}
                     </p>
-                    <p className="text-[10px] tabular-nums text-muted-foreground">
+                    <p className="text-2xs tabular-nums text-muted-foreground">
                       Velja do: {fmt(s.expiresAt)}
                       {s.ip ? ` · IP ${s.ip}` : ''}
                     </p>
@@ -313,7 +313,7 @@ export function SessionsDialog({ open, onOpenChange }: SessionsDialogProps) {
                       onClick={() => void revoke(s.id)}
                       disabled={revokingId !== null}
                       aria-label={`Prekliči sejo na napravi: ${label.device}, ${label.os}`}
-                      className="h-7 shrink-0 gap-1 border-roksal-red/30 px-2 text-[10px] text-roksal-red hover:bg-roksal-red/10 press-scale focus-visible:ring-2 focus-visible:ring-roksal-red/40"
+                      className="h-7 shrink-0 gap-1 border-roksal-red/30 px-2 text-2xs text-roksal-red hover:bg-roksal-red/10 press-scale focus-visible:ring-2 focus-visible:ring-roksal-red/40"
                     >
                       {revoking ? (
                         <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
@@ -334,7 +334,7 @@ export function SessionsDialog({ open, onOpenChange }: SessionsDialogProps) {
         )}
 
         <DialogFooter className="items-center justify-between gap-2 sm:justify-between">
-          <p className="text-[10px] text-muted-foreground tabular-nums">
+          <p className="text-2xs text-muted-foreground tabular-nums">
             {sessions ? `${sessions.length} ${sessions.length === 1 ? 'aktivna seja' : 'aktivnih sej'}` : ''}
           </p>
           <div className="flex items-center gap-2">

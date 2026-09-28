@@ -153,7 +153,7 @@ export function PasswordDialog({ open, onOpenChange }: PasswordDialogProps) {
                       />
                     ))}
                   </div>
-                  <span className={`text-[10px] font-bold uppercase tracking-wide ${besedilo}`}>
+                  <span className={`text-2xs font-bold uppercase tracking-wide ${besedilo}`}>
                     {j.oznaka}
                   </span>
                 </div>

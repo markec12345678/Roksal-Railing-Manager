@@ -980,12 +980,12 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 mb-0.5">
                           <span className="text-sm font-semibold text-roksal-ink truncate">{s.project.nazivProjekta}</span>
-                          <Badge variant="outline" className={`text-[8px] shrink-0 ${STATUS_COLORS[s.status]}`}>
+                          <Badge variant="outline" className={`text-3xs shrink-0 ${STATUS_COLORS[s.status]}`}>
                             {STATUS_LABELS[s.status] || s.status}
                           </Badge>
                         </div>
-                        <div className="text-[10px] text-muted-foreground">{s.project.customer.ime}</div>
-                        <div className="flex flex-wrap items-center gap-2 text-[10px] mt-1 tabular-nums text-muted-foreground">
+                        <div className="text-2xs text-muted-foreground">{s.project.customer.ime}</div>
+                        <div className="flex flex-wrap items-center gap-2 text-2xs mt-1 tabular-nums text-muted-foreground">
                           <span className="flex items-center gap-0.5"><Clock className="h-2.5 w-2.5" />{formatDate(s.datumZacetka)} {formatTime(s.datumZacetka)}</span>
                           <span>·</span>
                           <span className="text-roksal-ink">{s.predvideneUre}h{s.dejanskeUre ? ` (dejan. ${s.dejanskeUre}h)` : ''}</span>
@@ -997,14 +997,14 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                     {/* Status actions */}
                     {s.status === 'NAVRTENO' && (
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <Button type="button" size="sm" variant="outline" className="h-6 text-[10px] bg-amber-50 dark:bg-amber-950/40 focus-visible:ring-2 focus-visible:ring-roksal-navy/40" onClick={() => handleStatusChange(s.id, 'V_TEKU')}>
+                        <Button type="button" size="sm" variant="outline" className="h-6 text-2xs bg-amber-50 dark:bg-amber-950/40 focus-visible:ring-2 focus-visible:ring-roksal-navy/40" onClick={() => handleStatusChange(s.id, 'V_TEKU')}>
                           Začni montažo
                         </Button>
                         <Button
                           type="button"
                           size="sm"
                           variant="outline"
-                          className="h-6 text-[10px] focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                          className="h-6 text-2xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
                           aria-label={`Preloži termin za ${s.project.nazivProjekta}`}
                           onClick={() => {
                             const d = new Date(s.datumZacetka)
@@ -1021,10 +1021,10 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                     )}
                     {s.status === 'V_TEKU' && (
                       <>
-                        <Button type="button" size="sm" variant="outline" className="h-6 text-[10px] bg-green-50 dark:bg-green-950/40 focus-visible:ring-2 focus-visible:ring-roksal-navy/40" aria-label={`Zaključi termin ${s.project.nazivProjekta} s preverbo kakovosti`} onClick={() => openQcDialog(s.id, s.project.id, s.project.nazivProjekta)}>
+                        <Button type="button" size="sm" variant="outline" className="h-6 text-2xs bg-green-50 dark:bg-green-950/40 focus-visible:ring-2 focus-visible:ring-roksal-navy/40" aria-label={`Zaključi termin ${s.project.nazivProjekta} s preverbo kakovosti`} onClick={() => openQcDialog(s.id, s.project.id, s.project.nazivProjekta)}>
                           <CheckCircle2 className="h-3 w-3 mr-1" /> Zaključi (preverba + odštej material)
                         </Button>
-                        <Button type="button" size="sm" variant="outline" className="h-6 text-[10px] focus-visible:ring-2 focus-visible:ring-roksal-navy/40" aria-label={`Montažno dokazilo za ${s.project.nazivProjekta} (pred/po, checklist, predaja)`} onClick={() => void openEvidenceDialog(s.id, s.project.id, s.project.nazivProjekta)}>
+                        <Button type="button" size="sm" variant="outline" className="h-6 text-2xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40" aria-label={`Montažno dokazilo za ${s.project.nazivProjekta} (pred/po, checklist, predaja)`} onClick={() => void openEvidenceDialog(s.id, s.project.id, s.project.nazivProjekta)}>
                           <FileCheck2 className="h-3 w-3 mr-1" /> Montažno dokazilo
                         </Button>
                       </>
@@ -1034,7 +1034,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                         type="button"
                         size="sm"
                         variant="outline"
-                        className="h-6 text-[10px] focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                        className="h-6 text-2xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
                         aria-label={`Premakni preloženi termin ${s.project.nazivProjekta}`}
                         onClick={() => {
                           const d = new Date(s.datumZacetka)
@@ -1075,7 +1075,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                   <div className="h-4 w-4 rounded-full ring-2 ring-white shadow-sm" style={{ backgroundColor: c.barva }} aria-hidden />
                   <span className="text-sm font-semibold text-roksal-ink">{c.naziv}</span>
                 </div>
-                <div className="text-[10px] tabular-nums text-muted-foreground">
+                <div className="text-2xs tabular-nums text-muted-foreground">
                   {c.vodja ? `Vodja: ${c.vodja.ime}` : 'Brez vodje'} · {c._count.members} članov · {c._count.schedules} terminov
                 </div>
               </CardContent>
@@ -1102,18 +1102,18 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 mb-0.5">
                       <span className="text-sm font-semibold text-roksal-ink">{e.naziv}</span>
-                      <Badge variant="outline" className={`text-[8px] shrink-0 ${EQUIPMENT_STATUS_COLORS[e.status] ?? 'bg-muted'}`}>
+                      <Badge variant="outline" className={`text-3xs shrink-0 ${EQUIPMENT_STATUS_COLORS[e.status] ?? 'bg-muted'}`}>
                         {EQUIPMENT_STATUS_LABELS[e.status] ?? e.status}
                       </Badge>
                     </div>
-                    <div className="text-[10px] tabular-nums text-muted-foreground">
+                    <div className="text-2xs tabular-nums text-muted-foreground">
                       {EQUIPMENT_TYPES[e.tip] || e.tip} · {e.lokacija || 'Brez lokacije'} · {e.assignmentsCount} rezervacij
                       {e.serijskaStevilka && <span className="ml-1"> · SN {e.serijskaStevilka}</span>}
                     </div>
                     {/* R145 (§31): življenjski cikl — kalibracija (fail-closed
                         poudarki: POTEČENA rdeče, manjka potrdilo/rok oramno). */}
                     {e.calibrationRequired && (
-                      <div className="mt-1 text-[10px] tabular-nums">
+                      <div className="mt-1 text-2xs tabular-nums">
                         {e.calibrationOverdue ? (
                           <span className="inline-flex items-center gap-1 rounded border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/40 px-1.5 py-0.5 font-semibold text-red-700 dark:text-red-300">
                             <AlertTriangle className="h-3 w-3" aria-hidden /> Kalibracija potečena ({e.calibrationDueDate ? formatDate(e.calibrationDueDate) : '—'})
@@ -1131,7 +1131,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                       </div>
                     )}
                     {e.inspectionIntervalDays !== null && (
-                      <div className="mt-0.5 text-[10px] tabular-nums text-muted-foreground">
+                      <div className="mt-0.5 text-2xs tabular-nums text-muted-foreground">
                         {e.inspectionDue ? (
                           <span className="font-semibold text-amber-700 dark:text-amber-300">Pregled zadelju{e.nextInspectionAt ? ` (rok ${formatDate(e.nextInspectionAt)})` : ''}</span>
                         ) : e.inspectionUnknown ? (
@@ -1154,7 +1154,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                         type="button"
                         size="sm"
                         variant="outline"
-                        className="h-6 text-[10px] focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                        className="h-6 text-2xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
                         aria-label={`${EQUIPMENT_STATUS_LABELS[s] ?? s}: ${e.naziv}`}
                         onClick={() => void handleEquipmentStatus(e, s)}
                       >
@@ -1166,7 +1166,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                         type="button"
                         size="sm"
                         variant="outline"
-                        className="h-6 text-[10px] border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/40 focus-visible:ring-2 focus-visible:ring-red-400/50"
+                        className="h-6 text-2xs border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/40 focus-visible:ring-2 focus-visible:ring-red-400/50"
                         aria-label={`Upokoji ${e.naziv} (terminalno — ni mogoče razveljaviti)`}
                         title="Upokojitev je terminalna — ni mogoče razveljaviti"
                         onClick={() => void handleEquipmentStatus(e, 'UPOKOJENO')}
@@ -1178,7 +1178,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                       type="button"
                       size="sm"
                       variant="outline"
-                      className="h-6 text-[10px] bg-roksal-navy/5 focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                      className="h-6 text-2xs bg-roksal-navy/5 focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
                       aria-label={`Zabeleži dogodek za ${e.naziv}`}
                       onClick={() => void openEventDialog(e)}
                     >
@@ -1222,7 +1222,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
             <div>
               <Label className="text-xs">Oprema ({schedEquipment.length} izbranih)</Label>
               {equipment.filter((e0) => !['UPOKOJENO', 'IZGUBLJENO', 'V_SERVISU'].includes(e0.status)).length === 0 ? (
-                <p className="text-[10px] text-muted-foreground py-1">Ni rezervirljive opreme.</p>
+                <p className="text-2xs text-muted-foreground py-1">Ni rezervirljive opreme.</p>
               ) : (
                 <div className="max-h-32 space-y-1 overflow-y-auto rounded-md border p-2">
                   {equipment.filter((e0) => !['UPOKOJENO', 'IZGUBLJENO', 'V_SERVISU'].includes(e0.status)).map((e0) => (
@@ -1272,7 +1272,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
               <div><Label className="text-xs">Ura začetka</Label><Input type="time" value={moveTime} onChange={(e) => setMoveTime(e.target.value)} className="h-9" /></div>
             </div>
             <div><Label className="text-xs">Trajanje (ure)</Label><Input type="number" min="1" max="24" value={moveHours} onChange={(e) => setMoveHours(e.target.value)} className="h-9 tabular-nums" /></div>
-            <p className="text-[10px] leading-relaxed text-muted-foreground">
+            <p className="text-2xs leading-relaxed text-muted-foreground">
               Če ekipa ali monter v novem oknu ima že drug termin, bo preložitev zavrnjena (409) z razlago — nič ne bo tiho prekrivano.
             </p>
           </div>
@@ -1375,7 +1375,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                 <Label className="text-xs text-muted-foreground">Zadnji dogodki</Label>
                 <div className="max-h-28 space-y-1 overflow-y-auto rounded-md border p-2">
                   {eventHistory.map((h) => (
-                    <div key={h.id} className="flex items-center gap-2 text-[10px] tabular-nums">
+                    <div key={h.id} className="flex items-center gap-2 text-2xs tabular-nums">
                       <span className="font-semibold text-roksal-ink">{EQUIPMENT_EVENT_LABELS[h.type] ?? h.type}</span>
                       <span className="text-muted-foreground">{formatDate(h.performedAt)}</span>
                       {h.result === 'NAPAKA' && <span className="font-semibold text-red-700 dark:text-red-300">NAPAKA</span>}
@@ -1389,12 +1389,12 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
             {eventHistoryFor === eventTarget?.id && eventHistoryNapaka && (
               <p
                 role="note"
-                className="rounded-md border border-roksal-amber/40 bg-roksal-amber/10 px-2.5 py-1.5 text-[10px] text-roksal-ink dark:text-roksal-amber"
+                className="rounded-md border border-roksal-amber/40 bg-roksal-amber/10 px-2.5 py-1.5 text-2xs text-roksal-ink dark:text-roksal-amber"
               >
                 {eventHistoryNapaka}
               </p>
             )}
-            <p className="text-[10px] leading-relaxed text-muted-foreground">
+            <p className="text-2xs leading-relaxed text-muted-foreground">
               Dogodek v prihodnosti ni mogoč (preverba na strežniku). Kalibracija merske opreme zahteva potrdilo — sicer zavržena (400).
             </p>
           </div>
@@ -1476,7 +1476,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                   placeholder="Razlog (obvezen, reviziran kot QC_OVERRIDE)"
                   className="mt-1 h-8 text-xs"
                 />
-                <p className="mt-1 text-[10px] text-red-700/80 dark:text-red-300/80">Razlog se nespremenljivo zapiše v revizijsko sled skupaj z zaključitvijo.</p>
+                <p className="mt-1 text-2xs text-red-700/80 dark:text-red-300/80">Razlog se nespremenljivo zapiše v revizijsko sled skupaj z zaključitvijo.</p>
                 <div className="mt-2 flex gap-2">
                   <Button type="button" size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => setQcOverrideMode(false)}>Nazaj na preverbo</Button>
                   <Button
@@ -1494,7 +1494,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
             ) : (
               <button
                 type="button"
-                className="text-left text-[10px] text-muted-foreground underline underline-offset-2 hover:text-red-700 dark:hover:text-red-300"
+                className="text-left text-2xs text-muted-foreground underline underline-offset-2 hover:text-red-700 dark:hover:text-red-300"
                 onClick={() => setQcOverrideMode(true)}
               >
                 Preverba ni mogoča — zaključi z izrecnim override (razlog se revizira) →
@@ -1657,7 +1657,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                   </Button>
                 </div>
                 {(!evExisting.hasBefore || !evExisting.hasAfter) && (
-                  <p className="mt-1 text-[10px] text-amber-700 dark:text-amber-300">
+                  <p className="mt-1 text-2xs text-amber-700 dark:text-amber-300">
                     Predaja zahteva PRED in PO fotografijo — {(!evExisting.hasBefore && !evExisting.hasAfter) ? 'manjkata oba' : 'manjka ena'} (shranite dokazilo z izbranimi fotkami).
                   </p>
                 )}

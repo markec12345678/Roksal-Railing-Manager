@@ -170,7 +170,7 @@ export function TopBar({ onSync, syncing, onOpenPalette, hidden = false }: TopBa
             title="Iskalnik — Ctrl+K"
           >
             <Search className="h-4 w-4" />
-            <kbd className="hidden rounded border border-white/20 bg-white/10 px-1 font-sans text-[10px] font-medium sm:inline-block">
+            <kbd className="hidden rounded border border-white/20 bg-white/10 px-1 font-sans text-2xs font-medium sm:inline-block">
               Ctrl K
             </kbd>
           </Button>

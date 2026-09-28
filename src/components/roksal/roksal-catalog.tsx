@@ -146,7 +146,7 @@ export function RoksalCatalog() {
                         <Badge className={`${badge.cls} border border-transparent`} variant="secondary">
                           {badge.label}
                         </Badge>
-                        <span className="text-[10px] font-mono tabular-nums text-muted-foreground">{p.sifra}</span>
+                        <span className="text-2xs font-mono tabular-nums text-muted-foreground">{p.sifra}</span>
                       </div>
                       <h3 className="text-sm font-semibold text-roksal-ink">{p.naziv}</h3>
                       <p className="text-[11px] text-muted-foreground">{p.kategorija}</p>

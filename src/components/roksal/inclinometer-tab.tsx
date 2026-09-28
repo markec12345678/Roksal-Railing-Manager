@@ -244,16 +244,16 @@ export function InclinometerTab({ projectId }: { projectId: string | null }) {
           {/* Prikaz kotov — tabular-nums, da se številke ne "skakljejo" */}
           <div className="grid w-full grid-cols-2 gap-3">
             <div className="rounded-lg border border-roksal-navy/10 bg-card dark:border-roksal-ink/15 p-3 text-center transition-[border-color,box-shadow] duration-150 hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25 hover:shadow-sm">
-              <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Levo ↔ Desno</div>
+              <div className="text-2xs font-medium uppercase tracking-wide text-muted-foreground">Levo ↔ Desno</div>
               <div className="text-2xl font-bold tabular-nums text-roksal-ink">{reading ? angleX.toFixed(1) : '–'}°</div>
-              <div className="text-[10px] text-muted-foreground">
+              <div className="text-2xs text-muted-foreground">
                 {reading ? (Math.abs(reading.gamma) < 1.5 ? '↓ ravno' : reading.gamma > 0 ? '→ desno' : '← levo') : ''}
               </div>
             </div>
             <div className="rounded-lg border border-roksal-navy/10 bg-card dark:border-roksal-ink/15 p-3 text-center transition-[border-color,box-shadow] duration-150 hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25 hover:shadow-sm">
-              <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Naprej ↔ Nazaj</div>
+              <div className="text-2xs font-medium uppercase tracking-wide text-muted-foreground">Naprej ↔ Nazaj</div>
               <div className="text-2xl font-bold tabular-nums text-roksal-ink">{reading ? angleY.toFixed(1) : '–'}°</div>
-              <div className="text-[10px] text-muted-foreground">
+              <div className="text-2xs text-muted-foreground">
                 {reading ? (angleY < 1.5 ? '↓ ravno' : reading.beta > 90 ? '↓ naprej' : '↑ nazaj') : ''}
               </div>
             </div>
@@ -332,7 +332,7 @@ export function InclinometerTab({ projectId }: { projectId: string | null }) {
                 )}
                 {saving ? 'Shranjujem …' : 'Shrani nagib'}
               </Button>
-              {!projectId && <p className="text-center text-[10px] text-amber-600 dark:text-amber-400">Izberite projekt v zavihku Domov.</p>}
+              {!projectId && <p className="text-center text-2xs text-amber-600 dark:text-amber-400">Izberite projekt v zavihku Domov.</p>}
             </div>
           )}
         </CardContent>

@@ -163,8 +163,8 @@ describe('R189 (c) — kartica: številčni povzetek ob traku (fail-soft žičen
   it('izris NASVETEN: vrstica samo kadar statistika != null, ob traku, ENA vrsta razredov', () => {
     const src = kartica()
     expect(src.match(/\{statistika && \(/g)?.length).toBe(1)
-    // enaka vrsta mikroskopa kot oznaka traku (družina text-[10px] muted/70):
-    expect(src).toMatch(/text-\[10px\] leading-tight text-muted-foreground\/70 tabular-nums/)
+    // enaka vrsta mikroskopa kot oznaka traku (družina text-2xs muted/70):
+    expect(src).toMatch(/text-2xs leading-tight text-muted-foreground\/70 tabular-nums/)
     // vsebina: razpon + povprečje (sklanjatev v jedru ni potrebna — številke)
     expect(src).toContain('{statistika.najhitrejsa}–{statistika.najpocasnejsa} ms, povp. {statistika.povprecna}')
     // NOTRI znotraj traku bloka (za oznako, pred zaključkom bloka):

@@ -67,7 +67,7 @@ describe('R211 — fail-verbose meritve/portal viri v projektu-detail dialogu', 
   })
 
   it('portal: značka pokaže Napaka, ne lažno Onemogočen (obe kartici)', () => {
-    expect(domov).toContain('portalError ? (\n                      <Badge className="bg-roksal-red/15 text-roksal-red hover:bg-roksal-red/20 text-[10px]" title={portalError}>')
+    expect(domov).toContain('portalError ? (\n                      <Badge className="bg-roksal-red/15 text-roksal-red hover:bg-roksal-red/20 text-2xs" title={portalError}>')
     expect((domov.match(/Napaka\n/g) || []).length).toBe(2)
   })
 

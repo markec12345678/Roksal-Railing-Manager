@@ -554,7 +554,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
         {/* 1. Tip objekta */}
         <Card className="border-roksal-navy/10 dark:border-roksal-ink/15">
           <CardContent className="p-4">
-            <Label className="mb-2 block text-[10px] font-bold uppercase tracking-wide text-muted-foreground">1 · Kaj je objekt?</Label>
+            <Label className="mb-2 block text-2xs font-bold uppercase tracking-wide text-muted-foreground">1 · Kaj je objekt?</Label>
             <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
               {TIP_OBJEKTA.map((t) => (
                 <button
@@ -569,11 +569,11 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
                   }`}
                 >
                   <t.icon className={`h-4 w-4 ${data.tipObjekta === t.id ? 'text-roksal-amber' : 'text-roksal-ink/60'}`} />
-                  <span className={`text-[10px] font-bold leading-tight ${data.tipObjekta === t.id ? 'text-roksal-amber' : 'text-roksal-ink'}`}>{t.label}</span>
+                  <span className={`text-2xs font-bold leading-tight ${data.tipObjekta === t.id ? 'text-roksal-amber' : 'text-roksal-ink'}`}>{t.label}</span>
                 </button>
               ))}
             </div>
-            <p className="mt-2 text-[10px] text-muted-foreground">{TIP_OBJEKTA.find((t) => t.id === data.tipObjekta)?.opis}</p>
+            <p className="mt-2 text-2xs text-muted-foreground">{TIP_OBJEKTA.find((t) => t.id === data.tipObjekta)?.opis}</p>
           </CardContent>
         </Card>
 
@@ -581,7 +581,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
         <Card className="border-roksal-navy/10 dark:border-roksal-ink/15">
           <CardContent className="space-y-3 p-4">
             <div>
-              <Label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wide text-muted-foreground">2 · Oblika tlorisa</Label>
+              <Label className="mb-1.5 block text-2xs font-bold uppercase tracking-wide text-muted-foreground">2 · Oblika tlorisa</Label>
               <div className="grid grid-cols-4 gap-1.5">
                 {OBLIKE.map((o) => (
                   <button
@@ -594,13 +594,13 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
                     }`}
                   >
                     <span className={`block text-[11px] font-bold ${data.oblika === o.id ? 'text-roksal-amber' : 'text-roksal-ink'}`}>{o.label}</span>
-                    <span className="block text-[8px] text-muted-foreground">{o.opis}</span>
+                    <span className="block text-3xs text-muted-foreground">{o.opis}</span>
                   </button>
                 ))}
               </div>
             </div>
             <div>
-              <Label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Kje se pritrjuje?</Label>
+              <Label className="mb-1.5 block text-2xs font-bold uppercase tracking-wide text-muted-foreground">Kje se pritrjuje?</Label>
               <div className="grid grid-cols-4 gap-1.5">
                 {PRITRDITVE.map((p) => (
                   <button
@@ -613,7 +613,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
                     }`}
                   >
                     <span className={`block text-[11px] font-bold ${data.pritrditev === p.id ? 'text-roksal-amber' : 'text-roksal-ink'}`}>{p.label}</span>
-                    <span className="block text-[8px] text-muted-foreground">{p.opis}</span>
+                    <span className="block text-3xs text-muted-foreground">{p.opis}</span>
                   </button>
                 ))}
               </div>
@@ -624,7 +624,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
         {/* 3. Podlaga — najpomembneje */}
         <Card className={`border ${data.podlaga === 'estrih' ? 'border-amber-300 bg-amber-50/40 dark:border-amber-700 dark:bg-amber-950/40' : 'border-roksal-navy/10 dark:border-roksal-ink/15'}`}>
           <CardContent className="p-4">
-            <Label className="mb-2 block text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+            <Label className="mb-2 block text-2xs font-bold uppercase tracking-wide text-muted-foreground">
               3 · Podlaga (določa moznike!) 
             </Label>
             <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-6">
@@ -634,7 +634,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
                   type="button"
                   onClick={() => set('podlaga', p.id)}
                   aria-pressed={data.podlaga === p.id}
-                  className={`min-h-[44px] rounded-lg border px-1 py-1.5 text-[10px] font-bold transition-all ${
+                  className={`min-h-[44px] rounded-lg border px-1 py-1.5 text-2xs font-bold transition-all ${
                     data.podlaga === p.id
                       ? p.barva === 'amber'
                         ? 'border-amber-400 dark:border-amber-700 bg-amber-100 dark:bg-amber-500/15 text-amber-800 dark:text-amber-200'
@@ -649,7 +649,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
               ))}
             </div>
             {data.podlaga === 'estrih' && (
-              <p className="mt-2 flex items-start gap-1.5 rounded-lg bg-amber-100 dark:bg-amber-500/15 px-2.5 py-2 text-[10px] font-medium leading-relaxed text-amber-900 dark:text-amber-200">
+              <p className="mt-2 flex items-start gap-1.5 rounded-lg bg-amber-100 dark:bg-amber-500/15 px-2.5 py-2 text-2xs font-medium leading-relaxed text-amber-900 dark:text-amber-200">
                 <TriangleAlert className="mt-0.5 h-3 w-3 shrink-0" />
                 Estrih + folija = hidroizolacija. Ekspanzijski moznik je VDRA do folije →
                 kemija + tesnilna masa, sicer vlaga uniči ploščo (reklamacija!).
@@ -661,7 +661,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
         {/* 4. Mere */}
         <Card className="border-roksal-navy/10 dark:border-roksal-ink/15">
           <CardContent className="p-4">
-            <Label className="mb-2 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+            <Label className="mb-2 flex items-center gap-1 text-2xs font-bold uppercase tracking-wide text-muted-foreground">
               <Ruler className="h-3 w-3" /> 4 · Mere (mm — iz AR skenerja ali traku)
             </Label>
             <div className="grid grid-cols-3 gap-2">
@@ -720,7 +720,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
             )}
             {(data.razponNajdaljsiMm != null || data.skupnaDolzinaMm != null) && (
               <div className="mt-2">
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-2xs text-muted-foreground">
                   Najdaljši razpon: <strong className="text-roksal-ink">{mm(data.razponNajdaljsiMm)}</strong>
                   {data.skupnaDolzinaMm != null && <> · skupaj: <strong className="text-roksal-ink">{mm(data.skupnaDolzinaMm)}</strong></>}
                 </p>
@@ -728,15 +728,15 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
                   <>
                     <div className="mt-2 grid grid-cols-3 gap-1.5">
                       <div className="rounded-lg bg-roksal-navy/[0.04] px-2 py-1.5 text-center ring-1 ring-roksal-navy/5">
-                        <span className="block text-[8px] font-bold uppercase tracking-wide text-muted-foreground">Segmenti</span>
+                        <span className="block text-3xs font-bold uppercase tracking-wide text-muted-foreground">Segmenti</span>
                         <span className="block text-sm font-bold text-roksal-ink">~{izracun.segmentov}</span>
                       </div>
                       <div className="rounded-lg bg-roksal-navy/[0.04] px-2 py-1.5 text-center ring-1 ring-roksal-navy/5">
-                        <span className="block text-[8px] font-bold uppercase tracking-wide text-muted-foreground">Stebri</span>
+                        <span className="block text-3xs font-bold uppercase tracking-wide text-muted-foreground">Stebri</span>
                         <span className="block text-sm font-bold text-roksal-ink">~{izracun.stebri}</span>
                       </div>
                       <div className="rounded-lg bg-roksal-navy/[0.04] px-2 py-1.5 text-center ring-1 ring-roksal-navy/5">
-                        <span className="block text-[8px] font-bold uppercase tracking-wide text-muted-foreground">Kotni spoji</span>
+                        <span className="block text-3xs font-bold uppercase tracking-wide text-muted-foreground">Kotni spoji</span>
                         <span className="block text-sm font-bold text-roksal-ink">{izracun.koti}</span>
                       </div>
                     </div>
@@ -763,7 +763,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
         {/* 5. Ovire */}
         <Card className="border-roksal-navy/10 dark:border-roksal-ink/15">
           <CardContent className="p-4">
-            <Label className="mb-2 block text-[10px] font-bold uppercase tracking-wide text-muted-foreground">5 · Ovire na objektu</Label>
+            <Label className="mb-2 block text-2xs font-bold uppercase tracking-wide text-muted-foreground">5 · Ovire na objektu</Label>
             <div className="flex flex-wrap gap-1.5">
               {OVIRE.map((o) => {
                 const on = data.ovire.includes(o.id)
@@ -795,7 +795,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
             <div className="flex items-center justify-between gap-3">
               <div>
                 <Label className="text-[11px] font-bold text-roksal-ink">Dvigalo na voljo?</Label>
-                <p className="text-[10px] text-muted-foreground">Brez dvigala = plan ročnega dviga materiala</p>
+                <p className="text-2xs text-muted-foreground">Brez dvigala = plan ročnega dviga materiala</p>
               </div>
               <Switch checked={data.dvigalo} onCheckedChange={(v) => set('dvigalo', v)} aria-label="Dvigalo na voljo" />
             </div>
@@ -815,7 +815,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
         {/* 6 · RAL barva — izbira stranke na terenu (runda R) */}
         <Card className="border-roksal-navy/10 dark:border-roksal-ink/15">
           <CardContent className="p-4">
-            <Label className="mb-2 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+            <Label className="mb-2 flex items-center gap-1 text-2xs font-bold uppercase tracking-wide text-muted-foreground">
               <Palette className="h-3 w-3" /> 6 · RAL barva prahu (izbira stranke)
             </Label>
             <div className="flex flex-wrap gap-2">
@@ -837,8 +837,8 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
                       style={{ backgroundColor: r.hex }}
                     />
                     <span>
-                      <span className={`block text-[10px] font-bold leading-none ${on ? 'text-roksal-amber' : 'text-roksal-ink'}`}>RAL {r.code}</span>
-                      <span className="block text-[8px] text-muted-foreground">{r.ime}</span>
+                      <span className={`block text-2xs font-bold leading-none ${on ? 'text-roksal-amber' : 'text-roksal-ink'}`}>RAL {r.code}</span>
+                      <span className="block text-3xs text-muted-foreground">{r.ime}</span>
                     </span>
                     {on && <CheckCircle2 className="h-3.5 w-3.5 text-roksal-amber" />}
                   </button>
@@ -855,10 +855,10 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
         <Card className="border-roksal-navy/10 dark:border-roksal-ink/15">
           <CardContent className="p-4">
             <div className="mb-2 flex items-center justify-between">
-              <Label className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+              <Label className="flex items-center gap-1 text-2xs font-bold uppercase tracking-wide text-muted-foreground">
                 <Camera className="h-3 w-3" /> 7 · Foto kontrolni seznam (slikat MORAŠ)
               </Label>
-              <Badge variant="secondary" className="text-[10px]">{data.fotoPosneto.length}/{FOTO_CHECKLIST.length}</Badge>
+              <Badge variant="secondary" className="text-2xs">{data.fotoPosneto.length}/{FOTO_CHECKLIST.length}</Badge>
             </div>
             <div className="space-y-1.5">
               {FOTO_CHECKLIST.map((f, i) => {
@@ -873,7 +873,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
                       done ? 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/40' : 'border-roksal-navy/10 dark:border-roksal-ink/15 hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25'
                     }`}
                   >
-                    <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
+                    <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-2xs font-bold ${
                       done ? 'bg-green-500 text-white' : 'bg-roksal-navy/10 text-roksal-ink/60'
                     }`}>
                       {done ? <CheckCircle2 className="h-3.5 w-3.5" /> : i + 1}

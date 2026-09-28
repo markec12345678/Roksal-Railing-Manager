@@ -194,7 +194,7 @@ export function BottomNav({ activeTab, onTabChange, badges = {}, moreActive = nu
                   </div>
                   <div>
                     <div className="text-sm font-semibold text-roksal-ink">{t.label}</div>
-                    <div className="text-[10px] text-muted-foreground">{t.description}</div>
+                    <div className="text-2xs text-muted-foreground">{t.description}</div>
                   </div>
                 </button>
               )

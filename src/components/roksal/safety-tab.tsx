@@ -317,7 +317,7 @@ export function SafetyTab() {
               {summaryMessage}
             </p>
           </div>
-          <Badge className={`text-[10px] shrink-0 ${risk.bg} ${risk.color}`}>
+          <Badge className={`text-2xs shrink-0 ${risk.bg} ${risk.color}`}>
             {risk.label}
           </Badge>
         </div>
@@ -338,7 +338,7 @@ export function SafetyTab() {
               <Wind className="h-4 w-4" />
               Veter — Kranj
             </CardTitle>
-            <Badge className={`${risk.bg} ${risk.color} text-[10px]`}>
+            <Badge className={`${risk.bg} ${risk.color} text-2xs`}>
               {risk.label}
             </Badge>
           </div>
@@ -360,7 +360,7 @@ export function SafetyTab() {
                       {windData.speed.toFixed(1)}
                     </span>
                   </div>
-                  <p className="mt-1 text-[10px] text-muted-foreground">m/s</p>
+                  <p className="mt-1 text-2xs text-muted-foreground">m/s</p>
                 </div>
                 {/* Wind Compass */}
                 <div
@@ -453,21 +453,21 @@ export function SafetyTab() {
                   <Thermometer className="h-4 w-4 text-roksal-amber" />
                   <div>
                     <p className="text-xs font-medium text-roksal-ink tabular-nums">{windData.temperature}°C</p>
-                    <p className="text-[10px] text-muted-foreground">Temperatura</p>
+                    <p className="text-2xs text-muted-foreground">Temperatura</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 rounded-lg bg-secondary/50 p-2">
                   <CloudRain className="h-4 w-4 text-blue-500 dark:text-blue-400" />
                   <div>
                     <p className="text-xs font-medium text-roksal-ink tabular-nums">{windData.humidity}%</p>
-                    <p className="text-[10px] text-muted-foreground">Vlažnost</p>
+                    <p className="text-2xs text-muted-foreground">Vlažnost</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 rounded-lg bg-secondary/50 p-2">
                   <Gauge className="h-4 w-4 text-purple-500 dark:text-purple-400" />
                   <div>
                     <p className="text-xs font-medium text-roksal-ink tabular-nums">{windData.pressure} hPa</p>
-                    <p className="text-[10px] text-muted-foreground">Pritisnik</p>
+                    <p className="text-2xs text-muted-foreground">Pritisnik</p>
                   </div>
                 </div>
               </div>
@@ -588,7 +588,7 @@ export function SafetyTab() {
                       : 'bg-red-500'
                   }`} />
                 </div>
-                <p className="mt-1 text-[10px] text-muted-foreground">-10°…40°</p>
+                <p className="mt-1 text-2xs text-muted-foreground">-10°…40°</p>
               </div>
 
               {/* Temperature Info */}
@@ -623,12 +623,12 @@ export function SafetyTab() {
                         ? 'PREHLAJENO — tveganje za material'
                         : 'PREVROČE — tveganje za delavce'}
                     </p>
-                    <p className="text-[10px] text-muted-foreground">
+                    <p className="text-2xs text-muted-foreground">
                       Priporočena temperatura: 5°C–35°C
                     </p>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2 text-[10px]">
+                <div className="grid grid-cols-2 gap-2 text-2xs">
                   <div className="rounded-md bg-blue-50 px-2 py-1.5 text-center dark:bg-blue-950/30">
                     <span className="text-blue-600 dark:text-blue-400">{'<'}5°C</span>
                     <p className="text-muted-foreground">Nevarno</p>
@@ -679,7 +679,7 @@ export function SafetyTab() {
               Seznam preverjanj
             </CardTitle>
             <Badge
-              className={`text-[10px] tabular-nums ${
+              className={`text-2xs tabular-nums ${
                 progressPct === 100
                   ? 'bg-roksal-green/15 text-roksal-green'
                   : 'bg-secondary text-muted-foreground'

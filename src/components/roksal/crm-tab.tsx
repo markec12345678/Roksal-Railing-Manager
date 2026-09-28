@@ -312,7 +312,7 @@ export function CrmTab() {
             <CardContent className="p-3">
               <div className="flex items-center gap-1 mb-1">
                 <CheckCircle2 className="h-3 w-3 text-green-600 dark:text-green-400" aria-hidden="true" />
-                <span className="text-[10px] text-muted-foreground">Aktivni</span>
+                <span className="text-2xs text-muted-foreground">Aktivni</span>
               </div>
               <div className="text-lg font-bold text-roksal-ink tabular-nums">{stats.aktivni}</div>
             </CardContent>
@@ -321,12 +321,12 @@ export function CrmTab() {
             <CardContent className="p-3">
               <div className="flex items-center gap-1 mb-1">
                 <Bell className="h-3 w-3 text-amber-600 dark:text-amber-400" aria-hidden="true" />
-                <span className="text-[10px] text-muted-foreground">Opomniki</span>
+                <span className="text-2xs text-muted-foreground">Opomniki</span>
               </div>
               <div className="text-lg font-bold text-amber-700 dark:text-amber-300 tabular-nums">
                 {stats.zOpomniki}
                 {stats.potekliOpomniki > 0 && (
-                  <span className="text-[10px] text-red-600 dark:text-red-400 ml-1">({stats.potekliOpomniki} poteklo)</span>
+                  <span className="text-2xs text-red-600 dark:text-red-400 ml-1">({stats.potekliOpomniki} poteklo)</span>
                 )}
               </div>
             </CardContent>
@@ -335,7 +335,7 @@ export function CrmTab() {
             <CardContent className="p-3">
               <div className="flex items-center gap-1 mb-1">
                 <TrendingUp className="h-3 w-3 text-roksal-ink" aria-hidden="true" />
-                <span className="text-[10px] text-muted-foreground">Skupni LTV</span>
+                <span className="text-2xs text-muted-foreground">Skupni LTV</span>
               </div>
               <div className="text-lg font-bold text-roksal-ink tabular-nums">{formatLTV(stats.skupniLTV)}</div>
             </CardContent>
@@ -344,7 +344,7 @@ export function CrmTab() {
             <CardContent className="p-3">
               <div className="flex items-center gap-1 mb-1">
                 <Users className="h-3 w-3 text-purple-600 dark:text-purple-400" aria-hidden="true" />
-                <span className="text-[10px] text-muted-foreground">Skupno</span>
+                <span className="text-2xs text-muted-foreground">Skupno</span>
               </div>
               <div className="text-lg font-bold text-roksal-ink tabular-nums">{stats.skupno}</div>
             </CardContent>
@@ -475,27 +475,27 @@ export function CrmTab() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-sm font-semibold text-roksal-ink truncate">{c.ime}</span>
-                      <Badge variant="outline" className={`text-[8px] shrink-0 ${STATUS_COLORS[c.status]}`}>
+                      <Badge variant="outline" className={`text-3xs shrink-0 ${STATUS_COLORS[c.status]}`}>
                         {STATUS_LABELS[c.status] || c.status}
                       </Badge>
                       {c.opomnikStatus === 'POTEKEL' && (
-                        <Badge variant="outline" className="text-[8px] bg-red-100 text-red-700 border-red-300 dark:bg-red-500/15 dark:text-red-300 dark:border-red-500/30 shrink-0">
+                        <Badge variant="outline" className="text-3xs bg-red-100 text-red-700 border-red-300 dark:bg-red-500/15 dark:text-red-300 dark:border-red-500/30 shrink-0">
                           <AlertCircle className="h-2.5 w-2.5 mr-0.5" aria-hidden="true" />
                           Opomnik potekel
                         </Badge>
                       )}
                       {c.opomnikStatus === 'AKTIVEN' && (
-                        <Badge variant="outline" className="text-[8px] bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30 shrink-0">
+                        <Badge variant="outline" className="text-3xs bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30 shrink-0">
                           <Bell className="h-2.5 w-2.5 mr-0.5" aria-hidden="true" />
                           Opomnik
                         </Badge>
                       )}
                     </div>
-                    <div className="flex items-center gap-1 text-[10px] text-muted-foreground mb-1">
+                    <div className="flex items-center gap-1 text-2xs text-muted-foreground mb-1">
                       <MapPin className="h-2.5 w-2.5 shrink-0" />
                       <span className="truncate">{c.naslov}</span>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2 text-[10px]">
+                    <div className="flex flex-wrap items-center gap-2 text-2xs">
                       {c.kategorija && (
                         <span className="flex items-center gap-0.5">
                           <Building2 className="h-2.5 w-2.5 text-muted-foreground" />
@@ -544,13 +544,13 @@ export function CrmTab() {
             <div className="space-y-3 p-4">
               <div className="grid grid-cols-2 gap-2">
                 <div className="rounded-lg border border-border p-2">
-                  <div className="text-[10px] text-muted-foreground">Status</div>
+                  <div className="text-2xs text-muted-foreground">Status</div>
                   <Badge variant="outline" className={`text-[9px] mt-1 ${STATUS_COLORS[selectedCustomer.status]}`}>
                     {STATUS_LABELS[selectedCustomer.status] || selectedCustomer.status}
                   </Badge>
                 </div>
                 <div className="rounded-lg border border-border p-2">
-                  <div className="text-[10px] text-muted-foreground">Kategorija</div>
+                  <div className="text-2xs text-muted-foreground">Kategorija</div>
                   <div className="text-xs font-medium mt-1">{selectedCustomer.kategorija || '—'}</div>
                 </div>
               </div>
@@ -587,15 +587,15 @@ export function CrmTab() {
               {/* LTV + projekti */}
               <div className="grid grid-cols-3 gap-2">
                 <div className="rounded-lg bg-roksal-navy/5 p-2 text-center">
-                  <div className="text-[10px] text-muted-foreground">LTV</div>
+                  <div className="text-2xs text-muted-foreground">LTV</div>
                   <div className="text-sm font-bold text-roksal-ink">{formatLTV(selectedCustomer.ltv)}</div>
                 </div>
                 <div className="rounded-lg bg-roksal-navy/5 p-2 text-center">
-                  <div className="text-[10px] text-muted-foreground">Projekti</div>
+                  <div className="text-2xs text-muted-foreground">Projekti</div>
                   <div className="text-sm font-bold text-roksal-ink">{selectedCustomer.skupajProjektov}</div>
                 </div>
                 <div className="rounded-lg bg-roksal-navy/5 p-2 text-center">
-                  <div className="text-[10px] text-muted-foreground">Zaklenjeni</div>
+                  <div className="text-2xs text-muted-foreground">Zaklenjeni</div>
                   <div className="text-sm font-bold text-roksal-ink">{selectedCustomer.zaklenjeni}</div>
                 </div>
               </div>
@@ -612,7 +612,7 @@ export function CrmTab() {
                     <span className="text-xs font-semibold">
                       {selectedCustomer.opomnikStatus === 'POTEKEL' ? 'Opomnik potekel' : 'Opomnik'}
                     </span>
-                    <span className="text-[10px] text-muted-foreground ml-auto">
+                    <span className="text-2xs text-muted-foreground ml-auto">
                       {formatDate(selectedCustomer.opomnikDatum)}
                     </span>
                   </div>
@@ -631,7 +631,7 @@ export function CrmTab() {
               {/* Opombe */}
               {selectedCustomer.opombeCRM && (
                 <div className="rounded-lg border border-border p-2">
-                  <div className="text-[10px] text-muted-foreground mb-1">Opombe (interne)</div>
+                  <div className="text-2xs text-muted-foreground mb-1">Opombe (interne)</div>
                   <p className="text-xs">{selectedCustomer.opombeCRM}</p>
                 </div>
               )}

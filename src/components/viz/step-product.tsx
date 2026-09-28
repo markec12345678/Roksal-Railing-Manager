@@ -272,11 +272,11 @@ export function StepProduct() {
             <div className="flex items-center justify-between gap-2">
               <p className="text-sm font-bold text-roksal-ink">VAŠA OGRAJA</p>
               {productMask?.edited ? (
-                <Badge className="bg-roksal-amber/15 text-[10px] font-semibold text-roksal-amber hover:bg-roksal-amber/15">
+                <Badge className="bg-roksal-amber/15 text-2xs font-semibold text-roksal-amber hover:bg-roksal-amber/15">
                   Maska urejena ročno
                 </Badge>
               ) : (
-                <Badge variant="secondary" className="text-[10px]">
+                <Badge variant="secondary" className="text-2xs">
                   Samodejni izrez (predlog)
                 </Badge>
               )}

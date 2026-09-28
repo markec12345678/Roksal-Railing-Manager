@@ -406,7 +406,7 @@ export function SignatureQuote({ quoteData, monterName = 'Monter Roksal', projec
                 <Badge variant="outline" className="bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300 border-green-300 dark:border-green-800 text-[9px]">
                   <Check className="h-3 w-3 mr-1" /> Podpisano
                 </Badge>
-                <Button type="button" size="sm" variant="ghost" className="h-6 w-full text-[10px]" onClick={() => setCustomerSigOpen(true)}>
+                <Button type="button" size="sm" variant="ghost" className="h-6 w-full text-2xs" onClick={() => setCustomerSigOpen(true)}>
                   Spremeni
                 </Button>
               </div>
@@ -429,7 +429,7 @@ export function SignatureQuote({ quoteData, monterName = 'Monter Roksal', projec
                 <Badge variant="outline" className="bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300 border-green-300 dark:border-green-800 text-[9px]">
                   <Check className="h-3 w-3 mr-1" /> Podpisano
                 </Badge>
-                <Button type="button" size="sm" variant="ghost" className="h-6 w-full text-[10px]" onClick={() => setMonterSigOpen(true)}>
+                <Button type="button" size="sm" variant="ghost" className="h-6 w-full text-2xs" onClick={() => setMonterSigOpen(true)}>
                   Spremeni
                 </Button>
               </div>
@@ -462,7 +462,7 @@ export function SignatureQuote({ quoteData, monterName = 'Monter Roksal', projec
         </Button>
 
         {(!customerSig || !monterSig) && (
-          <p className="text-center text-[10px] text-amber-600 dark:text-amber-400">
+          <p className="text-center text-2xs text-amber-600 dark:text-amber-400">
             {!customerSig && !monterSig
               ? 'Oba podpisa (stranka + monter) sta potrebna'
               : !customerSig

@@ -700,7 +700,7 @@ export function NotificationCenter() {
                             števcev; vsebina ostane ista, brez sklanjatev). */}
                         <p className={`truncate text-[11px] text-muted-foreground ${item.kind === 'stock' ? 'tabular-nums' : ''}`}>{item.subtitle}</p>
                         {item.meta && (
-                          <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide text-roksal-amber">
+                          <p className="mt-0.5 text-2xs font-semibold uppercase tracking-wide text-roksal-amber">
                             {item.meta}
                           </p>
                         )}
@@ -717,7 +717,7 @@ export function NotificationCenter() {
             {persisted.length > 0 && (
               <div className="mt-3 border-t border-border/60 pt-3">
                 <div className="mb-2 flex items-center gap-1.5 px-1">
-                  <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  <p className="flex items-center gap-1.5 text-2xs font-bold uppercase tracking-wider text-muted-foreground">
                     <Inbox className="h-3 w-3" aria-hidden="true" />
                     Poslana obvestila ({persisted.length})
                   </p>
@@ -732,7 +732,7 @@ export function NotificationCenter() {
                         type="button"
                         onClick={() => void oznaciVsePrebrano()}
                         disabled={oznacujemVse}
-                        className="ml-auto flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground transition-colors hover:bg-roksal-navy/5 hover:text-roksal-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 disabled:cursor-not-allowed disabled:opacity-50 dark:text-muted-foreground dark:hover:bg-roksal-ink/10 dark:hover:text-roksal-ink dark:focus-visible:ring-roksal-ink/40"
+                        className="ml-auto flex items-center gap-1 rounded-md px-1.5 py-0.5 text-2xs font-bold uppercase tracking-wider text-muted-foreground transition-colors hover:bg-roksal-navy/5 hover:text-roksal-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 disabled:cursor-not-allowed disabled:opacity-50 dark:text-muted-foreground dark:hover:bg-roksal-ink/10 dark:hover:text-roksal-ink dark:focus-visible:ring-roksal-ink/40"
                         aria-label={`Označi vse kot prebrano (${neprebrana})`}
                         title={`Označi vse kot prebrano (${neprebrana})`}
                       >
@@ -791,7 +791,7 @@ export function NotificationCenter() {
                               <p className="line-clamp-2 text-[11px] text-muted-foreground">{n.sporocilo}</p>
                             )}
                             {n.status === 'FAILED' && (
-                              <p className="mt-0.5 flex items-center gap-1 text-[10px] font-semibold text-roksal-red">
+                              <p className="mt-0.5 flex items-center gap-1 text-2xs font-semibold text-roksal-red">
                                 <AlertTriangle className="h-3 w-3 shrink-0" aria-hidden="true" />
                                 {n.lastError ?? 'Razlog ni znan'} · poskus{' '}
                                 <span className="tabular-nums">
@@ -799,7 +799,7 @@ export function NotificationCenter() {
                                 </span>
                               </p>
                             )}
-                            <p className="mt-0.5 text-[10px] tabular-nums text-muted-foreground/70">
+                            <p className="mt-0.5 text-2xs tabular-nums text-muted-foreground/70">
                               {new Date(n.createdAt).toLocaleString('sl-SI', {
                                 day: '2-digit',
                                 month: '2-digit',
@@ -817,7 +817,7 @@ export function NotificationCenter() {
                           <button
                             type="button"
                             onClick={() => void odpriEkipoZaPregled(n)}
-                            className="ml-11 mt-1.5 inline-flex items-center gap-1 rounded-full bg-roksal-navy/5 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-roksal-navy transition-colors hover:bg-roksal-navy/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 active:scale-[0.97] dark:bg-roksal-ink/10 dark:text-roksal-ink dark:hover:bg-roksal-ink/20 dark:focus-visible:ring-roksal-ink/40"
+                            className="ml-11 mt-1.5 inline-flex items-center gap-1 rounded-full bg-roksal-navy/5 px-2.5 py-1 text-2xs font-bold uppercase tracking-wider text-roksal-navy transition-colors hover:bg-roksal-navy/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 active:scale-[0.97] dark:bg-roksal-ink/10 dark:text-roksal-ink dark:hover:bg-roksal-ink/20 dark:focus-visible:ring-roksal-ink/40"
                             aria-label="Odpri Ekipa — pregled ekipnih računov"
                             title="Pregled ekipnih računov (zaklep, vloge, aktivnost)"
                           >

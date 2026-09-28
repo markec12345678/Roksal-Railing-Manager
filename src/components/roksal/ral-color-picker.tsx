@@ -131,7 +131,7 @@ export function RALColorPicker({
                 {selectedColor.name}
               </div>
             </div>
-            <Badge variant="outline" className="font-mono text-[10px]">
+            <Badge variant="outline" className="font-mono text-2xs">
               {selectedColor.hexColor.toUpperCase()}
             </Badge>
           </div>
@@ -182,7 +182,7 @@ export function RALColorPicker({
                       <div className="text-xs font-semibold truncate text-roksal-ink dark:text-white">
                         RAL {color.code}
                       </div>
-                      <div className="text-[10px] text-muted-foreground truncate">
+                      <div className="text-2xs text-muted-foreground truncate">
                         {color.name}
                       </div>
                     </div>

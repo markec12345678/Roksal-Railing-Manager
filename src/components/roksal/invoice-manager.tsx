@@ -883,24 +883,24 @@ export function InvoiceManager() {
           <div className="space-y-2">
             <div className="grid grid-cols-3 gap-2">
               <div className="rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 p-2 text-center transition-all hover:shadow-sm hover:border-emerald-300/70">
-                <div className="text-[10px] uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Plačano</div>
+                <div className="text-2xs uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Plačano</div>
                 <div className="text-sm font-bold tabular-nums text-emerald-800 dark:text-emerald-200">{eur(summary.placano)}</div>
               </div>
               <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-2 text-center transition-all hover:shadow-sm hover:border-amber-300/70">
-                <div className="text-[10px] uppercase tracking-wide text-amber-700 dark:text-amber-300">Odprto</div>
+                <div className="text-2xs uppercase tracking-wide text-amber-700 dark:text-amber-300">Odprto</div>
                 <div className="text-sm font-bold tabular-nums text-amber-800 dark:text-amber-200">
                   {eur(Math.max(0, summary.izdano - summary.placano))}
                 </div>
               </div>
               <div className={`rounded-lg border p-2 text-center transition-all hover:shadow-sm ${summary.zapadloN > 0 ? 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 hover:border-red-300/70' : 'border-border bg-muted/40'}`}>
-                <div className={`text-[10px] uppercase tracking-wide ${summary.zapadloN > 0 ? 'text-red-700 dark:text-red-300' : 'text-muted-foreground'}`}>
+                <div className={`text-2xs uppercase tracking-wide ${summary.zapadloN > 0 ? 'text-red-700 dark:text-red-300' : 'text-muted-foreground'}`}>
                   Zapadlo
                 </div>
                 <div className={`text-sm font-bold tabular-nums ${summary.zapadloN > 0 ? 'text-red-800 dark:text-red-200' : 'text-muted-foreground'}`}>
                   {summary.zapadloN > 0 ? eur(summary.zapadlo) : '—'}
                 </div>
                 {summary.zapadloN > 0 && (
-                  <div className="text-[10px] tabular-nums text-red-600 dark:text-red-400">{summary.zapadloN} račun(ov)</div>
+                  <div className="text-2xs tabular-nums text-red-600 dark:text-red-400">{summary.zapadloN} račun(ov)</div>
                 )}
               </div>
             </div>
@@ -913,7 +913,7 @@ export function InvoiceManager() {
                     style={{ width: `${Math.min(100, Math.max(0, (summary.placano / summary.izdano) * 100))}%` }}
                   />
                 </div>
-                <div className="text-right text-[10px] text-muted-foreground">
+                <div className="text-right text-2xs text-muted-foreground">
                   plačano {Math.round((summary.placano / summary.izdano) * 100)} % od izdanih {eur(summary.izdano)}
                 </div>
               </div>
@@ -956,15 +956,15 @@ export function InvoiceManager() {
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-1.5">
                         <span className="font-mono text-sm font-bold text-roksal-ink">{inv.stevilka}</span>
-                        <Badge variant="outline" className="text-[10px] px-1.5">
+                        <Badge variant="outline" className="text-2xs px-1.5">
                           {TIP_META[inv.tip].label}
                         </Badge>
-                        <Badge variant="outline" className={`text-[10px] px-1.5 gap-1 ${meta.className}`}>
+                        <Badge variant="outline" className={`text-2xs px-1.5 gap-1 ${meta.className}`}>
                           <span className={`h-1.5 w-1.5 rounded-full ${meta.dot}`} />
                           {meta.label}
                         </Badge>
                         {zapadlo && (
-                          <Badge variant="outline" className="text-[10px] px-1.5 border-red-300 dark:border-red-800 bg-red-100 dark:bg-red-500/15 text-red-800 dark:text-red-200 gap-1">
+                          <Badge variant="outline" className="text-2xs px-1.5 border-red-300 dark:border-red-800 bg-red-100 dark:bg-red-500/15 text-red-800 dark:text-red-200 gap-1">
                             <AlertTriangle className="h-3 w-3" /> zapadlo {zapadlo} dni
                           </Badge>
                         )}
@@ -972,7 +972,7 @@ export function InvoiceManager() {
                       <div className="mt-1 truncate text-xs text-muted-foreground">
                         {inv.project?.nazivProjekta ?? '—'} · {parseKupec(inv.kupec)?.ime ?? '—'}
                       </div>
-                      <div className="mt-0.5 text-[10px] tabular-nums text-muted-foreground">
+                      <div className="mt-0.5 text-2xs tabular-nums text-muted-foreground">
                         izdano {new Date(inv.datumIzdaje).toLocaleDateString('sl-SI')} · rok{' '}
                         {inv.rokPlacilaDni} dni
                         {inv.placanoAt && ` · plačano ${new Date(inv.placanoAt).toLocaleDateString('sl-SI')}`}
@@ -980,7 +980,7 @@ export function InvoiceManager() {
                     </div>
                     <div className="text-right shrink-0">
                       <div className="text-sm font-bold tabular-nums text-roksal-ink">{eur(inv.znesek)}</div>
-                      <div className="text-[10px] tabular-nums text-muted-foreground">z DDV {inv.ddv > 0 ? '22 %' : '0 %'}</div>
+                      <div className="text-2xs tabular-nums text-muted-foreground">z DDV {inv.ddv > 0 ? '22 %' : '0 %'}</div>
                     </div>
                   </div>
 
@@ -1226,7 +1226,7 @@ export function InvoiceManager() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="text-right text-[10px] text-muted-foreground">
+                  <div className="text-right text-2xs text-muted-foreground">
                     vrstica: <span className="font-semibold text-foreground">
                       {eur(round2((p.kolicina || 0) * (p.cenaNaEnoto || 0)))}
                     </span>

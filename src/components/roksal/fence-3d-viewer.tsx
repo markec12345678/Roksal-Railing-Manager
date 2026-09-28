@@ -218,10 +218,10 @@ export function Fence3dViewer() {
           <div className="min-w-0 flex-1">
             <div className="mb-1 flex flex-wrap items-center gap-2">
               <h3 className="text-sm font-semibold text-roksal-ink">3D ograja v AR</h3>
-              <span className="rounded-full bg-roksal-amber/10 px-1.5 py-0.5 text-[8px] font-bold text-roksal-amber">model-viewer</span>
-              <span className="rounded-full bg-roksal-navy/5 px-1.5 py-0.5 text-[8px] font-bold text-roksal-ink">GLB</span>
-              <span className="rounded-full bg-roksal-navy/5 px-1.5 py-0.5 text-[8px] font-bold text-roksal-ink">USDZ · Quick Look</span>
-              <span className="rounded-full bg-roksal-amber/10 px-1.5 py-0.5 text-[8px] font-bold text-roksal-amber">5× RAL</span>
+              <span className="rounded-full bg-roksal-amber/10 px-1.5 py-0.5 text-3xs font-bold text-roksal-amber">model-viewer</span>
+              <span className="rounded-full bg-roksal-navy/5 px-1.5 py-0.5 text-3xs font-bold text-roksal-ink">GLB</span>
+              <span className="rounded-full bg-roksal-navy/5 px-1.5 py-0.5 text-3xs font-bold text-roksal-ink">USDZ · Quick Look</span>
+              <span className="rounded-full bg-roksal-amber/10 px-1.5 py-0.5 text-3xs font-bold text-roksal-amber">5× RAL</span>
             </div>
             <p className="text-[11px] leading-relaxed text-muted-foreground">
               Oddelek 2,0 × 1,1 m v pravi velikosti: Android → Scene Viewer/WebXR,
@@ -241,7 +241,7 @@ export function Fence3dViewer() {
           )}
           {mvReady && !isLoaded && !loadError && (
             <div className="pointer-events-none absolute inset-x-0 top-3 flex justify-center">
-              <span className="flex items-center gap-1.5 rounded-full bg-black/40 px-3 py-1 text-[10px] font-medium text-white/85 backdrop-blur-sm">
+              <span className="flex items-center gap-1.5 rounded-full bg-black/40 px-3 py-1 text-2xs font-medium text-white/85 backdrop-blur-sm">
                 <Loader2 className="h-3 w-3 animate-spin text-roksal-amber" /> Nalagam model ograje…
               </span>
             </div>
@@ -261,13 +261,13 @@ export function Fence3dViewer() {
           )}
           {/* Prekrivni namig vrtenja (izgine ob 'load') */}
           {isLoaded && !arActive && (
-            <div className="pointer-events-none absolute left-3 top-3 flex items-center gap-1.5 rounded-full bg-black/35 px-2.5 py-1 text-[10px] text-white/85 backdrop-blur-sm">
+            <div className="pointer-events-none absolute left-3 top-3 flex items-center gap-1.5 rounded-full bg-black/35 px-2.5 py-1 text-2xs text-white/85 backdrop-blur-sm">
               <RotateCw className="h-3 w-3 text-roksal-amber" /> vrti s prstom · ščipni za približek
             </div>
           )}
           {arActive && (
             <div className="pointer-events-none absolute left-1/2 top-4 z-10 -translate-x-1/2">
-              <span className="flex items-center gap-1.5 rounded-full bg-green-600/90 px-3 py-1 text-[10px] font-bold text-white shadow-lg">
+              <span className="flex items-center gap-1.5 rounded-full bg-green-600/90 px-3 py-1 text-2xs font-bold text-white shadow-lg">
                 <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" /> AR aktivna — postavi ograjo na rob
               </span>
             </div>
@@ -300,7 +300,7 @@ export function Fence3dViewer() {
           </div>
 
           <div className="flex items-center gap-2" role="group" aria-label="Izbira RAL barve prahu">
-            <span className="flex shrink-0 items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            <span className="flex shrink-0 items-center gap-1 text-2xs font-semibold uppercase tracking-wide text-muted-foreground">
               <Palette className="h-3 w-3" /> RAL:
             </span>
             <div className="flex flex-1 items-center gap-1.5">
@@ -336,7 +336,7 @@ export function Fence3dViewer() {
           </div>
 
           <div className="flex items-center gap-2" role="group" aria-label="Postavitev v AR">
-            <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Postavitev:</span>
+            <span className="shrink-0 text-2xs font-semibold uppercase tracking-wide text-muted-foreground">Postavitev:</span>
             <div className="flex flex-1 gap-1 rounded-xl bg-roksal-navy/[0.05] p-1">
               {([
                 { id: 'wall' as Placement, label: 'Stena / rob', icon: PanelTop },
@@ -365,7 +365,7 @@ export function Fence3dViewer() {
             {arAvailable === false ? (
               <>
                 <Smartphone className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
-                <p className="text-[10px] leading-relaxed text-muted-foreground">
+                <p className="text-2xs leading-relaxed text-muted-foreground">
                   AR gumb bo deloval na <strong className="text-roksal-ink">telefonu</strong> (Android: Scene Viewer · iPhone: Quick Look).
                   Na računalniku vrti 3D model s prstom/miško.
                 </p>
@@ -373,7 +373,7 @@ export function Fence3dViewer() {
             ) : (
               <>
                 <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-roksal-ink/50" />
-                <p className="text-[10px] leading-relaxed text-muted-foreground">
+                <p className="text-2xs leading-relaxed text-muted-foreground">
                   Klikni <strong className="text-roksal-ink">„Poglej v prostoru“</strong> — Scene Viewer/Quick Look
                   namesti segment v pravi velikosti; stranka potrdi višino in barvo na mestu.
                 </p>

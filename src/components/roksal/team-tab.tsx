@@ -501,13 +501,13 @@ export function TeamTab() {
                     <div className="flex flex-wrap items-center gap-1.5">
                       <p className="truncate text-sm font-semibold text-roksal-ink">{u.ime}</p>
                       <Badge
-                        className={`text-[10px] font-medium ${ROLE_CHIP[u.vloga] ?? 'bg-secondary'}`}
+                        className={`text-2xs font-medium ${ROLE_CHIP[u.vloga] ?? 'bg-secondary'}`}
                         title={`Vloga: ${ROLE_LABEL[u.vloga] ?? u.vloga}`}
                       >
                         {ROLE_LABEL[u.vloga] ?? u.vloga}
                       </Badge>
                       {self && (
-                        <Badge variant="outline" className="text-[10px]">
+                        <Badge variant="outline" className="text-2xs">
                           ti
                         </Badge>
                       )}
@@ -518,7 +518,7 @@ export function TeamTab() {
                   {/* Statusni chip (R160: status iz ENEGA vira resnice z izvozom) */}
                   <Badge
                     variant="secondary"
-                    className={`text-[10px] ${STATUS_META[status].chip}`}
+                    className={`text-2xs ${STATUS_META[status].chip}`}
                     title={STATUS_META[status].title}
                   >
                     <StatusIcon className="mr-1 h-3 w-3" />
@@ -526,7 +526,7 @@ export function TeamTab() {
                   </Badge>
                 </div>
 
-                <div className="mt-1.5 flex flex-wrap items-center gap-3 text-[10px] text-muted-foreground">
+                <div className="mt-1.5 flex flex-wrap items-center gap-3 text-2xs text-muted-foreground">
                   <span className="inline-flex items-center gap-1">
                     <CalendarClock className="h-3 w-3" />
                     {/* R200 — 'Zadnja aktivnost' z uro (R199 P1 (e)): prej SAMO

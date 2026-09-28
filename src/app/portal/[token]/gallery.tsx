@@ -86,7 +86,7 @@ export function PortalGallery({ sections }: PortalGalleryProps) {
                       />
                       {photo.opomba && (
                         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-1.5">
-                          <p className="text-[10px] text-white line-clamp-2 leading-tight">
+                          <p className="text-2xs text-white line-clamp-2 leading-tight">
                             {photo.opomba}
                           </p>
                         </div>

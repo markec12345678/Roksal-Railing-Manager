@@ -189,7 +189,7 @@ export function SistemZdravjeCard() {
                 = POZITIVNO stanje → roksal-green opacity žetoni (delujejo v
                 OBEH temah, brez dark: dvojčkov; prej green-50 hardcoded). */}
             <span
-              className="inline-flex items-center gap-1 rounded-md border border-roksal-green/30 bg-roksal-green/10 px-2 py-0.5 text-[10px] font-semibold text-roksal-green"
+              className="inline-flex items-center gap-1 rounded-md border border-roksal-green/30 bg-roksal-green/10 px-2 py-0.5 text-2xs font-semibold text-roksal-green"
             >
               Baza odgovarja
             </span>
@@ -201,7 +201,7 @@ export function SistemZdravjeCard() {
             {zgrajeno && (
               <span className="text-[11px] text-muted-foreground">{zgrajeno}</span>
             )}
-            <span className="text-[10px] text-muted-foreground/70">
+            <span className="text-2xs text-muted-foreground/70">
               Javna sonda /api/public/health — pinguje bazo (3 s vrata).
             </span>
           </div>
@@ -229,12 +229,12 @@ export function SistemZdravjeCard() {
                 )
               })}
             </div>
-            <span className="text-[10px] leading-tight text-muted-foreground/70">
+            <span className="text-2xs leading-tight text-muted-foreground/70">
               Odzivni časi ({obsegZgodovine(zgodovina.length)}, ring {ZGODOVINA_MAX})
             </span>
             {/* R189 — številčni povzetek (nasvetna vrstica; null → odsotna): */}
             {statistika && (
-              <span className="text-[10px] leading-tight text-muted-foreground/70 tabular-nums">
+              <span className="text-2xs leading-tight text-muted-foreground/70 tabular-nums">
                 {statistika.najhitrejsa}–{statistika.najpocasnejsa} ms, povp. {statistika.povprecna}
               </span>
             )}

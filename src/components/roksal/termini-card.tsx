@@ -307,12 +307,12 @@ export function TerminiCard({ myUserId, onOpenProjectId }: TerminiCardProps) {
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1">
           <Badge
-            className={`${scheduleTerminiStatusColor(t.status)} text-[10px] px-2 py-0.5`}
+            className={`${scheduleTerminiStatusColor(t.status)} text-2xs px-2 py-0.5`}
           >
             {scheduleTerminiStatusLabel(t.status)}
           </Badge>
           {t.moja && (
-            <Badge className="bg-roksal-amber/20 text-roksal-ink dark:text-roksal-amber text-[10px] px-2 py-0.5">
+            <Badge className="bg-roksal-amber/20 text-roksal-ink dark:text-roksal-amber text-2xs px-2 py-0.5">
               <Wrench className="mr-1 h-2.5 w-2.5" aria-hidden="true" />
               Moja montaža
             </Badge>

@@ -350,7 +350,7 @@ function ReferenceSection({
 
       <div className="grid gap-2 sm:grid-cols-2">
         <div>
-          <Label htmlFor="ms-known-mm" className="text-[10px]">
+          <Label htmlFor="ms-known-mm" className="text-2xs">
             Znana dolžina (mm)
           </Label>
           <Input
@@ -366,7 +366,7 @@ function ReferenceSection({
           />
         </div>
         <div>
-          <Label htmlFor="ms-ref-kind" className="text-[10px]">
+          <Label htmlFor="ms-ref-kind" className="text-2xs">
             Vir mere
           </Label>
           <Select value={refKind} onValueChange={(v) => onKindChange(v as ScaleSourceKind)}>
@@ -443,7 +443,7 @@ function ProductSection({
         <>
           <div className="grid gap-2 sm:grid-cols-2">
             <div>
-              <Label htmlFor="ms-product" className="text-[10px]">
+              <Label htmlFor="ms-product" className="text-2xs">
                 Izdelek
               </Label>
               <Select value={productId} onValueChange={onProductChange}>
@@ -460,7 +460,7 @@ function ProductSection({
               </Select>
             </div>
             <div>
-              <Label htmlFor="ms-orientation" className="text-[10px]">
+              <Label htmlFor="ms-orientation" className="text-2xs">
                 Orientacija
               </Label>
               <Select
@@ -484,7 +484,7 @@ function ProductSection({
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <Label htmlFor="ms-gap" className="text-[10px]">
+              <Label htmlFor="ms-gap" className="text-2xs">
                 Razmak (mm)
               </Label>
               <Input
@@ -499,7 +499,7 @@ function ProductSection({
               />
             </div>
             <div>
-              <Label htmlFor="ms-post-width" className="text-[10px]">
+              <Label htmlFor="ms-post-width" className="text-2xs">
                 Širina stebra (mm)
               </Label>
               <Input
@@ -516,7 +516,7 @@ function ProductSection({
           </div>
 
           {selected && (
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-2xs text-muted-foreground">
               Profil dovoljuje razmak {selected.board.minGapMm}–{selected.board.maxGapMm} mm ·
               brez izdelka je rezultat samo izmerjena geometrija.
             </p>
@@ -636,7 +636,7 @@ function ResultsSection({ result, error }: { result: ConfirmResponse | null; err
           </div>
 
           {/* Sledljivost (provenance) */}
-          <div className="space-y-0.5 text-[10px] text-muted-foreground">
+          <div className="space-y-0.5 text-2xs text-muted-foreground">
             <p className="flex items-start gap-1">
               <Info className="mt-0.5 h-3 w-3 shrink-0" />
               <span>{g.totalLengthMm.provenance}</span>
@@ -1438,7 +1438,7 @@ export function MeasurementStudio({ projectId }: { projectId?: string | null }) 
                   className="pointer-events-none absolute inset-0 h-full w-full"
                 />
               </div>
-              <p className="text-[10px] text-muted-foreground">
+              <p className="text-2xs text-muted-foreground">
                 Legenda: zelena = prekni · modra = stebri · oranžna = kotniki · rdeča = referenčna
                 mera · rumena/rožata = ročne točke
               </p>
@@ -1542,7 +1542,7 @@ export function MeasurementStudio({ projectId }: { projectId?: string | null }) 
                     Počisti
                   </Button>
                 </div>
-                <div className="flex flex-wrap gap-1.5 text-[10px]">
+                <div className="flex flex-wrap gap-1.5 text-2xs">
                   <Badge variant="outline" className="border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 text-[9px] text-rose-700 dark:text-rose-300">
                     Spodnja linija: {manualPath.length}
                   </Badge>
@@ -1610,12 +1610,12 @@ export function MeasurementStudio({ projectId }: { projectId?: string | null }) 
               IZRAČUNAJ MERITEV
             </Button>
             {!canCompute && computeHint && !confirming && (
-              <p className="text-center text-[10px] text-muted-foreground" role="status">
+              <p className="text-center text-2xs text-muted-foreground" role="status">
                 {computeHint}
               </p>
             )}
             {!projectId && (
-              <p className="text-center text-[10px] text-muted-foreground">
+              <p className="text-center text-2xs text-muted-foreground">
                 Projekt ni izbran — meritev bo izračunana, a NE shranjena.
               </p>
             )}

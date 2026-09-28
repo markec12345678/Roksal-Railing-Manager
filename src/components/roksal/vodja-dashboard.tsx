@@ -643,7 +643,7 @@ export function VodjaDashboard() {
                 </div>
                 {/* R225 — žetoni na žetone (ISTO strukturo kot Domov
                     STATUS_ZETONI): opacity žetoni brez dark: dvojčkov. */}
-                <Badge variant="outline" className={`text-[8px] shrink-0 ${
+                <Badge variant="outline" className={`text-3xs shrink-0 ${
                   t.status === 'ZAKLJUCENO' ? 'bg-roksal-green/15 text-roksal-green border-roksal-green/30' :
                   t.status === 'V_TEKU' ? 'bg-roksal-amber/15 text-roksal-amber border-roksal-amber/30' :
                   'bg-roksal-navy/10 text-roksal-ink border-roksal-navy/25 dark:border-roksal-ink/25'
@@ -664,7 +664,7 @@ export function VodjaDashboard() {
             <CardContent className="p-3">
               <div className="flex items-center gap-1 mb-1">
                 <Euro className="h-3 w-3 text-roksal-ink" aria-hidden="true" />
-                <span className="text-[10px] text-muted-foreground">Prihodek (plačano)</span>
+                <span className="text-2xs text-muted-foreground">Prihodek (plačano)</span>
               </div>
               <div className="text-lg font-bold tabular-nums text-roksal-ink">{formatEUR(stats.mesecniPrihodek)}</div>
               <div className="text-[9px] text-muted-foreground">iz plačanih računov</div>
@@ -674,7 +674,7 @@ export function VodjaDashboard() {
             <CardContent className="p-3">
               <div className="flex items-center gap-1 mb-1">
                 <TrendingUp className="h-3 w-3 text-roksal-green" aria-hidden="true" />
-                <span className="text-[10px] text-muted-foreground">Marža (25%)</span>
+                <span className="text-2xs text-muted-foreground">Marža (25%)</span>
               </div>
               <div className="text-lg font-bold tabular-nums text-roksal-green">{formatEUR(stats.mesecnaMarza)}</div>
             </CardContent>
@@ -685,7 +685,7 @@ export function VodjaDashboard() {
             <CardContent className="p-3">
               <div className="flex items-center gap-1 mb-1">
                 <Package className="h-3 w-3 text-roksal-ink" aria-hidden="true" />
-                <span className="text-[10px] text-muted-foreground">Projektov</span>
+                <span className="text-2xs text-muted-foreground">Projektov</span>
               </div>
               <div className="text-lg font-bold tabular-nums text-roksal-ink">{stats.mesecnoProjektov}</div>
             </CardContent>
@@ -694,7 +694,7 @@ export function VodjaDashboard() {
             <CardContent className="p-3">
               <div className="flex items-center gap-1 mb-1">
                 <Clock className="h-3 w-3 text-roksal-amber" aria-hidden="true" />
-                <span className="text-[10px] text-muted-foreground">Ure</span>
+                <span className="text-2xs text-muted-foreground">Ure</span>
               </div>
               <div className="text-lg font-bold tabular-nums text-roksal-ink">{stats.mesecnoUr}h</div>
             </CardContent>
@@ -721,7 +721,7 @@ export function VodjaDashboard() {
                     title={`${m.label}: ${formatEUR(m.eur)}`}
                   >
                     {m.eur > 0 && (
-                      <span className="text-[8px] font-semibold tabular-nums text-roksal-ink">{formatEUR(m.eur)}</span>
+                      <span className="text-3xs font-semibold tabular-nums text-roksal-ink">{formatEUR(m.eur)}</span>
                     )}
                     <div
                       className={`w-full max-w-[38px] rounded-t-md transition-all duration-500 ${
@@ -785,7 +785,7 @@ export function VodjaDashboard() {
                 <AlertTriangle className="h-4 w-4 text-roksal-red shrink-0" aria-hidden="true" />
                 <div className="flex-1">
                   <div className="text-xs font-medium text-roksal-ink"><span className="tabular-nums">{stats.potekliOpomniki}</span> poteklih opomnikov</div>
-                  <div className="text-[10px] text-roksal-red">Preveri v CRM → Stranke</div>
+                  <div className="text-2xs text-roksal-red">Preveri v CRM → Stranke</div>
                 </div>
               </CardContent>
             </Card>
@@ -801,7 +801,7 @@ export function VodjaDashboard() {
                 <Package className="h-4 w-4 text-roksal-red shrink-0" aria-hidden="true" />
                 <div className="flex-1">
                   <div className="text-xs font-medium text-roksal-ink"><span className="tabular-nums">{stats.nizkaZaloga}</span> materialov z nizko zalogo</div>
-                  <div className="text-[10px] text-roksal-red">Naroči pri dobavitelju</div>
+                  <div className="text-2xs text-roksal-red">Naroči pri dobavitelju</div>
                 </div>
               </CardContent>
             </Card>
@@ -834,7 +834,7 @@ export function VodjaDashboard() {
               <PackageX className="h-4 w-4 shrink-0 text-roksal-amber" aria-hidden="true" />
               <div className="flex-1">
                 <div className="text-xs font-medium text-roksal-ink">Brez dobavitelja — <span className="tabular-nums">{stats.brezDobavitelja}</span> artiklov brez vpisane cene</div>
-                <div className="text-[10px] text-roksal-amber">Naročilni tok postavke ne more oceniti — klik odpre Zalogo s filtrom</div>
+                <div className="text-2xs text-roksal-amber">Naročilni tok postavke ne more oceniti — klik odpre Zalogo s filtrom</div>
               </div>
             </button>
           )}
@@ -863,7 +863,7 @@ export function VodjaDashboard() {
               <CalendarX className="h-4 w-4 shrink-0 text-roksal-red" aria-hidden="true" />
               <div className="flex-1">
                 <div className="text-xs font-medium text-roksal-ink">Zamujena dobava — <span className="tabular-nums">{stats.zamujeneDobave}</span> {narociloBeseda(stats.zamujeneDobave)} z pretečenim rokom</div>
-                <div className="text-[10px] text-roksal-red">Obljubljeni datum je pretekel — klik odpre Naročila</div>
+                <div className="text-2xs text-roksal-red">Obljubljeni datum je pretekel — klik odpre Naročila</div>
               </div>
             </button>
           )}
@@ -873,7 +873,7 @@ export function VodjaDashboard() {
                 <Truck className="h-4 w-4 text-roksal-navy dark:text-roksal-ink shrink-0" aria-hidden="true" />
                 <div className="flex-1">
                   <div className="text-xs font-medium text-roksal-ink"><span className="tabular-nums">{stats.odprtaNarocila}</span> odprtih naročil</div>
-                  <div className="text-[10px] text-roksal-navy dark:text-roksal-ink/80">Čaka na dobavo</div>
+                  <div className="text-2xs text-roksal-navy dark:text-roksal-ink/80">Čaka na dobavo</div>
                 </div>
               </CardContent>
             </Card>

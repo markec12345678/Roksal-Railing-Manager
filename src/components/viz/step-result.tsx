@@ -60,7 +60,7 @@ function MetricsRow({
     <div className="flex items-center justify-between gap-2 py-1.5 text-sm">
       <span className="min-w-0 flex-1 text-muted-foreground">{children}</span>
       {ok === null ? (
-        <Badge variant="outline" className="shrink-0 text-[10px]">—</Badge>
+        <Badge variant="outline" className="shrink-0 text-2xs">—</Badge>
       ) : ok ? (
         <CheckCircle2 className="h-5 w-5 shrink-0 text-green-600" aria-label="USTREZA" />
       ) : (
@@ -387,11 +387,11 @@ export function StepResult() {
               </MetricsRow>
               <MetricsRow ok={m.chroma.dE < 1.5}>
                 Barva (RAL zaščita): ΔE <strong className="text-foreground">{m.chroma.dE.toFixed(2)}</strong>{' '}
-                <span className="text-[10px]">(meja 1.5)</span>
+                <span className="text-2xs">(meja 1.5)</span>
               </MetricsRow>
               <MetricsRow ok={true}>
                 Čas predogleda: <strong className="text-foreground">{(m.timeMs / 1000).toFixed(1)} s</strong>{' '}
-                <span className="text-[10px]">(deterministična geometrija — brez AI)</span>
+                <span className="text-2xs">(deterministična geometrija — brez AI)</span>
               </MetricsRow>
             </>
           ) : (
@@ -410,7 +410,7 @@ export function StepResult() {
               <Sparkles className="h-4 w-4 text-roksal-amber" />
               Realistična končna vizualizacija
             </span>
-            <Badge variant="outline" className="shrink-0 border-roksal-amber/50 text-[10px] text-roksal-amber">
+            <Badge variant="outline" className="shrink-0 border-roksal-amber/50 text-2xs text-roksal-amber">
               PLANIRANO — čaka na GPU strežnik
             </Badge>
           </CardTitle>

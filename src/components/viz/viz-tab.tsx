@@ -78,7 +78,7 @@ function Stepper() {
               {i + 1}
             </span>
             <span
-              className={`truncate text-[9px] font-semibold sm:text-[10px] ${
+              className={`truncate text-[9px] font-semibold sm:text-2xs ${
                 active ? 'text-roksal-ink' : 'text-muted-foreground'
               }`}
             >
@@ -337,7 +337,7 @@ export function VizTab() {
             Roksal — ograje po meri. Predogled je informativen; pri predmetih pred ograjo (rastline,
             stebri) lahko pride do odstopanj.
           </p>
-          <p className="text-[10px] text-muted-foreground/70">
+          <p className="text-2xs text-muted-foreground/70">
             © {new Date().getFullYear()} Roksal d.o.o.
           </p>
         </div>

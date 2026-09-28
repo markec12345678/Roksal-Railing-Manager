@@ -331,7 +331,7 @@ export function DocumentsTab() {
               </p>
               <div className="flex flex-wrap gap-1.5 mt-1">
                 {Object.entries(docCounts).map(([type, count]) => (
-                  <Badge key={type} variant="secondary" className="text-[10px] h-5 px-1.5">
+                  <Badge key={type} variant="secondary" className="text-2xs h-5 px-1.5">
                     {docTypeLabels[type] || type}: {count}
                   </Badge>
                 ))}
@@ -368,7 +368,7 @@ export function DocumentsTab() {
                   <span className="text-xs font-medium text-roksal-ink">
                     {action.label}
                   </span>
-                  <span className="text-[10px] text-muted-foreground">
+                  <span className="text-2xs text-muted-foreground">
                     {action.desc}
                   </span>
                 </Button>
@@ -416,7 +416,7 @@ export function DocumentsTab() {
                         <p className="truncate text-sm font-medium text-roksal-ink">
                           {docTypeLabels[doc.tipDokumenta] || doc.tipDokumenta}
                         </p>
-                        <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                        <div className="flex items-center gap-2 text-2xs text-muted-foreground">
                           <Clock className="h-3 w-3" />
                           <span className="tabular-nums">
                             {new Date(doc.createdAt).toLocaleDateString('sl-SI', {
@@ -437,7 +437,7 @@ export function DocumentsTab() {
                       </div>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <Badge className={`text-[10px] h-5 px-1.5 ${statusCfg.color}`}>
+                      <Badge className={`text-2xs h-5 px-1.5 ${statusCfg.color}`}>
                         {fileUrl ? (
                           <Eye className="mr-1 h-2.5 w-2.5" />
                         ) : (
@@ -509,7 +509,7 @@ export function DocumentsTab() {
                 {/* Status */}
                 <div className="flex items-center justify-between rounded-lg border border-border/50 p-3">
                   <span className="text-xs text-muted-foreground">Status</span>
-                  <Badge className={`text-[10px] h-5 px-2 ${statusConfig[previewDoc.status]?.color || statusConfig.GENERIRANO.color}`}>
+                  <Badge className={`text-2xs h-5 px-2 ${statusConfig[previewDoc.status]?.color || statusConfig.GENERIRANO.color}`}>
                     {statusConfig[previewDoc.status]?.label || 'Generirano'}
                   </Badge>
                 </div>

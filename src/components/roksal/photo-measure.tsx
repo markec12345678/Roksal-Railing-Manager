@@ -160,7 +160,7 @@ export function PhotoMeasure({ projectId }: { projectId: string | null }) {
             </div>
             <div className="min-w-0">
               <p className="text-xs font-medium text-roksal-ink">Meri iz fotke (AI ocena)</p>
-              <p className="text-[10px] text-muted-foreground truncate">
+              <p className="text-2xs text-muted-foreground truncate">
                 Fotka → ocena dolžine/višine — brez ARCore, tudi za iPhone
               </p>
             </div>
@@ -209,7 +209,7 @@ export function PhotoMeasure({ projectId }: { projectId: string | null }) {
           <div className="mt-3 space-y-2.5">
             <div className="flex flex-wrap items-center gap-1.5">
               {conf && <Badge className={`text-[9px] px-2 py-0.5 ${conf.cls}`}>{conf.label}</Badge>}
-              <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+              <span className="flex items-center gap-1 text-2xs text-muted-foreground">
                 <Info className="h-3 w-3" />
                 izhodišče: {ocena.izhodisce}
               </span>
@@ -217,7 +217,7 @@ export function PhotoMeasure({ projectId }: { projectId: string | null }) {
 
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
-                <Label className="text-[10px] font-medium">Dolžina (mm)</Label>
+                <Label className="text-2xs font-medium">Dolžina (mm)</Label>
                 <Input
                   type="number"
                   value={dolzina}
@@ -227,7 +227,7 @@ export function PhotoMeasure({ projectId }: { projectId: string | null }) {
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-[10px] font-medium">Višina (mm)</Label>
+                <Label className="text-2xs font-medium">Višina (mm)</Label>
                 <Input
                   type="number"
                   value={visina}
@@ -239,7 +239,7 @@ export function PhotoMeasure({ projectId }: { projectId: string | null }) {
             </div>
 
             {ocena.opombe && (
-              <div className="flex items-start gap-1.5 rounded-lg bg-secondary/60 p-2 text-[10px] text-muted-foreground">
+              <div className="flex items-start gap-1.5 rounded-lg bg-secondary/60 p-2 text-2xs text-muted-foreground">
                 <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
                 <span className="line-clamp-2">{ocena.opombe}</span>
               </div>

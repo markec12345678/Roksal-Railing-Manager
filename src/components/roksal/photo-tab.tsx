@@ -789,7 +789,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
               Družinske klase (card/border/muted), brez novih barv. */}
           <div className="flex items-center gap-1.5 rounded-md border border-roksal-navy/10 bg-card px-2 py-1 dark:border-roksal-ink/15">
             <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-roksal-green" aria-hidden="true" />
-            <span className="text-[10px] text-muted-foreground">
+            <span className="text-2xs text-muted-foreground">
               Zasebnost: EXIF/GPS metapodatki se pri nalaganju samodejno odstranijo na strežniku.
             </span>
           </div>
@@ -877,7 +877,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
                 >
                   {k === 'ALL' ? 'Vse' : KATEGORIJE.find((c) => c.id === k)?.short}
                   {k !== 'ALL' && (
-                    <span className="ml-1 text-[10px] opacity-70">
+                    <span className="ml-1 text-2xs opacity-70">
                       {stats[k.toLowerCase() as 'pred' | 'med' | 'po']}
                     </span>
                   )}
@@ -910,7 +910,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
               </div>
               <div className="grid grid-cols-2 gap-1.5">
                 <div>
-                  <Label className="mb-0.5 block text-[10px] text-muted-foreground">Od datuma</Label>
+                  <Label className="mb-0.5 block text-2xs text-muted-foreground">Od datuma</Label>
                   <Input
                     type="date"
                     value={dateFrom}
@@ -919,7 +919,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
                   />
                 </div>
                 <div>
-                  <Label className="mb-0.5 block text-[10px] text-muted-foreground">Do datuma</Label>
+                  <Label className="mb-0.5 block text-2xs text-muted-foreground">Do datuma</Label>
                   <Input
                     type="date"
                     value={dateTo}
@@ -965,7 +965,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
                       onClick={() => setPreviewPhoto(p)}
                     />
                     <div className="absolute left-0 top-0">
-                      <Badge className={`rounded-br-lg rounded-tl-lg text-[8px] ${kat?.cls}`} variant="secondary">
+                      <Badge className={`rounded-br-lg rounded-tl-lg text-3xs ${kat?.cls}`} variant="secondary">
                         {p.kategorija}
                       </Badge>
                     </div>
@@ -1001,7 +1001,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
               <div className="flex items-center justify-between gap-2">
                 <div>
                   <p className="text-xs font-medium text-roksal-ink">Pred/Po primerjave</p>
-                  <p className="text-[10px] text-muted-foreground">
+                  <p className="text-2xs text-muted-foreground">
                     Poveži PRED in PO slike za predstavitev dela strankam.
                   </p>
                 </div>
@@ -1039,7 +1039,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
                       afterLabel="PO"
                     />
                     <div className="mt-2 flex items-center justify-between">
-                      <div className="text-[10px] text-muted-foreground tabular-nums">
+                      <div className="text-2xs text-muted-foreground tabular-nums">
                         {new Date(po!.createdAt).toLocaleDateString('sl-SI')}
                       </div>
                       <Button
@@ -1139,7 +1139,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
                     >
                       <ChevronRight className="h-5 w-5" />
                     </button>
-                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] text-white">
+                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-black/60 px-2 py-0.5 text-2xs text-white">
                       {previewIndex + 1} / {filteredPhotos.length}
                     </div>
                   </>
@@ -1416,7 +1416,7 @@ function CameraCapture({
         </button>
         <span className="text-sm font-medium">Slikanje — {KATEGORIJE.find((k) => k.id === kategorija)?.label}</span>
         {gps ? (
-          <div className="flex items-center gap-1 text-[10px] text-green-400">
+          <div className="flex items-center gap-1 text-2xs text-green-400">
             <MapPin className="h-3 w-3" />
             GPS
           </div>
@@ -2051,7 +2051,7 @@ function AnnotationEditor({
           <X className="h-4 w-4" aria-hidden="true" />
         </button>
         <span className="text-xs font-medium">Anotacije</span>
-        <span className="ml-1 text-[10px] text-white/60">{anns.length}</span>
+        <span className="ml-1 text-2xs text-white/60">{anns.length}</span>
 
         <div className="ml-auto flex items-center gap-2">
           <button
@@ -2110,7 +2110,7 @@ function AnnotationEditor({
               key={s.value}
               type="button"
               onClick={() => setStroke(s.value)}
-              className={`flex h-6 w-9 items-center justify-center rounded-md border text-[10px] focus-visible:ring-2 focus-visible:ring-roksal-amber/60 ${
+              className={`flex h-6 w-9 items-center justify-center rounded-md border text-2xs focus-visible:ring-2 focus-visible:ring-roksal-amber/60 ${
                 stroke === s.value
                   ? 'border-roksal-amber bg-roksal-amber/20 text-roksal-amber'
                   : 'border-white/20 text-white/70'
@@ -2162,7 +2162,7 @@ function AnnotationEditor({
                   variant="ghost"
                   size="sm"
                   onClick={clearCalibration}
-                  className="h-7 px-2 text-[10px] text-red-600 hover:bg-red-50 hover:text-red-700"
+                  className="h-7 px-2 text-2xs text-red-600 hover:bg-red-50 hover:text-red-700"
                 >
                   <Trash2 className="mr-1 h-3 w-3" />
                   Počisti
@@ -2185,7 +2185,7 @@ function AnnotationEditor({
             <div className="space-y-2 px-3 pb-3">
               {/* Hitre reference */}
               <div>
-                <Label className="mb-1 block text-[10px] text-muted-foreground">Hitre reference</Label>
+                <Label className="mb-1 block text-2xs text-muted-foreground">Hitre reference</Label>
                 <div className="flex gap-1 overflow-x-auto pb-1 no-scrollbar">
                   {QUICK_REFS.map((qr) => (
                     <button
@@ -2193,7 +2193,7 @@ function AnnotationEditor({
                       type="button"
                       onClick={() => applyPreset(qr.mm)}
                       disabled={!!photoCalibration}
-                      className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] transition-colors disabled:opacity-50 ${
+                      className={`shrink-0 rounded-full border px-2.5 py-1 text-2xs transition-colors disabled:opacity-50 ${
                         refRealLen === String(qr.mm) && refUnit === 'mm'
                           ? 'border-roksal-amber bg-roksal-amber text-white'
                           : 'border-border bg-white text-muted-foreground hover:bg-muted'
@@ -2207,7 +2207,7 @@ function AnnotationEditor({
               {/* Realna dolžina + enota */}
               <div className="grid grid-cols-[1fr_auto] gap-1.5">
                 <div>
-                  <Label className="mb-0.5 block text-[10px] text-muted-foreground">Realna dolžina</Label>
+                  <Label className="mb-0.5 block text-2xs text-muted-foreground">Realna dolžina</Label>
                   <Input
                     type="number"
                     value={refRealLen}
@@ -2218,7 +2218,7 @@ function AnnotationEditor({
                   />
                 </div>
                 <div>
-                  <Label className="mb-0.5 block text-[10px] text-muted-foreground">Enota</Label>
+                  <Label className="mb-0.5 block text-2xs text-muted-foreground">Enota</Label>
                   <Select
                     value={refUnit}
                     onValueChange={(v) => setRefUnit(v as 'mm' | 'cm' | 'm')}
@@ -2237,7 +2237,7 @@ function AnnotationEditor({
               </div>
               {/* Kaj je referenca? */}
               <div>
-                <Label className="mb-0.5 block text-[10px] text-muted-foreground">
+                <Label className="mb-0.5 block text-2xs text-muted-foreground">
                   Kaj je referenca? (opcijsko)
                 </Label>
                 <Input
@@ -2249,7 +2249,7 @@ function AnnotationEditor({
                 />
               </div>
               {/* Navodila */}
-              <div className="flex items-start gap-1.5 rounded-md border border-amber-200 bg-amber-50 px-2 py-1.5 text-[10px] text-amber-900">
+              <div className="flex items-start gap-1.5 rounded-md border border-amber-200 bg-amber-50 px-2 py-1.5 text-2xs text-amber-900">
                 <Info className="mt-0.5 h-3 w-3 shrink-0" />
                 <span>
                   {photoCalibration
@@ -2314,7 +2314,7 @@ function AnnotationEditor({
                 variant="outline"
                 size="sm"
                 onClick={exportCsv}
-                className="h-7 px-2 text-[10px]"
+                className="h-7 px-2 text-2xs"
               >
                 <FileText className="mr-1 h-3 w-3" />
                 CSV
@@ -2324,7 +2324,7 @@ function AnnotationEditor({
                 size="sm"
                 onClick={transferToMeasurements}
                 disabled={!!transferring || !photoCalibration}
-                className="h-7 bg-roksal-amber px-2 text-[10px] text-white hover:bg-roksal-amber/90"
+                className="h-7 bg-roksal-amber px-2 text-2xs text-white hover:bg-roksal-amber/90"
               >
                 <Send className="mr-1 h-3 w-3" />
                 V Meritve
@@ -2334,20 +2334,20 @@ function AnnotationEditor({
           <Table>
             <TableHeader>
               <TableRow className="h-7">
-                <TableHead className="w-10 px-2 py-1 text-[10px]">#</TableHead>
-                <TableHead className="px-2 py-1 text-[10px]">Oznaka</TableHead>
-                <TableHead className="px-2 py-1 text-[10px]">Realna dolžina</TableHead>
-                <TableHead className="w-16 px-2 py-1 text-right text-[10px]">Dejanja</TableHead>
+                <TableHead className="w-10 px-2 py-1 text-2xs">#</TableHead>
+                <TableHead className="px-2 py-1 text-2xs">Oznaka</TableHead>
+                <TableHead className="px-2 py-1 text-2xs">Realna dolžina</TableHead>
+                <TableHead className="w-16 px-2 py-1 text-right text-2xs">Dejanja</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {measureList.map((m) => (
                 <TableRow key={m.id} className="h-8">
-                  <TableCell className="px-2 py-1 text-[10px] font-semibold text-roksal-ink">M{m.seqNum}</TableCell>
-                  <TableCell className="px-2 py-1 text-[10px]">
+                  <TableCell className="px-2 py-1 text-2xs font-semibold text-roksal-ink">M{m.seqNum}</TableCell>
+                  <TableCell className="px-2 py-1 text-2xs">
                     {m.oznaka || <span className="text-muted-foreground">—</span>}
                   </TableCell>
-                  <TableCell className="px-2 py-1 text-[10px]">
+                  <TableCell className="px-2 py-1 text-2xs">
                     {m.realLengthMm ? (
                       <span className="font-medium text-roksal-green">{formatDistanceMulti(m.realLengthMm)}</span>
                     ) : (
@@ -2388,7 +2388,7 @@ function AnnotationEditor({
             {measureStats.count > 0 && (
               <TableFooter>
                 <TableRow className="h-7 bg-muted/50">
-                  <TableCell colSpan={3} className="px-2 py-1 text-[10px] text-muted-foreground">
+                  <TableCell colSpan={3} className="px-2 py-1 text-2xs text-muted-foreground">
                     Skupna: <strong className="text-roksal-ink">{measureStats.total > 0 ? formatDistanceMulti(measureStats.total) : '—'}</strong>
                     {' · '}Povprečna: <strong className="text-roksal-ink">{measureStats.avg > 0 ? formatLength(measureStats.avg) : '—'}</strong>
                     {' · '}Št. mer: <strong className="text-roksal-ink">{measureStats.count}</strong>
@@ -2451,11 +2451,11 @@ function AnnotationEditor({
               {/* Podrobnosti */}
               <div className="grid grid-cols-2 gap-2 rounded-md border border-border bg-muted/30 p-2 text-[11px]">
                 <div>
-                  <p className="text-[10px] text-muted-foreground">Dolžina v pikslih</p>
+                  <p className="text-2xs text-muted-foreground">Dolžina v pikslih</p>
                   <p className="font-medium text-roksal-ink">{editMeasure.pixelLength.toFixed(1)} px</p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-muted-foreground">Realna dolžina</p>
+                  <p className="text-2xs text-muted-foreground">Realna dolžina</p>
                   {editMeasure.realLengthMm ? (
                     <p className="font-medium text-roksal-green">{formatDistanceMulti(editMeasure.realLengthMm)}</p>
                   ) : (
@@ -2464,7 +2464,7 @@ function AnnotationEditor({
                 </div>
                 {photoCalibration && (
                   <div className="col-span-2">
-                    <p className="text-[10px] text-muted-foreground">Uporabljena umeritev</p>
+                    <p className="text-2xs text-muted-foreground">Uporabljena umeritev</p>
                     <p className="font-medium text-roksal-ink">
                       {photoCalibration.pixelsPerMm.toFixed(2)} px/mm
                       {photoCalibration.oznaka ? ` · ${photoCalibration.oznaka}` : ''}
@@ -2482,7 +2482,7 @@ function AnnotationEditor({
                   placeholder="npr. dolžina balkona, višina ograje"
                   autoFocus
                 />
-                <p className="mt-1 text-[10px] text-muted-foreground">
+                <p className="mt-1 text-2xs text-muted-foreground">
                   Oznaka se prikaže v preglednici in na črti na sliki.
                 </p>
               </div>
@@ -2643,7 +2643,7 @@ function PairCreatorDialog({
           {predId && poId && (
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <p className="mb-1 text-[10px] text-muted-foreground">PRED</p>
+                <p className="mb-1 text-2xs text-muted-foreground">PRED</p>
                 { }
                 <img
                   src={predPhotos.find((p) => p.id === predId)?.imageData}
@@ -2652,7 +2652,7 @@ function PairCreatorDialog({
                 />
               </div>
               <div>
-                <p className="mb-1 text-[10px] text-muted-foreground">PO</p>
+                <p className="mb-1 text-2xs text-muted-foreground">PO</p>
                 { }
                 <img
                   src={poPhotos.find((p) => p.id === poId)?.imageData}

@@ -179,10 +179,10 @@ export function BeforeAfter({
         )}
 
         {/* Oznake PREJ | POTEM */}
-        <Badge className="pointer-events-none absolute left-2 top-2 bg-roksal-navy/85 text-[10px] font-bold text-white hover:bg-roksal-navy/85">
+        <Badge className="pointer-events-none absolute left-2 top-2 bg-roksal-navy/85 text-2xs font-bold text-white hover:bg-roksal-navy/85">
           PREJ
         </Badge>
-        <Badge className="pointer-events-none absolute right-2 top-2 bg-roksal-amber/95 text-[10px] font-bold text-white hover:bg-roksal-amber/95">
+        <Badge className="pointer-events-none absolute right-2 top-2 bg-roksal-amber/95 text-2xs font-bold text-white hover:bg-roksal-amber/95">
           POTEM
         </Badge>
       </div>

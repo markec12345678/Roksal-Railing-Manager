@@ -278,7 +278,7 @@ export function PostSignaturePanel({ project }: { project: Project }) {
               <p className="text-[11px] text-green-700 dark:text-green-300 mt-0.5">
                 {project.dealLockedAt && new Date(project.dealLockedAt).toLocaleString('sl-SI')}
               </p>
-              <p className="text-[10px] text-green-600 dark:text-green-400 mt-0.5">
+              <p className="text-2xs text-green-600 dark:text-green-400 mt-0.5">
                 Stranka: {project.dealSignedBy} · Monter: {project.dealSignedByMonter}
               </p>
             </div>
@@ -300,7 +300,7 @@ export function PostSignaturePanel({ project }: { project: Project }) {
               <span className="text-[11px] font-semibold text-roksal-ink">Deal Lock</span>
               <CheckCircle2 className="h-3 w-3 text-green-600 dark:text-green-400 ml-auto" />
             </div>
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-2xs text-muted-foreground">
               Ponudba zaklenjena. Nič več editanja.
             </p>
           </CardContent>
@@ -313,12 +313,12 @@ export function PostSignaturePanel({ project }: { project: Project }) {
               <Package className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               <span className="text-[11px] font-semibold text-roksal-ink">BOM Draft</span>
               {bomDraft && (
-                <Badge variant="outline" className="ml-auto text-[8px] bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300">
+                <Badge variant="outline" className="ml-auto text-3xs bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300">
                   {bomDraft.items.length} art.
                 </Badge>
               )}
             </div>
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-2xs text-muted-foreground">
               {bomDraft ? 'Material draft generiran (ne naročilo)' : 'Ni še generiran'}
             </p>
           </CardContent>
@@ -332,7 +332,7 @@ export function PostSignaturePanel({ project }: { project: Project }) {
               <span className="text-[11px] font-semibold text-roksal-ink">Projekt = ZA_MONTAZO</span>
               <CheckCircle2 className="h-3 w-3 text-green-600 dark:text-green-400 ml-auto" />
             </div>
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-2xs text-muted-foreground">
               Status samodejno spremenjen na &quot;Za montažo&quot;
             </p>
           </CardContent>
@@ -345,12 +345,12 @@ export function PostSignaturePanel({ project }: { project: Project }) {
               <TrendingUp className="h-4 w-4 text-purple-600 dark:text-purple-400" />
               <span className="text-[11px] font-semibold text-roksal-ink">Marža zaklenjena</span>
               {project.marginLocked && (
-                <Badge variant="outline" className="ml-auto text-[8px] bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300">
+                <Badge variant="outline" className="ml-auto text-3xs bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300">
                   {project.marginLocked.toFixed(0)} €
                 </Badge>
               )}
             </div>
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-2xs text-muted-foreground">
               {project.marginLocked ? `${project.marginLocked.toFixed(2)} € zaklenjene marže` : 'Ni na voljo'}
             </p>
           </CardContent>
@@ -368,14 +368,14 @@ export function PostSignaturePanel({ project }: { project: Project }) {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            <div className="rounded-lg border border-border bg-muted/30 p-2 text-[10px] text-muted-foreground italic">
+            <div className="rounded-lg border border-border bg-muted/30 p-2 text-2xs text-muted-foreground italic">
               ⚠️ {bomDraft.notes || 'BOM draft — avtomatsko generiran iz podpisane ponudbe. Ni naročilo.'}
             </div>
             <div className="space-y-1">
               {bomDraft.items.map((item, i) => (
                 <div key={i} className="flex items-center justify-between rounded border border-border bg-white dark:bg-card p-2 text-[11px]">
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-[8px] bg-muted/50">
+                    <Badge variant="outline" className="text-3xs bg-muted/50">
                       {item.kategorija}
                     </Badge>
                     <span className="font-medium text-roksal-ink">{item.naziv}</span>
@@ -389,7 +389,7 @@ export function PostSignaturePanel({ project }: { project: Project }) {
               ))}
             </div>
             {bomDraft.notes && (
-              <p className="text-[10px] text-muted-foreground pt-1">{bomDraft.notes}</p>
+              <p className="text-2xs text-muted-foreground pt-1">{bomDraft.notes}</p>
             )}
           </CardContent>
         </Card>
@@ -423,7 +423,7 @@ export function PostSignaturePanel({ project }: { project: Project }) {
                 <span className="text-xs font-semibold text-roksal-ink">{a.signedByName}</span>
                 <CheckCircle2 className="h-3 w-3 text-green-600 dark:text-green-400 ml-auto" />
               </div>
-              <div className="grid grid-cols-2 gap-1 text-[10px] text-muted-foreground">
+              <div className="grid grid-cols-2 gap-1 text-2xs text-muted-foreground">
                 <div className="flex items-center gap-1">
                   <Clock className="h-2.5 w-2.5" />
                   {new Date(a.createdAt).toLocaleString('sl-SI')}
@@ -439,7 +439,7 @@ export function PostSignaturePanel({ project }: { project: Project }) {
                 )}
               </div>
               {a.pdfHash && (
-                <div className="mt-1 text-[8px] text-muted-foreground truncate font-mono">
+                <div className="mt-1 text-3xs text-muted-foreground truncate font-mono">
                   PDF hash: {a.pdfHash.slice(0, 32)}...
                 </div>
               )}
@@ -467,7 +467,7 @@ export function PostSignaturePanel({ project }: { project: Project }) {
       </Button>
 
       {/* Legal disclaimer */}
-      <div className="rounded-lg border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-2 text-[10px] text-amber-800 dark:text-amber-200">
+      <div className="rounded-lg border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-2 text-2xs text-amber-800 dark:text-amber-200">
         <AlertTriangle className="h-3 w-3 inline mr-1" />
         Deal je zaklenjen z avtomatskim sistemom. Vsa dejanja so zabeležena v audit trail
         z IP, device fingerprint in časom. Podpisana PDF ponudba je pravno veljaven dokument.

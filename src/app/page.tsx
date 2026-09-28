@@ -431,7 +431,7 @@ export default function Home() {
             <div className="h-full bg-roksal-amber animate-pulse" style={{ width: '100%' }} />
           </div>
         )}
-        <div className="flex items-center justify-center gap-1.5 py-1.5 text-[10px] text-muted-foreground">
+        <div className="flex items-center justify-center gap-1.5 py-1.5 text-2xs text-muted-foreground">
           <RefreshCw className={`h-2.5 w-2.5 ${syncing ? 'animate-spin' : ''}`} />
           <span>
             {syncing

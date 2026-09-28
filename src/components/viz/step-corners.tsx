@@ -435,12 +435,12 @@ export function StepCorners() {
 
         <Badge
           variant="secondary"
-          className="pointer-events-none absolute left-2 top-2 bg-white/90 text-[10px] font-semibold text-roksal-navy"
+          className="pointer-events-none absolute left-2 top-2 bg-white/90 text-2xs font-semibold text-roksal-navy"
           aria-live="polite"
         >
           Predogled
         </Badge>
-        <Badge variant="secondary" className="pointer-events-none absolute bottom-2 right-2 bg-white/85 text-[10px] text-roksal-navy">
+        <Badge variant="secondary" className="pointer-events-none absolute bottom-2 right-2 bg-white/85 text-2xs text-roksal-navy">
           {Math.round(zoom * 100)}%
         </Badge>
       </div>
@@ -464,7 +464,7 @@ export function StepCorners() {
           </Button>
         </div>
         <div className="mt-3 flex items-center gap-3">
-          <Badge variant="secondary" className="shrink-0 bg-roksal-navy/10 text-[10px] text-roksal-ink">
+          <Badge variant="secondary" className="shrink-0 bg-roksal-navy/10 text-2xs text-roksal-ink">
             Vogal {activeCorner + 1}
           </Badge>
           <div className="grid grid-cols-3 grid-rows-2 gap-1" role="group" aria-label="Fini premik aktivnega vogala">

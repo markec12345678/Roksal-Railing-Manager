@@ -865,7 +865,7 @@ export function SketchCanvas({ projectId, onClose }: SketchCanvasProps) {
                       <div className="text-xs font-semibold truncate text-roksal-ink dark:text-white">
                         {sk.naziv}
                       </div>
-                      <div className="text-[10px] text-muted-foreground">
+                      <div className="text-2xs text-muted-foreground">
                         {new Date(sk.createdAt).toLocaleDateString('sl-SI')}
                       </div>
                     </div>

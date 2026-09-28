@@ -1525,7 +1525,7 @@ export function FloorPlanTab({ projectId }: FloorPlanTabProps) {
               </div>
               <div>
                 <CardTitle className="text-base text-white">Tloris z elementi</CardTitle>
-                <p className="text-[10px] text-white/70">Roksal — balkon in ograja</p>
+                <p className="text-2xs text-white/70">Roksal — balkon in ograja</p>
               </div>
             </div>
             <div className="flex items-center gap-1">
@@ -1978,7 +1978,7 @@ function StatCard({
   }
   return (
     <div className={`rounded-lg border p-2 ${colors[accent]}`}>
-      <div className="text-[10px] uppercase tracking-wide opacity-80">{label}</div>
+      <div className="text-2xs uppercase tracking-wide opacity-80">{label}</div>
       <div className="text-sm font-bold tabular-nums">{value}</div>
     </div>
   )

@@ -414,7 +414,7 @@ export function PdfExport({ project }: { project: Project | null }) {
             )}
             <div className="text-left">
               <div className="text-sm font-semibold text-roksal-ink">Delovni list monterja</div>
-              <div className="text-[10px] text-muted-foreground">Meritve, slike pred/med/po, opombe, podpisi</div>
+              <div className="text-2xs text-muted-foreground">Meritve, slike pred/med/po, opombe, podpisi</div>
             </div>
           </Button>
           <Button
@@ -431,12 +431,12 @@ export function PdfExport({ project }: { project: Project | null }) {
             )}
             <div className="text-left">
               <div className="text-sm font-semibold text-roksal-ink">Ponudba za stranko</div>
-              <div className="text-[10px] text-muted-foreground">Postavke, DDV, skupaj, pogoji, podpis</div>
+              <div className="text-2xs text-muted-foreground">Postavke, DDV, skupaj, pogoji, podpis</div>
             </div>
           </Button>
         </div>
         {project && (
-          <Badge variant="secondary" className="w-fit text-[10px]">
+          <Badge variant="secondary" className="w-fit text-2xs">
             Aktivni projekt: {project.nazivProjekta}
           </Badge>
         )}

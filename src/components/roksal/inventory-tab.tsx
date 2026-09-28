@@ -812,7 +812,7 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
           <div className="flex items-end justify-around gap-3 h-24">
             {categoryStock.map((cat) => (
               <div key={cat.category} className="flex flex-1 flex-col items-center gap-1.5">
-                <span className="text-[10px] font-medium tabular-nums text-roksal-ink">{cat.totalStock}</span>
+                <span className="text-2xs font-medium tabular-nums text-roksal-ink">{cat.totalStock}</span>
                 <div className="relative w-full flex justify-center">
                   <div className="w-10 bg-secondary/50 rounded-t-sm relative overflow-hidden" style={{ height: '80px' }}>
                     <div
@@ -863,13 +863,13 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
       {/* Stats Header */}
       <div className="grid grid-cols-3 gap-3 md:gap-4">
         <Card className="px-3 py-3 card-hover transition-all duration-200 animate-fade-in-up" style={{ animationDelay: '60ms' }}>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+          <p className="text-2xs text-muted-foreground uppercase tracking-wide">
             Artikli
           </p>
           <p className="text-xl font-bold tabular-nums text-roksal-ink">{totalItems}</p>
         </Card>
         <Card className="px-3 py-3 card-hover transition-all duration-200 animate-fade-in-up" style={{ animationDelay: '120ms' }}>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+          <p className="text-2xs text-muted-foreground uppercase tracking-wide">
             Skupna zaloga
           </p>
           <p className="text-xl font-bold tabular-nums text-roksal-ink">
@@ -877,7 +877,7 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
           </p>
         </Card>
         <Card className="px-3 py-3 card-hover transition-all duration-200 animate-fade-in-up" style={{ animationDelay: '180ms' }}>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+          <p className="text-2xs text-muted-foreground uppercase tracking-wide">
             Opozorila
           </p>
           <p className={`text-xl font-bold tabular-nums ${lowStockItems.length > 0 ? 'text-roksal-red' : 'text-roksal-green'}`}>
@@ -1119,7 +1119,7 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="h-7 px-2.5 text-[10px] gap-1 border-roksal-red/30 text-roksal-red hover:bg-roksal-red/10 press-scale focus-visible:ring-2 focus-visible:ring-roksal-red/40"
+                            className="h-7 px-2.5 text-2xs gap-1 border-roksal-red/30 text-roksal-red hover:bg-roksal-red/10 press-scale focus-visible:ring-2 focus-visible:ring-roksal-red/40"
                             onClick={() => handleReorder(item)}
                             /* R217 (P1-f) — dostopnost je RESNICA: gumb ne
                                odpre naročila, ampak KPIRA naročilnico
@@ -1143,7 +1143,7 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
                               {item.enota}
                             </span>
                           </p>
-                          <p className="text-[10px] tabular-nums text-muted-foreground">
+                          <p className="text-2xs tabular-nums text-muted-foreground">
                             Min: {item.minimalnaZaloga} {item.enota}
                           </p>
                         </div>
@@ -1156,7 +1156,7 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
                         className={`h-1.5 ${isLow ? '[&>div]:bg-roksal-red' : getStockPercent(item) <= 50 ? '[&>div]:bg-roksal-amber' : '[&>div]:bg-roksal-green'}`}
                       />
                       <div className="flex items-center justify-between">
-                        <Badge variant="secondary" className="text-[10px] h-5 px-1.5">
+                        <Badge variant="secondary" className="text-2xs h-5 px-1.5">
                           <Archive className="mr-1 h-2.5 w-2.5" />
                           {typeLabels[item.tip] || item.tip}
                         </Badge>
@@ -1170,7 +1170,7 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
                             (sorojeni čip zgoraj počne filtriranje) — dobeseden
                             tekst je hkrati iskren aria-tekst. */}
                         {item._count?.prices === 0 && <BadgeBrezDobavitelja />}
-                        <span className="text-[10px] text-muted-foreground">
+                        <span className="text-2xs text-muted-foreground">
                           {item._count?.usages || 0} uporab
                         </span>
                       </div>
@@ -1182,7 +1182,7 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
                         type="button"
                         onClick={() => void toggleLots(item)}
                         aria-expanded={lotsOpenId === item.id}
-                        className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 text-[10px] font-semibold text-roksal-ink/70 transition-colors hover:bg-secondary hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                        className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 text-2xs font-semibold text-roksal-ink/70 transition-colors hover:bg-secondary hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
                         title="Od kod je ta material? Šarže, dobavitelji in poraba"
                       >
                         <PackageSearch className="h-3 w-3" aria-hidden="true" />
@@ -1235,7 +1235,7 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
                                           className={`h-1.5 w-1.5 shrink-0 rounded-full ${st.dot}`}
                                           aria-hidden="true"
                                         />
-                                        <p className="truncate font-mono text-[10px] font-semibold text-roksal-ink">
+                                        <p className="truncate font-mono text-2xs font-semibold text-roksal-ink">
                                           {lot.lotNumber}
                                         </p>
                                       </div>
@@ -1245,7 +1245,7 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
                                         {st.label}
                                       </span>
                                     </div>
-                                    <div className="mt-1 flex items-center justify-between gap-2 text-[10px] text-muted-foreground">
+                                    <div className="mt-1 flex items-center justify-between gap-2 text-2xs text-muted-foreground">
                                       <span className="truncate">
                                         {lot.dobavitelj ? (
                                           lot.dobavitelj
@@ -1271,7 +1271,7 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
                                           style={{ width: `${Math.min(pct, 100)}%` }}
                                         />
                                       </div>
-                                      <span className="shrink-0 text-[10px] font-semibold tabular-nums text-roksal-ink">
+                                      <span className="shrink-0 text-2xs font-semibold tabular-nums text-roksal-ink">
                                         {lot.quantityRemaining}/{lot.quantityInitial} {lotsData.inventory.enota}
                                       </span>
                                     </div>
@@ -1416,7 +1416,7 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
                 </SelectContent>
               </Select>
               {selectedItem && (
-                <p className="text-[10px] tabular-nums text-muted-foreground">
+                <p className="text-2xs tabular-nums text-muted-foreground">
                   Trenutna zaloga: {selectedItem.kolicinaZaloga} {selectedItem.enota} · Min: {selectedItem.minimalnaZaloga} {selectedItem.enota}
                 </p>
               )}
@@ -1478,10 +1478,10 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
                     </span>
                   </div>
                   <div className="mt-1 flex items-center gap-2">
-                    <Badge className={`text-[10px] h-5 px-1.5 ${movementColors[movementType]}`}>
+                    <Badge className={`text-2xs h-5 px-1.5 ${movementColors[movementType]}`}>
                       {movementLabels[movementType]}
                     </Badge>
-                    <span className="text-[10px] tabular-nums text-muted-foreground">
+                    <span className="text-2xs tabular-nums text-muted-foreground">
                       {movementQuantity} {selectedItem.enota}
                     </span>
                   </div>

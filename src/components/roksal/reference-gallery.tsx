@@ -290,7 +290,7 @@ function StatisticsCard({ items }: { items: GalleryItem[] }) {
       <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {/* Skupno */}
         <div className="space-y-1">
-          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+          <p className="text-2xs uppercase tracking-wide text-muted-foreground">
             Skupno realizacij
           </p>
           <p className="text-2xl font-bold text-roksal-ink dark:text-white">
@@ -300,21 +300,21 @@ function StatisticsCard({ items }: { items: GalleryItem[] }) {
 
         {/* Javno */}
         <div className="space-y-1">
-          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+          <p className="text-2xs uppercase tracking-wide text-muted-foreground">
             Z javnim prikazom
           </p>
           <p className="text-2xl font-bold text-roksal-ink dark:text-white flex items-center gap-1">
             <Eye className="w-4 h-4 text-roksal-amber" />
             {publicCount}
           </p>
-          <p className="text-[10px] text-muted-foreground">
+          <p className="text-2xs text-muted-foreground">
             {total - publicCount} privatnih
           </p>
         </div>
 
         {/* Najnovejša */}
         <div className="space-y-1 col-span-2 md:col-span-1">
-          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+          <p className="text-2xs uppercase tracking-wide text-muted-foreground">
             Najnovejša realizacija
           </p>
           {newest.date ? (
@@ -322,7 +322,7 @@ function StatisticsCard({ items }: { items: GalleryItem[] }) {
               <p className="text-sm font-semibold text-roksal-ink dark:text-white line-clamp-1">
                 {newest.naslov}
               </p>
-              <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+              <p className="text-2xs text-muted-foreground flex items-center gap-1">
                 <Calendar className="w-3 h-3" />
                 {formatDateShort(newest.date)}
               </p>
@@ -334,7 +334,7 @@ function StatisticsCard({ items }: { items: GalleryItem[] }) {
 
         {/* Material bars */}
         <div className="col-span-2 md:col-span-1 space-y-1.5">
-          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+          <p className="text-2xs uppercase tracking-wide text-muted-foreground">
             Po materialu
           </p>
           {total === 0 ? (
@@ -343,38 +343,38 @@ function StatisticsCard({ items }: { items: GalleryItem[] }) {
             <>
               {materialCounts.map((m) => (
                 <div key={m.material} className="flex items-center gap-2">
-                  <span className="text-[10px] w-12 text-muted-foreground">{m.material}</span>
+                  <span className="text-2xs w-12 text-muted-foreground">{m.material}</span>
                   <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                     <div
                       className={`h-full ${barColor(m.material)} transition-all`}
                       style={{ width: `${(m.count / maxCount) * 100}%` }}
                     />
                   </div>
-                  <span className="text-[10px] w-5 text-right font-medium">{m.count}</span>
+                  <span className="text-2xs w-5 text-right font-medium">{m.count}</span>
                 </div>
               ))}
               {othersCount > 0 && (
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] w-12 text-muted-foreground">Ostalo</span>
+                  <span className="text-2xs w-12 text-muted-foreground">Ostalo</span>
                   <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                     <div
                       className="h-full bg-muted-foreground/40 transition-all"
                       style={{ width: `${(othersCount / maxCount) * 100}%` }}
                     />
                   </div>
-                  <span className="text-[10px] w-5 text-right font-medium">{othersCount}</span>
+                  <span className="text-2xs w-5 text-right font-medium">{othersCount}</span>
                 </div>
               )}
               {noMaterialCount > 0 && (
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] w-12 text-muted-foreground">Brez</span>
+                  <span className="text-2xs w-12 text-muted-foreground">Brez</span>
                   <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                     <div
                       className="h-full bg-muted-foreground/20 transition-all"
                       style={{ width: `${(noMaterialCount / maxCount) * 100}%` }}
                     />
                   </div>
-                  <span className="text-[10px] w-5 text-right font-medium">{noMaterialCount}</span>
+                  <span className="text-2xs w-5 text-right font-medium">{noMaterialCount}</span>
                 </div>
               )}
             </>
@@ -584,26 +584,26 @@ function Lightbox({
         <div className="flex flex-wrap gap-2 items-center text-xs">
           {item.profil && (
             <>
-              <Badge variant="secondary" className="text-[10px]">
+              <Badge variant="secondary" className="text-2xs">
                 {item.profil.naziv}
               </Badge>
-              <Badge variant="outline" className="text-[10px] border-white/40 text-white">
+              <Badge variant="outline" className="text-2xs border-white/40 text-white">
                 {item.profil.material}
               </Badge>
             </>
           )}
           {item.project?.customer?.ime && (
-            <Badge variant="outline" className="text-[10px] border-white/40 text-white">
+            <Badge variant="outline" className="text-2xs border-white/40 text-white">
               Stranka: {item.project.customer.ime}
             </Badge>
           )}
           {item.javno ? (
-            <Badge variant="outline" className="text-[10px] border-roksal-amber/60 text-roksal-amber">
+            <Badge variant="outline" className="text-2xs border-roksal-amber/60 text-roksal-amber">
               <Eye className="w-3 h-3 mr-1" />
               Javno
             </Badge>
           ) : (
-            <Badge variant="outline" className="text-[10px] border-white/40 text-white/70">
+            <Badge variant="outline" className="text-2xs border-white/40 text-white/70">
               <EyeOff className="w-3 h-3 mr-1" />
               Privatno
             </Badge>
@@ -1391,7 +1391,7 @@ export function ReferenceGallery() {
               <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t">
                 <span className="text-xs text-muted-foreground">Aktivni filtri:</span>
                 {search.trim() && (
-                  <Badge variant="secondary" className="text-[10px] gap-1">
+                  <Badge variant="secondary" className="text-2xs gap-1">
                     Iskanje: &quot;{search.trim().slice(0, 20)}&quot;
                     <button
                       type="button"
@@ -1404,7 +1404,7 @@ export function ReferenceGallery() {
                   </Badge>
                 )}
                 {filterProfilId !== 'all' && (
-                  <Badge variant="secondary" className="text-[10px] gap-1">
+                  <Badge variant="secondary" className="text-2xs gap-1">
                     Profil: {profili.find((p) => p.id === filterProfilId)?.naziv || '?'}
                     <button
                       type="button"
@@ -1417,7 +1417,7 @@ export function ReferenceGallery() {
                   </Badge>
                 )}
                 {filterMaterial !== 'all' && (
-                  <Badge variant="secondary" className="text-[10px] gap-1">
+                  <Badge variant="secondary" className="text-2xs gap-1">
                     Material: {filterMaterial}
                     <button
                       type="button"
@@ -1430,7 +1430,7 @@ export function ReferenceGallery() {
                   </Badge>
                 )}
                 {filterLokacija !== 'all' && (
-                  <Badge variant="secondary" className="text-[10px] gap-1">
+                  <Badge variant="secondary" className="text-2xs gap-1">
                     Lokacija: {filterLokacija}
                     <button
                       type="button"
@@ -1443,7 +1443,7 @@ export function ReferenceGallery() {
                   </Badge>
                 )}
                 {filterYear !== 'all' && (
-                  <Badge variant="secondary" className="text-[10px] gap-1">
+                  <Badge variant="secondary" className="text-2xs gap-1">
                     Leto: {filterYear}
                     <button
                       type="button"
@@ -1460,7 +1460,7 @@ export function ReferenceGallery() {
                   variant="ghost"
                   size="sm"
                   onClick={clearFilters}
-                  className="h-6 px-2 text-[10px] text-destructive hover:text-destructive"
+                  className="h-6 px-2 text-2xs text-destructive hover:text-destructive"
                 >
                   Počisti vse
                 </Button>
@@ -1559,7 +1559,7 @@ export function ReferenceGallery() {
                   {hasBoth && (
                     <Badge
                       variant="secondary"
-                      className="absolute top-2 left-2 bg-roksal-amber/90 text-white text-[10px]"
+                      className="absolute top-2 left-2 bg-roksal-amber/90 text-white text-2xs"
                     >
                       Pred / Po
                     </Badge>
@@ -1568,7 +1568,7 @@ export function ReferenceGallery() {
                   {featured && (
                     <Badge
                       variant="secondary"
-                      className="absolute top-2 right-2 bg-white/90 text-roksal-amber text-[10px] gap-0.5 border border-roksal-amber/40"
+                      className="absolute top-2 right-2 bg-white/90 text-roksal-amber text-2xs gap-0.5 border border-roksal-amber/40"
                     >
                       <Star className="w-3 h-3 fill-roksal-amber" />
                       Izpostavljeno
@@ -1576,7 +1576,7 @@ export function ReferenceGallery() {
                   )}
                   {/* Hover hint */}
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-end justify-center pb-2 opacity-0 group-hover:opacity-100">
-                    <span className="text-[10px] text-white bg-black/50 px-2 py-0.5 rounded">
+                    <span className="text-2xs text-white bg-black/50 px-2 py-0.5 rounded">
                       Klikni za predogled
                     </span>
                   </div>
@@ -1593,16 +1593,16 @@ export function ReferenceGallery() {
                   )}
                   <div className="flex items-center gap-1.5 flex-wrap pt-1">
                     {item.profil && (
-                      <Badge variant="outline" className="text-[10px]">
+                      <Badge variant="outline" className="text-2xs">
                         {item.profil.naziv}
                       </Badge>
                     )}
                     {item.profil?.material && (
-                      <Badge variant="secondary" className="text-[10px]">
+                      <Badge variant="secondary" className="text-2xs">
                         {item.profil.material}
                       </Badge>
                     )}
-                    <span className="text-[10px] tabular-nums text-muted-foreground ml-auto">
+                    <span className="text-2xs tabular-nums text-muted-foreground ml-auto">
                       {formatDateShort(item.createdAt)}
                     </span>
                   </div>
@@ -1805,7 +1805,7 @@ export function ReferenceGallery() {
                     ) : (
                       <div className="text-center text-muted-foreground">
                         <Upload className="w-6 h-6 mx-auto mb-1" />
-                        <span className="text-[10px]">Klikni za nalaganje</span>
+                        <span className="text-2xs">Klikni za nalaganje</span>
                       </div>
                     )}
                   </div>
@@ -1831,7 +1831,7 @@ export function ReferenceGallery() {
                     ) : (
                       <div className="text-center text-muted-foreground">
                         <Upload className="w-6 h-6 mx-auto mb-1" />
-                        <span className="text-[10px]">Klikni za nalaganje</span>
+                        <span className="text-2xs">Klikni za nalaganje</span>
                       </div>
                     )}
                   </div>
@@ -1844,7 +1844,7 @@ export function ReferenceGallery() {
                 </label>
               </div>
             </div>
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-2xs text-muted-foreground">
               Največja velikost slike: 5 MB. Priporočena ločljivost 1920×1080.
             </p>
           </div>

@@ -37,6 +37,12 @@ import { ToastAction } from '@/components/ui/toast'
 import { useToast } from '@/hooks/use-toast'
 import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'
 import { cn } from '@/lib/utils'
+// R238 — zaključek 'izvozi' družine (P1-c): prodajna plošča dobi CSV izvoz
+// (finančna dimenzija lijaka — vrednost/spomnik/podpis, ki jih R164
+// projekti-csv NIMA; statusi = ISTI vir resnice PROJEKTI_STATUS_LABELS).
+import { buildPloscaCsv, ploscaCsvFilename } from '@/lib/plosca-csv'
+import { projektiLabel } from '@/lib/projekti-csv'
+import { todayStamp } from '@/lib/csv-export'
 import {
   BadgeCheck,
   CalendarClock,
@@ -50,6 +56,7 @@ import {
   Factory,
   Hammer,
   AlertCircle,
+  FileDown,
   Lock,
   MoreVertical,
   Trello,
@@ -164,18 +171,18 @@ function PipelineCardVisual({
           </span>
         )}
         {p.dealLocked && (
-          <span title="Podpis — deal lock" className="inline-flex items-center gap-0.5 text-[10px] font-medium text-roksal-ink dark:text-roksal-amber">
+          <span title="Podpis — deal lock" className="inline-flex items-center gap-0.5 text-2xs font-medium text-roksal-ink dark:text-roksal-amber">
             <Lock className="h-3 w-3" /> podpis
           </span>
         )}
         {montaza && (
-          <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground">
+          <span className="inline-flex items-center gap-0.5 text-2xs text-muted-foreground">
             <CalendarDays className="h-3 w-3" /> {montaza}
           </span>
         )}
       </div>
       {fu && (
-        <Badge variant="outline" className={cn('mt-1.5 px-1.5 py-0 text-[10px] font-medium', fu.cls)}>
+        <Badge variant="outline" className={cn('mt-1.5 px-1.5 py-0 text-2xs font-medium', fu.cls)}>
           {fu.label}
         </Badge>
       )}
@@ -284,12 +291,12 @@ function PipelineColumn({
       <div className={cn('flex items-center gap-1.5 bg-gradient-to-r to-transparent px-2.5 py-2', col.head)}>
         <Icon className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
         <span className="text-xs font-semibold">{col.label}</span>
-        <Badge variant="secondary" className="ml-auto h-5 min-w-5 rounded-full px-1.5 text-[10px]">
+        <Badge variant="secondary" className="ml-auto h-5 min-w-5 rounded-full px-1.5 text-2xs">
           {projects.length}
         </Badge>
       </div>
       {vsota > 0 && (
-        <div className="flex items-center gap-1 px-2.5 pt-1 text-[10px] font-medium text-muted-foreground">
+        <div className="flex items-center gap-1 px-2.5 pt-1 text-2xs font-medium text-muted-foreground">
           <Euro className="h-3 w-3" aria-hidden />
           {fmtEur(vsota)}
         </div>
@@ -332,6 +339,9 @@ export function DealPipeline() {
   const [busyId, setBusyId] = useState<string | null>(null)
   const [flashId, setFlashId] = useState<string | null>(null)
   const [customerFilter, setCustomerFilter] = useState<string>('ALL')
+  // R238 — izvoz plošče: disabled med nalaganjem (ne izvozi NEpolnega
+  // seznama — R233 družina) + aria-label sklanjatev prek projektiLabel.
+  const [exportingPlosca, setExportingPlosca] = useState(false)
   const itemsRef = useRef<PipeProject[]>([])
   const { toast } = useToast()
 
@@ -484,6 +494,52 @@ export function DealPipeline() {
     [vidni],
   )
 
+  // R238 — izvoz TOČNO vidnega stanja plošče (isti filter stranke —
+  // IZVOŽENO = ZASLON, vzorec R164/R233). Gumb VEDNO viden; klik pri 0
+  // → iskren toast (fail-closed — ni prazne datoteke). Fail-verbose:
+  // TypeError iz liba gre v toast z razlogom (R162 vzorec).
+  const handleExportPloscaCsv = () => {
+    if (vidni.length === 0) {
+      toast({ title: 'Ni projektov na plošči za izvoz', description: 'CSV se izvozi, ko je na plošči prvi projekt.' })
+      return
+    }
+    setExportingPlosca(true)
+    try {
+      const { csv, vrstic } = buildPloscaCsv(
+        vidni.map((p) => ({
+          nazivProjekta: p.nazivProjekta,
+          status: p.status,
+          strankaIme: p.customer?.ime ?? null,
+          vrednostEur: p.estimatedPrice ?? null,
+          spomnik: p.followUpDate ?? null,
+          datumMontaze: p.datumMontaze ?? null,
+          podpisano: p.dealLocked,
+        })),
+      )
+      // EN now za ime datoteke (lekcija R121/R235 — dva klici razideta
+      // determinizem).
+      const filename = ploscaCsvFilename(todayStamp())
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+      toast({ title: 'CSV izvožen', description: `Izvožena prodajna plošča (${projektiLabel(vrstic)}) v datoteko ${filename}.` })
+    } catch (err) {
+      toast({
+        title: 'Izvoz ni uspel',
+        description: err instanceof Error ? err.message : `Neznana napaka (${String(err)}).`,
+        variant: 'destructive',
+      })
+    } finally {
+      setExportingPlosca(false)
+    }
+  }
+
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -536,6 +592,22 @@ export function DealPipeline() {
                 </SelectContent>
               </Select>
             )}
+            {/* R238 — CSV izvoz prodajne plošče (gumb VEDNO viden — R232
+                družina; disabled med nalaganjem — ne izvozi NEpolnega
+                seznama; ISTI fokus žeton kot družina navy/40). */}
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-8 shrink-0 gap-1.5 px-2 text-xs focus-visible:ring-roksal-navy/40"
+              onClick={handleExportPloscaCsv}
+              disabled={loading || exportingPlosca}
+              aria-label="Izvozi prodajno ploščo kot CSV"
+              title="Izvozi vidne projekte z vrednostjo, spomnikom in podpisom kot CSV za Excel"
+            >
+              <FileDown className={`h-3.5 w-3.5 ${exportingPlosca ? 'animate-pulse' : ''}`} aria-hidden="true" />
+              Izvozi CSV
+            </Button>
             <Button
               type="button"
               variant="ghost"

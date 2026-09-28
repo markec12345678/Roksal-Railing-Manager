@@ -365,7 +365,7 @@ export function CommandPalette({ open, onOpenChange, onNavigate, onSync }: Comma
   const countHeading = (label: string, count: number) => (
     <span className="flex items-center justify-between gap-2">
       <span>{label}</span>
-      <span className="tabular-nums text-[10px] font-medium text-muted-foreground/70">
+      <span className="tabular-nums text-2xs font-medium text-muted-foreground/70">
         {count}
       </span>
     </span>
@@ -772,13 +772,13 @@ export function CommandPalette({ open, onOpenChange, onNavigate, onSync }: Comma
         aria-hidden="true"
       >
         <span className="flex items-center gap-1.5">
-          <kbd className="rounded border bg-muted px-1 font-sans text-[10px]">↑↓</kbd>
+          <kbd className="rounded border bg-muted px-1 font-sans text-2xs">↑↓</kbd>
           krmarjenje
-          <kbd className="ml-1.5 rounded border bg-muted px-1 font-sans text-[10px]">↵</kbd>
+          <kbd className="ml-1.5 rounded border bg-muted px-1 font-sans text-2xs">↵</kbd>
           izbira
         </span>
         <span className="flex items-center gap-1.5">
-          <kbd className="rounded border bg-muted px-1 font-sans text-[10px]">esc</kbd>
+          <kbd className="rounded border bg-muted px-1 font-sans text-2xs">esc</kbd>
           zapri
         </span>
       </div>

@@ -739,7 +739,7 @@ function CapsBadge({ ok, label }: { ok: boolean | 'unknown'; label: string }) {
         ? 'border-amber-300 bg-amber-50 text-amber-800'
         : 'border-border bg-muted text-muted-foreground'
   return (
-    <Badge variant="outline" className={`text-[10px] ${cls}`}>
+    <Badge variant="outline" className={`text-2xs ${cls}`}>
       {label}: {ok === true ? 'da' : ok === false ? 'ne' : 'neznano'}
     </Badge>
   )
@@ -789,13 +789,13 @@ function ElementCard({
         <span className="ml-auto font-mono text-[9px] text-muted-foreground">{el.id}</span>
       </div>
       <div className="mt-1.5 flex items-center gap-2">
-        <span className="shrink-0 text-[10px] text-muted-foreground">podpora {formatPct(el.support)}</span>
+        <span className="shrink-0 text-2xs text-muted-foreground">podpora {formatPct(el.support)}</span>
         <Progress value={Math.round(el.support * 100)} className="h-1.5" aria-label={`Podpora zaznave ${el.id}`} />
       </div>
       {el.warnings.length > 0 && (
         <ul className="mt-1 space-y-0.5">
           {el.warnings.map((wn, i) => (
-            <li key={i} className="text-[10px] leading-snug text-muted-foreground">
+            <li key={i} className="text-2xs leading-snug text-muted-foreground">
               ⚠ {wn}
             </li>
           ))}
@@ -1042,7 +1042,7 @@ function ConfirmResults({
             </div>
           )}
           {result.savedMeasurementId && (
-            <p className="mt-1.5 text-[10px] text-emerald-800">
+            <p className="mt-1.5 text-2xs text-emerald-800">
               ID shranjene meritve: <span className="font-mono">{result.savedMeasurementId}</span>
             </p>
           )}
@@ -1056,7 +1056,7 @@ function ConfirmResults({
           </AlertDescription>
         </Alert>
       )}
-      <p className="text-[10px] leading-snug text-muted-foreground">
+      <p className="text-2xs leading-snug text-muted-foreground">
         Potrjeno prek obstoječe Measurement → Geometry → BOM verige; CV je bil samo predlog.
       </p>
     </div>
@@ -1954,17 +1954,17 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
               </span>
             )}
             {projectId ? (
-              <Badge variant="outline" className="border-emerald-300 bg-emerald-50 text-[10px] text-emerald-800">
+              <Badge variant="outline" className="border-emerald-300 bg-emerald-50 text-2xs text-emerald-800">
                 ✓ Projekt povezan — meritev se shrani
               </Badge>
             ) : (
-              <Badge variant="outline" className="border-amber-300 bg-amber-50 text-[10px] text-amber-800">
+              <Badge variant="outline" className="border-amber-300 bg-amber-50 text-2xs text-amber-800">
                 Projekt ni izbran — meritev ne bo shranjena
               </Badge>
             )}
           </div>
           {capsLoaded && caps && caps.note && (
-            <p className="text-[10px] leading-snug text-muted-foreground">{caps.note}</p>
+            <p className="text-2xs leading-snug text-muted-foreground">{caps.note}</p>
           )}
           {capsLoaded && caps && !caps.camera && (
             <Alert className="border-amber-300 bg-amber-50 py-2">
@@ -1976,7 +1976,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
             </Alert>
           )}
           {productsError && (
-            <p className="text-[10px] text-amber-700" role="status">
+            <p className="text-2xs text-amber-700" role="status">
               ⚠ {productsError}
             </p>
           )}
@@ -2088,7 +2088,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                       className="pointer-events-none absolute inset-0 h-full w-full"
                     />
                   </div>
-                  <p className="text-[10px] leading-snug text-muted-foreground">
+                  <p className="text-2xs leading-snug text-muted-foreground">
                     Legenda: <span className="text-emerald-600">emerald</span> = ograja/rob ·{' '}
                     <span className="text-teal-600">teal</span> = stebri ·{' '}
                     <span className="text-amber-600">amber</span> = stopnice ·{' '}
@@ -2209,7 +2209,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                   </div>
 
                   {(clickMode === 'bbox' || clickMode === 'corners' || clickMode === 'ref' || segEditMode) && (
-                    <p className="text-[10px] text-muted-foreground" role="status">
+                    <p className="text-2xs text-muted-foreground" role="status">
                       {clickMode === 'ref' && 'Klikni P1, nato P2 (rdeči markerja). Tretji klik začne znova.'}
                       {segEditMode && 'Klik doda vmesno točko v pot; vleci točke A/B/številke za popravek.'}
                       {clickMode === 'corners' && `Klikni 4 kotnike v vrstnem redu TL, TR, BR, BL (${cornerProgress.length}/4).`}
@@ -2291,7 +2291,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                         type="button"
                         size="sm"
                         variant="ghost"
-                        className="min-h-[28px] text-[10px]"
+                        className="min-h-[28px] text-2xs"
                         onClick={() => setConfirmedCorners([])}
                         aria-label="Počisti kotnike"
                       >
@@ -2385,7 +2385,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                   {analysis.warnings.length > 0 && (
                     <ul className="space-y-0.5">
                       {analysis.warnings.map((w, i) => (
-                        <li key={i} className="text-[10px] text-muted-foreground">
+                        <li key={i} className="text-2xs text-muted-foreground">
                           ⚠ {w}
                         </li>
                       ))}
@@ -2564,13 +2564,13 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                         </div>
                       )}
                       {postsFromDetect && !lastScaleRef.current && (
-                        <p className="text-[10px] text-amber-700" role="status">
+                        <p className="text-2xs text-amber-700" role="status">
                           Za stebre iz zaznav je potreben merilo — zaženi najprej oceno postavitve
                           (merilo pride s strežnika).
                         </p>
                       )}
 
-                      <p className="text-[10px] text-muted-foreground">
+                      <p className="text-2xs text-muted-foreground">
                         Širina polja (iz reference + segment):{' '}
                         <span className="font-semibold text-roksal-ink">
                           {fenceWidthMm !== null ? `${fenceWidthMm} mm` : '— (manjka referenca/segment)'}
@@ -2591,7 +2591,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                     OCENI POSTAVITEV
                   </Button>
                   {!placementReady && placementHint && (
-                    <p className="text-center text-[10px] text-muted-foreground" role="status">
+                    <p className="text-center text-2xs text-muted-foreground" role="status">
                       {placementHint}
                     </p>
                   )}
@@ -2634,19 +2634,19 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                           {placementRes.placement.warnings.length > 0 && (
                             <ul className="space-y-0.5">
                               {placementRes.placement.warnings.map((w, i) => (
-                                <li key={i} className="text-[10px] text-amber-800">
+                                <li key={i} className="text-2xs text-amber-800">
                                   ⚠ {w}
                                 </li>
                               ))}
                             </ul>
                           )}
                           {placementRes.projection?.warnings.map((w, i) => (
-                            <p key={`pw${i}`} className="text-[10px] text-amber-800">
+                            <p key={`pw${i}`} className="text-2xs text-amber-800">
                               ⚠ {w}
                             </p>
                           ))}
                           {placementRes.projection?.kind === 'affine-approximation' && (
-                            <p className="text-[10px] text-amber-800">
+                            <p className="text-2xs text-amber-800">
                               ⚠ 2D približek (brez 4 kotnikov) — ni prava perspektivna projekcija.
                             </p>
                           )}
@@ -2679,7 +2679,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                   <CardTitle className="text-sm text-roksal-ink">Potrditev meritve</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  <div className="flex flex-wrap gap-1.5 text-[10px]">
+                  <div className="flex flex-wrap gap-1.5 text-2xs">
                     <Badge variant="outline" className={`text-[9px] ${refValid ? 'border-emerald-300 bg-emerald-50 text-emerald-800' : 'border-red-300 bg-red-50 text-red-700'}`}>
                       referenca {refValid ? '✓' : '✗'}
                     </Badge>
@@ -2701,7 +2701,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                     POTRDI MERITEV (OBSTOJEČA VERIGA)
                   </Button>
                   {!fotoCanConfirm && fotoHint && !confirming && (
-                    <p className="text-center text-[10px] text-muted-foreground" role="status">
+                    <p className="text-center text-2xs text-muted-foreground" role="status">
                       {fotoHint}
                     </p>
                   )}
@@ -2776,7 +2776,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                         />
                       )}
                     </div>
-                    <p className="text-[10px] leading-snug text-muted-foreground">
+                    <p className="text-2xs leading-snug text-muted-foreground">
                       Overlay ostane stabilen med analizo (zadnji rezultat).{!caps.webxrAr && ' 2D CV predogled brez trackinga (WebXR AR ni podprt na tej napravi — pravi AR: AR skener).'}
                     </p>
                     <div className="flex flex-wrap gap-2">
@@ -2870,7 +2870,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                           <span className="text-muted-foreground">Naslednji korak:</span>{' '}
                           {liveAnalysis.guidance.nextAction}
                         </p>
-                        <p className="text-[10px] text-muted-foreground">
+                        <p className="text-2xs text-muted-foreground">
                           Za merjenje/shranjevanje zajemi kader → FOTO (referenčna mera je tam
                           obvezna).
                         </p>
@@ -2945,7 +2945,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                       className="pointer-events-none absolute inset-0 h-full w-full"
                     />
                   </div>
-                  <p className="text-[10px] text-muted-foreground">
+                  <p className="text-2xs text-muted-foreground">
                     Legenda: rožata = spodnja linija · rumena = zgornja linija · vijolično = stebri ·
                     rdeča = referenčna mera
                   </p>
@@ -3030,7 +3030,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                       Počisti
                     </Button>
                   </div>
-                  <div className="flex flex-wrap gap-1.5 text-[10px]">
+                  <div className="flex flex-wrap gap-1.5 text-2xs">
                     <Badge variant="outline" className="border-rose-300 bg-rose-50 text-[9px] text-rose-700">
                       Spodnja: {mPath.length}
                     </Badge>
@@ -3083,7 +3083,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                     POTRDI MERITEV (OBSTOJEČA VERIGA)
                   </Button>
                   {!mCanConfirm && (
-                    <p className="text-center text-[10px] text-muted-foreground" role="status">
+                    <p className="text-center text-2xs text-muted-foreground" role="status">
                       {!refValid
                         ? 'Referenčna mera je obvezna (2 točki + znana mm).'
                         : mPath.length < 2
@@ -3100,7 +3100,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
       </Tabs>
 
       <Separator />
-      <p className="pb-2 text-center text-[10px] text-muted-foreground">
+      <p className="pb-2 text-center text-2xs text-muted-foreground">
         CV Studio (issues #10 + #11) — zaznave so PREDLOGI; potrjena geometrija nastane izključno
         prek obstoječe Measurement → Geometry → BOM verige.
       </p>

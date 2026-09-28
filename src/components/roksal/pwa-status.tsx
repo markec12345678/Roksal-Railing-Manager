@@ -202,14 +202,14 @@ export function PwaStatus() {
             <WifiOff className="h-4 w-4 shrink-0" />
             <div className="min-w-0 flex-1">
               <p className="text-[12px] font-semibold leading-tight">Ni povezave — aplikacija deluje naprej</p>
-              <p className="truncate text-[10px] leading-tight text-amber-800 dark:text-amber-200">
+              <p className="truncate text-2xs leading-tight text-amber-800 dark:text-amber-200">
                 {pending > 0
                   ? `${pending} ${pending === 1 ? 'zapis čaka' : 'zapisov čaka'} na pošiljanje (samodejno ob povezavi)`
                   : 'Zapisi se vrstijo in pošljejo samodejno ob povezavi'}
               </p>
             </div>
             {pending > 0 && (
-              <span className="flex h-6 min-w-[24px] shrink-0 items-center justify-center rounded-full bg-amber-500 px-1.5 text-[10px] font-bold text-white">
+              <span className="flex h-6 min-w-[24px] shrink-0 items-center justify-center rounded-full bg-amber-500 px-1.5 text-2xs font-bold text-white">
                 {pending}
               </span>
             )}
@@ -231,7 +231,7 @@ export function PwaStatus() {
               <p className="text-[12px] font-semibold leading-tight">
                 {held.length} {held.length === 1 ? 'zapis drugega uporabnika' : 'zapisov drugih uporabnikov'} — ni poslano
               </p>
-              <p className="truncate text-[10px] leading-tight text-violet-800 dark:text-violet-200">
+              <p className="truncate text-2xs leading-tight text-violet-800 dark:text-violet-200">
                 Dodal(a): {heldOwners.join(', ')} · prevzemi in pošlji s svojo sejo ali pusti lastniku.
               </p>
             </div>
@@ -263,7 +263,7 @@ export function PwaStatus() {
                 <p className="text-[12px] font-semibold leading-tight">
                   {problems.length} {problems.length === 1 ? 'zapis NI bil poslan' : 'zapisov NI bilo poslanih'} — zahteva odločitev
                 </p>
-                <p className="truncate text-[10px] leading-tight text-rose-800 dark:text-rose-200">
+                <p className="truncate text-2xs leading-tight text-rose-800 dark:text-rose-200">
                   Zapisi ostanejo ohranjeni; pošlji znova ali jih odstrani.
                 </p>
               </div>
@@ -297,7 +297,7 @@ export function PwaStatus() {
                           {item.status === 'conflict' ? 'Spor' : 'Napaka'}{item.statusCode ? ` ${item.statusCode}` : ''}
                         </span>
                       </p>
-                      <p className="truncate text-[10px] leading-tight text-rose-700/90 dark:text-rose-300/90" title={item.lastError}>
+                      <p className="truncate text-2xs leading-tight text-rose-700/90 dark:text-rose-300/90" title={item.lastError}>
                         {item.lastError ?? 'Neznana napaka'} · {timeFmt.format(new Date(item.createdAt))}
                         {item.attempts > 1 ? ` · ${item.attempts} poizkusov` : ''}
                       </p>
@@ -356,7 +356,7 @@ export function PwaStatus() {
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-[12px] font-semibold leading-tight text-roksal-ink">Namesti Roksal kot aplikacijo</p>
-              <p className="text-[10px] leading-tight text-muted-foreground">Ikona na domačem zaslonu, deluje tudi offline</p>
+              <p className="text-2xs leading-tight text-muted-foreground">Ikona na domačem zaslonu, deluje tudi offline</p>
             </div>
             <button
               type="button"

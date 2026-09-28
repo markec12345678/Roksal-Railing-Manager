@@ -197,7 +197,7 @@ export function JobsPanel() {
             <li key={j.type} className="flex items-start gap-1.5 text-[11px] leading-relaxed">
               <span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-roksal-amber" aria-hidden="true" />
               <span className="text-muted-foreground">
-                <code className="rounded bg-secondary/60 px-1 py-0.5 font-mono text-[10px] text-roksal-ink">{j.type}</code>{' '}
+                <code className="rounded bg-secondary/60 px-1 py-0.5 font-mono text-2xs text-roksal-ink">{j.type}</code>{' '}
                 — {j.opis}
               </span>
             </li>
@@ -226,22 +226,22 @@ export function JobsPanel() {
               className="flex items-center justify-between gap-2 rounded-lg border border-border/80 bg-card px-2.5 py-2 transition-colors hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25"
             >
               <div className="flex min-w-0 items-center gap-2">
-                <Badge className={`shrink-0 border-0 text-[10px] font-semibold ${STATUS_CHIP[j.status] ?? 'bg-secondary text-muted-foreground'}`}>
+                <Badge className={`shrink-0 border-0 text-2xs font-semibold ${STATUS_CHIP[j.status] ?? 'bg-secondary text-muted-foreground'}`}>
                   {j.status === 'SUCCEEDED' ? 'uspešno' : j.status === 'FAILED' ? 'napaka' : j.status === 'RUNNING' ? 'teče' : j.status}
                 </Badge>
                 <code className="truncate font-mono text-[11px] text-roksal-ink">{j.type}</code>
                 {j.attempts > 1 && (
-                  <span className="shrink-0 text-[10px] tabular-nums text-amber-700 dark:text-roksal-amber">
+                  <span className="shrink-0 text-2xs tabular-nums text-amber-700 dark:text-roksal-amber">
                     poskus {j.attempts}/{j.maxAttempts}
                   </span>
                 )}
                 {j.lastError && (
-                  <span className="hidden truncate text-[10px] text-red-600 dark:text-red-400 sm:inline" title={j.lastError}>
+                  <span className="hidden truncate text-2xs text-red-600 dark:text-red-400 sm:inline" title={j.lastError}>
                     {j.lastError}
                   </span>
                 )}
               </div>
-              <div className="flex shrink-0 items-center gap-2.5 text-[10px] tabular-nums text-muted-foreground">
+              <div className="flex shrink-0 items-center gap-2.5 text-2xs tabular-nums text-muted-foreground">
                 <span className="hidden items-center gap-1 md:inline-flex" title={`Lastnik: ${j.owner}`}>
                   <Timer className="h-3 w-3" aria-hidden="true" />
                   {durationText(j.durationMs)}
@@ -250,7 +250,7 @@ export function JobsPanel() {
               </div>
             </div>
           ))}
-          <p className="pt-0.5 text-right text-[10px] text-muted-foreground">
+          <p className="pt-0.5 text-right text-2xs text-muted-foreground">
             Zadnjih {Math.min(data.jobs.length, 8)} zagonov · retry: {data.retryPolicy.maxAttempts} poskusa na {data.retryPolicy.window}
           </p>
         </div>

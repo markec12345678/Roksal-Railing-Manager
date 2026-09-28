@@ -1845,7 +1845,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
                 <SelectItem key={p.id} value={p.id}>
                   <span className="flex flex-col">
                     <span className="font-medium">{p.naziv}</span>
-                    <span className="text-[10px] text-muted-foreground">
+                    <span className="text-2xs text-muted-foreground">
                       {p.kategorija} · {p.visinaMm} mm
                     </span>
                   </span>
@@ -2104,7 +2104,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
 
             {/* === HUD: real-time dimensions (AR-OVERLAY) === */}
             <div className="absolute top-3 left-3 z-10 pointer-events-none">
-              <div className="bg-roksal-navy/90 text-white rounded-lg p-2 text-[10px] max-w-[180px] backdrop-blur-sm shadow-md">
+              <div className="bg-roksal-navy/90 text-white rounded-lg p-2 text-2xs max-w-[180px] backdrop-blur-sm shadow-md">
                 <div className="flex items-center gap-1 mb-1 pb-1 border-b border-white/15">
                   <Ruler className="h-3 w-3 text-roksal-amber" />
                   <span className="font-semibold uppercase tracking-wide">Meritve</span>
@@ -2192,7 +2192,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
                   <div className="flex items-center gap-2 min-w-0">
                     <Calculator className="h-4 w-4 text-roksal-amber shrink-0" />
                     <span className="text-xs font-semibold shrink-0">Izračun</span>
-                    <span className="text-[10px] text-white/70 truncate">
+                    <span className="text-2xs text-white/70 truncate">
                       {autoCalc
                         ? `${autoCalc.balusterCount} palic · ${formatEUR(autoCalc.cenaMateriala)}`
                         : '—'}
@@ -2210,19 +2210,19 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
                   <div className="px-2.5 pb-2.5 pt-0.5">
                     {/* Warnings */}
                     {!kalibracija && (
-                      <div className="mb-1.5 text-[10px] bg-roksal-amber/15 border border-roksal-amber/30 text-roksal-amber rounded px-2 py-1 flex items-center gap-1">
+                      <div className="mb-1.5 text-2xs bg-roksal-amber/15 border border-roksal-amber/30 text-roksal-amber rounded px-2 py-1 flex items-center gap-1">
                         <AlertTriangle className="h-3 w-3 shrink-0" />
                         <span>Najprej umeri referenco za natančne mere</span>
                       </div>
                     )}
                     {!selectedProfil && (
-                      <div className="mb-1.5 text-[10px] bg-roksal-amber/15 border border-roksal-amber/30 text-roksal-amber rounded px-2 py-1 flex items-center gap-1">
+                      <div className="mb-1.5 text-2xs bg-roksal-amber/15 border border-roksal-amber/30 text-roksal-amber rounded px-2 py-1 flex items-center gap-1">
                         <AlertTriangle className="h-3 w-3 shrink-0" />
                         <span>Izberi profil</span>
                       </div>
                     )}
                     {tocke.length < 2 && (
-                      <div className="mb-1.5 text-[10px] bg-white/5 border border-white/10 text-white/70 rounded px-2 py-1 flex items-center gap-1">
+                      <div className="mb-1.5 text-2xs bg-white/5 border border-white/10 text-white/70 rounded px-2 py-1 flex items-center gap-1">
                         <AlertTriangle className="h-3 w-3 shrink-0" />
                         <span>Dodaj vsaj 2 točki za izračun</span>
                       </div>
@@ -2275,7 +2275,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
                         </Button>
                       </>
                     ) : (
-                      <div className="text-[10px] text-white/50 text-center py-2">
+                      <div className="text-2xs text-white/50 text-center py-2">
                         Podatki bodo izračunani, ko dodate točke in umerite referenco.
                       </div>
                     )}
@@ -2307,7 +2307,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
               className="flex-1 accent-amber-500"
               aria-label="Zoom kamere"
             />
-            <span className="w-10 text-right text-[10px] text-white/70" aria-hidden>
+            <span className="w-10 text-right text-2xs text-white/70" aria-hidden>
               {zoomValue.toFixed(1)}×
             </span>
           </div>
@@ -2533,7 +2533,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
               {/* Tip + zaupanje */}
               <div className="flex items-center justify-between rounded-lg border border-roksal-amber/30 bg-roksal-amber/5 p-3">
                 <div>
-                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  <p className="text-2xs uppercase tracking-wide text-muted-foreground">
                     Prepoznana ograja
                   </p>
                   <p className="text-sm font-bold text-roksal-ink">{aiAnaliza.tipOgraje}</p>
@@ -2541,7 +2541,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
                 <Badge
                   variant="secondary"
                   className={cn(
-                    'text-[10px]',
+                    'text-2xs',
                     aiAnaliza.zaupanje >= 0.7
                       ? 'bg-roksal-green/15 text-roksal-green'
                       : 'bg-amber-100 text-amber-700',
@@ -2560,7 +2560,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
                   ['Ovire', aiAnaliza.ovire],
                 ].map(([label, value]) => (
                   <div key={label as string}>
-                    <dt className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    <dt className="text-2xs font-semibold uppercase tracking-wide text-muted-foreground">
                       {label}
                     </dt>
                     <dd className="text-[13px] leading-relaxed text-roksal-ink">{value}</dd>
@@ -2570,7 +2570,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
 
               {/* Priporočene mere */}
               <div className="space-y-2">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                <p className="text-2xs font-semibold uppercase tracking-wide text-muted-foreground">
                   Priporočene mere
                 </p>
                 {aiAnaliza.priporoceneMere?.map((m, i) => (
@@ -2601,14 +2601,14 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
 
               {aiAnaliza.opombe && (
                 <div className="rounded-lg bg-roksal-navy/5 p-3">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">
+                  <p className="text-2xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">
                     Opombe za ponudbo
                   </p>
                   <p className="text-[12px] leading-relaxed text-roksal-ink">{aiAnaliza.opombe}</p>
                 </div>
               )}
 
-              <p className="text-[10px] text-muted-foreground leading-relaxed">
+              <p className="text-2xs text-muted-foreground leading-relaxed">
                 AI ocena je pripomoček, ne zamenjava za merjenje na lokaciji. Mere vedno
                 preverite s kalibriranim merjenjem.
               </p>
@@ -2743,7 +2743,7 @@ function SnapshotCard({
             <p className="text-xs font-semibold text-roksal-ink truncate">
               {snapshot.profil?.naziv ?? 'Brez profila'}
             </p>
-            <p className="text-[10px] text-muted-foreground">{date}</p>
+            <p className="text-2xs text-muted-foreground">{date}</p>
           </div>
           <Button
             type="button"

@@ -713,7 +713,7 @@ export function MaskEditor({
         {imgReady && (
           <Badge
             variant="secondary"
-            className="pointer-events-none absolute bottom-2 right-2 bg-white/85 text-[10px] text-roksal-navy"
+            className="pointer-events-none absolute bottom-2 right-2 bg-white/85 text-2xs text-roksal-navy"
           >
             {Math.round(zoom * 100)}%
           </Badge>

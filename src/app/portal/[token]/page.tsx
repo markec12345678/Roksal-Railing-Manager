@@ -333,7 +333,7 @@ export default async function PortalPage({ params }: PageProps) {
               <div className="flex items-center gap-2 rounded-lg bg-card/70 px-3 py-2">
                 <Calendar className="h-4 w-4 text-roksal-amber shrink-0" />
                 <div className="min-w-0">
-                  <p className="text-[10px] text-muted-foreground leading-tight">Datum montaže</p>
+                  <p className="text-2xs text-muted-foreground leading-tight">Datum montaže</p>
                   <p className="text-sm font-semibold text-roksal-ink truncate">
                     {new Date(project.datumMontaze).toLocaleDateString('sl-SI', {
                       weekday: 'long',
@@ -349,7 +349,7 @@ export default async function PortalPage({ params }: PageProps) {
               <div className="flex items-center gap-2 rounded-lg bg-card/70 px-3 py-2">
                 <Euro className="h-4 w-4 text-roksal-green shrink-0" />
                 <div className="min-w-0">
-                  <p className="text-[10px] text-muted-foreground leading-tight">Predvidena cena</p>
+                  <p className="text-2xs text-muted-foreground leading-tight">Predvidena cena</p>
                   <p className="text-sm font-semibold text-roksal-ink truncate">
                     {formatPrice(project.estimatedPrice)}
                   </p>
@@ -422,7 +422,7 @@ export default async function PortalPage({ params }: PageProps) {
                   <div className="min-w-0 flex-1 pt-0.5">
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-xs font-semibold text-roksal-ink">{event.title}</p>
-                      <time className="text-[10px] text-muted-foreground whitespace-nowrap">
+                      <time className="text-2xs text-muted-foreground whitespace-nowrap">
                         {new Date(event.timestamp).toLocaleDateString('sl-SI', {
                           day: 'numeric',
                           month: 'short',
@@ -491,10 +491,10 @@ export default async function PortalPage({ params }: PageProps) {
               </div>
               <div>
                 <p className="text-xs font-semibold text-white leading-tight">{COMPANY.ime}</p>
-                <p className="text-[10px] text-white/60 leading-tight">{COMPANY.website}</p>
+                <p className="text-2xs text-white/60 leading-tight">{COMPANY.website}</p>
               </div>
             </div>
-            <p className="text-[10px] text-white/50">
+            <p className="text-2xs text-white/50">
               Portal stranke · {new Date().getFullYear()}
             </p>
           </div>

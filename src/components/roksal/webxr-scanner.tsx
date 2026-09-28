@@ -1732,7 +1732,7 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
             </div>
             <div className="min-w-0">
               <h2 className="text-sm font-bold text-white truncate">WebXR AR — pravi hit-test</h2>
-              <p className="text-[10px] text-white/60">XRFrame · sidra · Depth API</p>
+              <p className="text-2xs text-white/60">XRFrame · sidra · Depth API</p>
             </div>
           </div>
           {sessionState === 'active' && (
@@ -1769,7 +1769,7 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
               {featureChips.map((c) => (
                 <span
                   key={c.label}
-                  className={`flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-semibold backdrop-blur-sm ${
+                  className={`flex items-center gap-1 rounded-full px-2 py-1 text-2xs font-semibold backdrop-blur-sm ${
                     c.ok ? 'bg-roksal-navy/85 text-white' : 'bg-black/50 text-white/50'
                   }`}
                 >
@@ -1778,12 +1778,12 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
                   <span className={c.ok ? 'text-roksal-amber' : ''}>{c.value}</span>
                 </span>
               ))}
-              <span className="flex items-center gap-1 rounded-full bg-roksal-navy/85 px-2 py-1 text-[10px] font-semibold text-white backdrop-blur-sm">
+              <span className="flex items-center gap-1 rounded-full bg-roksal-navy/85 px-2 py-1 text-2xs font-semibold text-white backdrop-blur-sm">
                 <Gauge className="h-3 w-3 text-roksal-amber" />
                 {hud.fps} fps · f{hud.frameCount}
               </span>
               {features.planes && planesVisible && (hud.largestFloorM2 !== null || hud.largestWallM2 !== null) && (
-                <span className="flex items-center gap-1.5 rounded-full bg-black/50 px-2 py-1 text-[10px] font-semibold text-white/80 backdrop-blur-sm">
+                <span className="flex items-center gap-1.5 rounded-full bg-black/50 px-2 py-1 text-2xs font-semibold text-white/80 backdrop-blur-sm">
                   <span className="h-2 w-2 rounded-sm bg-roksal-amber" /> tla
                   <span className="ml-1 h-2 w-2 rounded-sm bg-emerald-400" /> stene
                 </span>
@@ -1822,7 +1822,7 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
                     if (el) markerElsRef.current.set(p.id, el)
                     else markerElsRef.current.delete(p.id)
                   }}
-                  className="absolute left-0 top-0 flex h-4 w-4 items-center justify-center rounded-full border-2 border-roksal-amber bg-white text-[8px] font-black text-roksal-navy opacity-0 shadow"
+                  className="absolute left-0 top-0 flex h-4 w-4 items-center justify-center rounded-full border-2 border-roksal-amber bg-white text-3xs font-black text-roksal-navy opacity-0 shadow"
                 >
                   {p.label}
                 </div>
@@ -1934,19 +1934,19 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
                 {chainMode && chainStats && chainStats.corners >= 2 && (
                   <div className="grid grid-cols-2 gap-1.5 rounded-xl bg-roksal-amber/10 p-2 sm:grid-cols-4" data-xr-ui>
                     <div className="rounded-lg bg-black/25 px-2 py-1.5 text-center">
-                      <div className="text-[8px] font-semibold uppercase tracking-wide text-white/50">Obris</div>
+                      <div className="text-3xs font-semibold uppercase tracking-wide text-white/50">Obris</div>
                       <div className="text-xs font-black tabular-nums text-roksal-amber">{fmtMm(chainStats.perimeterMm)}</div>
                     </div>
                     <div className="rounded-lg bg-black/25 px-2 py-1.5 text-center">
-                      <div className="text-[8px] font-semibold uppercase tracking-wide text-white/50">Stebri (2,5 m)</div>
+                      <div className="text-3xs font-semibold uppercase tracking-wide text-white/50">Stebri (2,5 m)</div>
                       <div className="text-xs font-black tabular-nums text-white">{chainStats.posts}</div>
                     </div>
                     <div className="rounded-lg bg-black/25 px-2 py-1.5 text-center">
-                      <div className="text-[8px] font-semibold uppercase tracking-wide text-white/50">Vogali</div>
+                      <div className="text-3xs font-semibold uppercase tracking-wide text-white/50">Vogali</div>
                       <div className="text-xs font-black tabular-nums text-white">{chainStats.corners}{chainClosed ? ' · zaprt ✓' : ''}</div>
                     </div>
                     <div className="rounded-lg bg-black/25 px-2 py-1.5 text-center">
-                      <div className="text-[8px] font-semibold uppercase tracking-wide text-white/50">Površina</div>
+                      <div className="text-3xs font-semibold uppercase tracking-wide text-white/50">Površina</div>
                       <div className={`text-xs font-black tabular-nums ${chainStats.areaM2 !== null ? 'text-green-300' : 'text-white/40'}`}>
                         {chainStats.areaM2 !== null ? `${chainStats.areaM2.toFixed(2)} m²` : 'zapri tloris'}
                       </div>
@@ -1993,7 +1993,7 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
                           ? 'sprejemljivo'
                           : 'prevelik razpon — ponovno izmeri!'}
                       {accuracyView.count < 3 && (
-                        <span className="mt-0.5 block text-[10px] opacity-80">
+                        <span className="mt-0.5 block text-2xs opacity-80">
                           Namig: izmeri vsaj 3× in shrani povprečje — najbolj natančen rezultat.
                         </span>
                       )}
@@ -2010,13 +2010,13 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
                       className="h-14 w-20 shrink-0 rounded-lg object-cover ring-1 ring-roksal-amber/40"
                     />
                     <div className="min-w-0 flex-1">
-                      <div className="text-[10px] font-semibold text-white">AR foto posnetek</div>
+                      <div className="text-2xs font-semibold text-white">AR foto posnetek</div>
                       <div className="text-[9px] text-white/60">Z merami · shrani v AR posnetke</div>
                     </div>
                     <a
                       href={capturedPhoto}
                       download={`roksal-ar-${Date.now()}.jpg`}
-                      className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg bg-white/10 px-2 text-[10px] font-semibold text-white transition-colors hover:bg-white/20"
+                      className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg bg-white/10 px-2 text-2xs font-semibold text-white transition-colors hover:bg-white/20"
                       aria-label="Prenesi AR posnetek"
                     >
                       <Download className="h-4 w-4" />
@@ -2120,7 +2120,7 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
                     <AlertTriangle className="mx-auto h-10 w-10 text-amber-400" />
                     <p className="text-sm font-medium text-white">WebXR AR ni podprt</p>
                     <p className="text-xs text-white/70">{errorMsg}</p>
-                    <div className="mt-2 rounded-lg bg-white/10 p-2.5 text-left text-[10px] text-white/80">
+                    <div className="mt-2 rounded-lg bg-white/10 p-2.5 text-left text-2xs text-white/80">
                       <p className="mb-1 font-semibold">Zahtevano:</p>
                       <p>• Chrome 90+ na Androidu</p>
                       <p>• ARCore telefon (Pixel 2+, Galaxy S8+, …)</p>
@@ -2173,7 +2173,7 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
                       </div>
                     </div>
 
-                    <div className="rounded-lg bg-white/5 p-2.5 text-[10px] leading-relaxed text-white/70">
+                    <div className="rounded-lg bg-white/5 p-2.5 text-2xs leading-relaxed text-white/70">
                       <p><span className="font-semibold text-white/90">Verižni način:</span> tapni vogale ograje po vrsti — obris Σ, št. stebrov (2,5 m) in površina se računajo sami; tap na prvi vogal zapre tloris.</p>
                       <p className="mt-1"><span className="font-semibold text-white/90">Foto:</span> zajame AR sliko s kamere (Chrome 107+) z narisanimi merami — shrani v AR posnetke.</p>
                       <p className="mt-1"><span className="font-semibold text-emerald-300">Ravnine (Chrome 131+):</span> tla in stene se pokažejo kot poligoni z oceno površine — hitra orientacija v prostoru.</p>
@@ -2181,7 +2181,7 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
 
                     {(measurementsView.length > 0 || chainPointsView.length > 0) && (
                       <div className="rounded-lg bg-roksal-amber/10 p-2.5">
-                        <div className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase text-roksal-amber">
+                        <div className="mb-1 flex items-center gap-1.5 text-2xs font-bold uppercase text-roksal-amber">
                           <Ruler className="h-3 w-3" /> Zadnja seja: {measurementsView.length + chainPointsView.length} točk
                         </div>
                         <div className="max-h-24 space-y-0.5 overflow-y-auto">
@@ -2246,7 +2246,7 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
                   <div className="text-center">
                     <Loader2 className="mx-auto mb-2 h-8 w-8 animate-spin text-roksal-amber" />
                     <p className="text-sm text-white">Zaganjam WebXR sejo…</p>
-                    <p className="mt-1 text-[10px] text-white/60">Potrdi dovoljenja na telefonu.</p>
+                    <p className="mt-1 text-2xs text-white/60">Potrdi dovoljenja na telefonu.</p>
                   </div>
                 )}
 
@@ -2309,16 +2309,16 @@ export function WebXrLauncher({ projectId }: { projectId: string | null }) {
             <div className="min-w-0 flex-1">
               <div className="mb-1 flex flex-wrap items-center gap-2">
                 <h3 className="text-sm font-semibold text-roksal-ink">WebXR AR — pravi hit-test</h3>
-                <span className="rounded-full bg-roksal-amber/10 px-1.5 py-0.5 text-[8px] font-bold text-roksal-amber">
+                <span className="rounded-full bg-roksal-amber/10 px-1.5 py-0.5 text-3xs font-bold text-roksal-amber">
                   XRFrame
                 </span>
-                <span className="rounded-full bg-roksal-navy/5 px-1.5 py-0.5 text-[8px] font-bold text-roksal-ink">
+                <span className="rounded-full bg-roksal-navy/5 px-1.5 py-0.5 text-3xs font-bold text-roksal-ink">
                   Verižno
                 </span>
-                <span className="rounded-full bg-roksal-navy/5 px-1.5 py-0.5 text-[8px] font-bold text-roksal-ink">
+                <span className="rounded-full bg-roksal-navy/5 px-1.5 py-0.5 text-3xs font-bold text-roksal-ink">
                   AR foto
                 </span>
-                <span className="rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[8px] font-bold text-emerald-600">
+                <span className="rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-3xs font-bold text-emerald-600">
                   Ravnine 131+
                 </span>
               </div>
@@ -2330,18 +2330,18 @@ export function WebXrLauncher({ projectId }: { projectId: string | null }) {
               <div className="mb-2 grid grid-cols-3 gap-1.5 text-center">
                 <div className="rounded-md bg-roksal-navy/[0.04] px-1 py-1.5 ring-1 ring-roksal-navy/10">
                   <div className="text-[9px] font-bold text-roksal-ink">±1–2 cm</div>
-                  <div className="text-[8px] text-muted-foreground">natančnost</div>
+                  <div className="text-3xs text-muted-foreground">natančnost</div>
                 </div>
                 <div className="rounded-md bg-roksal-navy/[0.04] px-1 py-1.5 ring-1 ring-roksal-navy/10">
                   <div className="text-[9px] font-bold text-roksal-ink">obris + m²</div>
-                  <div className="text-[8px] text-muted-foreground">verižno</div>
+                  <div className="text-3xs text-muted-foreground">verižno</div>
                 </div>
                 <div className="rounded-md bg-roksal-navy/[0.04] px-1 py-1.5 ring-1 ring-roksal-navy/10">
                   <div className="text-[9px] font-bold text-roksal-ink">foto + mere</div>
-                  <div className="text-[8px] text-muted-foreground">AR posnetki</div>
+                  <div className="text-3xs text-muted-foreground">AR posnetki</div>
                 </div>
               </div>
-              <div className="mb-2 flex flex-wrap items-center gap-2 text-[10px]">
+              <div className="mb-2 flex flex-wrap items-center gap-2 text-2xs">
                 <span className={`flex items-center gap-1 ${supported ? 'text-green-600' : 'text-amber-600'}`}>
                   {supported ? <CheckCircle2 className="h-3 w-3" /> : <AlertTriangle className="h-3 w-3" />}
                   {supported ? 'Podprto na tej napravi' : 'Ni podprto (Chrome Android potreben)'}

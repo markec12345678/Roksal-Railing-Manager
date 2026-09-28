@@ -246,7 +246,7 @@ export function AuditTrailDialog({
                   type="button"
                   onClick={() => setFilter(key)}
                   aria-pressed={aktiv}
-                  className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 ${
+                  className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-2xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 ${
                     aktiv ? razred : 'bg-muted text-muted-foreground border-border opacity-70 hover:opacity-100'
                   }`}
                 >
@@ -288,7 +288,7 @@ export function AuditTrailDialog({
                       <Badge variant="outline" className={`text-[9px] shrink-0 ${badge.className}`}>
                         {badge.label}
                       </Badge>
-                      <span className="text-[10px] text-muted-foreground tabular-nums">{formatCas(e.timestamp)}</span>
+                      <span className="text-2xs text-muted-foreground tabular-nums">{formatCas(e.timestamp)}</span>
                     </div>
                     <div className="mt-1 text-xs text-roksal-ink">
                       {e.user ? (
@@ -307,7 +307,7 @@ export function AuditTrailDialog({
                           type="button"
                           onClick={() => toggle(e.id)}
                           aria-expanded={isOpen}
-                          className="mt-1 inline-flex items-center gap-0.5 rounded text-[10px] text-muted-foreground hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                          className="mt-1 inline-flex items-center gap-0.5 rounded text-2xs text-muted-foreground hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
                         >
                           {isOpen ? (
                             <ChevronDown className="h-3 w-3" aria-hidden />
@@ -319,12 +319,12 @@ export function AuditTrailDialog({
                         {isOpen ? (
                           <div className="mt-1.5 space-y-1 rounded bg-muted/60 px-2 py-1.5">
                             {e.oldValue ? (
-                              <p className="break-all font-mono text-[10px] text-muted-foreground">
+                              <p className="break-all font-mono text-2xs text-muted-foreground">
                                 <span className="font-semibold text-red-700 dark:text-red-300">−</span> {e.oldValue}
                               </p>
                             ) : null}
                             {e.newValue ? (
-                              <p className="break-all font-mono text-[10px] text-roksal-ink">
+                              <p className="break-all font-mono text-2xs text-roksal-ink">
                                 <span className="font-semibold text-green-700 dark:text-green-300">+</span> {e.newValue}
                               </p>
                             ) : null}

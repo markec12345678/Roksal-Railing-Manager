@@ -746,15 +746,15 @@ export function MaterialIntelligenceTab({
               {/* Skupne statistike */}
               <div className="grid grid-cols-3 gap-2">
                 <Card className="border-green-200 dark:border-green-800"><CardContent className="p-3">
-                  <div className="flex items-center gap-1 mb-1"><CheckCircle2 className="h-3 w-3 text-green-600 dark:text-green-400" /><span className="text-[10px] text-muted-foreground">Skupaj</span></div>
+                  <div className="flex items-center gap-1 mb-1"><CheckCircle2 className="h-3 w-3 text-green-600 dark:text-green-400" /><span className="text-2xs text-muted-foreground">Skupaj</span></div>
                   <div className="text-lg font-bold text-roksal-ink tabular-nums">{bomRefine.skupajCena.toFixed(0)} €</div>
                 </CardContent></Card>
                 <Card className="border-amber-200 dark:border-amber-800"><CardContent className="p-3">
-                  <div className="flex items-center gap-1 mb-1"><TrendingUp className="h-3 w-3 text-amber-600 dark:text-amber-400" /><span className="text-[10px] text-muted-foreground">Prihranek</span></div>
+                  <div className="flex items-center gap-1 mb-1"><TrendingUp className="h-3 w-3 text-amber-600 dark:text-amber-400" /><span className="text-2xs text-muted-foreground">Prihranek</span></div>
                   <div className="text-lg font-bold text-amber-700 dark:text-amber-300 tabular-nums">{bomRefine.skupajPrihranek.toFixed(0)} €</div>
                 </CardContent></Card>
                 <Card className="border-blue-200 dark:border-blue-800"><CardContent className="p-3">
-                  <div className="flex items-center gap-1 mb-1"><Package className="h-3 w-3 text-blue-600 dark:text-blue-400" /><span className="text-[10px] text-muted-foreground">Artikli</span></div>
+                  <div className="flex items-center gap-1 mb-1"><Package className="h-3 w-3 text-blue-600 dark:text-blue-400" /><span className="text-2xs text-muted-foreground">Artikli</span></div>
                   <div className="text-lg font-bold text-roksal-ink tabular-nums">{bomRefine.matchedCount}/{bomRefine.totalCount}</div>
                 </CardContent></Card>
               </div>
@@ -772,12 +772,12 @@ export function MaterialIntelligenceTab({
                       <div key={opt.supplierId} className={`rounded-lg border p-2.5 transition-colors ${i === 0 ? 'border-green-300 bg-green-50 dark:border-green-700 dark:bg-green-950/40' : 'border-border hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25'}`}>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            {i === 0 && <Badge className="bg-green-600 text-white text-[8px]">NAJBOLJŠI</Badge>}
+                            {i === 0 && <Badge className="bg-green-600 text-white text-3xs">NAJBOLJŠI</Badge>}
                             <span className="text-sm font-medium text-roksal-ink">{opt.supplier}</span>
                           </div>
                           <span className="text-sm font-bold text-roksal-amber tabular-nums">{opt.skupaj.toFixed(0)} €</span>
                         </div>
-                        <div className="text-[10px] text-muted-foreground mt-1 tabular-nums">{opt.items.length} artiklov</div>
+                        <div className="text-2xs text-muted-foreground mt-1 tabular-nums">{opt.items.length} artiklov</div>
                       </div>
                     ))}
                   </CardContent>
@@ -795,10 +795,10 @@ export function MaterialIntelligenceTab({
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5 mb-0.5">
-                            <Badge variant="outline" className="text-[8px] bg-muted/50">{item.bomItem.kategorija}</Badge>
+                            <Badge variant="outline" className="text-3xs bg-muted/50">{item.bomItem.kategorija}</Badge>
                             <span className="text-xs font-medium text-roksal-ink truncate">{item.bomItem.naziv}</span>
                           </div>
-                          <div className="text-[10px] text-muted-foreground">{item.bomItem.kolicina} {item.bomItem.enota}</div>
+                          <div className="text-2xs text-muted-foreground">{item.bomItem.kolicina} {item.bomItem.enota}</div>
                         </div>
                         <div className="text-right shrink-0">
                           {item.bestPrice ? (
@@ -810,7 +810,7 @@ export function MaterialIntelligenceTab({
                               )}
                             </>
                           ) : (
-                            <Badge variant="outline" className="text-[8px] bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border-red-300 dark:border-red-800">Ni cene</Badge>
+                            <Badge variant="outline" className="text-3xs bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border-red-300 dark:border-red-800">Ni cene</Badge>
                           )}
                         </div>
                       </div>
@@ -926,7 +926,7 @@ export function MaterialIntelligenceTab({
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-semibold text-roksal-ink">{order.supplier.naziv}</span>
-                            <Badge variant="outline" className={`text-[8px] ${
+                            <Badge variant="outline" className={`text-3xs ${
                               order.status === 'PREKlicANO' ? 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border-red-300 dark:border-red-800' :
                               order.status === 'DOBLJENO' ? 'bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300 border-green-300 dark:border-green-800' :
                               order.status === 'POSLANO' ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-800' :
@@ -944,14 +944,14 @@ export function MaterialIntelligenceTab({
                                 '→ dobava …' zraven. */}
                             {jeZamujenaDobava(order, danasZamude) && <BadgeZamujenaDobava />}
                           </div>
-                          <div className="text-[10px] text-muted-foreground mt-0.5 tabular-nums">
+                          <div className="text-2xs text-muted-foreground mt-0.5 tabular-nums">
                             {fmtDate(order.datumNarocila)}
                             {order.datumDobave && ` → dobava ${fmtDate(order.datumDobave)}`}
                           </div>
                         </div>
                         <div className="text-right">
                           <div className="text-sm font-bold text-roksal-amber tabular-nums">{order.skupajCena.toFixed(0)} €</div>
-                          <div className="text-[10px] text-muted-foreground tabular-nums">{order.items.length} artiklov</div>
+                          <div className="text-2xs text-muted-foreground tabular-nums">{order.items.length} artiklov</div>
                         </div>
                       </div>
                       {/* R140: razprta postavka naročila — artikli s količino/ceno
@@ -960,7 +960,7 @@ export function MaterialIntelligenceTab({
                         type="button"
                         aria-expanded={expanded}
                         onClick={() => setExpandedOrder(expanded ? null : order.id)}
-                        className="flex w-full items-center gap-1 rounded px-1 py-0.5 text-[10px] text-muted-foreground transition-colors hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
+                        className="flex w-full items-center gap-1 rounded px-1 py-0.5 text-2xs text-muted-foreground transition-colors hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
                       >
                         {expanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
                         {expanded ? 'Skrij postavke' : 'Pokaži postavke'}
@@ -970,17 +970,17 @@ export function MaterialIntelligenceTab({
                           {order.items.map((item, i) => (
                             <div key={i} className="flex items-center justify-between gap-2 rounded border border-border/60 bg-muted/40 px-2 py-1">
                               <span className="min-w-0 flex-1 truncate text-[11px] text-roksal-ink">{item.naziv}</span>
-                              <span className="shrink-0 text-[10px] text-muted-foreground tabular-nums">
+                              <span className="shrink-0 text-2xs text-muted-foreground tabular-nums">
                                 {item.kolicina} {item.enota}
                               </span>
-                              <span className="shrink-0 text-[10px] text-muted-foreground tabular-nums">{item.cena.toFixed(2)} €/en</span>
+                              <span className="shrink-0 text-2xs text-muted-foreground tabular-nums">{item.cena.toFixed(2)} €/en</span>
                               <span className="shrink-0 text-[11px] font-semibold text-roksal-ink tabular-nums">
                                 {(item.cena * item.kolicina).toFixed(2)} €
                               </span>
                             </div>
                           ))}
                           {order.opombe && (
-                            <div className="px-2 text-[10px] italic text-muted-foreground">Opomba: {order.opombe}</div>
+                            <div className="px-2 text-2xs italic text-muted-foreground">Opomba: {order.opombe}</div>
                           )}
                         </div>
                       )}
@@ -993,7 +993,7 @@ export function MaterialIntelligenceTab({
                           type="button"
                           size="sm"
                           variant="outline"
-                          className="h-6 gap-1 text-[10px] focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
+                          className="h-6 gap-1 text-2xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
                           onClick={() => void kopirajNarocilnicoIzNarocila(order)}
                           aria-label={`Kopiraj naročilnico naročila pri ${order.supplier.naziv} v odložišče`}
                           title="Naročilnica za dobavitelja iz postavk tega naročila — prilepi v e-pošto/SMS"
@@ -1008,7 +1008,7 @@ export function MaterialIntelligenceTab({
                           type="button"
                           size="sm"
                           variant="outline"
-                          className="h-6 gap-1 text-[10px] focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
+                          className="h-6 gap-1 text-2xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
                           onClick={() => void prenesiNarocilnicoPdf(order)}
                           aria-label={`Prenesi naročilnico naročila pri ${order.supplier.naziv} kot PDF`}
                           title="Naročilnica kot pravi PDF za dobavitelja — determinističen dokument iz postavk"
@@ -1024,7 +1024,7 @@ export function MaterialIntelligenceTab({
                           size="sm"
                           variant="outline"
                           aria-expanded={zgodovinaOrderId === order.id}
-                          className="h-6 gap-1 text-[10px] focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
+                          className="h-6 gap-1 text-2xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
                           onClick={() => odpriZgodovino(order.id)}
                           aria-label={`Zgodovina prehodov naročila pri ${order.supplier.naziv}`}
                           title="Sled prehodov statusa (kdo, kdaj) — sveže pridobljena ob vsakem odpiranju"
@@ -1033,17 +1033,17 @@ export function MaterialIntelligenceTab({
                           Zgodovina
                         </Button>
                         {order.status === 'OSNUTEK' && (
-                          <Button type="button" size="sm" variant="outline" className="h-6 text-[10px] focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1" onClick={() => handleOrderStatus(order.id, 'POSLANO')} title="Označi, da si naročilo poslal sam (aplikacija ne pošilja dokumentov)">
+                          <Button type="button" size="sm" variant="outline" className="h-6 text-2xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1" onClick={() => handleOrderStatus(order.id, 'POSLANO')} title="Označi, da si naročilo poslal sam (aplikacija ne pošilja dokumentov)">
                             Označi kot poslano
                           </Button>
                         )}
                         {order.status === 'POSLANO' && (
-                          <Button type="button" size="sm" variant="outline" className="h-6 text-[10px] focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1" onClick={() => handleOrderStatus(order.id, 'POTRJENO')}>
+                          <Button type="button" size="sm" variant="outline" className="h-6 text-2xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1" onClick={() => handleOrderStatus(order.id, 'POTRJENO')}>
                             Potrdi
                           </Button>
                         )}
                         {order.status === 'POTRJENO' && (
-                          <Button type="button" size="sm" variant="outline" className="h-6 text-[10px] bg-green-50 dark:bg-green-950/40 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1" onClick={() => setReceiveDialogOrderId(order.id)} title="Prejem v zalogo — potrditev s prikazom postavk">
+                          <Button type="button" size="sm" variant="outline" className="h-6 text-2xs bg-green-50 dark:bg-green-950/40 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1" onClick={() => setReceiveDialogOrderId(order.id)} title="Prejem v zalogo — potrditev s prikazom postavk">
                             <CheckCircle2 className="h-3 w-3 mr-1" /> Dobljeno (v zalogo)
                           </Button>
                         )}
@@ -1051,7 +1051,7 @@ export function MaterialIntelligenceTab({
                             potrditveni dialog (družina R198/R207) — odpre se,
                             PATCH gre šele prek 'Potrdi preklic'. */}
                         {(order.status === 'OSNUTEK' || order.status === 'POSLANO' || order.status === 'POTRJENO') && (
-                          <Button type="button" size="sm" variant="outline" className="h-6 gap-1 text-[10px] focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1" onClick={() => setCancelDialogOrderId(order.id)} title="Preklic naročila — KONČNO stanje, ni razveljavljivo (dobavitelja obvestiš sam)">
+                          <Button type="button" size="sm" variant="outline" className="h-6 gap-1 text-2xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1" onClick={() => setCancelDialogOrderId(order.id)} title="Preklic naročila — KONČNO stanje, ni razveljavljivo (dobavitelja obvestiš sam)">
                             <XCircle className="h-3 w-3" aria-hidden="true" />
                             Prekliči
                           </Button>
@@ -1079,7 +1079,7 @@ export function MaterialIntelligenceTab({
                           ) : (zgodovina[order.id]?.length ?? 0) === 0 ? (
                             <div className="text-[11px] text-muted-foreground">
                               <p>Še ni zapisanih prehodov za to naročilo.</p>
-                              <p className="mt-0.5 text-[10px]">
+                              <p className="mt-0.5 text-2xs">
                                 Sledenje prehodov beleži dogodke od uvedbe — starejši zapisi nimajo povezave na naročilo in jih ne izmišljujemo.
                               </p>
                             </div>
@@ -1094,7 +1094,7 @@ export function MaterialIntelligenceTab({
                                     <div className="flex flex-wrap items-center gap-1">
                                       <span className="text-[11px] font-medium text-roksal-ink">{akcijaOznaka(d.akcija)}</span>
                                       {d.statusPotem && (
-                                        <Badge variant="outline" className={`text-[8px] ${statusZnackaCls(d.statusPotem)}`}>
+                                        <Badge variant="outline" className={`text-3xs ${statusZnackaCls(d.statusPotem)}`}>
                                           {d.statusPotem}
                                         </Badge>
                                       )}
@@ -1152,7 +1152,7 @@ export function MaterialIntelligenceTab({
               disabled={loading}
               aria-label="Izvozi dobavitelje kot PDF"
               title="Dobavitelji kot pravi PDF — arhivski pregled kontaktnih in sodelovalnih podatkov"
-              className="h-6 gap-1 text-[10px] focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
+              className="h-6 gap-1 text-2xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
             >
               <FileText className="h-3 w-3" aria-hidden="true" />
               PDF
@@ -1185,9 +1185,9 @@ export function MaterialIntelligenceTab({
                           title={sup.aktivna ? 'Aktiven dobavitelj' : 'Neaktiven dobavitelj'}
                         />
                         <span className="text-sm font-semibold text-roksal-ink truncate">{sup.naziv}</span>
-                        {sup.popust > 0 && <Badge variant="outline" className="text-[8px] bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300">-{sup.popust}%</Badge>}
+                        {sup.popust > 0 && <Badge variant="outline" className="text-3xs bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300">-{sup.popust}%</Badge>}
                       </div>
-                      <div className="text-[10px] text-muted-foreground space-y-0.5 tabular-nums">
+                      <div className="text-2xs text-muted-foreground space-y-0.5 tabular-nums">
                         {sup.kontakt && <div>{sup.kontakt}</div>}
                         {sup.telefon && <div>{sup.telefon}</div>}
                         <div>Dobavni rok: {sup.dobavniRok} dni</div>
@@ -1305,7 +1305,7 @@ export function MaterialIntelligenceTab({
               {receiveDialogOrder.items.map((item, i) => (
                 <div key={i} className="flex items-center justify-between gap-2 rounded border border-border/60 bg-muted/40 px-2 py-1">
                   <span className="min-w-0 flex-1 truncate text-[11px] text-roksal-ink">{item.naziv}</span>
-                  <span className="shrink-0 text-[10px] text-muted-foreground tabular-nums">
+                  <span className="shrink-0 text-2xs text-muted-foreground tabular-nums">
                     {item.kolicina} {item.enota}
                   </span>
                 </div>

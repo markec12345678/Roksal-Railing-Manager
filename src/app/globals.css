@@ -1,6 +1,15 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* R238 (P1-e) — izključi virove, ki NISO UI: testni pina in skripte vsebujejo
+   dobesedne nize mikro razredov (text-\[10px\] / text-\[8px\]) v
+   expect()/preslikavah — brez tega bi Tailwind v4 iz teh nizov ŠE VEDNO
+   generiral arbitrary utility (mrtvi razred v odposlani CSS — lažni
+   needle). Resnični virovi razredov so samo app/components/pages/ui koda. */
+@source not "../lib/__tests__";
+@source not "../../scripts";
+@source not "../../worklog.md";
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -41,6 +50,16 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  /* R238 (P1-e) — mikro tipografska lestvica: poimenski žetoni za majhna
+     besedila (prej 666 razpršenih arbitrary razredov text-\[10px\] /
+     text-\[8px\] po 68 datotekah — migrirano s skripto
+     r238-tekst-zetoni.py). Bare vrednosti BREZ line-height var — ISTI izris
+     kot arbitrary razred (le font-size, nič drugega). 2xs = 10px,
+     3xs = 8px. tailwind-merge klasificira oba kot font-size
+     (isTshirtSize) — ISTI konflikt-profil kot arbitrary (dokazano v r238
+     testu). */
+  --text-2xs: 0.625rem;
+  --text-3xs: 0.5rem;
   --color-roksal-navy: #1d2b3e;
   /* R162 — roksal-ink: BESEDILO, ki ga nosi navy v svetli temi in se v
      temni temi obrne na svetlo nianso (kontrast na bg-card #1a2744).
