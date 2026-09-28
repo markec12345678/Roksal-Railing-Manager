@@ -860,7 +860,7 @@ export function InvoiceManager() {
               size="sm"
               variant="outline"
               onClick={() => exportRacuniCsv(invoices)}
-              className="h-8 gap-1.5 px-2.5 text-[11px] font-medium press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50"
+              className="h-8 gap-1.5 px-2.5 text-[11px] font-medium press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
               aria-label="Izvozi račune kot CSV"
               title="Izvozi vse račune (številka, status, zneski) kot CSV za Excel"
             >
@@ -990,7 +990,7 @@ export function InvoiceManager() {
                       <>
                         <Button
                           size="sm"
-                          className="h-7 text-xs bg-emerald-600 hover:bg-emerald-500 focus-visible:ring-emerald-400/50"
+                          className="h-7 text-xs bg-emerald-600 hover:bg-emerald-500 focus-visible:ring-roksal-navy/40"
                           onClick={() => patchStatus(inv, 'IZDAN')}
                         >
                           <Send className="h-3 w-3" /> Izdaj
@@ -1004,7 +1004,7 @@ export function InvoiceManager() {
                       <>
                         <Button
                           size="sm"
-                          className="h-7 text-xs bg-emerald-600 hover:bg-emerald-500 focus-visible:ring-emerald-400/50"
+                          className="h-7 text-xs bg-emerald-600 hover:bg-emerald-500 focus-visible:ring-roksal-navy/40"
                           onClick={() => patchStatus(inv, 'PLACAN')}
                         >
                           <CheckCircle2 className="h-3 w-3" /> Plačan

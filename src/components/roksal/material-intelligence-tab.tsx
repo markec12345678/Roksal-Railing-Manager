@@ -32,6 +32,14 @@ import {
   buildNarocilnicaPdfDoc,
   narocilnicaPdfFilename,
 } from '@/lib/narocilnica-pdf'
+// R236 (P1-c) — DOBAVITELJI PDF iz dobaviteljev (pravi PDF brat CSV R233 —
+// isti vir vrstic, fail-closed, bajtni determinizem; ISTI PDF pill družina
+// kot Zaloga PDF R234 / Naročilnica PDF R235).
+import {
+  buildDobaviteljiPdfDoc,
+  dobaviteljiPdfFilename,
+  dobaviteljBeseda,
+} from '@/lib/dobavitelji-pdf'
 import {
   Package,
   TrendingUp,
@@ -624,6 +632,37 @@ export function MaterialIntelligenceTab({
     toast({ title: 'CSV prenesen', description: `${count} dobaviteljev v Dobavitelji-${todayStamp()}.csv` })
   }
 
+  // R236 (P1-c) — DOBAVITELJI PDF (pravi dokument za arhiv/sodelovanje).
+  // ENA resnica: ISTI vrstice kot CSV R233 (zavihek suppliers — celoten
+  // vidni seznam); determinizem: EN `now` za dokument IN ime datoteke
+  // (dva klica new Date() bi razdala žig in ime — lekcija R121/R235).
+  // Fail-closed: 0 dobaviteljev → NIČ se ne sestavi (ni prazne datoteke —
+  // R232–R235 družina); fail-verbose: TypeError (pokvaren vnos) → viden
+  // razlog; ostalo → 'Izvoz PDF ni uspel: {razlog}' (R234 družina).
+  const handleSuppliersPdf = () => {
+    if (loading) return
+    if (suppliers.length === 0) {
+      toast({ title: 'Ni dobaviteljev za izvoz', description: 'PDF se izvozi, ko je dodan prvi dobavitelj.' })
+      return
+    }
+    try {
+      const now = new Date()
+      const doc = buildDobaviteljiPdfDoc(suppliers, { now })
+      doc.save(dobaviteljiPdfFilename(now))
+      toast({
+        title: `Izvoženih ${suppliers.length} ${dobaviteljBeseda(suppliers.length)} v PDF`,
+        description: 'Dobavitelji-…pdf — arhivski pregled kontaktnih in sodelovalnih podatkov.',
+      })
+    } catch (err) {
+      if (err instanceof TypeError) {
+        // fail-closed jedro: pokvaren vnos → viden razlog (nič izmišljenega dokumenta)
+        toast({ title: 'Dobavitelji PDF ni mogoče sestaviti iz tega seznama', description: err.message, variant: 'destructive' })
+      } else {
+        toast({ title: `Izvoz PDF ni uspel: ${err instanceof Error ? err.message : String(err)}`, variant: 'destructive' })
+      }
+    }
+  }
+
   return (
     <div className="space-y-4">
       {/* Tab switcher */}
@@ -1004,7 +1043,7 @@ export function MaterialIntelligenceTab({
                           </Button>
                         )}
                         {order.status === 'POTRJENO' && (
-                          <Button type="button" size="sm" variant="outline" className="h-6 text-[10px] bg-green-50 dark:bg-green-950/40 focus-visible:ring-2 focus-visible:ring-green-600/40 focus-visible:ring-offset-1" onClick={() => setReceiveDialogOrderId(order.id)} title="Prejem v zalogo — potrditev s prikazom postavk">
+                          <Button type="button" size="sm" variant="outline" className="h-6 text-[10px] bg-green-50 dark:bg-green-950/40 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1" onClick={() => setReceiveDialogOrderId(order.id)} title="Prejem v zalogo — potrditev s prikazom postavk">
                             <CheckCircle2 className="h-3 w-3 mr-1" /> Dobljeno (v zalogo)
                           </Button>
                         )}
@@ -1089,8 +1128,10 @@ export function MaterialIntelligenceTab({
       {tab === 'suppliers' && (
         <div className="space-y-3">
           {/* R233 — CSV gumb VEDNO viden (družina R232: izvozni gumb ne skriva
-              praznega stanja; klik fail-closed — 0 dobaviteljev → iskren toast). */}
-          <div className="flex justify-end">
+              praznega stanja; klik fail-closed — 0 dobaviteljev → iskren toast).
+              R236 — PDF pill (FileText, ISTI pill družina kot Zaloga R234 /
+              Naročilnica R235 — brata CSV+PDF ob gumbu, ISTI fail-closed). */}
+          <div className="flex justify-end gap-2">
             <Button
               type="button"
               size="sm"
@@ -1102,6 +1143,19 @@ export function MaterialIntelligenceTab({
               className="h-8 text-xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
             >
               <Download className="h-3.5 w-3.5 mr-1 text-roksal-amber" /> CSV
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={handleSuppliersPdf}
+              disabled={loading}
+              aria-label="Izvozi dobavitelje kot PDF"
+              title="Dobavitelji kot pravi PDF — arhivski pregled kontaktnih in sodelovalnih podatkov"
+              className="h-6 gap-1 text-[10px] focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
+            >
+              <FileText className="h-3 w-3" aria-hidden="true" />
+              PDF
             </Button>
           </div>
           <Button type="button" onClick={() => setSupplierDialogOpen(true)} className="w-full bg-roksal-navy text-white shadow-sm transition-all focus-visible:ring-2 focus-visible:ring-roksal-navy/40">
