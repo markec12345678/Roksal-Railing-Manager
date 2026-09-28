@@ -6,6 +6,15 @@
 // API že vrne to resnico (bestPrice/bestSupplier/suppliers), route NIČ
 // (client+lib only — izvoz je potrošnik obstoječe resnice).
 //
+// R246 — RAZPONSKA DIMENZIJA (P1-g nadaljevanje): + 2 stolpca (Najvišja
+//   (EUR/enota), Razlika (EUR/enota)) — najvišja se IZPELJE iz polja `prices`
+//   ISTEGA odgovora (max per inventoryId, fail-closed — vrstica brez
+//   ujemajoče ponudbe → TypeError, NIKOLI izmišljena najvišja cena);
+//   razlika = ENA izpeljava razlikaDoNajvisje (PDF stolpec + KPI Prihranek +
+//   CSV stolpec); 1 ponudba → razlika 0,00 = resnica (ni razpona);
+//   KPI Prihranek = vsota razlik (zeleno, per enota); razlika > 0 amber bold
+//   (prostor za pogajanja); sklepni podpis razširjen.
+//
 // + lib primerjalni-cenik-pdf (cenik-pdf R244 vzorec): ROKSAL glava, KPI
 //   RAČUNANI iz obveznih polj vrstic (artikli, najnižja/najvišja najboljša
 //   cena, primerjave = artikli z ≥ 2 ponudbami — NIKOLI izmišljeni števci),
@@ -28,6 +37,7 @@ import {
   primerjalniPdfFilename,
   preveriPrimerjalniVnos,
   sortirajPrimerjalni,
+  razlikaDoNajvisje,
   type PrimerjalniPdfVnos,
 } from '@/lib/primerjalni-cenik-pdf'
 import { buildCenikPdfDoc } from '@/lib/cenik-pdf'
@@ -59,6 +69,7 @@ const VRSTE: PrimerjalniPdfVnos[] = [
     sifra: 'WPC-120-A',
     enota: 'm',
     najboljsaCena: 11.9,
+    najvisjaCena: 12.5, // razlika 0,60 — 2 ponudbi (razpon RES obstaja)
     dobavitelj: 'ŠČŽ Žaga d.o.o.',
     stDobaviteljev: 2,
   },
@@ -67,6 +78,7 @@ const VRSTE: PrimerjalniPdfVnos[] = [
     sifra: 'ALU-025-B',
     enota: 'kos',
     najboljsaCena: 4.35,
+    najvisjaCena: 5.1, // razlika 0,75 — 3 ponudbe
     dobavitelj: 'Alu Center d.o.o.',
     stDobaviteljev: 3,
   },
@@ -75,6 +87,7 @@ const VRSTE: PrimerjalniPdfVnos[] = [
     sifra: 'BET-080-C',
     enota: 'kos',
     najboljsaCena: 2,
+    najvisjaCena: 2, // razlika 0,00 — 1 ponudba (resnica: ni razpona)
     dobavitelj: 'Gradbeni material d.o.o.',
     stDobaviteljev: 1,
   },
@@ -132,13 +145,16 @@ describe('R245 — primerjalni-cenik-pdf lib (družina cenik-pdf R244, sal 0x51�
     expect(primerjalniPdfFilename(ZDANJ)).toBe('Primerjalni-cenik-2026-09-28.pdf')
   })
 
-  it('preveriPrimerjalniVnos: indeks krivca je VEDNO v sporočilu (artikel/sifra/enota/dobavitelj/najboljsaCena/stDobaviteljev)', () => {
+  it('preveriPrimerjalniVnos: indeks krivca je VEDNO v sporočilu (artikel/sifra/enota/dobavitelj/najboljsaCena/najvisjaCena/stDobaviteljev)', () => {
     expect(() => preveriPrimerjalniVnos({ ...VRSTE[0], artikel: '  ' }, 3)).toThrow(/\(3\)/)
     expect(() => preveriPrimerjalniVnos({ ...VRSTE[0], sifra: '' }, 2)).toThrow(/\(2\).*sifra/)
     expect(() => preveriPrimerjalniVnos({ ...VRSTE[0], enota: undefined as unknown as string }, 1)).toThrow(/\(1\).*enota/)
     expect(() => preveriPrimerjalniVnos({ ...VRSTE[0], dobavitelj: null as unknown as string }, 0)).toThrow(/\(0\).*dobavitelj/)
     expect(() => preveriPrimerjalniVnos({ ...VRSTE[0], najboljsaCena: -1 }, 5)).toThrow(/\(5\).*najboljsaCena/)
     expect(() => preveriPrimerjalniVnos({ ...VRSTE[0], najboljsaCena: Number.NaN }, 5)).toThrow(/najboljsaCena/)
+    expect(() => preveriPrimerjalniVnos({ ...VRSTE[0], najvisjaCena: -1 }, 5)).toThrow(/\(5\).*najvisjaCena/)
+    expect(() => preveriPrimerjalniVnos({ ...VRSTE[0], najvisjaCena: Number.NaN }, 5)).toThrow(/najvisjaCena/)
+    expect(() => preveriPrimerjalniVnos({ ...VRSTE[0], najvisjaCena: 11.8 }, 5)).toThrow(/negativna razlika ne obstaja/)
     expect(() => preveriPrimerjalniVnos({ ...VRSTE[0], stDobaviteljev: 0 }, 4)).toThrow(/\(4\).*stDobaviteljev/)
     expect(() => preveriPrimerjalniVnos({ ...VRSTE[0], stDobaviteljev: 1.5 }, 4)).toThrow(/stDobaviteljev/)
     expect(() => preveriPrimerjalniVnos({ ...VRSTE[0], stDobaviteljev: undefined as unknown as number }, 4)).toThrow(/stDobaviteljev/)
@@ -158,19 +174,23 @@ describe('R245 — primerjalni-cenik-pdf lib (družina cenik-pdf R244, sal 0x51�
     expect(lib).toContain('#${p.stDobaviteljev}')
   })
 
-  it('KPI se RAČUNAJO iz vrstic (artikli/najnižja/najvišja/primerjave ≥ 2 ponudb) — NIKOLI izmišljeni števci', () => {
+  it('KPI se RAČUNAJO iz vrstic (artikli/najnižja/najvišja/primerjave/prihranek) — NIKOLI izmišljeni števci', () => {
     expect(lib).toContain('const najnizja = Math.min(')
-    expect(lib).toContain('const najvisja = Math.max(')
+    expect(lib).toContain('const najvisjaKpi = Math.max(')
     expect(lib).toContain('const primerjave = sortirane.filter((p) => p.stDobaviteljev >= 2).length')
+    expect(lib).toContain('const prihranek = sortirane.reduce((s, p) => s + razlikaDoNajvisje(p), 0)')
     // iskren podpis: samo veljavne cene (route filtrira veljavnostDo: null)
     expect(lib).toContain('najnižja vpisana cena per artikel')
+    expect(lib).toContain('vsota razlik do najvišjih veljavnih cen')
     expect(lib).toContain('samo trenutno veljavne cene')
   })
 
-  it('glava PRIMERJALNI CENIK + zelena resnica najboljše cene + amber poudarjeni artikli z ≥ 2 ponudbami (vir)', () => {
+  it('glava PRIMERJALNI CENIK + zelena resnica najboljše cene + amber razlika > 0 + amber ≥ 2 ponudb (vir)', () => {
     expect(lib).toContain("'PRIMERJALNI CENIK'")
     expect(lib).toContain('data.column.index === 3')
     expect(lib).toContain('data.column.index === 5')
+    expect(lib).toContain('data.column.index === 7')
+    expect(lib).toContain("Number(v.replace(',', '.')) > 0")
     expect(lib).toContain('Number(v) >= 2')
   })
 
@@ -184,13 +204,57 @@ describe('R245 — primerjalni-cenik-pdf lib (družina cenik-pdf R244, sal 0x51�
   })
 })
 
+describe('R246 — razponska dimenzija (Najvišja + Razlika, izpeljava iz prices ISTEGA odgovora)', () => {
+  it('razlikaDoNajvisje: ENA izpeljava (0,60 / 0,75 / 0,00 — 1 ponudba = 0 je RESNICA, ne izmišljen 0)', () => {
+    // FP: 12.5 − 11.9 = 0.5999999999999996 — prikaz gre skozi cenaNiz
+    // (toFixed(2) pravilno zaokroži na '0.60'); trditev torej FP-varna
+    // (toBeCloseTo), prikazna resnica je toFixed(2) (lekcija R246).
+    expect(razlikaDoNajvisje(VRSTE[0])).toBeCloseTo(0.6, 10)
+    expect(razlikaDoNajvisje(VRSTE[0]).toFixed(2)).toBe('0.60')
+    expect(razlikaDoNajvisje(VRSTE[1])).toBeCloseTo(0.75, 10)
+    expect(razlikaDoNajvisje(VRSTE[2])).toBe(0) // 1 ponudba: najvišja = najnižja (točno 0 — ista številka)
+    expect(razlikaDoNajvisje(VRSTE[2])).toBeGreaterThanOrEqual(0)
+  })
+
+  it('KPI Prihranek = vsota razlik (0,60 + 0,75 + 0,00 = 1,35) — cenaNiz prikaz na 2 mesti', () => {
+    const prihranek = VRSTE.reduce((s, p) => s + razlikaDoNajvisje(p), 0)
+    expect(prihranek.toFixed(2)).toBe('1.35')
+    // KPI box v libu: 'Prihranek' z zeleno barvo (pozitiven signal)
+    expect(lib).toContain("'Prihranek'")
+  })
+
+  it('8 stolpcev (R246): ISTI prrez v PDF glavi IN CSV (Najvišja + Razlika med Najboljšo in Dobaviteljem)', () => {
+    const stolpci = "['Artikel', 'Šifra', 'Enota', 'Najboljša cena (EUR/enota)', 'Najvišja (EUR/enota)', 'Razlika (EUR/enota)', 'Dobavitelj', 'Št. dobaviteljev']"
+    expect(lib).toContain(`head: [${stolpci}]`)
+    expect(material).toContain(stolpci)
+  })
+
+  it('pridobiPrimerjalni: izpeljava iz prices (fail-closed: manjkajoče polje prices, pokvarjena vrstica z indeksom, brez ujemajoče ponudbe)', () => {
+    expect(material).toContain("(manjka polje prices).")
+    expect(material).toContain('polje prices vrstica ${i}: manjkajoči inventoryId/cena v odgovoru API-ja')
+    expect(material).toContain('brez ujemajoče ponudbe v polju prices (NIKOLI izmišljena najvišja cena)')
+    expect(material).toContain('najvisje.set(p.inventoryId, p.cena)')
+  })
+
+  it('CSV uporablja razlikaDoNajvisje (EN vir resnice s PDF stolpcem in KPI Prihranek)', () => {
+    const fn = oknoMed(material, 'function downloadPrimerjalniCsv', '/** R245 — fail-closed preslikava')
+    expect(fn).toContain('razlikaDoNajvisje(v)')
+  })
+
+  it('razponska vrstica v PDF telesu: najvisjaCena + razlikaDoNajvisje (oboji skozi cenaNiz — 2 mesti)', () => {
+    const body = oknoMed(lib, 'body: sortirane.map((p) => [', ']),')
+    expect(body).toContain('cenaNiz(p.najvisjaCena)')
+    expect(body).toContain('cenaNiz(razlikaDoNajvisje(p))')
+  })
+})
+
 describe('R245 — primerjalni CSV + pilli v material-intelligence-tab', () => {
-  it('downloadPrimerjalniCsv: ISTI prerez stolpcev kot PDF (Artikel, Šifra, Enota, Najboljša cena (EUR/enota), Dobavitelj, Št. dobaviteljev)', () => {
+  it('downloadPrimerjalniCsv: ISTI prerez stolpcev kot PDF (R246 8 stolpcev: Artikel, Šifra, Enota, Najboljša cena (EUR/enota), Najvišja (EUR/enota), Razlika (EUR/enota), Dobavitelj, Št. dobaviteljev)', () => {
     const fn = oknoMed(material, 'function downloadPrimerjalniCsv', '/** R245 — fail-closed preslikava')
     expect(fn).not.toBe('')
-    expect(fn).toContain("'Artikel', 'Šifra', 'Enota', 'Najboljša cena (EUR/enota)', 'Dobavitelj', 'Št. dobaviteljev'")
+    expect(fn).toContain("'Artikel', 'Šifra', 'Enota', 'Najboljša cena (EUR/enota)', 'Najvišja (EUR/enota)', 'Razlika (EUR/enota)', 'Dobavitelj', 'Št. dobaviteljev'")
     // ISTI stolpci v PDF tabeli (ENA resnica čez brata)
-    expect(lib).toContain("head: [['Artikel', 'Šifra', 'Enota', 'Najboljša cena (EUR/enota)', 'Dobavitelj', 'Št. dobaviteljev']]")
+    expect(lib).toContain("head: [['Artikel', 'Šifra', 'Enota', 'Najboljša cena (EUR/enota)', 'Najvišja (EUR/enota)', 'Razlika (EUR/enota)', 'Dobavitelj', 'Št. dobaviteljev']]")
     // CSV ime = ISTA zgodba kot PDF ime (Primerjalni-cenik-…)
     expect(fn).toContain('`Primerjalni-cenik-${todayStamp()}.csv`')
   })
@@ -200,7 +264,7 @@ describe('R245 — primerjalni CSV + pilli v material-intelligence-tab', () => {
     expect(material).toContain("typeof v !== 'object' || !v.inventory")
   })
 
-  it('pridobiPrimerjalni: ISTI endpoint, polje bestPerMaterial, fail-verbose HTTP status + pokvarjena oblika', () => {
+  it('pridobiPrimerjalni: ISTI endpoint, polji bestPerMaterial + prices, fail-verbose HTTP status + pokvarjena oblika', () => {
     const fn = oknoMed(material, 'const pridobiPrimerjalni', 'const handlePrimerjalniCsv')
     expect(fn).toContain("fetch('/api/material-prices')")
     expect(fn).toContain("'Odgovora /api/material-prices ni mogoče prebrati (manjka polje bestPerMaterial).'")

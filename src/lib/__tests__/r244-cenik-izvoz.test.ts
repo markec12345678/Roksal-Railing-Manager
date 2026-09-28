@@ -276,7 +276,10 @@ describe('R244 — cenik CSV + pilli v material-intelligence-tab', () => {
   })
 
   it('EN now za žig IN ime (determinizem — dva new Date() bi razdala žig in ime)', () => {
-    const pdf = oknoMed(material, 'const handleCenikPdf', '  return (')
+    // R246 sinhronizacija: med handleCenikPdf in JSX return je zdaj R245/R246
+    // PRIMERJALNI blok (ima svoj EN now — pije ga svoj test) — okno se
+    // sidra na začetek primerjalnega bloka, da meri SAMO cenik handler.
+    const pdf = oknoMed(material, 'const handleCenikPdf', '// R245 — PRIMERJALNI CENIK izvoz')
     expect((pdf.match(/new Date\(\)/g) || []).length).toBe(1)
   })
 

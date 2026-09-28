@@ -60,6 +60,7 @@ import {
   buildPrimerjalniPdfDoc,
   primerjalniPdfFilename,
   sortirajPrimerjalni,
+  razlikaDoNajvisje,
   type PrimerjalniPdfVnos,
 } from '@/lib/primerjalni-cenik-pdf'
 import {
@@ -116,11 +117,15 @@ interface CenikCena {
 // `bestPerMaterial` (GET /api/material-prices brez filtrov — API že vrne
 // najnižjo veljavno ceno per artikel + dobavitelja + št. ponudb). ENA
 // vrstica = EN artikel (ločena resnica od cenika R244, ki je vrstica per
-// ponudba).
+// ponudba). R246 — razponska dimenzija: `najvisjaCena` je IZPELJANA iz
+// polja `prices` ISTEGA odgovora (vse trenutno veljavne ponudbe — max per
+// inventoryId; izračun v pridobiPrimerjalni, fail-closed — nikoli izmišljen).
 interface PrimerjalniVrsta {
   inventoryId: string
   inventory: { naziv: string; sifraMateriala: string; enota: string }
   bestPrice: number
+  /** R246 — najvišja veljavna cena za ta artikel (max iz prices). */
+  najvisjaCena: number
   bestSupplier: string
   suppliers: number
 }
@@ -325,25 +330,28 @@ function cenikVnosi(cene: CenikCena[]): CenikPdfVnos[] {
 }
 
 // R245 — PRIMERJALNI CENIK CSV (brat PDF primerjalnega cenika, ISTI prerez
-// stolpcev: Artikel, Šifra, Enota, Najboljša cena (EUR/enota), Dobavitelj,
-// Št. dobaviteljev). Vir = polje bestPerMaterial iz GET /api/material-prices
-// (samo trenutno veljavne cene — route filtrira veljavnostDo: null). Sort =
-// sortirajPrimerjalni IZ LIBA (WYSIWYG brata — ISTI red kot v PDF; cenik
-// R244 CSV je šel po API redu, primerjalni dobi skupni red od prvega dne).
-// Fail-closed oblike odgovora rešuje primerjalniVnosi (TypeError z indeksom
-// krivca).
+// stolpcev: Artikel, Šifra, Enota, Najboljša cena (EUR/enota), Najvišja
+// (EUR/enota), Razlika (EUR/enota), Dobavitelj, Št. dobaviteljev — R246
+// razponska dimenzija). Vir = polji bestPerMaterial + prices iz GET
+// /api/material-prices (samo trenutno veljavne cene — route filtrira
+// veljavnostDo: null). Sort = sortirajPrimerjalni IZ LIBA (WYSIWYG brata —
+// ISTI red kot v PDF). Razlika = razlikaDoNajvisje IZ LIBA (EN vir resnice
+// s PDF KPI Prihranek). Fail-closed oblike odgovora rešujeta
+// pridobiPrimerjalni + primerjalniVnosi (TypeError z indeksom krivca).
 function downloadPrimerjalniCsv(vrste: PrimerjalniVrsta[]): number {
   const rows: CsvValue[][] = sortirajPrimerjalni(primerjalniVnosi(vrste)).map((v) => [
     v.artikel,
     v.sifra,
     v.enota,
     v.najboljsaCena,
+    v.najvisjaCena,
+    razlikaDoNajvisje(v),
     v.dobavitelj,
     String(v.stDobaviteljev),
   ])
   downloadCsv(
     `Primerjalni-cenik-${todayStamp()}.csv`,
-    ['Artikel', 'Šifra', 'Enota', 'Najboljša cena (EUR/enota)', 'Dobavitelj', 'Št. dobaviteljev'],
+    ['Artikel', 'Šifra', 'Enota', 'Najboljša cena (EUR/enota)', 'Najvišja (EUR/enota)', 'Razlika (EUR/enota)', 'Dobavitelj', 'Št. dobaviteljev'],
     rows,
   )
   return rows.length
@@ -351,17 +359,22 @@ function downloadPrimerjalniCsv(vrste: PrimerjalniVrsta[]): number {
 
 /** R245 — fail-closed preslikava bestPerMaterial vrstic v PrimerjalniPdfVnos
  *  (pokvarjena oblika → TypeError z indeksom krivca; NIKOLI tiho izmišljevanje
- *  polj). */
+ *  polj). R246 — najvisjaCena pride iz pridobiPrimerjalni (izpeljava iz
+ *  prices — fail-closed, brez ujemajoče ponudbe → TypeError tam). */
 function primerjalniVnosi(vrste: PrimerjalniVrsta[]): PrimerjalniPdfVnos[] {
   return vrste.map((v, i) => {
     if (!v || typeof v !== 'object' || !v.inventory) {
       throw new TypeError(`primerjalni vrstica ${i}: manjkajoči inventory v odgovoru API-ja`)
+    }
+    if (typeof v.najvisjaCena !== 'number') {
+      throw new TypeError(`primerjalni vrstica ${i}: manjkajoča najvisjaCena (izpeljava iz prices je spodletela)`)
     }
     return {
       artikel: v.inventory.naziv,
       sifra: v.inventory.sifraMateriala,
       enota: v.inventory.enota,
       najboljsaCena: v.bestPrice,
+      najvisjaCena: v.najvisjaCena,
       dobavitelj: v.bestSupplier,
       stDobaviteljev: v.suppliers,
     }
@@ -930,11 +943,15 @@ export function MaterialIntelligenceTab({
   }
 
   // R245 — PRIMERJALNI CENIK izvoz (CSV + PDF): linijsko pridobivanje FRESH
-  // podatkov ob kliku (ISTI endpoint kot cenik — polje bestPerMaterial je
-  // del ISTEGA odgovora; ni dodatne mreže ob odprtju zavihka). Fail-verbose:
-  // !res.ok → HTTP status v opisu; pokvarjena oblika → TypeError z razlogom;
-  // 0 cen → iskren toast (ni prazne datoteke — R232–R244 družina; NASLOV je
-  // drugačen od cenika — 'za primerjavo', vsak dokument pove svojo resnico).
+  // podatkov ob kliku (ISTI endpoint kot cenik — polji bestPerMaterial IN
+  // prices sta del ISTEGA odgovora; ni dodatne mreže ob odprtju zavihka).
+  // R246 — razponska dimenzija: najvišja veljavna cena per artikel se
+  // IZPELJE iz prices (max per inventoryId) — fail-closed: pokvarjena
+  // prices vrstica → TypeError z indeksom; bestPerMaterial vrstica brez
+  // ujemajoče ponudbe → TypeError (NIKOLI izmišljena najvišja cena).
+  // Fail-verbose: !res.ok → HTTP status v opisu; 0 cen → iskren toast (ni
+  // prazne datoteke — R232–R244 družina; NASLOV je drugačen od cenika —
+  // 'za primerjavo', vsak dokument pove svojo resnico).
   // primerjalniVTeku zavira dvoklik (ISTI gumb dvakrat).
   const [primerjalniVTeku, setPrimerjalniVTeku] = useState(false)
   const pridobiPrimerjalni = useCallback(async (): Promise<PrimerjalniVrsta[]> => {
@@ -946,7 +963,26 @@ export function MaterialIntelligenceTab({
     if (!data || typeof data !== 'object' || !Array.isArray((data as { bestPerMaterial?: unknown }).bestPerMaterial)) {
       throw new TypeError('Odgovora /api/material-prices ni mogoče prebrati (manjka polje bestPerMaterial).')
     }
-    return (data as { bestPerMaterial: PrimerjalniVrsta[] }).bestPerMaterial
+    if (!Array.isArray((data as { prices?: unknown }).prices)) {
+      throw new TypeError('Odgovora /api/material-prices ni mogoče prebrati (manjka polje prices).')
+    }
+    const cene = (data as { prices: Array<{ inventoryId?: unknown; cena?: unknown }> }).prices
+    const najvisje = new Map<string, number>()
+    cene.forEach((p, i) => {
+      if (!p || typeof p !== 'object' || typeof p.inventoryId !== 'string' || typeof p.cena !== 'number') {
+        throw new TypeError(`polje prices vrstica ${i}: manjkajoči inventoryId/cena v odgovoru API-ja`)
+      }
+      const obstojeca = najvisje.get(p.inventoryId)
+      if (obstojeca === undefined || p.cena > obstojeca) najvisje.set(p.inventoryId, p.cena)
+    })
+    const vrste = (data as { bestPerMaterial: Array<PrimerjalniVrsta> }).bestPerMaterial
+    return vrste.map((v, i) => {
+      const najvisja = najvisje.get(v.inventoryId)
+      if (najvisja === undefined) {
+        throw new TypeError(`primerjalna vrstica ${i}: brez ujemajoče ponudbe v polju prices (NIKOLI izmišljena najvišja cena)`)
+      }
+      return { ...v, najvisjaCena: najvisja }
+    })
   }, [])
 
   const handlePrimerjalniCsv = async () => {

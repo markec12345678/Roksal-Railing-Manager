@@ -60,14 +60,23 @@ const GRAY: [number, number, number] = [110, 110, 110]
 const LIGHT: [number, number, number] = [243, 244, 246]
 
 /** Client-safe prerez ENE primerjalne vrstice (polje `bestPerMaterial` iz
- *  GET /api/material-prices brez filtrov). ENA vrstica = EN artikel. */
+ *  GET /api/material-prices brez filtrov) + razponska dimenzija (R246, P1-g
+ *  nadaljevanje): najvišja veljavna cena IZ ISTEGA odgovora (polje `prices`
+ *  = vse trenutno veljavne ponudbe) — razlika do najvišje je resnično
+ *  IZPELJANA iz obstoječih vrstic (nič izmišljenega; 1 ponudba → razlika
+ *  0,00 = resnica: brez ponudb za primerjavo ni razpona). ENA vrstica = EN
+ *  artikel. */
 export interface PrimerjalniPdfVnos {
   artikel: string
   sifra: string
   enota: string
   /** Najnižja trenutno veljavna cena per artikel (EUR na enoto). */
   najboljsaCena: number
-  /** Dobavitelj te najnižje cene (API `bestSupplier`). */
+  /** Najvišja trenutno veljavna cena za ta artikel (EUR na enoto; iz polja
+   *  prices ISTEGA odgovora — R246). ≥ najboljsaCena (preveriPrimerjalniVnos
+   *  to zagotavlja — negativna razlika ne obstaja). */
+  najvisjaCena: number
+  /** Dobavitelj najnižje cene (API `bestSupplier`). */
   dobavitelj: string
   /** Št. dobaviteljev z veljavno ceno za ta artikel (API `suppliers`). */
   stDobaviteljev: number
@@ -98,6 +107,12 @@ export function preveriPrimerjalniVnos(p: PrimerjalniPdfVnos, i: number): void {
   if (typeof p.najboljsaCena !== 'number' || !Number.isFinite(p.najboljsaCena) || p.najboljsaCena < 0) {
     throw new TypeError(`preveriPrimerjalniVnos (${i}): najboljsaCena mora biti končno ne-negativno število, ne ${String(p.najboljsaCena)}`)
   }
+  if (typeof p.najvisjaCena !== 'number' || !Number.isFinite(p.najvisjaCena) || p.najvisjaCena < 0) {
+    throw new TypeError(`preveriPrimerjalniVnos (${i}): najvisjaCena mora biti končno ne-negativno število, ne ${String(p.najvisjaCena)}`)
+  }
+  if (p.najvisjaCena < p.najboljsaCena) {
+    throw new TypeError(`preveriPrimerjalniVnos (${i}): najvisjaCena (${String(p.najvisjaCena)}) ne sme biti pod najboljsa (${String(p.najboljsaCena)}) — negativna razlika ne obstaja`)
+  }
   if (typeof p.stDobaviteljev !== 'number' || !Number.isInteger(p.stDobaviteljev) || p.stDobaviteljev < 1) {
     throw new TypeError(`preveriPrimerjalniVnos (${i}): stDobaviteljev mora biti celo število ≥ 1, ne ${String(p.stDobaviteljev)}`)
   }
@@ -122,6 +137,13 @@ function deterministichenId(seed: string): string {
     fnv1aHex(seed, 0x53) +
     fnv1aHex(seed, 0x54)
   )
+}
+
+/** Razlika do najvišje veljavne cene (EUR/enota) — ENOGA izpeljava za PDF
+ *  (KPI Prihranek + stolpec) IN CSV (EN vir resnice; 1 ponudba → 0 = resnica,
+ *  brez ponudb za primerjavo ni razpona). */
+export function razlikaDoNajvisje(v: PrimerjalniPdfVnos): number {
+  return v.najvisjaCena - v.najboljsaCena
 }
 
 /** Sort vrstic V LIBU — skupni red (artikel asc → najboljša cena asc →
@@ -210,10 +232,13 @@ export function buildPrimerjalniPdfDoc(
 
   // KPI se RAČUNAJO iz obveznih polj vrstic (notranja skladnost — glej glavo
   // liba): št. artiklov, najnižja/najvišja najboljša cena, primerjave =
-  // artikli z ≥ 2 ponudbami (kjer primerjava RES obstaja — amber poudarek).
+  // artikli z ≥ 2 ponudbami (kjer primerjava RES obstaja — amber poudarek),
+  // prihranek = vsota razlik do najvišjih veljavnih cen (per enota; R246
+  // razponska dimenzija — zeleno, pozitiven signal).
   const najnizja = Math.min(...sortirane.map((p) => p.najboljsaCena))
-  const najvisja = Math.max(...sortirane.map((p) => p.najboljsaCena))
+  const najvisjaKpi = Math.max(...sortirane.map((p) => p.najvisjaCena))
   const primerjave = sortirane.filter((p) => p.stDobaviteljev >= 2).length
+  const prihranek = sortirane.reduce((s, p) => s + razlikaDoNajvisje(p), 0)
 
   const doc = new jsPDF()
   registerSloPdfFonts(doc)
@@ -252,44 +277,58 @@ export function buildPrimerjalniPdfDoc(
   // ---------- KPI povzetek (izračun iz vrstic — notranja skladnost) ----------
   let y = 33
   y = sectionTitle(doc, y, 'Povzetek primerjalnega cenika')
-  const bw = 42
+  // R246: 5 polj (razponska dimenzija) → ožji box (33 mm) v ISTI vrsti (5×33 + 4×4 = 181 ≤ 182)
+  const bw = 33
   const bh = 16
   const gap = 4
   kpiBox(doc, 14, y, bw, bh, 'Artikli', String(sortirane.length), NAVY)
   kpiBox(doc, 14 + bw + gap, y, bw, bh, 'Najnižja', `${cenaNiz(najnizja)} €`, GREEN)
-  kpiBox(doc, 14 + 2 * (bw + gap), y, bw, bh, 'Najvišja', `${cenaNiz(najvisja)} €`, AMBER)
+  kpiBox(doc, 14 + 2 * (bw + gap), y, bw, bh, 'Najvišja', `${cenaNiz(najvisjaKpi)} €`, AMBER)
   kpiBox(doc, 14 + 3 * (bw + gap), y, bw, bh, 'Primerjave', String(primerjave), NAVY)
+  kpiBox(doc, 14 + 4 * (bw + gap), y, bw, bh, 'Prihranek', `${cenaNiz(prihranek)} €`, GREEN)
   y += bh + 8
 
-  // ---------- tabela primerjalnega cenika (ENA resnica = stolpci CSV) ----------
+  // ---------- tabela primerjalnega cenika (ENA resnica = stolpci CSV; R246 razponska dimenzija) ----------
   y = sectionTitle(doc, y, `Najboljše cene per artikel (${sortirane.length})`)
   autoTable(doc, {
     startY: y,
-    head: [['Artikel', 'Šifra', 'Enota', 'Najboljša cena (EUR/enota)', 'Dobavitelj', 'Št. dobaviteljev']],
+    head: [['Artikel', 'Šifra', 'Enota', 'Najboljša cena (EUR/enota)', 'Najvišja (EUR/enota)', 'Razlika (EUR/enota)', 'Dobavitelj', 'Št. dobaviteljev']],
     body: sortirane.map((p) => [
       p.artikel.trim(),
       p.sifra.trim(),
       p.enota.trim(),
       cenaNiz(p.najboljsaCena),
+      cenaNiz(p.najvisjaCena),
+      cenaNiz(razlikaDoNajvisje(p)),
       p.dobavitelj.trim(),
       String(p.stDobaviteljev),
     ]),
     styles: { fontSize: 8, cellPadding: 1.8, font: 'Roboto' },
     headStyles: { fillColor: [...NAVY], textColor: 255, fontSize: 8 },
     columnStyles: {
-      0: { cellWidth: 42 },
+      0: { cellWidth: 34 },
       3: { halign: 'right' },
+      4: { halign: 'right' },
       5: { halign: 'right' },
+      7: { halign: 'right' },
     },
     didParseCell: (data) => {
       // WYSIWYG z zaslonom: najboljša cena zeleno bold (ISTI pomen zelene
-      // resnice kot v ceniku R244 — ključna številka ne utone); št.
-      // dobaviteljev > 1 amber bold (kjer primerjava RES obstaja).
+      // resnice kot v ceniku R244 — ključna številka ne utone); razlika > 0
+      // amber bold (prostor za pogajanja — kjer razpon RES obstaja); razlika
+      // 0 (1 ponudba) ostane navadna — resnica brez lažnega signala.
       if (data.section === 'body' && data.column.index === 3) {
         data.cell.styles.textColor = GREEN
         data.cell.styles.fontStyle = 'bold'
       }
       if (data.section === 'body' && data.column.index === 5) {
+        const v = String(data.cell.raw ?? '')
+        if (Number(v.replace(',', '.')) > 0) {
+          data.cell.styles.textColor = AMBER
+          data.cell.styles.fontStyle = 'bold'
+        }
+      }
+      if (data.section === 'body' && data.column.index === 7) {
         const v = String(data.cell.raw ?? '')
         if (Number(v) >= 2) {
           data.cell.styles.textColor = AMBER
@@ -310,7 +349,7 @@ export function buildPrimerjalniPdfDoc(
   doc.setFontSize(8.5)
   doc.setTextColor(...NAVY)
   doc.text(
-    `${sortirane.length} ${artikelBeseda(sortirane.length)} · najnižja vpisana cena per artikel · samo trenutno veljavne cene (pretečene niso vključene).`,
+    `${sortirane.length} ${artikelBeseda(sortirane.length)} · najnižja vpisana cena per artikel · vsota razlik do najvišjih veljavnih cen ${cenaNiz(prihranek)} EUR/enota · samo trenutno veljavne cene (pretečene niso vključene).`,
     14,
     y + 4,
   )
