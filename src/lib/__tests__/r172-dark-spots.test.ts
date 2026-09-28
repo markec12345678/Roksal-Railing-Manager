@@ -61,7 +61,10 @@ const PRIMERI = [
   // +1, handler komentar +1; ogledalo ŠE VEDNO na ISTI vsebinski vrstici).
   // R232: 647→655 (handleOrdersCsv R232 komentar +4 + fail-closed veji +4;
   // ogledalo ŠE VEDNO na ISTI vsebinski vrstici — precedens R180/R229).
-  stražar('src/components/roksal/material-intelligence-tab.tsx', 655, 'bg-green-50', 'dark:bg-green-950/40'),
+  // R233: 655→698 (downloadSuppliersCsv +28 (vključno String števci komentar
+  // +3) + handleSuppliersCsv +9 + komentar +6; ogledalo ŠE VEDNO na ISTI
+  // vsebinski vrstici — precedens R180/R229/R232).
+  stražar('src/components/roksal/material-intelligence-tab.tsx', 698, 'bg-green-50', 'dark:bg-green-950/40'),
   // roksal-catalog — steklo tint (vzorec Inox fix R171)
   // R203: 193→228 (fail-verbose fetchProfili + trojna veja +35).
   // R229: 228→232 (Inox chip žetoni komentar +3 — precedens R180/R203).

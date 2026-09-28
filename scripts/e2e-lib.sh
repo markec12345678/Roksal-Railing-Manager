@@ -90,3 +90,11 @@ eb_csv_reset() {
   local varname="$1"
   agent-browser eval "(()=>{window.__$varname=null; return 'reset';})()" 2>&1 | tail -1
 }
+
+# R233 (P1-d) — klik gumba po aria-label (ponavlja se od r226; JS .click()
+# deluje za controlled onClick gumbe — za Radix DropdownMenu triggerje rabiš
+# pointer sekvence r199/r200, ZA TE gumba ta helper NI namenjen).
+eb_klik_gumb() {
+  local aria="$1"
+  agent-browser eval "(()=>{const g=document.querySelector('button[aria-label=\"$aria\"]'); if(!g) return 'ni gumba'; g.click(); return 'klik';})()" 2>&1 | tail -1
+}

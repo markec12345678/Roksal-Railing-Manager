@@ -181,6 +181,36 @@ function downloadOrdersCsv(orders: MaterialOrder[], danas: Date): number {
   return rows.length
 }
 
+// R233 (P1-c) — 'izvozi' družina: tabela Dobavitelji dobi CSV izvoz (edini
+// vir v Materialu brez izvoza po R231). ENA resnica: ISTI podatki kot kartice
+// — status 'Aktiven/Neaktiven' je ISTA resnica kot pika + title na kartici
+// (R144), _count števec ISTA kot vrstica 'N cen · M naročil'. Manjkajoči
+// _count (starejši hint, sekanc med deployema) = PRAZNI celici — NIKOLI
+// izmišljen 0 (fail-closed, R227 vzorec 'producers brez polja = brez oznake').
+// Kontakt/telefon/email manjkajo → prazna celica (nič izmišljenega).
+// Števci (dobavniRok, _count) kot String — celo števila so celo števila
+// ("1", ne "1,00" — decimalna vejica je za CENE, R136; vodja-CSV vzorec
+// String(kpi)), popust ostane number (% je lahko decimalen).
+function downloadSuppliersCsv(suppliers: Supplier[]): number {
+  const rows: CsvValue[][] = suppliers.map((s) => [
+    s.naziv,
+    s.aktivna ? 'Aktiven' : 'Neaktiven',
+    s.kontakt ?? '',
+    s.telefon ?? '',
+    s.email ?? '',
+    String(s.dobavniRok),
+    s.popust,
+    s._count ? String(s._count.materialPrices) : '',
+    s._count ? String(s._count.orders) : '',
+  ])
+  downloadCsv(
+    `Dobavitelji-${todayStamp()}.csv`,
+    ['Naziv', 'Status', 'Kontakt', 'Telefon', 'Email', 'Dobavni rok (dni)', 'Popust (%)', 'Št. cen', 'Št. naročil'],
+    rows,
+  )
+  return rows.length
+}
+
 // R207 — stil statusnega filtra (pill družina R136/R204/R206; 0 novih hex,
 // tokeni + focus ring; aria-pressed namesto aria-selected — pravi toggle).
 function chipCls(aktiven: boolean): string {
@@ -544,6 +574,19 @@ export function MaterialIntelligenceTab({
     }
     const count = downloadOrdersCsv(orders, danasZamude)
     toast({ title: 'CSV prenesen', description: `${count} postavk v Narocila-${todayStamp()}.csv` })
+  }
+
+  // R233 (P1-c) — izvoz dobaviteljev (ISTI vzorec kot handleOrdersCsv R232:
+  // gumb VEDNO viden, klik fail-closed — 0 dobaviteljev → iskren toast, nič
+  // se ne izvozi; nalaganje → onemogočen).
+  const handleSuppliersCsv = () => {
+    if (loading) return
+    if (suppliers.length === 0) {
+      toast({ title: 'Ni dobaviteljev za izvoz', description: 'CSV se izvozi, ko je dodan prvi dobavitelj.' })
+      return
+    }
+    const count = downloadSuppliersCsv(suppliers)
+    toast({ title: 'CSV prenesen', description: `${count} dobaviteljev v Dobavitelji-${todayStamp()}.csv` })
   }
 
   return (
@@ -994,6 +1037,22 @@ export function MaterialIntelligenceTab({
       {/* Suppliers tab */}
       {tab === 'suppliers' && (
         <div className="space-y-3">
+          {/* R233 — CSV gumb VEDNO viden (družina R232: izvozni gumb ne skriva
+              praznega stanja; klik fail-closed — 0 dobaviteljev → iskren toast). */}
+          <div className="flex justify-end">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={handleSuppliersCsv}
+              disabled={loading}
+              aria-label="Izvozi dobavitelje kot CSV"
+              title="Izvozi vse dobavitelje kot CSV za Excel"
+              className="h-8 text-xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
+            >
+              <Download className="h-3.5 w-3.5 mr-1 text-roksal-amber" /> CSV
+            </Button>
+          </div>
           <Button type="button" onClick={() => setSupplierDialogOpen(true)} className="w-full bg-roksal-navy text-white shadow-sm transition-all focus-visible:ring-2 focus-visible:ring-roksal-navy/40">
             <Plus className="h-4 w-4 mr-2" /> Nov dobavitelj
           </Button>
