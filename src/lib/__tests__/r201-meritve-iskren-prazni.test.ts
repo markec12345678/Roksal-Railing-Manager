@@ -53,16 +53,19 @@ describe('R201 — izbirnik: iskren prazni stolpec namesto slepega izbrika', () 
     const s = src()
     expect(s).toContain('title="Ni projektov"')
     expect(s).toContain('Meritve se vežejo na projekt — ko je projekt ustvarjen in dodeljen tebi, se pojavi tukaj.')
-    // R202: stara vlogova trditev ('ko vodja ustvari') ODSTRANJENA — POST
-    // /api/projects je seja-omejen (vsakdo z sejo), UI pa prikazuje gumb
-    // 'Nov projekt' vsem — besedilo ne sme izmišljati omejitve.
+    // R202: stara vlogova trditev ('ko vodja ustvari') ODSTRANJENA. R239
+    // (P1-a): POST /api/projects = RBAC (denyUnless MANAGER_ROLES) —
+    // besedilo ne sme niti izmišljati omejitev (R202) niti zanikati
+    // resnične (R239): gumb 'Nov projekt' je viden samo vodstvu.
     expect(s).not.toContain('ko vodja ustvari projekt')
+    expect(s).not.toContain('Projekt ustvariš v zavihku Domov (gumb »Nov projekt«).')
   })
 
   it("'Kaj naprej' vodič: aria-label + natanko 3 koraki v pravilnem vrstnem redu (R202 uskladjeni z realnostjo UI)", () => {
     const s = src()
     expect(s).toContain('aria-label="Kaj naprej"')
-    expect(s).toContain('Projekt ustvariš v zavihku Domov (gumb »Nov projekt«).')
+    // R239 (P1-a) — vlogo-nevtralna iskrna resnica (gumb = vodstvo).
+    expect(s).toContain('Projekt se ustvari v zavihku Domov (gumb »Nov projekt« — viden vodstvu).')
     expect(s).toContain('Projekt se samodejno pojavi v tem zavihku.')
     expect(s).toContain('Zajemi meritve z AR kamero ali jih dodaj ročno.')
   })

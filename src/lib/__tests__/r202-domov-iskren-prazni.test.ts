@@ -111,7 +111,10 @@ describe('R202 — Meritve uskladitev (F2): besedila brez izmišljenih vlogovih 
     const s = src()
     expect(s).toContain('Meritve se vežejo na projekt — ko je projekt ustvarjen in dodeljen tebi, se pojavi tukaj.')
     expect(s).toContain('Meritve se vežejo na projekt. Ko je projekt izbran, lahko zajameš prvo meritev.')
-    expect(s).toContain('Projekt ustvariš v zavihku Domov (gumb »Nov projekt«).')
+    // R239 (P1-a): resnica posodobljena — ustvarjanje = vodstveno dejanje,
+    // besedilo je vlogo-nevtralno in pove, KDO gumb vidi (iskrenost).
+    expect(s).toContain('Projekt se ustvari v zavihku Domov (gumb »Nov projekt« — viden vodstvu).')
+    expect(s).not.toContain('Projekt ustvariš v zavihku Domov (gumb »Nov projekt«).')
   })
 
   it("regresija R201 nedotaknjena: 'Dodaj meritev' natanko 1× + FolderX natanko 2× + testid", () => {

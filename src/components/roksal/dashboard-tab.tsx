@@ -86,7 +86,7 @@ import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'
 import { casOznaka } from '@/lib/osvezitev-fokus'
 import { buildProjektiCsv, projektiCsvFilename, projektiLabel, PROJEKTI_STATUS_LABELS } from '@/lib/projekti-csv'
 import { todayStamp } from '@/lib/csv-export'
-import { statusOptionsFor, statusOptionsHint } from '@/lib/status-options'
+import { statusOptionsFor, statusOptionsHint, isManagerRole } from '@/lib/status-options'
 
 interface Project {
   id: string
@@ -312,6 +312,12 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
   // ponuja SAMO prehode, ki jih strežnik (assertTransition) sprejme za to vlogo.
   // Neznana vloga (seja spodaj) = pot ne-vodstva (least privilege, fail-closed).
   const [myVloga, setMyVloga] = useState<string | null>(null)
+  // R239 (P1-a): ustvarjanje projekta = vodstveno dejanje (POST /api/projects
+  // → denyUnless(MANAGER_ROLES)). UI ogledalo: 'Nov projekt' viden SAMO
+  // vodstvu; neznana vloga = skrito (least privilege, fail-closed — ISTI
+  // vzorec kot myVloga zgoraj). isManagerRole = dokumentirana pariteta
+  // z MANAGER_ROLES (status-options.ts).
+  const smeUstvarjatiProjekte = isManagerRole(myVloga)
   // R166: Profile.id prijavljenega (GET /api/auth → user.id) — kartica Termini
   // z njim iskreno označi "Moja montaža" (monter.id === user.id). null → brez
   // poudarka (nikoli ugibanj, least privilege).
@@ -844,7 +850,15 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
         setNewProjectDate('')
         setNewProjectNotes('')
       } else {
-        toast.error('Napaka pri ustvarjanju projekta')
+        // R239 (P1-a) — fail-verbose: 403 iz denyUnless nosi razlog
+        // ("Za to dejanje je potrebna vloga ADMIN ali VODJA. Tvoja vloga:
+        // MONTER.") — pokažemo ga, ne zamolčimo (družina R162/R238).
+        const napaka = await res.json().catch(() => null)
+        const razlog =
+          napaka && typeof napaka === 'object' && typeof (napaka as { detail?: unknown }).detail === 'string'
+            ? (napaka as { detail: string }).detail
+            : null
+        toast.error(razlog ? `Projekt ni bil ustvarjen: ${razlog}` : 'Napaka pri ustvarjanju projekta')
       }
     } catch {
       toast.error('Napaka pri povezavi s strežnikom')
@@ -1536,15 +1550,20 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
         </div>
       )}
 
-      {/* New Project Button */}
-      <Button
-        type="button"
-        onClick={() => setNewProjectOpen(true)}
-        className="w-full bg-roksal-amber hover:bg-roksal-amber/90 text-roksal-navy h-11 shadow-sm transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98] btn-shine md:w-auto md:px-8"
-      >
-        <Plus className="mr-2 h-4 w-4" />
-        Nov projekt
-      </Button>
+      {/* R239 (P1-a) — New Project Button: viden SAMO vodstvu (isManagerRole =
+          MANAGER_ROLES pariteta s strežniškimi vrati na POST /api/projects).
+          Ne-vodstvo (in neznana vloga) gumba ne vidi — ni lažnega obljuba
+          (iskrenost), strežnik bi inače vrnil 403. */}
+      {smeUstvarjatiProjekte && (
+        <Button
+          type="button"
+          onClick={() => setNewProjectOpen(true)}
+          className="w-full bg-roksal-amber hover:bg-roksal-amber/90 text-roksal-navy h-11 shadow-sm transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98] btn-shine md:w-auto md:px-8"
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          Nov projekt
+        </Button>
+      )}
 
       {/* Equipment Status */}
       <Card className="card-hover transition-all duration-200">
@@ -1817,9 +1836,11 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
           ) : projects.length === 0 ? (
             /* R202 — iskren prazni stolpec (družina R201): Domov je vozlišče,
                kamor kažejo Fotke/Nagib/Tloris ('Izberite projekt v zavihku
-               Domov'). Vodič kaže na REALNOST UI — gumb 'Nov projekt' je zgoraj
-               in ustvarjanje je na voljo prijavljenim (POST /api/projects =
-               seja, brez vlogovih omejitev) — ni izmišljenih omejitev. */
+               Domov'). Vodič kaže na REALNOST UI. R239 (P1-a): ustvarjanje
+               je vodstveno dejanje — korak 1 je VLOGO-OSVEŠČEN: vodstvo vidi
+               gumb 'Nov projekt' (zgoraj), ne-vodstvo dobi iskren opis, da
+               projekt pripravi vodstvo (nikoli kazalec na gumb, ki ga ne
+               vidi — R161/R165 precedens: vodič ne laže o vlogah). */
             <div className="space-y-3" data-testid="domov-brez-projektov">
               <EmptyState
                 icon={FolderX}
@@ -1830,11 +1851,18 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                 className="mx-auto grid w-full max-w-[340px] gap-1.5 text-left"
                 aria-label="Kaj naprej"
               >
-                {[
-                  'Ustvari projekt z gumbom Nov projekt (zgoraj).',
-                  'Klikni projekt na seznamu — izbira velja za vsa orodja.',
-                  'Zajemi meritve, fotke ali nagibe za projekt.',
-                ].map((korak, i) => (
+                {(smeUstvarjatiProjekte
+                  ? [
+                      'Ustvari projekt z gumbom Nov projekt (zgoraj).',
+                      'Klikni projekt na seznamu — izbira velja za vsa orodja.',
+                      'Zajemi meritve, fotke ali nagibe za projekt.',
+                    ]
+                  : [
+                      'Projekt pripravi vodstvo — ko je objavljen, se pojavi na tem seznamu.',
+                      'Klikni projekt na seznamu — izbira velja za vsa orodja.',
+                      'Zajemi meritve, fotke ali nagibe za projekt.',
+                    ]
+                ).map((korak, i) => (
                   <li
                     key={korak}
                     className="flex items-start gap-2 text-[11px] text-muted-foreground"
@@ -2079,7 +2107,10 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
       )}
 
       {/* New Project Dialog */}
-      <Dialog open={newProjectOpen} onOpenChange={setNewProjectOpen}>
+      {/* R239 (P1-a): dialog odprt LE, če sme ustvarjati — obrambni AND
+          (gumb je edina pot do tega stanja, a stale seja/vloga naj ne more
+          prikazati dialoga, ki bi zagotovo končal s 403). */}
+      <Dialog open={smeUstvarjatiProjekte && newProjectOpen} onOpenChange={setNewProjectOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle className="text-roksal-ink">Nov projekt</DialogTitle>

@@ -1,11 +1,13 @@
 // Roksal Field - API: Projekti — S+9 (issue #4, §3 + §13 + §14)
 // GET: filtrirano po vlogi (MONTER vidi svoje, vodstvo/skladišče vse).
 // POST: ustvarjanje + audit v isti transakciji (brez ilegalnega userId 'system').
+//       R239 (P1-a) — ustvarjanje = vodstvena dejanja: denyUnless(MANAGER_ROLES)
+//       (ADMIN/VODJA); MONTER/SKLADISCE → 403 z razlogom, API ključ → 403.
 // PATCH: resource-level dostop + ENOTEN statusni stroj (preprečuje preskoke).
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { createProjectSchema, updateProjectSchema } from '@/lib/validations'
-import { authenticate, unauthorized } from '@/lib/auth'
+import { authenticate, unauthorized, denyUnless, MANAGER_ROLES } from '@/lib/auth'
 import {
   assertProjectAccess,
   projectWhereForPrincipal,
@@ -50,6 +52,14 @@ export async function POST(request: Request) {
   // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
   const zavrnjeno = zapisOmejitev(request, 'projects')
   if (zavrnjeno) return zavrnjeno
+
+  // R239 (P1-a) — RBAC vrata: ustvarjanje projekta je vodstvena dejanja.
+  // denyUnless: brez seje → 401; API ključ → 403 (poslovna ruta); vloga
+  // zunaj MANAGER_ROLES → 403 z razumom (fail-verbose). Dvakratna
+  // avtentikacija (tudi spodaj) je namerna — denyUnless je vrata,
+  // authenticate spodaj reši kontekst za audit (dokumentirano v auth.ts).
+  const denied = await denyUnless(request, MANAGER_ROLES)
+  if (denied) return denied
 
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
   const auth = await authenticate(request)

@@ -4259,7 +4259,11 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                 aria-label="Kaj naprej"
               >
                 {[
-                  'Projekt ustvariš v zavihku Domov (gumb »Nov projekt«).',
+                  /* R239 (P1-a): ustvarjanje = vodstveno dejanje — besedilo
+                     je vlogo-nevtralno in točno za VSE: vodstvo vidi gumb,
+                     monter ve, odkod projekti pridejo (nikoli kazalec na
+                     gumb, ki ga ne vidi — R201 iskrenost, R239 resnica). */
+                  'Projekt se ustvari v zavihku Domov (gumb »Nov projekt« — viden vodstvu).',
                   'Projekt se samodejno pojavi v tem zavihku.',
                   'Zajemi meritve z AR kamero ali jih dodaj ročno.',
                 ].map((korak, i) => (
