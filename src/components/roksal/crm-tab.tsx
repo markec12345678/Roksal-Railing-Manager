@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -42,6 +42,16 @@ import {
   koledarPovzetek,
   type KoledarPregledVnos,
 } from '@/lib/koledar-pregledov-pdf'
+// R263 — pokritost opomnikov (19. člen 'izvozi' družine): presek strank ×
+// opomniški status iz ISTEGA /api/crm odgovora — route NIČ (client+lib only);
+// EN now za žig + ime (lekcija R121/R235); ENA izpeljava = PDF KPI + tabela
+// + sklep + F2 mini-vrstica + toast (WYSIWYG).
+import {
+  buildStrankePokritostPdfDoc,
+  strankePokritostPdfFilename,
+  strankeOpomnikiPokritost,
+  type StrankaOpomnikVnos,
+} from '@/lib/stranke-pokritost-pdf'
 import {
   Users,
   Search,
@@ -161,6 +171,8 @@ export function CrmTab() {
   const [potekliVTeku, setPotekliVTeku] = useState(false)
   // R253 — dvoklik guard koledarja pregledov PDF (ISTA družina).
   const [koledarVTeku, setKoledarVTeku] = useState(false)
+  // R263 — dvoklik guard pokritosti opomnikov PDF (ISTA družina).
+  const [pokritostVTeku, setPokritostVTeku] = useState(false)
 
   // R162 — fail-verbose (isti razred kot R161 QuoteFollowUp): GET /api/crm
   // je pri neuspehu TIHO pokazal staro/prazno stanje (if (res.ok) brez else +
@@ -400,6 +412,78 @@ export function CrmTab() {
     }
   }
 
+  // R263 — ENA izpeljava vhodov za pokritostni presek (WYSIWYG ISTI vir kot
+  // PDF KPI, tabela, sklep, F2 mini-vrstica IN toast): DTO pruning iz ISTEGA
+  // state-a, ki ga loadCustomers ŽE napolni — NIČ nove mreže. opomnikStatus
+  // VERBATIM iz API-ja (⚠️ opomnikDatum > 7 dni v prihodnje ostane 'NI' —
+  // ruta ne izračuna AKTIVEN za oddaljene datume; lib NE trdi nobene
+  // invariante o datumu). PRAZEN seznam → null (iskrena nič-podatkov resnica
+  // — memo NE sme padeti med nalaganjem; lib fail-closed zavrže prazno).
+  const pokritostVhodi = useMemo(() => {
+    const vhodi: StrankaOpomnikVnos[] = customers.map((c) => ({
+      id: c.id,
+      ime: c.ime,
+      naslov: c.naslov,
+      status: c.status,
+      kategorija: c.kategorija,
+      telefon: c.telefon,
+      zadnjiKontakt: c.zadnjiKontakt,
+      ltv: c.ltv,
+      opomnikStatus: c.opomnikStatus,
+    }))
+    return vhodi
+  }, [customers])
+  const pokritostPovzetek = useMemo(
+    () => (customers.length > 0 ? strankeOpomnikiPokritost(pokritostVhodi).povzetek : null),
+    [customers.length, pokritostVhodi],
+  )
+
+  // R263 — STRANKE — OPOMNIŠKA POKRITOST PDF (19. člen 'izvozi' družine):
+  // presek strank × opomniški status iz ISTEGA /api/crm odgovora. ENA resnica
+  // v libu: vrstica = slepa pika (opomnikStatus 'NI', NE-arhivirana —
+  // arhivirana = zaprt primer, poimenovan števec); pokritost % =
+  // zOpomnikom / strankN × 100 (VEDNO definiran — strankN ≥ 1); sort LTV
+  // DESC (najvrednejše prve — akcijski red). Fail-closed: 0 strank ALI 0
+  // slepih pik → iskren toast (obe veji, R256 lekcija 4); TypeError → viden
+  // razlog. EN now za žig IN ime (lekcija R121/R235). Bralni dokument —
+  // brez dodatnega pravicnega gate (P1-k precedens; isti vir kot pregled).
+  const handlePokritostPdf = () => {
+    if (pokritostVTeku) return
+    if (customers.length === 0) {
+      // Fail-closed jedro: brez strank ni pokritosti — iskren toast.
+      toast({ title: 'Ni strank v CRM', description: 'PDF se izvozi, ko je dodana prva stranka.' })
+      return
+    }
+    if (pokritostPovzetek !== null && pokritostPovzetek.brezN === 0) {
+      // Fail-closed jedro: dokument brez vrstic ne nastaja (družinsko
+      // pravilo) — iskren pozitiven toast (pokritost 100 % je DOBRA novica).
+      toast({ title: 'Vse stranke imajo vpisan opomnik', description: 'PDF se izvozi, ko ostane kaka stranka brez vpisanega pregleda.' })
+      return
+    }
+    setPokritostVTeku(true)
+    try {
+      const now = new Date()
+      const doc = buildStrankePokritostPdfDoc(pokritostVhodi, { now })
+      doc.save(strankePokritostPdfFilename(now))
+      // Toast pove REALNO agregatno resnico (ISTA izpeljava
+      // strankeOpomnikiPokritost kot PDF KPI IN mini-vrstica — WYSIWYG).
+      const { povzetek } = strankeOpomnikiPokritost(pokritostVhodi)
+      toast({
+        title: 'Pokritost opomnikov prenešena v PDF',
+        description: `Stranke-opomniska-pokritost-…pdf — ${povzetek.brezN === 1 ? '1 stranka' : `${povzetek.brezN} strank`} brez vpisanega opomnika, pokritost ${povzetek.pokritostNiz} %, poteklih ${povzetek.potekliN}.`,
+      })
+    } catch (err) {
+      if (err instanceof TypeError) {
+        // fail-closed jedro: pokvaren vnos → viden razlog (nič izmišljenega dokumenta)
+        toast({ title: 'Pokritost opomnikov PDF ni mogoče sestaviti iz teh podatkov', description: err instanceof Error ? err.message : String(err), variant: 'destructive' })
+      } else {
+        toast({ title: `Izvoz PDF ni uspel: ${err instanceof Error ? err.message : String(err)}`, variant: 'destructive' })
+      }
+    } finally {
+      setPokritostVTeku(false)
+    }
+  }
+
   // R159 — CSV izvoz seznama strank (podatkovni izvoz za Excel/mail-merge;
   // logika v src/lib/crm-csv.ts — deterministično, testirljivo, fail-closed).
   // Izvozi točno to, kar uporabnik vidi: upošteva iskanje + statusni filter.
@@ -545,6 +629,25 @@ export function CrmTab() {
         </div>
       )}
 
+      {/* R263 — F2 pokritostna mini-vrstica (WYSIWYG ISTA izpeljava
+          strankeOpomnikiPokritost kot PDF KPI + sklep + toast — ENA izpeljava,
+          ≥ 2 klici test dokaz); kondicionalni žig = R256 lekcija 4: ŽIVO samo
+          kadar ostane slepa pika, sicer skrit — OBE veji iskreni; žetoni
+          roksal-red/green — 0 novih hex. */}
+      {pokritostPovzetek && (
+        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+          <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${pokritostPovzetek.brezN > 0 ? 'bg-roksal-red' : 'bg-roksal-green'}`} />
+          <span>
+            Pokritost opomnikov: {pokritostPovzetek.brezN} od {pokritostPovzetek.strankN} strank brez vpisanega opomnika · pokritost {pokritostPovzetek.pokritostNiz} %
+          </span>
+          {pokritostPovzetek.brezN > 0 && (
+            <span className="rounded-full border border-roksal-red/40 bg-roksal-red/10 px-2 py-0.5 text-2xs font-medium text-roksal-red">
+              {pokritostPovzetek.brezN} brez vpisanega opomnika
+            </span>
+          )}
+        </div>
+      )}
+
       {/* R178 — glava seznama strank s pečatom svežine (družina R170/R171/R177):
           tab 'CRM stranke' je sklad kart — ta naslov jasno loči seznam strank
           od zgornjih kart (plošča/follow-up/računi) in nosi pečat svežine. */}
@@ -638,6 +741,24 @@ export function CrmTab() {
               <CalendarDays className="h-3 w-3" aria-hidden="true" />
               Koledar
             </Button>
+            {/* R263 — pokritost opomnikov PDF (19. člen 'izvozi' družine):
+                presek strank × opomniški status iz ISTEGA /api/crm odgovora.
+                Bralni dokument VEDNO viden (P1-k precedens); fail-closed
+                toast pri 0 strank / 0 slepih pik. ISTI žetoni kot ostali
+                pilli — 0 novih hex. */}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handlePokritostPdf}
+              disabled={pokritostVTeku}
+              className="h-7 shrink-0 gap-1.5 text-[11px] press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              aria-label="Izvozi pokritost opomnikov kot PDF"
+              title="Pokritost opomnikov kot PDF (slepe pike — najvrednejše prve)"
+            >
+              <Bell className="h-3 w-3" aria-hidden="true" />
+              Pokritost
+            </Button>
           </div>
         </ScrollArea>
         {/* R252 — legenda izvozne skupine (pili povejo svojo resnico; žetoni,
@@ -645,7 +766,7 @@ export function CrmTab() {
             Imenuje ISTO izpeljavo kot PDF KPI IN '(X poteklo)' na stats —
             ENA resnica na treh mestih. */}
         <p className="text-right text-2xs text-muted-foreground">
-          CSV = prikazani seznam · PDF = potekli opomniki (akcija) · Potekel = prek datuma · Koledar = vsi vpisani pregledi (časovna vrsta)
+          CSV = prikazani seznam · PDF = potekli opomniki (akcija) · Potekel = prek datuma · Koledar = vsi vpisani pregledi (časovna vrsta) · Pokritost = stranke × opomnikStatus (slepe pike = brez datuma)
         </p>
       </div>
 
