@@ -108,3 +108,14 @@ eb_pocakaj_tekst() {
   local tekst="$1" maks="${2:-10}"
   eb_pocakaj_na "(()=>{return document.body.textContent.includes('$tekst');})()" "$maks"
 }
+
+# R235 (P1-d) — zajem PDF izvoza na BAJTNI ravni: patcha URL.createObjectURL,
+# blob prebere arrayBuffer → Uint8Array → base64 v window.__<varname>.
+# RAZLIKA proti eb_csv_capture (Response.text() — zadosten za tekstovne CSV,
+# IZGUBLJA/pokvari bajte za BINARNE datoteke): ta helper zajame byte-exact
+# (E2E potem dekodira atob() → %PDF magija [37,80,68,70,45] + dolžina).
+# Uporaba:  eb_zajem_pdf pdf   → kasneje window.__pdf (base64 niz)
+eb_zajem_pdf() {
+  local varname="$1"
+  agent-browser eval "(()=>{const orig=URL.createObjectURL.bind(URL); URL.createObjectURL=function(b){ b.arrayBuffer().then(buf=>{ const u=new Uint8Array(buf); let s=''; const K=8192; for(let i=0;i<u.length;i+=K){ s+=String.fromCharCode.apply(null,u.subarray(i,Math.min(i+K,u.length))); } window.__$varname=btoa(s); }); return orig(b); }; return 'patched';})()" 2>&1 | tail -1
+}

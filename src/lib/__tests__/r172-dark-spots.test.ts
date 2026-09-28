@@ -66,7 +66,9 @@ const PRIMERI = [
   // vsebinski vrstici — precedens R180/R229/R232).
   // R234: 698→700 (statusZnackaCls nevtralna veja → žetoni +2 komentar;
   // ogledalo ŠE VEDNO na ISTI vsebinski vrstici — precedens R180/R229/R232).
-  stražar('src/components/roksal/material-intelligence-tab.tsx', 700, 'bg-green-50', 'dark:bg-green-950/40'),
+  // R235: 700→733 (uvoz narocilnica-pdf +7, FileText +1, handler
+  // prenesiNarocilnicoPdf +25; ogledalo ŠE VEDNO na ISTI vsebinski vrstici).
+  stražar('src/components/roksal/material-intelligence-tab.tsx', 733, 'bg-green-50', 'dark:bg-green-950/40'),
   // roksal-catalog — steklo tint (vzorec Inox fix R171)
   // R203: 193→228 (fail-verbose fetchProfili + trojna veja +35).
   // R229: 228→232 (Inox chip žetoni komentar +3 — precedens R180/R203).
@@ -80,7 +82,7 @@ const PRIMERI = [
   // flex-wrap vrstica; ogledalo na ISTI vsebinski vrstici, precedens R180/R182.
   // R186: +37 vrstic — uvoz izvoza CSV + handler izvoziMeritveCsv + gumb CSV;
   // ogledalo na ISTI vsebinski vrstici, precedens R180/R182/R183)
-  stražar('src/components/roksal/measurements-tab.tsx', 6559, 'hover:border-cyan-300', 'dark:hover:border-cyan-700'), // R201: 6452→6510; R203: 6510→6556 (povzetek gumb + handler +46); R234: 6556→6559 (statusColors + filtri čipi nevtralne veje → žetoni +3)
+  stražar('src/components/roksal/measurements-tab.tsx', 6561, 'hover:border-cyan-300', 'dark:hover:border-cyan-700'), // R201: 6452→6510; R203: 6510→6556 (povzetek gumb + handler +46); R234: 6556→6559 (statusColors + filtri čipi nevtralne veje → žetoni +3); R235: 6559→6561 (status števca UI površine gray → žetoni +2)
 ]
 
 describe('R172 dark-spot stražar — vsak svetli barvni žeton ima dark: ogledalo na ISTI vrstici', () => {

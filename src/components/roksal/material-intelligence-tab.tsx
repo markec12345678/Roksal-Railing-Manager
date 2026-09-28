@@ -25,6 +25,13 @@ import {
   buildNarocilnicaIzNarocila,
   narociloPostavkaBeseda,
 } from '@/lib/zaloga-povzetek'
+// R235 (P1-c) — NAROČILNICA PDF iz naročila (pravi PDF brat tekstovne
+// naročilnice R206 — isti vir postavk, delegirana fail-closed validacija,
+// bajtni determinizem; ISTI PDF pill družina kot Zaloga PDF R234).
+import {
+  buildNarocilnicaPdfDoc,
+  narocilnicaPdfFilename,
+} from '@/lib/narocilnica-pdf'
 import {
   Package,
   TrendingUp,
@@ -43,6 +50,7 @@ import {
   ClipboardList,
   XCircle,
   History,
+  FileText,
 } from 'lucide-react'
 
 interface Supplier {
@@ -562,6 +570,31 @@ export function MaterialIntelligenceTab({
     }
   }
 
+  // R235 (P1-c) — NAROČILNICA PDF (pravi dokument za prilogo dobavitelju).
+  // ENA resnica: isti vhod kot kopirana naročilnica R206 (order — postavke,
+  // dobavitelj, opombe); determinizem: EN `now` za dokument IN ime datoteke
+  // (dva klica new Date() bi razdala žig in ime — lekcija R121/R234).
+  // Fail-verbose: TypeError (pokvarjeno naročilo — delegirana validacija) →
+  // viden razlog; ostalo → 'Prenos PDF ni uspel: {razlog}' (R234 družina).
+  const prenesiNarocilnicoPdf = async (order: MaterialOrder) => {
+    try {
+      const now = new Date()
+      const doc = buildNarocilnicaPdfDoc(order, { now })
+      doc.save(narocilnicaPdfFilename(order, now))
+      toast({
+        title: `Naročilnica (${order.supplier.naziv}) prenesena v PDF`,
+        description: `${order.items.length} ${narociloPostavkaBeseda(order.items.length)} — prava priloga za dobavitelja.`,
+      })
+    } catch (err) {
+      if (err instanceof TypeError) {
+        // fail-closed jedro: pokvarjeno naročilo → viden razlog (nič izmišljenega dokumenta)
+        toast({ title: 'Naročilnice PDF ni mogoče sestaviti iz tega naročila', description: err.message, variant: 'destructive' })
+      } else {
+        toast({ title: `Prenos PDF ni uspel: ${err instanceof Error ? err.message : String(err)}`, variant: 'destructive' })
+      }
+    }
+  }
+
   // R140 — izvoz naročil v CSV (pisarniški pregled). R231 — podaja IZRECNO
   // danasZamude (polnoč, ISTI dan kot badge — ENA resnica za zaslon IN izvoz).
   // R232 — gumb je VEDNO viden (družina vodja-CSV R228: izvozni gumb ne skriva
@@ -928,6 +961,21 @@ export function MaterialIntelligenceTab({
                         >
                           <ClipboardList className="h-3 w-3" aria-hidden="true" />
                           Naročilnica
+                        </Button>
+                        {/* R235 (P1-c) — PDF pill: prava datoteka za prilogo
+                            (odložišče R206 ostane za e-pošto/SMS tekst); ISTI
+                            outline pill družina + a11y (aria + title). */}
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="h-6 gap-1 text-[10px] focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
+                          onClick={() => void prenesiNarocilnicoPdf(order)}
+                          aria-label={`Prenesi naročilnico naročila pri ${order.supplier.naziv} kot PDF`}
+                          title="Naročilnica kot pravi PDF za dobavitelja — determinističen dokument iz postavk"
+                        >
+                          <FileText className="h-3 w-3" aria-hidden="true" />
+                          PDF
                         </Button>
                         {/* R209 — zgodovina prehodov: pravi aria-expanded
                             preklopnik; odpiranje vedno prinese sveže dogodke

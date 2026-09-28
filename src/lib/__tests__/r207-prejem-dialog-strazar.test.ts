@@ -138,8 +138,8 @@ describe('R207 stražar: iskren alreadyReceived + opis DOBLJENO toasta', () => {
 describe('R207 stražar: lucide pin + struktura', () => {
   it('R177 lucide pin ostaja (ClipboardList pred History) — R208: XCircle tudi pred History', () => {
     const src = beri('src/components/roksal/material-intelligence-tab.tsx')
-    expect(src).toContain("  XCircle,\n  History,\n} from 'lucide-react'")
-    expect(src.indexOf('ClipboardList')).toBeLessThan(src.indexOf('  History,\n}'))
+    expect(src).toContain("  XCircle,\n  History,\n  FileText,\n} from 'lucide-react'") // R235: FileText (PDF pill) za History — pin nadgrajen na nov rep
+    expect(src.indexOf('ClipboardList')).toBeLessThan(src.indexOf('  History,\n  FileText,'))
   })
 
   it('dialog uporablja OBSTOJEČE ikone (Package/Loader2/CheckCircle2/AlertTriangle) — brez novih uvozov', () => {

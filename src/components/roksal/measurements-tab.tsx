@@ -4090,7 +4090,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   <span
                     className={`inline-flex items-center rounded px-1 py-0 text-[8px] font-medium border ${
                       groundTypeColors[m.tipPodlage as GroundType] ||
-                      'bg-gray-50 dark:bg-gray-950/40 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-800'
+                      'bg-muted text-muted-foreground border-border'
                     }`}
                   >
                     {groundTypeLabels[m.tipPodlage as GroundType] || m.tipPodlage}
@@ -4498,20 +4498,22 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               <p className="text-sm font-bold text-roksal-ink">{formatM2(totalArea)}</p>
             </div>
           </div>
-          {/* P1 — števci statusov */}
+          {/* P1 — števci statusov (R235 P1-f: UI površine gray → žetoni — en
+              razred obe temi, 0 novih hex; 'Potrjene' ostane semantična zelena;
+              ARHIVIRANA line-through = semantika arhiva, R234 pravilo) */}
           <Separator className="my-2.5" />
           <div className="grid grid-cols-3 gap-2">
-            <div className="rounded-lg bg-gray-50 dark:bg-gray-950/40 border border-gray-200 dark:border-gray-800 p-2 text-center">
-              <p className="text-[9px] text-gray-500 dark:text-gray-400 uppercase tracking-wide">Osnutki</p>
-              <p className="text-sm font-bold text-gray-600 dark:text-gray-400">{statusCounts.OSNUTEK}</p>
+            <div className="rounded-lg bg-muted border border-border p-2 text-center">
+              <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Osnutki</p>
+              <p className="text-sm font-bold text-muted-foreground">{statusCounts.OSNUTEK}</p>
             </div>
             <div className="rounded-lg bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800 p-2 text-center">
               <p className="text-[9px] text-green-600 dark:text-green-400 uppercase tracking-wide">Potrjene</p>
               <p className="text-sm font-bold text-green-700 dark:text-green-300">{statusCounts.POTRJENA}</p>
             </div>
-            <div className="rounded-lg bg-gray-50 dark:bg-gray-950/40 border border-gray-200 dark:border-gray-800 p-2 text-center">
-              <p className="text-[9px] text-gray-400 uppercase tracking-wide">Arhivirane</p>
-              <p className="text-sm font-bold text-gray-400 line-through">{statusCounts.ARHIVIRANA}</p>
+            <div className="rounded-lg bg-muted border border-border p-2 text-center">
+              <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Arhivirane</p>
+              <p className="text-sm font-bold text-muted-foreground line-through">{statusCounts.ARHIVIRANA}</p>
             </div>
           </div>
         </CardContent>
@@ -5219,7 +5221,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                           ? 'border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 animate-pulse'
                           : voiceSupported
                             ? 'border-roksal-navy/20 dark:border-roksal-ink/20 bg-roksal-navy/5 text-roksal-ink hover:bg-roksal-navy/10'
-                            : 'border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950/40 text-gray-400 cursor-not-allowed'
+                            : 'border-border bg-muted text-muted-foreground cursor-not-allowed'
                       }`}
                     >
                       <Mic className="h-3 w-3" />
