@@ -39,6 +39,7 @@ import {
   buildDobaviteljiPdfDoc,
   dobaviteljiPdfFilename,
   dobaviteljBeseda,
+  dobaviteljiRokPovzetek,
 } from '@/lib/dobavitelji-pdf'
 // R257 (P1-f, 'izvozi' družina — 13. člen) — NAROČILA PREGLED PDF (ločen
 // agregatni dokument od CSV R140/R232: ENA vrstica per NAROČILO; vir = ISTI
@@ -922,9 +923,13 @@ export function MaterialIntelligenceTab({
       const now = new Date()
       const doc = buildDobaviteljiPdfDoc(suppliers, { now })
       doc.save(dobaviteljiPdfFilename(now))
+      // R259 — toast nosi agregatno resnico dobavnega roka (ENA izpeljava
+      // dobaviteljiRokPovzetek; SI zapis z vejico — R248 lekcija ',' ločilo:
+      // zaslon sporoča v jeziku uporabnika, dokument v dokumentnem zapisu).
+      const roki = dobaviteljiRokPovzetek(suppliers)
       toast({
         title: `Izvoženih ${suppliers.length} ${dobaviteljBeseda(suppliers.length)} v PDF`,
-        description: 'Dobavitelji-…pdf — arhivski pregled kontaktnih in sodelovalnih podatkov.',
+        description: `Dobavitelji-…pdf — arhivski pregled kontaktnih in sodelovalnih podatkov, povprečni dobavni rok ${roki.povprecni.toFixed(1).replace('.', ',')} dni, najhitrejši ${roki.najhitrejsi} dni (${roki.najhitrejsiNaziv}).`,
       })
     } catch (err) {
       if (err instanceof TypeError) {
@@ -1636,6 +1641,15 @@ export function MaterialIntelligenceTab({
               PDF
             </Button>
           </div>
+          {/* R259 (F2 stil) — legenda izvozne skupine (želona pariteta
+              R256/R257/R258: vsak dokument pove svojo resnico; CSV = vrstica
+              per dobavitelj, PDF = arhivski pregled z agregatom roka). */}
+          <p
+            className="text-right text-2xs text-muted-foreground"
+            aria-label="Legenda izvoza dobaviteljev"
+          >
+            CSV = vrstica per dobavitelj · PDF = arhivski pregled z povprečnim in najhitrejšim dobavnim rokom
+          </p>
           {/* R243 — wave 5 RBAC ogledalo: CTA 'Nov dobavitelj' je VIDEN samo
               vlogi s pravico catalog.manage (API POST /api/suppliers). Med
               nalaganjem pravic in ob napaki skrit (fail-closed, R242 vzorec);

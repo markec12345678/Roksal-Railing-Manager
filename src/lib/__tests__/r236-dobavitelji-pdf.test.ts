@@ -202,7 +202,10 @@ describe('R236 — ENA resnica: PDF tabela = ISTI prerez kot CSV R233 (WYSIWYG)'
   it('števci String (celo števila so celo števila — CSV R233 lekcija), popust ostane brez formatiranja', () => {
     expect(lib).toContain('String(s.dobavniRok)')
     expect(lib).toContain('String(s.popust)')
-    expect(lib).not.toContain('.toFixed')
+    // R259 pin shift: nadgradna dobi povprečni rok toFixed(1) (izpeljano
+    // razmerje, dobičkonost R258 vzorec) — NEZELJENO ostane računovodska
+    // dvo decimalna (zneski EUR nimajo mesta v dobaviteljskem dokumentu).
+    expect(lib).not.toContain('.toFixed(2)')
   })
 
   it('KPI računana IZ obveznih polj (skupaj/aktivni/neaktivni) — cen/naročil NISO KPI (manjkajoči bi lažno učinkoval kot 0)', () => {

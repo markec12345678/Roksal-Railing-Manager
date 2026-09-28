@@ -4,6 +4,27 @@
 // brat (vzorec zaloga-pdf R234 / naročilnica-pdf R235: ROKSAL glava, KPI,
 // autoTable, noge, bajtni determinizem).
 //
+// R259 (P1-f nadgradna, 'izvozi' družina) — DOBAVNI ROK POVZETEK: KPI 3 → 5
+// škatel (+ Povprečni rok AMBER / + Najhitrejši GREEN — ISTI signalni jezik
+// kot naročila-pregled R257: AMBER = atribut, GREEN = pozitivna
+// izpostavljenost), agregatna resnica iz ISTEGA DTO (EN vir = ISTI
+// dobavitelji vhod, NIČ nove mreže, NIČ dvojnih seznamov):
+//  • ENA izpeljava `dobaviteljiRokPovzetek` = KPI + tabela WYSIWYG + sklep
+//    (in komponentni toast) — ni izračuna drugje;
+//  • najhitrejši/najpočasnejši = STROG primerjavi (< / >), izenačba = naziv
+//    ASC (code-unit <, R257 lekcija — brez locale APIjev; rezultat f(MNOŽICA),
+//    ne f(vrstnega reda odgovora) — R258 lekcija 1);
+//  • povprečni = Σ dobavniRok / n — n ≥ 1 je vgrajena resnica (prazen
+//    seznam fail-closed), zato je povprečje VEDNO definirano (NIKOLI '—');
+//    dokument prikazuje 1 decimalno mesto (računovodska natančnost
+//    izpeljanih razmerij, dobičkonost R258 toFixed(1) % vzorec);
+//  • tabela WYSIWYG: vsak dobavitelj z MIN dobavnim rokom zeleno bold (če
+//    več nosilcev min vrednosti, so VSI vidno izpostavljeni — to je resnica
+//    izenačbe; MNOŽIČNI nosilec se ne izmišljuje).
+// fileId seed se NI spremenil (R236 kontrakt: naziv/aktivna/dobavniRok/
+// popust) — enak vhod še vedno = bajtno enak dokument; KPI/sklep so
+// izpeljane resnice ISTEGA vhoda.
+//
 // ENA RESNICA z zaslonom in CSV (WYSIWYG — brat iz ISTEGA vira):
 //  • stolpci tabele = TOČNO ISTI prerez kot CSV R233 (Naziv, Status, Kontakt,
 //    Telefon, Email, Dobavni rok (dni), Popust (%), Št. cen, Št. naročil);
@@ -57,6 +78,57 @@ export interface DobaviteljPdfVnos {
   dobavniRok: number
   popust: number
   _count?: { materialPrices?: number; orders?: number }
+}
+
+/** Izpeljana resnica dobavnega roka — ENA izpeljava za KPI + tabela WYSIWYG
+ *  + sklep + komponentni toast (dobičkonost R258 vzorec ENA izpeljava).
+ *  Izenačba: naziv ASC (code-unit < — f(MNOŽICA), R257 vzorec). */
+export interface DobaviteljiRokPovzetek {
+  povprecni: number
+  najhitrejsi: number
+  najpocasnejsi: number
+  najhitrejsiNaziv: string
+  najpocasnejsiNaziv: string
+}
+
+/** Agregatna resnica dobavnega roka iz ISTEGA DTO — fail-closed na praznem
+ *  seznamu (družinsko pravilo: ni dokumenta, komponenta pokaže iskren toast).
+ *  Povprečje je VEDNO definirano (n ≥ 1 po fail-closed) — NIKOLI izmišljen
+ *  '—' ali 0. */
+export function dobaviteljiRokPovzetek(
+  dobavitelji: readonly DobaviteljPdfVnos[],
+): DobaviteljiRokPovzetek {
+  if (!Array.isArray(dobavitelji) || dobavitelji.length === 0) {
+    throw new TypeError(
+      'dobaviteljiRokPovzetek: prazen seznam ne nastaja dokumenta — komponenta pokaže iskren toast (Ni dobaviteljev za izvoz.)',
+    )
+  }
+  let vsota = 0
+  let najhitrejsi = dobavitelji[0].dobavniRok
+  let najpocasnejsi = dobavitelji[0].dobavniRok
+  let najhitrejsiNaziv = dobavitelji[0].naziv.trim()
+  let najpocasnejsiNaziv = dobavitelji[0].naziv.trim()
+  for (const s of dobavitelji) {
+    vsota += s.dobavniRok
+    const naziv = s.naziv.trim()
+    // STROG primerjavi + izenačba po nazivu (code-unit < — R257 lekcija:
+    // brez locale APIjev, rezultat f(MNOŽICA) NE f(vrstnega reda odgovora)).
+    if (s.dobavniRok < najhitrejsi || (s.dobavniRok === najhitrejsi && naziv < najhitrejsiNaziv)) {
+      najhitrejsi = s.dobavniRok
+      najhitrejsiNaziv = naziv
+    }
+    if (s.dobavniRok > najpocasnejsi || (s.dobavniRok === najpocasnejsi && naziv < najpocasnejsiNaziv)) {
+      najpocasnejsi = s.dobavniRok
+      najpocasnejsiNaziv = naziv
+    }
+  }
+  return {
+    povprecni: vsota / dobavitelji.length,
+    najhitrejsi,
+    najpocasnejsi,
+    najhitrejsiNaziv,
+    najpocasnejsiNaziv,
+  }
 }
 
 export interface DobaviteljiPdfOptions {
@@ -208,6 +280,8 @@ export function buildDobaviteljiPdfDoc(
   // KPI se RAČUNAJO iz obveznih polj (notranja skladnost — glej glavo liba).
   const aktivnih = dobavitelji.filter((s) => s.aktivna).length
   const neaktivnih = dobavitelji.length - aktivnih
+  // R259 — ENA izpeljava dobavnega roka (KPI + tabela WYSIWYG + sklep).
+  const povzetek = dobaviteljiRokPovzetek(dobavitelji)
 
   const doc = new jsPDF()
   registerSloPdfFonts(doc)
@@ -246,12 +320,16 @@ export function buildDobaviteljiPdfDoc(
   // ---------- KPI povzetek (izračun iz vrstic — notranja skladnost) ----------
   let y = 33
   y = sectionTitle(doc, y, 'Povzetek dobaviteljev')
-  const bw = 42
+  // R259: 5 škatel — širina 42 → 33 (ISTA razporeditev kot naročila-pregled
+  // R257: 5 × 33 + 4 × 4 = 181 mm znotraj 196 − 14 pisarniškega roba).
+  const bw = 33
   const bh = 16
   const gap = 4
   kpiBox(doc, 14, y, bw, bh, 'Dobavitelji', String(dobavitelji.length), NAVY)
   kpiBox(doc, 14 + bw + gap, y, bw, bh, 'Aktivni', String(aktivnih), aktivnih > 0 ? GREEN : NAVY)
   kpiBox(doc, 14 + 2 * (bw + gap), y, bw, bh, 'Neaktivni', String(neaktivnih), NAVY)
+  kpiBox(doc, 14 + 3 * (bw + gap), y, bw, bh, 'Povprečni rok', `${povzetek.povprecni.toFixed(1)} dni`, AMBER)
+  kpiBox(doc, 14 + 4 * (bw + gap), y, bw, bh, 'Najhitrejši', `${povzetek.najhitrejsi} dni`, GREEN)
   y += bh + 8
 
   // ---------- tabela dobaviteljev (ENA resnica = stolpci CSV R233) ----------
@@ -290,6 +368,15 @@ export function buildDobaviteljiPdfDoc(
           data.cell.styles.textColor = GRAY
         }
       }
+      // R259 WYSIWYG najhitrejši: vsak nosilec MIN dobavnega roka zeleno bold
+      // (ISTI pomen kot KPI 'Najhitrejši' — izenačba = VSI nosilci resnice
+      // izpostavljeni, ni izmišljenega ednina nosilca).
+      if (data.section === 'body' && data.column.index === 5) {
+        if (data.cell.raw === String(povzetek.najhitrejsi)) {
+          data.cell.styles.textColor = GREEN
+          data.cell.styles.fontStyle = 'bold'
+        }
+      }
     },
   })
   y = (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? y
@@ -303,11 +390,15 @@ export function buildDobaviteljiPdfDoc(
   doc.setFont('Roboto', 'normal')
   doc.setFontSize(8.5)
   doc.setTextColor(...NAVY)
-  doc.text(
-    `${dobavitelji.length} ${dobaviteljBeseda(dobavitelji.length)} · aktivnih ${aktivnih} · neaktivnih ${neaktivnih}.`,
-    14,
-    y + 4,
-  )
+  // R259 — sklep nosi agregatno resnico dobavnega roka (povprečje 1 decimalno
+  // mesto — točka, dokumentni zapis; najhitrejši z imenom nosilca).
+  const sklepVrstice = doc.splitTextToSize(
+    `${dobavitelji.length} ${dobaviteljBeseda(dobavitelji.length)} · aktivnih ${aktivnih} · neaktivnih ${neaktivnih} · povprečni dobavni rok ${povzetek.povprecni.toFixed(1)} dni · najhitrejši ${povzetek.najhitrejsi} dni (${povzetek.najhitrejsiNaziv}).`,
+    182,
+  ) as string[]
+  sklepVrstice.forEach((vrstica, i) => {
+    doc.text(vrstica, 14, y + 4 + i * 4)
+  })
 
   // ---------- noge na vseh straneh (ISTI vzorec kot boss-report družina) ----------
   const strani = doc.getNumberOfPages()
