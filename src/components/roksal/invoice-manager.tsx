@@ -57,6 +57,12 @@ import {
   History,
 } from 'lucide-react'
 import { downloadCsv, todayStamp } from '@/lib/csv-export'
+import {
+  buildPrihodkiPdfDoc,
+  prihodkiPdfFilename,
+  prihodkiPovzetek,
+  type PrihodkiPdfVnos,
+} from '@/lib/prihodki-pdf'
 
 // ---------- tipi ----------
 
@@ -231,6 +237,7 @@ export function InvoiceManager() {
 
   // Nov račun dialog
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [prihodkiVTeku, setPrihodkiVTeku] = useState(false)
   const [saving, setSaving] = useState(false)
   const [formProject, setFormProject] = useState<string>('')
   const [formTip, setFormTip] = useState<Invoice['tip']>('RACUN')
@@ -349,6 +356,55 @@ export function InvoiceManager() {
   }, [formPostavke])
 
   // ---------- povzetek ----------
+  // R250 — prihodki PDF (7. člen 'izvozi' družine): agregatna resnica za
+  // vodstvo iz ISTEGA odgovora /api/invoices (route NIČ). Bralni dokument —
+  // brez pravice gate (P1-k precedens; vsi, ki vidijo Račune, nosijo
+  // invoices.read). Determinizem: EN now za žig, ime IN zapadlost.
+  const handlePrihodkiPdf = () => {
+    if (prihodkiVTeku) return
+    setPrihodkiVTeku(true)
+    try {
+      if (invoices.length === 0) {
+        toast({ title: 'Ni računov za prihodke', description: 'PDF se izvozi, ko je vpisan prvi račun.' })
+        return
+      }
+      const now = new Date()
+      const vnosi: PrihodkiPdfVnos[] = invoices.map((inv) => ({
+        stevilka: inv.stevilka,
+        tip: inv.tip,
+        status: inv.status,
+        datumIzdaje: inv.datumIzdaje,
+        rokPlacilaDni: inv.rokPlacilaDni,
+        placanoAt: inv.placanoAt,
+        znesek: inv.znesek,
+        // Snapshot kupca, sicer ime stranke projekta, sicer iskren vezaj
+        // (prikazna resnica — NIČ izmišljenega; lib fail-closed preveri
+        // strukturo vrstic, kupec je prikazna resnica per račun).
+        kupec: inv.kupec?.trim() || inv.project?.customer?.ime?.trim() || '—',
+        projekt: inv.project?.nazivProjekta?.trim() || '—',
+      }))
+      const doc = buildPrihodkiPdfDoc(vnosi, { now })
+      doc.save(prihodkiPdfFilename(now))
+      // Toast pove REALNO agregatno resnico (ISTI trikot kot PDF KPI IN
+      // Povzetek boxi na zaslonu — WYSIWYG; ',' ločilo — minifier ubeži '·'
+      // v template literalih, R248 lekcija).
+      const pov = prihodkiPovzetek(vnosi, now)
+      toast({
+        title: 'Prihodki prenešeni v PDF',
+        description: `Prihodki-…pdf — plačano ${pov.placano.toFixed(2)} €, odprto ${pov.odprto.toFixed(2)} €, zapadlo ${pov.zapadlo.toFixed(2)} € (${pov.zapadloN} prek roka).`,
+      })
+    } catch (err) {
+      if (err instanceof TypeError) {
+        // fail-closed jedro: pokvaren vnos → viden razlog (nič izmišljenega dokumenta)
+        toast({ title: 'Prihodki PDF ni mogoče sestaviti iz teh podatkov', description: err instanceof Error ? err.message : String(err), variant: 'destructive' })
+      } else {
+        toast({ title: `Izvoz PDF ni uspel: ${err instanceof Error ? err.message : String(err)}`, variant: 'destructive' })
+      }
+    } finally {
+      setPrihodkiVTeku(false)
+    }
+  }
+
   const summary = useMemo(() => {
     let izdano = 0
     let placano = 0
@@ -929,6 +985,22 @@ export function InvoiceManager() {
               <Download className="h-3.5 w-3.5" />
               CSV
             </Button>
+            {/* R250 — prihodki PDF (7. člen 'izvozi' družine): agregatna
+                resnica za vodstvo (plačano/odprto/zapadlo — ISTI trikot kot
+                Povzetek boxi spodaj). Bralni dokument VEDNO viden (P1-k
+                precedens); fail-closed toast pri 0 računov. */}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handlePrihodkiPdf}
+              disabled={prihodkiVTeku}
+              className="h-8 gap-1.5 px-2.5 text-[11px] font-medium press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
+              aria-label="Izvozi prihodke kot PDF"
+              title="Prihodki, terjatve in zapadli računi kot pravi PDF — povzetek za vodstvo"
+            >
+              <FileDown className="h-3.5 w-3.5" />
+              PDF
+            </Button>
             {/* R241: gumb viden SAMO nosilcu invoices.create — API bi sicer
                 vrnil 403 (R239 ogledalo: nikoli gumb, ki ga pravica ne nosi). */}
             {lahkoUstvarja && (
@@ -953,6 +1025,13 @@ export function InvoiceManager() {
             (pravice invoices.create / invoices.issue / invoices.cancel) izvaja vodstvo.
           </p>
         )}
+        {/* R250 — legenda izvozne skupine (pili povejo svojo resnico;
+            žetoni, 0 novih hex; JSX tekst ohrani '·' dobesedno — r248
+            lekcija). Imenuje ISTO izpeljavo kot Povzetek boxi IN PDF KPI —
+            ENA resnica na treh mestih. */}
+        <p className="text-right text-2xs text-muted-foreground">
+          CSV = vsi računi (vrstice) · PDF = povzetek za vodstvo · Odprto = izdano, neplačano · Zapadlo = prek roka
+        </p>
         {/* Povzetek */}
         {!loading && invoices.length > 0 && (
           <div className="space-y-2">
