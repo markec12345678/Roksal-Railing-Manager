@@ -73,7 +73,7 @@ const PRIMERI = [
   // ISTI vsebinski vrstici — precedens R180/R229/R232). Prejem gumb ( isti
   // žeton, druga vsebinska vrstica) ostaja ne-pinana (r234 lekcija 3:
   // istovrstni žetoni na več vrsticah — pin vedno preverjen proti HEAD vsebini).
-  stražar('src/components/roksal/material-intelligence-tab.tsx', 1442, 'bg-green-50', 'dark:bg-green-950/40'), // R242: 772→1119; R243: 1119→1131 (wave 5 +12); R244: 1131→1266 (cenik izvoz +135); R245: 1266→1402 (primerjalni cenik +136); R246: 1402→1438 (razponska dimenzija +36: PrimerjalniVrsta +4, CSV 8 stolpcev +7, pridobiPrimerjalni izpeljava +23, primerjalniVnosi najvisjaCena +2); R247: 1438→1442 (% razlika +4: import +1, CSV komentar +2, CSV celica +1 — ogledalo ŠE VEDNO na ISTI vsebinski vrstici, Dobljeno/Prejem gumb)
+  stražar('src/components/roksal/material-intelligence-tab.tsx', 1445, 'bg-green-50', 'dark:bg-green-950/40'), // R242: 772→1119; R243: 1119→1131 (wave 5 +12); R244: 1131→1266 (cenik izvoz +135); R245: 1266→1402 (primerjalni cenik +136); R246: 1402→1438 (razponska dimenzija +36: PrimerjalniVrsta +4, CSV 8 stolpcev +7, pridobiPrimerjalni izpeljava +23, primerjalniVnosi najvisjaCena +2); R247: 1438→1442 (% razlika +4: import +1, CSV komentar +2, CSV celica +1 — ogledalo ŠE VEDNO na ISTI vsebinski vrstici, Dobljeno/Prejem gumb); R248: 1442→1445 (povprečni razpon +3: import +1, toast komentar +2 — ogledalo ŠE VEDNO na ISTI vsebinski vrstici, Dobljeno/Prejem gumb)
   // roksal-catalog — steklo tint (vzorec Inox fix R171)
   // R203: 193→228 (fail-verbose fetchProfili + trojna veja +35).
   // R229: 228→232 (Inox chip žetoni komentar +3 — precedens R180/R203).

@@ -176,6 +176,45 @@ export function razlikaOdstotekNiz(v: PrimerjalniPdfVnos): string {
   return razlikaOdstotek(v).toFixed(1).replace('.', ',')
 }
 
+/** Povprečni razpon v % (R248, P1-g nadaljevanje — agregatna izpeljava
+ *  razponske dimenzije: per-row % razlike R247 dobi svoj skupni povzetek) —
+ *  vsota razlik / vsota NAJBOLJŠIH cen × 100. Imenovatelj je vsota najboljših
+ *  (NE najvišjih — delovna opomba iz R247 handoverja je pomenila nasprotno,
+ *  ampak ENA resnica zahteva skladnost s stolpcem '% razlike' R247, ki je
+ *  razlika v % NAJBOLJŠE cene: agregat ISTIH razmerij = uteženo povprečje
+ *  stolpca; z vsoto najvišjih bi bralcu seštevanje stolpca dalo drugo
+ *  številko kot KPI — lažna neskladnost).
+ *
+ *  Fail-closed matematični rob (ISTI vzorec kot razlikaOdstotek R247):
+ *  vsota najboljših 0 z vsoto razlik > 0 → TypeError (odstotek od nič NI
+ *  izraziv — NIKOLI izmišljen 999 %/∞); vsota najboljših 0 z vsoto razlik 0
+ *  → 0 (iskrena resnica: brez razpona ni povprečja).
+ *
+ *  Determinizem: sortira interno (sortirajPrimerjalni) pred seštevanjem —
+ *  FP seštevanje je odvisno od vrstnega reda, rezultat mora biti f(MNOŽICA),
+ *  ne f(vrstni red odgovora) — ISTI vzorec kot sort V LIBU (R245). */
+export function povprecniRazpon(vnosi: readonly PrimerjalniPdfVnos[]): number {
+  const sortirane = sortirajPrimerjalni(vnosi)
+  const vsotaNajboljsih = sortirane.reduce((s, p) => s + p.najboljsaCena, 0)
+  const vsotaRazlik = sortirane.reduce((s, p) => s + razlikaDoNajvisje(p), 0)
+  if (vsotaNajboljsih === 0) {
+    if (vsotaRazlik > 0) {
+      throw new TypeError(
+        `povprecniRazpon: odstotek od vsote najboljših cen 0 ne obstaja (vsota razlik ${String(vsotaRazlik)} EUR — razlika od nič ni izraziva v %, NIKOLI izmišljena)`,
+      )
+    }
+    return 0
+  }
+  return (vsotaRazlik / vsotaNajboljsih) * 100
+}
+
+/** Prikazna resnica povprečnega razpona — ENA decimalna mesta + decimalna
+ *  vejica (slovenski zapis, ISTI vzorec kot razlikaOdstotekNiz R247: ISTI
+ *  niz v PDF KPI boxu, sklepni vrstici IN toast opisu — WYSIWYG). */
+export function povprecniRazponNiz(vnosi: readonly PrimerjalniPdfVnos[]): string {
+  return povprecniRazpon(vnosi).toFixed(1).replace('.', ',')
+}
+
 /** Sort vrstic V LIBU — skupni red (artikel asc → najboljša cena asc →
  *  dobavitelj asc → šifra asc): bajtni determinizem = f(MNOŽICA vhodov), ne
  *  f(vrstni red odgovora). IZVOŽEN — CSV brat uporabi ISTI red (WYSIWYG).
@@ -269,6 +308,12 @@ export function buildPrimerjalniPdfDoc(
   const najvisjaKpi = Math.max(...sortirane.map((p) => p.najvisjaCena))
   const primerjave = sortirane.filter((p) => p.stDobaviteljev >= 2).length
   const prihranek = sortirane.reduce((s, p) => s + razlikaDoNajvisje(p), 0)
+  // R248: agregat razponske dimenzije — povprečni razpon v % (vsota razlik /
+  // vsota najboljših; izpeljava povprecniRazpon sortira interno — ISTI
+  // determinizem f(množica)). KPI box barva = ISTI signal kot per-row %
+  // (R247): razpon > 0 amber (prostor za pogajanja), 0 navy (resnica brez
+  // lažnega signala).
+  const povprecni = povprecniRazpon(sortirane)
 
   const doc = new jsPDF()
   registerSloPdfFonts(doc)
@@ -316,6 +361,11 @@ export function buildPrimerjalniPdfDoc(
   kpiBox(doc, 14 + 2 * (bw + gap), y, bw, bh, 'Najvišja', `${cenaNiz(najvisjaKpi)} €`, AMBER)
   kpiBox(doc, 14 + 3 * (bw + gap), y, bw, bh, 'Primerjave', String(primerjave), NAVY)
   kpiBox(doc, 14 + 4 * (bw + gap), y, bw, bh, 'Prihranek', `${cenaNiz(prihranek)} €`, GREEN)
+  y += bh + 4
+  // R248: druga KPI vrsta — Povprečni razpon % (6. KPI; 33 mm box = ISTI
+  // vzorec, vrednost je kratek % niz — EUR boxi ostanejo nespremenjeni,
+  // brez stiskanja vrednosti v ožjo vrsto).
+  kpiBox(doc, 14, y, bw, bh, 'Povprečni razpon', `${povprecniRazponNiz(sortirane)} %`, povprecni > 0 ? AMBER : NAVY)
   y += bh + 8
 
   // ---------- tabela primerjalnega cenika (ENA resnica = stolpci CSV; R246 razponska dimenzija + R247 % razlika) ----------
@@ -390,7 +440,7 @@ export function buildPrimerjalniPdfDoc(
   doc.setFontSize(8.5)
   doc.setTextColor(...NAVY)
   doc.text(
-    `${sortirane.length} ${artikelBeseda(sortirane.length)} · najnižja vpisana cena per artikel · vsota razlik do najvišjih veljavnih cen ${cenaNiz(prihranek)} EUR/enota · razpon izražen tudi v odstotkih najboljše cene · samo trenutno veljavne cene (pretečene niso vključene).`,
+    `${sortirane.length} ${artikelBeseda(sortirane.length)} · najnižja vpisana cena per artikel · vsota razlik do najvišjih veljavnih cen ${cenaNiz(prihranek)} EUR/enota · razpon izražen tudi v odstotkih najboljše cene · povprečni razpon ${povprecniRazponNiz(sortirane)} % najboljše cene · samo trenutno veljavne cene (pretečene niso vključene).`,
     14,
     y + 4,
   )

@@ -34,6 +34,8 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
   buildPrimerjalniPdfDoc,
+  povprecniRazpon,
+  povprecniRazponNiz,
   primerjalniPdfFilename,
   preveriPrimerjalniVnos,
   sortirajPrimerjalni,
@@ -313,6 +315,83 @@ describe('R247 — % razlika (odstotek najboljše cene — naslednji logični ko
   it('cenik R244 brat ostane BAJTNATO nespremenjen (ločen dokument — cenik lib ne pozna % razlike)', () => {
     expect(cenikLib).not.toContain('% razlike')
     expect(cenikLib).not.toContain('razlikaOdstotek')
+  })
+})
+
+describe('R248 — Povprečni razpon (agregat razponske dimenzije — vsota razlik / vsota najboljših × 100)', () => {
+  // VRSTE: razlika 0,60 + 0,75 + 0,00 = 1,35; najboljša 11,9 + 4,35 + 2 = 18,25
+  // → 1,35/18,25 × 100 = 7,3972… % → prikaz '7,4' (FP-varna trditev na nizu).
+  it('povprecniRazpon: ENA agregatna izpeljava (1,35/18,25 = 7,3972… %) + premešan vrstni red = ISTI rezultat (sort interno — determinizem f(množica), FP seštevanje je od vrstnega reda)', () => {
+    expect(povprecniRazpon(VRSTE)).toBeCloseTo(7.3972603, 6)
+    expect(povprecniRazpon([...VRSTE].reverse())).toBeCloseTo(7.3972603, 6)
+    expect(povprecniRazpon(VRSTE)).toBeCloseTo(povprecniRazpon([...VRSTE].reverse()), 10)
+  })
+
+  it('povprecniRazponNiz: prikazna resnica 1 decimalna + vejica (7,4 — ISTI niz v PDF KPI, sklepu IN toastu — WYSIWYG)', () => {
+    // Goli FP 7.3972… NIKOLI trditveni partner prikaza (lekcija R246/R247):
+    expect(povprecniRazpon(VRSTE)).not.toBe(7.4)
+    expect(povprecniRazponNiz(VRSTE)).toBe('7,4')
+    // 1 ponudba (razlika 0) → iskren 0
+    expect(povprecniRazponNiz([VRSTE[2]])).toBe('0,0')
+  })
+
+  it('fail-closed matematični rob: vsota najboljših 0 z vsoto razlik > 0 → TypeError (odstotek od nič NI izraziv — NIKOLI izmišljen); obe nula → iskren 0', () => {
+    const nič = [{ ...VRSTE[2], najboljsaCena: 0, najvisjaCena: 3.5 }]
+    expect(() => povprecniRazpon(nič)).toThrow(TypeError)
+    expect(() => povprecniRazpon(nič)).toThrow(/odstotek od vsote najboljših cen 0 ne obstaja/)
+    const obeNula = [{ ...VRSTE[2], najboljsaCena: 0, najvisjaCena: 0 }]
+    expect(povprecniRazpon(obeNula)).toBe(0)
+    expect(povprecniRazponNiz(obeNula)).toBe('0,0')
+  })
+
+  it('imenovatelj je vsota NAJBOLJŠIH (skladnost s stolpcem % razlike R247 — uteženo povprečje stolpca, ne vsota najvišjih)', () => {
+    // [najboljša 2, najvišja 3] → razlika 1: po najboljših = 50 %; po najvišjih bi bilo 33,3… %
+    const ena = [{ ...VRSTE[2], najboljsaCena: 2, najvisjaCena: 3 }]
+    expect(povprecniRazpon(ena)).toBeCloseTo(50, 6)
+    expect(povprecniRazpon(ena)).not.toBeCloseTo(100 / 3, 3)
+    // odločitev dokumentirana v viru (handover R247 je omenjal najvišje —
+    // implementacija izbere najboljše ZA skladnost s per-row % razlike)
+    expect(lib).toContain('vsota NAJBOLJŠIH')
+  })
+
+  it('KPI box Povprečni razpon: druga vrsta POD 5-box vrsto (Prihranek prej) + signal barva = ISTI vzorec kot per-row % (amber > 0, navy 0)', () => {
+    expect(lib).toContain("'Povprečni razpon'")
+    expect(lib).toContain('povprecni > 0 ? AMBER : NAVY')
+    const kpi = oknoMed(lib, "kpiBox(doc, 14, y, bw, bh, 'Artikli'", '---------- tabela primerjalnega cenika')
+    expect(kpi).toContain("'Prihranek'")
+    expect(kpi.indexOf("'Prihranek'")).toBeLessThan(kpi.indexOf("'Povprečni razpon'"))
+  })
+
+  it('PDF telesu skozi povprecniRazponNiz (ENA prikazna resnica — KPI vrednost IN sklepna vrstica iz ISTEGA klica)', () => {
+    const kpi = oknoMed(lib, 'R248: druga KPI vrsta', 'y += bh + 8')
+    expect(kpi).toContain('povprecniRazponNiz(sortirane)')
+    const sklep = oknoMed(lib, 'sklepna vrstica', 'noge na vseh straneh')
+    expect(sklep).toContain('povprecniRazponNiz(sortirane)')
+  })
+
+  it('sklepni podpis pove agregatno resnico (povprečni razpon X % najboljše cene) — R247 % resnica ostaja (needle includes)', () => {
+    expect(lib).toContain(' · povprečni razpon ')
+    expect(lib).toContain(' % najboljše cene · ')
+    expect(lib).toContain('razpon izražen tudi v odstotkih najboljše cene')
+  })
+
+  it('legenda + toast nosita agregatno resnico (vsak prikaz ISTO zgodbo) — R247 needleja ostajata (includes)', () => {
+    expect(material).toContain('· Povprečni razpon = vsota razlik / vsota najboljših')
+    expect(material).toContain('povprecniRazponNiz(primerjalniVnosi(vrste))')
+    expect(material).toContain('· % = razpon do najvišje')
+    expect(material).toContain('z dobaviteljem in razponom v %')
+    expect(material).toContain('Cenik = vse ponudbe · Primerjalni = najnižja per artikel')
+  })
+
+  it('CSV brat OSTANE 9-stolpčen BREZ agregatne vrstice (agregati živijo v PDF KPI — R246 precedens Prihranek)', () => {
+    const fn = oknoMed(material, 'function downloadPrimerjalniCsv', '/** R245 — fail-closed preslikava')
+    expect(fn).not.toContain('povprecniRazpon')
+    expect(fn).toContain("'% razlike', 'Dobavitelj', 'Št. dobaviteljev'")
+  })
+
+  it('cenik R244 brat ne pozna povprečnega razpona (ločen dokument se še naprej obrestuje — bajtna stabilnost 4. rundo)', () => {
+    expect(cenikLib).not.toContain('Povprečni razpon')
+    expect(cenikLib).not.toContain('povprecniRazpon')
   })
 })
 

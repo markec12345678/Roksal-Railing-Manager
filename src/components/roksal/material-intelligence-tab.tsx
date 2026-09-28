@@ -58,6 +58,7 @@ import {
 // CSV in PDF delita ISTI red, WYSIWYG brata).
 import {
   buildPrimerjalniPdfDoc,
+  povprecniRazponNiz,
   primerjalniPdfFilename,
   sortirajPrimerjalni,
   razlikaDoNajvisje,
@@ -1020,9 +1021,11 @@ export function MaterialIntelligenceTab({
       const now = new Date()
       const doc = buildPrimerjalniPdfDoc(primerjalniVnosi(vrste), { now })
       doc.save(primerjalniPdfFilename(now))
+      // R248: toast pove TUDI agregatno resnico (povprečni razpon %) — ISTI
+      // niz kot PDF KPI box (povprecniRazponNiz — WYSIWYG, nič izmišljenega).
       toast({
         title: 'Primerjalni cenik prenešen v PDF',
-        description: 'Primerjalni-cenik-…pdf — najnižja veljavna cena per artikel z dobaviteljem in razponom v %.',
+        description: `Primerjalni-cenik-…pdf — najnižja veljavna cena per artikel z dobaviteljem in razponom v % · povprečni razpon ${povprecniRazponNiz(primerjalniVnosi(vrste))} %.`,
       })
     } catch (err) {
       if (err instanceof TypeError) {
@@ -1686,9 +1689,11 @@ export function MaterialIntelligenceTab({
                 {/* R245 — legenda izvozne skupine (želona pariteta: vsak
                     dokument pove svojo resnico; žetoni, 0 novih hex).
                     R247 — % resnica v legendi (razponska dimenzija zdaj
-                    vidna tudi bralcu pilli). */}
+                    vidna tudi bralcu pilli). R248 — agregatna resnica:
+                    povprečni razpon = vsota razlik / vsota najboljših
+                    (formula poimenovana, ISTI vir kot PDF KPI). */}
                 <p className="text-right text-2xs text-muted-foreground">
-                  Cenik = vse ponudbe · Primerjalni = najnižja per artikel · % = razpon do najvišje
+                  Cenik = vse ponudbe · Primerjalni = najnižja per artikel · % = razpon do najvišje · Povprečni razpon = vsota razlik / vsota najboljših
                 </p>
               </div>
               <Label className="text-xs">Izberi material za dodajanje cene</Label>
