@@ -215,6 +215,38 @@ export function povprecniRazponNiz(vnosi: readonly PrimerjalniPdfVnos[]): string
   return povprecniRazpon(vnosi).toFixed(1).replace('.', ',')
 }
 
+/** Največji razpon v % (R249, P1-g nadaljevanje — tretji element razponske
+ *  dimenzije: per-row % razlike R247 + povprečni R248 dobita še najširšega —
+ *  max per-row %: KJE je prostor za pogajanja največji). IZPELJAN iz
+ *  ISTEGA odgovora (razlikaOdstotek nad vsako vrstico), NIKOLI izmišljen.
+ *
+ *  Fail-closed matematični rob (DEDOVAN od razlikaOdstotek R247 — ISTI
+ *  vzorec): vrstica z najboljšo ceno 0 in razliko > 0 → TypeError (odstotek
+ *  od nič NI izraziv — NIKOLI izmišljen 999 %/∞). Poleg tega LASTNI rob:
+ *  prazen seznam → TypeError (max prazne množice NE obstaja — NIKOLI
+ *  izmišljen -Infinity; buildPrimerjalniPdfDoc prazne sezname že blokira,
+ *  čista funkcija je iskrena tudi sama).
+ *
+ *  Determinizem: max je UREJENOSTNA INVARIANTA (f(množica) po naravi —
+ *  vsak per-row % je determinističen, max med njimi ne potrebuje notranje
+ *  sortravanja; razlika od povprecniRazpon R248, kjer FP seštevanje sorto
+ *  ZAHTEVA — dokumentirano, test dokazuje premešan red = ISTI rezultat). */
+export function najvecjiRazpon(vnosi: readonly PrimerjalniPdfVnos[]): number {
+  if (!Array.isArray(vnosi) || vnosi.length === 0) {
+    throw new TypeError(
+      'najvecjiRazpon: prazen seznam nima največjega razpona (max prazne množice ne obstaja — NIKOLI izmišljen -Infinity)',
+    )
+  }
+  return Math.max(...vnosi.map((p) => razlikaOdstotek(p)))
+}
+
+/** Prikazna resnica največjega razpona — ENA decimalna mesta + decimalna
+ *  vejica (slovenski zapis, ISTI vzorec kot povprecniRazponNiz R248: ISTI
+ *  niz v PDF KPI boxu, sklepni vrstici IN toast opisu — WYSIWYG). */
+export function najvecjiRazponNiz(vnosi: readonly PrimerjalniPdfVnos[]): string {
+  return najvecjiRazpon(vnosi).toFixed(1).replace('.', ',')
+}
+
 /** Sort vrstic V LIBU — skupni red (artikel asc → najboljša cena asc →
  *  dobavitelj asc → šifra asc): bajtni determinizem = f(MNOŽICA vhodov), ne
  *  f(vrstni red odgovora). IZVOŽEN — CSV brat uporabi ISTI red (WYSIWYG).
@@ -314,6 +346,10 @@ export function buildPrimerjalniPdfDoc(
   // (R247): razpon > 0 amber (prostor za pogajanja), 0 navy (resnica brez
   // lažnega signala).
   const povprecni = povprecniRazpon(sortirane)
+  // R249: najširši razpon (max per-row % — 7. KPI). Dedi fail-closed rob
+  // razlikaOdstotek (R247) + lastni prazen-seznam rob (max ne obstaja);
+  // max je urejenostna invarianta — brez sorte, f(množica) po naravi.
+  const najvecji = najvecjiRazpon(sortirane)
 
   const doc = new jsPDF()
   registerSloPdfFonts(doc)
@@ -366,6 +402,10 @@ export function buildPrimerjalniPdfDoc(
   // vzorec, vrednost je kratek % niz — EUR boxi ostanejo nespremenjeni,
   // brez stiskanja vrednosti v ožjo vrsto).
   kpiBox(doc, 14, y, bw, bh, 'Povprečni razpon', `${povprecniRazponNiz(sortirane)} %`, povprecni > 0 ? AMBER : NAVY)
+  // R249: Največji razpon (max per-row %) v ISTI drugi vrsti (2× 33 mm —
+  // kratka % niza, brez prenašanja; ISTI signal kot povprečni/per-row %:
+  // amber > 0 = prostor za pogajanja, navy 0 = resnica brez lažnega signala).
+  kpiBox(doc, 14 + bw + gap, y, bw, bh, 'Največji razpon', `${najvecjiRazponNiz(sortirane)} %`, najvecji > 0 ? AMBER : NAVY)
   y += bh + 8
 
   // ---------- tabela primerjalnega cenika (ENA resnica = stolpci CSV; R246 razponska dimenzija + R247 % razlika) ----------
@@ -440,7 +480,7 @@ export function buildPrimerjalniPdfDoc(
   doc.setFontSize(8.5)
   doc.setTextColor(...NAVY)
   doc.text(
-    `${sortirane.length} ${artikelBeseda(sortirane.length)} · najnižja vpisana cena per artikel · vsota razlik do najvišjih veljavnih cen ${cenaNiz(prihranek)} EUR/enota · razpon izražen tudi v odstotkih najboljše cene · povprečni razpon ${povprecniRazponNiz(sortirane)} % najboljše cene · samo trenutno veljavne cene (pretečene niso vključene).`,
+    `${sortirane.length} ${artikelBeseda(sortirane.length)} · najnižja vpisana cena per artikel · vsota razlik do najvišjih veljavnih cen ${cenaNiz(prihranek)} EUR/enota · razpon izražen tudi v odstotkih najboljše cene · povprečni razpon ${povprecniRazponNiz(sortirane)} % najboljše cene · največji razpon ${najvecjiRazponNiz(sortirane)} % najboljše cene · samo trenutno veljavne cene (pretečene niso vključene).`,
     14,
     y + 4,
   )

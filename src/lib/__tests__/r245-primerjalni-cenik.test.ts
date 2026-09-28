@@ -36,6 +36,8 @@ import {
   buildPrimerjalniPdfDoc,
   povprecniRazpon,
   povprecniRazponNiz,
+  najvecjiRazpon,
+  najvecjiRazponNiz,
   primerjalniPdfFilename,
   preveriPrimerjalniVnos,
   sortirajPrimerjalni,
@@ -392,6 +394,94 @@ describe('R248 — Povprečni razpon (agregat razponske dimenzije — vsota razl
   it('cenik R244 brat ne pozna povprečnega razpona (ločen dokument se še naprej obrestuje — bajtna stabilnost 4. rundo)', () => {
     expect(cenikLib).not.toContain('Povprečni razpon')
     expect(cenikLib).not.toContain('povprecniRazpon')
+  })
+})
+
+describe('R249 — Največji razpon (max per-row % — najširši prostor za pogajanja med artikli)', () => {
+  // VRSTE per-row %: 0,60/11,9 = 5,042…%; 0,75/4,35 = 17,2414…%; 0/2 = 0
+  // → max = 17,2414… % → prikaz '17,2' (FP-varna trditev na nizu).
+  it('najvecjiRazpon: ENA izpeljava (max per-row % = 17,2414… %) + premešan vrstni red = ISTI rezultat (max je urejenostna invarianta — f(množica) po naravi)', () => {
+    expect(najvecjiRazpon(VRSTE)).toBeCloseTo(0.75 / 4.35 * 100, 6)
+    expect(najvecjiRazpon([...VRSTE].reverse())).toBeCloseTo(0.75 / 4.35 * 100, 6)
+    expect(najvecjiRazpon(VRSTE)).toBeCloseTo(najvecjiRazpon([...VRSTE].reverse()), 10)
+  })
+
+  it('najvecjiRazponNiz: prikazna resnica 1 decimalna + vejica (17,2 — ISTI niz v PDF KPI, sklepu IN toastu — WYSIWYG)', () => {
+    // Goli FP 17.2414… NIKOLI trditveni partner prikaza (lekcija R246/R247/R248):
+    expect(najvecjiRazpon(VRSTE)).not.toBe(17.2)
+    expect(najvecjiRazponNiz(VRSTE)).toBe('17,2')
+    // 1 ponudba (razlika 0) → iskren 0 (ISTI vzorec kot povprečni R248)
+    expect(najvecjiRazponNiz([VRSTE[2]])).toBe('0,0')
+  })
+
+  it('fail-closed DEDOVAN rob razlikaOdstotek (R247): vrstica z najboljšo 0 in razliko > 0 → TypeError (odstotek od nič NI izraziv — NIKOLI izmišljen)', () => {
+    const nič = [{ ...VRSTE[2], najboljsaCena: 0, najvisjaCena: 3.5 }]
+    expect(() => najvecjiRazpon(nič)).toThrow(TypeError)
+    expect(() => najvecjiRazpon(nič)).toThrow(/odstotek od najboljše cene 0 ne obstaja/)
+    // obe nula → iskren 0 (dedovana iskrena veja)
+    const obeNula = [{ ...VRSTE[2], najboljsaCena: 0, najvisjaCena: 0 }]
+    expect(najvecjiRazpon(obeNula)).toBe(0)
+    expect(najvecjiRazponNiz(obeNula)).toBe('0,0')
+  })
+
+  it('fail-closed LASTNI rob: prazen seznam → TypeError (max prazne množice NE obstaja — NIKOLI izmišljen -Infinity)', () => {
+    expect(() => najvecjiRazpon([])).toThrow(TypeError)
+    expect(() => najvecjiRazpon([])).toThrow(/prazen seznam nima največjega razpona/)
+    expect(() => najvecjiRazponNiz([])).toThrow(/prazen seznam nima največjega razpona/)
+    // odločitev dokumentirana v viru (sporočilo poimenuje -Infinity laž)
+    expect(lib).toContain('NIKOLI izmišljen -Infinity')
+  })
+
+  it('max je nad PER-ROW % (ne nad EUR razliko): majhna EUR razlika na mali ceni = VEČJI %', () => {
+    // 0,10 EUR razlike na 0,50 EUR = 20 %; 0,60 EUR na 11,90 EUR = 5,04 %
+    // → max % je 20 (EUR max bi bil 0,60 — NAPAČEN vir; dokaz izbire)
+    const mali = [{ ...VRSTE[2], najboljsaCena: 0.5, najvisjaCena: 0.6 }]
+    const veliki = [{ ...VRSTE[0] }]
+    expect(najvecjiRazpon([...mali, ...veliki])).toBeCloseTo(20, 6)
+    expect(najvecjiRazpon([...mali, ...veliki])).not.toBeCloseTo(0.6, 3)
+  })
+
+  it('KPI box Največji razpon: ISTA druga vrsta kot Povprečni (Povprečni prej, Največji za) + signal = ISTI vzorec (amber > 0, navy 0)', () => {
+    expect(lib).toContain("'Največji razpon'")
+    expect(lib).toContain('najvecji > 0 ? AMBER : NAVY')
+    const kpi = oknoMed(lib, 'R248: druga KPI vrsta', 'y += bh + 8')
+    // OBE boxa v ISTI vrsti — skupni blok, 2× 33 mm (brez prenašanja)
+    expect(kpi).toContain("'Povprečni razpon'")
+    expect(kpi).toContain("'Največji razpon'")
+    expect(kpi.indexOf("'Povprečni razpon'")).toBeLessThan(kpi.indexOf("'Največji razpon'"))
+  })
+
+  it('PDF telesu skozi najvecjiRazponNiz (ENA prikazna resnica — KPI vrednost IN sklepna vrstica iz ISTEGA klica)', () => {
+    const kpi = oknoMed(lib, 'R249: Največji razpon (max per-row %) v ISTI drugi vrsti', 'y += bh + 8')
+    expect(kpi).toContain('najvecjiRazponNiz(sortirane)')
+    const sklep = oknoMed(lib, 'sklepna vrstica', 'noge na vseh straneh')
+    expect(sklep).toContain('najvecjiRazponNiz(sortirane)')
+  })
+
+  it('sklepni podpis pove najširšo resnico (največji razpon X % najboljše cene) — R248/R247 needleja ostajata (nadgrajevanje brez lomljenja)', () => {
+    expect(lib).toContain(' · največji razpon ')
+    expect(lib).toContain(' % najboljše cene · ')
+    expect(lib).toContain(' · povprečni razpon ')
+    expect(lib).toContain('razpon izražen tudi v odstotkih najboljše cene')
+  })
+
+  it('legenda + toast nosita najširšo resnico (vsak prikaz ISTO zgodbo) — R248/R247 needleja ostajata (includes)', () => {
+    expect(material).toContain('· Največji razpon = najširši % med artikli')
+    expect(material).toContain('najvecjiRazponNiz(primerjalniVnosi(vrste))')
+    // R248/R247 regresiji (legenda raste — nadgrajevanje)
+    expect(material).toContain('· Povprečni razpon = vsota razlik / vsota najboljših')
+    expect(material).toContain('· % = razpon do najvišje')
+  })
+
+  it('CSV brat OSTANE 9-stolpčen BREZ agregatov (agregati živijo v PDF KPI — R246/R248 precedens)', () => {
+    const fn = oknoMed(material, 'function downloadPrimerjalniCsv', '/** R245 — fail-closed preslikava')
+    expect(fn).not.toContain('najvecjiRazpon')
+    expect(fn).toContain("'% razlike', 'Dobavitelj', 'Št. dobaviteljev'")
+  })
+
+  it('cenik R244 brat ne pozna največjega razpona (ločen dokument se še naprej obrestuje — bajtna stabilnost 5. rundo)', () => {
+    expect(cenikLib).not.toContain('Največji razpon')
+    expect(cenikLib).not.toContain('najvecjiRazpon')
   })
 })
 

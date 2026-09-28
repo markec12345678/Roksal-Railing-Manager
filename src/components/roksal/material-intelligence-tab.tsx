@@ -59,6 +59,7 @@ import {
 import {
   buildPrimerjalniPdfDoc,
   povprecniRazponNiz,
+  najvecjiRazponNiz,
   primerjalniPdfFilename,
   sortirajPrimerjalni,
   razlikaDoNajvisje,
@@ -1023,9 +1024,12 @@ export function MaterialIntelligenceTab({
       doc.save(primerjalniPdfFilename(now))
       // R248: toast pove TUDI agregatno resnico (povprečni razpon %) — ISTI
       // niz kot PDF KPI box (povprecniRazponNiz — WYSIWYG, nič izmišljenega).
+      // R249: + največji razpon (max per-row %, ISTI niz kot 7. KPI box).
+      // Odločevalec ',' med agregatoma (ne '·') — R248 lekcija: minifier
+      // ubeži '·' kot \xb7 v template literals, needleji ne smejo prečkati.
       toast({
         title: 'Primerjalni cenik prenešen v PDF',
-        description: `Primerjalni-cenik-…pdf — najnižja veljavna cena per artikel z dobaviteljem in razponom v % · povprečni razpon ${povprecniRazponNiz(primerjalniVnosi(vrste))} %.`,
+        description: `Primerjalni-cenik-…pdf — najnižja veljavna cena per artikel z dobaviteljem in razponom v % · povprečni razpon ${povprecniRazponNiz(primerjalniVnosi(vrste))} %, največji ${najvecjiRazponNiz(primerjalniVnosi(vrste))} %.`,
       })
     } catch (err) {
       if (err instanceof TypeError) {
@@ -1691,9 +1695,12 @@ export function MaterialIntelligenceTab({
                     R247 — % resnica v legendi (razponska dimenzija zdaj
                     vidna tudi bralcu pilli). R248 — agregatna resnica:
                     povprečni razpon = vsota razlik / vsota najboljših
-                    (formula poimenovana, ISTI vir kot PDF KPI). */}
+                    (formula poimenovana, ISTI vir kot PDF KPI).
+                    R249 — najširša resnica: največji razpon = max per-row
+                    % (KJE je prostor za pogajanja največji, ISTI vir kot
+                    7. KPI box). */}
                 <p className="text-right text-2xs text-muted-foreground">
-                  Cenik = vse ponudbe · Primerjalni = najnižja per artikel · % = razpon do najvišje · Povprečni razpon = vsota razlik / vsota najboljših
+                  Cenik = vse ponudbe · Primerjalni = najnižja per artikel · % = razpon do najvišje · Povprečni razpon = vsota razlik / vsota najboljših · Največji razpon = najširši % med artikli
                 </p>
               </div>
               <Label className="text-xs">Izberi material za dodajanje cene</Label>
