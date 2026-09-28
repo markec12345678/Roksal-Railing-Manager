@@ -38,7 +38,8 @@ function oknoMed(src: string, od: string, do_: string): string {
 describe('R233 — Dobavitelji CSV izvoz (izvozi družina — edini vir brez izvoza)', () => {
   it('downloadSuppliersCsv: ENA resnica — status ISTI kot pika/title (Aktiven/Neaktiven)', () => {
     const fn = oknoMed(material, 'function downloadSuppliersCsv', '// R207 — stil statusnega filtra')
-    expect(fn).toContain('(suppliers: Supplier[])')
+    // R260 premik pina: seg pride IZRECEN (segmentacija — pogodba kot danas)
+    expect(fn).toContain('(suppliers: Supplier[], seg: DobaviteljiSegmentacija)')
     expect(fn).toContain("s.aktivna ? 'Aktiven' : 'Neaktiven'")
   })
 
@@ -53,7 +54,12 @@ describe('R233 — Dobavitelji CSV izvoz (izvozi družina — edini vir brez izv
 
   it('CSV glava (SI, točke ISTE kot kartica): Naziv … Št. naročil + ime Dobavitelji-stamp.csv', () => {
     const fn = oknoMed(material, 'function downloadSuppliersCsv', '// R207 — stil statusnega filtra')
-    expect(fn).toContain("['Naziv', 'Status', 'Kontakt', 'Telefon', 'Email', 'Dobavni rok (dni)', 'Popust (%)', 'Št. cen', 'Št. naročil']")
+    // R260 premik pina: 9 → 11 stolpcev (append-only, R232 'Pretekel rok'
+    // vzorec — + 'Najhitrejši rok' + 'Največji popust'; stolpci 1–9 kontrakt
+    // R233 dobesedno NESPREMENJENI, preverjeni spodaj po posameznih delih).
+    expect(fn).toContain("['Naziv', 'Status', 'Kontakt', 'Telefon', 'Email', 'Dobavni rok (dni)', 'Popust (%)', 'Št. cen', 'Št. naročil', 'Najhitrejši rok', 'Največji popust']")
+    // kontrakt R233 — prvih 9 stolpcev ISTI vrstni red (zgodovinska resnica)
+    expect(fn).toContain("'Naziv', 'Status', 'Kontakt', 'Telefon', 'Email', 'Dobavni rok (dni)', 'Popust (%)', 'Št. cen', 'Št. naročil'")
     expect(fn).toContain('`Dobavitelji-${todayStamp()}.csv`')
   })
 

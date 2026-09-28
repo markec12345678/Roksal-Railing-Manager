@@ -40,6 +40,8 @@ import {
   dobaviteljiPdfFilename,
   dobaviteljBeseda,
   dobaviteljiRokPovzetek,
+  dobaviteljiSegmentacija,
+  type DobaviteljiSegmentacija,
 } from '@/lib/dobavitelji-pdf'
 // R257 (P1-f, 'izvozi' družina — 13. člen) — NAROČILA PREGLED PDF (ločen
 // agregatni dokument od CSV R140/R232: ENA vrstica per NAROČILO; vir = ISTI
@@ -279,7 +281,14 @@ function downloadOrdersCsv(orders: MaterialOrder[], danas: Date): number {
 // Števci (dobavniRok, _count) kot String — celo števila so celo števila
 // ("1", ne "1,00" — decimalna vejica je za CENE, R136; vodja-CSV vzorec
 // String(kpi)), popust ostane number (% je lahko decimalen).
-function downloadSuppliersCsv(suppliers: Supplier[]): number {
+// R260 (nadgradna, 16. člen družine — R232 'Pretekel rok' append-only vzorec):
+// stolpca 10/11 = segmentacija roka in popusta IZ ISTEGA DTO — ENA izpeljava
+// `dobaviteljiSegmentacija` (lib), `seg` pride IZRECEN (isti objekt za CSV +
+// toast — klicatelj garantira ISTI vidni seznam; pogodba kot `danas` pri
+// jeZamujenaDobava). 'DA/NE' po IDENTITETI referenc (v === s) — ne po nazivu
+// (dva istonažna dobavitelja sta različni resnici). Stolpci 1–9 kontrakt
+// R233 NESPREMENJENI (append-only, samo na koncu vrstice).
+function downloadSuppliersCsv(suppliers: Supplier[], seg: DobaviteljiSegmentacija): number {
   const rows: CsvValue[][] = suppliers.map((s) => [
     s.naziv,
     s.aktivna ? 'Aktiven' : 'Neaktiven',
@@ -290,10 +299,12 @@ function downloadSuppliersCsv(suppliers: Supplier[]): number {
     s.popust,
     s._count ? String(s._count.materialPrices) : '',
     s._count ? String(s._count.orders) : '',
+    seg.najhitrejsiVnosi.some((v) => v === s) ? 'DA' : 'NE',
+    seg.najvecjiPopustVnosi.some((v) => v === s) ? 'DA' : 'NE',
   ])
   downloadCsv(
     `Dobavitelji-${todayStamp()}.csv`,
-    ['Naziv', 'Status', 'Kontakt', 'Telefon', 'Email', 'Dobavni rok (dni)', 'Popust (%)', 'Št. cen', 'Št. naročil'],
+    ['Naziv', 'Status', 'Kontakt', 'Telefon', 'Email', 'Dobavni rok (dni)', 'Popust (%)', 'Št. cen', 'Št. naročil', 'Najhitrejši rok', 'Največji popust'],
     rows,
   )
   return rows.length
@@ -852,14 +863,28 @@ export function MaterialIntelligenceTab({
   // R233 (P1-c) — izvoz dobaviteljev (ISTI vzorec kot handleOrdersCsv R232:
   // gumb VEDNO viden, klik fail-closed — 0 dobaviteljev → iskren toast, nič
   // se ne izvozi; nalaganje → onemogočen).
+  // R260 — nadgradna: seg izračunan ENkrat per akcijo (ISTA referenca za CSV
+  // IN toast — ENA izpeljava, R259 vzorec handlerja); toast pove REALNO
+  // agregatno resnico vidnega seznama (R248 lekcija — brez nje je CSV
+  // šepav brat PDF-ja; sklanjatev dobaviteljBeseda — družinska resnica).
+  // Fail-closed: 0 → iskren toast (nespremenjeno); fail-verbose: TypeError
+  // iz liba → viden razlog (družina R234/R250).
   const handleSuppliersCsv = () => {
     if (loading) return
     if (suppliers.length === 0) {
       toast({ title: 'Ni dobaviteljev za izvoz', description: 'CSV se izvozi, ko je dodan prvi dobavitelj.' })
       return
     }
-    const count = downloadSuppliersCsv(suppliers)
-    toast({ title: 'CSV prenesen', description: `${count} dobaviteljev v Dobavitelji-${todayStamp()}.csv` })
+    try {
+      const seg = dobaviteljiSegmentacija(suppliers)
+      const count = downloadSuppliersCsv(suppliers, seg)
+      toast({
+        title: `CSV prenesen — ${count} ${dobaviteljBeseda(count)}`,
+        description: `Dobavitelji-…csv — najhitrejši rok ${seg.najhitrejsi} dni, največji popust ${seg.najvecjiPopust} %.`,
+      })
+    } catch (err) {
+      toast({ title: `Izvoz CSV ni uspel: ${err instanceof Error ? err.message : String(err)}`, variant: 'destructive' })
+    }
   }
 
   // R257 (P1-f, 13. člen) — NAROČILA PREGLED PDF (agregatna resnica za
@@ -1643,12 +1668,14 @@ export function MaterialIntelligenceTab({
           </div>
           {/* R259 (F2 stil) — legenda izvozne skupine (želona pariteta
               R256/R257/R258: vsak dokument pove svojo resnico; CSV = vrstica
-              per dobavitelj, PDF = arhivski pregled z agregatom roka). */}
+              per dobavitelj, PDF = arhivski pregled z agregatom roka).
+              R260 — podaljšana za segmentacijo (ISTI vrstici 10/11 v CSV;
+              stara resnica ostane dobesedno — append-only legenda). */}
           <p
             className="text-right text-2xs text-muted-foreground"
             aria-label="Legenda izvoza dobaviteljev"
           >
-            CSV = vrstica per dobavitelj · PDF = arhivski pregled z povprečnim in najhitrejšim dobavnim rokom
+            CSV = vrstica per dobavitelj · PDF = arhivski pregled z povprečnim in najhitrejšim dobavnim rokom · CSV nosi segmentacijo (najhitrejši rok · največji popust)
           </p>
           {/* R243 — wave 5 RBAC ogledalo: CTA 'Nov dobavitelj' je VIDEN samo
               vlogi s pravico catalog.manage (API POST /api/suppliers). Med
@@ -1680,32 +1707,49 @@ export function MaterialIntelligenceTab({
               </CardContent></Card>
             )
           ) : (
-            suppliers.map((sup) => (
-              <Card key={sup.id} className="transition-colors hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25 hover:shadow-sm">
-                <CardContent className="p-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        {/* R144 stil: živa pika aktivnosti dobavitelja */}
-                        <span
-                          className={`h-2 w-2 shrink-0 rounded-full ${sup.aktivna ? 'bg-roksal-green ring-2 ring-roksal-green/20' : 'bg-muted-foreground/40'}`}
-                          aria-hidden="true"
-                          title={sup.aktivna ? 'Aktiven dobavitelj' : 'Neaktiven dobavitelj'}
-                        />
-                        <span className="text-sm font-semibold text-roksal-ink truncate">{sup.naziv}</span>
-                        {sup.popust > 0 && <Badge variant="outline" className="text-3xs bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300">-{sup.popust}%</Badge>}
-                      </div>
-                      <div className="text-2xs text-muted-foreground space-y-0.5 tabular-nums">
-                        {sup.kontakt && <div>{sup.kontakt}</div>}
-                        {sup.telefon && <div>{sup.telefon}</div>}
-                        <div>Dobavni rok: {sup.dobavniRok} dni</div>
-                        {sup._count && <div>{sup._count.materialPrices} cen · {sup._count.orders} naročil</div>}
+            (() => {
+              // R260 — WYSIWYG segmentov na zaslonu: ISTA izpeljava
+              // (dobaviteljiSegmentacija) kot CSV stolpca 10/11 IN toast —
+              // ENA resnica vidnega seznama (zaslon ⇔ CSV ⇔ toast).
+              const segZaslon = dobaviteljiSegmentacija(suppliers)
+              return suppliers.map((sup) => (
+                <Card key={sup.id} className="transition-colors hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25 hover:shadow-sm">
+                  <CardContent className="p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          {/* R144 stil: živa pika aktivnosti dobavitelja */}
+                          <span
+                            className={`h-2 w-2 shrink-0 rounded-full ${sup.aktivna ? 'bg-roksal-green ring-2 ring-roksal-green/20' : 'bg-muted-foreground/40'}`}
+                            aria-hidden="true"
+                            title={sup.aktivna ? 'Aktiven dobavitelj' : 'Neaktiven dobavitelj'}
+                          />
+                          <span className="text-sm font-semibold text-roksal-ink truncate">{sup.naziv}</span>
+                          {sup.popust > 0 && <Badge variant="outline" className="text-3xs bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300">-{sup.popust}%</Badge>}
+                          {/* R260 — segmentni žigi (ISTO resnico kot CSV
+                              stolpca 10/11; rokopisno po IDENTITETI — v === s):
+                              najhitrejši rok VEDNO ko je nosilec; največji
+                              popust SAMO kadar je največji > 0 (maksimum
+                              ničnih ni izpostavljanje — nič izmišljenega). */}
+                          {segZaslon.najhitrejsiVnosi.includes(sup) && (
+                            <Badge variant="outline" className="text-3xs bg-roksal-green/10 text-roksal-green border-roksal-green/30">najhitrejši rok</Badge>
+                          )}
+                          {segZaslon.najvecjiPopust > 0 && segZaslon.najvecjiPopustVnosi.includes(sup) && (
+                            <Badge variant="outline" className="text-3xs bg-roksal-green/10 text-roksal-green border-roksal-green/30">največji popust</Badge>
+                          )}
+                        </div>
+                        <div className="text-2xs text-muted-foreground space-y-0.5 tabular-nums">
+                          {sup.kontakt && <div>{sup.kontakt}</div>}
+                          {sup.telefon && <div>{sup.telefon}</div>}
+                          <div>Dobavni rok: {sup.dobavniRok} dni</div>
+                          {sup._count && <div>{sup._count.materialPrices} cen · {sup._count.orders} naročil</div>}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
+                  </CardContent>
+                </Card>
+              ))
+            })()
           )}
 
           {/* Dodaj ceno materiala */}

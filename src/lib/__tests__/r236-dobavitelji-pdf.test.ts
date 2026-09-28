@@ -174,8 +174,16 @@ describe('R236 — ENA resnica: PDF tabela = ISTI prerez kot CSV R233 (WYSIWYG)'
       "head: [['Naziv', 'Status', 'Kontakt', 'Telefon', 'Email', 'Dobavni rok (dni)', 'Popust (%)', 'Št. cen', 'Št. naročil']]",
     )
     // CSV R233 nosi ISTI prerez (komponenta — vir resnice za izvozni družini).
+    // R260 premik pina: CSV je append-only razširjen na 11 stolpcev (+ 'Najhitrejši
+    // rok' + 'Največji popust' — segmentacija ISTEGA DTO); PDF glava ostaja
+    // 9 stolpcev (prerez 1–9 ISTI vrstni red — segmenti so CSV/zaslon/toast
+    // resnica, PDF kontrakt te runde NIČ).
     expect(komponenta).toContain(
-      "['Naziv', 'Status', 'Kontakt', 'Telefon', 'Email', 'Dobavni rok (dni)', 'Popust (%)', 'Št. cen', 'Št. naročil']",
+      "['Naziv', 'Status', 'Kontakt', 'Telefon', 'Email', 'Dobavni rok (dni)', 'Popust (%)', 'Št. cen', 'Št. naročil', 'Najhitrejši rok', 'Največji popust']",
+    )
+    // prerez 1–9 ostane nazivnostno skladen med PDF in CSV (zgodovinska resnica)
+    expect(komponenta).toContain(
+      "'Naziv', 'Status', 'Kontakt', 'Telefon', 'Email', 'Dobavni rok (dni)', 'Popust (%)', 'Št. cen', 'Št. naročil'",
     )
   })
 

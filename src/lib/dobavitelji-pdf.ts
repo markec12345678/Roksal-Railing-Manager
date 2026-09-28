@@ -21,6 +21,25 @@
 //  • tabela WYSIWYG: vsak dobavitelj z MIN dobavnim rokom zeleno bold (če
 //    več nosilcev min vrednosti, so VSI vidno izpostavljeni — to je resnica
 //    izenačbe; MNOŽIČNI nosilec se ne izmišljuje).
+//
+// R260 (P1-f nadgradna CSV brata, 'izvozi' družina) — SEGMENTACIJA
+// popust/dobavniRok iz ISTEGA DTO (route NIČ, NIČ nove mreže):
+//  • ENA izpeljava `dobaviteljiSegmentacija` = CSV stolpca 10/11 (DA/NE) +
+//    zaslonski žig na kartici + komponentni toast agregat — ni izračuna
+//    drugje;
+//  • nosilci so VSE VNOSI (identiteta referenc, ne nazivi — dva dobavitelja
+//    z istim nazivom a različnim rokom sta RAZLIČNI resnici; nazivna
+//    izenačba R259 ostane v PDF sloju, segmentni sloj je strožji);
+//  • DVOPROHODNI izračun (najprej MIN/MAX nato filter) = rezultat f(MNOŽICA)
+//    po konstrukciji — NIČ odvisnosti od vrstnega reda odgovora (R258
+//    lekcija 1 na najmočnejši obliki);
+//  • WYSIWYG: CSV 'DA' ⇔ zaslonski žig ⇔ toast agregat — ISTA resnica
+//    VISIBLENEGA seznama (API default vrne samo aktivne — R259 lekcija 3:
+//    toast agregat je WYSIWYG vidnega seznama, NE silent degradation);
+//  • zaslonski žig 'največji popust' SAMO kadar je največji popust > 0 —
+//    maksimum ničnih ni izpostavljanje vrednosti (nič izmišljenega
+//    poveličevanja); CSV stolpec ostane VEDNO mehanična DA/NE resnica
+//    ISTEGA DTO (brez okrasja, brez izjem).
 // fileId seed se NI spremenil (R236 kontrakt: naziv/aktivna/dobavniRok/
 // popust) — enak vhod še vedno = bajtno enak dokument; KPI/sklep so
 // izpeljane resnice ISTEGA vhoda.
@@ -128,6 +147,42 @@ export function dobaviteljiRokPovzetek(
     najpocasnejsi,
     najhitrejsiNaziv,
     najpocasnejsiNaziv,
+  }
+}
+
+/** R260 — segmentacija popust/dobavniRok iz ISTEGA DTO (ENA izpeljava za CSV
+ *  stolpca 10/11 + zaslonski žig + toast agregat). Fail-closed na praznem
+ *  seznamu (družinsko pravilo). DVOPROHODNI izračun: najprej MIN rok / MAX
+ *  popust, nato filter — rezultat f(MNOŽICA) po konstrukciji (NIČ
+ *  odvisnosti od vrstnega reda odgovora). Nosilci so VSE VNOSI po
+ *  IDENTITETI referenc (ne nazivi — dva dobavitelja z istim nazivom sta
+ *  različni resnici, če sta različna po roku/popustu). */
+export interface DobaviteljiSegmentacija {
+  najhitrejsi: number
+  najhitrejsiVnosi: readonly DobaviteljPdfVnos[]
+  najvecjiPopust: number
+  najvecjiPopustVnosi: readonly DobaviteljPdfVnos[]
+}
+
+export function dobaviteljiSegmentacija(
+  dobavitelji: readonly DobaviteljPdfVnos[],
+): DobaviteljiSegmentacija {
+  if (!Array.isArray(dobavitelji) || dobavitelji.length === 0) {
+    throw new TypeError(
+      'dobaviteljiSegmentacija: prazen seznam ne nastaja segmentov — komponenta pokaže iskren toast (Ni dobaviteljev za izvoz.)',
+    )
+  }
+  let najhitrejsi = dobavitelji[0].dobavniRok
+  let najvecjiPopust = dobavitelji[0].popust
+  for (const s of dobavitelji) {
+    if (s.dobavniRok < najhitrejsi) najhitrejsi = s.dobavniRok
+    if (s.popust > najvecjiPopust) najvecjiPopust = s.popust
+  }
+  return {
+    najhitrejsi,
+    najhitrejsiVnosi: dobavitelji.filter((s) => s.dobavniRok === najhitrejsi),
+    najvecjiPopust,
+    najvecjiPopustVnosi: dobavitelji.filter((s) => s.popust === najvecjiPopust),
   }
 }
 
