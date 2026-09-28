@@ -50,6 +50,13 @@ import { downloadCsv, todayStamp } from '@/lib/csv-export'
 // R234 (P1-c) — Stanje zaloge PDF izvoz ('izvozi' družina PDF dimenzija —
 // boss-report vzorec; ENA resnica s CSV R136/R226).
 import { generateZalogaPdf } from '@/lib/zaloga-pdf'
+// R237 (P1-c) — NAROČILNICA OSNUTEK PDF (pravi PDF brat CSV priloge R205 —
+// isti vir artiklov + narociloKolicina ENA formula, fail-closed delegacija,
+// bajtni determinizem; INTERNI dokument za potrditev osnutka).
+import {
+  buildOsnutekPdfDoc,
+  osnutekPdfFilename,
+} from '@/lib/osnutek-pdf'
 import { casOznaka } from '@/lib/osvezitev-fokus'
 import {
   buildZalogaPovzetek,
@@ -684,6 +691,40 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
     toast.success(
       `Naročilnica CSV prenesena — ${osnutekArtikli.length} ${zalogaPovzetekBeseda(osnutekArtikli.length)}.`,
     )
+  }
+
+  // R237 (P1-c) — NAROČILNICA OSNUTEK PDF (pravi dokument za interno potrditev
+  // osnutka PRED pošiljanjem; brat CSV priloge R205 — ISTI vir artikli +
+  // narociloKolicina ENA formula). Determinizem: EN `now` za dokument IN ime
+  // (dva klica new Date() bi razdala žig in ime — lekcija R121/R235).
+  // Fail-verbose: TypeError (pokvaren artikel / nad minimumom — delegirana
+  // validacija narociloKolicina) → viden razlog; ostalo → 'Izvoz PDF ni uspel:'
+  // (R234/R235/R236 družina). Gumb je disabled na 0 (ISTO semantiko kot CSV
+  // sorojec — prazna datoteka ne nastane).
+  function prenesiOsnutekPdf() {
+    if (osnutekArtikli.length === 0) {
+      toast.error('Ni artiklov pod minimalno zalogo — nič za naročilo.')
+      return
+    }
+    try {
+      const now = new Date()
+      const doc = buildOsnutekPdfDoc(osnutekArtikli, {
+        now,
+        opombe: osnutekOpombe,
+      })
+      doc.save(osnutekPdfFilename(now))
+      toast.success(
+        `Osnutek prenesen v PDF — ${osnutekArtikli.length} ${zalogaPovzetekBeseda(osnutekArtikli.length)}`,
+        { description: 'osnutek-narocilnica-…pdf — interni pregled pred pošiljanjem.' },
+      )
+    } catch (err) {
+      if (err instanceof TypeError) {
+        // fail-closed jedro: pokvaren artikel / nad minimumom → viden razlog
+        toast.error('Osnutka PDF ni mogoče sestaviti iz teh artiklov', { description: err.message })
+      } else {
+        toast.error(`Izvoz PDF ni uspel: ${err instanceof Error ? err.message : String(err)}`)
+      }
+    }
   }
 
   const selectedItem = inventory.find((i) => i.id === movementInventoryId)
@@ -1571,6 +1612,17 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
             >
               <Download className="h-4 w-4" aria-hidden="true" />
               CSV
+            </Button>
+            <Button
+              variant="outline"
+              onClick={prenesiOsnutekPdf}
+              disabled={osnutekArtikli.length === 0}
+              className="gap-1.5 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 disabled:opacity-50"
+              aria-label="Prenesi naročilnico vidnih artiklov kot PDF"
+              title="Naročilnica osnutka kot pravi PDF — interni pregled pred pošiljanjem"
+            >
+              <FileText className="h-4 w-4" aria-hidden="true" />
+              PDF
             </Button>
             <Button
               variant="outline"

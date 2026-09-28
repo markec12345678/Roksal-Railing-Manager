@@ -997,7 +997,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                     {/* Status actions */}
                     {s.status === 'NAVRTENO' && (
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <Button type="button" size="sm" variant="outline" className="h-6 text-[10px] bg-amber-50 dark:bg-amber-950/40 focus-visible:ring-2 focus-visible:ring-roksal-amber/50" onClick={() => handleStatusChange(s.id, 'V_TEKU')}>
+                        <Button type="button" size="sm" variant="outline" className="h-6 text-[10px] bg-amber-50 dark:bg-amber-950/40 focus-visible:ring-2 focus-visible:ring-roksal-navy/40" onClick={() => handleStatusChange(s.id, 'V_TEKU')}>
                           Začni montažo
                         </Button>
                         <Button

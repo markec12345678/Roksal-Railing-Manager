@@ -465,7 +465,7 @@ export function PunchList({ project }: { project: Project | null }) {
                     type="button"
                     onClick={() => void cycleStatus(item)}
                     aria-label={`Spremeni status: ${item.naslov}`}
-                    className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 outline-none transition-all focus-visible:ring-2 focus-visible:ring-roksal-amber focus-visible:ring-offset-2 ${
+                    className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 outline-none transition-all focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 ${
                       item.status === 'done'
                         ? 'border-emerald-500 bg-emerald-500 text-white'
                         : item.status === 'issue'
@@ -564,7 +564,7 @@ export function PunchList({ project }: { project: Project | null }) {
             type="button"
             variant="outline"
             size="sm"
-            className="h-9 focus-visible:ring-2 focus-visible:ring-roksal-amber/50"
+            className="h-9 focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
             disabled={items.length === 0}
             onClick={handleExportCsv}
             aria-label={`Izvozi ${items.length} točk zapisnika kot CSV datoteko`}

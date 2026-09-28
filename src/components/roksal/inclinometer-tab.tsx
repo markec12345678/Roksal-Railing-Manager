@@ -398,7 +398,7 @@ export function InclinometerTab({ projectId }: { projectId: string | null }) {
                 size="sm"
                 variant="outline"
                 onClick={handleExportCSV}
-                className="shrink-0 h-8 px-2.5 text-xs focus-visible:ring-2 focus-visible:ring-roksal-amber/50"
+                className="shrink-0 h-8 px-2.5 text-xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
                 aria-label={`Izvozi ${saved.length} nagibov kot CSV datoteko`}
               >
                 <Download className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />

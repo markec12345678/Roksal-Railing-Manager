@@ -4027,7 +4027,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                       onClick={() => handleStatusCycle(m)}
                       disabled={statusBusyId === m.id}
                       aria-label={`Status meritve ${m.oznaka || m.lokacija || `#${m.id.slice(-4)}`}: ${statusLabels[mStatus]}. Klik za spremembo v ${statusLabels[statusCycle[mStatus]]}`}
-                      className={`inline-flex items-center gap-0.5 rounded px-1 py-0 text-[8px] font-medium border transition-all hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-amber focus-visible:ring-offset-1 disabled:cursor-wait disabled:opacity-50 ${
+                      className={`inline-flex items-center gap-0.5 rounded px-1 py-0 text-[8px] font-medium border transition-all hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1 disabled:cursor-wait disabled:opacity-50 ${
                         statusColors[mStatus]
                       }`}
                       title="Klikni za cikliranje statusa (shranjeno v bazo)"
@@ -4907,7 +4907,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                     type="button"
                     variant="outline"
                     onClick={handleClearCalibration}
-                    className="h-9 px-3 focus-visible:ring-2 focus-visible:ring-roksal-amber/50"
+                    className="h-9 px-3 focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
                     aria-label="Počisti umeritev"
                   >
                     <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
@@ -6475,7 +6475,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               rows={3}
               maxLength={500}
               autoFocus
-              className="focus-visible:ring-roksal-amber"
+              className="focus-visible:ring-roksal-navy/40"
             />
             <p className="text-xs text-muted-foreground tabular-nums">
               {reopenNote.trim().length}/500 znakov

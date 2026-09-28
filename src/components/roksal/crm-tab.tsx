@@ -519,7 +519,7 @@ export function CrmTab() {
                     variant="ghost"
                     size="sm"
                     aria-label={`Uredi CRM: ${c.ime}`}
-                    className="shrink-0 h-7 outline-none focus-visible:ring-2 focus-visible:ring-roksal-amber focus-visible:ring-offset-2 hover:bg-amber-50 hover:text-roksal-navy dark:hover:bg-amber-500/15 dark:hover:text-amber-300"
+                    className="shrink-0 h-7 outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 hover:bg-amber-50 hover:text-roksal-navy dark:hover:bg-amber-500/15 dark:hover:text-amber-300"
                     onClick={(e) => {
                       e.stopPropagation()
                       handleOpenEdit(c)
@@ -712,7 +712,7 @@ export function CrmTab() {
               type="button"
               variant="outline"
               onClick={() => setEditOpen(false)}
-              className="focus-visible:ring-2 focus-visible:ring-roksal-amber focus-visible:ring-offset-2"
+              className="focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
             >
               Prekliči
             </Button>
@@ -721,7 +721,7 @@ export function CrmTab() {
               onClick={handleSaveEdit}
               disabled={saving}
               aria-busy={saving}
-              className="bg-roksal-navy text-white focus-visible:ring-2 focus-visible:ring-roksal-amber focus-visible:ring-offset-2 disabled:opacity-50"
+              className="bg-roksal-navy text-white focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 disabled:opacity-50"
             >
               {saving ? (
                 <>

@@ -65,6 +65,20 @@ VZORCI = {
     'border-barvni': (re.compile(r"(?<![\w-])border-(?:red|amber|green|blue|purple|violet|emerald|teal|cyan|sky|indigo|fuchsia|pink|rose|orange|lime|yellow)-(?:100|200|300)\b"), re.compile(r"dark:(?:[\w-]+:)*border-")),
     'text-barvni-temni': (re.compile(r"(?<![\w-])text-(?:red|amber|green|blue|purple|violet|emerald|teal|cyan|sky|indigo|fuchsia|pink|rose|orange|lime|yellow)-(?:600|700|800|900)\b"), re.compile(r"dark:(?:[\w-]+:)*text-")),
     'selection': (re.compile(r"selection:(?:bg|text)-(?:roksal|gray|slate|stone|zinc|neutral|red|amber|green|blue|purple|violet|emerald|teal|cyan|sky|indigo|fuchsia|pink|rose|orange|lime)-\d+"), re.compile(r"dark:selection:|dark:(?:[\w-]+:)*(?:bg|text)-")),
+    # R237 — FOKUS revizija 2. faza (r236 konverzija 4 odstopanj, sedaj
+    # SISTEMATIZIRANA): app glavni fokus = focus-visible:ring-roksal-navy/40
+    # (×143). Kandidat = fokus ring roksal-{amber,ink,green,blue} BREZ
+    # strukturnega opravila (mirror logika, nič hard-kodiranih izjem):
+    #   (a) dark:focus-visible:ring- mirror na vrstici = namerna dark veja
+    #       (bottom-nav ink/40 — navy v svetli, ink v temni);
+    #   (b) NE-ring roksal-amber/ink/green/blue na vrstici (bg-amber/5,
+    #       border-amber/40, hover:text-green …) = kontrolka je barvno
+    #       TEMATIČNA (ISTI pomen kot destructive red fokus — navy/40 bi
+    #       utišal barvno semantiko); ring-token sam NE šteje (lookbehind).
+    #   Preostali (osamljen fokus brez teme/mirrorja) = kandidat za navy/40.
+    #   Izjeme BREZ roksal tokenov (white/60 canvas, red- destructive,
+    #   ring-ring shadcn) so že izpuščene v vzorcu.
+    'fokus': (re.compile(r"focus-visible:ring-(?!roksal-navy/40\b)(?!white/60\b)(?!white\b)(?!red-)(?!roksal-red/40\b)(?!ring/50\b)(?!ring\b)(?!ring-2\b)(?!ring-offset\b)(?!ring-inset\b)roksal-(?:amber|ink|green|blue)[\w-]*(?:/\d+)?"), re.compile(r"dark:focus-visible:ring-|(?<!focus-visible:ring-)roksal-(?:amber|ink|green|blue)")),
 }
 
 def je_izjema(p: Path) -> bool:
