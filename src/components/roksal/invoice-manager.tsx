@@ -244,6 +244,40 @@ export function InvoiceManager() {
   const [qrInvoice, setQrInvoice] = useState<Invoice | null>(null)
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
   const [xmlLoading, setXmlLoading] = useState<string | null>(null)
+  // R241 (P1-i wave 3): UI ogledalo RBAC vrat na /api/invoices — komponenta
+  // prebere svoje KONKRETNE pravice (GET /api/auth → permissions, R135) in
+  // skrije akcije, ki bi končale s 403 (ISTI vzorec kot dashboard R239 in
+  // team-tab R135: "ista pravila kot strežnik, le izkustveno, ne naključno").
+  // Fail-closed: med nalaganjem (null) in ob napaki ([]) so VSE pisalne
+  // akcije skrite — least privilege, nikoli lažni gumb, ki bi utišal 403.
+  const [myPermissions, setMyPermissions] = useState<readonly string[] | null>(null)
+  useEffect(() => {
+    let alive = true
+    fetch('/api/auth')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (alive && data?.permissions) setMyPermissions(data.permissions as readonly string[])
+        else if (alive) setMyPermissions([])
+      })
+      .catch(() => {
+        if (alive) setMyPermissions([])
+      })
+    return () => {
+      alive = false
+    }
+  }, [])
+  // Vrata = TOČNO ISTA imena pravic kot denyUnlessInvoice v /api/invoices
+  // (POST + DELETE → invoices.create, PATCH IZDAN/PLACAN → invoices.issue,
+  // PATCH STORNIRAN → invoices.cancel) — pariteto zaklene r241 test.
+  const lahkoUstvarja = myPermissions?.includes('invoices.create') ?? false
+  const lahkoIzdaja = myPermissions?.includes('invoices.issue') ?? false
+  const lahkoStornira = myPermissions?.includes('invoices.cancel') ?? false
+  // Vlogo-osveščen vodič (R239 precedens — nikoli kazalec na gumb, ki ga
+  // uporabnik ne vidi): prikaže se SAMO, ko uporabnik nima NOBENE pisalne
+  // pravice nad računi. Med nalaganjem (null) se ne izgovarjamo — resnica
+  // še ni znana, tišina je iskrena.
+  const samoBranje =
+    myPermissions !== null && !lahkoUstvarja && !lahkoIzdaja && !lahkoStornira
 
   const loadInvoices = useCallback(async () => {
     try {
@@ -380,8 +414,18 @@ export function InvoiceManager() {
         resetForm()
         loadInvoices()
       } else {
+        // R241: fail-verbose — 403 iz denyUnlessInvoice nosi {error, detail},
+        // kjer je detail človeku razumljiv razlog ("Računi so uradni
+        // dokumenti — potrebna je pravica invoices.create."). Do R241 je UI
+        // pokazal samo generični error ("Prepovedano") — razlog je bil zamolčan.
         const err = await res.json().catch(() => ({}))
-        toast({ title: err.error ?? 'Napaka pri shranjevanju', variant: 'destructive' })
+        const razlog: string | null =
+          typeof err?.detail === 'string'
+            ? err.detail
+            : typeof err?.error === 'string'
+              ? err.error
+              : null
+        toast({ title: razlog ?? 'Napaka pri shranjevanju', variant: 'destructive' })
       }
     } catch {
       toast({ title: 'Omrežna napaka', variant: 'destructive' })
@@ -406,11 +450,22 @@ export function InvoiceManager() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: inv.id, status }),
       })
-      if (!res.ok) throw new Error()
+      // R241: fail-verbose — 403 razlog iz {error, detail} pride do
+      // uporabnika (do R241: generično "Napaka pri posodabljanju").
+      if (!res.ok) {
+        const err = (await res.json().catch(() => null)) as { detail?: unknown; error?: unknown } | null
+        const razlog: string | null =
+          typeof err?.detail === 'string'
+            ? err.detail
+            : typeof err?.error === 'string'
+              ? err.error
+              : null
+        throw new Error(razlog ?? 'Napaka pri posodabljanju')
+      }
       toast({ title: status === 'PLACAN' ? 'Račun plačan ✓' : status === 'STORNIRAN' ? 'Račun storniran' : 'Račun izdan' })
-    } catch {
+    } catch (e) {
       setInvoices(prev)
-      toast({ title: 'Napaka pri posodabljanju', variant: 'destructive' })
+      toast({ title: e instanceof Error ? e.message : 'Napaka pri posodabljanju', variant: 'destructive' })
     }
   }
 
@@ -421,8 +476,15 @@ export function InvoiceManager() {
         setInvoices((cur) => cur.filter((i) => i.id !== inv.id))
         toast({ title: 'Osnutek brisan' })
       } else {
+        // R241: fail-verbose — detail iz denyUnlessInvoice, ne samo "Prepovedano".
         const err = await res.json().catch(() => ({}))
-        toast({ title: err.error ?? 'Napaka pri brisanju', variant: 'destructive' })
+        const razlog: string | null =
+          typeof err?.detail === 'string'
+            ? err.detail
+            : typeof err?.error === 'string'
+              ? err.error
+              : null
+        toast({ title: razlog ?? 'Napaka pri brisanju', variant: 'destructive' })
       }
     } catch {
       toast({ title: 'Omrežna napaka', variant: 'destructive' })
@@ -867,17 +929,30 @@ export function InvoiceManager() {
               <Download className="h-3.5 w-3.5" />
               CSV
             </Button>
-            <Button
-              size="sm"
-              onClick={() => setDialogOpen(true)}
-              className="h-8 bg-amber-500 text-navy-900 hover:bg-amber-400"
-            >
-              <Plus className="h-4 w-4" /> Nov račun
-            </Button>
+            {/* R241: gumb viden SAMO nosilcu invoices.create — API bi sicer
+                vrnil 403 (R239 ogledalo: nikoli gumb, ki ga pravica ne nosi). */}
+            {lahkoUstvarja && (
+              <Button
+                size="sm"
+                onClick={() => setDialogOpen(true)}
+                className="h-8 bg-amber-500 text-navy-900 hover:bg-amber-400 press-scale"
+              >
+                <Plus className="h-4 w-4" /> Nov račun
+              </Button>
+            )}
           </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
+        {/* R241: vlogo-osveščen vodič — samo za gledalce brez pisalnih pravic
+            (MONTER/SKLADISCE: invoices.read). Navaja TOČNO permission-imeni
+            iz API vrat (pariteta r241 test), nikoli ne kaže na skrit gumb. */}
+        {samoBranje && (
+          <p className="text-2xs text-muted-foreground">
+            Pregled računov je samo za branje — ustvarjanje, izdaja in storno
+            (pravice invoices.create / invoices.issue / invoices.cancel) izvaja vodstvo.
+          </p>
+        )}
         {/* Povzetek */}
         {!loading && invoices.length > 0 && (
           <div className="space-y-2">
@@ -988,27 +1063,33 @@ export function InvoiceManager() {
                   <div className="mt-2 flex flex-wrap items-center gap-1.5">
                     {inv.status === 'OSNUTEK' && (
                       <>
-                        <Button
-                          size="sm"
-                          className="h-7 text-xs bg-emerald-600 hover:bg-emerald-500 focus-visible:ring-roksal-navy/40"
-                          onClick={() => patchStatus(inv, 'IZDAN')}
-                        >
-                          <Send className="h-3 w-3" /> Izdaj
-                        </Button>
-                        <Button size="sm" variant="outline" className="h-7 text-xs focus-visible:ring-roksal-navy/40" onClick={() => deleteInvoice(inv)}>
-                          <Trash2 className="h-3 w-3" /> Briši
-                        </Button>
+                        {lahkoIzdaja && (
+                          <Button
+                            size="sm"
+                            className="h-7 text-xs bg-emerald-600 hover:bg-emerald-500 focus-visible:ring-roksal-navy/40"
+                            onClick={() => patchStatus(inv, 'IZDAN')}
+                          >
+                            <Send className="h-3 w-3" /> Izdaj
+                          </Button>
+                        )}
+                        {lahkoUstvarja && (
+                          <Button size="sm" variant="outline" className="h-7 text-xs focus-visible:ring-roksal-navy/40" onClick={() => deleteInvoice(inv)}>
+                            <Trash2 className="h-3 w-3" /> Briši
+                          </Button>
+                        )}
                       </>
                     )}
                     {inv.status === 'IZDAN' && (
                       <>
-                        <Button
-                          size="sm"
-                          className="h-7 text-xs bg-emerald-600 hover:bg-emerald-500 focus-visible:ring-roksal-navy/40"
-                          onClick={() => patchStatus(inv, 'PLACAN')}
-                        >
-                          <CheckCircle2 className="h-3 w-3" /> Plačan
-                        </Button>
+                        {lahkoIzdaja && (
+                          <Button
+                            size="sm"
+                            className="h-7 text-xs bg-emerald-600 hover:bg-emerald-500 focus-visible:ring-roksal-navy/40"
+                            onClick={() => patchStatus(inv, 'PLACAN')}
+                          >
+                            <CheckCircle2 className="h-3 w-3" /> Plačan
+                          </Button>
+                        )}
                         {zapadlo && (
                           <Button
                             size="sm"
@@ -1021,26 +1102,28 @@ export function InvoiceManager() {
                             <BellRing className="h-3 w-3" /> Opomnik
                           </Button>
                         )}
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className={`h-7 text-xs border-red-300 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-950/40 focus-visible:ring-red-400/60 ${stornoId === inv.id ? 'bg-red-600 text-white hover:bg-red-500' : 'text-red-700 dark:text-red-300'}`}
-                          onClick={() => {
-                            if (stornoId === inv.id) {
-                              setStornoId(null)
-                              patchStatus(inv, 'STORNIRAN')
-                            } else {
-                              setStornoId(inv.id)
-                              setTimeout(() => setStornoId((cur) => (cur === inv.id ? null : cur)), 3000)
-                            }
-                          }}
-                        >
-                          <Ban className="h-3 w-3" />
-                          {stornoId === inv.id ? 'Potrdi storno?' : 'Storno'}
-                        </Button>
+                        {lahkoStornira && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className={`h-7 text-xs border-red-300 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-950/40 focus-visible:ring-red-400/60 ${stornoId === inv.id ? 'bg-red-600 text-white hover:bg-red-500' : 'text-red-700 dark:text-red-300'}`}
+                            onClick={() => {
+                              if (stornoId === inv.id) {
+                                setStornoId(null)
+                                patchStatus(inv, 'STORNIRAN')
+                              } else {
+                                setStornoId(inv.id)
+                                setTimeout(() => setStornoId((cur) => (cur === inv.id ? null : cur)), 3000)
+                              }
+                            }}
+                          >
+                            <Ban className="h-3 w-3" />
+                            {stornoId === inv.id ? 'Potrdi storno?' : 'Storno'}
+                          </Button>
+                        )}
                       </>
                     )}
-                    {inv.status === 'OSNUTEK' && (
+                    {inv.status === 'OSNUTEK' && lahkoUstvarja && (
                       <Button
                         size="sm"
                         variant="outline"
@@ -1095,7 +1178,15 @@ export function InvoiceManager() {
       </CardContent>
 
       {/* Dialog: nov račun */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog
+        open={dialogOpen}
+        onOpenChange={(open) => {
+          // R241: obrambni AND (R239 vzorec) — dialog se ne odpre, če
+          // pravica invoices.create ni znana/nosi (fail-closed vrata v vratah).
+          if (open && !lahkoUstvarja) return
+          setDialogOpen(open)
+        }}
+      >
         <DialogContent className="max-h-[88vh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -1251,17 +1342,17 @@ export function InvoiceManager() {
               <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-2">
                 <div className="flex justify-between text-xs">
                   <span className="text-muted-foreground">Osnova</span>
-                  <span className="font-semibold">{eur(formTotals.osnova)}</span>
+                  <span className="font-semibold tabular-nums">{eur(formTotals.osnova)}</span>
                 </div>
                 {[...formTotals.ddvSkupine.entries()].map(([stopnja, z]) => (
                   <div key={stopnja} className="flex justify-between text-xs">
                     <span className="text-muted-foreground">DDV {stopnja} %</span>
-                    <span className="font-semibold">{eur(z)}</span>
+                    <span className="font-semibold tabular-nums">{eur(z)}</span>
                   </div>
                 ))}
                 <div className="mt-1 flex justify-between border-t border-amber-200 dark:border-amber-800 pt-1 text-sm font-bold text-roksal-ink">
                   <span>Za plačilo</span>
-                  <span>{eur(formTotals.znesek)}</span>
+                  <span className="tabular-nums">{eur(formTotals.znesek)}</span>
                 </div>
               </div>
             </div>
@@ -1342,7 +1433,7 @@ export function InvoiceManager() {
                 </div>
                 <div className="flex items-center justify-between border-t border-border/60 pt-1.5">
                   <span className="text-muted-foreground">Za plačilo</span>
-                  <span className="text-base font-bold text-roksal-ink">{eur(qrInvoice.znesek)}</span>
+                  <span className="text-base font-bold tabular-nums text-roksal-ink">{eur(qrInvoice.znesek)}</span>
                 </div>
               </div>
 
