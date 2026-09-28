@@ -15,8 +15,9 @@
 //    trenutno veljavnimi vnosi per inventoryId, bestSupplier = naziv
 //    dobavitelja te cene, suppliers = št. dobaviteljev z veljavno ceno);
 //    route NIČ (client+lib only — izvoz je potrošnik obstoječe resnice);
-//  • stolpci tabele = TOČNO ISTI prerez kot CSV (Artikel, Šifra, Enota,
-//    Najboljša cena (EUR/enota), Dobavitelj, Št. dobaviteljev);
+//  • stolpci tabele = TOČNO ISTI prerez kot CSV (R247 9 stolpcev: Artikel,
+//    Šifra, Enota, Najboljša cena (EUR/enota), Najvišja (EUR/enota),
+//    Razlika (EUR/enota), % razlike, Dobavitelj, Št. dobaviteljev);
 //  • vrstice so sortirane V LIBU (artikel asc → najboljša cena asc →
 //    dobavitelj asc → šifra asc) in sort je IZVOŽEN — CSV uporabi ISTI red
 //    (WYSIWYG brata; izboljšava vzorca: cenik R244 CSV je šel po API redu,
@@ -144,6 +145,35 @@ function deterministichenId(seed: string): string {
  *  brez ponudb za primerjavo ni razpona). */
 export function razlikaDoNajvisje(v: PrimerjalniPdfVnos): number {
   return v.najvisjaCena - v.najboljsaCena
+}
+
+/** Razlika izražena v % najboljše cene (R247, P1-g nadaljevanje — naslednja
+ *  logična korak razponske dimenzije po R246) — ENA izpeljava za PDF stolpec
+ *  IN CSV stolpec (ISTI prikaz = WYSIWYG brata).
+ *
+ *  Fail-closed matematični rob: najboljša cena 0 z razliko > 0 → TypeError
+ *  (odstotek od nič NI izraziv — NIKOLI izmišljen 999%/∞; indeks krivca
+ *  doda klicatelj prek preveriPrimerjalniVnos vrstnega reda). najboljša 0
+ *  z razliko 0 → 0 (iskrena resnica: brez ponudb za primerjavo ni razpona,
+ *  ISTI vzorec kot razlikaDoNajvisje 1 ponudbe). */
+export function razlikaOdstotek(v: PrimerjalniPdfVnos): number {
+  const razlika = razlikaDoNajvisje(v)
+  if (v.najboljsaCena === 0) {
+    if (razlika > 0) {
+      throw new TypeError(
+        `razlikaOdstotek: odstotek od najboljše cene 0 ne obstaja (najvišja ${String(v.najvisjaCena)} EUR — razlika od nič ni izraziva v %, NIKOLI izmišljena)`,
+      )
+    }
+    return 0
+  }
+  return (razlika / v.najboljsaCena) * 100
+}
+
+/** Prikazna resnica razlike v % — ENA decimalna mesta + decimalna vejica
+ *  (slovenski zapis, ISTI niz v PDF celici IN CSV polju — WYSIWYG; FP lekcija
+ *  R246: trditve na prikaznem nizu, ne na goli FP razliki). */
+export function razlikaOdstotekNiz(v: PrimerjalniPdfVnos): string {
+  return razlikaOdstotek(v).toFixed(1).replace('.', ',')
 }
 
 /** Sort vrstic V LIBU — skupni red (artikel asc → najboljša cena asc →
@@ -288,11 +318,11 @@ export function buildPrimerjalniPdfDoc(
   kpiBox(doc, 14 + 4 * (bw + gap), y, bw, bh, 'Prihranek', `${cenaNiz(prihranek)} €`, GREEN)
   y += bh + 8
 
-  // ---------- tabela primerjalnega cenika (ENA resnica = stolpci CSV; R246 razponska dimenzija) ----------
+  // ---------- tabela primerjalnega cenika (ENA resnica = stolpci CSV; R246 razponska dimenzija + R247 % razlika) ----------
   y = sectionTitle(doc, y, `Najboljše cene per artikel (${sortirane.length})`)
   autoTable(doc, {
     startY: y,
-    head: [['Artikel', 'Šifra', 'Enota', 'Najboljša cena (EUR/enota)', 'Najvišja (EUR/enota)', 'Razlika (EUR/enota)', 'Dobavitelj', 'Št. dobaviteljev']],
+    head: [['Artikel', 'Šifra', 'Enota', 'Najboljša cena (EUR/enota)', 'Najvišja (EUR/enota)', 'Razlika (EUR/enota)', '% razlike', 'Dobavitelj', 'Št. dobaviteljev']],
     body: sortirane.map((p) => [
       p.artikel.trim(),
       p.sifra.trim(),
@@ -300,6 +330,7 @@ export function buildPrimerjalniPdfDoc(
       cenaNiz(p.najboljsaCena),
       cenaNiz(p.najvisjaCena),
       cenaNiz(razlikaDoNajvisje(p)),
+      razlikaOdstotekNiz(p),
       p.dobavitelj.trim(),
       String(p.stDobaviteljev),
     ]),
@@ -307,16 +338,19 @@ export function buildPrimerjalniPdfDoc(
     headStyles: { fillColor: [...NAVY], textColor: 255, fontSize: 8 },
     columnStyles: {
       0: { cellWidth: 34 },
+      6: { cellWidth: 16, halign: 'right' },
       3: { halign: 'right' },
       4: { halign: 'right' },
       5: { halign: 'right' },
-      7: { halign: 'right' },
+      8: { halign: 'right' },
     },
     didParseCell: (data) => {
       // WYSIWYG z zaslonom: najboljša cena zeleno bold (ISTI pomen zelene
       // resnice kot v ceniku R244 — ključna številka ne utone); razlika > 0
       // amber bold (prostor za pogajanja — kjer razpon RES obstaja); razlika
       // 0 (1 ponudba) ostane navadna — resnica brez lažnega signala.
+      // R247: % razlike > 0 isti amber signal kot EUR razlika (ista paleta,
+      // isti pomen — odstotek je ISTA resnica v drugi enoti).
       if (data.section === 'body' && data.column.index === 3) {
         data.cell.styles.textColor = GREEN
         data.cell.styles.fontStyle = 'bold'
@@ -328,7 +362,14 @@ export function buildPrimerjalniPdfDoc(
           data.cell.styles.fontStyle = 'bold'
         }
       }
-      if (data.section === 'body' && data.column.index === 7) {
+      if (data.section === 'body' && data.column.index === 6) {
+        const v = String(data.cell.raw ?? '')
+        if (Number(v.replace(',', '.')) > 0) {
+          data.cell.styles.textColor = AMBER
+          data.cell.styles.fontStyle = 'bold'
+        }
+      }
+      if (data.section === 'body' && data.column.index === 8) {
         const v = String(data.cell.raw ?? '')
         if (Number(v) >= 2) {
           data.cell.styles.textColor = AMBER
@@ -349,7 +390,7 @@ export function buildPrimerjalniPdfDoc(
   doc.setFontSize(8.5)
   doc.setTextColor(...NAVY)
   doc.text(
-    `${sortirane.length} ${artikelBeseda(sortirane.length)} · najnižja vpisana cena per artikel · vsota razlik do najvišjih veljavnih cen ${cenaNiz(prihranek)} EUR/enota · samo trenutno veljavne cene (pretečene niso vključene).`,
+    `${sortirane.length} ${artikelBeseda(sortirane.length)} · najnižja vpisana cena per artikel · vsota razlik do najvišjih veljavnih cen ${cenaNiz(prihranek)} EUR/enota · razpon izražen tudi v odstotkih najboljše cene · samo trenutno veljavne cene (pretečene niso vključene).`,
     14,
     y + 4,
   )

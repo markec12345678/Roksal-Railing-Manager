@@ -224,9 +224,9 @@ describe('R234 — [Mandatory] stil (P1-f): nevtralne status veje gray → žeto
     expect(src).not.toContain('bg-gray-400 text-white border-gray-400')
   })
 
-  it('r172 PIN sinhroniziran (material-intelligence 1438 — R246, roksal-catalog 234)', () => {
+  it('r172 PIN sinhroniziran (material-intelligence 1442 — R247, roksal-catalog 234)', () => {
     const src = beri('src/lib/__tests__/r172-dark-spots.test.ts')
-    expect(src).toContain("'src/components/roksal/material-intelligence-tab.tsx', 1438,")
+    expect(src).toContain("'src/components/roksal/material-intelligence-tab.tsx', 1442,")
     expect(src).toContain("'src/components/roksal/roksal-catalog.tsx', 234,")
   })
 })

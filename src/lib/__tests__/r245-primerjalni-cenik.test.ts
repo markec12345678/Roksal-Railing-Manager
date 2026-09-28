@@ -38,6 +38,8 @@ import {
   preveriPrimerjalniVnos,
   sortirajPrimerjalni,
   razlikaDoNajvisje,
+  razlikaOdstotek,
+  razlikaOdstotekNiz,
   type PrimerjalniPdfVnos,
 } from '@/lib/primerjalni-cenik-pdf'
 import { buildCenikPdfDoc } from '@/lib/cenik-pdf'
@@ -189,7 +191,8 @@ describe('R245 — primerjalni-cenik-pdf lib (družina cenik-pdf R244, sal 0x51�
     expect(lib).toContain("'PRIMERJALNI CENIK'")
     expect(lib).toContain('data.column.index === 3')
     expect(lib).toContain('data.column.index === 5')
-    expect(lib).toContain('data.column.index === 7')
+    // R247: Št. dobaviteljev prestavljen s col 7 na col 8 (% razlike vrinjen)
+    expect(lib).toContain('data.column.index === 8')
     expect(lib).toContain("Number(v.replace(',', '.')) > 0")
     expect(lib).toContain('Number(v) >= 2')
   })
@@ -223,10 +226,13 @@ describe('R246 — razponska dimenzija (Najvišja + Razlika, izpeljava iz prices
     expect(lib).toContain("'Prihranek'")
   })
 
-  it('8 stolpcev (R246): ISTI prrez v PDF glavi IN CSV (Najvišja + Razlika med Najboljšo in Dobaviteljem)', () => {
-    const stolpci = "['Artikel', 'Šifra', 'Enota', 'Najboljša cena (EUR/enota)', 'Najvišja (EUR/enota)', 'Razlika (EUR/enota)', 'Dobavitelj', 'Št. dobaviteljev']"
+  it('9 stolpcev (R246 razponska + R247 % razlika): ISTI prrez v PDF glavi IN CSV (% razlike med Razliko in Dobaviteljem)', () => {
+    const stolpci = "['Artikel', 'Šifra', 'Enota', 'Najboljša cena (EUR/enota)', 'Najvišja (EUR/enota)', 'Razlika (EUR/enota)', '% razlike', 'Dobavitelj', 'Št. dobaviteljev']"
     expect(lib).toContain(`head: [${stolpci}]`)
     expect(material).toContain(stolpci)
+    // % stolpec stoji MED Razliko (EUR) in Dobaviteljem (IZVOŽEN prerez)
+    expect(lib.indexOf('Razlika (EUR/enota)')).toBeLessThan(lib.indexOf('% razlike'))
+    expect(lib).toContain("'% razlike', 'Dobavitelj'")
   })
 
   it('pridobiPrimerjalni: izpeljava iz prices (fail-closed: manjkajoče polje prices, pokvarjena vrstica z indeksom, brez ujemajoče ponudbe)', () => {
@@ -248,13 +254,75 @@ describe('R246 — razponska dimenzija (Najvišja + Razlika, izpeljava iz prices
   })
 })
 
+describe('R247 — % razlika (odstotek najboljše cene — naslednji logični korak razponske dimenzije po R246)', () => {
+  it('razlikaOdstotek: ENA izpeljava (0,6/11,9 = 5,04… %; 0,75/4,35 = 17,24… %; 0 — 1 ponudba = 0 je RESNICA)', () => {
+    // FP lekcija R246 (razponska): trditve na razlikah = toBeCloseTo +
+    // prikazna resnica na nizu (razlikaOdstotekNiz), NIKOLI goli toBe.
+    expect(razlikaOdstotek(VRSTE[0])).toBeCloseTo(5.0420168, 6)
+    expect(razlikaOdstotek(VRSTE[1])).toBeCloseTo(17.2413793, 6)
+    expect(razlikaOdstotek(VRSTE[2])).toBe(0) // 1 ponudba: točno 0 — ista številka
+    expect(razlikaOdstotek(VRSTE[2])).toBeGreaterThanOrEqual(0)
+  })
+
+  it('razlikaOdstotekNiz: prikazna resnica 1 decimalna + vejica (ISTI niz v PDF celici IN CSV polju — WYSIWYG)', () => {
+    // Goli FP 17.241379… NIKOLI trditveni partner prikaza (lekcija R246):
+    expect(razlikaOdstotek(VRSTE[1])).not.toBe(17.2)
+    expect(razlikaOdstotekNiz(VRSTE[0])).toBe('5,0')
+    expect(razlikaOdstotekNiz(VRSTE[1])).toBe('17,2')
+    expect(razlikaOdstotekNiz(VRSTE[2])).toBe('0,0')
+  })
+
+  it('fail-closed matematični rob: najboljša cena 0 z razliko > 0 → TypeError (odstotek od nič NI izraziv — NIKOLI izmišljen 999 %)', () => {
+    const nič = { ...VRSTE[2], najboljsaCena: 0, najvisjaCena: 3.5 }
+    expect(() => razlikaOdstotek(nič)).toThrow(TypeError)
+    expect(() => razlikaOdstotek(nič)).toThrow(/odstotek od najboljše cene 0 ne obstaja/)
+    // najboljša 0 z razliko 0 → 0 (iskrena resnica: brez ponudb ni razpona)
+    const obeNula = { ...VRSTE[2], najboljsaCena: 0, najvisjaCena: 0 }
+    expect(razlikaOdstotek(obeNula)).toBe(0)
+    expect(razlikaOdstotekNiz(obeNula)).toBe('0,0')
+  })
+
+  it('% razlika v PDF telesu skozi razlikaOdstotekNiz (prikazna resnica, ne goli FP)', () => {
+    const body = oknoMed(lib, 'body: sortirane.map((p) => [', ']),')
+    expect(body).toContain('razlikaOdstotekNiz(p)')
+  })
+
+  it('didParseCell: % razlike > 0 amber bold (col 6, ISTI signal kot EUR razlika) + Št. dobaviteljev premaknjen na col 8', () => {
+    expect(lib).toContain('data.column.index === 6')
+    expect(lib).toContain('data.column.index === 8')
+    // okno didParseCell (do konca autoTable) vsebuje % amber blok
+    // (ISTI AMBER token — 0 novih hex)
+    const blok = oknoMed(lib, 'didParseCell: (data) => {', 'lastAutoTable')
+    expect(blok).toContain('data.column.index === 6')
+    expect(blok).toContain('AMBER')
+  })
+
+  it('CSV uporablja razlikaOdstotekNiz (EN prikazna resnica s PDF celico — WYSIWYG brata)', () => {
+    const fn = oknoMed(material, 'function downloadPrimerjalniCsv', '/** R245 — fail-closed preslikava')
+    expect(fn).toContain('razlikaOdstotekNiz(v)')
+  })
+
+  it('sklepni podpis pove % resnico + legenda + toast (vsak prikaz pove ISTO zgodbo)', () => {
+    expect(lib).toContain('razpon izražen tudi v odstotkih najboljše cene')
+    expect(material).toContain('Cenik = vse ponudbe · Primerjalni = najnižja per artikel · % = razpon do najvišje')
+    // stara legenda-tekst ostaja (needle R245 ostane živ — includes)
+    expect(material).toContain('Cenik = vse ponudbe · Primerjalni = najnižja per artikel')
+    expect(material).toContain('z dobaviteljem in razponom v %')
+  })
+
+  it('cenik R244 brat ostane BAJTNATO nespremenjen (ločen dokument — cenik lib ne pozna % razlike)', () => {
+    expect(cenikLib).not.toContain('% razlike')
+    expect(cenikLib).not.toContain('razlikaOdstotek')
+  })
+})
+
 describe('R245 — primerjalni CSV + pilli v material-intelligence-tab', () => {
-  it('downloadPrimerjalniCsv: ISTI prerez stolpcev kot PDF (R246 8 stolpcev: Artikel, Šifra, Enota, Najboljša cena (EUR/enota), Najvišja (EUR/enota), Razlika (EUR/enota), Dobavitelj, Št. dobaviteljev)', () => {
+  it('downloadPrimerjalniCsv: ISTI prerez stolpcev kot PDF (R246 razponska + R247 % — 9 stolpcev: Artikel, Šifra, Enota, Najboljša cena (EUR/enota), Najvišja (EUR/enota), Razlika (EUR/enota), % razlike, Dobavitelj, Št. dobaviteljev)', () => {
     const fn = oknoMed(material, 'function downloadPrimerjalniCsv', '/** R245 — fail-closed preslikava')
     expect(fn).not.toBe('')
-    expect(fn).toContain("'Artikel', 'Šifra', 'Enota', 'Najboljša cena (EUR/enota)', 'Najvišja (EUR/enota)', 'Razlika (EUR/enota)', 'Dobavitelj', 'Št. dobaviteljev'")
+    expect(fn).toContain("'Artikel', 'Šifra', 'Enota', 'Najboljša cena (EUR/enota)', 'Najvišja (EUR/enota)', 'Razlika (EUR/enota)', '% razlike', 'Dobavitelj', 'Št. dobaviteljev'")
     // ISTI stolpci v PDF tabeli (ENA resnica čez brata)
-    expect(lib).toContain("head: [['Artikel', 'Šifra', 'Enota', 'Najboljša cena (EUR/enota)', 'Najvišja (EUR/enota)', 'Razlika (EUR/enota)', 'Dobavitelj', 'Št. dobaviteljev']]")
+    expect(lib).toContain("head: [['Artikel', 'Šifra', 'Enota', 'Najboljša cena (EUR/enota)', 'Najvišja (EUR/enota)', 'Razlika (EUR/enota)', '% razlike', 'Dobavitelj', 'Št. dobaviteljev']]")
     // CSV ime = ISTA zgodba kot PDF ime (Primerjalni-cenik-…)
     expect(fn).toContain('`Primerjalni-cenik-${todayStamp()}.csv`')
   })

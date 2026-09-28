@@ -61,6 +61,7 @@ import {
   primerjalniPdfFilename,
   sortirajPrimerjalni,
   razlikaDoNajvisje,
+  razlikaOdstotekNiz,
   type PrimerjalniPdfVnos,
 } from '@/lib/primerjalni-cenik-pdf'
 import {
@@ -331,12 +332,14 @@ function cenikVnosi(cene: CenikCena[]): CenikPdfVnos[] {
 
 // R245 — PRIMERJALNI CENIK CSV (brat PDF primerjalnega cenika, ISTI prerez
 // stolpcev: Artikel, Šifra, Enota, Najboljša cena (EUR/enota), Najvišja
-// (EUR/enota), Razlika (EUR/enota), Dobavitelj, Št. dobaviteljev — R246
-// razponska dimenzija). Vir = polji bestPerMaterial + prices iz GET
-// /api/material-prices (samo trenutno veljavne cene — route filtrira
-// veljavnostDo: null). Sort = sortirajPrimerjalni IZ LIBA (WYSIWYG brata —
-// ISTI red kot v PDF). Razlika = razlikaDoNajvisje IZ LIBA (EN vir resnice
-// s PDF KPI Prihranek). Fail-closed oblike odgovora rešujeta
+// (EUR/enota), Razlika (EUR/enota), % razlike, Dobavitelj, Št. dobaviteljev —
+// R246 razponska dimenzija + R247 % razlika). Vir = polji bestPerMaterial +
+// prices iz GET /api/material-prices (samo trenutno veljavne cene — route
+// filtrira veljavnostDo: null). Sort = sortirajPrimerjalni IZ LIBA (WYSIWYG
+// brata — ISTI red kot v PDF). Razlika = razlikaDoNajvisje IZ LIBA (EN vir
+// resnice s PDF KPI Prihranek); % razlike = razlikaOdstotekNiz IZ LIBA
+// (ISTI niz v PDF celici IN CSV polju — EN prikazna resnica, 1 decimala).
+// Fail-closed oblike odgovora rešujeta
 // pridobiPrimerjalni + primerjalniVnosi (TypeError z indeksom krivca).
 function downloadPrimerjalniCsv(vrste: PrimerjalniVrsta[]): number {
   const rows: CsvValue[][] = sortirajPrimerjalni(primerjalniVnosi(vrste)).map((v) => [
@@ -346,12 +349,13 @@ function downloadPrimerjalniCsv(vrste: PrimerjalniVrsta[]): number {
     v.najboljsaCena,
     v.najvisjaCena,
     razlikaDoNajvisje(v),
+    razlikaOdstotekNiz(v),
     v.dobavitelj,
     String(v.stDobaviteljev),
   ])
   downloadCsv(
     `Primerjalni-cenik-${todayStamp()}.csv`,
-    ['Artikel', 'Šifra', 'Enota', 'Najboljša cena (EUR/enota)', 'Najvišja (EUR/enota)', 'Razlika (EUR/enota)', 'Dobavitelj', 'Št. dobaviteljev'],
+    ['Artikel', 'Šifra', 'Enota', 'Najboljša cena (EUR/enota)', 'Najvišja (EUR/enota)', 'Razlika (EUR/enota)', '% razlike', 'Dobavitelj', 'Št. dobaviteljev'],
     rows,
   )
   return rows.length
@@ -1018,7 +1022,7 @@ export function MaterialIntelligenceTab({
       doc.save(primerjalniPdfFilename(now))
       toast({
         title: 'Primerjalni cenik prenešen v PDF',
-        description: 'Primerjalni-cenik-…pdf — najnižja veljavna cena per artikel z dobaviteljem.',
+        description: 'Primerjalni-cenik-…pdf — najnižja veljavna cena per artikel z dobaviteljem in razponom v %.',
       })
     } catch (err) {
       if (err instanceof TypeError) {
@@ -1672,7 +1676,7 @@ export function MaterialIntelligenceTab({
                     onClick={handlePrimerjalniPdf}
                     disabled={loading || primerjalniVTeku}
                     aria-label="Izvozi primerjalni cenik kot PDF"
-                    title="Primerjalni cenik kot pravi PDF — najnižja veljavna cena per artikel z dobaviteljem"
+                    title="Primerjalni cenik kot pravi PDF — najnižja veljavna cena per artikel z dobaviteljem in razponom v %"
                     className="h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
                   >
                     <FileText className="h-3 w-3" aria-hidden="true" />
@@ -1680,9 +1684,11 @@ export function MaterialIntelligenceTab({
                   </Button>
                 </div>
                 {/* R245 — legenda izvozne skupine (želona pariteta: vsak
-                    dokument pove svojo resnico; žetoni, 0 novih hex). */}
+                    dokument pove svojo resnico; žetoni, 0 novih hex).
+                    R247 — % resnica v legendi (razponska dimenzija zdaj
+                    vidna tudi bralcu pilli). */}
                 <p className="text-right text-2xs text-muted-foreground">
-                  Cenik = vse ponudbe · Primerjalni = najnižja per artikel
+                  Cenik = vse ponudbe · Primerjalni = najnižja per artikel · % = razpon do najvišje
                 </p>
               </div>
               <Label className="text-xs">Izberi material za dodajanje cene</Label>
