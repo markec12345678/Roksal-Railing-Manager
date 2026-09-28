@@ -48,8 +48,20 @@ import {
   cenikPdfFilename,
   cenikDatumIso,
   cenaBeseda,
+  artikelBeseda,
   type CenikPdfVnos,
 } from '@/lib/cenik-pdf'
+// R245 (P1-g, 'izvozi' družina — 6. člen) — PRIMERJALNI CENIK CSV+PDF (ločen
+// dokument od cenika R244: ENA vrstica per artikel = najnižja trenutno
+// veljavna cena; vir = polje bestPerMaterial iz ISTEGA API-ja — route NIČ;
+// fail-closed, bajtni determinizem, soli 0x51–0x54; sort IZVOŽEN iz liba —
+// CSV in PDF delita ISTI red, WYSIWYG brata).
+import {
+  buildPrimerjalniPdfDoc,
+  primerjalniPdfFilename,
+  sortirajPrimerjalni,
+  type PrimerjalniPdfVnos,
+} from '@/lib/primerjalni-cenik-pdf'
 import {
   Package,
   TrendingUp,
@@ -98,6 +110,19 @@ interface CenikCena {
   createdAt: string
   inventory: { naziv: string; sifraMateriala: string; enota: string }
   supplier: { naziv: string }
+}
+
+// R245 — client-safe prerez ENE primerjalne vrstice iz polja
+// `bestPerMaterial` (GET /api/material-prices brez filtrov — API že vrne
+// najnižjo veljavno ceno per artikel + dobavitelja + št. ponudb). ENA
+// vrstica = EN artikel (ločena resnica od cenika R244, ki je vrstica per
+// ponudba).
+interface PrimerjalniVrsta {
+  inventoryId: string
+  inventory: { naziv: string; sifraMateriala: string; enota: string }
+  bestPrice: number
+  bestSupplier: string
+  suppliers: number
 }
 
 interface Inventory {
@@ -295,6 +320,50 @@ function cenikVnosi(cene: CenikCena[]): CenikPdfVnos[] {
       cena: c.cena,
       opomba: c.opomba,
       vpisan: c.createdAt,
+    }
+  })
+}
+
+// R245 — PRIMERJALNI CENIK CSV (brat PDF primerjalnega cenika, ISTI prerez
+// stolpcev: Artikel, Šifra, Enota, Najboljša cena (EUR/enota), Dobavitelj,
+// Št. dobaviteljev). Vir = polje bestPerMaterial iz GET /api/material-prices
+// (samo trenutno veljavne cene — route filtrira veljavnostDo: null). Sort =
+// sortirajPrimerjalni IZ LIBA (WYSIWYG brata — ISTI red kot v PDF; cenik
+// R244 CSV je šel po API redu, primerjalni dobi skupni red od prvega dne).
+// Fail-closed oblike odgovora rešuje primerjalniVnosi (TypeError z indeksom
+// krivca).
+function downloadPrimerjalniCsv(vrste: PrimerjalniVrsta[]): number {
+  const rows: CsvValue[][] = sortirajPrimerjalni(primerjalniVnosi(vrste)).map((v) => [
+    v.artikel,
+    v.sifra,
+    v.enota,
+    v.najboljsaCena,
+    v.dobavitelj,
+    String(v.stDobaviteljev),
+  ])
+  downloadCsv(
+    `Primerjalni-cenik-${todayStamp()}.csv`,
+    ['Artikel', 'Šifra', 'Enota', 'Najboljša cena (EUR/enota)', 'Dobavitelj', 'Št. dobaviteljev'],
+    rows,
+  )
+  return rows.length
+}
+
+/** R245 — fail-closed preslikava bestPerMaterial vrstic v PrimerjalniPdfVnos
+ *  (pokvarjena oblika → TypeError z indeksom krivca; NIKOLI tiho izmišljevanje
+ *  polj). */
+function primerjalniVnosi(vrste: PrimerjalniVrsta[]): PrimerjalniPdfVnos[] {
+  return vrste.map((v, i) => {
+    if (!v || typeof v !== 'object' || !v.inventory) {
+      throw new TypeError(`primerjalni vrstica ${i}: manjkajoči inventory v odgovoru API-ja`)
+    }
+    return {
+      artikel: v.inventory.naziv,
+      sifra: v.inventory.sifraMateriala,
+      enota: v.inventory.enota,
+      najboljsaCena: v.bestPrice,
+      dobavitelj: v.bestSupplier,
+      stDobaviteljev: v.suppliers,
     }
   })
 }
@@ -857,6 +926,73 @@ export function MaterialIntelligenceTab({
       }
     } finally {
       setCenikVTeku(false)
+    }
+  }
+
+  // R245 — PRIMERJALNI CENIK izvoz (CSV + PDF): linijsko pridobivanje FRESH
+  // podatkov ob kliku (ISTI endpoint kot cenik — polje bestPerMaterial je
+  // del ISTEGA odgovora; ni dodatne mreže ob odprtju zavihka). Fail-verbose:
+  // !res.ok → HTTP status v opisu; pokvarjena oblika → TypeError z razlogom;
+  // 0 cen → iskren toast (ni prazne datoteke — R232–R244 družina; NASLOV je
+  // drugačen od cenika — 'za primerjavo', vsak dokument pove svojo resnico).
+  // primerjalniVTeku zavira dvoklik (ISTI gumb dvakrat).
+  const [primerjalniVTeku, setPrimerjalniVTeku] = useState(false)
+  const pridobiPrimerjalni = useCallback(async (): Promise<PrimerjalniVrsta[]> => {
+    const res = await fetch('/api/material-prices')
+    if (!res.ok) {
+      throw new Error(`GET /api/material-prices → HTTP ${res.status}`)
+    }
+    const data: unknown = await res.json()
+    if (!data || typeof data !== 'object' || !Array.isArray((data as { bestPerMaterial?: unknown }).bestPerMaterial)) {
+      throw new TypeError('Odgovora /api/material-prices ni mogoče prebrati (manjka polje bestPerMaterial).')
+    }
+    return (data as { bestPerMaterial: PrimerjalniVrsta[] }).bestPerMaterial
+  }, [])
+
+  const handlePrimerjalniCsv = async () => {
+    if (primerjalniVTeku) return
+    setPrimerjalniVTeku(true)
+    try {
+      const vrste = await pridobiPrimerjalni()
+      if (vrste.length === 0) {
+        toast({ title: 'Ni vpisanih cen za primerjavo', description: 'Primerjalni cenik se izvozi, ko je vpisana prva nabavna cena.' })
+        return
+      }
+      const count = downloadPrimerjalniCsv(vrste)
+      toast({ title: 'Primerjalni cenik prenešen', description: `${count} ${artikelBeseda(count)} v Primerjalni-cenik-${todayStamp()}.csv` })
+    } catch (err) {
+      toast({ title: 'Izvoz primerjalnega cenika ni uspel', description: err instanceof Error ? err.message : String(err), variant: 'destructive' })
+    } finally {
+      setPrimerjalniVTeku(false)
+    }
+  }
+
+  const handlePrimerjalniPdf = async () => {
+    if (primerjalniVTeku) return
+    setPrimerjalniVTeku(true)
+    try {
+      const vrste = await pridobiPrimerjalni()
+      if (vrste.length === 0) {
+        toast({ title: 'Ni vpisanih cen za primerjavo', description: 'PDF se izvozi, ko je vpisana prva nabavna cena.' })
+        return
+      }
+      // Determinizem: EN `now` za žig IN ime datoteke (lekcija R121/R235/R244).
+      const now = new Date()
+      const doc = buildPrimerjalniPdfDoc(primerjalniVnosi(vrste), { now })
+      doc.save(primerjalniPdfFilename(now))
+      toast({
+        title: 'Primerjalni cenik prenešen v PDF',
+        description: 'Primerjalni-cenik-…pdf — najnižja veljavna cena per artikel z dobaviteljem.',
+      })
+    } catch (err) {
+      if (err instanceof TypeError) {
+        // fail-closed jedro: pokvaren vnos → viden razlog (nič izmišljenega dokumenta)
+        toast({ title: 'Primerjalni cenik PDF ni mogoče sestaviti iz teh podatkov', description: err.message, variant: 'destructive' })
+      } else {
+        toast({ title: `Izvoz PDF ni uspel: ${err instanceof Error ? err.message : String(err)}`, variant: 'destructive' })
+      }
+    } finally {
+      setPrimerjalniVTeku(false)
     }
   }
 
@@ -1443,37 +1579,75 @@ export function MaterialIntelligenceTab({
               <CardTitle className="text-sm flex items-center gap-2"><Euro className="h-4 w-4 text-roksal-amber" /> Cene materiala</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              {/* R244 — CENIK izvoz (CSV + PDF pill pair, ISTA družina kot
-                  Dobavitelji R233/R236): VEDNO viden (bralni tok — P1-k
-                  precedens; izvozni gumb ne skriva praznega stanja, klik
-                  fail-closed — 0 cen → iskren toast). Vir: GET
-                  /api/material-prices (samo trenutno veljavne cene). */}
-              <div className="flex justify-end gap-2">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={handleCenikCsv}
-                  disabled={loading || cenikVTeku}
-                  aria-label="Izvozi cenik materiala kot CSV"
-                  title="Izvozi vse trenutno veljavne nabavne cene kot CSV za Excel"
-                  className="h-8 text-xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
-                >
-                  <Download className="h-3.5 w-3.5 mr-1 text-roksal-amber" /> CSV
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={handleCenikPdf}
-                  disabled={loading || cenikVTeku}
-                  aria-label="Izvozi cenik materiala kot PDF"
-                  title="Cenik materiala kot pravi PDF — pregled veljavnih nabavnih cen po dobaviteljih"
-                  className="h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
-                >
-                  <FileText className="h-3 w-3" aria-hidden="true" />
-                  PDF
-                </Button>
+              {/* R244/R245 — IZVOZNA SKUPINA na 'Cene materiala' kartici:
+                  cenik (vse ponudbe, R244) + primerjalni cenik (najnižja per
+                  artikel, R245). VEDNO vidna (bralni tok — P1-k precedens;
+                  izvozni gumb ne skriva praznega stanja, klik fail-closed —
+                  0 cen → iskren toast). Vir: GET /api/material-prices. */}
+              <div className="space-y-1.5">
+                <div className="flex justify-end gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={handleCenikCsv}
+                    disabled={loading || cenikVTeku}
+                    aria-label="Izvozi cenik materiala kot CSV"
+                    title="Izvozi vse trenutno veljavne nabavne cene kot CSV za Excel"
+                    className="h-8 text-xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
+                  >
+                    <Download className="h-3.5 w-3.5 mr-1 text-roksal-amber" /> CSV
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={handleCenikPdf}
+                    disabled={loading || cenikVTeku}
+                    aria-label="Izvozi cenik materiala kot PDF"
+                    title="Cenik materiala kot pravi PDF — pregled veljavnih nabavnih cen po dobaviteljih"
+                    className="h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
+                  >
+                    <FileText className="h-3 w-3" aria-hidden="true" />
+                    PDF
+                  </Button>
+                </div>
+                {/* R245 — PRIMERJALNI CENIK (ločen dokument od cenika R244:
+                    ENA vrstica per artikel = najnižja trenutno veljavna cena;
+                    polje bestPerMaterial iz ISTEGA API odgovora — route NIČ).
+                    ISTI pill razredi kot cenik par (družinska pariteta). */}
+                <div className="flex justify-end gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={handlePrimerjalniCsv}
+                    disabled={loading || primerjalniVTeku}
+                    aria-label="Izvozi primerjalni cenik kot CSV"
+                    title="Izvozi najnižjo veljavno ceno per artikel kot CSV za Excel"
+                    className="h-8 text-xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
+                  >
+                    <Download className="h-3.5 w-3.5 mr-1 text-roksal-amber" /> CSV
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={handlePrimerjalniPdf}
+                    disabled={loading || primerjalniVTeku}
+                    aria-label="Izvozi primerjalni cenik kot PDF"
+                    title="Primerjalni cenik kot pravi PDF — najnižja veljavna cena per artikel z dobaviteljem"
+                    className="h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
+                  >
+                    <FileText className="h-3 w-3" aria-hidden="true" />
+                    PDF
+                  </Button>
+                </div>
+                {/* R245 — legenda izvozne skupine (želona pariteta: vsak
+                    dokument pove svojo resnico; žetoni, 0 novih hex). */}
+                <p className="text-right text-2xs text-muted-foreground">
+                  Cenik = vse ponudbe · Primerjalni = najnižja per artikel
+                </p>
               </div>
               <Label className="text-xs">Izberi material za dodajanje cene</Label>
               {/* R243 — wave 5 RBAC ogledalo: izbira materiala (vhod v dialog

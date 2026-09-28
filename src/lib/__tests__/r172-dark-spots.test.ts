@@ -73,7 +73,7 @@ const PRIMERI = [
   // ISTI vsebinski vrstici — precedens R180/R229/R232). Prejem gumb ( isti
   // žeton, druga vsebinska vrstica) ostaja ne-pinana (r234 lekcija 3:
   // istovrstni žetoni na več vrsticah — pin vedno preverjen proti HEAD vsebini).
-  stražar('src/components/roksal/material-intelligence-tab.tsx', 1266, 'bg-green-50', 'dark:bg-green-950/40'), // R242: 772→1119; R243: 1119→1131 (wave 5 +12); R244: 1131→1266 (cenik izvoz +135: uvoz 10 + CenikCena 17 + CSV/preslikava 43 + handlerji 65 — ogledalo ŠE VEDNO na ISTI vsebinski vrstici, Dobljeno/Prejem gumb)
+  stražar('src/components/roksal/material-intelligence-tab.tsx', 1402, 'bg-green-50', 'dark:bg-green-950/40'), // R242: 772→1119; R243: 1119→1131 (wave 5 +12); R244: 1131→1266 (cenik izvoz +135); R245: 1266→1402 (primerjalni cenik +136: uvoz 12 + PrimerjalniVrsta 13 + CSV/preslikava 42 + handlerji 66 + pilli/legenda 3 — ogledalo ŠE VEDNO na ISTI vsebinski vrstici, Dobljeno/Prejem gumb)
   // roksal-catalog — steklo tint (vzorec Inox fix R171)
   // R203: 193→228 (fail-verbose fetchProfili + trojna veja +35).
   // R229: 228→232 (Inox chip žetoni komentar +3 — precedens R180/R203).

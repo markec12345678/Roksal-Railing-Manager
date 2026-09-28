@@ -449,7 +449,7 @@ export default async function PortalPage({ params }: PageProps) {
           <div className="grid grid-cols-2 gap-2">
             <a
               href={`tel:${COMPANY.telefonRaw}`}
-              className="flex items-center justify-center gap-2 rounded-lg bg-roksal-green text-white px-3 py-3 text-sm font-semibold hover:bg-roksal-green/90 active:scale-[0.98] transition-all"
+              className="flex items-center justify-center gap-2 rounded-lg bg-roksal-green text-white px-3 py-3 text-sm font-semibold hover:bg-roksal-green/90 press-scale transition-all"
             >
               <Phone className="h-4 w-4" />
               Pokliči
@@ -458,7 +458,7 @@ export default async function PortalPage({ params }: PageProps) {
               href={`mailto:${COMPANY.email}?subject=${encodeURIComponent(
                 `Povpraševanje: ${project.nazivProjekta}`
               )}`}
-              className="flex items-center justify-center gap-2 rounded-lg bg-roksal-navy text-white px-3 py-3 text-sm font-semibold hover:bg-roksal-navy/90 active:scale-[0.98] transition-all"
+              className="flex items-center justify-center gap-2 rounded-lg bg-roksal-navy text-white px-3 py-3 text-sm font-semibold hover:bg-roksal-navy/90 press-scale transition-all"
             >
               <Mail className="h-4 w-4" />
               Email
