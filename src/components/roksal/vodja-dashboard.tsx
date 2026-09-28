@@ -14,7 +14,7 @@
 //    semantični žetoni; focus-visible ringi; dekorativne ikone aria-hidden;
 //    tabular-nums. (R225: zadnje take barve v tej datoteki → žetoni.)
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'
 import { casOznaka } from '@/lib/osvezitev-fokus'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -38,6 +38,20 @@ import {
   type DobicikonostRacun,
   type DobicikonostNarocilo,
 } from '@/lib/dobicikonost-pdf'
+// R261 (P1-f, 'izvozi' družina — 17. člen) — RAČUNI PO PROJEKTIH PDF
+// (presek DVEH virov, ki ju vodja ŽE fetcha: /api/invoices + /api/projects —
+// route NIČ; ponudba = SHRANJEN stolpec estimatedPrice — read-only, NIČ
+// stika s pricing jedrom; realizirano = IZDAN+PLACAN EN VIR STATUSI
+// prihodki-pdf; odstopanje = izpeljana resnica, negativna RDEČA — NIKOLI
+// utišana; JOIN po IDENTITETI projectId === id — R260 lekcija; fail-closed,
+// bajtni determinizem, soli 0x81–0x84).
+import {
+  buildRacuniProjektiPdfDoc,
+  racuniProjektiPdfFilename,
+  racuniProjektiPoProjektih,
+  type RacuniProjektiRacun,
+  type RacuniProjektiProjekt,
+} from '@/lib/racuni-projekti-pdf'
 // R228 — NOVA tema: zamujena dobava (obljubljeni datum pretekel, naročilo
 // še odprto — sorojenec poteklih opomnikov; ISTI /api/material-orders fetch).
 import { steviloZamujenihDobav, narociloBeseda } from '@/lib/zamujena-dobava'
@@ -89,6 +103,9 @@ interface VodjaStats {
 
 interface InvLite {
   id: string
+  // R261 — IDENTITETNI ključ joina (v === s — R260 lekcija; /api/invoices
+  // odgovor nosi projectId — schema NOT NULL; naziv je samo prikaz).
+  projectId: string
   stevilka: string
   status: string
   znesek: number
@@ -168,6 +185,7 @@ export function VodjaDashboard() {
   const [allOrders, setAllOrders] = useState<DobicikonostNarocilo[]>([])
   const [reportLoading, setReportLoading] = useState(false)
   const [dobicikonostVTeku, setDobicikonostVTeku] = useState(false)
+  const [racuniProjektiVTeku, setRacuniProjektiVTeku] = useState(false)
   const [loading, setLoading] = useState(true)
   // R163: fail-verbose — razlog, zakaj podatkov NI (namesto lažnih ničel).
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -519,6 +537,70 @@ export function VodjaDashboard() {
   // VEDNO svež — EN VIR: loadData je isti loader kot mount + "Poskusi znova".
   useRefetchOnFocus(loadData)
 
+  // R261 — ENA izpeljava vhodov za presek (WYSIWYG ISTI vir kot PDF KPI,
+  // tabela, sklep, mini-vrstica IN toast): DTO pruning iz ISTIH state-ov,
+  // ki jih loadData ŽE napolni — NIČ nove mreže. Memo — preverba teče samo
+  // ob spremembi virov, ne vsak render.
+  const racuniProjektiVhodi = useMemo(() => {
+    const racuni: RacuniProjektiRacun[] = allInvoices.map((inv) => ({
+      stevilka: inv.stevilka,
+      status: inv.status,
+      znesek: inv.znesek,
+      projectId: inv.projectId,
+      projekt: inv.project?.nazivProjekta ?? null,
+    }))
+    const projekti: RacuniProjektiProjekt[] = allProjects.map((p) => ({
+      id: p.id,
+      nazivProjekta: p.nazivProjekta,
+      estimatedPrice: p.estimatedPrice ?? null,
+    }))
+    return { racuni, projekti }
+  }, [allInvoices, allProjects])
+  const racuniProjektiPovzetek = useMemo(
+    () => racuniProjektiPoProjektih(racuniProjektiVhodi.racuni, racuniProjektiVhodi.projekti).povzetek,
+    [racuniProjektiVhodi],
+  )
+
+  // R261 — RAČUNI PO PROJEKTIH PDF (17. člen 'izvozi' družine): presek
+  // DVEH virov, ki ju vodja ŽE ima (allInvoices + allProjects — NIČ nove
+  // mreže). ENA resnica v libu: ponudba = SHRANJEN estimatedPrice (read-only
+  // — NIČ pricing jedra), realizirano = IZDAN+PLACAN, odstopanje = izpeljava;
+  // brez-ponudbe + brez-zapisa + stornirani/osnutki = poimenovani v sklepu
+  // (NIKOLI tiho). Fail-closed: prazen presek (0 računov IN 0 projektov) →
+  // iskren toast; TypeError → viden razlog. EN now za žig IN ime (lekcija
+  // R121/R235). Bralni dokument — brez dodatnega pravicnega gate (vodja
+  // pregled že nosi oba vira; P1-k precedens).
+  const handleRacuniProjektiPdf = () => {
+    if (racuniProjektiVTeku || loading) return
+    setRacuniProjektiVTeku(true)
+    try {
+      if (allInvoices.length === 0 && allProjects.length === 0) {
+        toast({ title: 'Ni podatkov za račune po projektih', description: 'PDF se izvozi, ko je vpisan prvi račun ali projektna ponudba.' })
+        return
+      }
+      const now = new Date()
+      const doc = buildRacuniProjektiPdfDoc(racuniProjektiVhodi.racuni, racuniProjektiVhodi.projekti, { now })
+      doc.save(racuniProjektiPdfFilename(now))
+      // Toast pove REALNO agregatno resnico (ISTA izpeljava
+      // racuniProjektiPoProjektih kot PDF KPI IN mini-vrstica — WYSIWYG;
+      // '—' = iskrena ni-definirana resnica, nič izmišljene 0.00).
+      const { povzetek } = racuniProjektiPoProjektih(racuniProjektiVhodi.racuni, racuniProjektiVhodi.projekti)
+      toast({
+        title: 'Računi po projektih prenešeni v PDF',
+        description: `Racuni-po-projektih-…pdf — ${povzetek.projektov} projektov, ponudba ${povzetek.ponudba !== null ? povzetek.ponudba.toFixed(2) : '—'} €, realizirano ${povzetek.realizirano.toFixed(2)} €, odstopanje ${povzetek.odstopanje !== null ? povzetek.odstopanje.toFixed(2) : '—'} €.`,
+      })
+    } catch (err) {
+      if (err instanceof TypeError) {
+        // fail-closed jedro: pokvaren vnos → viden razlog (nič izmišljenega dokumenta)
+        toast({ title: 'Računi po projektih PDF ni mogoče sestaviti iz teh podatkov', description: err instanceof Error ? err.message : String(err), variant: 'destructive' })
+      } else {
+        toast({ title: `Izvoz PDF ni uspel: ${err instanceof Error ? err.message : String(err)}`, variant: 'destructive' })
+      }
+    } finally {
+      setRacuniProjektiVTeku(false)
+    }
+  }
+
   /** 🆕 R163: izvoz dnevnega pregleda v CSV — točno zaslonski podatki. */
   function exportDailyCsv() {
     if (!stats) return
@@ -676,11 +758,30 @@ export function VodjaDashboard() {
           <FileText className="h-3 w-3" aria-hidden="true" />
           PDF
         </Button>
+        {/* R261 — RAČUNI PO PROJEKTIH PDF (17. člen 'izvozi' družine):
+            presek ponudbe (shranjen estimatedPrice) in realizacije (računi)
+            — bralni dokument, VEDNO viden (P1-k precedens), press-scale +
+            FileText aria-hidden (pill družina — pariteta R258). */}
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
+          onClick={handleRacuniProjektiPdf}
+          disabled={loading || racuniProjektiVTeku}
+          aria-label="Izvozi račune po projektih kot PDF"
+          title="Računi po projektih kot pravi PDF — ponudba (vpisana ocena) vs realizacija (izdani + plačani računi) z odstopanjem"
+        >
+          <FileText className="h-3 w-3" aria-hidden="true" />
+          PDF
+        </Button>
       </div>
       {/* R258 — legenda dobičkonostne resnice (želona pariteta R245/R252/R257:
-          vsaka izpeljava pove svojo definicijo — WYSIWYG; žetoni, 0 novih hex). */}
+          vsaka izpeljava pove svojo definicijo — WYSIWYG; žetoni, 0 novih hex).
+          R261 — substring-parna nadgradna (R260 lekcija 3): nova resnica
+          PRIPEPENA ZA obstoječo — stara dobesedna resnica ostane, vsi stari
+          toContain pini ostanejo zeleni BREZ premika. */}
       <p className="text-right text-2xs text-muted-foreground">
-        Prihodki = izdani + plačani računi · Stroški = ne-preklicana naročila · Marža = prihodki − stroški · Marža (%) = marža / prihodki · Brez projekta = izključeni iz preseka
+        Prihodki = izdani + plačani računi · Stroški = ne-preklicana naročila · Marža = prihodki − stroški · Marža (%) = marža / prihodki · Brez projekta = izključeni iz preseka · Ponudba = vpisana ocena (estimatedPrice) · Realizirano = izdani + plačani računi · Odstopanje = realizirano − ponudba
       </p>
 
       {/* Današnji pregled */}
@@ -853,6 +954,27 @@ export function VodjaDashboard() {
                     {stats.zapadloSt > 0 && <span className="ml-1 font-medium">({stats.zapadloSt})</span>}
                   </p>
                 </div>
+              </div>
+              {/* R261 — F2 ponudbeni pregled (WYSIWYG ISTA izpeljava
+                  racuniProjektiPoProjektih kot PDF KPI — EN vir resnice
+                  zaslon/PDF; žetoni, 0 novih hex; '—' = iskrena
+                  ni-definirana vsota, NIKOLI izmišljena ničla). */}
+              <div className={`col-span-2 flex items-center gap-2 rounded-lg border px-2.5 py-1.5 ${
+                  racuniProjektiPovzetek.brezPonudbe > 0 ? 'border-roksal-amber/30 bg-roksal-amber/5' : 'border-border bg-muted/40'
+                }`}>
+                <span className={`h-2 w-2 shrink-0 rounded-full ${racuniProjektiPovzetek.brezPonudbe > 0 ? 'bg-roksal-amber' : 'bg-roksal-green'}`} aria-hidden />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[9px] text-muted-foreground">Ponudbe v izvedbi</p>
+                  <p className="text-xs font-bold tabular-nums text-roksal-ink">
+                    {racuniProjektiPovzetek.ponudba !== null ? formatEUR(racuniProjektiPovzetek.ponudba) : '—'}
+                    <span className="ml-1 text-[9px] font-normal text-muted-foreground">od {racuniProjektiPovzetek.ponudbaZneskov + racuniProjektiPovzetek.brezPonudbe} projektov</span>
+                  </p>
+                </div>
+                {racuniProjektiPovzetek.brezPonudbe > 0 && (
+                  <span className="shrink-0 rounded-full border border-roksal-amber/40 bg-roksal-amber/10 px-1.5 py-0.5 text-[9px] font-medium text-roksal-amber">
+                    {racuniProjektiPovzetek.brezPonudbe} brez vpisane ponudbe
+                  </span>
+                )}
               </div>
             </div>
           </CardContent>
