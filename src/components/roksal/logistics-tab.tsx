@@ -17,10 +17,18 @@ import { icsEscape, icsFold, icsUtc } from '@/lib/ics'
 import { allowedTransitions } from '@/lib/equipment-lifecycle'
 import {
   normalizirajTermin,
+  terminBeseda,
   terminUrPovzetekRazsirjen,
   vsotaPredvidenihUr,
   type TerminPrikazVnos,
 } from '@/lib/termini-prikaz'
+import {
+  generateProjektiTerminiPdf,
+  projektiTerminiPregled,
+  projektBeseda,
+  type ProjektiTerminiProjektVnos,
+  type ProjektiTerminiTerminVnos,
+} from '@/lib/projekti-termini-pdf'
 import {
   generateVozniRedPdf,
   vozniRedPovzetek,
@@ -37,7 +45,7 @@ import { IEV_TEMPLATE } from '@/lib/installation-evidence'
 import {
   Calendar, Download, Users, Wrench, Plus, Clock, MapPin, CheckCircle2, CalendarClock,
   Loader2, AlertTriangle, Truck, Package, ShieldCheck, History, FileCheck2, Lock,
-  CalendarRange,
+  CalendarRange, ClipboardList,
 } from 'lucide-react'
 
 interface Schedule {
@@ -129,6 +137,9 @@ interface Project {
   id: string
   nazivProjekta: string
   customer: { ime: string; naslov: string }
+  // R265 — planirana montaža (API jo vrača; podmnožica, ki jo bere presek
+  // projekti × termini — planirana montaža brez termina = planska luknja).
+  datumMontaze?: string | null
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -362,6 +373,9 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
   const [newScheduleOpen, setNewScheduleOpen] = useState(false)
   const [newCrewOpen, setNewCrewOpen] = useState(false)
   const [newEquipOpen, setNewEquipOpen] = useState(false)
+  // R265 — dvoklik guard izvoza (R264 vzorec pozicijaVTeku): med FRESH
+  // fetchom /api/schedules je pill onemogočen — nič dvojnih dokumentov.
+  const [ptVTeku, setPtVTeku] = useState(false)
   const { toast } = useToast()
 
   // Form states
@@ -968,6 +982,75 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
     )
   }
 
+  // R265 — FRESH fetch VSEH terminov ISTEGA endpointa ob kliku (R264
+  // precedens pridobiPozicijo): dokument = PORTFELJSKA resnica (vsi
+  // projekti × vsi termini), NE glede na projekt-filter taba — auto-izbor
+  // projekta ne sme skriti planskih luknij drugih projektov. Fail-verbose:
+  // HTTP napaka ALI ne-polje odgovora → viden razlog (nič tihe degradacije).
+  const handleProjektiTerminiPdf = async () => {
+    if (ptVTeku) return
+    setPtVTeku(true)
+    try {
+      const res = await fetch('/api/schedules', { credentials: 'same-origin' })
+      if (!res.ok) {
+        throw new Error(`GET /api/schedules → HTTP ${res.status}`)
+      }
+      const data: unknown = await res.json()
+      if (!Array.isArray(data)) {
+        throw new TypeError('Odgovora /api/schedules ni mogoče prebrati (ni polja).')
+      }
+      // Fail-verbose DTO pruning (R264 vzorec — nič tihe degradacije):
+      // surove resnice projectId/status/predvideneUre/datumZacetka +
+      // projekti id/naziv/datumMontaze/stranka. Resnice (status 5 znanih,
+      // ISO, identitete) preverja LIB fail-closed.
+      const termini: ProjektiTerminiTerminVnos[] = (data as Array<Record<string, unknown>>).map((s, i) => {
+        const projekt = s.project as { id?: unknown } | undefined
+        if (!projekt || typeof projekt.id !== 'string' || projekt.id === '') {
+          throw new TypeError(`termin vrstica ${i}: manjkajoč project.id v odgovoru API-ja`)
+        }
+        return {
+          projectId: projekt.id,
+          status: s.status as ProjektiTerminiTerminVnos['status'],
+          predvideneUre: typeof s.predvideneUre === 'number' ? s.predvideneUre : null,
+          datumZacetka: s.datumZacetka as string,
+        }
+      })
+      const projekti: ProjektiTerminiProjektVnos[] = projects.map((p, i) => {
+        if (typeof p.id !== 'string' || p.id === '' || typeof p.nazivProjekta !== 'string' || p.nazivProjekta === '') {
+          throw new TypeError(`projekt vrstica ${i}: manjkajoč id/nazivProjekta v odgovoru API-ja`)
+        }
+        return {
+          id: p.id,
+          nazivProjekta: p.nazivProjekta,
+          datumMontaze: typeof p.datumMontaze === 'string' ? p.datumMontaze : null,
+          stranka: p.customer && typeof p.customer.ime === 'string' ? p.customer.ime : null,
+        }
+      })
+      if (termini.length === 0) {
+        // Fail-closed jedro: prazen seznam ne nastaja dokumenta — iskren toast.
+        toast({ title: 'Ni vpisanih terminov', description: 'Pregled projektov in terminov se izvozi, ko je vpisan prvi termin montaže.' })
+        return
+      }
+      // ENA izpeljava: povzetek za toast = ISTA resnica kot KPI IN sklep na
+      // listu (WYSIWYG).
+      const { povzetek } = projektiTerminiPregled(projekti, termini)
+      generateProjektiTerminiPdf(projekti, termini, { now: new Date() })
+      toast({
+        title: 'Pregled projektov in terminov prenešen v PDF',
+        description: `Projekti-termini-…pdf — ${povzetek.zTermini} ${projektBeseda(povzetek.zTermini)} z termini, ${povzetek.terminov} ${terminBeseda(povzetek.terminov)}, brez termina ${povzetek.brezTermina}.`,
+      })
+    } catch (err) {
+      if (err instanceof TypeError) {
+        // fail-closed jedro: pokvaren vnos → viden razlog (nič izmišljenega dokumenta)
+        toast({ title: 'Pregled projektov in terminov ni mogoče sestaviti iz teh podatkov', description: err instanceof Error ? err.message : String(err), variant: 'destructive' })
+      } else {
+        toast({ title: `Izvoz PDF ni uspel: ${err instanceof Error ? err.message : String(err)}`, variant: 'destructive' })
+      }
+    } finally {
+      setPtVTeku(false)
+    }
+  }
+
   return (
     <div className="space-y-4">
       {/* Subtabs */}
@@ -1093,6 +1176,28 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
             >
               <CalendarRange aria-hidden="true" className="h-4 w-4 mr-1" /> Tedenski
             </Button>
+            {/* R265 — 21. člen 'izvozi' družine (P1-f): PROJEKTI — TERMINI
+                PREGLED PDF — presek VSEH terminov (/api/schedules — FRESH
+                fetch ISTEGA endpointa ob kliku, R244/R245/R264 precedens;
+                route NIČ, nič nove mreže) × /api/projects (ŽE v state).
+                PORTFELJSKA resnica — ne glede na projekt-filter taba (auto-
+                izbor projekta ne skrije planskih luknij drugih projektov).
+                Bralni dokument VEDNO viden (P1-k precedens R251–R256):
+                prazen seznam terminov → iskren fail-closed toast, NIKOLI
+                prazna datoteka; agregat v toastu = ISTI lib povzetek kot
+                KPI/sklep na listu (WYSIWYG). ISTI žetoni kot vozni red/
+                tedenski pilli — 0 novih hex. */}
+            <Button
+              type="button"
+              variant="outline"
+              aria-label="Izvozi pregled projektov in terminov kot PDF"
+              title="Pregled projektov in terminov kot pravi PDF — kateri projekti imajo termine in koliko dela je še pred nami"
+              disabled={ptVTeku}
+              className="shrink-0 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              onClick={handleProjektiTerminiPdf}
+            >
+              <ClipboardList aria-hidden="true" className="h-4 w-4 mr-1" /> Projekti
+            </Button>
           </div>
 
           {/* R255 — legenda izvozne skupine (ISTI vzorec kot R250–R253
@@ -1101,7 +1206,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
           {/* R256 — legenda razširjena z tedenskim razgledom (R256 needle je
               dobesedni PREDPONA — R255 resnica ostaja bajtno ISTA). */}
           <p className="text-2xs text-muted-foreground">
-            CSV = prikazani termini · ICS = koledar v telefonu · PDF = vozni red (kronološki) · Tedenski = naslednjih 7 dni (po dnevih)
+            CSV = prikazani termini · ICS = koledar v telefonu · PDF = vozni red (kronološki) · Tedenski = naslednjih 7 dni (po dnevih) · Projekti = projekti × termini (pokritost po projektih)
           </p>
 
           {/* R244 — vlogo-osveščen vodič (R242/R243 recept): viden SAMO, ko
