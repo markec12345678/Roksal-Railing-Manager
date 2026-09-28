@@ -25,6 +25,19 @@ import { useToast } from '@/hooks/use-toast'
 import { generateMonthlyReport } from '@/lib/boss-report-pdf'
 import { buildVodjaCsv, vodjaCsvFilename, terminStatusLabel } from '@/lib/vodja-csv'
 import { todayStamp } from '@/lib/csv-export'
+// R258 (P1-f, 'izvozi' družina — 14. člen) — DOBIČKONOST PO PROJEKTIH PDF
+// (presek DVEH virov, ki ju vodja ŽE fetcha: /api/invoices + /api/material-
+// orders — route NIČ; prihodki = IZDAN+PLACAN EN VIR STATUSI prihodki-pdf;
+// stroški = ne-preklicana naročila EN VIR STATUSI_NAROCIL narocila-pregled-
+// pdf R257; marža = izpeljana resnica, negativna RDEČA — NIKOLI utišana;
+// fail-closed, bajtni determinizem, soli 0x7d–0x80).
+import {
+  buildDobicikonostPdfDoc,
+  dobicikonostPdfFilename,
+  dobicikonostPoProjektih,
+  type DobicikonostRacun,
+  type DobicikonostNarocilo,
+} from '@/lib/dobicikonost-pdf'
 // R228 — NOVA tema: zamujena dobava (obljubljeni datum pretekel, naročilo
 // še odprto — sorojenec poteklih opomnikov; ISTI /api/material-orders fetch).
 import { steviloZamujenihDobav, narociloBeseda } from '@/lib/zamujena-dobava'
@@ -34,7 +47,7 @@ import { SistemZdravjeCard } from '@/components/roksal/sistem-zdravje-card'
 import {
   TrendingUp, Clock, Users, Package, Euro, CheckCircle2,
   AlertTriangle, Calendar, Truck, Bell, FileDown, Loader2, Download,
-  History, PackageX, CalendarX,
+  History, PackageX, CalendarX, FileText,
 } from 'lucide-react'
 
 interface VodjaStats {
@@ -150,7 +163,11 @@ export function VodjaDashboard() {
   const [prihodki, setPrihodki] = useState<{ label: string; eur: number }[]>([])
   const [allProjects, setAllProjects] = useState<ProjectFull[]>([])
   const [allInvoices, setAllInvoices] = useState<InvLite[]>([])
+  // R258 — dobičkonost presek: naročila si zapomnimo (ISTI fetch — EN VIR)
+  // kot minimalni prerez za lib (status + skupajCena + projekt naziv).
+  const [allOrders, setAllOrders] = useState<DobicikonostNarocilo[]>([])
   const [reportLoading, setReportLoading] = useState(false)
+  const [dobicikonostVTeku, setDobicikonostVTeku] = useState(false)
   const [loading, setLoading] = useState(true)
   // R163: fail-verbose — razlog, zakaj podatkov NI (namesto lažnih ničel).
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -167,6 +184,7 @@ export function VodjaDashboard() {
     setPrihodki([])
     setAllProjects([])
     setAllInvoices([])
+    setAllOrders([])
     // R180: pečat brez podatkov = lažna svežina — počisti ga (vsi 3 fail
     // poti: neuspešni odgovori, neveljaven odgovor, omrežna napaka).
     setVodjaOsvezitev(null)
@@ -365,6 +383,14 @@ export function VodjaDashboard() {
       // celotne vhodne podatke si zapomnimo za izvoz PDF poročila (runda M)
       setAllProjects(projects as unknown as ProjectFull[])
       setAllInvoices(invoices as InvLite[])
+      // R258 — dobičkonost presek: minimalni prerez naročil (ISTI odgovor —
+      // route include prinese project.nazivProjekta; fail-verbose veriga
+      // zgoraj zagotavlja, da je odgovor seznam — nič tihega ignore).
+      setAllOrders(
+        (orders as Array<{ status: string; skupajCena: number; project?: { nazivProjekta: string } | null }>).map(
+          (o) => ({ status: o.status, skupajCena: o.skupajCena, projekt: o.project?.nazivProjekta ?? null }),
+        ),
+      )
       // R180: pečat = vseh 7 virov uspešno prebranih (enoten trenutek svežine)
       setVodjaOsvezitev(new Date())
     } catch {
@@ -440,6 +466,50 @@ export function VodjaDashboard() {
       toast({ title: 'Napaka pri generiranju poročila', variant: 'destructive' })
     } finally {
       setReportLoading(false)
+    }
+  }
+
+  // R258 — DOBIČKONOST PO PROJEKTIH PDF (14. člen 'izvozi' družine): presek
+  // DVEH virov, ki ju vodja ŽE ima (allInvoices + allOrders — NIČ nove mreže).
+  // ENA resnica v libu: prihodki = IZDAN+PLACAN, stroški = ne-preklicana
+  // naročila, marža = izpeljava; brez-projektni + stornirani/osnutki =
+  // poimenovani v sklepu (NIKOLI tiho). Fail-closed: prazen presek (0 računov
+  // IN 0 naročil) → iskren toast; TypeError → viden razlog. EN now za žig IN
+  // ime (lekcija R121/R235). Bralni dokument — brez dodatnega pravicnega
+  // gate (vodja pregled že nosi oba vira; P1-k precedens).
+  const handleDobicikonostPdf = () => {
+    if (dobicikonostVTeku || loading) return
+    setDobicikonostVTeku(true)
+    try {
+      if (allInvoices.length === 0 && allOrders.length === 0) {
+        toast({ title: 'Ni podatkov za dobičkonost', description: 'PDF se izvozi, ko je vpisan prvi račun ali naročilo.' })
+        return
+      }
+      const now = new Date()
+      const racuni: DobicikonostRacun[] = allInvoices.map((inv) => ({
+        stevilka: inv.stevilka,
+        status: inv.status,
+        znesek: inv.znesek,
+        projekt: inv.project?.nazivProjekta ?? null,
+      }))
+      const doc = buildDobicikonostPdfDoc(racuni, allOrders, { now })
+      doc.save(dobicikonostPdfFilename(now))
+      // Toast pove REALNO agregatno resnico (ISTA izpeljava dobicikonostPoProjektih
+      // kot PDF KPI IN sklep — WYSIWYG; ',' ločilo — R248 lekcija).
+      const { povzetek } = dobicikonostPoProjektih(racuni, allOrders)
+      toast({
+        title: 'Dobičkonost prenešena v PDF',
+        description: `Dobicikonost-projektov-…pdf — ${povzetek.projektov} projektov, prihodki ${povzetek.prihodki.toFixed(2)} €, stroški ${povzetek.stroski.toFixed(2)} €, marža ${povzetek.marza.toFixed(2)} €.`,
+      })
+    } catch (err) {
+      if (err instanceof TypeError) {
+        // fail-closed jedro: pokvaren vnos → viden razlog (nič izmišljenega dokumenta)
+        toast({ title: 'Dobičkonost PDF ni mogoče sestaviti iz teh podatkov', description: err instanceof Error ? err.message : String(err), variant: 'destructive' })
+      } else {
+        toast({ title: `Izvoz PDF ni uspel: ${err instanceof Error ? err.message : String(err)}`, variant: 'destructive' })
+      }
+    } finally {
+      setDobicikonostVTeku(false)
     }
   }
 
@@ -590,7 +660,28 @@ export function VodjaDashboard() {
           {reportLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <FileDown className="h-3.5 w-3.5" aria-hidden="true" />}
           Poročilo PDF
         </Button>
+        {/* R258 — DOBIČKONOST PO PROJEKTIH PDF (14. člen 'izvozi' družine):
+            presek prihodkov (računi) in stroškov materiala (naročila) —
+            bralni dokument, VEDNO viden (P1-k precedens), press-scale +
+            FileText aria-hidden (pill družina). */}
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
+          onClick={handleDobicikonostPdf}
+          disabled={loading || dobicikonostVTeku}
+          aria-label="Izvozi dobičkonosnost projektov kot PDF"
+          title="Dobičkonosnost po projektih kot pravi PDF — prihodki (računi) vs stroški materiala (naročila) z maržo in akcijskim redom"
+        >
+          <FileText className="h-3 w-3" aria-hidden="true" />
+          PDF
+        </Button>
       </div>
+      {/* R258 — legenda dobičkonostne resnice (želona pariteta R245/R252/R257:
+          vsaka izpeljava pove svojo definicijo — WYSIWYG; žetoni, 0 novih hex). */}
+      <p className="text-right text-2xs text-muted-foreground">
+        Prihodki = izdani + plačani računi · Stroški = ne-preklicana naročila · Marža = prihodki − stroški · Marža (%) = marža / prihodki · Brez projekta = izključeni iz preseka
+      </p>
 
       {/* Današnji pregled */}
       <div>

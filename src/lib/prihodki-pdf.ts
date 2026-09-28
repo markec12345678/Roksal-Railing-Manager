@@ -63,7 +63,10 @@ const GRAY: [number, number, number] = [110, 110, 110]
 const LIGHT: [number, number, number] = [243, 244, 246]
 
 const TIPI = ['PREDRACUN', 'RACUN', 'PREDPLACILNI'] as const
-const STATUSI = ['OSNUTEK', 'IZDAN', 'PLACAN', 'STORNIRAN'] as const
+/** 4 znanih statusov računov — dobesedni kanon (prisma schema Invoice linija
+ *  'OSNUTEK | IZDAN | PLACAN | STORNIRAN'). EXPORTIRAN od R258: dobičkonost
+ *  po projektih (14. člen) re-use TA množico — EN VIR, nič dvojnega seznama. */
+export const STATUSI = ['OSNUTEK', 'IZDAN', 'PLACAN', 'STORNIRAN'] as const
 
 const TIPI_SI: Record<(typeof TIPI)[number], string> = {
   PREDRACUN: 'Predračun',

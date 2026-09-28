@@ -78,8 +78,9 @@ const LIGHT: [number, number, number] = [243, 244, 246]
 /** 5 znanih statusov naročila — dobesedni kanon prisma schema MaterialOrder
  *  (linija 'OSNUTEK | POSLANO | POTRJENO | DOBLJENO | PREKlicANO'). ENA
  *  množica; 'odprto' pomeni IZ ODPRTI_STATUSI_NAROCIL (EN VIR zamejena
- *  importom — nič dvojnega seznama). */
-const STATUSI_NAROCIL = ['OSNUTEK', 'POSLANO', 'POTRJENO', 'DOBLJENO', 'PREKlicANO'] as const
+ *  importom — nič dvojnega seznama). EXPORTIRAN od R258: dobičkonost po
+ *  projektih (14. člen) re-use TA množico — EN VIR, nič dvojnega. */
+export const STATUSI_NAROCIL = ['OSNUTEK', 'POSLANO', 'POTRJENO', 'DOBLJENO', 'PREKlicANO'] as const
 
 export type StatusNarocila = (typeof STATUSI_NAROCIL)[number]
 

@@ -176,8 +176,9 @@ describe('R180 — pečat VODJA pregled (vodja-dashboard — 11. notranja površ
   it('set SAMO ko so VSEH 7 virov uspešno prebrani (1× — enoten trenutek svežine)', () => {
     const s = src()
     expect(s.match(/setVodjaOsvezitev\(new Date\(\)\)/g)?.length).toBe(1)
-    // set ŠELE po nastanitvi allProjects/allInvoices (izvoz PDF iz teh držav)
-    expect(s).toMatch(/setAllInvoices\(invoices as InvLite\[\]\)\s*\n\s*\/\/ R180: pečat = vseh 7 virov uspešno prebranih/)
+    // set ŠELE po nastanitvi allProjects/allInvoices/allOrders (izvoz PDF iz teh držav);
+    // R258: med setAllInvoices in pečatom je vrinjen še setAllOrders presek (14. člen)
+    expect(s).toMatch(/setAllInvoices\(invoices as InvLite\[\]\)[\s\S]{0,700}\/\/ R180: pečat = vseh 7 virov uspešno prebranih/)
   })
 
   it('fail-closed: TILT clearOnFail počisti pečat — vse 3 fail poti (status, neveljaven, omrežje) skozi ENO funkcijo', () => {

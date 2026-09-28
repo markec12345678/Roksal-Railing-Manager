@@ -34,7 +34,7 @@ describe('R180 P1 — pregled za vodjo (vodja-dashboard)', () => {
     const src = vodja()
     expect(src).toContain("import { casOznaka } from '@/lib/osvezitev-fokus'")
     expect(src).toContain("import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'")
-    expect(src).toMatch(/\n  History, PackageX, CalendarX,\n\} from 'lucide-react'/) // R224: PackageX + R228: CalendarX (nova tema) v ISTEM bloku — History pečat ostaja
+    expect(src).toMatch(/\n  History, PackageX, CalendarX, FileText,\n\} from 'lucide-react'/) // R224: PackageX + R228: CalendarX (nova tema) v ISTEM bloku — History pečat ostaja; R258: FileText (dobičkonost pill) v ISTEM bloku
     expect(src).toContain('{casOznaka(vodjaOsvezitev)}')
     // OPOMBA: vodja ima pre-existing formatTime() (termin listing) — to je
     // domensko formatiranje časa termina, NE pečata; EN VIR pravilo velja za
@@ -53,10 +53,12 @@ describe('R180 P1 — pregled za vodjo (vodja-dashboard)', () => {
   it('pečat: set TOČKO 1× v uspešni veji (vseh 7 virov prebranih); fail-closed prek clearOnFail (vse 3 fail poti)', () => {
     const src = vodja()
     expect(src).toMatch(/const \[vodjaOsvezitev, setVodjaOsvezitev\] = useState<Date \| null>\(null\)/)
-    expect(src).toMatch(/setAllInvoices\(invoices as InvLite\[\]\)\s*\n\s*\/\/ R180[^\n]*\n\s*setVodjaOsvezitev\(new Date\(\)\)/)
+    // R258: med setAllInvoices in pečatom je vrinjen setAllOrders presek (14. člen)
+    expect(src).toMatch(/setAllInvoices\(invoices as InvLite\[\]\)[\s\S]{0,700}\/\/ R180[^\n]*\n\s*setVodjaOsvezitev\(new Date\(\)\)/)
     expect(src.match(/setVodjaOsvezitev\(new Date\(\)\)/g)).toHaveLength(1)
     // clearOnFail je SKUPNA fail-closed točka: počisti podatke TUDI pečat
-    expect(src).toMatch(/setAllInvoices\(\[\]\)\s*\n\s*\/\/ R180[^\n]*\n\s*\/\/[^\n]*\n\s*setVodjaOsvezitev\(null\)/)
+    // R258: clearOnFail počisti TUDI allOrders (setAllOrders([]) med allInvoices in pečatom)
+    expect(src).toMatch(/setAllInvoices\(\[\]\)\s*\n\s*setAllOrders\(\[\]\)\s*\n\s*\/\/ R180[^\n]*\n\s*\/\/[^\n]*\n\s*setVodjaOsvezitev\(null\)/)
     // …in clearOnFail je poklican iz VSEH treh fail poti (napake virov,
     // neveljaven odgovor, omrežna napaka) — pečat nikoli ne preživi napake
     const clearCalls = src.match(/clearOnFail\(\)/g) ?? []
