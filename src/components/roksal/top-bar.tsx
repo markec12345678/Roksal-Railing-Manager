@@ -1,9 +1,10 @@
 'use client'
 
-import { RefreshCw, Moon, Sun, Clock, Search, LogOut, KeyRound, MonitorSmartphone } from 'lucide-react'
+import { RefreshCw, Moon, Sun, Clock, Search, LogOut, KeyRound, MonitorSmartphone, ShieldCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { NotificationCenter } from '@/components/roksal/notification-center'
 import { SessionsDialog } from '@/components/roksal/sessions-dialog'
+import { MojaVlogaDialog } from '@/components/roksal/moja-vloga-dialog'
 import { useTheme } from 'next-themes'
 import { useSyncExternalStore, useCallback, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
@@ -72,6 +73,9 @@ export function TopBar({ onSync, syncing, onOpenPalette, hidden = false }: TopBa
   // R137: "Aktivne seje" — samostojni pregled živih sej + preklic tujih
   // naprav (GET/DELETE /api/auth/sessions sta obstajala od R134 brez UI).
   const [sessionsOpen, setSessionsOpen] = useState(false)
+  // R240: "Moja vloga in dovoljenja" — iskrenost obratne smeri RBAC ogledala
+  // (R239): uporabnik, ki gumba ne vidi, lahko v app ugotovi ZAKAJ.
+  const [vlogaOpen, setVlogaOpen] = useState(false)
 
   const toggleTheme = useCallback(() => {
     setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')
@@ -244,6 +248,13 @@ export function TopBar({ onSync, syncing, onOpenPalette, hidden = false }: TopBa
                 <MonitorSmartphone className="h-4 w-4 text-roksal-ink/70" aria-hidden="true" />
                 Aktivne seje
               </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => setVlogaOpen(true)}
+                className="gap-2 focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              >
+                <ShieldCheck className="h-4 w-4 text-roksal-ink/70" aria-hidden="true" />
+                Moja vloga in dovoljenja
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={() => void handleLogout(false)}
@@ -263,6 +274,7 @@ export function TopBar({ onSync, syncing, onOpenPalette, hidden = false }: TopBa
           </DropdownMenu>
           <PasswordDialog open={pwdOpen} onOpenChange={setPwdOpen} />
           <SessionsDialog open={sessionsOpen} onOpenChange={setSessionsOpen} />
+          <MojaVlogaDialog open={vlogaOpen} onOpenChange={setVlogaOpen} />
         </div>
       </div>
     </header>

@@ -46,6 +46,7 @@ import {
   type EkipaStatus,
 } from '@/lib/ekipa-csv'
 import { todayStamp } from '@/lib/csv-export'
+import { ROLE_CHIP } from '@/lib/status-options'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -98,12 +99,8 @@ interface TeamUser {
   lifecycle: Lifecycle
 }
 
-const ROLE_CHIP: Record<string, string> = {
-  ADMIN: 'bg-roksal-navy/10 text-roksal-ink ring-1 ring-inset ring-roksal-navy/20',
-  VODJA: 'bg-roksal-amber/15 text-amber-700 dark:text-amber-300 ring-1 ring-inset ring-roksal-amber/30',
-  MONTER: 'bg-secondary text-muted-foreground ring-1 ring-inset ring-border',
-  SKLADISCE: 'bg-roksal-green/10 text-roksal-green ring-1 ring-inset ring-roksal-green/25',
-}
+// R240: definicija je prestavljena v @/lib/status-options (EN VIR chip-stila
+// — ekipa + "Moja vloga in dovoljenja" dialog raba ISTI razred).
 
 // R160: vloge pridejo iz src/lib/ekipa-csv.ts (EN VIR RESNICE za UI in izvoz).
 const ROLE_LABEL: Record<string, string> = EKIPA_VLOGE

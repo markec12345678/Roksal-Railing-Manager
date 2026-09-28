@@ -47,6 +47,20 @@ export const ALLOWED_TRANSITIONS_UI: Record<ProjectStatusOption, ProjectStatusOp
 /** Vodstveni obhod (assertTransition: isManager → karkoli). Pariteta z MANAGER_ROLES. */
 const MANAGER_ROLES_UI = ['ADMIN', 'VODJA'] as const
 
+/**
+ * R240 — vizualni jezik vloge-chipov (EN VIR: ekipa tab + "Moja vloga in
+ * dovoljenja" dialog). Prej je živel le v team-tab.tsx (privaten); R239/R240
+ * dobita drugo površino, ki prikazuje vlogo — dvojna definicija bi se razidela.
+ * Žetoni (0 novih hex): navy/ink = pisarna, amber = vodja, secondary = teren,
+ * green = skladišče (ISTI pomen kot badge-brez-dobavitelja/zaloga chipi).
+ */
+export const ROLE_CHIP: Record<string, string> = {
+  ADMIN: 'bg-roksal-navy/10 text-roksal-ink ring-1 ring-inset ring-roksal-navy/20',
+  VODJA: 'bg-roksal-amber/15 text-amber-700 dark:text-amber-300 ring-1 ring-inset ring-roksal-amber/30',
+  MONTER: 'bg-secondary text-muted-foreground ring-1 ring-inset ring-border',
+  SKLADISCE: 'bg-roksal-green/10 text-roksal-green ring-1 ring-inset ring-roksal-green/25',
+}
+
 export function isManagerRole(vloga: string | null | undefined): boolean {
   return vloga != null && (MANAGER_ROLES_UI as readonly string[]).includes(vloga)
 }
