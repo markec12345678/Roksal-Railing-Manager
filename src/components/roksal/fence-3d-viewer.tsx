@@ -213,7 +213,7 @@ export function Fence3dViewer() {
         {/* Glava */}
         <div className="flex items-start gap-3 border-b border-roksal-navy/10 bg-gradient-to-r from-roksal-navy/[0.06] to-transparent p-4">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-roksal-navy shadow-sm">
-            <Move3d className="h-5 w-5 text-roksal-amber" />
+            <Move3d aria-hidden="true" className="h-5 w-5 text-roksal-amber" />
           </div>
           <div className="min-w-0 flex-1">
             <div className="mb-1 flex flex-wrap items-center gap-2">
@@ -235,20 +235,20 @@ export function Fence3dViewer() {
         <div ref={hostRef} className="relative h-64 w-full overflow-hidden sm:h-72" style={{ background: 'radial-gradient(120% 90% at 50% 0%, #3a4a5e 0%, #1d2b3e 55%, #14202e 100%)' }}>
           {!mvReady && !loadError && (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-white/70">
-              <Loader2 className="h-6 w-6 animate-spin text-roksal-amber" />
+              <Loader2 aria-hidden="true" className="h-6 w-6 animate-spin text-roksal-amber" />
               <p className="text-[11px]">Nalagam 3D pregledovalnik…</p>
             </div>
           )}
           {mvReady && !isLoaded && !loadError && (
             <div className="pointer-events-none absolute inset-x-0 top-3 flex justify-center">
               <span className="flex items-center gap-1.5 rounded-full bg-black/40 px-3 py-1 text-2xs font-medium text-white/85 backdrop-blur-sm">
-                <Loader2 className="h-3 w-3 animate-spin text-roksal-amber" /> Nalagam model ograje…
+                <Loader2 aria-hidden="true" className="h-3 w-3 animate-spin text-roksal-amber" /> Nalagam model ograje…
               </span>
             </div>
           )}
           {loadError && (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-4 text-center">
-              <AlertTriangle className="h-8 w-8 text-amber-400" />
+              <AlertTriangle aria-hidden="true" className="h-8 w-8 text-amber-400" />
               <p className="text-xs text-white/85">{loadError}</p>
               <button
                 type="button"
@@ -262,7 +262,7 @@ export function Fence3dViewer() {
           {/* Prekrivni namig vrtenja (izgine ob 'load') */}
           {isLoaded && !arActive && (
             <div className="pointer-events-none absolute left-3 top-3 flex items-center gap-1.5 rounded-full bg-black/35 px-2.5 py-1 text-2xs text-white/85 backdrop-blur-sm">
-              <RotateCw className="h-3 w-3 text-roksal-amber" /> vrti s prstom · ščipni za približek
+              <RotateCw aria-hidden="true" className="h-3 w-3 text-roksal-amber" /> vrti s prstom · ščipni za približek
             </div>
           )}
           {arActive && (
@@ -290,9 +290,9 @@ export function Fence3dViewer() {
                 }`}
               >
                 <span className={`flex items-center gap-1.5 text-[12px] font-bold ${variant === v.id ? 'text-roksal-amber' : 'text-roksal-ink'}`}>
-                  {v.id === 'klasika' ? <Layers className="h-3.5 w-3.5" /> : <PanelTop className="h-3.5 w-3.5" />}
+                  {v.id === 'klasika' ? <Layers aria-hidden="true" className="h-3.5 w-3.5" /> : <PanelTop aria-hidden="true" className="h-3.5 w-3.5" />}
                   {v.label}
-                  {isLoaded && variant === v.id && <CheckCircle2 className="ml-auto h-3 w-3 text-green-500" />}
+                  {isLoaded && variant === v.id && <CheckCircle2 aria-hidden="true" className="ml-auto h-3 w-3 text-green-500" />}
                 </span>
                 <span className="mt-0.5 block text-[9px] leading-tight text-muted-foreground">{v.opis}</span>
               </button>
@@ -301,7 +301,7 @@ export function Fence3dViewer() {
 
           <div className="flex items-center gap-2" role="group" aria-label="Izbira RAL barve prahu">
             <span className="flex shrink-0 items-center gap-1 text-2xs font-semibold uppercase tracking-wide text-muted-foreground">
-              <Palette className="h-3 w-3" /> RAL:
+              <Palette aria-hidden="true" className="h-3 w-3" /> RAL:
             </span>
             <div className="flex flex-1 items-center gap-1.5">
               {RAL_COLORS.map((r) => (
@@ -321,7 +321,7 @@ export function Fence3dViewer() {
                 >
                   {r.code === '9016' && <span className="sr-only">bela</span>}
                   {ral === r.code && (
-                    <CheckCircle2
+                    <CheckCircle2 aria-hidden="true"
                       className={`h-4 w-4 ${r.code === '9016' ? 'text-roksal-ink' : 'text-white'}`}
                       strokeWidth={3}
                     />
@@ -364,7 +364,7 @@ export function Fence3dViewer() {
           <div className="flex items-start gap-2 rounded-lg bg-roksal-navy/[0.04] px-3 py-2 ring-1 ring-roksal-navy/10">
             {arAvailable === false ? (
               <>
-                <Smartphone className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
+                <Smartphone aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
                 <p className="text-2xs leading-relaxed text-muted-foreground">
                   AR gumb bo deloval na <strong className="text-roksal-ink">telefonu</strong> (Android: Scene Viewer · iPhone: Quick Look).
                   Na računalniku vrti 3D model s prstom/miško.
@@ -372,7 +372,7 @@ export function Fence3dViewer() {
               </>
             ) : (
               <>
-                <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-roksal-ink/50" />
+                <Info aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0 text-roksal-ink/50" />
                 <p className="text-2xs leading-relaxed text-muted-foreground">
                   Klikni <strong className="text-roksal-ink">„Poglej v prostoru“</strong> — Scene Viewer/Quick Look
                   namesti segment v pravi velikosti; stranka potrdi višino in barvo na mestu.

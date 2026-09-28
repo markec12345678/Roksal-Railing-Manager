@@ -907,7 +907,7 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
           {/* Total Value Estimate Row */}
           <div className="mt-3 flex items-center justify-between rounded-lg bg-secondary/50 p-3">
             <div className="flex items-center gap-2">
-              <Euro className="h-4 w-4 text-roksal-ink" />
+              <Euro aria-hidden="true" className="h-4 w-4 text-roksal-ink" />
               <span className="text-xs text-muted-foreground">Ocena vrednosti zaloge</span>
             </div>
             <span className="text-sm font-bold tabular-nums text-roksal-ink">
@@ -946,7 +946,7 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
       {/* Low Stock Alert */}
       {lowStockItems.length > 0 && (
         <div className="flex items-center gap-3 rounded-xl border border-roksal-red/20 bg-roksal-red/5 p-3 slide-in-right">
-          <AlertTriangle className="h-5 w-5 shrink-0 text-roksal-red" />
+          <AlertTriangle aria-hidden="true" className="h-5 w-5 shrink-0 text-roksal-red" />
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium text-roksal-ink">
               Nizka zaloga!
@@ -961,7 +961,7 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
       {/* Filter Tabs + CSV izvoz (R136) */}
       <div className="flex items-center gap-2">
         <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
-          <Filter className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <Filter aria-hidden="true" className="h-4 w-4 shrink-0 text-muted-foreground" />
           {filterTabs.map((tab) => (
             <button
               key={tab.id}
@@ -1163,7 +1163,7 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
                             {item.naziv}
                           </p>
                           {isLow && (
-                            <TrendingDown className="h-3.5 w-3.5 shrink-0 text-roksal-red" />
+                            <TrendingDown aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-roksal-red" />
                           )}
                         </div>
                         <p className="text-[11px] text-muted-foreground">
@@ -1185,7 +1185,7 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
                                dejanje + artikel (brez ugibanja). */
                             aria-label={`Kopiraj naročilnico za artikel ${item.naziv} — besedilo za e-pošto/SMS`}
                           >
-                            <ShoppingCart className="h-3 w-3" />
+                            <ShoppingCart aria-hidden="true" className="h-3 w-3" />
                             Naroči
                           </Button>
                         )}
@@ -1214,7 +1214,7 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
                       />
                       <div className="flex items-center justify-between">
                         <Badge variant="secondary" className="text-2xs h-5 px-1.5">
-                          <Archive className="mr-1 h-2.5 w-2.5" />
+                          <Archive aria-hidden="true" className="mr-1 h-2.5 w-2.5" />
                           {typeLabels[item.tip] || item.tip}
                         </Badge>
                         {/* R225 — OSMI signalec konvergence: per-vrstica
@@ -1560,9 +1560,9 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
               className="bg-roksal-navy hover:bg-roksal-navy/90 text-white shadow-sm transition-all press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 disabled:opacity-50"
             >
               {submitting ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 aria-hidden="true" className="mr-2 h-4 w-4 animate-spin" />
               ) : (
-                <Package className="mr-2 h-4 w-4" />
+                <Package aria-hidden="true" className="mr-2 h-4 w-4" />
               )}
               Potrdi premik
             </Button>
@@ -1712,7 +1712,7 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
                 className="bg-roksal-navy hover:bg-roksal-navy/90 text-white shadow-sm transition-all press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 disabled:opacity-50"
               >
                 {osnutekSubmitting ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 aria-hidden="true" className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
                   <FileDown className="mr-2 h-4 w-4" aria-hidden="true" />
                 )}

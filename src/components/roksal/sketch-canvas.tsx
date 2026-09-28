@@ -488,7 +488,7 @@ export function SketchCanvas({ projectId, onClose }: SketchCanvasProps) {
             onClick={onClose}
             className="text-white hover:bg-white/10 h-8 px-2"
           >
-            <X className="w-4 h-4 mr-1" />
+            <X aria-hidden="true" className="w-4 h-4 mr-1" />
             Zapri
           </Button>
           <div className="hidden sm:block text-xs text-white/60 truncate">
@@ -522,7 +522,7 @@ export function SketchCanvas({ projectId, onClose }: SketchCanvasProps) {
             onClick={openSaveDialog}
             className="bg-roksal-amber hover:bg-roksal-amber/90 text-white h-8"
           >
-            <Save className="w-4 h-4 mr-1" />
+            <Save aria-hidden="true" className="w-4 h-4 mr-1" />
             Shrani
           </Button>
         </div>
@@ -542,7 +542,7 @@ export function SketchCanvas({ projectId, onClose }: SketchCanvasProps) {
               mode === 'VIEW' && 'bg-roksal-navy text-white hover:bg-roksal-navy/90'
             )}
           >
-            <Eye className="w-4 h-4 mr-1" />
+            <Eye aria-hidden="true" className="w-4 h-4 mr-1" />
             Pogled
           </Button>
           <Button
@@ -555,7 +555,7 @@ export function SketchCanvas({ projectId, onClose }: SketchCanvasProps) {
               mode === 'DRAW' && 'bg-roksal-navy text-white hover:bg-roksal-navy/90'
             )}
           >
-            <Pencil className="w-4 h-4 mr-1" />
+            <Pencil aria-hidden="true" className="w-4 h-4 mr-1" />
             Risanje
           </Button>
           <Button
@@ -568,7 +568,7 @@ export function SketchCanvas({ projectId, onClose }: SketchCanvasProps) {
               mode === 'MEASURE' && 'bg-roksal-navy text-white hover:bg-roksal-navy/90'
             )}
           >
-            <Ruler className="w-4 h-4 mr-1" />
+            <Ruler aria-hidden="true" className="w-4 h-4 mr-1" />
             Mera
           </Button>
         </div>
@@ -659,7 +659,7 @@ export function SketchCanvas({ projectId, onClose }: SketchCanvasProps) {
 
         {mode === 'MEASURE' && (
           <Badge variant="outline" className="ml-auto text-red-600 dark:text-red-400 border-red-600/40">
-            <Ruler className="w-3 h-3 mr-1" />
+            <Ruler aria-hidden="true" className="w-3 h-3 mr-1" />
             Način merjenja — potegni črto
           </Badge>
         )}
@@ -687,7 +687,7 @@ export function SketchCanvas({ projectId, onClose }: SketchCanvasProps) {
         {strokes.length === 0 && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="text-center text-white/40 px-6">
-              <ImageIcon className="w-12 h-12 mx-auto mb-3" />
+              <ImageIcon aria-hidden="true" className="w-12 h-12 mx-auto mb-3" />
               <p className="text-sm font-medium">
                 Prazno platno
               </p>
@@ -712,7 +712,7 @@ export function SketchCanvas({ projectId, onClose }: SketchCanvasProps) {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-roksal-ink dark:text-white">
-              <Ruler className="w-5 h-5 text-roksal-amber" />
+              <Ruler aria-hidden="true" className="w-5 h-5 text-roksal-amber" />
               Vnesi mero
             </DialogTitle>
             <DialogDescription>
@@ -764,7 +764,7 @@ export function SketchCanvas({ projectId, onClose }: SketchCanvasProps) {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-roksal-ink dark:text-white">
-              <Save className="w-5 h-5 text-roksal-amber" />
+              <Save aria-hidden="true" className="w-5 h-5 text-roksal-amber" />
               Shrani skico
             </DialogTitle>
             <DialogDescription>
@@ -815,12 +815,12 @@ export function SketchCanvas({ projectId, onClose }: SketchCanvasProps) {
             >
               {saving ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                  <Loader2 aria-hidden="true" className="w-4 h-4 mr-1 animate-spin" />
                   Shranjujem...
                 </>
               ) : (
                 <>
-                  <Save className="w-4 h-4 mr-1" />
+                  <Save aria-hidden="true" className="w-4 h-4 mr-1" />
                   Shrani
                 </>
               )}
@@ -834,7 +834,7 @@ export function SketchCanvas({ projectId, onClose }: SketchCanvasProps) {
         <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-roksal-ink dark:text-white">
-              <FolderOpen className="w-5 h-5 text-roksal-amber" />
+              <FolderOpen aria-hidden="true" className="w-5 h-5 text-roksal-amber" />
               Shranjene skice
             </DialogTitle>
             <DialogDescription>
@@ -844,7 +844,7 @@ export function SketchCanvas({ projectId, onClose }: SketchCanvasProps) {
           <ScrollArea className="flex-1 max-h-[55vh] -mx-1 px-1">
             {savedSketches.length === 0 ? (
               <div className="text-center py-10 text-sm text-muted-foreground">
-                <ImageIcon className="w-10 h-10 mx-auto mb-2 opacity-40" />
+                <ImageIcon aria-hidden="true" className="w-10 h-10 mx-auto mb-2 opacity-40" />
                 Za ta projekt še ni shranjenih skic.
               </div>
             ) : (
@@ -877,7 +877,7 @@ export function SketchCanvas({ projectId, onClose }: SketchCanvasProps) {
                           className="absolute top-1 right-1 p-1.5 rounded-full bg-red-600/90 text-white opacity-0 group-hover:opacity-100 transition-opacity"
                           aria-label="Izbriši skico"
                         >
-                          <Trash className="w-3.5 h-3.5" />
+                          <Trash aria-hidden="true" className="w-3.5 h-3.5" />
                         </button>
                       </TooltipTrigger>
                       <TooltipContent>Izbriši skico</TooltipContent>

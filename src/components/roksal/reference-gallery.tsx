@@ -219,7 +219,7 @@ function BeforeAfterSlider({
         style={{ left: `${percentage}%` }}
       >
         <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-9 h-9 bg-white rounded-full flex items-center justify-center shadow-lg">
-          <GripVertical className="w-4 h-4 text-roksal-ink" />
+          <GripVertical aria-hidden="true" className="w-4 h-4 text-roksal-ink" />
         </div>
       </div>
       <div className="absolute top-2 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded z-20">
@@ -283,7 +283,7 @@ function StatisticsCard({ items }: { items: GalleryItem[] }) {
     <Card className="border-roksal-navy/10 dark:border-roksal-ink/15">
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-semibold text-roksal-ink dark:text-white flex items-center gap-2">
-          <Layers className="w-4 h-4 text-roksal-amber" />
+          <Layers aria-hidden="true" className="w-4 h-4 text-roksal-amber" />
           Pregled galerije
         </CardTitle>
       </CardHeader>
@@ -304,7 +304,7 @@ function StatisticsCard({ items }: { items: GalleryItem[] }) {
             Z javnim prikazom
           </p>
           <p className="text-2xl font-bold text-roksal-ink dark:text-white flex items-center gap-1">
-            <Eye className="w-4 h-4 text-roksal-amber" />
+            <Eye aria-hidden="true" className="w-4 h-4 text-roksal-amber" />
             {publicCount}
           </p>
           <p className="text-2xs text-muted-foreground">
@@ -323,7 +323,7 @@ function StatisticsCard({ items }: { items: GalleryItem[] }) {
                 {newest.naslov}
               </p>
               <p className="text-2xs text-muted-foreground flex items-center gap-1">
-                <Calendar className="w-3 h-3" />
+                <Calendar aria-hidden="true" className="w-3 h-3" />
                 {formatDateShort(newest.date)}
               </p>
             </>
@@ -432,7 +432,7 @@ function Lightbox({
           <h3 className="text-base sm:text-lg font-semibold truncate">{item.naslov}</h3>
           {item.lokacija && (
             <p className="text-xs text-white/70 flex items-center gap-1 mt-0.5">
-              <MapPin className="w-3 h-3 flex-shrink-0" />
+              <MapPin aria-hidden="true" className="w-3 h-3 flex-shrink-0" />
               <span className="truncate">{item.lokacija}</span>
             </p>
           )}
@@ -445,7 +445,7 @@ function Lightbox({
             onClick={onToggleFeatured}
             className="text-white hover:bg-white/10"
           >
-            <Star
+            <Star aria-hidden="true"
               className={`w-4 h-4 mr-1 ${featured ? 'fill-roksal-amber text-roksal-amber' : 'text-white'}`}
             />
             <span className="text-xs">{featured ? 'Izpostavljeno' : 'Izpostavi'}</span>
@@ -457,7 +457,7 @@ function Lightbox({
             onClick={onOpenDetails}
             className="text-white hover:bg-white/10"
           >
-            <SlidersHorizontal className="w-4 h-4 mr-1" />
+            <SlidersHorizontal aria-hidden="true" className="w-4 h-4 mr-1" />
             <span className="text-xs">Podrobnosti</span>
           </Button>
           <Button
@@ -468,7 +468,7 @@ function Lightbox({
             className="text-white hover:bg-white/10"
             aria-label="Zapri"
           >
-            <X className="w-5 h-5" />
+            <X aria-hidden="true" className="w-5 h-5" />
           </Button>
         </div>
       </div>
@@ -489,7 +489,7 @@ function Lightbox({
           className="absolute left-2 sm:left-4 z-10 rounded-full bg-white/10 hover:bg-white/20 text-white border-0 disabled:opacity-30"
           aria-label="Prejšnja"
         >
-          <ChevronLeft className="w-6 h-6" />
+          <ChevronLeft aria-hidden="true" className="w-6 h-6" />
         </Button>
 
         <div
@@ -508,7 +508,7 @@ function Lightbox({
             />
           ) : (
             <div className="flex flex-col items-center text-white/50">
-              <ImageIcon className="w-16 h-16 mb-2" />
+              <ImageIcon aria-hidden="true" className="w-16 h-16 mb-2" />
               <p className="text-sm">Brez slike</p>
             </div>
           )}
@@ -523,7 +523,7 @@ function Lightbox({
           className="absolute right-2 sm:right-4 z-10 rounded-full bg-white/10 hover:bg-white/20 text-white border-0 disabled:opacity-30"
           aria-label="Naslednja"
         >
-          <ChevronRight className="w-6 h-6" />
+          <ChevronRight aria-hidden="true" className="w-6 h-6" />
         </Button>
       </div>
 
@@ -571,7 +571,7 @@ function Lightbox({
                   : 'bg-transparent text-white border-white/30 hover:bg-white/10'
               }
             >
-              <GripVertical className="w-3 h-3 mr-1" />
+              <GripVertical aria-hidden="true" className="w-3 h-3 mr-1" />
               Drsnik Pred/Po
             </Button>
           </div>
@@ -599,17 +599,17 @@ function Lightbox({
           )}
           {item.javno ? (
             <Badge variant="outline" className="text-2xs border-roksal-amber/60 text-roksal-amber">
-              <Eye className="w-3 h-3 mr-1" />
+              <Eye aria-hidden="true" className="w-3 h-3 mr-1" />
               Javno
             </Badge>
           ) : (
             <Badge variant="outline" className="text-2xs border-white/40 text-white/70">
-              <EyeOff className="w-3 h-3 mr-1" />
+              <EyeOff aria-hidden="true" className="w-3 h-3 mr-1" />
               Privatno
             </Badge>
           )}
           <span className="text-white/60 flex items-center gap-1">
-            <Calendar className="w-3 h-3" />
+            <Calendar aria-hidden="true" className="w-3 h-3" />
             {formatDateSI(item.createdAt)}
           </span>
         </div>
@@ -1210,7 +1210,7 @@ export function ReferenceGallery() {
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div>
           <h2 className="text-lg font-bold text-roksal-ink dark:text-white flex items-center gap-2">
-            <ImageIcon className="w-5 h-5 text-roksal-amber" />
+            <ImageIcon aria-hidden="true" className="w-5 h-5 text-roksal-amber" />
             Galerija realizacij
           </h2>
           <p className="text-xs text-muted-foreground mt-0.5">
@@ -1228,9 +1228,9 @@ export function ReferenceGallery() {
             className="h-8"
           >
             {exporting ? (
-              <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+              <Loader2 aria-hidden="true" className="w-4 h-4 mr-1 animate-spin" />
             ) : (
-              <FileDown className="w-4 h-4 mr-1" />
+              <FileDown aria-hidden="true" className="w-4 h-4 mr-1" />
             )}
             Izvozi PDF
           </Button>
@@ -1242,7 +1242,7 @@ export function ReferenceGallery() {
             disabled={loading}
             className="h-8"
           >
-            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw aria-hidden="true" className={`w-4 h-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
             Osveži
           </Button>
           <Button
@@ -1251,7 +1251,7 @@ export function ReferenceGallery() {
             onClick={() => setAddOpen(true)}
             className="h-8 bg-roksal-amber hover:bg-roksal-amber/90 text-white"
           >
-            <Plus className="w-4 h-4 mr-1" />
+            <Plus aria-hidden="true" className="w-4 h-4 mr-1" />
             Dodaj v galerijo
           </Button>
         </div>
@@ -1267,7 +1267,7 @@ export function ReferenceGallery() {
             {/* Search + sort row */}
             <div className="flex flex-col sm:flex-row gap-2">
               <div className="relative flex-1">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                <Search aria-hidden="true" className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                 <Input
                   type="text"
                   placeholder="Iskanje po naslovu, opisu, lokaciji, stranki..."
@@ -1284,12 +1284,12 @@ export function ReferenceGallery() {
                     onClick={() => setSearch('')}
                     aria-label="Počisti iskanje"
                   >
-                    <X className="w-3.5 h-3.5" />
+                    <X aria-hidden="true" className="w-3.5 h-3.5" />
                   </Button>
                 )}
               </div>
               <div className="flex items-center gap-2">
-                <ArrowUpDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                <ArrowUpDown aria-hidden="true" className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                 <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
                   <SelectTrigger className="h-9 w-[170px]">
                     <SelectValue />
@@ -1307,7 +1307,7 @@ export function ReferenceGallery() {
             {/* Material pills */}
             <div className="flex items-center gap-1.5 flex-wrap">
               <span className="text-xs text-muted-foreground flex items-center gap-1 mr-1">
-                <Filter className="w-3 h-3" />
+                <Filter aria-hidden="true" className="w-3 h-3" />
                 Material:
               </span>
               <Button
@@ -1399,7 +1399,7 @@ export function ReferenceGallery() {
                       className="ml-0.5 hover:bg-muted-foreground/20 rounded"
                       aria-label="Odstrani iskanje"
                     >
-                      <X className="w-3 h-3" />
+                      <X aria-hidden="true" className="w-3 h-3" />
                     </button>
                   </Badge>
                 )}
@@ -1412,7 +1412,7 @@ export function ReferenceGallery() {
                       className="ml-0.5 hover:bg-muted-foreground/20 rounded"
                       aria-label="Odstrani filter profila"
                     >
-                      <X className="w-3 h-3" />
+                      <X aria-hidden="true" className="w-3 h-3" />
                     </button>
                   </Badge>
                 )}
@@ -1425,7 +1425,7 @@ export function ReferenceGallery() {
                       className="ml-0.5 hover:bg-muted-foreground/20 rounded"
                       aria-label="Odstrani filter materiala"
                     >
-                      <X className="w-3 h-3" />
+                      <X aria-hidden="true" className="w-3 h-3" />
                     </button>
                   </Badge>
                 )}
@@ -1438,7 +1438,7 @@ export function ReferenceGallery() {
                       className="ml-0.5 hover:bg-muted-foreground/20 rounded"
                       aria-label="Odstrani filter lokacije"
                     >
-                      <X className="w-3 h-3" />
+                      <X aria-hidden="true" className="w-3 h-3" />
                     </button>
                   </Badge>
                 )}
@@ -1451,7 +1451,7 @@ export function ReferenceGallery() {
                       className="ml-0.5 hover:bg-muted-foreground/20 rounded"
                       aria-label="Odstrani filter leta"
                     >
-                      <X className="w-3 h-3" />
+                      <X aria-hidden="true" className="w-3 h-3" />
                     </button>
                   </Badge>
                 )}
@@ -1486,7 +1486,7 @@ export function ReferenceGallery() {
       ) : items.length === 0 ? (
         <Card className="border-dashed">
           <CardContent className="text-center py-12">
-            <ImageIcon className="w-12 h-12 mx-auto text-muted-foreground/40 mb-3" />
+            <ImageIcon aria-hidden="true" className="w-12 h-12 mx-auto text-muted-foreground/40 mb-3" />
             <p className="text-sm font-medium text-muted-foreground">
               Galerija je še prazna
             </p>
@@ -1498,7 +1498,7 @@ export function ReferenceGallery() {
       ) : filtered.length === 0 ? (
         <Card className="border-dashed">
           <CardContent className="text-center py-12">
-            <Search className="w-10 h-10 mx-auto text-muted-foreground/40 mb-3" />
+            <Search aria-hidden="true" className="w-10 h-10 mx-auto text-muted-foreground/40 mb-3" />
             <p className="text-sm font-medium text-muted-foreground">
               Ni realizacij, ki ustrezajo filtrom
             </p>
@@ -1512,7 +1512,7 @@ export function ReferenceGallery() {
               onClick={clearFilters}
               className="h-8"
             >
-              <X className="w-4 h-4 mr-1" />
+              <X aria-hidden="true" className="w-4 h-4 mr-1" />
               Počisti filtre
             </Button>
           </CardContent>
@@ -1552,7 +1552,7 @@ export function ReferenceGallery() {
                     />
                   ) : (
                     <div className="w-full aspect-video flex items-center justify-center">
-                      <ImageIcon className="w-10 h-10 text-muted-foreground/40" />
+                      <ImageIcon aria-hidden="true" className="w-10 h-10 text-muted-foreground/40" />
                     </div>
                   )}
                   {/* Pred/Po badge */}
@@ -1570,7 +1570,7 @@ export function ReferenceGallery() {
                       variant="secondary"
                       className="absolute top-2 right-2 bg-white/90 text-roksal-amber text-2xs gap-0.5 border border-roksal-amber/40"
                     >
-                      <Star className="w-3 h-3 fill-roksal-amber" />
+                      <Star aria-hidden="true" className="w-3 h-3 fill-roksal-amber" />
                       Izpostavljeno
                     </Badge>
                   )}
@@ -1587,7 +1587,7 @@ export function ReferenceGallery() {
                   </h3>
                   {item.lokacija && (
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <MapPin className="w-3 h-3 flex-shrink-0" />
+                      <MapPin aria-hidden="true" className="w-3 h-3 flex-shrink-0" />
                       <span className="truncate">{item.lokacija}</span>
                     </div>
                   )}
@@ -1642,7 +1642,7 @@ export function ReferenceGallery() {
             </SheetTitle>
             {selectedItem?.lokacija && (
               <SheetDescription className="flex items-center gap-1">
-                <MapPin className="w-3 h-3" />
+                <MapPin aria-hidden="true" className="w-3 h-3" />
                 {selectedItem.lokacija}
               </SheetDescription>
             )}
@@ -1723,7 +1723,7 @@ export function ReferenceGallery() {
         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-roksal-ink dark:text-white">
-              <Plus className="w-5 h-5 text-roksal-amber" />
+              <Plus aria-hidden="true" className="w-5 h-5 text-roksal-amber" />
               Dodaj v galerijo
             </DialogTitle>
             <DialogDescription>
@@ -1804,7 +1804,7 @@ export function ReferenceGallery() {
                       />
                     ) : (
                       <div className="text-center text-muted-foreground">
-                        <Upload className="w-6 h-6 mx-auto mb-1" />
+                        <Upload aria-hidden="true" className="w-6 h-6 mx-auto mb-1" />
                         <span className="text-2xs">Klikni za nalaganje</span>
                       </div>
                     )}
@@ -1830,7 +1830,7 @@ export function ReferenceGallery() {
                       />
                     ) : (
                       <div className="text-center text-muted-foreground">
-                        <Upload className="w-6 h-6 mx-auto mb-1" />
+                        <Upload aria-hidden="true" className="w-6 h-6 mx-auto mb-1" />
                         <span className="text-2xs">Klikni za nalaganje</span>
                       </div>
                     )}
@@ -1866,12 +1866,12 @@ export function ReferenceGallery() {
             >
               {saving ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                  <Loader2 aria-hidden="true" className="w-4 h-4 mr-1 animate-spin" />
                   Shranjujem...
                 </>
               ) : (
                 <>
-                  <Plus className="w-4 h-4 mr-1" />
+                  <Plus aria-hidden="true" className="w-4 h-4 mr-1" />
                   Dodaj
                 </>
               )}

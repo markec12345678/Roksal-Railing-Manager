@@ -1048,10 +1048,10 @@ export function MaterialIntelligenceTab({
       {/* Tab switcher */}
       <div className="grid grid-cols-3 gap-1 rounded-lg bg-muted p-1">
         <Button type="button" variant={tab === 'bom' ? 'default' : 'ghost'} size="sm" aria-pressed={tab === 'bom'} onClick={() => setTab('bom')} className={tab === 'bom' ? 'bg-roksal-navy text-white' : ''}>
-          <Sparkles className="h-3.5 w-3.5 mr-1" /> BOM Refine
+          <Sparkles aria-hidden="true" className="h-3.5 w-3.5 mr-1" /> BOM Refine
         </Button>
         <Button type="button" variant={tab === 'orders' ? 'default' : 'ghost'} size="sm" aria-pressed={tab === 'orders'} onClick={() => setTab('orders')} className={tab === 'orders' ? 'bg-roksal-navy text-white' : ''}>
-          <ShoppingCart className="h-3.5 w-3.5 mr-1" /> Naročila
+          <ShoppingCart aria-hidden="true" className="h-3.5 w-3.5 mr-1" /> Naročila
           {/* R208 — F2: števec aktivnih naročil (OSNUTEK/POSLANO/POTRJENO) na
               zavihku — opozorilo pred dejanjem; izpeljanka iz realnih naročil
               (R207 vzorec), viden LE ko > 0 (brez lažnega 0). */}
@@ -1065,7 +1065,7 @@ export function MaterialIntelligenceTab({
           )}
         </Button>
         <Button type="button" variant={tab === 'suppliers' ? 'default' : 'ghost'} size="sm" aria-pressed={tab === 'suppliers'} onClick={() => setTab('suppliers')} className={tab === 'suppliers' ? 'bg-roksal-navy text-white' : ''}>
-          <Truck className="h-3.5 w-3.5 mr-1" /> Dobavitelji
+          <Truck aria-hidden="true" className="h-3.5 w-3.5 mr-1" /> Dobavitelji
         </Button>
       </div>
 
@@ -1106,17 +1106,17 @@ export function MaterialIntelligenceTab({
         <div className="space-y-3">
           {!projectId ? (
             <Card><CardContent className="py-8 text-center text-muted-foreground">
-              <Package className="h-10 w-10 mx-auto mb-2 opacity-30" />
+              <Package aria-hidden="true" className="h-10 w-10 mx-auto mb-2 opacity-30" />
               <p className="text-sm">Izberi projekt v Domov za BOM optimizacijo.</p>
             </CardContent></Card>
           ) : loading && !bomRefine ? (
-            <Card><CardContent className="py-8 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto text-roksal-amber" /></CardContent></Card>
+            <Card><CardContent className="py-8 text-center"><Loader2 aria-hidden="true" className="h-6 w-6 animate-spin mx-auto text-roksal-amber" /></CardContent></Card>
           ) : !bomRefine && viriNapaka ? null : !bomRefine?.dealLocked ? (
             // R182 — BOM vir ni naložen (napaka vidna zgoraj) → brez lažnega
             // 'Deal ni zaklenjen' (R174: error panel je PREDNOST pred praznim stanjem)
             <Card className="border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40">
               <CardContent className="py-6 text-center">
-                <AlertTriangle className="h-8 w-8 mx-auto text-amber-500 dark:text-amber-400 mb-2" />
+                <AlertTriangle aria-hidden="true" className="h-8 w-8 mx-auto text-amber-500 dark:text-amber-400 mb-2" />
                 <p className="text-sm font-medium text-amber-900 dark:text-amber-200">Deal ni zaklenjen</p>
                 <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">Zakleni deal po podpisu (V4.1) za BOM optimizacijo.</p>
               </CardContent>
@@ -1126,15 +1126,15 @@ export function MaterialIntelligenceTab({
               {/* Skupne statistike */}
               <div className="grid grid-cols-3 gap-2">
                 <Card className="border-green-200 dark:border-green-800"><CardContent className="p-3">
-                  <div className="flex items-center gap-1 mb-1"><CheckCircle2 className="h-3 w-3 text-green-600 dark:text-green-400" /><span className="text-2xs text-muted-foreground">Skupaj</span></div>
+                  <div className="flex items-center gap-1 mb-1"><CheckCircle2 aria-hidden="true" className="h-3 w-3 text-green-600 dark:text-green-400" /><span className="text-2xs text-muted-foreground">Skupaj</span></div>
                   <div className="text-lg font-bold text-roksal-ink tabular-nums">{bomRefine.skupajCena.toFixed(0)} €</div>
                 </CardContent></Card>
                 <Card className="border-amber-200 dark:border-amber-800"><CardContent className="p-3">
-                  <div className="flex items-center gap-1 mb-1"><TrendingUp className="h-3 w-3 text-amber-600 dark:text-amber-400" /><span className="text-2xs text-muted-foreground">Prihranek</span></div>
+                  <div className="flex items-center gap-1 mb-1"><TrendingUp aria-hidden="true" className="h-3 w-3 text-amber-600 dark:text-amber-400" /><span className="text-2xs text-muted-foreground">Prihranek</span></div>
                   <div className="text-lg font-bold text-amber-700 dark:text-amber-300 tabular-nums">{bomRefine.skupajPrihranek.toFixed(0)} €</div>
                 </CardContent></Card>
                 <Card className="border-blue-200 dark:border-blue-800"><CardContent className="p-3">
-                  <div className="flex items-center gap-1 mb-1"><Package className="h-3 w-3 text-blue-600 dark:text-blue-400" /><span className="text-2xs text-muted-foreground">Artikli</span></div>
+                  <div className="flex items-center gap-1 mb-1"><Package aria-hidden="true" className="h-3 w-3 text-blue-600 dark:text-blue-400" /><span className="text-2xs text-muted-foreground">Artikli</span></div>
                   <div className="text-lg font-bold text-roksal-ink tabular-nums">{bomRefine.matchedCount}/{bomRefine.totalCount}</div>
                 </CardContent></Card>
               </div>
@@ -1144,7 +1144,7 @@ export function MaterialIntelligenceTab({
                 <Card>
                   <CardHeader className="pb-2">
                     <CardTitle className="flex items-center gap-2 text-sm">
-                      <Sparkles className="h-4 w-4 text-roksal-amber" /> Optimalni dobavitelji
+                      <Sparkles aria-hidden="true" className="h-4 w-4 text-roksal-amber" /> Optimalni dobavitelji
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2">
@@ -1206,7 +1206,7 @@ export function MaterialIntelligenceTab({
                 disabled={converting || bomRefine.matchedCount === 0}
                 className="w-full bg-roksal-amber text-white hover:bg-roksal-amber/90"
               >
-                {converting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ArrowRight className="mr-2 h-4 w-4" />}
+                {converting ? <Loader2 aria-hidden="true" className="mr-2 h-4 w-4 animate-spin" /> : <ArrowRight aria-hidden="true" className="mr-2 h-4 w-4" />}
                 Pretvori v naročilo (najboljši dobavitelj)
               </Button>
             </>
@@ -1234,7 +1234,7 @@ export function MaterialIntelligenceTab({
               title="Izvozi vsa naročila (neodvisno od statusnega filtra) kot CSV za Excel"
               className="h-8 text-xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
             >
-              <Download className="h-3.5 w-3.5 mr-1 text-roksal-amber" /> CSV
+              <Download aria-hidden="true" className="h-3.5 w-3.5 mr-1 text-roksal-amber" /> CSV
             </Button>
           </div>
           {/* R242 — vlogo-osveščen vodič (R241 Računi precedens): viden SAMO,
@@ -1257,12 +1257,12 @@ export function MaterialIntelligenceTab({
             </div>
           )}
           {loading && orders.length === 0 ? (
-            <Card><CardContent className="py-8 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto text-roksal-amber" /></CardContent></Card>
+            <Card><CardContent className="py-8 text-center"><Loader2 aria-hidden="true" className="h-6 w-6 animate-spin mx-auto text-roksal-amber" /></CardContent></Card>
           ) : orders.length === 0 ? (
             // R182 — naročila niso naložena (napaka zgoraj) → brez lažnega 'Ni naročil'
             viriNapaka ? null : (
               <Card><CardContent className="py-8 text-center text-muted-foreground">
-                <ShoppingCart className="h-10 w-10 mx-auto mb-2 opacity-30" />
+                <ShoppingCart aria-hidden="true" className="h-10 w-10 mx-auto mb-2 opacity-30" />
                 <p className="text-sm">Ni naročil. Pretvori BOM draft v naročilo.</p>
               </CardContent></Card>
             )
@@ -1298,7 +1298,7 @@ export function MaterialIntelligenceTab({
                 // R202 družina — prazno ZARADI filtra ≠ res prazno: iskren razlog
                 // + izhod (brez lažnega 'Ni naročil', ki bi lagal o bazi).
                 <Card><CardContent className="py-8 text-center text-muted-foreground">
-                  <ShoppingCart className="h-10 w-10 mx-auto mb-2 opacity-30" />
+                  <ShoppingCart aria-hidden="true" className="h-10 w-10 mx-auto mb-2 opacity-30" />
                   <p className="text-sm">Ni naročil s statusom {statusFilter}.</p>
                   <p className="mt-1 text-xs">Izberi drug status ali prikaži Vse.</p>
                   {/* R213 — besedilni izhod je dobil DEJANSKI gumb: EN klik
@@ -1361,7 +1361,7 @@ export function MaterialIntelligenceTab({
                         onClick={() => setExpandedOrder(expanded ? null : order.id)}
                         className="flex w-full items-center gap-1 rounded px-1 py-0.5 text-2xs text-muted-foreground transition-colors hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
                       >
-                        {expanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                        {expanded ? <ChevronDown aria-hidden="true" className="h-3 w-3" /> : <ChevronRight aria-hidden="true" className="h-3 w-3" />}
                         {expanded ? 'Skrij postavke' : 'Pokaži postavke'}
                       </button>
                       {expanded && (
@@ -1447,7 +1447,7 @@ export function MaterialIntelligenceTab({
                         )}
                         {order.status === 'POTRJENO' && lahkoPrejme && (
                           <Button type="button" size="sm" variant="outline" className="h-6 text-2xs bg-green-50 dark:bg-green-950/40 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1" onClick={() => { if (!lahkoPrejme) return; setReceiveDialogOrderId(order.id); }} title="Prejem v zalogo — potrditev s prikazom postavk">
-                            <CheckCircle2 className="h-3 w-3 mr-1" /> Dobljeno (v zalogo)
+                            <CheckCircle2 aria-hidden="true" className="h-3 w-3 mr-1" /> Dobljeno (v zalogo)
                           </Button>
                         )}
                         {/* R208 — preklic (končno stanje, brez stranskih učinkov):
@@ -1545,7 +1545,7 @@ export function MaterialIntelligenceTab({
               title="Izvozi vse dobavitelje kot CSV za Excel"
               className="h-8 text-xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
             >
-              <Download className="h-3.5 w-3.5 mr-1 text-roksal-amber" /> CSV
+              <Download aria-hidden="true" className="h-3.5 w-3.5 mr-1 text-roksal-amber" /> CSV
             </Button>
             <Button
               type="button"
@@ -1567,7 +1567,7 @@ export function MaterialIntelligenceTab({
               vlogo-osveščen vodič ga nadomešča z razlagom ZAKAJ. */}
           {lahkoUpravljaKatalog ? (
             <Button type="button" onClick={() => setSupplierDialogOpen(true)} className="w-full bg-roksal-navy text-white shadow-sm press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40">
-              <Plus className="h-4 w-4 mr-2" /> Nov dobavitelj
+              <Plus aria-hidden="true" className="h-4 w-4 mr-2" /> Nov dobavitelj
             </Button>
           ) : myPermissions !== null ? (
             <div
@@ -1581,12 +1581,12 @@ export function MaterialIntelligenceTab({
             </div>
           ) : null}
           {loading && suppliers.length === 0 ? (
-            <Card><CardContent className="py-8 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto text-roksal-amber" /></CardContent></Card>
+            <Card><CardContent className="py-8 text-center"><Loader2 aria-hidden="true" className="h-6 w-6 animate-spin mx-auto text-roksal-amber" /></CardContent></Card>
           ) : suppliers.length === 0 ? (
             // R182 — dobavitelji niso naloženi (napaka zgoraj) → brez lažnega 'Ni dobaviteljev'
             viriNapaka ? null : (
               <Card><CardContent className="py-8 text-center text-muted-foreground">
-                <Truck className="h-10 w-10 mx-auto mb-2 opacity-30" />
+                <Truck aria-hidden="true" className="h-10 w-10 mx-auto mb-2 opacity-30" />
                 <p className="text-sm">Ni dobaviteljev. Dodaj prvega.</p>
               </CardContent></Card>
             )
@@ -1623,7 +1623,7 @@ export function MaterialIntelligenceTab({
           <Separator />
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2"><Euro className="h-4 w-4 text-roksal-amber" /> Cene materiala</CardTitle>
+              <CardTitle className="text-sm flex items-center gap-2"><Euro aria-hidden="true" className="h-4 w-4 text-roksal-amber" /> Cene materiala</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               {/* R244/R245 — IZVOZNA SKUPINA na 'Cene materiala' kartici:
@@ -1643,7 +1643,7 @@ export function MaterialIntelligenceTab({
                     title="Izvozi vse trenutno veljavne nabavne cene kot CSV za Excel"
                     className="h-8 text-xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
                   >
-                    <Download className="h-3.5 w-3.5 mr-1 text-roksal-amber" /> CSV
+                    <Download aria-hidden="true" className="h-3.5 w-3.5 mr-1 text-roksal-amber" /> CSV
                   </Button>
                   <Button
                     type="button"
@@ -1674,7 +1674,7 @@ export function MaterialIntelligenceTab({
                     title="Izvozi najnižjo veljavno ceno per artikel kot CSV za Excel"
                     className="h-8 text-xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
                   >
-                    <Download className="h-3.5 w-3.5 mr-1 text-roksal-amber" /> CSV
+                    <Download aria-hidden="true" className="h-3.5 w-3.5 mr-1 text-roksal-amber" /> CSV
                   </Button>
                   <Button
                     type="button"

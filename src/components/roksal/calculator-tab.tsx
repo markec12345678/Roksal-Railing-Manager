@@ -1690,7 +1690,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
           {/* Bottom dimension: individual gap annotation */}
           <div className="flex items-center justify-center mt-1.5">
             <div className="flex items-center gap-0.5">
-              <Ruler className="h-3 w-3 text-roksal-amber" />
+              <Ruler aria-hidden="true" className="h-3 w-3 text-roksal-amber" />
               <span className="text-[9px] font-mono font-medium text-roksal-amber">
                 Razmik: {gap.toFixed(1)}mm med letvami
               </span>
@@ -1730,7 +1730,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
       <Card className="overflow-hidden">
         <CardHeader className="pb-2 pt-4 px-4">
           <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
-            <Scissors className="h-4 w-4" />
+            <Scissors aria-hidden="true" className="h-4 w-4" />
             Seznam rezov — pozicije letvev
           </CardTitle>
         </CardHeader>
@@ -1812,7 +1812,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
             onClick={onBackToMeasurements}
             className="flex items-center gap-1.5 rounded-lg border border-roksal-amber/30 bg-roksal-amber/10 px-2.5 py-1.5 text-[11px] font-medium text-roksal-ink hover:bg-roksal-amber/20 active:scale-[0.96] transition-all duration-150 press-scale shrink-0"
           >
-            <ArrowLeft className="h-3.5 w-3.5" />
+            <ArrowLeft aria-hidden="true" className="h-3.5 w-3.5" />
             <span>Nazaj na meritve</span>
           </button>
         )}
@@ -1822,7 +1822,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
       {importedFromMeasurement && (
         <div className="flex items-center gap-2.5 rounded-xl border border-roksal-amber/30 bg-roksal-amber/5 px-3.5 py-2.5 animate-fade-in-up">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-roksal-amber/15">
-            <ArrowDownToLine className="h-4 w-4 text-roksal-amber" />
+            <ArrowDownToLine aria-hidden="true" className="h-4 w-4 text-roksal-amber" />
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
@@ -1865,7 +1865,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
           <CardHeader className="pb-2 pt-4 px-4">
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
-                <Layers className="h-4 w-4 text-roksal-amber" />
+                <Layers aria-hidden="true" className="h-4 w-4 text-roksal-amber" />
                 Prihranjene predloge
                 <Badge variant="secondary" className="text-2xs h-5 px-1.5">{templates.length}</Badge>
               </CardTitle>
@@ -1881,7 +1881,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                   toast.success('Vse predloge počiščene')
                 }}
               >
-                <Trash2 className="mr-1 h-3 w-3" />
+                <Trash2 aria-hidden="true" className="mr-1 h-3 w-3" />
                 Počisti vse
               </Button>
             </div>
@@ -1905,7 +1905,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                       className="flex w-full items-start gap-2 text-left"
                     >
                       <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-roksal-navy/10">
-                        <Layers className="h-3.5 w-3.5 text-roksal-ink" />
+                        <Layers aria-hidden="true" className="h-3.5 w-3.5 text-roksal-ink" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-xs font-semibold text-roksal-ink truncate">{tpl.naziv}</p>
@@ -1926,7 +1926,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                         className="flex items-center gap-1 text-[9px] text-roksal-red hover:text-roksal-red/80 transition-colors"
                         aria-label="Izbriši predlogo"
                       >
-                        <Trash2 className="h-3 w-3" />
+                        <Trash2 aria-hidden="true" className="h-3 w-3" />
                         Izbriši
                       </button>
                     </div>
@@ -1936,7 +1936,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
             </div>
             {activeTemplateId && (
               <p className="mt-2 text-2xs text-roksal-amber flex items-center gap-1">
-                <CheckCircle2 className="h-3 w-3" />
+                <CheckCircle2 aria-hidden="true" className="h-3 w-3" />
                 Aktivna predloga je naložena v trenutnem načinu.
               </p>
             )}
@@ -2078,7 +2078,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
             onClick={handleCalculate}
             className="w-full bg-roksal-navy hover:bg-roksal-navy/90 text-white h-11"
           >
-            <Calculator className="mr-2 h-4 w-4" />
+            <Calculator aria-hidden="true" className="mr-2 h-4 w-4" />
             Izračunaj razmike
           </Button>
 
@@ -2089,7 +2089,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               className="rounded-lg border border-roksal-amber/30 bg-roksal-amber/10 p-3 animate-in fade-in slide-in-from-bottom-2 duration-200"
             >
               <p className="flex items-center gap-1.5 text-xs font-semibold text-roksal-amber">
-                <AlertTriangle className="h-3.5 w-3.5" />
+                <AlertTriangle aria-hidden="true" className="h-3.5 w-3.5" />
                 Izračun zavrnjen — vnos izven območja umerjenosti formule:
               </p>
               <ul className="mt-1.5 space-y-1">
@@ -2134,9 +2134,9 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               >
                 <CardContent className="flex items-center gap-3 p-4">
                   {railingResult.isCompliant ? (
-                    <CheckCircle2 className="h-6 w-6 shrink-0 text-roksal-green" />
+                    <CheckCircle2 aria-hidden="true" className="h-6 w-6 shrink-0 text-roksal-green" />
                   ) : (
-                    <AlertTriangle className="h-6 w-6 shrink-0 text-roksal-red" />
+                    <AlertTriangle aria-hidden="true" className="h-6 w-6 shrink-0 text-roksal-red" />
                   )}
                   <div>
                     <p
@@ -2201,7 +2201,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                 <Card className="border-roksal-amber/30">
                   <CardHeader className="pb-2 pt-4 px-4">
                     <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-amber">
-                      <Info className="h-4 w-4" />
+                      <Info aria-hidden="true" className="h-4 w-4" />
                       Opozorila
                     </CardTitle>
                   </CardHeader>
@@ -2212,7 +2212,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                           key={i}
                           className="flex items-start gap-2 text-xs text-muted-foreground"
                         >
-                          <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-roksal-amber" />
+                          <AlertTriangle aria-hidden="true" className="mt-0.5 h-3 w-3 shrink-0 text-roksal-amber" />
                           {w}
                         </li>
                       ))}
@@ -2229,7 +2229,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               <Card className="overflow-hidden border-l-4 border-l-roksal-navy">
                 <CardHeader className="pb-2 pt-4 px-4">
                   <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
-                    <Package className="h-4 w-4" />
+                    <Package aria-hidden="true" className="h-4 w-4" />
                     Skupaj material
                   </CardTitle>
                 </CardHeader>
@@ -2263,7 +2263,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               <Card className="overflow-hidden border-l-4 border-l-roksal-amber">
                 <CardHeader className="pb-2 pt-4 px-4">
                   <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
-                    <Euro className="h-4 w-4" />
+                    <Euro aria-hidden="true" className="h-4 w-4" />
                     Ocena stroškov
                   </CardTitle>
                 </CardHeader>
@@ -2280,7 +2280,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                       <div className="space-y-2">
                         <div className="flex items-center justify-between text-xs py-1.5 border-b border-border/30">
                           <div className="flex items-center gap-2">
-                            <Euro className="h-3.5 w-3.5 text-muted-foreground" />
+                            <Euro aria-hidden="true" className="h-3.5 w-3.5 text-muted-foreground" />
                             <span className="text-muted-foreground">Letve ({slatTotalM.toFixed(2)}m × {slatPricePerM.toFixed(1)} €/m)</span>
                           </div>
                           <span className="font-medium text-roksal-ink">{slatCost.toFixed(2)} €</span>
@@ -2288,7 +2288,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                         {postsCount > 0 && (
                           <div className="flex items-center justify-between text-xs py-1.5 border-b border-border/30">
                             <div className="flex items-center gap-2">
-                              <Euro className="h-3.5 w-3.5 text-muted-foreground" />
+                              <Euro aria-hidden="true" className="h-3.5 w-3.5 text-muted-foreground" />
                               <span className="text-muted-foreground">Stebri ({postsCount} × 25 €)</span>
                             </div>
                             <span className="font-medium text-roksal-ink">{postsCost.toFixed(2)} €</span>
@@ -2297,7 +2297,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                         {anchoringCost > 0 && (
                           <div className="flex items-center justify-between text-xs py-1.5 border-b border-border/30">
                             <div className="flex items-center gap-2">
-                              <Euro className="h-3.5 w-3.5 text-muted-foreground" />
+                              <Euro aria-hidden="true" className="h-3.5 w-3.5 text-muted-foreground" />
                               <span className="text-muted-foreground">Smola/čepi ({anchoringResult!.cartridgesNeeded} × 12 €)</span>
                             </div>
                             <span className="font-medium text-roksal-ink">{anchoringCost.toFixed(2)} €</span>
@@ -2317,7 +2317,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               {/* Safety Info Box */}
               <Card className="bg-roksal-navy/5">
                 <CardContent className="flex gap-3 p-4">
-                  <Info className="h-5 w-5 shrink-0 text-roksal-ink" />
+                  <Info aria-hidden="true" className="h-5 w-5 shrink-0 text-roksal-ink" />
                   <div className="text-xs text-muted-foreground">
                     <p className="font-medium text-roksal-ink">
                       Pravilnik o varstvu otrok (SIST EN 13485)
@@ -2343,7 +2343,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
             <Card className={importedFromMeasurement.podlaga === 'estrih' ? 'border-amber-300 bg-amber-50/60 dark:border-amber-700 dark:bg-amber-950/40' : 'border-roksal-navy/15 dark:border-roksal-ink/15'}>
               <CardContent className="p-4">
                 <div className="flex items-start gap-2.5">
-                  <AlertTriangle className={`mt-0.5 h-4 w-4 shrink-0 ${importedFromMeasurement.podlaga === 'estrih' ? 'text-amber-600 dark:text-amber-400' : 'text-roksal-ink/50'}`} />
+                  <AlertTriangle aria-hidden="true" className={`mt-0.5 h-4 w-4 shrink-0 ${importedFromMeasurement.podlaga === 'estrih' ? 'text-amber-600 dark:text-amber-400' : 'text-roksal-ink/50'}`} />
                   <div className="min-w-0 flex-1">
                     <p className="text-[11px] font-bold text-roksal-ink">
                       Podlaga z terena: {podlagaLabels[importedFromMeasurement.podlaga] ?? importedFromMeasurement.podlaga}
@@ -2380,7 +2380,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
           <Card>
             <CardHeader className="pb-3 pt-4 px-4">
               <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
-                <Anchor className="h-4 w-4" />
+                <Anchor aria-hidden="true" className="h-4 w-4" />
                 Tip sidra
               </CardTitle>
             </CardHeader>
@@ -2469,7 +2469,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
           {/* Temperature Warning */}
           {parseFloat(temperature) < 10 && (
             <div className="flex items-center gap-3 rounded-xl border border-roksal-amber/30 bg-roksal-amber/5 p-3">
-              <Thermometer className="h-5 w-5 shrink-0 text-roksal-amber" />
+              <Thermometer aria-hidden="true" className="h-5 w-5 shrink-0 text-roksal-amber" />
               <p className="text-xs text-muted-foreground">
                 {parseFloat(temperature) < 5
                   ? 'POZOR: Temperatura < 5°C. Kemično sidranje ni priporočljivo!'
@@ -2483,7 +2483,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
             onClick={handleCalculate}
             className="w-full bg-roksal-navy hover:bg-roksal-navy/90 text-white h-11"
           >
-            <Anchor className="mr-2 h-4 w-4" />
+            <Anchor aria-hidden="true" className="mr-2 h-4 w-4" />
             Izračunaj sidranje
           </Button>
 
@@ -2494,7 +2494,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               className="rounded-lg border border-roksal-amber/30 bg-roksal-amber/10 p-3 animate-in fade-in slide-in-from-bottom-2 duration-200"
             >
               <p className="flex items-center gap-1.5 text-xs font-semibold text-roksal-amber">
-                <AlertTriangle className="h-3.5 w-3.5" />
+                <AlertTriangle aria-hidden="true" className="h-3.5 w-3.5" />
                 Izračun zavrnjen — vnos izven območja umerjenosti formule:
               </p>
               <ul className="mt-1.5 space-y-1">
@@ -2564,7 +2564,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                 <Card className="border-roksal-amber/30">
                   <CardHeader className="pb-2 pt-4 px-4">
                     <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-amber">
-                      <AlertTriangle className="h-4 w-4" />
+                      <AlertTriangle aria-hidden="true" className="h-4 w-4" />
                       Opozorila
                     </CardTitle>
                   </CardHeader>
@@ -2575,7 +2575,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                           key={i}
                           className="flex items-start gap-2 text-xs text-muted-foreground"
                         >
-                          <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-roksal-amber" />
+                          <AlertTriangle aria-hidden="true" className="mt-0.5 h-3 w-3 shrink-0 text-roksal-amber" />
                           {w}
                         </li>
                       ))}
@@ -2587,7 +2587,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               {/* Info */}
               <Card className="bg-roksal-navy/5">
                 <CardContent className="flex gap-3 p-4">
-                  <Info className="h-5 w-5 shrink-0 text-roksal-ink" />
+                  <Info aria-hidden="true" className="h-5 w-5 shrink-0 text-roksal-ink" />
                   <div className="text-xs text-muted-foreground">
                     <p className="font-medium text-roksal-ink">
                       Navodila za sidranje
@@ -2612,7 +2612,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
           <Card>
             <CardHeader className="pb-3 pt-4 px-4">
               <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
-                <Wind className="h-4 w-4" />
+                <Wind aria-hidden="true" className="h-4 w-4" />
                 Tip ograje
               </CardTitle>
             </CardHeader>
@@ -2712,7 +2712,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
             onClick={handleCalculate}
             className="w-full bg-roksal-navy hover:bg-roksal-navy/90 text-white h-11"
           >
-            <Wind className="mr-2 h-4 w-4" />
+            <Wind aria-hidden="true" className="mr-2 h-4 w-4" />
             Izračunaj vetrno obremenitev
           </Button>
 
@@ -2723,7 +2723,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               className="rounded-lg border border-roksal-amber/30 bg-roksal-amber/10 p-3 animate-in fade-in slide-in-from-bottom-2 duration-200"
             >
               <p className="flex items-center gap-1.5 text-xs font-semibold text-roksal-amber">
-                <AlertTriangle className="h-3.5 w-3.5" />
+                <AlertTriangle aria-hidden="true" className="h-3.5 w-3.5" />
                 Izračun zavrnjen — vnos izven območja umerjenosti formule:
               </p>
               <ul className="mt-1.5 space-y-1">
@@ -2750,9 +2750,9 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               <Card className={`overflow-hidden border ${riskColors[windResult.riskLevel]}`}>
                 <CardContent className="flex items-center gap-3 p-4">
                   {windResult.riskLevel === 'LOW' || windResult.riskLevel === 'MEDIUM' ? (
-                    <CheckCircle2 className="h-6 w-6 shrink-0" />
+                    <CheckCircle2 aria-hidden="true" className="h-6 w-6 shrink-0" />
                   ) : (
-                    <AlertTriangle className="h-6 w-6 shrink-0" />
+                    <AlertTriangle aria-hidden="true" className="h-6 w-6 shrink-0" />
                   )}
                   <div>
                     <p className="text-sm font-semibold">
@@ -2801,7 +2801,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                 <Card className="border-roksal-amber/30">
                   <CardHeader className="pb-2 pt-4 px-4">
                     <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-amber">
-                      <Info className="h-4 w-4" />
+                      <Info aria-hidden="true" className="h-4 w-4" />
                       Priporočila
                     </CardTitle>
                   </CardHeader>
@@ -2812,7 +2812,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                           key={i}
                           className="flex items-start gap-2 text-xs text-muted-foreground"
                         >
-                          <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-roksal-amber" />
+                          <AlertTriangle aria-hidden="true" className="mt-0.5 h-3 w-3 shrink-0 text-roksal-amber" />
                           {r}
                         </li>
                       ))}
@@ -2824,7 +2824,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               {/* Info */}
               <Card className="bg-roksal-navy/5">
                 <CardContent className="flex gap-3 p-4">
-                  <Info className="h-5 w-5 shrink-0 text-roksal-ink" />
+                  <Info aria-hidden="true" className="h-5 w-5 shrink-0 text-roksal-ink" />
                   <div className="text-xs text-muted-foreground">
                     <p className="font-medium text-roksal-ink">
                       Vetrna obremenitev (EVS EN 1991-1-4)
@@ -2847,7 +2847,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
           <Card>
             <CardHeader className="pb-3 pt-4 px-4">
               <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
-                <AlignJustify className="h-4 w-4" />
+                <AlignJustify aria-hidden="true" className="h-4 w-4" />
                 Razmak palic — enakomerna porazdelitev
               </CardTitle>
             </CardHeader>
@@ -2910,7 +2910,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
           <Card>
             <CardHeader className="pb-3 pt-4 px-4">
               <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
-                <Percent className="h-4 w-4 text-roksal-amber" />
+                <Percent aria-hidden="true" className="h-4 w-4 text-roksal-amber" />
                 Rezerva materiala
               </CardTitle>
             </CardHeader>
@@ -2942,7 +2942,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               onClick={handleCalculate}
               className="w-full bg-roksal-navy hover:bg-roksal-navy/90 text-white h-11"
             >
-              <AlignJustify className="mr-2 h-4 w-4" />
+              <AlignJustify aria-hidden="true" className="mr-2 h-4 w-4" />
               Izračunaj razmak palic
             </Button>
             <Button
@@ -2951,7 +2951,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               onClick={saveTemplate}
               className="w-full h-11 border-roksal-amber/40 text-roksal-ink hover:bg-roksal-amber/10"
             >
-              <BookmarkPlus className="mr-2 h-4 w-4" />
+              <BookmarkPlus aria-hidden="true" className="mr-2 h-4 w-4" />
               Shrani predlogo
             </Button>
           </div>
@@ -2968,9 +2968,9 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               >
                 <CardContent className="flex items-center gap-3 p-4">
                   {balusterResult.isCompliant ? (
-                    <CheckCircle2 className="h-6 w-6 shrink-0 text-roksal-green" />
+                    <CheckCircle2 aria-hidden="true" className="h-6 w-6 shrink-0 text-roksal-green" />
                   ) : (
-                    <AlertTriangle className="h-6 w-6 shrink-0 text-roksal-red" />
+                    <AlertTriangle aria-hidden="true" className="h-6 w-6 shrink-0 text-roksal-red" />
                   )}
                   <div>
                     <p
@@ -3016,7 +3016,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               {rezervaPctBaluster > 0 && (
                 <Card className="border-roksal-amber/30 bg-roksal-amber/5">
                   <CardContent className="flex items-center gap-3 p-3">
-                    <Percent className="h-5 w-5 shrink-0 text-roksal-amber" />
+                    <Percent aria-hidden="true" className="h-5 w-5 shrink-0 text-roksal-amber" />
                     <div className="text-xs">
                       <p className="font-semibold text-roksal-ink">Rezerva materiala: {rezervaPctBaluster}%</p>
                       <p className="text-muted-foreground">
@@ -3052,7 +3052,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                 <CardHeader className="pb-2 pt-4 px-4">
                   <div className="flex items-center justify-between">
                     <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
-                      <Drill className="h-4 w-4" />
+                      <Drill aria-hidden="true" className="h-4 w-4" />
                       Pozicije od prve točke
                     </CardTitle>
                     <Button
@@ -3062,7 +3062,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                       className="h-7 px-2 text-2xs border-roksal-amber/30 text-roksal-ink hover:bg-roksal-amber/10"
                       onClick={exportBalusterPdf}
                     >
-                      <FileDown className="mr-1 h-3 w-3" />
+                      <FileDown aria-hidden="true" className="mr-1 h-3 w-3" />
                       Izvozi PDF
                     </Button>
                   </div>
@@ -3109,7 +3109,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                 <Card className="border-roksal-amber/30">
                   <CardHeader className="pb-2 pt-4 px-4">
                     <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-amber">
-                      <Info className="h-4 w-4" />
+                      <Info aria-hidden="true" className="h-4 w-4" />
                       Opozorila
                     </CardTitle>
                   </CardHeader>
@@ -3120,7 +3120,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                           key={i}
                           className="flex items-start gap-2 text-xs text-muted-foreground"
                         >
-                          <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-roksal-amber" />
+                          <AlertTriangle aria-hidden="true" className="mt-0.5 h-3 w-3 shrink-0 text-roksal-amber" />
                           {w}
                         </li>
                       ))}
@@ -3139,7 +3139,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
           <Card>
             <CardHeader className="pb-3 pt-4 px-4">
               <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
-                <Triangle className="h-4 w-4" />
+                <Triangle aria-hidden="true" className="h-4 w-4" />
                 Kotni / stopniščni izračun
               </CardTitle>
             </CardHeader>
@@ -3212,7 +3212,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               onClick={handleCalculate}
               className="w-full bg-roksal-navy hover:bg-roksal-navy/90 text-white h-11"
             >
-              <Triangle className="mr-2 h-4 w-4" />
+              <Triangle aria-hidden="true" className="mr-2 h-4 w-4" />
               Izračunaj kotni izračun
             </Button>
             <Button
@@ -3221,7 +3221,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               onClick={saveTemplate}
               className="w-full h-11 border-roksal-amber/40 text-roksal-ink hover:bg-roksal-amber/10"
             >
-              <BookmarkPlus className="mr-2 h-4 w-4" />
+              <BookmarkPlus aria-hidden="true" className="mr-2 h-4 w-4" />
               Shrani predlogo
             </Button>
           </div>
@@ -3280,9 +3280,9 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               >
                 <CardContent className="flex items-center gap-3 p-4">
                   {angledResult.isCompliant ? (
-                    <CheckCircle2 className="h-6 w-6 shrink-0 text-roksal-green" />
+                    <CheckCircle2 aria-hidden="true" className="h-6 w-6 shrink-0 text-roksal-green" />
                   ) : (
-                    <AlertTriangle className="h-6 w-6 shrink-0 text-roksal-red" />
+                    <AlertTriangle aria-hidden="true" className="h-6 w-6 shrink-0 text-roksal-red" />
                   )}
                   <div>
                     <p
@@ -3324,7 +3324,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               <Card>
                 <CardHeader className="pb-2 pt-4 px-4">
                   <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
-                    <Drill className="h-4 w-4" />
+                    <Drill aria-hidden="true" className="h-4 w-4" />
                     Pozicije palic (po rake)
                   </CardTitle>
                 </CardHeader>
@@ -3367,7 +3367,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                 <Card className="border-roksal-amber/30">
                   <CardHeader className="pb-2 pt-4 px-4">
                     <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-amber">
-                      <Info className="h-4 w-4" />
+                      <Info aria-hidden="true" className="h-4 w-4" />
                       Opozorila
                     </CardTitle>
                   </CardHeader>
@@ -3378,7 +3378,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                           key={i}
                           className="flex items-start gap-2 text-xs text-muted-foreground"
                         >
-                          <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-roksal-amber" />
+                          <AlertTriangle aria-hidden="true" className="mt-0.5 h-3 w-3 shrink-0 text-roksal-amber" />
                           {w}
                         </li>
                       ))}
@@ -3397,7 +3397,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
           <Card>
             <CardHeader className="pb-3 pt-4 px-4">
               <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
-                <Package className="h-4 w-4" />
+                <Package aria-hidden="true" className="h-4 w-4" />
                 Segmenti projekta
               </CardTitle>
             </CardHeader>
@@ -3419,7 +3419,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                       className="p-1 rounded-md hover:bg-roksal-red/10 text-roksal-red transition-colors"
                       aria-label="Odstrani segment"
                     >
-                      <X className="h-3.5 w-3.5" />
+                      <X aria-hidden="true" className="h-3.5 w-3.5" />
                     </button>
                   </div>
                   <div className="grid grid-cols-3 gap-2">
@@ -3517,7 +3517,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                   ])
                 }}
               >
-                <Plus className="mr-1.5 h-3.5 w-3.5" />
+                <Plus aria-hidden="true" className="mr-1.5 h-3.5 w-3.5" />
                 Dodaj segment
               </Button>
             </CardContent>
@@ -3563,7 +3563,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               {/* runda S — barva naročila z terena (pračni lak) */}
               {importedFromMeasurement?.ralCode && (
                 <div className="mt-2 flex items-center gap-2 rounded-md bg-roksal-amber/10 px-2 py-1.5">
-                  <Palette className="h-3.5 w-3.5 shrink-0 text-roksal-amber" />
+                  <Palette aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-roksal-amber" />
                   <p className="text-2xs font-medium text-roksal-ink">
                     Naročilo: profil prašno lakiran v{' '}
                     <span className="font-bold">RAL {importedFromMeasurement.ralCode}</span>
@@ -3579,7 +3579,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
           <Card>
             <CardHeader className="pb-3 pt-4 px-4">
               <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
-                <Users className="h-4 w-4 text-roksal-amber" />
+                <Users aria-hidden="true" className="h-4 w-4 text-roksal-amber" />
                 Strošek dela
               </CardTitle>
             </CardHeader>
@@ -3630,7 +3630,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               <div className="rounded-lg bg-roksal-navy/5 p-2.5 text-[11px] text-muted-foreground">
                 <div className="flex items-center justify-between">
                   <span className="flex items-center gap-1.5">
-                    <Timer className="h-3 w-3 text-roksal-ink" />
+                    <Timer aria-hidden="true" className="h-3 w-3 text-roksal-ink" />
                     Predvideni čas montaže
                   </span>
                   <span className="font-medium text-roksal-ink">
@@ -3645,14 +3645,14 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
           <Card>
             <CardHeader className="pb-3 pt-4 px-4">
               <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
-                <Wallet className="h-4 w-4 text-roksal-amber" />
+                <Wallet aria-hidden="true" className="h-4 w-4 text-roksal-amber" />
                 Rezerva, DDV in akontacija
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 px-4 pb-4">
               <div className="space-y-1.5">
                 <Label className="text-xs flex items-center gap-1.5">
-                  <Percent className="h-3 w-3 text-roksal-amber" />
+                  <Percent aria-hidden="true" className="h-3 w-3 text-roksal-amber" />
                   Rezerva materiala
                 </Label>
                 <Select
@@ -3691,7 +3691,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs flex items-center gap-1.5">
-                  <Wallet className="h-3 w-3 text-roksal-amber" />
+                  <Wallet aria-hidden="true" className="h-3 w-3 text-roksal-amber" />
                   Akontacija (ob naročilu)
                 </Label>
                 <Select
@@ -3720,7 +3720,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               className="w-full bg-roksal-navy hover:bg-roksal-navy/90 text-white h-11"
               disabled={segments.length === 0 || !selectedProfileSifra}
             >
-              <Package className="mr-2 h-4 w-4" />
+              <Package aria-hidden="true" className="mr-2 h-4 w-4" />
               Izračunaj skupni material
             </Button>
             <Button
@@ -3729,7 +3729,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               onClick={saveTemplate}
               className="w-full h-11 border-roksal-amber/40 text-roksal-ink hover:bg-roksal-amber/10"
             >
-              <BookmarkPlus className="mr-2 h-4 w-4" />
+              <BookmarkPlus aria-hidden="true" className="mr-2 h-4 w-4" />
               Shrani predlogo
             </Button>
           </div>
@@ -3801,7 +3801,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               {importedFromMeasurement?.podlaga && (
                 <Card className={importedFromMeasurement.podlaga === 'estrih' ? 'border-amber-300 bg-amber-50/60 dark:border-amber-700 dark:bg-amber-950/40' : 'border-roksal-navy/15 dark:border-roksal-ink/15'}>
                   <CardContent className="flex items-start gap-2.5 p-3">
-                    <Drill className={`mt-0.5 h-4 w-4 shrink-0 ${importedFromMeasurement.podlaga === 'estrih' ? 'text-amber-600 dark:text-amber-400' : 'text-roksal-ink/50'}`} />
+                    <Drill aria-hidden="true" className={`mt-0.5 h-4 w-4 shrink-0 ${importedFromMeasurement.podlaga === 'estrih' ? 'text-amber-600 dark:text-amber-400' : 'text-roksal-ink/50'}`} />
                     <div className="min-w-0 flex-1">
                       <p className="text-[11px] font-bold text-roksal-ink">
                         Pritrditev: {podlagaSidraLabel[importedFromMeasurement.podlaga] ?? 'po meri'}
@@ -3821,7 +3821,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               {rezervaPctMaterial > 0 && (
                 <Card className="border-roksal-amber/30 bg-roksal-amber/5">
                   <CardContent className="flex items-center gap-3 p-3">
-                    <Percent className="h-5 w-5 shrink-0 text-roksal-amber" />
+                    <Percent aria-hidden="true" className="h-5 w-5 shrink-0 text-roksal-amber" />
                     <div className="text-xs flex-1">
                       <p className="font-semibold text-roksal-ink">Rezerva materiala: {rezervaPctMaterial}%</p>
                       <div className="text-muted-foreground grid grid-cols-2 sm:grid-cols-4 gap-1.5 mt-1">
@@ -3853,7 +3853,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                   <Card className="border-border bg-muted/40">
                     <CardHeader className="pb-2 pt-4 px-4">
                       <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
-                        <Hammer className="h-4 w-4 text-roksal-amber" />
+                        <Hammer aria-hidden="true" className="h-4 w-4 text-roksal-amber" />
                         Betoniranje stebrov
                         <Badge variant="outline" className="ml-auto text-2xs">
                           {posts} stebrov
@@ -3910,7 +3910,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                       </div>
                       {parseInt(concreteHoleDepthMm) < 800 && (
                         <p className="flex items-start gap-1.5 text-[11px] leading-snug text-amber-700 dark:text-amber-300">
-                          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                          <AlertTriangle aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                           Globina pod 800 mm — v Sloveniji je priporočena zmrzovalna globina ≈ 80 cm,
                           sicer lahko zmrzal dviguje stebre.
                         </p>
@@ -3924,7 +3924,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               <Card>
                 <CardHeader className="pb-2 pt-4 px-4">
                   <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
-                    <Hammer className="h-4 w-4" />
+                    <Hammer aria-hidden="true" className="h-4 w-4" />
                     Razdelitev po segmentih
                   </CardTitle>
                 </CardHeader>
@@ -3964,7 +3964,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               <Card className="overflow-hidden border-l-4 border-l-roksal-amber">
                 <CardHeader className="pb-2 pt-4 px-4">
                   <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
-                    <Euro className="h-4 w-4" />
+                    <Euro aria-hidden="true" className="h-4 w-4" />
                     Stroški materiala
                   </CardTitle>
                 </CardHeader>
@@ -4028,7 +4028,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                         <Separator className="my-3" />
                         <div className="space-y-2">
                           <p className="text-[11px] font-semibold text-roksal-ink uppercase tracking-wide flex items-center gap-1.5">
-                            <Users className="h-3 w-3 text-roksal-amber" />
+                            <Users aria-hidden="true" className="h-3 w-3 text-roksal-amber" />
                             Strošek dela
                           </p>
                           <div className="flex items-center justify-between text-xs py-1.5 border-b border-border/30">
@@ -4041,7 +4041,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                           </div>
                           <div className="flex items-center justify-between text-xs py-1.5 border-b border-border/30">
                             <span className="text-muted-foreground flex items-center gap-1.5">
-                              <Truck className="h-3 w-3" />
+                              <Truck aria-hidden="true" className="h-3 w-3" />
                               Transport
                             </span>
                             <span className="font-medium text-roksal-ink">
@@ -4050,7 +4050,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                           </div>
                           <div className="flex items-center justify-between text-xs py-1.5 border-b border-border/30">
                             <span className="text-muted-foreground flex items-center gap-1.5">
-                              <Timer className="h-3 w-3" />
+                              <Timer aria-hidden="true" className="h-3 w-3" />
                               Predvideni čas montaže
                             </span>
                             <span className="font-medium text-roksal-ink">
@@ -4087,7 +4087,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                             <Separator className="my-3" />
                             <div className="space-y-2">
                               <p className="text-[11px] font-semibold text-roksal-ink uppercase tracking-wide flex items-center gap-1.5">
-                                <Wallet className="h-3 w-3 text-roksal-amber" />
+                                <Wallet aria-hidden="true" className="h-3 w-3 text-roksal-amber" />
                                 Akontacija
                               </p>
                               <div className="flex items-center justify-between text-xs py-1.5 border-b border-border/30">
@@ -4108,7 +4108,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                               </div>
                               <div className="flex items-center justify-between text-xs py-1.5 text-muted-foreground">
                                 <span className="flex items-center gap-1.5">
-                                  <Calendar className="h-3 w-3" />
+                                  <Calendar aria-hidden="true" className="h-3 w-3" />
                                   Predvideni datum plačila akontacije
                                 </span>
                                 <span className="font-medium text-roksal-ink">
@@ -4128,7 +4128,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                     className="w-full mt-3 h-9 border-roksal-navy/30 dark:border-roksal-ink/30 text-roksal-ink hover:bg-roksal-navy/5"
                     onClick={exportMaterialPdf}
                   >
-                    <FileDown className="mr-1.5 h-3.5 w-3.5" />
+                    <FileDown aria-hidden="true" className="mr-1.5 h-3.5 w-3.5" />
                     Izvozi materialni list PDF
                   </Button>
                 </CardContent>
@@ -4144,7 +4144,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
           <Card>
             <CardHeader className="pb-3 pt-4 px-4">
               <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
-                <ShieldCheck className="h-4 w-4" />
+                <ShieldCheck aria-hidden="true" className="h-4 w-4" />
                 Preverjanje skladnosti s predpisi
               </CardTitle>
             </CardHeader>
@@ -4226,7 +4226,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               onClick={handleCalculate}
               className="w-full bg-roksal-navy hover:bg-roksal-navy/90 text-white h-11"
             >
-              <ShieldCheck className="mr-2 h-4 w-4" />
+              <ShieldCheck aria-hidden="true" className="mr-2 h-4 w-4" />
               Preveri skladnost
             </Button>
             <Button
@@ -4235,7 +4235,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               onClick={saveTemplate}
               className="w-full h-11 border-roksal-amber/40 text-roksal-ink hover:bg-roksal-amber/10"
             >
-              <BookmarkPlus className="mr-2 h-4 w-4" />
+              <BookmarkPlus aria-hidden="true" className="mr-2 h-4 w-4" />
               Shrani predlogo
             </Button>
           </div>
@@ -4251,9 +4251,9 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               >
                 <CardContent className="flex items-center gap-3 p-4">
                   {complianceResult.passed ? (
-                    <CheckCircle2 className="h-6 w-6 shrink-0 text-roksal-green" />
+                    <CheckCircle2 aria-hidden="true" className="h-6 w-6 shrink-0 text-roksal-green" />
                   ) : (
-                    <AlertTriangle className="h-6 w-6 shrink-0 text-roksal-red" />
+                    <AlertTriangle aria-hidden="true" className="h-6 w-6 shrink-0 text-roksal-red" />
                   )}
                   <div>
                     <p
@@ -4291,9 +4291,9 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                     >
                       <div className="flex items-start gap-2.5">
                         {check.passed ? (
-                          <CheckCircle2 className="h-5 w-5 shrink-0 text-roksal-green mt-0.5" />
+                          <CheckCircle2 aria-hidden="true" className="h-5 w-5 shrink-0 text-roksal-green mt-0.5" />
                         ) : (
-                          <X className="h-5 w-5 shrink-0 text-roksal-red mt-0.5" />
+                          <X aria-hidden="true" className="h-5 w-5 shrink-0 text-roksal-red mt-0.5" />
                         )}
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-semibold text-roksal-ink">{check.name}</p>
@@ -4317,7 +4317,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
 
               <Card className="bg-roksal-navy/5">
                 <CardContent className="flex gap-3 p-4">
-                  <Info className="h-5 w-5 shrink-0 text-roksal-ink" />
+                  <Info aria-hidden="true" className="h-5 w-5 shrink-0 text-roksal-ink" />
                   <div className="text-xs text-muted-foreground">
                     <p className="font-medium text-roksal-ink">
                       Sklic predpisov
@@ -4341,7 +4341,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
           <Card>
             <CardHeader className="pb-3 pt-4 px-4">
               <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
-                <Scissors className="h-4 w-4" />
+                <Scissors aria-hidden="true" className="h-4 w-4" />
                 CNC razrezni načrt — 1D bin packing
               </CardTitle>
             </CardHeader>
@@ -4398,7 +4398,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
             <CardHeader className="pb-2 pt-4 px-4">
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
-                  <AlignJustify className="h-4 w-4" />
+                  <AlignJustify aria-hidden="true" className="h-4 w-4" />
                   Zahtevani odseki
                   <Badge variant="secondary" className="text-2xs h-5 px-1.5">{cncSegments.length}</Badge>
                 </CardTitle>
@@ -4423,7 +4423,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                       toast.success(`Uvoženo ${newSegs.length} odsekov iz materiala`)
                     }}
                   >
-                    <ArrowDownToLine className="mr-1 h-3 w-3" />
+                    <ArrowDownToLine aria-hidden="true" className="mr-1 h-3 w-3" />
                     Uvozi iz materiala
                   </Button>
                   <Button
@@ -4433,7 +4433,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                     className="h-7 px-2 text-2xs"
                     onClick={() => setCncSegments([...cncSegments, { lengthMm: '', count: '1', label: '' }])}
                   >
-                    <Plus className="mr-1 h-3 w-3" />
+                    <Plus aria-hidden="true" className="mr-1 h-3 w-3" />
                     Dodaj
                   </Button>
                 </div>
@@ -4492,7 +4492,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                         className="p-1.5 rounded-md text-roksal-red hover:bg-roksal-red/10 transition-colors"
                         aria-label="Odstrani odsek"
                       >
-                        <X className="h-4 w-4" />
+                        <X aria-hidden="true" className="h-4 w-4" />
                       </button>
                     </div>
                   </div>
@@ -4512,7 +4512,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               onClick={handleCalculate}
               className="w-full bg-roksal-navy hover:bg-roksal-navy/90 text-white h-11"
             >
-              <Scissors className="mr-2 h-4 w-4" />
+              <Scissors aria-hidden="true" className="mr-2 h-4 w-4" />
               Izračunaj razrez
             </Button>
             <Button
@@ -4522,7 +4522,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               disabled={!cncResult}
               className="w-full h-11 border-roksal-amber/40 text-roksal-ink hover:bg-roksal-amber/10 disabled:opacity-40"
             >
-              <FileDown className="mr-2 h-4 w-4" />
+              <FileDown aria-hidden="true" className="mr-2 h-4 w-4" />
               Izvozi PDF
             </Button>
           </div>
@@ -4553,7 +4553,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                 <Card className="border-roksal-amber/30">
                   <CardHeader className="pb-2 pt-4 px-4">
                     <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-amber">
-                      <AlertTriangle className="h-4 w-4" />
+                      <AlertTriangle aria-hidden="true" className="h-4 w-4" />
                       Opozorila
                     </CardTitle>
                   </CardHeader>
@@ -4561,7 +4561,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                     <ul className="space-y-1.5">
                       {cncResult.warnings.map((w, i) => (
                         <li key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
-                          <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-roksal-amber" />
+                          <AlertTriangle aria-hidden="true" className="mt-0.5 h-3 w-3 shrink-0 text-roksal-amber" />
                           {w}
                         </li>
                       ))}
@@ -4574,7 +4574,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               <Card>
                 <CardHeader className="pb-2 pt-4 px-4">
                   <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
-                    <Scissors className="h-4 w-4" />
+                    <Scissors aria-hidden="true" className="h-4 w-4" />
                     Razrezni načrt (vizualno)
                   </CardTitle>
                 </CardHeader>
@@ -4643,7 +4643,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               <Card>
                 <CardHeader className="pb-2 pt-4 px-4">
                   <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
-                    <AlignJustify className="h-4 w-4" />
+                    <AlignJustify aria-hidden="true" className="h-4 w-4" />
                     Tabela razreza
                   </CardTitle>
                 </CardHeader>
@@ -4689,7 +4689,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
           <Card>
             <CardHeader className="pb-3 pt-4 px-4">
               <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
-                <MapPin className="h-4 w-4" />
+                <MapPin aria-hidden="true" className="h-4 w-4" />
                 Lokacija
               </CardTitle>
             </CardHeader>
@@ -4753,12 +4753,12 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               >
                 {windLocLoading ? (
                   <>
-                    <Crosshair className="mr-2 h-4 w-4 animate-spin" />
+                    <Crosshair aria-hidden="true" className="mr-2 h-4 w-4 animate-spin" />
                     Pridobivanje...
                   </>
                 ) : (
                   <>
-                    <Navigation className="mr-2 h-4 w-4" />
+                    <Navigation aria-hidden="true" className="mr-2 h-4 w-4" />
                     Uporabi mojo lokacijo
                   </>
                 )}
@@ -4844,7 +4844,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               onClick={handleCalculate}
               className="w-full bg-roksal-navy hover:bg-roksal-navy/90 text-white h-11"
             >
-              <Wind className="mr-2 h-4 w-4" />
+              <Wind aria-hidden="true" className="mr-2 h-4 w-4" />
               Izračunaj vetrno obremenitev
             </Button>
             <Button
@@ -4854,7 +4854,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               disabled={!windLocResult}
               className="w-full h-11 border-roksal-amber/40 text-roksal-ink hover:bg-roksal-amber/10 disabled:opacity-40"
             >
-              <FileDown className="mr-2 h-4 w-4" />
+              <FileDown aria-hidden="true" className="mr-2 h-4 w-4" />
               Izvozi PDF
             </Button>
           </div>
@@ -4883,11 +4883,11 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               <div className="grid grid-cols-2 gap-3">
                 <Card className="px-3 py-3 flex items-center gap-3">
                   {windLocResult.windZone === 3 ? (
-                    <Mountain className="h-8 w-8 text-roksal-amber shrink-0" />
+                    <Mountain aria-hidden="true" className="h-8 w-8 text-roksal-amber shrink-0" />
                   ) : windLocResult.windZone === 2 ? (
-                    <Wind className="h-8 w-8 text-roksal-amber shrink-0" />
+                    <Wind aria-hidden="true" className="h-8 w-8 text-roksal-amber shrink-0" />
                   ) : (
-                    <MapPin className="h-8 w-8 text-roksal-green shrink-0" />
+                    <MapPin aria-hidden="true" className="h-8 w-8 text-roksal-green shrink-0" />
                   )}
                   <div>
                     <p className="text-2xs text-muted-foreground uppercase tracking-wide">Vetrna cona</p>
@@ -4927,7 +4927,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               <Card>
                 <CardHeader className="pb-2 pt-4 px-4">
                   <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
-                    <MapPin className="h-4 w-4" />
+                    <MapPin aria-hidden="true" className="h-4 w-4" />
                     Karta vetrnih con Slovenije
                   </CardTitle>
                 </CardHeader>
@@ -4945,7 +4945,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                 <Card className="border-roksal-amber/30">
                   <CardHeader className="pb-2 pt-4 px-4">
                     <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-amber">
-                      <Info className="h-4 w-4" />
+                      <Info aria-hidden="true" className="h-4 w-4" />
                       Priporočila
                     </CardTitle>
                   </CardHeader>
@@ -4953,7 +4953,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                     <ul className="space-y-1.5">
                       {windLocResult.recommendations.map((r, i) => (
                         <li key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
-                          <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-roksal-amber" />
+                          <AlertTriangle aria-hidden="true" className="mt-0.5 h-3 w-3 shrink-0 text-roksal-amber" />
                           {r}
                         </li>
                       ))}
@@ -4964,7 +4964,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
 
               <Card className="bg-roksal-navy/5">
                 <CardContent className="flex gap-3 p-4">
-                  <Info className="h-5 w-5 shrink-0 text-roksal-ink" />
+                  <Info aria-hidden="true" className="h-5 w-5 shrink-0 text-roksal-ink" />
                   <div className="text-xs text-muted-foreground">
                     <p className="font-medium text-roksal-ink">
                       SIST EN 1991-1-4 NA (Slovenija)
@@ -4989,7 +4989,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
           <Card>
             <CardHeader className="pb-3 pt-4 px-4">
               <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
-                <Square className="h-4 w-4" />
+                <Square aria-hidden="true" className="h-4 w-4" />
                 Steklena balustrada — poenostavljena metoda
               </CardTitle>
             </CardHeader>
@@ -5063,7 +5063,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               onClick={handleCalculate}
               className="w-full bg-roksal-navy hover:bg-roksal-navy/90 text-white h-11"
             >
-              <Square className="mr-2 h-4 w-4" />
+              <Square aria-hidden="true" className="mr-2 h-4 w-4" />
               Izračunaj steklo
             </Button>
             <Button
@@ -5073,7 +5073,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               disabled={!glassResult}
               className="w-full h-11 border-roksal-amber/40 text-roksal-ink hover:bg-roksal-amber/10 disabled:opacity-40"
             >
-              <FileDown className="mr-2 h-4 w-4" />
+              <FileDown aria-hidden="true" className="mr-2 h-4 w-4" />
               Izvozi PDF
             </Button>
           </div>
@@ -5084,9 +5084,9 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               <Card className={`overflow-hidden border-l-4 ${glassResult.isSafe ? 'border-l-roksal-green bg-roksal-green/5' : 'border-l-roksal-red bg-roksal-red/5'}`}>
                 <CardContent className="flex items-center gap-3 p-4">
                   {glassResult.isSafe ? (
-                    <CheckCircle2 className="h-8 w-8 shrink-0 text-roksal-green" />
+                    <CheckCircle2 aria-hidden="true" className="h-8 w-8 shrink-0 text-roksal-green" />
                   ) : (
-                    <AlertTriangle className="h-8 w-8 shrink-0 text-roksal-red" />
+                    <AlertTriangle aria-hidden="true" className="h-8 w-8 shrink-0 text-roksal-red" />
                   )}
                   <div className="min-w-0 flex-1">
                     <p className="text-2xs text-muted-foreground uppercase tracking-wide">Priporočena debelina</p>
@@ -5131,7 +5131,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                 <Card>
                   <CardHeader className="pb-2 pt-4 px-4">
                     <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
-                      <Layers className="h-4 w-4" />
+                      <Layers aria-hidden="true" className="h-4 w-4" />
                       Plasti laminiranega stekla
                     </CardTitle>
                   </CardHeader>
@@ -5148,7 +5148,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               <Card>
                 <CardHeader className="pb-2 pt-4 px-4">
                   <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
-                    <AlignJustify className="h-4 w-4" />
+                    <AlignJustify aria-hidden="true" className="h-4 w-4" />
                     Alternativne debeline
                   </CardTitle>
                 </CardHeader>
@@ -5187,7 +5187,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                 <Card className="border-roksal-amber/30">
                   <CardHeader className="pb-2 pt-4 px-4">
                     <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-amber">
-                      <AlertTriangle className="h-4 w-4" />
+                      <AlertTriangle aria-hidden="true" className="h-4 w-4" />
                       Opozorila
                     </CardTitle>
                   </CardHeader>
@@ -5195,7 +5195,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                     <ul className="space-y-1.5">
                       {glassResult.warnings.map((w, i) => (
                         <li key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
-                          <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-roksal-amber" />
+                          <AlertTriangle aria-hidden="true" className="mt-0.5 h-3 w-3 shrink-0 text-roksal-amber" />
                           {w}
                         </li>
                       ))}
@@ -5209,7 +5209,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                 <Card className="border-roksal-navy/20 dark:border-roksal-ink/20">
                   <CardHeader className="pb-2 pt-4 px-4">
                     <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
-                      <Info className="h-4 w-4" />
+                      <Info aria-hidden="true" className="h-4 w-4" />
                       Priporočila
                     </CardTitle>
                   </CardHeader>
@@ -5217,7 +5217,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                     <ul className="space-y-1.5">
                       {glassResult.recommendations.map((r, i) => (
                         <li key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
-                          <CheckCircle2 className="mt-0.5 h-3 w-3 shrink-0 text-roksal-green" />
+                          <CheckCircle2 aria-hidden="true" className="mt-0.5 h-3 w-3 shrink-0 text-roksal-green" />
                           {r}
                         </li>
                       ))}
@@ -5228,7 +5228,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
 
               <Card className="bg-roksal-navy/5">
                 <CardContent className="flex gap-3 p-4">
-                  <Info className="h-5 w-5 shrink-0 text-roksal-ink" />
+                  <Info aria-hidden="true" className="h-5 w-5 shrink-0 text-roksal-ink" />
                   <div className="text-xs text-muted-foreground">
                     <p className="font-medium text-roksal-ink">
                       Poenostavljena metoda (SIST EN)
@@ -5316,7 +5316,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
           }}
           className="w-full bg-roksal-navy hover:bg-roksal-navy/90 text-white h-11 transition-all duration-200"
         >
-          <Save className="mr-2 h-4 w-4" />
+          <Save aria-hidden="true" className="mr-2 h-4 w-4" />
           Shrani izračun
         </Button>
       )}
@@ -5327,7 +5327,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
           <CardHeader className="pb-2 pt-4 px-4">
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
-                <Clock className="h-4 w-4" />
+                <Clock aria-hidden="true" className="h-4 w-4" />
                 Shrjeni izračuni
               </CardTitle>
               <Button
@@ -5340,7 +5340,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                   toast.success('Vsi izračuni počiščeni')
                 }}
               >
-                <Trash2 className="mr-1 h-3 w-3" />
+                <Trash2 aria-hidden="true" className="mr-1 h-3 w-3" />
                 Počisti vse
               </Button>
             </div>
@@ -5391,7 +5391,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                       {calc.keyResult}
                     </p>
                   </div>
-                  <RotateCcw className="h-3.5 w-3.5 shrink-0 text-muted-foreground ml-2" />
+                  <RotateCcw aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-muted-foreground ml-2" />
                 </button>
               ))}
             </div>
@@ -5410,10 +5410,10 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                   aria-expanded={historyOpen}
                   className="flex items-center gap-2 rounded-lg text-sm font-semibold text-roksal-ink hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
                 >
-                  <History className="h-4 w-4 text-roksal-amber" />
+                  <History aria-hidden="true" className="h-4 w-4 text-roksal-amber" />
                   Zgodovina izračunov
                   <Badge variant="secondary" className="text-2xs h-5 px-1.5 tabular-nums">{history.length}</Badge>
-                  {historyOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                  {historyOpen ? <ChevronUp aria-hidden="true" className="h-3.5 w-3.5" /> : <ChevronDown aria-hidden="true" className="h-3.5 w-3.5" />}
                 </button>
               </CollapsibleTrigger>
               {history.length > 0 && (
@@ -5425,7 +5425,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                     className="h-7 px-2 text-2xs text-roksal-ink hover:text-roksal-ink hover:bg-roksal-navy/5"
                     onClick={exportHistoryCsv}
                   >
-                    <FileSpreadsheet className="mr-1 h-3 w-3" />
+                    <FileSpreadsheet aria-hidden="true" className="mr-1 h-3 w-3" />
                     Izvozi CSV
                   </Button>
                   <Button
@@ -5435,7 +5435,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                     className="h-7 px-2 text-2xs text-roksal-red hover:text-roksal-red hover:bg-roksal-red/10"
                     onClick={clearHistory}
                   >
-                    <Trash2 className="mr-1 h-3 w-3" />
+                    <Trash2 aria-hidden="true" className="mr-1 h-3 w-3" />
                     Počisti
                   </Button>
                 </div>
@@ -5446,7 +5446,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
             <CardContent className="px-4 pb-4">
               {history.length === 0 ? (
                 <div className="text-center py-6 text-xs text-muted-foreground">
-                  <History className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                  <History aria-hidden="true" className="h-8 w-8 mx-auto mb-2 opacity-30" />
                   <p>Zgodovina je prazna.</p>
                   <p className="text-2xs mt-1">Kliknite "Izračunaj" v kateremkoli načinu, da se izračun samodejno shrani.</p>
                 </div>
@@ -5489,7 +5489,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                             {entry.keyResult}
                           </p>
                         </div>
-                        <RotateCcw className="h-3.5 w-3.5 shrink-0 text-muted-foreground ml-2 mt-1" />
+                        <RotateCcw aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-muted-foreground ml-2 mt-1" />
                       </button>
                     )
                   })}

@@ -449,7 +449,7 @@ export function StepCorners() {
       <div className="rounded-2xl border bg-white p-3 shadow-sm">
         <div className="flex items-center justify-between gap-2">
           <Button type="button" variant="outline" className="h-11 text-xs" onClick={() => setCorners(defaultCorners())} disabled={previewing} aria-label="Ponastavi položaj ograje">
-            <RotateCcw className="mr-1 h-4 w-4" />
+            <RotateCcw aria-hidden="true" className="mr-1 h-4 w-4" />
             Ponastavi položaj
           </Button>
           <Button
@@ -470,17 +470,17 @@ export function StepCorners() {
           <div className="grid grid-cols-3 grid-rows-2 gap-1" role="group" aria-label="Fini premik aktivnega vogala">
             <span />
             <Button type="button" variant="outline" size="icon" className="h-11 w-11" onClick={() => nudge(0, -1)} aria-label="Premakni vogal navzgor">
-              <ArrowUp className="h-4 w-4" />
+              <ArrowUp aria-hidden="true" className="h-4 w-4" />
             </Button>
             <span />
             <Button type="button" variant="outline" size="icon" className="h-11 w-11" onClick={() => nudge(-1, 0)} aria-label="Premakni vogal levo">
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft aria-hidden="true" className="h-4 w-4" />
             </Button>
             <Button type="button" variant="outline" size="icon" className="h-11 w-11" onClick={() => nudge(0, 1)} aria-label="Premakni vogal navzdol">
-              <ArrowDown className="h-4 w-4" />
+              <ArrowDown aria-hidden="true" className="h-4 w-4" />
             </Button>
             <Button type="button" variant="outline" size="icon" className="h-11 w-11" onClick={() => nudge(1, 0)} aria-label="Premakni vogal desno">
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRight aria-hidden="true" className="h-4 w-4" />
             </Button>
           </div>
           <p className="text-[11px] leading-tight text-muted-foreground">
@@ -501,7 +501,7 @@ export function StepCorners() {
           disabled={previewing || !balcony || !product || !mask}
           aria-label="Pripravi predogled vizualizacije"
         >
-          {previewing ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Sparkles className="mr-1 h-4 w-4" />}
+          {previewing ? <Loader2 aria-hidden="true" className="mr-1 h-4 w-4 animate-spin" /> : <Sparkles aria-hidden="true" className="mr-1 h-4 w-4" />}
           Pripravi predogled
         </Button>
       </div>

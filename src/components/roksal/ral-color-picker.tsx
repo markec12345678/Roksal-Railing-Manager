@@ -78,7 +78,7 @@ export function RALColorPicker({
       <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col gap-4 p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-roksal-ink dark:text-white">
-            <Palette className="w-5 h-5 text-roksal-amber" />
+            <Palette aria-hidden="true" className="w-5 h-5 text-roksal-amber" />
             Izberi RAL barvo
           </DialogTitle>
           <DialogDescription>
@@ -88,7 +88,7 @@ export function RALColorPicker({
 
         {/* Search */}
         <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Search aria-hidden="true" className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             placeholder="Išči RAL kodo ali ime..."
             value={search}
@@ -170,7 +170,7 @@ export function RALColorPicker({
                         style={{ backgroundColor: color.hexColor }}
                       />
                       {isActive && (
-                        <Check
+                        <Check aria-hidden="true"
                           className={cn(
                             'absolute inset-0 w-9 h-9 p-1.5',
                             isLight ? 'text-black' : 'text-white'
@@ -200,7 +200,7 @@ export function RALColorPicker({
             onClick={handleCancel}
             className="h-9"
           >
-            <X className="w-4 h-4 mr-1" />
+            <X aria-hidden="true" className="w-4 h-4 mr-1" />
             Prekliči
           </Button>
           <Button
@@ -209,7 +209,7 @@ export function RALColorPicker({
             disabled={!preview && !value}
             className="h-9 bg-roksal-navy hover:bg-roksal-navy/90 text-white"
           >
-            <Check className="w-4 h-4 mr-1" />
+            <Check aria-hidden="true" className="w-4 h-4 mr-1" />
             Potrdi izbiro
           </Button>
         </DialogFooter>

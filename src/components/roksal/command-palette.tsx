@@ -454,7 +454,7 @@ export function CommandPalette({ open, onOpenChange, onNavigate, onSync }: Comma
                   value={`nedavno ${r.q}`}
                   onSelect={() => setQuery(r.q)}
                 >
-                  <History className="mr-2 h-4 w-4 text-muted-foreground" />
+                  <History aria-hidden="true" className="mr-2 h-4 w-4 text-muted-foreground" />
                   <span className="truncate">{r.q}</span>
                   {r.nizkaZaloga === true && <BadgeNizkaZaloga />}
                   {/* R222 — drugi neodvisni žig zgodovine (amber — nabavna
@@ -468,7 +468,7 @@ export function CommandPalette({ open, onOpenChange, onNavigate, onSync }: Comma
                 onSelect={() => clearRecentSearches()}
                 className="text-muted-foreground"
               >
-                <X className="mr-2 h-4 w-4" />
+                <X aria-hidden="true" className="mr-2 h-4 w-4" />
                 <span className="text-xs">Počisti nedavna iskanja</span>
               </CommandItem>
             </CommandGroup>
@@ -535,7 +535,7 @@ export function CommandPalette({ open, onOpenChange, onNavigate, onSync }: Comma
                     close()
                   }}
                 >
-                  <Package className="mr-2 h-4 w-4 text-roksal-amber" />
+                  <Package aria-hidden="true" className="mr-2 h-4 w-4 text-roksal-amber" />
                   <span className="truncate">{i.naziv}</span>
                   <span className="ml-2 shrink-0 text-xs text-muted-foreground">
                     Zaloga <span className="font-medium tabular-nums text-roksal-red">{i.kolicinaZaloga}</span> {i.enota} · minimum <span className="tabular-nums">{i.minimalnaZaloga}</span>
@@ -559,7 +559,7 @@ export function CommandPalette({ open, onOpenChange, onNavigate, onSync }: Comma
                   }}
                   className="pl-8"
                 >
-                  <Package className="mr-2 h-4 w-4 text-roksal-amber/70" />
+                  <Package aria-hidden="true" className="mr-2 h-4 w-4 text-roksal-amber/70" />
                   <span className="text-[13px] text-muted-foreground">
                     Pokaži vse s nizko zalogo v Zalogi
                   </span>
@@ -591,7 +591,7 @@ export function CommandPalette({ open, onOpenChange, onNavigate, onSync }: Comma
                   }}
                   className="pl-8"
                 >
-                  <Package className="mr-2 h-4 w-4 text-roksal-amber/70" />
+                  <Package aria-hidden="true" className="mr-2 h-4 w-4 text-roksal-amber/70" />
                   <span className="text-[13px] text-muted-foreground">
                     Na minimumu — pokaži v Zalogi
                   </span>
@@ -626,7 +626,7 @@ export function CommandPalette({ open, onOpenChange, onNavigate, onSync }: Comma
                   close()
                 }}
               >
-                <PackageX className="mr-2 h-4 w-4 text-roksal-amber" />
+                <PackageX aria-hidden="true" className="mr-2 h-4 w-4 text-roksal-amber" />
                 <span className="truncate">
                   Brez dobavitelja — pokaži v Zalogi
                 </span>
@@ -648,7 +648,7 @@ export function CommandPalette({ open, onOpenChange, onNavigate, onSync }: Comma
                   value={`${p.nazivProjekta} ${p.customer?.ime ?? ''} ${p.customer?.naslov ?? ''}`}
                   onSelect={() => selectProject(p.id)}
                 >
-                  <FolderOpen className="mr-2 h-4 w-4 text-muted-foreground" />
+                  <FolderOpen aria-hidden="true" className="mr-2 h-4 w-4 text-muted-foreground" />
                   {searchActive ? <MatchedText text={p.nazivProjekta} q={q} /> : <span className="truncate">{p.nazivProjekta}</span>}
                   <span className="ml-2 shrink-0 text-xs text-muted-foreground">
                     {p.customer?.ime ?? ''}
@@ -661,7 +661,7 @@ export function CommandPalette({ open, onOpenChange, onNavigate, onSync }: Comma
                   value={`${p.nazivProjekta} ${p.customerIme}`}
                   onSelect={() => selectProject(p.id)}
                 >
-                  <FolderOpen className="mr-2 h-4 w-4 text-muted-foreground" />
+                  <FolderOpen aria-hidden="true" className="mr-2 h-4 w-4 text-muted-foreground" />
                   <MatchedText text={p.nazivProjekta} q={q} />
                   {p.customerIme && (
                     <span className="ml-2 shrink-0 text-xs text-muted-foreground">{p.customerIme}</span>
@@ -685,7 +685,7 @@ export function CommandPalette({ open, onOpenChange, onNavigate, onSync }: Comma
                     run({ label: c.ime, icon: Users, tab: 'more', more: 'crm' })
                   }}
                 >
-                  <Users className="mr-2 h-4 w-4 text-roksal-amber" />
+                  <Users aria-hidden="true" className="mr-2 h-4 w-4 text-roksal-amber" />
                   <MatchedText text={c.ime} q={q} />
                   <span className="ml-2 shrink-0 truncate text-xs text-muted-foreground">{c.naslov}</span>
                 </CommandItem>
@@ -735,7 +735,7 @@ export function CommandPalette({ open, onOpenChange, onNavigate, onSync }: Comma
                         ? `${m.naziv} — brez vpisane dobaviteljske cene, odpre Zalogo`
                         : undefined}
                   >
-                    <Package className="mr-2 h-4 w-4 text-roksal-amber" />
+                    <Package aria-hidden="true" className="mr-2 h-4 w-4 text-roksal-amber" />
                     <MatchedText text={m.naziv} q={q} />
                     {osnutek && <BadgeNizkaZaloga />}
                     {brez && <BadgeBrezDobavitelja />}
@@ -756,11 +756,11 @@ export function CommandPalette({ open, onOpenChange, onNavigate, onSync }: Comma
 
         <CommandGroup heading="Akcije">
           <CommandItem onSelect={() => { onSync(); close() }}>
-            <RefreshCw className="mr-2 h-4 w-4 text-roksal-amber" />
+            <RefreshCw aria-hidden="true" className="mr-2 h-4 w-4 text-roksal-amber" />
             Sinhroniziraj podatke
           </CommandItem>
           <CommandItem onSelect={() => { setTheme(resolvedTheme === 'dark' ? 'light' : 'dark'); close() }}>
-            <Sun className="mr-2 h-4 w-4 text-roksal-amber" />
+            <Sun aria-hidden="true" className="mr-2 h-4 w-4 text-roksal-amber" />
             Preklopi svetlo/temno temo
           </CommandItem>
         </CommandGroup>

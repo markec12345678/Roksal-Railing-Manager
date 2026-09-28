@@ -62,9 +62,9 @@ function MetricsRow({
       {ok === null ? (
         <Badge variant="outline" className="shrink-0 text-2xs">—</Badge>
       ) : ok ? (
-        <CheckCircle2 className="h-5 w-5 shrink-0 text-green-600" aria-label="USTREZA" />
+        <CheckCircle2 aria-hidden="true" className="h-5 w-5 shrink-0 text-green-600" aria-label="USTREZA" />
       ) : (
-        <XCircle className="h-5 w-5 shrink-0 text-red-600" aria-label="NE USTREZA" />
+        <XCircle aria-hidden="true" className="h-5 w-5 shrink-0 text-red-600" aria-label="NE USTREZA" />
       )}
     </div>
   )
@@ -99,7 +99,7 @@ export function StepResult() {
           </CardContent>
         </Card>
         <Button className="mt-3 h-11" variant="outline" onClick={() => s.setStep(4)}>
-          <ArrowLeft className="mr-2 h-4 w-4" /> Nazaj na položaj
+          <ArrowLeft aria-hidden="true" className="mr-2 h-4 w-4" /> Nazaj na položaj
         </Button>
       </div>
     )
@@ -204,7 +204,7 @@ export function StepResult() {
             <Dialog>
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm" className="h-10 px-4 text-xs font-semibold" aria-label="Povečaj predogled">
-                  <Maximize2 className="mr-1.5 h-4 w-4" />
+                  <Maximize2 aria-hidden="true" className="mr-1.5 h-4 w-4" />
                   Povečaj
                 </Button>
               </DialogTrigger>
@@ -249,14 +249,14 @@ export function StepResult() {
       <Card>
         <CardHeader className="pb-1">
           <CardTitle className="flex items-center gap-2 text-base text-roksal-ink">
-            <Save className="h-4 w-4" />
+            <Save aria-hidden="true" className="h-4 w-4" />
             Shrani projekt
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {savedProjectId ? (
             <div className="flex items-center gap-2 rounded-lg border border-green-600/30 bg-green-600/5 px-3 py-2.5 text-sm text-green-700">
-              <CheckCircle2 className="h-4 w-4 shrink-0" />
+              <CheckCircle2 aria-hidden="true" className="h-4 w-4 shrink-0" />
               Projekt je shranjen — najdete ga v <strong>Moji projekti</strong>.
             </div>
           ) : (
@@ -270,7 +270,7 @@ export function StepResult() {
                 className="h-11"
               />
               <Button type="button" className="h-12 w-full bg-roksal-amber font-bold text-white hover:bg-roksal-amber/90" disabled={saving} onClick={() => void handleSave()}>
-                {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                {saving ? <Loader2 aria-hidden="true" className="mr-2 h-4 w-4 animate-spin" /> : <Save aria-hidden="true" className="mr-2 h-4 w-4" />}
                 {saving ? 'Shranjujem …' : 'Shrani projekt'}
               </Button>
             </>
@@ -295,7 +295,7 @@ export function StepResult() {
             disabled={addingVariant}
             onClick={() => variantInputRef.current?.click()}
           >
-            {addingVariant ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
+            {addingVariant ? <Loader2 aria-hidden="true" className="mr-2 h-4 w-4 animate-spin" /> : <Plus aria-hidden="true" className="mr-2 h-4 w-4" />}
             {addingVariant ? LOADING_TEXT.preview : 'Primerjaj drugo ograjo'}
           </Button>
           <p className="text-[11px] leading-relaxed text-muted-foreground">
@@ -312,7 +312,7 @@ export function StepResult() {
               s.setStep(1)
             }}
           >
-            <Camera className="mr-2 h-4 w-4" />
+            <Camera aria-hidden="true" className="mr-2 h-4 w-4" />
             Nova vizualizacija
           </Button>
         </CardContent>
@@ -368,7 +368,7 @@ export function StepResult() {
       <Card>
         <CardHeader className="pb-1">
           <CardTitle className="flex items-center gap-2 text-base text-roksal-ink">
-            <ShieldCheck className="h-4 w-4 text-green-600" />
+            <ShieldCheck aria-hidden="true" className="h-4 w-4 text-green-600" />
             Dokazila predogleda
           </CardTitle>
         </CardHeader>
@@ -407,7 +407,7 @@ export function StepResult() {
         <CardHeader className="pb-1">
           <CardTitle className="flex items-center justify-between gap-2 text-base text-roksal-ink">
             <span className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-roksal-amber" />
+              <Sparkles aria-hidden="true" className="h-4 w-4 text-roksal-amber" />
               Realistična končna vizualizacija
             </span>
             <Badge variant="outline" className="shrink-0 border-roksal-amber/50 text-2xs text-roksal-amber">
@@ -444,7 +444,7 @@ export function StepResult() {
             disabled={requestingRender || !savedProjectId}
             onClick={() => void handleRequestRender()}
           >
-            {requestingRender ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+            {requestingRender ? <Loader2 aria-hidden="true" className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles aria-hidden="true" className="mr-2 h-4 w-4" />}
             {savedProjectId ? 'Zahtevaj končno vizualizacijo (ko bo GPU na voljo)' : 'Najprej shrani projekt'}
           </Button>
         </CardContent>
@@ -453,7 +453,7 @@ export function StepResult() {
       {/* Navigacija */}
       <div className="flex items-center gap-2 pb-2">
         <Button type="button" variant="outline" className="h-11 flex-1" onClick={() => s.setStep(4)}>
-          <ArrowLeft className="mr-1 h-4 w-4" /> Položaj
+          <ArrowLeft aria-hidden="true" className="mr-1 h-4 w-4" /> Položaj
         </Button>
         <Button
           type="button"
@@ -464,7 +464,7 @@ export function StepResult() {
             s.setStep('home')
           }}
         >
-          <RotateCcw className="mr-1 h-4 w-4" /> Na domačo
+          <RotateCcw aria-hidden="true" className="mr-1 h-4 w-4" /> Na domačo
         </Button>
       </div>
     </div>

@@ -200,7 +200,7 @@ export function PasswordDialog({ open, onOpenChange }: PasswordDialogProps) {
             disabled={sending || !current || next.length < 8 || !repeat}
             className="h-10 rounded-xl bg-roksal-amber text-white hover:bg-roksal-amber/90"
           >
-            {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
+            {sending ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <KeyRound aria-hidden="true" className="h-4 w-4" />}
             {sending ? 'Menjujem…' : 'Zamenjaj geslo'}
           </Button>
         </DialogFooter>

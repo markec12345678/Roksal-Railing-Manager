@@ -569,7 +569,7 @@ export function CrmTab() {
       {/* Iskalnik + filter */}
       <div className="space-y-2">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search aria-hidden="true" className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -682,7 +682,7 @@ export function CrmTab() {
         ) : (
           <Card>
             <CardContent className="py-8 text-center text-muted-foreground">
-              <Users className="h-10 w-10 mx-auto mb-2 opacity-30" />
+              <Users aria-hidden="true" className="h-10 w-10 mx-auto mb-2 opacity-30" />
               <p className="text-sm">Ni strank ki ustrezajo iskanju.</p>
             </CardContent>
           </Card>
@@ -726,23 +726,23 @@ export function CrmTab() {
                       )}
                     </div>
                     <div className="flex items-center gap-1 text-2xs text-muted-foreground mb-1">
-                      <MapPin className="h-2.5 w-2.5 shrink-0" />
+                      <MapPin aria-hidden="true" className="h-2.5 w-2.5 shrink-0" />
                       <span className="truncate">{c.naslov}</span>
                     </div>
                     <div className="flex flex-wrap items-center gap-2 text-2xs">
                       {c.kategorija && (
                         <span className="flex items-center gap-0.5">
-                          <Building2 className="h-2.5 w-2.5 text-muted-foreground" />
+                          <Building2 aria-hidden="true" className="h-2.5 w-2.5 text-muted-foreground" />
                           {c.kategorija}
                         </span>
                       )}
                       <span className="flex items-center gap-0.5 tabular-nums">
-                        <FileText className="h-2.5 w-2.5 text-muted-foreground" />
+                        <FileText aria-hidden="true" className="h-2.5 w-2.5 text-muted-foreground" />
                         {c.skupajProjektov} projektov
                       </span>
                       {c.ltv > 0 && (
                         <span className="flex items-center gap-0.5 font-medium text-roksal-amber tabular-nums">
-                          <Euro className="h-2.5 w-2.5" />
+                          <Euro aria-hidden="true" className="h-2.5 w-2.5" />
                           {formatLTV(c.ltv)}
                         </span>
                       )}
@@ -791,12 +791,12 @@ export function CrmTab() {
 
               <div className="rounded-lg border border-border p-2 space-y-1.5 text-xs">
                 <div className="flex items-center gap-2">
-                  <MapPin className="h-3 w-3 text-muted-foreground shrink-0" />
+                  <MapPin aria-hidden="true" className="h-3 w-3 text-muted-foreground shrink-0" />
                   <span>{selectedCustomer.naslov}</span>
                 </div>
                 {selectedCustomer.telefon && (
                   <div className="flex items-center gap-2">
-                    <Phone className="h-3 w-3 text-muted-foreground shrink-0" />
+                    <Phone aria-hidden="true" className="h-3 w-3 text-muted-foreground shrink-0" />
                     <a href={`tel:${selectedCustomer.telefon}`} className="text-roksal-ink hover:underline">
                       {selectedCustomer.telefon}
                     </a>
@@ -804,7 +804,7 @@ export function CrmTab() {
                 )}
                 {selectedCustomer.email && (
                   <div className="flex items-center gap-2">
-                    <Mail className="h-3 w-3 text-muted-foreground shrink-0" />
+                    <Mail aria-hidden="true" className="h-3 w-3 text-muted-foreground shrink-0" />
                     <a href={`mailto:${selectedCustomer.email}`} className="text-roksal-ink hover:underline truncate">
                       {selectedCustomer.email}
                     </a>
@@ -812,7 +812,7 @@ export function CrmTab() {
                 )}
                 {selectedCustomer.kontaktnaOseba && (
                   <div className="flex items-center gap-2">
-                    <User className="h-3 w-3 text-muted-foreground shrink-0" />
+                    <User aria-hidden="true" className="h-3 w-3 text-muted-foreground shrink-0" />
                     <span>{selectedCustomer.kontaktnaOseba}</span>
                   </div>
                 )}
@@ -893,7 +893,7 @@ export function CrmTab() {
               )}
 
               <Button type="button" className="w-full bg-roksal-navy text-white" onClick={() => handleOpenEdit(selectedCustomer)}>
-                <Edit className="h-4 w-4 mr-2" />
+                <Edit aria-hidden="true" className="h-4 w-4 mr-2" />
                 Uredi CRM
               </Button>
             </div>

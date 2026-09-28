@@ -299,7 +299,7 @@ export function DocumentsTab() {
       <Card className="card-hover transition-all duration-200 animate-fade-in-up" style={{ animationDelay: '0ms' }}>
         <CardContent className="p-4">
           <div className="flex items-center gap-3">
-            <FolderOpen className="h-4 w-4 text-roksal-ink" />
+            <FolderOpen aria-hidden="true" className="h-4 w-4 text-roksal-ink" />
             <div className="flex-1">
               <Select value={selectedProject} onValueChange={setSelectedProject}>
                 <SelectTrigger className="w-full">
@@ -323,7 +323,7 @@ export function DocumentsTab() {
         <CardContent className="p-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-roksal-navy/10">
-              <FileStack className="h-5 w-5 text-roksal-ink" />
+              <FileStack aria-hidden="true" className="h-5 w-5 text-roksal-ink" />
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-roksal-ink">
@@ -361,7 +361,7 @@ export function DocumentsTab() {
                   disabled={docLoading}
                 >
                   {docLoading ? (
-                    <Loader2 className="h-5 w-5 text-roksal-ink animate-spin" />
+                    <Loader2 aria-hidden="true" className="h-5 w-5 text-roksal-ink animate-spin" />
                   ) : (
                     <Icon className="h-5 w-5 text-roksal-ink" />
                   )}
@@ -417,7 +417,7 @@ export function DocumentsTab() {
                           {docTypeLabels[doc.tipDokumenta] || doc.tipDokumenta}
                         </p>
                         <div className="flex items-center gap-2 text-2xs text-muted-foreground">
-                          <Clock className="h-3 w-3" />
+                          <Clock aria-hidden="true" className="h-3 w-3" />
                           <span className="tabular-nums">
                             {new Date(doc.createdAt).toLocaleDateString('sl-SI', {
                               day: 'numeric',
@@ -439,9 +439,9 @@ export function DocumentsTab() {
                     <div className="flex items-center gap-1.5">
                       <Badge className={`text-2xs h-5 px-1.5 ${statusCfg.color}`}>
                         {fileUrl ? (
-                          <Eye className="mr-1 h-2.5 w-2.5" />
+                          <Eye aria-hidden="true" className="mr-1 h-2.5 w-2.5" />
                         ) : (
-                          <CheckCircle2 className="mr-1 h-2.5 w-2.5" />
+                          <CheckCircle2 aria-hidden="true" className="mr-1 h-2.5 w-2.5" />
                         )}
                         {statusCfg.label}
                       </Badge>
@@ -456,7 +456,7 @@ export function DocumentsTab() {
                             window.open(fileUrl, '_blank', 'noopener')
                           }}
                         >
-                          <Download className="h-3.5 w-3.5 text-muted-foreground" />
+                          <Download aria-hidden="true" className="h-3.5 w-3.5 text-muted-foreground" />
                         </Button>
                       )}
                     </div>
@@ -517,7 +517,7 @@ export function DocumentsTab() {
                 {/* Creation Date */}
                 <div className="flex items-center justify-between rounded-lg border border-border/50 p-3">
                   <div className="flex items-center gap-2">
-                    <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                    <Clock aria-hidden="true" className="h-3.5 w-3.5 text-muted-foreground" />
                     <span className="text-xs text-muted-foreground">Datum ustvarjanja</span>
                   </div>
                   <span className="text-xs font-medium text-roksal-ink tabular-nums">
@@ -533,7 +533,7 @@ export function DocumentsTab() {
                 {verzijaOf(previewDoc) && (
                   <div className="flex items-center justify-between rounded-lg border border-border/50 p-3">
                     <div className="flex items-center gap-2">
-                      <FileStack className="h-3.5 w-3.5 text-muted-foreground" />
+                      <FileStack aria-hidden="true" className="h-3.5 w-3.5 text-muted-foreground" />
                       <span className="text-xs text-muted-foreground">Verzija</span>
                     </div>
                     <span className="text-xs font-medium text-roksal-ink font-mono tabular-nums">
@@ -553,7 +553,7 @@ export function DocumentsTab() {
                 {/* Project Name */}
                 <div className="flex items-center justify-between rounded-lg border border-border/50 p-3">
                   <div className="flex items-center gap-2">
-                    <FolderOpen className="h-3.5 w-3.5 text-muted-foreground" />
+                    <FolderOpen aria-hidden="true" className="h-3.5 w-3.5 text-muted-foreground" />
                     <span className="text-xs text-muted-foreground">Projekt</span>
                   </div>
                   <span className="text-xs font-medium text-roksal-ink">
@@ -565,7 +565,7 @@ export function DocumentsTab() {
                 {fileUrlOf(previewDoc) && (
                   <div className="flex items-center justify-between rounded-lg border border-border/50 p-3">
                     <div className="flex items-center gap-2">
-                      <Eye className="h-3.5 w-3.5 text-roksal-green" />
+                      <Eye aria-hidden="true" className="h-3.5 w-3.5 text-roksal-green" />
                       <span className="text-xs text-muted-foreground">PDF datoteka</span>
                     </div>
                     <span className="text-xs font-medium text-roksal-green">Na voljo</span>
@@ -580,7 +580,7 @@ export function DocumentsTab() {
                     className="gap-1.5 focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
                     aria-label="Prenesi PDF datoteko dokumenta"
                   >
-                    <Download className="h-3.5 w-3.5" />
+                    <Download aria-hidden="true" className="h-3.5 w-3.5" />
                     Prenesi PDF
                   </Button>
                 ) : (
@@ -590,7 +590,7 @@ export function DocumentsTab() {
                     className="gap-1.5"
                     title="PDF datoteka ni na voljo (dokument brez shranjene datoteke)"
                   >
-                    <Download className="h-3.5 w-3.5" />
+                    <Download aria-hidden="true" className="h-3.5 w-3.5" />
                     PDF ni na voljo
                   </Button>
                 )}

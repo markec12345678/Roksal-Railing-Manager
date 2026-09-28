@@ -1728,7 +1728,7 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-roksal-amber">
-              <Box className="h-5 w-5 text-white" />
+              <Box aria-hidden="true" className="h-5 w-5 text-white" />
             </div>
             <div className="min-w-0">
               <h2 className="text-sm font-bold text-white truncate">WebXR AR — pravi hit-test</h2>
@@ -1746,7 +1746,7 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
             className="min-h-[44px] min-w-[44px] rounded-full p-2 text-white hover:bg-white/10"
             aria-label="Zapri WebXR skener"
           >
-            <X className="h-5 w-5" />
+            <X aria-hidden="true" className="h-5 w-5" />
           </button>
         </div>
       </div>
@@ -1773,13 +1773,13 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
                     c.ok ? 'bg-roksal-navy/85 text-white' : 'bg-black/50 text-white/50'
                   }`}
                 >
-                  {c.ok ? <CheckCircle2 className="h-3 w-3 text-roksal-amber" /> : <AlertTriangle className="h-3 w-3" />}
+                  {c.ok ? <CheckCircle2 aria-hidden="true" className="h-3 w-3 text-roksal-amber" /> : <AlertTriangle aria-hidden="true" className="h-3 w-3" />}
                   {c.label}
                   <span className={c.ok ? 'text-roksal-amber' : ''}>{c.value}</span>
                 </span>
               ))}
               <span className="flex items-center gap-1 rounded-full bg-roksal-navy/85 px-2 py-1 text-2xs font-semibold text-white backdrop-blur-sm">
-                <Gauge className="h-3 w-3 text-roksal-amber" />
+                <Gauge aria-hidden="true" className="h-3 w-3 text-roksal-amber" />
                 {hud.fps} fps · f{hud.frameCount}
               </span>
               {features.planes && planesVisible && (hud.largestFloorM2 !== null || hud.largestWallM2 !== null) && (
@@ -1838,7 +1838,7 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
               )}
               {hud.tracking && features.depth && hud.centerDistM !== null && (
                 <p className="mx-auto inline-block rounded-full bg-black/60 px-3 py-1 text-[11px] text-white/90">
-                  <ScanLine className="mr-1 inline h-3 w-3 text-roksal-amber" />
+                  <ScanLine aria-hidden="true" className="mr-1 inline h-3 w-3 text-roksal-amber" />
                   Objekt na sredini: {hud.centerDistM.toFixed(2)} m
                 </p>
               )}
@@ -1858,7 +1858,7 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
                         !chainMode ? 'bg-roksal-amber text-white shadow' : 'text-white/60 hover:bg-white/10'
                       }`}
                     >
-                      <Ruler className="mr-1 inline h-3.5 w-3.5" /> Dvo-točkovno
+                      <Ruler aria-hidden="true" className="mr-1 inline h-3.5 w-3.5" /> Dvo-točkovno
                     </button>
                     <button
                       type="button"
@@ -1867,7 +1867,7 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
                         chainMode ? 'bg-roksal-amber text-white shadow' : 'text-white/60 hover:bg-white/10'
                       }`}
                     >
-                      <Route className="mr-1 inline h-3.5 w-3.5" /> Verižno (obris)
+                      <Route aria-hidden="true" className="mr-1 inline h-3.5 w-3.5" /> Verižno (obris)
                     </button>
                   </div>
                   {features.planes && (
@@ -1884,7 +1884,7 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
                       }`}
                       data-xr-ui
                     >
-                      {planesVisible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                      {planesVisible ? <Eye aria-hidden="true" className="h-4 w-4" /> : <EyeOff aria-hidden="true" className="h-4 w-4" />}
                     </button>
                   )}
                 </div>
@@ -1902,7 +1902,7 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
                     </div>
                   ) : chainMode && chainClosed ? (
                     <div className="flex items-center justify-center gap-2 text-[11px] font-semibold text-green-300">
-                      <CheckCircle2 className="h-4 w-4" /> Tloris zaprt — shrani obris ali slikaj
+                      <CheckCircle2 aria-hidden="true" className="h-4 w-4" /> Tloris zaprt — shrani obris ali slikaj
                     </div>
                   ) : pendingView ? (
                     <div>
@@ -1924,7 +1924,7 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
                     </div>
                   ) : (
                     <div className="flex items-center justify-center gap-2 text-[11px] text-white/60">
-                      <Crosshair className="h-4 w-4 text-roksal-amber" />
+                      <Crosshair aria-hidden="true" className="h-4 w-4 text-roksal-amber" />
                       {hud.tracking ? (chainMode ? 'Tapni zaslon → vogal 1' : 'Tapni zaslon → točka A') : 'Usmeri telefon proti ploskvi'}
                     </div>
                   )}
@@ -1979,9 +1979,9 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
                     data-xr-ui
                   >
                     {accuracyView.verdict === 'razhajajoce' ? (
-                      <AlertTriangle className="h-4 w-4 shrink-0" />
+                      <AlertTriangle aria-hidden="true" className="h-4 w-4 shrink-0" />
                     ) : (
-                      <CheckCircle2 className="h-4 w-4 shrink-0" />
+                      <CheckCircle2 aria-hidden="true" className="h-4 w-4 shrink-0" />
                     )}
                     <span>
                       Kontrola natančnosti ({accuracyView.count}×):
@@ -2019,7 +2019,7 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
                       className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg bg-white/10 px-2 text-2xs font-semibold text-white transition-colors hover:bg-white/20"
                       aria-label="Prenesi AR posnetek"
                     >
-                      <Download className="h-4 w-4" />
+                      <Download aria-hidden="true" className="h-4 w-4" />
                     </a>
                   </div>
                 )}
@@ -2034,7 +2034,7 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
                     disabled={pointsView.length === 0 && chainPointsView.length === 0 && !chainClosed}
                     className="min-h-[44px] flex-1 border-white/20 bg-transparent text-white hover:bg-white/10"
                   >
-                    <Undo2 className="mr-1 h-4 w-4" /> Undo
+                    <Undo2 aria-hidden="true" className="mr-1 h-4 w-4" /> Undo
                   </Button>
                   <Button
                     type="button"
@@ -2045,7 +2045,7 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
                     title={features.camera ? 'AR fotografija s kamero + merami' : 'Brez camera-access — sintetična shema'}
                     className="min-h-[44px] flex-1 border-roksal-amber/50 bg-roksal-amber/15 text-white hover:bg-roksal-amber/25"
                   >
-                    {capturing ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Camera className="mr-1 h-4 w-4 text-roksal-amber" />}
+                    {capturing ? <Loader2 aria-hidden="true" className="mr-1 h-4 w-4 animate-spin" /> : <Camera aria-hidden="true" className="mr-1 h-4 w-4 text-roksal-amber" />}
                     {capturing ? 'Zajem…' : 'Foto'}
                   </Button>
                   <Button
@@ -2055,7 +2055,7 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
                     size="sm"
                     className="min-h-[44px] flex-1 border-white/20 bg-transparent text-white hover:bg-white/10"
                   >
-                    <X className="mr-1 h-4 w-4" /> Konec
+                    <X aria-hidden="true" className="mr-1 h-4 w-4" /> Konec
                   </Button>
                 </div>
                 {/* Kontrole — vrsta 2: Shrani · Shema */}
@@ -2067,7 +2067,7 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
                     size="sm"
                     className="min-h-[44px] flex-1 bg-roksal-amber text-white hover:bg-roksal-amber/90"
                   >
-                    {saving ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Save className="mr-1 h-4 w-4" />}
+                    {saving ? <Loader2 aria-hidden="true" className="mr-1 h-4 w-4 animate-spin" /> : <Save aria-hidden="true" className="mr-1 h-4 w-4" />}
                     {savedToProject ? 'Shranjeno ✓' : 'Shrani'}
                   </Button>
                   <Button
@@ -2079,7 +2079,7 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
                     aria-label="Shrani AR shemo v posnetke"
                     className="min-h-[44px] w-[52px] shrink-0 border-white/20 bg-transparent px-0 text-white hover:bg-white/10"
                   >
-                    {savingSchema ? <Loader2 className="h-4 w-4 animate-spin" /> : schemaSaved ? <CheckCircle2 className="h-4 w-4 text-green-400" /> : <ImageIcon className="h-4 w-4" />}
+                    {savingSchema ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : schemaSaved ? <CheckCircle2 aria-hidden="true" className="h-4 w-4 text-green-400" /> : <ImageIcon aria-hidden="true" className="h-4 w-4" />}
                   </Button>
                   <Button
                     type="button"
@@ -2090,7 +2090,7 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
                     aria-label="Uporabi mere v kalkulatorju"
                     className="min-h-[44px] flex-1 border-white/20 bg-transparent text-white hover:bg-white/10"
                   >
-                    <Calculator className="mr-1 h-4 w-4" /> Kalkulator
+                    <Calculator aria-hidden="true" className="mr-1 h-4 w-4" /> Kalkulator
                   </Button>
                 </div>
                 {!projectId && (
@@ -2110,14 +2110,14 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
               <CardContent className="space-y-4 p-5 sm:p-6">
                 {sessionState === 'checking' && (
                   <div className="text-center">
-                    <Loader2 className="mx-auto mb-2 h-8 w-8 animate-spin text-roksal-amber" />
+                    <Loader2 aria-hidden="true" className="mx-auto mb-2 h-8 w-8 animate-spin text-roksal-amber" />
                     <p className="text-sm text-white">Preverjam WebXR podporo…</p>
                   </div>
                 )}
 
                 {sessionState === 'unsupported' && (
                   <div className="space-y-2 text-center">
-                    <AlertTriangle className="mx-auto h-10 w-10 text-amber-400" />
+                    <AlertTriangle aria-hidden="true" className="mx-auto h-10 w-10 text-amber-400" />
                     <p className="text-sm font-medium text-white">WebXR AR ni podprt</p>
                     <p className="text-xs text-white/70">{errorMsg}</p>
                     <div className="mt-2 rounded-lg bg-white/10 p-2.5 text-left text-2xs text-white/80">
@@ -2127,7 +2127,7 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
                       <p>• HTTPS (PWA namestitev)</p>
                     </div>
                     <Button type="button" onClick={onClose} variant="outline" size="sm" className="min-h-[44px]">
-                      <Smartphone className="mr-1 h-4 w-4" /> Razumem
+                      <Smartphone aria-hidden="true" className="mr-1 h-4 w-4" /> Razumem
                     </Button>
                   </div>
                 )}
@@ -2135,7 +2135,7 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
                 {sessionState === 'idle' && (
                   <div className="space-y-3">
                     <div className="text-center">
-                      <Box className="mx-auto mb-2 h-10 w-10 text-roksal-amber" />
+                      <Box aria-hidden="true" className="mx-auto mb-2 h-10 w-10 text-roksal-amber" />
                       <p className="text-sm font-semibold text-white">WebXR AR — pravi merjenik</p>
                       <p className="mt-1 text-xs text-white/70">
                         XRFrame hit-test + sidra + Depth API. Retikla drži realno ploskev,
@@ -2145,29 +2145,29 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
 
                     <div className="grid grid-cols-3 gap-2 text-center">
                       <div className="rounded-lg bg-green-600/15 p-2">
-                        <Crosshair className="mx-auto mb-1 h-4 w-4 text-green-400" />
+                        <Crosshair aria-hidden="true" className="mx-auto mb-1 h-4 w-4 text-green-400" />
                         <div className="text-[9px] text-white">Hit-test</div>
                         <div className="text-[9px] font-semibold text-green-400">obvezen</div>
                       </div>
                       <div className="rounded-lg bg-white/5 p-2">
-                        <Route className="mx-auto mb-1 h-4 w-4 text-roksal-amber" />
+                        <Route aria-hidden="true" className="mx-auto mb-1 h-4 w-4 text-roksal-amber" />
                         <div className="text-[9px] text-white">Verižno</div>
                         <div className="text-[9px] text-white/50">obris + m²</div>
                       </div>
                       <div className="rounded-lg bg-white/5 p-2">
-                        <Camera className="mx-auto mb-1 h-4 w-4 text-roksal-amber" />
+                        <Camera aria-hidden="true" className="mx-auto mb-1 h-4 w-4 text-roksal-amber" />
                         <div className="text-[9px] text-white">Foto</div>
                         <div className="text-[9px] text-white/50">AR + mere</div>
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-center">
                       <div className="rounded-lg bg-emerald-500/10 p-2">
-                        <Layers className="mx-auto mb-1 h-4 w-4 text-emerald-400" />
+                        <Layers aria-hidden="true" className="mx-auto mb-1 h-4 w-4 text-emerald-400" />
                         <div className="text-[9px] text-white">Ravnine</div>
                         <div className="text-[9px] font-semibold text-emerald-300">Chrome 131+</div>
                       </div>
                       <div className="rounded-lg bg-white/5 p-2">
-                        <Box className="mx-auto mb-1 h-4 w-4 text-roksal-amber" />
+                        <Box aria-hidden="true" className="mx-auto mb-1 h-4 w-4 text-roksal-amber" />
                         <div className="text-[9px] text-white">3D ograja</div>
                         <div className="text-[9px] text-white/50">GLB + USDZ</div>
                       </div>
@@ -2182,7 +2182,7 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
                     {(measurementsView.length > 0 || chainPointsView.length > 0) && (
                       <div className="rounded-lg bg-roksal-amber/10 p-2.5">
                         <div className="mb-1 flex items-center gap-1.5 text-2xs font-bold uppercase text-roksal-amber">
-                          <Ruler className="h-3 w-3" /> Zadnja seja: {measurementsView.length + chainPointsView.length} točk
+                          <Ruler aria-hidden="true" className="h-3 w-3" /> Zadnja seja: {measurementsView.length + chainPointsView.length} točk
                         </div>
                         <div className="max-h-24 space-y-0.5 overflow-y-auto">
                           {[...measurementsView.map((m) => ({ id: m.id, label: m.label, distanceMm: m.distanceMm })), ...chainMeasurementsView].map((m) => (
@@ -2200,7 +2200,7 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
                             size="sm"
                             className="mt-2 min-h-[40px] w-full bg-roksal-amber text-white"
                           >
-                            <Save className="mr-1 h-3.5 w-3.5" /> Shrani v Meritve
+                            <Save aria-hidden="true" className="mr-1 h-3.5 w-3.5" /> Shrani v Meritve
                           </Button>
                         )}
                         <div className="mt-2 grid grid-cols-2 gap-2">
@@ -2211,7 +2211,7 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
                             variant="outline"
                             className="min-h-[40px] border-white/20 bg-transparent text-white hover:bg-white/10"
                           >
-                            <Calculator className="mr-1 h-3.5 w-3.5" /> V kalkulator
+                            <Calculator aria-hidden="true" className="mr-1 h-3.5 w-3.5" /> V kalkulator
                           </Button>
                           <Button
                             type="button"
@@ -2221,7 +2221,7 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
                             variant="outline"
                             className="min-h-[40px] border-white/20 bg-transparent text-white hover:bg-white/10"
                           >
-                            {savingSchema ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : schemaSaved ? <CheckCircle2 className="mr-1 h-3.5 w-3.5 text-green-400" /> : <ImageIcon className="mr-1 h-3.5 w-3.5" />}
+                            {savingSchema ? <Loader2 aria-hidden="true" className="mr-1 h-3.5 w-3.5 animate-spin" /> : schemaSaved ? <CheckCircle2 aria-hidden="true" className="mr-1 h-3.5 w-3.5 text-green-400" /> : <ImageIcon aria-hidden="true" className="mr-1 h-3.5 w-3.5" />}
                             {schemaSaved ? 'Shema ✓' : 'Shema'}
                           </Button>
                         </div>
@@ -2233,7 +2233,7 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
                       onClick={() => void startSession()}
                       className="min-h-[48px] w-full bg-roksal-amber text-white hover:bg-roksal-amber/90"
                     >
-                      <Zap className="mr-2 h-4 w-4" />
+                      <Zap aria-hidden="true" className="mr-2 h-4 w-4" />
                       Zaženi WebXR AR
                     </Button>
                     <p className="text-center text-[9px] text-white/45">
@@ -2244,7 +2244,7 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
 
                 {sessionState === 'requesting' && (
                   <div className="text-center">
-                    <Loader2 className="mx-auto mb-2 h-8 w-8 animate-spin text-roksal-amber" />
+                    <Loader2 aria-hidden="true" className="mx-auto mb-2 h-8 w-8 animate-spin text-roksal-amber" />
                     <p className="text-sm text-white">Zaganjam WebXR sejo…</p>
                     <p className="mt-1 text-2xs text-white/60">Potrdi dovoljenja na telefonu.</p>
                   </div>
@@ -2252,7 +2252,7 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
 
                 {sessionState === 'error' && (
                   <div className="space-y-2 text-center">
-                    <AlertTriangle className="mx-auto h-10 w-10 text-red-400" />
+                    <AlertTriangle aria-hidden="true" className="mx-auto h-10 w-10 text-red-400" />
                     <p className="text-sm font-medium text-white">Napaka</p>
                     <p className="text-xs text-white/70">{errorMsg}</p>
                     <div className="flex justify-center gap-2">
@@ -2304,7 +2304,7 @@ export function WebXrLauncher({ projectId }: { projectId: string | null }) {
         <CardContent className="p-4">
           <div className="flex items-start gap-3">
             <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${supported ? 'bg-green-100' : 'bg-amber-100'}`}>
-              <Box className={`h-5 w-5 ${supported ? 'text-green-600' : 'text-amber-600'}`} />
+              <Box aria-hidden="true" className={`h-5 w-5 ${supported ? 'text-green-600' : 'text-amber-600'}`} />
             </div>
             <div className="min-w-0 flex-1">
               <div className="mb-1 flex flex-wrap items-center gap-2">
@@ -2343,7 +2343,7 @@ export function WebXrLauncher({ projectId }: { projectId: string | null }) {
               </div>
               <div className="mb-2 flex flex-wrap items-center gap-2 text-2xs">
                 <span className={`flex items-center gap-1 ${supported ? 'text-green-600' : 'text-amber-600'}`}>
-                  {supported ? <CheckCircle2 className="h-3 w-3" /> : <AlertTriangle className="h-3 w-3" />}
+                  {supported ? <CheckCircle2 aria-hidden="true" className="h-3 w-3" /> : <AlertTriangle aria-hidden="true" className="h-3 w-3" />}
                   {supported ? 'Podprto na tej napravi' : 'Ni podprto (Chrome Android potreben)'}
                 </span>
               </div>
@@ -2354,7 +2354,7 @@ export function WebXrLauncher({ projectId }: { projectId: string | null }) {
                 size="sm"
                 className="min-h-[44px] w-full bg-roksal-navy text-white shadow-sm transition-all hover:bg-roksal-navy/90 hover:shadow-md active:scale-[0.99]"
               >
-                <Box className="mr-2 h-4 w-4" />
+                <Box aria-hidden="true" className="mr-2 h-4 w-4" />
                 {supported ? 'Odpri WebXR AR' : 'Ni podprto'}
               </Button>
               {!projectId && supported && (
@@ -2362,7 +2362,7 @@ export function WebXrLauncher({ projectId }: { projectId: string | null }) {
               )}
               {!supported && (
                 <p className="mt-1 text-center text-[9px] text-muted-foreground">
-                  <Smartphone className="mr-1 inline h-3 w-3" />
+                  <Smartphone aria-hidden="true" className="mr-1 inline h-3 w-3" />
                   Potreben Android Chrome + ARCore telefon
                 </p>
               )}

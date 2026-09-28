@@ -486,7 +486,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
     return (
       <Card>
         <CardContent className="flex flex-col items-center gap-2 p-8 text-center">
-          <MapPinned className="h-8 w-8 text-muted-foreground/50" />
+          <MapPinned aria-hidden="true" className="h-8 w-8 text-muted-foreground/50" />
           <p className="text-sm font-medium text-muted-foreground">Izberi projekt za terenski pregled</p>
           <p className="text-xs text-muted-foreground/70">Zapisnik se shranjuje na projekt (en pregled na objekt).</p>
         </CardContent>
@@ -519,10 +519,10 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
           <CardContent className="p-4">
             <div className="mb-2 flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <ClipboardList className="h-4 w-4 text-roksal-amber" />
+                <ClipboardList aria-hidden="true" className="h-4 w-4 text-roksal-amber" />
                 <h3 className="text-sm font-bold text-roksal-ink">Terenski pregled</h3>
                 {data.zakljuceno && (
-                  <Badge className="bg-green-100 dark:bg-green-500/15 text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-500/15"><CheckCircle2 className="mr-1 h-3 w-3" /> zaključen</Badge>
+                  <Badge className="bg-green-100 dark:bg-green-500/15 text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-500/15"><CheckCircle2 aria-hidden="true" className="mr-1 h-3 w-3" /> zaključen</Badge>
                 )}
               </div>
               <div className="flex shrink-0 items-center gap-2">
@@ -534,7 +534,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
                   className="h-8 gap-1.5 rounded-lg border-roksal-navy/20 dark:border-roksal-ink/20 px-2.5 text-[11px] font-bold text-roksal-ink hover:bg-roksal-amber/10 hover:text-roksal-ink"
                   aria-label="Izvozi PDF zapisnik"
                 >
-                  {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileDown className="h-3.5 w-3.5 text-roksal-amber" />}
+                  {generating ? <Loader2 aria-hidden="true" className="h-3.5 w-3.5 animate-spin" /> : <FileDown aria-hidden="true" className="h-3.5 w-3.5 text-roksal-amber" />}
                   PDF
                 </Button>
               </div>
@@ -542,7 +542,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
             <Progress value={completion} className="h-2" />
             {warnings.length > 0 && (
               <div className="mt-3 flex items-start gap-2 rounded-lg bg-amber-50 dark:bg-amber-950/40 px-3 py-2 ring-1 ring-amber-200">
-                <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+                <TriangleAlert aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
                 <p className="text-[11px] leading-relaxed text-amber-800 dark:text-amber-200">
                   <strong>{warnings.length} opozorilo(i):</strong> {warnings.map((w) => w.text.toLowerCase()).slice(0, 2).join(' · ')}
                 </p>
@@ -650,7 +650,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
             </div>
             {data.podlaga === 'estrih' && (
               <p className="mt-2 flex items-start gap-1.5 rounded-lg bg-amber-100 dark:bg-amber-500/15 px-2.5 py-2 text-2xs font-medium leading-relaxed text-amber-900 dark:text-amber-200">
-                <TriangleAlert className="mt-0.5 h-3 w-3 shrink-0" />
+                <TriangleAlert aria-hidden="true" className="mt-0.5 h-3 w-3 shrink-0" />
                 Estrih + folija = hidroizolacija. Ekspanzijski moznik je VDRA do folije →
                 kemija + tesnilna masa, sicer vlaga uniči ploščo (reklamacija!).
               </p>
@@ -662,7 +662,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
         <Card className="border-roksal-navy/10 dark:border-roksal-ink/15">
           <CardContent className="p-4">
             <Label className="mb-2 flex items-center gap-1 text-2xs font-bold uppercase tracking-wide text-muted-foreground">
-              <Ruler className="h-3 w-3" /> 4 · Mere (mm — iz AR skenerja ali traku)
+              <Ruler aria-hidden="true" className="h-3 w-3" /> 4 · Mere (mm — iz AR skenerja ali traku)
             </Label>
             <div className="grid grid-cols-3 gap-2">
               <div>
@@ -749,7 +749,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
                         onClick={sendToCalculator}
                         className="mt-2 h-9 w-full gap-1.5 rounded-lg bg-roksal-navy text-[11px] font-bold text-white hover:bg-roksal-navy/90 active:scale-[0.98] transition-all"
                       >
-                        <Calculator className="h-3.5 w-3.5 text-roksal-amber" />
+                        <Calculator aria-hidden="true" className="h-3.5 w-3.5 text-roksal-amber" />
                         Uporabi mere v kalkulatorju
                       </Button>
                     )}
@@ -816,7 +816,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
         <Card className="border-roksal-navy/10 dark:border-roksal-ink/15">
           <CardContent className="p-4">
             <Label className="mb-2 flex items-center gap-1 text-2xs font-bold uppercase tracking-wide text-muted-foreground">
-              <Palette className="h-3 w-3" /> 6 · RAL barva prahu (izbira stranke)
+              <Palette aria-hidden="true" className="h-3 w-3" /> 6 · RAL barva prahu (izbira stranke)
             </Label>
             <div className="flex flex-wrap gap-2">
               {RAL_BARVE.map((r) => {
@@ -840,7 +840,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
                       <span className={`block text-2xs font-bold leading-none ${on ? 'text-roksal-amber' : 'text-roksal-ink'}`}>RAL {r.code}</span>
                       <span className="block text-3xs text-muted-foreground">{r.ime}</span>
                     </span>
-                    {on && <CheckCircle2 className="h-3.5 w-3.5 text-roksal-amber" />}
+                    {on && <CheckCircle2 aria-hidden="true" className="h-3.5 w-3.5 text-roksal-amber" />}
                   </button>
                 )
               })}
@@ -856,7 +856,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
           <CardContent className="p-4">
             <div className="mb-2 flex items-center justify-between">
               <Label className="flex items-center gap-1 text-2xs font-bold uppercase tracking-wide text-muted-foreground">
-                <Camera className="h-3 w-3" /> 7 · Foto kontrolni seznam (slikat MORAŠ)
+                <Camera aria-hidden="true" className="h-3 w-3" /> 7 · Foto kontrolni seznam (slikat MORAŠ)
               </Label>
               <Badge variant="secondary" className="text-2xs">{data.fotoPosneto.length}/{FOTO_CHECKLIST.length}</Badge>
             </div>
@@ -876,7 +876,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
                     <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-2xs font-bold ${
                       done ? 'bg-green-500 text-white' : 'bg-roksal-navy/10 text-roksal-ink/60'
                     }`}>
-                      {done ? <CheckCircle2 className="h-3.5 w-3.5" /> : i + 1}
+                      {done ? <CheckCircle2 aria-hidden="true" className="h-3.5 w-3.5" /> : i + 1}
                     </span>
                     <span className="min-w-0">
                       <span className={`block text-[11px] font-bold ${done ? 'text-green-700 dark:text-green-300' : 'text-roksal-ink'}`}>{f.label}</span>
@@ -887,7 +887,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
               })}
             </div>
             <p className="mt-2 flex items-center gap-1 text-[9px] text-muted-foreground">
-              <Camera className="h-3 w-3" /> Posnetke z GPS + anotacijami zajemi v zavihku <strong>Slike</strong>.
+              <Camera aria-hidden="true" className="h-3 w-3" /> Posnetke z GPS + anotacijami zajemi v zavihku <strong>Slike</strong>.
             </p>
           </CardContent>
         </Card>
@@ -907,10 +907,10 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
             </div>
             <div className="flex gap-2">
               <Button onClick={() => void save(false)} disabled={saving} className="h-11 flex-1 bg-roksal-navy text-white hover:bg-roksal-navy/90">
-                {saving ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Save className="mr-1 h-4 w-4" />} Shrani
+                {saving ? <Loader2 aria-hidden="true" className="mr-1 h-4 w-4 animate-spin" /> : <Save aria-hidden="true" className="mr-1 h-4 w-4" />} Shrani
               </Button>
               <Button onClick={() => void save(true)} disabled={saving || data.zakljuceno} className="h-11 flex-1 bg-green-600 text-white hover:bg-green-700 disabled:opacity-50">
-                <CheckCircle2 className="mr-1 h-4 w-4" /> {data.zakljuceno ? 'Zaključen ✓' : 'Zaključi pregled'}
+                <CheckCircle2 aria-hidden="true" className="mr-1 h-4 w-4" /> {data.zakljuceno ? 'Zaključen ✓' : 'Zaključi pregled'}
               </Button>
             </div>
           </CardContent>
@@ -922,7 +922,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
         <Card className="overflow-hidden border-roksal-navy/20 dark:border-roksal-ink/20 shadow-sm">
           <div className="flex items-center justify-between gap-2 border-b border-roksal-navy/10 dark:border-roksal-ink/15 bg-gradient-to-r from-roksal-navy to-roksal-navy/80 p-3.5">
             <div className="flex items-center gap-2">
-              <Package className="h-4 w-4 text-roksal-amber" />
+              <Package aria-hidden="true" className="h-4 w-4 text-roksal-amber" />
               <div>
                 <h3 className="text-[13px] font-bold text-white">S seboj prinesti</h3>
                 <p className="text-[9px] text-white/60">živo iz zapisnika — {bringList.length} točk</p>
@@ -934,7 +934,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
               className="h-8 px-2 text-white/80 hover:bg-white/10 hover:text-white"
               aria-label="Deli seznam z ekipo"
             >
-              <Share2 className="h-3.5 w-3.5" />
+              <Share2 aria-hidden="true" className="h-3.5 w-3.5" />
             </Button>
             <Button
               type="button" size="sm" variant="ghost"
@@ -942,7 +942,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
               className="h-8 px-2 text-white/80 hover:bg-white/10 hover:text-white"
               aria-label="Kopiraj seznam"
             >
-              <Copy className="h-3.5 w-3.5" />
+              <Copy aria-hidden="true" className="h-3.5 w-3.5" />
             </Button>
           </div>
           <CardContent className="max-h-[70vh] space-y-1.5 overflow-y-auto p-3">
@@ -970,7 +970,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
                         type="checkbox"
                         checked={!!tools[item.id]}
                         onChange={() => setTools((prev) => ({ ...prev, [item.id]: !prev[item.id] }))}
-                        className="mt-0.5 h-4 w-4 accent-[#f59e0b]"
+                        className="mt-0.5 h-4 w-4 accent-roksal-amber"
                       />
                       <span className="min-w-0">
                         <span className={`block text-[11px] font-bold leading-snug ${item.kind === 'warn' ? 'text-amber-800 dark:text-amber-200' : 'text-roksal-ink'}`}>{item.text}</span>

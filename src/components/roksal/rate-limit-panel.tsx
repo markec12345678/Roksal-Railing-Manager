@@ -237,7 +237,7 @@ export function RateLimitPanel() {
             className="h-8 px-2 focus-visible:ring-roksal-navy/40"
             aria-label="Osveži telemetrijo omejevanja hitrosti"
           >
-            <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw aria-hidden="true" className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
           </Button>
         </div>
       </div>
@@ -245,7 +245,7 @@ export function RateLimitPanel() {
       {/* Stanja */}
       {loading && !data ? (
         <div className="mt-3 flex items-center justify-center rounded-lg border border-border bg-secondary/30 p-6">
-          <Loader2 className="h-5 w-5 animate-spin text-roksal-amber" />
+          <Loader2 aria-hidden="true" className="h-5 w-5 animate-spin text-roksal-amber" />
         </div>
       ) : napaka ? (
         <div

@@ -54,7 +54,7 @@ export function ActivationClient({ token, ime }: ActivationClientProps) {
       <main className="flex min-h-screen items-center justify-center bg-stone-100 p-6 dark:bg-background">
         <div className="w-full max-w-md rounded-2xl border border-emerald-200 bg-white p-8 text-center shadow-sm dark:border-emerald-800 dark:bg-card">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-950/40">
-            <CheckCircle2 className="h-7 w-7 text-emerald-600 dark:text-emerald-400" />
+            <CheckCircle2 aria-hidden="true" className="h-7 w-7 text-emerald-600 dark:text-emerald-400" />
           </div>
           <h1 className="text-xl font-bold text-roksal-ink">Račun je aktiven!</h1>
           <p className="mt-2 text-sm text-muted-foreground">
@@ -64,7 +64,7 @@ export function ActivationClient({ token, ime }: ActivationClientProps) {
             href="/login"
             className="mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-roksal-amber px-5 text-sm font-bold text-white shadow-md hover:bg-roksal-amber/90"
           >
-            <KeyRound className="h-4 w-4" />
+            <KeyRound aria-hidden="true" className="h-4 w-4" />
             Na prijavo
           </Link>
         </div>
@@ -77,7 +77,7 @@ export function ActivationClient({ token, ime }: ActivationClientProps) {
       <div className="w-full max-w-md rounded-2xl border border-stone-200 bg-white p-8 shadow-sm dark:border-stone-800 dark:bg-card">
         <div className="mb-5 text-center">
           <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-roksal-amber/15">
-            <KeyRound className="h-6 w-6 text-roksal-amber" />
+            <KeyRound aria-hidden="true" className="h-6 w-6 text-roksal-amber" />
           </div>
           <h1 className="text-xl font-bold text-roksal-ink">Dobrodošli, {ime.split(' ')[0]}!</h1>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -125,7 +125,7 @@ export function ActivationClient({ token, ime }: ActivationClientProps) {
             disabled={sending || password.length < 8 || !repeat}
             className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-roksal-amber text-sm font-bold text-white shadow-md hover:bg-roksal-amber/90 disabled:opacity-50"
           >
-            {sending ? <Loader2 className="h-4.5 w-4.5 animate-spin" /> : <Send className="h-4 w-4" />}
+            {sending ? <Loader2 aria-hidden="true" className="h-4.5 w-4.5 animate-spin" /> : <Send aria-hidden="true" className="h-4 w-4" />}
             {sending ? 'Aktiviram…' : 'Aktiviraj račun'}
           </Button>
 

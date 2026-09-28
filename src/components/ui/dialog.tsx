@@ -74,7 +74,7 @@ function DialogContent({
             data-slot="dialog-close"
             className="ring-offset-background focus-visible:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-4 right-4 rounded-md opacity-70 transition-[opacity,background-color] hover:opacity-100 hover:bg-accent/60 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
           >
-            <XIcon />
+            <XIcon aria-hidden="true" />
             {/* R159: sr-only v slovenščini — bralniki zaslonov slišijo jezik UI, ne 'Close'. */}
             <span className="sr-only">Zapri</span>
           </DialogPrimitive.Close>

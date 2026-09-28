@@ -88,7 +88,7 @@ export function StepMask() {
           aria-label="Naprej na nastavitev 4 vogalov"
         >
           Naprej
-          <ArrowRight className="ml-1 h-4 w-4" />
+          <ArrowRight aria-hidden="true" className="ml-1 h-4 w-4" />
         </Button>
       </div>
     </div>

@@ -240,7 +240,7 @@ export function PostSignaturePanel({ project }: { project: Project }) {
     return (
       <Card>
         <CardContent className="py-8 text-center">
-          <Loader2 className="h-6 w-6 animate-spin mx-auto text-roksal-amber" />
+          <Loader2 aria-hidden="true" className="h-6 w-6 animate-spin mx-auto text-roksal-amber" />
           <p className="text-xs text-muted-foreground mt-2">Nalagam post-signature podatke...</p>
         </CardContent>
       </Card>
@@ -251,7 +251,7 @@ export function PostSignaturePanel({ project }: { project: Project }) {
     return (
       <Card className="border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40">
         <CardContent className="py-6 text-center">
-          <Lock className="h-8 w-8 mx-auto text-amber-500 dark:text-amber-400 mb-2" />
+          <Lock aria-hidden="true" className="h-8 w-8 mx-auto text-amber-500 dark:text-amber-400 mb-2" />
           <p className="text-sm font-medium text-amber-900 dark:text-amber-200">Deal še ni zaklenjen</p>
           <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
             Po podpisu ponudbe (V4) se deal samodejno zaklene in aktivirajo post-signature avtomatizacije.
@@ -268,7 +268,7 @@ export function PostSignaturePanel({ project }: { project: Project }) {
         <CardContent className="p-4">
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-500/15">
-              <Lock className="h-6 w-6 text-green-600 dark:text-green-400" />
+              <Lock aria-hidden="true" className="h-6 w-6 text-green-600 dark:text-green-400" />
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2">
@@ -283,7 +283,7 @@ export function PostSignaturePanel({ project }: { project: Project }) {
               </p>
             </div>
             <Badge variant="outline" className="bg-green-100 dark:bg-green-500/15 text-green-800 dark:text-green-200 border-green-300 dark:border-green-800">
-              <ShieldCheck className="h-3 w-3 mr-1" />
+              <ShieldCheck aria-hidden="true" className="h-3 w-3 mr-1" />
               ZA_MONTAZO
             </Badge>
           </div>
@@ -296,9 +296,9 @@ export function PostSignaturePanel({ project }: { project: Project }) {
         <Card className="border-green-200 dark:border-green-800">
           <CardContent className="p-3">
             <div className="flex items-center gap-2 mb-1">
-              <Lock className="h-4 w-4 text-green-600 dark:text-green-400" />
+              <Lock aria-hidden="true" className="h-4 w-4 text-green-600 dark:text-green-400" />
               <span className="text-[11px] font-semibold text-roksal-ink">Deal Lock</span>
-              <CheckCircle2 className="h-3 w-3 text-green-600 dark:text-green-400 ml-auto" />
+              <CheckCircle2 aria-hidden="true" className="h-3 w-3 text-green-600 dark:text-green-400 ml-auto" />
             </div>
             <p className="text-2xs text-muted-foreground">
               Ponudba zaklenjena. Nič več editanja.
@@ -310,7 +310,7 @@ export function PostSignaturePanel({ project }: { project: Project }) {
         <Card className="border-blue-200 dark:border-blue-800">
           <CardContent className="p-3">
             <div className="flex items-center gap-2 mb-1">
-              <Package className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              <Package aria-hidden="true" className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               <span className="text-[11px] font-semibold text-roksal-ink">BOM Draft</span>
               {bomDraft && (
                 <Badge variant="outline" className="ml-auto text-3xs bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300">
@@ -328,9 +328,9 @@ export function PostSignaturePanel({ project }: { project: Project }) {
         <Card className="border-amber-200 dark:border-amber-800">
           <CardContent className="p-3">
             <div className="flex items-center gap-2 mb-1">
-              <FileText className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              <FileText aria-hidden="true" className="h-4 w-4 text-amber-600 dark:text-amber-400" />
               <span className="text-[11px] font-semibold text-roksal-ink">Projekt = ZA_MONTAZO</span>
-              <CheckCircle2 className="h-3 w-3 text-green-600 dark:text-green-400 ml-auto" />
+              <CheckCircle2 aria-hidden="true" className="h-3 w-3 text-green-600 dark:text-green-400 ml-auto" />
             </div>
             <p className="text-2xs text-muted-foreground">
               Status samodejno spremenjen na &quot;Za montažo&quot;
@@ -342,7 +342,7 @@ export function PostSignaturePanel({ project }: { project: Project }) {
         <Card className="border-purple-200 dark:border-purple-800">
           <CardContent className="p-3">
             <div className="flex items-center gap-2 mb-1">
-              <TrendingUp className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+              <TrendingUp aria-hidden="true" className="h-4 w-4 text-purple-600 dark:text-purple-400" />
               <span className="text-[11px] font-semibold text-roksal-ink">Marža zaklenjena</span>
               {project.marginLocked && (
                 <Badge variant="outline" className="ml-auto text-3xs bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300">
@@ -362,7 +362,7 @@ export function PostSignaturePanel({ project }: { project: Project }) {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-sm">
-              <Package className="h-4 w-4 text-roksal-amber" />
+              <Package aria-hidden="true" className="h-4 w-4 text-roksal-amber" />
               BOM Draft (Bill of Materials)
               <Badge variant="secondary" className="ml-auto text-[9px]">DRAFT</Badge>
             </CardTitle>
@@ -399,7 +399,7 @@ export function PostSignaturePanel({ project }: { project: Project }) {
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-sm">
-            <ShieldCheck className="h-4 w-4 text-roksal-amber" />
+            <ShieldCheck aria-hidden="true" className="h-4 w-4 text-roksal-amber" />
             Audit Trail — Podpisi
             <Badge variant="outline" className="ml-auto text-[9px]">
               {audits.length} vnosa
@@ -421,11 +421,11 @@ export function PostSignaturePanel({ project }: { project: Project }) {
                   {a.signatureType === 'CUSTOMER' ? 'STRANKA' : 'MONTER'}
                 </Badge>
                 <span className="text-xs font-semibold text-roksal-ink">{a.signedByName}</span>
-                <CheckCircle2 className="h-3 w-3 text-green-600 dark:text-green-400 ml-auto" />
+                <CheckCircle2 aria-hidden="true" className="h-3 w-3 text-green-600 dark:text-green-400 ml-auto" />
               </div>
               <div className="grid grid-cols-2 gap-1 text-2xs text-muted-foreground">
                 <div className="flex items-center gap-1">
-                  <Clock className="h-2.5 w-2.5" />
+                  <Clock aria-hidden="true" className="h-2.5 w-2.5" />
                   {new Date(a.createdAt).toLocaleString('sl-SI')}
                 </div>
                 {a.ipAddress && (
@@ -459,16 +459,16 @@ export function PostSignaturePanel({ project }: { project: Project }) {
         className="w-full bg-roksal-navy text-white hover:bg-roksal-navy/90"
       >
         {exporting ? (
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          <Loader2 aria-hidden="true" className="mr-2 h-4 w-4 animate-spin" />
         ) : (
-          <Download className="mr-2 h-4 w-4" />
+          <Download aria-hidden="true" className="mr-2 h-4 w-4" />
         )}
         Izvozi Audit Trail PDF
       </Button>
 
       {/* Legal disclaimer */}
       <div className="rounded-lg border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-2 text-2xs text-amber-800 dark:text-amber-200">
-        <AlertTriangle className="h-3 w-3 inline mr-1" />
+        <AlertTriangle aria-hidden="true" className="h-3 w-3 inline mr-1" />
         Deal je zaklenjen z avtomatskim sistemom. Vsa dejanja so zabeležena v audit trail
         z IP, device fingerprint in časom. Podpisana PDF ponudba je pravno veljaven dokument.
       </div>

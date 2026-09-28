@@ -172,12 +172,12 @@ function PipelineCardVisual({
         )}
         {p.dealLocked && (
           <span title="Podpis — deal lock" className="inline-flex items-center gap-0.5 text-2xs font-medium text-roksal-ink dark:text-roksal-amber">
-            <Lock className="h-3 w-3" /> podpis
+            <Lock aria-hidden="true" className="h-3 w-3" /> podpis
           </span>
         )}
         {montaza && (
           <span className="inline-flex items-center gap-0.5 text-2xs text-muted-foreground">
-            <CalendarDays className="h-3 w-3" /> {montaza}
+            <CalendarDays aria-hidden="true" className="h-3 w-3" /> {montaza}
           </span>
         )}
       </div>
@@ -234,7 +234,7 @@ function DraggableCard({
                 aria-label={`Spremeni status projekta ${p.nazivProjekta}`}
                 className="rounded-md p-1 text-muted-foreground/60 transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
               >
-                <MoreVertical className="h-3.5 w-3.5" />
+                <MoreVertical aria-hidden="true" className="h-3.5 w-3.5" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-44">
                 <DropdownMenuLabel className="text-[11px]">Premakni v …</DropdownMenuLabel>
@@ -248,7 +248,7 @@ function DraggableCard({
                   >
                     <span className={cn('h-2 w-2 rounded-full', c.dot)} />
                     {c.label}
-                    {c.id === p.status && <Check className="ml-auto h-3 w-3" />}
+                    {c.id === p.status && <Check aria-hidden="true" className="ml-auto h-3 w-3" />}
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
@@ -297,7 +297,7 @@ function PipelineColumn({
       </div>
       {vsota > 0 && (
         <div className="flex items-center gap-1 px-2.5 pt-1 text-2xs font-medium text-muted-foreground">
-          <Euro className="h-3 w-3" aria-hidden />
+          <Euro aria-hidden="true" className="h-3 w-3"  />
           {fmtEur(vsota)}
         </div>
       )}
@@ -546,7 +546,7 @@ export function DealPipeline() {
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
             <CardTitle className="flex items-center gap-2 text-base">
-              <Trello className="h-4 w-4 shrink-0 text-roksal-amber" aria-hidden />
+              <Trello aria-hidden="true" className="h-4 w-4 shrink-0 text-roksal-amber"  />
               Prodajna plošča
             </CardTitle>
             {/* R178 — pečat 'Osveženo ob HH:MM:SS' (vzorec R177; skrit na ozkih
@@ -569,7 +569,7 @@ export function DealPipeline() {
           <div className="flex flex-wrap items-center gap-1.5 sm:justify-end">
             {vrednostPonudb > 0 && (
               <Badge variant="outline" className="gap-1 border-roksal-navy/30 dark:border-roksal-ink/30 text-[11px] text-roksal-ink dark:text-roksal-amber">
-                <Euro className="h-3 w-3" aria-hidden />
+                <Euro aria-hidden="true" className="h-3 w-3"  />
                 {fmtEur(vrednostPonudb)} v obdelavi
               </Badge>
             )}
@@ -579,7 +579,7 @@ export function DealPipeline() {
                   aria-label="Filtriraj ploščo po stranki"
                   className="h-8 w-full min-w-0 text-xs sm:w-[170px] sm:flex-none"
                 >
-                  <Users className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                  <Users aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-muted-foreground"  />
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -617,7 +617,7 @@ export function DealPipeline() {
               aria-expanded={open}
               aria-label={open ? 'Skrči prodajno ploščo' : 'Razpri prodajno ploščo'}
             >
-              {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              {open ? <ChevronUp aria-hidden="true" className="h-4 w-4" /> : <ChevronDown aria-hidden="true" className="h-4 w-4" />}
             </Button>
           </div>
         </div>

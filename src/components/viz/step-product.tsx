@@ -235,7 +235,7 @@ export function StepProduct() {
         <Card className="rounded-2xl">
           <CardContent className="flex flex-col items-center gap-3 p-6 text-center">
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-roksal-navy/10" aria-hidden="true">
-              <WandSparkles className="h-7 w-7 text-roksal-ink" />
+              <WandSparkles aria-hidden="true" className="h-7 w-7 text-roksal-ink" />
             </div>
             <p className="text-sm font-semibold text-roksal-ink">Naložite fotografijo ograje</p>
             <p className="text-xs text-muted-foreground">
@@ -249,7 +249,7 @@ export function StepProduct() {
                 disabled={busy}
                 aria-label="Fotografiraj ograjo"
               >
-                {busy ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Camera className="mr-2 h-5 w-5" />}
+                {busy ? <Loader2 aria-hidden="true" className="mr-2 h-5 w-5 animate-spin" /> : <Camera aria-hidden="true" className="mr-2 h-5 w-5" />}
                 {busy ? LOADING_TEXT.upload : 'Fotografiraj'}
               </Button>
               <Button
@@ -260,7 +260,7 @@ export function StepProduct() {
                 disabled={busy}
                 aria-label="Izberi fotografijo iz galerije"
               >
-                <Images className="mr-2 h-5 w-5" />
+                <Images aria-hidden="true" className="mr-2 h-5 w-5" />
                 Iz galerije
               </Button>
             </div>
@@ -310,11 +310,11 @@ export function StepProduct() {
 
             <div className="grid grid-cols-2 gap-2">
               <Button type="button" variant="outline" className="h-11 text-xs" onClick={() => inputRef.current?.click()} disabled={busy} aria-label="Zamenjaj fotografijo ograje">
-                <Replace className="mr-1 h-4 w-4" />
+                <Replace aria-hidden="true" className="mr-1 h-4 w-4" />
                 Zamenjaj
               </Button>
               <Button type="button" variant="outline" className="h-11 text-xs" onClick={() => setEditorOpen(true)} disabled={busy} aria-label="Uredi masko izdelka (napredno)">
-                <PenTool className="mr-1 h-4 w-4" />
+                <PenTool aria-hidden="true" className="mr-1 h-4 w-4" />
                 Uredi masko
               </Button>
             </div>
@@ -364,9 +364,9 @@ export function StepProduct() {
           disabled={!product}
           aria-label="Da, uporabi to ograjo in naprej"
         >
-          <Check className="mr-1 h-4 w-4" />
+          <Check aria-hidden="true" className="mr-1 h-4 w-4" />
           Da, uporabi
-          <ArrowRight className="ml-1 h-4 w-4" />
+          <ArrowRight aria-hidden="true" className="ml-1 h-4 w-4" />
         </Button>
       </div>
     </div>

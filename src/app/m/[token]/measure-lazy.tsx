@@ -13,7 +13,7 @@ const MeasureClient = dynamic(() => import('./measure-client').then((m) => m.Mea
   loading: () => (
     <main className="flex min-h-screen items-center justify-center bg-stone-100 dark:bg-background">
       <div className="flex flex-col items-center gap-3">
-        <Loader2 className="h-6 w-6 animate-spin text-roksal-amber" />
+        <Loader2 aria-hidden="true" className="h-6 w-6 animate-spin text-roksal-amber" />
         <p className="text-xs text-muted-foreground">Nalagam merilno karto…</p>
       </div>
     </main>

@@ -67,7 +67,7 @@ export function PasswordChangeBanner() {
   return (
     <div role="alert" className="border-b border-roksal-amber/30 bg-roksal-amber/10 px-4 py-2">
       <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-2">
-        <ShieldAlert className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+        <ShieldAlert aria-hidden="true" className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
         <p className="min-w-0 flex-1 text-[12px] font-medium text-amber-800 dark:text-amber-200">
           Vaše geslo je bilo ponastavljeno s strani administratorja — nastavite svoje novo geslo.
         </p>
@@ -77,7 +77,7 @@ export function PasswordChangeBanner() {
           onClick={() => setOpen(!open)}
           className="h-7 bg-amber-600 text-[11px] text-white hover:bg-amber-700"
         >
-          <KeyRound className="mr-1 h-3 w-3" />
+          <KeyRound aria-hidden="true" className="mr-1 h-3 w-3" />
           Zamenjaj geslo
         </Button>
       </div>
@@ -114,7 +114,7 @@ export function PasswordChangeBanner() {
             disabled={busy || !current || next.length < 8 || !repeat}
             className="h-9 w-full bg-roksal-navy text-xs text-white hover:bg-roksal-navy/90 disabled:opacity-50"
           >
-            {busy ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <KeyRound className="mr-1.5 h-3.5 w-3.5" />}
+            {busy ? <Loader2 aria-hidden="true" className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <KeyRound aria-hidden="true" className="mr-1.5 h-3.5 w-3.5" />}
             Shrani novo geslo
           </Button>
         </div>

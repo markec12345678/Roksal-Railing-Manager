@@ -141,7 +141,7 @@ export function JobsPanel() {
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-roksal-navy/10">
-            <Wrench className="h-4 w-4 text-roksal-ink" />
+            <Wrench aria-hidden="true" className="h-4 w-4 text-roksal-ink" />
           </div>
           <div>
             <h3 className="text-[13px] font-bold text-roksal-ink">Vzdrževanje — posli v ozadju</h3>
@@ -171,7 +171,7 @@ export function JobsPanel() {
             className="h-8 px-2 focus-visible:ring-roksal-navy/40"
             aria-label="Osveži register poslov"
           >
-            <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw aria-hidden="true" className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
           </Button>
           <Button
             type="button"
@@ -181,9 +181,9 @@ export function JobsPanel() {
             className="h-8 bg-roksal-navy hover:bg-roksal-navy/90 text-white focus-visible:ring-roksal-navy/40"
           >
             {running ? (
-              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+              <Loader2 aria-hidden="true" className="mr-1.5 h-3.5 w-3.5 animate-spin" />
             ) : (
-              <PlayCircle className="mr-1.5 h-3.5 w-3.5" />
+              <PlayCircle aria-hidden="true" className="mr-1.5 h-3.5 w-3.5" />
             )}
             Zaženi zdaj
           </Button>
@@ -208,7 +208,7 @@ export function JobsPanel() {
       {/* Stanja */}
       {loading ? (
         <div className="mt-3 flex items-center justify-center rounded-lg border border-border bg-secondary/30 p-6">
-          <Loader2 className="h-5 w-5 animate-spin text-roksal-amber" />
+          <Loader2 aria-hidden="true" className="h-5 w-5 animate-spin text-roksal-amber" />
         </div>
       ) : error ? (
         <div className="mt-3 rounded-lg border border-roksal-red/40 bg-roksal-red/10 px-3 py-2.5 text-[11px] text-roksal-red" role="alert">

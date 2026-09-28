@@ -562,7 +562,7 @@ export function NotificationCenter() {
         aria-label={`Obvestila${badge > 0 ? ` (${badge} novih)` : ''}`}
         title="Obvestila"
       >
-        <Bell className={`h-4 w-4 ${pulse ? 'animate-bounce' : ''}`} />
+        <Bell aria-hidden="true" className={`h-4 w-4 ${pulse ? 'animate-bounce' : ''}`} />
         {badge > 0 && (
           <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-roksal-red px-1 text-[9px] font-bold text-white">
             {badge > 9 ? '9+' : badge}
@@ -574,9 +574,9 @@ export function NotificationCenter() {
         <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-sm rounded-l-3xl">
           <SheetHeader className="border-b border-border/60 px-4 py-3">
             <SheetTitle className="flex items-center gap-2 text-roksal-ink">
-              <Bell className="h-4 w-4 text-roksal-amber" />
+              <Bell aria-hidden="true" className="h-4 w-4 text-roksal-amber" />
               Obvestila
-              {loading && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
+              {loading && <Loader2 aria-hidden="true" className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
             </SheetTitle>
             <SheetDescription className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
               <span>Nizka zaloga, današnje montaže, naročila, vreme, računi in poslana obvestila.</span>
@@ -615,14 +615,14 @@ export function NotificationCenter() {
             {items.length === 0 && persisted.length === 0 && !loading && !persistedError && !viriNapaka && (
               <div className="flex flex-col items-center gap-2 py-12 text-center">
                 <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-100 dark:bg-green-500/15">
-                  <CheckCheck className="h-7 w-7 text-green-600 dark:text-green-400" />
+                  <CheckCheck aria-hidden="true" className="h-7 w-7 text-green-600 dark:text-green-400" />
                 </div>
                 <p className="text-sm font-semibold text-roksal-ink">Vse je pod nadzorom</p>
                 <p className="max-w-[220px] text-xs text-muted-foreground">
                   Ni nizke zaloge, ni artiklov brez dobavitelja, danes ni montaž, ni aktivnih naročil in vreme ne povzroča skrbi.
                 </p>
                 <Button variant="outline" size="sm" className="mt-1 min-h-[40px]" onClick={() => void load()}>
-                  <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Osveži
+                  <RefreshCw aria-hidden="true" className="mr-1.5 h-3.5 w-3.5" /> Osveži
                 </Button>
               </div>
             )}
@@ -692,7 +692,7 @@ export function NotificationCenter() {
                             </span>
                           )}
                           {item.kind === 'weather' && (
-                            <AlertTriangle className="h-3 w-3 shrink-0 text-amber-500 dark:text-amber-400" />
+                            <AlertTriangle aria-hidden="true" className="h-3 w-3 shrink-0 text-amber-500 dark:text-amber-400" />
                           )}
                         </div>
                         {/* R216 stil — stock številke tabular-nums (zaloge in
@@ -705,7 +705,7 @@ export function NotificationCenter() {
                           </p>
                         )}
                       </div>
-                      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/50 transition-transform group-hover:translate-x-0.5 group-hover:text-roksal-amber" />
+                      <ChevronRight aria-hidden="true" className="h-4 w-4 shrink-0 text-muted-foreground/50 transition-transform group-hover:translate-x-0.5 group-hover:text-roksal-amber" />
                     </button>
                   </li>
                 )

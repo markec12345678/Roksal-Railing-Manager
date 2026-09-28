@@ -138,7 +138,7 @@ export function ProductHome() {
             disabled={demoLoading}
             title="Preizkusni primer uporabi demo fotografije — brez lastne fotografije"
           >
-            {demoLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FlaskConical className="mr-2 h-4 w-4" aria-hidden="true" />}
+            {demoLoading ? <Loader2 aria-hidden="true" className="mr-2 h-4 w-4 animate-spin" /> : <FlaskConical className="mr-2 h-4 w-4" aria-hidden="true" />}
             Preizkusite na primeru
           </Button>
           <button

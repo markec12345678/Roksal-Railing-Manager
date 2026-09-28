@@ -182,7 +182,7 @@ export function MeasureClient({ token, nazivProjekta, stranka }: MeasureClientPr
       <main className="min-h-screen bg-stone-100 px-4 py-10 dark:bg-background">
         <div className="mx-auto max-w-md rounded-2xl border border-emerald-200 bg-white p-8 text-center shadow-sm dark:border-emerald-800 dark:bg-card">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-950/40">
-            <CheckCircle2 className="h-9 w-9 text-emerald-600 dark:text-emerald-400" />
+            <CheckCircle2 aria-hidden="true" className="h-9 w-9 text-emerald-600 dark:text-emerald-400" />
           </div>
           <h1 className="text-xl font-bold text-roksal-ink">Hvala, {ime.split(' ')[0]}!</h1>
           <p className="mt-2 text-sm text-muted-foreground">
@@ -256,13 +256,13 @@ export function MeasureClient({ token, nazivProjekta, stranka }: MeasureClientPr
               aria-label="Moja lokacija"
               className="absolute bottom-16 right-2 z-[500] flex h-11 w-11 items-center justify-center rounded-full bg-white text-roksal-navy shadow-md active:scale-95"
             >
-              <LocateFixed className="h-5 w-5" />
+              <LocateFixed aria-hidden="true" className="h-5 w-5" />
             </button>
           </div>
           {/* Mer */}
           <div className="flex items-center gap-3 border-t border-stone-200 bg-white px-4 py-3 dark:border-stone-800 dark:bg-card">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-roksal-amber/15">
-              <MapPin className="h-5 w-5 text-roksal-amber" />
+              <MapPin aria-hidden="true" className="h-5 w-5 text-roksal-amber" />
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-[11px] text-muted-foreground">Dolžina vaše ograje</p>
@@ -276,7 +276,7 @@ export function MeasureClient({ token, nazivProjekta, stranka }: MeasureClientPr
               disabled={points.length === 0}
               className="flex h-10 items-center gap-1.5 rounded-lg border border-stone-300 px-3 text-xs font-medium text-stone-700 disabled:opacity-40 dark:border-stone-700 dark:text-stone-300"
             >
-              <Undo2 className="h-3.5 w-3.5" /> Nazaj
+              <Undo2 aria-hidden="true" className="h-3.5 w-3.5" /> Nazaj
             </button>
             <button
               type="button"
@@ -285,7 +285,7 @@ export function MeasureClient({ token, nazivProjekta, stranka }: MeasureClientPr
               className="flex h-10 w-10 items-center justify-center rounded-lg border border-stone-300 text-stone-500 disabled:opacity-40 dark:border-stone-700 dark:text-stone-400"
               aria-label="Počisti vse točke"
             >
-              <Eraser className="h-4 w-4" />
+              <Eraser aria-hidden="true" className="h-4 w-4" />
             </button>
           </div>
         </div>
@@ -322,7 +322,7 @@ export function MeasureClient({ token, nazivProjekta, stranka }: MeasureClientPr
             className="flex h-13 w-full items-center justify-center gap-2 rounded-xl bg-roksal-amber py-3.5 text-sm font-bold text-white shadow-md transition-colors hover:bg-roksal-amber/90 disabled:opacity-50"
             style={{ minHeight: 52 }}
           >
-            {sending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+            {sending ? <Loader2 aria-hidden="true" className="h-5 w-5 animate-spin" /> : <Send aria-hidden="true" className="h-5 w-5" />}
             {sending ? 'Pošiljam…' : 'Pošlji meritev'}
           </button>
           <p className="text-center text-[11px] text-muted-foreground">

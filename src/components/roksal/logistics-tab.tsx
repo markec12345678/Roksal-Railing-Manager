@@ -930,13 +930,13 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
       {/* Subtabs */}
       <div className="grid grid-cols-3 gap-1 rounded-lg bg-muted p-1">
         <Button type="button" variant={subtab === 'calendar' ? 'default' : 'ghost'} size="sm" onClick={() => setSubtab('calendar')} className={subtab === 'calendar' ? 'bg-roksal-navy text-white' : ''}>
-          <Calendar className="h-3.5 w-3.5 mr-1" /> Koledar
+          <Calendar aria-hidden="true" className="h-3.5 w-3.5 mr-1" /> Koledar
         </Button>
         <Button type="button" variant={subtab === 'crews' ? 'default' : 'ghost'} size="sm" onClick={() => setSubtab('crews')} className={subtab === 'crews' ? 'bg-roksal-navy text-white' : ''}>
-          <Users className="h-3.5 w-3.5 mr-1" /> Ekipe
+          <Users aria-hidden="true" className="h-3.5 w-3.5 mr-1" /> Ekipe
         </Button>
         <Button type="button" variant={subtab === 'equipment' ? 'default' : 'ghost'} size="sm" onClick={() => setSubtab('equipment')} className={subtab === 'equipment' ? 'bg-roksal-navy text-white' : ''}>
-          <Wrench className="h-3.5 w-3.5 mr-1" /> Oprema
+          <Wrench aria-hidden="true" className="h-3.5 w-3.5 mr-1" /> Oprema
         </Button>
       </div>
 
@@ -950,7 +950,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                 (R242); bralni CSV izvoz ostaja (odjemalski dokument, P1-k). */}
             {lahkoUpravljaProizvodnjo && (
               <Button type="button" onClick={() => setNewScheduleOpen(true)} className="flex-1 bg-roksal-navy text-white shadow-sm press-scale hover:bg-roksal-navy/90 transition-all">
-                <Plus className="h-4 w-4 mr-2" /> Nov termin montaže
+                <Plus aria-hidden="true" className="h-4 w-4 mr-2" /> Nov termin montaže
               </Button>
             )}
             <Button
@@ -972,7 +972,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                 if (n > 0) toast({ title: `CSV izvožen (${n} terminov)`, description: 'Datoteka vsebuje vidne termine — odpravite jo v Excelu.' })
               }}
             >
-              <Download className="h-4 w-4 mr-1" aria-hidden /> CSV
+              <Download aria-hidden="true" className="h-4 w-4 mr-1"  /> CSV
             </Button>
             <Button
               type="button"
@@ -986,7 +986,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                 if (n > 0) toast({ title: `Koledar izvožen (${n} terminov)`, description: 'Datoteko odpri v telefonu — dogodki se dodajo v koledar.' })
               }}
             >
-              <Download className="h-4 w-4 mr-1" aria-hidden /> .ics
+              <Download aria-hidden="true" className="h-4 w-4 mr-1"  /> .ics
             </Button>
           </div>
 
@@ -1022,10 +1022,10 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
           )}
 
           {loading ? (
-            <Card><CardContent className="py-8 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto text-roksal-amber" /></CardContent></Card>
+            <Card><CardContent className="py-8 text-center"><Loader2 aria-hidden="true" className="h-6 w-6 animate-spin mx-auto text-roksal-amber" /></CardContent></Card>
           ) : schedules.length === 0 ? (
             <Card><CardContent className="py-8 text-center text-muted-foreground">
-              <Calendar className="h-10 w-10 mx-auto mb-2 opacity-30" />
+              <Calendar aria-hidden="true" className="h-10 w-10 mx-auto mb-2 opacity-30" />
               <p className="text-sm">Ni terminov. Ustvari nov termin montaže.</p>
             </CardContent></Card>
           ) : (
@@ -1057,11 +1057,11 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                         </div>
                         <div className="text-2xs text-muted-foreground">{s.project.customer.ime}</div>
                         <div className="flex flex-wrap items-center gap-2 text-2xs mt-1 tabular-nums text-muted-foreground">
-                          <span className="flex items-center gap-0.5"><Clock className="h-2.5 w-2.5" />{formatDate(s.datumZacetka)} {formatTime(s.datumZacetka)}</span>
+                          <span className="flex items-center gap-0.5"><Clock aria-hidden="true" className="h-2.5 w-2.5" />{formatDate(s.datumZacetka)} {formatTime(s.datumZacetka)}</span>
                           <span>·</span>
                           <span className="text-roksal-ink">{s.predvideneUre}h{s.dejanskeUre ? ` (dejan. ${s.dejanskeUre}h)` : ''}</span>
-                          {s.crew && <><span>·</span><span className="flex items-center gap-0.5"><Users className="h-2.5 w-2.5" />{s.crew.naziv}</span></>}
-                          {s.lokacija && <><span>·</span><span className="flex items-center gap-0.5"><MapPin className="h-2.5 w-2.5" />{s.lokacija}</span></>}
+                          {s.crew && <><span>·</span><span className="flex items-center gap-0.5"><Users aria-hidden="true" className="h-2.5 w-2.5" />{s.crew.naziv}</span></>}
+                          {s.lokacija && <><span>·</span><span className="flex items-center gap-0.5"><MapPin aria-hidden="true" className="h-2.5 w-2.5" />{s.lokacija}</span></>}
                         </div>
                       </div>
                     </div>
@@ -1092,7 +1092,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                             setMoveHours(String(s.predvideneUre ?? 8))
                           }}
                         >
-                          <CalendarClock className="h-3 w-3 mr-1" /> Preloži
+                          <CalendarClock aria-hidden="true" className="h-3 w-3 mr-1" /> Preloži
                         </Button>
                         )}
                       </div>
@@ -1101,11 +1101,11 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                       <>
                         {lahkoUpravljaProizvodnjo && (
                           <Button type="button" size="sm" variant="outline" className="h-6 text-2xs bg-green-50 dark:bg-green-950/40 focus-visible:ring-2 focus-visible:ring-roksal-navy/40" aria-label={`Zaključi termin ${s.project.nazivProjekta} s preverbo kakovosti`} onClick={() => openQcDialog(s.id, s.project.id, s.project.nazivProjekta)}>
-                            <CheckCircle2 className="h-3 w-3 mr-1" /> Zaključi (preverba + odštej material)
+                            <CheckCircle2 aria-hidden="true" className="h-3 w-3 mr-1" /> Zaključi (preverba + odštej material)
                           </Button>
                         )}
                         <Button type="button" size="sm" variant="outline" className="h-6 text-2xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40" aria-label={`Montažno dokazilo za ${s.project.nazivProjekta} (pred/po, checklist, predaja)`} onClick={() => void openEvidenceDialog(s.id, s.project.id, s.project.nazivProjekta)}>
-                          <FileCheck2 className="h-3 w-3 mr-1" /> Montažno dokazilo
+                          <FileCheck2 aria-hidden="true" className="h-3 w-3 mr-1" /> Montažno dokazilo
                         </Button>
                       </>
                     )}
@@ -1125,7 +1125,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                           setMoveHours(String(s.predvideneUre ?? 8))
                         }}
                       >
-                        <CalendarClock className="h-3 w-3 mr-1" /> Premakni na nov datum
+                        <CalendarClock aria-hidden="true" className="h-3 w-3 mr-1" /> Premakni na nov datum
                       </Button>
                     )}
                   </CardContent>
@@ -1141,11 +1141,11 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
       {subtab === 'crews' && (
         <div className="space-y-3">
           <Button type="button" onClick={() => setNewCrewOpen(true)} className="w-full bg-roksal-navy text-white">
-            <Plus className="h-4 w-4 mr-2" /> Nova ekipa
+            <Plus aria-hidden="true" className="h-4 w-4 mr-2" /> Nova ekipa
           </Button>
           {crews.length === 0 ? (
             <Card><CardContent className="py-8 text-center text-muted-foreground">
-              <Users className="h-10 w-10 mx-auto mb-2 opacity-30" />
+              <Users aria-hidden="true" className="h-10 w-10 mx-auto mb-2 opacity-30" />
               <p className="text-sm">Ni ekip. Ustvari prvo ekipo.</p>
             </CardContent></Card>
           ) : crews.map((c) => (
@@ -1172,7 +1172,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
               type:'equipment'). Med nalaganjem (null) skrit — R242. */}
           {lahkoUpravljaProizvodnjo && (
             <Button type="button" onClick={() => setNewEquipOpen(true)} className="w-full bg-roksal-navy text-white shadow-sm press-scale hover:bg-roksal-navy/90 transition-all">
-              <Plus className="h-4 w-4 mr-2" /> Nova oprema
+              <Plus aria-hidden="true" className="h-4 w-4 mr-2" /> Nova oprema
             </Button>
           )}
           {myPermissions !== null && !lahkoUpravljaProizvodnjo && (
@@ -1189,7 +1189,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
           )}
           {equipment.length === 0 ? (
             <Card><CardContent className="py-8 text-center text-muted-foreground">
-              <Wrench className="h-10 w-10 mx-auto mb-2 opacity-30" />
+              <Wrench aria-hidden="true" className="h-10 w-10 mx-auto mb-2 opacity-30" />
               <p className="text-sm">Ni opreme. Dodaj prvo.</p>
             </CardContent></Card>
           ) : equipment.map((e) => (
@@ -1213,15 +1213,15 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                       <div className="mt-1 text-2xs tabular-nums">
                         {e.calibrationOverdue ? (
                           <span className="inline-flex items-center gap-1 rounded border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/40 px-1.5 py-0.5 font-semibold text-red-700 dark:text-red-300">
-                            <AlertTriangle className="h-3 w-3" aria-hidden /> Kalibracija potečena ({e.calibrationDueDate ? formatDate(e.calibrationDueDate) : '—'})
+                            <AlertTriangle aria-hidden="true" className="h-3 w-3"  /> Kalibracija potečena ({e.calibrationDueDate ? formatDate(e.calibrationDueDate) : '—'})
                           </span>
                         ) : e.calibrationMissing ? (
                           <span className="inline-flex items-center gap-1 rounded border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.5 text-amber-800 dark:text-amber-200">
-                            <AlertTriangle className="h-3 w-3" aria-hidden /> Manjka potrdilo/rok kalibracije
+                            <AlertTriangle aria-hidden="true" className="h-3 w-3"  /> Manjka potrdilo/rok kalibracije
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 text-muted-foreground">
-                            <ShieldCheck className="h-3 w-3 text-green-600 dark:text-green-400" aria-hidden />
+                            <ShieldCheck aria-hidden="true" className="h-3 w-3 text-green-600 dark:text-green-400"  />
                             Kalibracija do {e.calibrationDueDate ? formatDate(e.calibrationDueDate) : '—'}{e.calibrationCertificate ? ` · ${e.calibrationCertificate}` : ''}
                           </span>
                         )}
@@ -1282,7 +1282,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                       aria-label={`Zabeleži dogodek za ${e.naziv}`}
                       onClick={() => void openEventDialog(e)}
                     >
-                      <History className="h-3 w-3 mr-1" aria-hidden /> Zabeleži
+                      <History aria-hidden="true" className="h-3 w-3 mr-1"  /> Zabeleži
                     </Button>
                   </div>
                 )}
@@ -1360,7 +1360,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-roksal-ink">
-              <CalendarClock className="h-4.5 w-4.5 text-roksal-amber" />
+              <CalendarClock aria-hidden="true" className="h-4.5 w-4.5 text-roksal-amber" />
               Preloži termin
             </DialogTitle>
           </DialogHeader>
@@ -1390,7 +1390,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
               disabled={moveBusy || !moveDate}
               className="bg-roksal-navy hover:bg-roksal-navy/90 text-white shadow-sm transition-all press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 disabled:opacity-50"
             >
-              {moveBusy && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
+              {moveBusy && <Loader2 aria-hidden="true" className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
               Preloži
             </Button>
             )}
@@ -1440,7 +1440,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-roksal-ink">
-              <History className="h-4.5 w-4.5 text-roksal-amber" />
+              <History aria-hidden="true" className="h-4.5 w-4.5 text-roksal-amber" />
               Zabeleži dogodek
             </DialogTitle>
           </DialogHeader>
@@ -1530,7 +1530,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                 disabled={eventBusy || !eventDate || (eventType === 'KALIBRACIJA' && eventTarget?.calibrationRequired && !eventCertificate)}
                 className="bg-roksal-navy hover:bg-roksal-navy/90 text-white shadow-sm transition-all press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 disabled:opacity-50"
               >
-                {eventBusy && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
+                {eventBusy && <Loader2 aria-hidden="true" className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
                 Zabeleži
               </Button>
             )}
@@ -1546,7 +1546,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-roksal-ink">
-              <ShieldCheck className="h-4.5 w-4.5 text-roksal-amber" />
+              <ShieldCheck aria-hidden="true" className="h-4.5 w-4.5 text-roksal-amber" />
               Preverba kakovosti
             </DialogTitle>
           </DialogHeader>
@@ -1583,11 +1583,11 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
             <div className="flex items-center justify-between text-[11px] tabular-nums">
               {qcPassed ? (
                 <span className="inline-flex items-center gap-1 font-semibold text-green-700 dark:text-green-300">
-                  <CheckCircle2 className="h-3.5 w-3.5" /> Preverba prehaja — vse izpolnjeno
+                  <CheckCircle2 aria-hidden="true" className="h-3.5 w-3.5" /> Preverba prehaja — vse izpolnjeno
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1 font-semibold text-amber-700 dark:text-amber-300">
-                  <AlertTriangle className="h-3.5 w-3.5" /> Napake: {qcDefects} — zaključitev ne bo prehajala
+                  <AlertTriangle aria-hidden="true" className="h-3.5 w-3.5" /> Napake: {qcDefects} — zaključitev ne bo prehajala
                 </span>
               )}
             </div>
@@ -1615,7 +1615,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                     className="h-7 bg-red-600 text-[11px] text-white hover:bg-red-700 focus-visible:ring-red-400/50 press-scale"
                     onClick={() => void handleQcOverride()}
                   >
-                    {qcBusy && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
+                    {qcBusy && <Loader2 aria-hidden="true" className="mr-1 h-3 w-3 animate-spin" />}
                     Zaključi z override
                   </Button>
                   )}
@@ -1642,7 +1642,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
               disabled={qcBusy || !qcValid}
               className="bg-roksal-navy hover:bg-roksal-navy/90 text-white shadow-sm transition-all press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 disabled:opacity-50"
             >
-              {qcBusy && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
+              {qcBusy && <Loader2 aria-hidden="true" className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
               {qcPassed ? 'Preverba + zaključi' : 'Shrani preverbo (z napakami)'}
             </Button>
             )}
@@ -1657,7 +1657,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-roksal-ink">
-              <FileCheck2 className="h-4.5 w-4.5 text-roksal-ink" />
+              <FileCheck2 aria-hidden="true" className="h-4.5 w-4.5 text-roksal-ink" />
               Montažno dokazilo
             </DialogTitle>
           </DialogHeader>
@@ -1670,7 +1670,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
           <div className="space-y-3">
             {evExisting?.locked ? (
               <div className="flex items-center gap-2 rounded-md border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/40 p-2 text-[11px] font-semibold text-green-700 dark:text-green-300">
-                <Lock className="h-3.5 w-3.5" /> Zaklenjeno s predajo ({evExisting.handoverName ?? '—'})
+                <Lock aria-hidden="true" className="h-3.5 w-3.5" /> Zaklenjeno s predajo ({evExisting.handoverName ?? '—'})
               </div>
             ) : null}
             <div>
@@ -1786,7 +1786,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                     className="h-8 bg-roksal-navy text-[11px] text-white hover:bg-roksal-navy/90 focus-visible:ring-roksal-navy/40"
                     onClick={() => void handleEvidenceHandover()}
                   >
-                    {evBusy && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
+                    {evBusy && <Loader2 aria-hidden="true" className="mr-1 h-3 w-3 animate-spin" />}
                     Potrdi predajo
                   </Button>
                 </div>
@@ -1800,11 +1800,11 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
             <div className="flex items-center justify-between text-[11px] tabular-nums">
               {evValid ? (
                 <span className="inline-flex items-center gap-1 font-semibold text-green-700 dark:text-green-300">
-                  <CheckCircle2 className="h-3.5 w-3.5" /> {evAllChecked ? 'Checklist polno' : `Checklist: ${IEV_TEMPLATE.filter((t) => evChecked[t.key] === true).length}/${IEV_TEMPLATE.length}`} · napake: {evDefectsList.length}
+                  <CheckCircle2 aria-hidden="true" className="h-3.5 w-3.5" /> {evAllChecked ? 'Checklist polno' : `Checklist: ${IEV_TEMPLATE.filter((t) => evChecked[t.key] === true).length}/${IEV_TEMPLATE.length}`} · napake: {evDefectsList.length}
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1 font-semibold text-amber-700 dark:text-amber-300">
-                  <AlertTriangle className="h-3.5 w-3.5" /> Neizpolnjene postavke potrebujejo opombo
+                  <AlertTriangle aria-hidden="true" className="h-3.5 w-3.5" /> Neizpolnjene postavke potrebujejo opombo
                 </span>
               )}
             </div>
@@ -1817,7 +1817,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
               disabled={evBusy || evExisting?.locked === true || !evValid || !evLokacija.trim()}
               className="bg-roksal-navy hover:bg-roksal-navy/90 text-white focus-visible:ring-roksal-navy/40"
             >
-              {evBusy && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
+              {evBusy && <Loader2 aria-hidden="true" className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
               {evExisting ? 'Posodobi dokazilo' : 'Shrani dokazilo'}
             </Button>
           </DialogFooter>

@@ -956,7 +956,7 @@ export function InvoiceManager() {
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between gap-2">
           <CardTitle className="flex items-center gap-2 text-base">
-            <Receipt className="h-4 w-4 text-amber-500 dark:text-amber-400" />
+            <Receipt aria-hidden="true" className="h-4 w-4 text-amber-500 dark:text-amber-400" />
             Računi <span className="text-xs font-normal text-muted-foreground">(FURS)</span>
           </CardTitle>
           {/* R180 — pečat svežine (družina R170-R178, 9 površin): tight-header klasni
@@ -982,7 +982,7 @@ export function InvoiceManager() {
               aria-label="Izvozi račune kot CSV"
               title="Izvozi vse račune (številka, status, zneski) kot CSV za Excel"
             >
-              <Download className="h-3.5 w-3.5" />
+              <Download aria-hidden="true" className="h-3.5 w-3.5" />
               CSV
             </Button>
             {/* R250 — prihodki PDF (7. člen 'izvozi' družine): agregatna
@@ -998,7 +998,7 @@ export function InvoiceManager() {
               aria-label="Izvozi prihodke kot PDF"
               title="Prihodki, terjatve in zapadli računi kot pravi PDF — povzetek za vodstvo"
             >
-              <FileDown className="h-3.5 w-3.5" />
+              <FileDown aria-hidden="true" className="h-3.5 w-3.5" />
               PDF
             </Button>
             {/* R241: gumb viden SAMO nosilcu invoices.create — API bi sicer
@@ -1009,7 +1009,7 @@ export function InvoiceManager() {
                 onClick={() => setDialogOpen(true)}
                 className="h-8 bg-amber-500 text-navy-900 hover:bg-amber-400 press-scale"
               >
-                <Plus className="h-4 w-4" /> Nov račun
+                <Plus aria-hidden="true" className="h-4 w-4" /> Nov račun
               </Button>
             )}
           </div>
@@ -1077,7 +1077,7 @@ export function InvoiceManager() {
 
         {loading ? (
           <div className="flex items-center justify-center py-6">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            <Loader2 aria-hidden="true" className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
         ) : invoices.length === 0 ? (
           <EmptyState
@@ -1119,7 +1119,7 @@ export function InvoiceManager() {
                         </Badge>
                         {zapadlo && (
                           <Badge variant="outline" className="text-2xs px-1.5 border-red-300 dark:border-red-800 bg-red-100 dark:bg-red-500/15 text-red-800 dark:text-red-200 gap-1">
-                            <AlertTriangle className="h-3 w-3" /> zapadlo {zapadlo} dni
+                            <AlertTriangle aria-hidden="true" className="h-3 w-3" /> zapadlo {zapadlo} dni
                           </Badge>
                         )}
                       </div>
@@ -1148,12 +1148,12 @@ export function InvoiceManager() {
                             className="h-7 text-xs bg-emerald-600 hover:bg-emerald-500 focus-visible:ring-roksal-navy/40"
                             onClick={() => patchStatus(inv, 'IZDAN')}
                           >
-                            <Send className="h-3 w-3" /> Izdaj
+                            <Send aria-hidden="true" className="h-3 w-3" /> Izdaj
                           </Button>
                         )}
                         {lahkoUstvarja && (
                           <Button size="sm" variant="outline" className="h-7 text-xs focus-visible:ring-roksal-navy/40" onClick={() => deleteInvoice(inv)}>
-                            <Trash2 className="h-3 w-3" /> Briši
+                            <Trash2 aria-hidden="true" className="h-3 w-3" /> Briši
                           </Button>
                         )}
                       </>
@@ -1166,7 +1166,7 @@ export function InvoiceManager() {
                             className="h-7 text-xs bg-emerald-600 hover:bg-emerald-500 focus-visible:ring-roksal-navy/40"
                             onClick={() => patchStatus(inv, 'PLACAN')}
                           >
-                            <CheckCircle2 className="h-3 w-3" /> Plačan
+                            <CheckCircle2 aria-hidden="true" className="h-3 w-3" /> Plačan
                           </Button>
                         )}
                         {zapadlo && (
@@ -1178,7 +1178,7 @@ export function InvoiceManager() {
                             title={`Plačilni opomnik — zapadlo ${zapadlo} dni`}
                             aria-label={`Plačilni opomnik za račun ${inv.stevilka}`}
                           >
-                            <BellRing className="h-3 w-3" /> Opomnik
+                            <BellRing aria-hidden="true" className="h-3 w-3" /> Opomnik
                           </Button>
                         )}
                         {lahkoStornira && (
@@ -1196,7 +1196,7 @@ export function InvoiceManager() {
                               }
                             }}
                           >
-                            <Ban className="h-3 w-3" />
+                            <Ban aria-hidden="true" className="h-3 w-3" />
                             {stornoId === inv.id ? 'Potrdi storno?' : 'Storno'}
                           </Button>
                         )}
@@ -1217,11 +1217,11 @@ export function InvoiceManager() {
                           setDialogOpen(true)
                         }}
                       >
-                        <Pencil className="h-3 w-3" /> Uredi
+                        <Pencil aria-hidden="true" className="h-3 w-3" /> Uredi
                       </Button>
                     )}
                     <Button size="sm" variant="outline" className="h-7 text-xs focus-visible:ring-roksal-navy/40" onClick={() => generatePdf(inv)}>
-                      <FileDown className="h-3 w-3" /> PDF
+                      <FileDown aria-hidden="true" className="h-3 w-3" /> PDF
                     </Button>
                     {inv.status !== 'STORNIRAN' && (
                       <Button
@@ -1232,7 +1232,7 @@ export function InvoiceManager() {
                         title="UPN QR koda za plačilo"
                         aria-label="UPN QR koda za plačilo"
                       >
-                        <QrCode className="h-3 w-3" /> QR
+                        <QrCode aria-hidden="true" className="h-3 w-3" /> QR
                       </Button>
                     )}
                     {inv.status !== 'STORNIRAN' && (
@@ -1245,7 +1245,7 @@ export function InvoiceManager() {
                         title="eRačun XML (eSlog 2.1 / EN 16931)"
                         aria-label="Prenesi eRačun XML"
                       >
-                        {xmlLoading === inv.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileCode2 className="h-3 w-3" />} XML
+                        {xmlLoading === inv.id ? <Loader2 aria-hidden="true" className="h-3 w-3 animate-spin" /> : <FileCode2 aria-hidden="true" className="h-3 w-3" />} XML
                       </Button>
                     )}
                   </div>
@@ -1269,7 +1269,7 @@ export function InvoiceManager() {
         <DialogContent className="max-h-[88vh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Receipt className="h-4 w-4 text-amber-500 dark:text-amber-400" /> Nov račun (FURS)
+              <Receipt aria-hidden="true" className="h-4 w-4 text-amber-500 dark:text-amber-400" /> Nov račun (FURS)
             </DialogTitle>
           </DialogHeader>
 
@@ -1312,7 +1312,7 @@ export function InvoiceManager() {
                     onClick={importFromBom}
                     disabled={bomLoading}
                   >
-                    {bomLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <PackageOpen className="h-3 w-3" />}
+                    {bomLoading ? <Loader2 aria-hidden="true" className="h-3 w-3 animate-spin" /> : <PackageOpen aria-hidden="true" className="h-3 w-3" />}
                     Iz BOM
                   </Button>
                   <Button
@@ -1322,7 +1322,7 @@ export function InvoiceManager() {
                     className="h-7 text-xs"
                     onClick={() => setFormPostavke((cur) => [...cur, emptyPostavka()])}
                   >
-                    <Plus className="h-3 w-3" /> Vrstica
+                    <Plus aria-hidden="true" className="h-3 w-3" /> Vrstica
                   </Button>
                 </div>
               </div>
@@ -1347,7 +1347,7 @@ export function InvoiceManager() {
                         onClick={() => setFormPostavke((cur) => cur.filter((_, j) => j !== i))}
                         aria-label="Odstrani vrstico"
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
+                        <Trash2 aria-hidden="true" className="h-3.5 w-3.5" />
                       </Button>
                     )}
                   </div>
@@ -1454,7 +1454,7 @@ export function InvoiceManager() {
               disabled={saving}
               className="bg-amber-500 text-navy-900 hover:bg-amber-400"
             >
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Euro className="h-4 w-4" />}
+              {saving ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <Euro aria-hidden="true" className="h-4 w-4" />}
               Shrani osnutek
             </Button>
           </DialogFooter>
@@ -1466,7 +1466,7 @@ export function InvoiceManager() {
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <QrCode className="h-4 w-4 text-amber-500 dark:text-amber-400" />
+              <QrCode aria-hidden="true" className="h-4 w-4 text-amber-500 dark:text-amber-400" />
               UPN QR — {qrInvoice?.stevilka}
             </DialogTitle>
           </DialogHeader>
@@ -1482,11 +1482,11 @@ export function InvoiceManager() {
                   />
                 ) : (
                   <div className="flex h-48 w-48 items-center justify-center">
-                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                    <Loader2 aria-hidden="true" className="h-6 w-6 animate-spin text-muted-foreground" />
                   </div>
                 )}
                 <p className="flex items-center gap-1.5 text-[11px] font-medium text-roksal-ink">
-                  <Banknote className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <Banknote aria-hidden="true" className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                   Skeniraj z aplikacijo svoje banke — nalog se izpolni samodejno
                 </p>
               </div>
@@ -1523,7 +1523,7 @@ export function InvoiceManager() {
                   className="h-9"
                   onClick={() => void copyText(cleanIban(IZDAJATELJ.trr), 'IBAN')}
                 >
-                  <Copy className="h-3.5 w-3.5" /> Kopiraj IBAN
+                  <Copy aria-hidden="true" className="h-3.5 w-3.5" /> Kopiraj IBAN
                 </Button>
                 <Button
                   variant="outline"
@@ -1531,7 +1531,7 @@ export function InvoiceManager() {
                   className="h-9"
                   onClick={() => void copyText(`SI12 ${qrInvoice.stevilka}`, 'Referenca')}
                 >
-                  <Copy className="h-3.5 w-3.5" /> Kopiraj referenco
+                  <Copy aria-hidden="true" className="h-3.5 w-3.5" /> Kopiraj referenco
                 </Button>
               </div>
             </div>

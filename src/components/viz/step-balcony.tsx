@@ -240,7 +240,7 @@ export function StepBalcony() {
                 disabled={staging}
                 aria-label="Fotografiraj balkon"
               >
-                {staging ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Camera className="mr-2 h-5 w-5" />}
+                {staging ? <Loader2 aria-hidden="true" className="mr-2 h-5 w-5 animate-spin" /> : <Camera aria-hidden="true" className="mr-2 h-5 w-5" />}
                 {staging ? LOADING_TEXT.upload : 'Fotografiraj'}
               </Button>
               <Button
@@ -251,7 +251,7 @@ export function StepBalcony() {
                 disabled={staging}
                 aria-label="Izberi sliko iz galerije"
               >
-                <Images className="mr-2 h-5 w-5" />
+                <Images aria-hidden="true" className="mr-2 h-5 w-5" />
                 Izberi iz galerije
               </Button>
               <Button
@@ -262,7 +262,7 @@ export function StepBalcony() {
                 disabled={demoLoading || staging}
                 aria-label="Naloži preizkusni primer"
               >
-                {demoLoading ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Sparkles className="mr-1 h-4 w-4" />}
+                {demoLoading ? <Loader2 aria-hidden="true" className="mr-1 h-4 w-4 animate-spin" /> : <Sparkles aria-hidden="true" className="mr-1 h-4 w-4" />}
                 Preizkusni primer
               </Button>
             </div>
@@ -282,7 +282,7 @@ export function StepBalcony() {
               {staging && (
                 <div className="absolute inset-0 flex items-center justify-center bg-white/70" aria-live="polite">
                   <span className="flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs font-medium text-roksal-navy shadow">
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> {LOADING_TEXT.upload}
+                    <Loader2 aria-hidden="true" className="h-3.5 w-3.5 animate-spin" /> {LOADING_TEXT.upload}
                   </span>
                 </div>
               )}
@@ -298,15 +298,15 @@ export function StepBalcony() {
             ) : (
               <div className="grid grid-cols-3 gap-2">
                 <Button type="button" variant="outline" className="h-11 text-xs" onClick={() => void rotate90()} disabled={staging} aria-label="Zavrti sliko za 90 stopinj">
-                  <RotateCw className="mr-1 h-4 w-4" />
+                  <RotateCw aria-hidden="true" className="mr-1 h-4 w-4" />
                   Zavrti 90°
                 </Button>
                 <Button type="button" variant="outline" className="h-11 text-xs" onClick={() => setCropOpen(true)} disabled={staging} aria-label="Obreži sliko">
-                  <Crop className="mr-1 h-4 w-4" />
+                  <Crop aria-hidden="true" className="mr-1 h-4 w-4" />
                   Obreži
                 </Button>
                 <Button type="button" variant="outline" className="h-11 text-xs" onClick={() => replaceInputRef.current?.click()} disabled={staging} aria-label="Zamenjaj fotografijo">
-                  <Replace className="mr-1 h-4 w-4" />
+                  <Replace aria-hidden="true" className="mr-1 h-4 w-4" />
                   Zamenjaj
                 </Button>
               </div>
@@ -328,7 +328,7 @@ export function StepBalcony() {
           aria-label="Naprej na izbiro izdelka"
         >
           Naprej
-          <ArrowRight className="ml-1 h-4 w-4" />
+          <ArrowRight aria-hidden="true" className="ml-1 h-4 w-4" />
         </Button>
       </div>
     </div>

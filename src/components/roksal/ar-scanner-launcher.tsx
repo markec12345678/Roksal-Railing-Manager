@@ -42,12 +42,12 @@ export function ArScannerLauncher({ projectId }: ArScannerLauncherProps) {
           onClick={handleClick}
           className="w-full bg-roksal-navy hover:bg-roksal-navy/90 text-white h-12 text-base gap-2 btn-shine"
         >
-          <Camera className="h-5 w-5" />
+          <Camera aria-hidden="true" className="h-5 w-5" />
           Odpri AR kamero
         </Button>
       ) : (
         <div className="w-full rounded-lg border border-dashed border-roksal-amber/40 bg-roksal-amber/5 p-4 flex flex-col items-center text-center gap-2">
-          <AlertCircle className="h-6 w-6 text-roksal-amber" />
+          <AlertCircle aria-hidden="true" className="h-6 w-6 text-roksal-amber" />
           <p className="text-sm font-medium text-roksal-ink">
             Najprej izberite projekt
           </p>
@@ -55,7 +55,7 @@ export function ArScannerLauncher({ projectId }: ArScannerLauncherProps) {
             AR kamera je na voljo samo znotraj izbranega projekta.
           </p>
           <div className="mt-1 flex items-center gap-1.5 text-[11px] text-muted-foreground">
-            <FolderOpen className="h-3.5 w-3.5" />
+            <FolderOpen aria-hidden="true" className="h-3.5 w-3.5" />
             Izberite projekt na nadzorni plošči.
           </div>
         </div>

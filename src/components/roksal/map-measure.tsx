@@ -350,7 +350,7 @@ ${tocke}
       `}</style>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base text-roksal-ink">
-          <Satellite className="h-5 w-5 text-roksal-amber" />
+          <Satellite aria-hidden="true" className="h-5 w-5 text-roksal-amber" />
           Satelitsko merjenje črte
           <Badge variant="outline" className="ml-auto text-[11px]">
             brez odhoda na teren
@@ -374,14 +374,14 @@ ${tocke}
             aria-label="Centriraj na mojo lokacijo"
             className="absolute bottom-16 right-2 z-[500] flex h-11 w-11 items-center justify-center rounded-full bg-white text-roksal-navy shadow-md transition-transform active:scale-95"
           >
-            <LocateFixed className="h-5 w-5" />
+            <LocateFixed aria-hidden="true" className="h-5 w-5" />
           </button>
         </div>
 
         {/* Rezultati */}
         <div className="flex items-center gap-3 rounded-lg bg-muted p-3">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-roksal-amber/15">
-            <Ruler className="h-5 w-5 text-roksal-amber" />
+            <Ruler aria-hidden="true" className="h-5 w-5 text-roksal-amber" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-xs text-muted-foreground">Dolžina črte ograje</p>
@@ -431,7 +431,7 @@ ${tocke}
             disabled={points.length === 0}
             onClick={undo}
           >
-            <Undo2 className="mr-1.5 h-4 w-4" />
+            <Undo2 aria-hidden="true" className="mr-1.5 h-4 w-4" />
             Nazaj
           </Button>
           <Button
@@ -442,7 +442,7 @@ ${tocke}
             disabled={points.length === 0}
             onClick={clearAll}
           >
-            <Eraser className="mr-1.5 h-4 w-4" />
+            <Eraser aria-hidden="true" className="mr-1.5 h-4 w-4" />
             Počisti
           </Button>
           <Button
@@ -454,7 +454,7 @@ ${tocke}
             onClick={() => setShareOpen(true)}
             title="Stranka sama izmeri prek povezave"
           >
-            <Share2 className="mr-1.5 h-4 w-4" />
+            <Share2 aria-hidden="true" className="mr-1.5 h-4 w-4" />
             Pošlji stranki
           </Button>
           <Button
@@ -466,7 +466,7 @@ ${tocke}
             onClick={exportKml}
             title="Izvozi točke kot KML za Google Earth / QGIS"
           >
-            <Download className="mr-1.5 h-4 w-4" />
+            <Download aria-hidden="true" className="mr-1.5 h-4 w-4" />
             KML
           </Button>
           <Button
@@ -476,7 +476,7 @@ ${tocke}
             disabled={points.length < 2 || saving}
             onClick={() => void saveMeasurement()}
           >
-            {saving ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Save className="mr-1.5 h-4 w-4" />}
+            {saving ? <Loader2 aria-hidden="true" className="mr-1.5 h-4 w-4 animate-spin" /> : <Save aria-hidden="true" className="mr-1.5 h-4 w-4" />}
             Shrani v meritve
           </Button>
         </div>
@@ -486,7 +486,7 @@ ${tocke}
           <DialogContent className="max-w-sm rounded-2xl">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-roksal-ink">
-                <Share2 className="h-5 w-5 text-roksal-amber" />
+                <Share2 aria-hidden="true" className="h-5 w-5 text-roksal-amber" />
                 Merilna povezava stranke
               </DialogTitle>
               <DialogDescription>
@@ -500,16 +500,16 @@ ${tocke}
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <Button type="button" className="h-11 bg-roksal-navy hover:bg-roksal-navy/90" onClick={copyShareLink} disabled={!shareUrl}>
-                  {copied ? <Check className="mr-1.5 h-4 w-4" /> : <Copy className="mr-1.5 h-4 w-4" />}
+                  {copied ? <Check aria-hidden="true" className="mr-1.5 h-4 w-4" /> : <Copy aria-hidden="true" className="mr-1.5 h-4 w-4" />}
                   {copied ? 'Kopirano' : 'Kopiraj'}
                 </Button>
                 <Button type="button" className="h-11 bg-emerald-600 hover:bg-emerald-700" onClick={shareWhatsApp} disabled={!shareUrl}>
-                  <MessageCircle className="mr-1.5 h-4 w-4" />
+                  <MessageCircle aria-hidden="true" className="mr-1.5 h-4 w-4" />
                   WhatsApp
                 </Button>
               </div>
               <Button type="button" variant="outline" className="h-11 w-full" onClick={shareNative} disabled={!shareUrl}>
-                <Share2 className="mr-1.5 h-4 w-4" />
+                <Share2 aria-hidden="true" className="mr-1.5 h-4 w-4" />
                 Deli prek telefona
               </Button>
             </div>
@@ -517,7 +517,7 @@ ${tocke}
         </Dialog>
 
         <p className="text-[11px] leading-snug text-muted-foreground">
-          <MapPin className="mr-1 inline h-3 w-3" />
+          <MapPin aria-hidden="true" className="mr-1 inline h-3 w-3" />
           Natančnost satelitskega posnetka je cca. ±1–2 m — primerno za informativno ponudbo;
           končna meritev ostane AR na terenu.
         </p>

@@ -173,7 +173,7 @@ export function BeforeAfter({
               onPointerDown={onHandlePointerDown}
               onKeyDown={onHandleKeyDown}
             >
-              <ChevronsLeftRight className="h-5 w-5 text-roksal-ink" />
+              <ChevronsLeftRight aria-hidden="true" className="h-5 w-5 text-roksal-ink" />
             </div>
           </div>
         )}
@@ -191,7 +191,7 @@ export function BeforeAfter({
       {withZoom && (
         <div className="flex items-center justify-center gap-2">
           <Button type="button" variant="outline" size="icon" className="h-11 w-11" onClick={() => zoomBy(1 / 1.3)} aria-label="Pomanjšaj" title="Pomanjšaj">
-            <Minus className="h-5 w-5" />
+            <Minus aria-hidden="true" className="h-5 w-5" />
           </Button>
           <Button
             type="button"
@@ -203,11 +203,11 @@ export function BeforeAfter({
             }}
             aria-label="Ponastavi povečavo"
           >
-            <RotateCcw className="mr-1 h-4 w-4" />
+            <RotateCcw aria-hidden="true" className="mr-1 h-4 w-4" />
             Ponastavi
           </Button>
           <Button type="button" variant="outline" size="icon" className="h-11 w-11" onClick={() => zoomBy(1.3)} aria-label="Povečaj" title="Povečaj">
-            <Plus className="h-5 w-5" />
+            <Plus aria-hidden="true" className="h-5 w-5" />
           </Button>
           <span className="ml-1 text-xs text-muted-foreground">{Math.round(zoom * 100)} %</span>
         </div>

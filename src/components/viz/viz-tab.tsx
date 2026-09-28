@@ -284,7 +284,7 @@ export function VizTab() {
                 setStep(prev)
               }}
             >
-              <ChevronLeft className="mr-1 h-4 w-4" />
+              <ChevronLeft aria-hidden="true" className="mr-1 h-4 w-4" />
               Nazaj
             </Button>
           </div>

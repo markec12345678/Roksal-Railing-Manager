@@ -200,7 +200,7 @@ export function InclinometerTab({ projectId }: { projectId: string | null }) {
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-base">
-              <Compass className="h-5 w-5 text-roksal-amber" />
+              <Compass aria-hidden="true" className="h-5 w-5 text-roksal-amber" />
               Digitalna libela
             </CardTitle>
             {reading && (
@@ -262,7 +262,7 @@ export function InclinometerTab({ projectId }: { projectId: string | null }) {
           {/* Kontrola senzorja */}
           {permission === 'idle' && (
             <Button type="button" onClick={enableSensor} className="w-full bg-roksal-amber text-white hover:bg-roksal-amber/90 focus-visible:ring-2 focus-visible:ring-roksal-amber/50">
-              <Compass className="mr-2 h-4 w-4" />
+              <Compass aria-hidden="true" className="mr-2 h-4 w-4" />
               Vklopi libelo
             </Button>
           )}
@@ -276,11 +276,11 @@ export function InclinometerTab({ projectId }: { projectId: string | null }) {
             >
               {monitoring ? (
                 <>
-                  <RefreshCw className="mr-2 h-4 w-4" /> Ustavi merjenje
+                  <RefreshCw aria-hidden="true" className="mr-2 h-4 w-4" /> Ustavi merjenje
                 </>
               ) : (
                 <>
-                  <Compass className="mr-2 h-4 w-4" /> Nadaljuj merjenje
+                  <Compass aria-hidden="true" className="mr-2 h-4 w-4" /> Nadaljuj merjenje
                 </>
               )}
             </Button>

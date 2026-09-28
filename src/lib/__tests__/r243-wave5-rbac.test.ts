@@ -115,7 +115,8 @@ describe('R243 — UI vrata: štiri vstopne točke pogojno upodobljene po matrik
 
   it("CTA 'Nov dobavitelj' = catalog.manage; sorojedni vodič nadomešča gumb", () => {
     expect(matUi).toContain('{lahkoUpravljaKatalog ? (')
-    expect(matUi).toContain('<Plus className="h-4 w-4 mr-2" /> Nov dobavitelj')
+    // R254 pin shift: codemod P1-d vstavil aria-hidden="true" (detektor r254).
+    expect(matUi).toContain('<Plus aria-hidden="true" className="h-4 w-4 mr-2" /> Nov dobavitelj')
   })
 
   it("vhod v dialog cene = price.override + guard v onValueChange (vrata v vratah)", () => {

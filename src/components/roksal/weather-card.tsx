@@ -172,7 +172,7 @@ export function WeatherCard({
               </div>
               {/* Veterni kompas */}
               <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border bg-background">
-                <Navigation
+                <Navigation aria-hidden="true"
                   className="h-5 w-5 text-sky-500 dark:text-sky-400 transition-transform duration-500"
                   style={{ transform: `rotate(${weather.direction}deg)` }}
                   aria-label={`Smer vetra ${weather.directionLabel}`}

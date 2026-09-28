@@ -344,7 +344,7 @@ export function SignatureQuote({ quoteData, monterName = 'Monter Roksal', projec
     <Card className="border-roksal-amber/30">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
-          <Pen className="h-5 w-5 text-roksal-amber" />
+          <Pen aria-hidden="true" className="h-5 w-5 text-roksal-amber" />
           Ponudba s podpisom
           <Badge variant="secondary" className="ml-auto text-[9px] bg-roksal-amber/10 text-roksal-amber">
             V4
@@ -397,14 +397,14 @@ export function SignatureQuote({ quoteData, monterName = 'Monter Roksal', projec
           {/* Stranka */}
           <div className="rounded-lg border-2 border-dashed border-border p-3 text-center">
             <div className="flex items-center justify-center gap-1 mb-2">
-              <User className="h-4 w-4 text-roksal-ink" />
+              <User aria-hidden="true" className="h-4 w-4 text-roksal-ink" />
               <span className="text-xs font-medium">Podpis stranke</span>
             </div>
             {customerSig ? (
               <div className="space-y-2">
                 <img src={customerSig} alt="Podpis stranke" className="h-16 w-full object-contain" />
                 <Badge variant="outline" className="bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300 border-green-300 dark:border-green-800 text-[9px]">
-                  <Check className="h-3 w-3 mr-1" /> Podpisano
+                  <Check aria-hidden="true" className="h-3 w-3 mr-1" /> Podpisano
                 </Badge>
                 <Button type="button" size="sm" variant="ghost" className="h-6 w-full text-2xs" onClick={() => setCustomerSigOpen(true)}>
                   Spremeni
@@ -412,7 +412,7 @@ export function SignatureQuote({ quoteData, monterName = 'Monter Roksal', projec
               </div>
             ) : (
               <Button type="button" size="sm" className="w-full bg-roksal-navy text-white" onClick={() => setCustomerSigOpen(true)}>
-                <Pen className="h-3 w-3 mr-1" /> Podpiši
+                <Pen aria-hidden="true" className="h-3 w-3 mr-1" /> Podpiši
               </Button>
             )}
           </div>
@@ -420,14 +420,14 @@ export function SignatureQuote({ quoteData, monterName = 'Monter Roksal', projec
           {/* Monter */}
           <div className="rounded-lg border-2 border-dashed border-border p-3 text-center">
             <div className="flex items-center justify-center gap-1 mb-2">
-              <User className="h-4 w-4 text-roksal-amber" />
+              <User aria-hidden="true" className="h-4 w-4 text-roksal-amber" />
               <span className="text-xs font-medium">Podpis monterja</span>
             </div>
             {monterSig ? (
               <div className="space-y-2">
                 <img src={monterSig} alt="Podpis monterja" className="h-16 w-full object-contain" />
                 <Badge variant="outline" className="bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300 border-green-300 dark:border-green-800 text-[9px]">
-                  <Check className="h-3 w-3 mr-1" /> Podpisano
+                  <Check aria-hidden="true" className="h-3 w-3 mr-1" /> Podpisano
                 </Badge>
                 <Button type="button" size="sm" variant="ghost" className="h-6 w-full text-2xs" onClick={() => setMonterSigOpen(true)}>
                   Spremeni
@@ -435,7 +435,7 @@ export function SignatureQuote({ quoteData, monterName = 'Monter Roksal', projec
               </div>
             ) : (
               <Button type="button" size="sm" className="w-full bg-roksal-amber text-white" onClick={() => setMonterSigOpen(true)}>
-                <Pen className="h-3 w-3 mr-1" /> Podpiši
+                <Pen aria-hidden="true" className="h-3 w-3 mr-1" /> Podpiši
               </Button>
             )}
           </div>
@@ -450,12 +450,12 @@ export function SignatureQuote({ quoteData, monterName = 'Monter Roksal', projec
         >
           {generating ? (
             <>
-              <FileText className="mr-2 h-4 w-4 animate-pulse" />
+              <FileText aria-hidden="true" className="mr-2 h-4 w-4 animate-pulse" />
               Generiram PDF...
             </>
           ) : (
             <>
-              <Download className="mr-2 h-4 w-4" />
+              <Download aria-hidden="true" className="mr-2 h-4 w-4" />
               Generiraj podpisano ponudbo PDF
             </>
           )}
@@ -483,7 +483,7 @@ export function SignatureQuote({ quoteData, monterName = 'Monter Roksal', projec
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-roksal-ink">
-              <Pen className="h-5 w-5 text-roksal-amber" />
+              <Pen aria-hidden="true" className="h-5 w-5 text-roksal-amber" />
               Podpis stranke
             </DialogTitle>
           </DialogHeader>
@@ -509,13 +509,13 @@ export function SignatureQuote({ quoteData, monterName = 'Monter Roksal', projec
             </div>
             <div className="flex gap-2">
               <Button type="button" variant="outline" className="flex-1" onClick={handleClearCustomer}>
-                <Eraser className="h-4 w-4 mr-1" /> Počisti
+                <Eraser aria-hidden="true" className="h-4 w-4 mr-1" /> Počisti
               </Button>
               <Button type="button" variant="outline" className="flex-1" onClick={() => setCustomerSigOpen(false)}>
-                <X className="h-4 w-4 mr-1" /> Prekliči
+                <X aria-hidden="true" className="h-4 w-4 mr-1" /> Prekliči
               </Button>
               <Button type="button" className="flex-1 bg-roksal-navy text-white" onClick={handleSaveCustomerSig}>
-                <Check className="h-4 w-4 mr-1" /> Shrani
+                <Check aria-hidden="true" className="h-4 w-4 mr-1" /> Shrani
               </Button>
             </div>
           </div>
@@ -527,7 +527,7 @@ export function SignatureQuote({ quoteData, monterName = 'Monter Roksal', projec
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-roksal-ink">
-              <Pen className="h-5 w-5 text-roksal-amber" />
+              <Pen aria-hidden="true" className="h-5 w-5 text-roksal-amber" />
               Podpis monterja
             </DialogTitle>
           </DialogHeader>
@@ -553,13 +553,13 @@ export function SignatureQuote({ quoteData, monterName = 'Monter Roksal', projec
             </div>
             <div className="flex gap-2">
               <Button type="button" variant="outline" className="flex-1" onClick={handleClearMonter}>
-                <Eraser className="h-4 w-4 mr-1" /> Počisti
+                <Eraser aria-hidden="true" className="h-4 w-4 mr-1" /> Počisti
               </Button>
               <Button type="button" variant="outline" className="flex-1" onClick={() => setMonterSigOpen(false)}>
-                <X className="h-4 w-4 mr-1" /> Prekliči
+                <X aria-hidden="true" className="h-4 w-4 mr-1" /> Prekliči
               </Button>
               <Button type="button" className="flex-1 bg-roksal-amber text-white" onClick={handleSaveMonterSig}>
-                <Check className="h-4 w-4 mr-1" /> Shrani
+                <Check aria-hidden="true" className="h-4 w-4 mr-1" /> Shrani
               </Button>
             </div>
           </div>

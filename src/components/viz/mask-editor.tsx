@@ -755,7 +755,7 @@ export function MaskEditor({
           aria-label="Razveljavi"
           title="Razveljavi"
         >
-          <Undo2 className="h-5 w-5" />
+          <Undo2 aria-hidden="true" className="h-5 w-5" />
         </Button>
         <Button
           type="button"
@@ -767,7 +767,7 @@ export function MaskEditor({
           aria-label="Uveljavi znova (ponovi)"
           title="Ponovi"
         >
-          <Redo2 className="h-5 w-5" />
+          <Redo2 aria-hidden="true" className="h-5 w-5" />
         </Button>
         <Button
           type="button"
@@ -778,7 +778,7 @@ export function MaskEditor({
           aria-label="Ponastavi vse — počisti masko"
           title="Ponastavi vse (počisti masko)"
         >
-          <RotateCcw className="h-5 w-5" />
+          <RotateCcw aria-hidden="true" className="h-5 w-5" />
         </Button>
       </div>
 
@@ -800,13 +800,13 @@ export function MaskEditor({
       {/* Zoom + poligon akcije */}
       <div className="flex flex-wrap items-center gap-1">
         <Button type="button" variant="outline" size="icon" className="h-11 w-11" onClick={zoomOut} aria-label="Pomanjšaj" title="Pomanjšaj">
-          <Minus className="h-5 w-5" />
+          <Minus aria-hidden="true" className="h-5 w-5" />
         </Button>
         <Button type="button" variant="outline" className="h-11 min-w-11 px-2 text-xs font-semibold" onClick={resetView} aria-label="Ponastavi pogled (1:1)" title="Ponastavi pogled">
           1:1
         </Button>
         <Button type="button" variant="outline" size="icon" className="h-11 w-11" onClick={zoomIn} aria-label="Povečaj" title="Povečaj">
-          <Plus className="h-5 w-5" />
+          <Plus aria-hidden="true" className="h-5 w-5" />
         </Button>
         {tool === 'polygon' && (
           <>
@@ -827,7 +827,7 @@ export function MaskEditor({
               disabled={polygonPoints.length < 3}
               aria-label="Zapri poligon in zapolni območje"
             >
-              <Check className="mr-1 h-4 w-4" />
+              <Check aria-hidden="true" className="mr-1 h-4 w-4" />
               Zapri poligon{polygonPoints.length >= 3 ? '' : ` (${polygonPoints.length}/3)`}
             </Button>
           </>
@@ -838,7 +838,7 @@ export function MaskEditor({
       <div className="flex items-center gap-2">
         {onCancel && (
           <Button type="button" variant="outline" className="h-11 flex-1" onClick={onCancel} aria-label="Prekliči urejanje maske">
-            <X className="mr-1 h-4 w-4" />
+            <X aria-hidden="true" className="mr-1 h-4 w-4" />
             Prekliči
           </Button>
         )}
@@ -849,7 +849,7 @@ export function MaskEditor({
           disabled={!hasMask || saving}
           aria-label={saveLabel}
         >
-          {saving ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Check className="mr-1 h-4 w-4" />}
+          {saving ? <Loader2 aria-hidden="true" className="mr-1 h-4 w-4 animate-spin" /> : <Check aria-hidden="true" className="mr-1 h-4 w-4" />}
           {saveLabel}
         </Button>
       </div>

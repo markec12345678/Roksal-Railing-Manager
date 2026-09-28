@@ -684,7 +684,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex flex-wrap items-center gap-2 text-base">
-            <Camera className="h-5 w-5 text-roksal-amber" />
+            <Camera aria-hidden="true" className="h-5 w-5 text-roksal-amber" />
             Slikanje projekta
             {/* R183 — pečat v CardTitle vrstici (vzorec zapisnik/ponudbe R181);
                 skrit na ozkih zaslonih; EN VIR casOznaka. */}
@@ -723,7 +723,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
         <CardContent className="space-y-4">
           {!projectId && (
             <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-800">
-              <AlertTriangle className="mb-1 inline h-3.5 w-3.5" /> Izberite projekt v zavihku Domov pred slikanjem.
+              <AlertTriangle aria-hidden="true" className="mb-1 inline h-3.5 w-3.5" /> Izberite projekt v zavihku Domov pred slikanjem.
             </div>
           )}
 
@@ -757,7 +757,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
               disabled={!projectId}
               className="bg-roksal-amber text-white hover:bg-roksal-amber/90"
             >
-              <Camera className="mr-2 h-4 w-4" />
+              <Camera aria-hidden="true" className="mr-2 h-4 w-4" />
               Slikaj
             </Button>
             <Button
@@ -766,7 +766,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
               onClick={() => fileInputRef.current?.click()}
               disabled={!projectId}
             >
-              <Upload className="mr-2 h-4 w-4" />
+              <Upload aria-hidden="true" className="mr-2 h-4 w-4" />
               Dodaj iz galerije
             </Button>
             <input
@@ -819,11 +819,11 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
           {projectId && photos.length > 0 && (
             <div className="flex items-center justify-between rounded-md bg-muted/50 px-3 py-1.5 text-[11px] text-muted-foreground">
               <span>
-                <Calendar className="mr-1 inline h-3 w-3" />
+                <Calendar aria-hidden="true" className="mr-1 inline h-3 w-3" />
                 Zadnja: {stats.lastPhoto ? formatRelativeTime(stats.lastPhoto.createdAt) : '—'}
               </span>
               <span>
-                <Layers className="mr-1 inline h-3 w-3" />
+                <Layers aria-hidden="true" className="mr-1 inline h-3 w-3" />
                 {formatBytes(stats.totalBytes)}
               </span>
             </div>
@@ -840,7 +840,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
           onClick={() => setViewMode('gallery')}
           className={`flex-1 ${viewMode === 'gallery' ? 'bg-roksal-navy text-white' : ''}`}
         >
-          <Images className="mr-1.5 h-3.5 w-3.5" />
+          <Images aria-hidden="true" className="mr-1.5 h-3.5 w-3.5" />
           Galerija
         </Button>
         <Button
@@ -850,7 +850,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
           onClick={() => setViewMode('pairs')}
           className={`flex-1 ${viewMode === 'pairs' ? 'bg-roksal-navy text-white' : ''}`}
         >
-          <Columns className="mr-1.5 h-3.5 w-3.5" />
+          <Columns aria-hidden="true" className="mr-1.5 h-3.5 w-3.5" />
           Pred/Po pari
           {pairsResolved.length > 0 && (
             <Badge variant="secondary" className="ml-1.5 bg-roksal-amber/20 text-roksal-amber">
@@ -891,7 +891,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
                   onClick={clearFilters}
                   className="h-7 shrink-0 text-[11px] text-muted-foreground"
                 >
-                  <X className="mr-1 h-3 w-3" />
+                  <X aria-hidden="true" className="mr-1 h-3 w-3" />
                   Počisti ({activeFilterCount})
                 </Button>
               )}
@@ -900,7 +900,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
             {/* Iskanje + datum */}
             <div className="space-y-1.5">
               <div className="relative">
-                <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                <Search aria-hidden="true" className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -978,7 +978,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
                       className="absolute right-1 top-1 rounded-full bg-black/50 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
                       aria-label={`Izbriši sliko${p.opomba ? ` (${p.opomba})` : ''}`}
                     >
-                      <Trash2 className="h-3 w-3" />
+                      <Trash2 aria-hidden="true" className="h-3 w-3" />
                     </button>
                     {p.opomba && (
                       <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-1.5">
@@ -1012,7 +1012,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
                   disabled={predPhotos.length === 0 || poPhotos.length === 0}
                   className="bg-roksal-amber text-white hover:bg-roksal-amber/90"
                 >
-                  <Sparkles className="mr-1 h-3.5 w-3.5" />
+                  <Sparkles aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
                   Ustvari par
                 </Button>
               </div>
@@ -1021,7 +1021,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
 
           {pairsResolved.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
-              <Columns className="mb-2 h-10 w-10 opacity-30" />
+              <Columns aria-hidden="true" className="mb-2 h-10 w-10 opacity-30" />
               <p className="text-sm">Ni še ustvarjenih parov.</p>
               {predPhotos.length === 0 || poPhotos.length === 0 ? (
                 <p className="mt-1 text-[11px]">Potrebne so vsaj ena PRED in ena PO slika.</p>
@@ -1049,7 +1049,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
                         onClick={() => savePairs(pairs.filter((p) => p !== pair))}
                         className="h-7 text-[11px] text-muted-foreground hover:text-destructive"
                       >
-                        <Trash2 className="mr-1 h-3 w-3" />
+                        <Trash2 aria-hidden="true" className="mr-1 h-3 w-3" />
                         Odstrani par
                       </Button>
                     </div>
@@ -1129,7 +1129,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
                       className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/60 p-1.5 text-white hover:bg-black/80 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
                       aria-label="Prejšnja"
                     >
-                      <ChevronLeft className="h-5 w-5" />
+                      <ChevronLeft aria-hidden="true" className="h-5 w-5" />
                     </button>
                     <button
                       type="button"
@@ -1137,7 +1137,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
                       className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/60 p-1.5 text-white hover:bg-black/80 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
                       aria-label="Naslednja"
                     >
-                      <ChevronRight className="h-5 w-5" />
+                      <ChevronRight aria-hidden="true" className="h-5 w-5" />
                     </button>
                     <div className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-black/60 px-2 py-0.5 text-2xs text-white">
                       {previewIndex + 1} / {filteredPhotos.length}
@@ -1167,7 +1167,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
                   </a>
                 )}
                 <div className="flex items-center gap-1.5">
-                  <Layers className="h-3 w-3 text-roksal-amber" />
+                  <Layers aria-hidden="true" className="h-3 w-3 text-roksal-amber" />
                   Velikost: {formatBytes(estimateBytes(previewPhoto.imageData))}
                 </div>
               </div>
@@ -1185,7 +1185,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
                     setAnnotationNewImage(previewPhoto.imageData)
                   }}
                 >
-                  <Pencil className="mr-1 h-3.5 w-3.5" />
+                  <Pencil aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
                   Uredi
                 </Button>
                 <Button
@@ -1194,7 +1194,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
                   variant="outline"
                   onClick={() => handleDuplicate(previewPhoto)}
                 >
-                  <Copy className="mr-1 h-3.5 w-3.5" />
+                  <Copy aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
                   Kopija
                 </Button>
                 <Button
@@ -1203,7 +1203,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
                   variant="outline"
                   onClick={() => handleExport(previewPhoto)}
                 >
-                  <Download className="mr-1 h-3.5 w-3.5" />
+                  <Download aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
                   Izvozi
                 </Button>
                 <Button
@@ -1215,7 +1215,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
                     setPreviewPhoto(null)
                   }}
                 >
-                  <Trash2 className="mr-1 h-3.5 w-3.5" />
+                  <Trash2 aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
                   Izbriši
                 </Button>
               </div>
@@ -1417,7 +1417,7 @@ function CameraCapture({
         <span className="text-sm font-medium">Slikanje — {KATEGORIJE.find((k) => k.id === kategorija)?.label}</span>
         {gps ? (
           <div className="flex items-center gap-1 text-2xs text-green-400">
-            <MapPin className="h-3 w-3" />
+            <MapPin aria-hidden="true" className="h-3 w-3" />
             GPS
           </div>
         ) : (
@@ -1445,12 +1445,12 @@ function CameraCapture({
       <div className="relative flex-1 overflow-hidden">
         {status === 'starting' && (
           <div className="flex h-full items-center justify-center text-white">
-            <Loader2 className="h-8 w-8 animate-spin" />
+            <Loader2 aria-hidden="true" className="h-8 w-8 animate-spin" />
           </div>
         )}
         {status === 'error' && (
           <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center text-white">
-            <AlertTriangle className="h-10 w-10 text-amber-400" />
+            <AlertTriangle aria-hidden="true" className="h-10 w-10 text-amber-400" />
             <p className="text-sm">{errorMsg || 'Dostop do kamere je zavrnjen.'}</p>
             <p className="text-[11px] text-white/60">V nastavitvah brskalnika omogočite dostop do kamere.</p>
           </div>
@@ -1487,7 +1487,7 @@ function CameraCapture({
           />
           <div className="flex gap-2">
             <Button type="button" variant="outline" onClick={handleRetake} className="flex-1 border-white/20 bg-transparent text-white hover:bg-white/10">
-              <X className="mr-1 h-4 w-4" />
+              <X aria-hidden="true" className="mr-1 h-4 w-4" />
               Ponovi
             </Button>
             <Button
@@ -1496,11 +1496,11 @@ function CameraCapture({
               onClick={() => setAnnotateMode(true)}
               className="flex-1 border-roksal-amber/40 bg-transparent text-roksal-amber hover:bg-roksal-amber/10"
             >
-              <Pencil className="mr-1 h-4 w-4" />
+              <Pencil aria-hidden="true" className="mr-1 h-4 w-4" />
               Anotiraj
             </Button>
             <Button type="button" onClick={handleSave} disabled={saving} className="flex-1 bg-roksal-amber text-white hover:bg-roksal-amber/90">
-              {saving ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Check className="mr-1 h-4 w-4" />}
+              {saving ? <Loader2 aria-hidden="true" className="mr-1 h-4 w-4 animate-spin" /> : <Check aria-hidden="true" className="mr-1 h-4 w-4" />}
               Shrani
             </Button>
           </div>
@@ -2080,7 +2080,7 @@ function AnnotationEditor({
             disabled={saving}
             className="rounded-md bg-roksal-amber px-3 py-1.5 text-[11px] font-medium text-white hover:bg-roksal-amber/90 disabled:opacity-50"
           >
-            {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+            {saving ? <Loader2 aria-hidden="true" className="h-3.5 w-3.5 animate-spin" /> : <Save aria-hidden="true" className="h-3.5 w-3.5" />}
             <span className="ml-1">Shrani</span>
           </button>
         </div>
@@ -2145,7 +2145,7 @@ function AnnotationEditor({
         >
           <div className="flex items-center justify-between gap-2 px-3 py-2">
             <div className="flex min-w-0 items-center gap-1.5">
-              <Ruler className="h-4 w-4 shrink-0 text-roksal-amber" />
+              <Ruler aria-hidden="true" className="h-4 w-4 shrink-0 text-roksal-amber" />
               <span className="text-[11px] font-semibold text-roksal-ink">Umeritev reference</span>
               {photoCalibration ? (
                 <Badge className="shrink-0 bg-green-100 text-[9px] text-green-800">
@@ -2164,7 +2164,7 @@ function AnnotationEditor({
                   onClick={clearCalibration}
                   className="h-7 px-2 text-2xs text-red-600 hover:bg-red-50 hover:text-red-700"
                 >
-                  <Trash2 className="mr-1 h-3 w-3" />
+                  <Trash2 aria-hidden="true" className="mr-1 h-3 w-3" />
                   Počisti
                 </Button>
               )}
@@ -2250,7 +2250,7 @@ function AnnotationEditor({
               </div>
               {/* Navodila */}
               <div className="flex items-start gap-1.5 rounded-md border border-amber-200 bg-amber-50 px-2 py-1.5 text-2xs text-amber-900">
-                <Info className="mt-0.5 h-3 w-3 shrink-0" />
+                <Info aria-hidden="true" className="mt-0.5 h-3 w-3 shrink-0" />
                 <span>
                   {photoCalibration
                     ? `Umerjeno z “${photoCalibration.oznaka || 'referenco'}”. Riši črte za meritve — realna dolžina se izračuna samodejno.`
@@ -2286,7 +2286,7 @@ function AnnotationEditor({
       {/* PAMETNO PRIPOROČILO — dismissable */}
       {suggestion && (
         <div className="flex items-center gap-2 border-t border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-900">
-          <Lightbulb className="h-3.5 w-3.5 shrink-0" />
+          <Lightbulb aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
           <span className="flex-1">{suggestion.text}</span>
           <button
             type="button"
@@ -2294,7 +2294,7 @@ function AnnotationEditor({
             className="shrink-0 rounded p-0.5 hover:bg-amber-100"
             aria-label="Zapri priporočilo"
           >
-            <X className="h-3 w-3" />
+            <X aria-hidden="true" className="h-3 w-3" />
           </button>
         </div>
       )}
@@ -2304,7 +2304,7 @@ function AnnotationEditor({
         <div className="max-h-[34vh] overflow-y-auto border-t border-border bg-white">
           <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-border bg-white px-3 py-2">
             <div className="flex items-center gap-1.5">
-              <Ruler className="h-4 w-4 text-roksal-green" />
+              <Ruler aria-hidden="true" className="h-4 w-4 text-roksal-green" />
               <span className="text-[11px] font-semibold text-roksal-ink">Mere na sliki</span>
               <Badge variant="secondary" className="text-[9px]">{measureList.length}</Badge>
             </div>
@@ -2316,7 +2316,7 @@ function AnnotationEditor({
                 onClick={exportCsv}
                 className="h-7 px-2 text-2xs"
               >
-                <FileText className="mr-1 h-3 w-3" />
+                <FileText aria-hidden="true" className="mr-1 h-3 w-3" />
                 CSV
               </Button>
               <Button
@@ -2326,7 +2326,7 @@ function AnnotationEditor({
                 disabled={!!transferring || !photoCalibration}
                 className="h-7 bg-roksal-amber px-2 text-2xs text-white hover:bg-roksal-amber/90"
               >
-                <Send className="mr-1 h-3 w-3" />
+                <Send aria-hidden="true" className="mr-1 h-3 w-3" />
                 V Meritve
               </Button>
             </div>
@@ -2370,7 +2370,7 @@ function AnnotationEditor({
                         className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:outline-none"
                         aria-label="Uredi mero"
                       >
-                        <Pencil className="h-3 w-3" />
+                        <Pencil aria-hidden="true" className="h-3 w-3" />
                       </button>
                       <button
                         type="button"
@@ -2378,7 +2378,7 @@ function AnnotationEditor({
                         className="rounded p-1 text-muted-foreground hover:bg-red-50 hover:text-red-600 focus-visible:ring-2 focus-visible:ring-red-400/50 focus-visible:outline-none"
                         aria-label="Izbriši mero"
                       >
-                        <Trash2 className="h-3 w-3" />
+                        <Trash2 aria-hidden="true" className="h-3 w-3" />
                       </button>
                     </div>
                   </TableCell>
@@ -2443,7 +2443,7 @@ function AnnotationEditor({
           <DialogContent className="max-w-sm">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-sm">
-                <Ruler className="h-4 w-4 text-roksal-amber" />
+                <Ruler aria-hidden="true" className="h-4 w-4 text-roksal-amber" />
                 {editMeasure.isCalibration ? 'Umeritvena črta (referenca)' : 'Podrobnosti mere'}
               </DialogTitle>
             </DialogHeader>
@@ -2495,7 +2495,7 @@ function AnnotationEditor({
                 onClick={() => deleteMeasure(editMeasure.id)}
                 className="mr-auto"
               >
-                <Trash2 className="mr-1 h-3.5 w-3.5" />
+                <Trash2 aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
                 Izbriši
               </Button>
               <Button type="button" variant="outline" size="sm" onClick={() => setEditMeasure(null)}>
@@ -2507,7 +2507,7 @@ function AnnotationEditor({
                 onClick={() => saveMeasureLabel(editMeasure.id, editMeasure.oznaka)}
                 className="bg-roksal-amber text-white hover:bg-roksal-amber/90"
               >
-                <Check className="mr-1 h-3.5 w-3.5" />
+                <Check aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
                 Shrani
               </Button>
             </DialogFooter>
@@ -2553,8 +2553,8 @@ function BeforeAfterSlider({
         style={{ left: `${pos}%` }}
       >
         <div className="absolute top-1/2 left-1/2 flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-roksal-navy bg-white shadow-lg">
-          <ChevronLeft className="h-3 w-3 text-roksal-ink" />
-          <ChevronRight className="h-3 w-3 text-roksal-ink" />
+          <ChevronLeft aria-hidden="true" className="h-3 w-3 text-roksal-ink" />
+          <ChevronRight aria-hidden="true" className="h-3 w-3 text-roksal-ink" />
         </div>
       </div>
       {/* Oznaki */}
@@ -2601,7 +2601,7 @@ function PairCreatorDialog({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-sm">
-            <Sparkles className="h-4 w-4 text-roksal-amber" />
+            <Sparkles aria-hidden="true" className="h-4 w-4 text-roksal-amber" />
             Ustvari Pred/Po par
           </DialogTitle>
         </DialogHeader>
@@ -2674,7 +2674,7 @@ function PairCreatorDialog({
             onClick={() => onCreate({ predId, poId })}
             className="bg-roksal-amber text-white hover:bg-roksal-amber/90"
           >
-            <Check className="mr-1 h-3.5 w-3.5" />
+            <Check aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
             Ustvari par
           </Button>
         </DialogFooter>

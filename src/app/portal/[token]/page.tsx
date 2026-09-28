@@ -285,7 +285,7 @@ export default async function PortalPage({ params }: PageProps) {
               href={`tel:${COMPANY.telefonRaw}`}
               className="flex items-center gap-1.5 rounded-lg bg-white/10 hover:bg-white/20 px-3 py-1.5 text-xs font-medium transition-colors"
             >
-              <Phone className="h-3.5 w-3.5" />
+              <Phone aria-hidden="true" className="h-3.5 w-3.5" />
               Pokliči
             </a>
           </div>
@@ -296,7 +296,7 @@ export default async function PortalPage({ params }: PageProps) {
             <h1 className="text-xl font-bold leading-tight">{project.nazivProjekta}</h1>
             {project.customer && (
               <p className="text-sm text-white/80 mt-1 flex items-center gap-1.5">
-                <MapPin className="h-3.5 w-3.5 shrink-0" />
+                <MapPin aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
                 {project.customer.ime}
                 {project.customer.naslov ? ` · ${project.customer.naslov}` : ''}
               </p>
@@ -331,7 +331,7 @@ export default async function PortalPage({ params }: PageProps) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {project.datumMontaze && (
               <div className="flex items-center gap-2 rounded-lg bg-card/70 px-3 py-2">
-                <Calendar className="h-4 w-4 text-roksal-amber shrink-0" />
+                <Calendar aria-hidden="true" className="h-4 w-4 text-roksal-amber shrink-0" />
                 <div className="min-w-0">
                   <p className="text-2xs text-muted-foreground leading-tight">Datum montaže</p>
                   <p className="text-sm font-semibold text-roksal-ink truncate">
@@ -347,7 +347,7 @@ export default async function PortalPage({ params }: PageProps) {
             )}
             {project.estimatedPrice !== null && project.estimatedPrice !== undefined && (
               <div className="flex items-center gap-2 rounded-lg bg-card/70 px-3 py-2">
-                <Euro className="h-4 w-4 text-roksal-green shrink-0" />
+                <Euro aria-hidden="true" className="h-4 w-4 text-roksal-green shrink-0" />
                 <div className="min-w-0">
                   <p className="text-2xs text-muted-foreground leading-tight">Predvidena cena</p>
                   <p className="text-sm font-semibold text-roksal-ink truncate">
@@ -377,7 +377,7 @@ export default async function PortalPage({ params }: PageProps) {
           <section className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/40">
             <div className="flex items-center gap-2 mb-2">
               <div className="flex h-7 w-7 items-center justify-center rounded-full bg-roksal-amber">
-                <MessageSquare className="h-3.5 w-3.5 text-white" />
+                <MessageSquare aria-hidden="true" className="h-3.5 w-3.5 text-white" />
               </div>
               <p className="text-sm font-bold text-roksal-ink">Sporočilo monterja</p>
             </div>
@@ -390,7 +390,7 @@ export default async function PortalPage({ params }: PageProps) {
         {/* PHOTO TIMELINE */}
         <section>
           <div className="flex items-center gap-2 mb-3">
-            <Camera className="h-4 w-4 text-roksal-ink" />
+            <Camera aria-hidden="true" className="h-4 w-4 text-roksal-ink" />
             <h2 className="text-base font-bold text-roksal-ink">Slike montaže</h2>
             {totalPhotos > 0 && (
               <span className="ml-auto text-xs text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">
@@ -405,7 +405,7 @@ export default async function PortalPage({ params }: PageProps) {
         {timeline.length > 0 && (
           <section className="rounded-xl border border-border bg-card p-4 shadow-sm">
             <div className="flex items-center gap-2 mb-3">
-              <History className="h-4 w-4 text-roksal-ink" />
+              <History aria-hidden="true" className="h-4 w-4 text-roksal-ink" />
               <h2 className="text-base font-bold text-roksal-ink">Zgodovina projekta</h2>
             </div>
             <div className="relative space-y-0">
@@ -451,7 +451,7 @@ export default async function PortalPage({ params }: PageProps) {
               href={`tel:${COMPANY.telefonRaw}`}
               className="flex items-center justify-center gap-2 rounded-lg bg-roksal-green text-white px-3 py-3 text-sm font-semibold hover:bg-roksal-green/90 press-scale transition-all"
             >
-              <Phone className="h-4 w-4" />
+              <Phone aria-hidden="true" className="h-4 w-4" />
               Pokliči
             </a>
             <a
@@ -460,21 +460,21 @@ export default async function PortalPage({ params }: PageProps) {
               )}`}
               className="flex items-center justify-center gap-2 rounded-lg bg-roksal-navy text-white px-3 py-3 text-sm font-semibold hover:bg-roksal-navy/90 press-scale transition-all"
             >
-              <Mail className="h-4 w-4" />
+              <Mail aria-hidden="true" className="h-4 w-4" />
               Email
             </a>
           </div>
           <div className="mt-3 pt-3 border-t border-border space-y-1.5 text-xs text-muted-foreground">
             <p className="flex items-center gap-2">
-              <Phone className="h-3.5 w-3.5 text-roksal-amber" />
+              <Phone aria-hidden="true" className="h-3.5 w-3.5 text-roksal-amber" />
               {COMPANY.telefon}
             </p>
             <p className="flex items-center gap-2">
-              <Mail className="h-3.5 w-3.5 text-roksal-amber" />
+              <Mail aria-hidden="true" className="h-3.5 w-3.5 text-roksal-amber" />
               {COMPANY.email}
             </p>
             <p className="flex items-center gap-2">
-              <MapPin className="h-3.5 w-3.5 text-roksal-amber" />
+              <MapPin aria-hidden="true" className="h-3.5 w-3.5 text-roksal-amber" />
               {COMPANY.naslov}
             </p>
           </div>
@@ -509,7 +509,7 @@ function NotFoundPage() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="max-w-md w-full rounded-xl border border-border bg-card p-6 text-center shadow-sm">
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-50 dark:bg-red-950/40">
-          <ChevronRight className="h-7 w-7 text-roksal-red" />
+          <ChevronRight aria-hidden="true" className="h-7 w-7 text-roksal-red" />
         </div>
         <h1 className="text-lg font-bold text-roksal-ink mb-2">Stran ni na voljo</h1>
         <p className="text-sm text-muted-foreground mb-5">
@@ -518,11 +518,11 @@ function NotFoundPage() {
         </p>
         <div className="space-y-2 text-xs text-muted-foreground border-t border-border pt-4">
           <p className="flex items-center justify-center gap-2">
-            <Phone className="h-3.5 w-3.5 text-roksal-amber" />
+            <Phone aria-hidden="true" className="h-3.5 w-3.5 text-roksal-amber" />
             {COMPANY.telefon}
           </p>
           <p className="flex items-center justify-center gap-2">
-            <Mail className="h-3.5 w-3.5 text-roksal-amber" />
+            <Mail aria-hidden="true" className="h-3.5 w-3.5 text-roksal-amber" />
             {COMPANY.email}
           </p>
         </div>

@@ -811,7 +811,7 @@ function ElementCard({
             onClick={onReset}
             aria-label={`Razveljavi zavrnitev ${el.id}`}
           >
-            <Undo2 className="mr-1 h-3 w-3" />
+            <Undo2 aria-hidden="true" className="mr-1 h-3 w-3" />
             Razveljavi
           </Button>
         ) : (
@@ -824,7 +824,7 @@ function ElementCard({
               onClick={onAccept}
               aria-label={`Sprejmi zaznavo ${el.id}`}
             >
-              <CheckCircle2 className="mr-1 h-3 w-3" />
+              <CheckCircle2 aria-hidden="true" className="mr-1 h-3 w-3" />
               Sprejmi
             </Button>
             <Button
@@ -835,7 +835,7 @@ function ElementCard({
               onClick={onReject}
               aria-label={`Zavrni zaznavo ${el.id}`}
             >
-              <XCircle className="mr-1 h-3 w-3" />
+              <XCircle aria-hidden="true" className="mr-1 h-3 w-3" />
               Zavrni
             </Button>
           </>
@@ -849,7 +849,7 @@ function ElementCard({
             onClick={onDelete}
             aria-label={`Briši ročno zaznavo ${el.id}`}
           >
-            <Trash2 className="mr-1 h-3 w-3" />
+            <Trash2 aria-hidden="true" className="mr-1 h-3 w-3" />
             Briši
           </Button>
         )}
@@ -885,11 +885,11 @@ function ReferenceSection({
   return (
     <div className="space-y-2 rounded-lg border border-red-200 bg-red-50/40 p-3">
       <div className="flex items-center gap-2">
-        <Ruler className="h-4 w-4 text-red-600" />
+        <Ruler aria-hidden="true" className="h-4 w-4 text-red-600" />
         <span className="text-xs font-semibold text-roksal-ink">Referenčna mera (obvezna za mm)</span>
       </div>
       <Alert className="border-amber-300 bg-amber-50 py-2">
-        <TriangleAlert className="h-4 w-4 text-amber-700" />
+        <TriangleAlert aria-hidden="true" className="h-4 w-4 text-amber-700" />
         <AlertDescription className="text-[11px] text-amber-800">
           Absolutne mere brez referenčne mere niso mogoče (ni ugibanja). Označite znano dolžino
           (npr. letvico 1000 mm) in vpišite njeno dolžino.
@@ -953,7 +953,7 @@ function ReferenceSection({
           aria-pressed={marking}
           aria-label="Označi referenčni točki na sliki"
         >
-          <Crosshair className="mr-1 h-3.5 w-3.5" />
+          <Crosshair aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
           {marking ? 'Klikni P1, nato P2 …' : 'Označi na sliki'}
         </Button>
         <Button
@@ -984,7 +984,7 @@ function ConfirmResults({
   if (error) {
     return (
       <Alert variant="destructive" role="status">
-        <TriangleAlert className="h-4 w-4" />
+        <TriangleAlert aria-hidden="true" className="h-4 w-4" />
         <AlertTitle>Potrditev ni uspela</AlertTitle>
         <AlertDescription className="text-[11px]">{error}</AlertDescription>
       </Alert>
@@ -998,7 +998,7 @@ function ConfirmResults({
       {geom ? (
         <div className="rounded-lg border border-emerald-300 bg-emerald-50 p-3">
           <div className="flex flex-wrap items-center gap-1.5">
-            <ShieldCheck className="h-4 w-4 text-emerald-700" />
+            <ShieldCheck aria-hidden="true" className="h-4 w-4 text-emerald-700" />
             <span className="text-xs font-semibold text-emerald-900">Meritev shranjena</span>
             {state && (
               <Badge variant="outline" className="ml-auto border-emerald-500 bg-emerald-600 text-[9px] text-white">
@@ -1049,7 +1049,7 @@ function ConfirmResults({
         </div>
       ) : (
         <Alert className="border-amber-300 bg-amber-50" role="status">
-          <TriangleAlert className="h-4 w-4 text-amber-700" />
+          <TriangleAlert aria-hidden="true" className="h-4 w-4 text-amber-700" />
           <AlertTitle className="text-amber-900">Brez merila ni bilo mogoče shraniti geometrije</AlertTitle>
           <AlertDescription className="text-[11px] text-amber-800">
             {scaleHint ?? 'Meritev brez veljavnega merila (SCALE_REQUIRED) ni shranjena — sistem ne ugiba.'}
@@ -1929,7 +1929,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-base text-roksal-ink">
-            <ScanLine className="h-5 w-5 text-roksal-amber" />
+            <ScanLine aria-hidden="true" className="h-5 w-5 text-roksal-amber" />
             CV Studio
           </CardTitle>
         </CardHeader>
@@ -1968,7 +1968,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
           )}
           {capsLoaded && caps && !caps.camera && (
             <Alert className="border-amber-300 bg-amber-50 py-2">
-              <Video className="h-4 w-4 text-amber-700" />
+              <Video aria-hidden="true" className="h-4 w-4 text-amber-700" />
               <AlertDescription className="text-[11px] text-amber-800">
                 Kamera ni na voljo — zavihek V ŽIVO je onemogočen. Uporabi FOTO (nalaganje
                 fotografije) ali ROČNO (fail-safe brez CV).
@@ -2021,7 +2021,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                     if (f) processFile(f, true)
                   }}
                 >
-                  <Upload className="h-8 w-8 text-roksal-ink/40" />
+                  <Upload aria-hidden="true" className="h-8 w-8 text-roksal-ink/40" />
                   <p className="text-xs text-muted-foreground">
                     Povleci sliko sem ali izberi datoteko (≤1280 px, JPEG).
                   </p>
@@ -2036,7 +2036,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                       className="min-h-[44px] bg-roksal-amber text-white hover:bg-roksal-amber/90"
                       aria-label="Naloži sliko prizora"
                     >
-                      <Upload className="mr-1.5 h-4 w-4" />
+                      <Upload aria-hidden="true" className="mr-1.5 h-4 w-4" />
                       Naloži sliko
                     </Button>
                     <Button
@@ -2050,7 +2050,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                       className="min-h-[44px]"
                       aria-label="Posnemi fotografijo s kamero"
                     >
-                      <Camera className="mr-1.5 h-4 w-4" />
+                      <Camera aria-hidden="true" className="mr-1.5 h-4 w-4" />
                       Kamera
                     </Button>
                   </div>
@@ -2128,7 +2128,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                     className="min-h-[44px] text-[11px]"
                     aria-label="Zamenjaj sliko"
                   >
-                    <Upload className="mr-1 h-3.5 w-3.5" />
+                    <Upload aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
                     Zamenjaj sliko
                   </Button>
                   <Button
@@ -2140,7 +2140,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                     className="min-h-[44px] text-[11px]"
                     aria-label="Ponovno analiziraj sliko"
                   >
-                    {analyzing ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Sparkles className="mr-1 h-3.5 w-3.5" />}
+                    {analyzing ? <Loader2 aria-hidden="true" className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Sparkles aria-hidden="true" className="mr-1 h-3.5 w-3.5" />}
                     Analiziraj sliko
                   </Button>
                 </div>
@@ -2160,7 +2160,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                       aria-pressed={clickMode === 'ref'}
                       aria-label="Označi referenčno mero (2 klika)"
                     >
-                      <Ruler className="mr-1 h-3.5 w-3.5" />
+                      <Ruler aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
                       Referenca (2 klika)
                     </Button>
                     <Button
@@ -2172,7 +2172,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                       aria-pressed={segEditMode}
                       aria-label="Popravi geometrijo — dodaj/vleci točke segmenta"
                     >
-                      <Layers className="mr-1 h-3.5 w-3.5" />
+                      <Layers aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
                       Popravi geometrijo
                     </Button>
                     <Button
@@ -2184,7 +2184,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                       aria-pressed={clickMode === 'corners'}
                       aria-label="Označi 4 kotnike (TL, TR, BR, BL)"
                     >
-                      <Square className="mr-1 h-3.5 w-3.5" />
+                      <Square aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
                       Označi 4 kotnike
                     </Button>
                     <Button
@@ -2203,7 +2203,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                       aria-pressed={clickMode === 'bbox'}
                       aria-label="Ročna označba površine (2 klika = bbox)"
                     >
-                      <Square className="mr-1 h-3.5 w-3.5" />
+                      <Square aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
                       Označi na sliki
                     </Button>
                   </div>
@@ -2247,7 +2247,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                         onClick={undoSegPoint}
                         aria-label="Razveljavi zadnjo točko segmenta"
                       >
-                        <Undo2 className="mr-1 h-3 w-3" />
+                        <Undo2 aria-hidden="true" className="mr-1 h-3 w-3" />
                         Undo točka
                       </Button>
                       <Button
@@ -2258,7 +2258,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                         onClick={clearSeg}
                         aria-label="Počisti segment"
                       >
-                        <Trash2 className="mr-1 h-3 w-3" />
+                        <Trash2 aria-hidden="true" className="mr-1 h-3 w-3" />
                         Počisti
                       </Button>
                       <Button
@@ -2327,13 +2327,13 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                   className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 p-3 text-[11px] text-muted-foreground"
                   role="status"
                 >
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
                   Analiza prizora teče (deterministični CV, brez AI) …
                 </div>
               )}
               {analyzeError && (
                 <Alert variant="destructive" role="status">
-                  <TriangleAlert className="h-4 w-4" />
+                  <TriangleAlert aria-hidden="true" className="h-4 w-4" />
                   <AlertTitle>Napaka analize</AlertTitle>
                   <AlertDescription className="text-[11px]">{analyzeError}</AlertDescription>
                 </Alert>
@@ -2363,7 +2363,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                   </div>
                   {!analysis.quality.usable && analysis.quality.reasons.length > 0 && (
                     <Alert className="border-amber-300 bg-amber-50 py-2">
-                      <TriangleAlert className="h-4 w-4 text-amber-700" />
+                      <TriangleAlert aria-hidden="true" className="h-4 w-4 text-amber-700" />
                       <AlertDescription className="text-[11px] text-amber-800">
                         Slika morda ni uporabna: {analysis.quality.reasons.join(' ')}
                       </AlertDescription>
@@ -2587,7 +2587,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                     className="min-h-[44px] w-full bg-roksal-amber text-white hover:bg-roksal-amber/90"
                     aria-label="Oceni postavitev"
                   >
-                    {placing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Package className="mr-2 h-4 w-4" />}
+                    {placing ? <Loader2 aria-hidden="true" className="mr-2 h-4 w-4 animate-spin" /> : <Package aria-hidden="true" className="mr-2 h-4 w-4" />}
                     OCENI POSTAVITEV
                   </Button>
                   {!placementReady && placementHint && (
@@ -2598,7 +2598,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
 
                   {placementError && (
                     <Alert variant="destructive" role="status">
-                      <TriangleAlert className="h-4 w-4" />
+                      <TriangleAlert aria-hidden="true" className="h-4 w-4" />
                       <AlertTitle>Napaka ocene</AlertTitle>
                       <AlertDescription className="text-[11px]">{placementError}</AlertDescription>
                     </Alert>
@@ -2609,7 +2609,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                       {placementRes.placement.valid && placementRes.placement.layout ? (
                         <div className="space-y-1.5 rounded-lg border border-emerald-300 bg-emerald-50 p-3">
                           <div className="flex flex-wrap items-center gap-1.5">
-                            <CheckCircle2 className="h-4 w-4 text-emerald-700" />
+                            <CheckCircle2 aria-hidden="true" className="h-4 w-4 text-emerald-700" />
                             <span className="text-xs font-semibold text-emerald-900">Postavitev veljavna</span>
                             {placementRes.projection && (
                               <Badge
@@ -2654,7 +2654,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                       ) : (
                         <div className="space-y-1.5 rounded-lg border border-red-300 bg-red-50 p-3">
                           <div className="flex items-center gap-1.5">
-                            <XCircle className="h-4 w-4 text-red-700" />
+                            <XCircle aria-hidden="true" className="h-4 w-4 text-red-700" />
                             <span className="text-xs font-semibold text-red-900">Postavitev NI veljavna</span>
                           </div>
                           {placementRes.placement.reason && (
@@ -2697,7 +2697,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                     className="min-h-[44px] w-full bg-roksal-navy text-white hover:bg-roksal-navy/90"
                     aria-label="Potrdi meritev in shrani prek obstoječe verige"
                   >
-                    {confirming ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
+                    {confirming ? <Loader2 aria-hidden="true" className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck aria-hidden="true" className="mr-2 h-4 w-4" />}
                     POTRDI MERITEV (OBSTOJEČA VERIGA)
                   </Button>
                   {!fotoCanConfirm && fotoHint && !confirming && (
@@ -2727,7 +2727,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
               <div className="space-y-2">
                 {!cameraActive ? (
                   <div className="flex min-h-[220px] flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-roksal-navy/20 bg-white p-6 text-center">
-                    <Video className="h-8 w-8 text-roksal-ink/40" />
+                    <Video aria-hidden="true" className="h-8 w-8 text-roksal-ink/40" />
                     <p className="text-xs text-muted-foreground">
                       Živi 2D CV predogled (frame-relative overlay, brez trackinga).
                     </p>
@@ -2737,12 +2737,12 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                       className="min-h-[44px] bg-roksal-amber text-white hover:bg-roksal-amber/90"
                       aria-label="Vklopi kamero"
                     >
-                      <Camera className="mr-1.5 h-4 w-4" />
+                      <Camera aria-hidden="true" className="mr-1.5 h-4 w-4" />
                       Vklopi kamero
                     </Button>
                     {cameraError && (
                       <Alert variant="destructive" role="status">
-                        <TriangleAlert className="h-4 w-4" />
+                        <TriangleAlert aria-hidden="true" className="h-4 w-4" />
                         <AlertDescription className="text-[11px]">{cameraError}</AlertDescription>
                       </Alert>
                     )}
@@ -2789,7 +2789,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                         className="min-h-[44px] text-[11px]"
                         aria-label="Analiziraj trenutni kader"
                       >
-                        {liveBusy ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <ScanLine className="mr-1 h-3.5 w-3.5" />}
+                        {liveBusy ? <Loader2 aria-hidden="true" className="mr-1 h-3.5 w-3.5 animate-spin" /> : <ScanLine aria-hidden="true" className="mr-1 h-3.5 w-3.5" />}
                         Analiziraj trenutni kader
                       </Button>
                       <Button
@@ -2799,7 +2799,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                         className="min-h-[44px] bg-roksal-amber text-white hover:bg-roksal-amber/90"
                         aria-label="Zajemi kader in preklopi na FOTO"
                       >
-                        <Camera className="mr-1 h-3.5 w-3.5" />
+                        <Camera aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
                         Zajemi kader → FOTO
                       </Button>
                       <Button
@@ -2842,7 +2842,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                     )}
                     {liveError && (
                       <Alert variant="destructive" role="status">
-                        <TriangleAlert className="h-4 w-4" />
+                        <TriangleAlert aria-hidden="true" className="h-4 w-4" />
                         <AlertDescription className="text-[11px]">{liveError}</AlertDescription>
                       </Alert>
                     )}
@@ -2889,7 +2889,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
             <div className="space-y-2">
               {!imageData ? (
                 <div className="flex min-h-[220px] flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-roksal-navy/20 bg-white p-6 text-center">
-                  <Upload className="h-8 w-8 text-roksal-ink/40" />
+                  <Upload aria-hidden="true" className="h-8 w-8 text-roksal-ink/40" />
                   <p className="text-xs text-muted-foreground">
                     Ročni način (fail-safe): deluje BREZ CV rezultata — samo tvoje točke + referenca.
                   </p>
@@ -2904,7 +2904,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                       className="min-h-[44px] bg-roksal-amber text-white hover:bg-roksal-amber/90"
                       aria-label="Naloži sliko za ročno merjenje"
                     >
-                      <Upload className="mr-1.5 h-4 w-4" />
+                      <Upload aria-hidden="true" className="mr-1.5 h-4 w-4" />
                       Naloži sliko
                     </Button>
                     <Button
@@ -2918,7 +2918,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                       className="min-h-[44px]"
                       aria-label="Posnemi fotografijo za ročno merjenje"
                     >
-                      <Camera className="mr-1.5 h-4 w-4" />
+                      <Camera aria-hidden="true" className="mr-1.5 h-4 w-4" />
                       Kamera
                     </Button>
                   </div>
@@ -3009,7 +3009,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                       }}
                       aria-label="Razveljavi zadnjo točko"
                     >
-                      <Undo2 className="mr-1 h-3.5 w-3.5" />
+                      <Undo2 aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
                       Razveljavi zadnjo
                     </Button>
                     <Button
@@ -3026,7 +3026,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                       }}
                       aria-label="Počisti vse točke"
                     >
-                      <Trash2 className="mr-1 h-3.5 w-3.5" />
+                      <Trash2 aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
                       Počisti
                     </Button>
                   </div>
@@ -3079,7 +3079,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                     className="min-h-[44px] w-full bg-roksal-navy text-white hover:bg-roksal-navy/90"
                     aria-label="Potrdi ročno meritev"
                   >
-                    {confirming ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
+                    {confirming ? <Loader2 aria-hidden="true" className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck aria-hidden="true" className="mr-2 h-4 w-4" />}
                     POTRDI MERITEV (OBSTOJEČA VERIGA)
                   </Button>
                   {!mCanConfirm && (

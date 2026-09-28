@@ -1822,7 +1822,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
           onClick={onClose}
           aria-label="Zapri AR"
         >
-          <X className="h-5 w-5" />
+          <X aria-hidden="true" className="h-5 w-5" />
         </Button>
 
         <div className="flex-1 min-w-0">
@@ -1871,7 +1871,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
               onClick={() => setGridVisible((v) => !v)}
               aria-label="Mreža"
             >
-              <Grid3x3 className="h-5 w-5" />
+              <Grid3x3 aria-hidden="true" className="h-5 w-5" />
             </Button>
           </TooltipTrigger>
           <TooltipContent side="bottom">
@@ -1897,7 +1897,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
                 aria-label="Bliskavica"
                 aria-pressed={torchOn}
               >
-                <Zap className="h-5 w-5" />
+                <Zap aria-hidden="true" className="h-5 w-5" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">
@@ -1917,7 +1917,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
               onClick={undoLast}
               aria-label="Razveljavi"
             >
-              <Undo2 className="h-5 w-5" />
+              <Undo2 aria-hidden="true" className="h-5 w-5" />
             </Button>
           </TooltipTrigger>
           <TooltipContent side="bottom">Razveljavi zadnje dejanje</TooltipContent>
@@ -1939,7 +1939,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
               onClick={kalibracija ? resetCalibration : openCalibrate}
               aria-label="Umeri"
             >
-              <Crosshair className="h-5 w-5" />
+              <Crosshair aria-hidden="true" className="h-5 w-5" />
             </Button>
           </TooltipTrigger>
           <TooltipContent side="bottom">
@@ -1967,9 +1967,9 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
               aria-label="AI analiza ograje"
             >
               {aiAnalyzing ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
+                <Loader2 aria-hidden="true" className="h-5 w-5 animate-spin" />
               ) : (
-                <Sparkles className="h-5 w-5" />
+                <Sparkles aria-hidden="true" className="h-5 w-5" />
               )}
             </Button>
           </TooltipTrigger>
@@ -1991,9 +1991,9 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
               aria-label="Posnetek"
             >
               {saving ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
+                <Loader2 aria-hidden="true" className="h-5 w-5 animate-spin" />
               ) : (
-                <Camera className="h-5 w-5" />
+                <Camera aria-hidden="true" className="h-5 w-5" />
               )}
             </Button>
           </TooltipTrigger>
@@ -2011,7 +2011,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
               onClick={openHistory}
               aria-label="Zgodovina"
             >
-              <History className="h-5 w-5" />
+              <History aria-hidden="true" className="h-5 w-5" />
             </Button>
           </TooltipTrigger>
           <TooltipContent side="bottom">Zgodovina posnetkov</TooltipContent>
@@ -2022,19 +2022,19 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
       <div className="absolute top-16 right-3 z-10 flex flex-col items-end gap-1.5 pointer-events-none">
         {lowLight && (
           <Badge className="bg-amber-600/90 text-white border-transparent shadow-md animate-pulse">
-            <SunDim className="h-3 w-3" />
+            <SunDim aria-hidden="true" className="h-3 w-3" />
             Temno — prižgi bliskavico
           </Badge>
         )}
         {steady && (
           <Badge className="bg-emerald-600/90 text-white border-transparent shadow-md">
-            <Check className="h-3 w-3" />
+            <Check aria-hidden="true" className="h-3 w-3" />
             Stabilno — zajemi zdaj
           </Badge>
         )}
         {kalibracija && (
           <Badge className="bg-roksal-green/90 text-white border-transparent shadow-md">
-            <Check className="h-3 w-3" />
+            <Check aria-hidden="true" className="h-3 w-3" />
             {kalibracija.pixelsPerMm.toFixed(3)} px/mm
           </Badge>
         )}
@@ -2050,7 +2050,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
         )}
         {meritve.length > 0 && (
           <Badge className="bg-roksal-green/90 text-white border-transparent shadow-md">
-            <Ruler className="h-3 w-3" />
+            <Ruler aria-hidden="true" className="h-3 w-3" />
             {meritve.length}
           </Badge>
         )}
@@ -2060,7 +2060,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
       <div ref={containerRef} className="relative flex-1 overflow-hidden bg-black">
         {cameraError ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-roksal-navy">
-            <AlertTriangle className="h-12 w-12 text-roksal-amber mb-3" />
+            <AlertTriangle aria-hidden="true" className="h-12 w-12 text-roksal-amber mb-3" />
             <p className="text-white text-base font-semibold mb-2">Kamera ni na voljo</p>
             <p className="text-white/70 text-sm max-w-xs mb-4">{cameraError}</p>
             <Button
@@ -2069,7 +2069,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
               className="bg-roksal-amber text-white hover:bg-roksal-amber/90"
               onClick={retryCamera}
             >
-              <RotateCcw className="h-4 w-4" />
+              <RotateCcw aria-hidden="true" className="h-4 w-4" />
               Poskusi znova
             </Button>
           </div>
@@ -2096,7 +2096,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
             {tocke.length === 0 && !calibrateActive && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div className="bg-roksal-navy/80 text-white/90 text-sm px-4 py-2.5 rounded-lg backdrop-blur-sm text-center max-w-[280px]">
-                  <Plus className="h-5 w-5 mx-auto mb-1 text-roksal-amber" />
+                  <Plus aria-hidden="true" className="h-5 w-5 mx-auto mb-1 text-roksal-amber" />
                   Tapnite na tla za dodajanje stebrov ograje
                 </div>
               </div>
@@ -2106,7 +2106,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
             <div className="absolute top-3 left-3 z-10 pointer-events-none">
               <div className="bg-roksal-navy/90 text-white rounded-lg p-2 text-2xs max-w-[180px] backdrop-blur-sm shadow-md">
                 <div className="flex items-center gap-1 mb-1 pb-1 border-b border-white/15">
-                  <Ruler className="h-3 w-3 text-roksal-amber" />
+                  <Ruler aria-hidden="true" className="h-3 w-3 text-roksal-amber" />
                   <span className="font-semibold uppercase tracking-wide">Meritve</span>
                 </div>
                 <div className="space-y-0.5">
@@ -2150,7 +2150,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
                     <span className="text-white/55">Kalibracija</span>
                     {realtimeStats.kalibrirano && realtimeStats.ppm ? (
                       <span className="font-semibold text-roksal-green flex items-center gap-0.5">
-                        <CheckCircle2 className="h-2.5 w-2.5" />
+                        <CheckCircle2 aria-hidden="true" className="h-2.5 w-2.5" />
                         {realtimeStats.ppm.toFixed(2)} px/mm
                       </span>
                     ) : (
@@ -2190,7 +2190,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
                   aria-label={calcPanelOpen ? 'Skrči izračun' : 'Razširi izračun'}
                 >
                   <div className="flex items-center gap-2 min-w-0">
-                    <Calculator className="h-4 w-4 text-roksal-amber shrink-0" />
+                    <Calculator aria-hidden="true" className="h-4 w-4 text-roksal-amber shrink-0" />
                     <span className="text-xs font-semibold shrink-0">Izračun</span>
                     <span className="text-2xs text-white/70 truncate">
                       {autoCalc
@@ -2199,9 +2199,9 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
                     </span>
                   </div>
                   {calcPanelOpen ? (
-                    <ChevronDown className="h-4 w-4 shrink-0" />
+                    <ChevronDown aria-hidden="true" className="h-4 w-4 shrink-0" />
                   ) : (
-                    <ChevronUp className="h-4 w-4 shrink-0" />
+                    <ChevronUp aria-hidden="true" className="h-4 w-4 shrink-0" />
                   )}
                 </button>
 
@@ -2211,19 +2211,19 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
                     {/* Warnings */}
                     {!kalibracija && (
                       <div className="mb-1.5 text-2xs bg-roksal-amber/15 border border-roksal-amber/30 text-roksal-amber rounded px-2 py-1 flex items-center gap-1">
-                        <AlertTriangle className="h-3 w-3 shrink-0" />
+                        <AlertTriangle aria-hidden="true" className="h-3 w-3 shrink-0" />
                         <span>Najprej umeri referenco za natančne mere</span>
                       </div>
                     )}
                     {!selectedProfil && (
                       <div className="mb-1.5 text-2xs bg-roksal-amber/15 border border-roksal-amber/30 text-roksal-amber rounded px-2 py-1 flex items-center gap-1">
-                        <AlertTriangle className="h-3 w-3 shrink-0" />
+                        <AlertTriangle aria-hidden="true" className="h-3 w-3 shrink-0" />
                         <span>Izberi profil</span>
                       </div>
                     )}
                     {tocke.length < 2 && (
                       <div className="mb-1.5 text-2xs bg-white/5 border border-white/10 text-white/70 rounded px-2 py-1 flex items-center gap-1">
-                        <AlertTriangle className="h-3 w-3 shrink-0" />
+                        <AlertTriangle aria-hidden="true" className="h-3 w-3 shrink-0" />
                         <span>Dodaj vsaj 2 točki za izračun</span>
                       </div>
                     )}
@@ -2292,7 +2292,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
         {/* Zoom drsnik — samo kadar kamera podpira zoom */}
         {zoomCap && (
           <div className="flex items-center gap-2 px-2 pb-2">
-            <ZoomIn className="h-4 w-4 shrink-0 text-white/70" aria-hidden />
+            <ZoomIn aria-hidden="true" className="h-4 w-4 shrink-0 text-white/70"  />
             <input
               type="range"
               min={zoomCap.min}
@@ -2324,7 +2324,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
             }}
             disabled={calibrateActive}
           >
-            <Plus className="h-4 w-4" />
+            <Plus aria-hidden="true" className="h-4 w-4" />
             Točke
           </Button>
           <Button
@@ -2337,7 +2337,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
             }}
             disabled={calibrateActive || tocke.length === 0}
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 aria-hidden="true" className="h-4 w-4" />
             Izbriši
           </Button>
           <Button
@@ -2350,7 +2350,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
             }}
             disabled={calibrateActive || tocke.length === 0}
           >
-            <Move className="h-4 w-4" />
+            <Move aria-hidden="true" className="h-4 w-4" />
             Premakni
           </Button>
           <Button
@@ -2363,7 +2363,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
             }}
             disabled={calibrateActive}
           >
-            <Ruler className="h-4 w-4" />
+            <Ruler aria-hidden="true" className="h-4 w-4" />
             Meri
           </Button>
         </div>
@@ -2376,7 +2376,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
             onClick={clearAll}
             disabled={tocke.length === 0 && meritve.length === 0}
           >
-            <Trash2 className="h-3.5 w-3.5" />
+            <Trash2 aria-hidden="true" className="h-3.5 w-3.5" />
             Počisti vse
           </Button>
           {calibrateActive && (
@@ -2418,7 +2418,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-roksal-ink">
-              <Crosshair className="h-5 w-5 text-roksal-amber" />
+              <Crosshair aria-hidden="true" className="h-5 w-5 text-roksal-amber" />
               Umeritev kamere
             </DialogTitle>
             <DialogDescription>
@@ -2456,7 +2456,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
               className="bg-roksal-amber text-white hover:bg-roksal-amber/90"
               onClick={confirmCalibrateStart}
             >
-              <Crosshair className="h-4 w-4" />
+              <Crosshair aria-hidden="true" className="h-4 w-4" />
               Izberi 2 točki
             </Button>
           </DialogFooter>
@@ -2468,7 +2468,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-roksal-ink">
-              <Ruler className="h-5 w-5 text-roksal-green" />
+              <Ruler aria-hidden="true" className="h-5 w-5 text-roksal-green" />
               Označi meritev
             </DialogTitle>
             <DialogDescription>
@@ -2509,7 +2509,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
               className="bg-roksal-green text-white hover:bg-roksal-green/90"
               onClick={confirmMeritev}
             >
-              <Check className="h-4 w-4" />
+              <Check aria-hidden="true" className="h-4 w-4" />
               Shrani
             </Button>
           </DialogFooter>
@@ -2521,7 +2521,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
         <SheetContent side="right" className="w-full sm:max-w-md p-0 flex flex-col">
           <SheetHeader className="px-4 pt-5 pb-3 border-b">
             <SheetTitle className="flex items-center gap-2 text-roksal-ink">
-              <Sparkles className="h-5 w-5 text-roksal-amber" />
+              <Sparkles aria-hidden="true" className="h-5 w-5 text-roksal-amber" />
               AI analiza ograje
             </SheetTitle>
             <SheetDescription>
@@ -2631,7 +2631,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
               onClick={applyAiSuggestions}
               disabled={!aiAnaliza}
             >
-              <CheckCircle2 className="h-4 w-4" />
+              <CheckCircle2 aria-hidden="true" className="h-4 w-4" />
               Uporabi priporočila
             </Button>
           </div>
@@ -2643,7 +2643,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
         <SheetContent side="right" className="w-full sm:max-w-md p-0 flex flex-col">
           <SheetHeader className="px-4 pt-5 pb-3 border-b">
             <SheetTitle className="flex items-center gap-2 text-roksal-ink">
-              <History className="h-5 w-5 text-roksal-amber" />
+              <History aria-hidden="true" className="h-5 w-5 text-roksal-amber" />
               Zgodovina AR posnetkov
             </SheetTitle>
             <SheetDescription>
@@ -2653,11 +2653,11 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
           <div className="flex-1 overflow-y-auto p-3 scrollbar-thin">
             {snapshotsLoading ? (
               <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-6 w-6 animate-spin text-roksal-ink" />
+                <Loader2 aria-hidden="true" className="h-6 w-6 animate-spin text-roksal-ink" />
               </div>
             ) : snapshots.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
-                <Camera className="h-10 w-10 text-muted-foreground mb-2" />
+                <Camera aria-hidden="true" className="h-10 w-10 text-muted-foreground mb-2" />
                 <p className="text-sm text-muted-foreground">
                   Še ni shranjenih posnetkov.
                 </p>
@@ -2683,7 +2683,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
               className="w-full"
               onClick={() => void fetchSnapshots()}
             >
-              <RotateCcw className="h-3.5 w-3.5" />
+              <RotateCcw aria-hidden="true" className="h-3.5 w-3.5" />
               Osveži
             </Button>
           </div>
@@ -2753,7 +2753,7 @@ function SnapshotCard({
             onClick={onDelete}
             aria-label="Izbriši posnetek"
           >
-            <Trash2 className="h-3.5 w-3.5" />
+            <Trash2 aria-hidden="true" className="h-3.5 w-3.5" />
           </Button>
         </div>
         {expanded && (

@@ -86,7 +86,7 @@ export function RoksalCatalog() {
       {/* Iskanje */}
       <div className="space-y-3">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search aria-hidden="true" className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -118,7 +118,7 @@ export function RoksalCatalog() {
 
       {/* Statistika */}
       <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-        <Filter className="h-3 w-3" />
+        <Filter aria-hidden="true" className="h-3 w-3" />
         <span>
           {filtered.length} od {profili.length} profilov
         </span>
@@ -153,13 +153,13 @@ export function RoksalCatalog() {
 
                       <div className="mt-3 flex flex-wrap gap-3 text-[11px] tabular-nums">
                         <div className="flex items-center gap-1 text-muted-foreground">
-                          <Ruler className="h-3 w-3" />
+                          <Ruler aria-hidden="true" className="h-3 w-3" />
                           <span>
                             {p.visinaMm}×{p.sirinaMm}mm
                           </span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <Euro className="h-3 w-3 text-muted-foreground" />
+                          <Euro aria-hidden="true" className="h-3 w-3 text-muted-foreground" />
                           <span className="font-semibold text-roksal-ink">{p.cenaM.toFixed(2)} €/m</span>
                         </div>
                         {p.barvaRal && (

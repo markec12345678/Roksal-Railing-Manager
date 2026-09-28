@@ -173,14 +173,14 @@ export function TopBar({ onSync, syncing, onOpenPalette, hidden = false }: TopBa
             aria-label="Odpri iskalnik (Ctrl+K)"
             title="Iskalnik — Ctrl+K"
           >
-            <Search className="h-4 w-4" />
+            <Search aria-hidden="true" className="h-4 w-4" />
             <kbd className="hidden rounded border border-white/20 bg-white/10 px-1 font-sans text-2xs font-medium sm:inline-block">
               Ctrl K
             </kbd>
           </Button>
           {/* Live Clock */}
           <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-white/10 text-white/70 md:px-2.5">
-            <Clock className="h-3 w-3 md:h-3.5 md:w-3.5" />
+            <Clock aria-hidden="true" className="h-3 w-3 md:h-3.5 md:w-3.5" />
             <span className="text-xs font-mono font-medium tabular-nums">
               {liveClock}
             </span>
@@ -226,7 +226,7 @@ export function TopBar({ onSync, syncing, onOpenPalette, hidden = false }: TopBa
                 title="Odjava"
                 disabled={loggingOut}
               >
-                <LogOut className={`h-4 w-4 ${loggingOut ? 'animate-pulse' : ''}`} />
+                <LogOut aria-hidden="true" className={`h-4 w-4 ${loggingOut ? 'animate-pulse' : ''}`} />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">

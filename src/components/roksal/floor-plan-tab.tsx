@@ -1521,7 +1521,7 @@ export function FloorPlanTab({ projectId }: FloorPlanTabProps) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-md bg-roksal-amber">
-                <Frame className="h-4 w-4 text-white" />
+                <Frame aria-hidden="true" className="h-4 w-4 text-white" />
               </div>
               <div>
                 <CardTitle className="text-base text-white">Tloris z elementi</CardTitle>
@@ -1585,7 +1585,7 @@ export function FloorPlanTab({ projectId }: FloorPlanTabProps) {
           onClick={importFromMeasurements}
           className="h-8 shrink-0 border-roksal-navy/20 text-roksal-ink"
         >
-          <Upload className="mr-1 h-3.5 w-3.5" />
+          <Upload aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
           Uvozi iz meritev
         </Button>
         <Button
@@ -1595,7 +1595,7 @@ export function FloorPlanTab({ projectId }: FloorPlanTabProps) {
           onClick={() => setLayersOpen(true)}
           className="h-8 shrink-0 border-roksal-navy/20 text-roksal-ink"
         >
-          <Layers className="mr-1 h-3.5 w-3.5" />
+          <Layers aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
           Plasti
         </Button>
         <Button
@@ -1605,7 +1605,7 @@ export function FloorPlanTab({ projectId }: FloorPlanTabProps) {
           onClick={exportPDF}
           className="h-8 shrink-0 border-roksal-navy/20 text-roksal-ink"
         >
-          <FileText className="mr-1 h-3.5 w-3.5" />
+          <FileText aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
           PDF
         </Button>
         <Button
@@ -1615,7 +1615,7 @@ export function FloorPlanTab({ projectId }: FloorPlanTabProps) {
           onClick={exportDXF}
           className="h-8 shrink-0 border-roksal-navy/20 text-roksal-ink"
         >
-          <Download className="mr-1 h-3.5 w-3.5" />
+          <Download aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
           DXF
         </Button>
         <Button
@@ -1625,7 +1625,7 @@ export function FloorPlanTab({ projectId }: FloorPlanTabProps) {
           onClick={exportPNG}
           className="h-8 shrink-0 border-roksal-navy/20 text-roksal-ink"
         >
-          <FileImage className="mr-1 h-3.5 w-3.5" />
+          <FileImage aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
           PNG
         </Button>
         <Button
@@ -1635,7 +1635,7 @@ export function FloorPlanTab({ projectId }: FloorPlanTabProps) {
           onClick={saveAsSketch}
           className="h-8 shrink-0 border-roksal-navy/20 text-roksal-ink"
         >
-          <Save className="mr-1 h-3.5 w-3.5" />
+          <Save aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
           Skica
         </Button>
       </div>
@@ -1706,12 +1706,12 @@ export function FloorPlanTab({ projectId }: FloorPlanTabProps) {
             <div className="absolute bottom-2 left-2 rounded-md border border-roksal-navy/20 bg-white/90 px-2 py-1 text-[11px] text-roksal-navy shadow-sm">
               {pendingPoint ? (
                 <span className="flex items-center gap-1">
-                  <Crosshair className="h-3 w-3 text-roksal-amber" />
+                  <Crosshair aria-hidden="true" className="h-3 w-3 text-roksal-amber" />
                   Kliknite drugo točko…
                 </span>
               ) : (
                 <span className="flex items-center gap-1">
-                  <RulerIcon className="h-3 w-3" />
+                  <RulerIcon aria-hidden="true" className="h-3 w-3" />
                   {tools.find((t) => t.id === selectedTool)?.hint}
                 </span>
               )}
@@ -1860,9 +1860,9 @@ export function FloorPlanTab({ projectId }: FloorPlanTabProps) {
                 </div>
                 <div className="flex items-center gap-2">
                   {layers[layer.key] ? (
-                    <Eye className="h-4 w-4 text-muted-foreground" />
+                    <Eye aria-hidden="true" className="h-4 w-4 text-muted-foreground" />
                   ) : (
-                    <EyeOff className="h-4 w-4 text-muted-foreground" />
+                    <EyeOff aria-hidden="true" className="h-4 w-4 text-muted-foreground" />
                   )}
                   <Switch
                     checked={layers[layer.key]}
@@ -2038,7 +2038,7 @@ function WallProperties({
       </div>
       <Separator />
       <Button type="button" variant="destructive" size="sm" onClick={onDelete} className="w-full">
-        <Trash2 className="mr-1 h-3.5 w-3.5" />
+        <Trash2 aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
         Izbriši steno
       </Button>
     </div>
@@ -2122,7 +2122,7 @@ function PostProperties({
       </div>
       <Separator />
       <Button type="button" variant="destructive" size="sm" onClick={onDelete} className="w-full">
-        <Trash2 className="mr-1 h-3.5 w-3.5" />
+        <Trash2 aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
         Izbriši stebriček
       </Button>
     </div>
@@ -2190,7 +2190,7 @@ function DoorProperties({
       )}
       <Separator />
       <Button type="button" variant="destructive" size="sm" onClick={onDelete} className="w-full">
-        <Trash2 className="mr-1 h-3.5 w-3.5" />
+        <Trash2 aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
         Izbriši vrata
       </Button>
     </div>
@@ -2253,7 +2253,7 @@ function WindowProperties({
       )}
       <Separator />
       <Button type="button" variant="destructive" size="sm" onClick={onDelete} className="w-full">
-        <Trash2 className="mr-1 h-3.5 w-3.5" />
+        <Trash2 aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
         Izbriši okno
       </Button>
     </div>
@@ -2302,7 +2302,7 @@ function DimensionProperties({
       </div>
       <Separator />
       <Button type="button" variant="destructive" size="sm" onClick={onDelete} className="w-full">
-        <Trash2 className="mr-1 h-3.5 w-3.5" />
+        <Trash2 aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
         Izbriši mero
       </Button>
     </div>
@@ -2331,7 +2331,7 @@ function TextProperties({
       </div>
       <Separator />
       <Button type="button" variant="destructive" size="sm" onClick={onDelete} className="w-full">
-        <Trash2 className="mr-1 h-3.5 w-3.5" />
+        <Trash2 aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
         Izbriši besedilo
       </Button>
     </div>

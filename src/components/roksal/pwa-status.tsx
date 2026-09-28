@@ -199,7 +199,7 @@ export function PwaStatus() {
             className="mb-1.5 flex items-center gap-2.5 rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 px-3 py-2 text-amber-900 dark:text-amber-200 shadow-sm"
             role="status"
           >
-            <WifiOff className="h-4 w-4 shrink-0" />
+            <WifiOff aria-hidden="true" className="h-4 w-4 shrink-0" />
             <div className="min-w-0 flex-1">
               <p className="text-[12px] font-semibold leading-tight">Ni povezave — aplikacija deluje naprej</p>
               <p className="truncate text-2xs leading-tight text-amber-800 dark:text-amber-200">
@@ -226,7 +226,7 @@ export function PwaStatus() {
             className="mb-1.5 flex items-center gap-2.5 rounded-xl border border-violet-300 dark:border-violet-800 bg-violet-50 dark:bg-violet-950/40 px-3 py-2 text-violet-900 dark:text-violet-200 shadow-sm"
             role="status"
           >
-            <UserCheck className="h-4 w-4 shrink-0" />
+            <UserCheck aria-hidden="true" className="h-4 w-4 shrink-0" />
             <div className="min-w-0 flex-1">
               <p className="text-[12px] font-semibold leading-tight">
                 {held.length} {held.length === 1 ? 'zapis drugega uporabnika' : 'zapisov drugih uporabnikov'} — ni poslano
@@ -241,7 +241,7 @@ export function PwaStatus() {
               className="flex min-h-[32px] shrink-0 items-center gap-1 rounded-lg bg-violet-600 px-2.5 text-[11px] font-bold text-white transition-colors hover:bg-violet-700 active:scale-95"
               aria-label="Prevzemi tuje zapise in jih pošlji s svojo sejo"
             >
-              <CheckCircle2 className="h-3.5 w-3.5" />
+              <CheckCircle2 aria-hidden="true" className="h-3.5 w-3.5" />
               Prevzemi in pošlji
             </button>
           </motion.div>
@@ -258,7 +258,7 @@ export function PwaStatus() {
             role="alert"
           >
             <div className="flex items-center gap-2.5">
-              <AlertTriangle className="h-4 w-4 shrink-0" />
+              <AlertTriangle aria-hidden="true" className="h-4 w-4 shrink-0" />
               <div className="min-w-0 flex-1">
                 <p className="text-[12px] font-semibold leading-tight">
                   {problems.length} {problems.length === 1 ? 'zapis NI bil poslan' : 'zapisov NI bilo poslanih'} — zahteva odločitev
@@ -273,7 +273,7 @@ export function PwaStatus() {
                 className="flex min-h-[32px] items-center gap-1 rounded-lg bg-rose-600 px-2.5 text-[11px] font-bold text-white transition-colors hover:bg-rose-700 active:scale-95"
                 aria-label="Ponovno pošlji vse zapise iz vrste"
               >
-                <RotateCcw className="h-3.5 w-3.5" />
+                <RotateCcw aria-hidden="true" className="h-3.5 w-3.5" />
                 Vse znova
               </button>
               <button
@@ -283,7 +283,7 @@ export function PwaStatus() {
                 aria-expanded={expanded}
                 aria-label={expanded ? 'Skrči seznam neuspelih zapisov' : 'Razširi seznam neuspelih zapisov'}
               >
-                {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                {expanded ? <ChevronUp aria-hidden="true" className="h-4 w-4" /> : <ChevronDown aria-hidden="true" className="h-4 w-4" />}
               </button>
             </div>
             {expanded && (
@@ -308,7 +308,7 @@ export function PwaStatus() {
                       className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-500/15"
                       aria-label={`Pošlji znova: ${item.label ?? item.url}`}
                     >
-                      <RotateCcw className="h-3.5 w-3.5" />
+                      <RotateCcw aria-hidden="true" className="h-3.5 w-3.5" />
                     </button>
                     <button
                       type="button"
@@ -316,7 +316,7 @@ export function PwaStatus() {
                       className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-500/15"
                       aria-label={`Odstrani: ${item.label ?? item.url}`}
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
+                      <Trash2 aria-hidden="true" className="h-3.5 w-3.5" />
                     </button>
                   </li>
                 ))}
@@ -335,7 +335,7 @@ export function PwaStatus() {
             className="mb-1.5 flex items-center gap-2 rounded-xl border border-green-300 dark:border-green-800 bg-green-50 dark:bg-green-950/40 px-3 py-2 text-green-800 dark:text-green-200 shadow-sm"
             role="status"
           >
-            {flushing ? <Loader2 className="h-4 w-4 shrink-0 animate-spin" /> : <CheckCircle2 className="h-4 w-4 shrink-0" />}
+            {flushing ? <Loader2 aria-hidden="true" className="h-4 w-4 shrink-0 animate-spin" /> : <CheckCircle2 aria-hidden="true" className="h-4 w-4 shrink-0" />}
             <p className="text-[12px] font-semibold">
               Povezava vzpostavljena{justSyncedCount > 0 ? ` — ${justSyncedCount} ${justSyncedCount === 1 ? 'zapis poslan' : 'zapisov poslanih'}` : ''}
             </p>
@@ -352,7 +352,7 @@ export function PwaStatus() {
             className="mb-1.5 flex items-center gap-2.5 rounded-xl border border-roksal-navy/15 dark:border-roksal-ink/15 bg-card px-3 py-2 shadow-sm"
           >
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-roksal-amber/15">
-              <Download className="h-4 w-4 text-roksal-amber" />
+              <Download aria-hidden="true" className="h-4 w-4 text-roksal-amber" />
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-[12px] font-semibold leading-tight text-roksal-ink">Namesti Roksal kot aplikacijo</p>
@@ -371,7 +371,7 @@ export function PwaStatus() {
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-secondary"
               aria-label="Zapri namig za namestitev"
             >
-              <X className="h-4 w-4" />
+              <X aria-hidden="true" className="h-4 w-4" />
             </button>
           </motion.div>
         )}

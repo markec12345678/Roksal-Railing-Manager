@@ -269,7 +269,7 @@ function QualityPanel({
 
       {state === 'INSUFFICIENT_DATA' && (
         <div className="flex items-start gap-2 rounded-lg border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/40 p-2 text-[11px] text-red-800 dark:text-red-200">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          <AlertTriangle aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
           <div className="flex-1 space-y-2">
             <p>Detekcija ni zadostna za samodejno merjenje (fail-safe issue #2).</p>
             <Button
@@ -312,7 +312,7 @@ function ReferenceSection({
   return (
     <div className="space-y-2 rounded-lg border border-roksal-amber/30 bg-roksal-amber/5 p-3">
       <div className="flex items-center gap-2">
-        <Crosshair className="h-4 w-4 text-roksal-amber" />
+        <Crosshair aria-hidden="true" className="h-4 w-4 text-roksal-amber" />
         <span className="text-sm font-semibold text-roksal-ink">
           Referenčna mera (obvezna za mm)
         </span>
@@ -393,7 +393,7 @@ function ReferenceSection({
           onClick={onClearPoints}
           aria-label="Počisti referenčni točki"
         >
-          <Trash2 className="mr-1 h-3.5 w-3.5" />
+          <Trash2 aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
           Počisti referenčni točki
         </Button>
       )}
@@ -429,7 +429,7 @@ function ProductSection({
   return (
     <div className="space-y-2 rounded-lg border border-border bg-white p-3">
       <div className="flex items-center gap-2">
-        <Package className="h-4 w-4 text-roksal-ink" />
+        <Package aria-hidden="true" className="h-4 w-4 text-roksal-ink" />
         <span className="text-sm font-semibold text-roksal-ink">
           Izdelek (opcijsko — za predračun materiala)
         </span>
@@ -535,7 +535,7 @@ function ResultsSection({ result, error }: { result: ConfirmResponse | null; err
         role="status"
         className="flex items-start gap-2 rounded-lg border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/40 p-3 text-[11px] text-red-800 dark:text-red-200"
       >
-        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+        <AlertTriangle aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
         <span>{error}</span>
       </div>
     )
@@ -548,7 +548,7 @@ function ResultsSection({ result, error }: { result: ConfirmResponse | null; err
   return (
     <div className="space-y-3 rounded-lg border border-roksal-navy/15 dark:border-roksal-ink/15 bg-muted/20 p-3">
       <div className="flex items-center gap-2">
-        <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+        <CheckCircle2 aria-hidden="true" className="h-4 w-4 text-green-600 dark:text-green-400" />
         <span className="text-sm font-semibold text-roksal-ink">Rezultat meritve</span>
         <StateBadge state={session.quality.state} className="ml-auto" />
       </div>
@@ -557,7 +557,7 @@ function ResultsSection({ result, error }: { result: ConfirmResponse | null; err
       {!g && (
         <div className="space-y-1 rounded-lg border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-3 text-[11px] text-amber-800 dark:text-amber-200">
           <p className="flex items-center gap-2 font-semibold">
-            <AlertTriangle className="h-4 w-4" />
+            <AlertTriangle aria-hidden="true" className="h-4 w-4" />
             SCALE_REQUIRED — merilo ni bilo mogoče določiti
           </p>
           <p>Ni dimenzij — to je pravilno vedenje: sistem NE izmišljuje merila.</p>
@@ -581,7 +581,7 @@ function ResultsSection({ result, error }: { result: ConfirmResponse | null; err
         <>
           <div className="grid grid-cols-2 gap-2">
             <div className="rounded-lg border border-border bg-white p-2.5 text-center">
-              <Ruler className="mx-auto mb-1 h-4 w-4 text-roksal-ink" />
+              <Ruler aria-hidden="true" className="mx-auto mb-1 h-4 w-4 text-roksal-ink" />
               <div className="text-lg font-bold text-roksal-ink">
                 {(g.totalLengthMm.valueMm / 1000).toFixed(3)} m
               </div>
@@ -590,7 +590,7 @@ function ResultsSection({ result, error }: { result: ConfirmResponse | null; err
               </div>
             </div>
             <div className="rounded-lg border border-border bg-white p-2.5 text-center">
-              <Ruler className="mx-auto mb-1 h-4 w-4 text-roksal-ink" />
+              <Ruler aria-hidden="true" className="mx-auto mb-1 h-4 w-4 text-roksal-ink" />
               <div className="text-lg font-bold text-roksal-ink">{fmtNum(g.heightMm.valueMm)} mm</div>
               <div className="text-[9px] text-muted-foreground">
                 Višina · ± {fmtNum(g.heightMm.uncertaintyMm)} mm
@@ -638,16 +638,16 @@ function ResultsSection({ result, error }: { result: ConfirmResponse | null; err
           {/* Sledljivost (provenance) */}
           <div className="space-y-0.5 text-2xs text-muted-foreground">
             <p className="flex items-start gap-1">
-              <Info className="mt-0.5 h-3 w-3 shrink-0" />
+              <Info aria-hidden="true" className="mt-0.5 h-3 w-3 shrink-0" />
               <span>{g.totalLengthMm.provenance}</span>
             </p>
             <p className="flex items-start gap-1">
-              <Info className="mt-0.5 h-3 w-3 shrink-0" />
+              <Info aria-hidden="true" className="mt-0.5 h-3 w-3 shrink-0" />
               <span>{g.heightMm.provenance}</span>
             </p>
             {session.scale && (
               <p className="flex items-start gap-1">
-                <Info className="mt-0.5 h-3 w-3 shrink-0" />
+                <Info aria-hidden="true" className="mt-0.5 h-3 w-3 shrink-0" />
                 <span>
                   Merilo: {fmtNum(session.scale.reference.knownMm)} mm ↔{' '}
                   {(session.scale.referenceLengthUnits * 100).toFixed(1)} % slike (vir:{' '}
@@ -665,7 +665,7 @@ function ResultsSection({ result, error }: { result: ConfirmResponse | null; err
       {takeoffPreview && (
         <div className="space-y-2 rounded-lg border border-roksal-amber/40 bg-roksal-amber/5 p-3">
           <div className="flex items-center gap-2">
-            <Package className="h-4 w-4 text-roksal-amber" />
+            <Package aria-hidden="true" className="h-4 w-4 text-roksal-amber" />
             <span className="text-sm font-semibold text-roksal-ink">
               Predračun materiala (iz geometrije)
             </span>
@@ -708,7 +708,7 @@ function ResultsSection({ result, error }: { result: ConfirmResponse | null; err
           role="status"
           className="flex items-center gap-2 rounded-lg border border-green-300 dark:border-green-800 bg-green-50 dark:bg-green-950/40 p-2.5 text-[11px] font-medium text-green-800 dark:text-green-200"
         >
-          <CheckCircle2 className="h-4 w-4 shrink-0" />
+          <CheckCircle2 aria-hidden="true" className="h-4 w-4 shrink-0" />
           Meritev shranjena v projekt (ID: {savedMeasurementId})
         </div>
       )}
@@ -1328,7 +1328,7 @@ export function MeasurementStudio({ projectId }: { projectId?: string | null }) 
       <Card className="border-roksal-amber/30">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
-            <Ruler className="h-5 w-5 text-roksal-amber" />
+            <Ruler aria-hidden="true" className="h-5 w-5 text-roksal-amber" />
             Merilni studio
             <Badge
               variant="secondary"
@@ -1358,7 +1358,7 @@ export function MeasurementStudio({ projectId }: { projectId?: string | null }) 
                   className="min-h-[44px] bg-roksal-amber text-white hover:bg-roksal-amber/90"
                   aria-label="Zajemi fotografijo"
                 >
-                  <Camera className="mr-2 h-4 w-4" />
+                  <Camera aria-hidden="true" className="mr-2 h-4 w-4" />
                   Zajemi
                 </Button>
                 <Button
@@ -1382,7 +1382,7 @@ export function MeasurementStudio({ projectId }: { projectId?: string | null }) 
                   className="min-h-[44px] flex-col gap-1 border-roksal-navy/20 dark:border-roksal-ink/20"
                   aria-label="Odpri kamero za zajem slike"
                 >
-                  <Camera className="h-5 w-5 text-roksal-ink" />
+                  <Camera aria-hidden="true" className="h-5 w-5 text-roksal-ink" />
                   <span className="text-xs">Kamera</span>
                 </Button>
                 <Button
@@ -1392,7 +1392,7 @@ export function MeasurementStudio({ projectId }: { projectId?: string | null }) 
                   className="min-h-[44px] flex-col gap-1 border-roksal-navy/20 dark:border-roksal-ink/20"
                   aria-label="Naloži sliko iz datoteke"
                 >
-                  <Upload className="h-5 w-5 text-roksal-ink" />
+                  <Upload aria-hidden="true" className="h-5 w-5 text-roksal-ink" />
                   <span className="text-xs">Naloži sliko</span>
                 </Button>
               </div>
@@ -1409,7 +1409,7 @@ export function MeasurementStudio({ projectId }: { projectId?: string | null }) 
                   role="status"
                   className="flex items-start gap-2 rounded-lg border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-2 text-[11px] text-amber-800 dark:text-amber-200"
                 >
-                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <AlertTriangle aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
                   <span>{cameraError}</span>
                 </div>
               )}
@@ -1465,7 +1465,7 @@ export function MeasurementStudio({ projectId }: { projectId?: string | null }) 
               )}
               {detecting && (
                 <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 p-3 text-[11px] text-muted-foreground" role="status">
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
                   Deterministična detekcija teče (Sobel + Hough, brez AI) …
                 </div>
               )}
@@ -1474,7 +1474,7 @@ export function MeasurementStudio({ projectId }: { projectId?: string | null }) 
                   role="status"
                   className="flex items-start gap-2 rounded-lg border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/40 p-3 text-[11px] text-red-800 dark:text-red-200"
                 >
-                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <AlertTriangle aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
                   <span>{detectError}</span>
                 </div>
               )}
@@ -1527,7 +1527,7 @@ export function MeasurementStudio({ projectId }: { projectId?: string | null }) 
                     onClick={undoLastPoint}
                     aria-label="Razveljavi zadnjo točko"
                   >
-                    <Undo2 className="mr-1 h-3.5 w-3.5" />
+                    <Undo2 aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
                     Razveljavi zadnjo točko
                   </Button>
                   <Button
@@ -1538,7 +1538,7 @@ export function MeasurementStudio({ projectId }: { projectId?: string | null }) 
                     onClick={clearAllPoints}
                     aria-label="Počisti vse točke"
                   >
-                    <Trash2 className="mr-1 h-3.5 w-3.5" />
+                    <Trash2 aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
                     Počisti
                   </Button>
                 </div>
@@ -1603,9 +1603,9 @@ export function MeasurementStudio({ projectId }: { projectId?: string | null }) 
               aria-label="Izračunaj meritev"
             >
               {confirming ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 aria-hidden="true" className="mr-2 h-4 w-4 animate-spin" />
               ) : (
-                <Ruler className="mr-2 h-4 w-4" />
+                <Ruler aria-hidden="true" className="mr-2 h-4 w-4" />
               )}
               IZRAČUNAJ MERITEV
             </Button>

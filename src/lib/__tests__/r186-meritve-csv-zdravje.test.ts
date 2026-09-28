@@ -144,7 +144,9 @@ describe('R186 — žičenje (measurements-tab): gumb izvoza CSV', () => {
     const src = tab()
     expect(src).toContain('aria-label="Izvozi vidne meritve kot CSV"')
     expect(src).toContain('title="Izvozi vidne meritve (upošteva filter) kot CSV za Excel"')
-    expect(src).toMatch(/aria-label="Izvozi vidne meritve kot CSV"[\s\S]{0,400}<Download className="h-3 w-3" \/>/)
+    // R254 pin shift: codemod P1-d vstavil aria-hidden="true" (dekorativna
+    // ikona izven screen-reader drevesa — detektor r254 vzdržuje invarianto).
+    expect(src).toMatch(/aria-label="Izvozi vidne meritve kot CSV"[\s\S]{0,400}<Download aria-hidden="true" className="h-3 w-3" \/>/)
     expect(src).toContain('hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40')
   })
 

@@ -391,7 +391,7 @@ export function PdfExport({ project }: { project: Project | null }) {
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
-          <FileDown className="h-5 w-5 text-roksal-amber" />
+          <FileDown aria-hidden="true" className="h-5 w-5 text-roksal-amber" />
           Izvoz PDF
         </CardTitle>
       </CardHeader>
@@ -408,9 +408,9 @@ export function PdfExport({ project }: { project: Project | null }) {
             className="h-auto justify-start border-roksal-navy/20 dark:border-roksal-ink/20 py-3"
           >
             {generating === 'work' ? (
-              <Loader2 className="mr-3 h-5 w-5 animate-spin text-roksal-amber" />
+              <Loader2 aria-hidden="true" className="mr-3 h-5 w-5 animate-spin text-roksal-amber" />
             ) : (
-              <FileText className="mr-3 h-5 w-5 text-roksal-ink" />
+              <FileText aria-hidden="true" className="mr-3 h-5 w-5 text-roksal-ink" />
             )}
             <div className="text-left">
               <div className="text-sm font-semibold text-roksal-ink">Delovni list monterja</div>
@@ -425,9 +425,9 @@ export function PdfExport({ project }: { project: Project | null }) {
             className="h-auto justify-start border-roksal-navy/20 dark:border-roksal-ink/20 py-3"
           >
             {generating === 'quote' ? (
-              <Loader2 className="mr-3 h-5 w-5 animate-spin text-roksal-amber" />
+              <Loader2 aria-hidden="true" className="mr-3 h-5 w-5 animate-spin text-roksal-amber" />
             ) : (
-              <FileCheck2 className="mr-3 h-5 w-5 text-roksal-ink" />
+              <FileCheck2 aria-hidden="true" className="mr-3 h-5 w-5 text-roksal-ink" />
             )}
             <div className="text-left">
               <div className="text-sm font-semibold text-roksal-ink">Ponudba za stranko</div>

@@ -256,7 +256,7 @@ export function SafetyTab() {
           disabled={!windData}
           aria-label="Kopiraj varnostno poročilo na odložišče"
         >
-          <FileText className="h-3.5 w-3.5" />
+          <FileText aria-hidden="true" className="h-3.5 w-3.5" />
           Poročilo
         </Button>
       </div>
@@ -302,9 +302,9 @@ export function SafetyTab() {
             windData.isSafeForInstallation ? 'bg-roksal-green/20' : 'bg-roksal-red/20'
           }`}>
             {windData.isSafeForInstallation ? (
-              <CloudSun className="h-6 w-6 text-roksal-green" />
+              <CloudSun aria-hidden="true" className="h-6 w-6 text-roksal-green" />
             ) : (
-              <Zap className="h-6 w-6 text-roksal-red" />
+              <Zap aria-hidden="true" className="h-6 w-6 text-roksal-red" />
             )}
           </div>
           <div className="min-w-0 flex-1">
@@ -335,7 +335,7 @@ export function SafetyTab() {
         <CardHeader className="pb-2 pt-4 px-4">
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
-              <Wind className="h-4 w-4" />
+              <Wind aria-hidden="true" className="h-4 w-4" />
               Veter — Kranj
             </CardTitle>
             <Badge className={`${risk.bg} ${risk.color} text-2xs`}>
@@ -398,13 +398,13 @@ export function SafetyTab() {
                 </div>
                 <div className="space-y-1.5 min-w-0">
                   <div className="flex items-center gap-2 text-sm">
-                    <Gauge className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    <Gauge aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                     <span className="text-muted-foreground">
                       Pih: <span className="font-medium text-roksal-ink tabular-nums">{windData.gust.toFixed(1)} m/s</span>
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
-                    <Compass className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    <Compass aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                     <span className="text-muted-foreground">
                       {windData.directionLabel} <span className="font-medium text-roksal-ink tabular-nums">{windData.direction}°</span>
                     </span>
@@ -415,7 +415,7 @@ export function SafetyTab() {
               {/* Beaufort Scale Indicator */}
               <div className="flex items-center gap-3 rounded-lg bg-secondary/50 p-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-roksal-navy/10">
-                  <Wind className="h-5 w-5 text-roksal-ink" />
+                  <Wind aria-hidden="true" className="h-5 w-5 text-roksal-ink" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
@@ -450,21 +450,21 @@ export function SafetyTab() {
               {/* Weather details */}
               <div className="grid grid-cols-3 gap-2">
                 <div className="flex items-center gap-2 rounded-lg bg-secondary/50 p-2">
-                  <Thermometer className="h-4 w-4 text-roksal-amber" />
+                  <Thermometer aria-hidden="true" className="h-4 w-4 text-roksal-amber" />
                   <div>
                     <p className="text-xs font-medium text-roksal-ink tabular-nums">{windData.temperature}°C</p>
                     <p className="text-2xs text-muted-foreground">Temperatura</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 rounded-lg bg-secondary/50 p-2">
-                  <CloudRain className="h-4 w-4 text-blue-500 dark:text-blue-400" />
+                  <CloudRain aria-hidden="true" className="h-4 w-4 text-blue-500 dark:text-blue-400" />
                   <div>
                     <p className="text-xs font-medium text-roksal-ink tabular-nums">{windData.humidity}%</p>
                     <p className="text-2xs text-muted-foreground">Vlažnost</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 rounded-lg bg-secondary/50 p-2">
-                  <Gauge className="h-4 w-4 text-purple-500 dark:text-purple-400" />
+                  <Gauge aria-hidden="true" className="h-4 w-4 text-purple-500 dark:text-purple-400" />
                   <div>
                     <p className="text-xs font-medium text-roksal-ink tabular-nums">{windData.pressure} hPa</p>
                     <p className="text-2xs text-muted-foreground">Pritisnik</p>
@@ -476,7 +476,7 @@ export function SafetyTab() {
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-[11px]">
                   <span className="text-muted-foreground flex items-center gap-1.5">
-                    <CloudRain className="h-3 w-3" />
+                    <CloudRain aria-hidden="true" className="h-3 w-3" />
                     Vlažnost zraka
                   </span>
                   <div className="flex items-center gap-1.5">
@@ -513,9 +513,9 @@ export function SafetyTab() {
                 }`}
               >
                 {windData.isSafeForInstallation ? (
-                  <CheckCircle2 className="h-5 w-5 shrink-0 text-roksal-green" />
+                  <CheckCircle2 aria-hidden="true" className="h-5 w-5 shrink-0 text-roksal-green" />
                 ) : (
-                  <AlertTriangle className="h-5 w-5 shrink-0 text-roksal-red" />
+                  <AlertTriangle aria-hidden="true" className="h-5 w-5 shrink-0 text-roksal-red" />
                 )}
                 <div>
                   <p
@@ -546,7 +546,7 @@ export function SafetyTab() {
         <Card className="card-hover transition-all duration-200 animate-fade-in-up" style={{ animationDelay: '120ms' }}>
           <CardHeader className="pb-2 pt-4 px-4">
             <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
-              <Thermometer className="h-4 w-4" />
+              <Thermometer aria-hidden="true" className="h-4 w-4" />
               Temperaturni indikator
             </CardTitle>
           </CardHeader>
@@ -605,9 +605,9 @@ export function SafetyTab() {
                   }`}
                 >
                   {windData.temperature >= 5 && windData.temperature <= 35 ? (
-                    <CheckCircle2 className="h-4 w-4 shrink-0 text-roksal-green" />
+                    <CheckCircle2 aria-hidden="true" className="h-4 w-4 shrink-0 text-roksal-green" />
                   ) : (
-                    <AlertTriangle className="h-4 w-4 shrink-0 text-roksal-red" />
+                    <AlertTriangle aria-hidden="true" className="h-4 w-4 shrink-0 text-roksal-red" />
                   )}
                   <div>
                     <p
@@ -649,9 +649,9 @@ export function SafetyTab() {
         <CardContent className="flex items-center justify-between p-4">
           <div className="flex items-center gap-3">
             {ghostMode ? (
-              <Eye className="h-5 w-5 text-roksal-ink" />
+              <Eye aria-hidden="true" className="h-5 w-5 text-roksal-ink" />
             ) : (
-              <EyeOff className="h-5 w-5 text-muted-foreground" />
+              <EyeOff aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
             )}
             <div>
               <p className="text-sm font-medium text-roksal-ink">
@@ -675,7 +675,7 @@ export function SafetyTab() {
         <CardHeader className="pb-2 pt-4 px-4">
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
-              <Shield className="h-4 w-4" />
+              <Shield aria-hidden="true" className="h-4 w-4" />
               Seznam preverjanj
             </CardTitle>
             <Badge
@@ -742,7 +742,7 @@ export function SafetyTab() {
           {/* Completion message */}
           {progressPct === 100 && (
             <div className="mt-4 flex items-center gap-2 rounded-lg bg-roksal-green/10 p-3">
-              <CheckCircle2 className="h-5 w-5 shrink-0 text-roksal-green" />
+              <CheckCircle2 aria-hidden="true" className="h-5 w-5 shrink-0 text-roksal-green" />
               <p className="text-sm font-medium text-roksal-green">
                 Vsa varnostna preverjanja so končana!
               </p>

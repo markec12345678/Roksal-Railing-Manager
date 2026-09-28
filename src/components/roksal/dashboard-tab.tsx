@@ -1266,11 +1266,11 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
               </h3>
               <div className="flex flex-col gap-1.5 text-sm text-muted-foreground">
                 <div className="flex items-center gap-2">
-                  <MapPin className="h-3.5 w-3.5 text-roksal-amber" />
+                  <MapPin aria-hidden="true" className="h-3.5 w-3.5 text-roksal-amber" />
                   <span>{nextInstallation.customer?.naslov || 'Ni naslova'}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <CalendarDays className="h-3.5 w-3.5 text-roksal-amber" />
+                  <CalendarDays aria-hidden="true" className="h-3.5 w-3.5 text-roksal-amber" />
                   <span>
                     {nextInstallation.datumMontaze
                       ? formatDateNice(nextInstallation.datumMontaze)
@@ -1278,7 +1278,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Wrench className="h-3.5 w-3.5 text-roksal-amber" />
+                  <Wrench aria-hidden="true" className="h-3.5 w-3.5 text-roksal-amber" />
                   <span>
                     {nextInstallation.customer?.ime || 'Ni stranke'}
                   </span>
@@ -1287,7 +1287,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
             </div>
           ) : (
             <div className="flex items-center gap-2 py-4 text-muted-foreground">
-              <CheckCircle2 className="h-5 w-5 text-roksal-green" />
+              <CheckCircle2 aria-hidden="true" className="h-5 w-5 text-roksal-green" />
               <span className="text-sm">Ni načrtovanih montaž</span>
             </div>
           )}
@@ -1312,7 +1312,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
           <CardHeader className="pb-2 pt-4 px-4">
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
-                <CalendarDays className="h-4 w-4 text-roksal-amber" />
+                <CalendarDays aria-hidden="true" className="h-4 w-4 text-roksal-amber" />
                 Danes & opozorila
               </CardTitle>
               {(todayInstallations.length + overdueProjects.length) > 0 && (
@@ -1331,7 +1331,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                 className="flex w-full items-center gap-2.5 rounded-lg bg-roksal-amber/10 px-3 py-2.5 text-left transition-all duration-150 hover:bg-roksal-amber/15 active:scale-[0.99]"
               >
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-roksal-amber/20">
-                  <Wrench className="h-4 w-4 text-roksal-amber" />
+                  <Wrench aria-hidden="true" className="h-4 w-4 text-roksal-amber" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="flex items-center gap-1.5 text-xs font-semibold text-roksal-ink">
@@ -1346,7 +1346,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                     Montaža danes · {p.customer?.ime || 'Ni stranke'}
                   </p>
                 </div>
-                <ChevronRight className="h-4 w-4 shrink-0 text-roksal-amber" />
+                <ChevronRight aria-hidden="true" className="h-4 w-4 shrink-0 text-roksal-amber" />
               </button>
             ))}
             {groupedOverdue.map(({ p, n }) => (
@@ -1357,7 +1357,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                 className="flex w-full items-center gap-2.5 rounded-lg bg-roksal-red/10 px-3 py-2.5 text-left transition-all duration-150 hover:bg-roksal-red/15 active:scale-[0.99]"
               >
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-roksal-red/20">
-                  <AlertTriangle className="h-4 w-4 text-roksal-red" />
+                  <AlertTriangle aria-hidden="true" className="h-4 w-4 text-roksal-red" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="flex items-center gap-1.5 text-xs font-semibold text-roksal-ink">
@@ -1372,7 +1372,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                     Zapadlo: {formatDate(p.datumMontaze ?? '')} · {overdueDays(p)} dni čez termin
                   </p>
                 </div>
-                <ChevronRight className="h-4 w-4 shrink-0 text-roksal-red" />
+                <ChevronRight aria-hidden="true" className="h-4 w-4 shrink-0 text-roksal-red" />
               </button>
             ))}
           </CardContent>
@@ -1396,7 +1396,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
         <Card className="px-3 py-3 card-hover transition-all duration-200">
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-roksal-navy/10">
-              <TrendingUp className="h-4 w-4 text-roksal-ink" />
+              <TrendingUp aria-hidden="true" className="h-4 w-4 text-roksal-ink" />
             </div>
             <div>
               <p className="text-lg font-bold text-roksal-ink">{totalProjects}</p>
@@ -1407,7 +1407,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
         <Card className="px-3 py-3 card-hover transition-all duration-200">
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-roksal-amber/10">
-              <Clock className="h-4 w-4 text-roksal-amber" />
+              <Clock aria-hidden="true" className="h-4 w-4 text-roksal-amber" />
             </div>
             <div>
               <p className="text-lg font-bold text-roksal-ink">{projects.filter(p => p.status === 'V_TEKU').length}</p>
@@ -1418,7 +1418,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
         <Card className="px-3 py-3 card-hover transition-all duration-200">
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-roksal-green/10">
-              <CheckCircle2 className="h-4 w-4 text-roksal-green" />
+              <CheckCircle2 aria-hidden="true" className="h-4 w-4 text-roksal-green" />
             </div>
             <div>
               <p className="text-lg font-bold text-roksal-ink">{completedCount}</p>
@@ -1490,7 +1490,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
           <CardHeader className="pb-2 pt-4 px-4">
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
-                <TrendingUp className="h-4 w-4 text-roksal-ink" />
+                <TrendingUp aria-hidden="true" className="h-4 w-4 text-roksal-ink" />
                 Aktivnost (6 mesecev)
               </CardTitle>
               {/* Legenda */}
@@ -1560,7 +1560,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
           onClick={() => setNewProjectOpen(true)}
           className="w-full bg-roksal-amber hover:bg-roksal-amber/90 text-roksal-navy h-11 shadow-sm press-scale btn-shine md:w-auto md:px-8"
         >
-          <Plus className="mr-2 h-4 w-4" />
+          <Plus aria-hidden="true" className="mr-2 h-4 w-4" />
           Nov projekt
         </Button>
       )}
@@ -1575,14 +1575,14 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
         <CardContent className="px-4 pb-4">
           <div className="grid grid-cols-2 gap-3 md:gap-4">
             <div className="flex items-center gap-2.5 rounded-lg bg-secondary/50 p-2.5">
-              <BatteryMedium className="h-5 w-5 text-roksal-green" />
+              <BatteryMedium aria-hidden="true" className="h-5 w-5 text-roksal-green" />
               <div>
                 <p className="text-xs font-medium text-roksal-ink">Baterija</p>
                 <p className="text-[11px] text-muted-foreground">87% — polna</p>
               </div>
             </div>
             <div className="flex items-center gap-2.5 rounded-lg bg-secondary/50 p-2.5">
-              <Wifi className="h-5 w-5 text-roksal-green animate-pulse-soft" />
+              <Wifi aria-hidden="true" className="h-5 w-5 text-roksal-green animate-pulse-soft" />
               <div>
                 <p className="text-xs font-medium text-roksal-ink">Povezava</p>
                 <p className="text-[11px] text-muted-foreground">Online — sinhron.</p>
@@ -1615,7 +1615,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
       {/* Search & Filter Bar */}
       <div className="space-y-2">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -1633,7 +1633,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
           )}
         </div>
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
-          <Filter className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          <Filter aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
           {statusFilterTabs.map((tab) => (
             <button
               key={tab.id}
@@ -1768,7 +1768,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                         {statusLabels[project.status]}
                       </Badge>
                     </div>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    <ChevronRight aria-hidden="true" className="h-4 w-4 text-muted-foreground" />
                   </div>
                   {statusDropdownId === project.id && (
                     <div
@@ -1801,7 +1801,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                             >
                               <span className={`inline-block h-2 w-2 rounded-full ${statusColors[key]?.split(' ')[0]}`} />
                               {label}
-                              {key === project.status && <X className="ml-auto h-3 w-3 text-muted-foreground" />}
+                              {key === project.status && <X aria-hidden="true" className="ml-auto h-3 w-3 text-muted-foreground" />}
                             </button>
                           )
                         })
@@ -1888,7 +1888,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
       {/* Low Stock Alert */}
       {lowStockCount > 0 ? (
         <div className="flex items-center gap-3 rounded-xl border border-roksal-red/20 bg-roksal-red/5 p-3 animate-fade-in-up">
-          <AlertTriangle className="h-5 w-5 shrink-0 text-roksal-red badge-pulse" />
+          <AlertTriangle aria-hidden="true" className="h-5 w-5 shrink-0 text-roksal-red badge-pulse" />
           <div>
             <p className="text-sm font-medium text-roksal-ink">
               Nizka zaloga materiala
@@ -1919,7 +1919,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
         </div>
       ) : !invLoading && inventory.length > 0 ? (
         <div className="flex items-center gap-3 rounded-xl border border-roksal-green/20 bg-roksal-green/5 p-3">
-          <CheckCircle2 className="h-5 w-5 shrink-0 text-roksal-green" />
+          <CheckCircle2 aria-hidden="true" className="h-5 w-5 shrink-0 text-roksal-green" />
           <div>
             <p className="text-sm font-medium text-roksal-ink">
               Zaloga v redu
@@ -2070,7 +2070,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
           <CardHeader className="pb-2 pt-4 px-4">
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
-                <Activity className="h-4 w-4" />
+                <Activity aria-hidden="true" className="h-4 w-4" />
                 Aktivnosti
               </CardTitle>
               <Badge variant="secondary" className="text-2xs">{activities.length}</Badge>
@@ -2144,7 +2144,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                     setCustomerDialogOpen(true)
                   }}
                 >
-                  <UserPlus className="mr-1 h-3.5 w-3.5" />
+                  <UserPlus aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
                   Nova
                 </Button>
               </div>
@@ -2231,9 +2231,9 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
               className="bg-roksal-navy hover:bg-roksal-navy/90 text-white"
             >
               {creating ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 aria-hidden="true" className="mr-2 h-4 w-4 animate-spin" />
               ) : (
-                <Plus className="mr-2 h-4 w-4" />
+                <Plus aria-hidden="true" className="mr-2 h-4 w-4" />
               )}
               Ustvari
             </Button>
@@ -2331,9 +2331,9 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
               className="bg-roksal-navy hover:bg-roksal-navy/90 text-white"
             >
               {creatingCustomer ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 aria-hidden="true" className="mr-2 h-4 w-4 animate-spin" />
               ) : (
-                <UserPlus className="mr-2 h-4 w-4" />
+                <UserPlus aria-hidden="true" className="mr-2 h-4 w-4" />
               )}
               Shrani stranko
             </Button>
@@ -2361,7 +2361,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                   aria-label="Odpri revizijsko sled projekta"
                   onClick={() => setAuditOpen(true)}
                 >
-                  <History className="h-3.5 w-3.5 mr-1.5 text-roksal-amber" aria-hidden />
+                  <History aria-hidden="true" className="h-3.5 w-3.5 mr-1.5 text-roksal-amber"  />
                   Revizijska sled
                 </Button>
               </DialogHeader>
@@ -2409,7 +2409,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
 
                 <Card className="px-3 py-3">
                   <div className="flex items-center gap-2 mb-2">
-                    <Wrench className="h-3.5 w-3.5 text-roksal-amber" />
+                    <Wrench aria-hidden="true" className="h-3.5 w-3.5 text-roksal-amber" />
                     <span className="text-xs font-medium text-roksal-ink">Stranka</span>
                   </div>
                   <p className="text-sm font-medium text-roksal-ink">
@@ -2425,7 +2425,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                         href={`tel:${detailProject.customer.telefon}`}
                         className="flex items-center gap-1.5 rounded-lg bg-roksal-green/10 border border-roksal-green/20 px-2.5 py-1.5 text-[11px] font-medium text-roksal-green hover:bg-roksal-green/20 active:scale-[0.96] transition-all duration-150 press-scale"
                       >
-                        <Phone className="h-3.5 w-3.5" />
+                        <Phone aria-hidden="true" className="h-3.5 w-3.5" />
                         <span>Kliči</span>
                       </a>
                     )}
@@ -2434,7 +2434,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                         href={`mailto:${detailProject.customer.email}`}
  className="flex items-center gap-1.5 rounded-lg bg-roksal-navy/10 border border-roksal-navy/20 dark:border-roksal-ink/20 px-2.5 py-1.5 text-[11px] font-medium text-roksal-ink hover:bg-roksal-navy/15 active:scale-[0.96] transition-all duration-150 press-scale"
                       >
-                        <Mail className="h-3.5 w-3.5" />
+                        <Mail aria-hidden="true" className="h-3.5 w-3.5" />
                         <span>E-pošta</span>
                       </a>
                     )}
@@ -2451,7 +2451,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                     onClick={() => setDetailMeasurementsExpanded(!detailMeasurementsExpanded)}
                   >
                     <div className="flex items-center gap-2">
-                      <Ruler className="h-4 w-4 text-roksal-ink" />
+                      <Ruler aria-hidden="true" className="h-4 w-4 text-roksal-ink" />
                       <span className="text-xs font-medium text-roksal-ink">Meritve tega projekta</span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -2460,7 +2460,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                       ) : (
                         <Badge variant="secondary" className="text-[11px]">{detailMeasurements.length}</Badge>
                       )}
-                      {detailMeasurementsExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                      {detailMeasurementsExpanded ? <ChevronUp aria-hidden="true" className="h-4 w-4 text-muted-foreground" /> : <ChevronDown aria-hidden="true" className="h-4 w-4 text-muted-foreground" />}
                     </div>
                   </div>
 
@@ -2468,7 +2468,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                     <div className="border-t border-border/50 px-3 pb-3 pt-2 space-y-2.5 max-h-[260px] overflow-y-auto scrollbar-thin">
                       {detailMeasurementsLoading ? (
                         <div className="flex items-center justify-center py-4">
-                          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                          <Loader2 aria-hidden="true" className="h-5 w-5 animate-spin text-muted-foreground" />
                         </div>
                       ) : detailMeasurementsError ? (
                         // R211: fail-verbose — napaka NIKOLI ni prikazana kot 'Ni meritev';
@@ -2525,7 +2525,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <Calculator className="h-3 w-3 text-roksal-amber" />
+                        <Calculator aria-hidden="true" className="h-3 w-3 text-roksal-amber" />
                         <span className="text-[11px] text-muted-foreground">
                           ~{estimateSlats(detailMeasurements)} letvev
                         </span>
@@ -2536,21 +2536,21 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
 
                 <div className="grid grid-cols-3 gap-3">
                   <Card className="px-3 py-3 text-center">
-                    <Ruler className="mx-auto mb-1 h-4 w-4 text-roksal-ink" />
+                    <Ruler aria-hidden="true" className="mx-auto mb-1 h-4 w-4 text-roksal-ink" />
                     <p className="text-lg font-bold text-roksal-ink">
                       {detailProject._count?.measurements || 0}
                     </p>
                     <p className="text-2xs text-muted-foreground">Meritve</p>
                   </Card>
                   <Card className="px-3 py-3 text-center">
-                    <FileText className="mx-auto mb-1 h-4 w-4 text-roksal-ink" />
+                    <FileText aria-hidden="true" className="mx-auto mb-1 h-4 w-4 text-roksal-ink" />
                     <p className="text-lg font-bold text-roksal-ink">
                       {detailProject._count?.documents || 0}
                     </p>
                     <p className="text-2xs text-muted-foreground">Dokumenti</p>
                   </Card>
                   <Card className="px-3 py-3 text-center">
-                    <Package className="mx-auto mb-1 h-4 w-4 text-roksal-ink" />
+                    <Package aria-hidden="true" className="mx-auto mb-1 h-4 w-4 text-roksal-ink" />
                     <p className="text-lg font-bold text-roksal-ink">
                       {detailProject._count?.auditLogs || 0}
                     </p>
@@ -2559,7 +2559,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                 </div>
 
                 <div className="flex items-center gap-2 text-sm">
-                  <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                  <CalendarDays aria-hidden="true" className="h-4 w-4 text-muted-foreground" />
                   <span className="text-muted-foreground">Datum montaže:</span>
                   <span className="font-medium text-roksal-ink">
                     {detailProject.datumMontaze
@@ -2574,7 +2574,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
 
                 {detailProject.monter && (
                   <div className="flex items-center gap-2 text-sm">
-                    <Wrench className="h-4 w-4 text-muted-foreground" />
+                    <Wrench aria-hidden="true" className="h-4 w-4 text-muted-foreground" />
                     <span className="text-muted-foreground">Monter:</span>
                     <span className="font-medium text-roksal-ink">
                       {detailProject.monter.ime}
@@ -2593,11 +2593,11 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                 <Card className="overflow-hidden border-l-4 border-l-roksal-navy/40">
                   <div className="flex w-full items-center justify-between p-3 bg-roksal-navy/5">
                     <div className="flex items-center gap-2">
-                      <Globe className="h-4 w-4 text-roksal-ink" />
+                      <Globe aria-hidden="true" className="h-4 w-4 text-roksal-ink" />
                       <span className="text-xs font-semibold text-roksal-ink">Portal stranke</span>
                     </div>
                     {portalLoading ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                      <Loader2 aria-hidden="true" className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
                     ) : portalError ? (
                       <Badge className="bg-roksal-red/15 text-roksal-red hover:bg-roksal-red/20 text-2xs" title={portalError}>
                         <AlertTriangle className="mr-1 h-3 w-3" aria-hidden="true" />
@@ -2605,7 +2605,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                       </Badge>
                     ) : portalInfo?.enabled ? (
                       <Badge className="bg-roksal-green/15 text-roksal-green hover:bg-roksal-green/20 text-2xs">
-                        <ShieldCheck className="mr-1 h-3 w-3" />
+                        <ShieldCheck aria-hidden="true" className="mr-1 h-3 w-3" />
                         Omogočen
                       </Badge>
                     ) : (
@@ -2643,7 +2643,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                       // §10 (R135): monter brez pravice portal.manage — pošteno
                       // stanje namesto mrtvega gumba (strežnik bi vrnil 403).
                       <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50/70 px-2.5 py-2 dark:border-roksal-amber/25 dark:bg-roksal-amber/10">
-                        <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-roksal-amber" />
+                        <Info aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-roksal-amber" />
                         <div className="space-y-0.5">
                           <p className="text-[11px] font-medium text-amber-800 dark:text-roksal-amber">Ureja pisarna</p>
                           <p className="text-[11px] text-amber-700/90 leading-relaxed dark:text-roksal-amber/80">
@@ -2667,9 +2667,9 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                           size="sm"
                         >
                           {portalActionLoading ? (
-                            <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                            <Loader2 aria-hidden="true" className="mr-2 h-3.5 w-3.5 animate-spin" />
                           ) : (
-                            <Globe className="mr-2 h-3.5 w-3.5" />
+                            <Globe aria-hidden="true" className="mr-2 h-3.5 w-3.5" />
                           )}
                           Omogoči portal stranke
                         </Button>
@@ -2683,7 +2683,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                           <Label className="text-[11px] text-muted-foreground">Povezava portala</Label>
                           <div className="flex items-center gap-1.5">
                             <div className="flex-1 min-w-0 flex items-center gap-1.5 rounded-md border border-border bg-secondary/40 px-2 py-1.5">
-                              <Link2 className="h-3 w-3 shrink-0 text-roksal-amber" />
+                              <Link2 aria-hidden="true" className="h-3 w-3 shrink-0 text-roksal-amber" />
                               <span className="text-[11px] font-mono text-roksal-ink truncate">
                                 /portal/{portalInfo.token.slice(0, 12)}…
                               </span>
@@ -2709,7 +2709,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                           return (
                             <div className="grid grid-cols-2 gap-1.5 rounded-md border border-border bg-secondary/30 px-2 py-1.5">
                               <div className="flex items-center gap-1.5 min-w-0">
-                                <CalendarClock
+                                <CalendarClock aria-hidden="true"
                                   className={`h-3.5 w-3.5 shrink-0 ${expCritical ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}
                                 />
                                 <div className="min-w-0">
@@ -2731,7 +2731,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                                 </div>
                               </div>
                               <div className="flex items-center gap-1.5 min-w-0">
-                                <History className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                                <History aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                                 <div className="min-w-0">
                                   <p className="text-[9px] uppercase tracking-wide text-muted-foreground leading-tight">
                                     Zadnji obisk
@@ -2762,7 +2762,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                             disabled={!detailProject?.customer?.telefon}
                             className="h-8 text-[11px]"
                           >
-                            <MessageSquare className="mr-1 h-3.5 w-3.5" />
+                            <MessageSquare aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
                             SMS
                           </Button>
                           <Button
@@ -2773,7 +2773,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                             disabled={!detailProject?.customer?.email}
                             className="h-8 text-[11px]"
                           >
-                            <Mail className="mr-1 h-3.5 w-3.5" />
+                            <Mail aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
                             Email
                           </Button>
                           <Button
@@ -2783,7 +2783,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                             onClick={copyPortalUrl}
                             className="h-8 text-[11px]"
                           >
-                            <Copy className="mr-1 h-3.5 w-3.5" />
+                            <Copy aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
                             Kopiraj
                           </Button>
                         </div>
@@ -2825,9 +2825,9 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                               }`}
                             >
                               {portalShowPrice ? (
-                                <Eye className="h-3 w-3" />
+                                <Eye aria-hidden="true" className="h-3 w-3" />
                               ) : (
-                                <EyeOff className="h-3 w-3" />
+                                <EyeOff aria-hidden="true" className="h-3 w-3" />
                               )}
                               {portalShowPrice ? 'Pokaži stranki' : 'Skrito'}
                             </button>
@@ -2860,9 +2860,9 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                           className="w-full h-8 text-[11px] border-roksal-amber/40 text-roksal-ink hover:bg-roksal-amber/10"
                         >
                           {portalActionLoading ? (
-                            <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
+                            <Loader2 aria-hidden="true" className="mr-1.5 h-3 w-3 animate-spin" />
                           ) : (
-                            <CheckCircle2 className="mr-1.5 h-3 w-3" />
+                            <CheckCircle2 aria-hidden="true" className="mr-1.5 h-3 w-3" />
                           )}
                           Shrani sporočilo in ceno
                         </Button>
@@ -2879,7 +2879,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                             className="h-8 text-[11px] text-roksal-ink hover:bg-roksal-navy/10"
                             title="Ustvari novo povezavo — stara postane trajno nedosegljiva"
                           >
-                            <RefreshCw className="mr-1 h-3 w-3" />
+                            <RefreshCw aria-hidden="true" className="mr-1 h-3 w-3" />
                             Nova
                           </Button>
                           <Button
@@ -2891,7 +2891,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                             className="h-8 text-[11px] text-roksal-red hover:bg-roksal-red/10"
                             title="Začasno izklopi stran — povezava ostane veljavna"
                           >
-                            <X className="mr-1 h-3 w-3" />
+                            <X aria-hidden="true" className="mr-1 h-3 w-3" />
                             Izklopi
                           </Button>
                           <Button
@@ -2903,7 +2903,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                             className="h-8 text-[11px] text-roksal-red hover:bg-roksal-red/10 border border-roksal-red/30"
                             title="Trajno prekliči povezavo (žeton mrtev) — potrebna Nova povezava"
                           >
-                            <KeyRound className="mr-1 h-3 w-3" />
+                            <KeyRound aria-hidden="true" className="mr-1 h-3 w-3" />
                             Prekliči
                           </Button>
                         </div>
@@ -2911,7 +2911,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                         {!canManagePortal && (
                           // §10 (R135): stanje namesto akcij za nosilca brez pravice
                           <div className="flex items-center gap-1.5 border-t border-border pt-2">
-                            <Info className="h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+                            <Info aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
                             <span className="text-[11px] text-muted-foreground">
                               Ureja pisarna (pravica portal.manage)
                             </span>
@@ -2927,11 +2927,11 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                 <Card className="overflow-hidden border-l-4 border-l-roksal-amber/60">
                   <div className="flex w-full items-center justify-between p-3 bg-roksal-amber/5">
                     <div className="flex items-center gap-2">
-                      <Ruler className="h-4 w-4 text-roksal-ink" />
+                      <Ruler aria-hidden="true" className="h-4 w-4 text-roksal-ink" />
                       <span className="text-xs font-semibold text-roksal-ink">Merilna povezava (samomeritev)</span>
                     </div>
                     {portalLoading ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                      <Loader2 aria-hidden="true" className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
                     ) : portalError ? (
                       <Badge className="bg-roksal-red/15 text-roksal-red hover:bg-roksal-red/20 text-2xs" title={portalError}>
                         <AlertTriangle className="mr-1 h-3 w-3" aria-hidden="true" />
@@ -2939,7 +2939,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                       </Badge>
                     ) : portalInfo?.measure?.enabled ? (
                       <Badge className="bg-roksal-amber/15 text-amber-700 dark:text-amber-300 hover:bg-roksal-amber/25 text-2xs">
-                        <ShieldCheck className="mr-1 h-3 w-3" />
+                        <ShieldCheck aria-hidden="true" className="mr-1 h-3 w-3" />
                         Izdana
                       </Badge>
                     ) : (
@@ -2962,7 +2962,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                     {!portalLoading && !portalError && !portalInfo?.measure?.enabled && !canManagePortal && (
                       // §10 (R135): pošteno stanje namesto gumba, ki bi vrnil 403
                       <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50/70 px-2.5 py-2 dark:border-roksal-amber/25 dark:bg-roksal-amber/10">
-                        <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-roksal-amber" />
+                        <Info aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-roksal-amber" />
                         <div className="space-y-0.5">
                           <p className="text-[11px] font-medium text-amber-800 dark:text-roksal-amber">Ureja pisarna</p>
                           <p className="text-[11px] text-amber-700/90 leading-relaxed dark:text-roksal-amber/80">
@@ -2986,9 +2986,9 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                           size="sm"
                         >
                           {portalActionLoading ? (
-                            <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                            <Loader2 aria-hidden="true" className="mr-2 h-3.5 w-3.5 animate-spin" />
                           ) : (
-                            <Ruler className="mr-2 h-3.5 w-3.5" />
+                            <Ruler aria-hidden="true" className="mr-2 h-3.5 w-3.5" />
                           )}
                           Izdaj merilno povezavo
                         </Button>
@@ -3002,7 +3002,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                           <Label className="text-[11px] text-muted-foreground">Merilna povezava</Label>
                           <div className="flex items-center gap-1.5">
                             <div className="flex-1 min-w-0 flex items-center gap-1.5 rounded-md border border-border bg-secondary/40 px-2 py-1.5">
-                              <Link2 className="h-3 w-3 shrink-0 text-roksal-amber" />
+                              <Link2 aria-hidden="true" className="h-3 w-3 shrink-0 text-roksal-amber" />
                               <span className="text-[11px] font-mono text-roksal-ink truncate">
                                 /m/{portalInfo.measure.token.slice(0, 12)}…
                               </span>
@@ -3030,7 +3030,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                           return (
                             <div className="grid grid-cols-2 gap-1.5 rounded-md border border-border bg-secondary/30 px-2 py-1.5">
                               <div className="flex items-center gap-1.5 min-w-0">
-                                <CalendarClock
+                                <CalendarClock aria-hidden="true"
                                   className={`h-3.5 w-3.5 shrink-0 ${mCritical ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}
                                 />
                                 <div className="min-w-0">
@@ -3052,7 +3052,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                                 </div>
                               </div>
                               <div className="flex items-center gap-1.5 min-w-0">
-                                <History className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                                <History aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                                 <div className="min-w-0">
                                   <p className="text-[9px] uppercase tracking-wide text-muted-foreground leading-tight">
                                     Zadnja meritev
@@ -3083,7 +3083,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                             disabled={!detailProject?.customer?.telefon}
                             className="h-8 text-[11px]"
                           >
-                            <MessageSquare className="mr-1 h-3.5 w-3.5" />
+                            <MessageSquare aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
                             SMS
                           </Button>
                           <Button
@@ -3094,7 +3094,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                             disabled={!detailProject?.customer?.email}
                             className="h-8 text-[11px]"
                           >
-                            <Mail className="mr-1 h-3.5 w-3.5" />
+                            <Mail aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
                             Email
                           </Button>
                           <Button
@@ -3104,7 +3104,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                             onClick={copyMeasureUrl}
                             className="h-8 text-[11px]"
                           >
-                            <Copy className="mr-1 h-3.5 w-3.5" />
+                            <Copy aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
                             Kopiraj
                           </Button>
                         </div>
@@ -3121,7 +3121,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                             className="h-8 text-[11px] text-roksal-ink hover:bg-roksal-navy/10"
                             title="Ustvari novo merilno povezavo — stara postane trajno nedosegljiva"
                           >
-                            <RefreshCw className="mr-1 h-3 w-3" />
+                            <RefreshCw aria-hidden="true" className="mr-1 h-3 w-3" />
                             Nova
                           </Button>
                           <Button
@@ -3133,7 +3133,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                             className="h-8 text-[11px] text-roksal-red hover:bg-roksal-red/10"
                             title="Začasno izklopi sprejemanje meritev — povezava ostane veljavna"
                           >
-                            <X className="mr-1 h-3 w-3" />
+                            <X aria-hidden="true" className="mr-1 h-3 w-3" />
                             Izklopi
                           </Button>
                           <Button
@@ -3145,7 +3145,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                             className="h-8 text-[11px] text-roksal-red hover:bg-roksal-red/10 border border-roksal-red/30"
                             title="Trajno prekliči merilno povezavo (žeton mrtev) — potrebna Nova povezava"
                           >
-                            <KeyRound className="mr-1 h-3 w-3" />
+                            <KeyRound aria-hidden="true" className="mr-1 h-3 w-3" />
                             Prekliči
                           </Button>
                         </div>
@@ -3153,7 +3153,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                         {!canManagePortal && (
                           // §10 (R135): stanje namesto akcij za nosilca brez pravice
                           <div className="flex items-center gap-1.5 border-t border-border pt-2">
-                            <Info className="h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+                            <Info aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
                             <span className="text-[11px] text-muted-foreground">
                               Ureja pisarna (pravica portal.manage)
                             </span>

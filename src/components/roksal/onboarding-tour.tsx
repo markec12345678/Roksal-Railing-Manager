@@ -168,7 +168,7 @@ export function OnboardingTour({ onClose, onNavigate }: { onClose: () => void; o
           {/* Footer */}
           <div className="flex items-center justify-between p-3 border-t border-border bg-muted/30">
             <Button type="button" variant="ghost" size="sm" onClick={handlePrev} disabled={korak === 0} className="text-[11px]">
-              <ChevronLeft className="h-4 w-4 mr-1" /> Nazaj
+              <ChevronLeft aria-hidden="true" className="h-4 w-4 mr-1" /> Nazaj
             </Button>
 
             {/* Dots */}
@@ -188,17 +188,17 @@ export function OnboardingTour({ onClose, onNavigate }: { onClose: () => void; o
 
             {current.akcija ? (
               <Button type="button" size="sm" onClick={handleAction} className="text-[11px] bg-roksal-amber text-white">
-                {current.akcija.label} <ChevronRight className="h-4 w-4 ml-1" />
+                {current.akcija.label} <ChevronRight aria-hidden="true" className="h-4 w-4 ml-1" />
               </Button>
             ) : (
               <Button type="button" size="sm" onClick={handleNext} className="text-[11px] bg-roksal-navy text-white">
                 {korak === KORAKI.length - 1 ? (
                   <>
-                    <CheckCircle2 className="h-4 w-4 mr-1" /> Zaključi
+                    <CheckCircle2 aria-hidden="true" className="h-4 w-4 mr-1" /> Zaključi
                   </>
                 ) : (
                   <>
-                    Naprej <ChevronRight className="h-4 w-4 ml-1" />
+                    Naprej <ChevronRight aria-hidden="true" className="h-4 w-4 ml-1" />
                   </>
                 )}
               </Button>
@@ -239,7 +239,7 @@ export function OnboardingWrapper({ onNavigate }: { onNavigate: (tab: string) =>
         aria-label="Ponovi onboarding"
         title="Ponovi vodič"
       >
-        <RotateCcw className="h-4 w-4" />
+        <RotateCcw aria-hidden="true" className="h-4 w-4" />
       </button>
     )
   }

@@ -3990,7 +3990,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <span className="inline-flex items-center gap-0.5 rounded px-1 py-0 text-3xs font-medium border bg-roksal-amber/10 text-roksal-amber border-roksal-amber/30">
-                        <Camera className="h-2.5 w-2.5" />
+                        <Camera aria-hidden="true" className="h-2.5 w-2.5" />
                         Foto
                       </span>
                     </TooltipTrigger>
@@ -4001,7 +4001,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <span className="inline-flex items-center gap-0.5 rounded px-1 py-0 text-3xs font-medium border bg-cyan-50 dark:bg-cyan-950/40 text-cyan-700 dark:text-cyan-300 border-cyan-200 dark:border-cyan-800">
-                        <Boxes className="h-2.5 w-2.5" />
+                        <Boxes aria-hidden="true" className="h-2.5 w-2.5" />
                         AR
                       </span>
                     </TooltipTrigger>
@@ -4012,7 +4012,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <span className="inline-flex items-center gap-0.5 rounded px-1 py-0 text-3xs font-medium border bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800">
-                        <UserRound className="h-2.5 w-2.5" />
+                        <UserRound aria-hidden="true" className="h-2.5 w-2.5" />
                         Stranka
                       </span>
                     </TooltipTrigger>
@@ -4033,11 +4033,11 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                       title="Klikni za cikliranje statusa (shranjeno v bazo)"
                     >
                       {mStatus === 'POTRJENA' ? (
-                        <CheckCircle2 className="h-2.5 w-2.5" />
+                        <CheckCircle2 aria-hidden="true" className="h-2.5 w-2.5" />
                       ) : mStatus === 'ARHIVIRANA' ? (
-                        <Archive className="h-2.5 w-2.5" />
+                        <Archive aria-hidden="true" className="h-2.5 w-2.5" />
                       ) : (
-                        <RotateCcw className="h-2.5 w-2.5" />
+                        <RotateCcw aria-hidden="true" className="h-2.5 w-2.5" />
                       )}
                       {statusLabels[mStatus]}
                     </button>
@@ -4046,7 +4046,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                 </Tooltip>
                 {m.segmentId && (
                   <Badge variant="outline" className="text-[9px] h-4 px-1 shrink-0">
-                    <Layers className="h-2.5 w-2.5 mr-0.5" />
+                    <Layers aria-hidden="true" className="h-2.5 w-2.5 mr-0.5" />
                     {allSegments.find((s) => s.id === m.segmentId)?.name || m.segmentId}
                   </Badge>
                 )}
@@ -4099,7 +4099,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                 {/* MERITVE-PRO — podrobnosti vira */}
                 {isPhoto && m.oznaka && (
                   <span className="inline-flex items-center gap-0.5 text-[9px] text-roksal-amber/80 font-mono">
-                    <ImageIcon className="h-2.5 w-2.5" />
+                    <ImageIcon aria-hidden="true" className="h-2.5 w-2.5" />
                     Vir: Foto ({m.oznaka} · {m.dolzinaMm}mm)
                   </span>
                 )}
@@ -4118,7 +4118,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                     title="Poglej foto"
                     aria-label={`Poglej pripadajočo foto mero za ${m.oznaka || 'meritev'}`}
                   >
-                    <Camera className="h-3.5 w-3.5 text-roksal-amber" />
+                    <Camera aria-hidden="true" className="h-3.5 w-3.5 text-roksal-amber" />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent>Poglej pripadajočo foto mero</TooltipContent>
@@ -4131,7 +4131,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               title="Podvoji meritev"
               aria-label={`Podvoji meritev ${m.oznaka || m.id.slice(-4)}`}
             >
-              <Copy className="h-3.5 w-3.5 text-muted-foreground" />
+              <Copy aria-hidden="true" className="h-3.5 w-3.5 text-muted-foreground" />
             </button>
             <button
               type="button"
@@ -4140,7 +4140,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               title="Izbriši meritev"
               aria-label={`Izbriši meritev ${m.oznaka || m.id.slice(-4)}`}
             >
-              <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-roksal-red" />
+              <Trash2 aria-hidden="true" className="h-3.5 w-3.5 text-muted-foreground hover:text-roksal-red" />
             </button>
           </div>
         </div>
@@ -4157,12 +4157,12 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
         <div className="flex items-center justify-between border-t border-border/30 px-3 py-2 bg-secondary/10">
           <div className="flex items-center gap-3 text-[11px] text-muted-foreground min-w-0">
             <span className="flex items-center gap-1 shrink-0 tabular-nums">
-              <Calendar className="h-3 w-3" />
+              <Calendar aria-hidden="true" className="h-3 w-3" />
               {new Date(m.createdAt).toLocaleDateString('sl-SI')}
             </span>
             {gps && (
               <span className="flex items-center gap-1 shrink-0">
-                <MapPin className="h-3 w-3" />
+                <MapPin aria-hidden="true" className="h-3 w-3" />
                 GPS
               </span>
             )}
@@ -4170,7 +4170,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
           <div className="flex items-center gap-1.5 shrink-0">
             {(m.opomba || m.opombe) && (
               <div className="flex items-center gap-1 text-[11px] text-muted-foreground max-w-[30%] truncate">
-                <AlertCircle className="h-3 w-3 shrink-0" />
+                <AlertCircle aria-hidden="true" className="h-3 w-3 shrink-0" />
                 <span className="truncate hidden sm:inline">{m.opomba || m.opombe}</span>
               </div>
             )}
@@ -4183,7 +4183,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                 title="Poglej pripadajočo foto mero"
                 aria-label={`Poglej pripadajočo foto mero za ${m.oznaka || 'meritev'}`}
               >
-                <Link2 className="h-3 w-3" />
+                <Link2 aria-hidden="true" className="h-3 w-3" />
                 <span>Poglej foto</span>
               </button>
             )}
@@ -4201,7 +4201,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                 title="Izračunaj razmike v kalkulatorju"
                 aria-label={`Izračunaj razmike za meritev ${m.oznaka || m.id.slice(-4)}`}
               >
-                <Calculator className="h-3.5 w-3.5" />
+                <Calculator aria-hidden="true" className="h-3.5 w-3.5" />
                 <span>Razmiki</span>
               </button>
             )}
@@ -4281,7 +4281,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
             </div>
           ) : (
             <div className="flex items-center gap-3">
-              <FolderOpen className="h-4 w-4 text-roksal-ink" />
+              <FolderOpen aria-hidden="true" className="h-4 w-4 text-roksal-ink" />
               <div className="flex-1">
                 <Select value={selectedProject} onValueChange={setSelectedProject}>
                   <SelectTrigger className="w-full">
@@ -4298,7 +4298,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               </div>
               {calibration.pixelsPerMm && (
                 <Badge className="bg-roksal-amber/15 text-roksal-amber border border-roksal-amber/30">
-                  <Crosshair className="h-3 w-3 mr-1" />
+                  <Crosshair aria-hidden="true" className="h-3 w-3 mr-1" />
                   {calibration.pixelsPerMm.toFixed(2)} px/mm
                 </Badge>
               )}
@@ -4323,7 +4323,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                 }`}
               >
                 {laserStatus === 'connecting' ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
                 ) : (
                   <Bluetooth className="h-4 w-4" />
                 )}
@@ -4342,7 +4342,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
             <div className="flex items-center gap-1.5 shrink-0">
               {laserLastReading != null && laserStatus === 'connected' && (
                 <Badge className="bg-roksal-green/15 text-roksal-green border border-roksal-green/30 text-2xs h-6 px-2">
-                  <Radio className="h-3 w-3 mr-1" />
+                  <Radio aria-hidden="true" className="h-3 w-3 mr-1" />
                   {laserLastReading}mm
                 </Badge>
               )}
@@ -4372,7 +4372,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   onClick={disconnectLaser}
                   className="h-8 px-3 text-[11px] border-roksal-red/30 text-roksal-red hover:bg-roksal-red/10"
                 >
-                  <Unplug className="mr-1 h-3.5 w-3.5" />
+                  <Unplug aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
                   Prekini
                 </Button>
               )}
@@ -4380,7 +4380,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
           </div>
           {!laserSupported && (
             <div className="rounded-md bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 p-2 text-2xs text-amber-700 dark:text-amber-300 flex items-start gap-1.5">
-              <AlertCircle className="h-3 w-3 mt-0.5 shrink-0" />
+              <AlertCircle aria-hidden="true" className="h-3 w-3 mt-0.5 shrink-0" />
               <span>
                 Web Bluetooth ni podprt v tem brskalniku. Uporabite Chrome na Androidu ali računalniku.
                 Ročni vnos še vedno deluje.
@@ -4389,7 +4389,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
           )}
           {laserStatus === 'connected' && (
             <div className="rounded-md bg-roksal-green/5 border border-roksal-green/20 p-2 text-2xs text-roksal-green/90 flex items-start gap-1.5">
-              <Radio className="h-3 w-3 mt-0.5 shrink-0 animate-pulse" />
+              <Radio aria-hidden="true" className="h-3 w-3 mt-0.5 shrink-0 animate-pulse" />
               <span>
                 Poslušam meritve... Pošlji mero z gumbom na daljincu — samodejno se izpolni dolžina v formi.
               </span>
@@ -4400,7 +4400,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2 min-w-0">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-50 dark:bg-cyan-950/40 text-cyan-700 dark:text-cyan-300 shrink-0 border border-cyan-200 dark:border-cyan-800">
-                <Boxes className="h-4 w-4" />
+                <Boxes aria-hidden="true" className="h-4 w-4" />
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-medium text-roksal-ink">Uvozi iz AR posnetka</p>
@@ -4416,7 +4416,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               disabled={!selectedProject}
               className="h-8 px-3 text-[11px] border-cyan-300 dark:border-cyan-800 text-cyan-700 dark:text-cyan-300 hover:bg-cyan-50 dark:hover:bg-cyan-950/40"
             >
-              <Boxes className="mr-1 h-3.5 w-3.5" />
+              <Boxes aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
               Uvozi iz AR
             </Button>
           </div>
@@ -4430,7 +4430,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
       <Card className="card-hover transition-all duration-200 animate-fade-in-up border-roksal-amber/20" style={{ animationDelay: '15ms' }}>
         <CardHeader className="pb-2 pt-4 px-4">
           <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
-            <Sparkles className="h-4 w-4 text-roksal-amber" />
+            <Sparkles aria-hidden="true" className="h-4 w-4 text-roksal-amber" />
             Hitre predloge
           </CardTitle>
         </CardHeader>
@@ -4469,7 +4469,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
       <Card className="card-hover transition-all duration-200 animate-fade-in-up" style={{ animationDelay: '30ms' }}>
         <CardHeader className="pb-2 pt-4 px-4">
           <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
-            <TrendingUp className="h-4 w-4" />
+            <TrendingUp aria-hidden="true" className="h-4 w-4" />
             Povzetek meritev
           </CardTitle>
         </CardHeader>
@@ -4574,7 +4574,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
         <CardContent className="p-3">
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2">
-              <ArrowRightLeft className="h-4 w-4 text-roksal-ink" />
+              <ArrowRightLeft aria-hidden="true" className="h-4 w-4 text-roksal-ink" />
               <div>
                 <p className="text-xs font-medium text-roksal-ink">Primarna enota za prikaz</p>
                 <p className="text-[9px] text-muted-foreground">Vpliva na vse prikaze dimenzij</p>
@@ -4617,7 +4617,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               >
                 <div className="flex items-center gap-2">
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-roksal-amber text-white">
-                    <Layers2 className="h-4 w-4" />
+                    <Layers2 aria-hidden="true" className="h-4 w-4" />
                   </div>
                   <div>
                     <span className="text-sm font-medium text-roksal-ink">Stopniščni čarovnik</span>
@@ -4627,9 +4627,9 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   </div>
                 </div>
                 {stairWizardOpen ? (
-                  <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                  <ChevronUp aria-hidden="true" className="h-4 w-4 text-muted-foreground" />
                 ) : (
-                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  <ChevronDown aria-hidden="true" className="h-4 w-4 text-muted-foreground" />
                 )}
               </button>
             </CollapsibleTrigger>
@@ -4682,7 +4682,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                 {/* Segment */}
                 <div className="space-y-1.5">
                   <Label className="text-xs font-medium">
-                    <Layers className="inline h-3 w-3 mr-1" />
+                    <Layers aria-hidden="true" className="inline h-3 w-3 mr-1" />
                     Ciljni segment
                   </Label>
                   <Select
@@ -4756,7 +4756,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                     disabled={!stairCalc.valid || !selectedProject}
                     className="flex-1 h-9 bg-roksal-navy text-white hover:bg-roksal-navy/90"
                   >
-                    <Plus className="mr-1.5 h-4 w-4" />
+                    <Plus aria-hidden="true" className="mr-1.5 h-4 w-4" />
                     Ustvari meritve
                   </Button>
                   <Button
@@ -4766,7 +4766,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                     disabled={!stairCalc.valid}
                     className="h-9 px-3 border-roksal-amber/30 text-roksal-amber hover:bg-roksal-amber/10"
                   >
-                    <Bookmark className="mr-1.5 h-4 w-4" />
+                    <Bookmark aria-hidden="true" className="mr-1.5 h-4 w-4" />
                     Shrani kot predlogo
                   </Button>
                 </div>
@@ -4829,7 +4829,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                       : 'bg-roksal-navy/10 text-roksal-ink'
                   }`}
                 >
-                  <Crosshair className="h-4 w-4" />
+                  <Crosshair aria-hidden="true" className="h-4 w-4" />
                 </div>
                 <div>
                   <span className="text-sm font-medium text-roksal-ink">Umeritev reference</span>
@@ -4841,9 +4841,9 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                 </div>
               </div>
               {calibrationOpen ? (
-                <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                <ChevronUp aria-hidden="true" className="h-4 w-4 text-muted-foreground" />
               ) : (
-                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                <ChevronDown aria-hidden="true" className="h-4 w-4 text-muted-foreground" />
               )}
             </button>
           </CollapsibleTrigger>
@@ -4903,7 +4903,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   className="flex-1 h-9 bg-roksal-amber hover:bg-roksal-amber/90 text-white"
                   disabled={!calibration.realMm || !calibration.pixelDistance}
                 >
-                  <Crosshair className="mr-1.5 h-4 w-4" />
+                  <Crosshair aria-hidden="true" className="mr-1.5 h-4 w-4" />
                   Izračunaj umeritev
                 </Button>
                 {calibration.pixelsPerMm && (
@@ -4965,7 +4965,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
         >
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-roksal-navy text-white">
-              <Plus className="h-4 w-4" />
+              <Plus aria-hidden="true" className="h-4 w-4" />
             </div>
             <div>
               <span className="text-sm font-medium text-roksal-ink">Nova meritev</span>
@@ -4975,9 +4975,9 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
             </div>
           </div>
           {formOpen ? (
-            <ChevronUp className="h-4 w-4 text-muted-foreground" />
+            <ChevronUp aria-hidden="true" className="h-4 w-4 text-muted-foreground" />
           ) : (
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            <ChevronDown aria-hidden="true" className="h-4 w-4 text-muted-foreground" />
           )}
         </button>
 
@@ -5011,7 +5011,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium">
-                  <Tag className="inline h-3 w-3 mr-1" />
+                  <Tag aria-hidden="true" className="inline h-3 w-3 mr-1" />
                   Oznaka
                 </Label>
                 <Input
@@ -5026,7 +5026,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
             {/* Segment */}
             <div className="space-y-1.5">
               <Label className="text-xs font-medium">
-                <Layers className="inline h-3 w-3 mr-1" />
+                <Layers aria-hidden="true" className="inline h-3 w-3 mr-1" />
                 Segment
               </Label>
               <Input
@@ -5051,7 +5051,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
             {/* Location */}
             <div className="space-y-1.5">
               <Label className="text-xs font-medium">
-                <MapPin className="inline h-3 w-3 mr-1" />
+                <MapPin aria-hidden="true" className="inline h-3 w-3 mr-1" />
                 Lokacija / Opis
               </Label>
               <Input
@@ -5066,7 +5066,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium">
-                  <Ruler className="inline h-3 w-3 mr-1" />
+                  <Ruler aria-hidden="true" className="inline h-3 w-3 mr-1" />
                   Dolžina
                 </Label>
                 <div className="flex gap-1.5">
@@ -5100,7 +5100,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium">
-                  <Ruler className="inline h-3 w-3 mr-1 rotate-90" />
+                  <Ruler aria-hidden="true" className="inline h-3 w-3 mr-1 rotate-90" />
                   Višina
                 </Label>
                 <div className="flex gap-1.5">
@@ -5138,7 +5138,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium">
-                  <Hammer className="inline h-3 w-3 mr-1" />
+                  <Hammer aria-hidden="true" className="inline h-3 w-3 mr-1" />
                   Število stebrov
                 </Label>
                 <Input
@@ -5274,7 +5274,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                 className="h-9 px-3 text-[11px] gap-1.5 shrink-0 transition-colors"
                 onClick={() => toast.info('LiDAR skeniranje bo kmalu na voljo')}
               >
-                <Scan className="h-3.5 w-3.5" />
+                <Scan aria-hidden="true" className="h-3.5 w-3.5" />
                 Scaniraj
               </Button>
               <Button
@@ -5290,7 +5290,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   </span>
                 ) : (
                   <>
-                    <Plus className="mr-1.5 h-4 w-4" />
+                    <Plus aria-hidden="true" className="mr-1.5 h-4 w-4" />
                     Shrani meritev
                   </>
                 )}
@@ -5305,7 +5305,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
         <CardHeader className="pb-2 pt-4 px-4">
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
-              <Layers className="h-4 w-4" />
+              <Layers aria-hidden="true" className="h-4 w-4" />
               Segmenti
               <Badge variant="secondary" className="text-2xs h-5 px-1.5">
                 {allSegments.length}
@@ -5318,7 +5318,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               className="h-7 px-2 text-[11px] gap-1"
               onClick={() => setAddSegmentOpen(!addSegmentOpen)}
             >
-              <Plus className="h-3 w-3" />
+              <Plus aria-hidden="true" className="h-3 w-3" />
               Dodaj segment
             </Button>
           </div>
@@ -5354,7 +5354,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   onClick={handleAddSegment}
                   className="flex-1 h-8 bg-roksal-navy text-white hover:bg-roksal-navy/90 text-xs"
                 >
-                  <Save className="mr-1 h-3 w-3" />
+                  <Save aria-hidden="true" className="mr-1 h-3 w-3" />
                   Shrani
                 </Button>
                 <Button
@@ -5372,7 +5372,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
 
           {allSegments.length === 0 ? (
             <div className="py-6 text-center">
-              <Layers className="mx-auto h-7 w-7 text-muted-foreground/30" />
+              <Layers aria-hidden="true" className="mx-auto h-7 w-7 text-muted-foreground/30" />
               <p className="mt-2 text-xs text-muted-foreground">Brez segmentov</p>
               <p className="text-2xs text-muted-foreground/60 mt-1">
                 Dodajte segment za grupiranje meritev
@@ -5394,7 +5394,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                         >
                           <div className="flex items-center gap-2 min-w-0">
                             <div className="flex h-7 w-7 items-center justify-center rounded-md bg-roksal-navy/10 text-roksal-ink">
-                              <Layers className="h-3.5 w-3.5" />
+                              <Layers aria-hidden="true" className="h-3.5 w-3.5" />
                             </div>
                             <div className="min-w-0">
                               <p className="text-sm font-medium text-roksal-ink truncate">{seg.name}</p>
@@ -5413,9 +5413,9 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                               </p>
                             </div>
                             {isOpen ? (
-                              <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" />
+                              <ChevronUp aria-hidden="true" className="h-3.5 w-3.5 text-muted-foreground" />
                             ) : (
-                              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                              <ChevronDown aria-hidden="true" className="h-3.5 w-3.5 text-muted-foreground" />
                             )}
                           </div>
                         </button>
@@ -5463,7 +5463,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                             }}
                             className="w-full rounded-lg border border-dashed border-roksal-navy/30 dark:border-roksal-ink/30 py-1.5 text-2xs text-roksal-ink hover:bg-roksal-navy/5 transition-colors"
                           >
-                            <Plus className="inline h-3 w-3 mr-1" />
+                            <Plus aria-hidden="true" className="inline h-3 w-3 mr-1" />
                             Dodaj meritev v ta segment
                           </button>
                           {/* P3 — dodaj stebriček v ta segment */}
@@ -5475,7 +5475,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                             }}
                             className="w-full rounded-lg border border-dashed border-roksal-amber/40 py-1.5 text-2xs text-roksal-amber hover:bg-roksal-amber/5 transition-colors"
                           >
-                            <Columns3 className="inline h-3 w-3 mr-1" />
+                            <Columns3 aria-hidden="true" className="inline h-3 w-3 mr-1" />
                             Dodaj stebriček v ta segment
                           </button>
                           {/* P3 — dodaj WPC palice za WPC segmente */}
@@ -5487,7 +5487,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                               onClick={() => handleAddWpcPaliceAsStebri(seg)}
                               className="w-full rounded-lg border border-dashed border-amber-400/50 dark:border-amber-700/50 py-1.5 text-2xs text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40 transition-colors"
                             >
-                              <Fence className="inline h-3 w-3 mr-1" />
+                              <Fence aria-hidden="true" className="inline h-3 w-3 mr-1" />
                               Dodaj WPC palice kot materiale
                             </button>
                           )}
@@ -5496,7 +5496,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                             onClick={() => handleDeleteSegment(seg.id)}
                             className="w-full rounded-lg border border-dashed border-roksal-red/30 py-1 text-2xs text-roksal-red hover:bg-roksal-red/5 transition-colors"
                           >
-                            <Trash2 className="inline h-3 w-3 mr-1" />
+                            <Trash2 aria-hidden="true" className="inline h-3 w-3 mr-1" />
                             Izbriši segment
                           </button>
                         </div>
@@ -5516,7 +5516,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
           <CardHeader className="pb-2 pt-4 px-4">
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
-                <Columns3 className="h-4 w-4 text-roksal-amber" />
+                <Columns3 aria-hidden="true" className="h-4 w-4 text-roksal-amber" />
                 Nov stebriček (S{getNextStebriNumber(measurements, stebriSegmentId || undefined)})
               </CardTitle>
               <button
@@ -5533,7 +5533,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
             {/* Segment */}
             <div className="space-y-1.5">
               <Label className="text-xs font-medium">
-                <Layers className="inline h-3 w-3 mr-1" />
+                <Layers aria-hidden="true" className="inline h-3 w-3 mr-1" />
                 Segment
               </Label>
               <Select
@@ -5642,7 +5642,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
             {/* Višina stebra */}
             <div className="space-y-1.5">
               <Label className="text-xs font-medium">
-                <Ruler className="inline h-3 w-3 mr-1 rotate-90" />
+                <Ruler aria-hidden="true" className="inline h-3 w-3 mr-1 rotate-90" />
                 Višina stebra (mm)
               </Label>
               <Input
@@ -5661,7 +5661,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               disabled={!stebriSegmentId || !stebriPozicija}
               className="w-full h-9 bg-roksal-amber text-white hover:bg-roksal-amber/90"
             >
-              <Plus className="mr-1.5 h-4 w-4" />
+              <Plus aria-hidden="true" className="mr-1.5 h-4 w-4" />
               Dodaj stebriček S{getNextStebriNumber(measurements, stebriSegmentId || undefined)}
             </Button>
           </CardContent>
@@ -5684,7 +5684,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               >
                 <div className="flex items-center gap-2">
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500 text-white">
-                    <Fence className="h-4 w-4" />
+                    <Fence aria-hidden="true" className="h-4 w-4" />
                   </div>
                   <div>
                     <span className="text-sm font-medium text-roksal-ink">WPC konfiguracija</span>
@@ -5694,9 +5694,9 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   </div>
                 </div>
                 {wpcConfigOpen ? (
-                  <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                  <ChevronUp aria-hidden="true" className="h-4 w-4 text-muted-foreground" />
                 ) : (
-                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  <ChevronDown aria-hidden="true" className="h-4 w-4 text-muted-foreground" />
                 )}
               </button>
             </CollapsibleTrigger>
@@ -5759,13 +5759,13 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                 </div>
                 {wpcRazmikPalic > 110 && (
                   <div className="rounded-lg border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-2.5 text-2xs text-amber-700 dark:text-amber-300 flex items-center gap-1.5">
-                    <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                    <AlertCircle aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
                     Razmik {wpcRazmikPalic}mm presega 110mm — preverite skladnost s predpisi!
                   </div>
                 )}
                 {wpcRazmikPalic <= 110 && (
                   <div className="rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/40 p-2.5 text-2xs text-green-700 dark:text-green-300 flex items-center gap-1.5">
-                    <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                    <CheckCircle2 aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
                     Razmik {wpcRazmikPalic}mm ustreza predpisom (≤110mm)
                   </div>
                 )}
@@ -5803,7 +5803,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
         <Card className="card-hover transition-all duration-200 animate-fade-in-up" style={{ animationDelay: '270ms' }}>
           <CardHeader className="pb-2 pt-4 px-4">
             <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
-              <TrendingUp className="h-4 w-4" />
+              <TrendingUp aria-hidden="true" className="h-4 w-4" />
               Povprečne dimenzije
             </CardTitle>
           </CardHeader>
@@ -5811,7 +5811,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
             <div className="grid grid-cols-2 gap-3">
               <div className="flex items-center gap-3 rounded-lg bg-secondary/50 p-3">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-roksal-navy/10">
-                  <Ruler className="h-4 w-4 text-roksal-ink" />
+                  <Ruler aria-hidden="true" className="h-4 w-4 text-roksal-ink" />
                 </div>
                 <div>
                   <p className="text-xs font-medium text-roksal-ink">
@@ -5822,7 +5822,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               </div>
               <div className="flex items-center gap-3 rounded-lg bg-secondary/50 p-3">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-roksal-navy/10">
-                  <Ruler className="h-4 w-4 text-roksal-amber rotate-90" />
+                  <Ruler aria-hidden="true" className="h-4 w-4 text-roksal-amber rotate-90" />
                 </div>
                 <div>
                   <p className="text-xs font-medium text-roksal-ink">
@@ -5841,7 +5841,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
         <CardContent className="p-3 space-y-2.5">
           {/* Status filter pills */}
           <div className="flex items-center gap-1.5 flex-wrap">
-            <Filter className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            <Filter aria-hidden="true" className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
             {(['VSE', 'OSNUTEK', 'POTRJENA', 'ARHIVIRANA'] as StatusFilter[]).map((f) => {
               const isActive = statusFilter === f
               const label = f === 'VSE' ? 'Vse' : statusLabels[f as MeasurementStatus]
@@ -5885,7 +5885,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               }`}
               title="Filtriraj samo mere iz foto zavihka"
             >
-              <Camera className="h-3 w-3" />
+              <Camera aria-hidden="true" className="h-3 w-3" />
               Foto mere
               <span className="rounded-full bg-black/10 px-1 text-[9px]">{fotoMeasurementsCount}</span>
             </button>
@@ -5897,7 +5897,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               aria-label="Izvozi vidne meritve kot CSV"
               title="Izvozi vidne meritve (upošteva filter) kot CSV za Excel"
             >
-              <Download className="h-3 w-3" />
+              <Download aria-hidden="true" className="h-3 w-3" />
               CSV
             </button>
             {/* R203 — povzetek vidnih meritev v odložišče (SMS/WhatsApp) —
@@ -5909,7 +5909,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               aria-label="Kopiraj povzetek vidnih meritev v odložišče"
               title="Kopiraj vidne meritve (upošteva filter) kot besedilo za SMS/WhatsApp"
             >
-              <Copy className="h-3 w-3" />
+              <Copy aria-hidden="true" className="h-3 w-3" />
               Povzetek
             </button>
             <div className="flex-1" />
@@ -5926,7 +5926,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   : 'bg-secondary/50 text-muted-foreground border-border/50 hover:bg-secondary'
               }`}
             >
-              {bulkMode ? <CheckSquare className="h-3 w-3" /> : <Square className="h-3 w-3" />}
+              {bulkMode ? <CheckSquare aria-hidden="true" className="h-3 w-3" /> : <Square aria-hidden="true" className="h-3 w-3" />}
               Skupinsko
             </button>
           </div>
@@ -5941,7 +5941,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                     onClick={handleBulkSelectAll}
                     className="flex items-center gap-1 rounded-md border border-border bg-background px-2 py-0.5 text-2xs font-medium hover:bg-secondary/50 transition-colors"
                   >
-                    <CheckSquare className="h-3 w-3" />
+                    <CheckSquare aria-hidden="true" className="h-3 w-3" />
                     Izberi vse
                   </button>
                   <button
@@ -5949,7 +5949,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                     onClick={handleBulkClear}
                     className="flex items-center gap-1 rounded-md border border-border bg-background px-2 py-0.5 text-2xs font-medium hover:bg-secondary/50 transition-colors"
                   >
-                    <Square className="h-3 w-3" />
+                    <Square aria-hidden="true" className="h-3 w-3" />
                     Počisti
                   </button>
                   <Badge variant="secondary" className="text-2xs h-5 px-1.5">
@@ -5964,7 +5964,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   disabled={selectedIds.size === 0}
                   className="flex items-center justify-center gap-1 rounded-md border border-roksal-navy/20 dark:border-roksal-ink/20 bg-background px-2 py-1 text-2xs font-medium text-roksal-ink hover:bg-roksal-navy/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
-                  <Download className="h-3 w-3" />
+                  <Download aria-hidden="true" className="h-3 w-3" />
                   Izvozi izbrane CSV
                 </button>
                 <div className="flex items-center gap-1">
@@ -5986,7 +5986,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                     disabled={selectedIds.size === 0 || !bulkCopyTarget}
                     className="flex items-center gap-1 rounded-md border border-roksal-amber/30 bg-roksal-amber/10 px-2 py-1 text-2xs font-medium text-roksal-amber hover:bg-roksal-amber/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
                   >
-                    <Copy className="h-3 w-3" />
+                    <Copy aria-hidden="true" className="h-3 w-3" />
                     Kopiraj
                   </button>
                 </div>
@@ -5996,7 +5996,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   disabled={selectedIds.size === 0}
                   className="flex items-center justify-center gap-1 rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 px-2 py-1 text-2xs font-medium text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/15 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
-                  <Trash2 className="h-3 w-3" />
+                  <Trash2 aria-hidden="true" className="h-3 w-3" />
                   Izbriši izbrane
                 </button>
               </div>
@@ -6019,7 +6019,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
             <div className="flex flex-wrap items-center justify-between gap-2">
               <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
                 <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-roksal-amber/15">
-                  <UserRound className="h-4 w-4 text-roksal-amber" aria-hidden />
+                  <UserRound aria-hidden="true" className="h-4 w-4 text-roksal-amber"  />
                 </span>
                 Stranka vs merilec
               </CardTitle>
@@ -6062,7 +6062,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               </div>
               <div className="rounded-lg border border-roksal-amber/30 bg-roksal-amber/10 px-2.5 py-2 text-center">
                 <p className="flex items-center justify-center gap-1 text-[9px] font-medium uppercase tracking-wide text-roksal-amber">
-                  <UserRound className="h-2.5 w-2.5" aria-hidden /> Stranka
+                  <UserRound aria-hidden="true" className="h-2.5 w-2.5"  /> Stranka
                 </p>
                 <p className="text-base font-bold text-roksal-ink sm:text-lg">{formatMultiUnit(strankaPrimerjava.strankaSkupajMm)}</p>
                 <p className="text-[9px] text-muted-foreground">
@@ -6102,7 +6102,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg bg-muted/50 px-2.5 py-1.5 text-2xs text-muted-foreground">
               {strankaPrimerjava.meta.imeStranke && (
                 <span className="inline-flex items-center gap-1 font-medium text-foreground">
-                  <UserRound className="h-3 w-3" aria-hidden />
+                  <UserRound aria-hidden="true" className="h-3 w-3"  />
                   {strankaPrimerjava.meta.imeStranke}
                 </span>
               )}
@@ -6111,12 +6111,12 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   href={`tel:${strankaPrimerjava.meta.telefonStranke.replace(/\s+/g, '')}`}
                   className="inline-flex items-center gap-1 text-roksal-ink underline-offset-2 hover:underline"
                 >
-                  <Phone className="h-3 w-3" aria-hidden />
+                  <Phone aria-hidden="true" className="h-3 w-3"  />
                   {strankaPrimerjava.meta.telefonStranke}
                 </a>
               )}
               <span className="ml-auto inline-flex items-center gap-1">
-                <Clock className="h-3 w-3" aria-hidden />
+                <Clock aria-hidden="true" className="h-3 w-3"  />
                 prejeto {new Date(strankaPrimerjava.zadnja).toLocaleDateString('sl-SI', { day: '2-digit', month: '2-digit' })}
               </span>
             </div>
@@ -6234,7 +6234,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                 className="flex items-center gap-1 rounded-lg border border-roksal-navy/20 dark:border-roksal-ink/20 bg-roksal-navy/5 px-2 py-1 text-2xs font-medium text-roksal-ink hover:bg-roksal-navy/10 active:scale-[0.96] transition-all duration-150"
                 disabled={loading || measurements.length === 0}
               >
-                <Download className="h-3 w-3" />
+                <Download aria-hidden="true" className="h-3 w-3" />
                 CSV
               </button>
               <button
@@ -6243,7 +6243,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                 className="flex items-center gap-1 rounded-lg border border-roksal-amber/30 bg-roksal-amber/10 px-2 py-1 text-2xs font-medium text-roksal-amber hover:bg-roksal-amber/20 active:scale-[0.96] transition-all duration-150"
                 disabled={loading || measurements.length === 0}
               >
-                <FileText className="h-3 w-3" />
+                <FileText aria-hidden="true" className="h-3 w-3" />
                 PDF
               </button>
               <Badge variant="secondary">{filteredMeasurements.length}</Badge>
@@ -6262,7 +6262,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               {groupedMeasurements.map((group) => (
                 <div key={group.label}>
                   <div className="flex items-center gap-2 mb-2 mt-1 first:mt-0">
-                    <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                    <Calendar aria-hidden="true" className="h-3.5 w-3.5 text-muted-foreground" />
                     <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                       {group.label}
                     </span>
@@ -6296,7 +6296,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
             )
           ) : (
             <div className="py-8 text-center">
-              <Ruler className="mx-auto h-8 w-8 text-muted-foreground/30" />
+              <Ruler aria-hidden="true" className="mx-auto h-8 w-8 text-muted-foreground/30" />
               <p className="mt-2 text-sm text-muted-foreground">Brez meritev v tem filtru</p>
               <p className="text-[11px] text-muted-foreground/60 mt-1">Spremenite filter statusa zgoraj</p>
             </div>
@@ -6314,7 +6314,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
             >
               <div className="flex items-center gap-2">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-roksal-navy/10 text-roksal-ink">
-                  <History className="h-4 w-4" />
+                  <History aria-hidden="true" className="h-4 w-4" />
                 </div>
                 <div>
                   <span className="text-sm font-medium text-roksal-ink">Zgodovina sprememb</span>
@@ -6330,9 +6330,9 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   {auditEntries.length}
                 </Badge>
                 {auditOpen ? (
-                  <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                  <ChevronUp aria-hidden="true" className="h-4 w-4 text-muted-foreground" />
                 ) : (
-                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  <ChevronDown aria-hidden="true" className="h-4 w-4 text-muted-foreground" />
                 )}
               </div>
             </button>
@@ -6341,7 +6341,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
             <div className="border-t border-border/50 px-4 pb-4 pt-3 space-y-3 slide-in-right">
               {auditEntries.length === 0 ? (
                 <div className="py-6 text-center">
-                  <ClipboardList className="mx-auto h-7 w-7 text-muted-foreground/30" />
+                  <ClipboardList aria-hidden="true" className="mx-auto h-7 w-7 text-muted-foreground/30" />
                   <p className="mt-2 text-xs text-muted-foreground">Brez zgodovine sprememb</p>
                   <p className="text-2xs text-muted-foreground/60 mt-1">
                     Spremembe meritev bodo samodejno zabeležene
@@ -6363,7 +6363,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                             <div className="flex-1 min-w-0">
                               <p className="text-xs text-foreground leading-tight">{entry.opis}</p>
                               <div className="flex items-center gap-1.5 mt-0.5">
-                                <Clock className="h-2.5 w-2.5 text-muted-foreground" />
+                                <Clock aria-hidden="true" className="h-2.5 w-2.5 text-muted-foreground" />
                                 <span className="text-2xs text-muted-foreground">
                                   {new Date(entry.timestamp).toLocaleString('sl-SI')}
                                 </span>
@@ -6403,7 +6403,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                       onClick={handleExportAuditCSV}
                       disabled={auditEntries.length === 0}
                     >
-                      <FileSpreadsheet className="mr-1 h-3 w-3" />
+                      <FileSpreadsheet aria-hidden="true" className="mr-1 h-3 w-3" />
                       Izvozi zgodovino
                     </Button>
                   </div>
@@ -6440,7 +6440,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               disabled={bulkArchiveBusy}
               className="bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-500 disabled:cursor-wait disabled:opacity-70"
             >
-              <Archive className="mr-1.5 h-4 w-4" />
+              <Archive aria-hidden="true" className="mr-1.5 h-4 w-4" />
               {bulkArchiveBusy ? 'Arhiviranje …' : `Arhiviraj (${selectedIds.size})`}
             </Button>
           </DialogFooter>
@@ -6455,7 +6455,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Archive className="h-4 w-4 text-roksal-amber" />
+              <Archive aria-hidden="true" className="h-4 w-4 text-roksal-amber" />
               Ponovno odpri arhivirano meritev?
             </DialogTitle>
             <DialogDescription>
@@ -6511,7 +6511,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Boxes className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+              <Boxes aria-hidden="true" className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
               Uvozi mere iz AR posnetka
             </DialogTitle>
             <DialogDescription>
@@ -6533,7 +6533,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               </div>
             ) : arSnapshots.length === 0 ? (
               <div className="py-8 text-center">
-                <Boxes className="mx-auto h-8 w-8 text-muted-foreground/30" />
+                <Boxes aria-hidden="true" className="mx-auto h-8 w-8 text-muted-foreground/30" />
                 <p className="mt-2 text-xs text-muted-foreground">Ni AR posnetkov za ta projekt</p>
                 <p className="text-2xs text-muted-foreground/60 mt-1">
                   Najprej ustvari AR posnetek v AR kameri
@@ -6574,7 +6574,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                         />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center">
-                          <Boxes className="h-5 w-5 text-muted-foreground/40" />
+                          <Boxes aria-hidden="true" className="h-5 w-5 text-muted-foreground/40" />
                         </div>
                       )}
                     </div>
@@ -6611,7 +6611,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                       )}
                     </div>
                     {isSelected && (
-                      <CheckCircle2 className="h-4 w-4 text-cyan-600 dark:text-cyan-400 shrink-0" />
+                      <CheckCircle2 aria-hidden="true" className="h-4 w-4 text-cyan-600 dark:text-cyan-400 shrink-0" />
                     )}
                   </button>
                 )
@@ -6653,12 +6653,12 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
             >
               {arImportProgress ? (
                 <>
-                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                  <Loader2 aria-hidden="true" className="mr-1.5 h-4 w-4 animate-spin" />
                   Prenašam...
                 </>
               ) : (
                 <>
-                  <Boxes className="mr-1.5 h-4 w-4" />
+                  <Boxes aria-hidden="true" className="mr-1.5 h-4 w-4" />
                   Uvozi mere
                 </>
               )}
@@ -6672,7 +6672,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Camera className="h-4 w-4 text-roksal-amber" />
+              <Camera aria-hidden="true" className="h-4 w-4 text-roksal-amber" />
               Foto mera
             </DialogTitle>
             <DialogDescription>
@@ -6684,7 +6684,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               <Skeleton className="h-48 w-full rounded-lg" />
             ) : photoViewerNotFound ? (
               <div className="py-8 text-center">
-                <AlertCircle className="mx-auto h-8 w-8 text-roksal-red/40" />
+                <AlertCircle aria-hidden="true" className="mx-auto h-8 w-8 text-roksal-red/40" />
                 <p className="mt-2 text-xs text-muted-foreground">Foto ni najden v projektu</p>
                 <p className="text-2xs text-muted-foreground/60 mt-1">
                   Morda je bila izbrisana. ID: {photoViewerId?.slice(-6)}
@@ -6701,7 +6701,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
             ) : null}
             {photoViewerUrl && !photoViewerLoading && (
               <div className="rounded-md bg-roksal-amber/5 border border-roksal-amber/20 p-2 text-2xs text-roksal-amber/90 flex items-start gap-1.5">
-                <ImageIcon className="h-3 w-3 mt-0.5 shrink-0" />
+                <ImageIcon aria-hidden="true" className="h-3 w-3 mt-0.5 shrink-0" />
                 <span>
                   To je fotografija z narisano merno črto. Za urejanje anotacij odpri v slikah.
                 </span>
@@ -6723,7 +6723,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               disabled={!photoViewerUrl || photoViewerLoading}
               className="sm:flex-1 bg-roksal-amber text-white hover:bg-roksal-amber/90"
             >
-              <ImageIcon className="mr-1.5 h-4 w-4" />
+              <ImageIcon aria-hidden="true" className="mr-1.5 h-4 w-4" />
               Odpri v slikah
             </Button>
           </DialogFooter>
@@ -6777,7 +6777,7 @@ function CalibrationPhotoPicker({ onPixelDistance }: { onPixelDistance: (px: num
   return (
     <div className="space-y-1.5">
       <Label className="text-xs font-medium">
-        <Camera className="inline h-3 w-3 mr-1" />
+        <Camera aria-hidden="true" className="inline h-3 w-3 mr-1" />
         Ali izberi 2 točki na sliki
       </Label>
       <input
@@ -6794,7 +6794,7 @@ function CalibrationPhotoPicker({ onPixelDistance }: { onPixelDistance: (px: num
           onClick={() => fileRef.current?.click()}
           className="w-full rounded-lg border border-dashed border-border bg-secondary/30 py-3 text-[11px] text-muted-foreground hover:bg-secondary/50 transition-colors"
         >
-          <Camera className="mx-auto h-4 w-4 mb-1" />
+          <Camera aria-hidden="true" className="mx-auto h-4 w-4 mb-1" />
           Naloži ali slikaj referenco
         </button>
       ) : (
@@ -6971,9 +6971,9 @@ function InlineInclinometer({
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
             {mode === 'KOT' ? (
-              <Triangle className="h-4 w-4 text-roksal-amber" />
+              <Triangle aria-hidden="true" className="h-4 w-4 text-roksal-amber" />
             ) : (
-              <Mountain className="h-4 w-4 text-roksal-amber" />
+              <Mountain aria-hidden="true" className="h-4 w-4 text-roksal-amber" />
             )}
             {mode === 'KOT' ? 'Meritev kota' : 'Meritev nagiba'}
           </CardTitle>
@@ -7028,11 +7028,11 @@ function InlineInclinometer({
           <Badge variant={isLevel ? 'default' : 'secondary'} className={isLevel ? 'bg-green-600 text-white' : ''}>
             {isLevel ? (
               <>
-                <CheckCircle2 className="mr-1 h-3 w-3" /> V vodoravni
+                <CheckCircle2 aria-hidden="true" className="mr-1 h-3 w-3" /> V vodoravni
               </>
             ) : (
               <>
-                <AlertCircle className="mr-1 h-3 w-3" />
+                <AlertCircle aria-hidden="true" className="mr-1 h-3 w-3" />
                 {(angleX + angleY).toFixed(1)}° odstopanja
               </>
             )}
@@ -7046,7 +7046,7 @@ function InlineInclinometer({
             onClick={enableSensor}
             className="w-full bg-roksal-amber text-white hover:bg-roksal-amber/90 h-9"
           >
-            <Gauge className="mr-2 h-4 w-4" />
+            <Gauge aria-hidden="true" className="mr-2 h-4 w-4" />
             Vklopi senzor
           </Button>
         )}
@@ -7059,11 +7059,11 @@ function InlineInclinometer({
           >
             {monitoring ? (
               <>
-                <RefreshCw className="mr-2 h-4 w-4" /> Ustavi merjenje
+                <RefreshCw aria-hidden="true" className="mr-2 h-4 w-4" /> Ustavi merjenje
               </>
             ) : (
               <>
-                <Gauge className="mr-2 h-4 w-4" /> Nadaljuj
+                <Gauge aria-hidden="true" className="mr-2 h-4 w-4" /> Nadaljuj
               </>
             )}
           </Button>
@@ -7109,7 +7109,7 @@ function InlineInclinometer({
               disabled={saving}
               className="w-full bg-roksal-navy text-white hover:bg-roksal-navy/90 h-9"
             >
-              <Save className="mr-2 h-4 w-4" />
+              <Save aria-hidden="true" className="mr-2 h-4 w-4" />
               {saving ? 'Shranjujem...' : `Shrani kot ${mode === 'KOT' ? 'kot' : 'nagib'}`}
             </Button>
           </div>
@@ -7467,9 +7467,9 @@ function InlineKotomer({
     mode === 'KOT_VOGAL' ? (
       <CornerDownRight className="h-4 w-4 text-roksal-amber" />
     ) : mode === 'KOT_STOPNISCE' ? (
-      <Layers2 className="h-4 w-4 text-roksal-amber" />
+      <Layers2 aria-hidden="true" className="h-4 w-4 text-roksal-amber" />
     ) : (
-      <Triangle className="h-4 w-4 text-roksal-amber" />
+      <Triangle aria-hidden="true" className="h-4 w-4 text-roksal-amber" />
     )
   const modeTitle =
     mode === 'KOT_VOGAL'
@@ -7599,7 +7599,7 @@ function InlineKotomer({
             onClick={enableSensor}
             className="w-full bg-roksal-amber text-white hover:bg-roksal-amber/90 h-9"
           >
-            <Gauge className="mr-2 h-4 w-4" />
+            <Gauge aria-hidden="true" className="mr-2 h-4 w-4" />
             Vklopi senzor kotomera
           </Button>
         )}
@@ -7611,7 +7611,7 @@ function InlineKotomer({
               onClick={() => setMonitoring(!monitoring)}
               className="h-9"
             >
-              <Gauge className="mr-1.5 h-4 w-4" />
+              <Gauge aria-hidden="true" className="mr-1.5 h-4 w-4" />
               {monitoring ? 'Ustavi' : ' merit'}
             </Button>
             <Button
@@ -7620,7 +7620,7 @@ function InlineKotomer({
               disabled={!monitoring || currentAngle == null}
               className="h-9 bg-roksal-navy text-white hover:bg-roksal-navy/90"
             >
-              {lockedAngle != null ? <Lock className="mr-1.5 h-4 w-4" /> : <Unlock className="mr-1.5 h-4 w-4" />}
+              {lockedAngle != null ? <Lock aria-hidden="true" className="mr-1.5 h-4 w-4" /> : <Unlock aria-hidden="true" className="mr-1.5 h-4 w-4" />}
               {lockedAngle != null ? `Zaklenjeno ${lockedAngle}°` : 'Zakleni kot'}
             </Button>
           </div>
@@ -7680,7 +7680,7 @@ function InlineKotomer({
             />
             {mode === 'KOT_STOPNISCE' && stairKot != null && (
               <p className="text-[9px] text-roksal-amber">
-                <Bookmark className="inline h-2.5 w-2.5 mr-1" />
+                <Bookmark aria-hidden="true" className="inline h-2.5 w-2.5 mr-1" />
                 Predlog iz stopniščnega čarovnika: {stairKot.toFixed(1)}°
               </p>
             )}
@@ -7717,7 +7717,7 @@ function InlineKotomer({
           onClick={handleSaveKotomer}
           className="w-full bg-roksal-navy text-white hover:bg-roksal-navy/90 h-9"
         >
-          <Save className="mr-2 h-4 w-4" />
+          <Save aria-hidden="true" className="mr-2 h-4 w-4" />
           Shrani kot {mode === 'KOT_VOGAL' ? 'vogal' : mode === 'KOT_STOPNISCE' ? 'kot stopnice' : 'kot'}
         </Button>
       </CardContent>
@@ -7764,7 +7764,7 @@ function SteberTable({
     <div className="rounded-lg border border-roksal-navy/15 dark:border-roksal-ink/15 bg-background overflow-hidden slide-in-right">
       <div className="flex items-center justify-between p-2 border-b border-border/40 bg-roksal-navy/5">
         <div className="flex items-center gap-1.5">
-          <Columns3 className="h-3.5 w-3.5 text-roksal-ink" />
+          <Columns3 aria-hidden="true" className="h-3.5 w-3.5 text-roksal-ink" />
           <span className="text-[11px] font-semibold text-roksal-ink">
             Preglednica stebrov ({total})
           </span>
@@ -7774,7 +7774,7 @@ function SteberTable({
           onClick={onExportCsv}
           className="flex items-center gap-1 rounded-md border border-roksal-navy/20 dark:border-roksal-ink/20 bg-background px-1.5 py-0.5 text-[9px] font-medium text-roksal-ink hover:bg-roksal-navy/10 transition-colors"
         >
-          <Download className="h-2.5 w-2.5" />
+          <Download aria-hidden="true" className="h-2.5 w-2.5" />
           CSV
         </button>
       </div>
@@ -7839,7 +7839,7 @@ function SteberTable({
       {/* Warnings */}
       {maxRazmik > 1500 && (
         <div className="border-t border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 p-1.5 text-[9px] text-red-700 dark:text-red-300 flex items-center gap-1">
-          <AlertCircle className="h-3 w-3 shrink-0" />
+          <AlertCircle aria-hidden="true" className="h-3 w-3 shrink-0" />
           Razmik {Math.round(maxRazmik)}mm presega 1500mm — preveri statiko!
         </div>
       )}
@@ -7960,7 +7960,7 @@ function WpcDiagram({
     <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-2 slide-in-right">
       <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-1.5">
-          <Fence className="h-3.5 w-3.5 text-amber-700 dark:text-amber-300" />
+          <Fence aria-hidden="true" className="h-3.5 w-3.5 text-amber-700 dark:text-amber-300" />
           <span className="text-[11px] font-semibold text-roksal-ink">{orientacijaLabel}</span>
         </div>
         <Badge variant="outline" className="text-[9px] h-4 px-1 border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-300">
@@ -8038,7 +8038,7 @@ function WpcDiagram({
       )}
       {razmikPalic > 110 && (
         <p className="text-[9px] text-amber-700 dark:text-amber-300 mt-0.5 text-center">
-          <AlertCircle className="inline h-2.5 w-2.5 mr-0.5" />
+          <AlertCircle aria-hidden="true" className="inline h-2.5 w-2.5 mr-0.5" />
           Razmik {razmikPalic}mm presega 110mm — preveri predpise!
         </p>
       )}

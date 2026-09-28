@@ -212,7 +212,7 @@ function LoginForm() {
                 role="alert"
                 className="animate-shake flex items-start gap-2 rounded-lg bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950/40 dark:text-red-200"
               >
-                <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
+                <ShieldAlert aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
                 {/* R189 — fail-verbose: pod API napako TUDI podrobnost (429:
                     'Poskusi znova čez N s.'), ki jo je UI prej tiho izgubil;
                     null → vrstica odsotna (nič praznih obljub). */}
@@ -232,7 +232,7 @@ function LoginForm() {
               className="w-full bg-roksal-navy text-white transition-all hover:bg-roksal-navy/90 hover:shadow-md active:scale-[0.99]"
               disabled={busy || demoBusy}
             >
-              {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {busy && <Loader2 aria-hidden="true" className="mr-2 h-4 w-4 animate-spin" />}
               {busy ? 'Prijavljam…' : 'Prijava'}
             </Button>
 
@@ -254,7 +254,7 @@ function LoginForm() {
                   disabled={busy || demoBusy}
                   onClick={onDemoAccess}
                 >
-                  {demoBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
+                  {demoBusy ? <Loader2 aria-hidden="true" className="mr-2 h-4 w-4 animate-spin" /> : <Zap aria-hidden="true" className="mr-2 h-4 w-4" />}
                   {demoBusy ? 'Pripravljam demo…' : 'Vstop brez prijave (Demo)'}
                 </Button>
               </>

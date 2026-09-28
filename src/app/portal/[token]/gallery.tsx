@@ -118,7 +118,7 @@ export function PortalGallery({ sections }: PortalGalleryProps) {
             className="absolute top-4 right-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
             aria-label="Zapri"
           >
-            <X className="h-5 w-5" />
+            <X aria-hidden="true" className="h-5 w-5" />
           </button>
 
           {allPhotos.length > 1 && (
@@ -129,7 +129,7 @@ export function PortalGallery({ sections }: PortalGalleryProps) {
                 className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
                 aria-label="Prejšnja"
               >
-                <ChevronLeft className="h-6 w-6" />
+                <ChevronLeft aria-hidden="true" className="h-6 w-6" />
               </button>
               <button
                 type="button"
@@ -137,7 +137,7 @@ export function PortalGallery({ sections }: PortalGalleryProps) {
                 className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
                 aria-label="Naslednja"
               >
-                <ChevronRight className="h-6 w-6" />
+                <ChevronRight aria-hidden="true" className="h-6 w-6" />
               </button>
             </>
           )}
@@ -156,7 +156,7 @@ export function PortalGallery({ sections }: PortalGalleryProps) {
           <div className="absolute bottom-0 inset-x-0 p-4 bg-gradient-to-t from-black/90 to-transparent">
             {allPhotos[lightboxIndex].opomba && (
               <div className="mb-2 flex items-start gap-2">
-                <MessageSquare className="h-4 w-4 text-roksal-amber shrink-0 mt-0.5" />
+                <MessageSquare aria-hidden="true" className="h-4 w-4 text-roksal-amber shrink-0 mt-0.5" />
                 <p className="text-sm text-white">{allPhotos[lightboxIndex].opomba}</p>
               </div>
             )}
@@ -166,7 +166,7 @@ export function PortalGallery({ sections }: PortalGalleryProps) {
                 {allPhotos[lightboxIndex].sectionLabel}
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <Calendar className="h-3.5 w-3.5" />
+                <Calendar aria-hidden="true" className="h-3.5 w-3.5" />
                 {new Date(allPhotos[lightboxIndex].createdAt).toLocaleString('sl-SI', {
                   day: 'numeric',
                   month: 'long',

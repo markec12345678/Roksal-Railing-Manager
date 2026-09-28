@@ -361,7 +361,7 @@ export function TeamTab() {
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-roksal-navy/10">
-            <UserCog className="h-4.5 w-4.5 text-roksal-ink" />
+            <UserCog aria-hidden="true" className="h-4.5 w-4.5 text-roksal-ink" />
           </div>
           <div>
             <h2 className="text-sm font-bold text-roksal-ink">Ekipa — življenjski cikl računov</h2>
@@ -408,7 +408,7 @@ export function TeamTab() {
               onClick={() => setInviteOpen(true)}
               className="h-8 bg-roksal-navy hover:bg-roksal-navy/90 text-white press-scale"
             >
-              <UserPlus className="mr-1.5 h-3.5 w-3.5" />
+              <UserPlus aria-hidden="true" className="mr-1.5 h-3.5 w-3.5" />
               Povabi
             </Button>
           )}
@@ -447,7 +447,7 @@ export function TeamTab() {
         </div>
       ) : loading && users.length === 0 ? (
         <div className="flex items-center justify-center rounded-xl border border-border bg-card p-10">
-          <Loader2 className="h-6 w-6 animate-spin text-roksal-amber" />
+          <Loader2 aria-hidden="true" className="h-6 w-6 animate-spin text-roksal-amber" />
         </div>
       ) : users.length === 0 ? (
         canRead ? (
@@ -457,7 +457,7 @@ export function TeamTab() {
         ) : (
           // §10 (R135): pošteno stanje namesto praznega seznama (strežnik: 403 users.read)
           <div className="flex items-start gap-2 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 px-3.5 py-3">
-            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+            <ShieldCheck aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
             <div className="space-y-0.5">
               <p className="text-xs font-semibold text-amber-800 dark:text-amber-200">Ekipa — ureja pisarna</p>
               <p className="text-[11px] text-amber-700/90 dark:text-amber-300/90 leading-relaxed">
@@ -525,7 +525,7 @@ export function TeamTab() {
 
                 <div className="mt-1.5 flex flex-wrap items-center gap-3 text-2xs text-muted-foreground">
                   <span className="inline-flex items-center gap-1">
-                    <CalendarClock className="h-3 w-3" />
+                    <CalendarClock aria-hidden="true" className="h-3 w-3" />
                     {/* R200 — 'Zadnja aktivnost' z uro (R199 P1 (e)): prej SAMO
                         datum (admin ni videl, ali je aktivnost bila danes ob
                         08:03 ali lani); zdaj EN VIR aktivnostOznaka:
@@ -534,7 +534,7 @@ export function TeamTab() {
                   </span>
                   {u.lifecycle.mustChangePassword && (
                     <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400">
-                      <ShieldAlert className="h-3 w-3" />
+                      <ShieldAlert aria-hidden="true" className="h-3 w-3" />
                       mora zamenjati geslo
                     </span>
                   )}
@@ -553,7 +553,7 @@ export function TeamTab() {
                         className="h-7 text-[11px] text-roksal-green hover:bg-roksal-green/10"
                         title="Vrni račun v delo"
                       >
-                        {busyId === u.id ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <UserCheck className="mr-1 h-3 w-3" />}
+                        {busyId === u.id ? <Loader2 aria-hidden="true" className="mr-1 h-3 w-3 animate-spin" /> : <UserCheck aria-hidden="true" className="mr-1 h-3 w-3" />}
                         Reaktiviraj
                       </Button>
                     ) : (
@@ -571,7 +571,7 @@ export function TeamTab() {
                         className="h-7 text-[11px] text-muted-foreground hover:bg-secondary"
                         title="Offboarding — prijava + žetoni takoj mrtevi"
                       >
-                        <Trash2 className="mr-1 h-3 w-3" />
+                        <Trash2 aria-hidden="true" className="mr-1 h-3 w-3" />
                         Deaktiviraj
                       </Button>
                     )}
@@ -585,7 +585,7 @@ export function TeamTab() {
                         onClick={() => void act({ action: 'unlock', userId: u.id }, `${u.ime} odklenjen`, u.id)}
                         className="h-7 text-[11px] text-roksal-ink hover:bg-roksal-navy/10"
                       >
-                        <LockOpen className="mr-1 h-3 w-3" />
+                        <LockOpen aria-hidden="true" className="mr-1 h-3 w-3" />
                         Odkleni
                       </Button>
                     ) : (
@@ -599,7 +599,7 @@ export function TeamTab() {
                           className="h-7 text-[11px] text-roksal-red hover:bg-roksal-red/10"
                           title="Varnostni zaklep (npr. sum kompromitacije)"
                         >
-                          <Lock className="mr-1 h-3 w-3" />
+                          <Lock aria-hidden="true" className="mr-1 h-3 w-3" />
                           Zakleni
                         </Button>
                       )
@@ -614,7 +614,7 @@ export function TeamTab() {
                       className="h-7 text-[11px] text-amber-700 dark:text-amber-300 hover:bg-roksal-amber/10"
                       title="Začasno geslo (prikaže se ENKRAT) + prisilna zamenjava"
                     >
-                      <ShieldAlert className="mr-1 h-3 w-3" />
+                      <ShieldAlert aria-hidden="true" className="mr-1 h-3 w-3" />
                       Ponastavi geslo
                     </Button>
 
@@ -719,7 +719,7 @@ export function TeamTab() {
               disabled={busyId === 'invite' || !inviteEmail.trim() || !inviteIme.trim()}
               className="bg-roksal-navy hover:bg-roksal-navy/90 text-white press-scale"
             >
-              {busyId === 'invite' ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <UserPlus className="mr-1.5 h-3.5 w-3.5" />}
+              {busyId === 'invite' ? <Loader2 aria-hidden="true" className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <UserPlus aria-hidden="true" className="mr-1.5 h-3.5 w-3.5" />}
               Ustvari povabilo
             </Button>
           </DialogFooter>
@@ -731,7 +731,7 @@ export function TeamTab() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-roksal-ink">
-              <BadgeCheck className="h-4.5 w-4.5 text-roksal-green" />
+              <BadgeCheck aria-hidden="true" className="h-4.5 w-4.5 text-roksal-green" />
               {oneTime?.kind === 'activation' ? 'Aktivacijska povezava' : 'Začasno geslo'}
             </DialogTitle>
             <DialogDescription className="text-xs">

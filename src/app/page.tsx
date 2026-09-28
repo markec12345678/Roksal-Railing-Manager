@@ -391,7 +391,7 @@ export default function Home() {
 
   return (
     <div
-      className="min-h-screen bg-[#f7f9ff] roksal-bg-pattern roksal-texture"
+      className="min-h-screen bg-roksal-bg roksal-bg-pattern roksal-texture"
       onTouchStart={onPullStart}
       onTouchMove={onPullMove}
       onTouchEnd={onPullEnd}
@@ -407,7 +407,7 @@ export default function Home() {
           className="flex h-9 w-9 items-center justify-center rounded-full bg-card shadow-lg ring-1 ring-roksal-amber/30"
           style={{ transform: `rotate(${pullPx * 3}deg)` }}
         >
-          <RefreshCw
+          <RefreshCw aria-hidden="true"
             className={`h-4 w-4 text-roksal-amber ${pullPx >= PTR_THRESHOLD || syncing ? 'animate-spin' : ''}`}
           />
         </div>
@@ -432,7 +432,7 @@ export default function Home() {
           </div>
         )}
         <div className="flex items-center justify-center gap-1.5 py-1.5 text-2xs text-muted-foreground">
-          <RefreshCw className={`h-2.5 w-2.5 ${syncing ? 'animate-spin' : ''}`} />
+          <RefreshCw aria-hidden="true" className={`h-2.5 w-2.5 ${syncing ? 'animate-spin' : ''}`} />
           <span>
             {syncing
               ? 'Sinhronizacija...'
@@ -450,7 +450,7 @@ export default function Home() {
       {selectedProject && (activeTab === 'ar' || activeTab === 'photos' || activeTab === 'inclinometer' || moreTab === 'sketches') && (
         <div className="mx-auto w-full max-w-lg px-3 pb-1 md:max-w-3xl lg:max-w-5xl">
           <div className="flex items-center gap-2 rounded-lg border border-roksal-amber/30 bg-roksal-amber/5 px-3 py-1.5 text-[11px]">
-            <Camera className="h-3 w-3 text-roksal-amber" />
+            <Camera aria-hidden="true" className="h-3 w-3 text-roksal-amber" />
             <span className="font-medium text-roksal-ink">{selectedProject.nazivProjekta}</span>
             <span className="text-muted-foreground">·</span>
             <span className="text-muted-foreground truncate">{selectedProject.customer?.naslov ?? 'Brez naslova'}</span>
@@ -529,7 +529,7 @@ export default function Home() {
               }}
               className="mb-3 -ml-2 text-muted-foreground"
             >
-              <ChevronLeft className="mr-1 h-4 w-4" />
+              <ChevronLeft aria-hidden="true" className="mr-1 h-4 w-4" />
               Nazaj
             </Button>
             <h2 className="mb-3 text-lg font-bold text-roksal-ink">{moreLabel}</h2>

@@ -547,7 +547,7 @@ export function VodjaDashboard() {
     <div className="space-y-4 p-4">
       {/* Naslov */}
       <div className="flex flex-wrap items-center gap-2">
-        <TrendingUp className="h-5 w-5 text-roksal-amber" />
+        <TrendingUp aria-hidden="true" className="h-5 w-5 text-roksal-amber" />
         <h2 className="text-base font-bold text-roksal-ink">Pregled za vodjo</h2>
         <Badge variant="outline" className="text-[9px] bg-roksal-amber/10 text-roksal-amber">
           {new Date().toLocaleDateString('sl-SI', { weekday: 'long', day: '2-digit', month: 'long' })}

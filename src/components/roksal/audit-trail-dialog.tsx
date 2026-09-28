@@ -260,7 +260,7 @@ export function AuditTrailDialog({
 
         {loading ? (
           <div className="py-10 text-center">
-            <Loader2 className="h-6 w-6 animate-spin mx-auto text-roksal-amber" aria-label="Nalagam sled" />
+            <Loader2 aria-hidden="true" className="h-6 w-6 animate-spin mx-auto text-roksal-amber" aria-label="Nalagam sled" />
           </div>
         ) : error ? (
           <div className="rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 px-3 py-2.5 text-sm text-red-700 dark:text-red-300" role="alert">
@@ -268,7 +268,7 @@ export function AuditTrailDialog({
           </div>
         ) : !entries || entries.length === 0 ? (
           <div className="py-8 text-center text-muted-foreground">
-            <ShieldCheck className="h-10 w-10 mx-auto mb-2 opacity-30" aria-hidden />
+            <ShieldCheck aria-hidden="true" className="h-10 w-10 mx-auto mb-2 opacity-30"  />
             <p className="text-sm">Ni še revizijskih vpisov za ta projekt.</p>
           </div>
         ) : prikazani.length === 0 ? (
@@ -310,9 +310,9 @@ export function AuditTrailDialog({
                           className="mt-1 inline-flex items-center gap-0.5 rounded text-2xs text-muted-foreground hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
                         >
                           {isOpen ? (
-                            <ChevronDown className="h-3 w-3" aria-hidden />
+                            <ChevronDown aria-hidden="true" className="h-3 w-3"  />
                           ) : (
-                            <ChevronRight className="h-3 w-3" aria-hidden />
+                            <ChevronRight aria-hidden="true" className="h-3 w-3"  />
                           )}
                           {isOpen ? 'Skrij podrobnosti' : 'Podrobnosti'}
                         </button>

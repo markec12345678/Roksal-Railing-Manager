@@ -389,7 +389,7 @@ export function PunchList({ project }: { project: Project | null }) {
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="flex flex-wrap items-center gap-2 text-base text-roksal-ink">
-          <ClipboardCheck className="h-5 w-5 text-roksal-amber" />
+          <ClipboardCheck aria-hidden="true" className="h-5 w-5 text-roksal-amber" />
           Prejemni zapisnik
           {zapisnikOsvezitev && (
             <span
@@ -436,7 +436,7 @@ export function PunchList({ project }: { project: Project | null }) {
         )}
         {loading ? (
           <div className="flex items-center justify-center py-6 text-sm text-muted-foreground">
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            <Loader2 aria-hidden="true" className="mr-2 h-4 w-4 animate-spin" />
             Nalagam zapisnik…
           </div>
         ) : items.length === 0 ? (
@@ -478,7 +478,7 @@ export function PunchList({ project }: { project: Project | null }) {
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                       </svg>
                     ) : item.status === 'issue' ? (
-                      <AlertTriangle className="h-3.5 w-3.5" />
+                      <AlertTriangle aria-hidden="true" className="h-3.5 w-3.5" />
                     ) : null}
                   </button>
                   <div className="min-w-0 flex-1">
@@ -531,7 +531,7 @@ export function PunchList({ project }: { project: Project | null }) {
             onClick={() => void addItem(newTitle.trim())}
             aria-label="Dodaj točko"
           >
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+            {saving ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <Plus aria-hidden="true" className="h-4 w-4" />}
           </Button>
         </div>
 
@@ -545,7 +545,7 @@ export function PunchList({ project }: { project: Project | null }) {
               disabled={saving || !project}
               onClick={() => void addStandardPoints()}
             >
-              <Sparkles className="mr-1.5 h-4 w-4" />
+              <Sparkles aria-hidden="true" className="mr-1.5 h-4 w-4" />
               Standardne točke
             </Button>
           )}
@@ -557,7 +557,7 @@ export function PunchList({ project }: { project: Project | null }) {
             disabled={items.length === 0 || generating}
             onClick={generatePdf}
           >
-            {generating ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <FileDown className="mr-1.5 h-4 w-4" />}
+            {generating ? <Loader2 aria-hidden="true" className="mr-1.5 h-4 w-4 animate-spin" /> : <FileDown aria-hidden="true" className="mr-1.5 h-4 w-4" />}
             PDF zapisnik
           </Button>
           <Button
