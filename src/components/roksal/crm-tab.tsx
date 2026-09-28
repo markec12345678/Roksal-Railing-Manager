@@ -21,6 +21,13 @@ import { DealPipeline } from '@/components/roksal/deal-pipeline'
 import { buildCrmCsv, crmCsvFilename } from '@/lib/crm-csv'
 import { todayStamp } from '@/lib/csv-export'
 import {
+  buildOpomnikPdfDoc,
+  opomnikPdfFilename,
+  opomnikDniNiz,
+  preveriOpomnikVnos,
+  type OpomnikPdfVnos,
+} from '@/lib/opomnik-pdf'
+import {
   Users,
   Search,
   Phone,
@@ -41,6 +48,7 @@ import {
   Loader2,
   Download,
   History,
+  FileDown,
 } from 'lucide-react'
 // R178 — EN VIR RESNICE za pečat 'Osveženo ob' (vzorec R170/R171/R177):
 // komponenta NE formatira časa sama.
@@ -131,6 +139,8 @@ export function CrmTab() {
   const [editOpomnikOpis, setEditOpomnikOpis] = useState('')
   const [editZadnjiKontakt, setEditZadnjiKontakt] = useState('')
   const [editOpombe, setEditOpombe] = useState('')
+  // R251 — dvoklik guard opomnika PDF (ISTI vzorec kot prihodkiVTeku R250).
+  const [opomnikVTeku, setOpomnikVTeku] = useState(false)
 
   // R162 — fail-verbose (isti razred kot R161 QuoteFollowUp): GET /api/crm
   // je pri neuspehu TIHO pokazal staro/prazno stanje (if (res.ok) brez else +
@@ -205,6 +215,58 @@ export function CrmTab() {
   const handleOpenDetail = (customer: CrmCustomer) => {
     setSelectedCustomer(customer)
     setDetailOpen(true)
+  }
+
+  // R251 — Opomnik PDF (8. člen 'izvozi' družine): terenski list za ponovni
+  // kontakt iz ISTEGA odgovora /api/crm, ki ga CrmTab že izriše. Pill živi v
+  // opomniškem bloku (viden točno takrat, ko opomnikDatum obstaja — lib
+  // fail-closed: opomnik brez datuma ne nastaja dokumenta). Bralni dokument
+  // brez pravice gate (P1-k precedens). EN now za žig + ime + dni resnica
+  // (determinizem, vzorec R203/R244/R250); toast pove REALNO resnico
+  // (status + dni — ISTI izpeljava kot PDF KPI IN blok na zaslonu; WYSIWYG).
+  const handleOpomnikPdf = () => {
+    if (opomnikVTeku || !selectedCustomer) return
+    if (!selectedCustomer.opomnikDatum) {
+      // Fail-closed jedro: brez datuma ni dokumenta — iskren toast (NIČ izmišljenega).
+      toast({ title: 'Opomnik ni nastavljen', description: 'PDF se izvozi, ko je vpisan datum opomnika.' })
+      return
+    }
+    setOpomnikVTeku(true)
+    try {
+      const now = new Date()
+      const vnos: OpomnikPdfVnos = {
+        ime: selectedCustomer.ime,
+        naslov: selectedCustomer.naslov,
+        telefon: selectedCustomer.telefon,
+        email: selectedCustomer.email,
+        kontaktnaOseba: selectedCustomer.kontaktnaOseba,
+        kategorija: selectedCustomer.kategorija,
+        opomnikDatum: selectedCustomer.opomnikDatum,
+        opomnikOpis: selectedCustomer.opomnikOpis,
+        zadnjiKontakt: selectedCustomer.zadnjiKontakt,
+        createdAt: selectedCustomer.createdAt,
+        // Status VERBATIM iz API-ja (žig na kartici — WYSIWYG, NIČ izračunavanja v klientu)
+        opomnikStatus: selectedCustomer.opomnikStatus,
+        ltv: selectedCustomer.ltv,
+        skupajProjektov: selectedCustomer.skupajProjektov,
+        zaklenjeni: selectedCustomer.zaklenjeni,
+      }
+      const doc = buildOpomnikPdfDoc(vnos, { now })
+      doc.save(opomnikPdfFilename(now))
+      toast({
+        title: 'Opomnik prenešen v PDF',
+        description: `Opomnik-…pdf — ${selectedCustomer.ime} · ${opomnikDniNiz(vnos, now)}.`,
+      })
+    } catch (err) {
+      if (err instanceof TypeError) {
+        // fail-closed jedro: pokvaren vnos → viden razlog (nič izmišljenega dokumenta)
+        toast({ title: 'Opomnik PDF ni mogoče sestaviti iz teh podatkov', description: err instanceof Error ? err.message : String(err), variant: 'destructive' })
+      } else {
+        toast({ title: `Izvoz PDF ni uspel: ${err instanceof Error ? err.message : String(err)}`, variant: 'destructive' })
+      }
+    } finally {
+      setOpomnikVTeku(false)
+    }
   }
 
   // R159 — CSV izvoz seznama strank (podatkovni izvoz za Excel/mail-merge;
@@ -612,13 +674,35 @@ export function CrmTab() {
                     <span className="text-xs font-semibold">
                       {selectedCustomer.opomnikStatus === 'POTEKEL' ? 'Opomnik potekel' : 'Opomnik'}
                     </span>
-                    <span className="text-2xs text-muted-foreground ml-auto">
-                      {formatDate(selectedCustomer.opomnikDatum)}
+                    <span className="text-2xs text-muted-foreground ml-auto tabular-nums">
+                      {formatDate(selectedCustomer.opomnikDatum)} · {opomnikDniNiz({ opomnikDatum: selectedCustomer.opomnikDatum }, new Date())}
                     </span>
                   </div>
                   {selectedCustomer.opomnikOpis && (
                     <p className="text-[11px] text-muted-foreground">{selectedCustomer.opomnikOpis}</p>
                   )}
+                  {/* R251 — izvozna skupina opomnika (pili povejo svojo resnico;
+                      žetoni, 0 novih hex; JSX tekst ohrani '·' dobesedno —
+                      r248 lekcija). Imenuje ISTO izpeljavo kot PDF KPI — ENA
+                      resnica na treh mestih (blok, toast, PDF). */}
+                  <div className="flex items-center justify-between gap-2 mt-2">
+                    <span className="text-2xs text-muted-foreground">
+                      PDF = terenski list za obisk · Potekel = prek datuma
+                    </span>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={handleOpomnikPdf}
+                      disabled={opomnikVTeku}
+                      className="h-8 gap-1.5 px-2.5 text-[11px] font-medium press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
+                      aria-label="Pripravi opomnik kot PDF"
+                      title="Terenski list za ponovni kontakt kot pravi PDF — stranka, naloga, kontekst"
+                    >
+                      <FileDown className="h-3.5 w-3.5" aria-hidden="true" />
+                      PDF
+                    </Button>
+                  </div>
                 </div>
               )}
 
