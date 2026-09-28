@@ -37,7 +37,8 @@ describe('R207 stražar: gumb DOBLJENO odpre dialog (NE takoj PATCH)', () => {
   it('gumb povezan na dialog + title razlaga', () => {
     const okno = oknoMed(
       src,
-      "{order.status === 'POTRJENO' && (",
+      // R242: vrata zdaj po pravici — start-marker vključuje lahkoPrejme
+      "{order.status === 'POTRJENO' && lahkoPrejme && (",
       '</CardContent>',
     )
     expect(okno).toContain('setReceiveDialogOrderId(order.id)')
@@ -129,7 +130,8 @@ describe('R207 stražar: iskren alreadyReceived + opis DOBLJENO toasta', () => {
     expect(okno).toContain("'Zaloga je posodobljena.'")
     // uspeh zapre dialog; fail-verbose pusti odprt (razlog viden)
     expect(okno).toContain("if (status === 'DOBLJENO') setReceiveDialogOrderId(null)")
-    expect(okno).toContain("data?.error ?? `HTTP ${res.status}`")
+    // fail-verbose (R140) ostaja — R242: detail PRED error (R241 vzorec)
+    expect(okno).toContain("data?.detail?.trim() || data?.error?.trim() || `HTTP ${res.status}`")
     // receiving stanje sproščeno v finally (tudi ob napaki)
     expect(okno).toContain("if (status === 'DOBLJENO') setReceiveSending(false)")
   })

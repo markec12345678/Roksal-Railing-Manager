@@ -39,7 +39,8 @@ describe('R206 stražar: iskren prehod POSLANO (stara oznaka gumba je GONE)', ()
     const okno = oknoMed(
       src,
       '{/* Status actions — R206: iskren gumb prehoda POSLANO',
-      "{order.status === 'POSLANO' && (",
+      // R242: vrata zdaj po pravici — end-marker vključuje lahkoOdobri
+      "{order.status === 'POSLANO' && lahkoOdobri && (",
     )
     expect(okno).toContain("handleOrderStatus(order.id, 'POSLANO')")
     expect(okno).toContain('Označi kot poslano')
@@ -49,7 +50,8 @@ describe('R206 stražar: iskren prehod POSLANO (stara oznaka gumba je GONE)', ()
   it('POTRJENO nespremenjen; DOBLJENO gre prek potrditvenega dialoga (R207 — edini prehod z resnično stransko resnico)', () => {
     const okno = oknoMed(
       src,
-      "{order.status === 'POSLANO' && (",
+      // R242: vrata zdaj po pravici — start-marker vključuje lahkoOdobri
+      "{order.status === 'POSLANO' && lahkoOdobri && (",
       '</CardContent>',
     )
     expect(okno).toContain("handleOrderStatus(order.id, 'POTRJENO')")
@@ -72,8 +74,8 @@ describe('R206 stražar: iskren prehod POSLANO (stara oznaka gumba je GONE)', ()
     expect(okno).toContain("POTRJENO: 'Status → POTRJENO'")
     expect(okno).toContain("DOBLJENO: 'Dobljeno — material v zalogi'")
     expect(okno).toContain('Aplikacija ne pošilja dokumentov')
-    // fail-verbose (R140) ostaja
-    expect(okno).toContain("data?.error ?? `HTTP ${res.status}`")
+    // fail-verbose (R140) ostaja — R242: detail PRED error (R241 vzorec)
+    expect(okno).toContain("data?.detail?.trim() || data?.error?.trim() || `HTTP ${res.status}`")
   })
 })
 

@@ -283,6 +283,40 @@ export function MaterialIntelligenceTab({
   const [zgodovina, setZgodovina] = useState<Record<string, ZgodovinaVnos[]>>({})
   const [zgodovinaNalaganje, setZgodovinaNalaganje] = useState(false)
   const [zgodovinaNapaka, setZgodovinaNapaka] = useState<string | null>(null)
+  // R242 — wave 4 RBAC ogledalo (TOČNO R239/R241 vzorec): pravice prebere z
+  // GET /api/auth (R135 EN VIR RESNICE; fetch on mount z alive guardom,
+  // napaka → []) in skrije akcije, ki bi končale s 403. API matrika
+  // PATCH /api/material-orders (§10/R135): prehodi ≠ DOBLJENO →
+  // procurement.approve; DOBLJENO → approve ALI receive ("prejem je
+  // skladiščna operacija"); POST (ustvarjanje) → procurement.create
+  // (glej Osnutek dialog — samostojna površina, wave 5 kandidat).
+  const [myPermissions, setMyPermissions] = useState<readonly string[] | null>(null)
+  useEffect(() => {
+    let alive = true
+    fetch('/api/auth')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (alive && data?.permissions) setMyPermissions(data.permissions as readonly string[])
+        else if (alive) setMyPermissions([])
+      })
+      .catch(() => {
+        if (alive) setMyPermissions([])
+      })
+    return () => {
+      alive = false
+    }
+  }, [])
+  // Fail-closed izpeljava (R241 vzorec — izrecno na false, NIKOLI tiha
+  // inflacija pravic): med nalaganjem (null) in ob napaki so VSE pisalne akcije skrite — least
+  // privilege, nikoli lažni gumb, ki bi končal s 403 (naključno odkrivanje).
+  const lahkoOdobri = myPermissions?.includes('procurement.approve') ?? false
+  const lahkoPrejme =
+    lahkoOdobri || (myPermissions?.includes('procurement.receive') ?? false)
+  // Vlogo-osveščen vodič (R239 precedens — nikoli kazalec na gumb, ki ga
+  // uporabnik ne vidi): pokaže se SAMO, ko uporabnik nima NOBENE pisalne
+  // pravice nad naročili IN je seznam pravic ZNAN (myPermissions !== null —
+  // med nalaganjem tišina je iskrena, R241 vzorec).
+  const samoBranjeNarocil = myPermissions !== null && !lahkoOdobri && !lahkoPrejme
   const { toast } = useToast()
 
   // Nov dobavitelj form
@@ -455,6 +489,12 @@ export function MaterialIntelligenceTab({
   }
 
   const handleOrderStatus = async (orderId: string, status: string) => {
+    // R242 — obrambni AND (R239 vzorec: vrata v vratah) — ISTA matrika kot
+    // API PATCH: prehod ≠ DOBLJENO rabi procurement.approve, DOBLJENO
+    // zadostuje že procurement.receive. Gumbi so že skriti; ta AND je
+    // druga plast (naključni klic ne zažene upehanske toke).
+    if (!lahkoOdobri && !lahkoPrejme) return
+    if (!lahkoOdobri && status !== 'DOBLJENO') return
     if (status === 'DOBLJENO') setReceiveSending(true)
     // R208 — preklic: dvoklik zaščita (drugi PATCH bi bil 409 — prehod je
     // enkraten; vrata zaklenemo kot pri prejemu, dialog ostane odprt).
@@ -508,9 +548,19 @@ export function MaterialIntelligenceTab({
       } else {
         // R140: fail-verbose — 403/409 napake se POKAŽEJO (prej tiho ugasil
         // gumb brez razlage; npr. MONTER ni videl zakaj "Dobljeno" ne dela).
+        // R242 — detail PRED error (R241 vzorec): forbidden() vrne
+        // { error: 'Prepovedano', detail } — človeku razumljiv razlog živi
+        // v detail, generični 'Prepovedano' NE sme zasenčiti razloga.
         // R207 — dialog prejema OSTANE odprt: razlog je viden, Prekliči možen.
-        const data = await res.json().catch(() => null)
-        toast({ title: 'Napaka', description: data?.error ?? `HTTP ${res.status}`, variant: 'destructive' })
+        const data = (await res.json().catch(() => null)) as
+          | { error?: string; detail?: string }
+          | null
+        toast({
+          title: 'Napaka',
+          description:
+            data?.detail?.trim() || data?.error?.trim() || `HTTP ${res.status}`,
+          variant: 'destructive',
+        })
       }
     } catch {
       toast({ title: 'Omrežna napaka', variant: 'destructive' })
@@ -852,11 +902,30 @@ export function MaterialIntelligenceTab({
               disabled={loading}
               aria-label="Izvozi naročila kot CSV"
               title="Izvozi vsa naročila (neodvisno od statusnega filtra) kot CSV za Excel"
-              className="h-8 text-xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
+              className="h-8 text-xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
             >
               <Download className="h-3.5 w-3.5 mr-1 text-roksal-amber" /> CSV
             </Button>
           </div>
+          {/* R242 — vlogo-osveščen vodič (R241 Računi precedens): viden SAMO,
+              ko uporabnik NIMA nobene pisalne pravice nad naročili IN je seznam
+              pravic znan (tišina med nalaganjem je iskrena). Navaja TOČNO
+              imena pravic iz API vrat (procurement.approve/receive) —
+              uporabnik, ki gumba ne vidi, razume ZAKAJ; izključno žetoni
+              (0 novih hex), nikoli kazalec na skriti gumb. */}
+          {samoBranjeNarocil && (
+            <div
+              className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-2xs text-muted-foreground"
+              role="note"
+              aria-label="Naročila so za branje — upravljanje zahteva pravice"
+            >
+              Pregled naročil je samo za branje. Prehode statusa (poslano /
+              potrjeno / preklic) ureja vloga s pravico{' '}
+              <span className="font-semibold text-roksal-ink">procurement.approve</span>,
+              prejem materiala v zalogo pa tudi vloga s pravico{' '}
+              <span className="font-semibold text-roksal-ink">procurement.receive</span>.
+            </div>
+          )}
           {loading && orders.length === 0 ? (
             <Card><CardContent className="py-8 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto text-roksal-amber" /></CardContent></Card>
           ) : orders.length === 0 ? (
@@ -1032,26 +1101,30 @@ export function MaterialIntelligenceTab({
                           <History className="h-3 w-3" aria-hidden="true" />
                           Zgodovina
                         </Button>
-                        {order.status === 'OSNUTEK' && (
-                          <Button type="button" size="sm" variant="outline" className="h-6 text-2xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1" onClick={() => handleOrderStatus(order.id, 'POSLANO')} title="Označi, da si naročilo poslal sam (aplikacija ne pošilja dokumentov)">
+                        {/* R242 — RBAC ogledalo (R239/R241 vzorec): vrata
+                            po TOČNI API matriki — POSLANO/POTRJENO/PREKlicANO
+                            = procurement.approve, DOBLJENO = approve ALI
+                            receive. Gumb, ki bi končal s 403, se NE rodi. */}
+                        {order.status === 'OSNUTEK' && lahkoOdobri && (
+                          <Button type="button" size="sm" variant="outline" className="h-6 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1" onClick={() => handleOrderStatus(order.id, 'POSLANO')} title="Označi, da si naročilo poslal sam (aplikacija ne pošilja dokumentov)">
                             Označi kot poslano
                           </Button>
                         )}
-                        {order.status === 'POSLANO' && (
-                          <Button type="button" size="sm" variant="outline" className="h-6 text-2xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1" onClick={() => handleOrderStatus(order.id, 'POTRJENO')}>
+                        {order.status === 'POSLANO' && lahkoOdobri && (
+                          <Button type="button" size="sm" variant="outline" className="h-6 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1" onClick={() => handleOrderStatus(order.id, 'POTRJENO')}>
                             Potrdi
                           </Button>
                         )}
-                        {order.status === 'POTRJENO' && (
-                          <Button type="button" size="sm" variant="outline" className="h-6 text-2xs bg-green-50 dark:bg-green-950/40 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1" onClick={() => setReceiveDialogOrderId(order.id)} title="Prejem v zalogo — potrditev s prikazom postavk">
+                        {order.status === 'POTRJENO' && lahkoPrejme && (
+                          <Button type="button" size="sm" variant="outline" className="h-6 text-2xs bg-green-50 dark:bg-green-950/40 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1" onClick={() => { if (!lahkoPrejme) return; setReceiveDialogOrderId(order.id); }} title="Prejem v zalogo — potrditev s prikazom postavk">
                             <CheckCircle2 className="h-3 w-3 mr-1" /> Dobljeno (v zalogo)
                           </Button>
                         )}
                         {/* R208 — preklic (končno stanje, brez stranskih učinkov):
                             potrditveni dialog (družina R198/R207) — odpre se,
                             PATCH gre šele prek 'Potrdi preklic'. */}
-                        {(order.status === 'OSNUTEK' || order.status === 'POSLANO' || order.status === 'POTRJENO') && (
-                          <Button type="button" size="sm" variant="outline" className="h-6 gap-1 text-2xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1" onClick={() => setCancelDialogOrderId(order.id)} title="Preklic naročila — KONČNO stanje, ni razveljavljivo (dobavitelja obvestiš sam)">
+                        {(order.status === 'OSNUTEK' || order.status === 'POSLANO' || order.status === 'POTRJENO') && lahkoOdobri && (
+                          <Button type="button" size="sm" variant="outline" className="h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1" onClick={() => { if (!lahkoOdobri) return; setCancelDialogOrderId(order.id); }} title="Preklic naročila — KONČNO stanje, ni razveljavljivo (dobavitelja obvestiš sam)">
                             <XCircle className="h-3 w-3" aria-hidden="true" />
                             Prekliči
                           </Button>
@@ -1140,7 +1213,7 @@ export function MaterialIntelligenceTab({
               disabled={loading}
               aria-label="Izvozi dobavitelje kot CSV"
               title="Izvozi vse dobavitelje kot CSV za Excel"
-              className="h-8 text-xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
+              className="h-8 text-xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
             >
               <Download className="h-3.5 w-3.5 mr-1 text-roksal-amber" /> CSV
             </Button>
@@ -1152,13 +1225,13 @@ export function MaterialIntelligenceTab({
               disabled={loading}
               aria-label="Izvozi dobavitelje kot PDF"
               title="Dobavitelji kot pravi PDF — arhivski pregled kontaktnih in sodelovalnih podatkov"
-              className="h-6 gap-1 text-2xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
+              className="h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
             >
               <FileText className="h-3 w-3" aria-hidden="true" />
               PDF
             </Button>
           </div>
-          <Button type="button" onClick={() => setSupplierDialogOpen(true)} className="w-full bg-roksal-navy text-white shadow-sm transition-all focus-visible:ring-2 focus-visible:ring-roksal-navy/40">
+          <Button type="button" onClick={() => setSupplierDialogOpen(true)} className="w-full bg-roksal-navy text-white shadow-sm press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40">
             <Plus className="h-4 w-4 mr-2" /> Nov dobavitelj
           </Button>
           {loading && suppliers.length === 0 ? (

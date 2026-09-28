@@ -1607,7 +1607,7 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
               variant="outline"
               onClick={prenesiNarocilnicoCsv}
               disabled={osnutekArtikli.length === 0}
-              className="gap-1.5 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 disabled:opacity-50"
+              className="gap-1.5 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 disabled:opacity-50"
               aria-label="Prenesi naročilnico vidnih artiklov kot CSV"
             >
               <Download className="h-4 w-4" aria-hidden="true" />
@@ -1617,7 +1617,7 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
               variant="outline"
               onClick={prenesiOsnutekPdf}
               disabled={osnutekArtikli.length === 0}
-              className="gap-1.5 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 disabled:opacity-50"
+              className="gap-1.5 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 disabled:opacity-50"
               aria-label="Prenesi naročilnico vidnih artiklov kot PDF"
               title="Naročilnica osnutka kot pravi PDF — interni pregled pred pošiljanjem"
             >
@@ -1634,7 +1634,7 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
             <Button
               onClick={handleShraniOsnutek}
               disabled={osnutekSubmitting || !osnutekDobavitelj || dobaviteljiStanje !== 'ok' || dobavitelji.length === 0}
-              className="bg-roksal-navy hover:bg-roksal-navy/90 text-white shadow-sm transition-all focus-visible:ring-2 focus-visible:ring-roksal-navy/40 disabled:opacity-50"
+              className="bg-roksal-navy hover:bg-roksal-navy/90 text-white shadow-sm transition-all press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 disabled:opacity-50"
             >
               {osnutekSubmitting ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

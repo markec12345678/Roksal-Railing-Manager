@@ -238,7 +238,9 @@ describe('R236 — komponenta: PDF pill v zavihku Dobavitelji (ISTI pill družin
 
   it('handler: VEDNO viden (disabled LE loading) + fail-closed pri 0 + EN now za dokument IN ime', () => {
     const z = komponenta.indexOf('const handleSuppliersPdf')
-    const k = komponenta.indexOf('return (')
+    // R242: iskanje 'return (' ŠELE po zacetku handlerja — useEffect cleanup
+    // (return () =>) bi ga preglasil (prazen okno = slepi pin)
+    const k = komponenta.indexOf('return (', z)
     const h = komponenta.slice(z, k)
     expect(h).toContain('if (loading) return')
     expect(h).toContain("if (suppliers.length === 0) {")
@@ -262,7 +264,7 @@ describe('R236 — [Mandatory] stil (P1-f): focus-visible prstan revizija — EN
   it('app glavni fokus = roksal-navy/40 (revizija: 4 odstopanja konvertirana)', () => {
     expect(racuni).toContain('focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"')
     expect(racuni).toContain("className=\"h-7 text-xs bg-emerald-600 hover:bg-emerald-500 focus-visible:ring-roksal-navy/40\"")
-    expect(komponenta).toContain('bg-green-50 dark:bg-green-950/40 focus-visible:ring-2 focus-visible:ring-roksal-navy/40')
+    expect(komponenta).toContain('bg-green-50 dark:bg-green-950/40 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40')
     // Konvertirana odstopanja NE obstajajo več (amber/emerald/green fokusrni žetoni).
     expect(racuni).not.toContain('focus-visible:ring-amber-500/50')
     expect(racuni).not.toContain('focus-visible:ring-emerald-400/50')
