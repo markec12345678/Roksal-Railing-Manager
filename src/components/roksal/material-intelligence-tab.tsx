@@ -67,6 +67,21 @@ import {
   type ZalogaOsnutekArtikel,
   type ZalogaOsnutekNarocilo,
 } from '@/lib/zaloga-osnutek-pdf'
+// R264 (P1-f, 'izvozi' družina — 20. člen) — DOBAVITELJI — POZICIJA CEN PDF
+// (presek DVEH polj ISTEGA /api/material-prices odgovora — prices ×
+// bestPerMaterial, FRESH ob kliku kot cenik/primerjalni R244/R245 — route
+// NIČ; JOIN po IDENTITETI inventoryId; pozicija NAJNIŽJA/VIŠJA po vrednosti;
+// povprečni odstopek čez višje vrstice SAMO pri višjih > 0 sicer '—';
+// najširši razpon max čez vse vrstice; brez-alternativa suppliers === 1;
+// fail-closed, bajtni determinizem, soli 0x8d–0x90).
+import {
+  buildDobaviteljiPozicijaPdfDoc,
+  dobaviteljiPozicijaPdfFilename,
+  dobaviteljiPozicijaCen,
+  ponudbaBeseda,
+  type PozicijaCenaVnos,
+  type PozicijaBestVnos,
+} from '@/lib/dobavitelji-pozicija-pdf'
 // R244 (P1 'izvozi' družina — 5. člen) — CENIK MATERIALA PDF (pravi PDF brat
 // CSV cenika R244 — ISTI prerez vrstic, fail-closed, bajtni determinizem;
 // ISTI PDF pill družina kot Zaloga R234 / Naročilnica R235 / Dobavitelji R236).
@@ -1208,6 +1223,86 @@ export function MaterialIntelligenceTab({
     }
   }
 
+  // R264 — POZICIJA DOBAVITELJEV (20. člen 'izvozi' družine): presek DVEH
+  // polj ISTEGA /api/material-prices odgovora (prices × bestPerMaterial —
+  // FRESH ob kliku, vzorec pridobiCenik/pridobiPrimerjalni — NIČ nove mreže,
+  // NIČ state-a). ENA resnica v libu: pozicija NAJNIŽJA/VIŠJA po VREDNOSTI
+  // (dva istocenovna = obadva najnižja — iskreno); povprečni odstopek čez
+  // VIŠJE vrstice SAMO pri višjih > 0 sicer '—'; najširši razpon max čez
+  // VSE vrstice (0 = vse najnižje); brez-alternativa suppliers === 1 (RED —
+  // cenitveno tveganje). Fail-closed: 0 cen → iskren toast; pokvaren JOIN
+  // / min-invarianta / bestPrice 0 → TypeError viden razlog. EN now za žig
+  // IN ime (lekcija R121/R235). Bralni dokument — brez dodatnega pravicnega
+  // gate (P1-k precedens; isti vir kot cenik/primerjalni).
+  const [pozicijaVTeku, setPozicijaVTeku] = useState(false)
+  const pridobiPozicijo = useCallback(async (): Promise<{ ceny: PozicijaCenaVnos[]; najboljse: PozicijaBestVnos[] }> => {
+    const res = await fetch('/api/material-prices')
+    if (!res.ok) {
+      throw new Error(`GET /api/material-prices → HTTP ${res.status}`)
+    }
+    const data: unknown = await res.json()
+    if (!data || typeof data !== 'object' || !Array.isArray((data as { prices?: unknown }).prices)) {
+      throw new TypeError('Odgovora /api/material-prices ni mogoče prebrati (manjka polje prices).')
+    }
+    if (!Array.isArray((data as { bestPerMaterial?: unknown }).bestPerMaterial)) {
+      throw new TypeError('Odgovora /api/material-prices ni mogoče prebrati (manjka polje bestPerMaterial).')
+    }
+    const ceny: PozicijaCenaVnos[] = (data as { prices: Array<Record<string, unknown>> }).prices.map((p, i) => {
+      const supplier = p.supplier as { id?: unknown; naziv?: unknown } | undefined
+      const inventoryId = p.inventoryId
+      const cena = p.cena
+      if (!supplier || typeof supplier.id !== 'string' || typeof supplier.naziv !== 'string') {
+        throw new TypeError(`polje prices vrstica ${i}: manjkajoč dobavitelj (supplier.id/naziv) v odgovoru API-ja`)
+      }
+      if (typeof inventoryId !== 'string' || typeof cena !== 'number') {
+        throw new TypeError(`polje prices vrstica ${i}: manjkajoči inventoryId/cena v odgovoru API-ja`)
+      }
+      return { inventoryId, cena, dobaviteljId: supplier.id, dobavitelj: supplier.naziv }
+    })
+    const najboljse: PozicijaBestVnos[] = (data as { bestPerMaterial: Array<Record<string, unknown>> }).bestPerMaterial.map((b, i) => {
+      const inventoryId = b.inventoryId
+      const bestPrice = b.bestPrice
+      const suppliers = b.suppliers
+      if (typeof inventoryId !== 'string' || typeof bestPrice !== 'number' || typeof suppliers !== 'number') {
+        throw new TypeError(`polje bestPerMaterial vrstica ${i}: manjkajoči inventoryId/bestPrice/suppliers v odgovoru API-ja`)
+      }
+      return { inventoryId, bestPrice, suppliers }
+    })
+    return { ceny, najboljse }
+  }, [])
+
+  const handlePozicijaPdf = async () => {
+    if (pozicijaVTeku) return
+    setPozicijaVTeku(true)
+    try {
+      const { ceny, najboljse } = await pridobiPozicijo()
+      if (ceny.length === 0) {
+        // Fail-closed jedro: prazen seznam ne nastaja dokumenta — iskren toast.
+        toast({ title: 'Ni vpisanih cen', description: 'Pozicija dobaviteljev se izvozi, ko je vpisana prva nabavna cena.' })
+        return
+      }
+      const now = new Date()
+      const doc = buildDobaviteljiPozicijaPdfDoc(ceny, najboljse, { now })
+      doc.save(dobaviteljiPozicijaPdfFilename(now))
+      // Toast pove REALNO agregatno resnico (ISTA izpeljava
+      // dobaviteljiPozicijaCen kot PDF KPI IN sklep — WYSIWYG).
+      const { povzetek } = dobaviteljiPozicijaCen(ceny, najboljse)
+      toast({
+        title: 'Pozicija dobaviteljev prenešena v PDF',
+        description: `Pozicija-dobaviteljev-…pdf — ${povzetek.dobaviteljev} ${dobaviteljBeseda(povzetek.dobaviteljev)}, ${povzetek.ponudb} ${ponudbaBeseda(povzetek.ponudb)}, brez alternative ${povzetek.brezAlternative}.`,
+      })
+    } catch (err) {
+      if (err instanceof TypeError) {
+        // fail-closed jedro: pokvaren vnos → viden razlog (nič izmišljenega dokumenta)
+        toast({ title: 'Pozicija dobaviteljev PDF ni mogoče sestaviti iz teh podatkov', description: err instanceof Error ? err.message : String(err), variant: 'destructive' })
+      } else {
+        toast({ title: `Izvoz PDF ni uspel: ${err instanceof Error ? err.message : String(err)}`, variant: 'destructive' })
+      }
+    } finally {
+      setPozicijaVTeku(false)
+    }
+  }
+
   return (
     <div className="space-y-4">
       {/* Tab switcher */}
@@ -1941,6 +2036,26 @@ export function MaterialIntelligenceTab({
                     PDF
                   </Button>
                 </div>
+                {/* R264 — POZICIJA DOBAVITELJEV PDF (20. člen 'izvozi'
+                    družine): presek prices × bestPerMaterial iz ISTEGA
+                    /api/material-prices odgovora. Bralni dokument VEDNO
+                    viden (P1-k precedens); fail-closed toast pri 0 cen.
+                    ISTI žetoni kot ostali pilli — 0 novih hex. */}
+                <div className="flex justify-end gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={handlePozicijaPdf}
+                    disabled={loading || pozicijaVTeku}
+                    aria-label="Izvozi pozicijo dobaviteljev kot PDF"
+                    title="Pozicija dobaviteljev kot pravi PDF — kdo je najcenejši in kje je prostor za pogajanja"
+                    className="h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
+                  >
+                    <FileText className="h-3 w-3" aria-hidden="true" />
+                    PDF
+                  </Button>
+                </div>
                 {/* R245 — legenda izvozne skupine (želona pariteta: vsak
                     dokument pove svojo resnico; žetoni, 0 novih hex).
                     R247 — % resnica v legendi (razponska dimenzija zdaj
@@ -1951,7 +2066,7 @@ export function MaterialIntelligenceTab({
                     % (KJE je prostor za pogajanja največji, ISTI vir kot
                     7. KPI box). */}
                 <p className="text-right text-2xs text-muted-foreground">
-                  Cenik = vse ponudbe · Primerjalni = najnižja per artikel · % = razpon do najvišje · Povprečni razpon = vsota razlik / vsota najboljših · Največji razpon = najširši % med artikli
+                  Cenik = vse ponudbe · Primerjalni = najnižja per artikel · % = razpon do najvišje · Povprečni razpon = vsota razlik / vsota najboljših · Največji razpon = najširši % med artikli · Pozicija = dobavitelji × najnižja per artikel · Brez alternative = samo ena ponudba
                 </p>
               </div>
               <Label className="text-xs">Izberi material za dodajanje cene</Label>

@@ -544,7 +544,7 @@ describe('R245 — primerjalni CSV + pilli v material-intelligence-tab', () => {
   })
 
   it('EN now za žig IN ime (determinizem — dva new Date() bi razdala žig in ime)', () => {
-    const pdf = oknoMed(material, 'const handlePrimerjalniPdf', '  return (')
+    const pdf = oknoMed(material, 'const handlePrimerjalniPdf', 'R264 — POZICIJA DOBAVITELJEV')
     expect((pdf.match(/new Date\(\)/g) || []).length).toBe(1)
   })
 
