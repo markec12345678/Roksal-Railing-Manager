@@ -52,6 +52,21 @@ import {
   narocilaPregledPdfFilename,
   narocilaPregledPovzetek,
 } from '@/lib/narocila-pregled-pdf'
+// R262 (P1-f, 'izvozi' družina — 18. člen) — ZALOGA — OSNUTEK POKRITOST PDF
+// (presek DVEH virov, ki ta tab ŽE fetcha: /api/inventory +
+// /api/material-orders — route NIČ; pokrito = Σ postavk OSNUTEK naročil po
+// IDENTITETI inventoryId — R260/R261 lekcija; EN VIR STATUSI_NAROCIL
+// narocila-pregled-pdf R257; ne-OSNUTEK naročila NIČ ne pokrivajo —
+// osnutek je OBLJUBA; manjkajoci = max(0, minimum − zaloga); % samo pri
+// manjkajoci > 0 sicer '—'; fail-closed, bajtni determinizem, soli
+// 0x85–0x88).
+import {
+  buildZalogaOsnutekPdfDoc,
+  zalogaOsnutekPdfFilename,
+  zalogaOsnutekPokritost,
+  type ZalogaOsnutekArtikel,
+  type ZalogaOsnutekNarocilo,
+} from '@/lib/zaloga-osnutek-pdf'
 // R244 (P1 'izvozi' družina — 5. člen) — CENIK MATERIALA PDF (pravi PDF brat
 // CSV cenika R244 — ISTI prerez vrstic, fail-closed, bajtni determinizem;
 // ISTI PDF pill družina kot Zaloga R234 / Naročilnica R235 / Dobavitelji R236).
@@ -184,7 +199,9 @@ interface MaterialOrder {
   datumDobave: string | null
   opombe: string | null
   supplier: { naziv: string }
-  items: Array<{ naziv: string; kolicina: number; enota: string; cena: number }>
+  // R262 — IDENTITETNI ključ pokritostnega preseka (v === s — R260/R261
+  // lekcija; /api/material-orders include items ŽE nosi inventoryId).
+  items: Array<{ inventoryId: string; naziv: string; kolicina: number; enota: string; cena: number }>
 }
 
 // R209 — zgodovina prehodov naročila: dogodek iz /api/material-orders/history
@@ -900,6 +917,71 @@ export function MaterialIntelligenceTab({
   // brez pravice gate (P1-k precedens; CSV kontrakt R140 nespremenjen:
   // VSA naročila, neodvisno od statusnega filtra).
   const [narocilaVTeku, setNarocilaVTeku] = useState(false)
+
+  // R262 — ENA izpeljava vhodov za pokritostni presek (WYSIWYG ISTI vir kot
+  // PDF KPI, tabela, sklep, mini-vrstica IN toast): DTO pruning iz ISTIH
+  // state-ov, ki jih loadData ŽE napolni na tem podzavihku — NIČ nove mreže.
+  const pokritostVhodi = useMemo(() => {
+    const artikli: ZalogaOsnutekArtikel[] = inventories.map((a) => ({
+      id: a.id,
+      sifraMateriala: a.sifraMateriala,
+      naziv: a.naziv,
+      kolicinaZaloga: a.kolicinaZaloga,
+      enota: a.enota,
+      minimalnaZaloga: a.minimalnaZaloga,
+    }))
+    const narocila: ZalogaOsnutekNarocilo[] = orders.map((o) => ({
+      status: o.status,
+      items: o.items.map((p) => ({ inventoryId: p.inventoryId, kolicina: p.kolicina })),
+    }))
+    return { artikli, narocila }
+  }, [inventories, orders])
+  const pokritostPovzetek = useMemo(
+    () => zalogaOsnutekPokritost(pokritostVhodi.artikli, pokritostVhodi.narocila).povzetek,
+    [pokritostVhodi],
+  )
+  const [pokritostVTeku, setPokritostVTeku] = useState(false)
+
+  // R262 — ZALOGA — OSNUTEK POKRITOST PDF (18. člen 'izvozi' družine):
+  // presek DVEH virov, ki ta podzavihek ŽE ima (inventories + orders — NIČ
+  // nove mreže). ENA resnica v libu: pokrito = Σ OSNUTEK postavk po
+  // IDENTITETI inventoryId, manjkajoci = max(0, minimum − zaloga), % samo
+  // pri manjkajoci > 0; ne-OSNUTEK NIČ ne pokriva (obljuba ≠ nabava);
+  // brez-zapisa + nad-minimumom-brez-osnutka = poimenovani v sklepu
+  // (NIKOLI tiho). Fail-closed: prazen presek (0 artiklov IN 0 naročil) →
+  // iskren toast; TypeError → viden razlog. EN now za žig IN ime (lekcija
+  // R121/R235). Bralni dokument — brez dodatnega pravicnega gate (P1-k
+  // precedens; isti viri kot pregled).
+  const handlePokritostPdf = () => {
+    if (pokritostVTeku || loading) return
+    setPokritostVTeku(true)
+    try {
+      if (inventories.length === 0 && orders.length === 0) {
+        toast({ title: 'Ni podatkov za pokritost', description: 'PDF se izvozi, ko je vpisan prvi artikel ali osnutek naročila.' })
+        return
+      }
+      const now = new Date()
+      const doc = buildZalogaOsnutekPdfDoc(pokritostVhodi.artikli, pokritostVhodi.narocila, { now })
+      doc.save(zalogaOsnutekPdfFilename(now))
+      // Toast pove REALNO agregatno resnico (ISTA izpeljava
+      // zalogaOsnutekPokritost kot PDF KPI IN mini-vrstica — WYSIWYG).
+      const { povzetek } = zalogaOsnutekPokritost(pokritostVhodi.artikli, pokritostVhodi.narocila)
+      toast({
+        title: 'Pokritost prenešena v PDF',
+        description: `Zaloga-osnutek-pokritost-…pdf — ${povzetek.artiklov} artiklov, pokrito ${povzetek.pokritoEnot} enot iz ${povzetek.osnutkov} osnutkov, nepokritih ${povzetek.nepokritih}.`,
+      })
+    } catch (err) {
+      if (err instanceof TypeError) {
+        // fail-closed jedro: pokvaren vnos → viden razlog (nič izmišljenega dokumenta)
+        toast({ title: 'Pokritost PDF ni mogoče sestaviti iz teh podatkov', description: err instanceof Error ? err.message : String(err), variant: 'destructive' })
+      } else {
+        toast({ title: `Izvoz PDF ni uspel: ${err instanceof Error ? err.message : String(err)}`, variant: 'destructive' })
+      }
+    } finally {
+      setPokritostVTeku(false)
+    }
+  }
+
   const handleNarocilaPdf = () => {
     if (narocilaVTeku || loading) return
     setNarocilaVTeku(true)
@@ -1335,13 +1417,49 @@ export function MaterialIntelligenceTab({
               <FileText className="h-3 w-3" aria-hidden="true" />
               PDF
             </Button>
+            {/* R262 — ZALOGA — OSNUTEK POKRITOST PDF (18. člen 'izvozi'
+                družine): presek zaloge in OSNUTEK naročil po identiteti
+                artikla — bralni dokument, VEDNO viden (P1-k precedens),
+                press-scale + FileText aria-hidden (pill družina — pariteta
+                R257). */}
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={handlePokritostPdf}
+              disabled={loading || pokritostVTeku}
+              aria-label="Izvozi pokritost zaloge in osnutkov kot PDF"
+              title="Pokritost kot pravi PDF — kaj osnutki že pokrivajo in kaj pod minimumom še manjka"
+              className="h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
+            >
+              <FileText className="h-3 w-3" aria-hidden="true" />
+              PDF
+            </Button>
           </div>
           {/* R257 — legenda izvozne skupine (želona pariteta R245/R252/R255:
               vsak dokument pove svojo resnico — vrstica per postavka (CSV)
-              ≠ vrstica per naročilo (PDF); žetoni, 0 novih hex). */}
+              ≠ vrstica per naročilo (PDF); žetoni, 0 novih hex).
+              R262 — substring-parna nadgradna (R260 lekcija 3): nova
+              resnica PRIPEPENA ZA obstoječo — stara dobesedna resnica
+              ostane, vsi stari toContain pini ostanejo zeleni BREZ premika. */}
           <p className="text-right text-2xs text-muted-foreground">
-            CSV = vrstica per postavka · PDF = vrstica per naročilo · Pretekel rok = pretekljena obljuba, status še odprt
+            CSV = vrstica per postavka · PDF = vrstica per naročilo · Pretekel rok = pretekljena obljuba, status še odprt · Pokritost = zaloga × osnutki (OSNUTEK) po identiteti artikla
           </p>
+          {/* R262 — F2 pokritostna mini-vrstica (WYSIWYG ISTA izpeljava
+              zalogaOsnutekPokritost kot PDF KPI — EN vir resnice
+              zaslon/PDF; kondicionalna resnica: žig 'U nepokritih' SAMO
+              kadar nepokritih > 0 — R256 lekcija; žetoni, 0 novih hex). */}
+          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/40 px-2.5 py-1.5">
+            <span className={`h-2 w-2 shrink-0 rounded-full ${pokritostPovzetek.nepokritih > 0 ? 'bg-roksal-red' : 'bg-roksal-green'}`} aria-hidden />
+            <p className="min-w-0 flex-1 text-[11px] text-muted-foreground">
+              Pokritost osnutka: {pokritostPovzetek.artiklov} artiklov · pokrito {pokritostPovzetek.pokritoEnot} enot iz {pokritostPovzetek.osnutkov} osnutkov
+            </p>
+            {pokritostPovzetek.nepokritih > 0 && (
+              <span className="shrink-0 rounded-full border border-roksal-red/40 bg-roksal-red/10 px-1.5 py-0.5 text-[9px] font-medium text-roksal-red">
+                {pokritostPovzetek.nepokritih} nepokritih pod minimumom
+              </span>
+            )}
+          </div>
           {/* R242 — vlogo-osveščen vodič (R241 Računi precedens): viden SAMO,
               ko uporabnik NIMA nobene pisalne pravice nad naročili IN je seznam
               pravic znan (tišina med nalaganjem je iskrena). Navaja TOČNO

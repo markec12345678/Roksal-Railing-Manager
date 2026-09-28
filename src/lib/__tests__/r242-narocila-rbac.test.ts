@@ -157,12 +157,14 @@ describe('R242 — [Mandatory] stil: press-scale pariteta ISTIH akcij čez konte
     expect(uiSrc).toContain('"w-full bg-roksal-navy text-white shadow-sm press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"')
   })
 
-  it('material-intelligence: vsi štirje statusni prehodi nosijo mikro-pritisk (8× press-scale)', () => {
+  it('material-intelligence: vsi štirje statusni prehodi nosijo mikro-pritisk (17× press-scale — R262 lekcija 4)', () => {
     // R245 sinhronizacija: 12 (R242 8 + R243 2 + R244 cenik pilli 2) +
     // 2 primerjalni pilli (CSV + PDF, ISTI pill razredi kot cenik par) = 14;
-    // R257: +1 orders PDF pill (13. člen 'izvozi' družine) = 15
+    // R257: +1 orders PDF pill (13. člen 'izvozi' družine) = 15;
+    // R262: +2 = 1 pokritost pill className (18. člen) + 1 pill komentar
+    // (regex šteje TUDI komentarje — R259 lekcija 2, dokumentirano) = 17
     const stevec = (uiSrc.match(/press-scale/g) ?? []).length
-    expect(stevec).toBe(15)
+    expect(stevec).toBe(17)
   })
 
   it('inventory Osnutek dialog footer: CSV/PDF/Shrani = ISTI jezik kot header pilule sorojenci', () => {
