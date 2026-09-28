@@ -310,7 +310,38 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
     if (osnutekOpen) void naloziDobavitelje()
   }, [osnutekOpen, naloziDobavitelje])
 
+  // R243 — wave 5 RBAC ogledalo (TOČNO R239/R241/R242 vzorec): pravice prebere z
+  // GET /api/auth (R135 EN VIR RESNICE; fetch on mount z alive guardom,
+  // napaka → []) in skrije akcije, ki bi končale s 403. API matrika (TOČNO
+  // iz route datotek): POST /api/inventory s tipPremika → inventory.write
+  // (§10/R135 — 'Premike zaloge beležita vodstvo ali skladišče'); POST
+  // /api/material-orders (osnutek) → procurement.create.
+  const [myPermissions, setMyPermissions] = useState<readonly string[] | null>(null)
+  useEffect(() => {
+    let alive = true
+    fetch('/api/auth')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (alive && data?.permissions) setMyPermissions(data.permissions as readonly string[])
+        else if (alive) setMyPermissions([])
+      })
+      .catch(() => {
+        if (alive) setMyPermissions([])
+      })
+    return () => {
+      alive = false
+    }
+  }, [])
+  // Fail-closed izpeljava (R242 vzorec — izrecno na false, NIKOLI tiha
+  // inflacija pravic): med nalaganjem (null) in ob napaki sta VSE pisalni
+  // akciji skriti — least privilege, nikoli lažni gumb, ki bi končal s 403.
+  const lahkoZapisujePremike = myPermissions?.includes('inventory.write') ?? false
+  const lahkoUstvariNarocila = myPermissions?.includes('procurement.create') ?? false
+
   async function handleMovement() {
+    // R243 — obrambni AND (R242 vzorec: vrata v vratah): gumb je skrit, ta
+    // AND je druga plast (naključni klic ne zažene upehanske toke).
+    if (!lahkoZapisujePremike) return
     if (!movementInventoryId || !movementQuantity || parseFloat(movementQuantity) <= 0) {
       toast.error('Izpolnite vsa obvezna polja')
       return
@@ -626,6 +657,9 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
   // vrednosti. Fail-verbose z razlogom iz odgovora (vzorec R140/R163/R203/R204):
   // 403 pokaže manjkajočo pravico + vlogo, 400/409/500 svet razlog.
   async function handleShraniOsnutek() {
+    // R243 — obrambni AND (R242 vzorec: vrata v vratah) — ISTA disjunkcija
+    // kot API vrata na POST /api/material-orders (procurement.create).
+    if (!lahkoUstvariNarocila) return
     if (!osnutekDobavitelj || osnutekArtikli.length === 0) {
       toast.error('Izberite dobavitelja za osnutek naročila.')
       return
@@ -790,16 +824,39 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
             )}
           </div>
         </div>
-        <Button
-          size="icon"
-          className="h-9 w-9 bg-roksal-amber hover:bg-roksal-amber/90 text-roksal-navy shadow-sm focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-1"
-          onClick={() => setMovementOpen(true)}
-          aria-label="Dodaj gibanje zaloge"
-          title="Dodaj gibanje zaloge"
-        >
-          <Plus className="h-4 w-4" aria-hidden="true" />
-        </Button>
+        {/* R243 — wave 5 RBAC ogledalo: gumb 'Dodaj gibanje zaloge' je VIDEN
+            samo vlogi s pravico inventory.write (API POST /api/inventory s
+            tipPremika — §10/R135). Med nalaganjem pravic in ob napaki skrit
+            (fail-closed, R242 vzorec). */}
+        {lahkoZapisujePremike && (
+          <Button
+            size="icon"
+            className="h-9 w-9 bg-roksal-amber hover:bg-roksal-amber/90 text-roksal-navy shadow-sm focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-1 press-scale"
+            onClick={() => setMovementOpen(true)}
+            aria-label="Dodaj gibanje zaloge"
+            title="Dodaj gibanje zaloge"
+          >
+            <Plus className="h-4 w-4" aria-hidden="true" />
+          </Button>
+        )}
       </div>
+      {/* R243 — vlogo-osveščen vodič (R241/R242 precedens — nikoli kazalec na
+          gumb, ki ga uporabnik ne vidi): viden SAMO, ko uporabnik nima
+          inventory.write IN je seznam pravic znan (tišina med nalaganjem je
+          iskrena). Navaja TOČNO ime pravice iz API vrat — uporabnik, ki
+          gumba ne vidi, razume ZAKAJ; izključno žetoni (0 novih hex). */}
+      {myPermissions !== null && !lahkoZapisujePremike && (
+        <div
+          className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-2xs text-muted-foreground"
+          role="note"
+          aria-label="Premiki zaloge so za branje — beleženje zahteva pravico"
+        >
+          Pregled zaloge je samo za branje. Premike (poraba / dopolnitev /
+          odpis) beležita vloga s pravico{' '}
+          <span className="font-semibold text-roksal-ink">inventory.write</span> —
+          vodstvo ali skladišče.
+        </div>
+      )}
 
       {/* Mini Stock Chart */}
       <Card className="card-accent-left card-hover transition-all duration-200 animate-fade-in-up" style={{ animationDelay: '0ms' }}>
@@ -1500,7 +1557,7 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
             <Button
               onClick={handleMovement}
               disabled={submitting || !movementInventoryId || !movementQuantity || parseFloat(movementQuantity) <= 0}
-              className="bg-roksal-navy hover:bg-roksal-navy/90 text-white shadow-sm transition-all focus-visible:ring-2 focus-visible:ring-roksal-navy/40 disabled:opacity-50"
+              className="bg-roksal-navy hover:bg-roksal-navy/90 text-white shadow-sm transition-all press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 disabled:opacity-50"
             >
               {submitting ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -1601,6 +1658,23 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
                 className="focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
               />
             </div>
+
+            {/* R243 — vlogo-osveščen vodič v Osnutku (R242 Naročila precedens):
+                viden SAMO, ko uporabnik nima procurement.create IN je seznam
+                pravic znan. CSV/PDF naročilnica ostajata (odjemalski dokumenti,
+                brez vrata — P1-k precedens); pisalna akcija 'Shrani osnutek'
+                pa je skrita. */}
+            {myPermissions !== null && !lahkoUstvariNarocila && (
+              <div
+                className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-2xs text-muted-foreground"
+                role="note"
+                aria-label="Shranjevanje osnutka naročila zahteva pravico"
+              >
+                Shranjevanje osnutka naročila je pravica{' '}
+                <span className="font-semibold text-roksal-ink">procurement.create</span>.
+                Naročilnico lahko še vedno prenesete kot CSV ali PDF.
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button
@@ -1631,18 +1705,20 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
             >
               Prekliči
             </Button>
-            <Button
-              onClick={handleShraniOsnutek}
-              disabled={osnutekSubmitting || !osnutekDobavitelj || dobaviteljiStanje !== 'ok' || dobavitelji.length === 0}
-              className="bg-roksal-navy hover:bg-roksal-navy/90 text-white shadow-sm transition-all press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 disabled:opacity-50"
-            >
-              {osnutekSubmitting ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <FileDown className="mr-2 h-4 w-4" aria-hidden="true" />
-              )}
-              Shrani osnutek
-            </Button>
+            {lahkoUstvariNarocila && (
+              <Button
+                onClick={handleShraniOsnutek}
+                disabled={osnutekSubmitting || !osnutekDobavitelj || dobaviteljiStanje !== 'ok' || dobavitelji.length === 0}
+                className="bg-roksal-navy hover:bg-roksal-navy/90 text-white shadow-sm transition-all press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 disabled:opacity-50"
+              >
+                {osnutekSubmitting ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <FileDown className="mr-2 h-4 w-4" aria-hidden="true" />
+                )}
+                Shrani osnutek
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -317,6 +317,12 @@ export function MaterialIntelligenceTab({
   // pravice nad naročili IN je seznam pravic ZNAN (myPermissions !== null —
   // med nalaganjem tišina je iskrena, R241 vzorec).
   const samoBranjeNarocil = myPermissions !== null && !lahkoOdobri && !lahkoPrejme
+  // R243 — wave 5 nadaljevanje (ISTI fail-closed vzorec, ISTA seja pravic):
+  // POST /api/suppliers → catalog.manage (route vrstica 39); POST
+  // /api/material-prices → price.override (route vrstica 82). Med nalaganjem
+  // (null) in ob napaki sta obe akciji skriti — least privilege.
+  const lahkoUpravljaKatalog = myPermissions?.includes('catalog.manage') ?? false
+  const lahkoUrejaCene = myPermissions?.includes('price.override') ?? false
   const { toast } = useToast()
 
   // Nov dobavitelj form
@@ -439,6 +445,9 @@ export function MaterialIntelligenceTab({
   // R203 — fail-verbose (vzorec R140): 409/401/500 se POKAŽEJO z razlogom
   // iz odgovora — prej tiho: dialog ostane odprt brez razlage.
   const handleCreateSupplier = async () => {
+    // R243 — obrambni AND (R242 vzorec: vrata v vratah) — ISTA pravica kot
+    // API vrata na POST /api/suppliers (catalog.manage).
+    if (!lahkoUpravljaKatalog) return
     if (!newSupplier.naziv) return
     try {
       const res = await fetch('/api/suppliers', {
@@ -461,6 +470,9 @@ export function MaterialIntelligenceTab({
   }
 
   const handleAddPrice = async () => {
+    // R243 — obrambni AND (R242 vzorec: vrata v vratah) — ISTA pravica kot
+    // API vrata na POST /api/material-prices (price.override).
+    if (!lahkoUrejaCene) return
     if (!selectedInventory || !newPrice.supplierId || !newPrice.cena) return
     try {
       const res = await fetch('/api/material-prices', {
@@ -1231,9 +1243,25 @@ export function MaterialIntelligenceTab({
               PDF
             </Button>
           </div>
-          <Button type="button" onClick={() => setSupplierDialogOpen(true)} className="w-full bg-roksal-navy text-white shadow-sm press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40">
-            <Plus className="h-4 w-4 mr-2" /> Nov dobavitelj
-          </Button>
+          {/* R243 — wave 5 RBAC ogledalo: CTA 'Nov dobavitelj' je VIDEN samo
+              vlogi s pravico catalog.manage (API POST /api/suppliers). Med
+              nalaganjem pravic in ob napaki skrit (fail-closed, R242 vzorec);
+              vlogo-osveščen vodič ga nadomešča z razlagom ZAKAJ. */}
+          {lahkoUpravljaKatalog ? (
+            <Button type="button" onClick={() => setSupplierDialogOpen(true)} className="w-full bg-roksal-navy text-white shadow-sm press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40">
+              <Plus className="h-4 w-4 mr-2" /> Nov dobavitelj
+            </Button>
+          ) : myPermissions !== null ? (
+            <div
+              className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-2xs text-muted-foreground"
+              role="note"
+              aria-label="Dobavitelji so za branje — urejanje zahteva pravico"
+            >
+              Pregled dobaviteljev je samo za branje. Ustvarjanje in urejanje
+              je pravica{' '}
+              <span className="font-semibold text-roksal-ink">catalog.manage</span>.
+            </div>
+          ) : null}
           {loading && suppliers.length === 0 ? (
             <Card><CardContent className="py-8 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto text-roksal-amber" /></CardContent></Card>
           ) : suppliers.length === 0 ? (
@@ -1281,17 +1309,36 @@ export function MaterialIntelligenceTab({
             </CardHeader>
             <CardContent className="space-y-2">
               <Label className="text-xs">Izberi material za dodajanje cene</Label>
-              <Select onValueChange={(val) => {
-                const inv = inventories.find((i) => i.id === val)
-                if (inv) { setSelectedInventory(inv); setPriceDialogOpen(true) }
-              }}>
-                <SelectTrigger className="h-9"><SelectValue placeholder="Izberi material..." /></SelectTrigger>
-                <SelectContent>
-                  {inventories.map((inv) => (
-                    <SelectItem key={inv.id} value={inv.id}>{inv.naziv} ({inv.sifraMateriala})</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {/* R243 — wave 5 RBAC ogledalo: izbira materiala (vhod v dialog
+                  cene) je VIDENA samo pravici price.override (API POST
+                  /api/material-prices); sicer vlogo-osveščen vodič. Guard tudi
+                  v onValueChange (vrata v vratah — R242 dialog precedens). */}
+              {lahkoUrejaCene ? (
+                <Select onValueChange={(val) => {
+                  if (!lahkoUrejaCene) return
+                  const inv = inventories.find((i) => i.id === val)
+                  if (inv) { setSelectedInventory(inv); setPriceDialogOpen(true) }
+                }}>
+                  <SelectTrigger className="h-9"><SelectValue placeholder="Izberi material..." /></SelectTrigger>
+                  <SelectContent>
+                    {inventories.map((inv) => (
+                      <SelectItem key={inv.id} value={inv.id}>{inv.naziv} ({inv.sifraMateriala})</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : myPermissions !== null ? (
+                <div
+                  className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-2xs text-muted-foreground"
+                  role="note"
+                  aria-label="Vpisi cen zahtevajo pravico"
+                >
+                  Pregled cen ostaja pri artiklih. Vpisi in spremembe nabavnih
+                  cen so pravica{' '}
+                  <span className="font-semibold text-roksal-ink">price.override</span>.
+                </div>
+              ) : (
+                <div className="h-9" aria-hidden="true" />
+              )}
             </CardContent>
           </Card>
         </div>
@@ -1315,7 +1362,7 @@ export function MaterialIntelligenceTab({
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setSupplierDialogOpen(false)}>Prekliči</Button>
-            <Button type="button" onClick={handleCreateSupplier} className="bg-roksal-navy text-white">Shrani</Button>
+            <Button type="button" onClick={handleCreateSupplier} className="w-full bg-roksal-navy text-white press-scale">Shrani</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1339,7 +1386,7 @@ export function MaterialIntelligenceTab({
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setPriceDialogOpen(false)}>Prekliči</Button>
-            <Button type="button" onClick={handleAddPrice} className="bg-roksal-navy text-white">Shrani ceno</Button>
+            <Button type="button" onClick={handleAddPrice} className="w-full bg-roksal-navy text-white press-scale">Shrani ceno</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
