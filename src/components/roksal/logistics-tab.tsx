@@ -27,11 +27,17 @@ import {
   vozniRedUreKpi,
   type VozniRedTermin,
 } from '@/lib/logistika-vozni-red-pdf'
+import {
+  generateTedenskiVozniRedPdf,
+  tedenskiPregledPovzetek,
+  tedenskiUreKpi,
+} from '@/lib/tedenski-vozni-red-pdf'
 import { QC_TEMPLATE, computePassed, countDefects } from '@/lib/qc-gate'
 import { IEV_TEMPLATE } from '@/lib/installation-evidence'
 import {
   Calendar, Download, Users, Wrench, Plus, Clock, MapPin, CheckCircle2, CalendarClock,
   Loader2, AlertTriangle, Truck, Package, ShieldCheck, History, FileCheck2, Lock,
+  CalendarRange,
 } from 'lucide-react'
 
 interface Schedule {
@@ -1055,13 +1061,47 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
             >
               <Truck aria-hidden="true" className="h-4 w-4 mr-1" /> PDF
             </Button>
+            {/* R256 — 12. člen 'izvozi' družine (P1-f): TEDENSKI VOZNI RED PDF —
+                7-dnevni razgled po dnevih za pisarno/vodstvo (kateri dnevi so
+                polni, kateri prazni — NA EN POGLED). ISTI vir kot vozni red
+                R255 (vozniRedVnosi — normalizirajTermin); okno = danes +
+                6 dni UTC (determinizem čez pasove); preklicani VIDNO RED bold.
+                VEDNO viden (P1-k precedens R251–R255): prazno okno → iskren
+                fail-closed toast, NIKOLI prazna datoteka; agregat v toastu =
+                ISTI lib povzetek kot KPI/sklep na listu (WYSIWYG). */}
+            <Button
+              type="button"
+              variant="outline"
+              aria-label="Izvozi tedenski pregled montaž kot PDF"
+              title="Tedenski pregled montaž — naslednjih 7 dni (razgled po dnevih)"
+              className="shrink-0 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              onClick={() => {
+                const pov = tedenskiPregledPovzetek(vozniRedVnosi, new Date())
+                if (pov === null) {
+                  toast({
+                    title: 'Ni terminov v naslednjih 7 dneh',
+                    description: 'Tedenski pregled se izvozi, ko je vpisan termin v prihajajočem tednu.',
+                  })
+                  return
+                }
+                generateTedenskiVozniRedPdf(vozniRedVnosi, { now: new Date() })
+                toast({
+                  title: 'Tedenski pregled prenešen v PDF',
+                  description: `${pov.dniN} dni, ${pov.terminovN} terminov, ${tedenskiUreKpi(pov)} h.`,
+                })
+              }}
+            >
+              <CalendarRange aria-hidden="true" className="h-4 w-4 mr-1" /> Tedenski
+            </Button>
           </div>
 
           {/* R255 — legenda izvozne skupine (ISTI vzorec kot R250–R253
               legende na CRM/računih): vsak izvoz = svoja resnica, ločilnik
               '·' + poimenovana razlika. */}
+          {/* R256 — legenda razširjena z tedenskim razgledom (R256 needle je
+              dobesedni PREDPONA — R255 resnica ostaja bajtno ISTA). */}
           <p className="text-2xs text-muted-foreground">
-            CSV = prikazani termini · ICS = koledar v telefonu · PDF = vozni red (kronološki)
+            CSV = prikazani termini · ICS = koledar v telefonu · PDF = vozni red (kronološki) · Tedenski = naslednjih 7 dni (po dnevih)
           </p>
 
           {/* R244 — vlogo-osveščen vodič (R242/R243 recept): viden SAMO, ko
