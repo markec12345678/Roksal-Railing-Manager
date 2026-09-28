@@ -1432,7 +1432,10 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
               const total = totalProjects
               const bars = [
                 { label: 'V teku', count: vTeku, color: 'bg-roksal-amber', textColor: 'text-roksal-amber' },
-                { label: 'Načrtovano', count: nacrtovano, color: 'bg-gray-300 dark:bg-gray-500', textColor: 'text-muted-foreground' },
+                // R234 — nevtrna palica 'Načrtovano' → žeton bg-muted-foreground
+                // (R226 pika vzorec — en razred obe temi; sorojenci
+                // amber/green/red ostanejo semantični statusni koloriti).
+                { label: 'Načrtovano', count: nacrtovano, color: 'bg-muted-foreground', textColor: 'text-muted-foreground' },
                 { label: 'Zaključeno', count: zakljuceno, color: 'bg-roksal-green', textColor: 'text-roksal-green' },
                 { label: 'Ustavljeno', count: ustavljeno, color: 'bg-roksal-red', textColor: 'text-roksal-red' },
               ].filter(b => b.count > 0)

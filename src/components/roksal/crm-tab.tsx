@@ -88,7 +88,9 @@ const STATUS_COLORS: Record<string, string> = {
   // R162 stil pass — dark: variante (svetla tema NESPREMENJENA, temna dobi
   // berljive polprosojne chipe namesto svetlih 100-barv).
   AKTIVEN: 'bg-green-100 text-green-800 border-green-300 dark:bg-green-500/15 dark:text-green-300 dark:border-green-500/30',
-  NEAKTIVEN: 'bg-gray-100 text-gray-700 border-gray-300 dark:bg-gray-500/15 dark:text-gray-300 dark:border-gray-500/30',
+  // R234 — nevtralna veja → žetoni (R229 Zapadlo vzorec: en razred obe temi;
+  // sorojenci AKTIVEN/POTENCIALEN/ARHIVIRAN ostanejo semantični).
+  NEAKTIVEN: 'bg-muted text-muted-foreground border-border',
   POTENCIALEN: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30',
   ARHIVIRAN: 'bg-red-100 text-red-700 border-red-300 dark:bg-red-500/15 dark:text-red-300 dark:border-red-500/30',
 }

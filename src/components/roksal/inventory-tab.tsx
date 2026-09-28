@@ -38,6 +38,7 @@ import {
   ShoppingCart,
   Euro,
   Download,
+  FileText,
   ChevronDown,
   ChevronUp,
   ClipboardList,
@@ -46,6 +47,9 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { downloadCsv, todayStamp } from '@/lib/csv-export'
+// R234 (P1-c) — Stanje zaloge PDF izvoz ('izvozi' družina PDF dimenzija —
+// boss-report vzorec; ENA resnica s CSV R136/R226).
+import { generateZalogaPdf } from '@/lib/zaloga-pdf'
 import { casOznaka } from '@/lib/osvezitev-fokus'
 import {
   buildZalogaPovzetek,
@@ -444,6 +448,41 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
       ]),
     )
     toast.success(`Izvoženih ${filtered.length} artiklov v CSV.`)
+  }
+
+  /** R234 (P1-c 'izvozi' družina — PDF dimenzija) — Stanje zaloge PDF izvoz
+   *  vidnih artiklov (upošteva filter — ISTO množico kot CSV R136; boss-report
+   *  vzorec). Fail-closed: 0 vidnih → iskren toast (NI prazne datoteke —
+   *  R232/R233 družina); pokvarena generacija → fail-verbose toast (NIČ
+   *  tihe degradacije). */
+  function exportZalogaPdf() {
+    if (filtered.length === 0) {
+      toast.error('Ni artiklov za izvoz.')
+      return
+    }
+    try {
+      generateZalogaPdf(
+        filtered.map((item) => ({
+          sifraMateriala: item.sifraMateriala,
+          naziv: item.naziv,
+          // ISTA preslikava tipa kot CSV R136 (WYSIWYG — tip label).
+          tip: typeLabels[item.tip] || item.tip,
+          enota: item.enota,
+          kolicinaZaloga: item.kolicinaZaloga,
+          minimalnaZaloga: item.minimalnaZaloga,
+          _count: item._count,
+        })),
+        {
+          now: new Date(),
+          // R227 pravilo: kontekst LE če dejansko aktiven ('Vse' → brez omembe).
+          kategorija: filter === 'ALL' ? null : (filterTabs.find((f) => f.id === filter)?.label ?? null),
+          cip: podMinOnly ? 'pod' : naMinOnly ? 'na' : brezDobaviteljaOnly ? 'brez' : null,
+        },
+      )
+      toast.success(`Izvoženih ${filtered.length} artiklov v PDF.`)
+    } catch (err) {
+      toast.error(`Izvoz PDF ni uspel: ${err instanceof Error ? err.message : 'neznana napaka'}`)
+    }
   }
 
   // R219 (P1-f) — dvostopenjsko filtriranje: PRVA stopnja = tip (kot pred
@@ -982,6 +1021,20 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
         >
           <Download className="h-3.5 w-3.5" aria-hidden="true" />
           CSV
+        </Button>
+        {/* R234 (P1-c) — Stanje zaloge PDF ('izvozi' družina PDF dimenzija):
+            ISTI pill družina kot CSV R136 / Naročilnica R204 / Osnutek R205;
+            fail-closed klik (0 vidnih → toast, NI prazne datoteke — R232). */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={exportZalogaPdf}
+          className="h-8 shrink-0 gap-1.5 text-[11px] font-medium tabular-nums press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+          aria-label="Izvozi vidno zalogo kot PDF"
+          title="Izvozi vidno zalogo (upošteva filter) kot PDF poročilo"
+        >
+          <FileText className="h-3.5 w-3.5" aria-hidden="true" />
+          PDF
         </Button>
       </div>
 

@@ -157,7 +157,9 @@ const EQUIPMENT_STATUS_COLORS: Record<string, string> = {
   V_UPORABI: 'bg-blue-100 dark:bg-blue-500/15 text-blue-800 dark:text-blue-200 border-blue-300 dark:border-blue-800',
   V_SERVISU: 'bg-amber-100 dark:bg-amber-500/15 text-amber-800 dark:text-amber-200 border-amber-300 dark:border-amber-800',
   IZGUBLJENO: 'bg-red-100 dark:bg-red-500/15 text-red-700 dark:text-red-300 border-red-300 dark:border-red-800',
-  UPOKOJENO: 'bg-gray-100 dark:bg-gray-500/15 text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-800',
+  // R234 — nevtralna veja → žetoni (R229 Zapadlo vzorec; sorojenci
+  // V_SERVISU amber / IZGUBLJENO red ostanejo semantični).
+  UPOKOJENO: 'bg-muted text-muted-foreground border-border',
 }
 
 const EQUIPMENT_EVENT_LABELS: Record<string, string> = {

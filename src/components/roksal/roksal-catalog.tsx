@@ -134,7 +134,9 @@ export function RoksalCatalog() {
       ) : (
         <div className="space-y-3">
           {filtered.map((p) => {
-            const badge = MATERIAL_BADGE[p.material] ?? { label: p.material, cls: 'bg-gray-100 dark:bg-gray-500/15 text-gray-800 dark:text-gray-200' }
+            // R234 — fallback neznani material → žetoni (nevtralna veja;
+            // znani materiali ostanejo semantični MATERIAL_BADGE).
+            const badge = MATERIAL_BADGE[p.material] ?? { label: p.material, cls: 'bg-muted text-muted-foreground' }
             return (
               <Card key={p.id} className="overflow-hidden transition-[border-color,box-shadow] duration-150 hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25 hover:shadow-sm">
                 <CardContent className="p-4">

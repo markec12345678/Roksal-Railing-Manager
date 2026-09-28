@@ -192,7 +192,10 @@ describe('R209 stražar: UI zgodovina na kartici naročila', () => {
   })
 
   it('statusZnackaCls ogledala barvne družine značk na kartici (vsi dark: na isti vrstici)', () => {
-    const okno = oknoMed(src, 'function statusZnackaCls', "'bg-gray-50 dark:bg-gray-950/40")
+    // R234: konec okna pomaknjen na NOVO nevtralno vejo (žetoni — R232
+    // STATE_BADGE vzorec; sorojenci red/green/blue/amber ostanejo semantični,
+    // vsi ŠE VEDNO znotraj okna — precedens R180/R229 pin sinhronizacij).
+    const okno = oknoMed(src, 'function statusZnackaCls', "'bg-muted text-muted-foreground border-border'")
     expect(okno).toContain('bg-red-50 dark:bg-red-950/40')
     expect(okno).toContain('bg-green-50 dark:bg-green-950/40')
     expect(okno).toContain('bg-blue-50 dark:bg-blue-950/40')

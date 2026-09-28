@@ -143,7 +143,9 @@ function statusZnackaCls(status: string | null): string {
   if (status === 'DOBLJENO') return 'bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300 border-green-300 dark:border-green-800'
   if (status === 'POSLANO') return 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-800'
   if (status === 'POTRJENO') return 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800'
-  return 'bg-gray-50 dark:bg-gray-950/40 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-800'
+  // R234 — nevtralna (neznana) veja → žetoni (R232 STATE_BADGE NEZNANO vzorec;
+  // sorojenci PREKlicANO/DOBLJENO/POSLANO/POTRJENO ostanejo semantični).
+  return 'bg-muted text-muted-foreground border-border'
 }
 
 // R231 (P1-e) — ENAJSTI signalec konvergence: stolpec 'Pretekel rok' (DA/NE)
@@ -857,7 +859,8 @@ export function MaterialIntelligenceTab({
                               order.status === 'DOBLJENO' ? 'bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300 border-green-300 dark:border-green-800' :
                               order.status === 'POSLANO' ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-800' :
                               order.status === 'POTRJENO' ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800' :
-                              'bg-gray-50 dark:bg-gray-950/40 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-800'
+                              // R234 — nevtralna (neznana) veja → žetoni (statusZnackaCls vzorec).
+                              'bg-muted text-muted-foreground border-border'
                             }`}>{order.status}</Badge>
                             {/* R229 — per-vrstična oznaka 'Pretekel rok':
                                 obljubljeni datum dobave je pretekel, status pa

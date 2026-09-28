@@ -457,9 +457,12 @@ const statusLabels: Record<MeasurementStatus, string> = {
 }
 
 const statusColors: Record<MeasurementStatus, string> = {
-  OSNUTEK: 'bg-gray-100 dark:bg-gray-500/15 text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-800',
+  // R234 — nevtralni statusi → žetoni (R229 OSNUTEK/Zapadlo vzorec: en razred
+  // obe temi; ARHIVIRANA obdrži line-through — prečrtanost je SEMANTIKA
+  // arhiva, ne barva; POTRJENA ostane semantična zeleni sorojenec).
+  OSNUTEK: 'bg-muted text-muted-foreground border-border',
   POTRJENA: 'bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300 border-green-300 dark:border-green-800',
-  ARHIVIRANA: 'bg-gray-50 dark:bg-gray-950/40 text-gray-400 border-gray-200 dark:border-gray-800 line-through',
+  ARHIVIRANA: 'bg-muted text-muted-foreground border-border line-through',
 }
 
 const statusCycle: Record<MeasurementStatus, MeasurementStatus> = {
@@ -5844,15 +5847,15 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                     : 'bg-secondary/50 text-muted-foreground border-border/50'
                   : f === 'OSNUTEK'
                     ? isActive
-                      ? 'bg-gray-600 text-white border-gray-600'
-                      : 'bg-gray-50 dark:bg-gray-950/40 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-800'
+                      ? 'bg-muted-foreground text-white border-muted-foreground'
+                      : 'bg-muted text-muted-foreground border-border'
                     : f === 'POTRJENA'
                       ? isActive
                         ? 'bg-green-600 text-white border-green-600'
                         : 'bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800'
                       : isActive
-                        ? 'bg-gray-400 text-white border-gray-400 dark:border-gray-700'
-                        : 'bg-gray-50 dark:bg-gray-950/40 text-gray-400 border-gray-200 dark:border-gray-800'
+                        ? 'bg-muted-foreground text-white border-muted-foreground'
+                        : 'bg-muted text-muted-foreground border-border'
               return (
                 <button
                   key={f}

@@ -98,3 +98,13 @@ eb_klik_gumb() {
   local aria="$1"
   agent-browser eval "(()=>{const g=document.querySelector('button[aria-label=\"$aria\"]'); if(!g) return 'ni gumba'; g.click(); return 'klik';})()" 2>&1 | tail -1
 }
+
+# R234 (P1-d) — čakanje na besedilo v body (body.textContent.includes se
+# ponavlja v E2E od r228 — zdaj zaprto v knjižnici). IIFE pogodba OHRANJENA:
+# helper SAM ovije tekst v IIFE predikat (r225/r227 lekcija ZAPRTA — klicatelj
+# ne more zgraditi predikata brez klica). OMEJITEV: tekst ne sme vsebovati
+# enojnega narekovaja (bash → eval escape chaining — r229 lekcija št. 5).
+eb_pocakaj_tekst() {
+  local tekst="$1" maks="${2:-10}"
+  eb_pocakaj_na "(()=>{return document.body.textContent.includes('$tekst');})()" "$maks"
+}
