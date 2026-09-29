@@ -47,6 +47,12 @@ import { casOznaka } from '@/lib/osvezitev-fokus'
 // čisto jedro meritve-csv = družina vodja-csv R157-R163).
 import { meritveCsv, meritveCsvFilename } from '@/lib/meritve-csv'
 import { buildMeritvePovzetek, meritvePovzetekBeseda } from '@/lib/meritve-povzetek'
+import {
+  meritevTerenPregled,
+  generateMeritveTerenPdf,
+  osnutekBeseda,
+  type MeritveTerenVnos,
+} from '@/lib/meritve-teren-pdf'
 import { downloadCsvText } from '@/lib/csv-export'
 import {
   Dialog,
@@ -124,6 +130,8 @@ import {
   CloudUpload,
   // R201 — iskren prazni stolpec (ni projektov)
   FolderX,
+  // R269 — terenski pregled PDF (25. člen 'izvozi' družine)
+  FileDown,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
@@ -911,6 +919,8 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
   const [reopenNote, setReopenNote] = useState('')
   const [reopenBusy, setReopenBusy] = useState(false)
   const [bulkArchiveBusy, setBulkArchiveBusy] = useState(false)
+  // R269 — dvoklik guard za terenski pregled PDF (družinska pariteta R263–R268).
+  const [pdfVteku, setPdfVteku] = useState(false)
 
   // P1 — Status filter
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('VSE')
@@ -1866,6 +1876,29 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
     [measurements]
   )
 
+  // R269 — F2 mini-vrstica 'Meritve (viden seznam):' — ENA izpeljava
+  // meritevTerenPregled čez ISTI prune kot PDF KPI + sklep + toast (WYSIWYG):
+  // state (viden seznam po status/foto filtrih) = kar uporabnik vidi; FRESH
+  // ob kliku = polna resnica projekta (dve okni, ENA matemtika). Brez
+  // try/catch — pokvaren vir bi poklical isti throw kot statusni filter
+  // (EN vir napak; DB status je strežniško čist — R153).
+  const terenPovzetek = useMemo(() => {
+    if (!selectedProject || filteredMeasurements.length === 0) return null
+    return meritevTerenPregled(
+      filteredMeasurements.map((m) => ({
+        id: m.id,
+        createdAt: m.createdAt,
+        dolzinaMm: m.dolzinaMm,
+        visinaMm: m.visinaMm,
+        tipMeritve: m.tipMeritve ?? null,
+        oznaka: m.oznaka ?? null,
+        status: m.status ?? null,
+        lokacija: m.lokacija ?? null,
+        opomba: m.opomba ?? null,
+      })),
+    ).povzetek
+  }, [filteredMeasurements, selectedProject])
+
   // R186 — izvoz VIDNIH meritev (upošteva status + foto filter) kot CSV.
   // Fail-closed: prazen seznam → viden toast (nič praznih datotek);
   // pokvaren vnos → viden toast z razlogom (fail-verbose — nič tihega izvoza
@@ -1920,6 +1953,107 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
       }
     }
   }, [filteredMeasurements, projects, selectedProject])
+
+  // R269 — MERITVE — TERENSKI PREGLED PDF (25. člen 'izvozi' družine): FRESH
+  // fetch /api/measurements?projectId ob kliku (R244–R268 precedens — polna
+  // resnica projekta, ne filtrirani state) + fail-verbose DTO pruning
+  // (identiteta + fizikalne mere + arMetadata parse tu — imenovan razlog;
+  // ostalo VERBATIM — lib preveri z indeksom krivca). PRAZEN seznam →
+  // iskren toast (NIČ prazne datoteke); ENA izpeljava povzetka = ISTA
+  // resnica kot KPI + sklep + mini-vrstica (WYSIWYG).
+  const handleTerenPdf = async () => {
+    if (pdfVteku) return
+    if (!selectedProject) {
+      toast.error('Ni izbranega projekta', {
+        description: 'Terenski pregled je projekt-obračunski — najprej izberite projekt.',
+      })
+      return
+    }
+    setPdfVteku(true)
+    try {
+      const res = await fetch(`/api/measurements?projectId=${selectedProject}`, {
+        credentials: 'same-origin',
+      })
+      if (!res.ok) {
+        throw new Error(`GET /api/measurements → HTTP ${res.status}`)
+      }
+      const data: unknown = await res.json()
+      if (!Array.isArray(data)) {
+        throw new TypeError('Odgovora /api/measurements ni mogoče prebrati (ni polja).')
+      }
+      const vrstice = data as Array<Record<string, unknown>>
+      const vnosi: MeritveTerenVnos[] = vrstice.map((m, i) => {
+        if (typeof m.id !== 'string' || m.id === '') {
+          throw new TypeError(`meritev vrstica ${i}: manjkajoč id v odgovoru API-ja`)
+        }
+        if (typeof m.createdAt !== 'string' || m.createdAt === '') {
+          throw new TypeError(`meritev vrstica ${i} (${m.id}): manjkajoč createdAt v odgovoru API-ja`)
+        }
+        if (typeof m.dolzinaMm !== 'number' || !Number.isFinite(m.dolzinaMm) || m.dolzinaMm < 0) {
+          throw new TypeError(`meritev vrstica ${i} (${m.id}): dolzinaMm mora biti ne-negativno končno število, ne ${String(m.dolzinaMm)}`)
+        }
+        if (typeof m.visinaMm !== 'number' || !Number.isFinite(m.visinaMm) || m.visinaMm < 0) {
+          throw new TypeError(`meritev vrstica ${i} (${m.id}): visinaMm mora biti ne-negativno končno število, ne ${String(m.visinaMm)}`)
+        }
+        // arMetadata parse — fail-verbose (UI parser je toleranten {}; dokument
+        // resnice NIKOLI tiho ne preskoči pokvarene vrstice).
+        let ar: Record<string, unknown> = {}
+        if (m.arMetadata !== null && m.arMetadata !== undefined) {
+          if (typeof m.arMetadata !== 'string') {
+            throw new TypeError(`meritev vrstica ${i} (${m.id}): arMetadata mora biti niz ALI null, ne ${String(m.arMetadata)}`)
+          }
+          if (m.arMetadata.trim() !== '') {
+            try {
+              const parsed: unknown = JSON.parse(m.arMetadata)
+              if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+                throw new TypeError('ni objekt')
+              }
+              ar = parsed as Record<string, unknown>
+            } catch {
+              throw new TypeError(`meritev vrstica ${i} (${m.id}): arMetadata ni razumljen kot JSON objekt (pokvaren vir)`)
+            }
+          }
+        }
+        return {
+          id: m.id,
+          createdAt: m.createdAt,
+          dolzinaMm: m.dolzinaMm,
+          visinaMm: m.visinaMm,
+          tipMeritve: (ar.tipMeritve ?? null) as string | null,
+          oznaka: (ar.oznaka ?? null) as string | null,
+          status: (m.status ?? ar.status ?? null) as string | null,
+          lokacija: (ar.lokacija ?? null) as string | null,
+          opomba: (ar.opomba ?? null) as string | null,
+        }
+      })
+      if (vnosi.length === 0) {
+        // Fail-closed jedro: prazen seznam ne nastaja dokumenta — iskren toast.
+        toast.error('Ni vpisanih meritev', {
+          description: 'Terenski pregled se izvozi, ko je vpisana prva meritev projekta.',
+        })
+        return
+      }
+      // ENA izpeljava: povzetek za toast = ISTA resnica kot KPI IN sklep na
+      // listu (WYSIWYG).
+      const { povzetek } = meritevTerenPregled(vnosi)
+      // Ime projekta = točno to, kar pokaže izbirnik; brez izbire → null
+      // (jedro pošteno pokaže 'Brez imena projekta' — brez izmišljenih imen).
+      const projektIme = projects.find((p) => p.id === selectedProject)?.nazivProjekta || null
+      generateMeritveTerenPdf(vnosi, { now: new Date(), projektIme })
+      toast.success('Terenski pregled meritev prenešen v PDF', {
+        description: `Meritve-teren-…pdf — ${povzetek.meritev} ${meritvePovzetekBeseda(povzetek.meritev)}, osnutki ${povzetek.osnutkov}, potrjenih ${povzetek.potrjenih}, arhiviranih ${povzetek.arhiviranih}.`,
+      })
+    } catch (err) {
+      // Fail-verbose: izvoz ne sme tiho spodleteti — razlog gre v toast.
+      // Fail-closed jedro (TypeError iz liba) = pokvaren vnos → viden razlog
+      // (NIČ izmišljenega dokumenta).
+      toast.error('Izvoz ni uspel', {
+        description: err instanceof Error ? err.message : `Neznana napaka (${String(err)}).`,
+      })
+    } finally {
+      setPdfVteku(false)
+    }
+  }
 
   // ── Primerjava "Stranka vs merilec" ───────────────────────────────────────
   // Stranka je prek javne povezave /m/[token] narisala svojo ograjo na karti
@@ -5912,6 +6046,28 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               <Copy aria-hidden="true" className="h-3 w-3" />
               Povzetek
             </button>
+            {/* R269 — terenski pregled PDF (25. člen 'izvozi' družine): VEDNO
+                viden, ko je projekt izbran (NI gated na filteredMeasurements
+                .length — pariteta R263–R268; brez projekta ni FRESH vira —
+                podatek-scope, ne pravica); press-scale + dvoklik guard +
+                FileDown aria-hidden (družinski kontrakt). */}
+            {selectedProject && (
+              <button
+                type="button"
+                onClick={() => void handleTerenPdf()}
+                disabled={pdfVteku}
+                className="flex shrink-0 items-center gap-1 rounded-lg border border-border/50 bg-secondary/50 px-2 py-1 text-2xs font-medium text-muted-foreground transition-all duration-150 press-scale active:scale-[0.96] hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                aria-label="Izvozi terenski pregled meritev kot PDF"
+                title="Terenski pregled meritev kot pravi PDF — VSE meritve projekta (tudi arhivirane)"
+              >
+                {pdfVteku ? (
+                  <Loader2 aria-hidden="true" className="h-3 w-3 animate-spin" />
+                ) : (
+                  <FileDown aria-hidden="true" className="h-3 w-3" />
+                )}
+                PDF
+              </button>
+            )}
             <div className="flex-1" />
             {/* Bulk mode toggle */}
             <button
@@ -5930,6 +6086,40 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               Skupinsko
             </button>
           </div>
+
+          {/* R269 — legenda pill pariteta (družina R263–R268): poimenuje kaj
+              nosi dokument — VSE meritve izbranega projekta (FRESH ob kliku,
+              ne filtrirani state); VEDNO vidna, ko je projekt izbran
+              (pariteta s pillom). */}
+          {selectedProject && (
+            <p className="text-2xs text-muted-foreground">
+              PDF = VSE meritve projekta (tudi arhivirane — polna resnica, ne samo viden seznam filtrov)
+            </p>
+          )}
+
+          {/* R269 — F2 mini-vrstica stanja meritev (WYSIWYG ISTA izpeljava
+              meritevTerenPregled kot PDF KPI + sklep + toast — ENA izpeljava):
+              state (viden seznam po filtrih) = kar uporabnik vidi, FRESH =
+              polna resnica projekta (dve okni, ENA matemtika); dot
+              roksal-amber/green — AMBER kadar osnutki čakajo potrditev;
+              kondicionalni žeton ŽIVO samo kadar > 0 — R256 lekcija 4;
+              tabular-nums; 0 novih hex. */}
+          {selectedProject && terenPovzetek !== null && (
+            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <span
+                aria-hidden="true"
+                className={`h-2 w-2 shrink-0 rounded-full ${terenPovzetek.osnutkov > 0 ? 'bg-roksal-amber' : 'bg-roksal-green'}`}
+              />
+              <span className="tabular-nums">
+                Meritve (viden seznam): {terenPovzetek.meritev} {meritvePovzetekBeseda(terenPovzetek.meritev)} · osnutki {terenPovzetek.osnutkov} · potrjenih {terenPovzetek.potrjenih} · arhiviranih {terenPovzetek.arhiviranih}
+              </span>
+              {terenPovzetek.osnutkov > 0 && (
+                <span className="rounded-full border border-roksal-amber/40 bg-roksal-amber/10 px-2 py-0.5 text-2xs font-medium text-roksal-amber">
+                  {osnutekBeseda(terenPovzetek.osnutkov)}
+                </span>
+              )}
+            </div>
+          )}
 
           {/* Bulk toolbar (prikaže se samo v bulk mode z izborom) */}
           {bulkMode && (

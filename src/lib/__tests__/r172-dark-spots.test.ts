@@ -87,7 +87,7 @@ const PRIMERI = [
   // flex-wrap vrstica; ogledalo na ISTI vsebinski vrstici, precedens R180/R182.
   // R186: +37 vrstic — uvoz izvoza CSV + handler izvoziMeritveCsv + gumb CSV;
   // ogledalo na ISTI vsebinski vrstici, precedens R180/R182/R183)
-  stražar('src/components/roksal/measurements-tab.tsx', 6565, 'hover:border-cyan-300', 'dark:hover:border-cyan-700'), // R201: 6452→6510; R203: 6510→6556 (povzetek gumb + handler +46); R234: 6556→6559 (statusColors + filtri čipi nevtralne veje → žetoni +3); R235: 6559→6561 (status števca UI površine gray → žetoni +2); R239: 6561→6565 (vodič korak 1 vlogo-nevtralna resnica + komentar +4)
+  stražar('src/components/roksal/measurements-tab.tsx', 6755, 'hover:border-cyan-300', 'dark:hover:border-cyan-700'), // R201: 6452→6510; R203: 6510→6556 (povzetek gumb + handler +46); R234: 6556→6559 (statusColors + filtri čipi nevtralne veje → žetoni +3); R235: 6559→6561 (status števca UI površine gray → žetoni +2); R239: 6561→6565 (vodič korak 1 vlogo-nevtralna resnica + komentar +4); R269: 6565→6755 (teren PDF: lib import +5, FileDown +2, pdfVteku +2, memo terenPovzetek +22, handleTerenPdf +102, pill +22, legenda+mini +35 → +190)
 ]
 
 describe('R172 dark-spot stražar — vsak svetli barvni žeton ima dark: ogledalo na ISTI vrstici', () => {
