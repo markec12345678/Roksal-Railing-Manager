@@ -12,7 +12,7 @@
 //   • Ponastavi geslo — začasno geslo prikažemo ENKRAT (mustChangePassword).
 // Own-guard je tudi na strežniku — tu ga samo ne prikažemo (občutek ≠ varnost).
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
 import {
   AlertCircle,
@@ -20,6 +20,7 @@ import {
   CalendarClock,
   Copy,
   Download,
+  FileDown,
   Loader2,
   Lock,
   LockOpen,
@@ -43,8 +44,18 @@ import {
   ekipaCsvFilename,
   ekipaStatusOf,
   EKIPA_VLOGE,
+  type EkipaLifecycle,
   type EkipaStatus,
 } from '@/lib/ekipa-csv'
+// R268 — EKIPA — STANJE EKIPE PDF (24. člen 'izvozi' družine): EN VIR ×3 z
+// ekipa-csv R160 (statusi + ekipaStatusOf + vloge), FRESH /api/users ob
+// kliku, fail-closed, bajtni determinizem (vzorec ponudbe-spomniki R267).
+import {
+  clanBeseda,
+  ekipaStanjePregled,
+  generateEkipaStanjePdf,
+  type EkipaStanjeVnos,
+} from '@/lib/ekipa-stanje-pdf'
 import { todayStamp } from '@/lib/csv-export'
 import { ROLE_CHIP } from '@/lib/status-options'
 import { Button } from '@/components/ui/button'
@@ -190,6 +201,29 @@ export function TeamTab() {
   const [inviteVloga, setInviteVloga] = useState('MONTER')
   const [oneTime, setOneTime] = useState<OneTime>(null)
   const [copied, setCopied] = useState(false)
+  // R268 — dvoklik guard za PDF izvoz (družinska pariteta quote-followup R267).
+  const [pdfVteku, setPdfVteku] = useState(false)
+
+  // R268 — F2 mini-vrstica 'Ekipa (viden seznam):' — ENA izpeljava
+  // ekipaStanjePregled čez ISTI prune kot PDF KPI + sklep + toast (WYSIWYG):
+  // state = kar uporabnik vidi; FRESH ob kliku = trenutna resnica (dve okni,
+  // ENA matemtika). Brez try/catch — pokvaren DTO bi poklical isti
+  // ekipaStatusOf throw kot statusni chipi zgoraj (EN vir napak).
+  const ekipaPovzetek = useMemo(() => {
+    if (users.length === 0) return null
+    return ekipaStanjePregled(
+      users.map((u) => ({
+        id: u.id,
+        ime: u.ime,
+        email: u.email,
+        vloga: u.vloga,
+        lifecycle: u.lifecycle,
+        telefon: u.telefon,
+        lastActive: u.lastActive,
+        createdAt: u.createdAt,
+      })),
+    ).povzetek
+  }, [users])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -304,6 +338,70 @@ export function TeamTab() {
     }
   }
 
+  // R268 — EKIPA — STANJE EKIPE PDF (24. člen 'izvozi' družine): FRESH fetch
+  // /api/users ob kliku (R244–R267 precedens — trenutna resnica, ne zastarel
+  // state) + fail-verbose DTO pruning (identitete tu — imenovan razlog;
+  // ostalo VERBATIM — lib preveri z indeksom krivca). PRAZEN seznam →
+  // iskren toast (NIČ prazne datoteke); ENA izpeljava povzetka = ISTA
+  // resnica kot KPI + sklep + mini-vrstica (WYSIWYG).
+  const handleStanjePdf = async () => {
+    if (pdfVteku) return
+    setPdfVteku(true)
+    try {
+      const res = await fetch('/api/users', { credentials: 'same-origin' })
+      if (!res.ok) {
+        throw new Error(`GET /api/users → HTTP ${res.status}`)
+      }
+      const data: unknown = await res.json()
+      if (!Array.isArray(data)) {
+        throw new TypeError('Odgovora /api/users ni mogoče prebrati (ni polja).')
+      }
+      const vrstice = data as Array<Record<string, unknown>>
+      const vnosi: EkipaStanjeVnos[] = vrstice.map((u, i) => {
+        if (typeof u.id !== 'string' || u.id === '') {
+          throw new TypeError(`ekipa vrstica ${i}: manjkajoč id v odgovoru API-ja`)
+        }
+        const lc = u.lifecycle
+        if (lc === null || typeof lc !== 'object') {
+          throw new TypeError(`ekipa vrstica ${i} (${u.id}): manjkajoč lifecycle v odgovoru API-ja`)
+        }
+        return {
+          id: u.id,
+          ime: u.ime as string,
+          email: u.email as string,
+          vloga: u.vloga as string,
+          lifecycle: lc as unknown as EkipaLifecycle,
+          telefon: typeof u.telefon === 'string' ? u.telefon : null,
+          lastActive: typeof u.lastActive === 'string' ? u.lastActive : null,
+          createdAt: u.createdAt as string,
+        }
+      })
+      if (vnosi.length === 0) {
+        // Fail-closed jedro: prazen seznam ne nastaja dokumenta — iskren toast.
+        toast.error('Ni vpisanih članov ekipe', {
+          description: 'Pregled stanja se izvozi, ko je vpisan prvi član ekipe.',
+        })
+        return
+      }
+      // ENA izpeljava: povzetek za toast = ISTA resnica kot KPI IN sklep na
+      // listu (WYSIWYG).
+      const { povzetek } = ekipaStanjePregled(vnosi)
+      generateEkipaStanjePdf(vnosi, { now: new Date() })
+      toast.success('Pregled stanja ekipe prenešen v PDF', {
+        description: `Ekipa-stanje-…pdf — ${clanBeseda(povzetek.clanov)}, aktivnih ${povzetek.aktivnih}, čaka aktivacijo ${povzetek.cakaAktivacijo}, povabilo poteklo ${povzetek.povabiloPoteklo}, zaklenjenih ${povzetek.zaklenjenih}.`,
+      })
+    } catch (err) {
+      // Fail-verbose: izvoz ne sme tiho spodleteti — razlog gre v toast.
+      // Fail-closed jedro (TypeError iz liba) = pokvaren vnos → viden razlog
+      // (NIČ izmišljenega dokumenta).
+      toast.error('Izvoz ni uspel', {
+        description: err instanceof Error ? err.message : `Neznana napaka (${String(err)}).`,
+      })
+    } finally {
+      setPdfVteku(false)
+    }
+  }
+
   async function copyText(text: string) {
     try {
       await navigator.clipboard.writeText(text)
@@ -384,6 +482,28 @@ export function TeamTab() {
           </div>
         </div>
         <div className="flex items-center gap-1.5">
+          {/* R268 — PDF pill VEDNO viden znotraj površine canRead (NI gated na
+              users.length — pariteta R263–R267); press-scale + dvoklik guard
+              + FileDown aria-hidden (družinski kontrakt). */}
+          {canRead && (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => void handleStanjePdf()}
+              disabled={pdfVteku}
+              className="h-8 px-2.5 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              aria-label="Izvozi pregled stanja ekipe kot PDF"
+              title="Pregled stanja ekipe kot pravi PDF — statusi računov, vloge, življenjski cikl (celotna ekipa)"
+            >
+              {pdfVteku ? (
+                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+              ) : (
+                <FileDown className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
+              )}
+              PDF
+            </Button>
+          )}
           {canRead && users.length > 0 && (
             <Button
               type="button"
@@ -414,6 +534,15 @@ export function TeamTab() {
           )}
         </div>
       </div>
+
+      {/* R268 — legenda pill pariteta (družina R263–R267): poimenuje kaj nosi
+          dokument — TRENUTNA resnica ob kliku (FRESH /api/users, ne zastarel
+          state); VEDNO vidna (tudi pri praznem seznamu — pariteta s pillom). */}
+      {canRead && (
+        <p className="text-2xs text-muted-foreground">
+          PDF = celotna ekipa (trenutna resnica ob kliku — FRESH /api/users, ne zastarel state)
+        </p>
+      )}
 
       {!canManage && canRead && (
         <div className="rounded-lg border border-border bg-secondary/40 px-3 py-2 text-[11px] text-muted-foreground">
@@ -646,6 +775,39 @@ export function TeamTab() {
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* R268 — F2 mini-vrstica stanja ekipe (WYSIWYG ISTA izpeljava
+          ekipaStanjePregled kot PDF KPI + sklep + toast — ENA izpeljava):
+          state = kar uporabnik vidi, FRESH = trenutna resnica ob kliku (dve
+          okni, ENA matemtika); dot roksal-red/green — RED kadar RED akcija
+          (potečeno povabilo ALI zaklep); kondicionalni žetoni ŽIVO samo
+          kadar > 0 — R256 lekcija 4; tabular-nums; 0 novih hex. */}
+      {canRead && !loading && !error && ekipaPovzetek !== null && (
+        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+          <span
+            aria-hidden="true"
+            className={`h-2 w-2 shrink-0 rounded-full ${ekipaPovzetek.povabiloPoteklo > 0 || ekipaPovzetek.zaklenjenih > 0 ? 'bg-roksal-red' : 'bg-roksal-green'}`}
+          />
+          <span className="tabular-nums">
+            Ekipa (viden seznam): {clanBeseda(ekipaPovzetek.clanov)} · aktivnih {ekipaPovzetek.aktivnih} · čaka aktivacijo {ekipaPovzetek.cakaAktivacijo} · povabilo poteklo {ekipaPovzetek.povabiloPoteklo} · zaklenjenih {ekipaPovzetek.zaklenjenih}
+          </span>
+          {ekipaPovzetek.povabiloPoteklo > 0 && (
+            <span className="rounded-full border border-roksal-red/40 bg-roksal-red/10 px-2 py-0.5 text-2xs font-medium text-roksal-red">
+              {ekipaPovzetek.povabiloPoteklo} povabilo poteklo
+            </span>
+          )}
+          {ekipaPovzetek.zaklenjenih > 0 && (
+            <span className="rounded-full border border-roksal-red/40 bg-roksal-red/10 px-2 py-0.5 text-2xs font-medium text-roksal-red">
+              {ekipaPovzetek.zaklenjenih} zaklenjenih računov
+            </span>
+          )}
+          {ekipaPovzetek.cakaAktivacijo > 0 && (
+            <span className="rounded-full border border-roksal-amber/40 bg-roksal-amber/10 px-2 py-0.5 text-2xs font-medium text-roksal-amber">
+              {ekipaPovzetek.cakaAktivacijo} čaka aktivacijo
+            </span>
+          )}
         </div>
       )}
 
