@@ -2096,6 +2096,25 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
     ).povzetek
   }, [filteredMeasurements, selectedProject])
 
+  // R282 (issue #16 §10) — F2 sync mini-vrstica: števec sync metadata
+  // (V3 — opazovano stanje klienta) čez ISTI vidni seznam (EN VIR
+  // filteredMeasurements). Null = nobena vidna vrstica NE nosi sync
+  // metadata → vrstica se NE rendera (iskrena praznina — nikoli izumljen
+  // števec 'brez sync'); neznano syncState se NE šteje (fail-closed).
+  const syncPregled = useMemo(() => {
+    const vrstice = filteredMeasurements.filter((m) => m.sync?.syncState != null)
+    if (vrstice.length === 0) return null
+    const n = (s: NonNullable<ArSyncMeta['syncState']>) =>
+      vrstice.filter((m) => m.sync?.syncState === s).length
+    return {
+      sinhroniziranih: n('synced'),
+      cakajocih: n('pending'),
+      konfliktov: n('conflict'),
+      napak: n('error'),
+      grobnic: vrstice.filter((m) => m.sync?.tombstone === true).length,
+    }
+  }, [filteredMeasurements])
+
   // R186 — izvoz VIDNIH meritev (upošteva status + foto filter) kot CSV.
   // Fail-closed: prazen seznam → viden toast (nič praznih datotek);
   // pokvaren vnos → viden toast z razlogom (fail-verbose — nič tihega izvoza
@@ -6559,6 +6578,35 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               {terenPovzetek.osnutkov > 0 && (
                 <span className="rounded-full border border-roksal-amber/40 bg-roksal-amber/10 px-2 py-0.5 text-2xs font-medium text-roksal-amber">
                   {osnutekBeseda(terenPovzetek.osnutkov)}
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* R282 (issue #16 §10, V3) — F2 sync mini-vrstica: števec sync
+              metadata vidnega seznama — prikazana SAMO kadar vsaj ena vrstica
+              nosi sync metadata (iskrena praznina = brez vrstice); konflikti
+              > 0 = rdeča pika + akcijski žig (osveži bazo in ponovi sync —
+              obstoječi /api/sync razreši), čakajoči > 0 = amber, sicer green;
+              hover title parity (0 novih hex — ulomki že v datoteki). */}
+          {selectedProject && terenPovzetek !== null && syncPregled !== null && (
+            <div role="status" className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <span
+                aria-hidden="true"
+                className={`h-2 w-2 shrink-0 rounded-full ${syncPregled.konfliktov > 0 ? 'bg-roksal-red' : syncPregled.cakajocih > 0 || syncPregled.napak > 0 ? 'bg-roksal-amber' : 'bg-roksal-green'}`}
+              />
+              <span
+                className="tabular-nums cursor-help"
+                title="Sinhronizacijsko stanje vidnega seznama (issue #16 §10): števec sync metadata iz kontrakta — opazovano stanje klienta (provenance), NI sync resnica; revizije in konflikte razrešuje obstoječi /api/sync (strežnik ne zaupa klientu). Grobnice = lokalno označeno za brisanje (tombstone)."
+              >
+                Sync (viden seznam): {syncPregled.sinhroniziranih} sinhroniziranih · {syncPregled.cakajocih} čakajoči · {syncPregled.konfliktov} konfliktov · {syncPregled.napak} napak{syncPregled.grobnic > 0 ? ` · ${syncPregled.grobnic} grobnic` : ''}
+              </span>
+              {syncPregled.konfliktov > 0 && (
+                <span
+                  className="rounded-full border border-roksal-red/40 bg-roksal-red/10 px-2 py-0.5 text-2xs font-medium text-roksal-red cursor-help"
+                  title="Odprti sync konflikt (issue #16 §10): ista meritev spremenjena na dveh straneh — obstoječi /api/sync je zavrpnil star baseRevision (strežnik ne ugiba); obe verziji ohranjeni. Osveži bazo (GET delta) in ponovi sync."
+                >
+                  Konflikt — osveži bazo in ponovi sync
                 </span>
               )}
             </div>
