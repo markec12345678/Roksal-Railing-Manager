@@ -200,6 +200,9 @@ export function preveriOpremoVnos(o: OpremaCikelVnos, i: number): void {
   if (o.inspectionDue && o.nextInspectionAt === null) {
     throw new TypeError(`preveriOpremoVnos (${i}): inspectionDue brez naslednjega roka (nextInspectionAt null) — pokvaren vir`)
   }
+  if (o.calibrationOverdue && o.calibrationDueDate === null) {
+    throw new TypeError(`preveriOpremoVnos (${i}): calibrationOverdue brez kalibracijskega roka (calibrationDueDate null) — pokvaren vir`)
+  }
   if ((o.calibrationOverdue || o.calibrationMissing) && !o.calibrationRequired) {
     throw new TypeError(`preveriOpremoVnos (${i}): kalibracijski alarm na nemerski opremi (calibrationRequired false) — pokvaren vir`)
   }
@@ -247,6 +250,11 @@ export interface OpremaCikelVrsta {
   kalPotecena: boolean
   /** Manjka kalibracijski rok (AMBER). */
   kalManjkaRok: boolean
+  /** ISO rok kalibracije ALI null (celica 'do DD.MM.YYYY' — fail-closed
+   *  invarianta: kalPotecena ⇒ kalRok znan, sicer je vir pokvaren). */
+  kalRok: string | null
+  /** Potrdilo ALI null (čist podatek — poimenovan dodatek v celici). */
+  kalPotrdilo: string | null
   /** Nemerska — kalibracija 'ne zahteva' (sivo, NI alarm). */
   kalNeZahteva: boolean
   /** Št. rezervacij (celo ≥ 0). */
@@ -315,6 +323,8 @@ export function opremaCikelPregled(
     pregledNezabelezen: o.inspectionUnknown,
     kalPotecena: o.calibrationOverdue,
     kalManjkaRok: o.calibrationMissing,
+    kalRok: o.calibrationDueDate,
+    kalPotrdilo: o.calibrationCertificate,
     kalNeZahteva: !o.calibrationRequired,
     rezervacije: o.assignmentsCount,
   }))
@@ -477,7 +487,7 @@ export function buildOpremaCikelPdfDoc(
   const bw = 33
   const bh = 16
   const gap = 4
-  kpiBox(doc, 14, y, bw, bh, 'Opreme', String(povzetek.oprem), NAVY)
+  kpiBox(doc, 14, y, bw, bh, 'Kosov', String(povzetek.oprem), NAVY)
   kpiBox(doc, 14 + bw + gap, y, bw, bh, 'Pregled zapadel', String(povzetek.pregledZapadel), povzetek.pregledZapadel > 0 ? RED : GREEN)
   kpiBox(doc, 14 + 2 * (bw + gap), y, bw, bh, 'Pregled nezabeležen', String(povzetek.pregledNezabelezen), povzetek.pregledNezabelezen > 0 ? AMBER : GREEN)
   kpiBox(doc, 14 + 3 * (bw + gap), y, bw, bh, 'Kalibracija potečena', String(povzetek.kalPotecena), povzetek.kalPotecena > 0 ? RED : GREEN)
@@ -497,13 +507,97 @@ export function buildOpremaCikelPdfDoc(
       v.lokacija ?? '—',
       v.zadnjiPregled !== null ? cenikDatumIso(v.zadnjiPregled) : v.pregledNezabelezen ? 'ni zabeležen' : '—',
       v.naslednjiPregled !== null ? cenikDatumIso(v.naslednjiPregled) : '—',
-      v.kalPotecena
-        ? `potečena ${v.naslednjiPregled !== null ? '' : ''}${cenikDatumIso((vrste.find((x) => x.id === v.id), { } as never) ?? '')}`.replace('potečena  potečena', 'potečena')
-        : '',
+      // Kalibracija — 4 iskrene veje (R145 deterministika): potečena (RED,
+      // akcija) / manjka rok (AMBER — iskreno NEZNANO) / 'do DD.MM.YYYY'
+      // (+ potrdilo, čist podatek) / 'ne zahteva' (nemerska — sivo, NI alarm).
+      v.kalNeZahteva
+        ? 'ne zahteva'
+        : v.kalPotecena
+          ? `potečena ${cenikDatumIso(v.kalRok!)}`
+          : v.kalRok !== null
+            ? `do ${cenikDatumIso(v.kalRok)}${v.kalPotrdilo !== null ? ` · ${v.kalPotrdilo}` : ''}`
+            : 'manjka rok',
+      String(v.rezervacije),
     ]),
+    styles: { fontSize: 8, cellPadding: 1.8, font: 'Roboto' },
+    headStyles: { fillColor: [...NAVY], textColor: 255, fontSize: 8 },
+    columnStyles: { 7: { halign: 'right' } },
+    didParseCell: (data) => {
+      // WYSIWYG: zapadel pregled RED bold (akcija); nezabeležen AMBER
+      // (iskreno neznano); '—' sivo (iskren odpad — nič ne trdimo);
+      // kalibracija: potečena RED bold, manjka rok AMBER, ne zahteva sivo.
+      if (data.section !== 'body') return
+      const v = vrste[data.row.index]
+      if (!v) return
+      const raw = String(data.cell.raw ?? '')
+      if (data.column.index === 5 && v.pregledZapadel) {
+        data.cell.styles.textColor = RED
+        data.cell.styles.fontStyle = 'bold'
+      }
+      if (data.column.index === 4 && raw === 'ni zabeležen') data.cell.styles.textColor = AMBER
+      if ((data.column.index === 3 || data.column.index === 4) && raw === '—') data.cell.styles.textColor = GRAY
+      if (data.column.index === 6) {
+        if (raw.startsWith('potečena')) {
+          data.cell.styles.textColor = RED
+          data.cell.styles.fontStyle = 'bold'
+        } else if (raw === 'manjka rok') {
+          data.cell.styles.textColor = AMBER
+        } else if (raw === 'ne zahteva') {
+          data.cell.styles.textColor = GRAY
+        }
+      }
+    },
   })
   y = (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? y
   y += 6
 
+  // ---------- sklepna vrstica (iskren podpis — izključitve poimenovane) ----------
+  if (y > 255) {
+    doc.addPage()
+    y = 20
+  }
+  doc.setFont('Roboto', 'normal')
+  doc.setFontSize(8.5)
+  doc.setTextColor(...NAVY)
+  doc.text(
+    `${povzetek.oprem} ${kosBeseda(povzetek.oprem)} · merskih ${povzetek.merskih} (kalibracija pogoj) · zapadel pregled ${povzetek.pregledZapadel} (akcija) · nezabeležen ${povzetek.pregledNezabelezen} (iskreno neznano — interval brez zapisa) · kalibracija potečena ${povzetek.kalPotecena} (akcija) · manjka kal. rok ${povzetek.kalManjkaRok} · brez vpisane lokacije ${povzetek.brezLokacije} (poimenovano) · rezervacij ${povzetek.rezervacij} · statusi: na voljo ${povzetek.naVoljo} / v uporabi ${povzetek.vUporabi} / v servisu ${povzetek.vServisu} / izgubljeno ${povzetek.izgubljeno} / upokojeno ${povzetek.upokojeno} (referenčni pregled — VSA oprema) · vir = /api/equipment (polna resnica, paginacija do 10.000 kosov).`,
+    14,
+    y + 4,
+  )
+
+  // ---------- noge na vseh straneh (ISTI vzorec kot boss-report družina) ----------
+  const strani = doc.getNumberOfPages()
+  const genStr = `Generirano ${zalogaPovzetekCasOznaka(now)}`
+  for (let i = 1; i <= strani; i++) {
+    doc.setPage(i)
+    doc.setDrawColor(226, 232, 240)
+    doc.setLineWidth(0.3)
+    doc.line(14, 284, 196, 284)
+    doc.setFont('Roboto', 'normal')
+    doc.setFontSize(7)
+    doc.setTextColor(...GRAY)
+    doc.text(`${genStr} · Roksal Field Manager v2.5`, 14, 289)
+    doc.text(`Stran ${i}/${strani}`, 196, 289, { align: 'right' })
+  }
+
   return doc
+}
+
+/** Ime datoteke — `Oprema-cikel-YYYY-MM-DD.pdf` (družinski vzorec;
+ *  deterministično glede na `now`; EN now za žig IN ime — lekcija R121/R235). */
+export function opremaCikelPdfFilename(now: Date): string {
+  if (!(now instanceof Date) || Number.isNaN(now.getTime())) {
+    throw new TypeError('opremaCikelPdfFilename: pričakovan veljaven now: Date')
+  }
+  return `Oprema-cikel-${todayStamp(now)}.pdf`
+}
+
+/** Zgeneriraj OPREMA — ŽIVLJENJSKI CIKL PDF (determinističen — enak vhod =
+ *  bajtno enak dokument) in ga shrani. */
+export function generateOpremaCikelPdf(
+  oprema: readonly OpremaCikelVnos[],
+  options: OpremaCikelPdfOptions,
+): void {
+  const doc = buildOpremaCikelPdfDoc(oprema, options)
+  doc.save(opremaCikelPdfFilename(options.now))
 }

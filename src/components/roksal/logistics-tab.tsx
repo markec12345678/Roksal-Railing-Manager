@@ -30,6 +30,12 @@ import {
   type ProjektiTerminiTerminVnos,
 } from '@/lib/projekti-termini-pdf'
 import {
+  generateOpremaCikelPdf,
+  opremaCikelPregled,
+  kosBeseda,
+  type OpremaCikelVnos,
+} from '@/lib/oprema-cikel-pdf'
+import {
   generateVozniRedPdf,
   vozniRedPovzetek,
   vozniRedUreKpi,
@@ -45,7 +51,7 @@ import { IEV_TEMPLATE } from '@/lib/installation-evidence'
 import {
   Calendar, Download, Users, Wrench, Plus, Clock, MapPin, CheckCircle2, CalendarClock,
   Loader2, AlertTriangle, Truck, Package, ShieldCheck, History, FileCheck2, Lock,
-  CalendarRange, ClipboardList,
+  CalendarRange, ClipboardList, Activity,
 } from 'lucide-react'
 
 interface Schedule {
@@ -376,6 +382,41 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
   // R265 — dvoklik guard izvoza (R264 vzorec pozicijaVTeku): med FRESH
   // fetchom /api/schedules je pill onemogočen — nič dvojnih dokumentov.
   const [ptVTeku, setPtVTeku] = useState(false)
+  // R266 — izvoz cikla opreme v teku (disabled guard — pariteta ptVTeku R265).
+  const [ocVTeku, setOcVTeku] = useState(false)
+
+  // R266 — ENA izpeljava vhodov za cikl opreme (WYSIWYG ISTI vir kot PDF
+  // KPI, tabela, sklep, F2 mini-vrstica IN toast): DTO pruning iz ISTEGA
+  // state-a, ki ga loadData ŽE napolni — NIČ nove mreže. Tip poimenovan z
+  // ISTO UI mapo kot badge (EQUIPMENT_TYPES); neznan pade na verbatim niz
+  // (prikazna resnica — NI jedra). status VERBATIM — lib fail-closed
+  // preveri vseh 5 znanih z indeksom krivca. PRAZEN seznam → null (memo
+  // NE sme padeti med nalaganjem; lib fail-closed zavrže prazno — R263
+  // vzorec). (Memo sta PRED pogojnimi vračanji — pravila hooks.)
+  const opremaCikelVhodi = useMemo<OpremaCikelVnos[]>(() => equipment.map((e) => ({
+    id: e.id,
+    naziv: e.naziv,
+    tip: EQUIPMENT_TYPES[e.tip] || e.tip,
+    status: e.status as OpremaCikelVnos['status'],
+    lokacija: e.lokacija,
+    serijskaStevilka: e.serijskaStevilka,
+    lastInspectionAt: e.lastInspectionAt,
+    inspectionIntervalDays: e.inspectionIntervalDays,
+    nextInspectionAt: e.nextInspectionAt,
+    inspectionDue: e.inspectionDue,
+    inspectionUnknown: e.inspectionUnknown,
+    calibrationRequired: e.calibrationRequired,
+    calibrationDueDate: e.calibrationDueDate,
+    calibrationCertificate: e.calibrationCertificate,
+    calibrationOverdue: e.calibrationOverdue,
+    calibrationMissing: e.calibrationMissing,
+    zadnjiServis: e.zadnjiServis,
+    assignmentsCount: e.assignmentsCount,
+  })), [equipment])
+  const opremaCikelPovzetek = useMemo(
+    () => (equipment.length > 0 ? opremaCikelPregled(opremaCikelVhodi).povzetek : null),
+    [equipment.length, opremaCikelVhodi],
+  )
   const { toast } = useToast()
 
   // Form states
@@ -1051,6 +1092,96 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
     }
   }
 
+  // R266 — OPREMA — ŽIVLJENJSKI CIKL PDF (22. člen 'izvozi' družine, P1-f):
+  // FRESH fetch VSE opreme ISTEGA endpointa ob kliku (R244/R245/R264/R265
+  // precedens — route NIČ, nič nove mreže) — POLNA resnica, paginacija čez
+  // limit 100 (do MAX_OFFSET 10.000) — TIHA REZINA je prepovedana (100
+  // zadetkov ≠ 'vsa oprema', nič ne pove, da vir ima več). Fail-verbose:
+  // HTTP napaka ALI ne-polje odgovora → viden razlog (nič tihe degradacije);
+  // resnice (status 5 znanih, booleans, ISO, identitete) preverja LIB
+  // fail-closed z indeksom krivca.
+  const handleOpremaCikelPdf = async () => {
+    if (ocVTeku) return
+    setOcVTeku(true)
+    try {
+      const vnosi: OpremaCikelVnos[] = []
+      const limit = 100
+      let offset = 0
+      for (;;) {
+        const res = await fetch(`/api/equipment?limit=${limit}&offset=${offset}`, { credentials: 'same-origin' })
+        if (!res.ok) {
+          throw new Error(`GET /api/equipment → HTTP ${res.status}`)
+        }
+        const data: unknown = await res.json()
+        if (!Array.isArray(data)) {
+          throw new TypeError('Odgovora /api/equipment ni mogoče prebrati (ni polja).')
+        }
+        const stran = data as Array<Record<string, unknown>>
+        for (let i = 0; i < stran.length; i++) {
+          const e = stran[i]
+          if (typeof e.id !== 'string' || e.id === '' || typeof e.naziv !== 'string' || e.naziv === '') {
+            throw new TypeError(`oprema vrstica ${offset + i}: manjkajoč id/naziv v odgovoru API-ja`)
+          }
+          const tipApi = typeof e.tip === 'string' ? e.tip : ''
+          const tip = EQUIPMENT_TYPES[tipApi] ?? (tipApi !== '' ? tipApi : null)
+          if (tip === null) {
+            throw new TypeError(`oprema vrstica ${offset + i}: manjkajoč tip v odgovoru API-ja`)
+          }
+          // Fail-verbose DTO pruning (R264/R265 vzorec): identitete + tip tu
+          // (imenovan razlog), ostalo VERBATIM — lib preveri z indeksom krivca.
+          vnosi.push({
+            id: e.id,
+            naziv: e.naziv,
+            tip,
+            status: e.status as OpremaCikelVnos['status'],
+            lokacija: (e.lokacija ?? null) as string | null,
+            serijskaStevilka: (e.serijskaStevilka ?? null) as string | null,
+            lastInspectionAt: (e.lastInspectionAt ?? null) as string | null,
+            inspectionIntervalDays: (e.inspectionIntervalDays ?? null) as number | null,
+            nextInspectionAt: (e.nextInspectionAt ?? null) as string | null,
+            inspectionDue: e.inspectionDue as boolean,
+            inspectionUnknown: e.inspectionUnknown as boolean,
+            calibrationRequired: e.calibrationRequired as boolean,
+            calibrationDueDate: (e.calibrationDueDate ?? null) as string | null,
+            calibrationCertificate: (e.calibrationCertificate ?? null) as string | null,
+            calibrationOverdue: e.calibrationOverdue as boolean,
+            calibrationMissing: e.calibrationMissing as boolean,
+            zadnjiServis: (e.zadnjiServis ?? null) as string | null,
+            assignmentsCount: e.assignmentsCount as number,
+          })
+        }
+        if (stran.length < limit) break
+        offset += limit
+        if (offset > 10_000) {
+          // Iskrena meja vira (MAX_OFFSET /api/equipment) — NI tihe rezine.
+          throw new TypeError('Več kot 10.000 kosov opreme — nad mejo paginacije vira (MAX_OFFSET) — izvoz zavrnjen (ni tihe rezine).')
+        }
+      }
+      if (vnosi.length === 0) {
+        // Fail-closed jedro: prazen seznam ne nastaja dokumenta — iskren toast.
+        toast({ title: 'Ni vpisane opreme', description: 'Pregled življenjskega cikla se izvozi, ko je vpisan prvi kos opreme.' })
+        return
+      }
+      // ENA izpeljava: povzetek za toast = ISTA resnica kot KPI IN sklep na
+      // listu (WYSIWYG).
+      const { povzetek } = opremaCikelPregled(vnosi)
+      generateOpremaCikelPdf(vnosi, { now: new Date() })
+      toast({
+        title: 'Pregled opreme prenešen v PDF',
+        description: `Oprema-cikel-…pdf — ${povzetek.oprem} ${kosBeseda(povzetek.oprem)}, zapadel pregled ${povzetek.pregledZapadel}, potečena kalibracija ${povzetek.kalPotecena}.`,
+      })
+    } catch (err) {
+      if (err instanceof TypeError) {
+        // fail-closed jedro: pokvaren vnos → viden razlog (nič izmišljenega dokumenta)
+        toast({ title: 'Pregled opreme ni mogoče sestaviti iz teh podatkov', description: err instanceof Error ? err.message : String(err), variant: 'destructive' })
+      } else {
+        toast({ title: `Izvoz PDF ni uspel: ${err instanceof Error ? err.message : String(err)}`, variant: 'destructive' })
+      }
+    } finally {
+      setOcVTeku(false)
+    }
+  }
+
   return (
     <div className="space-y-4">
       {/* Subtabs */}
@@ -1404,6 +1535,54 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
               prehodi so pravica{' '}
               <span className="font-semibold text-roksal-ink">production.manage</span>.
               Zgodovino dogodkov lahko še vedno odprete z Zabeleži.
+            </div>
+          )}
+          {/* R266 — 22. člen 'izvozi' družine (P1-f): OPREMA — ŽIVLJENJSKI
+              CIKL PDF — FRESH fetch VSE opreme (/api/equipment — paginacija
+              čez limit 100 do 10.000, tiha rezina prepovedana). Bralni
+              dokument VEDNO viden (P1-k precedens R251–R265): prazen seznam
+              → iskren fail-closed toast, NIKOLI prazna datoteka; agregat v
+              toastu = ISTI lib povzetek kot KPI/sklep na listu (WYSIWYG).
+              ISTI žetoni kot projekti/tedenski pilli — 0 novih hex. */}
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              aria-label="Izvozi pregled življenjskega cikla opreme kot PDF"
+              title="Življenjski cikl opreme kot pravi PDF — pregledi, kalibracije, statusi (vsa oprema)"
+              disabled={ocVTeku}
+              className="shrink-0 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              onClick={() => void handleOpremaCikelPdf()}
+            >
+              <Activity aria-hidden="true" className="h-4 w-4 mr-1" /> Cikel PDF
+            </Button>
+            <p className="text-2xs text-muted-foreground">
+              PDF = življenjski cikl VSE opreme (pregledi · kalibracije · statusi — polna resnica, ne samo viden seznam)
+            </p>
+          </div>
+          {/* R266 — F2 ciklov mini-vrstica (WYSIWYG ISTA izpeljava
+              opremaCikelPregled kot PDF KPI + sklep + toast — ENA izpeljava);
+              state = kar uporabnik vidi, FRESH fetch = polna resnica (dve
+              okni, ENA matemtika — obe poimenovani po viru); kondicionalni
+              žig = R256 lekcija 4: ŽIVO samo kadar je kaka akcija (zapadel
+              pregled / potečena kalibracija), sicer skrit — OBE veji
+              iskreni; žetoni roksal-red/green — 0 novih hex. */}
+          {opremaCikelPovzetek && (
+            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${opremaCikelPovzetek.pregledZapadel > 0 || opremaCikelPovzetek.kalPotecena > 0 ? 'bg-roksal-red' : 'bg-roksal-green'}`} />
+              <span className="tabular-nums">
+                Cikl (viden seznam): {opremaCikelPovzetek.oprem} {kosBeseda(opremaCikelPovzetek.oprem)} · zapadel pregled {opremaCikelPovzetek.pregledZapadel} · potečena kalibracija {opremaCikelPovzetek.kalPotecena} · brez lokacije {opremaCikelPovzetek.brezLokacije}
+              </span>
+              {opremaCikelPovzetek.pregledZapadel > 0 && (
+                <span className="rounded-full border border-roksal-red/40 bg-roksal-red/10 px-2 py-0.5 text-2xs font-medium text-roksal-red">
+                  {opremaCikelPovzetek.pregledZapadel} zapadel pregled
+                </span>
+              )}
+              {opremaCikelPovzetek.kalPotecena > 0 && (
+                <span className="rounded-full border border-roksal-red/40 bg-roksal-red/10 px-2 py-0.5 text-2xs font-medium text-roksal-red">
+                  {opremaCikelPovzetek.kalPotecena} potečena kalibracija
+                </span>
+              )}
             </div>
           )}
           {equipment.length === 0 ? (
