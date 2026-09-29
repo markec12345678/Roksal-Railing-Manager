@@ -58,6 +58,15 @@ import {
   generateInventuraPregledPdf,
   type InventuraArtikel,
 } from '@/lib/inventura-pregled-pdf'
+// R273 — 29. člen 'izvozi' družine: pregled vrednosti zaloge PDF (glava =
+// lib resnica; dve okni ENA matemtika — mini state + FRESH export prek
+// ISTEGA liba).
+import {
+  zalogaVrednostPregled,
+  generateZalogaVrednostPdf,
+  type ZalogaVrednostArtikel,
+  type ZalogaVrednostBest,
+} from '@/lib/zaloga-vrednost-pdf'
 // R270 — EN VIR formata količin (IMPORT, NI zasegane kopije — R262 → R270).
 import { kolicinaNiz } from '@/lib/zaloga-osnutek-pdf'
 // R237 (P1-c) — NAROČILNICA OSNUTEK PDF (pravi PDF brat CSV priloge R205 —
@@ -224,6 +233,14 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
   // R270 — dvoklik/ponovni klik guard za FRESH fetch inventurnega pregleda
   // (družinski kontrakt R264–R269: disabled={pdfVteku} + guard v handlerju).
   const [invPdfVteku, setInvPdfVteku] = useState(false)
+  // R273 — dvoklik/ponovni klik guard za FRESH fetch vrednostnega pregleda
+  // (družinski kontrakt R264–R272: disabled={valPdfVteku} + guard v handlerju).
+  const [valPdfVteku, setValPdfVteku] = useState(false)
+  // R273 — best cene (API bestPerMaterial — SAMO trenutno veljavne, API
+  // resnica veljavnostDo null) za mini-vrstico ENA matemtika: null = cena-vir
+  // še ni naložen ALI je pokvaren — mini pokaže ISKRENO odsotnost (NIKOLI
+  // lažnega Σ/pretečenega žiga brez dokazanega cen-vira).
+  const [bestCene, setBestCene] = useState<ZalogaVrednostBest[] | null>(null)
   // R177 — pečat 'Osveženo ob' = čas zadnjega USPEŠNEGA branja zaloge (primarni
   // vir te površine, vzorec R170/R171). Napaka/omrežje → null (pečat brez
   // podatkov bi lažno trdil svežino).
@@ -623,6 +640,109 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
     }
   }
 
+  /* R273 — 29. člen 'izvozi' družine: pregled vrednosti zaloge PDF (glava =
+   * lib resnica). FRESH GET /api/inventory + /api/material-prices ob kliku
+   * (dva vira ENA
+   * resnica: zaloge + trenutno veljavne cene — API resnica veljavnostDo
+   * null). Fail-closed: prazen vir → iskren toast (NI prazne datoteke);
+   * pokvaren vir → fail-verbose toast (NIČ tihe degradacije). ENA izpeljava
+   * zalogaVrednostPregled = toast = PDF (WYSIWYG). */
+  const handleVrednostPdf = async () => {
+    if (valPdfVteku) return
+    setValPdfVteku(true)
+    try {
+      const [resInv, resCene] = await Promise.all([
+        fetch('/api/inventory', { credentials: 'same-origin' }),
+        fetch('/api/material-prices', { credentials: 'same-origin' }),
+      ])
+      if (!resInv.ok) {
+        throw new Error(`GET /api/inventory → HTTP ${resInv.status}`)
+      }
+      if (!resCene.ok) {
+        throw new Error(`GET /api/material-prices → HTTP ${resCene.status}`)
+      }
+      const dataInv: unknown = await resInv.json()
+      const dataCene: unknown = await resCene.json()
+      if (!Array.isArray(dataInv)) {
+        throw new TypeError('Odgovora /api/inventory ni mogoče prebrati (ni polja).')
+      }
+      if (!dataCene || typeof dataCene !== 'object' || Array.isArray(dataCene)) {
+        throw new TypeError('Odgovora /api/material-prices ni mogoče prebrati (ni objekt).')
+      }
+      const bestArr = (dataCene as { bestPerMaterial?: unknown }).bestPerMaterial
+      if (!Array.isArray(bestArr)) {
+        throw new TypeError('Odgovora /api/material-prices ni mogoče prebrati (bestPerMaterial ni polje).')
+      }
+      const vrstice = dataInv as Array<Record<string, unknown>>
+      const vnosi: ZalogaVrednostArtikel[] = vrstice.map((item, i) => {
+        if (typeof item.id !== 'string' || item.id === '') {
+          throw new TypeError(`artikel vrstica ${i}: manjkajoč id v odgovoru API-ja`)
+        }
+        for (const [ime, v] of [
+          ['sifraMateriala', item.sifraMateriala],
+          ['naziv', item.naziv],
+          ['enota', item.enota],
+        ] as const) {
+          if (typeof v !== 'string' || v.trim() === '') {
+            throw new TypeError(`artikel vrstica ${i} (${item.id}): ${ime} mora biti ne-prazen niz, ne ${String(v)}`)
+          }
+        }
+        if (typeof item.kolicinaZaloga !== 'number' || !Number.isFinite(item.kolicinaZaloga) || item.kolicinaZaloga < 0) {
+          throw new TypeError(`artikel vrstica ${i} (${item.id}): kolicinaZaloga mora biti končno ne-negativno število, ne ${String(item.kolicinaZaloga)}`)
+        }
+        // Fail-verbose DTO pruning (R269/R270 vzorec): števec cen je del
+        // vira — manjkajoč/pokvaren NIKOLI tiho 0 (R227 strogost).
+        const cnt = item._count as { prices?: unknown } | undefined
+        if (!cnt || typeof cnt.prices !== 'number' || !Number.isInteger(cnt.prices) || cnt.prices < 0) {
+          throw new TypeError(`artikel vrstica ${i} (${item.id}): števec cen (_count.prices) mora biti ne-negativno celo število, ne ${String(cnt?.prices)}`)
+        }
+        return {
+          id: item.id as string,
+          sifraMateriala: item.sifraMateriala as string,
+          naziv: item.naziv as string,
+          kolicinaZaloga: item.kolicinaZaloga as number,
+          enota: item.enota as string,
+          stevecCen: cnt.prices,
+        }
+      })
+      const best: ZalogaVrednostBest[] = (bestArr as Array<Record<string, unknown>>).map((b, i) => {
+        if (typeof b.inventoryId !== 'string' || b.inventoryId === '') {
+          throw new TypeError(`best vrstica ${i}: manjkajoč inventoryId v odgovoru API-ja`)
+        }
+        if (typeof b.bestPrice !== 'number' || !Number.isFinite(b.bestPrice) || b.bestPrice < 0) {
+          throw new TypeError(`best vrstica ${i} (${b.inventoryId}): bestPrice mora biti končno ne-negativno število, ne ${String(b.bestPrice)}`)
+        }
+        if (typeof b.bestSupplier !== 'string' || b.bestSupplier.trim() === '') {
+          throw new TypeError(`best vrstica ${i} (${b.inventoryId}): bestSupplier mora biti ne-prazen niz, ne ${String(b.bestSupplier)}`)
+        }
+        return { inventoryId: b.inventoryId, bestPrice: b.bestPrice, bestSupplier: b.bestSupplier }
+      })
+      if (vnosi.length === 0) {
+        // Fail-closed jedro: prazen seznam ne nastaja dokumenta — iskren toast.
+        toast.error('Ni vpisanih artiklov', {
+          description: 'Pregled vrednosti zaloge se izvozi, ko je vpisan prvi artikel zaloge.',
+        })
+        return
+      }
+      // ENA izpeljava: povzetek za toast = ISTA resnica kot KPI IN sklep na
+      // listu (WYSIWYG).
+      const { povzetek } = zalogaVrednostPregled(vnosi, best)
+      generateZalogaVrednostPdf(vnosi, best, { now: new Date() })
+      toast.success('Pregled vrednosti zaloge prenešen v PDF', {
+        description: `Zaloga-vrednost-…pdf — ${artikelBeseda(povzetek.artiklov)}, Σ ${povzetek.zCeno > 0 ? `${povzetek.vsotaEur.toFixed(2)} EUR` : '—'}, pretečena ${povzetek.pretecenih}, brez cene ${povzetek.brezCene}.`,
+      })
+    } catch (err) {
+      // Fail-verbose: izvoz ne sme tiho spodleteti — razlog gre v toast.
+      // Fail-closed jedro (TypeError iz liba) = pokvaren vnos → viden razlog
+      // (NIČ izmišljenega dokumenta).
+      toast.error('Izvoz ni uspel', {
+        description: err instanceof Error ? err.message : `Neznana napaka (${String(err)}).`,
+      })
+    } finally {
+      setValPdfVteku(false)
+    }
+  }
+
   // R219 (P1-f) — dvostopenjsko filtriranje: PRVA stopnja = tip (kot pred
   // R219), DRUGA = čip 'pod minimumom'. Ime 'filtered' ostane KONČNO vidna
   // množica — vsi porabniki (CSV R136, Naročilnica R204, Osnutek R205,
@@ -709,6 +829,83 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
     }
     return inventuraPregled(vnosi).povzetek
   }, [filtered])
+
+  // R273 — FRESH best cene (API bestPerMaterial — SAMO trenutno veljavne,
+  // API resnica veljavnostDo null) za mini-vrstico ENA matemtika. Bralni
+  // GET; pokvaren odgovor = null (mini iskreno odsotna — NIKOLI lažni žig;
+  // FRESH export path ima polno fail-verbose preverbo ob kliku).
+  useEffect(() => {
+    let ziv = true
+    fetch('/api/material-prices', { credentials: 'same-origin' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: unknown) => {
+        if (!ziv) return
+        if (!d || typeof d !== 'object' || Array.isArray(d)) {
+          setBestCene(null)
+          return
+        }
+        const arr = (d as { bestPerMaterial?: unknown }).bestPerMaterial
+        if (!Array.isArray(arr)) {
+          setBestCene(null)
+          return
+        }
+        const best: ZalogaVrednostBest[] = []
+        for (const b of arr) {
+          const e = b as Record<string, unknown>
+          if (
+            typeof e.inventoryId !== 'string' || e.inventoryId === '' ||
+            typeof e.bestPrice !== 'number' || !Number.isFinite(e.bestPrice) || e.bestPrice < 0 ||
+            typeof e.bestSupplier !== 'string' || e.bestSupplier.trim() === ''
+          ) {
+            setBestCene(null)
+            return
+          }
+          best.push({ inventoryId: e.inventoryId, bestPrice: e.bestPrice, bestSupplier: e.bestSupplier })
+        }
+        setBestCene(best)
+      })
+      .catch(() => {
+        if (ziv) setBestCene(null)
+      })
+    return () => {
+      ziv = false
+    }
+  }, [])
+
+  // R273 — F2 mini-vrstica 'Vrednost (viden seznam):' — ENA izpeljava
+  // zalogaVrednostPregled čez ISTI prune + bestCene kot PDF KPI + sklep +
+  // toast (WYSIWYG): dve okni (state vs FRESH), ENA matemtika. bestCene
+  // null → mini iskreno odsotna (cena-vir ni dokazan — NIKOLI lažnega Σ).
+  // R227 strogost: manjkajoč/pokvaren števec cen = brez mini.
+  const vrednostVidenPregled = useMemo(() => {
+    if (filtered.length === 0 || bestCene === null) return null
+    const vnosi: ZalogaVrednostArtikel[] = []
+    for (const item of filtered) {
+      const cnt = item._count
+      if (
+        !cnt ||
+        typeof cnt.prices !== 'number' ||
+        !Number.isInteger(cnt.prices) ||
+        cnt.prices < 0
+      ) {
+        return null
+      }
+      vnosi.push({
+        id: item.id,
+        sifraMateriala: item.sifraMateriala,
+        naziv: item.naziv,
+        kolicinaZaloga: item.kolicinaZaloga,
+        enota: item.enota,
+        stevecCen: cnt.prices,
+      })
+    }
+    try {
+      return zalogaVrednostPregled(vnosi, bestCene).povzetek
+    } catch {
+      // Pokvaren best-vir (orphan/podvojen id) = brez mini — iskrena praznina.
+      return null
+    }
+  }, [filtered, bestCene])
 
   function getStockPercent(item: InventoryItem): number {
     const max = Math.max(item.minimalnaZaloga * 3, item.kolicinaZaloga)
@@ -1289,6 +1486,27 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
           )}
           Inventura
         </Button>
+        {/* R273 — pregled vrednosti zaloge PDF (29. člen 'izvozi' družine):
+            VEDNO viden (NI gated na filtered.length — pariteta R263–R272;
+            podatkovni scope inventory.read, ne pišoča pravica); press-scale
+            + dvoklik guard + FileDown/Loader2 aria-hidden (družinski
+            kontrakt). */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => void handleVrednostPdf()}
+          disabled={valPdfVteku}
+          className="h-8 shrink-0 gap-1.5 text-[11px] font-medium tabular-nums press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+          aria-label="Izvozi pregled vrednosti zaloge kot PDF"
+          title="Pregled vrednosti zaloge kot pravi PDF — VSA zalogovna premoženja s trenutno veljavnimi cenami (FRESH ob kliku)"
+        >
+          {valPdfVteku ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+          ) : (
+            <FileDown className="h-3.5 w-3.5" aria-hidden="true" />
+          )}
+          Vrednost
+        </Button>
       </div>
 
       {/* R270 — legenda pill pariteta (družina R263–R269): poimenuje kaj
@@ -1297,6 +1515,13 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
           vidna (pariteta s pillom). */}
       <p className="text-2xs text-muted-foreground">
         PDF = VSA zalogovna premoženja (tudi artikli brez premikov — polna resnica, ne samo viden seznam filtrov)
+      </p>
+
+      {/* R273 — legenda pill pariteta (družina R263–R272): poimenuje kaj
+          nosi dokument — polna denarna resnica skladišča FRESH ob kliku
+          (oba vira); VEDNO vidna (pariteta s pillom). */}
+      <p className="text-2xs text-muted-foreground">
+        PDF = polna denarna resnica skladišča (FRESH /api/inventory + /api/material-prices ob kliku — samo trenutno veljavne cene; ne zastarel state)
       </p>
 
       {/* R270 — F2 mini-vrstica 'Inventura (viden seznam):' (WYSIWYG ISTA
@@ -1319,7 +1544,7 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
             }`}
           />
           <span className="tabular-nums">
-            Inventura (viden seznam): {inventuraVidenPregled.artiklov} {artikelBeseda(inventuraVidenPregled.artiklov)} · pod minimumom {inventuraVidenPregled.podMinimumom} · na meji {inventuraVidenPregled.naMeji} · premiki {inventuraVidenPregled.premikiSkupaj}
+            Inventura (viden seznam): {artikelBeseda(inventuraVidenPregled.artiklov)} · pod minimumom {inventuraVidenPregled.podMinimumom} · na meji {inventuraVidenPregled.naMeji} · premiki {inventuraVidenPregled.premikiSkupaj}
           </span>
           {inventuraVidenPregled.podMinimumom > 0 && inventuraVidenPregled.najvecjiManjka !== null && (
             <span className="rounded-full border border-roksal-red/40 bg-roksal-red/10 px-2 py-0.5 text-2xs font-medium text-roksal-red tabular-nums">
@@ -1329,6 +1554,39 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
           {inventuraVidenPregled.naMeji > 0 && (
             <span className="rounded-full border border-roksal-amber/40 bg-roksal-amber/10 px-2 py-0.5 text-2xs font-medium text-roksal-amber tabular-nums">
               na meji {inventuraVidenPregled.naMeji}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* R273 — F2 mini-vrstica 'Vrednost (viden seznam):' (WYSIWYG ISTA
+          izpeljava zalogaVrednostPregled kot PDF KPI + sklep + toast — ENA
+          izpeljava): dot RED (brez cene — nič ne more oceniti) / AMBER
+          (pretečena — akcija re-price) / GREEN; kondicionalna žetona ŽIVO
+          samo kadar > 0 — R256 lekcija 4; tabular-nums; 0 novih hex. */}
+      {vrednostVidenPregled !== null && (
+        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+          <span
+            aria-hidden="true"
+            className={`h-2 w-2 shrink-0 rounded-full ${
+              vrednostVidenPregled.brezCene > 0
+                ? 'bg-roksal-red'
+                : vrednostVidenPregled.pretecenih > 0
+                  ? 'bg-roksal-amber'
+                  : 'bg-roksal-green'
+            }`}
+          />
+          <span className="tabular-nums">
+            Vrednost (viden seznam): {artikelBeseda(vrednostVidenPregled.artiklov)} · Σ {vrednostVidenPregled.zCeno > 0 ? `${vrednostVidenPregled.vsotaEur.toFixed(2)} EUR` : '—'}
+          </span>
+          {vrednostVidenPregled.pretecenih > 0 && (
+            <span className="rounded-full border border-roksal-amber/40 bg-roksal-amber/10 px-2 py-0.5 text-2xs font-medium text-roksal-amber tabular-nums">
+              pretečena {vrednostVidenPregled.pretecenih}
+            </span>
+          )}
+          {vrednostVidenPregled.brezCene > 0 && (
+            <span className="rounded-full border border-roksal-red/40 bg-roksal-red/10 px-2 py-0.5 text-2xs font-medium text-roksal-red tabular-nums">
+              brez cene {vrednostVidenPregled.brezCene}
             </span>
           )}
         </div>

@@ -53,7 +53,7 @@ eb_zapri_vodic
 
 echo "--- PRSTNI ODTIS PRE (PO prijavi — lastActive se piše samo na /api/auth POST) ---"
 node scripts/r268-db-e2e.cjs fp > /tmp/r268-fp-pre.json
-cat /tmp/r268-fp-pre.json | python3 -c "import json,sys; d=json.load(sys.stdin); print('PRE:', d['stevci'])"
+cat /tmp/r268-fp-pre.json | python3 -c "import json,sys; d=json.load(sys.stdin); print('PRE:', d['stevci'])" || exit 1
 
 echo "=== Z1: Ekipa — R268 pill ŽIVO (VEDNO viden + press-scale + FileDown aria-hidden) + legenda + mini-vrstica (naravno: 6 aktivnih) — pričakovanje DINAMIČNO iz ISTEGA API odgovora ==="
 eb_dispatch '{"tab":"more","more":"ekipa","subTab":null,"osnutek":null,"filter":null}'
@@ -72,8 +72,8 @@ st=d['apiCounts']; assert st and st['vsi']==6 and st['aktivnih']==6 and st['caka
 pri='Ekipa (viden seznam): 6 članov · aktivnih 6 · čaka aktivacijo 0 · povabilo poteklo 0 · zaklenjenih 0'
 assert d['miniTekst']==pri, 'Z1 mini FAIL (naravno stanje 6 aktivnih): '+json.dumps(d)+' — pričakovano: '+pri
 assert d['dotGreen'] and not d['dotRed'] and not d['zetoni'], 'Z1 dot/žetoni FAIL (vsi aktivni → GREEN, nič žetonov): '+json.dumps(d)
-print('Z1 preverba OK — pill ŽIVO + legenda pariteta + mini DINAMIČNO = ISTI API odgovor (6 članov aktivnih 6, GREEN dot, nič žetonov)')"
-print_mini() { python3 -c "import json; r=json.load(open('$1')); d=json.loads(r) if isinstance(r,str) else r; print('mini:', d['miniTekst'])"; }
+print('Z1 preverba OK — pill ŽIVO + legenda pariteta + mini DINAMIČNO = ISTI API odgovor (6 članov aktivnih 6, GREEN dot, nič žetonov)')" || exit 1
+print_mini() { python3 -c "import json; r=json.load(open('$1')); d=json.loads(r) if isinstance(r,str) else r; print('mini:', d['miniTekst'])" || exit 1; }
 print_mini /tmp/r268-z1.json
 agent-browser screenshot "$SS/qa-r268-e2e-pill.png" > /dev/null 2>&1
 
@@ -85,7 +85,7 @@ eb_klik_gumb "Izvozi pregled stanja ekipe kot PDF"
 eb_pocakaj_tekst "Ni vpisanih članov ekipe" 14
 eb_cakaj 1
 agent-browser eval "(()=>{const t=document.body.textContent; return JSON.stringify({toastTitle:t.includes('Ni vpisanih članov ekipe'), toastOpis:t.includes('Pregled stanja se izvozi, ko je vpisan prvi član ekipe.'), niDokumenta:!(typeof window.__ekipa268pre==='string'&&window.__ekipa268pre.length>0), err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r268-z1b.json
-python3 -c "import json; r=json.load(open('/tmp/r268-z1b.json')); d=json.loads(r) if isinstance(r,str) else r; assert d['toastTitle'] and d['toastOpis'] and d['niDokumenta'], 'Z1b fail-closed FAIL: '+json.dumps(d); print('Z1b fail-closed veja OK (ni dokumenta — ni prazne datoteke)')"
+python3 -c "import json; r=json.load(open('/tmp/r268-z1b.json')); d=json.loads(r) if isinstance(r,str) else r; assert d['toastTitle'] and d['toastOpis'] and d['niDokumenta'], 'Z1b fail-closed FAIL: '+json.dumps(d); print('Z1b fail-closed veja OK (ni dokumenta — ni prazne datoteke)')" || exit 1
 agent-browser eval "(()=>{window.fetch=window.__origFetch; return 'restored';})()" 2>&1 | tail -1
 agent-browser screenshot "$SS/qa-r268-e2e-failclosed.png" > /dev/null 2>&1
 
@@ -96,7 +96,7 @@ eb_klik_gumb "Izvozi pregled stanja ekipe kot PDF"
 eb_pocakaj_tekst "Pregled stanja ekipe prenešen v PDF" 14
 eb_cakaj 1
 agent-browser eval "(()=>{const t=document.body.textContent; const agg=/Ekipa-stanje-…pdf — (.+?)\./.exec(t); const b64=window.__ekipa268; if(typeof b64!=='string'||b64.length===0) return JSON.stringify({pdf:false, agg:agg?agg[1]:null, err:window.__err??null}); const bin=atob(b64); const znani=[30057,30119,30191,30253,35565,38753,39927,41519,42798,37709,37771,36788,36656,36532,33958,36555,38631,45508,44828,36260,36583,45127,38565,38909,40261,35409,37228,39094,41009,37560,38744,43572,51142]; return JSON.stringify({pdf:true, magija:bin.substring(0,5), bajtov:bin.length, novGlifniRazred:!znani.includes(bin.length), agg:agg?agg[1]:null, err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r268-z2-pdf.json
-python3 -c "import json; r=json.load(open('/tmp/r268-z2-pdf.json')); d=json.loads(r) if isinstance(r,str) else r; assert d['pdf'] and d['magija']=='%PDF-' and d['novGlifniRazred'] and d['agg']=='6 članov, aktivnih 6, čaka aktivacijo 0, povabilo poteklo 0, zaklenjenih 0', 'Z2 PDF FAIL: '+json.dumps(d); print('Z2 PDF OK —', d['bajtov'], 'bajtov, NOV razred (33 znanih), FRESH trenutna resnica: 6 članov (2 ADMIN / 1 VODJA / 3 MONTER), vsi aktivni')"
+python3 -c "import json; r=json.load(open('/tmp/r268-z2-pdf.json')); d=json.loads(r) if isinstance(r,str) else r; assert d['pdf'] and d['magija']=='%PDF-' and d['novGlifniRazred'] and d['agg']=='6 članov, aktivnih 6, čaka aktivacijo 0, povabilo poteklo 0, zaklenjenih 0', 'Z2 PDF FAIL: '+json.dumps(d); print('Z2 PDF OK —', d['bajtov'], 'bajtov, NOV razred (33 znanih), FRESH trenutna resnica: 6 članov (2 ADMIN / 1 VODJA / 3 MONTER), vsi aktivni')" || exit 1
 agent-browser screenshot "$SS/qa-r268-e2e-pdf.png" > /dev/null 2>&1
 
 echo "=== Z3: regresije ŽIVO lokalno — R267 CRM spomniki pill + R266 oprema pill (mini SKRITA pri 0 opreme — iskrena praznina) ==="
@@ -111,7 +111,7 @@ klik_subtab "Oprema"
 eb_pocakaj_na "(()=>{return !!document.querySelector('button[aria-label=\"Izvozi pregled življenjskega cikla opreme kot PDF\"]');})()" 14
 sleep 1
 agent-browser eval "(()=>{const oc=document.querySelector('button[aria-label=\"Izvozi pregled življenjskega cikla opreme kot PDF\"]'); const t=document.body.textContent; return JSON.stringify({r266Pill:!!oc, r266Legenda:t.includes('PDF = življenjski cikl VSE opreme (pregledi · kalibracije · statusi — polna resnica, ne samo viden seznam)'), r266MiniSkrita0Opreme:!t.includes('Cikl (viden seznam)'), err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r268-z3.json
-python3 -c "import json; r=json.load(open('/tmp/r268-z3.json')); d=json.loads(r) if isinstance(r,str) else r; assert d['r266Pill'] and d['r266Legenda'] and d['r266MiniSkrita0Opreme'], 'Z3 FAIL: '+json.dumps(d); print('Z3 regresije OK — R267 + R266 pill + legenda ŽIVO, oprema mini skrita pri 0 (iskrena praznina)')"
+python3 -c "import json; r=json.load(open('/tmp/r268-z3.json')); d=json.loads(r) if isinstance(r,str) else r; assert d['r266Pill'] and d['r266Legenda'] and d['r266MiniSkrita0Opreme'], 'Z3 FAIL: '+json.dumps(d); print('Z3 regresije OK — R267 + R266 pill + legenda ŽIVO, oprema mini skrita pri 0 (iskrena praznina)')" || exit 1
 
 echo "=== Z4: temna + err null ==="
 eb_dispatch '{"tab":"dashboard","more":null,"subTab":null,"osnutek":null,"filter":null}'

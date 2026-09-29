@@ -53,7 +53,7 @@ izberi_projekt() {
 
 echo "--- PRSTNI ODTIS PRE (Measurement + Customer + Project POLNA resnica + regresija širine) ---"
 node scripts/r269-db-e2e.cjs fp > /tmp/r269-fp-pre.json
-cat /tmp/r269-fp-pre.json | python3 -c "import json,sys; d=json.load(sys.stdin); print('PRE:', d['stevci'])"
+cat /tmp/r269-fp-pre.json | python3 -c "import json,sys; d=json.load(sys.stdin); print('PRE:', d['stevci'])" || exit 1
 
 echo "--- SEED-BASE (1 stranka + 1 projekt — BREZ meritev; Z1b = naravna fail-closed veja) ---"
 node scripts/r269-db-e2e.cjs seed-base
@@ -68,7 +68,7 @@ eb_dispatch '{"tab":"measurements","more":null,"subTab":null,"osnutek":null,"fil
 eb_pocakaj_na "(()=>{return !!document.querySelector('button[aria-label=\"Izvozi terenski pregled meritev kot PDF\"]');})()" 24
 sleep 2
 agent-browser eval "(()=>{const id=(l)=>document.querySelector('button[aria-label=\"'+l+'\"]'); const t=document.body.textContent; const vseSvg=[...document.querySelectorAll('svg.lucide')]; const zAria=vseSvg.filter(s=>s.getAttribute('aria-hidden')==='true').length; const pk=id('Izvozi terenski pregled meritev kot PDF'); return JSON.stringify({pill:!!pk, ps:pk?pk.className.includes('press-scale'):false, ariaHidden:pk?!!pk.querySelector('svg[aria-hidden=\"true\"]'):false, disabled:pk?pk.disabled:null, title:pk?pk.getAttribute('title'):null, legenda:t.includes('PDF = VSE meritve projekta (tudi arhivirane — polna resnica, ne samo viden seznam filtrov)'), miniSkrita0Meritev:!t.includes('Meritve (viden seznam)'), ariaR254:{lucide:vseSvg.length, zAria, vsePokrite:vseSvg.length===zAria}, err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r269-z1.json
-python3 -c "import json; r=json.load(open('/tmp/r269-z1.json')); d=json.loads(r) if isinstance(r,str) else r; assert d['pill'] and d['ps'] and d['ariaHidden'] and d['disabled']==False and d['legenda'] and d['miniSkrita0Meritev'] and d['ariaR254']['vsePokrite'], 'Z1 resnice FAIL: '+json.dumps(d); print('Z1 preverba OK — pill ŽIVO + legenda pariteta + mini SKRITA pri 0 meritev (iskrena praznina)')"
+python3 -c "import json; r=json.load(open('/tmp/r269-z1.json')); d=json.loads(r) if isinstance(r,str) else r; assert d['pill'] and d['ps'] and d['ariaHidden'] and d['disabled']==False and d['legenda'] and d['miniSkrita0Meritev'] and d['ariaR254']['vsePokrite'], 'Z1 resnice FAIL: '+json.dumps(d); print('Z1 preverba OK — pill ŽIVO + legenda pariteta + mini SKRITA pri 0 meritev (iskrena praznina)')" || exit 1
 agent-browser screenshot "$SS/qa-r269-e2e-pill.png" > /dev/null 2>&1
 
 echo "=== Z1b: fail-closed veja NARAVNA (seed projekt resnično brez meritev — NIČ stuba, NIČ mutacij) ==="
@@ -78,7 +78,7 @@ eb_klik_gumb "Izvozi terenski pregled meritev kot PDF"
 eb_pocakaj_tekst "Ni vpisanih meritev" 14
 eb_cakaj 1
 agent-browser eval "(()=>{const t=document.body.textContent; return JSON.stringify({toastTitle:t.includes('Ni vpisanih meritev'), toastOpis:t.includes('Terenski pregled se izvozi, ko je vpisana prva meritev projekta.'), niDokumenta:!(typeof window.__pon269pre==='string'&&window.__pon269pre.length>0), err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r269-z1b.json
-python3 -c "import json; r=json.load(open('/tmp/r269-z1b.json')); d=json.loads(r) if isinstance(r,str) else r; assert d['toastTitle'] and d['toastOpis'] and d['niDokumenta'], 'Z1b fail-closed FAIL: '+json.dumps(d); print('Z1b fail-closed veja OK (naravno prazen projekt — ni dokumenta, ni prazne datoteke)')"
+python3 -c "import json; r=json.load(open('/tmp/r269-z1b.json')); d=json.loads(r) if isinstance(r,str) else r; assert d['toastTitle'] and d['toastOpis'] and d['niDokumenta'], 'Z1b fail-closed FAIL: '+json.dumps(d); print('Z1b fail-closed veja OK (naravno prazen projekt — ni dokumenta, ni prazne datoteke)')" || exit 1
 agent-browser screenshot "$SS/qa-r269-e2e-failclosed.png" > /dev/null 2>&1
 
 echo "=== Z2: SEED-MERITVE (4 meritve — vse veje statusov; projekt obstaja od seed-base) + POLN reload + ponovna izbira projekta — mini-vrstica + žeton + AMBER dot ==="
@@ -100,7 +100,7 @@ assert d['miniTekst']=='Meritve (viden seznam): 4 meritve · osnutki 2 · potrje
 assert d['dotAmber'] and not d['dotGreen'], 'Z2 dot FAIL: '+json.dumps(d)
 assert d['zeton'], 'Z2 žeton FAIL: '+json.dumps(d)
 print('Z2 mini-vrstica OK — 4 meritve · osnutki 2 · potrjenih 1 · arhiviranih 1 + AMBER dot + žeton ŽIVO')
-"
+" || exit 1
 agent-browser screenshot "$SS/qa-r269-e2e-mini.png" > /dev/null 2>&1
 
 echo "=== Z2b: POST klik — FRESH polna resnica + toast agregat + PDF NOV glifni razred ==="
@@ -110,7 +110,7 @@ eb_klik_gumb "Izvozi terenski pregled meritev kot PDF"
 eb_pocakaj_tekst "Terenski pregled meritev prenešen v PDF" 14
 eb_cakaj 1
 agent-browser eval "(()=>{const t=document.body.textContent; const agg=/Meritve-teren-…pdf — (.+?)\./.exec(t); const b64=window.__pon269; if(typeof b64!=='string'||b64.length===0) return JSON.stringify({pdf:false, agg:agg?agg[1]:null, err:window.__err??null}); const bin=atob(b64); const znani=[30057,30119,30191,30253,35565,38753,39927,41519,42798,37709,37771,36788,36656,36532,33958,36555,38631,45508,44828,36260,36583,45127,38565,38909,40261,35409,37228,39094,41009,37560,38744,43572,51142,45074]; return JSON.stringify({pdf:true, magija:bin.substring(0,5), bajtov:bin.length, novGlifniRazred:!znani.includes(bin.length), agg:agg?agg[1]:null, err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r269-z2-pdf.json
-python3 -c "import json; r=json.load(open('/tmp/r269-z2-pdf.json')); d=json.loads(r) if isinstance(r,str) else r; assert d['pdf'] and d['magija']=='%PDF-' and d['novGlifniRazred'] and d['agg']=='4 meritve, osnutki 2, potrjenih 1, arhiviranih 1', 'Z2b PDF FAIL: '+json.dumps(d); print('Z2b PDF OK —', d['bajtov'], 'bajtov, NOV razred (34 znanih), FRESH polna resnica: 4 meritve (vse veje statusov), osnutki 2, potrjenih 1, arhiviranih 1')"
+python3 -c "import json; r=json.load(open('/tmp/r269-z2-pdf.json')); d=json.loads(r) if isinstance(r,str) else r; assert d['pdf'] and d['magija']=='%PDF-' and d['novGlifniRazred'] and d['agg']=='4 meritve, osnutki 2, potrjenih 1, arhiviranih 1', 'Z2b PDF FAIL: '+json.dumps(d); print('Z2b PDF OK —', d['bajtov'], 'bajtov, NOV razred (34 znanih), FRESH polna resnica: 4 meritve (vse veje statusov), osnutki 2, potrjenih 1, arhiviranih 1')" || exit 1
 agent-browser screenshot "$SS/qa-r269-e2e-pdf.png" > /dev/null 2>&1
 
 echo "=== Z3: regresije ŽIVO lokalno — R268 ekipa pill (ADMIN canRead) + R267 CRM pill + R266 oprema pill (mini SKRITA pri 0 opreme — iskrena praznina) ==="
@@ -129,7 +129,7 @@ agent-browser eval "(()=>{const b=[...document.querySelectorAll('button')].find(
 eb_pocakaj_na "(()=>{return !!document.querySelector('button[aria-label=\"Izvozi pregled življenjskega cikla opreme kot PDF\"]');})()" 14
 sleep 1
 agent-browser eval "(()=>{const oc=document.querySelector('button[aria-label=\"Izvozi pregled življenjskega cikla opreme kot PDF\"]'); const t=document.body.textContent; return JSON.stringify({r266Pill:!!oc, r266Legenda:t.includes('PDF = življenjski cikl VSE opreme (pregledi · kalibracije · statusi — polna resnica, ne samo viden seznam)'), r266MiniSkrita0Opreme:!t.includes('Cikl (viden seznam)'), err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r269-z3.json
-python3 -c "import json; r=json.load(open('/tmp/r269-z3.json')); d=json.loads(r) if isinstance(r,str) else r; assert d['r266Pill'] and d['r266Legenda'] and d['r266MiniSkrita0Opreme'], 'Z3 FAIL: '+json.dumps(d); print('Z3 regresije OK — R266 pill + legenda ŽIVO, mini skrita pri 0 opreme (iskrena praznina)')"
+python3 -c "import json; r=json.load(open('/tmp/r269-z3.json')); d=json.loads(r) if isinstance(r,str) else r; assert d['r266Pill'] and d['r266Legenda'] and d['r266MiniSkrita0Opreme'], 'Z3 FAIL: '+json.dumps(d); print('Z3 regresije OK — R266 pill + legenda ŽIVO, mini skrita pri 0 opreme (iskrena praznina)')" || exit 1
 
 echo "=== Z4: temna + err null ==="
 eb_dispatch '{"tab":"dashboard","more":null,"subTab":null,"osnutek":null,"filter":null}'

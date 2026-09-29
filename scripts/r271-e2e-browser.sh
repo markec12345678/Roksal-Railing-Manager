@@ -55,7 +55,7 @@ izberi_projekt() {
 
 echo "--- PRSTNI ODTIS PRE (PunchItem + Project + Customer POLNA resnica + regresija širine r270/r269 števcev) ---"
 node scripts/r271-db-e2e.cjs fp > /tmp/r271-fp-pre.json
-cat /tmp/r271-fp-pre.json | python3 -c "import json,sys; d=json.load(sys.stdin); print('PRE:', d['stevci'])"
+cat /tmp/r271-fp-pre.json | python3 -c "import json,sys; d=json.load(sys.stdin); print('PRE:', d['stevci'])" || exit 1
 
 echo "--- SEED-BASE (1 stranka + 1 projekt — BREZ točk; Z1b = naravna fail-closed veja) ---"
 node scripts/r271-db-e2e.cjs seed-base

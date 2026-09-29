@@ -46,7 +46,7 @@ klik_subtab() {
 
 echo "--- PRSTNI ODTIS PRE (Equipment POLNA resnica + regresija širine) ---"
 node scripts/r266-db-e2e.cjs fp > /tmp/r266-fp-pre.json
-cat /tmp/r266-fp-pre.json | python3 -c "import json,sys; d=json.load(sys.stdin); print('PRE:', d['stevci'])"
+cat /tmp/r266-fp-pre.json | python3 -c "import json,sys; d=json.load(sys.stdin); print('PRE:', d['stevci'])" || exit 1
 
 echo "--- PRIJAVA (prek e2e-lib.sh) ---"
 eb_odpri_in_prijavi || { echo "LOGIN FAIL — abort"; for pid in $(ss -tlnp 2>/dev/null | grep ':3100' | grep -oP 'pid=\K[0-9]+' | sort -u); do kill -9 "$pid" 2>/dev/null; done; exit 1; }
@@ -60,7 +60,7 @@ klik_subtab "Oprema"
 eb_pocakaj_na "(()=>{return !!document.querySelector('button[aria-label=\"Izvozi pregled življenjskega cikla opreme kot PDF\"]');})()" 14
 sleep 2
 agent-browser eval "(()=>{const id=(l)=>document.querySelector('button[aria-label=\"'+l+'\"]'); const ck=id('Izvozi pregled življenjskega cikla opreme kot PDF'); const t=document.body.textContent; const vseSvg=[...document.querySelectorAll('svg.lucide')]; const zAria=vseSvg.filter(s=>s.getAttribute('aria-hidden')==='true').length; return JSON.stringify({ckPill:!!ck, ckPS:ck?ck.className.includes('press-scale'):false, ckAriaHidden:ck?!!ck.querySelector('svg[aria-hidden=\"true\"]'):false, ckDisabled:ck?ck.disabled:null, ckTitle:ck?ck.getAttribute('title'):null, ckText:ck?ck.textContent.trim():null, miniSkrita0Opreme:!t.includes('Cikl (viden seznam)'), legendaR266:t.includes('PDF = življenjski cikl VSE opreme (pregledi · kalibracije · statusi — polna resnica, ne samo viden seznam)'), ariaR254:{lucide:vseSvg.length, zAria, vsePokrite:vseSvg.length===zAria}, err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r266-z1.json
-python3 -c "import json; r=json.load(open('/tmp/r266-z1.json')); d=json.loads(r) if isinstance(r,str) else r; assert d['ckPill'] and d['ckPS'] and d['ckAriaHidden'] and d['ckDisabled']==False and d['miniSkrita0Opreme'] and d['legendaR266'] and d['ariaR254']['vsePokrite'], 'Z1 resnice FAIL: '+json.dumps(d); print('Z1 preverba OK — pill ŽIVO, mini skrita pri 0 opreme (iskrena praznina), legenda pariteta')"
+python3 -c "import json; r=json.load(open('/tmp/r266-z1.json')); d=json.loads(r) if isinstance(r,str) else r; assert d['ckPill'] and d['ckPS'] and d['ckAriaHidden'] and d['ckDisabled']==False and d['miniSkrita0Opreme'] and d['legendaR266'] and d['ariaR254']['vsePokrite'], 'Z1 resnice FAIL: '+json.dumps(d); print('Z1 preverba OK — pill ŽIVO, mini skrita pri 0 opreme (iskrena praznina), legenda pariteta')" || exit 1
 agent-browser screenshot "$SS/qa-r266-e2e-pill.png" > /dev/null 2>&1
 
 echo "=== Z1b: fail-closed veja (naravno stanje: 0 opreme → 'Ni vpisane opreme', NI dokumenta) ==="
@@ -70,7 +70,7 @@ eb_klik_gumb "Izvozi pregled življenjskega cikla opreme kot PDF"
 eb_pocakaj_tekst "Ni vpisane opreme" 14
 eb_cakaj 1
 agent-browser eval "(()=>{const t=document.body.textContent; return JSON.stringify({toastTitle:t.includes('Ni vpisane opreme'), toastOpis:t.includes('Pregled življenjskega cikla se izvozi, ko je vpisan prvi kos opreme.'), niDokumenta:!(typeof window.__poz266pre==='string'&&window.__poz266pre.length>0), err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r266-z1b.json
-python3 -c "import json; r=json.load(open('/tmp/r266-z1b.json')); d=json.loads(r) if isinstance(r,str) else r; assert d['toastTitle'] and d['toastOpis'] and d['niDokumenta'], 'Z1b fail-closed FAIL: '+json.dumps(d); print('Z1b fail-closed veja OK (ni dokumenta — ni prazne datoteke)')"
+python3 -c "import json; r=json.load(open('/tmp/r266-z1b.json')); d=json.loads(r) if isinstance(r,str) else r; assert d['toastTitle'] and d['toastOpis'] and d['niDokumenta'], 'Z1b fail-closed FAIL: '+json.dumps(d); print('Z1b fail-closed veja OK (ni dokumenta — ni prazne datoteke)')" || exit 1
 agent-browser screenshot "$SS/qa-r266-e2e-failclosed.png" > /dev/null 2>&1
 
 echo "=== Z2: SEED (4 kosi — vse ciklov veje) + POLN reload — uspešna veja + mini-vrstica + žetona ==="
@@ -99,7 +99,7 @@ r=json.load(open('/tmp/r266-z2-mini.json')); d=json.loads(r) if isinstance(r,str
 assert d['miniTekst']=='Cikl (viden seznam): 4 kosi · zapadel pregled 1 · potečena kalibracija 1 · brez lokacije 2', 'Z2 mini FAIL: '+json.dumps(d)
 assert d['zetonZapadel'] and d['zetonPotecena'] and d['dotRed'], 'Z2 žetona/dot FAIL: '+json.dumps(d)
 print('Z2 mini-vrstica OK — 4 kosi · zapadel 1 · potečena 1 · brez lokacije 2 + kondicionalna žetona + RED dot ŽIVO')
-"
+" || exit 1
 eb_zajem_pdf poz266
 eb_csv_reset poz266
 eb_klik_gumb "Izvozi pregled življenjskega cikla opreme kot PDF"
@@ -112,10 +112,10 @@ import json
 r=json.load(open('/tmp/r266-z2.json')); d=json.loads(r) if isinstance(r,str) else r
 assert d['toastTitle'] and d['toastAgregat']=='4 kosi, zapadel pregled 1, potečena kalibracija 1', 'Z2 toast FAIL: '+json.dumps(d)
 print('Z2 toast OK —', d['toastAgregat'], '(sklanjatev ŽIVO: 4 kosi)')
-"
+" || exit 1
 eb_pocakaj_na "(()=>{return typeof window.__poz266==='string'&&window.__poz266.length>0;})()" 14
 agent-browser eval "(()=>{const b64=window.__poz266; if(typeof b64!=='string'||b64.length===0) return JSON.stringify({pdf:false, err:window.__err??null}); const bin=atob(b64); const znani=[30057,30119,30191,30253,35565,38753,39927,41519,42798,37709,37771,36788,36656,36532,33958,36555,38631,45508,44828,36260,36583,45127,38565,38909,40261,35409,37228,39094,41009,37560]; return JSON.stringify({pdf:true, magija:bin.substring(0,5), bajtov:bin.length, novGlifniRazred:!znani.includes(bin.length), err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r266-z2-pdf.json
-python3 -c "import json; r=json.load(open('/tmp/r266-z2-pdf.json')); d=json.loads(r) if isinstance(r,str) else r; assert d['pdf'] and d['magija']=='%PDF-' and d['novGlifniRazred'], 'Z2 PDF FAIL: '+json.dumps(d); print('Z2 PDF OK —', d['bajtov'], 'bajtov, NOV razred (30 znanih)')"
+python3 -c "import json; r=json.load(open('/tmp/r266-z2-pdf.json')); d=json.loads(r) if isinstance(r,str) else r; assert d['pdf'] and d['magija']=='%PDF-' and d['novGlifniRazred'], 'Z2 PDF FAIL: '+json.dumps(d); print('Z2 PDF OK —', d['bajtov'], 'bajtov, NOV razred (30 znanih)')" || exit 1
 agent-browser screenshot "$SS/qa-r266-e2e-po-seedu.png" > /dev/null 2>&1
 
 echo "=== Z3: R265 regresija — Koledar subtab: projekti-termini pill ŠE ŽIVO + legenda dobesedno ==="
@@ -142,7 +142,7 @@ echo "=== Z5: RESTORE + prstni odtis post BAJTNATO == pre ==="
 agent-browser close --all > /dev/null 2>&1
 node scripts/r266-db-e2e.cjs restore
 node scripts/r266-db-e2e.cjs fp > /tmp/r266-fp-post.json
-cat /tmp/r266-fp-post.json | python3 -c "import json,sys; d=json.load(sys.stdin); print('POST:', d['stevci'])"
+cat /tmp/r266-fp-post.json | python3 -c "import json,sys; d=json.load(sys.stdin); print('POST:', d['stevci'])" || exit 1
 if cmp -s /tmp/r266-fp-pre.json /tmp/r266-fp-post.json; then echo "DB BAJTNATO IDENTIČNA (pre==post — seed/restore bajtnato)"; else echo "DB RAZLIKA!"; diff <(python3 -m json.tool /tmp/r266-fp-pre.json) <(python3 -m json.tool /tmp/r266-fp-post.json) | head -20; fi
 
 for pid in $(ss -tlnp 2>/dev/null | grep ':3100' | grep -oP 'pid=\K[0-9]+' | sort -u); do kill -9 "$pid" 2>/dev/null; done

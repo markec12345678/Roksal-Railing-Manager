@@ -48,7 +48,7 @@ for i in $(seq 1 20); do curl -s -o /dev/null --max-time 2 http://127.0.0.1:3100
 
 echo "--- PRSTNI ODTIS PRE (Inventory POLNA resnica + regresija širine r269 števcev) ---"
 node scripts/r270-db-e2e.cjs fp > /tmp/r270-fp-pre.json
-cat /tmp/r270-fp-pre.json | python3 -c "import json,sys; d=json.load(sys.stdin); print('PRE:', d['stevci'])"
+cat /tmp/r270-fp-pre.json | python3 -c "import json,sys; d=json.load(sys.stdin); print('PRE:', d['stevci'])" || exit 1
 
 echo "--- PRIJAVA (prek e2e-lib.sh) — NARAVNI vir (brez seeda: Z1 + Z1b) ---"
 eb_odpri_in_prijavi || { echo "LOGIN FAIL — abort"; for pid in $(ss -tlnp 2>/dev/null | grep ':3100' | grep -oP 'pid=\K[0-9]+' | sort -u); do kill -9 "$pid" 2>/dev/null; done; exit 1; }
@@ -59,7 +59,7 @@ eb_dispatch '{"tab":"inventory","more":null,"subTab":null,"osnutek":null,"filter
 eb_pocakaj_na "(()=>{return !!document.querySelector('button[aria-label=\"Izvozi inventurni pregled premoženja kot PDF\"]');})()" 24
 sleep 2
 agent-browser eval "(()=>{const id=(l)=>document.querySelector('button[aria-label=\"'+l+'\"]'); const t=document.body.textContent; const vseSvg=[...document.querySelectorAll('svg.lucide')]; const zAria=vseSvg.filter(s=>s.getAttribute('aria-hidden')==='true').length; const pk=id('Izvozi inventurni pregled premoženja kot PDF'); const mini=[...document.querySelectorAll('span')].find(s=>s.textContent.indexOf('Inventura (viden seznam)')===0); return JSON.stringify({pill:!!pk, ps:pk?pk.className.includes('press-scale'):false, ariaHidden:pk?!!pk.querySelector('svg[aria-hidden=\"true\"]'):false, disabled:pk?pk.disabled:null, title:pk?(pk.getAttribute('title')||'').includes('VSA zalogovna premoženja'):false, legenda:t.includes('PDF = VSA zalogovna premoženja (tudi artikli brez premikov — polna resnica, ne samo viden seznam filtrov)'), miniPrefix:mini?mini.textContent.trim().startsWith('Inventura (viden seznam): '):false, ariaR254:{lucide:vseSvg.length, zAria, vsePokrite:vseSvg.length===zAria}, err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r270-z1.json
-python3 -c "import json; r=json.load(open('/tmp/r270-z1.json')); d=json.loads(r) if isinstance(r,str) else r; assert d['pill'] and d['ps'] and d['ariaHidden'] and d['disabled']==False and d['title'] and d['legenda'] and d['miniPrefix'] and d['ariaR254']['vsePokrite'], 'Z1 resnice FAIL: '+json.dumps(d); print('Z1 preverba OK — pill ŽIVO + legenda pariteta + mini prefix (naravni vir) + aria pokrit')"
+python3 -c "import json; r=json.load(open('/tmp/r270-z1.json')); d=json.loads(r) if isinstance(r,str) else r; assert d['pill'] and d['ps'] and d['ariaHidden'] and d['disabled']==False and d['title'] and d['legenda'] and d['miniPrefix'] and d['ariaR254']['vsePokrite'], 'Z1 resnice FAIL: '+json.dumps(d); print('Z1 preverba OK — pill ŽIVO + legenda pariteta + mini prefix (naravni vir) + aria pokrit')" || exit 1
 agent-browser screenshot "$SS/qa-r270-e2e-pill.png" > /dev/null 2>&1
 
 echo "=== Z1b: fail-closed veja prek fetch stuba [] (r211 precedens — NIČ DB mutacij, stub restavriran) ==="
@@ -70,7 +70,7 @@ eb_klik_gumb "Izvozi inventurni pregled premoženja kot PDF"
 eb_pocakaj_tekst "Ni vpisanih artiklov" 14
 eb_cakaj 1
 agent-browser eval "(()=>{window.fetch=window.__origFetch; delete window.__origFetch; const t=document.body.textContent; return JSON.stringify({stubRestavriran:!window.__origFetch, toastTitle:t.includes('Ni vpisanih artiklov'), toastOpis:t.includes('Inventurni pregled se izvozi, ko je vpisan prvi artikel zaloge.'), niDokumenta:!(typeof window.__pon270pre==='string'&&window.__pon270pre.length>0), err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r270-z1b.json
-python3 -c "import json; r=json.load(open('/tmp/r270-z1b.json')); d=json.loads(r) if isinstance(r,str) else r; assert d['stubRestavriran'] and d['toastTitle'] and d['toastOpis'] and d['niDokumenta'], 'Z1b fail-closed FAIL: '+json.dumps(d); print('Z1b fail-closed veja OK (stub [] — ni dokumenta, ni prazne datoteke, stub restavriran)')"
+python3 -c "import json; r=json.load(open('/tmp/r270-z1b.json')); d=json.loads(r) if isinstance(r,str) else r; assert d['stubRestavriran'] and d['toastTitle'] and d['toastOpis'] and d['niDokumenta'], 'Z1b fail-closed FAIL: '+json.dumps(d); print('Z1b fail-closed veja OK (stub [] — ni dokumenta, ni prazne datoteke, stub restavriran)')" || exit 1
 agent-browser screenshot "$SS/qa-r270-e2e-failclosed.png" > /dev/null 2>&1
 
 echo "=== Z2: SEED (8 artiklov — vse veje) + POLN reload — mini == DINAMIČNO izračunana resnica IZ ISTEGA API odgovora + dot + žetona ==="
@@ -84,7 +84,7 @@ eb_pocakaj_na "(()=>{return !!document.querySelector('button[aria-label=\"Izvozi
 agent-browser eval "(()=>{window.__inv=null; fetch('/api/inventory',{credentials:'same-origin'}).then(r=>r.json()).then(d=>{window.__inv=d}).catch(e=>{window.__invErr=String(e)}); return 'poslano';})()" 2>&1 | tail -1
 eb_cakaj 3
 agent-browser eval "JSON.stringify({inv:window.__inv, napaka:window.__invErr??null})" 2>&1 | tail -1 > /tmp/r270-inv-raw.json
-python3 - <<'PYEOF'
+python3 - <<'PYEOF' || exit 1
 import json, re
 
 raw = open('/tmp/r270-inv-raw.json').read().strip()
@@ -135,7 +135,7 @@ for v in vrste:
         if nm is None or v[2] > nm[0]:
             nm = (v[2], v[3])
 
-mini_pri = f'Inventura (viden seznam): {len(inv)} {artikel_beseda(len(inv))} · pod minimumom {pod} · na meji {na_meji} · premiki {premiki}'
+mini_pri = f'Inventura (viden seznam): {artikel_beseda(len(inv))} · pod minimumom {pod} · na meji {na_meji} · premiki {premiki}'
 agg_pri = f'{artikel_beseda(len(inv))}, pod minimumom {pod}, na meji {na_meji}'
 zeton_red = f'manjka {kolicina_niz(nm[0])} {nm[1]}' if nm else None
 json.dump({'n': len(inv), 'pod': pod, 'na_meji': na_meji, 'premiki': premiki,
@@ -148,7 +148,7 @@ PYEOF
 eb_pocakaj_na "(()=>{const s=[...document.querySelectorAll('span')].find(x=>x.textContent.indexOf('Inventura (viden seznam)')===0); return !!s && s.textContent.includes('artiklov') && s.textContent.includes(' · pod minimumom ');})()" 24
 sleep 1
 agent-browser eval "(()=>{const mini=[...document.querySelectorAll('span')].find(s=>s.textContent.indexOf('Inventura (viden seznam)')===0); const kont=[...document.querySelectorAll('div')].find(d=>{const s=d.querySelector('span.tabular-nums'); return s&&s.textContent.indexOf('Inventura (viden seznam)')===0;}); const dotRed=kont?!!kont.querySelector('span[aria-hidden].bg-roksal-red'):false; const dotAmber=kont?!!kont.querySelector('span[aria-hidden].bg-roksal-amber'):false; const dotGreen=kont?!!kont.querySelector('span[aria-hidden].bg-roksal-green'):false; const zetoni=kont?[...kont.querySelectorAll('span')].filter(x=>x.className.includes('rounded-full')).map(x=>x.textContent.trim()):[]; return JSON.stringify({miniTekst:mini?mini.textContent.trim():null, dotRed, dotAmber, dotGreen, zetoni, err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r270-z2-mini.json
-python3 - <<'PYEOF'
+python3 - <<'PYEOF' || exit 1
 import json
 r = json.load(open('/tmp/r270-z2-mini.json'))
 d = json.loads(r) if isinstance(r, str) else r
@@ -168,7 +168,7 @@ eb_klik_gumb "Izvozi inventurni pregled premoženja kot PDF"
 eb_pocakaj_tekst "Inventurni pregled premoženja prenešen v PDF" 14
 eb_cakaj 1
 agent-browser eval "(()=>{const t=document.body.textContent; const agg=/Inventura-pregled-…pdf — (.+?)\./.exec(t); const b64=window.__pon270; if(typeof b64!=='string'||b64.length===0) return JSON.stringify({pdf:false, agg:agg?agg[1]:null, err:window.__err??null}); const bin=atob(b64); const znani=[30057,30119,30191,30253,35565,38753,39927,41519,42798,37709,37771,36788,36656,36532,33958,36555,38631,45508,44828,36260,36583,45127,38565,38909,40261,35409,37228,39094,41009,37560,38744,43572,51142,45074,42769]; return JSON.stringify({pdf:true, magija:bin.substring(0,5), bajtov:bin.length, novGlifniRazred:!znani.includes(bin.length), agg:agg?agg[1]:null, err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r270-z2-pdf.json
-python3 - <<'PYEOF'
+python3 - <<'PYEOF' || exit 1
 import json
 r = json.load(open('/tmp/r270-z2-pdf.json'))
 d = json.loads(r) if isinstance(r, str) else r
@@ -194,7 +194,7 @@ eb_dispatch '{"tab":"more","more":"material","subTab":"orders","osnutek":null,"f
 eb_pocakaj_na "(()=>{return !!document.querySelector('button[aria-label=\"Izvozi pokritost zaloge in osnutkov kot PDF\"]');})()" 24
 R262_OK=$(agent-browser eval "(()=>{const b=document.querySelector('button[aria-label=\"Izvozi pokritost zaloge in osnutkov kot PDF\"]'); return JSON.stringify({pill:!!b, err:window.__err??null});})()" 2>&1 | tail -1)
 echo "  R262: $R262_OK"
-python3 - "$R268_OK" "$R267_OK" "$R262_OK" <<'PYEOF'
+python3 - "$R268_OK" "$R267_OK" "$R262_OK" <<'PYEOF' || exit 1
 import json, sys
 
 def parse(raw):
@@ -214,7 +214,7 @@ agent-browser eval "(()=>{document.documentElement.classList.add('dark'); return
 eb_cakaj 2
 agent-browser eval "(()=>{const t=document.body.textContent; return JSON.stringify({temna:document.documentElement.classList.contains('dark'), legendaTemna:t.includes('PDF = VSA zalogovna premoženja'), err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r270-z4.json
 agent-browser eval "(()=>{document.documentElement.classList.remove('dark'); return 'svetla';})()" > /dev/null 2>&1
-python3 -c "import json; r=json.load(open('/tmp/r270-z4.json')); d=json.loads(r) if isinstance(r,str) else r; assert d['temna'] and d['legendaTemna'] and d['err'] is None, 'Z4 temna FAIL: '+json.dumps(d); print('Z4 temna OK — legenda vidna, err null')"
+python3 -c "import json; r=json.load(open('/tmp/r270-z4.json')); d=json.loads(r) if isinstance(r,str) else r; assert d['temna'] and d['legendaTemna'] and d['err'] is None, 'Z4 temna FAIL: '+json.dumps(d); print('Z4 temna OK — legenda vidna, err null')" || exit 1
 
 echo "=== RESTORE + ODTIS (bajtnata identičnost — ZERO-MUTACIJA) ==="
 node scripts/r270-db-e2e.cjs restore
