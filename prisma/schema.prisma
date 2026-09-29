@@ -242,11 +242,33 @@ model Measurement {
   statusNote      String?
   statusUpdatedAt DateTime?
 
+  // R276 (issue #16 §6 — zgodovina verzij; register #17-E): meritve se NE
+  // tiho prepisujejo — korekcija = NOVA vrstica v verigi (R153 kanon:
+  // "popravki gredo skozi vodjo (nov vnos)"; nobena ruta ne spreminja
+  // dimenzij). verzija = zaporedna številka znotraj verige (1, 2, 3 …);
+  // null = nastalo PRED verzioniranjem (iskrena praznina — brez backfill,
+  // brez izmišljene zgodovine). predhodnikId UNIQUE = enojna veriga brez
+  // razvejanja (fork = P2002 → 409, tudi race — DB nivo). korenId = id prve
+  // vrstice verige (koren = null) — O(1) fetch verige, integriteta po vzorcu
+  // R121 DocumentVersion @@unique([documentId, version]). vir = strežniško
+  // IZPELJAN izvor (MANUAL/PHOTO_CV/ARCORE_DEPTH, kontrakt #16 §2) — klient
+  // ga ne more podati (ne ponareljiv); null pri legacy arMetadata = ni vir
+  // resnice (nikoli ugibanje). Odločitve O1–O9: docs/MEASUREMENT-HISTORY.md.
+  verzija      Int?
+  predhodnikId String? @unique
+  korenId      String?
+  vir          String?
+
   project              Project                @relation(fields: [projectId], references: [id], onDelete: Cascade)
   installationEvidence InstallationEvidence[] // R147 §28 — merilni dokazi povezani z dokazili
 
+  predhodnik Measurement?  @relation("MeritevVerzije", fields: [predhodnikId], references: [id], onDelete: SetNull)
+  nasledniki Measurement[] @relation("MeritevVerzije")
+
   @@index([projectId, dedupeHash])
   @@index([projectId, status])
+  @@index([korenId, verzija])
+  @@index([projectId, verzija])
 }
 
 // ============================================

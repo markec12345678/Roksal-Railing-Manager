@@ -12,6 +12,9 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { parseSlDimension, useSpeechRecognition } from '@/lib/sl-speech'
 import { measurementStatusCounts } from '@/lib/measurement-status'
+// R276 (issue #16 §6) — zgodovina verzij meritev: oznake vira (EN VIR z
+// kontraktom #16 §2) za prikaz na kartici meritve.
+import { MERITEV_VIR_LABELS, type MeritevVir } from '@/lib/meritev-verzije'
 import {
   loadDrafts,
   saveDraft,
@@ -261,6 +264,14 @@ interface Measurement {
   source?: string
   photoId?: string
   snapshotId?: string
+  // R276 (issue #16 §6) — zgodovina verzij: verzija 1, 2, 3 … znotraj
+  // verige korekcij (null = nastalo pred verzioniranjem — iskrena
+  // praznina); predhodnikId = prejšnja verzija; korenId = prva vrstica
+  // verige; vir = strežniško izpeljan izvor (MANUAL/PHOTO_CV/ARCORE_DEPTH).
+  verzija?: number | null
+  predhodnikId?: string | null
+  korenId?: string | null
+  vir?: string | null
 }
 
 interface Project {
@@ -922,6 +933,40 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
   // R269 — dvoklik guard za terenski pregled PDF (družinska pariteta R263–R268).
   const [pdfVteku, setPdfVteku] = useState(false)
 
+  // R276 (issue #16 §6) — korekcija = NOVA verzija v verigi (predhodnik
+  // ostane v zgodovini — nič tihega prepisovanja). popravljaMeritev drži
+  // cilj korekcije; zgodovina drži odprto verigo verzij (lazy fetch).
+  const [popravljaMeritev, setPopravljaMeritev] = useState<{
+    id: string
+    oznaka: string
+    verzija: number | null
+  } | null>(null)
+  type VerzijaVrstica = {
+    id: string
+    verzija: number | null
+    vir: string | null
+    status: string
+    dolzinaMm: number
+    visinaMm: number
+    predhodnikId: string | null
+    createdAt: string
+    deltaDolzinaMm: number | null
+    deltaVisinaMm: number | null
+  }
+  type VerzijeOdgovor = {
+    korenId: string | null
+    aktivnaId: string | null
+    aktivnaVerzija: number | null
+    steviloVerzij: number
+    verzije: VerzijaVrstica[]
+  }
+  const [zgodovina, setZgodovina] = useState<{
+    odprtoZa: string | null
+    nalaga: boolean
+    napaka: string | null
+    data: VerzijeOdgovor | null
+  }>({ odprtoZa: null, nalaga: false, napaka: null, data: null })
+
   // P1 — Status filter
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('VSE')
 
@@ -1537,6 +1582,69 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
     [selectedProject]
   )
 
+  // R276 (O4/O8) — začetek korekcije: obrazec se vnaprej izpolni z vrednostmi
+  // predhodnika (enote mm — brez pretvorbe, nič ugibanja); shranjevanje
+  // ustvari NOVO verzijo (predhodnikId v POST telesu).
+  function handleStartCorrection(m: Measurement) {
+    if (m.status === 'ARHIVIRANA') {
+      toast.error(
+        'Arhivirane meritve ni mogoče popraviti — najprej jo ponovno odprite (klik na status z opombo).'
+      )
+      return
+    }
+    setPopravljaMeritev({
+      id: m.id,
+      oznaka: m.oznaka || m.lokacija || `#${m.id.slice(-4)}`,
+      verzija: m.verzija ?? null,
+    })
+    setFormLengthUnit('mm')
+    setFormHeightUnit('mm')
+    setFormLength(String(m.dolzinaMm))
+    setFormHeight(String(m.visinaMm))
+    setFormOznaka(m.oznaka || '')
+    setFormLocation(m.lokacija || '')
+    setFormOpen(true)
+    toast.info(
+      `Popravljanje „${m.oznaka || m.lokacija || `#${m.id.slice(-4)}`}“ — shranjevanje ustvari NOVO verzijo; obstoječa ostane v zgodovini.`
+    )
+  }
+
+  function handleCancelCorrection() {
+    setPopravljaMeritev(null)
+    resetForm()
+    toast.info('Korekcija preklicana — nič ni bilo shranjeno.')
+  }
+
+  // R276 (O8) — zgodovina verzij: lazy fetch celotne verige (GET
+  // /api/measurements/[id]/verzije). Napaka = viden razlog, nič lažnih
+  // praznih tabel.
+  async function toggleZgodovina(m: Measurement) {
+    if (zgodovina.odprtoZa === m.id) {
+      setZgodovina({ odprtoZa: null, nalaga: false, napaka: null, data: null })
+      return
+    }
+    setZgodovina({ odprtoZa: m.id, nalaga: true, napaka: null, data: null })
+    try {
+      const res = await fetch(`/api/measurements/${m.id}/verzije`)
+      if (!res.ok) {
+        const telo = (await res.json().catch(() => null)) as { error?: string } | null
+        throw new Error(telo?.error ?? `Strežnik je vrnil ${res.status}`)
+      }
+      const data = (await res.json()) as VerzijeOdgovor
+      if (!Array.isArray(data.verzije) || typeof data.steviloVerzij !== 'number') {
+        throw new Error('Odgovora verzij ni mogoče prebrati (pokvarena oblika)')
+      }
+      setZgodovina({ odprtoZa: m.id, nalaga: false, napaka: null, data })
+    } catch (napaka) {
+      setZgodovina({
+        odprtoZa: m.id,
+        nalaga: false,
+        napaka: napaka instanceof Error ? napaka.message : 'Napaka pri branju zgodovine',
+        data: null,
+      })
+    }
+  }
+
   async function handleSubmitMeasurement() {
     if (!selectedProject || !formLength || !formHeight) {
       toast.error('Vnesite dolžino in višino!')
@@ -1571,13 +1679,24 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
     }
 
     try {
-      const postPayload = {
+      // R276 (O4/O8) — korekcija: predhodnikId v telesu → strežnik ustvari
+      // NOVO verzijo v verigi (fail-closed meje na strežniku; vir je
+      // strežniško izpeljan — klient ga ne pošilja).
+      const postPayload: {
+        projectId: string
+        dolzinaMm: number
+        visinaMm: number
+        arMetadata: ArMetadata
+        gpsLokacija: { lat: number; lng: number }
+        predhodnikId?: string
+      } = {
         projectId: selectedProject,
         dolzinaMm,
         visinaMm,
         arMetadata,
         gpsLokacija: { lat: 46.2397, lng: 14.3556 },
       }
+      if (popravljaMeritev) postPayload.predhodnikId = popravljaMeritev.id
       const res = await fetch('/api/measurements', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1605,14 +1724,25 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
         pushAudit({
           akcija: 'ADD',
           meritevId: newMeasurement.id,
-          opis: `Nova meritev \"${formOznaka || formLocation || newMeasurement.id.slice(-4)}\" dodana — ${formatMultiUnit(dolzinaMm)}`,
+          opis: popravljaMeritev
+            ? `Nova verzija v${newMeasurement.verzija ?? '?'} meritve „${popravljaMeritev.oznaka}" — ${formatMultiUnit(dolzinaMm)} (predhodna ostaja v zgodovini)`
+            : `Nova meritev \"${formOznaka || formLocation || newMeasurement.id.slice(-4)}\" dodana — ${formatMultiUnit(dolzinaMm)}`,
         })
         resetForm()
         setFormOpen(false)
-        toast.success('Meritev dodana!')
+        // R276 (O3) — korekcija: iskren toast z verzijo; predhodnik ostane.
+        if (popravljaMeritev) {
+          setPopravljaMeritev(null)
+          toast.success(
+            `Nova verzija v${newMeasurement.verzija ?? '?'} shranjena — predhodna meritev ostaja v zgodovini.`
+          )
+        } else {
+          toast.success('Meritev dodana!')
+        }
       } else {
         // R152: neuspeh → ekspliciten lokalni osnutek (ni izmišljene vrstice,
-        // ni lažnega "uspešno shranjeno").
+        // ni lažnega "uspešno shranjeno"). R276: osnutek korekcije NOSI
+        // predhodnikId (sinhronizacija ustvari verzijo, ne nove standalone).
         createMeasurementDraft(
           postPayload,
           formOznaka || formLocation || formatMultiUnit(dolzinaMm)
@@ -4178,6 +4308,45 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   </TooltipTrigger>
                   <TooltipContent>Spremeni status (perzistentno, z revizijsko sledjo)</TooltipContent>
                 </Tooltip>
+                {/* R276 (O2/O5) — verzija žig: vN za verzionirane vrstice;
+                    null (legacy pred verzioniranjem) = brez žiga (iskrena
+                    praznina — nikoli izmišljene verzije). */}
+                {m.verzija != null && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span
+                        className="inline-flex items-center rounded px-1 py-0 text-3xs font-medium border bg-roksal-navy/5 text-roksal-navy border-roksal-navy/20 dark:bg-roksal-ink/10 dark:text-roksal-ink dark:border-roksal-ink/20 cursor-help font-mono tabular-nums"
+                        title={
+                          m.predhodnikId
+                            ? `Verzija v${m.verzija} — korekcija (predhodna verzija ostaja v zgodovini — issue #16 §6). Klik na ikono zgodovine pokaže celotno verigo.`
+                            : `Verzija v${m.verzija} — prvi vpis v verigi (korekcije ustvarjajo v2, v3 …; obstoječe se ne prepišejo — issue #16 §6).`
+                        }
+                      >
+                        v{m.verzija}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {m.predhodnikId
+                        ? 'Korekcija — predhodna verzija ostaja v zgodovini'
+                        : 'Prvi vpis v verigi verzij'}
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+                {/* R276 (O2) — vir izpeljan na strežniku (MANUAL/PHOTO_CV/
+                    ARCORE_DEPTH); null (legacy) = brez oznake (iskrena
+                    praznina — nikoli ugibanje). */}
+                {m.vir != null && m.vir in MERITEV_VIR_LABELS && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="inline-flex items-center rounded px-1 py-0 text-3xs font-medium border bg-muted text-muted-foreground border-border">
+                        {MERITEV_VIR_LABELS[m.vir as MeritevVir]}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Vir meritve (izpeljan na strežniku — vir resnice)
+                    </TooltipContent>
+                  </Tooltip>
+                )}
                 {m.segmentId && (
                   <Badge variant="outline" className="text-[9px] h-4 px-1 shrink-0">
                     <Layers aria-hidden="true" className="h-2.5 w-2.5 mr-0.5" />
@@ -4241,6 +4410,47 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
             </div>
           </div>
           <div className="flex items-center gap-0.5 shrink-0 ml-2">
+            {/* R276 (O8) — zgodovina verzij: odpre verigo korekcij (lazy
+                fetch); viden le, ko veriga obstaja (korenId ali predhodnikId). */}
+            {(m.verzija != null || m.predhodnikId || m.korenId) && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => toggleZgodovina(m)}
+                    className="p-1.5 rounded-lg hover:bg-roksal-navy/10 dark:hover:bg-roksal-ink/10 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:outline-none transition-colors"
+                    title="Zgodovina verzij"
+                    aria-label={`Pokaži zgodovino verzij meritve ${m.oznaka || m.lokacija || `#${m.id.slice(-4)}`}`}
+                  >
+                    <History
+                      aria-hidden="true"
+                      className={`h-3.5 w-3.5 ${zgodovina.odprtoZa === m.id ? 'text-roksal-navy dark:text-roksal-ink' : 'text-muted-foreground'}`}
+                    />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>Zgodovina verzij (korekcije ne prepišejo — dodajo)</TooltipContent>
+              </Tooltip>
+            )}
+            {/* R276 (O4) — Popravi (nova verzija): arhivirana → UI varen
+                zavrn (server je vseeno fail-closed 409). */}
+            {!isArchived && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => handleStartCorrection(m)}
+                    className="p-1.5 rounded-lg hover:bg-roksal-navy/10 dark:hover:bg-roksal-ink/10 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:outline-none transition-colors"
+                    title="Popravi meritev (ustvari novo verzijo)"
+                    aria-label={`Popravi meritev ${m.oznaka || m.lokacija || `#${m.id.slice(-4)}`} — ustvari novo verzijo`}
+                  >
+                    <PencilRuler aria-hidden="true" className="h-3.5 w-3.5 text-muted-foreground" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Popravi — ustvari novo verzijo (obstoječa ostaja v zgodovini)
+                </TooltipContent>
+              </Tooltip>
+            )}
             {/* MERITVE-PRO — Poglej foto gumb za photo-sourced mere */}
             {isPhoto && m.photoId && (
               <Tooltip>
@@ -4278,6 +4488,90 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
             </button>
           </div>
         </div>
+
+        {/* R276 (O8) — zgodovina verzij: celotna veriga z deltami, virom,
+            statusom in aktivno verzijo (determinističen vrstni red s
+            strežnika). Iskrene praznine: legacy verzija = '—', delta prve
+            vrstice = '—', arhivirana zadnja = brez aktivne. */}
+        {zgodovina.odprtoZa === m.id && (
+          <div className="px-3 pb-3">
+            <div className="rounded-lg border border-border/60 bg-muted/30 p-2.5">
+              <p className="text-3xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
+                <History aria-hidden="true" className="h-3 w-3" />
+                Zgodovina verzij — korekcije NE prepišejo obstoječih mer, dodajo novo verzijo
+                (issue #16 §6)
+              </p>
+              {zgodovina.nalaga && (
+                <p className="text-3xs text-muted-foreground py-2">Nalaganje zgodovine …</p>
+              )}
+              {zgodovina.napaka && (
+                <p className="text-3xs text-roksal-red py-2" role="alert">
+                  Zgodovine ni mogoče pokazati: {zgodovina.napaka}
+                </p>
+              )}
+              {!zgodovina.nalaga && !zgodovina.napaka && zgodovina.data && (
+                <>
+                  <table className="w-full text-3xs">
+                    <thead>
+                      <tr className="text-left text-muted-foreground">
+                        <th className="py-1 pr-2 font-medium">Verzija</th>
+                        <th className="py-1 pr-2 font-medium">Datum</th>
+                        <th className="py-1 pr-2 font-medium">Vir</th>
+                        <th className="py-1 pr-2 font-medium tabular-nums">Dolžina</th>
+                        <th className="py-1 pr-2 font-medium tabular-nums">Δ</th>
+                        <th className="py-1 pr-2 font-medium">Status</th>
+                        <th className="py-1 font-medium text-right">Aktivna</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {zgodovina.data.verzije.map((v) => (
+                        <tr key={v.id} className="border-t border-border/40">
+                          <td className="py-1 pr-2 font-mono tabular-nums">
+                            {v.verzija != null ? `v${v.verzija}` : '—'}
+                          </td>
+                          <td className="py-1 pr-2 tabular-nums">
+                            {new Date(v.createdAt).toLocaleDateString('sl-SI')}
+                          </td>
+                          <td className="py-1 pr-2">
+                            {v.vir != null && v.vir in MERITEV_VIR_LABELS
+                              ? MERITEV_VIR_LABELS[v.vir as MeritevVir]
+                              : '—'}
+                          </td>
+                          <td className="py-1 pr-2 font-mono tabular-nums">
+                            {formatMultiUnit(v.dolzinaMm)}
+                          </td>
+                          <td className="py-1 pr-2 font-mono tabular-nums">
+                            {v.deltaDolzinaMm != null
+                              ? (v.deltaDolzinaMm >= 0 ? `+${v.deltaDolzinaMm}` : String(v.deltaDolzinaMm))
+                              : '—'}
+                          </td>
+                          <td className="py-1 pr-2">{v.status}</td>
+                          <td className="py-1 text-right">
+                            {zgodovina.data?.aktivnaId === v.id ? (
+                              <span
+                                className="inline-block h-2 w-2 rounded-full bg-roksal-green"
+                                aria-hidden="true"
+                              />
+                            ) : (
+                              <span className="sr-only">
+                                {v.status === 'ARHIVIRANA' ? 'arhivirana — brez aktivne' : 'neaktivna'}
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <p className="text-3xs text-muted-foreground mt-2">
+                    {zgodovina.data.aktivnaId === null
+                      ? 'Aktivna verzija: ni (zadnja verzija je arhivirana — nikoli padec nazaj na starejšo).'
+                      : `Aktivna verzija: v${zgodovina.data.aktivnaVerzija}. Odvisni rezultati (BOM/dokumenti) nastali pred novejšo verzijo se NE izračunajo samodejno.`}
+                  </p>
+                </>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Diagram (samo za RAZDALJA / VISINA / SEGMENT) */}
         {(!m.tipMeritve ||
@@ -5117,6 +5411,38 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
 
         {formOpen && (
           <div className="border-t border-border/50 px-4 pb-4 pt-3 space-y-3 slide-in-right">
+            {/* R276 (O3/O4) — korekcijski pas: vidna resnica da shranjevanje
+                ustvari NOVO verzijo (predhodnik ostane v zgodovini — nič
+                prepisovanja); preklic je čist (nič shranjeno). */}
+            {popravljaMeritev && (
+              <div
+                className="flex items-start justify-between gap-2 rounded-lg border border-roksal-navy/20 bg-roksal-navy/5 dark:border-roksal-ink/20 dark:bg-roksal-ink/10 px-2.5 py-2"
+                role="status"
+              >
+                <div className="min-w-0">
+                  <p className="text-2xs font-medium text-roksal-navy dark:text-roksal-ink">
+                    Popravljanje verzije: „{popravljaMeritev.oznaka}"
+                    {popravljaMeritev.verzija != null ? ` (v${popravljaMeritev.verzija})` : ' (legacy — brez oznake verzije)'}
+                  </p>
+                  <p className="text-3xs text-muted-foreground mt-0.5">
+                    Shranjevanje ustvari NOVO verzijo v
+                    {popravljaMeritev.verzija != null ? popravljaMeritev.verzija + 1 : 2}; obstoječa
+                    meritev ostane nespremenjena v zgodovini (issue #16 §6).
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCancelCorrection}
+                  disabled={submitting}
+                  className="h-6 shrink-0 text-2xs px-2"
+                >
+                  <X aria-hidden="true" className="h-3 w-3" />
+                  Prekliči
+                </Button>
+              </div>
+            )}
             {/* Tip meritve + oznaka */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
@@ -5425,7 +5751,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                 ) : (
                   <>
                     <Plus aria-hidden="true" className="mr-1.5 h-4 w-4" />
-                    Shrani meritev
+                    {popravljaMeritev ? 'Shrani kot novo verzijo' : 'Shrani meritev'}
                   </>
                 )}
               </Button>

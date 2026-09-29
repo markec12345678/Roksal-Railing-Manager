@@ -37,6 +37,27 @@ import {
   storeResponseIn,
 } from '@/lib/idempotency'
 import { ArContractError, isArContractPayload, parseArSessionPayload } from '@/lib/ar-contract'
+import {
+  izracunajNaslednjoVerzijo,
+  izracunajKorenIdNaslednika,
+  izracunajDelti,
+  ODVISNI_REZULTATI_OPOMBA,
+  type MeritevVir,
+} from '@/lib/meritev-verzije'
+
+/**
+ * R276 (O4) — napaka pravil verzije z žičnim HTTP statusom (400/409).
+ * Vrgena ZNOTRAJ transakcije → rollback (ZERO-MUTACIJA neuspešne verzije);
+ * 404 (neznani predhodnik) ostane AccessDeniedError — obstoječi vzorec.
+ * AccessDeniedError se NE širi (status 403|404 je njen kontrakt).
+ */
+class VerzijaNapaka extends Error {
+  readonly status: 400 | 409
+  constructor(status: 400 | 409, message: string) {
+    super(message)
+    this.status = status
+  }
+}
 
 export async function POST(request: Request) {
   // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
@@ -71,8 +92,17 @@ export async function POST(request: Request) {
     // spremeni obstoječega projekta'). Legacy (brez contractVersion) = stara
     // pot nespremenjena. parseArSessionPayload je ČIST — vrne kanonično
     // obliko, ki jo zapišemo (strict — neznana polja zavrnjena, §D).
+    // R276 (O2) — vir = STREŽNIŠKO izpeljan iz istega kontrakta (klient ga
+    // ne more podati): kontrakt → source iz kanonične oblike; brez
+    // arMetadata → MANUAL (samo ročni vnosi UI); legacy arMetadata → null
+    // (iskrena praznina — stari format NI vir resnice, nikoli ugibanje).
+    let vir: MeritevVir | null = 'MANUAL'
     if (validated.arMetadata && isArContractPayload(validated.arMetadata)) {
-      validated = { ...validated, arMetadata: parseArSessionPayload(validated.arMetadata) }
+      const kanonicno = parseArSessionPayload(validated.arMetadata)
+      validated = { ...validated, arMetadata: kanonicno }
+      vir = kanonicno.source
+    } else if (validated.arMetadata) {
+      vir = null
     }
 
     // Meritev + (možen prehod statusa) + audit (+ idempotenca) = ENA transakcija (§13).
@@ -80,6 +110,36 @@ export async function POST(request: Request) {
       // R128: rezervacija Idempotency-Key = PRVI stavek — vzporedni poizkus
       // istega ključa povzroči rollback cele transakcije (brez dvojnikov).
       if (idemKey) await reserveIdempotencyIn(tx, idemKey, 'measurements', idemBinding)
+
+      // R276 (O4) — validacija predhodnika INSIDE tx (atomska z zapisom):
+      // obstoji (404) + isti projekt (400) + ni arhiviran (409). DB UNIQUE
+      // na predhodnikId je zadnja črta proti razvejanju (fork = P2002).
+      let predhodnik: {
+        id: string
+        verzija: number | null
+        korenId: string | null
+        dolzinaMm: number
+        visinaMm: number
+      } | null = null
+      if (validated.predhodnikId) {
+        const p = await tx.measurement.findUnique({ where: { id: validated.predhodnikId } })
+        if (!p) {
+          throw new AccessDeniedError(404, 'Predhodna meritev ne obstaja')
+        }
+        if (p.projectId !== validated.projectId) {
+          throw new VerzijaNapaka(
+            400,
+            'Predhodna meritev pripada drugemu projektu — verzija mora ostati znotraj istega projekta'
+          )
+        }
+        if (p.status === 'ARHIVIRANA') {
+          throw new VerzijaNapaka(
+            409,
+            'Arhivirane meritve ni mogoče popraviti z novo verzijo — najprej ponovno odpiranje prek statusa (PATCH z opombo)'
+          )
+        }
+        predhodnik = { id: p.id, verzija: p.verzija, korenId: p.korenId, dolzinaMm: p.dolzinaMm, visinaMm: p.visinaMm }
+      }
 
       const created = await tx.measurement.create({
         data: {
@@ -89,6 +149,13 @@ export async function POST(request: Request) {
           lidarScanUrl: validated.lidarScanUrl,
           arMetadata: validated.arMetadata ? JSON.stringify(validated.arMetadata) : null,
           gpsLokacija: validated.gpsLokacija ? JSON.stringify(validated.gpsLokacija) : null,
+          // R276 (O3): samostojna meritev = verzija 1 (sama je koren,
+          // korenId null); naslednik = predhodnik.verzija + 1, koren se
+          // prevzame. Null verzija NIKOLI izmišljena (brez backfill, O2/O9).
+          verzija: predhodnik ? izracunajNaslednjoVerzijo(predhodnik.verzija) : 1,
+          korenId: predhodnik ? izracunajKorenIdNaslednika(predhodnik) : null,
+          predhodnikId: predhodnik?.id ?? null,
+          vir,
         }
       })
 
@@ -102,12 +169,42 @@ export async function POST(request: Request) {
         })
       }
 
-      await auditInTx(tx, {
-        userId: actor,
-        projectId: validated.projectId,
-        akcija: 'CREATE_MEASUREMENT',
-        newValue: JSON.stringify({ dolzinaMm: validated.dolzinaMm, visinaMm: validated.visinaMm }),
-      })
+      // R276 (O6/O7): korekcija = audit MEASUREMENT_VERSION z deltami
+      // ('kaj se je spremenilo') + IZREČNO iskren zapis odvisnih rezultatov
+      // (NIČ lažnega 'recalculated: true'). Samostojna meritev = obstoječi
+      // CREATE_MEASUREMENT NESPREMENJEN (regresijska varnost).
+      if (predhodnik) {
+        const delti = izracunajDelti(predhodnik, created)
+        await auditInTx(tx, {
+          userId: actor,
+          projectId: validated.projectId,
+          akcija: 'MEASUREMENT_VERSION',
+          oldValue: JSON.stringify({
+            id: predhodnik.id,
+            verzija: predhodnik.verzija,
+            dolzinaMm: predhodnik.dolzinaMm,
+            visinaMm: predhodnik.visinaMm,
+          }),
+          newValue: JSON.stringify({
+            id: created.id,
+            verzija: created.verzija,
+            dolzinaMm: created.dolzinaMm,
+            visinaMm: created.visinaMm,
+            deltaDolzinaMm: delti.deltaDolzinaMm,
+            deltaVisinaMm: delti.deltaVisinaMm,
+            vir,
+            predhodnikId: predhodnik.id,
+            odvisniRezultati: ODVISNI_REZULTATI_OPOMBA,
+          }),
+        })
+      } else {
+        await auditInTx(tx, {
+          userId: actor,
+          projectId: validated.projectId,
+          akcija: 'CREATE_MEASUREMENT',
+          newValue: JSON.stringify({ dolzinaMm: validated.dolzinaMm, visinaMm: validated.visinaMm }),
+        })
+      }
 
       // R128: snapshot odgovora v isti transakciji — retry istega ključa
       // vrne TA odgovor (exactly-once), ne ustvari druge meritve.
@@ -132,8 +229,24 @@ export async function POST(request: Request) {
     if (error instanceof AccessDeniedError) {
       return NextResponse.json({ error: error.message }, { status: error.status })
     }
+    if (error instanceof VerzijaNapaka) {
+      return NextResponse.json({ error: error.message }, { status: error.status })
+    }
     if (error instanceof InvalidTransitionError) {
       return NextResponse.json({ error: error.message }, { status: error.status })
+    }
+    // R276 (O4) — razvejanje verige (fork) = P2002 na unique predhodnikId
+    // (zadnja obrambna črta, tudi vzporedni race) → čist 409, NIČ zapisano
+    // (transakcija rollbackana — ZERO-MUTACIJA neuspešnega fork-a).
+    if ((error as { code?: string }).code === 'P2002') {
+      const target = (error as { meta?: { target?: unknown } }).meta?.target
+      const tarča = Array.isArray(target) ? target.join(',') : String(target ?? '')
+      if (tarča.includes('predhodnikId') || tarča.includes('Measurement_predhodnikId_key')) {
+        return NextResponse.json(
+          { error: 'Predhodnik že ima naslednika — verzija je enojna veriga brez razvejanja' },
+          { status: 409 },
+        )
+      }
     }
     // R274 (issue #17 §B/§D) — neveljaven kontrakt-payload = čist 400 z
     // žično kodo (klient jo lahko obravnava programsko); originalni payload

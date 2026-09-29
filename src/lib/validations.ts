@@ -48,6 +48,13 @@ export const createMeasurementSchema = z.object({
   lidarScanUrl: z.string().optional(),
   arMetadata: z.record(z.string(), z.unknown()).optional(),
   gpsLokacija: z.object({ lat: z.number(), lng: z.number() }).optional(),
+  // R276 (issue #16 §6) — opcijski predhodnik: prisoten = korekcija → NOVA
+  // verzija v verigi (verzija = predhodnik+1, predhodnikId UNIQUE = enojna
+  // veriga brez razvejanja). Validacija obstoječnosti/istega projekta/
+  // arhiva gre na ruti (fail-closed 404/400/409) — DB UNIQUE je zadnja
+  // obrambna črta (P2002 → 409, tudi race). `vir` NI klient-podatok —
+  // strežniško izpeljan (docs/MEASUREMENT-HISTORY.md O2/O8).
+  predhodnikId: z.string().min(1, 'ID predhodne meritve je obvezen, če je podan').optional(),
 })
 
 // ============================================
