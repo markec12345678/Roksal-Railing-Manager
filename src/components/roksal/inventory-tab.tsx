@@ -1533,8 +1533,15 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
           R256 lekcija 4; tabular-nums; 0 novih hex. R274 a11y detail:
           role="status" (implicitno aria-live="polite") — async resnica po
           mount fetchu se oznanji bralniku; pariteta R263–R273 družine. */}
+        {/* R275 — hover razložljivost iskrene resnice: title + cursor-help
+            poimenujeta WYSIWYG pomen mini-vrstice (brez vizualnega šuma).
+            0 novih hex. */}
       {inventuraVidenPregled !== null && (
-        <div role="status" className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+        <div
+          role="status"
+          title="Inventura (viden seznam) = kar uporabnik vidi po čipih/tipu; FRESH PDF = VSA zalogovna premoženja. pod minimumom = akcija naročila, na meji = pozor."
+          className="flex flex-wrap cursor-help items-center gap-2 text-xs text-muted-foreground"
+        >
           <span
             aria-hidden="true"
             className={`h-2 w-2 shrink-0 rounded-full ${
@@ -1568,7 +1575,11 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
           samo kadar > 0 — R256 lekcija 4; tabular-nums; 0 novih hex. R274
           a11y detail: role="status" — async resnica oznanjena bralniku. */}
       {vrednostVidenPregled !== null && (
-        <div role="status" className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+        <div
+          role="status"
+          title="Vrednost (viden seznam) = ISTI izračun kot PDF KPI + toast (WYSIWYG). Σ — pomeni: nič artiklov nima trenutno veljavne cene — nič ni ocenjeno (brez demo cene)."
+          className="flex flex-wrap cursor-help items-center gap-2 text-xs text-muted-foreground"
+        >
           <span
             aria-hidden="true"
             className={`h-2 w-2 shrink-0 rounded-full ${

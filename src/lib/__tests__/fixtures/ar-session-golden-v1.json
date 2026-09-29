@@ -1,0 +1,56 @@
+{
+  "contractVersion": 1,
+  "appVersion": "BalkonAR 0.9.2",
+  "projectId": "balkonar-proj-2026-09-29-001",
+  "sessionId": "sess-2026-09-29-0730-a4f3",
+  "source": "ARCORE_DEPTH",
+  "units": "mm",
+  "coordinateFrame": {
+    "type": "LOCAL_NORMALIZED",
+    "note": "prva točka = levi spodnji vogel; prvi rob vzdolž +X (PRIMERJAVA.md §5.4)"
+  },
+  "transform": {
+    "anchorId": "anchor-01",
+    "translationMm": [0, 0, 0],
+    "rotationQ": [0, 0, 0, 1]
+  },
+  "calibration": {
+    "model": "TWO_POINT_SCALE",
+    "referenceMm": 1000,
+    "note": "1 m trak med točkama A/B"
+  },
+  "quality": {
+    "confidence": 0.92,
+    "uncertaintyMm": 8.5,
+    "note": "mat površina, enakomerna svetloba"
+  },
+  "photoRefs": [
+    { "ref": "ar/photo-001.jpg", "sha256": "aa11bb22cc33dd44ee55ff66aa11bb22cc33dd44ee55ff66aa11bb22cc33dd44" },
+    { "ref": "ar/photo-002.jpg" }
+  ],
+  "glbRefs": [
+    { "ref": "ar/scan-001.glb", "sha256": "ff00ee11dd22cc33bb44aa55ff00ee11dd22cc33bb44aa55ff00ee11dd22cc33" }
+  ],
+  "segments": [
+    {
+      "segmentId": "seg-001",
+      "lengthMm": 3200.75,
+      "heightMm": 1200,
+      "source": "ARCORE_DEPTH",
+      "measurementIndex": 0
+    },
+    {
+      "segmentId": "seg-002",
+      "lengthMm": 900,
+      "heightMm": 1200,
+      "slopeDeg": -2.5,
+      "source": "MANUAL",
+      "measurementIndex": 1
+    },
+    {
+      "segmentId": "seg-003",
+      "lengthMm": 450.25,
+      "source": "PHOTO_CV"
+    }
+  ]
+}
