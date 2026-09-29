@@ -19,7 +19,7 @@ import { QuoteFollowUp } from '@/components/roksal/quote-followup'
 import { InvoiceManager } from '@/components/roksal/invoice-manager'
 import { DealPipeline } from '@/components/roksal/deal-pipeline'
 import { buildCrmCsv, crmCsvFilename } from '@/lib/crm-csv'
-import { todayStamp } from '@/lib/csv-export'
+import { todayStamp, downloadCsvText } from '@/lib/csv-export'
 // R288 — deep-link odločitev ((k) dopolnitev R287): čista lib funkcija
 // (client-safe, R283 vzorec izvlečene funkcije) razsodi porabo zahteve —
 // komponenta ostane tanka vez (CAKAJ/ODPRI/PRESKOCI — vsi robovi pripeti).
@@ -46,6 +46,13 @@ import {
   koledarPovzetek,
   type KoledarPregledVnos,
 } from '@/lib/koledar-pregledov-pdf'
+// R295 — koledar pregledov CSV (25. člen 'izvozi' družine): CSV brat PDF
+// R253 — ISTA koledarska resnica (sort EN VIR, preverba EN VIR, 'Dni do' EN
+// VIR) kot ravninska tabela; route NIČ (client+lib only).
+import {
+  koledarPregledovCsv,
+  koledarPregledovCsvFilename,
+} from '@/lib/koledar-pregledov-csv'
 // R263 — pokritost opomnikov (19. člen 'izvozi' družine): presek strank ×
 // opomniški status iz ISTEGA /api/crm odgovora — route NIČ (client+lib only);
 // EN now za žig + ime (lekcija R121/R235); ENA izpeljava = PDF KPI + tabela
@@ -79,6 +86,7 @@ import {
   History,
   FileDown,
   CalendarDays,
+  FileSpreadsheet,
 } from 'lucide-react'
 // R178 — EN VIR RESNICE za pečat 'Osveženo ob' (vzorec R170/R171/R177):
 // komponenta NE formatira časa sama.
@@ -190,6 +198,8 @@ export function CrmTab({
   const [potekliVTeku, setPotekliVTeku] = useState(false)
   // R253 — dvoklik guard koledarja pregledov PDF (ISTA družina).
   const [koledarVTeku, setKoledarVTeku] = useState(false)
+  // R295 — dvoklik guard koledarja pregledov CSV (ISTA družina, pariteta brata).
+  const [koledarCsvVTeku, setKoledarCsvVTeku] = useState(false)
   // R263 — dvoklik guard pokritosti opomnikov PDF (ISTA družina).
   const [pokritostVTeku, setPokritostVTeku] = useState(false)
 
@@ -393,6 +403,37 @@ export function CrmTab({
     }
   }
 
+  // R295 — ENA izpeljava koledarskih vpisov (WYSIWYG ISTI vir kot PDF R253
+  // + CSV 25. člen + F2 mini-vrstica): DTO pruning iz ISTEGA state-a, ki ga
+  // loadCustomers ŽE napolni — NIČ nove mreže. opomnikStatus VERBATIM iz
+  // API-ja ('NI' = brez vpisanega datuma → NIČ na koledarju — izmišljen
+  // pregled NE obstaja, fail-closed do resnice).
+  const koledarVnosi = useMemo<KoledarPregledVnos[]>(
+    () =>
+      customers
+        .filter(
+          (c): c is CrmCustomer & { opomnikStatus: 'AKTIVEN' | 'POTEKEL' } =>
+            c.opomnikStatus === 'AKTIVEN' || c.opomnikStatus === 'POTEKEL',
+        )
+        .map((c) => ({
+          ime: c.ime,
+          naslov: c.naslov,
+          telefon: c.telefon,
+          kontaktnaOseba: c.kontaktnaOseba,
+          // AKTIVEN/POTEKEL ⇒ opomnikDatum obstaja (API nastavi status SAMO
+          // znotraj if (opomnikDatum)) — invarianta + runtime fail-closed
+          // preverba v libih (PDF brat + CSV brat).
+          opomnikDatum: c.opomnikDatum as string,
+          opomnikOpis: c.opomnikOpis,
+          opomnikStatus: c.opomnikStatus,
+        })),
+    [customers],
+  )
+  const koledarPov = useMemo(
+    () => (koledarVnosi.length > 0 ? koledarPovzetek(koledarVnosi) : null),
+    [koledarVnosi],
+  )
+
   // R253 — KOLEDAR PREGLEDOV PDF (10. člen 'izvozi' družine): časovna vrsta
   // VSEH vpisanih pregledov (AKTIVEN + POTEKEL) iz ISTEGA odgovora /api/crm.
   // Izbira = opomnikStatus !== 'NI' (VERBATIM iz API-ja — 'NI' = brez vpisanega
@@ -401,14 +442,11 @@ export function CrmTab({
   // 0 vpisanih → iskren toast, NI dokumenta (družinsko pravilo). Bralni
   // dokument VEDNO viden (P1-k precedens). EN now za žig + ime + dni; toast
   // pove REALNO agregatno resnico (pregledi + v tem tednu + potekli — ISTI
-  // izpeljava kot PDF KPI; WYSIWYG).
+  // izpeljava kot PDF KPI; WYSIWYG). R295: vhodi iz EN memo koledarVnosi
+  // (ISTA izpeljava kot CSV brat + F2 mini-vrstica — NIČ dvojnega).
   const handleKoledarPregledovPdf = () => {
     if (koledarVTeku) return
-    const pregledi = customers.filter(
-      (c): c is CrmCustomer & { opomnikStatus: 'AKTIVEN' | 'POTEKEL' } =>
-        c.opomnikStatus === 'AKTIVEN' || c.opomnikStatus === 'POTEKEL',
-    )
-    if (pregledi.length === 0) {
+    if (koledarVnosi.length === 0) {
       // Fail-closed jedro: prazen koledar ne nastaja dokumenta — iskren toast.
       toast({ title: 'Ni vpisanih pregledov', description: 'PDF se izvozi, ko je vpisan prvi datum pregleda.' })
       return
@@ -416,24 +454,11 @@ export function CrmTab({
     setKoledarVTeku(true)
     try {
       const now = new Date()
-      const vnosi: KoledarPregledVnos[] = pregledi.map((c) => ({
-        ime: c.ime,
-        naslov: c.naslov,
-        telefon: c.telefon,
-        kontaktnaOseba: c.kontaktnaOseba,
-        // AKTIVEN/POTEKEL ⇒ opomnikDatum obstaja (API nastavi status SAMO
-        // znotraj if (opomnikDatum)) — invarianta + runtime fail-closed preverba v libu.
-        opomnikDatum: c.opomnikDatum as string,
-        opomnikOpis: c.opomnikOpis,
-        // Status VERBATIM iz API-ja (žig na kartici — lib še enkrat zavrne
-        // 'NI' vnos: pokvarena izpeljava → viden razlog).
-        opomnikStatus: c.opomnikStatus,
-      }))
-      const doc = buildKoledarPregledovPdfDoc(vnosi, { now })
+      const doc = buildKoledarPregledovPdfDoc(koledarVnosi, { now })
       doc.save(koledarPregledovPdfFilename(now))
       // Toast pove REALNO agregatno resnico (ISTI trikot kot PDF KPI —
       // WYSIWYG; ',' ločilo — R248 lekcija).
-      const pov = koledarPovzetek(vnosi)
+      const pov = koledarPovzetek(koledarVnosi)
       toast({
         title: 'Koledar pregledov prenešen v PDF',
         description: `Koledar-pregledov-…pdf — ${pov.preglediN} pregledov, ${pov.vTemTednu} v tem tednu, ${pov.poteklih} poteklih.`,
@@ -447,6 +472,41 @@ export function CrmTab({
       }
     } finally {
       setKoledarVTeku(false)
+    }
+  }
+
+  // R295 — KOLEDAR PREGLEDOV CSV (25. člen 'izvozi' družine): CSV brat PDF
+  // R253 — izvozi ISTO koledarsko resnico (sortirajKoledar EN VIR, preverba
+  // EN VIR preveriKoledarVnos, Datum EN VIR cenikDatumIso, 'Dni do' EN VIR
+  // koledarDniDo) kot ravninska tabela za Excel/računovodstvo. Fail-closed:
+  // 0 vpisanih → iskren toast (ISTI gate kot PDF brat); dvoklik guard
+  // (pariteta brata); toast pove ISTO agregatno resnico (WYSIWYG).
+  const handleKoledarPregledovCsv = () => {
+    if (koledarCsvVTeku) return
+    if (koledarVnosi.length === 0) {
+      // Fail-closed jedro: prazen koledar ne nastaja datoteke — iskren toast.
+      toast({ title: 'Ni vpisanih pregledov', description: 'CSV se izvozi, ko je vpisan prvi datum pregleda.' })
+      return
+    }
+    setKoledarCsvVTeku(true)
+    try {
+      const now = new Date()
+      const { csv } = koledarPregledovCsv(koledarVnosi, now)
+      const ime = koledarPregledovCsvFilename(now)
+      downloadCsvText(ime, csv)
+      const pov = koledarPovzetek(koledarVnosi)
+      toast({
+        title: `Koledar pregledov prenešen v CSV (${ime})`,
+        description: `${pov.preglediN} pregledov, ${pov.vTemTednu} v tem tednu, ${pov.poteklih} poteklih.`,
+      })
+    } catch (err) {
+      if (err instanceof TypeError) {
+        toast({ title: 'Koledar pregledov CSV ni mogoče sestaviti iz teh podatkov', description: err instanceof Error ? err.message : String(err), variant: 'destructive' })
+      } else {
+        toast({ title: `Izvoz CSV ni uspel: ${err instanceof Error ? err.message : String(err)}`, variant: 'destructive' })
+      }
+    } finally {
+      setKoledarCsvVTeku(false)
     }
   }
 
@@ -687,6 +747,32 @@ export function CrmTab({
         </div>
       )}
 
+      {/* R295 — F2 koledarska mini-vrstica (WYSIWYG ISTA izpeljava
+          koledarPovzetek kot PDF KPI + CSV meta + toast — ENA izpeljava prek
+          memo koledarPov); vidna SAMO kadar je vpisan vsaj en pregled
+          (iskrena praznina = nič vrstice — ni lažnega nič-prikaza);
+          kondicionalna žiga = R256 lekcija 4; žetoni roksal-navy/amber/red
+          — 0 novih hex. */}
+      {/* R274 a11y: role="status" — async mini resnica oznanjena bralniku. */}
+      {koledarPov && (
+        <div role="status" className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+          <span aria-hidden className="h-2 w-2 shrink-0 rounded-full bg-roksal-navy" />
+          <span>
+            Pregledi: {koledarPov.preglediN} vpisanih · {koledarPov.vTemTednu} v tem tednu · {koledarPov.poteklih} poteklih
+          </span>
+          {koledarPov.poteklih > 0 && (
+            <span className="rounded-full border border-roksal-red/40 bg-roksal-red/10 px-2 py-0.5 text-2xs font-medium text-roksal-red">
+              {koledarPov.poteklih} poteklih
+            </span>
+          )}
+          {koledarPov.vTemTednu > 0 && (
+            <span className="rounded-full border border-roksal-amber/40 bg-roksal-amber/10 px-2 py-0.5 text-2xs font-medium text-roksal-amber">
+              {koledarPov.vTemTednu} v tem tednu
+            </span>
+          )}
+        </div>
+      )}
+
       {/* R178 — glava seznama strank s pečatom svežine (družina R170/R171/R177):
           tab 'CRM stranke' je sklad kart — ta naslov jasno loči seznam strank
           od zgornjih kart (plošča/follow-up/računi) in nosi pečat svežine. */}
@@ -779,6 +865,24 @@ export function CrmTab({
             >
               <CalendarDays className="h-3 w-3" aria-hidden="true" />
               Koledar
+            </Button>
+            {/* R295 — koledar pregledov CSV (25. člen 'izvozi' družine):
+                CSV brat PDF R253 — ISTA koledarska resnica kot ravninska
+                tabela za Excel/računovodstvo. Bralna datoteka VEDNO viden
+                (P1-k precedens); fail-closed toast pri 0 vpisanih. ISTI
+                žetoni kot ostali pilli — 0 novih hex. */}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleKoledarPregledovCsv}
+              disabled={koledarCsvVTeku}
+              className="h-7 shrink-0 gap-1.5 text-[11px] press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              aria-label="Izvozi koledar pregledov kot CSV"
+              title="Koledar pregledov kot CSV (isti stolpci kot PDF — za Excel/računovodstvo)"
+            >
+              <FileSpreadsheet className="h-3 w-3" aria-hidden="true" />
+              Koledar CSV
             </Button>
             {/* R263 — pokritost opomnikov PDF (19. člen 'izvozi' družine):
                 presek strank × opomniški status iz ISTEGA /api/crm odgovora.

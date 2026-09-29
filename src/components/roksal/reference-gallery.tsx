@@ -24,6 +24,7 @@ import {
   SheetDescription,
 } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
+import { slDatumPolni, slDatumKratko } from '@/lib/csv-export';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
@@ -131,11 +132,9 @@ function getYear(dateStr: string): string {
 
 function formatDateSI(dateStr: string): string {
   try {
-    return new Date(dateStr).toLocaleDateString('sl-SI', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
+    const d = new Date(dateStr);
+    if (Number.isNaN(d.getTime())) return dateStr;
+    return slDatumPolni(d);
   } catch {
     return dateStr;
   }
@@ -143,7 +142,9 @@ function formatDateSI(dateStr: string): string {
 
 function formatDateShort(dateStr: string): string {
   try {
-    return new Date(dateStr).toLocaleDateString('sl-SI');
+    const d = new Date(dateStr);
+    if (Number.isNaN(d.getTime())) return dateStr;
+    return slDatumKratko(d);
   } catch {
     return dateStr;
   }
@@ -711,7 +712,7 @@ export function ReferenceGallery() {
     items.forEach((i) => {
       if (i.lokacija) set.add(i.lokacija);
     });
-    return Array.from(set).sort((a, b) => a.localeCompare(b, 'sl'));
+    return Array.from(set).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
   }, [items]);
 
   // === Unique years ===
@@ -765,9 +766,9 @@ export function ReferenceGallery() {
         case 'oldest':
           return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
         case 'az':
-          return a.naslov.localeCompare(b.naslov, 'sl');
+          return a.naslov < b.naslov ? -1 : a.naslov > b.naslov ? 1 : 0;
         case 'location':
-          return (a.lokacija || '').localeCompare(b.lokacija || '', 'sl');
+          return (a.lokacija || '') < (b.lokacija || '') ? -1 : (a.lokacija || '') > (b.lokacija || '') ? 1 : 0;
         default:
           return 0;
       }
@@ -1025,11 +1026,7 @@ export function ReferenceGallery() {
         doc.setTextColor(220, 220, 220);
         doc.setFontSize(8);
         doc.setFont('helvetica', 'normal');
-        const dateStr = new Date().toLocaleDateString('sl-SI', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        });
+        const dateStr = slDatumPolni(new Date());
         doc.text(`Roksal Kranj · Izvoz ${dateStr}`, margin, pageHeight - 3.5);
         doc.text('www.roksal.si', pageWidth - margin, pageHeight - 3.5, { align: 'right' });
       };

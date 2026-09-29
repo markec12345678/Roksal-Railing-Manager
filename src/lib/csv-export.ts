@@ -153,3 +153,36 @@ export const MESCI_SL_KRATKO: readonly string[] = [
   'jan.', 'feb.', 'mar.', 'apr.', 'maj', 'jun.',
   'jul.', 'avg.', 'sep.', 'okt.', 'nov.', 'dec.',
 ]
+
+// ---------------------------------------------------------------------------
+// R295 (issue #1 — determinizem, komponentni sloj) — kombinirani prikazni
+// formati: pariteta izmerjena node 24 sl-SI (r295 testi — bajtna pariteta z
+// Intl na kanoničnih primerih vključno z 'maj' brez pike).
+// ---------------------------------------------------------------------------
+
+/** `D. mes.` (pariteta toLocaleDateString('sl-SI', { day:'numeric',
+ *  month:'short' }) — izmerjeno: '15. okt.', '5. mar.', '15. maj'). */
+export function slMesecevaOkrajsava(d: Date): string {
+  return `${d.getDate()}. ${MESCI_SL_KRATKO[d.getMonth()]}`
+}
+
+/** `D. mes. YY` (pariteta toLocaleDateString('sl-SI', { day:'numeric',
+ *  month:'short', year:'2-digit' }) — izmerjeno: '15. okt. 26', '15. maj 26'). */
+export function slMesecevaOkrajsavaLeto(d: Date): string {
+  const yy = String(d.getFullYear() % 100).padStart(2, '0')
+  return `${slMesecevaOkrajsava(d)} ${yy}`
+}
+
+/** `D. mes., HH:MM` (pariteta toLocaleString('sl-SI', { day:'numeric',
+ *  month:'short', hour:'2-digit', minute:'2-digit' }) — izmerjeno:
+ *  '15. okt., 14:30' — VEJICA pred uro, ICU resnica). */
+export function slMesecevaOkrajsavaUra(d: Date): string {
+  return `${slMesecevaOkrajsava(d)}, ${slUra(d)}`
+}
+
+/** `D. mesec YYYY` (pariteta toLocaleDateString('sl-SI', { year:'numeric',
+ *  month:'long', day:'numeric' }) — izmerjeno: '15. oktober 2026',
+ *  '5. marec 2026'). */
+export function slDatumPolni(d: Date): string {
+  return `${d.getDate()}. ${MESCI_SL[d.getMonth()]} ${d.getFullYear()}`
+}

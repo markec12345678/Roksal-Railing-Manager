@@ -61,6 +61,7 @@ import {
 } from '@/lib/calc-engineering'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import { slDatumKratko, slCasDolgo, formatSlDecimalno, slMesecevaOkrajsava, slMesecevaOkrajsavaLeto, slMesecevaOkrajsavaUra } from '@/lib/csv-export'
 
 type CalcMode = 'railing' | 'anchoring' | 'wind' | 'baluster' | 'angled' | 'material' | 'compliance' | 'cnc' | 'windLocation' | 'glass'
 type ProfileType = 'classic' | 'z-line' | 'vertical'
@@ -654,7 +655,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
       toast.error('Predloge so na voljo samo za: Razmak palic, Kotni, Skupni material, Predpisi')
       return
     }
-    const naziv = window.prompt('Ime predloge:', `Predloga ${templateModeLabels[mode as TemplateMode]} ${new Date().toLocaleDateString('sl-SI')}`)
+    const naziv = window.prompt('Ime predloge:', `Predloga ${templateModeLabels[mode as TemplateMode]} ${slDatumKratko(new Date())}`)
     if (!naziv || !naziv.trim()) return
     const tpl: CalcTemplate = {
       id: `tpl_${Date.now()}`,
@@ -774,7 +775,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
     }
     const headers = ['Datum', 'Način', 'Ključni rezultat', 'Projekt', 'Formula', 'Odtis vhodov', 'Vhodni podatki']
     const rows = history.map((h) => [
-      new Date(h.timestamp).toLocaleString('sl-SI'),
+      `${slDatumKratko(new Date(h.timestamp))}, ${slCasDolgo(new Date(h.timestamp))}`,
       h.modeLabel,
       h.keyResult,
       h.projectName ?? '',
@@ -1133,7 +1134,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
     doc.setFontSize(8)
     doc.setTextColor(120, 120, 120)
     doc.text(
-      `Datum: ${new Date().toLocaleDateString('sl-SI')} — Roksal Railing Manager`,
+      `Datum: ${slDatumKratko(new Date())} — Roksal Railing Manager`,
       14,
       finalY + 10,
     )
@@ -1171,7 +1172,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
       doc.text(`Projekt: ${projectName.trim()}`, 14, y)
       y += 5
     }
-    doc.text(`Datum: ${new Date().toLocaleDateString('sl-SI')}`, 14, y)
+    doc.text(`Datum: ${slDatumKratko(new Date())}`, 14, y)
     y += 5
     doc.text(`Rezerva materiala: ${rezervaPctMaterial}%`, 14, y)
     y += 5
@@ -1251,7 +1252,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
     // Akontacija (if > 0)
     let afterY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY
     if (akontacijaPct > 0) {
-      const placiloDatum = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('sl-SI')
+      const placiloDatum = slDatumKratko(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000))
       autoTable(doc, {
         startY: afterY + 6,
         head: [['Akontacija', 'Znesek (€)', 'Rok']],
@@ -1305,7 +1306,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
       doc.text(`Projekt: ${projectName.trim()}`, 14, y)
       y += 5
     }
-    doc.text(`Datum: ${new Date().toLocaleDateString('sl-SI')}`, 14, y)
+    doc.text(`Datum: ${slDatumKratko(new Date())}`, 14, y)
     y += 5
     doc.text(`Število profilov: ${cncResult.stockCount}  ·  Izkoristek: ${cncResult.overallUtilizationPct.toFixed(1)}%  ·  Ostanek: ${cncResult.totalWasteMm}mm`, 14, y)
     y += 7
@@ -1459,7 +1460,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
 
     doc.setFontSize(8)
     doc.setTextColor(120, 120, 120)
-    doc.text(`Datum: ${new Date().toLocaleDateString('sl-SI')} — Roksal Railing Manager (SIST EN 1991-1-4 NA)`, 14, 280)
+    doc.text(`Datum: ${slDatumKratko(new Date())} — Roksal Railing Manager (SIST EN 1991-1-4 NA)`, 14, 280)
     doc.save(`roksal-vetrno-porocilo-${Date.now()}.pdf`)
     toast.success('Vetrno poročilo PDF izvoženo')
   }
@@ -1583,7 +1584,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
 
     doc.setFontSize(8)
     doc.setTextColor(120, 120, 120)
-    doc.text(`Datum: ${new Date().toLocaleDateString('sl-SI')} — Roksal Railing Manager (poenostavljena metoda po SIST EN)`, 14, 280)
+    doc.text(`Datum: ${slDatumKratko(new Date())} — Roksal Railing Manager (poenostavljena metoda po SIST EN)`, 14, 280)
     doc.save(`roksal-steklena-balustrada-${Date.now()}.pdf`)
     toast.success('Specifikacija stekla PDF izvožena')
   }
@@ -1914,7 +1915,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                             {templateModeLabels[tpl.mode]}
                           </Badge>
                           <span className="text-[9px] text-muted-foreground">
-                            {new Date(tpl.createdAt).toLocaleDateString('sl-SI', { day: 'numeric', month: 'short', year: '2-digit' })}
+                            {slMesecevaOkrajsavaLeto(new Date(tpl.createdAt))}
                           </span>
                         </div>
                       </div>
@@ -3898,7 +3899,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                         <Card className="px-3 py-2.5 bg-card">
                           <p className="text-2xs text-muted-foreground uppercase tracking-wide">Betona skupaj</p>
                           <p className="text-xl font-bold text-roksal-ink">
-                            {totalL.toLocaleString('sl-SI')} <span className="text-sm font-medium">L</span>
+                            {formatSlDecimalno(totalL, 0, 3)} <span className="text-sm font-medium">L</span>
                           </p>
                           <p className="text-2xs text-muted-foreground">{Math.round(perPostL)} L / steber</p>
                         </Card>
@@ -4112,7 +4113,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                                   Predvideni datum plačila akontacije
                                 </span>
                                 <span className="font-medium text-roksal-ink">
-                                  {new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('sl-SI')}
+                                  {slDatumKratko(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000))}
                                 </span>
                               </div>
                             </div>
@@ -5384,7 +5385,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                         {calc.modeLabel}
                       </Badge>
                       <span className="text-2xs text-muted-foreground">
-                        {new Date(calc.date).toLocaleDateString('sl-SI', { day: 'numeric', month: 'short' })}
+                        {slMesecevaOkrajsava(new Date(calc.date))}
                       </span>
                     </div>
                     <p className="mt-0.5 truncate text-xs font-medium text-roksal-ink">
@@ -5471,7 +5472,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                               {entry.modeLabel}
                             </Badge>
                             <span className="text-[9px] text-muted-foreground tabular-nums">
-                              {new Date(entry.timestamp).toLocaleString('sl-SI', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                              {slMesecevaOkrajsavaUra(new Date(entry.timestamp))}
                             </span>
                             {entry.projectName && (
                               <Badge variant="secondary" className="text-[9px] h-4 px-1.5 bg-roksal-amber/10 text-roksal-amber border-roksal-amber/20">

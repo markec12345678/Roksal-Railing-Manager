@@ -273,7 +273,9 @@ describe('R253 — komponenta: pill + legenda + toast (WYSIWYG, ENA resnica na t
   })
 
   it('toast nosi REALNO agregatno resnico (koledarPovzetek — pregledi + v tem tednu + potekli) — EN now za žig + ime', () => {
-    expect(komponenta).toContain('koledarPovzetek(vnosi)')
+    // R295: ENA izpeljava memo koledarVnosi (ISTA izpeljava kot CSV brat 25.
+    // člen + F2 mini-vrstica — NIČ dvojnega); pin sledi vsebinski resnici.
+    expect(komponenta).toContain('koledarPovzetek(koledarVnosi)')
     expect(komponenta).toContain('Koledar pregledov prenešen v PDF')
     expect(komponenta).toContain('koledarPregledovPdfFilename(now)')
     expect(komponenta).toContain('${pov.preglediN} pregledov, ${pov.vTemTednu} v tem tednu, ${pov.poteklih} poteklih.')
