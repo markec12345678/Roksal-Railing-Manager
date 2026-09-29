@@ -4349,7 +4349,16 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                 {m.vir != null && m.vir in MERITEV_VIR_LABELS && (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <span className="inline-flex items-center rounded px-1 py-0 text-3xs font-medium border bg-muted text-muted-foreground border-border">
+                      <span
+                        className="inline-flex items-center rounded px-1 py-0 text-3xs font-medium border bg-muted text-muted-foreground border-border cursor-help"
+                        title={
+                          m.vir === 'MANUAL'
+                            ? 'Vir podatkov: Ročni vnos — meritev vnesel uporabnik; oznako izpeljal strežnik iz kontrakta (klient je ne more ponarejati).'
+                            : m.vir === 'PHOTO_CV'
+                              ? 'Vir podatkov: Foto-CV — meritev iz računalniškega vida na fotografijah; oznako izpeljal strežnik iz kontrakta (klient je ne more ponarejati).'
+                              : 'Vir podatkov: AR-Depth — meritev iz ARCore globinskega senzorja; oznako izpeljal strežnik iz kontrakta (klient je ne more ponarejati).'
+                        }
+                      >
                         {MERITEV_VIR_LABELS[m.vir as MeritevVir]}
                       </span>
                     </TooltipTrigger>

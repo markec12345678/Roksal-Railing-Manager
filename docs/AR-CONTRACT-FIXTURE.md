@@ -10,7 +10,11 @@ Kontrakt: **MeasurementSession v1** — R274 (issue #17 §A/§B/§D), semantičn
 odločitve 1–8 v glavi `src/lib/ar-contract.ts`; **R277 razširitev (issue
 #16 §3)**: `segments[].angleDeg` opcijsko (aditivno — odločitve P1–P6 v glavi
 `src/lib/ar-contract.ts`; verzija ostane 1, zlati fixture ostane brez novega
-polja — minimalni+polni primer v1).
+polja — minimalni+polni primer v1); **R278 razširitev (issue #16 §3)**:
+`segments[].startMm`/`endMm` opcijsko (aditivno — odločitve Q1–Q6 v glavi
+`src/lib/ar-contract.ts`; ista disciplina — verzija ostane 1, fixture brez
+novih polj); plus `segments[].confidence`/`uncertaintyMm` opcijsko
+(isti kanon — odločitve S1–S6 v glavi `src/lib/ar-contract.ts`).
 
 ---
 
@@ -102,6 +106,10 @@ Minimalni veljaven payload (samo obvezna polja — vse ostalo izpustljivo):
 | `segments[].heightMm` | `Float?` | `finite > 0` | opcijsko |
 | `segments[].slopeDeg` | `Float?` | `finite` | ZNAK = del resnice (negativen naklon legitimen — R272 precedens) |
 | `segments[].angleDeg` | `Float?` | `finite` | **R277 (issue #16 §3, P1–P6)**: smer segmenta v vodoravni ravnini — azimut, deg, CCW od +X (prvi segment v LOCAL_NORMALIZED = 0°); izmerjena resnica, NE izpeljana; znak/vrednost verbatim (brez wrapa); izostanek = ni izmerjeno, ekspliciten null zavrnjen |
+| `segments[].startMm` | `[Float, Float]?` | `finite ×2` | **R278 (issue #16 §3, Q1–Q6)**: izmerjena začetna točka v LOCAL_NORMALIZED vodoravni ravnini `[x, y]`, mm (enota v imenu); 2D NE 3D (z nosi heightMm/slopeDeg); NE izpeljano in NE križno preverjano proti lengthMm/angleDeg (skladnost = downstream geometrija domena); negativni koordinati veljavni — verbatim; izostanek = ni izmerjeno, ekspliciten null zavrnjen |
+| `segments[].endMm` | `[Float, Float]?` | `finite ×2` | **R278 (issue #16 §3, Q1–Q6)**: izmerjena končna točka — ista disciplina kot `startMm` |
+| `segments[].confidence` | `Float?` | `finite 0..1` | **R278 (issue #16 §3, S1–S6)**: flat per-segment zaupanje (NE nested quality — S2); meji 0 in 1 VELJAVNI (0 = naprava izrecno poroča nič zaupanja — S5); NE izpeljano iz calibration/session quality (S3); izostanek = ni poročano, ekspliciten null zavrnjen |
+| `segments[].uncertaintyMm` | `Float?` | `finite > 0` | **R278 (issue #16 §3, S1–S6)**: flat per-segment negotovost, mm v imenu (kanon odločitev 2); ista disciplina kot `confidence` |
 | `segments[].source` | enum `SessionSource` | kot `source` | per-segment izvor |
 | `segments[].measurementIndex` | `Int?` | `Int ≥ 0` | opcijsko |
 
@@ -161,6 +169,10 @@ data class ArSegment(
     val heightMm: Double? = null,
     val slopeDeg: Double? = null,              // znak = del resnice
     val angleDeg: Double? = null,              // R277 (issue #16 §3): azimut CCW od +X, deg; izostanek = ni izmerjeno
+    val startMm: List<Double>? = null,         // R278 (issue #16 §3): [x, y] mm — 2D fiksna dolžina; NE izpeljano, NE križno preverjano
+    val endMm: List<Double>? = null,           // R278: ista disciplina kot startMm
+    val confidence: Double? = null,            // R278 (issue #16 §3): 0..1, meji veljavni; flat — NE nested quality (S2)
+    val uncertaintyMm: Double? = null,         // R278: mm > 0 (kanon odločitev 2)
     val source: SessionSource,
     val measurementIndex: Int? = null,
 )

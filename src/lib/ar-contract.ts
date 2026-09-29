@@ -104,6 +104,75 @@
 //       shrani kanonični payload; brez sheme — R276 je že naredil edini
 //       schema-touch; ta runda brez migracije).
 //
+// ── SEMANTIČNE ODLOČITVE SEGMENT START/END (R278, issue #16 §3 — Q1–Q6,
+//    zapisane PRED razvojem po kanonu P1–P6) ───────────────────────────────────
+//
+//   Q1. ADITIVNA v1, NE contractVersion 2. Isti razlogi kot P1: (a) v1 še
+//       vedno brez produkcijskega writerja/readerja (ar-android integracija
+//       ne začeta — #17 J izrecno NI dokazan); (b) opcijsko polje = čista
+//       dodatek — stari writer (v1 brez koordinat) ostane 100 % veljaven;
+//       (c) edini nekompatibilni smer je stari STRICT reader × novi writer
+//       — Manager R274–R277 bi tak payload ZAVRNIL z izrecno napako
+//       (fail-closed, NIČ tihe izgube) in okno se zapre z R278 deployom;
+//       (d) dvig na v2 bi razbil zlati fixture + R274 ×31 + R275 ×15 +
+//       R277 ×15 testov brez koristi. issue #16 §7 'kompatibilna ALI
+//       eksplicitno migracija' — ta je kompatibilna za VSE obstoječe
+//       writerje. Matrika nosi razširitev izrečno.
+//   Q2. FORMA = žični tuple [x, y] (2D, mm, enota V IMENU — kanon odločitev
+//       2: lengthMm/heightMm/uncertaintyMm/translationMm). Imeni startMm/
+//       endMm (issue #16 §3 'start/end'). 2D NE 3D: LOCAL_NORMALIZED
+//       (PRIMERJAVA.md §5.4) opredeljuje vodoravno ravnino (prva točka v
+//       izhodišču, prvi rob vzdolž +X) — postavitev segmentov je v ravnini
+//       (x, y); navpična dimenzija je že nosiljena s heightMm (višina) in
+//       slopeDeg (naklon) — 3D z bi izumil semantično prekrivanje. Fail-
+//       closed: 1D/3D tuple = zavrnitev, ne ugibanje.
+//   Q3. IZMERJENO, NE IZPELJANO, NE KRIŽNO PREVERJANO (P3 nadaljevanje):
+//       startMm/endMm = neodvisno izmerjena resnica naprave. Kontrakt NE
+//       izpeljuje lengthMm iz |end−start|, NE izpeljuje angleDeg iz
+//       start/end IN tudi NE preverja skladnosti med njimi — vsiljena
+//       enačba bi zahtevala izumljeno toleranco (naključje = izmišljen)
+//       in dolžina ter točke so NEODVISNA branja z neodvisnimi napakami.
+//       Skladnost je downstream geometrija/BOM domena (core NIČ). Testi
+//       dokazujejo: |end−start| ≠ lengthMm ostane VELJAVEN payload.
+//   Q4. FRAME = session-level LOCAL_NORMALIZED (odločitev 5, §5.4) —
+//       per-segment NI lastnega okvirja (v1 ima EN canonical frame tip).
+//       Prvi segment startMm = [0, 0] je pričakovan po definiciji okvirja,
+//       NE pa vsiljen (re-anchor ga lahko spremeni — nič izumljenih
+//       preverb).
+//   Q5. IZOSTANEK ≠ NIČ (P5 nadaljevanje): brez startMm/endMm = točka NI
+//       bila izmerjena (iskrena praznina). Ekspliciten null zavrnjen
+//       (z.tuple() ne sprejme null — izostanek je edini način 'brez
+//       vrednosti'). NaN/Infinity zavrnjena (finite). Negativni koordinati
+//       VELJAVNI (re-anchor/nadljenji segmenti — vrednost verbatim, brez
+//       wrapa/normalizacije; precedens P2/slopeDeg).
+//   Q6. DB/ROUTE NIČ (P6 nadaljevanje): koordinati gredo v arMetadata JSON
+//       verbatim (route že shrani kanonični payload; brez sheme — R276 je
+//       edini schema-touch; ta runda brez migracije).
+//
+// ── SEMANTIČNE ODLOČITVE SEGMENT QUALITY/UNCERTAINTY (R278, issue #16 §3
+//    — S1–S6, isti kanon kot Q1–Q6) ───────────────────────────────────────────
+//
+//   S1. ADITIVNA v1 (isti razlogi kot P1/Q1 — verzija ostane 1, matrika
+//       nosi razširitev izrečno).
+//   S2. IMENA/FORMA = FLAT per-segment `confidence` (0..1, vključno s
+//       mejama) in `uncertaintyMm` (mm v imenu — kanon odločitev 2).
+//       NE nested `quality: {…}` na segmentu — session-level quality
+//       strictObject ostane nespremenjen (dve ravi semantike: agregat
+//       seje vs. neodvisna resnica segmenta), wire pa ostane raven z
+//       slopeDeg/angleDeg/startMm/endMm.
+//   S3. IZMERJENO, NE IZPELJANO (P3/Q3 kanon): kontrakt NE izpeljuje
+//       confidence iz calibration in NE izpeljuje uncertaintyMm iz
+//       kakovosti seje — neodvisna branja naprave, tudi če se razlikujejo
+//       od session-level vrednosti (NI vsiljene skladnosti).
+//   S4. ENOTE: confidence = brez-enotno razmerje 0..1; uncertaintyMm = mm
+//       (pozitivno, NEzaokroženo — kanon odločitev 2).
+//   S5. IZOSTANEK ≠ NIČ (P5/Q5 kanon): brez polja = naprava NI poročala
+//       o kakovosti (iskrena praznina). Ekspliciten null zavrnjen. 0 in 1
+//       sta VELJAVNI izmerjeni vrednosti (0 = naprava izrecno poroča nič
+//       zaupanja — to je resnica, ne manjkajoča vrednost). NaN/Infinity/
+//       izven 0..1 zavrnjene.
+//   S6. DB/ROUTE NIČ (P6/Q6 kanon): arMetadata JSON verbatim, brez sheme.
+//
 // Determinizem: enak vhod → enak izhod (brez ure, naključja, locale).
 // Fail-closed: vsak neveljaven vhod = izrecna ArContractError s kodo.
 // ---------------------------------------------------------------------------
@@ -119,7 +188,7 @@ export const AR_CONTRACT_VERSION = 1
 export const AR_CONTRACT_COMPATIBILITY = {
   // P1 (R277): v1 razširjen ADITIVNO z segments[].angleDeg (issue #16 §3 —
   // opcijsko; brez spremembe pomena obstoječih polj, brez migracije).
-  1: { status: 'aktivna', uvod: 'R274 (issue #17 §A/§D)', razsiritev: 'R277 (issue #16 §3: segments[].angleDeg opcijsko — aditivno, P1–P6)' },
+  1: { status: 'aktivna', uvod: 'R274 (issue #17 §A/§D)', razsiritev: 'R277 (issue #16 §3: segments[].angleDeg opcijsko — aditivno, P1–P6) + R278 (issue #16 §3: segments[].startMm/endMm + confidence/uncertaintyMm opcijsko — aditivno, Q1–Q6/S1–S6)' },
 } as const
 
 /** Podprte verzije — izpeljane iz matrike (EN vir). */
@@ -218,6 +287,20 @@ const arSessionSchema = z.strictObject({
          *  Izmerjena resnica — NE izpeljana (P3); znak/vrednost verbatim
          *  (P2); izostanek = ni izmerjeno, ekspliciten null zavrnjen (P5). */
         angleDeg: finiteStevilo.optional(),
+        /** R278 (issue #16 §3, Q1–Q6): izmerjeni končni točki segmenta v
+         *  LOCAL_NORMALIZED vodoravni ravnini [x, y], mm (enota v imenu —
+         *  kanon odločitev 2). Izmerjena resnica — NE izpeljana in NE
+         *  križno preverjana proti lengthMm/angleDeg (Q3); 2D NE 3D (Q2);
+         *  izostanek = ni izmerjeno, ekspliciten null zavrnjen (Q5);
+         *  negativni koordinati veljavni — verbatim (Q5). */
+        startMm: z.tuple([finiteStevilo, finiteStevilo]).optional(),
+        endMm: z.tuple([finiteStevilo, finiteStevilo]).optional(),
+        /** R278 (issue #16 §3, S1–S6): flat per-segment kakovost —
+         *  confidence 0..1 (meji VELJAVNI — S5), uncertaintyMm > 0 (mm v
+         *  imenu — S4). NE izpeljano iz calibration/session quality (S3);
+         *  izostanek = ni poročano, ekspliciten null zavrnjen (S5). */
+        confidence: z.number().finite().min(0).max(1).optional(),
+        uncertaintyMm: mmStevilo.optional(),
         source: z.enum(AR_SESSION_SOURCES),
         measurementIndex: z.number().int().min(0).optional(),
       }),
