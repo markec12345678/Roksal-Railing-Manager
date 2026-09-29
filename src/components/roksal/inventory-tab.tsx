@@ -43,10 +43,11 @@ import {
   ChevronUp,
   ClipboardList,
   FileDown,
+  FileSpreadsheet,
   History,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { downloadCsv, todayStamp } from '@/lib/csv-export'
+import { downloadCsv, downloadCsvText, todayStamp } from '@/lib/csv-export'
 // R234 (P1-c) — Stanje zaloge PDF izvoz ('izvozi' družina PDF dimenzija —
 // boss-report vzorec; ENA resnica s CSV R136/R226).
 import { generateZalogaPdf } from '@/lib/zaloga-pdf'
@@ -58,6 +59,13 @@ import {
   generateInventuraPregledPdf,
   type InventuraArtikel,
 } from '@/lib/inventura-pregled-pdf'
+// R286 (P1-f) — inventurni pregled premoženja CSV (30. člen 'izvozi'
+// družine — ISTA resnica kot R270 PDF, drug medij: Excel/računovodski
+// uvoz; EN VIR inventuraPregled — pariteta po konstrukciji, F1/F2).
+import {
+  inventuraPregledCsv,
+  inventuraPregledCsvFilename,
+} from '@/lib/inventura-pregled-csv'
 // R273 — 29. člen 'izvozi' družine: pregled vrednosti zaloge PDF (glava =
 // lib resnica; dve okni ENA matemtika — mini state + FRESH export prek
 // ISTEGA liba).
@@ -233,6 +241,8 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
   // R270 — dvoklik/ponovni klik guard za FRESH fetch inventurnega pregleda
   // (družinski kontrakt R264–R269: disabled={pdfVteku} + guard v handlerju).
   const [invPdfVteku, setInvPdfVteku] = useState(false)
+  // R286 (30. člen) — dvoklik guard CSV izvoza (pariteta invPdfVteku).
+  const [invCsvVteku, setInvCsvVteku] = useState(false)
   // R273 — dvoklik/ponovni klik guard za FRESH fetch vrednostnega pregleda
   // (družinski kontrakt R264–R272: disabled={valPdfVteku} + guard v handlerju).
   const [valPdfVteku, setValPdfVteku] = useState(false)
@@ -553,6 +563,58 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
     }
   }
 
+  /** R286 — DTO preslikava EN VIR na UI nivoju: odgovor /api/inventory →
+   *  InventuraArtikel[] (fail-verbose — R227 strogost: manjkajoč/pokvaren
+   *  premik NIČ tiho '0'; tip = ISTA preslikava typeLabels kot CSV R136 /
+   *  PDF R234 — WYSIWYG; neznana koda verbatim — iskren fallback).
+   *  Uporablja jo PDF (R270) IN CSV (R286, 30. člen) izvoz — dva medija,
+   *  ENA preslikava vira (F1 EN VIR na komponentnem nivoju). */
+  const mapInventoryOdgovor = (data: unknown): InventuraArtikel[] => {
+    if (!Array.isArray(data)) {
+      throw new TypeError('Odgovora /api/inventory ni mogoče prebrati (ni polja).')
+    }
+    const vrstice = data as Array<Record<string, unknown>>
+    return vrstice.map((item, i) => {
+      if (typeof item.id !== 'string' || item.id === '') {
+        throw new TypeError(`artikel vrstica ${i}: manjkajoč id v odgovoru API-ja`)
+      }
+      for (const [ime, v] of [
+        ['sifraMateriala', item.sifraMateriala],
+        ['naziv', item.naziv],
+        ['tip', item.tip],
+        ['enota', item.enota],
+      ] as const) {
+        if (typeof v !== 'string' || v.trim() === '') {
+          throw new TypeError(`artikel vrstica ${i} (${item.id}): ${ime} mora biti ne-prazen niz, ne ${String(v)}`)
+        }
+      }
+      for (const [ime, v] of [
+        ['kolicinaZaloga', item.kolicinaZaloga],
+        ['minimalnaZaloga', item.minimalnaZaloga],
+      ] as const) {
+        if (typeof v !== 'number' || !Number.isFinite(v) || v < 0) {
+          throw new TypeError(`artikel vrstica ${i} (${item.id}): ${ime} mora biti končno ne-negativno število, ne ${String(v)}`)
+        }
+      }
+      // Fail-verbose DTO pruning (R269 vzorec): števec premikov je del
+      // vira — manjkajoč/pokvaren NIČ tiho ni '0' (R227 strogost).
+      const cnt = item._count as { movements?: unknown } | undefined
+      if (!cnt || typeof cnt.movements !== 'number' || !Number.isInteger(cnt.movements) || cnt.movements < 0) {
+        throw new TypeError(`artikel vrstica ${i} (${item.id}): premiki (_count.movements) morajo biti ne-negativno celo število, ne ${String(cnt?.movements)}`)
+      }
+      return {
+        id: item.id as string,
+        sifraMateriala: item.sifraMateriala as string,
+        naziv: item.naziv as string,
+        tip: typeLabels[item.tip as string] || (item.tip as string),
+        enota: item.enota as string,
+        kolicinaZaloga: item.kolicinaZaloga as number,
+        minimalnaZaloga: item.minimalnaZaloga as number,
+        premiki: cnt.movements,
+      }
+    })
+  }
+
   /** R270 (P1-f 'izvozi' družina — 26. člen) — INVENTURA — PREMOŽENJSKI
    *  PREGLED PDF: FRESH GET /api/inventory ob kliku — polna resnica VSEH
    *  premoženj (R234 PDF je namenoma viden seznam po filtrih; R270 je druga
@@ -569,51 +631,7 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
         throw new Error(`GET /api/inventory → HTTP ${res.status}`)
       }
       const data: unknown = await res.json()
-      if (!Array.isArray(data)) {
-        throw new TypeError('Odgovora /api/inventory ni mogoče prebrati (ni polja).')
-      }
-      const vrstice = data as Array<Record<string, unknown>>
-      const vnosi: InventuraArtikel[] = vrstice.map((item, i) => {
-        if (typeof item.id !== 'string' || item.id === '') {
-          throw new TypeError(`artikel vrstica ${i}: manjkajoč id v odgovoru API-ja`)
-        }
-        for (const [ime, v] of [
-          ['sifraMateriala', item.sifraMateriala],
-          ['naziv', item.naziv],
-          ['tip', item.tip],
-          ['enota', item.enota],
-        ] as const) {
-          if (typeof v !== 'string' || v.trim() === '') {
-            throw new TypeError(`artikel vrstica ${i} (${item.id}): ${ime} mora biti ne-prazen niz, ne ${String(v)}`)
-          }
-        }
-        for (const [ime, v] of [
-          ['kolicinaZaloga', item.kolicinaZaloga],
-          ['minimalnaZaloga', item.minimalnaZaloga],
-        ] as const) {
-          if (typeof v !== 'number' || !Number.isFinite(v) || v < 0) {
-            throw new TypeError(`artikel vrstica ${i} (${item.id}): ${ime} mora biti končno ne-negativno število, ne ${String(v)}`)
-          }
-        }
-        // Fail-verbose DTO pruning (R269 vzorec): števec premikov je del
-        // vira — manjkajoč/pokvaren NIČ tiho ni '0' (R227 strogost).
-        const cnt = item._count as { movements?: unknown } | undefined
-        if (!cnt || typeof cnt.movements !== 'number' || !Number.isInteger(cnt.movements) || cnt.movements < 0) {
-          throw new TypeError(`artikel vrstica ${i} (${item.id}): premiki (_count.movements) morajo biti ne-negativno celo število, ne ${String(cnt?.movements)}`)
-        }
-        return {
-          id: item.id as string,
-          sifraMateriala: item.sifraMateriala as string,
-          naziv: item.naziv as string,
-          // ISTA preslikava tipa kot CSV R136 / PDF R234 (WYSIWYG — tip label;
-          // neznana koda verbatim — iskren fallback).
-          tip: typeLabels[item.tip as string] || (item.tip as string),
-          enota: item.enota as string,
-          kolicinaZaloga: item.kolicinaZaloga as number,
-          minimalnaZaloga: item.minimalnaZaloga as number,
-          premiki: cnt.movements,
-        }
-      })
+      const vnosi = mapInventoryOdgovor(data)
       if (vnosi.length === 0) {
         // Fail-closed jedro: prazen seznam ne nastaja dokumenta — iskren toast.
         toast.error('Ni vpisanih artiklov', {
@@ -637,6 +655,50 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
       })
     } finally {
       setInvPdfVteku(false)
+    }
+  }
+
+  /** R286 (P1-f 'izvozi' družina — 30. člen) — INVENTURA — PREMOŽENJSKI
+   *  PREGLED CSV: ISTA resnica kot R270 PDF, drug medij (Excel/
+   *  računovodski uvoz — F1). FRESH GET /api/inventory ob kliku + ISTA
+   *  DTO preslikava mapInventoryOdgovor (EN VIR na UI nivoju); EN VIR
+   *  inventuraPregled znotraj liba (isti vrsti, isti sort — WYSIWYG po
+   *  konstrukciji, F2). Fail-closed: prazen vir → iskren toast (NI
+   *  prazne datoteke, F3); pokvaren vir → fail-verbose toast (NIČ tihe
+   *  degradacije). now = nov Date() LE tukaj (UI trenutek klika — F4). */
+  const handleInventuraCsv = async () => {
+    if (invCsvVteku) return
+    setInvCsvVteku(true)
+    try {
+      const res = await fetch('/api/inventory', { credentials: 'same-origin' })
+      if (!res.ok) {
+        throw new Error(`GET /api/inventory → HTTP ${res.status}`)
+      }
+      const data: unknown = await res.json()
+      const vnosi = mapInventoryOdgovor(data)
+      if (vnosi.length === 0) {
+        // Fail-closed jedro: prazen seznam ne nastaja datoteke — iskren toast.
+        toast.error('Ni vpisanih artiklov', {
+          description: 'Inventurni pregled (CSV) se izvozi, ko je vpisan prvi artikel zaloge.',
+        })
+        return
+      }
+      // ENA izpeljava: inventuraPregled znotraj liba = ISTA resnica kot
+      // PDF KPI/tabela/sklep IN toast (WYSIWYG); izvozeno = kanonični ISO.
+      const now = new Date()
+      const { povzetek } = inventuraPregled(vnosi)
+      const { csv, vrstic } = inventuraPregledCsv(vnosi, now)
+      downloadCsvText(inventuraPregledCsvFilename(now), csv)
+      toast.success('Inventurni pregled premoženja prenešen v CSV', {
+        description: `Inventura-pregled-…csv — ${vrstic - 1} ${artikelBeseda(povzetek.artiklov).toLowerCase()}, pod minimumom ${povzetek.podMinimumom}, na meji ${povzetek.naMeji}.`,
+      })
+    } catch (err) {
+      // Fail-verbose: izvoz ne sme tiho spodleteti — razlog gre v toast.
+      toast.error('Izvoz ni uspel', {
+        description: err instanceof Error ? err.message : `Neznana napaka (${String(err)}).`,
+      })
+    } finally {
+      setInvCsvVteku(false)
     }
   }
 
@@ -1486,6 +1548,27 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
           )}
           Inventura
         </Button>
+        {/* R286 — inventurni pregled CSV (30. člen 'izvozi' družine): ISTA
+            resnica kot R270 PDF, drug medij (Excel/računovodski uvoz, F1);
+            VEDNO viden (pariteta R270/R273); press-scale + dvoklik guard
+            + FileSpreadsheet/Loader2 aria-hidden (družinski kontrakt,
+            pariteta R285 zapisni list CSV gumba; 0 novih hex). */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => void handleInventuraCsv()}
+          disabled={invCsvVteku}
+          className="h-8 shrink-0 gap-1.5 text-[11px] font-medium tabular-nums press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 active:scale-[0.96]"
+          aria-label="Izvozi inventurni pregled premoženja kot CSV"
+          title="Inventurni pregled premoženja kot CSV (30. člen izvozne družine) — ista zapisana resnica kot PDF v Excelu: 8 tabelnih stolpcev + id/Premiki/Izvoženo za računovodski uvoz"
+        >
+          {invCsvVteku ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+          ) : (
+            <FileSpreadsheet className="h-3.5 w-3.5" aria-hidden="true" />
+          )}
+          Inventura CSV
+        </Button>
         {/* R273 — pregled vrednosti zaloge PDF (29. člen 'izvozi' družine):
             VEDNO viden (NI gated na filtered.length — pariteta R263–R272;
             podatkovni scope inventory.read, ne pišoča pravica); press-scale
@@ -1522,6 +1605,13 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
           (oba vira); VEDNO vidna (pariteta s pillom). */}
       <p className="text-2xs text-muted-foreground">
         PDF = polna denarna resnica skladišča (FRESH /api/inventory + /api/material-prices ob kliku — samo trenutno veljavne cene; ne zastarel state)
+      </p>
+
+      {/* R286 — legenda CSV pill pariteta (30. člen; pariteta R285 legenda
+          1:1): poimenuje kaj nosi CSV — ISTA resnica kot R270 PDF v Excelu
+          + strojno-berljivi dodatki; VEDNO vidna (pariteta s pillom). */}
+      <p className="text-2xs text-muted-foreground">
+        Inventura CSV = ista resnica kot PDF v Excelu — 8 tabelnih stolpcev + id/Premiki/Izvoženo (kanonični ISO) za računovodski uvoz
       </p>
 
       {/* R270 — F2 mini-vrstica 'Inventura (viden seznam):' (WYSIWYG ISTA

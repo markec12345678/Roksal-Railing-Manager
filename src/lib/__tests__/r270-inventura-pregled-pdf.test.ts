@@ -333,15 +333,24 @@ describe('R270 — vsebinski dokazi na komponenti (inventory-tab.tsx)', () => {
     expect(komponenta).toContain('if (invPdfVteku) return')
   })
 
-  it('FRESH fetch /api/inventory ob kliku (polna resnica skladišča — R234 je namenoma viden seznam) + fail-verbose DTO pruning (GET HTTP razlog, Array.isArray, _count.movements strict)', () => {
+  it('FRESH fetch /api/inventory ob kliku (polna resnica skladišča — R234 je namenoma viden seznam) + fail-verbose DTO pruning (GET HTTP razlog, Array.isArray, _count.movements strict) — R286: preslikava EN VIR mapInventoryOdgovor (PDF IN CSV handler)', () => {
+    // R286 refactor: DTO preslikava živi v mapInventoryOdgovor (dva medija,
+    // ENA preslikava — F1 na komponentnem nivoju); pin dokazuje ISTO
+    // fail-verbose strogost v NOVEM oknu + uporabo iz obeh handlerjev.
+    const mapper = oknoMed(komponenta, 'const mapInventoryOdgovor = (data: unknown): InventuraArtikel[] => {', '/** R270 (P1-f')
+    expect(mapper).toContain("throw new TypeError('Odgovora /api/inventory ni mogoče prebrati (ni polja).')")
+    expect(mapper).toContain("!cnt || typeof cnt.movements !== 'number' || !Number.isInteger(cnt.movements) || cnt.movements < 0")
+    expect(mapper).toContain('premiki (_count.movements) morajo biti ne-negativno celo število')
+    // ISTA preslikava tipa kot CSV R136 / PDF R234 (WYSIWYG — tip label)
+    expect(mapper).toContain('typeLabels[item.tip as string] || (item.tip as string)')
     const handler = oknoMed(komponenta, 'const handleInventuraPdf = async () => {', '  // R219 (P1-f) — dvostopenjsko filtriranje')
     expect(handler).toContain("fetch('/api/inventory', { credentials: 'same-origin' })")
     expect(handler).toContain('GET /api/inventory → HTTP ${res.status}')
-    expect(handler).toContain("throw new TypeError('Odgovora /api/inventory ni mogoče prebrati (ni polja).')")
-    expect(handler).toContain("!cnt || typeof cnt.movements !== 'number' || !Number.isInteger(cnt.movements) || cnt.movements < 0")
-    expect(handler).toContain('premiki (_count.movements) morajo biti ne-negativno celo število')
-    // ISTA preslikava tipa kot CSV R136 / PDF R234 (WYSIWYG — tip label)
-    expect(handler).toContain('typeLabels[item.tip as string] || (item.tip as string)')
+    expect(handler).toContain('mapInventoryOdgovor(data)')
+    // CSV handler (R286, 30. člen) — ISTI vir, ISTA preslikava:
+    const csvHandler = oknoMed(komponenta, 'const handleInventuraCsv = async () => {', '  /* R273 — 29. člen')
+    expect(csvHandler).toContain("fetch('/api/inventory', { credentials: 'same-origin' })")
+    expect(csvHandler).toContain('mapInventoryOdgovor(data)')
   })
 
   it('fail-closed toast (Ni vpisanih artiklov + iskren opis) + fail-verbose (Izvoz ni uspel) + ENA izpeljava (inventuraPregled(vnosi) pred generate + agregat toast)', () => {

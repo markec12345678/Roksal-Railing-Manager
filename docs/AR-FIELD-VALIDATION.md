@@ -112,3 +112,36 @@ Dejanski test (rezultate zapisati PRED trditvijo o terenski natančnosti):
 ## 10. KEEP / PORT / ADAPT / DEFER / REJECT (issue #14 §16)
 
 Vsaka integracijska sprememba nosi razvrstitev z dejanskim file/function dokazom — zapisovati v worklog ob vsaki rundi, ki se dotakne integracije.
+
+## 11. Zmogljivost — surov Depth NIČ v poslovni sistem (issue #15 §12)
+
+Razmejitev (issue #15 §12): ločiti poslovne meritve, potrebne metadata,
+fotografije, GLB in opcijski surovi/diagnostični AR podatki. Poslovni
+sistem prejme VSE, kar potrebuje za delo — brez nepotrebne obremenitve.
+
+**R286 dokaz (determinističen, kontraktni nivo):** poslovni sistem nima
+lastnih Depth vrst — edina vrata AR podatkov v poslovni sistem so skupni
+kontrakt v1 (`parseArSessionPayload`, route `/api/measurements` validira
+PRED transakcijo). Dokazna družina:
+`src/lib/__tests__/r286-ar-depth-izkljucitev.test.ts` (D0–D4):
+
+- **D2** — prepovedana surovi-Depth družina (depthMap, rawDepth, depthData,
+  confidenceMap, pointCloud, depthImage, depthFrame, depthBuffer,
+  depth_raw) INJECTIRANA v sicer veljaven v1 payload → ZAVRNJENA z
+  `AR_CONTRACT_VALIDACIJA` (zod strict — odločitev 3 kontrakta: neznana
+  polja se zavrnejo, ne utišano odstranijo). Enako na segment in metadata
+  blokih (quality/calibration/transform/sync).
+- **D3** — nosilci so SAMO REFERENCE: photoRefs/glbRefs =
+  `{ ref ≤ 300 znakov, sha256? }` — binarna polja (bytes/data/binary/
+  base64) = zavrnitev; dokazane zgornje meje: 500 foto / 100 GLB /
+  ref 300 znakov (veljavne na meji, zavrnjene čez).
+- **D4** — površinska enumeracija razčlenjene resnice (vsa opcijska polja):
+  ključi top-level (14) in segmenta (19) NIKOLI ne ustrezajo
+  `/depth|cloud|point/i` — meritve + reference + provenance, NIČ binarnega.
+- **D1** — zavračanje je fail-verbose: napaka nosi ORIGINALNI payload
+  (issue #17 D — nič izgube, nič tihega strip-anja).
+
+Surovi/diagnostični AR podatki ostanejo na NAPRAVI (ar-android) — v
+poslovni sistem gredo samo izmerjene vrednosti, reference na foto/GLB
+(in metadata). To je §12 performance resnica: prenos je voden po
+kontraktu, ne po velikosti — deterministično in preverljivo.

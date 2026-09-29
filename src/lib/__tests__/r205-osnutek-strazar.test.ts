@@ -171,10 +171,11 @@ describe('R205 stražar: dialog (a11y + R182 trojna veja + pill družina)', () =
 })
 
 describe('R205 stražar: R177 lucide pin + import hijena', () => {
-  it('FileDown je vstavljen ALFABETIČNO pred pinano vrstico History (pin brez premika)', () => {
+  it('FileDown je vstavljen ALFABETIČNO pred pinano vrstico History (pin brez premika; R286: FileSpreadsheet med njima — isti alfabetični kontrakt)', () => {
     const src = beri('src/components/roksal/inventory-tab.tsx')
-    expect(src).toContain("  ClipboardList,\n  FileDown,\n  History,\n} from 'lucide-react'")
-    expect(src.indexOf('FileDown')).toBeLessThan(src.indexOf('  History,\n}'))
+    expect(src).toContain("  ClipboardList,\n  FileDown,\n  FileSpreadsheet,\n  History,\n} from 'lucide-react'")
+    expect(src.indexOf('FileDown')).toBeLessThan(src.indexOf('  FileSpreadsheet,\n'))
+    expect(src.indexOf('FileSpreadsheet')).toBeLessThan(src.indexOf('  History,\n}'))
   })
 
   it('lib uvoz vsebuje nove EN VIR izvoze (narocilnicaCsvVrstice + narociloKolicina)', () => {
