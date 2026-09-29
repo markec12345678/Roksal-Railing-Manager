@@ -160,8 +160,10 @@ export function preveriZalogaOsnutekNarocilo(n: ZalogaOsnutekNarocilo, i: number
 }
 
 /** Znesek/količina kot stabilen niz — 1 decimalna mesta za količine (ISTI
- *  vzorec kot prihodki/dobicikonost znesekNiz; količine so lahko necel). */
-function kolicinaNiz(k: number): string {
+ *  vzorec kot prihodki/dobicikonost znesekNiz; količine so lahko necel).
+ *  R270 — EXPORTED: EN VIR formata za inventura-pregled-pdf (IMPORT, NI
+ *  zasegane kopije — isti vzorec kot STATUSI_NAROCIL R257 → R262). */
+export function kolicinaNiz(k: number): string {
   return Number.isInteger(k) ? String(k) : k.toFixed(2)
 }
 

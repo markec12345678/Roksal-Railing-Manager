@@ -1,10 +1,10 @@
 #!/bin/bash
-# R269 — build needleji: (24) MERITVE — TERENSKI PREGLED PDF (measurements-tab — FRESH
+# R270 — build needleji: (28) INVENTURA — PREMOŽENJSKI PREGLED PDF (inventory-tab — FRESH
 # /api/measurements?projectId, route NIČ; mini-vrstica state-oka; legenda pariteta) + R268/
-# R267/R266/R265/R264/R263/R262/…/R227 regresije (parent: r268-build-needles.sh viri).
+# R267/R266/R265/R264/R263/R262/…/R227 regresije (parent: r269-build-needles.sh viri — POPRAVLJENA struktura: needleji ZA definicijo funkcij, lažno zeleni loop-bug R269).
 set -u
 cd /home/z/my-project
-OUT=/tmp/r269-build-chunks
+OUT=/tmp/r270-build-chunks
 mkdir -p "$OUT" && rm -f "$OUT"/*.js 2>/dev/null
 
 find .next/static/chunks -name '*.js' -type f | while read -r f; do
@@ -43,6 +43,34 @@ need_static "(referenčni pregled — VSE meritve projekta, tudi arhivirane)" "R
 need_static "vir = /api/measurements?projectId (resnica dostopa do projekta)" "R269 sklep vir"
 need_static "PDF = VSE meritve projekta (tudi arhivirane — polna resnica, ne samo viden seznam filtrov)" "R269 legenda pill pariteta"
 
+echo "--- R270 inventura-pregled PDF (klient) ---"
+need_static "Izvozi inventurni pregled premoženja kot PDF" "R270 pill aria"
+need_static "Inventurni pregled premoženja kot pravi PDF — VSA zalogovna premoženja (FRESH ob kliku)" "R270 pill title"
+need_static "INVENTURA — PREMOŽENJSKI PREGLED" "R270 PDF glava"
+need_static "celotno skladišče — VSA premoženja" "R270 glava podnaslov"
+need_static "Inventurni pregled premoženja prenešen v PDF" "R270 toast title"
+need_static "Ni vpisanih artiklov" "R270 fail-closed toast"
+need_static "Inventurni pregled se izvozi, ko je vpisan prvi artikel zaloge." "R270 fail-closed toast opis"
+need_static "Inventura-pregled-" "R270 filename prefix"
+need_static "inventuraPregled" "R270 ENA izpeljava (KPI + tabela + sklep + toast + mini)"
+need_static "artikelBeseda" "R270 sklanjatev (toast + mini)"
+need_static "kolicinaNiz" "R270 FORMAT EN VIR IMPORT R262 (NI zasegane kopije)"
+need_static "GET /api/inventory → HTTP" "R270 FRESH fetch ISTEGA endpointa (R244–R269 precedens)"
+need_static "Odgovora /api/inventory ni mogoče prebrati" "R270 fail-verbose DTO pruning"
+need_static "manjkajoč id v odgovoru API-ja" "R270 DTO pruning identiteta"
+need_static "premiki (_count.movements) morajo biti ne-negativno celo število" "R270 DTO pruning premiki strict (R227 strogost)"
+need_static "Inventura (viden seznam):" "R270 F2 mini-vrstica (state-oka)"
+need_static "Pod minimumom" "R270 KPI akcija (RED)"
+need_static "Največji manjka" "R270 KPI 5 (največji deficit + enota)"
+need_static "(akcija — naroči pred naslednjo porabo)" "R270 sklep akcija pod-minimumom"
+need_static "(točno na meji — naslednja poraba pusti pod)" "R270 sklep pozornost na-meji"
+need_static "(zdrava zaloga)" "R270 sklep zdrava cona"
+need_static "nizka zaloga (≤ minimum — čip zaloge)" "R270 sklep R219 čip pariteta"
+need_static "(vsi zabeleženi premiki — obrat skozi skladišče" "R270 sklep obrat resnica"
+need_static "iskreno nič" "R270 sklep brez-premikov poimenovana veja"
+need_static "(referenčni pregled — VSA zalogovna premoženja, tudi artikli brez premikov)" "R270 sklep resnica"
+need_static "vir = /api/inventory (resnica zaloge — FRESH ob kliku, ne viden seznam filtrov)" "R270 sklep vir"
+need_static "PDF = VSA zalogovna premoženja (tudi artikli brez premikov — polna resnica, ne samo viden seznam filtrov)" "R270 legenda pill pariteta"
 echo "--- R268 ekipa-stanje PDF (regresija — R268 ŽIVO na produ dokazan) ---"
 need_static "Izvozi pregled stanja ekipe kot PDF" "R268 pill aria"
 need_static "Pregled stanja ekipe kot pravi PDF — statusi računov, vloge, življenjski cikl (celotna ekipa)" "R268 pill title"
@@ -136,5 +164,5 @@ need_static "Brez dobavitelja (" "R227 žig aria"
 must_miss "to-[#2a3f5f]" "must_miss to-[#2a3f5f]"
 must_miss "accent-[#f59e0b]" "must_miss accent-[#f59e0b]"
 must_miss "bg-[#f7f9ff]" "must_miss bg-[#f7f9ff]"
-echo "NEEDLE FAIL=$FAIL (R269 ×22 novih + R268 ×24 + R267 ×9 + R266 ×9 + R265 ×7 + regresije)"
+echo "NEEDLE FAIL=$FAIL (R270 ×28 novih + R269 ×22 + R268 ×24 + R267 ×9 + R266 ×9 + R265 ×7 + regresije)"
 exit $FAIL

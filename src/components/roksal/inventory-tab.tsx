@@ -50,6 +50,16 @@ import { downloadCsv, todayStamp } from '@/lib/csv-export'
 // R234 (P1-c) — Stanje zaloge PDF izvoz ('izvozi' družina PDF dimenzija —
 // boss-report vzorec; ENA resnica s CSV R136/R226).
 import { generateZalogaPdf } from '@/lib/zaloga-pdf'
+// R270 (P1-f) — inventurni pregled premoženja PDF (26. člen 'izvozi'
+// družine — druga rezina ISTEGA vira: premoženje, ne pokritost R262).
+import {
+  inventuraPregled,
+  artikelBeseda,
+  generateInventuraPregledPdf,
+  type InventuraArtikel,
+} from '@/lib/inventura-pregled-pdf'
+// R270 — EN VIR formata količin (IMPORT, NI zasegane kopije — R262 → R270).
+import { kolicinaNiz } from '@/lib/zaloga-osnutek-pdf'
 // R237 (P1-c) — NAROČILNICA OSNUTEK PDF (pravi PDF brat CSV priloge R205 —
 // isti vir artiklov + narociloKolicina ENA formula, fail-closed delegacija,
 // bajtni determinizem; INTERNI dokument za potrditev osnutka).
@@ -211,6 +221,9 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
   const [lotsError, setLotsError] = useState<string | null>(null)
   // R152: napaka nalaganja zaloge je EKSPlicitna (nič izmišljenih artiklov).
   const [invError, setInvError] = useState<string | null>(null)
+  // R270 — dvoklik/ponovni klik guard za FRESH fetch inventurnega pregleda
+  // (družinski kontrakt R264–R269: disabled={pdfVteku} + guard v handlerju).
+  const [invPdfVteku, setInvPdfVteku] = useState(false)
   // R177 — pečat 'Osveženo ob' = čas zadnjega USPEŠNEGA branja zaloge (primarni
   // vir te površine, vzorec R170/R171). Napaka/omrežje → null (pečat brez
   // podatkov bi lažno trdil svežino).
@@ -523,6 +536,93 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
     }
   }
 
+  /** R270 (P1-f 'izvozi' družina — 26. člen) — INVENTURA — PREMOŽENJSKI
+   *  PREGLED PDF: FRESH GET /api/inventory ob kliku — polna resnica VSEH
+   *  premoženj (R234 PDF je namenoma viden seznam po filtrih; R270 je druga
+   *  vrata: premoženje, ne pokritost R262). Fail-closed: prazen vir → iskren
+   *  toast (NI prazne datoteke); pokvaren vir → fail-verbose toast (NIČ
+   *  tihe degradacije). ENA izpeljava inventuraPregled = toast = PDF
+   *  (WYSIWYG). */
+  const handleInventuraPdf = async () => {
+    if (invPdfVteku) return
+    setInvPdfVteku(true)
+    try {
+      const res = await fetch('/api/inventory', { credentials: 'same-origin' })
+      if (!res.ok) {
+        throw new Error(`GET /api/inventory → HTTP ${res.status}`)
+      }
+      const data: unknown = await res.json()
+      if (!Array.isArray(data)) {
+        throw new TypeError('Odgovora /api/inventory ni mogoče prebrati (ni polja).')
+      }
+      const vrstice = data as Array<Record<string, unknown>>
+      const vnosi: InventuraArtikel[] = vrstice.map((item, i) => {
+        if (typeof item.id !== 'string' || item.id === '') {
+          throw new TypeError(`artikel vrstica ${i}: manjkajoč id v odgovoru API-ja`)
+        }
+        for (const [ime, v] of [
+          ['sifraMateriala', item.sifraMateriala],
+          ['naziv', item.naziv],
+          ['tip', item.tip],
+          ['enota', item.enota],
+        ] as const) {
+          if (typeof v !== 'string' || v.trim() === '') {
+            throw new TypeError(`artikel vrstica ${i} (${item.id}): ${ime} mora biti ne-prazen niz, ne ${String(v)}`)
+          }
+        }
+        for (const [ime, v] of [
+          ['kolicinaZaloga', item.kolicinaZaloga],
+          ['minimalnaZaloga', item.minimalnaZaloga],
+        ] as const) {
+          if (typeof v !== 'number' || !Number.isFinite(v) || v < 0) {
+            throw new TypeError(`artikel vrstica ${i} (${item.id}): ${ime} mora biti končno ne-negativno število, ne ${String(v)}`)
+          }
+        }
+        // Fail-verbose DTO pruning (R269 vzorec): števec premikov je del
+        // vira — manjkajoč/pokvaren NIČ tiho ni '0' (R227 strogost).
+        const cnt = item._count as { movements?: unknown } | undefined
+        if (!cnt || typeof cnt.movements !== 'number' || !Number.isInteger(cnt.movements) || cnt.movements < 0) {
+          throw new TypeError(`artikel vrstica ${i} (${item.id}): premiki (_count.movements) morajo biti ne-negativno celo število, ne ${String(cnt?.movements)}`)
+        }
+        return {
+          id: item.id as string,
+          sifraMateriala: item.sifraMateriala as string,
+          naziv: item.naziv as string,
+          // ISTA preslikava tipa kot CSV R136 / PDF R234 (WYSIWYG — tip label;
+          // neznana koda verbatim — iskren fallback).
+          tip: typeLabels[item.tip as string] || (item.tip as string),
+          enota: item.enota as string,
+          kolicinaZaloga: item.kolicinaZaloga as number,
+          minimalnaZaloga: item.minimalnaZaloga as number,
+          premiki: cnt.movements,
+        }
+      })
+      if (vnosi.length === 0) {
+        // Fail-closed jedro: prazen seznam ne nastaja dokumenta — iskren toast.
+        toast.error('Ni vpisanih artiklov', {
+          description: 'Inventurni pregled se izvozi, ko je vpisan prvi artikel zaloge.',
+        })
+        return
+      }
+      // ENA izpeljava: povzetek za toast = ISTA resnica kot KPI IN sklep na
+      // listu (WYSIWYG).
+      const { povzetek } = inventuraPregled(vnosi)
+      generateInventuraPregledPdf(vnosi, { now: new Date() })
+      toast.success('Inventurni pregled premoženja prenešen v PDF', {
+        description: `Inventura-pregled-…pdf — ${artikelBeseda(povzetek.artiklov)}, pod minimumom ${povzetek.podMinimumom}, na meji ${povzetek.naMeji}.`,
+      })
+    } catch (err) {
+      // Fail-verbose: izvoz ne sme tiho spodleteti — razlog gre v toast.
+      // Fail-closed jedro (TypeError iz liba) = pokvaren vnos → viden razlog
+      // (NIČ izmišljenega dokumenta).
+      toast.error('Izvoz ni uspel', {
+        description: err instanceof Error ? err.message : `Neznana napaka (${String(err)}).`,
+      })
+    } finally {
+      setInvPdfVteku(false)
+    }
+  }
+
   // R219 (P1-f) — dvostopenjsko filtriranje: PRVA stopnja = tip (kot pred
   // R219), DRUGA = čip 'pod minimumom'. Ime 'filtered' ostane KONČNO vidna
   // množica — vsi porabniki (CSV R136, Naročilnica R204, Osnutek R205,
@@ -574,6 +674,41 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
   const lowStockItems = inventory.filter(
     (i) => i.kolicinaZaloga <= i.minimalnaZaloga
   )
+
+  // R270 — F2 mini-vrstica 'Inventura (viden seznam):' — ENA izpeljava
+  // inventuraPregled čez ISTI prune kot PDF KPI + sklep + toast (WYSIWYG):
+  // viden seznam po čipih/tipu = kar uporabnik vidi; FRESH ob kliku = polna
+  // resnica skladišča (dve okni, ENA matemtika). R227 strogost: manjkajoči
+  // števec premikov NIKOLI ni '0' — mini brez resnice o obratu = brez mini
+  // (iskrena praznina, NIKOLI lažna številka).
+  const inventuraVidenPregled = useMemo(() => {
+    if (filtered.length === 0) return null
+    const vnosi: InventuraArtikel[] = []
+    for (const item of filtered) {
+      const cnt = item._count
+      // R227 strogost: manjkajoči/pokvaren števec premikov = brez mini
+      // (iskrena praznina — NIKOLI lažna številka '0').
+      if (
+        !cnt ||
+        typeof cnt.movements !== 'number' ||
+        !Number.isInteger(cnt.movements) ||
+        cnt.movements < 0
+      ) {
+        return null
+      }
+      vnosi.push({
+        id: item.id,
+        sifraMateriala: item.sifraMateriala,
+        naziv: item.naziv,
+        tip: typeLabels[item.tip] || item.tip,
+        enota: item.enota,
+        kolicinaZaloga: item.kolicinaZaloga,
+        minimalnaZaloga: item.minimalnaZaloga,
+        premiki: cnt.movements,
+      })
+    }
+    return inventuraPregled(vnosi).povzetek
+  }, [filtered])
 
   function getStockPercent(item: InventoryItem): number {
     const max = Math.max(item.minimalnaZaloga * 3, item.kolicinaZaloga)
@@ -1134,7 +1269,70 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
           <FileText className="h-3.5 w-3.5" aria-hidden="true" />
           PDF
         </Button>
+        {/* R270 — inventurni pregled PDF (26. člen 'izvozi' družine): VEDNO
+            viden (NI gated na filtered.length — pariteta R263–R269; podatkovni
+            scope inventory.read, ne pišoča pravica); press-scale + dvoklik
+            guard + FileDown/Loader2 aria-hidden (družinski kontrakt). */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => void handleInventuraPdf()}
+          disabled={invPdfVteku}
+          className="h-8 shrink-0 gap-1.5 text-[11px] font-medium tabular-nums press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+          aria-label="Izvozi inventurni pregled premoženja kot PDF"
+          title="Inventurni pregled premoženja kot pravi PDF — VSA zalogovna premoženja (FRESH ob kliku)"
+        >
+          {invPdfVteku ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+          ) : (
+            <FileDown className="h-3.5 w-3.5" aria-hidden="true" />
+          )}
+          Inventura
+        </Button>
       </div>
+
+      {/* R270 — legenda pill pariteta (družina R263–R269): poimenuje kaj
+          nosi dokument — VSA premoženja FRESH ob kliku (R234 PDF je namenoma
+          viden seznam po filtrih — dve vrati, dve različni vprašanji); VEDNO
+          vidna (pariteta s pillom). */}
+      <p className="text-2xs text-muted-foreground">
+        PDF = VSA zalogovna premoženja (tudi artikli brez premikov — polna resnica, ne samo viden seznam filtrov)
+      </p>
+
+      {/* R270 — F2 mini-vrstica 'Inventura (viden seznam):' (WYSIWYG ISTA
+          izpeljava inventuraPregled kot PDF KPI + sklep + toast — ENA
+          izpeljava): viden seznam po čipih/tipu = kar uporabnik vidi, FRESH =
+          polna resnica skladišča (dve okni, ENA matemtika); dot
+          roksal-red/amber/green — RED kadar akcija (pod minimumom), AMBER
+          kadar samo na meji; kondicionalna žetona ŽIVO samo kadar > 0 —
+          R256 lekcija 4; tabular-nums; 0 novih hex. */}
+      {inventuraVidenPregled !== null && (
+        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+          <span
+            aria-hidden="true"
+            className={`h-2 w-2 shrink-0 rounded-full ${
+              inventuraVidenPregled.podMinimumom > 0
+                ? 'bg-roksal-red'
+                : inventuraVidenPregled.naMeji > 0
+                  ? 'bg-roksal-amber'
+                  : 'bg-roksal-green'
+            }`}
+          />
+          <span className="tabular-nums">
+            Inventura (viden seznam): {inventuraVidenPregled.artiklov} {artikelBeseda(inventuraVidenPregled.artiklov)} · pod minimumom {inventuraVidenPregled.podMinimumom} · na meji {inventuraVidenPregled.naMeji} · premiki {inventuraVidenPregled.premikiSkupaj}
+          </span>
+          {inventuraVidenPregled.podMinimumom > 0 && inventuraVidenPregled.najvecjiManjka !== null && (
+            <span className="rounded-full border border-roksal-red/40 bg-roksal-red/10 px-2 py-0.5 text-2xs font-medium text-roksal-red tabular-nums">
+              manjka {kolicinaNiz(inventuraVidenPregled.najvecjiManjka.vrednost)} {inventuraVidenPregled.najvecjiManjka.enota}
+            </span>
+          )}
+          {inventuraVidenPregled.naMeji > 0 && (
+            <span className="rounded-full border border-roksal-amber/40 bg-roksal-amber/10 px-2 py-0.5 text-2xs font-medium text-roksal-amber tabular-nums">
+              na meji {inventuraVidenPregled.naMeji}
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Inventory List */}
       <Card className="animate-fade-in-up transition-all duration-200" style={{ animationDelay: '240ms' }}>
