@@ -227,7 +227,10 @@ export function groupTermini(
   }
   const poDatumu = (a: TerminPrikazVnos, b: TerminPrikazVnos) => {
     const diff = new Date(a.datumZacetka).getTime() - new Date(b.datumZacetka).getTime()
-    return diff !== 0 ? diff : a.id.localeCompare(b.id)
+    // R294 (issue #1 — determinizem): izenačba po id = navadno < po UTF-16
+    // kodnih točkah (R245/R250 kanon) — localeCompare je locale-odvisen.
+    if (diff !== 0) return diff
+    return a.id < b.id ? -1 : a.id > b.id ? 1 : 0
   }
   skupine.danes.sort(poDatumu)
   skupine.kasneje.sort(poDatumu)

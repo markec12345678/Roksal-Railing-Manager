@@ -18,7 +18,7 @@
 //  • Fail-closed: neveljaven datum/status/agregat → TypeError (iste stroge
 //    funkcije, ki jih uporablja zaslon — pokvarjen vnos ne more tiho pasti).
 
-import { toCsv, type CsvValue } from '@/lib/csv-export'
+import { toCsv, slDatum, type CsvValue } from '@/lib/csv-export'
 import { casOznaka } from '@/lib/osvezitev-fokus'
 import {
   scheduleTerminiStatusLabel,
@@ -66,7 +66,8 @@ function absolutniDatum(iso: string): string {
   if (Number.isNaN(d.getTime())) {
     throw new TypeError(`absolutniDatum: neveljaven datum: ${String(iso)}`)
   }
-  return d.toLocaleDateString('sl-SI', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  // R294 (issue #1): bajtno ista čista izpeljava (EN VIR csv-export).
+  return slDatum(d)
 }
 
 /** Zgradi celoten CSV (vključno s povzetkom in metapodatki obsega). Čista

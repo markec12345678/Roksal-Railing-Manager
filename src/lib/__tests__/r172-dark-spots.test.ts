@@ -80,8 +80,11 @@ const PRIMERI = [
   // R234: 232→234 (MATERIAL_BADGE fallback → žetoni +2 komentar).
   stražar('src/components/roksal/roksal-catalog.tsx', 234, 'bg-cyan-200/40', 'dark:bg-cyan-500/20'),
   // site-survey-tab — estrih Card + opravljeno opravilo
-  stražar('src/components/roksal/site-survey-tab.tsx', 625, 'bg-amber-50/40', 'dark:bg-amber-950/40'),
-  stražar('src/components/roksal/site-survey-tab.tsx', 873, 'bg-green-50', 'dark:bg-green-950/40'),
+  // R294: 625→626, 873→874 (prekinjena inkarnacija r294: +1 vrstica 'now: new Date(),'
+  // pri generateSurveyPdf klicu :411 — now KOT parameter, issue #1 determinizem;
+  // precedens R180/R203/R229 — pinane številke vrstic sledijo vsebinskim vrsticam).
+  stražar('src/components/roksal/site-survey-tab.tsx', 626, 'bg-amber-50/40', 'dark:bg-amber-950/40'),
+  stražar('src/components/roksal/site-survey-tab.tsx', 874, 'bg-green-50', 'dark:bg-green-950/40'),
   // measurements-tab — AR snapshot hover obroba
   // (R183: +51 vrstic — loadAll refactor + pečat meritveOsvezitev + glavna
   // flex-wrap vrstica; ogledalo na ISTI vsebinski vrstici, precedens R180/R182.

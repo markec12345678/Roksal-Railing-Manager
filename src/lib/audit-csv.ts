@@ -23,6 +23,7 @@
 //    se formatira prek Date + sl-SI (isti vzorec kot formatCas v dialogu).
 //  • Fail-closed: neveljaven časovni žig/ne-polje → TypeError.
 
+import { slDatum, slUra } from '@/lib/csv-export'
 export interface AuditCsvRow {
   id: string
   akcija: string
@@ -48,11 +49,8 @@ export function formatAuditCas(ts: string, polje = 'timestamp'): string {
   if (Number.isNaN(d.getTime())) {
     throw new TypeError(`buildAuditCsv: neveljaven časovni žig v polju ${polje}: ${String(ts)}`)
   }
-  return (
-    d.toLocaleDateString('sl-SI', { day: '2-digit', month: '2-digit', year: 'numeric' }) +
-    ' ' +
-    d.toLocaleTimeString('sl-SI', { hour: '2-digit', minute: '2-digit' })
-  )
+  // R294 (issue #1): bajtno ista čista izpeljava namesto ICU klica (slDatum/slUra EN VIR csv-export).
+  return `${slDatum(d)} ${slUra(d)}`
 }
 
 /** Slovenska sklanjatev za aria-label: 1/21/31 vpis, 2/22 vpisa,

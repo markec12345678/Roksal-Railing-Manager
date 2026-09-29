@@ -58,15 +58,14 @@ function quoteField(value: string): string {
  * brez Date API-ja (100 % deterministično, neodvisno od časovnega pasu);
  * polni ISO z apisuje prek Date in sl-SI locale (isti vzorec kot nagibi/zapisnik). */
 function formatDatum(iso: string): string {
-  const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso)
+  // R294 (issue #1 — determinizem): kalendarski datum iz ISO NIZA (slice
+  // 0–10) — NIKOLI toLocaleDateString (ICU/časovni pas odvisen; isti zapis
+  // '2026-01-05T00:30:00Z' je v različnih pasih dal RAZLIČEN datum).
+  const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso) ?? /^(\d{4})-(\d{2})-(\d{2})/.exec(iso)
   if (dateOnly) {
     return `${dateOnly[3]}.${dateOnly[2]}.${dateOnly[1]}`
   }
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) {
-    throw new TypeError(`buildCrmCsv: neveljaven datum: ${String(iso)}`)
-  }
-  return d.toLocaleDateString('sl-SI')
+  throw new TypeError(`buildCrmCsv: neveljaven datum: ${String(iso)}`)
 }
 
 /** Število → cela števila brez ločil (podatkovni stolpec za Excel). */

@@ -87,20 +87,23 @@ export async function getWindData(lat: number, lon: number, apiKey?: string): Pr
   }
 }
 
+/** R294 (issue #1 — determinizem): demo vzorec je FIKSEN in ISKREN —
+ *  NIKOLI Math.random (naključna varnostna ocena = tiha degradacija,
+ *  'no fake/mock success'). Opis izrecno pove, da to NISO živi podatki. */
 function getDemoWindData(lat: number, lon: number): WindData {
-  const demoSpeed = 6.5 + Math.random() * 4
-  const demoGust = demoSpeed * (1.2 + Math.random() * 0.3)
+  const demoSpeed = 6.5 + 4 * 0.5 // fiksno 8.5 m/s — sredina demo okna
+  const demoGust = demoSpeed * 1.35 // fiksno 11.475 m/s
   const risk = assessWindRisk(demoSpeed, demoGust)
 
   return {
     speed: Math.round(demoSpeed * 10) / 10,
     gust: Math.round(demoGust * 10) / 10,
-    direction: Math.round(Math.random() * 360),
-    directionLabel: getWindDirectionLabel(Math.random() * 360),
-    temperature: Math.round(15 + Math.random() * 15),
-    humidity: Math.round(50 + Math.random() * 30),
-    pressure: Math.round(1010 + Math.random() * 20),
-    description: 'Deloma oblačno',
+    direction: 210,
+    directionLabel: getWindDirectionLabel(210),
+    temperature: 18,
+    humidity: 62,
+    pressure: 1014,
+    description: 'Demo (brez živih podatkov — nastavi OPENWEATHER_API_KEY)',
     icon: '02d',
     location: `${lat.toFixed(2)}°N, ${lon.toFixed(2)}°E`,
     timestamp: new Date(),

@@ -15,6 +15,7 @@
  *  'X' → 'Naprej-nazaj', 'Y' → 'Levo-desno', katerakoli druga/null → prazen
  *  niz (iskren odpad — CSV prazen stolpec, PDF '—' sivo)). VEDANJE 1:1 —
  *  buildNagibiCsv uporablja ISTO funkcijo (NI zasegane kopije). */
+import { slDatumKratko, slUra } from '@/lib/csv-export'
 export function smerLabel(smer: string | null | undefined): string {
   return smer === 'Y' ? 'Levo-desno' : smer === 'X' ? 'Naprej-nazaj' : ''
 }
@@ -41,8 +42,9 @@ export function buildNagibiCsv(
       throw new TypeError(`buildNagibiCsv: neveljaven kotStopinje: ${String(r.kotStopinje)}`)
     }
     const d = new Date(r.createdAt)
-    const datum = d.toLocaleDateString('sl-SI')
-    const ura = d.toLocaleTimeString('sl-SI', { hour: '2-digit', minute: '2-digit' })
+    // R294 (issue #1): bajtno isti čisti izpisi (EN VIR csv-export).
+    const datum = slDatumKratko(d)
+    const ura = slUra(d)
     const kot = r.kotStopinje.toFixed(1)
     const smer = smerLabel(r.smer)
     const lokacija = (r.lokacija ?? '').replace(/"/g, '""')

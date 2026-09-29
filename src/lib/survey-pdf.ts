@@ -16,6 +16,7 @@
 
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import { slDatumKratko } from '@/lib/csv-export'
 import { registerSloPdfFonts } from '@/lib/pdf-sl-font'
 
 const COLORS = {
@@ -51,10 +52,18 @@ export interface SurveyPdfInput {
   opombe: string | null
   zakljuceno: boolean
   completion: number
+  /** R294 (issue #1 — determinizem): referenčni trenutek KOT parameter
+   *  (žig glave + ime datoteke) — jedro NE bere ure (doktrina R121/R250:
+   *  enak vhod = bajtno enak PDF; 'now' je izrecen vnos klicatelja). */
+  now: Date
 }
 
-/** Ime datoteke: zapisnik-teren-{projekt}-{datum}.pdf (brez šumnikov/Presledki) */
-export function surveyPdfFilename(projectNaziv: string): string {
+/** Ime datoteke: zapisnik-teren-{projekt}-{datum}.pdf (brez šumnikov/Presledki).
+ *  R294: referenčni datum pride KOT parameter (F4 — jedro ne bere ure). */
+export function surveyPdfFilename(projectNaziv: string, now: Date): string {
+  if (!(now instanceof Date) || Number.isNaN(now.getTime())) {
+    throw new TypeError('surveyPdfFilename: pričakovan veljaven now: Date')
+  }
   const slug = projectNaziv
     .toLowerCase()
     .normalize('NFD')
@@ -62,7 +71,7 @@ export function surveyPdfFilename(projectNaziv: string): string {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 40)
-  const dan = new Date().toISOString().slice(0, 10)
+  const dan = now.toISOString().slice(0, 10)
   return `zapisnik-teren-${slug || 'projekt'}-${dan}.pdf`
 }
 
@@ -78,6 +87,22 @@ function section(doc: jsPDF, y: number, title: string): number {
 }
 
 export function generateSurveyPdf(input: SurveyPdfInput): void {
+  const doc = buildSurveyPdfDoc(input)
+  doc.save(surveyPdfFilename(input.projectNaziv, input.now))
+}
+
+/** R294 — zgradi ZAPISNIK dokument (brez shranjevanja) — vrne jsPDF instanco
+ *  (testi berejo doc.output('arraybuffer') → bajtni determinizem dokaz).
+ *  Datum v glavi = DD.MM.YYYY iz input.now (string rezanje — brez
+ *  locale-odvisnih APIjev, kanon cenikDatumIso). */
+export function buildSurveyPdfDoc(input: SurveyPdfInput): jsPDF {
+  if (!input || typeof input !== 'object') {
+    throw new TypeError('buildSurveyPdfDoc: pričakovan vhod (SurveyPdfInput)')
+  }
+  if (!(input.now instanceof Date) || Number.isNaN(input.now.getTime())) {
+    throw new TypeError('buildSurveyPdfDoc: pričakovan veljaven now: Date')
+  }
+  const dan = `${String(input.now.getDate()).padStart(2, '0')}.${String(input.now.getMonth() + 1).padStart(2, '0')}.${input.now.getFullYear()}`
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
   registerSloPdfFonts(doc)
   const pageW = doc.internal.pageSize.getWidth()
@@ -99,7 +124,7 @@ export function generateSurveyPdf(input: SurveyPdfInput): void {
   doc.setFont('Roboto', 'normal')
   doc.text('ROKSAL d.o.o. Kranj · montaža ograj', 30, 20)
   doc.setFontSize(8)
-  doc.text(new Date().toLocaleDateString('sl-SI', { day: '2-digit', month: '2-digit', year: 'numeric' }), pageW - 14, 13, { align: 'right' })
+  doc.text(dan, pageW - 14, 13, { align: 'right' })
   y = 32
 
   // ── Meta podatki ─────────────────────────────────────────────────────────
@@ -113,8 +138,10 @@ export function generateSurveyPdf(input: SurveyPdfInput): void {
   ]
   const right = [
     `Status pregleda: ${input.zakljuceno ? 'ZAKLJUČEN' : 'ODPRT (v postopku)'}`,
-    `Datum montaže: ${input.datumMontaze ? new Date(input.datumMontaze).toLocaleDateString('sl-SI') : '—'}`,
-    `Datum izpisa: ${new Date().toLocaleDateString('sl-SI')}`,
+    // R294 (issue #1): bajtno ista čista izpeljava (privzeti sl-SI format).
+    `Datum montaže: ${input.datumMontaze ? slDatumKratko(new Date(input.datumMontaze)) : '—'}`,
+    // R294 (issue #1): izpis iz input.now (determinizem — jedro NE bere ure).
+    `Datum izpisa: ${slDatumKratko(input.now)}`,
   ]
   left.forEach((line, i) => doc.text(line, 14, y + i * 5))
   right.forEach((line, i) => doc.text(line, pageW / 2 + 6, y + i * 5))
@@ -256,7 +283,7 @@ export function generateSurveyPdf(input: SurveyPdfInput): void {
   doc.setTextColor(...COLORS.gray)
   doc.text('Monter (podpis)', 14, y + 4)
   doc.text('Vodja montaže (podpis)', pageW - 14 - colW + 8, y + 4)
-  doc.text(`Kraj in datum: ${new Date().toLocaleDateString('sl-SI')}`, 14, y + 12)
+  doc.text(`Kraj in datum: ${dan}`, 14, y + 12)
 
   // ── Noga na vseh straneh ─────────────────────────────────────────────────
   const total = doc.getNumberOfPages()
@@ -269,5 +296,5 @@ export function generateSurveyPdf(input: SurveyPdfInput): void {
     doc.text(`Stran ${p}/${total}`, pageW - 14, pageH - 7, { align: 'right' })
   }
 
-  doc.save(surveyPdfFilename(input.projectNaziv))
+  return doc
 }

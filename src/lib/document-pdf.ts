@@ -18,6 +18,7 @@
  */
 import { jsPDF } from 'jspdf'
 import { createHash } from 'node:crypto'
+import { slDatum } from '@/lib/csv-export'
 import { registerSloPdfFonts } from '@/lib/pdf-sl-font'
 
 const COLORS = {
@@ -80,7 +81,8 @@ function formatDate(date: Date | string | null | undefined): string {
   if (!date) return '—'
   const d = typeof date === 'string' ? new Date(date) : date
   if (Number.isNaN(d.getTime())) return '—'
-  return d.toLocaleDateString('sl-SI', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  // R294 (issue #1): bajtno ista čista izpeljava — renderer MORA biti bajtno determinističen (SHA-256 storage).
+  return slDatum(d)
 }
 
 /** Blok glave z navy pasom; vrne y po glavi. */

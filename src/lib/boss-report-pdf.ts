@@ -6,6 +6,7 @@
 // Graf rišemo z jsPDF rect primitivi (brez knjižnic) — enak izgled kot DOM
 // graf na vodja pregledu.
 
+import { formatSlDecimalno, slDatumKratko, slUra, MESCI_SL } from '@/lib/csv-export'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { registerSloPdfFonts } from './pdf-sl-font'
@@ -78,13 +79,12 @@ const STATUS_SL: Record<string, string> = {
   USTAVLJENO: 'Ustavljeno',
 }
 
-const eur = (n: number) =>
-  n.toLocaleString('sl-SI', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'
-const eur0 = (n: number) =>
-  n.toLocaleString('sl-SI', { maximumFractionDigits: 0 }) + ' €'
+// R294 (issue #1): bajtno iste čiste izpeljave namesto ICU klicev (EN VIR csv-export).
+const eur = (n: number) => formatSlDecimalno(n, 2, 2) + ' €'
+const eur0 = (n: number) => formatSlDecimalno(n, 0, 0) + ' €'
 
 function slDatum(d: Date | string): string {
-  return new Date(d).toLocaleDateString('sl-SI')
+  return slDatumKratko(new Date(d))
 }
 
 function capitalize(s: string): string {
@@ -93,7 +93,8 @@ function capitalize(s: string): string {
 
 /** Ime meseca v slovenščini, velika začetnica ("September"). */
 export function mesecIme(year: number, month: number): string {
-  return capitalize(new Date(year, month, 1).toLocaleDateString('sl-SI', { month: 'long' }))
+  // R294: fiksni slovenski seznam (NIKOLI locale-odvisen izpis meseca).
+  return capitalize(MESCI_SL[month])
 }
 
 const LAST_AUTOTABLE_Y = (doc: jsPDF): number =>
@@ -332,7 +333,7 @@ export function generateMonthlyReport(data: ReportData): void {
 
   // ---------- noge na vseh straneh ----------
   const strani = doc.getNumberOfPages()
-  const genStr = `Generirano ${slDatum(data.generatedAt)} ob ${data.generatedAt.toLocaleTimeString('sl-SI', { hour: '2-digit', minute: '2-digit' })}`
+  const genStr = `Generirano ${slDatum(data.generatedAt)} ob ${slUra(data.generatedAt)}`
   for (let i = 1; i <= strani; i++) {
     doc.setPage(i)
     doc.setDrawColor(226, 232, 240)

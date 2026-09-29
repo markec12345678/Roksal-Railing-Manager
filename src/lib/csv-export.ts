@@ -69,3 +69,62 @@ export function todayStamp(now: Date = new Date()): string {
   const d = String(now.getDate()).padStart(2, '0')
   return `${y}-${m}-${d}`
 }
+
+// ---------------------------------------------------------------------------
+// R294 (issue #1 — determinizem) — EN VIR slovenski prikazni formati:
+// zamenjava toLocale*/Intl klicev (ICU-odvisen izpis — lahko divergira čez
+// stroje/verzije Node) z BAJTNO ISTIMI čistimi izpeljavami. Format pravila
+// izpeljane iz ICU resnice (node 24, sl-SI) — glej r294 testi (bajtna
+// pariteta z Intl na kanoničnih primerih).
+// ---------------------------------------------------------------------------
+
+/** `DD. MM. YYYY` (2-mestni dan/mesec s presledki — pariteta
+ *  toLocaleDateString('sl-SI', { day:'2-digit', month:'2-digit', year:'numeric' })). */
+export function slDatum(d: Date): string {
+  const dd = String(d.getDate()).padStart(2, '0')
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  return `${dd}. ${mm}. ${d.getFullYear()}`
+}
+
+/** `HH:MM` (pariteta toLocaleTimeString('sl-SI', { hour:'2-digit', minute:'2-digit' })). */
+export function slUra(d: Date): string {
+  const hh = String(d.getHours()).padStart(2, '0')
+  const mm = String(d.getMinutes()).padStart(2, '0')
+  return `${hh}:${mm}`
+}
+
+/** `D. M. YYYY` (brez polnjenja — pariteta toLocaleDateString('sl-SI') privzeti format). */
+export function slDatumKratko(d: Date): string {
+  return `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()}`
+}
+
+/** Število z decimalno vejico in točkovnim tisočilcem (pariteta
+ *  Intl.NumberFormat('sl-SI', { minimumFractionDigits, maximumFractionDigits })). */
+export function formatSlDecimalno(n: number, minFrac: number, maxFrac: number): string {
+  if (typeof n !== 'number' || !Number.isFinite(n)) {
+    throw new TypeError('formatSlDecimalno: pričakovano končno število')
+  }
+  if (!Number.isInteger(minFrac) || !Number.isInteger(maxFrac) || minFrac < 0 || maxFrac < minFrac || maxFrac > 20) {
+    throw new TypeError('formatSlDecimalno: pričakovana 0 ≤ minFrac ≤ maxFrac ≤ 20')
+  }
+  const neg = n < 0
+  const abs = Math.abs(n)
+  const fiksno = abs.toFixed(maxFrac)
+  const [cela, frack] = fiksno.split('.')
+  // sl-SI ICU: tisočilce šele pri ≥ 5 celoštevilčnih mestih (10000 → 10.000,
+  // 9999 → 9999 — minimumGroupingDigits = 2; izmerjeno node 24)
+  const skupina = cela.length >= 5 ? cela.replace(/\B(?=(\d{3})+(?!\d))/g, '.') : cela
+  const frakcija = frack !== undefined && frack.length > 0 ? frack : ''
+  // obreži na minFrac (toFixed že zapolni do maxFrac; minFrac < maxFrac obreže
+  // končne ničle, ampak NIKOLI pod minFrac)
+  const obrezana = frakcija.replace(/0+$/, '').slice(0, Math.max(minFrac, frakcija.replace(/0+$/, '').length))
+  const frakPrikaz = obrezana.padEnd(minFrac, '0')
+  return (neg ? '-' : '') + skupina + (frakPrikaz.length > 0 ? ',' + frakPrikaz : '')
+}
+
+/** Slovenska imena mesecev (index = Date.getMonth() — 0-based; pariteta
+ *  toLocaleDateString('sl-SI', { month: 'long' })). */
+export const MESCI_SL: readonly string[] = [
+  'januar', 'februar', 'marec', 'april', 'maj', 'junij',
+  'julij', 'avgust', 'september', 'oktober', 'november', 'december',
+]

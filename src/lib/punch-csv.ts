@@ -11,6 +11,7 @@
 //    (Odprto/Rešeno/Napaka — STATUS_META); neznana vrednost → fail-closed
 //    TypeError, ne tiho ugibanje. Opomba null → prazen stolpec.
 
+import { slDatumKratko } from '@/lib/csv-export'
 export type PunchStatus = 'open' | 'done' | 'issue'
 
 export interface PunchCsvRow {
@@ -45,7 +46,8 @@ export function buildPunchCsv(
       throw new TypeError(`buildPunchCsv: neznani status: ${String(r.status)}`)
     }
     const d = new Date(r.createdAt)
-    const datum = d.toLocaleDateString('sl-SI')
+    // R294 (issue #1): bajtno ista čista izpeljava (privzeti sl-SI format).
+    const datum = slDatumKratko(d)
     const naslov = r.naslov.replace(/"/g, '""')
     const opomba = (r.opomba ?? '').replace(/"/g, '""')
     return `${datum},"${naslov}","${statusLabel}","${opomba}"`

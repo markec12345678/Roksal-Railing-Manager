@@ -69,9 +69,13 @@ import { steviloZamujenihDobav, narociloBeseda } from '@/lib/zamujena-dobava'
 // R187 — Sistem — zdravje kartica (21. površina živostne družine; javna
 // sonda /api/public/health R186 iz vodjinega pogleda).
 import { SistemZdravjeCard } from '@/components/roksal/sistem-zdravje-card'
+// R294 — ISSUE #1 (Professional automation): avtomatizacijski katalog —
+// EN VIR razreda funkcij (deterministic / SDK / script / AI-optional);
+// AI = neobvezna pomoč, jedro deluje brez AI (docs/automacija-audit.md).
+import { avtomatizacijaPovzetek } from '@/lib/automation/katalog'
 import {
   TrendingUp, Clock, Users, Package, Euro, CheckCircle2,
-  AlertTriangle, Calendar, Truck, Bell, FileDown, Loader2, Download,
+  AlertTriangle, Calendar, Truck, Bell, FileDown, Loader2, Download, Workflow,
   History, PackageX, CalendarX, FileText, FileSpreadsheet,
 } from 'lucide-react'
 
@@ -594,6 +598,10 @@ export function VodjaDashboard() {
     }
   }
 
+  // R294 — ISSUE #1: razred funkcij — EN VIR izpeljava iz kataloga (WYSIWYG
+  // kartica; NIKOLI ročno vpisane številke — isti povzetek kot testi + docs).
+  const avtomatizacija = avtomatizacijaPovzetek()
+
   // R293 — MARŽNI RAZGLED merilo: največja |marža| čez vrste (ISTO merilo za
   // VSE vrstice — vzorec R291/R292 mini tir; 0 pri praznem preseku).
   const maxMarza = useMemo(
@@ -917,6 +925,14 @@ export function VodjaDashboard() {
                       style={{ width: `${sirina}%` }}
                     />
                   </div>
+                  {/* R294 (MANDATORY STIL): števca dokumentov iz ISTE vrste
+                      (PDF tabela stolpca Računov/Naročil — resnica NA ZASLONU). */}
+                  <span
+                    className="w-14 shrink-0 text-right text-2xs tabular-nums text-muted-foreground"
+                    title={`Računov: ${v.racunov} · Naročil: ${v.narocil} (ista resnica kot PDF tabela)`}
+                  >
+                    {v.racunov} r · {v.narocil} n
+                  </span>
                   <span
                     className={`w-20 shrink-0 text-right text-2xs tabular-nums ${negativna ? 'font-medium text-roksal-red' : 'text-roksal-ink'}`}
                   >
@@ -931,6 +947,55 @@ export function VodjaDashboard() {
           </div>
         )}
       </div>
+
+      {/* R294 — AVTOMATIZACIJA — razred funkcij (issue #1: feature-by-feature
+          audit NA ZASLONU — EN VIR katalog (WYSIWYG — iste številke kot testi
+          in docs/automacija-audit.md); AI = neobvezna pomoč z IZREČENIM
+          determinističnim nadomestkom — jedro deluje brez AI; skripti tile
+          POGOJNI (iskrena 0 = ni skriptov v katalogu — kanon r277); 0 novih
+          hex — samo žetoni). */}
+      <section
+        className="rounded-lg border border-border bg-muted/40 px-3 py-2"
+        aria-label="Avtomatizacija — razred funkcij"
+      >
+        <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
+          <p className="flex items-center gap-1 text-2xs font-medium text-roksal-ink">
+            <Workflow className="h-3 w-3" aria-hidden="true" />
+            Avtomatizacija — razred funkcij
+          </p>
+          <p className="text-2xs tabular-nums text-muted-foreground">
+            {avtomatizacija.skupaj} funkcij · {avtomatizacija.stObmocij} območij poslovanja
+          </p>
+        </div>
+        <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1">
+          <span
+            className="text-2xs text-roksal-ink"
+            title="Deterministične funkcije: čista geometrija, poslovna pravila in izpeljave — enaki vhodi = enak izhod."
+          >
+            {avtomatizacija.deterministicnih} determinističnih
+          </span>
+          <span
+            className="text-2xs text-roksal-ink"
+            title="SDK funkcije: uveljavljene knjižnice (npr. jsPDF) pod determinističnimi predlogami."
+          >
+            {avtomatizacija.sdk} SDK
+          </span>
+          {avtomatizacija.skriptov > 0 && (
+            <span className="text-2xs text-roksal-ink" title="Lokalni skripti/delavci.">
+              {avtomatizacija.skriptov} skriptov
+            </span>
+          )}
+          <span
+            className="text-2xs text-roksal-amber"
+            title="AI = neobvezna pomoč: vsaka AI zmožnost IZRECNO deklarira deterministični nadomestek (kanon issue #1 §11) — AI nikoli ni vir resnice."
+          >
+            {avtomatizacija.ai} AI (neobvezne)
+          </span>
+        </div>
+        <p className="mt-1 text-2xs text-muted-foreground">
+          AI = neobvezna pomoč ({avtomatizacija.aiZNadomestkom} zmožnosti z izrečenim determinističnim nadomestkom) — jedro deluje brez AI.
+        </p>
+      </section>
 
       {/* Današnji pregled */}
       <div>

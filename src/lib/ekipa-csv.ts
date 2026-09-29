@@ -19,6 +19,7 @@
 //    Null polja (telefon, zadnja aktivnost) → prazen stolpec (nikoli 'null'
 //    besedilo, nikoli '—'). Datumi → sl-SI prikaz (DD.MM.YYYY).
 
+import { slDatumKratko } from '@/lib/csv-export'
 export interface EkipaLifecycle {
   deactivated: boolean
   locked: boolean
@@ -77,7 +78,8 @@ function formatDatum(iso: string, polje: string): string {
   if (Number.isNaN(d.getTime())) {
     throw new TypeError(`buildEkipaCsv: neveljaven datum v polju ${polje}: ${String(iso)}`)
   }
-  return d.toLocaleDateString('sl-SI')
+  // R294 (issue #1): bajtno ista čista izpeljava (privzeti sl-SI format 'D. M. YYYY').
+  return slDatumKratko(d)
 }
 
 export function buildEkipaCsv(

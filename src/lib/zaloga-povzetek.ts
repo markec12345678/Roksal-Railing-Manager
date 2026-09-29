@@ -42,6 +42,7 @@
  *  dobavitelj vidita, da aplikacija postavke ne more oceniti — cena ni
  *  izmišljena niti v besedilu). Producers brez polja (starejši hint,
  *  sekanc med deployema) = brez oznake — NIKOLI lažnega žiga. */
+import { slDatum, slUra } from '@/lib/csv-export'
 export interface ZalogaArtikelZaNarocilo {
   id: string
   sifraMateriala: string
@@ -121,13 +122,8 @@ export function zalogaPovzetekCasOznaka(now: Date): string {
   if (!(now instanceof Date) || Number.isNaN(now.getTime())) {
     throw new TypeError('zalogaPovzetekCasOznaka: pričakovan veljaven now: Date')
   }
-  const datum = now.toLocaleDateString('sl-SI', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  })
-  const ura = now.toLocaleTimeString('sl-SI', { hour: '2-digit', minute: '2-digit' })
-  return `${datum} ob ${ura}`
+  // R294 (issue #1): bajtno ista čista izpeljava (EN VIR csv-export; now KOT parameter).
+  return `${slDatum(now)} ob ${slUra(now)}`
 }
 
 /** Besedilna naročilnica VIDNIH artiklov pod minimumom (za dobavitelja).

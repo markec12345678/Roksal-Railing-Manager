@@ -411,6 +411,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
       }
       generateSurveyPdf({
         projectNaziv: project?.nazivProjekta ?? 'Projekt',
+        now: new Date(),
         customerName: project?.customer?.ime ?? null,
         monterName: project?.monter?.ime ?? null,
         datumMontaze: project?.datumMontaze ?? null,
