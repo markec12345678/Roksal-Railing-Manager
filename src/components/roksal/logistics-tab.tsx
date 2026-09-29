@@ -12,7 +12,7 @@ import { Separator } from '@/components/ui/separator'
 import { useToast } from '@/hooks/use-toast'
 import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'
 import { casOznaka } from '@/lib/osvezitev-fokus'
-import { downloadCsv, todayStamp } from '@/lib/csv-export'
+import { downloadCsv, downloadCsvText, todayStamp } from '@/lib/csv-export'
 import { icsEscape, icsFold, icsUtc } from '@/lib/ics'
 import { allowedTransitions } from '@/lib/equipment-lifecycle'
 import {
@@ -46,12 +46,22 @@ import {
   tedenskiPregledPovzetek,
   tedenskiUreKpi,
 } from '@/lib/tedenski-vozni-red-pdf'
+// R292 — EN VIR razgled + CSV (23. člen 'izvozi' družine): okno/ime dneva/
+// validacija/sort/vsote UVOŽENI iz PDF brata (nič dvojnega — WYSIWYG po
+// konstrukciji); razgled = ISTA resnica za zaslon, CSV IN toast.
+import {
+  tedenskiRazgled,
+  tedenskiRazgledSklep,
+  tedenskiVozniRedCsv,
+  tedenskiVozniRedCsvFilename,
+} from '@/lib/tedenski-vozni-red-csv'
+import { cenikDatumIso } from '@/lib/cenik-pdf'
 import { QC_TEMPLATE, computePassed, countDefects } from '@/lib/qc-gate'
 import { IEV_TEMPLATE } from '@/lib/installation-evidence'
 import {
   Calendar, Download, Users, Wrench, Plus, Clock, MapPin, CheckCircle2, CalendarClock,
   Loader2, AlertTriangle, Truck, Package, ShieldCheck, History, FileCheck2, Lock,
-  CalendarRange, ClipboardList, Activity,
+  CalendarRange, ClipboardList, Activity, FileSpreadsheet,
 } from 'lucide-react'
 
 interface Schedule {
@@ -384,6 +394,8 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
   const [ptVTeku, setPtVTeku] = useState(false)
   // R266 — izvoz cikla opreme v teku (disabled guard — pariteta ptVTeku R265).
   const [ocVTeku, setOcVTeku] = useState(false)
+  // R292 — dvoklik guard tedenskega CSV (pariteta ptVTeku R265/ocVTeku R266).
+  const [tedenskiCsvVTeku, setTedenskiCsvVTeku] = useState(false)
 
   // R266 — ENA izpeljava vhodov za cikl opreme (WYSIWYG ISTI vir kot PDF
   // KPI, tabela, sklep, F2 mini-vrstica IN toast): DTO pruning iz ISTEGA
@@ -418,6 +430,51 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
     [equipment.length, opremaCikelVhodi],
   )
   const { toast } = useToast()
+
+  // R292 — TEDENSKI RAZGLED (MANDATORY STIL): 7-dnevni razgled NA ZASLONU
+  // (do zdaj samo v PDF R256). EN VIR resnice — tedenskiRazgled uvaža okno/
+  // validacijo/sort/vsote iz PDF brata, zato zaslon, CSV (23. člen) IN toast
+  // NE morejo divergirati. now = čas izpeljave razgleda (memo per podatkovni
+  // snapshot vozniRedVnosi — determinističen red vedenja, vzorec drugih memo).
+  const tedenskiRazgledNow = useMemo(() => new Date(), [vozniRedVnosi])
+  const razgled = useMemo(
+    () => tedenskiRazgled(vozniRedVnosi, tedenskiRazgledNow),
+    [vozniRedVnosi, tedenskiRazgledNow],
+  )
+
+  // R292 — 23. člen 'izvozi' družine: TEDENSKI VOZNI RED CSV — CSV brat PDF
+  // R256 (vzorec R284→R285/R291): fail-closed PREJ (prazno okno → iskren
+  // toast, NIKOLI prazna datoteka — R250/R291 vzorec), potem ENA izpeljava
+  // (ISTI now za povzetek + CSV + ime — lekcija R121/R235); agregat v
+  // toastu = ISTI lib sklep kot razgled na zaslonu (WYSIWYG, sklanjatev
+  // EN VIR terminBeseda); fail-verbose catch (R291 vzorec); dvoklik guard
+  // (pariteta ptVTeku R265).
+  const handleTedenskiCsv = () => {
+    if (tedenskiCsvVTeku) return
+    setTedenskiCsvVTeku(true)
+    try {
+      const now = new Date()
+      const pov = tedenskiPregledPovzetek(vozniRedVnosi, now)
+      if (pov === null) {
+        toast({
+          title: 'Ni terminov v naslednjih 7 dneh',
+          description: 'CSV se izvozi, ko je vpisan termin v prihajajočem tednu.',
+        })
+        return
+      }
+      const { csv } = tedenskiVozniRedCsv(vozniRedVnosi, now)
+      const ime = tedenskiVozniRedCsvFilename(now)
+      downloadCsvText(ime, csv)
+      toast({
+        title: `Tedenski pregled prenešen v CSV (${ime})`,
+        description: `${tedenskiRazgledSklep(pov)}.`,
+      })
+    } catch (err) {
+      toast({ title: 'Izvoz CSV ni uspel', description: err instanceof Error ? err.message : String(err), variant: 'destructive' })
+    } finally {
+      setTedenskiCsvVTeku(false)
+    }
+  }
 
   // Form states
   const [schedProject, setSchedProject] = useState('')
@@ -1200,6 +1257,56 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
       {/* Calendar tab */}
       {subtab === 'calendar' && (
         <div className="space-y-3">
+          {/* R292 — TEDENSKI RAZGLED (MANDATORY STIL) — 7-dnevni razgled NA
+              ZASLONU (do zdaj samo v PDF R256): ENA resnica z izvozi — EN VIR
+              tedenskiRazgled (ISTI okno/sort/stevec kot PDF IN CSV —
+              divergenca nemogoča). PRAZNI dnevi = iskreno 0 (NIKOLI skriti —
+              'kateri dnevi prazni' JE resnica razgleda); preklicani = viden
+              rdeč števec (iskren odpad — PDF RED bold pariteta); mini tir
+              vzorec R291: širina = terminov / najbolj obremenjen dan × 100 —
+              ISTO merilo za VSE dni, 0 % iskreno pri praznem oknu,
+              aria-hidden (številka nosi resnico), hover title z izrečeno
+              izpeljavo. 0 novih hex — samo obstoječi žetoni. */}
+          <div
+            className="rounded-lg border border-border bg-muted/40 px-3 py-2"
+            role="group"
+            aria-label="Tedenski razgled — naslednjih 7 dni"
+          >
+            <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
+              <p className="text-2xs font-medium text-roksal-ink">Tedenski razgled</p>
+              <p className="text-2xs text-muted-foreground" data-testid="tedenski-razgled-sklep">
+                {razgled.pov === null
+                  ? 'Naslednjih 7 dni brez vpisanih terminov.'
+                  : `${tedenskiRazgledSklep(razgled.pov)}.`}
+              </p>
+            </div>
+            <div className="mt-1.5 grid grid-cols-7 gap-1">
+              {razgled.dnevi.map((d) => {
+                const sirina =
+                  razgled.maxTerminov === 0
+                    ? 0
+                    : Math.min(100, Math.round((d.terminov / razgled.maxTerminov) * 100))
+                return (
+                  <div
+                    key={d.dan}
+                    className="min-w-0 text-center"
+                    title={`${d.ime} ${cenikDatumIso(d.dan)}: ${d.terminov} ${terminBeseda(d.terminov)} — ${sirina} % najbolj obremenjenega dne${d.preklicani > 0 ? ` · preklicani ${d.preklicani}` : ''}`}
+                  >
+                    <p className="truncate text-2xs font-medium text-roksal-ink">{d.ime.slice(0, 3)}</p>
+                    <p className="text-2xs text-muted-foreground tabular-nums">{cenikDatumIso(d.dan)}</p>
+                    <p
+                      className={`text-2xs tabular-nums ${d.preklicani > 0 ? 'font-medium text-roksal-red' : 'text-muted-foreground'}`}
+                    >
+                      {d.terminov}
+                    </p>
+                    <div className="mt-0.5 h-1 rounded-full bg-muted" aria-hidden="true">
+                      <div className="h-1 rounded-full bg-roksal-navy/30" style={{ width: `${sirina}%` }} />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
           <div className="flex gap-2">
             {/* R244 — wave 6 RBAC ogledalo: CTA 'Nov termin montaže' je VIDEN
                 samo vlogi s pravico production.manage (API POST /api/schedules).
@@ -1307,6 +1414,24 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
             >
               <CalendarRange aria-hidden="true" className="h-4 w-4 mr-1" /> Tedenski
             </Button>
+            {/* R292 — 23. člen 'izvozi' družine (P1-f): TEDENSKI VOZNI RED
+                CSV — CSV brat PDF R256 (vzorec R284→R285/R291): ISTI okno/
+                sort/stevec EN VIR tedenskiRazgled + tedenskiPregledPovzetek —
+                WYSIWYG po konstrukciji. VEDNO viden (P1-k/R232 kanon):
+                prazno okno → iskren fail-closed toast, NIKOLI prazna
+                datoteka (R250/R291 vzorec); toast = ISTI lib sklep kot
+                razgled (sklanjatev EN VIR terminBeseda). */}
+            <Button
+              type="button"
+              variant="outline"
+              aria-label="Izvozi tedenski pregled montaž kot CSV"
+              title="Tedenski pregled montaž kot CSV — ista resnica kot PDF (dnevi · termini · ure)"
+              disabled={tedenskiCsvVTeku}
+              className="shrink-0 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              onClick={handleTedenskiCsv}
+            >
+              <FileSpreadsheet aria-hidden="true" className="h-4 w-4 mr-1" /> CSV
+            </Button>
             {/* R265 — 21. člen 'izvozi' družine (P1-f): PROJEKTI — TERMINI
                 PREGLED PDF — presek VSEH terminov (/api/schedules — FRESH
                 fetch ISTEGA endpointa ob kliku, R244/R245/R264 precedens;
@@ -1337,7 +1462,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
           {/* R256 — legenda razširjena z tedenskim razgledom (R256 needle je
               dobesedni PREDPONA — R255 resnica ostaja bajtno ISTA). */}
           <p className="text-2xs text-muted-foreground">
-            CSV = prikazani termini · ICS = koledar v telefonu · PDF = vozni red (kronološki) · Tedenski = naslednjih 7 dni (po dnevih) · Projekti = projekti × termini (pokritost po projektih)
+            CSV = prikazani termini · ICS = koledar v telefonu · PDF = vozni red (kronološki) · Tedenski = naslednjih 7 dni (po dnevih) · Projekti = projekti × termini (pokritost po projektih) · Tedenski CSV = ista resnica kot PDF
           </p>
 
           {/* R244 — vlogo-osveščen vodič (R242/R243 recept): viden SAMO, ko
