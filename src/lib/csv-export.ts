@@ -98,6 +98,23 @@ export function slDatumKratko(d: Date): string {
   return `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()}`
 }
 
+/** `DD. MM.` (brez leta — pariteta toLocaleDateString('sl-SI', { day:'2-digit',
+ *  month:'2-digit' }) — R295, komponentna UI logika). */
+export function slDatumOkrajsava(d: Date): string {
+  const dd = String(d.getDate()).padStart(2, '0')
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  return `${dd}. ${mm}.`
+}
+
+/** `HH:MM:SS` (pariteta toLocaleTimeString('sl-SI') privzeti format — R295,
+ *  komponentna PDF logika: toLocaleString('sl-SI') = slDatumKratko + ', ' + slCasDolgo). */
+export function slCasDolgo(d: Date): string {
+  const hh = String(d.getHours()).padStart(2, '0')
+  const mm = String(d.getMinutes()).padStart(2, '0')
+  const ss = String(d.getSeconds()).padStart(2, '0')
+  return `${hh}:${mm}:${ss}`
+}
+
 /** Število z decimalno vejico in točkovnim tisočilcem (pariteta
  *  Intl.NumberFormat('sl-SI', { minimumFractionDigits, maximumFractionDigits })). */
 export function formatSlDecimalno(n: number, minFrac: number, maxFrac: number): string {
@@ -127,4 +144,12 @@ export function formatSlDecimalno(n: number, minFrac: number, maxFrac: number): 
 export const MESCI_SL: readonly string[] = [
   'januar', 'februar', 'marec', 'april', 'maj', 'junij',
   'julij', 'avgust', 'september', 'oktober', 'november', 'december',
+]
+
+/** Slovenska kratka imena mesecev (index = Date.getMonth() — 0-based; pariteta
+ *  toLocaleDateString('sl-SI', { month: 'short' }) — R295, komponentna PDF/UI
+ *  logika; 'maj' brez pike, ostali s piko — izmerjeno node 24 sl-SI). */
+export const MESCI_SL_KRATKO: readonly string[] = [
+  'jan.', 'feb.', 'mar.', 'apr.', 'maj', 'jun.',
+  'jul.', 'avg.', 'sep.', 'okt.', 'nov.', 'dec.',
 ]

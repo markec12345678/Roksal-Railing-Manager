@@ -57,7 +57,7 @@ import {
   History,
   FileSpreadsheet,
 } from 'lucide-react'
-import { downloadCsv, downloadCsvText, todayStamp } from '@/lib/csv-export'
+import { downloadCsv, downloadCsvText, todayStamp, slDatumKratko, formatSlDecimalno } from '@/lib/csv-export'
 import {
   buildPrihodkiPdfDoc,
   prihodkiPdfFilename,
@@ -161,7 +161,7 @@ const STATUS_META: Record<Invoice['status'], { label: string; className: string;
 }
 
 const eur = (n: number) =>
-  n.toLocaleString('sl-SI', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'
+  formatSlDecimalno(n, 2, 2) + ' €'
 
 function parsePostavke(json: string): Postavka[] {
   try {
@@ -210,7 +210,7 @@ function exportRacuniCsv(invoices: Invoice[]) {
     `racuni-${todayStamp()}.csv`,
     ['Številka', 'Tip', 'Status', 'Datum izdaje', 'Rok (dni)', 'Zapadlo (dni)', 'Osnova (EUR)', 'DDV (EUR)', 'Za plačilo (EUR)'],
     [...invoices]
-      .sort((a, b) => b.datumIzdaje.localeCompare(a.datumIzdaje))
+      .sort((a, b) => (a.datumIzdaje > b.datumIzdaje ? -1 : a.datumIzdaje < b.datumIzdaje ? 1 : 0))
       .map((inv) => [
         inv.stevilka,
         tipLabels[inv.tip] ?? inv.tip,
@@ -753,8 +753,8 @@ export function InvoiceManager() {
       startY: 58,
       body: [
         [
-          `Datum izdaje: ${new Date(inv.datumIzdaje).toLocaleDateString('sl-SI')}`,
-          `Datum storitve: ${inv.datumStoritve ? new Date(inv.datumStoritve).toLocaleDateString('sl-SI') : '—'}`,
+          `Datum izdaje: ${slDatumKratko(new Date(inv.datumIzdaje))}`,
+          `Datum storitve: ${inv.datumStoritve ? slDatumKratko(new Date(inv.datumStoritve)) : '—'}`,
           `Rok plačila: ${inv.rokPlacilaDni} dni`,
         ],
       ],
@@ -771,7 +771,7 @@ export function InvoiceManager() {
         return [
           String(i + 1),
           p.opis,
-          p.kolicina.toLocaleString('sl-SI'),
+          formatSlDecimalno(p.kolicina, 0, 3),
           p.enota,
           eur(p.cenaNaEnoto),
           `${p.ddvStopnja} %`,
@@ -835,7 +835,7 @@ export function InvoiceManager() {
       doc.setFontSize(7)
       doc.setTextColor(90, 90, 90)
       doc.text(`Preberi QR z aplikacijo banke — plačilo ${eur(inv.znesek)}`, 47, 251)
-      doc.text(`se izpolni samodejno (rok: ${rokPlacilaDatum(inv).toLocaleDateString('sl-SI')})`, 47, 255)
+      doc.text(`se izpolni samodejno (rok: ${slDatumKratko(rokPlacilaDatum(inv))})`, 47, 255)
       doc.text(`Referenca: SI12 ${inv.stevilka}`, 47, 259)
     }
 
@@ -893,7 +893,7 @@ export function InvoiceManager() {
     doc.text('PLAČILNI OPOMNIK', 196, 15, { align: 'right' })
     doc.setFontSize(10)
     doc.setFont('Roboto', 'normal')
-    doc.text(new Date().toLocaleDateString('sl-SI'), 196, 22, { align: 'right' })
+    doc.text(slDatumKratko(new Date()), 196, 22, { align: 'right' })
 
     // Zadeva + prejemnik
     doc.setFontSize(9)
@@ -926,7 +926,7 @@ export function InvoiceManager() {
     doc.setFontSize(9)
     doc.setTextColor(80, 80, 80)
     doc.text(
-      `Izvirni rok plačila: ${rokPlacilaDatum(inv).toLocaleDateString('sl-SI')}   ·   Odprt znesek: ${eur(inv.znesek)}`,
+      `Izvirni rok plačila: ${slDatumKratko(rokPlacilaDatum(inv))}   ·   Odprt znesek: ${eur(inv.znesek)}`,
       20,
       79
     )
@@ -984,7 +984,7 @@ export function InvoiceManager() {
     doc.setTextColor(60, 60, 60)
     doc.text(`Prejemnik: ${IZDAJATELJ.naziv}`, 18, by + 12)
     doc.text(`TRR: ${IZDAJATELJ.trr}   ·   Referenca: SI12 ${inv.stevilka}`, 18, by + 17)
-    doc.text(`Znesek: ${eur(inv.znesek)}   ·   Rok: takoj (izvirni rok ${rokPlacilaDatum(inv).toLocaleDateString('sl-SI')})`, 18, by + 22)
+    doc.text(`Znesek: ${eur(inv.znesek)}   ·   Rok: takoj (izvirni rok ${slDatumKratko(rokPlacilaDatum(inv))})`, 18, by + 22)
 
     // UPN QR
     if (upnQrUrl) {
@@ -1298,9 +1298,9 @@ export function InvoiceManager() {
                         {inv.project?.nazivProjekta ?? '—'} · {parseKupec(inv.kupec)?.ime ?? '—'}
                       </div>
                       <div className="mt-0.5 text-2xs tabular-nums text-muted-foreground">
-                        izdano {new Date(inv.datumIzdaje).toLocaleDateString('sl-SI')} · rok{' '}
+                        izdano {slDatumKratko(new Date(inv.datumIzdaje))} · rok{' '}
                         {inv.rokPlacilaDni} dni
-                        {inv.placanoAt && ` · plačano ${new Date(inv.placanoAt).toLocaleDateString('sl-SI')}`}
+                        {inv.placanoAt && ` · plačano ${slDatumKratko(new Date(inv.placanoAt))}`}
                       </div>
                     </div>
                     <div className="text-right shrink-0">
@@ -1678,7 +1678,7 @@ export function InvoiceManager() {
                 <div className="flex justify-between gap-2">
                   <span className="text-muted-foreground">Rok plačila</span>
                   <span className="font-semibold">
-                    {rokPlacilaDatum(qrInvoice).toLocaleDateString('sl-SI')}
+                    {slDatumKratko(rokPlacilaDatum(qrInvoice))}
                   </span>
                 </div>
                 <div className="flex items-center justify-between border-t border-border/60 pt-1.5">

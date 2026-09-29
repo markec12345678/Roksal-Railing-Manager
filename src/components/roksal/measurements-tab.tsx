@@ -153,6 +153,7 @@ import {
 import { Progress } from '@/components/ui/progress'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import { slDatumKratko, slCasDolgo, slDatumOkrajsava, MESCI_SL } from '@/lib/csv-export'
 
 // ============================================
 // TIPI
@@ -1400,7 +1401,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
     setSyncingDrafts(true)
     let ok = 0
     let fail = 0
-    for (const draft of [...drafts].sort((a, b) => a.createdAt.localeCompare(b.createdAt))) {
+    for (const draft of [...drafts].sort((a, b) => (a.createdAt > b.createdAt ? 1 : a.createdAt < b.createdAt ? -1 : 0))) {
       const success = await syncSingleDraft(draft)
       if (success) ok += 1
       else fail += 1
@@ -2621,7 +2622,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
       } else if (mDay.getTime() === yesterday.getTime()) {
         label = 'Včeraj'
       } else {
-        label = mDate.toLocaleDateString('sl-SI', { day: 'numeric', month: 'long' })
+        label = `${mDate.getDate()}. ${MESCI_SL[mDate.getMonth()]}`
       }
 
       if (!grouped.has(label)) grouped.set(label, [])
@@ -3413,7 +3414,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
       const kot = m.kot ? String(m.kot) : ''
       const opomba = (m.opomba || '').replace(/"/g, '""')
       const opombe = (m.opombe || '').replace(/"/g, '""')
-      const datum = new Date(m.createdAt).toLocaleDateString('sl-SI')
+      const datum = slDatumKratko(new Date(m.createdAt))
       return `"${oznaka}","${tip}","${status}","${lokacija}","${segment}",${dMm},${dCm},${dM},${vMm},${vCm},${vM},"${stebri}","${podlaga}",${kot},"${opomba}","${opombe}",${datum}`
     })
     const csvContent = '\uFEFF' + header + '\n' + rows.join('\n')
@@ -3492,7 +3493,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
         formatDimension(m.dolzinaMm),
         formatDimension(m.visinaMm),
         m.kot ? `${m.kot}°` : '—',
-        new Date(m.createdAt).toLocaleDateString('sl-SI'),
+        slDatumKratko(new Date(m.createdAt)),
       ]),
       theme: 'grid',
       headStyles: { fillColor: [29, 43, 62], textColor: 255, fontSize: 8 },
@@ -3512,7 +3513,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
     doc.setFontSize(8)
     doc.setTextColor(120, 120, 120)
     doc.text(
-      `Izvozeno ${new Date().toLocaleString('sl-SI')} • Roksal Kranj`,
+      `Izvozeno ${slDatumKratko(new Date())}, ${slCasDolgo(new Date())} • Roksal Kranj`,
       14,
       Math.min(finalY + 10, doc.internal.pageSize.getHeight() - 10)
     )
@@ -3728,7 +3729,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
       const kot = m.kot ? String(m.kot) : ''
       const opomba = (m.opomba || '').replace(/"/g, '""')
       const opombe = (m.opombe || '').replace(/"/g, '""')
-      const datum = new Date(m.createdAt).toLocaleDateString('sl-SI')
+      const datum = slDatumKratko(new Date(m.createdAt))
       return `"${oznaka}","${tip}","${status}","${lokacija}","${segment}",${dMm},${dCm},${dM},${vMm},${vCm},${vM},"${stebri}","${podlaga}",${kot},"${opomba}","${opombe}",${datum}`
     })
     const csvContent = '\uFEFF' + header + '\n' + rows.join('\n')
@@ -3885,7 +3886,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
     }
     const header = 'Cas,Akcija,MeritevId,Opis,StaraVrednost,NovaVrednost'
     const rows = auditEntries.map((e) => {
-      const cas = new Date(e.timestamp).toLocaleString('sl-SI')
+      const cas = `${slDatumKratko(new Date(e.timestamp))}, ${slCasDolgo(new Date(e.timestamp))}`
       const akcija = auditActionLabels[e.akcija]
       const opis = e.opis.replace(/"/g, '""')
       const stara = (e.staraVrednost || '').replace(/"/g, '""')
@@ -4932,7 +4933,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                             {v.verzija != null ? `v${v.verzija}` : '—'}
                           </td>
                           <td className="py-1 pr-2 tabular-nums">
-                            {new Date(v.createdAt).toLocaleDateString('sl-SI')}
+                            {slDatumKratko(new Date(v.createdAt))}
                           </td>
                           <td className="py-1 pr-2">
                             {v.vir != null && v.vir in MERITEV_VIR_LABELS
@@ -4988,7 +4989,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
           <div className="flex items-center gap-3 text-[11px] text-muted-foreground min-w-0">
             <span className="flex items-center gap-1 shrink-0 tabular-nums">
               <Calendar aria-hidden="true" className="h-3 w-3" />
-              {new Date(m.createdAt).toLocaleDateString('sl-SI')}
+              {slDatumKratko(new Date(m.createdAt))}
             </span>
             {gps && (
               <span className="flex items-center gap-1 shrink-0">
@@ -7147,7 +7148,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               )}
               <span className="ml-auto inline-flex items-center gap-1">
                 <Clock aria-hidden="true" className="h-3 w-3"  />
-                prejeto {new Date(strankaPrimerjava.zadnja).toLocaleDateString('sl-SI', { day: '2-digit', month: '2-digit' })}
+                prejeto {slDatumOkrajsava(new Date(strankaPrimerjava.zadnja))}
               </span>
             </div>
             {strankaPrimerjava.meta.opombaStranke && (
@@ -7208,7 +7209,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
             <CardContent className="px-4 pb-4">
               <ul className="space-y-2">
                 {[...drafts]
-                  .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+                  .sort((a, b) => (a.createdAt > b.createdAt ? 1 : a.createdAt < b.createdAt ? -1 : 0))
                   .map((d) => (
                     <li
                       key={d.draftId}
@@ -7219,7 +7220,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                           {d.label || 'Meritev brez oznake'}
                         </p>
                         <p className="text-2xs text-muted-foreground tabular-nums">
-                          {new Date(d.createdAt).toLocaleString('sl-SI')} · lokalni osnutek
+                          {`${slDatumKratko(new Date(d.createdAt))}, ${slCasDolgo(new Date(d.createdAt))}`} · lokalni osnutek
                         </p>
                       </div>
                       <div className="flex shrink-0 items-center gap-1.5">
@@ -7395,7 +7396,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                               <div className="flex items-center gap-1.5 mt-0.5">
                                 <Clock aria-hidden="true" className="h-2.5 w-2.5 text-muted-foreground" />
                                 <span className="text-2xs text-muted-foreground">
-                                  {new Date(entry.timestamp).toLocaleString('sl-SI')}
+                                  {`${slDatumKratko(new Date(entry.timestamp))}, ${slCasDolgo(new Date(entry.timestamp))}`}
                                 </span>
                                 <Badge variant="outline" className="text-3xs h-3.5 px-1 py-0">
                                   {auditActionLabels[entry.akcija]}
@@ -7629,7 +7630,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                         )}
                       </div>
                       <p className="text-2xs text-muted-foreground mt-0.5">
-                        {new Date(snap.createdAt).toLocaleString('sl-SI')}
+                        {`${slDatumKratko(new Date(snap.createdAt))}, ${slCasDolgo(new Date(snap.createdAt))}`}
                       </p>
                       <p className="text-2xs text-muted-foreground font-mono mt-0.5">
                         {stTock} točk · {stTock >= 2 ? stTock - 1 : 0} parov

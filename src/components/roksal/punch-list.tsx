@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input'
 import { Progress } from '@/components/ui/progress'
 import { EmptyState } from '@/components/ui/empty-state'
 import { useToast } from '@/hooks/use-toast'
+import { slDatumKratko, slCasDolgo } from '@/lib/csv-export'
 import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'
 import { casOznaka } from '@/lib/osvezitev-fokus'
 import {
@@ -361,7 +362,7 @@ export function PunchList({ project }: { project: Project | null }) {
         throw new Error(reason && typeof reason.error === 'string' ? reason.error : `HTTP ${res.status}`)
       }
     } catch (err) {
-      setItems((prev) => [...prev, item].sort((a, b) => a.createdAt.localeCompare(b.createdAt)))
+      setItems((prev) => [...prev, item].sort((a, b) => (a.createdAt > b.createdAt ? 1 : a.createdAt < b.createdAt ? -1 : 0)))
       toast({
         title: 'Napaka',
         description: err instanceof Error && err.message !== 'Failed to fetch'
@@ -394,7 +395,7 @@ export function PunchList({ project }: { project: Project | null }) {
       doc.setFontSize(10)
       doc.setFont('Roboto', 'normal')
       doc.text('Prejemni zapisnik — kontrola pred predajo', 14, 19)
-      doc.text(new Date().toLocaleDateString('sl-SI'), pageWidth - 14, 19, { align: 'right' })
+      doc.text(slDatumKratko(new Date()), pageWidth - 14, 19, { align: 'right' })
 
       // Podatki o projektu
       doc.setTextColor(17, 24, 39)
@@ -459,7 +460,7 @@ export function PunchList({ project }: { project: Project | null }) {
 
       doc.setFontSize(7)
       doc.text(
-        `Zapisnik generiran z aplikacijo Roksal Field — ${new Date().toLocaleString('sl-SI')}`,
+        `Zapisnik generiran z aplikacijo Roksal Field — ${slDatumKratko(new Date())}, ${slCasDolgo(new Date())}`,
         14,
         288,
       )

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { useToast } from '@/hooks/use-toast'
+import { slDatumKratko, slCasDolgo } from '@/lib/csv-export'
 import {
   Lock,
   CheckCircle2,
@@ -108,7 +109,7 @@ export function PostSignaturePanel({ project }: { project: Project }) {
       doc.text('AUDIT TRAIL — PODPISI', pageW - 14, 15, { align: 'right' })
       doc.setFontSize(8)
       doc.setFont('helvetica', 'normal')
-      doc.text(new Date().toLocaleString('sl-SI'), pageW - 14, 21, { align: 'right' })
+      doc.text(`${slDatumKratko(new Date())}, ${slCasDolgo(new Date())}`, pageW - 14, 21, { align: 'right' })
 
       let y = 44
       // Projekt info
@@ -125,7 +126,7 @@ export function PostSignaturePanel({ project }: { project: Project }) {
       doc.text(`Stranka: ${project.customer?.ime || '—'}`, 14, y + 5)
       doc.text(`Status: ZA_MONTAZO (podpisano)`, 14, y + 10)
       if (project.dealLockedAt) {
-        doc.text(`Datum podpisa: ${new Date(project.dealLockedAt).toLocaleString('sl-SI')}`, 14, y + 15)
+        doc.text(`Datum podpisa: ${slDatumKratko(new Date(project.dealLockedAt))}, ${slCasDolgo(new Date(project.dealLockedAt))}`, 14, y + 15)
       }
       if (project.estimatedPrice) {
         doc.text(`Skupna cena: ${project.estimatedPrice.toFixed(2)} € z DDV`, 14, y + 20)
@@ -155,7 +156,7 @@ export function PostSignaturePanel({ project }: { project: Project }) {
         y += 5
         doc.text(`Ime: ${a.signedByName}`, 18, y)
         y += 4
-        doc.text(`Datum: ${new Date(a.createdAt).toLocaleString('sl-SI')}`, 18, y)
+        doc.text(`Datum: ${slDatumKratko(new Date(a.createdAt))}, ${slCasDolgo(new Date(a.createdAt))}`, 18, y)
         y += 4
         if (a.ipAddress) {
           doc.text(`IP: ${a.ipAddress}`, 18, y)
@@ -276,7 +277,7 @@ export function PostSignaturePanel({ project }: { project: Project }) {
                 <Badge className="bg-green-600 text-white text-[9px]">WON</Badge>
               </div>
               <p className="text-[11px] text-green-700 dark:text-green-300 mt-0.5">
-                {project.dealLockedAt && new Date(project.dealLockedAt).toLocaleString('sl-SI')}
+                {project.dealLockedAt && `${slDatumKratko(new Date(project.dealLockedAt))}, ${slCasDolgo(new Date(project.dealLockedAt))}`}
               </p>
               <p className="text-2xs text-green-600 dark:text-green-400 mt-0.5">
                 Stranka: {project.dealSignedBy} · Monter: {project.dealSignedByMonter}
@@ -426,7 +427,7 @@ export function PostSignaturePanel({ project }: { project: Project }) {
               <div className="grid grid-cols-2 gap-1 text-2xs text-muted-foreground">
                 <div className="flex items-center gap-1">
                   <Clock aria-hidden="true" className="h-2.5 w-2.5" />
-                  {new Date(a.createdAt).toLocaleString('sl-SI')}
+                  {`${slDatumKratko(new Date(a.createdAt))}, ${slCasDolgo(new Date(a.createdAt))}`}
                 </div>
                 {a.ipAddress && (
                   <div className="truncate">IP: {a.ipAddress}</div>

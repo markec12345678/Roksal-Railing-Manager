@@ -9,6 +9,7 @@ import { FileDown, Loader2, FileText, FileCheck2 } from 'lucide-react'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { registerSloPdfFonts } from '@/lib/pdf-sl-font'
+import { slDatumKratko, slCasDolgo } from '@/lib/csv-export'
 
 import type { Project } from '@/lib/types'
 
@@ -82,7 +83,7 @@ export function PdfExport({ project }: { project: Project | null }) {
 
       // Datum desno
       doc.setFontSize(8)
-      doc.text(new Date().toLocaleDateString('sl-SI'), pageW - 14, 14, { align: 'right' })
+      doc.text(slDatumKratko(new Date()), pageW - 14, 14, { align: 'right' })
       doc.text(`Št: ${project.id.slice(-6).toUpperCase()}`, pageW - 14, 20, { align: 'right' })
 
       y = 38
@@ -107,8 +108,8 @@ export function PdfExport({ project }: { project: Project | null }) {
       const right = [
         `Status: ${STATUS_LABELS[project.status] ?? project.status}`,
         `Monter: ${project.monter?.ime ?? '—'}`,
-        `Datum montaže: ${project.datumMontaze ? new Date(project.datumMontaze).toLocaleDateString('sl-SI') : '—'}`,
-        `Datum izpisa: ${new Date().toLocaleDateString('sl-SI')}`,
+        `Datum montaže: ${project.datumMontaze ? slDatumKratko(new Date(project.datumMontaze)) : '—'}`,
+        `Datum izpisa: ${slDatumKratko(new Date())}`,
       ]
       left.forEach((line, i) => doc.text(line, 14, y + i * 5))
       right.forEach((line, i) => doc.text(line, pageW / 2, y + i * 5))
@@ -129,7 +130,7 @@ export function PdfExport({ project }: { project: Project | null }) {
             String(i + 1),
             String(m.dolzinaMm),
             String(m.visinaMm),
-            new Date(m.createdAt).toLocaleDateString('sl-SI'),
+            slDatumKratko(new Date(m.createdAt)),
           ]),
           theme: 'grid',
           headStyles: { fillColor: COLORS.navy, fontSize: 9, font: "Roboto" },
@@ -175,7 +176,7 @@ export function PdfExport({ project }: { project: Project | null }) {
             doc.setFontSize(7)
             doc.setFont('Roboto', 'normal')
             doc.setTextColor(...COLORS.gray)
-            doc.text(new Date(imgs[i].createdAt).toLocaleString('sl-SI'), x, imgY + 44)
+            doc.text(`${slDatumKratko(new Date(imgs[i].createdAt))}, ${slCasDolgo(new Date(imgs[i].createdAt))}`, x, imgY + 44)
           }
           y += Math.ceil(imgs.length / 2) * 55 + 4
         }
@@ -263,7 +264,7 @@ export function PdfExport({ project }: { project: Project | null }) {
       doc.text('Kranj, Slovenija · Ograje in terase po meri', 32, 21)
       doc.text('PONUDBA', pageW - 14, 15, { align: 'right' })
       doc.setFontSize(8)
-      doc.text(new Date().toLocaleDateString('sl-SI'), pageW - 14, 21, { align: 'right' })
+      doc.text(slDatumKratko(new Date()), pageW - 14, 21, { align: 'right' })
 
       y = 44
       // Za & dobivalnik
@@ -277,7 +278,7 @@ export function PdfExport({ project }: { project: Project | null }) {
       doc.setFont('Roboto', 'bold')
       doc.text('DATUM:', pageW - 60, y)
       doc.setFont('Roboto', 'normal')
-      doc.text(new Date().toLocaleDateString('sl-SI'), pageW - 14, y, { align: 'right' })
+      doc.text(slDatumKratko(new Date()), pageW - 14, y, { align: 'right' })
       doc.setFont('Roboto', 'bold')
       doc.text('ŠT. PONUDBE:', pageW - 60, y + 5)
       doc.setFont('Roboto', 'normal')

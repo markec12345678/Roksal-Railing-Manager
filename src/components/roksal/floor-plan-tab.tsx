@@ -41,6 +41,7 @@ import {
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { useToast } from '@/hooks/use-toast'
+import { slDatumKratko, slCasDolgo } from '@/lib/csv-export'
 import jsPDF from 'jspdf'
 import {
   Minus,
@@ -1181,7 +1182,7 @@ export function FloorPlanTab({ projectId }: FloorPlanTabProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           projectId,
-          naziv: `Tloris ${new Date().toLocaleDateString('sl-SI')}`,
+          naziv: `Tloris ${slDatumKratko(new Date())}`,
           pngData,
           povzetek: `Tloris z ${stats.postCount} stebri, ${stats.doorCount} vrati, ${stats.windowCount} okni. Skupna dolžina sten: ${stats.wallLengthM.toFixed(2)} m.`,
         }),
@@ -1224,7 +1225,7 @@ export function FloorPlanTab({ projectId }: FloorPlanTabProps) {
       doc.text('Tloris balkona z elementi', 30, 19)
       // Datum desno
       doc.setFontSize(8)
-      doc.text(new Date().toLocaleDateString('sl-SI'), pageW - 14, 13, { align: 'right' })
+      doc.text(slDatumKratko(new Date()), pageW - 14, 13, { align: 'right' })
       if (projectId) {
         doc.text(`Projekt: ${projectId.slice(-6).toUpperCase()}`, pageW - 14, 19, { align: 'right' })
       }
@@ -1316,7 +1317,7 @@ export function FloorPlanTab({ projectId }: FloorPlanTabProps) {
       doc.setFontSize(7)
       doc.setTextColor(107, 114, 128)
       doc.text(
-        `Roksal d.o.o., Kranj — Tloris generiran ${new Date().toLocaleString('sl-SI')}`,
+        `Roksal d.o.o., Kranj — Tloris generiran ${slDatumKratko(new Date())}, ${slCasDolgo(new Date())}`,
         14,
         pageH - 10
       )

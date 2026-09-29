@@ -557,3 +557,116 @@ export function pregledajAvtomatizacijo(
   }
   return kršitve
 }
+
+// ---------------------------------------------------------------------------
+// KOMPONENTNI SLOJ (R295 — issue #1 nadaljevanje: skener razširjen na
+// src/components). Prikazni sloj ima DRUGAČNO politiko kot jedro:
+//   - ARTIFACT domena (komponenta z jsPDF importom — vgrajena PDF logika,
+//     npr. račun/ponudba/delovni list) = bajtni determinizem TUDI v
+//     komponentah: locale* + localeCompare NIKOLI — EN VIR pomožniki iz
+//     csv-export.ts (slDatumKratko/slCasDolgo/formatSlDecimalno, R294/R295);
+//   - stena ura (new Date()/Date.now) v prikaznem sloju = opazovalec "zdaj"
+//     (zadnja osvežitev, urni prikaz, zapadlost UI) — LAST OPERACIJE, ne
+//     resnica izvoza → NI vzorec komponentnega skena;
+//   - Math.random v komponentah = SAMO prek izjem (unikatni ID pred sync,
+//     shadcn skeleton dekoracija) — vsaka z obveznim razlogom;
+//   - AI gostitelji = NIKOLI (isto jedro pravilo).
+// ---------------------------------------------------------------------------
+
+/** Izjeme komponentnega skena po TOČNI poti — vsaka z OBVEZNIM razlogom
+ *  (isti fail-closed kontrakt kot AVTOMATIZACIJA_IZJEME). */
+export const AVTOMATIZACIJA_IZJEME_KOMPONENTE: readonly AvtomatizacijaIzjema[] = [
+  {
+    pot: 'src/components/roksal/photo-tab.tsx',
+    dovoljeni: ['Math.random'],
+    razlog: 'unikatni ID ne sinhronizirane analize pred sync (ann_ + Date.now + Math.random) — isti vzorec kot src/lib/offline-queue.ts izjema R294; ni resnica izvoza',
+  },
+  {
+    pot: 'src/components/roksal/cv-studio.tsx',
+    dovoljeni: ['Math.random'],
+    razlog: 'unikatni ID lokalne CV seje pred sync (id- + Date.now + Math.random) — unikatnost entropy, ni resnica izvoza',
+  },
+  {
+    pot: 'src/components/roksal/floor-plan-tab.tsx',
+    dovoljeni: ['Math.random'],
+    razlog: 'unikatni ID lokalen tloris element pred sync (prefix_ + Date.now + Math.random) — unikatnost entropy, ni resnica izvoza',
+  },
+  {
+    pot: 'src/components/roksal/measurement-studio.tsx',
+    dovoljeni: ['Math.random'],
+    razlog: 'unikatni ID merilne seje pred sync (ms- + Date.now + Math.random) — unikatnost entropy, ni resnica izvoza',
+  },
+  {
+    pot: 'src/components/roksal/ar-scanner.tsx',
+    dovoljeni: ['Math.random'],
+    razlog: 'unikatni ID AR meritve pred sync (Date.now + Math.random) — unikatnost entropy, ni resnica izvoza',
+  },
+  {
+    pot: 'src/components/ui/sidebar.tsx',
+    dovoljeni: ['Math.random'],
+    razlog: 'shadcn/ui UPSTREAM SidebarMenuSkeleton: dekorativna naključna širina 50-90 % med nalaganjem (loading skeleton) — ni podatkovni prikaz, ni resnica izvoza, ni AI',
+  },
+]
+
+/** Pregled komponentnega sloja → kršitve (deterministično; indeks krivca =
+ *  pot + vrstica). Vzorci: AI gostitelji + Math.random (vse komponente,
+ *  izjeme po točni poti) + locale* + localeCompare (SAMO ARTIFACT domena —
+ *  komponenta z jsPDF importom). SEAM pravilo identično jedru. */
+export function pregledajKomponente(
+  viri: readonly { pot: string; vsebina: string }[],
+): Kršitev[] {
+  if (!Array.isArray(viri)) {
+    throw new TypeError('pregledajKomponente: pričakovano polje virov')
+  }
+  const SEAM_PRED = /\?\?\s*$/
+  const SEAM_PRIVZETO = /:\s*[A-Za-z0-9_$][A-Za-z0-9_$<>\[\]|.\s]*=\s*$/
+  const JSPDF_IMPORT = /from\s+(['"])jspdf\1/
+  const izjeme = new Map<string, AvtomatizacijaIzjema>()
+  for (const iz of AVTOMATIZACIJA_IZJEME_KOMPONENTE) {
+    if (!iz.pot || !Array.isArray(iz.dovoljeni) || typeof iz.razlog !== 'string' || iz.razlog.trim() === '') {
+      throw new TypeError(`pregledajKomponente: izjema brez razloga/dovoljenih (${String(iz.pot)})`)
+    }
+    izjeme.set(iz.pot, iz)
+  }
+  const vzorci = PREPOVEDANI_VZORCI.filter(
+    (v) =>
+      v.ime === 'AI-API-gostitelj' ||
+      v.ime === 'Math.random' ||
+      v.ime === 'locale-odvisni-izpis' ||
+      v.ime === 'localeCompare',
+  )
+  const kršitve: Kršitev[] = []
+  for (const vir of viri) {
+    if (!vir || typeof vir.pot !== 'string' || typeof vir.vsebina !== 'string') {
+      throw new TypeError('pregledajKomponente: pričakovano { pot, vsebina }')
+    }
+    if (vir.pot === 'src/lib/avtomatizacija-audit.ts') continue // skener sam (definicijska datoteka)
+    const artifactDomena = JSPDF_IMPORT.test(odstraniKomentarje(vir.vsebina))
+    const izjema = izjeme.get(vir.pot)
+    const brezKomentarjev = odstraniKomentarje(vir.vsebina)
+    for (const v of vzorci) {
+      const artifactVzorec = v.ime === 'locale-odvisni-izpis' || v.ime === 'localeCompare'
+      if (artifactVzorec && !artifactDomena) continue // prikazni sloj: stena ura/locale UI je opazovalec, ne resnica
+      if (izjema?.dovoljeni.includes(v.ime)) continue
+      const re = new RegExp(v.vzorec, 'g')
+      let m: RegExpExecArray | null
+      while ((m = re.exec(brezKomentarjev)) !== null) {
+        const vrstica = brezKomentarjev.slice(0, m.index).split('\n').length
+        const lineText = brezKomentarjev.split('\n')[vrstica - 1] ?? ''
+        const zacetekVrstice = brezKomentarjev.lastIndexOf('\n', m.index - 1) + 1
+        const pred = brezKomentarjev.slice(zacetekVrstice, m.index)
+        if (SEAM_PRED.test(pred) || SEAM_PRIVZETO.test(pred)) {
+          continue // privzeta vrednost parametra / ?? fallback — dokumentiran kanon
+        }
+        kršitve.push({
+          pot: vir.pot,
+          vzorec: v.ime,
+          vrstica,
+          razlaga: v.razlaga,
+          okoli: lineText.trim().slice(0, 120),
+        })
+      }
+    }
+  }
+  return kršitve
+}

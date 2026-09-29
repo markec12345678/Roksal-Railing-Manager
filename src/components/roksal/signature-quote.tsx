@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
 import SignatureCanvas from 'react-signature-canvas'
 import { Pen, Eraser, Check, X, FileText, User, Download } from 'lucide-react'
+import { slDatumKratko } from '@/lib/csv-export'
 import jsPDF from 'jspdf'
 
 interface SignedQuoteData {
@@ -265,11 +266,11 @@ export function SignatureQuote({ quoteData, monterName = 'Monter Roksal', projec
 
       doc.setFontSize(7)
       doc.setTextColor(...COLORS.gray)
-      doc.text(`Datum: ${new Date().toLocaleDateString('sl-SI')}`, podpisLevi, y + 34)
+      doc.text(`Datum: ${slDatumKratko(new Date())}`, podpisLevi, y + 34)
       if (customerLocation) {
         doc.text(`Kraj: ${customerLocation}`, podpisLevi, y + 37)
       }
-      doc.text(`Datum: ${new Date().toLocaleDateString('sl-SI')}`, podpisDesni, y + 34)
+      doc.text(`Datum: ${slDatumKratko(new Date())}`, podpisDesni, y + 34)
       doc.text('Roksal d.o.o. Kranj', podpisDesni, y + 37)
 
       // Noga
