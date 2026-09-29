@@ -50,8 +50,12 @@ async function main() {
       ['e2e-r276-proj', 'e2e-r276-str', 'E2E r276 Verzije', 'V_TEKU', 'e2e-r276-proj-portal', TS]
     )
     await c.query(
-      `INSERT INTO "Measurement" ("id","projectId","dolzinaMm","visinaMm","createdAt","status","verzija","korenId","vir") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
-      ['e2e-r276-m1', 'e2e-r276-proj', 3200, 1200, TS, 'OSNUTEK', 1, null, 'MANUAL']
+      // R280: arMetadata z tipMeritve VISINA + kot 87 — seed resnica za
+      // R280 tip/kot badge title probes (aditivno; restore briše vrstico —
+      // odtis pre==post neoviran; R279 segBadge ostaja NE-prisoten — brez
+      // segmentId = iskrena praznina, kanon r279 Z1).
+      `INSERT INTO "Measurement" ("id","projectId","dolzinaMm","visinaMm","createdAt","status","verzija","korenId","vir","arMetadata") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+      ['e2e-r276-m1', 'e2e-r276-proj', 3200, 1200, TS, 'OSNUTEK', 1, null, 'MANUAL', JSON.stringify({ tipMeritve: 'VISINA', kot: 87 })]
     )
     const n = await c.query(`SELECT COUNT(*)::int AS n FROM "Measurement" WHERE "projectId" = 'e2e-r276-proj'`)
     console.log(`seed-verzije OK — meritev: ${n.rows[0].n}`)

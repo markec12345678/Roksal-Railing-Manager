@@ -17,7 +17,14 @@ novih polj); plus `segments[].confidence`/`uncertaintyMm` opcijsko
 (isti kanon — odločitve S1–S6 v glavi `src/lib/ar-contract.ts`); **R279
 razširitev (issue #16 §9)**: `segments[].photoIds`/`modelIds` opcijsko —
 verbatim reference v session-level nize + superRefine referenčna integriteta
-(nič osirotelih referenc; T1–T5 v glavi `src/lib/ar-contract.ts`).
+(nič osirotelih referenc; T1–T5 v glavi `src/lib/ar-contract.ts`); **R280
+razširitev (issue #16 §3 — ZADNJI ostanki §3)**: `segments[].profile`/
+`color`/`material`/`handrail`/`posts`/`configuration` opcijsko (aditivno —
+odločitve U1–U6 v glavi `src/lib/ar-contract.ts`; RAZMEJITEV KONTRAKT vs.
+BUSINESS: produkt reference = OPAZOVANE/POTRJENE terenske oznake
+(provenance), NIKOLI business resnica — BOM/geometry/pricing core NE
+importira kontrakta (strukturni test) in parse NE izpeljuje NIČESAR iz teh
+polj (invariančni test); NE enumi kataloga = nič vzporednega vira resnice).
 
 ---
 
@@ -115,6 +122,12 @@ Minimalni veljaven payload (samo obvezna polja — vse ostalo izpustljivo):
 | `segments[].uncertaintyMm` | `Float?` | `finite > 0` | **R278 (issue #16 §3, S1–S6)**: flat per-segment negotovost, mm v imenu (kanon odločitev 2); ista disciplina kot `confidence` |
 | `segments[].photoIds` | `[String]?` | `1..20 × (1..300)` | **R279 (issue #16 §9, T1–T5)**: verbatim reference v session-level `photoRefs[].ref` — povezava Project → MeasurementSession → Segment → Photo (EN VIR — nič podvajanja sekcije); NE-prazen niz (izostanek = edini 'brez'); fail-closed superRefine — osirotela referenca = zavrnitev (T3); verbatim brez trim/case-fold (T4) |
 | `segments[].modelIds` | `[String]?` | `1..20 × (1..300)` | **R279 (issue #16 §9, T1–T5)**: verbatim reference v `glbRefs[].ref` — ista disciplina kot `photoIds` |
+| `segments[].profile` | `String?` | `String 1..200` | **R280 (issue #16 §3, U1–U6)**: OPAZOVANA/POTRJENA terenska referenca profila (provenance), NIKOLI business resnica (U3 — core NE bere); verbatim brez trim/case-fold (U5); izostanek = ni opazovano, prazen niz in null zavrnjena (U4) |
+| `segments[].color` | `String?` | `String 1..200` | **R280 (issue #16 §3, U1–U6)**: terenska barvna referenca — ista disciplina kot `profile` |
+| `segments[].material` | `String?` | `String 1..200` | **R280 (issue #16 §3, U1–U6)**: terenska materialna referenca — ista disciplina kot `profile` |
+| `segments[].handrail` | `String?` | `String 1..200` | **R280 (issue #16 §3, U1–U6)**: terenska referenca ročaja ('kjer je del potrjene konfiguracije') — vezna resnica konfiguracije ostane Deal Lock (issue #13); ista disciplina kot `profile` |
+| `segments[].posts` | `String?` | `String 1..200` | **R280 (issue #16 §3, U1–U6)**: terenska referenca drogov — §11: posts v Roksalu DERIVED, kontrakt nosi samo oznako; ista disciplina kot `profile` |
+| `segments[].configuration` | `String?` | `String 1..200` | **R280 (issue #16 §3, U1–U6)**: terenska konfiguracijska referenca — ista disciplina kot `handrail` |
 | `segments[].source` | enum `SessionSource` | kot `source` | per-segment izvor |
 | `segments[].measurementIndex` | `Int?` | `Int ≥ 0` | opcijsko |
 
@@ -180,6 +193,12 @@ data class ArSegment(
     val uncertaintyMm: Double? = null,         // R278: mm > 0 (kanon odločitev 2)
     val photoIds: List<String>? = null,        // R279 (issue #16 §9): verbatim reference v photoRefs[].ref; NE-prazen; osirotela = zavrnitev (superRefine)
     val modelIds: List<String>? = null,        // R279: verbatim reference v glbRefs[].ref — ista disciplina
+    val profile: String? = null,               // R280 (issue #16 §3): terenska referenca — provenance, NIKOLI business resnica (U3); verbatim 1..200
+    val color: String? = null,                 // R280: ista disciplina kot profile
+    val material: String? = null,              // R280: ista disciplina kot profile
+    val handrail: String? = null,              // R280: terenska referenca — vezna resnica ostane Deal Lock (issue #13)
+    val posts: String? = null,                 // R280: oznaka — posts v Roksalu DERIVED (§11)
+    val configuration: String? = null,         // R280: terenska konfiguracijska referenca — ista disciplina kot handrail
     val source: SessionSource,
     val measurementIndex: Int? = null,
 )

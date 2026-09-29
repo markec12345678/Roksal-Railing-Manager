@@ -198,6 +198,46 @@
 //       'ref-A' ≠ 'ref-a' (test dokazuje zavrnitev).
 //   T5. DB/ROUTE NIČ (P6/Q6/S6 kanon): arMetadata JSON verbatim, brez sheme.
 //
+// ── SEMANTIČNE ODLOČITVE SEGMENT PRODUKT REFERENCE (R280, issue #16 §3
+//    — U1–U6, isti kanon kot P/Q/S/T) ─────────────────────────────────────
+//
+//   U1. ADITIVNA v1 (isti razlogi kot P1/Q1/S1/T1 — verzija ostane 1,
+//       matrika nosi razširitev izrečno).
+//   U2. FORMA = flat per-segment opcijski VERBATIM STRINGI, 1:1 issue
+//       besednjak: profile / color / material (§3 'color/material, kjer je
+//       relevantno') + handrail / posts / configuration (§3 'kjer je del
+//       potrjene konfiguracije'). Vsaka dimenzija NEODVISNO opcijska.
+//       NIZI, NE ENUMI kataloga: nomenklatura kataloga je Product SDK
+//       domena (core NIČ — trda pravilo); enum v kontraktu bi ustvaril
+//       DRUGI VZPOREDNI VIR RESNICE (issue #16 cilj: 'brez ustvarjanja
+//       drugega vzporednega vira resnice') + sinhronizacijsko breme med
+//       repozitoriji ob vsaki spremembi kataloga. STRINGI, NE STRUKTURE:
+//       §11 razmejitev — railing layout/posts so v Roksalu DERIVED
+//       (business); strukturna specifikacija na segmentu bi se lahko
+//       pojavila kot alternativna geometrijska resnica.
+//   U3. RAZMEJITEV KONTRAKT vs. BUSINESS (glavna odločitev runde):
+//       produkt reference na segmentu = OPAZOVANE/POTRJENE terenske
+//       oznake (provenance zapisa), NIKOLI business resnica. Roksal
+//       business resnica ostane Measurement → Geometry → Railing Layout
+//       → BOM → Quote (issue #16 §8/§11; issue #13 Quote → Deal Lock).
+//       'kjer je del potrjene konfiguracije' = kaj je bilo potrjeno NA
+//       TERENU (zapis); vezna resnica konfiguracije ostane Deal Lock.
+//       BOM/geometry/pricing core teh polj NE bere — dokaz: core moduli
+//       NE importirajo ar-contract (strukturni test) + parse NE izpeljuje
+//       NIČESAR iz teh polj (invariančni test: payload ± produkt polja
+//       = brez njih deep-enak).
+//   U4. IZOSTANEK ≠ NIČ (P5/Q5/S5/T2 kanon): brez polja = ni bilo
+//       opazovano/potrjeno (iskrena praznina). Ekspliciten null zavrnjen
+//       (z.string() ne sprejme null). PRAZEN niz zavrnjen (min(1)) —
+//       prazen string = dvosmerna izjava 'brez', izostanek je EDINI
+//       'brez' (ena resnica — kanon T2).
+//   U5. VERBATIM (odločitev 6 kanon): brez trim/case-fold — 'WPC-120-A' ≠
+//       'wpc-120-a'; vrednost z presledki na robovih ostane verbatim.
+//       Strop 200 znakov (velikodušen strop — terenska oznaka, ne styler;
+//       ref nizi imajo 300 — produkt oznake so krajše).
+//   U6. DB/ROUTE NIČ (P6/Q6/S6/T5 kanon): arMetadata JSON verbatim, brez
+//       sheme (R276 edini schema-touch), brez migracije.
+//
 // Determinizem: enak vhod → enak izhod (brez ure, naključja, locale).
 // Fail-closed: vsak neveljaven vhod = izrecna ArContractError s kodo.
 // ---------------------------------------------------------------------------
@@ -213,7 +253,7 @@ export const AR_CONTRACT_VERSION = 1
 export const AR_CONTRACT_COMPATIBILITY = {
   // P1 (R277): v1 razširjen ADITIVNO z segments[].angleDeg (issue #16 §3 —
   // opcijsko; brez spremembe pomena obstoječih polj, brez migracije).
-  1: { status: 'aktivna', uvod: 'R274 (issue #17 §A/§D)', razsiritev: 'R277 (issue #16 §3: segments[].angleDeg opcijsko — aditivno, P1–P6) + R278 (issue #16 §3: segments[].startMm/endMm + confidence/uncertaintyMm opcijsko — aditivno, Q1–Q6/S1–S6) + R279 (issue #16 §9: segments[].photoIds/modelIds opcijsko — aditivno, T1–T5, superRefine referenčna integriteta)' },
+  1: { status: 'aktivna', uvod: 'R274 (issue #17 §A/§D)', razsiritev: 'R277 (issue #16 §3: segments[].angleDeg opcijsko — aditivno, P1–P6) + R278 (issue #16 §3: segments[].startMm/endMm + confidence/uncertaintyMm opcijsko — aditivno, Q1–Q6/S1–S6) + R279 (issue #16 §9: segments[].photoIds/modelIds opcijsko — aditivno, T1–T5, superRefine referenčna integriteta) + R280 (issue #16 §3: segments[].profile/color/material/handrail/posts/configuration opcijsko — aditivno, U1–U6, razmejitev kontrakt vs. business)' },
 } as const
 
 /** Podprte verzije — izpeljane iz matrike (EN vir). */
@@ -334,6 +374,20 @@ const arSessionSchema = z.strictObject({
          *  case-fold (T4). */
         photoIds: z.array(z.string().min(1).max(300)).min(1).max(20).optional(),
         modelIds: z.array(z.string().min(1).max(300)).min(1).max(20).optional(),
+        /** R280 (issue #16 §3, U1–U6): produkt reference — OPAZOVANE/
+         *  POTRJENE terenske oznake (provenance zapisa), NIKOLI business
+         *  resnica (U3 razmejitev: BOM/geometry/pricing core teh polj NE
+         *  bere — core NE importira kontrakta; katalog je Product SDK
+         *  domena — kontrakt NE nosi enumov kataloga = nič vzporednega
+         *  vira resnice, U2). Verbatim — brez trim/case-fold (U5);
+         *  izostanek = ni opazovano/potrjeno, prazen niz in ekspliciten
+         *  null zavrnjena (U4). */
+        profile: z.string().min(1).max(200).optional(),
+        color: z.string().min(1).max(200).optional(),
+        material: z.string().min(1).max(200).optional(),
+        handrail: z.string().min(1).max(200).optional(),
+        posts: z.string().min(1).max(200).optional(),
+        configuration: z.string().min(1).max(200).optional(),
         source: z.enum(AR_SESSION_SOURCES),
         measurementIndex: z.number().int().min(0).optional(),
       }),

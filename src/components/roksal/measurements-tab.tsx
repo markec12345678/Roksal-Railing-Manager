@@ -414,6 +414,21 @@ const tipMeritveLabels: Record<TipMeritve, string> = {
   STEBR: 'Stebriček/Palica',
 }
 
+// R280 MANDATORY STIL — hover parity za tip badge (isti vzorec kot R278 vir
+// pill + R279 segmentId Badge: cursor-help + title razložljivost; 0 novih hex).
+const tipMeritveTitles: Record<TipMeritve, string> = {
+  RAZDALJA: 'Vrsta meritve: Razdalja — vodoravna dolžina; določa širino segmenta.',
+  VISINA: 'Vrsta meritve: Višina — navpična dimenzija; določa višino ograje.',
+  KOT: 'Vrsta meritve: Kot — izmerjen kot v stopinjah (vrednost = resnica, verbatim).',
+  NAGIB: 'Vrsta meritve: Nagib — naklon tal/plošče; znak je del resnice.',
+  GLOBINA: 'Vrsta meritve: Globina — globinska meritev (npr. stopnice).',
+  PREMER: 'Vrsta meritve: Premer — premer objekta (npr. droga).',
+  SEGMENT: 'Vrsta meritve: Segment — meritev pripisana segmentu (stabilen segmentId — identiteta preživi re-anchor, issue #16 §1).',
+  KOT_VOGAL: 'Vrsta meritve: Vogal — notranji/zunanji kot vogala.',
+  KOT_STOPNISCE: 'Vrsta meritve: Kot stopnice — naklon stopniščnega kosa (rake).',
+  STEBR: 'Vrsta meritve: Stebriček/Palica — samostojen steber s pozicijo v segmentu (avto-številčenje S1, S2 …).',
+}
+
 const tipMeritveIcons: Record<TipMeritve, typeof Ruler> = {
   RAZDALJA: Ruler,
   VISINA: Gauge,
@@ -4252,9 +4267,10 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                 </p>
                 {m.tipMeritve && m.tipMeritve !== 'RAZDALJA' && (
                   <span
-                    className={`inline-flex items-center gap-0.5 rounded px-1 py-0 text-3xs font-medium border ${
+                    className={`inline-flex items-center gap-0.5 rounded px-1 py-0 text-3xs font-medium border cursor-help ${
                       tipMeritveColors[m.tipMeritve]
                     }`}
+                    title={tipMeritveTitles[m.tipMeritve]}
                   >
                     <TipIcon className="h-2.5 w-2.5" />
                     {tipMeritveLabels[m.tipMeritve]}
@@ -4378,7 +4394,11 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   </Badge>
                 )}
                 {m.kot && m.kot !== 90 && (
-                  <Badge variant="outline" className="text-[9px] h-4 px-1 shrink-0">
+                  <Badge
+                    variant="outline"
+                    className="text-[9px] h-4 px-1 shrink-0 cursor-help"
+                    title={`Kot ${m.kot}° — izmerjena vrednost (verbatim, znak = resnica). Privzeti pravi kot 90° se ne označuje — označujem samo odstopanja.`}
+                  >
                     {m.kot}°
                   </Badge>
                 )}
