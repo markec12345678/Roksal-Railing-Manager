@@ -193,9 +193,14 @@ describe('R287 — zvonček komponenta (strazar): EN VIR + portal akcija + stil'
     expect(src).toContain("opomnikPotekel: { icon: PhoneCall, bg: 'bg-roksal-red/15', fg: 'text-roksal-red' },")
   })
 
-  it('portal akcija: klik → CRM (R182 protokol — pariteta followup/invoice)', () => {
-    expect(src).toContain("item.kind === 'followup' || item.kind === 'invoice' || item.kind === 'opomnik' || item.kind === 'opomnikPotekel'")
+  it('portal akcija: klik → CRM (R182 protokol) — R288: opomnik dobi deep-link (dvo-dogodkovni R214 vzorec), followup/invoice ostajata navadni R182', () => {
+    // R288 (posodobitev pina z ohranjeno namero): skupna veja followup/
+    // invoice/opomnik/opomnikPotekel se cepi — opomnik kinda dobita roksal:
+    // select-crm deep-link, followup/invoice ostajata na navadni navigaciji.
+    expect(src).toContain("item.kind === 'followup' || item.kind === 'invoice'")
+    expect(src).toContain("item.kind === 'opomnik' || item.kind === 'opomnikPotekel'")
     expect(src).toContain("new CustomEvent('roksal:navigate', { detail: { tab: 'more', more: 'crm' } })")
+    expect(src).toContain("new CustomEvent('roksal:select-crm', { detail: strankaId })")
   })
 
   it('a11y (R217 vzorec): aria-label pove cilj — odpre CRM (opomnik)', () => {

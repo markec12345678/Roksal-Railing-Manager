@@ -20,6 +20,10 @@ import { InvoiceManager } from '@/components/roksal/invoice-manager'
 import { DealPipeline } from '@/components/roksal/deal-pipeline'
 import { buildCrmCsv, crmCsvFilename } from '@/lib/crm-csv'
 import { todayStamp } from '@/lib/csv-export'
+// R288 — deep-link odločitev ((k) dopolnitev R287): čista lib funkcija
+// (client-safe, R283 vzorec izvlečene funkcije) razsodi porabo zahteve —
+// komponenta ostane tanka vez (CAKAJ/ODPRI/PRESKOCI — vsi robovi pripeti).
+import { crmDeepLinkOdlocitev } from '@/lib/crm-deep-link'
 import {
   buildOpomnikPdfDoc,
   opomnikPdfFilename,
@@ -140,7 +144,17 @@ function formatLTV(eur: number): string {
   return eur.toLocaleString('sl-SI', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + ' €'
 }
 
-export function CrmTab() {
+export function CrmTab({
+  // R288 — deep-link zahteva (id stranke iz zvončka 'opomnik-{id}');
+  // null = brez zahteve. Lastništvo stanja: page.tsx (lupina) — R214 vzorec.
+  izbranaStrankaId = null,
+  // R288 — one-shot poraba: klicatelj počisti zahtevo po ODPRI/PRESKOCI
+  // (brez ponovnega odpiranja ob remountu; CAKAJ robov NE čistijo).
+  onStrankaIzbranaObravnavana,
+}: {
+  izbranaStrankaId?: string | null
+  onStrankaIzbranaObravnavana?: () => void
+} = {}) {
   const [customers, setCustomers] = useState<CrmCustomer[]>([])
   const [stats, setStats] = useState<CrmStats | null>(null)
   const [loading, setLoading] = useState(true)
@@ -154,6 +168,11 @@ export function CrmTab() {
   const [selectedCustomer, setSelectedCustomer] = useState<CrmCustomer | null>(null)
   const [editOpen, setEditOpen] = useState(false)
   const [detailOpen, setDetailOpen] = useState(false)
+  // R288 — poudarjena vrstica (deep-link stil, D6): stranka, na katero nas
+  // je pripeljal zvonček (opomnik). Ostane do NASLEDNJE deep-link zahteve
+  // (monotonski n — zadnja zmaga, R221 vzorec) ali do remounta — kazalec,
+  // ne poslovna resnica. 0 novih žetonov (roksal-amber družina).
+  const [poudarjenStrankaId, setPoudarjenStrankaId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const { toast } = useToast()
 
@@ -221,6 +240,25 @@ export function CrmTab() {
   // med osvežitvijo OSTANE viden (render vrata spodaj: loading && prazno —
   // isti vzorec kot termini-card R170), nikoli utrip skeletov.
   useRefetchOnFocus(loadCustomers)
+
+  // R288 — (k) opomnik deep-link — poraba zahteve (one-shot): odločitev je
+  // čista lib funkcija (crmDeepLinkOdlocitev — vsi robovi pripeti v vitestu):
+  // CAKAJ (nalaganje/napaka/brez zahteve) → nič; ODPRI → detail Sheet stranke
+  // (opomniška kartica že nosi POTEKEL red / AKTIVEN amber) + poudarjena
+  // vrstica (D6 stil); PRESKOCI → navadni CRM seznam (stranka izbrisana/
+  // RBAC — R287 vedenje, R216 fail-safe vzorec). Po ODPRI/PRESKOCI se
+  // zahteva počista (callback) — brez ponovnega odpiranja ob remountu.
+  useEffect(() => {
+    if (!izbranaStrankaId) return
+    const odlocitev = crmDeepLinkOdlocitev<CrmCustomer>(izbranaStrankaId, customers, loading, error)
+    if (odlocitev.dejanje === 'CAKAJ') return
+    if (odlocitev.dejanje === 'ODPRI') {
+      setPoudarjenStrankaId(odlocitev.stranka.id)
+      setSelectedCustomer(odlocitev.stranka)
+      setDetailOpen(true)
+    }
+    onStrankaIzbranaObravnavana?.()
+  }, [izbranaStrankaId, customers, loading, error, onStrankaIzbranaObravnavana])
 
   const filtered = customers.filter((c) => {
     const matchSearch =
@@ -817,7 +855,11 @@ export function CrmTab() {
               role="button"
               tabIndex={0}
               aria-label={`Stranka ${c.ime} — odpri podrobnosti (LTV ${formatLTV(c.ltv)}, ${c.skupajProjektov} projektov)`}
-              className="cursor-pointer outline-none transition-[border-color,box-shadow] duration-150 hover:border-roksal-amber/40 hover:shadow-sm focus-visible:border-roksal-amber focus-visible:ring-2 focus-visible:ring-roksal-amber focus-visible:ring-offset-2"
+              className={`cursor-pointer outline-none transition-[border-color,box-shadow] duration-150 hover:border-roksal-amber/40 hover:shadow-sm focus-visible:border-roksal-amber focus-visible:ring-2 focus-visible:ring-roksal-amber focus-visible:ring-offset-2 ${poudarjenStrankaId === c.id ? 'border-roksal-amber/60 bg-roksal-amber/5' : ''}`}
+              /* R288 — poudarjena vrstica (deep-link stil): roksal-amber obroba
+                 + 5% polnilo (ISTO žetonska družina kot hover — 0 novih hex);
+                 hover title v zaslon. bralniku pove izvor poudarka. */
+              title={poudarjenStrankaId === c.id ? 'Poudarjeno iz zvončka (opomnik)' : undefined}
               onClick={() => handleOpenDetail(c)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {

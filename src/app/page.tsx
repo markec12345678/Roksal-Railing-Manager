@@ -108,6 +108,13 @@ export default function Home() {
   const [syncError, setSyncError] = useState<string | null>(null)
   const [projects, setProjects] = useState<Project[]>([])
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
+  // R288 — (k) opomnik deep-link: roksal:select-crm zahteva (dvo-dogodkovni
+  // protokol z zvončkom — R214 vzorec select-project). State živi V LUPINI
+  // (vedno priklopljena — CrmTab se montira/unmonta z zavihkom); CrmTab
+  // zahtevo ONE-SHOT porabi (callback počisti — brez ponovnega odpiranja ob
+  // remountu). Whitelist guard: samo ne-prazen niz (fail-closed — nikoli
+  // lažne izbire); monotonski n — zadnja zahteva zmaga (R221 vzorec).
+  const [izbranaStrankaId, setIzbranaStrankaId] = useState<string | null>(null)
   const [sketchOpen, setSketchOpen] = useState(false)
   const [paletteOpen, setPaletteOpen] = useState(false)
 
@@ -179,13 +186,26 @@ export default function Home() {
       const id = (e as CustomEvent<string>).detail
       if (typeof id === 'string' && id) setSelectedProjectId(id)
     }
+    // R288 — deep-link zahteva iz zvončka (opomnik vrstica): isti guard
+    // vzorec kot select-project (whitelist — samo ne-prazen niz).
+    function onSelectCrmStranka(e: Event) {
+      const id = (e as CustomEvent<string>).detail
+      if (typeof id === 'string' && id) setIzbranaStrankaId(id)
+    }
     window.addEventListener('keydown', onKeyDown)
     window.addEventListener('roksal:select-project', onSelectProject)
+    window.addEventListener('roksal:select-crm', onSelectCrmStranka)
     return () => {
       window.removeEventListener('keydown', onKeyDown)
       window.removeEventListener('roksal:select-project', onSelectProject)
+      window.removeEventListener('roksal:select-crm', onSelectCrmStranka)
     }
   }, [])
+
+  // R288 — one-shot poraba deep-link zahteve: CrmTab pokliče, ko je zahteva
+  // ODPRATA (detail Sheet) ALI PRESKOČENA (stranka ni več v seznamu —
+  // fail-safe R287 vedenje). CAKAJ robov (nalaganje/napaka) NE čistijo.
+  const obravnavajIzbranoStranko = useCallback(() => setIzbranaStrankaId(null), [])
 
   const badges = useMemo<Record<string, number>>(() => {
     const b: Record<string, number> = {}
@@ -564,7 +584,7 @@ export default function Home() {
             {moreTab === 'postsig' && selectedProject && (
               <PostSignaturePanel project={selectedProject} />
             )}
-            {moreTab === 'crm' && <CrmTab />}
+            {moreTab === 'crm' && <CrmTab izbranaStrankaId={izbranaStrankaId} onStrankaIzbranaObravnavana={obravnavajIzbranoStranko} />}
             {moreTab === 'material' && <MaterialIntelligenceTab projectId={selectedProjectId} initialSubTab={materialSubTab} />}
             {moreTab === 'logistics' && <LogisticsTab projectId={selectedProjectId} />}
             {moreTab === 'pdf' && <PdfExport project={selectedProject} />}

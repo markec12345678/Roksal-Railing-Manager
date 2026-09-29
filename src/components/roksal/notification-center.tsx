@@ -58,6 +58,10 @@ import { jeZamujenaDobava } from '@/lib/zamujena-dobava'
 // opomnikZvonekVrstice je client-safe (brez uvozov) — opomnikStatus je VERBATIM
 // strežniški izračun (R251 kanon); danas je IZRECEN argument (vzorec R228).
 import { opomnikZvonekVrstice } from '@/lib/opomnik-zvonek'
+// R288 — deep-link parser ((k) dopolnitev: signal → dejanje → CILJ):
+// fail-closed izlušči id stranke iz vrstične id 'opomnik-{id}' — brez
+// prefiksa/ostanka → null (samo navigacija, R216 vzorec).
+import { opomnikStrankaIdIzVrstice } from '@/lib/crm-deep-link'
 
 interface NotificationItem {
   id: string
@@ -486,11 +490,21 @@ export function NotificationCenter() {
     } else if (item.kind === 'install') {
       window.dispatchEvent(new CustomEvent('roksal:navigate', { detail: { tab: 'dashboard' } }))
       window.dispatchEvent(new CustomEvent('roksal:select-project', { detail: item.id.replace('install-', '') }))
-    } else if (item.kind === 'followup' || item.kind === 'invoice' || item.kind === 'opomnik' || item.kind === 'opomnikPotekel') {
-      // R287 — (k) portal akcija: opomnik vrstica vodi v CRM (ISTI protokol
-      // kot followup/invoice R182 — signal → dejanje; deep-link do konkretne
-      // stranke = izrecno ODLOŽENO — zahteva page.tsx + crm-tab wiring).
+    } else if (item.kind === 'followup' || item.kind === 'invoice') {
+      // R182 — followup/invoice: navadna navigacija. R288: deep-link nosi
+      // SAMO opomnik (izrecna R287/R288 odločitev) — ti dva kinda ostajata
+      // R182 resnica (sprememba ni v obsegu).
       window.dispatchEvent(new CustomEvent('roksal:navigate', { detail: { tab: 'more', more: 'crm' } }))
+    } else if (item.kind === 'opomnik' || item.kind === 'opomnikPotekel') {
+      // R287 — (k) portal akcija: opomnik vrstica vodi v CRM (R182 protokol).
+      // R288 — DEEP-LINK (dopolnitev; R214 vzorec dvo-dogodkovnega protokola
+      // install/select-project): navigate crm + roksal:select-crm { id
+      // stranke } — CrmTab odpri detail Sheet stranke (opomniška kartica) in
+      // poudari vrstico. Fail-closed: id brez 'opomnik-{id}' oblike → samo
+      // navigacija (R216 vzorec 'brez → navadna navigacija').
+      window.dispatchEvent(new CustomEvent('roksal:navigate', { detail: { tab: 'more', more: 'crm' } }))
+      const strankaId = opomnikStrankaIdIzVrstice(item.id)
+      if (strankaId) window.dispatchEvent(new CustomEvent('roksal:select-crm', { detail: strankaId }))
     } else if (item.kind === 'order' || item.kind === 'zamujena') {
       // R212 — Material je za 'Več' sheetom (R206 lekcija): more:'material'
       // je obstoječi MoreTabId (page.tsx handleMoreSelect → MaterialIntelligenceTab).
