@@ -1,0 +1,117 @@
+{
+  "_opomba": "R283 — issue #15 §1 referenčni testni projekt: SKELET s znanimi referenčnimi podatki (raven segment, kot 90°, stopniščni segment, naklon, različne dolžine, višine, profil, barva/material, fotografije, ponovni obisk) + §3 isti test prek VSEH treh virov (MANUAL / PHOTO_CV / ARCORE_DEPTH). EN VIR resnice za OBE svetova: r283-referencni-projekt.cjs (DB seed) IN r283-viri-pregled.test.ts (kontraktna validacija). Fizična neodvisna merjenja = lastniška akcija (protokol: docs/AR-FIELD-VALIDATION.md).",
+  "_opomba_arMetadata_dialekti": "m1/m2 = legacy dialekt (tipMeritve/kot/oznaka — UI tip/kot badge resnica); m3 = POLN kontrakt payload v1 (parseArSessionPayload — segments/calibration/quality/photoRefs/glbRefs; ključni vrstni red = red definicije sheme → serialize(parse(x)) bajtno identičen).",
+  "stranka": { "id": "e2e-r283-str", "ime": "E2E r283 Referenčna", "naslov": "Test 1" },
+  "projekt": { "id": "e2e-r283-ref-proj", "nazivProjekta": "REF — Terenska validacija (issue #15)", "status": "V_TEKU", "clientToken": "e2e-r283-ref-proj-portal" },
+  "meritve": [
+    {
+      "id": "e2e-r283-m1",
+      "dolzinaMm": 3450,
+      "visinaMm": 1000,
+      "vir": "MANUAL",
+      "status": "OSNUTEK",
+      "verzija": 1,
+      "ts": "2026-09-29T08:00:00Z",
+      "arMetadata": {
+        "tipMeritve": "RAZDALJA",
+        "kot": 90,
+        "oznaka": "REF-RAVEN-A",
+        "opomba": "Referenčni raven segment A — referenčna vrednost 3,45 m iz nacrta; kot 90° na prelomu (issue #15 §1). Fizična primerjava z neodvisnim merilnim postopkom = lastniška akcija (docs/AR-FIELD-VALIDATION.md §3)."
+      }
+    },
+    {
+      "id": "e2e-r283-m2",
+      "dolzinaMm": 2100,
+      "visinaMm": 1000,
+      "vir": "PHOTO_CV",
+      "status": "OSNUTEK",
+      "verzija": 1,
+      "ts": "2026-09-29T08:30:00Z",
+      "arMetadata": {
+        "tipMeritve": "RAZDALJA",
+        "oznaka": "REF-RAVEN-B",
+        "opomba": "Referenčni raven segment B — foto-CV prehod istega obiska (issue #15 §3: isti test prek vseh virov)."
+      }
+    },
+    {
+      "id": "e2e-r283-m3",
+      "dolzinaMm": 4800,
+      "visinaMm": 1100,
+      "vir": "ARCORE_DEPTH",
+      "status": "OSNUTEK",
+      "verzija": 1,
+      "ts": "2026-10-01T09:00:00Z",
+      "arMetadata": {
+        "contractVersion": 1,
+        "appVersion": "roksal-manager-r283",
+        "projectId": "e2e-r283-ref-proj",
+        "sessionId": "e2e-r283-sess-3",
+        "source": "ARCORE_DEPTH",
+        "units": "mm",
+        "coordinateFrame": { "type": "LOCAL_NORMALIZED", "note": "Referenčni projekt — ponovni obisk (issue #15 §1: vsaj en ponovni obisk projekta)." },
+        "transform": { "anchorId": "anchor-r283-c", "translationMm": [0, 0, 0], "rotationQ": [0, 0, 0, 1] },
+        "calibration": { "model": "TWO_POINT_SCALE", "referenceMm": 1000, "note": "Kalibracijska točka C — referenčna palica 1,00 m (issue #14 §13)." },
+        "quality": { "confidence": 0.91, "uncertaintyMm": 4, "note": "Ponovni obisk — drift check po protokolu docs/AR-FIELD-VALIDATION.md §6." },
+        "photoRefs": [
+          { "ref": "e2e-r283/photo-naklon-a.jpg" },
+          { "ref": "e2e-r283/photo-naklon-b.jpg" }
+        ],
+        "glbRefs": [
+          { "ref": "e2e-r283/model-naklon.glb" }
+        ],
+        "segments": [
+          {
+            "segmentId": "seg-naklon-1",
+            "lengthMm": 4800,
+            "heightMm": 1100,
+            "slopeDeg": 8,
+            "angleDeg": 0,
+            "startMm": [0, 0],
+            "endMm": [4753, 0],
+            "confidence": 0.9,
+            "uncertaintyMm": 5,
+            "photoIds": ["e2e-r283/photo-naklon-a.jpg"],
+            "modelIds": ["e2e-r283/model-naklon.glb"],
+            "profile": "ROMB 67",
+            "color": "RAL 7016",
+            "material": "ALU",
+            "source": "ARCORE_DEPTH",
+            "measurementIndex": 0
+          },
+          {
+            "segmentId": "seg-stopnice-1",
+            "lengthMm": 1750,
+            "heightMm": 950,
+            "slopeDeg": 35,
+            "angleDeg": 90,
+            "startMm": [4753, 0],
+            "endMm": [4753, 1434],
+            "confidence": 0.88,
+            "uncertaintyMm": 6,
+            "photoIds": ["e2e-r283/photo-naklon-a.jpg", "e2e-r283/photo-naklon-b.jpg"],
+            "profile": "ROMB 67",
+            "material": "WPC sivi",
+            "source": "ARCORE_DEPTH",
+            "measurementIndex": 1
+          },
+          {
+            "segmentId": "seg-raven-c",
+            "lengthMm": 3450,
+            "heightMm": 1000,
+            "slopeDeg": 0,
+            "angleDeg": 270,
+            "startMm": [4753, 1434],
+            "endMm": [4753, -2016],
+            "confidence": 0.93,
+            "uncertaintyMm": 3,
+            "profile": "ROMB 67",
+            "color": "RAL 7016",
+            "material": "ALU",
+            "source": "ARCORE_DEPTH",
+            "measurementIndex": 2
+          }
+        ]
+      }
+    }
+  ]
+}

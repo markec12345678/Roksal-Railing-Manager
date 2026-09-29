@@ -15,6 +15,9 @@ import { measurementStatusCounts } from '@/lib/measurement-status'
 // R276 (issue #16 §6) — zgodovina verzij meritev: oznake vira (EN VIR z
 // kontraktom #16 §2) za prikaz na kartici meritve.
 import { MERITEV_VIR_LABELS, type MeritevVir } from '@/lib/meritev-verzije'
+// R283 (issue #15 §3) — pokritost virov vidnega seznama (fail-closed
+// čiste funkcije; EN VIR resnice = filteredMeasurements).
+import { izracunajMeritveVirPregled } from '@/lib/meritve-viri-pregled'
 import {
   loadDrafts,
   saveDraft,
@@ -2114,6 +2117,17 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
       grobnic: vrstice.filter((m) => m.sync?.tombstone === true).length,
     }
   }, [filteredMeasurements])
+
+  // R283 (issue #15 §3) — F3 vir pokritost mini: števec strežniško
+  // izpeljanih virov čez ISTI vidni seznam (EN VIR filteredMeasurements;
+  // zaprta množica = AR_SESSION_SOURCES). Null = nobena vidna vrstica NE
+  // nosi prepoznanega viroma → vrstica se NE rendera (iskrena praznina —
+  // nikoli izumljen števec); neznani vir se NE šteje (fail-closed —
+  // syncPregled kanon R282).
+  const virPregled = useMemo(
+    () => izracunajMeritveVirPregled(filteredMeasurements),
+    [filteredMeasurements],
+  )
 
   // R186 — izvoz VIDNIH meritev (upošteva status + foto filter) kot CSV.
   // Fail-closed: prazen seznam → viden toast (nič praznih datotek);
@@ -6566,17 +6580,27 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               kondicionalni žeton ŽIVO samo kadar > 0 — R256 lekcija 4;
               tabular-nums; 0 novih hex. */}
           {/* R274 a11y: role="status" — async mini resnica oznanjena bralniku. */}
+          {/* R283 MANDATORY STIL: hover parity — R269 mini je imela brez
+              title (R282 sync mini jo ima) → parity kanon R280/R281/R282:
+              cursor-help + title (WYSIWYG razlaga + R153 cikel); žeton
+              title (osnutki = čakajo potrditev). 0 novih hex. */}
           {selectedProject && terenPovzetek !== null && (
             <div role="status" className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               <span
                 aria-hidden="true"
                 className={`h-2 w-2 shrink-0 rounded-full ${terenPovzetek.osnutkov > 0 ? 'bg-roksal-amber' : 'bg-roksal-green'}`}
               />
-              <span className="tabular-nums">
+              <span
+                className="tabular-nums cursor-help"
+                title="Števec stanj vidnega seznama (WYSIWYG — R269): state = viden seznam po filtrih (kar uporabnik vidi), FRESH = polna resnica projekta — dve okni, ENA matemtika. Osnutki čakajo potrditev; potrjene/arhivirane nosi življenjski cikel R153."
+              >
                 Meritve (viden seznam): {terenPovzetek.meritev} {meritvePovzetekBeseda(terenPovzetek.meritev)} · osnutki {terenPovzetek.osnutkov} · potrjenih {terenPovzetek.potrjenih} · arhiviranih {terenPovzetek.arhiviranih}
               </span>
               {terenPovzetek.osnutkov > 0 && (
-                <span className="rounded-full border border-roksal-amber/40 bg-roksal-amber/10 px-2 py-0.5 text-2xs font-medium text-roksal-amber">
+                <span
+                  className="rounded-full border border-roksal-amber/40 bg-roksal-amber/10 px-2 py-0.5 text-2xs font-medium text-roksal-amber cursor-help"
+                  title="Osnutki — meritve v stanju OSNUTEK čakajo potrditev (R153 življenjski cikel); potrditev prek akcij vrstice meritve."
+                >
                   {osnutekBeseda(terenPovzetek.osnutkov)}
                 </span>
               )}
@@ -6609,6 +6633,30 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   Konflikt — osveži bazo in ponovi sync
                 </span>
               )}
+            </div>
+          )}
+
+          {/* R283 (issue #15 §3) — F3 vir pokritost mini-vrstica: števec
+              strežniško izpeljanih virov vidnega seznama (EN VIR
+              filteredMeasurements — ISTI seznam kot R269 mini + R282 sync
+              mini); prikazana SAMO kadar vsaj ena vrstica nosi prepoznan
+              vir (iskrena praznina = brez vrstice — nikoli izumljen
+              števec); popolna pokritost (MANUAL + PHOTO_CV + ARCORE_DEPTH)
+              = green pika, delna = amber — terenska validacija (#15)
+              zahteva isti test prek VSEH treh virov; hover title parity
+              (0 novih hex — ulomki že v datoteki). */}
+          {selectedProject && terenPovzetek !== null && virPregled !== null && (
+            <div role="status" className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <span
+                aria-hidden="true"
+                className={`h-2 w-2 shrink-0 rounded-full ${virPregled.popolnaPokritost ? 'bg-roksal-green' : 'bg-roksal-amber'}`}
+              />
+              <span
+                className="tabular-nums cursor-help"
+                title="Pokritost virov vidnega seznama (issue #15 §3): števec strežniško izpeljanih virov po skupnem kontraktu — ročni vnos (MANUAL), foto-CV (PHOTO_CV), AR-Depth (ARCORE_DEPTH). Zelena pika = vse tri vrste prisotne; amber = samo del — terenska validacija (issue #15) zahteva isti test prek vseh treh virov. Vrstice brez prepoznanega viroma se ne štejejo (fail-closed — nič ugibanja)."
+              >
+                Viri (viden seznam): {virPregled.manual} ročnih · {virPregled.photoCv} foto-CV · {virPregled.arcoreDepth} AR-Depth
+              </span>
             </div>
           )}
 
