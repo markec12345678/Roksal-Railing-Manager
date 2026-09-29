@@ -173,6 +173,31 @@
 //       izven 0..1 zavrnjene.
 //   S6. DB/ROUTE NIČ (P6/Q6 kanon): arMetadata JSON verbatim, brez sheme.
 //
+// ── SEMANTIČNE ODLOČITVE SEGMENT PHOTO/GLB POVEZAVE (R279, issue #16 §9
+//    — T1–T5, isti kanon kot Q/S) ──────────────────────────────────────
+//
+//   T1. ADITIVNA v1 (isti razlogi kot P1/Q1/S1 — verzija ostane 1, matrika
+//       nosi razširitev izrečno).
+//   T2. FORMA = per-segment `photoIds`/`modelIds` — nizi VERBATIM referenc
+//       v session-level `photoRefs[].ref` / `glbRefs[].ref` (EN VIR referenčne
+//       resnice — sekcija za referencą (ref 1..300, sha256 opcionsko) se
+//       NE PODVOJI; issue #16 §9 'stabilne reference in povezavo s Project
+//       → MeasurementSession → Segment'). Nizi so NE-PRAZNI (min 1) —
+//       prazen niz = dvosmerna izjava 'brez foto', izostanek polja je edini
+//       'brez' (ena resnica — kanon P5/Q5/S5); strop 20 na segment.
+//   T3. REFERENČNA INTEGRITETA = FAIL-CLOSED superRefine: vsak photoId
+//       MORA obstajati v session photoRefs (in modelId v glbRefs) — osirotela
+//       referenca = ZAVRNITEV (NIČ izumljenih vez). To je STRUKTURNA vez,
+//       NE meritvena: dokaz identitete (===) brez tolerance — zato NI v
+//       protislovju z Q3 (neodvisne meritvene resnice se NE vsiljujejo v
+//       enačbo; vezje seje in referenc v ISTEM payloadu pa je dosledno
+//       preverljivo brez izumljenih pragov). Chajavost session-level niza:
+//       photoIds brez photoRefs = osirotela vez = zavrnitev (§9: 'Ni dovolj
+//       samo ime datoteke' — referenca brez nosilca NI vez).
+//   T4. ID-JI VERBATIM (odločitev 6 kanon): brez trim/case-fold —
+//       'ref-A' ≠ 'ref-a' (test dokazuje zavrnitev).
+//   T5. DB/ROUTE NIČ (P6/Q6/S6 kanon): arMetadata JSON verbatim, brez sheme.
+//
 // Determinizem: enak vhod → enak izhod (brez ure, naključja, locale).
 // Fail-closed: vsak neveljaven vhod = izrecna ArContractError s kodo.
 // ---------------------------------------------------------------------------
@@ -188,7 +213,7 @@ export const AR_CONTRACT_VERSION = 1
 export const AR_CONTRACT_COMPATIBILITY = {
   // P1 (R277): v1 razširjen ADITIVNO z segments[].angleDeg (issue #16 §3 —
   // opcijsko; brez spremembe pomena obstoječih polj, brez migracije).
-  1: { status: 'aktivna', uvod: 'R274 (issue #17 §A/§D)', razsiritev: 'R277 (issue #16 §3: segments[].angleDeg opcijsko — aditivno, P1–P6) + R278 (issue #16 §3: segments[].startMm/endMm + confidence/uncertaintyMm opcijsko — aditivno, Q1–Q6/S1–S6)' },
+  1: { status: 'aktivna', uvod: 'R274 (issue #17 §A/§D)', razsiritev: 'R277 (issue #16 §3: segments[].angleDeg opcijsko — aditivno, P1–P6) + R278 (issue #16 §3: segments[].startMm/endMm + confidence/uncertaintyMm opcijsko — aditivno, Q1–Q6/S1–S6) + R279 (issue #16 §9: segments[].photoIds/modelIds opcijsko — aditivno, T1–T5, superRefine referenčna integriteta)' },
 } as const
 
 /** Podprte verzije — izpeljane iz matrike (EN vir). */
@@ -301,6 +326,14 @@ const arSessionSchema = z.strictObject({
          *  izostanek = ni poročano, ekspliciten null zavrnjen (S5). */
         confidence: z.number().finite().min(0).max(1).optional(),
         uncertaintyMm: mmStevilo.optional(),
+        /** R279 (issue #16 §9, T1–T5): verbatim reference v session-level
+         *  photoRefs[].ref / glbRefs[].ref — povezava Project →
+         *  MeasurementSession → Segment → Photo/GLB (EN VIR — T2).
+         *  NE-PRAZNI nizi (izostanek = brez; T2); referenčna integriteta
+         *  fail-closed superRefine spodaj (T3); verbatim — brez trim/
+         *  case-fold (T4). */
+        photoIds: z.array(z.string().min(1).max(300)).min(1).max(20).optional(),
+        modelIds: z.array(z.string().min(1).max(300)).min(1).max(20).optional(),
         source: z.enum(AR_SESSION_SOURCES),
         measurementIndex: z.number().int().min(0).optional(),
       }),
@@ -308,6 +341,34 @@ const arSessionSchema = z.strictObject({
     .min(1)
     .max(1000),
 })
+  /** R279 (issue #16 §9, T3): fail-closed referenčna integriteta —
+   *  osirotela referenca (photoId/modelId brez nosilca v session-level
+   *  photoRefs/glbRefs) = zavrnitev z žico poti. ENAKO-dosledna vez,
+   *  NIČ izumljenih toleranc (T3); kompletnost = §9 'povezavo s Segment'. */
+  .superRefine((vrednost, ctx) => {
+    const fotoRefa = vrednost.photoRefs ?? []
+    const glbRefa = vrednost.glbRefs ?? []
+    vrednost.segments.forEach((seg, idx) => {
+      for (const pid of seg.photoIds ?? []) {
+        if (!fotoRefa.some((r) => r.ref === pid)) {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['segments', idx, 'photoIds'],
+            message: `Fotografska referenca "${pid}" ne obstaja v session photoRefs (issue #16 §9 — nič osirotelih referenc).`,
+          })
+        }
+      }
+      for (const mid of seg.modelIds ?? []) {
+        if (!glbRefa.some((r) => r.ref === mid)) {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['segments', idx, 'modelIds'],
+            message: `GLB referenca "${mid}" ne obstaja v session glbRefs (issue #16 §9 — nič osirotelih referenc).`,
+          })
+        }
+      }
+    })
+  })
 
 export type ArSessionPayload = z.infer<typeof arSessionSchema>
 

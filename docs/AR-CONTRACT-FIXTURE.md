@@ -14,7 +14,10 @@ polja — minimalni+polni primer v1); **R278 razširitev (issue #16 §3)**:
 `segments[].startMm`/`endMm` opcijsko (aditivno — odločitve Q1–Q6 v glavi
 `src/lib/ar-contract.ts`; ista disciplina — verzija ostane 1, fixture brez
 novih polj); plus `segments[].confidence`/`uncertaintyMm` opcijsko
-(isti kanon — odločitve S1–S6 v glavi `src/lib/ar-contract.ts`).
+(isti kanon — odločitve S1–S6 v glavi `src/lib/ar-contract.ts`); **R279
+razširitev (issue #16 §9)**: `segments[].photoIds`/`modelIds` opcijsko —
+verbatim reference v session-level nize + superRefine referenčna integriteta
+(nič osirotelih referenc; T1–T5 v glavi `src/lib/ar-contract.ts`).
 
 ---
 
@@ -110,6 +113,8 @@ Minimalni veljaven payload (samo obvezna polja — vse ostalo izpustljivo):
 | `segments[].endMm` | `[Float, Float]?` | `finite ×2` | **R278 (issue #16 §3, Q1–Q6)**: izmerjena končna točka — ista disciplina kot `startMm` |
 | `segments[].confidence` | `Float?` | `finite 0..1` | **R278 (issue #16 §3, S1–S6)**: flat per-segment zaupanje (NE nested quality — S2); meji 0 in 1 VELJAVNI (0 = naprava izrecno poroča nič zaupanja — S5); NE izpeljano iz calibration/session quality (S3); izostanek = ni poročano, ekspliciten null zavrnjen |
 | `segments[].uncertaintyMm` | `Float?` | `finite > 0` | **R278 (issue #16 §3, S1–S6)**: flat per-segment negotovost, mm v imenu (kanon odločitev 2); ista disciplina kot `confidence` |
+| `segments[].photoIds` | `[String]?` | `1..20 × (1..300)` | **R279 (issue #16 §9, T1–T5)**: verbatim reference v session-level `photoRefs[].ref` — povezava Project → MeasurementSession → Segment → Photo (EN VIR — nič podvajanja sekcije); NE-prazen niz (izostanek = edini 'brez'); fail-closed superRefine — osirotela referenca = zavrnitev (T3); verbatim brez trim/case-fold (T4) |
+| `segments[].modelIds` | `[String]?` | `1..20 × (1..300)` | **R279 (issue #16 §9, T1–T5)**: verbatim reference v `glbRefs[].ref` — ista disciplina kot `photoIds` |
 | `segments[].source` | enum `SessionSource` | kot `source` | per-segment izvor |
 | `segments[].measurementIndex` | `Int?` | `Int ≥ 0` | opcijsko |
 
@@ -173,6 +178,8 @@ data class ArSegment(
     val endMm: List<Double>? = null,           // R278: ista disciplina kot startMm
     val confidence: Double? = null,            // R278 (issue #16 §3): 0..1, meji veljavni; flat — NE nested quality (S2)
     val uncertaintyMm: Double? = null,         // R278: mm > 0 (kanon odločitev 2)
+    val photoIds: List<String>? = null,        // R279 (issue #16 §9): verbatim reference v photoRefs[].ref; NE-prazen; osirotela = zavrnitev (superRefine)
+    val modelIds: List<String>? = null,        // R279: verbatim reference v glbRefs[].ref — ista disciplina
     val source: SessionSource,
     val measurementIndex: Int? = null,
 )

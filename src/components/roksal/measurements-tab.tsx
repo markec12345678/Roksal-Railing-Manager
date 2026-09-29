@@ -4368,7 +4368,11 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   </Tooltip>
                 )}
                 {m.segmentId && (
-                  <Badge variant="outline" className="text-[9px] h-4 px-1 shrink-0">
+                  <Badge
+                    variant="outline"
+                    className="text-[9px] h-4 px-1 shrink-0 cursor-help"
+                    title={`Pripada segmentu ${allSegments.find((s) => s.id === m.segmentId)?.name || m.segmentId} — stabilen segmentId (identiteta preživi re-anchor, offline delo in migracijo kontrakta — issue #16 §1).`}
+                  >
                     <Layers aria-hidden="true" className="h-2.5 w-2.5 mr-0.5" />
                     {allSegments.find((s) => s.id === m.segmentId)?.name || m.segmentId}
                   </Badge>
