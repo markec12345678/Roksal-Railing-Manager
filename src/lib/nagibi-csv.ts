@@ -10,6 +10,15 @@
 //    "Naprej-nazaj" (X), katerakoli druga/null vrednost → PRAZEN stolpec.
 //    Kot se formatira z točno 1 decimalko (kot v UI), lokacija se escape-ira.
 
+/** R272 — smer preslikava IZVLEČENA kot IZVOŽEN vir (R262 kolicinaNiz EXPORT
+ *  precedens — PDF dokument resnice uporablja ISTO preslikavo kot CSV arhiv:
+ *  'X' → 'Naprej-nazaj', 'Y' → 'Levo-desno', katerakoli druga/null → prazen
+ *  niz (iskren odpad — CSV prazen stolpec, PDF '—' sivo)). VEDANJE 1:1 —
+ *  buildNagibiCsv uporablja ISTO funkcijo (NI zasegane kopije). */
+export function smerLabel(smer: string | null | undefined): string {
+  return smer === 'Y' ? 'Levo-desno' : smer === 'X' ? 'Naprej-nazaj' : ''
+}
+
 export interface NagibiCsvRow {
   kotStopinje: number
   smer: string | null
@@ -35,8 +44,7 @@ export function buildNagibiCsv(
     const datum = d.toLocaleDateString('sl-SI')
     const ura = d.toLocaleTimeString('sl-SI', { hour: '2-digit', minute: '2-digit' })
     const kot = r.kotStopinje.toFixed(1)
-    const smer =
-      r.smer === 'Y' ? 'Levo-desno' : r.smer === 'X' ? 'Naprej-nazaj' : ''
+    const smer = smerLabel(r.smer)
     const lokacija = (r.lokacija ?? '').replace(/"/g, '""')
     return `${datum},${ura},${kot},"${smer}","${lokacija}"`
   })

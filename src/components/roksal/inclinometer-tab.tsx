@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -9,7 +9,13 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
 import { buildNagibiCsv, nagibiCsvFilename } from '@/lib/nagibi-csv'
-import { Compass, Download, RefreshCw, Save, TriangleAlert, CheckCircle2, Loader2 } from 'lucide-react'
+import {
+  nagibiTerenPregled,
+  generateNagibiTerenPdf,
+  nagibBeseda,
+  type NagibTerenVnos,
+} from '@/lib/nagibi-teren-pdf'
+import { Compass, Download, RefreshCw, Save, TriangleAlert, CheckCircle2, Loader2, FileDown } from 'lucide-react'
 
 interface SlopeReading {
   beta: number // X front-back tilt (-180 to 180)
@@ -22,6 +28,7 @@ interface SavedSlope {
   smer: string | null
   lokacija: string | null
   createdAt: string
+  veljaven: boolean
 }
 
 const LOKACIJE = [
@@ -33,13 +40,16 @@ const LOKACIJE = [
   'Drugo',
 ]
 
-export function InclinometerTab({ projectId }: { projectId: string | null }) {
+export function InclinometerTab({ projectId, projektIme }: { projectId: string | null; projektIme?: string | null }) {
   const [reading, setReading] = useState<SlopeReading | null>(null)
   const [permission, setPermission] = useState<'idle' | 'granted' | 'denied' | 'unsupported'>('idle')
   const [monitoring, setMonitoring] = useState(false)
   const [lokacija, setLokacija] = useState(LOKACIJE[0])
   const [customLokacija, setCustomLokacija] = useState('')
   const [saving, setSaving] = useState(false)
+  // R272 — dvoklik guard za terenski pregled nagibov PDF (družinska pariteta
+  // R263–R271).
+  const [pdfNagibiVteku, setPdfNagibiVteku] = useState(false)
   const [saved, setSaved] = useState<SavedSlope[]>([])
   // R154 — iskrena zgodovina: BREZ_PROJEKTA / NALAGANJE / OK / NAPAKA.
   // Prej: tihi catch /* ignore */ in neuspeh res.ok brez poročanja — napaka
@@ -171,6 +181,110 @@ export function InclinometerTab({ projectId }: { projectId: string | null }) {
     }
   }
 
+  // R272 — F2 mini-vrstica 'Nagibi (viden seznam):' — ENA izpeljava
+  // nagibiTerenPregled čez ISTI saved kot PDF KPI + sklep + toast (WYSIWYG):
+  // state = kar uporabnik vidi; FRESH ob kliku = polna resnica (dve okni, ENA
+  // matemtika). Brez try/catch — pokvaren vir bi poklical isti throw kot CSV
+  // izvoz (EN vir napak; DB resnica je strežniško čista — R153).
+  const nagibiStanjePovzetek = useMemo(() => {
+    if (!projectId || saved.length === 0) return null
+    return nagibiTerenPregled(
+      saved.map((s) => ({
+        id: s.id,
+        createdAt: s.createdAt,
+        kotStopinje: s.kotStopinje,
+        smer: s.smer,
+        lokacija: s.lokacija,
+        veljaven: s.veljaven,
+      })),
+    ).povzetek
+  }, [saved, projectId])
+
+  // R272 — terenski pregled nagibov (stanje digitalne libele) PDF (28. člen
+  // 'izvozi' družine): FRESH fetch /api/slopes?projectId ob kliku (R244–R271
+  // precedens — polna resnica zgodovine, ne state) + fail-verbose DTO
+  // pruning (identiteta + createdAt + kotStopinje tu; smer/lokacija/veljaven
+  // verbatim — lib preveri z indeksom krivca). PRAZEN seznam → iskren toast
+  // (NIČ prazne datoteke); ENA izpeljava povzetka = ISTA resnica kot KPI +
+  // sklep + mini-vrstica (WYSIWYG).
+  const handleNagibiPdf = async () => {
+    if (pdfNagibiVteku) return
+    if (!projectId) {
+      toast({
+        title: 'Brez projekta',
+        description: 'Terenski pregled nagibov je projekt-obračunski — najprej izberite projekt.',
+        variant: 'destructive',
+      })
+      return
+    }
+    setPdfNagibiVteku(true)
+    try {
+      const res = await fetch(`/api/slopes?projectId=${projectId}`, {
+        credentials: 'same-origin',
+      })
+      if (!res.ok) {
+        throw new Error(`GET /api/slopes → HTTP ${res.status}`)
+      }
+      const data: unknown = await res.json()
+      if (!Array.isArray(data)) {
+        throw new TypeError('Odgovora /api/slopes ni mogoče prebrati (ni polja).')
+      }
+      const vrstice = data as Array<Record<string, unknown>>
+      const vnosi: NagibTerenVnos[] = vrstice.map((n, i) => {
+        if (typeof n.id !== 'string' || n.id === '') {
+          throw new TypeError(`nagib vrstica ${i}: manjkajoč id v odgovoru API-ja`)
+        }
+        if (typeof n.createdAt !== 'string' || n.createdAt === '') {
+          throw new TypeError(`nagib vrstica ${i} (${n.id}): manjkajoč createdAt v odgovoru API-ja`)
+        }
+        if (typeof n.kotStopinje !== 'number' || !Number.isFinite(n.kotStopinje)) {
+          throw new TypeError(`nagib vrstica ${i} (${n.id}): kotStopinje mora biti končno število, ne ${String(n.kotStopinje)}`)
+        }
+        return {
+          id: n.id,
+          createdAt: n.createdAt,
+          kotStopinje: n.kotStopinje,
+          smer: (n.smer ?? null) as string | null,
+          lokacija: (n.lokacija ?? null) as string | null,
+          veljaven: n.veljaven as boolean,
+        }
+      })
+      if (vnosi.length === 0) {
+        // Fail-closed jedro: prazen seznam ne nastaja dokumenta — iskren toast.
+        toast({
+          title: 'Ni vpisanih nagibov',
+          description: 'Terenski pregled nagibov se izvozi, ko je vpisan prvi odčitek projekta.',
+          variant: 'destructive',
+        })
+        return
+      }
+      // ENA izpeljava: povzetek za toast = ISTA resnica kot KPI IN sklep na
+      // listu (WYSIWYG).
+      const { povzetek } = nagibiTerenPregled(vnosi)
+      // Ime projekta = točno to, kar pokaže izbirnik (page.tsx prop); brez
+      // izbire → null (jedro pošteno pokaže 'Brez imena projekta' — brez
+      // izmišljenih imen).
+      generateNagibiTerenPdf(vnosi, { now: new Date(), projektIme: projektIme ?? null })
+      toast({
+        title: 'Terenski pregled nagibov prenešen v PDF',
+        // nagibBeseda vrne ŠTEVILO IN besedo — klicalec NE doda še enega števca
+        // (R269 lekcija 3 pariteta).
+        description: `Nagibi-teren-…pdf — ${nagibBeseda(povzetek.nagibov)}, največji |kot| ${povzetek.najvecjiKot}°, povprečni ${povzetek.povprecniKot}°.`,
+      })
+    } catch (err) {
+      // Fail-verbose: izvoz ne sme tiho spodleteti — razlog gre v toast.
+      // Fail-closed jedro (TypeError iz liba) = pokvaren vnos → viden razlog
+      // (NIČ izmišljenega dokumenta).
+      toast({
+        title: 'Izvoz ni uspel',
+        description: err instanceof Error ? err.message : `Neznana napaka (${String(err)}).`,
+        variant: 'destructive',
+      })
+    } finally {
+      setPdfNagibiVteku(false)
+    }
+  }
+
   // R157 — izvoz zgodovine nagibov v CSV (dopolnitev odloženega iz R156 (c);
   // logika v src/lib/nagibi-csv.ts — deterministično, testirljivo, iskreno).
   function handleExportCSV() {
@@ -203,19 +317,73 @@ export function InclinometerTab({ projectId }: { projectId: string | null }) {
               <Compass aria-hidden="true" className="h-5 w-5 text-roksal-amber" />
               Digitalna libela
             </CardTitle>
-            {reading && (
-              <Badge
-                variant={isLevel ? 'default' : 'secondary'}
-                className={isLevel ? 'bg-green-600 text-white' : ''}
-                aria-label={isLevel ? 'Libela je v vodoravni' : `Odstopanje od vodoravne: ${(angleX + angleY).toFixed(1)} stopinj`}
-              >
-                {isLevel ? <CheckCircle2 className="mr-1 h-3 w-3" aria-hidden="true" /> : <TriangleAlert className="mr-1 h-3 w-3" aria-hidden="true" />}
-                {isLevel ? 'V vodoravni' : `${(angleX + angleY).toFixed(1)}°`}
-              </Badge>
-            )}
+            <div className="flex items-center gap-2">
+              {reading && (
+                <Badge
+                  variant={isLevel ? 'default' : 'secondary'}
+                  className={isLevel ? 'bg-green-600 text-white' : ''}
+                  aria-label={isLevel ? 'Libela je v vodoravni' : `Odstopanje od vodoravne: ${(angleX + angleY).toFixed(1)} stopinj`}
+                >
+                  {isLevel ? <CheckCircle2 className="mr-1 h-3 w-3" aria-hidden="true" /> : <TriangleAlert className="mr-1 h-3 w-3" aria-hidden="true" />}
+                  {isLevel ? 'V vodoravni' : `${(angleX + angleY).toFixed(1)}°`}
+                </Badge>
+              )}
+              {/* R272 — terenski pregled nagibov PDF (28. člen 'izvozi'
+                  družine): VEDNO viden, ko je projekt izbran (NI gated na
+                  saved.length — pariteta R263–R271; brez projekta ni FRESH
+                  vira — podatek-scope, ne pravica); press-scale + dvoklik
+                  guard + FileDown aria-hidden (družinski kontrakt). */}
+              {projectId && (
+                <button
+                  type="button"
+                  onClick={() => void handleNagibiPdf()}
+                  disabled={pdfNagibiVteku}
+                  className="flex shrink-0 items-center gap-1 rounded-lg border border-border/50 bg-secondary/50 px-2 py-1 text-2xs font-medium text-muted-foreground transition-all duration-150 press-scale active:scale-[0.96] hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                  aria-label="Izvozi terenski pregled nagibov kot PDF"
+                  title="Terenski pregled nagibov kot pravi PDF — VSI nagibi projekta (tudi označeni neveljavni)"
+                >
+                  {pdfNagibiVteku ? (
+                    <Loader2 aria-hidden="true" className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <FileDown aria-hidden="true" className="h-3 w-3" />
+                  )}
+                  PDF
+                </button>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent className="flex flex-col items-center gap-4">
+          {/* R272 — legenda pill pariteta (družina R263–R271): poimenuje kaj
+              nosi dokument — VSI nagibi izbranega projekta (FRESH ob kliku,
+              ne state); VEDNO vidna, ko je projekt izbran (pariteta s
+              pillom). */}
+          {projectId && (
+            <p className="self-start text-2xs text-muted-foreground">
+              PDF = VSI nagibi projekta (tudi označeni neveljavni — polna resnica, ne samo viden seznam)
+            </p>
+          )}
+          {/* R272 — F2 mini-vrstica stanja nagibov (WYSIWYG ISTA izpeljava
+              nagibiTerenPregled kot PDF KPI + sklep + toast — ENA izpeljava):
+              dot AMBER kadar neveljavni čakajo / GREEN; kondicionalni žeton
+              ŽIVO samo kadar > 0 — R256 lekcija 4; tabular-nums; 0 novih
+              hex. */}
+          {projectId && nagibiStanjePovzetek !== null && (
+            <div className="flex flex-wrap items-center gap-2 self-start text-xs text-muted-foreground">
+              <span
+                aria-hidden="true"
+                className={`h-2 w-2 shrink-0 rounded-full ${nagibiStanjePovzetek.neveljavnih > 0 ? 'bg-roksal-amber' : 'bg-roksal-green'}`}
+              />
+              <span className="tabular-nums">
+                Nagibi (viden seznam): {nagibBeseda(nagibiStanjePovzetek.nagibov)} · največji {nagibiStanjePovzetek.najvecjiKot}° · povprečni {nagibiStanjePovzetek.povprecniKot}°
+              </span>
+              {nagibiStanjePovzetek.neveljavnih > 0 && (
+                <span className="rounded-full border border-roksal-amber/40 bg-roksal-amber/10 px-2 py-0.5 text-2xs font-medium text-roksal-amber">
+                  {nagibiStanjePovzetek.neveljavnih} neveljavnih
+                </span>
+              )}
+            </div>
+          )}
           {/* Libela — krožna (R150 vzorec: grafika z vlogo img + opisnim
               aria-labelom, ki ga bralniki lahko preberejo) */}
           <div

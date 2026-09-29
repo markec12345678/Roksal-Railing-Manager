@@ -513,7 +513,7 @@ export default function Home() {
             selectedProjectId={selectedProjectId}
           />
         )}
-        {activeTab === 'inclinometer' && <InclinometerTab projectId={selectedProjectId} />}
+        {activeTab === 'inclinometer' && <InclinometerTab projectId={selectedProjectId} projektIme={selectedProject?.nazivProjekta ?? null} />}
         {activeTab === 'inventory' && <InventoryTab osnutekHint={inventoryOsnutekHint} filterHint={inventoryFilterNamig} />}
 
         {/* "Več" zavihki */}
