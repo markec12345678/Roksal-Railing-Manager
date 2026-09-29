@@ -95,7 +95,7 @@ eb_csv_reset val274
 eb_klik_gumb "Izvozi pregled vrednosti zaloge kot PDF"
 eb_pocakaj_tekst "Pregled vrednosti zaloge prenešen v PDF" 14
 eb_cakaj 1
-agent-browser eval "(()=>{const t=document.body.textContent; const agg=t.includes('Zaloga-vrednost-…pdf — 13 artiklov, Σ 239.85 EUR, pretečena 1, brez cene 9.')?'13 artiklov, Σ 239.85 EUR, pretečena 1, brez cene 9':null; const b64=window.__val274; if(typeof b64!=='string'||b64.length===0) return JSON.stringify({pdf:false, agg:agg?agg[1]:null, err:window.__err??null}); const bin=atob(b64); return JSON.stringify({pdf:true, magija:bin.substring(0,5), bajtov:bin.length, agg:agg?agg[1]:null, err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r274-z2-pdf.json
+agent-browser eval "(()=>{const t=document.body.textContent; const agg=t.includes('Zaloga-vrednost-…pdf — 13 artiklov, Σ 239.85 EUR, pretečena 1, brez cene 9.')?'13 artiklov, Σ 239.85 EUR, pretečena 1, brez cene 9':null; const b64=window.__val274; if(typeof b64!=='string'||b64.length===0) return JSON.stringify({pdf:false, agg:agg, err:window.__err??null}); const bin=atob(b64); return JSON.stringify({pdf:true, magija:bin.substring(0,5), bajtov:bin.length, agg:agg, err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r274-z2-pdf.json
 python3 - <<'PYEOF' || exit 1
 import json
 r = json.load(open('/tmp/r274-z2-pdf.json'))

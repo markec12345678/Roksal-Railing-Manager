@@ -96,10 +96,13 @@ vitest 3577/3577 (199 datotek, +41 glede na R273: +10 sync-pogodbeni gate,
 server+client chunks, Z-STRUCT 0/0) · smoke ✓ (health/200/307/403) ·
 prod QA R273 LIVE (10 needlejev + prvi LIVE klik vrednostnega pill-a s spot
 sejo). 0 padajočih testov po R274 spremembah (r148 regresija potrjena zeleno).
-**Iskreno omejitev:** bralni browser-E2E z bajtnim odtisom baze NI bil tekel v
-tej rundi — UI komponente so nespremenjene (obe polovici = API route + libs);
-pokritost: vitest integracije (route handlerji direktno, roksal_test) + smoke +
-needleji. E2E ŽIVO z odtisom sledi v rundi, ki se dotakne UI.
+**E2E ŽIVO EXIT=0 čisti tek** (`scripts/r274-e2e-browser.sh`, standalone :3100,
+ADMIN; UNION obeh polovic rundi): a11y sweep role="status" na mini-vrsticah
+(Z1) + fail-closed veja prek stuba [] s restavriranim stubom (Z1b) + dinamična
+mini IZ ISTEGA API '13 artiklov · Σ 239.85 EUR' + žetona + RED dot (Z2) +
+toast agregat ISTA resnica + PDF 58525 bajtna reprodukcija R273 determinizem
+(Z2b) + R272/R271/R269 pill regresije ŽIVO (Z3) + temna (Z4) → RESTORE →
+ODTIS BAJTNATO IDENTIČEN pre==post (ZERO-MUTACIJA) + port sproščen.
 
 ## J. Field validation
 
