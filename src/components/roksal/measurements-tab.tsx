@@ -59,6 +59,7 @@ import {
   osnutekBeseda,
   type MeritveTerenVnos,
 } from '@/lib/meritve-teren-pdf'
+import { generateTerenskiZapisniPdf } from '@/lib/terenski-zapisni-pdf'
 import { downloadCsvText } from '@/lib/csv-export'
 import {
   Dialog,
@@ -999,6 +1000,8 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
   const [bulkArchiveBusy, setBulkArchiveBusy] = useState(false)
   // R269 — dvoklik guard za terenski pregled PDF (družinska pariteta R263–R268).
   const [pdfVteku, setPdfVteku] = useState(false)
+  // R284 — dvoklik guard za terenski zapisni list PDF (pariteta R269 guard).
+  const [zapisniVteku, setZapisniVteku] = useState(false)
 
   // R276 (issue #16 §6) — korekcija = NOVA verzija v verigi (predhodnik
   // ostane v zgodovini — nič tihega prepisovanja). popravljaMeritev drži
@@ -2293,6 +2296,131 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
       })
     } finally {
       setPdfVteku(false)
+    }
+  }
+
+  // R284 — TERENSKI ZAPISNI LIST PDF (issue #15 §3, worklog i5): ISTI FRESH
+  // fetch + fail-verbose DTO pruning vzorec kot R269 (izolacija nove družine
+  // — namerna duplikacija pruningu, da R269 handler NIKOLI ne tvega regresije
+  // bajtnega kontrakta; skupno resnico nosi EN VIR meritevTerenPregled v
+  // libu). Zapisni list = IZPOLNJEVALNI list (X1): zapisana resnica + PRAZNI
+  // fizični stolpci (Fizična ref./Δ/Zapiski) — izpolni jih lastnik na terenu
+  // po docs/AR-FIELD-VALIDATION.md §3. PRAZEN seznam → iskren toast; ENA
+  // izpeljava povzetka = ISTA resnica kot KPI + sklep (WYSIWYG).
+  const handleZapisniListPdf = async () => {
+    if (zapisniVteku) return
+    if (!selectedProject) {
+      toast.error('Ni izbranega projekta', {
+        description: 'Terenski zapisni list je projekt-obračunski — najprej izberite projekt.',
+      })
+      return
+    }
+    setZapisniVteku(true)
+    try {
+      const res = await fetch(`/api/measurements?projectId=${selectedProject}`, {
+        credentials: 'same-origin',
+      })
+      if (!res.ok) {
+        throw new Error(`GET /api/measurements → HTTP ${res.status}`)
+      }
+      const data: unknown = await res.json()
+      if (!Array.isArray(data)) {
+        throw new TypeError('Odgovora /api/measurements ni mogoče prebrati (ni polja).')
+      }
+      const vrstice = data as Array<Record<string, unknown>>
+      const vnosi: MeritveTerenVnos[] = vrstice.map((m, i) => {
+        if (typeof m.id !== 'string' || m.id === '') {
+          throw new TypeError(`meritev vrstica ${i}: manjkajoč id v odgovoru API-ja`)
+        }
+        if (typeof m.createdAt !== 'string' || m.createdAt === '') {
+          throw new TypeError(`meritev vrstica ${i} (${m.id}): manjkajoč createdAt v odgovoru API-ja`)
+        }
+        if (typeof m.dolzinaMm !== 'number' || !Number.isFinite(m.dolzinaMm) || m.dolzinaMm < 0) {
+          throw new TypeError(`meritev vrstica ${i} (${m.id}): dolzinaMm mora biti ne-negativno končno število, ne ${String(m.dolzinaMm)}`)
+        }
+        if (typeof m.visinaMm !== 'number' || !Number.isFinite(m.visinaMm) || m.visinaMm < 0) {
+          throw new TypeError(`meritev vrstica ${i} (${m.id}): visinaMm mora biti ne-negativno končno število, ne ${String(m.visinaMm)}`)
+        }
+        if (m.verzija !== null && m.verzija !== undefined && (typeof m.verzija !== 'number' || !Number.isInteger(m.verzija) || (m.verzija as number) < 1)) {
+          throw new TypeError(`meritev vrstica ${i} (${m.id}): verzija mora biti pozitivno celo število ALI null, ne ${String(m.verzija)}`)
+        }
+        if (m.vir !== null && m.vir !== undefined && typeof m.vir !== 'string') {
+          throw new TypeError(`meritev vrstica ${i} (${m.id}): vir mora biti niz ALI null, ne ${String(m.vir)}`)
+        }
+
+        // R284 — kot (X2 EN VIR R186 r[5] = kotStopinje): prvorazredni DTO
+        // stolpec; fallback legacy arMetadata.kot (število). Pokvaren tip =
+        // fail-verbose (NIČ tihega String(number) na listu); odsoten = null
+        // ('—' iskren odpad).
+        let kot: number | null = null
+        if (m.kotStopinje !== null && m.kotStopinje !== undefined) {
+          if (typeof m.kotStopinje !== 'number' || !Number.isFinite(m.kotStopinje)) {
+            throw new TypeError(`meritev vrstica ${i} (${m.id}): kotStopinje mora biti končno število ALI null, ne ${String(m.kotStopinje)}`)
+          }
+          kot = m.kotStopinje
+        }
+        // arMetadata parse — fail-verbose (ISTI kontrakt kot R269 — pokvaren
+        // vir NIKOLI tiho preskočen).
+        let ar: Record<string, unknown> = {}
+        if (m.arMetadata !== null && m.arMetadata !== undefined) {
+          if (typeof m.arMetadata !== 'string') {
+            throw new TypeError(`meritev vrstica ${i} (${m.id}): arMetadata mora biti niz ALI null, ne ${String(m.arMetadata)}`)
+          }
+          if (m.arMetadata.trim() !== '') {
+            try {
+              const parsed: unknown = JSON.parse(m.arMetadata)
+              if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+                throw new TypeError('ni objekt')
+              }
+              ar = parsed as Record<string, unknown>
+            } catch {
+              throw new TypeError(`meritev vrstica ${i} (${m.id}): arMetadata ni razumljen kot JSON objekt (pokvaren vir)`)
+            }
+          }
+        }
+        if (kot === null && typeof ar.kot === 'number' && Number.isFinite(ar.kot)) {
+          // legacy dialekt (m1/m2) — kot živi v arMetadata.kot (R283 fikstura)
+          kot = ar.kot
+        }
+        return {
+          id: m.id,
+          createdAt: m.createdAt,
+          dolzinaMm: m.dolzinaMm,
+          visinaMm: m.visinaMm,
+          kotStopinje: kot,
+          tipMeritve: (ar.tipMeritve ?? null) as string | null,
+          oznaka: (ar.oznaka ?? null) as string | null,
+          status: (m.status ?? ar.status ?? null) as string | null,
+          lokacija: (ar.lokacija ?? null) as string | null,
+          opomba: (ar.opomba ?? null) as string | null,
+          verzija: (m.verzija ?? null) as number | null,
+          vir: (m.vir ?? null) as string | null,
+        }
+      })
+      if (vnosi.length === 0) {
+        // Fail-closed jedro: prazen seznam ne nastaja dokumenta — iskren toast.
+        toast.error('Ni vpisanih meritev', {
+          description: 'Terenski zapisni list se izvozi, ko je vpisana prva meritev projekta.',
+        })
+        return
+      }
+      // ENA izpeljava: povzetek za toast = ISTA resnica kot KPI IN sklep na
+      // listu (WYSIWYG — EN VIR meritevTerenPregled).
+      const { povzetek } = meritevTerenPregled(vnosi)
+      // Ime projekta = točno to, kar pokaže izbirnik; brez izbire → null
+      // (jedro pošteno pokaže 'Brez imena projekta' — brez izmišljenih imen).
+      const projektIme = projects.find((p) => p.id === selectedProject)?.nazivProjekta || null
+      generateTerenskiZapisniPdf(vnosi, { now: new Date(), projektIme })
+      toast.success('Zapisni list prenešen v PDF', {
+        description: `Terenski-zapisni-…pdf — ${povzetek.meritev} ${meritvePovzetekBeseda(povzetek.meritev)}; fizični stolpci (ref./Δ/zapiski) ostajajo prazni — izpolni jih na terenu (issue #15 §3).`,
+      })
+    } catch (err) {
+      // Fail-verbose: izvoz ne sme tiho spodleteti — razlog gre v toast.
+      toast.error('Izvoz ni uspel', {
+        description: err instanceof Error ? err.message : `Neznana napaka (${String(err)}).`,
+      })
+    } finally {
+      setZapisniVteku(false)
     }
   }
 
@@ -6543,6 +6671,29 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                 PDF
               </button>
             )}
+            {/* R284 — terenski zapisni list PDF (issue #15 §3, worklog i5):
+                IZPOLNJEVALNI list — zapisana resnica + PRAZNI fizični
+                stolpci (Fizična ref./Δ/Zapiski) za lastniško akcijo na
+                terenu (docs/AR-FIELD-VALIDATION.md §3). Pariteta R269 gumba:
+                press-scale + dvoklik guard + FileText aria-hidden
+                (družinski kontrakt); hover title pariteta kanon R280–R283. */}
+            {selectedProject && (
+              <button
+                type="button"
+                onClick={() => void handleZapisniListPdf()}
+                disabled={zapisniVteku}
+                className="flex shrink-0 items-center gap-1 rounded-lg border border-border/50 bg-secondary/50 px-2 py-1 text-2xs font-medium text-muted-foreground transition-all duration-150 press-scale active:scale-[0.96] hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                aria-label="Izvozi terenski zapisni list kot PDF"
+                title="Terenski zapisni list (issue #15 §3) — zapisane mere + prazni stolpci za fizično validacijo na terenu"
+              >
+                {zapisniVteku ? (
+                  <Loader2 aria-hidden="true" className="h-3 w-3 animate-spin" />
+                ) : (
+                  <FileText aria-hidden="true" className="h-3 w-3" />
+                )}
+                ZAPISNI LIST
+              </button>
+            )}
             <div className="flex-1" />
             {/* Bulk mode toggle */}
             <button
@@ -6556,6 +6707,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   ? 'bg-roksal-navy text-white border-roksal-navy'
                   : 'bg-secondary/50 text-muted-foreground border-border/50 hover:bg-secondary'
               }`}
+              title="Skupinski način — masovno izbiranje meritev za skupinske akcije (potrdi/arhiviraj)"
             >
               {bulkMode ? <CheckSquare aria-hidden="true" className="h-3 w-3" /> : <Square aria-hidden="true" className="h-3 w-3" />}
               Skupinsko
@@ -6568,7 +6720,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               (pariteta s pillom). */}
           {selectedProject && (
             <p className="text-2xs text-muted-foreground">
-              PDF = VSE meritve projekta (tudi arhivirane — polna resnica, ne samo viden seznam filtrov)
+              PDF = VSE meritve projekta (tudi arhivirane — polna resnica, ne samo viden seznam filtrov) · ZAPISNI LIST = zapisane mere + prazni stolpci za fizično validacijo (issue #15 §3 — fizične mere zapisuje lastnik na terenu)
             </p>
           )}
 
