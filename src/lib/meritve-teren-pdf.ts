@@ -63,6 +63,7 @@ import { cenikDatumIso } from './cenik-pdf'
 import { meritevVrstica, type MeritevZaIzvoz } from './meritve-csv'
 import { MEASUREMENT_STATUS_VALUES, type MeasurementStatusValue } from './measurement-status'
 import { meritvePovzetekBeseda } from './meritve-povzetek'
+import { MERITEV_VIRI, MERITEV_VIR_LABELS, type MeritevVir } from './meritev-verzije'
 
 // ---------- barve (ISTI dokumenti družina — 0 novih hex) ----------
 const NAVY: [number, number, number] = [29, 43, 62] // roksal-navy
@@ -110,9 +111,28 @@ export function preveriMeritevVnos(o: MeritveTerenVnos, i: number): void {
     ['lokacija', o.lokacija],
     ['opomba', o.opomba],
     ['tipPodlage', o.tipPodlage],
+    ['vir', o.vir],
   ] as const) {
     if (v !== null && v !== undefined && typeof v !== 'string') {
       throw new TypeError(`preveriMeritevVnos (${i}): ${ime} mora biti niz ALI null, ne ${String(v)}`)
+    }
+  }
+  // R277 — verzija: cela številka ALI null/izostanek (fail-closed: pokvaren
+  // vir ne sme tiho priti na list kot String(number)).
+  if (o.verzija !== null && o.verzija !== undefined) {
+    if (typeof o.verzija !== 'number' || !Number.isInteger(o.verzija) || o.verzija < 1) {
+      throw new TypeError(
+        `preveriMeritevVnos (${i}): verzija mora biti pozitivno celo število ALI null, ne ${String(o.verzija)}`,
+      )
+    }
+  }
+  // R277 — vir: samo znane vrednosti iz MERITEV_VIRI (neznana = pokvaren
+  // vir → TypeError; ista strogost kot status prek MEASUREMENT_STATUS_VALUES).
+  if (o.vir !== null && o.vir !== undefined) {
+    if (!(MERITEV_VIRI as readonly string[]).includes(o.vir)) {
+      throw new TypeError(
+        `preveriMeritevVnos (${i}): vir mora biti eden izmed ${MERITEV_VIRI.join('/')}, ne ${String(o.vir)}`,
+      )
     }
   }
 }
@@ -138,6 +158,11 @@ export interface MeritveTerenVrsta {
   lokacija: string | null
   /** Opomba ALI null ('—'). */
   opomba: string | null
+  /** R277 (issue #16 §6 — papirnata sledljivost): verzija v verigi ALI null
+   *  (legacy, pred verzioniranjem R276 — iskren odpad, ne izmisljena v1). */
+  verzija: number | null
+  /** R277 — izvor meritve (MANUAL/PHOTO_CV/ARCORE_DEPTH) ALI null (legacy). */
+  vir: MeritevVir | null
   /** Akcijski red (manjša = prej — akcijska cona na vrhu). */
   akcijskiRed: number
 }
@@ -202,6 +227,8 @@ export function meritevTerenPregled(
       status: status as MeasurementStatusValue,
       lokacija: r[17] === '' ? null : r[17],
       opomba: r[18] === '' ? null : r[18],
+      verzija: o.verzija ?? null,
+      vir: (o.vir ?? null) as MeritevVir | null,
       akcijskiRed: AKCIJSKI_RED[status as MeasurementStatusValue],
     }
   })
@@ -419,7 +446,7 @@ export function buildMeritveTerenPdfDoc(
   y = sectionTitle(doc, y, `Meritve (${vrste.length})`)
   autoTable(doc, {
     startY: y,
-    head: [['Datum', 'Oznaka', 'Tip', 'Dolžina (mm)', 'Višina (mm)', 'Status', 'Lokacija', 'Opomba']],
+    head: [['Datum', 'Oznaka', 'Tip', 'Dolžina (mm)', 'Višina (mm)', 'Status', 'Verzija', 'Vir', 'Lokacija', 'Opomba']],
     body: vrste.map((v) => [
       v.datum,
       v.oznaka ?? '—',
@@ -427,6 +454,8 @@ export function buildMeritveTerenPdfDoc(
       String(v.dolzinaMm),
       String(v.visinaMm),
       v.status,
+      v.verzija === null ? '—' : `v${v.verzija}`,
+      v.vir === null ? '—' : MERITEV_VIR_LABELS[v.vir],
       v.lokacija ?? '—',
       v.opomba ?? '—',
     ]),
@@ -450,7 +479,7 @@ export function buildMeritveTerenPdfDoc(
           data.cell.styles.textColor = GRAY
         }
       }
-      if ((data.column.index === 1 || data.column.index === 6 || data.column.index === 7) && raw === '—') {
+      if ((data.column.index === 1 || data.column.index === 6 || data.column.index === 7 || data.column.index === 8 || data.column.index === 9) && raw === '—') {
         data.cell.styles.textColor = GRAY
       }
     },
@@ -467,7 +496,7 @@ export function buildMeritveTerenPdfDoc(
   doc.setFontSize(8.5)
   doc.setTextColor(...NAVY)
   doc.text(
-    `${meritvePovzetekBeseda(povzetek.meritev)} · osnutki ${povzetek.osnutkov} (akcija — pregled in potrditev) · potrjenih ${povzetek.potrjenih} (pripravljeno za pripravo izdelave) · arhiviranih ${povzetek.arhiviranih} (zgodovinska cona) · skupna dolžina ${(povzetek.skupnaDolzinaMm / 1000).toFixed(2)} m (Σ vseh meritev — kanonične enote mm) · tipov ${povzetek.tipov} (polna podrobnost tipov v CSV arhivu) · statusi in tipi = kode VERBATIM (ista resnica kot CSV izvoz) · (referenčni pregled — VSE meritve projekta, tudi arhivirane) · vir = /api/measurements?projectId (resnica dostopa do projekta).`,
+    `${meritvePovzetekBeseda(povzetek.meritev)} · osnutki ${povzetek.osnutkov} (akcija — pregled in potrditev) · potrjenih ${povzetek.potrjenih} (pripravljeno za pripravo izdelave) · arhiviranih ${povzetek.arhiviranih} (zgodovinska cona) · skupna dolžina ${(povzetek.skupnaDolzinaMm / 1000).toFixed(2)} m (Σ vseh meritev — kanonične enote mm) · tipov ${povzetek.tipov} (polna podrobnost tipov v CSV arhivu) · statusi in tipi = kode VERBATIM (ista resnica kot CSV izvoz) · verzija = veriga korekcij (v1 = prvi vpis; — = nastalo pred verzioniranjem; korekcija ustvari novo verzijo, starejša ostane v zgodovini) · vir = izvor meritve (Ročni vnos/Foto-CV/AR-Depth) · (referenčni pregled — VSE meritve projekta, tudi arhivirane) · vir podatkov = /api/measurements?projectId (resnica dostopa do projekta).`,
     14,
     y + 4,
   )

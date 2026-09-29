@@ -7,7 +7,10 @@ Spodnja kopija je IZOBRAŽEVALNA — pri spremembi kontrakta se najprej spremeni
 JSON + shema + testi, šele potem dokument.)
 
 Kontrakt: **MeasurementSession v1** — R274 (issue #17 §A/§B/§D), semantične
-odločitve 1–8 v glavi `src/lib/ar-contract.ts`.
+odločitve 1–8 v glavi `src/lib/ar-contract.ts`; **R277 razširitev (issue
+#16 §3)**: `segments[].angleDeg` opcijsko (aditivno — odločitve P1–P6 v glavi
+`src/lib/ar-contract.ts`; verzija ostane 1, zlati fixture ostane brez novega
+polja — minimalni+polni primer v1).
 
 ---
 
@@ -98,6 +101,7 @@ Minimalni veljaven payload (samo obvezna polja — vse ostalo izpustljivo):
 | `segments[].lengthMm` | `Float` | `finite > 0` | float mm NEzaokrožen (3200.75 preživi) |
 | `segments[].heightMm` | `Float?` | `finite > 0` | opcijsko |
 | `segments[].slopeDeg` | `Float?` | `finite` | ZNAK = del resnice (negativen naklon legitimen — R272 precedens) |
+| `segments[].angleDeg` | `Float?` | `finite` | **R277 (issue #16 §3, P1–P6)**: smer segmenta v vodoravni ravnini — azimut, deg, CCW od +X (prvi segment v LOCAL_NORMALIZED = 0°); izmerjena resnica, NE izpeljana; znak/vrednost verbatim (brez wrapa); izostanek = ni izmerjeno, ekspliciten null zavrnjen |
 | `segments[].source` | enum `SessionSource` | kot `source` | per-segment izvor |
 | `segments[].measurementIndex` | `Int?` | `Int ≥ 0` | opcijsko |
 
@@ -156,6 +160,7 @@ data class ArSegment(
     val lengthMm: Double,                      // > 0, NEzaokrožen
     val heightMm: Double? = null,
     val slopeDeg: Double? = null,              // znak = del resnice
+    val angleDeg: Double? = null,              // R277 (issue #16 §3): azimut CCW od +X, deg; izostanek = ni izmerjeno
     val source: SessionSource,
     val measurementIndex: Int? = null,
 )

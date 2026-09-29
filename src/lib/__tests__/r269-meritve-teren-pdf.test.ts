@@ -225,8 +225,8 @@ describe('R269 — fail-closed v libu (družina R236/R250–R268)', () => {
 })
 
 describe('R269 — WYSIWYG vir (tabela + KPI + sklep)', () => {
-  it('tabela 8 stolpcev (Datum, Oznaka, Tip, Dolžina (mm), Višina (mm), Status, Lokacija, Opomba) — head dobesedno', () => {
-    expect(lib).toContain("['Datum', 'Oznaka', 'Tip', 'Dolžina (mm)', 'Višina (mm)', 'Status', 'Lokacija', 'Opomba']")
+  it('tabela 10 stolpcev R277 (Datum, Oznaka, Tip, Dolžina (mm), Višina (mm), Status, Verzija, Vir, Lokacija, Opomba) — head dobesedno', () => {
+    expect(lib).toContain("['Datum', 'Oznaka', 'Tip', 'Dolžina (mm)', 'Višina (mm)', 'Status', 'Verzija', 'Vir', 'Lokacija', 'Opomba']")
   })
 
   it('barvna resnica: OSNUTEK AMBER bold (akcija — čaka potrditev), POTRJENA GREEN, ARHIVIRANA sivo (zgodovina), \'—\' sivo; NIKOLI utišan alarm', () => {
@@ -258,7 +258,8 @@ describe('R269 — WYSIWYG vir (tabela + KPI + sklep)', () => {
     expect(lib).toContain('(Σ vseh meritev — kanonične enote mm)')
     expect(lib).toContain('statusi in tipi = kode VERBATIM (ista resnica kot CSV izvoz)')
     expect(lib).toContain('(referenčni pregled — VSE meritve projekta, tudi arhivirane)')
-    expect(lib).toContain('vir = /api/measurements?projectId (resnica dostopa do projekta)')
+    expect(lib).toContain('vir podatkov = /api/measurements?projectId (resnica dostopa do projekta)')
+    // R277 — sklep poimenuje tudi verigo korekcij (verzija) in izvor (vir).
   })
 
   it('glava MERITVE — TERENSKI PREGLED + projekt: ime + osveženo + noge Stran i/N + NOVI datotečni kontrakt Meritve-teren- + brez locale + NIČ mreže v libu', () => {

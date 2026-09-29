@@ -2125,6 +2125,15 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
         if (typeof m.visinaMm !== 'number' || !Number.isFinite(m.visinaMm) || m.visinaMm < 0) {
           throw new TypeError(`meritev vrstica ${i} (${m.id}): visinaMm mora biti ne-negativno končno število, ne ${String(m.visinaMm)}`)
         }
+        // R277 (issue #16 §6) — verzija + vir: fail-verbose tipovna preverba
+        // (pokvaren vir NE sme tiho priti na list kot String(number); verzija
+        // = pozitivno celo število ALI null/izostanek = legacy).
+        if (m.verzija !== null && m.verzija !== undefined && (typeof m.verzija !== 'number' || !Number.isInteger(m.verzija) || (m.verzija as number) < 1)) {
+          throw new TypeError(`meritev vrstica ${i} (${m.id}): verzija mora biti pozitivno celo število ALI null, ne ${String(m.verzija)}`)
+        }
+        if (m.vir !== null && m.vir !== undefined && typeof m.vir !== 'string') {
+          throw new TypeError(`meritev vrstica ${i} (${m.id}): vir mora biti niz ALI null, ne ${String(m.vir)}`)
+        }
         // arMetadata parse — fail-verbose (UI parser je toleranten {}; dokument
         // resnice NIKOLI tiho ne preskoči pokvarene vrstice).
         let ar: Record<string, unknown> = {}
@@ -2154,6 +2163,8 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
           status: (m.status ?? ar.status ?? null) as string | null,
           lokacija: (ar.lokacija ?? null) as string | null,
           opomba: (ar.opomba ?? null) as string | null,
+          verzija: (m.verzija ?? null) as number | null,
+          vir: (m.vir ?? null) as string | null,
         }
       })
       if (vnosi.length === 0) {
@@ -4514,11 +4525,11 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   <table className="w-full text-3xs">
                     <thead>
                       <tr className="text-left text-muted-foreground">
-                        <th className="py-1 pr-2 font-medium">Verzija</th>
+                        <th className="py-1 pr-2 font-medium" title="Verzija v verigi korekcij — v1 = prvi vpis; — = nastalo pred verzioniranjem (korekcija ustvari novo verzijo, starejša ostaje v zgodovini)">Verzija</th>
                         <th className="py-1 pr-2 font-medium">Datum</th>
-                        <th className="py-1 pr-2 font-medium">Vir</th>
-                        <th className="py-1 pr-2 font-medium tabular-nums">Dolžina</th>
-                        <th className="py-1 pr-2 font-medium tabular-nums">Δ</th>
+                        <th className="py-1 pr-2 font-medium" title="Izvor meritve — izpeljan na strežniku: Ročni vnos / Foto-CV / AR-Depth; — = nastalo pred verzioniranjem">Vir</th>
+                        <th className="py-1 pr-2 font-medium tabular-nums" title="Dolžina te verzije v mm — Δ pokaže razliko od predhodne verzije">Dolžina</th>
+                        <th className="py-1 pr-2 font-medium tabular-nums" title="Delta od predhodne verzije (+ večje / − manjše); prva vrstica verige nima delte">Δ</th>
                         <th className="py-1 pr-2 font-medium">Status</th>
                         <th className="py-1 font-medium text-right">Aktivna</th>
                       </tr>

@@ -59,10 +59,50 @@
 //      Sync-revizija/konflikt za meritve (baseRevision na session nivoju) =
 //      ločena odločitev z DB resnico (E: zgodovina) — prihodnja runda, NE
 //      tiho izumljeno v tej.
-//   8. E (ZGODOVINA) = NI rešena v tem modulu — meritev se trenutno NE
-//      prepisuje (route le ustvarja; statusni cikl OSNUTEK → POTRJENA →
-//      ARHIVIRANA ima revizijsko sled v AuditLog, R153). Sledljivost
-//      spremembe 3,20 m → 3,45 m rabi sync-model za meritve (glej 7).
+//   8. E (ZGODOVINA) = rešena v R276 (issue #16 §6 — verzije/predhodnikId/
+//      korenId/vir + GET verzije + audit MEASUREMENT_VERSION; docs/
+//      MEASUREMENT-HISTORY.md O1–O9).
+//
+// ── SEMANTIČNE ODLOČITVE SEGMENT KOTA (R277, issue #16 §3 — P1–P6, zapisane
+//    PRED razvojem po kanonu O1–O9) ──────────────────────────────────────────
+//
+//   P1. ADITIVNA v1, NE contractVersion 2. angleDeg = OPCIONSKO polje v
+//       obstoječi v1. Razlogi: (a) v1 v trenutku R277 NI ima še nobenega
+//       produkcijskega writerja/readerja (ar-android integracija ni začeta —
+//       issue #17 J je izrecno NI dokazan); (b) opcijsko polje = čista
+//       dodatek v shemi — stari writer (v1 brez kota) ostane 100 % veljaven;
+//       (c) edini nekompatibilni smer je stari STRICT reader × novi writer —
+//       Manager R274–R276 bi tak payload ZAVRNIL z izrecno napako (fail-
+//       closed, NIČ tihe izgube) in to okno se zapre z R277 deployom
+//       (Manager deploy = minute, Android integracija = prihodnje tedne);
+//       (d) dvig na v2 bi razbil zlati fixture + R274 ×31 + R275 ×15 testov
+//       brez dejanske koristi. issue #16 §7 dovoljuje 'kompatibilna' sprememba
+//       — ta je kompatibilna za VSE obstoječe writerje. Matrika spodaj nosi
+//       razširitev izrecno.
+//   P2. SEMANTIKA: angleDeg = smer segmenta v vodoravni ravnini (azimut) —
+//       kot od LOCAL_NORMALIZED +X osi do smeri segmenta (start → end),
+//       nasprotno urinega kazalca pozitiven (desnosučni sistem, +Y gor v
+//       ravnini = matematični atan2(dy, dx) v stopinjah). Prvi segment v
+//       LOCAL_NORMALIZED okviru je po definiciji 0°. Finite število; vrednost
+//       in znak = resnica — kontrakt NE normalizira (brez wrapa na [0,360)
+//       ali [−180,180] — normalizacija bi spremenila izmerjeno resnico;
+//       precedens: slopeDeg znak = resnica, R272).
+//   P3. IZMERJENO, NE IZPELJANO: angleDeg je neodvisna izmerjena resnica od
+//       naprave — kontrakt NE izpeljuje kota iz koordinat/dolžin in Manager
+//       NE računa nazaj. Izpeljava geometrije je BOM/geometry domena (core
+//       NIČ). Start/end koordinat v1 NIMA (samo smer + dolžina) — dovolj za
+//       nadaljnjo geometrijo, brez nove identitete (issue #16 §3).
+//   P4. ENOTE = stopinje (deg), NE radiani — isti dogovor kot slopeDeg (v1:
+//       mm za dolžine, deg za kote).
+//   P5. IZOSTANEK ≠ NIČ: brez angleDeg = kot NI bil izmerjen (iskrena
+//       praznina). Ekspliciten null = ZAVRJEN (z.number() ne sprejme null —
+//       izostanek je edini način 'brez vrednosti'; NIKOLI ugibanje 0, saj je
+//       0 realna izmerjena vrednost — prvi segment). NaN/Infinity zavrnjena
+//       (finite). Strict ostaja: neznana polja (tudi tipografije 'kotDeg')
+//       = zavrnitev, ne utišano odstranjevanje (odločitev 3 nespremenjena).
+//   P6. DB/ROUTE NIČ: angleDeg gre v arMetadata JSON verbatim (route že
+//       shrani kanonični payload; brez sheme — R276 je že naredil edini
+//       schema-touch; ta runda brez migracije).
 //
 // Determinizem: enak vhod → enak izhod (brez ure, naključja, locale).
 // Fail-closed: vsak neveljaven vhod = izrecna ArContractError s kodo.
@@ -77,7 +117,9 @@ export const AR_CONTRACT_VERSION = 1
  *  branje: katera contractVersion je sprejeta in v kakšnem stanju je.
  *  Prihodnje verzije se doda SEM, ne z tiho toleranco pri razčlenjevanju. */
 export const AR_CONTRACT_COMPATIBILITY = {
-  1: { status: 'aktivna', uvod: 'R274 (issue #17 §A/§D)' },
+  // P1 (R277): v1 razširjen ADITIVNO z segments[].angleDeg (issue #16 §3 —
+  // opcijsko; brez spremembe pomena obstoječih polj, brez migracije).
+  1: { status: 'aktivna', uvod: 'R274 (issue #17 §A/§D)', razsiritev: 'R277 (issue #16 §3: segments[].angleDeg opcijsko — aditivno, P1–P6)' },
 } as const
 
 /** Podprte verzije — izpeljane iz matrike (EN vir). */
@@ -171,6 +213,11 @@ const arSessionSchema = z.strictObject({
         heightMm: mmStevilo.optional(),
         /** znak = del resnice (negativen naklon je legitimen — R272 precedens) */
         slopeDeg: finiteStevilo.optional(),
+        /** R277 (issue #16 §3, P1–P6): smer segmenta v vodoravni ravnini
+         *  (azimut, deg, CCW od +X; prvi segment v LOCAL_NORMALIZED = 0°).
+         *  Izmerjena resnica — NE izpeljana (P3); znak/vrednost verbatim
+         *  (P2); izostanek = ni izmerjeno, ekspliciten null zavrnjen (P5). */
+        angleDeg: finiteStevilo.optional(),
         source: z.enum(AR_SESSION_SOURCES),
         measurementIndex: z.number().int().min(0).optional(),
       }),

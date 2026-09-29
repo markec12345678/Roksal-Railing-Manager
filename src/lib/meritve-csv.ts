@@ -50,6 +50,10 @@ export interface MeritevZaIzvoz {
   pozicijaMm?: number | null
   notranjiKot?: number | null
   zunanjiKot?: number | null
+  /** R277 — verzija v verigi (issue #16 §6; null/izostanek = legacy, pred verzioniranjem). CSV 19-stolpčni kontrakt NIČ — polje je samo za PDF terenskega pregleda. */
+  verzija?: number | null
+  /** R277 — izvor meritve (MERITEV_VIRI: MANUAL/PHOTO_CV/ARCORE_DEPTH; null = legacy). CSV NIČ — samo PDF. */
+  vir?: string | null
 }
 
 /** Ena CSV vrstica iz merch. Odprta polja → '' (pošteno prazno); status/tip
