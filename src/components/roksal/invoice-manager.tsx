@@ -63,6 +63,11 @@ import {
   prihodkiPovzetek,
   type PrihodkiPdfVnos,
 } from '@/lib/prihodki-pdf'
+import {
+  prihodkiPoMesecih,
+  racunBeseda,
+  type PrihodkiMeseciPovzetek,
+} from '@/lib/prihodki-meseci'
 
 // ---------- tipi ----------
 
@@ -356,6 +361,41 @@ export function InvoiceManager() {
   }, [formPostavke])
 
   // ---------- povzetek ----------
+  // R290 — EN VIR preslikava /api/invoices → PrihodkiPdfVnos: prihodki PDF
+  // izvoz (R250) IN sekcija 'Prihodki po mesecih' (R290) poganjata iz ISTEGA
+  // polja (WYSIWYG po konstrukciji — preslikava enkrat, ne dvakrat).
+  const prihodkiVnosi = useMemo<PrihodkiPdfVnos[]>(
+    () =>
+      invoices.map((inv) => ({
+        stevilka: inv.stevilka,
+        tip: inv.tip,
+        status: inv.status,
+        datumIzdaje: inv.datumIzdaje,
+        rokPlacilaDni: inv.rokPlacilaDni,
+        placanoAt: inv.placanoAt,
+        znesek: inv.znesek,
+        // Snapshot kupca, sicer ime stranke projekta, sicer iskren vezaj
+        // (prikazna resnica — NIČ izmišljenega; lib fail-closed preveri
+        // strukturo vrstic, kupec je prikazna resnica per račun).
+        kupec: inv.kupec?.trim() || inv.project?.customer?.ime?.trim() || '—',
+        projekt: inv.project?.nazivProjekta?.trim() || '—',
+      })),
+    [invoices],
+  )
+  // R290 — prihodki po mesecih (plačila dimenzija): fail-verbose razčlenitev
+  // (pokvaren vir = viden razlog, nikoli zrušitev ALI tiho praznina —
+  // vzorec deal-pipeline R172).
+  const meseciPovzetek = useMemo<{ ok: boolean; p?: PrihodkiMeseciPovzetek; napaka?: string }>(
+    () => {
+      try {
+        return { ok: true, p: prihodkiPoMesecih(prihodkiVnosi) }
+      } catch (err) {
+        return { ok: false, napaka: err instanceof Error ? err.message : String(err) }
+      }
+    },
+    [prihodkiVnosi],
+  )
+
   // R250 — prihodki PDF (7. člen 'izvozi' družine): agregatna resnica za
   // vodstvo iz ISTEGA odgovora /api/invoices (route NIČ). Bralni dokument —
   // brez pravice gate (P1-k precedens; vsi, ki vidijo Račune, nosijo
@@ -369,20 +409,7 @@ export function InvoiceManager() {
         return
       }
       const now = new Date()
-      const vnosi: PrihodkiPdfVnos[] = invoices.map((inv) => ({
-        stevilka: inv.stevilka,
-        tip: inv.tip,
-        status: inv.status,
-        datumIzdaje: inv.datumIzdaje,
-        rokPlacilaDni: inv.rokPlacilaDni,
-        placanoAt: inv.placanoAt,
-        znesek: inv.znesek,
-        // Snapshot kupca, sicer ime stranke projekta, sicer iskren vezaj
-        // (prikazna resnica — NIČ izmišljenega; lib fail-closed preveri
-        // strukturo vrstic, kupec je prikazna resnica per račun).
-        kupec: inv.kupec?.trim() || inv.project?.customer?.ime?.trim() || '—',
-        projekt: inv.project?.nazivProjekta?.trim() || '—',
-      }))
+      const vnosi = prihodkiVnosi
       const doc = buildPrihodkiPdfDoc(vnosi, { now })
       doc.save(prihodkiPdfFilename(now))
       // Toast pove REALNO agregatno resnico (ISTI trikot kot PDF KPI IN
@@ -1036,17 +1063,23 @@ export function InvoiceManager() {
         {!loading && invoices.length > 0 && (
           <div className="space-y-2">
             <div className="grid grid-cols-3 gap-2">
-              <div className="rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 p-2 text-center transition-all hover:shadow-sm hover:border-emerald-300/70">
+              {/* R290 MANDATORY STIL: hover title na KPI boxih — izpeljava
+                  izrečena (WYSIWYG preglednost; ISTA izpeljava kot legenda
+                  izvozne skupine in PDF KPI — ENA resnica na treh mestih). */}
+              <div className="rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 p-2 text-center transition-all hover:shadow-sm hover:border-emerald-300/70" title="Plačano = vsi računi s statusom PLACAN (vsota zneskov)">
                 <div className="text-2xs uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Plačano</div>
                 <div className="text-sm font-bold tabular-nums text-emerald-800 dark:text-emerald-200">{eur(summary.placano)}</div>
               </div>
-              <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-2 text-center transition-all hover:shadow-sm hover:border-amber-300/70">
+              <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-2 text-center transition-all hover:shadow-sm hover:border-amber-300/70" title="Odprto = izdano (IZDAN + PLACAN), neplačano — ISTI trikot kot prihodki PDF">
                 <div className="text-2xs uppercase tracking-wide text-amber-700 dark:text-amber-300">Odprto</div>
                 <div className="text-sm font-bold tabular-nums text-amber-800 dark:text-amber-200">
                   {eur(Math.max(0, summary.izdano - summary.placano))}
                 </div>
               </div>
-              <div className={`rounded-lg border p-2 text-center transition-all hover:shadow-sm ${summary.zapadloN > 0 ? 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 hover:border-red-300/70' : 'border-border bg-muted/40'}`}>
+              <div
+                className={`rounded-lg border p-2 text-center transition-all hover:shadow-sm ${summary.zapadloN > 0 ? 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 hover:border-red-300/70' : 'border-border bg-muted/40'}`}
+                title="Zapadlo = izdani računi prek roka plačila (rok = izdaja + rokPlacilaDni)"
+              >
                 <div className={`text-2xs uppercase tracking-wide ${summary.zapadloN > 0 ? 'text-red-700 dark:text-red-300' : 'text-muted-foreground'}`}>
                   Zapadlo
                 </div>
@@ -1071,6 +1104,71 @@ export function InvoiceManager() {
                   plačano {Math.round((summary.placano / summary.izdano) * 100)} % od izdanih {eur(summary.izdano)}
                 </div>
               </div>
+            )}
+            {/* R290 — PRIHODKI PO MESECIH (plačila dimenzija): razčlenitev
+                plačil po mesecu placanoAt — EN VIR s prihodki PDF (isti
+                prihodkiVnosi, ISTA validacija/sort uvožena). Fail-verbose
+                napaka (pokvaren vir = razlog, ne tiha praznina); meseci ASC;
+                IZDAN/OSNUTEK/STORNIRAN poštevani — nič tihega izginjanja.
+                Žetoni (border-border/60 · bg-muted/40 · text-muted-foreground
+                · text-roksal-ink · tabular-nums) — 0 novih hex. */}
+            {!meseciPovzetek.ok ? (
+              <div
+                role="alert"
+                className="rounded-lg border border-amber-300/60 bg-amber-50 p-2 text-2xs text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200"
+              >
+                Prihodki po mesecih iz teh podatkov ni mogoče razčleniti — {meseciPovzetek.napaka}
+              </div>
+            ) : (
+              <section
+                aria-label="Prihodki po mesecih — po mesecu plačila"
+                className="rounded-lg border border-border/60 bg-muted/40 p-2"
+              >
+                <div className="flex items-baseline justify-between">
+                  <h4 className="text-2xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Prihodki po mesecih
+                  </h4>
+                  {meseciPovzetek.p!.stStorniranih > 0 && (
+                    <span className="text-2xs tabular-nums text-muted-foreground">
+                      stornirani {meseciPovzetek.p!.stStorniranih} (izključeni iz zneskov)
+                    </span>
+                  )}
+                </div>
+                {meseciPovzetek.p!.meseci.length === 0 ? (
+                  <p className="pt-1 text-2xs text-muted-foreground">
+                    Ni plačanih računov — prihodki po mesecih se izrišejo ob prvem plačilu.
+                  </p>
+                ) : (
+                  <>
+                    <ul className="mt-1 space-y-0.5">
+                      {meseciPovzetek.p!.meseci.map((m) => (
+                        <li
+                          key={m.mesec}
+                          className="flex items-center justify-between rounded px-1 py-0.5 text-2xs transition-colors hover:bg-muted/60"
+                        >
+                          <span className="tabular-nums text-roksal-ink">{m.mesec}</span>
+                          <span className="tabular-nums text-muted-foreground">
+                            {m.stRacunov} {racunBeseda(m.stRacunov)}
+                          </span>
+                          <span className="tabular-nums font-semibold text-roksal-ink">{eur(m.prihodki)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <div className="mt-1 flex items-center justify-between border-t border-border/60 px-1 pt-1 text-2xs">
+                      <span className="text-muted-foreground">Skupaj plačano</span>
+                      <span className="tabular-nums text-muted-foreground">
+                        {meseciPovzetek.p!.skupajRacunov} {racunBeseda(meseciPovzetek.p!.skupajRacunov)}
+                      </span>
+                      <span className="tabular-nums font-bold text-roksal-ink">{eur(meseciPovzetek.p!.skupajPrihodki)}</span>
+                    </div>
+                    {meseciPovzetek.p!.stIzdanih > 0 && (
+                      <p className="px-1 pt-0.5 text-right text-2xs tabular-nums text-muted-foreground">
+                        v teku: {meseciPovzetek.p!.stIzdanih} {racunBeseda(meseciPovzetek.p!.stIzdanih)} · {eur(meseciPovzetek.p!.znesekIzdanih)}
+                      </p>
+                    )}
+                  </>
+                )}
+              </section>
             )}
           </div>
         )}
