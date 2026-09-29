@@ -63,13 +63,15 @@ describe('R182 — obvestila (notification-center): fail-verbose agregacije + ž
     expect(src).toMatch(/onClick=\{\(\) => \{ setOpen\(true\); void load\(\) \}\}/)
   })
 
-  it('fail-verbose: 5× status !== 403 (zaloga, projekti, računi, naročila, vreme) — 403 meja tiho (R175)', () => {
+  it('fail-verbose: 6× status !== 403 (zaloga, projekti, CRM opomniki R287, računi, naročila, vreme) — 403 meja tiho (R175)', () => {
     const src = obvestila()
-    // 5 virov × non-403 guard (računi/naročila/vreme imajo tudi catch vejo)
+    // 6 virov × non-403 guard (računi/naročila/vreme imajo tudi catch vejo)
     // R212: naročila = 5. vir (aktivna naročila digest)
-    expect(src.match(/\.status !== 403/g)).toHaveLength(5)
+    // R287: CRM opomniki = 6. vir ((k) portal akcija — EN VIR /api/crm)
+    expect(src.match(/\.status !== 403/g)).toHaveLength(6)
     expect(src).toContain("neuspeliViri.push('zaloga')")
     expect(src).toContain("neuspeliViri.push('projekti')")
+    expect(src).toContain("neuspeliViri.push('CRM opomniki')")
     expect(src.split("neuspeliViri.push('računi')").length - 1).toBe(2) // !res.ok + catch
     expect(src.split("neuspeliViri.push('naročila')").length - 1).toBe(2) // R212: !res.ok + catch
     expect(src.split("neuspeliViri.push('vreme')").length - 1).toBe(2) // !res.ok + catch

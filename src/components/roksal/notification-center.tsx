@@ -32,7 +32,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 import { Button } from '@/components/ui/button'
 import {
   Bell, Package, PackageX, CalendarDays, CalendarX, CloudLightning, CheckCheck,
-  ChevronRight, RefreshCw, AlertTriangle, Loader2, FileClock, Receipt,
+  ChevronRight, RefreshCw, AlertTriangle, Loader2, FileClock, Receipt, PhoneCall,
   UserCog, Inbox, Wrench, History, ShieldCheck, ShoppingCart,
 } from 'lucide-react'
 import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'
@@ -54,10 +54,14 @@ import { BadgeZamujenaDobava } from '@/components/roksal/badge-zamujena-dobava'
 // R229 — lib zamujena-dobava (R228): jeZamujenaDobava je client-safe (brez
 // uvozov) — danas je IZRECEN argument (determinizem, kot vodja R228).
 import { jeZamujenaDobava } from '@/lib/zamujena-dobava'
+// R287 — lib opomnik-zvonek ((k) portal akcija — ZAPRTJE evalvacije od R251):
+// opomnikZvonekVrstice je client-safe (brez uvozov) — opomnikStatus je VERBATIM
+// strežniški izračun (R251 kanon); danas je IZRECEN argument (vzorec R228).
+import { opomnikZvonekVrstice } from '@/lib/opomnik-zvonek'
 
 interface NotificationItem {
   id: string
-  kind: 'stock' | 'install' | 'weather' | 'followup' | 'invoice' | 'order' | 'brez' | 'zamujena'
+  kind: 'stock' | 'install' | 'weather' | 'followup' | 'invoice' | 'order' | 'brez' | 'zamujena' | 'opomnik' | 'opomnikPotekel'
   title: string
   subtitle: string
   meta?: string
@@ -149,7 +153,7 @@ export function NotificationCenter() {
     // opozorilno vrstico + brez pečata.
     const neuspeliViri: string[] = []
     try {
-      const [invRes, projRes] = await Promise.all([fetch('/api/inventory'), fetch('/api/projects')])
+      const [invRes, projRes, crmRes] = await Promise.all([fetch('/api/inventory'), fetch('/api/projects'), fetch('/api/crm')])
       const today = new Date()
 
       // 1) Nizka zaloga
@@ -251,6 +255,32 @@ export function NotificationCenter() {
         }
       } else if (projRes.status !== 403) {
         neuspeliViri.push('projekti')
+      }
+
+      // 2c) R287 — CRM opomniki ((k) opomnik portal akcija — ZAPRTJE
+      // evalvacije od R251): stranke z opomnikom AKTIVEN (≤ 7 dni) ALI
+      // POTEKEL — ISTI /api/crm odgovor, ki ga CrmTab že izriše (EN VIR).
+      // opomnikStatus VERBATIM strežniški izračun (R251 kanon — lib NE
+      // razsoja statusa; brez polja = vrstica NIČ, nikoli lažnega žiga);
+      // POTEKEL prioriteta (alarm), max 6 (vzorec followup/invoice).
+      // Portal akcija: klik → CRM (R182 protokol — pariteta followup).
+      if (crmRes.ok) {
+        const crm = (await crmRes.json()) as { customers?: unknown }
+        const opVrstice = opomnikZvonekVrstice(
+          Array.isArray(crm.customers) ? crm.customers : [],
+          new Date(today.getFullYear(), today.getMonth(), today.getDate()),
+        )
+        for (const v of opVrstice) {
+          out.push({
+            id: v.id,
+            kind: v.alarm ? 'opomnikPotekel' : 'opomnik',
+            title: v.ime,
+            subtitle: v.opis,
+            meta: v.meta,
+          })
+        }
+      } else if (crmRes.status !== 403) {
+        neuspeliViri.push('CRM opomniki')
       }
 
       // 5) Zapadli računi (izdan + rok plačila pretekel)
@@ -456,7 +486,10 @@ export function NotificationCenter() {
     } else if (item.kind === 'install') {
       window.dispatchEvent(new CustomEvent('roksal:navigate', { detail: { tab: 'dashboard' } }))
       window.dispatchEvent(new CustomEvent('roksal:select-project', { detail: item.id.replace('install-', '') }))
-    } else if (item.kind === 'followup' || item.kind === 'invoice') {
+    } else if (item.kind === 'followup' || item.kind === 'invoice' || item.kind === 'opomnik' || item.kind === 'opomnikPotekel') {
+      // R287 — (k) portal akcija: opomnik vrstica vodi v CRM (ISTI protokol
+      // kot followup/invoice R182 — signal → dejanje; deep-link do konkretne
+      // stranke = izrecno ODLOŽENO — zahteva page.tsx + crm-tab wiring).
       window.dispatchEvent(new CustomEvent('roksal:navigate', { detail: { tab: 'more', more: 'crm' } }))
     } else if (item.kind === 'order' || item.kind === 'zamujena') {
       // R212 — Material je za 'Več' sheetom (R206 lekcija): more:'material'
@@ -550,6 +583,12 @@ export function NotificationCenter() {
     // opomniki/nizka zaloga/vodja kartica R228; en vizual en pomen — datum,
     // ki ni bil izpolnjen).
     zamujena: { icon: CalendarX, bg: 'bg-roksal-red/15', fg: 'text-roksal-red' },
+    // R287 — (k) portal akcija: opomnik AKTIVEN = pozornost (roksal-amber —
+    // ISTA semantika kot brez/order), POTEKEL = ALARM (roksal-red — ISTA
+    // semantika kot zamujena/nizka zaloga); PhoneCall = ponovni kontakt
+    // (opomniški namen). 0 novih tokenov.
+    opomnik: { icon: PhoneCall, bg: 'bg-roksal-amber/15', fg: 'text-roksal-amber' },
+    opomnikPotekel: { icon: PhoneCall, bg: 'bg-roksal-red/15', fg: 'text-roksal-red' },
   }
 
   return (
@@ -579,7 +618,7 @@ export function NotificationCenter() {
               {loading && <Loader2 aria-hidden="true" className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
             </SheetTitle>
             <SheetDescription className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
-              <span>Nizka zaloga, današnje montaže, naročila, vreme, računi in poslana obvestila.</span>
+              <span>Nizka zaloga, današnje montaže, naročila, vreme, računi, CRM opomniki in poslana obvestila.</span>
               {obvestilaOsvezitev && (
                 <span
                   className="hidden items-center gap-1 text-[11px] text-muted-foreground sm:flex"
@@ -619,7 +658,7 @@ export function NotificationCenter() {
                 </div>
                 <p className="text-sm font-semibold text-roksal-ink">Vse je pod nadzorom</p>
                 <p className="max-w-[220px] text-xs text-muted-foreground">
-                  Ni nizke zaloge, ni artiklov brez dobavitelja, danes ni montaž, ni aktivnih naročil in vreme ne povzroča skrbi.
+                  Ni nizke zaloge, ni artiklov brez dobavitelja, danes ni montaž, ni aktivnih naročil, ni opomnikov in vreme ne povzroča skrbi.
                 </p>
                 <Button variant="outline" size="sm" className="mt-1 min-h-[40px]" onClick={() => void load()}>
                   <RefreshCw aria-hidden="true" className="mr-1.5 h-3.5 w-3.5" /> Osveži
@@ -663,7 +702,9 @@ export function NotificationCenter() {
                           ? `${item.title} — odpre Zalogo s filtrom brez dobavitelja`
                           : item.kind === 'zamujena'
                             ? `${item.title} — odpre Material → Naročila`
-                            : undefined}
+                            : item.kind === 'opomnik' || item.kind === 'opomnikPotekel'
+                              ? `${item.title} — odpre CRM (opomnik)`
+                              : undefined}
                     >
                       <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${style.bg}`}>
                         <Icon className={`h-5 w-5 ${style.fg}`} />
@@ -700,7 +741,13 @@ export function NotificationCenter() {
                             števcev; vsebina ostane ista, brez sklanjatev). */}
                         <p className={`truncate text-[11px] text-muted-foreground ${item.kind === 'stock' ? 'tabular-nums' : ''}`}>{item.subtitle}</p>
                         {item.meta && (
-                          <p className="mt-0.5 text-2xs font-semibold uppercase tracking-wide text-roksal-amber">
+                          <p className={`mt-0.5 text-2xs font-semibold uppercase tracking-wide ${
+                            /* R287 — POTEKEL meta v rdeči (ALARM — ISTA
+                               semantika kot zamujena); obstoječe mete ostanejo
+                               amber (novi kindi NE spreminjajo obstoječega
+                               kontrakta). */
+                            item.kind === 'opomnikPotekel' ? 'text-roksal-red' : 'text-roksal-amber'
+                          }`}>
                             {item.meta}
                           </p>
                         )}
