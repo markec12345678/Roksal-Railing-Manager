@@ -31,6 +31,14 @@ import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { registerSloPdfFonts } from '@/lib/pdf-sl-font'
 import { buildPunchCsv, punchCsvFilename } from '@/lib/punch-csv'
+import {
+  punchZapisnikPregled,
+  generateZapisnikStanjePdf,
+  tockaBeseda,
+  napakaBeseda,
+  odprtaBeseda,
+  type PunchZapisnikVnos,
+} from '@/lib/punch-stanje-pdf'
 import type { Project } from '@/lib/types'
 
 interface PunchItem {
@@ -68,6 +76,9 @@ export function PunchList({ project }: { project: Project | null }) {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [newTitle, setNewTitle] = useState('')
   const [generating, setGenerating] = useState(false)
+  // R271 — dvoklik guard za pregled stanja zapisnika PDF (družinska pariteta
+  // R263–R270).
+  const [stanjeVteku, setStanjeVteku] = useState(false)
   // R181 — pečat svežine: čas zadnjega USPEŠNEGA branja /api/punch (vzorec
   // R170/R177/R178/R180). Napaka/omrežje → null (fail-closed — NIČ lažne
   // svežine; zapisnik ostane viden, a BREZ pečata = uporabnik ve, da ni svež).
@@ -127,6 +138,104 @@ export function PunchList({ project }: { project: Project | null }) {
   const doneCount = useMemo(() => items.filter((i) => i.status === 'done').length, [items])
   const issueCount = useMemo(() => items.filter((i) => i.status === 'issue').length, [items])
   const progress = items.length > 0 ? Math.round((doneCount / items.length) * 100) : 0
+
+  // R271 — F2 mini-vrstica 'Zapisnik (viden seznam):' — ENA izpeljava
+  // punchZapisnikPregled čez ISTI items kot PDF KPI + sklep + toast
+  // (WYSIWYG): state = kar uporabnik vidi; FRESH ob kliku = polna resnica
+  // (dve okni, ENA matemtika). Brez try/catch — pokvaren vir bi poklical isti
+  // throw kot CSV izvoz (EN vir napak; DB status je strežniško čist — R153).
+  const zapisnikStanjePovzetek = useMemo(() => {
+    if (!project || items.length === 0) return null
+    return punchZapisnikPregled(
+      items.map((i) => ({
+        id: i.id,
+        createdAt: i.createdAt,
+        naslov: i.naslov,
+        opomba: i.opomba ?? null,
+        status: i.status,
+      })),
+    ).povzetek
+  }, [items, project])
+
+  // R271 — pregled stanja zapisnika (stanje pred predajo) PDF (27. člen
+  // 'izvozi' družine): FRESH fetch /api/punch?projectId ob kliku (R244–R270
+  // precedens — polna resnica zapisnika, ne state) + fail-verbose DTO pruning (identiteta +
+  // createdAt tu; naslov/status/opomba verbatim — lib preveri z indeksom
+  // krivca). PRAZEN zapisnik → iskren toast (NIČ prazne datoteke); ENA
+  // izpeljava povzetka = ISTA resnica kot KPI + sklep + mini-vrstica.
+  const handleStanjePdf = async () => {
+    if (stanjeVteku) return
+    if (!project) {
+      toast({
+        title: 'Ni izbranega projekta',
+        description: 'Stanje zapisnika je projekt-obračunsko — najprej izberite projekt.',
+        variant: 'destructive',
+      })
+      return
+    }
+    setStanjeVteku(true)
+    try {
+      const res = await fetch(`/api/punch?projectId=${project.id}`, {
+        credentials: 'same-origin',
+      })
+      if (!res.ok) {
+        throw new Error(`GET /api/punch → HTTP ${res.status}`)
+      }
+      const data: unknown = await res.json()
+      if (!Array.isArray(data)) {
+        throw new TypeError('Odgovora /api/punch ni mogoče prebrati (ni polja).')
+      }
+      const vrstice = data as Array<Record<string, unknown>>
+      const vnosi: PunchZapisnikVnos[] = vrstice.map((t, i) => {
+        if (typeof t.id !== 'string' || t.id === '') {
+          throw new TypeError(`točka vrstica ${i}: manjkajoč id v odgovoru API-ja`)
+        }
+        if (typeof t.createdAt !== 'string' || t.createdAt === '') {
+          throw new TypeError(`točka vrstica ${i} (${t.id}): manjkajoč createdAt v odgovoru API-ja`)
+        }
+        return {
+          id: t.id,
+          createdAt: t.createdAt,
+          naslov: t.naslov as string,
+          opomba: (t.opomba ?? null) as string | null,
+          status: t.status as string,
+        }
+      })
+      if (vnosi.length === 0) {
+        // Fail-closed jedro: prazen zapisnik ne nastaja dokumenta — iskren toast.
+        toast({
+          title: 'Ni točk prejemnega zapisnika',
+          description: 'Stanje zapisnika se izvozi, ko je vpisana prva točka projekta.',
+          variant: 'destructive',
+        })
+        return
+      }
+      // ENA izpeljava: povzetek za toast = ISTA resnica kot KPI IN sklep na
+      // listu (WYSIWYG).
+      const { povzetek } = punchZapisnikPregled(vnosi)
+      // Ime projekta = točno to, kar pokaže kartica; brez imena → null
+      // (jedro pošteno pokaže 'Brez imena projekta' — brez izmišljenih imen).
+      const projektIme = project?.nazivProjekta || null
+      generateZapisnikStanjePdf(vnosi, { now: new Date(), projektIme })
+      toast({
+        title: 'Stanje zapisnika prenešeno v PDF',
+        // tockaBeseda vrne ŠTEVILO IN besedo ('4 točke') — klicalec NE doda
+        // še enega števca (R269 lekcija 3 pariteta).
+        description: `Zapisnik-stanje-…pdf — ${tockaBeseda(povzetek.tock)}, napak ${povzetek.napak}, odprtih ${povzetek.odprtih}, rešenost ${povzetek.resenostOdstotek} %.`,
+      })
+    } catch (err) {
+      // Fail-verbose: izvoz ne sme tiho spodleteti — razlog gre v toast.
+      // Fail-closed jedro (TypeError iz liba) = pokvaren vnos → viden razlog
+      // (NIČ izmišljenega dokumenta).
+      toast({
+        title: 'Izvoz ni uspel',
+        description: err instanceof Error ? err.message : `Neznana napaka (${String(err)}).`,
+        variant: 'destructive',
+      })
+    } finally {
+      setStanjeVteku(false)
+    }
+  }
 
   async function addItem(naslov: string, opomba?: string) {
     if (!project) {
@@ -406,9 +515,65 @@ export function PunchList({ project }: { project: Project | null }) {
               {doneCount}/{items.length}
             </Badge>
           )}
+          {/* R271 — pregled stanja zapisnika PDF (27. člen 'izvozi' družine):
+              VEDNO viden, ko je projekt izbran (NI gated na items.length —
+              pariteta R263–R270; brez projekta ni FRESH vira — podatek-scope,
+              ne pravica); press-scale + dvoklik guard + FileDown aria-hidden
+              (družinski kontrakt). */}
+          {project && (
+            <button
+              type="button"
+              onClick={() => void handleStanjePdf()}
+              disabled={stanjeVteku}
+              className={`flex shrink-0 items-center gap-1 rounded-lg border border-border/50 bg-secondary/50 px-2 py-1 text-2xs font-medium text-muted-foreground transition-all duration-150 press-scale active:scale-[0.96] hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 ${items.length > 0 ? '' : 'ml-auto'}`}
+              aria-label="Izvozi pregled stanja zapisnika kot PDF"
+              title="Stanje zapisnika kot pravi PDF — VSE točke zapisnika (tudi rešene)"
+            >
+              {stanjeVteku ? (
+                <Loader2 aria-hidden="true" className="h-3 w-3 animate-spin" />
+              ) : (
+                <FileDown aria-hidden="true" className="h-3 w-3" />
+              )}
+              PDF stanje
+            </button>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
+        {/* R271 — legenda pill pariteta (družina R263–R270): poimenuje kaj
+            nosi dokument — VSE točke zapisnika (FRESH ob kliku, ne state);
+            VEDNO vidna, ko je projekt izbran (pariteta s pillom). */}
+        {project && (
+          <p className="text-2xs text-muted-foreground">
+            PDF = VSE točke zapisnika (tudi rešene — polna resnica, ne samo viden seznam)
+          </p>
+        )}
+        {/* R271 — F2 mini-vrstica stanja zapisnika (WYSIWYG ISTA izpeljava
+            punchZapisnikPregled kot PDF KPI + sklep + toast — ENA izpeljava):
+            dot RED (napake blokirajo predajo) / AMBER (odprte čakajo) /
+            GREEN (vse rešeno); žetona ŽIVO samo kadar > 0 — R256 lekcija 4;
+            tabular-nums; 0 novih hex. */}
+        {project && zapisnikStanjePovzetek !== null && (
+          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            <span
+              aria-hidden="true"
+              className={`h-2 w-2 shrink-0 rounded-full ${zapisnikStanjePovzetek.napak > 0 ? 'bg-roksal-red' : zapisnikStanjePovzetek.odprtih > 0 ? 'bg-roksal-amber' : 'bg-roksal-green'}`}
+            />
+            <span className="tabular-nums">
+              Zapisnik (viden seznam): {tockaBeseda(zapisnikStanjePovzetek.tock)} · napak {zapisnikStanjePovzetek.napak} · odprtih {zapisnikStanjePovzetek.odprtih} · rešenost {zapisnikStanjePovzetek.resenostOdstotek} %
+            </span>
+            {zapisnikStanjePovzetek.napak > 0 && (
+              <span className="rounded-full border border-roksal-red/40 bg-roksal-red/10 px-2 py-0.5 text-2xs font-medium text-roksal-red">
+                {napakaBeseda(zapisnikStanjePovzetek.napak)}
+              </span>
+            )}
+            {zapisnikStanjePovzetek.odprtih > 0 && (
+              <span className="rounded-full border border-roksal-amber/40 bg-roksal-amber/10 px-2 py-0.5 text-2xs font-medium text-roksal-amber">
+                {odprtaBeseda(zapisnikStanjePovzetek.odprtih)}
+              </span>
+            )}
+          </div>
+        )}
         {/* R155: vidna napaka nalaganja (fail-verbose; vzorec R152/R154). */}
         {loadError && !loading && (
           <div
