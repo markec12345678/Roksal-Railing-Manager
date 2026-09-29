@@ -213,6 +213,22 @@ interface ArMetadata {
   // MERITVE-PRO — AR točke (x, y) za AR-sourced mere
   x?: number
   y?: number
+  // R281 (issue #16 §10, V1–V6) — sync metadata iz kontrakta: OPAZOVANO
+  // stanje klienta (provenance), NIKOLI sync resnica (ta ostane v
+  // obstoječem /api/sync — 'strežnik ne zaupa klientu', R148).
+  sync?: ArSyncMeta
+}
+
+/** R281 (issue #16 §10) — sync blok kontrakta (session-level); polja
+ *  1:1 z shemo /api/sync (V5 — ENA resnica o mejah). */
+interface ArSyncMeta {
+  mutationId?: string
+  deviceId?: string
+  baseRevision?: number
+  baseUpdatedAt?: string
+  syncRevision?: number
+  syncState?: 'synced' | 'pending' | 'conflict' | 'error'
+  tombstone?: boolean
 }
 
 interface Measurement {
@@ -264,6 +280,9 @@ interface Measurement {
   source?: string
   photoId?: string
   snapshotId?: string
+  // R281 (issue #16 §10, V1–V6) — sync metadata (provenance; prikaz
+  // samo, kadar je klient poročal sync stanje — iskrena praznina)
+  sync?: ArSyncMeta
   // R276 (issue #16 §6) — zgodovina verzij: verzija 1, 2, 3 … znotraj
   // verige korekcij (null = nastalo pred verzioniranjem — iskrena
   // praznina); predhodnikId = prejšnja verzija; korenId = prva vrstica
@@ -455,6 +474,36 @@ const tipMeritveColors: Record<TipMeritve, string> = {
   KOT_VOGAL: 'bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 border-teal-200 dark:border-teal-800',
   KOT_STOPNISCE: 'bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800',
   STEBR: 'bg-roksal-navy/10 text-roksal-ink border-roksal-navy/20 dark:border-roksal-ink/20',
+}
+
+// R281 MANDATORY STIL (issue #16 §10) — hover parity za sync žig (isti
+// vzorec kot R280 tip badge + R278 vir pill: cursor-help + title
+// razložljivost; 0 novih hex — vse barvne ulomke že obstoječe v datoteki).
+const syncStanjeLabels: Record<NonNullable<ArSyncMeta['syncState']>, string> = {
+  synced: 'Sinhronizirano',
+  pending: 'V čakalni vrsti',
+  conflict: 'Konflikt',
+  error: 'Napaka sync',
+}
+
+const syncStanjeTitles: Record<NonNullable<ArSyncMeta['syncState']>, string> = {
+  synced:
+    'Sinhronizacijsko stanje: Sinhronizirano — opazovano stanje klienta (provenance), NI sync resnica; revizije in konflikti ostanejo v obstoječem /api/sync (issue #16 §10).',
+  pending:
+    'Sinhronizacijsko stanje: V čakalni vrsti — odjavno delo (issue #16 §13) še ni poslano; opazovano stanje klienta, NI sync resnica (issue #16 §10).',
+  conflict:
+    'Sinhronizacijsko stanje: Konflikt — obstoječi /api/sync je zaznal odstopanje baseRevision (strežnik ne zaupa klientu); nobena sprememba se ne izgubi tiho, obe verziji ohranjeni (issue #16 §10).',
+  error:
+    'Sinhronizacijsko stanje: Napaka — zadnji poskus sync ni uspel; opazovano stanje klienta, NI sync resnica (issue #16 §10).',
+}
+
+// 0 novih hex — ulomki povzeti iz obstoječih žigov v tej datoteki
+// (R234 nevtralni / R280 amber / obstoječa semantična rdeča).
+const syncStanjeColors: Record<NonNullable<ArSyncMeta['syncState']>, string> = {
+  synced: 'bg-muted text-muted-foreground border-border',
+  pending: 'bg-roksal-amber/10 text-roksal-amber border-roksal-amber/30',
+  conflict: 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border-red-300 dark:border-red-800',
+  error: 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border-red-300 dark:border-red-800',
 }
 
 const groundTypeLabels: Record<GroundType, string> = {
@@ -1554,6 +1603,9 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
         source: ar.source ?? m.source,
         photoId: ar.photoId ?? m.photoId,
         snapshotId: ar.snapshotId ?? m.snapshotId,
+        // R281 (issue #16 §10) — sync metadata (provenance; iskrena
+        // praznina, če je klient NI poročal)
+        sync: ar.sync,
       }
     })
   }
@@ -4380,6 +4432,26 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                     </TooltipTrigger>
                     <TooltipContent>
                       Vir meritve (izpeljan na strežniku — vir resnice)
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+                {/* R281 (issue #16 §10, V3/V4) — sync žig: opazovano stanje
+                    klienta (provenance), prikazano SAMO kadar je klient
+                    poročal sync stanje (iskrena praznina — nikoli izumljen
+                    žig); neznano syncState = brez žiga (fail-closed prikaz). */}
+                {m.sync?.syncState != null && m.sync.syncState in syncStanjeLabels && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span
+                        className={`inline-flex items-center rounded px-1 py-0 text-3xs font-medium border cursor-help ${syncStanjeColors[m.sync.syncState]}`}
+                        title={`${syncStanjeTitles[m.sync.syncState]}${m.sync.tombstone === true ? ' Lokalno označeno za brisanje (tombstone — grobnico potrdi /api/sync ob naslednjem syncu).' : ''}`}
+                      >
+                        {syncStanjeLabels[m.sync.syncState]}
+                        {typeof m.sync.syncRevision === 'number' ? ` r${m.sync.syncRevision}` : ''}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Sync metadata (opazovano stanje klienta — NI sync resnica)
                     </TooltipContent>
                   </Tooltip>
                 )}

@@ -238,6 +238,58 @@
 //   U6. DB/ROUTE NIČ (P6/Q6/S6/T5 kanon): arMetadata JSON verbatim, brez
 //       sheme (R276 edini schema-touch), brez migracije.
 //
+// ── SEMANTIČNE ODLOČITVE SYNC METADATA (R281, issue #16 §10 — V1–V6, isti
+//    kanon kot P/Q/S/T/U) ──────────────────────────────────────────────────
+//
+//   V1. ADITIVNA v1 (isti razlogi kot P1/Q1/S1/T1/U1 — verzija ostane 1,
+//       matrika nosi razširitev izrečno).
+//   V2. FORMA = session-level opcijski `sync` strictObject — flat polja z
+//       besednjakom 1:1 iz issue #16 §10 ('mutation identity, revision,
+//       base revision/update timestamp, device identity, conflict state,
+//       sync state in tombstone state') in 1:1 z OBSTOJEČIM sync modelom
+//       (issue #17 F: 'Uporabiti obstoječi Roksal sync model, ne ustvarjati
+//       drugega vzporednega sync protokola' — stropi ENAKI shemi
+//       /api/sync/route.ts: mutationId ≤ 128, baseUpdatedAt ≤ 64,
+//       baseRevision int ≥ 0; syncRevision = monotona strežniška revizija,
+//       ki jo je klient nazadnje VIDEL v serverState). syncState = ZAPRT
+//       besednjak odjavnega čakalnega vrsta ('synced' | 'pending' |
+//       'conflict' | 'error' — issue #16 §13 offline: Android dela brez
+//       omrežja, sync kasneje; stanje čakalnega vrsta je klijentska
+//       resnica naprave). tombstone = boolean (true = lokalno označeno za
+//       brisanje; false = izrecno NE grobnica — oboje realna stanja,
+//       analog 0 iz S5).
+//   V3. RAZMEJITEV PROVENANCE vs. PROTOCOL (glavna odločitev runde —
+//       nadaljevanje U3): sync blok = OPAZOVANO stanje klienta (kaj je
+//       videl/poslal njegov čakalni vrsta), NIKOLI sync resnica. Resnica
+//       revizij, konfliktov, razrešitev in grobnic ostane V OBSTOJEČEM
+//       /api/sync (detectSyncConflict — 'strežnik ne zaupa klientu', R148;
+//       syncRevision monotono; audit v ISTI transakciji) — kontrakt NE
+//       implementira protokola, NE razrešuje konfliktov, NE ugiba, NE
+//       preverja svojih revizij proti strežniški resnici (ČIST modul —
+//       brez DB; izomerjeno NE izpeljano NE križno preverjano, Q3 kanon).
+//       Manager business logika teh polj NE bere — dokaz: core moduli
+//       NE importirajo ar-contract (strukturni test) + parse NE izpeljuje
+//       NIČESAR iz sync bloka (invariančni test: payload ± sync = brez
+//       njega deep-enak). §10 zahteva, da 'sistem ne sme ene spremembe
+//       tiho izgubiti' — to doseže OBSTOJEČI conflict response
+//       (action:'conflict' + serverState + retryable, R148) — kontrakt
+//       samo NOSI metadata, ki jih ta protokol potrebuje.
+//   V4. IZOSTANEK ≠ NIČ (P5/Q5/S5/U4 kanon): brez `sync` bloka = klient
+//       NI poročal sync stanja (iskrena praznina — NIKOLI izumljen
+//       'brez sync' objekt). Ekspliciten null zavrnjen. Kadar je blok
+//       prisoten, je `syncState` OBVEZEN (blok brez stanja = dvosmerna
+//       izjava — analog U4 prazen niz); ostala polja NEODVISNO opcijska.
+//       tombstone: false je VELJAVNO izrecno stanje (analog 0 iz S5 —
+//       realno stanje, ne manjkajoča vrednost).
+//   V5. VERBATIM (kanon odločitev 6): mutationId/deviceId/baseUpdatedAt
+//       brez trim/case-fold — 'DEV-01' ≠ 'dev-01', presledki na robovih
+//       ostanejo. Stropi = ENAKA shema kot /api/sync (128/64) — ENA
+//       resnica o mejah, nič vzporednih stropov.
+//   V6. DB/ROUTE NIČ (P6/Q6/S6/T5/U6 kanon): sync blok gre v arMetadata
+//       JSON verbatim (R276 edini schema-touch); /api/sync route NIČ —
+//       obstoječa infrastruktura se NE ponovno implementira NE oslabi
+//       (issue #17 F); brez migracije.
+//
 // Determinizem: enak vhod → enak izhod (brez ure, naključja, locale).
 // Fail-closed: vsak neveljaven vhod = izrecna ArContractError s kodo.
 // ---------------------------------------------------------------------------
@@ -253,7 +305,7 @@ export const AR_CONTRACT_VERSION = 1
 export const AR_CONTRACT_COMPATIBILITY = {
   // P1 (R277): v1 razširjen ADITIVNO z segments[].angleDeg (issue #16 §3 —
   // opcijsko; brez spremembe pomena obstoječih polj, brez migracije).
-  1: { status: 'aktivna', uvod: 'R274 (issue #17 §A/§D)', razsiritev: 'R277 (issue #16 §3: segments[].angleDeg opcijsko — aditivno, P1–P6) + R278 (issue #16 §3: segments[].startMm/endMm + confidence/uncertaintyMm opcijsko — aditivno, Q1–Q6/S1–S6) + R279 (issue #16 §9: segments[].photoIds/modelIds opcijsko — aditivno, T1–T5, superRefine referenčna integriteta) + R280 (issue #16 §3: segments[].profile/color/material/handrail/posts/configuration opcijsko — aditivno, U1–U6, razmejitev kontrakt vs. business)' },
+  1: { status: 'aktivna', uvod: 'R274 (issue #17 §A/§D)', razsiritev: 'R277 (issue #16 §3: segments[].angleDeg opcijsko — aditivno, P1–P6) + R278 (issue #16 §3: segments[].startMm/endMm + confidence/uncertaintyMm opcijsko — aditivno, Q1–Q6/S1–S6) + R279 (issue #16 §9: segments[].photoIds/modelIds opcijsko — aditivno, T1–T5, superRefine referenčna integriteta) + R280 (issue #16 §3: segments[].profile/color/material/handrail/posts/configuration opcijsko — aditivno, U1–U6, razmejitev kontrakt vs. business) + R281 (issue #16 §10: session-level sync blok opcijsko — aditivno, V1–V6, razmejitev provenance vs. protocol)' },
 } as const
 
 /** Podprte verzije — izpeljane iz matrike (EN vir). */
@@ -273,6 +325,12 @@ export type ArFrameType = (typeof AR_FRAME_TYPES)[number]
 /** Kalibracijski modeli v1 (issue #17 A: 'calibration model'). */
 export const AR_CALIBRATION_MODELS = ['TWO_POINT_SCALE', 'KNOWN_OBJECT', 'MARKER_PLATE'] as const
 export type ArCalibrationModel = (typeof AR_CALIBRATION_MODELS)[number]
+
+/** Sync stanje odjavnega čakalnega vrsta (issue #16 §10 'sync state' + §13
+ *  offline — R281 V2). ZAPRT besednjak klijentske resnice naprave — NIKOLI
+ *  strežniška sync resnica (V3: ta ostane v obstoječem /api/sync). */
+export const AR_SYNC_STATES = ['synced', 'pending', 'conflict', 'error'] as const
+export type ArSyncState = (typeof AR_SYNC_STATES)[number]
 
 /** Izrecna napaka skupnega kontrakta — koda je del žične resnice (route
  *  jo vrača klientu; testi jo preverjajo). `payload` nosi ORIGINALNI vhod,
@@ -339,6 +397,40 @@ const arSessionSchema = z.strictObject({
     .optional(),
   photoRefs: z.array(referenca).max(500).optional(),
   glbRefs: z.array(referenca).max(100).optional(),
+  /** R281 (issue #16 §10, V1–V6): sync metadata — OPAZOVANO stanje
+   *  klijentskega čakalnega vrsta (provenance zapisa), NIKOLI sync
+   *  resnica (V3 razmejitev: revizije/konflikti/razrešitve/grobnice
+   *  ostanejo v obstoječem /api/sync — 'strežnik ne zaupa klientu',
+   *  R148; kontrakt NE implementira protokola — issue #17 F). Stropi
+   *  ENAKI shemi /api/sync (V5 — ENA resnica o mejah); verbatim — brez
+   *  trim/case-fold (V5); izostanek bloka = klient NI poročal sync
+   *  stanja, ekspliciten null zavrnjen; syncState OBVEZEN kadar je blok
+   *  prisoten, tombstone: false veljavno izrecno stanje (V4). */
+  sync: z
+    .strictObject({
+      /** 'mutation identity' — echo klientove mutacije (strop 128 = shema
+       *  /api/sync/route.ts) */
+      mutationId: z.string().min(1).max(128).optional(),
+      /** 'device identity' — X-Device-Id resnica naprave (strop 128) */
+      deviceId: z.string().min(1).max(128).optional(),
+      /** 'base revision' — revizija, ki jo je klient videl pred spremembo
+       *  (int ≥ 0 = shema /api/sync; 0 = veljavna revizija — R148 vzorec) */
+      baseRevision: z.number().int().min(0).optional(),
+      /** 'base revision/update timestamp' — baseUpdatedAt (strop 64 =
+       *  shema /api/sync) */
+      baseUpdatedAt: z.string().min(1).max(64).optional(),
+      /** 'revision' — monotona strežniška syncRevision, ki jo je klient
+       *  nazadnje VIDEL v serverState (echo — NIKOLI trditev o trenutni
+       *  strežniški resnici, V3) */
+      syncRevision: z.number().int().min(0).optional(),
+      /** 'sync state' — zaprt besednjak čakalnega vrsta (V2); OBVEZEN
+       *  kadar je blok prisoten (V4) */
+      syncState: z.enum(AR_SYNC_STATES),
+      /** 'tombstone state' — true = lokalno označeno za brisanje;
+       *  false = izrecno NE grobnica (oboje realna stanja, V4) */
+      tombstone: z.boolean().optional(),
+    })
+    .optional(),
   segments: z
     .array(
       z.strictObject({

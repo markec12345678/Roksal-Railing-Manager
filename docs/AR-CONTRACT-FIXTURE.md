@@ -111,6 +111,13 @@ Minimalni veljaven payload (samo obvezna polja — vse ostalo izpustljivo):
 | `photoRefs[].ref` | `String` | `String 1..300` | stabilna referenca |
 | `photoRefs[].sha256` | `String?` | regex `^[0-9a-f]{64}$` | malo črko, 64 hex |
 | `glbRefs[]` | kot photoRefs | (ista oblika) | max 100 |
+| `sync.mutationId` | `String?` | `String 1..128` | **R281 (issue #16 §10, V1–V6)**: 'mutation identity' — echo klientove mutacije; strop ENAK shemi `/api/sync/route.ts` (V5 — ENA resnica o mejah); verbatim brez trim/case-fold; OPAZOVANO stanje klienta, NIKOLI sync resnica (V3 — ta ostane v obstoječem /api/sync, 'strežnik ne zaupa klientu' R148) |
+| `sync.deviceId` | `String?` | `String 1..128` | **R281**: 'device identity' — X-Device-Id resnica naprave; ista disciplina kot `mutationId` |
+| `sync.baseRevision` | `Int?` | `Int ≥ 0` | **R281**: 'base revision' — revizija, ki jo je klient videl pred spremembo; 0 veljaven (R148 vzorec); negativno/necelo/niz/null zavrnjeno |
+| `sync.baseUpdatedAt` | `String?` | `String 1..64` | **R281**: 'base revision/update timestamp'; strop 64 = shema /api/sync |
+| `sync.syncRevision` | `Int?` | `Int ≥ 0` | **R281**: 'revision' — monotona strežniška syncRevision, ki jo je klient nazadnje VIDEL v serverState (echo — nikoli trditev o trenutni strežniški resnici, V3) |
+| `sync.syncState` | enum `SyncState` | `z.enum(['synced','pending','conflict','error'])` | **R281**: 'sync state' — zaprt besednjak odjavnega čakalnega vrsta (§13 offline); OBVEZEN kadar je blok prisoten (V4 — blok brez stanja = dvosmerna izjava) |
+| `sync.tombstone` | `Boolean?` | `z.boolean()` | **R281**: 'tombstone state' — true = lokalno označeno za brisanje; false = izrecno NE grobnica (oboje realna stanja, V4 — analog 0 iz S5); null zavrnjen |
 | `segments[].segmentId` | `String` | `String 1..128` | stabilen ID segmenta |
 | `segments[].lengthMm` | `Float` | `finite > 0` | float mm NEzaokrožen (3200.75 preživi) |
 | `segments[].heightMm` | `Float?` | `finite > 0` | opcijsko |
@@ -140,6 +147,9 @@ Stropi: `photoRefs` max 500, `glbRefs` max 100, `segments` min 1 / max 1000.
 ```kotlin
 @Serializable
 enum class SessionSource { ARCORE_DEPTH, MANUAL, PHOTO_CV }
+
+@Serializable
+enum class SyncState { synced, pending, conflict, error }   // R281 (§10): zaprt besednjak čakalnega vrsta
 
 @Serializable
 enum class FrameType { LOCAL_NORMALIZED }
@@ -181,6 +191,19 @@ data class ArRef(
 )
 
 @Serializable
+data class ArSyncMeta(                          // R281 (issue #16 §10, V1–V6):
+    // opazovano stanje klienta (provenance) — NIKOLI sync resnica; stropi
+    // ENAKI shemi /api/sync (V5); verbatim brez trim/case-fold
+    val mutationId: String? = null,             // 1..128
+    val deviceId: String? = null,               // 1..128 — X-Device-Id resnica
+    val baseRevision: Int? = null,              // ≥ 0 — revizija, ki jo je klient videl
+    val baseUpdatedAt: String? = null,          // 1..64
+    val syncRevision: Int? = null,              // ≥ 0 — nazadnje viden serverState.syncRevision
+    val syncState: SyncState,                   // OBVEZEN kadar je blok prisoten (V4)
+    val tombstone: Boolean? = null,             // true/false realni stanji; null ne pošiljati
+)
+
+@Serializable
 data class ArSegment(
     val segmentId: String,                     // 1..128, verbatim
     val lengthMm: Double,                      // > 0, NEzaokrožen
@@ -217,6 +240,7 @@ data class MeasurementSession(
     val quality: ArQuality? = null,
     val photoRefs: List<ArRef>? = null,        // max 500
     val glbRefs: List<ArRef>? = null,          // max 100
+    val sync: ArSyncMeta? = null,              // R281 (issue #16 §10): opcijsko — izostanek = klient NI poročal sync stanja
     val segments: List<ArSegment>,             // 1..1000
 )
 ```
@@ -272,6 +296,11 @@ nespremenjen (nadgrajevljivost, R148 vzorec).
 
 - ar-android serializacija proti temu fixture-ju (Kotlin test z ISTIM
   zlatim primerom — bajtna pariteta `encodeToString` ↔ JSON datoteka);
-- `sinceRevision`/`baseRevision` na session nivoju (E: zgodovina meritev) =
-  ločena SEMANTIČNA ODLOČITEV z DB resnico — prvi schema-touch od R154;
+- §10 sync metadata = KONTRAKT nivo rešen v R281 (V1–V6: opcijski `sync`
+  blok nosi metadata, ki jih obstoječi Roksal Mobile Sync API potrebuje —
+  issue #17 F: obstoječi sync model, brez vzporednega protokola). Strežniška
+  resnica konfliktov ostane v `/api/sync` (detectSyncConflict — 'strežnik
+  ne zaupa klientu'); MOREBITNI nadaljnji korak = per-measurement revizijski
+  stolpci (schema-touch) — SAMO z lastniško odločitvijo, NI potrebe za
+  obstoječ protokol;
 - terenska validacija (J) ostaja lastniška akcija.
