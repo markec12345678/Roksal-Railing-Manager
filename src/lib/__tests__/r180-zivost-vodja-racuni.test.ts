@@ -82,7 +82,7 @@ describe('R180 P1 — računi (invoice-manager)', () => {
     const src = racuni()
     expect(src).toContain("import { casOznaka } from '@/lib/osvezitev-fokus'")
     expect(src).toContain("import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'")
-    expect(src).toMatch(/\n  History,\n\} from 'lucide-react'/)
+    expect(src).toMatch(/\n  History,\n  [A-Za-z]+,\n\} from 'lucide-react'/) // R291: FileSpreadsheet (prihodki meseci CSV gumb) v ISTEM bloku — History pečat ostaja
     expect(src).toContain('{casOznaka(racuniOsvezitev)}')
     // PEČAT SAMO: projektni dropdown (sekundarni vir) ne sme formatirati časa
     expect(src.match(/toLocaleTimeString/g)).toBeNull()

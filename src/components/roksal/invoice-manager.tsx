@@ -55,8 +55,9 @@ import {
   BellRing,
   Download,
   History,
+  FileSpreadsheet,
 } from 'lucide-react'
-import { downloadCsv, todayStamp } from '@/lib/csv-export'
+import { downloadCsv, downloadCsvText, todayStamp } from '@/lib/csv-export'
 import {
   buildPrihodkiPdfDoc,
   prihodkiPdfFilename,
@@ -68,6 +69,10 @@ import {
   racunBeseda,
   type PrihodkiMeseciPovzetek,
 } from '@/lib/prihodki-meseci'
+import {
+  prihodkiMeseciCsv,
+  prihodkiMeseciCsvFilename,
+} from '@/lib/prihodki-meseci-csv'
 
 // ---------- tipi ----------
 
@@ -395,6 +400,38 @@ export function InvoiceManager() {
     },
     [prihodkiVnosi],
   )
+  // R291 — PRIHODKI PO MESECIH CSV (8. člen izvozne družine): EN VIR z
+  // sekcijo (isti meseciPovzetek.p — WYSIWYG po konstrukciji, lib NE računa
+  // znova). Gumb VEDNO viden (kanon R232); pri 0 mesecih fail-closed toast,
+  // NIČ datoteke (R250 vzorec). Determinizem: EN now za žig + ime.
+  const [meseciCsvVTeku, setMeseciCsvVTeku] = useState(false)
+  const handleMeseciCsv = () => {
+    if (meseciCsvVTeku) return
+    if (!meseciPovzetek.ok) {
+      toast({ title: 'CSV ni mogoče sestaviti iz teh podatkov', description: meseciPovzetek.napaka, variant: 'destructive' })
+      return
+    }
+    setMeseciCsvVTeku(true)
+    try {
+      const p = meseciPovzetek.p!
+      if (p.meseci.length === 0) {
+        toast({ title: 'Ni plačanih računov', description: 'CSV se izvozi ob prvem plačilu.' })
+        return
+      }
+      const now = new Date()
+      const { csv } = prihodkiMeseciCsv(p, now)
+      const ime = prihodkiMeseciCsvFilename(now)
+      downloadCsvText(ime, csv)
+      toast({
+        title: `Prihodki po mesecih prenešeni v CSV (${ime})`,
+        description: `${p.meseci.length} ${p.meseci.length === 1 ? 'mesec' : 'meseci'} — skupaj plačano ${p.skupajPrihodki.toFixed(2)} € (${p.skupajRacunov} ${racunBeseda(p.skupajRacunov)}).`,
+      })
+    } catch (err) {
+      toast({ title: 'Izvoz CSV ni uspel', description: err instanceof Error ? err.message : String(err), variant: 'destructive' })
+    } finally {
+      setMeseciCsvVTeku(false)
+    }
+  }
 
   // R250 — prihodki PDF (7. člen 'izvozi' družine): agregatna resnica za
   // vodstvo iz ISTEGA odgovora /api/invoices (route NIČ). Bralni dokument —
@@ -1128,11 +1165,28 @@ export function InvoiceManager() {
                   <h4 className="text-2xs font-semibold uppercase tracking-wide text-muted-foreground">
                     Prihodki po mesecih
                   </h4>
-                  {meseciPovzetek.p!.stStorniranih > 0 && (
-                    <span className="text-2xs tabular-nums text-muted-foreground">
-                      stornirani {meseciPovzetek.p!.stStorniranih} (izključeni iz zneskov)
-                    </span>
-                  )}
+                  <div className="flex items-center gap-1.5">
+                    {meseciPovzetek.p!.stStorniranih > 0 && (
+                      <span className="text-2xs tabular-nums text-muted-foreground">
+                        stornirani {meseciPovzetek.p!.stStorniranih} (izključeni iz zneskov)
+                      </span>
+                    )}
+                    {/* R291 — CSV gumb VEDNO viden (kanon R232); pri 0 mesecih
+                        fail-closed toast (R250 vzorec); press-scale + ring +
+                        aria — družinska pariteta R285/R286 izvoznih gumbov. */}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleMeseciCsv}
+                      disabled={meseciCsvVTeku}
+                      className="h-6 gap-1 px-1.5 text-2xs font-medium press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
+                      aria-label="Izvozi prihodke po mesecih kot CSV"
+                      title="Prihodki po mesecih kot CSV — ista resnica kot sekcija (skupaj + v teku + stornirani)"
+                    >
+                      <FileSpreadsheet aria-hidden="true" className="h-3 w-3" />
+                      CSV
+                    </Button>
+                  </div>
                 </div>
                 {meseciPovzetek.p!.meseci.length === 0 ? (
                   <p className="pt-1 text-2xs text-muted-foreground">
@@ -1141,18 +1195,37 @@ export function InvoiceManager() {
                 ) : (
                   <>
                     <ul className="mt-1 space-y-0.5">
-                      {meseciPovzetek.p!.meseci.map((m) => (
-                        <li
-                          key={m.mesec}
-                          className="flex items-center justify-between rounded px-1 py-0.5 text-2xs transition-colors hover:bg-muted/60"
-                        >
-                          <span className="tabular-nums text-roksal-ink">{m.mesec}</span>
-                          <span className="tabular-nums text-muted-foreground">
-                            {m.stRacunov} {racunBeseda(m.stRacunov)}
-                          </span>
-                          <span className="tabular-nums font-semibold text-roksal-ink">{eur(m.prihodki)}</span>
-                        </li>
-                      ))}
+                      {meseciPovzetek.p!.meseci.map((m) => {
+                        // R291 MANDATORY STIL: mini stolpc — deterministična
+                        // širina = prihodki / največji mesec × 100 (isto
+                        // merilo za VSE vrstice; 0 EUR = 0 % — iskreno);
+                        // žetoni (bg-muted tir + bg-roksal-navy/30), 0 novih
+                        // hex; aria-hidden (dekorativni — številke nosijo
+                        // resnico, vzorec cashflow traku R241).
+                        const najvecji = Math.max(...meseciPovzetek.p!.meseci.map((x) => x.prihodki))
+                        const sirina = najvecji > 0 ? Math.min(100, (m.prihodki / najvecji) * 100) : 0
+                        return (
+                          <li
+                            key={m.mesec}
+                            className="rounded px-1 py-0.5 text-2xs transition-colors hover:bg-muted/60"
+                            title={`${m.mesec}: ${eur(m.prihodki)} — ${najvecji > 0 ? Math.round((m.prihodki / najvecji) * 100) : 0} % največjega meseca`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="tabular-nums text-roksal-ink">{m.mesec}</span>
+                              <span className="tabular-nums text-muted-foreground">
+                                {m.stRacunov} {racunBeseda(m.stRacunov)}
+                              </span>
+                              <span className="tabular-nums font-semibold text-roksal-ink">{eur(m.prihodki)}</span>
+                            </div>
+                            <div aria-hidden="true" className="mt-0.5 h-1 overflow-hidden rounded-full bg-muted">
+                              <div
+                                className="h-full rounded-full bg-roksal-navy/30 transition-all duration-300"
+                                style={{ width: `${sirina}%` }}
+                              />
+                            </div>
+                          </li>
+                        )
+                      })}
                     </ul>
                     <div className="mt-1 flex items-center justify-between border-t border-border/60 px-1 pt-1 text-2xs">
                       <span className="text-muted-foreground">Skupaj plačano</span>
