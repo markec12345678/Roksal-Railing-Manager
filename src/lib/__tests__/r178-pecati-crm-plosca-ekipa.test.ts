@@ -118,9 +118,11 @@ describe('R178 P1 — CRM pečat (crm-tab)', () => {
     // R251 pin shift: import blok dobi FileDown (opomnik PDF pill — 8. člen
     // 'izvozi' družine); R253 pin shift: import blok dobi CalendarDays
     // (koledar pregledov pill — 10. člen); R295 pin shift: import blok dobi
-    // FileSpreadsheet (koledar pregledov CSV pill — 25. člen); History
+    // FileSpreadsheet (koledar pregledov CSV pill — 25. člen); R296 pin
+    // shift: import blok dobi CalendarPlus (koledar pregledov ICS pill —
+    // 26. člen, uvoz v koledarsko aplikacijo); History
     // pečatova ikona ostaja nedotaknjena.
-    expect(src).toMatch(/\n  History,\n  FileDown,\n  CalendarDays,\n  FileSpreadsheet,\n\} from 'lucide-react'/)
+    expect(src).toMatch(/\n  History,\n  FileDown,\n  CalendarDays,\n  FileSpreadsheet,\n  CalendarPlus,\n\} from 'lucide-react'/)
     expect(src).toContain('{casOznaka(strankeOsvezitev)}')
     expect(src.match(/toLocaleTimeString/g)).toBeNull()
   })

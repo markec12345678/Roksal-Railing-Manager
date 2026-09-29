@@ -19,7 +19,7 @@ import { QuoteFollowUp } from '@/components/roksal/quote-followup'
 import { InvoiceManager } from '@/components/roksal/invoice-manager'
 import { DealPipeline } from '@/components/roksal/deal-pipeline'
 import { buildCrmCsv, crmCsvFilename } from '@/lib/crm-csv'
-import { todayStamp, downloadCsvText } from '@/lib/csv-export'
+import { todayStamp, downloadCsvText, downloadTextFile } from '@/lib/csv-export'
 // R288 — deep-link odločitev ((k) dopolnitev R287): čista lib funkcija
 // (client-safe, R283 vzorec izvlečene funkcije) razsodi porabo zahteve —
 // komponenta ostane tanka vez (CAKAJ/ODPRI/PRESKOCI — vsi robovi pripeti).
@@ -53,6 +53,13 @@ import {
   koledarPregledovCsv,
   koledarPregledovCsvFilename,
 } from '@/lib/koledar-pregledov-csv'
+// R296 — koledar pregledov ICS (26. člen 'izvozi' družine): ICS brat PDF
+// R253 + CSV R295 — ISTA koledarska resnica kot RFC 5545 iCalendar za
+// koledarske aplikacije (Google/Outlook/telefon); route NIČ (client+lib only).
+import {
+  koledarPregledovIcs,
+  koledarPregledovIcsFilename,
+} from '@/lib/koledar-pregledov-ics'
 // R263 — pokritost opomnikov (19. člen 'izvozi' družine): presek strank ×
 // opomniški status iz ISTEGA /api/crm odgovora — route NIČ (client+lib only);
 // EN now za žig + ime (lekcija R121/R235); ENA izpeljava = PDF KPI + tabela
@@ -87,6 +94,7 @@ import {
   FileDown,
   CalendarDays,
   FileSpreadsheet,
+  CalendarPlus,
 } from 'lucide-react'
 // R178 — EN VIR RESNICE za pečat 'Osveženo ob' (vzorec R170/R171/R177):
 // komponenta NE formatira časa sama.
@@ -200,6 +208,7 @@ export function CrmTab({
   const [koledarVTeku, setKoledarVTeku] = useState(false)
   // R295 — dvoklik guard koledarja pregledov CSV (ISTA družina, pariteta brata).
   const [koledarCsvVTeku, setKoledarCsvVTeku] = useState(false)
+  const [koledarIcsVTeku, setKoledarIcsVTeku] = useState(false)
   // R263 — dvoklik guard pokritosti opomnikov PDF (ISTA družina).
   const [pokritostVTeku, setPokritostVTeku] = useState(false)
 
@@ -510,6 +519,41 @@ export function CrmTab({
     }
   }
 
+  // R296 — KOLEDAR PREGLEDOV ICS (26. člen 'izvozi' družine): ICS brat PDF
+  // R253 + CSV R295 — ISTA koledarska resnica (sortirajKoledar EN VIR,
+  // preverba EN VIR preveriKoledarVnos, datum EN VIR izpeljava) kot RFC 5545
+  // iCalendar, ki ga koledarska aplikacija uvozi kot dogodke. Fail-closed:
+  // 0 vpisanih → iskren toast (ISTI gate kot bratje); dvoklik guard
+  // (pariteta bratov); toast pove ISTO agregatno resnico (WYSIWYG).
+  const handleKoledarPregledovIcs = () => {
+    if (koledarIcsVTeku) return
+    if (koledarVnosi.length === 0) {
+      // Fail-closed jedro: prazen koledar ne nastaja datoteke — iskren toast.
+      toast({ title: 'Ni vpisanih pregledov', description: 'ICS se izvozi, ko je vpisan prvi datum pregleda.' })
+      return
+    }
+    setKoledarIcsVTeku(true)
+    try {
+      const now = new Date()
+      const { ics, dogodki } = koledarPregledovIcs(koledarVnosi, now)
+      const ime = koledarPregledovIcsFilename(now)
+      downloadTextFile(ime, ics, 'text/calendar;charset=utf-8')
+      const pov = koledarPovzetek(koledarVnosi)
+      toast({
+        title: `Koledar pregledov prenešen v ICS (${ime})`,
+        description: `${dogodki} dogodkov za koledarsko aplikacijo — ${pov.preglediN} pregledov, ${pov.vTemTednu} v tem tednu, ${pov.poteklih} poteklih.`,
+      })
+    } catch (err) {
+      if (err instanceof TypeError) {
+        toast({ title: 'Koledar pregledov ICS ni mogoče sestaviti iz teh podatkov', description: err instanceof Error ? err.message : String(err), variant: 'destructive' })
+      } else {
+        toast({ title: `Izvoz ICS ni uspel: ${err instanceof Error ? err.message : String(err)}`, variant: 'destructive' })
+      }
+    } finally {
+      setKoledarIcsVTeku(false)
+    }
+  }
+
   // R263 — ENA izpeljava vhodov za pokritostni presek (WYSIWYG ISTI vir kot
   // PDF KPI, tabela, sklep, F2 mini-vrstica IN toast): DTO pruning iz ISTEGA
   // state-a, ki ga loadCustomers ŽE napolni — NIČ nove mreže. opomnikStatus
@@ -757,8 +801,20 @@ export function CrmTab({
       {koledarPov && (
         <div role="status" className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           <span aria-hidden className="h-2 w-2 shrink-0 rounded-full bg-roksal-navy" />
-          <span>
-            Pregledi: {koledarPov.preglediN} vpisanih · {koledarPov.vTemTednu} v tem tednu · {koledarPov.poteklih} poteklih
+          {/* R296 stil — vsak segment F2 mini-vrstice nosi title z IZREČENO
+              definicijo (ISTA resnica kot PDF sklep VERBATIM — hover pove,
+              od kod števec prihaja; nič nove izpeljave, nič novih hex).
+              Ločila pridejo kot string izrazi (' vpisanih · ') — ISTI
+              zaključeni literali kot R295 (needleji + DOM besedilo
+              nespremenjena; JSX bi ob rezih vrstic odrezal presledek). */}
+          <span title="Vse stranke z vpisanim datumom pregleda (AKTIVEN + POTEKEL) — koledarski red (najbližji pregled prvi)">
+            Pregledi: {koledarPov.preglediN}{' vpisanih · '}
+          </span>
+          <span title="Pregledi v naslednjih 7 dneh (kanon opomnika — isto okno kot ruta izračuna AKTIVEN)">
+            {koledarPov.vTemTednu}{' v tem tednu · '}
+          </span>
+          <span title="Datum pregleda je že pretekel (opomnikDatum < danes)">
+            {koledarPov.poteklih}{' poteklih'}
           </span>
           {koledarPov.poteklih > 0 && (
             <span className="rounded-full border border-roksal-red/40 bg-roksal-red/10 px-2 py-0.5 text-2xs font-medium text-roksal-red">
@@ -883,6 +939,24 @@ export function CrmTab({
             >
               <FileSpreadsheet className="h-3 w-3" aria-hidden="true" />
               Koledar CSV
+            </Button>
+            {/* R296 — koledar pregledov ICS (26. člen 'izvozi' družine):
+                ICS brat PDF R253 + CSV R295 — ISTA koledarska resnica kot
+                RFC 5545 iCalendar za koledarske aplikacije. Bralna datoteka
+                VEDNO vidna (P1-k precedens); fail-closed toast pri 0
+                vpisanih. ISTI žetoni kot ostali pilli — 0 novih hex. */}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleKoledarPregledovIcs}
+              disabled={koledarIcsVTeku}
+              className="h-7 shrink-0 gap-1.5 text-[11px] press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              aria-label="Izvozi koledar pregledov kot ICS"
+              title="Koledar pregledov kot ICS (uvoz v koledarsko aplikacijo — Google/Outlook/telefon)"
+            >
+              <CalendarPlus className="h-3 w-3" aria-hidden="true" />
+              Koledar ICS
             </Button>
             {/* R263 — pokritost opomnikov PDF (19. člen 'izvozi' družine):
                 presek strank × opomniški status iz ISTEGA /api/crm odgovora.

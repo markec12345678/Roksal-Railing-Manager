@@ -38,12 +38,13 @@ export function toCsv(headers: string[], rows: CsvValue[][]): string {
 }
 
 /**
- * Sproži prenos ŽE zgrajenega CSV besedila (R171 — izvozi, ki vključujejo
- * povzetke/metapodatke, ki jih oblika headers+rows ne more izraziti;
- * vzorec: Termini kartica P1-d). Isti kontrakt kot downloadCsv.
+ * R296 — splošni prenos besedilne datoteke (izvozi družina): ISTA mehanika
+ * kot downloadCsvText, MIME tip pride KOT PARAMETER — ICS brat (26. člen)
+ * nosi 'text/calendar;charset=utf-8', CSV bratje ostanejo 'text/csv'.
+ * Determinizem: vsebina + ime + mime = klicateljeva resnica, jedro ne ugiba.
  */
-export function downloadCsvText(filename: string, csv: string): void {
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+export function downloadTextFile(filename: string, vsebina: string, mime: string): void {
+  const blob = new Blob([vsebina], { type: mime })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
@@ -52,6 +53,16 @@ export function downloadCsvText(filename: string, csv: string): void {
   a.click()
   a.remove()
   URL.revokeObjectURL(url)
+}
+
+/**
+ * Sproži prenos ŽE zgrajenega CSV besedila (R171 — izvozi, ki vključujejo
+ * povzetke/metapodatke, ki jih oblika headers+rows ne more izraziti;
+ * vzorec: Termini kartica P1-d). Isti kontrakt kot downloadCsv.
+ * R296: delegira na downloadTextFile — ISTA mehanika, ISTI MIME.
+ */
+export function downloadCsvText(filename: string, csv: string): void {
+  downloadTextFile(filename, csv, 'text/csv;charset=utf-8')
 }
 
 /**
