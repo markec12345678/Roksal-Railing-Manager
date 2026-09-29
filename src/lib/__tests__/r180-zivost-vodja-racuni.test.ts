@@ -34,7 +34,7 @@ describe('R180 P1 — pregled za vodjo (vodja-dashboard)', () => {
     const src = vodja()
     expect(src).toContain("import { casOznaka } from '@/lib/osvezitev-fokus'")
     expect(src).toContain("import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'")
-    expect(src).toMatch(/\n  History, PackageX, CalendarX, FileText,\n\} from 'lucide-react'/) // R224: PackageX + R228: CalendarX (nova tema) v ISTEM bloku — History pečat ostaja; R258: FileText (dobičkonost pill) v ISTEM bloku
+    expect(src).toMatch(/\n  History, PackageX, CalendarX, FileText, FileSpreadsheet,\n\} from 'lucide-react'/) // R224: PackageX + R228: CalendarX (nova tema) v ISTEM bloku — History pečat ostaja; R258: FileText (dobičkonost pill) v ISTEM bloku; R293: FileSpreadsheet (dobičkonost CSV gumb, 24. člen) v ISTEM bloku — pin posodobljen z OHRANJENO namero (R291 vzorec)
     expect(src).toContain('{casOznaka(vodjaOsvezitev)}')
     // OPOMBA: vodja ima pre-existing formatTime() (termin listing) — to je
     // domensko formatiranje časa termina, NE pečata; EN VIR pravilo velja za

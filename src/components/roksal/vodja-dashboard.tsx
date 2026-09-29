@@ -24,7 +24,18 @@ import { Separator } from '@/components/ui/separator'
 import { useToast } from '@/hooks/use-toast'
 import { generateMonthlyReport } from '@/lib/boss-report-pdf'
 import { buildVodjaCsv, vodjaCsvFilename, terminStatusLabel } from '@/lib/vodja-csv'
-import { todayStamp } from '@/lib/csv-export'
+import { todayStamp, downloadCsvText } from '@/lib/csv-export'
+// R293 (P1-f, 'izvozi' družina — 24. člen) — DOBIČKONOST PO PROJEKTIH CSV:
+// CSV brat PDF R258 (vzorec R284→R285/R291/R292) — EN VIR: lib uvaža presek
+// { vrste, povzetek } (NIČ ponovnega računa), znesekNiz iz PDF brata
+// (ISTI strojni kanon zneskov) + projektBeseda (sklanjatev EN VIR);
+// MARŽNI RAZGLED strip = ISTA izpeljava (WYSIWYG zaslon · PDF · CSV).
+import {
+  dobicikonostProjektiCsv,
+  dobicikonostProjektiCsvFilename,
+  dobicikonostSklep,
+  type DobicikonostPresek,
+} from '@/lib/dobicikonost-projekti-csv'
 // R258 (P1-f, 'izvozi' družina — 14. člen) — DOBIČKONOST PO PROJEKTIH PDF
 // (presek DVEH virov, ki ju vodja ŽE fetcha: /api/invoices + /api/material-
 // orders — route NIČ; prihodki = IZDAN+PLACAN EN VIR STATUSI prihodki-pdf;
@@ -61,7 +72,7 @@ import { SistemZdravjeCard } from '@/components/roksal/sistem-zdravje-card'
 import {
   TrendingUp, Clock, Users, Package, Euro, CheckCircle2,
   AlertTriangle, Calendar, Truck, Bell, FileDown, Loader2, Download,
-  History, PackageX, CalendarX, FileText,
+  History, PackageX, CalendarX, FileText, FileSpreadsheet,
 } from 'lucide-react'
 
 interface VodjaStats {
@@ -185,6 +196,8 @@ export function VodjaDashboard() {
   const [allOrders, setAllOrders] = useState<DobicikonostNarocilo[]>([])
   const [reportLoading, setReportLoading] = useState(false)
   const [dobicikonostVTeku, setDobicikonostVTeku] = useState(false)
+  // R293 — dvoklik guard dobičkonostnega CSV (pariteta brata dobicikonostVTeku R258).
+  const [dobicikonostCsvVTeku, setDobicikonostCsvVTeku] = useState(false)
   const [racuniProjektiVTeku, setRacuniProjektiVTeku] = useState(false)
   const [loading, setLoading] = useState(true)
   // R163: fail-verbose — razlog, zakaj podatkov NI (namesto lažnih ničel).
@@ -487,6 +500,29 @@ export function VodjaDashboard() {
     }
   }
 
+  // R293 — ENA izpeljava vhodov za presek (WYSIWYG ISTI vir kot PDF brat,
+  // CSV 24. člen IN MARŽNI RAZGLED strip): DTO pruning iz ISTIH state-ov,
+  // ki jih loadData ŽE napolni — NIČ nove mreže (vzorec R261). Memo —
+  // preverba teče samo ob spremembi virov, ne vsak render.
+  const dobicikonostVhodi = useMemo<{ racuni: DobicikonostRacun[]; narocila: DobicikonostNarocilo[] }>(
+    () => ({
+      racuni: allInvoices.map((inv) => ({
+        stevilka: inv.stevilka,
+        status: inv.status,
+        znesek: inv.znesek,
+        projekt: inv.project?.nazivProjekta ?? null,
+      })),
+      narocila: allOrders,
+    }),
+    [allInvoices, allOrders],
+  )
+  // R293 — presek = ENA izpeljava za strip + CSV + PDF toast (ISTA čista
+  // funkcija na ISTIH vhodih — divergenca nemogoča).
+  const dobicikonostIzpeljava = useMemo<DobicikonostPresek>(
+    () => dobicikonostPoProjektih(dobicikonostVhodi.racuni, dobicikonostVhodi.narocila),
+    [dobicikonostVhodi],
+  )
+
   // R258 — DOBIČKONOST PO PROJEKTIH PDF (14. člen 'izvozi' družine): presek
   // DVEH virov, ki ju vodja ŽE ima (allInvoices + allOrders — NIČ nove mreže).
   // ENA resnica v libu: prihodki = IZDAN+PLACAN, stroški = ne-preklicana
@@ -495,6 +531,8 @@ export function VodjaDashboard() {
   // IN 0 naročil) → iskren toast; TypeError → viden razlog. EN now za žig IN
   // ime (lekcija R121/R235). Bralni dokument — brez dodatnega pravicnega
   // gate (vodja pregled že nosi oba vira; P1-k precedens).
+  // R293: DTO pruning preseljen v dobicikonostVhodi memo (EN VIR — isti
+  // rezultat, R290 vzorec 'stara inline preslikava izbrisana').
   const handleDobicikonostPdf = () => {
     if (dobicikonostVTeku || loading) return
     setDobicikonostVTeku(true)
@@ -504,12 +542,7 @@ export function VodjaDashboard() {
         return
       }
       const now = new Date()
-      const racuni: DobicikonostRacun[] = allInvoices.map((inv) => ({
-        stevilka: inv.stevilka,
-        status: inv.status,
-        znesek: inv.znesek,
-        projekt: inv.project?.nazivProjekta ?? null,
-      }))
+      const racuni = dobicikonostVhodi.racuni
       const doc = buildDobicikonostPdfDoc(racuni, allOrders, { now })
       doc.save(dobicikonostPdfFilename(now))
       // Toast pove REALNO agregatno resnico (ISTA izpeljava dobicikonostPoProjektih
@@ -530,6 +563,43 @@ export function VodjaDashboard() {
       setDobicikonostVTeku(false)
     }
   }
+
+  // R293 — 24. člen 'izvozi' družine: DOBIČKONOST PO PROJEKTIH CSV — CSV brat
+  // PDF R258 (vzorec R284→R285/R291/R292): fail-closed PREJ (0 računov IN 0
+  // naročil → iskren toast, NIKOLI prazna datoteka — ISTI gate kot brat),
+  // potem ENA izpeljava (ISTI presek memo + ISTI now za CSV + ime — lekcija
+  // R121/R235); agregat v toastu = ISTI lib sklep kot MARŽNI RAZGLED strip
+  // (WYSIWYG, sklanjatev EN VIR projektBeseda); fail-verbose catch (R291/R292
+  // vzorec); dvoklik guard (pariteta brata dobicikonostVTeku R258).
+  const handleDobicikonostCsv = () => {
+    if (dobicikonostCsvVTeku || loading) return
+    setDobicikonostCsvVTeku(true)
+    try {
+      if (allInvoices.length === 0 && allOrders.length === 0) {
+        toast({ title: 'Ni podatkov za dobičkonost', description: 'CSV se izvozi, ko je vpisan prvi račun ali naročilo.' })
+        return
+      }
+      const now = new Date()
+      const { csv } = dobicikonostProjektiCsv(dobicikonostIzpeljava, now)
+      const ime = dobicikonostProjektiCsvFilename(now)
+      downloadCsvText(ime, csv)
+      toast({
+        title: `Dobičkonost prenešena v CSV (${ime})`,
+        description: `${dobicikonostSklep(dobicikonostIzpeljava.povzetek)}.`,
+      })
+    } catch (err) {
+      toast({ title: 'Izvoz CSV ni uspel', description: err instanceof Error ? err.message : String(err), variant: 'destructive' })
+    } finally {
+      setDobicikonostCsvVTeku(false)
+    }
+  }
+
+  // R293 — MARŽNI RAZGLED merilo: največja |marža| čez vrste (ISTO merilo za
+  // VSE vrstice — vzorec R291/R292 mini tir; 0 pri praznem preseku).
+  const maxMarza = useMemo(
+    () => dobicikonostIzpeljava.vrste.reduce((m, v) => Math.max(m, Math.abs(v.marza)), 0),
+    [dobicikonostIzpeljava],
+  )
 
   useEffect(() => { loadData() }, [loadData])
   // R180 — ponovni bris ob vrnitvi v zavihek (družinski hook, 30 s vrata R170):
@@ -774,15 +844,93 @@ export function VodjaDashboard() {
           <FileText className="h-3 w-3" aria-hidden="true" />
           PDF
         </Button>
+        {/* R293 — DOBIČKONOST PO PROJEKTIH CSV (24. člen 'izvozi' družine):
+            CSV brat PDF R258 — bralni dokument, VEDNO viden (P1-k precedens),
+            press-scale + FileSpreadsheet aria-hidden (pill družina — pariteta
+            R258/R261). */}
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
+          onClick={handleDobicikonostCsv}
+          disabled={loading || dobicikonostCsvVTeku}
+          aria-label="Izvozi dobičkonosnost projektov kot CSV"
+          title="Dobičkonosnost po projektih kot CSV — ista resnica kot PDF (prihodki · stroški · marža)"
+        >
+          <FileSpreadsheet className="h-3 w-3" aria-hidden="true" />
+          CSV
+        </Button>
       </div>
       {/* R258 — legenda dobičkonostne resnice (želona pariteta R245/R252/R257:
           vsaka izpeljava pove svojo definicijo — WYSIWYG; žetoni, 0 novih hex).
           R261 — substring-parna nadgradna (R260 lekcija 3): nova resnica
           PRIPEPENA ZA obstoječo — stara dobesedna resnica ostane, vsi stari
-          toContain pini ostanejo zeleni BREZ premika. */}
+          toContain pini ostanejo zeleni BREZ premika.
+          R293 — pripona: CSV = ista resnica kot PDF (24. člen). */}
       <p className="text-right text-2xs text-muted-foreground">
-        Prihodki = izdani + plačani računi · Stroški = ne-preklicana naročila · Marža = prihodki − stroški · Marža (%) = marža / prihodki · Brez projekta = izključeni iz preseka · Ponudba = vpisana ocena (estimatedPrice) · Realizirano = izdani + plačani računi · Odstopanje = realizirano − ponudba
+        Prihodki = izdani + plačani računi · Stroški = ne-preklicana naročila · Marža = prihodki − stroški · Marža (%) = marža / prihodki · Brez projekta = izključeni iz preseka · Ponudba = vpisana ocena (estimatedPrice) · Realizirano = izdani + plačani računi · Odstopanje = realizirano − ponudba · CSV = ista resnica kot PDF
       </p>
+
+      {/* R293 — MARŽNI RAZGLED (MANDATORY STIL) — dobičkonostna resnica NA
+          ZASLONU (do zdaj samo v PDF R258): ENA resnica z izvozoma — EN VIR
+          dobicikonostIzpeljava (ISTI presek kot PDF IN CSV — divergenca
+          nemogoča). MARŽA ASC (ISTI akcijski red kot PDF tabela — najslabša
+          PRVA, R252 vzorec); NEGATIVNA marža rdeča (iskren alarm — PDF RED
+          bold pariteta, NIKOLI utišana); '—' % = iskrena ni-definirana
+          resnica (NIKOLI izmišljen 0 %); mini tir vzorec R291/R292: širina =
+          |marža| / najvišja marža × 100 — ISTO merilo za VSE vrstice, 0 %
+          iskreno pri praznem preseku, aria-hidden (številka nosi resnico),
+          hover title z izrečeno izpeljavo. 0 novih hex — samo obstoječi
+          žetoni (baseline pregled r226 — hex literali v komentarjih ŠTEJEJO,
+          r225/r261 pin lekcija). */}
+      <div
+        className="rounded-lg border border-border bg-muted/40 px-3 py-2"
+        role="group"
+        aria-label="Maržni razgled — marža po projektih"
+      >
+        <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
+          <p className="text-2xs font-medium text-roksal-ink">Maržni razgled</p>
+          <p className="text-2xs text-muted-foreground" data-testid="marzni-razgled-sklep">
+            {dobicikonostIzpeljava.vrste.length === 0
+              ? 'Ni projektov v preseku — dobičkonost se izriše ob prvem računu ali naročilu.'
+              : `${dobicikonostSklep(dobicikonostIzpeljava.povzetek)}.`}
+          </p>
+        </div>
+        {dobicikonostIzpeljava.vrste.length > 0 && (
+          <div className="mt-1.5 space-y-1">
+            {dobicikonostIzpeljava.vrste.map((v) => {
+              const negativna = v.marza < 0
+              const sirina =
+                maxMarza === 0
+                  ? 0
+                  : Math.min(100, Math.round((Math.abs(v.marza) / maxMarza) * 100))
+              return (
+                <div
+                  key={v.projekt}
+                  className="flex min-w-0 items-center gap-2"
+                  title={`${v.projekt}: marža ${v.marza.toFixed(2)} EUR — ${sirina} % najvišje marže (po absolutni vrednosti)${v.marzaOdstotek === null ? ' · brez prihodkov (% ni definiran)' : ''}`}
+                >
+                  <span className="w-24 shrink-0 truncate text-2xs text-roksal-ink">{v.projekt}</span>
+                  <div className="h-1 min-w-0 flex-1 rounded-full bg-muted" aria-hidden="true">
+                    <div
+                      className={`h-1 rounded-full ${negativna ? 'bg-roksal-red/40' : 'bg-roksal-navy/30'}`}
+                      style={{ width: `${sirina}%` }}
+                    />
+                  </div>
+                  <span
+                    className={`w-20 shrink-0 text-right text-2xs tabular-nums ${negativna ? 'font-medium text-roksal-red' : 'text-roksal-ink'}`}
+                  >
+                    {v.marza.toFixed(2)}
+                  </span>
+                  <span className="w-10 shrink-0 text-right text-2xs tabular-nums text-muted-foreground">
+                    {v.marzaOdstotek === null ? '—' : `${v.marzaOdstotek.toFixed(1)} %`}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
 
       {/* Današnji pregled */}
       <div>

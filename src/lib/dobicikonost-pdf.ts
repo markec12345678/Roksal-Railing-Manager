@@ -133,8 +133,10 @@ export function preveriDobicikonostNarocilo(n: DobicikonostNarocilo, i: number):
   }
 }
 
-/** Znesek kot stabilen niz — 2 decimalni mesti (družinski znesekNiz vzorec). */
-function znesekNiz(z: number): string {
+/** Znesek kot stabilen niz — 2 decimalni mesti (družinski znesekNiz vzorec).
+ *  R293: EXPORTIRAN — CSV brat (dobicikonost-projekti-csv) uvaža ISTI strojni
+ *  kanon zneskov (EN VIR — divergenca med PDF in CSV nemogoča). */
+export function znesekNiz(z: number): string {
   return z.toFixed(2)
 }
 
