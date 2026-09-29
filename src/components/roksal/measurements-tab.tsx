@@ -60,6 +60,7 @@ import {
   type MeritveTerenVnos,
 } from '@/lib/meritve-teren-pdf'
 import { generateTerenskiZapisniPdf } from '@/lib/terenski-zapisni-pdf'
+import { zapisniListCsv, zapisniListCsvFilename } from '@/lib/terenski-zapisni-csv'
 import { downloadCsvText } from '@/lib/csv-export'
 import {
   Dialog,
@@ -1002,6 +1003,8 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
   const [pdfVteku, setPdfVteku] = useState(false)
   // R284 — dvoklik guard za terenski zapisni list PDF (pariteta R269 guard).
   const [zapisniVteku, setZapisniVteku] = useState(false)
+  // R285 — CSV zapisni list v teku (dvoklik guard — pariteta R284 PDF gumba).
+  const [zapisniCsvVteku, setZapisniCsvVteku] = useState(false)
 
   // R276 (issue #16 §6) — korekcija = NOVA verzija v verigi (predhodnik
   // ostane v zgodovini — nič tihega prepisovanja). popravljaMeritev drži
@@ -2421,6 +2424,128 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
       })
     } finally {
       setZapisniVteku(false)
+    }
+  }
+
+  // R285 — TERENSKI ZAPISNI LIST CSV (issue #15 §3, worklog i5b): ISTI FRESH
+  // fetch + fail-verbose DTO pruning vzorec kot R284 (namerna duplikacija —
+  // izolacija družine: R284 PDF handler NIKOLI ne tvega regresije bajtnega
+  // kontrakta; skupno resnico nosita EN VIR zapisniListVrste IN R186
+  // meritevVrstica v libih). CSV = DIGITALNO izpolnjevanje v Excelu (Y1):
+  // ista zapisana resnica + PRAZNI fizični stolpci (fizicna_ref_mm /
+  // delta_mm / zapiski_terena) — izpolni jih lastnik v Excelu. PRAZEN
+  // seznam → iskren toast (nič praznih datotek); pariteta stolpcev z R186
+  // arhivom po konstrukciji (Y2 — EN VIR meritevVrstica).
+  const handleZapisniListCsv = async () => {
+    if (zapisniCsvVteku) return
+    if (!selectedProject) {
+      toast.error('Ni izbranega projekta', {
+        description: 'Terenski zapisni list (CSV) je projekt-obračunski — najprej izberite projekt.',
+      })
+      return
+    }
+    setZapisniCsvVteku(true)
+    try {
+      const res = await fetch(`/api/measurements?projectId=${selectedProject}`, {
+        credentials: 'same-origin',
+      })
+      if (!res.ok) {
+        throw new Error(`GET /api/measurements → HTTP ${res.status}`)
+      }
+      const data: unknown = await res.json()
+      if (!Array.isArray(data)) {
+        throw new TypeError('Odgovora /api/measurements ni mogoče prebrati (ni polja).')
+      }
+      const vrstice = data as Array<Record<string, unknown>>
+      const vnosi: MeritveTerenVnos[] = vrstice.map((m, i) => {
+        if (typeof m.id !== 'string' || m.id === '') {
+          throw new TypeError(`meritev vrstica ${i}: manjkajoč id v odgovoru API-ja`)
+        }
+        if (typeof m.createdAt !== 'string' || m.createdAt === '') {
+          throw new TypeError(`meritev vrstica ${i} (${m.id}): manjkajoč createdAt v odgovoru API-ja`)
+        }
+        if (typeof m.dolzinaMm !== 'number' || !Number.isFinite(m.dolzinaMm) || m.dolzinaMm < 0) {
+          throw new TypeError(`meritev vrstica ${i} (${m.id}): dolzinaMm mora biti ne-negativno končno število, ne ${String(m.dolzinaMm)}`)
+        }
+        if (typeof m.visinaMm !== 'number' || !Number.isFinite(m.visinaMm) || m.visinaMm < 0) {
+          throw new TypeError(`meritev vrstica ${i} (${m.id}): visinaMm mora biti ne-negativno končno število, ne ${String(m.visinaMm)}`)
+        }
+        if (m.verzija !== null && m.verzija !== undefined && (typeof m.verzija !== 'number' || !Number.isInteger(m.verzija) || (m.verzija as number) < 1)) {
+          throw new TypeError(`meritev vrstica ${i} (${m.id}): verzija mora biti pozitivno celo število ALI null, ne ${String(m.verzija)}`)
+        }
+        if (m.vir !== null && m.vir !== undefined && typeof m.vir !== 'string') {
+          throw new TypeError(`meritev vrstica ${i} (${m.id}): vir mora biti niz ALI null, ne ${String(m.vir)}`)
+        }
+        // R285 — kot (Y2 EN VIR R186 r[5] = kotStopinje): ISTI vzorec kot
+        // R284 X2 — prvorazredni DTO stolpec; fallback legacy arMetadata.kot
+        // (število). Pokvaren tip = fail-verbose; odsoten = null ('' celica
+        // v CSV — iskren odpad, pariteta R186).
+        let kot: number | null = null
+        if (m.kotStopinje !== null && m.kotStopinje !== undefined) {
+          if (typeof m.kotStopinje !== 'number' || !Number.isFinite(m.kotStopinje)) {
+            throw new TypeError(`meritev vrstica ${i} (${m.id}): kotStopinje mora biti končno število ALI null, ne ${String(m.kotStopinje)}`)
+          }
+          kot = m.kotStopinje
+        }
+        // arMetadata parse — fail-verbose (ISTI kontrakt kot R269/R284 —
+        // pokvaren vir NIKOLI tiho preskočen).
+        let ar: Record<string, unknown> = {}
+        if (m.arMetadata !== null && m.arMetadata !== undefined) {
+          if (typeof m.arMetadata !== 'string') {
+            throw new TypeError(`meritev vrstica ${i} (${m.id}): arMetadata mora biti niz ALI null, ne ${String(m.arMetadata)}`)
+          }
+          if (m.arMetadata.trim() !== '') {
+            try {
+              const parsed: unknown = JSON.parse(m.arMetadata)
+              if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+                throw new TypeError('ni objekt')
+              }
+              ar = parsed as Record<string, unknown>
+            } catch {
+              throw new TypeError(`meritev vrstica ${i} (${m.id}): arMetadata ni razumljen kot JSON objekt (pokvaren vir)`)
+            }
+          }
+        }
+        if (kot === null && typeof ar.kot === 'number' && Number.isFinite(ar.kot)) {
+          // legacy dialekt (m1/m2) — kot živi v arMetadata.kot (R283 fikstura)
+          kot = ar.kot
+        }
+        return {
+          id: m.id,
+          createdAt: m.createdAt,
+          dolzinaMm: m.dolzinaMm,
+          visinaMm: m.visinaMm,
+          kotStopinje: kot,
+          tipMeritve: (ar.tipMeritve ?? null) as string | null,
+          oznaka: (ar.oznaka ?? null) as string | null,
+          status: (m.status ?? ar.status ?? null) as string | null,
+          lokacija: (ar.lokacija ?? null) as string | null,
+          opomba: (ar.opomba ?? null) as string | null,
+          verzija: (m.verzija ?? null) as number | null,
+          vir: (m.vir ?? null) as string | null,
+        }
+      })
+      if (vnosi.length === 0) {
+        // Fail-closed jedro: prazen seznam ne nastaja datoteke — iskren toast.
+        toast.error('Ni vpisanih meritev', {
+          description: 'Terenski zapisni list (CSV) se izvozi, ko je vpisana prva meritev projekta.',
+        })
+        return
+      }
+      // EN VIR R285 lib: validacija + akcijski sort + R186 pariteta + prazni
+      // fizični stolpci — čisto jedro, komponenta je samo žičenje (Y7).
+      const { csv, vrstic } = zapisniListCsv(vnosi)
+      downloadCsvText(zapisniListCsvFilename(new Date()), csv)
+      toast.success('Zapisni list prenešen v CSV', {
+        description: `Terenski-zapisni-…csv — ${vrstic - 1} vrstic; stolpci fizicna_ref_mm/delta_mm/zapiski_terena ostajajo PRAZNI — izpolni jih v Excelu (issue #15 §3).`,
+      })
+    } catch (err) {
+      // Fail-verbose: izvoz ne sme tiho spodleteti — razlog gre v toast.
+      toast.error('Izvoz ni uspel', {
+        description: err instanceof Error ? err.message : `Neznana napaka (${String(err)}).`,
+      })
+    } finally {
+      setZapisniCsvVteku(false)
     }
   }
 
@@ -6694,6 +6819,30 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                 ZAPISNI LIST
               </button>
             )}
+            {/* R285 — terenski zapisni list CSV (issue #15 §3, worklog i5b):
+                DIGITALNO izpolnjevanje v Excelu — ISTA zapisana resnica + ISTI
+                prazni fizični stolpci (fizicna_ref_mm/delta_mm/zapiski_terena)
+                kot R284 PDF; pariteta R186 arhiva po konstrukciji (EN VIR
+                meritevVrstica). Pariteta R284 gumba: press-scale + dvoklik
+                guard + FileSpreadsheet aria-hidden (družinski kontrakt);
+                hover title pariteta kanon R280–R284. */}
+            {selectedProject && (
+              <button
+                type="button"
+                onClick={() => void handleZapisniListCsv()}
+                disabled={zapisniCsvVteku}
+                className="flex shrink-0 items-center gap-1 rounded-lg border border-border/50 bg-secondary/50 px-2 py-1 text-2xs font-medium text-muted-foreground transition-all duration-150 press-scale active:scale-[0.96] hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                aria-label="Izvozi terenski zapisni list kot CSV"
+                title="Terenski zapisni list kot CSV (issue #15 §3) — ista zapisana resnica + prazni stolpci fizicna_ref_mm/delta_mm/zapiski_terena za digitalno izpolnjevanje v Excelu"
+              >
+                {zapisniCsvVteku ? (
+                  <Loader2 aria-hidden="true" className="h-3 w-3 animate-spin" />
+                ) : (
+                  <FileSpreadsheet aria-hidden="true" className="h-3 w-3" />
+                )}
+                ZAPISNI LIST CSV
+              </button>
+            )}
             <div className="flex-1" />
             {/* Bulk mode toggle */}
             <button
@@ -6720,7 +6869,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               (pariteta s pillom). */}
           {selectedProject && (
             <p className="text-2xs text-muted-foreground">
-              PDF = VSE meritve projekta (tudi arhivirane — polna resnica, ne samo viden seznam filtrov) · ZAPISNI LIST = zapisane mere + prazni stolpci za fizično validacijo (issue #15 §3 — fizične mere zapisuje lastnik na terenu)
+              PDF = VSE meritve projekta (tudi arhivirane — polna resnica, ne samo viden seznam filtrov) · ZAPISNI LIST = zapisane mere + prazni stolpci za fizično validacijo (issue #15 §3 — fizične mere zapisuje lastnik na terenu) · ZAPISNI LIST CSV = ista resnica v Excelu — prazni fizični stolpci za digitalno izpolnjevanje (issue #15 §3, pariteta z R186 arhivom)
             </p>
           )}
 
