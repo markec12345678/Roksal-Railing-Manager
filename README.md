@@ -103,7 +103,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 45 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **4061** (222 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **4061** (223 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 143 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -326,6 +326,12 @@ Sheet z 6 podzavihki:
 - Ghost Mode toggle
 - Politika občutljivih podatkov: [docs/PODATKI.md](docs/PODATKI.md) (§38 — inventar + zaščita + kaj se NE hrani)
 
+#### ⚙️ Avtomatizacija (issue #1 — deterministično jedro)
+- 100 % deterministična jedra: kalkulacije, izvozi (40+ PDF/CSV), varnost, sync — enaki vhodi = bajtno enak izhod
+- AI = neobvezna pomoč, NIKOLI vir resnice (iskren GPU stub + VLM foto ocena z determinističnim nadomestkom)
+- Skener determinizma: 0 nedokumentiranih odstopanj nad src/lib (izjeme izrecne z razlogom)
+- Pregled: [docs/automacija-audit.md](docs/automacija-audit.md) (EN VIR pripet na lib + strazar testi) · kartica «Avtomatizacija — razred funkcij» v vodjinem pregledu
+
 ---
 
 ## 📸 Posnetki zaslona
@@ -366,7 +372,7 @@ Sheet z 6 podzavihki:
 | **PWA** | Service Worker + Web Manifest |
 | **Temnitveni način** | [next-themes](https://github.com/pacocoursey/next-themes) |
 | **Validacija** | [Zod 4](https://zod.dev/) |
-| **Testiranje** | [Vitest 4](https://vitest.dev/) (3646 testov + globalSetup embedded PG) |
+| **Testiranje** | [Vitest 4](https://vitest.dev/) (4061 testov + globalSetup embedded PG) |
 | **Paketni upravitelj** | [Bun](https://bun.sh/) |
 | **Linting** | ESLint 9 + eslint-config-next |
 
