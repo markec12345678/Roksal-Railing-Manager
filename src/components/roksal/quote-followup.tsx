@@ -25,11 +25,12 @@ import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
 import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'
 import { casOznaka } from '@/lib/osvezitev-fokus'
-import { buildPonudbeCsv, ponudbeCsvFilename, ponudbeLabel, PONUDBE_STATUS_LABELS } from '@/lib/ponudbe-csv'
+import { buildPonudbeCsv, ponudbeCsvFilename, ponudbeLabel, PONUDBE_STATUS_LABELS, stanjeSpomnika } from '@/lib/ponudbe-csv'
 import { todayStamp } from '@/lib/csv-export'
 import {
   Download,
   FileClock,
+  FileDown,
   History,
   Loader2,
   Phone,
@@ -37,6 +38,11 @@ import {
   CalendarClock,
   AlertTriangle,
 } from 'lucide-react'
+import {
+  generatePonudbeSpomnikiPdf,
+  ponudbeSpomnikiPregled,
+  type PonudbaSpomnikiVnos,
+} from '@/lib/ponudbe-spomniki-pdf'
 
 interface FollowProject {
   id: string
@@ -66,6 +72,8 @@ export function QuoteFollowUp() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [exporting, setExporting] = useState(false)
+  // R267 — dvoklik zaščita PDF izvoza (družinski vzorec disabled={ocVTeku} R266).
+  const [pdfVteku, setPdfVteku] = useState(false)
   const [busyId, setBusyId] = useState<string | null>(null)
   // R181 — pečat svežine: čas zadnjega USPEŠNEGA branja /api/projects (vzorec
   // R170/R177/R178/R180). Napaka/omrežje → null (fail-closed — NIČ lažne
@@ -147,6 +155,22 @@ export function QuoteFollowUp() {
     [pending],
   )
 
+  // R267 — F2 mini-vrstica (WYSIWYG ISTA izpeljava ponudbeSpomnikiPregled kot
+  // PDF KPI + sklep + toast — ENA izpeljava): state = kar uporabnik vidi
+  // (viden seznam — prvih 12 vrst kartice), FRESH fetch ob kliku = polna
+  // resnica (dve okni, ENA matemtika — obe poimenovani po viru); stanje
+  // spomnika EN VIR stanjeSpomnika (R161) — NIKOLI zasegana kopija.
+  const spomnikiPovzetek = useMemo(() => {
+    const danesIso = todayStamp(today)
+    const stanja = pending.map((p) => stanjeSpomnika(p.followUpDate, danesIso))
+    return {
+      viden: pending.length,
+      zapadel: stanja.filter((s) => s === 'Zapadel').length,
+      danes: stanja.filter((s) => s === 'Danes').length,
+      brez: stanja.filter((s) => s === 'Brez spomnika').length,
+    }
+  }, [pending, today])
+
   async function setFollowUp(id: string, date: Date | null, opomba?: string) {
     setBusyId(id)
     try {
@@ -190,6 +214,76 @@ export function QuoteFollowUp() {
   function plusDays(id: string, days: number) {
     const d = new Date(nowMs + days * 86400000)
     void setFollowUp(id, d, `Pokliči stranko — sledenje ponudbe (+${days} dni)`)
+  }
+
+  // R267 — PONUDBE — SPOMNIŠKI PREGLED PDF (23. člen 'izvozi' družine):
+  // FRESH fetch ISTEGA endpointa ob kliku (R244/R245/R264/R265/R266 precedens
+  // — nič state-a, nič nove mreže) — DOKUMENT = POLNA resnica: VSE ponudbe,
+  // TUDI podpisane (viden seznam kartice = samo odprte, prvih 12; PDF je
+  // referenčni pregled cevi ponudb). HTTP napaka ALI ne-polje odgovora →
+  // viden razlog (nič tihe degradacije); resnice (status 4 znanih,
+  // dealLocked boolean, ISO, identitete) preverja LIB fail-closed z indeksom
+  // krivca.
+  const handleSpomnikiPdf = async () => {
+    if (pdfVteku) return
+    setPdfVteku(true)
+    try {
+      const res = await fetch('/api/projects', { credentials: 'same-origin' })
+      if (!res.ok) {
+        throw new Error(`GET /api/projects → HTTP ${res.status}`)
+      }
+      const data: unknown = await res.json()
+      if (!Array.isArray(data)) {
+        throw new TypeError('Odgovora /api/projects ni mogoče prebrati (ni polja).')
+      }
+      const vrstice = data as Array<Record<string, unknown>>
+      // Fail-verbose DTO pruning (R264/R265/R266 vzorec): identitete tu
+      // (imenovan razlog), ostalo VERBATIM — lib preveri z indeksom krivca.
+      const vnosi: PonudbaSpomnikiVnos[] = vrstice.map((p, i) => {
+        if (typeof p.id !== 'string' || p.id === '' || typeof p.nazivProjekta !== 'string' || p.nazivProjekta === '') {
+          throw new TypeError(`ponudba vrstica ${i}: manjkajoč id/nazivProjekta v odgovoru API-ja`)
+        }
+        const strankaRaw = p.customer
+        const stranka =
+          strankaRaw !== null && typeof strankaRaw === 'object' && typeof (strankaRaw as { ime?: unknown }).ime === 'string'
+            ? (strankaRaw as { ime: string }).ime
+            : null
+        return {
+          id: p.id,
+          nazivProjekta: p.nazivProjekta,
+          stranka,
+          status: p.status as PonudbaSpomnikiVnos['status'],
+          dealLocked: p.dealLocked as boolean,
+          followUpDate: typeof p.followUpDate === 'string' ? p.followUpDate : null,
+          followUpOpomba: typeof p.followUpOpomba === 'string' ? p.followUpOpomba : null,
+          datumMontaze: typeof p.datumMontaze === 'string' ? p.datumMontaze : null,
+        }
+      })
+      if (vnosi.length === 0) {
+        // Fail-closed jedro: prazen seznam ne nastaja dokumenta — iskren toast.
+        toast({ title: 'Ni vpisanih ponudb', description: 'Pregled spomnikov se izvozi, ko je vpisana prva ponudba.' })
+        return
+      }
+      // ENA izpeljava: povzetek za toast = ISTA resnica kot KPI IN sklep na
+      // listu (WYSIWYG).
+      const { povzetek } = ponudbeSpomnikiPregled(vnosi, new Date())
+      generatePonudbeSpomnikiPdf(vnosi, { now: new Date() })
+      toast({
+        title: 'Pregled ponudb prenešen v PDF',
+        description: `Ponudbe-spomniki-…pdf — ${ponudbeLabel(povzetek.ponudb)}, zapadel spomnik ${povzetek.zapadelOprtih}, podpisanih ${povzetek.podpisanih}.`,
+      })
+    } catch (err) {
+      // Fail-verbose: izvoz ne sme tiho spodleteti — razlog gre v toast.
+      // Fail-closed jedro (TypeError iz liba) = pokvaren vnos → viden razlog
+      // (NIČ izmišljenega dokumenta).
+      toast({
+        title: 'Izvoz ni uspel',
+        description: err instanceof Error && err.message !== 'Failed to fetch' ? err.message : `Neznana napaka (${String(err)}).`,
+        variant: 'destructive',
+      })
+    } finally {
+      setPdfVteku(false)
+    }
   }
 
   const handleExportCsv = () => {
@@ -263,6 +357,23 @@ export function QuoteFollowUp() {
               type="button"
               size="sm"
               variant="outline"
+              className="h-7 shrink-0 gap-1.5 text-[11px] press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              onClick={() => void handleSpomnikiPdf()}
+              disabled={pdfVteku}
+              aria-label="Izvozi pregled spomnikov ponudb kot PDF"
+              title="Spomniški pregled ponudb kot pravi PDF — stanja spomnikov, podpisi (vse ponudbe, tudi podpisane)"
+            >
+              {pdfVteku ? (
+                <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
+              ) : (
+                <FileDown className="h-3 w-3" aria-hidden="true" />
+              )}
+              PDF
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
               className="h-7 shrink-0 gap-1.5 text-[11px] focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
               onClick={handleExportCsv}
               disabled={pending.length === 0 || exporting || loading || error !== null}
@@ -280,6 +391,12 @@ export function QuoteFollowUp() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">
+        {/* R267 — legenda pill pariteta (družina R263–R266): poimenuje kaj nosi
+            dokument — VSE ponudbe, tudi podpisane (polna resnica, ne samo viden
+            seznam); VEDNO vidna (tudi pri praznem seznamu — pariteta z pillom). */}
+        <p className="text-2xs text-muted-foreground">
+          PDF = VSE ponudbe (tudi podpisane — polna resnica, ne samo viden seznam)
+        </p>
         {loading ? (
           <div className="flex items-center justify-center py-5 text-sm text-muted-foreground" aria-busy="true" aria-live="polite">
             <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
@@ -430,6 +547,30 @@ export function QuoteFollowUp() {
               )
             })}
           </ul>
+        )}
+        {/* R267 — F2 spomniška mini-vrstica (WYSIWYG ISTA izpeljava
+            stanjeSpomnika kot PDF KPI + sklep + toast — ENA izpeljava):
+            state = kar uporabnik vidi (viden seznam), FRESH = polna resnica
+            (dve okni, ENA matemtika); dot roksal-red/green — RED kadar
+            zapadla akcija; kondicionalna žetona ŽIVO samo kadar > 0 — R256
+            lekcija 4; tabular-nums; 0 novih hex. */}
+        {!loading && !error && pending.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${spomnikiPovzetek.zapadel > 0 ? 'bg-roksal-red' : 'bg-roksal-green'}`} />
+            <span className="tabular-nums">
+              Spomniki (viden seznam): {ponudbeLabel(spomnikiPovzetek.viden)} · zapadel {spomnikiPovzetek.zapadel} · spomnik danes {spomnikiPovzetek.danes} · brez spomnika {spomnikiPovzetek.brez}
+            </span>
+            {spomnikiPovzetek.zapadel > 0 && (
+              <span className="rounded-full border border-roksal-red/40 bg-roksal-red/10 px-2 py-0.5 text-2xs font-medium text-roksal-red">
+                {spomnikiPovzetek.zapadel} zapadel spomnik
+              </span>
+            )}
+            {spomnikiPovzetek.brez > 0 && (
+              <span className="rounded-full border border-roksal-amber/40 bg-roksal-amber/10 px-2 py-0.5 text-2xs font-medium text-roksal-amber">
+                {spomnikiPovzetek.brez} brez spomnika
+              </span>
+            )}
+          </div>
         )}
       </CardContent>
     </Card>
