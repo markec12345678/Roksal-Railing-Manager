@@ -57,7 +57,7 @@ import { jeZamujenaDobava } from '@/lib/zamujena-dobava'
 // R287 — lib opomnik-zvonek ((k) portal akcija — ZAPRTJE evalvacije od R251):
 // opomnikZvonekVrstice je client-safe (brez uvozov) — opomnikStatus je VERBATIM
 // strežniški izračun (R251 kanon); danas je IZRECEN argument (vzorec R228).
-import { opomnikZvonekVrstice } from '@/lib/opomnik-zvonek'
+import { opomnikZvonekVrstice, opomnikZvonekPresezek } from '@/lib/opomnik-zvonek'
 // R288 — deep-link parser ((k) dopolnitev: signal → dejanje → CILJ):
 // fail-closed izlušči id stranke iz vrstične id 'opomnik-{id}' — brez
 // prefiksa/ostanka → null (samo navigacija, R216 vzorec).
@@ -110,6 +110,17 @@ interface WeatherSummary {
   gust: number
 }
 
+/** R289 — ISKREN PRESEŽEK: ena vrstica POVZETKA (role="note" pod seznamom) za
+ * VSAKO signalno družino, ki ima več veljavnih vnosov kot jih zvonček prikaže
+ * (cap ×8 / ×6 — vzorec slice(0, N)). Brez tega bi 9. zamujena dobava / 7.
+ * opomnik TIHO izginil (lažna varnost — vzorec R152/R182). Štetje na nivoju
+ * vira (skupaj − prikazani) — dosledno z odštevanjem, ki šteje tudi duplikate
+ * (pariteta badge). */
+interface PresezekVrstica {
+  kategorija: string
+  st: number
+}
+
 const RISK_LABEL: Record<WeatherSummary['riskLevel'], string> = {
   low: 'Varno',
   medium: 'Previdno',
@@ -144,6 +155,9 @@ export function NotificationCenter() {
   // ki niso bilo naloženi (non-403). Prej je tihi izpad /api/inventory pomenil
   // 'nizka zaloga NEVIDNA' = lažno 'Vse je pod nadzorom' (isti vzorec R162/R174).
   const [viriNapaka, setViriNapaka] = useState<string | null>(null)
+  // R289 — presežki per družina (prazno = brez presežka; reset ob vsakem loadu
+  // in ob omrežni napaki — nikoli zastarelih števcev).
+  const [presezki, setPresezki] = useState<PresezekVrstica[]>([])
   const loadedOnce = useRef(false)
   // R198 — masovno „Označi vse kot prebrano“: zaklep gumba med potekom
   // (dvoklik = dva klica, drugi vrača opened:0 — neškodljivo, ampak grdo).
@@ -156,6 +170,13 @@ export function NotificationCenter() {
     // — poštno stanje, NE napaka), vse ostalo (401/5xx/omrežje) gre v vidno
     // opozorilno vrstico + brez pečata.
     const neuspeliViri: string[] = []
+    // R289 — presežki (lokalni zbiratelj; set šele ob uspešnem koncu —
+    // nikoli delnih/mešanih števcev; catch resetira na [])
+    const presezki: PresezekVrstica[] = []
+    const dodajPresezek = (kategorija: string, skupaj: number, prikazanih: number) => {
+      const n = skupaj - prikazanih
+      if (n > 0) presezki.push({ kategorija, st: n })
+    }
     try {
       const [invRes, projRes, crmRes] = await Promise.all([fetch('/api/inventory'), fetch('/api/projects'), fetch('/api/crm')])
       const today = new Date()
@@ -196,6 +217,8 @@ export function NotificationCenter() {
             },
           })
         }
+        // R289 — iskren presežek (EN VIR: ISTI filtriran seznam)
+        dodajPresezek('Nizka zaloga', low.length, 8)
         // R222 (P1-c nadaljevanje) — 'Brez dobavitelja' vrstice (druga
         // dimenzija — nabavna pripravljenost): artikel brez VPISANE cene
         // pri katerem koli dobavitelju (MaterialPrice števec === 0 — ISTA
@@ -213,6 +236,8 @@ export function NotificationCenter() {
             meta: 'Preveri nabavne cene',
           })
         }
+        // R289 — iskren presežek (EN VIR: ISTI filtriran seznam)
+        dodajPresezek('Brez dobavitelja', brez.length, 8)
       } else if (invRes.status !== 403) {
         // R182 — fail-verbose: tihi izpad vira = nizka zaloga NEVIDNA (lažno
         // 'Vse je pod nadzorom'); 403 = meja vloge, tiho (R175).
@@ -237,6 +262,8 @@ export function NotificationCenter() {
             meta: p.status === 'V_TEKU' ? 'V teku' : 'Načrtovana',
           })
         }
+        // R289 — iskren presežek (EN VIR: ISTI filtriran seznam)
+        dodajPresezek('Današnje montaže', todays.length, 8)
 
         // 2b) Zapadli follow-upi ponudb (ponudba poslana, stranka še ni odgovorila)
         const dueFollowUps = (projects || []).filter(
@@ -257,6 +284,8 @@ export function NotificationCenter() {
             meta: days > 0 ? `zapadlo ${days} dni` : 'danes',
           })
         }
+        // R289 — iskren presežek (EN VIR: ISTI filtriran seznam)
+        dodajPresezek('Follow-upi', dueFollowUps.length, 6)
       } else if (projRes.status !== 403) {
         neuspeliViri.push('projekti')
       }
@@ -283,6 +312,10 @@ export function NotificationCenter() {
             meta: v.meta,
           })
         }
+        // R289 — iskren presežek: lib lasti štetje (opomnikZvonekPresezek —
+        // ISTI validacijski sprehod kot vrstice; pokvareni vnosi NE štejejo)
+        const opPresezek = opomnikZvonekPresezek(Array.isArray(crm.customers) ? crm.customers : [])
+        if (opPresezek > 0) presezki.push({ kategorija: 'CRM opomniki', st: opPresezek })
       } else if (crmRes.status !== 403) {
         neuspeliViri.push('CRM opomniki')
       }
@@ -314,6 +347,8 @@ export function NotificationCenter() {
               meta: days > 0 ? `zapadlo ${days} dni` : 'rok danes',
             })
           }
+          // R289 — iskren presežek (EN VIR: ISTI filtriran seznam)
+          dodajPresezek('Zapadli računi', dueInvoices.length, 6)
         } else if (invRes2.status !== 403) {
           // R182 — računi so FINANČNO KRITIČNI: tihi izpad = zapadli račun
           // NEVIDEN ('opcijski vir' NE pomeni tihe degradacije).
@@ -375,6 +410,8 @@ export function NotificationCenter() {
               meta: 'Izterjaj dobavo pri dobavitelju',
             })
           }
+          // R289 — iskren presežek (EN VIR: ISTI filtriran seznam)
+          dodajPresezek('Zamujene dobave', zamujena.length, 8)
         } else if (oRes.status !== 403) {
           neuspeliViri.push('naročila')
         }
@@ -438,6 +475,10 @@ export function NotificationCenter() {
 
       setItems(deduped)
       setBadge(deduped.reduce((n, i) => n + (i.count ?? 1), 0))
+      setPresezki(presezki)
+      // R289 — presežki grejo v stanje ŠELE ob uspešnem koncu (atomarno z
+      // items — nikoli mešanih stanj); ob neuspehu ostanejo prejšnji (isti
+      // podatki ostanejo prikazani — R182 vzorec) — resetira SAMO catch.
 
       // R182 — pečat + agregacijska napaka: pečat = zadnje USPEŠNO branje
       // VSEH virov (vsaj EN non-403 neuspešen → BREZ pečata + viden warning);
@@ -460,6 +501,7 @@ export function NotificationCenter() {
       // napaka je VIDNA; obstoječi podatki ostanejo, a BREZ lažnega pečata.
       setViriNapaka('Obvestila niso bila osvežena (omrežje) — prikaz je lahko zastarel.')
       setObvestilaOsvezitev(null)
+      setPresezki([])
     } finally {
       setLoading(false)
     }
@@ -772,6 +814,23 @@ export function NotificationCenter() {
                 )
               })}
             </ul>
+
+            {/* R289 — ISKREN PRESEŽEK: POVZETEK vrstica pod seznamom, vidna
+                SAMO ko vsaj ENA družina preseže prikazani cap (pogojni kanon
+                r277 — iskrena praznina v obratni smeri: iskren presežek).
+                Vrstice NISO klikljive (brez lažnih affordance — celotna
+                resnica je na pripadajočih ploščah, title to pove izrecno). */}
+            {presezki.length > 0 && (
+              <div
+                role="note"
+                aria-label="Iskren presežek signalov"
+                title="Iskren presežek — zvonček prikazuje najpomembnejše vrstice; celotna resnica je na pripadajočih ploščah."
+                className="mt-2 rounded-xl border border-border/60 bg-muted/40 px-3 py-2 text-2xs text-muted-foreground"
+              >
+                <span className="font-semibold text-roksal-ink">Presežek:</span>{' '}
+                <span className="tabular-nums">{presezki.map((p) => `${p.kategorija} +${p.st}`).join(' · ')}</span>
+              </div>
+            )}
 
             {/* R143 (§29): zapisana obvestila — življenjski cikel
                 QUEUED → SENT → DELIVERED → OPENED / FAILED (retry politika). */}

@@ -179,7 +179,9 @@ describe('R287 — zvonček komponenta (strazar): EN VIR + portal akcija + stil'
   it('EN VIR: /api/crm v ISTEM Promise.all kot zaloga/projekti (R251 kanon — brez nove zahteve v ločenem toku)', () => {
     expect(src).toContain("fetch('/api/crm')")
     expect(src).toContain('const [invRes, projRes, crmRes] = await Promise.all(')
-    expect(src).toContain("import { opomnikZvonekVrstice } from '@/lib/opomnik-zvonek'")
+    // R289 — pin posodobljen z ohranjeno namero: EN VIR uvoz razširjen z
+    // opomnikZvonekPresezek (isti lib, isti vir — presežek NE more divergirati)
+    expect(src).toContain("import { opomnikZvonekVrstice, opomnikZvonekPresezek } from '@/lib/opomnik-zvonek'")
   })
 
   it('opomnikStatus VERBATIM — komponenta NE filtrira po lastnem izračunu (lib je vrata; brez ?? 0 ohlapnosti)', () => {

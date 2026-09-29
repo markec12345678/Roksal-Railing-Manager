@@ -52,18 +52,14 @@ export interface OpomnikZvonekVrstica {
   alarm: boolean
 }
 
-/** Zvončkove opomniške vrstice iz /api/crm customers (fail-closed per vnos;
- * seznam MORA biti seznam — TypeError, ISTA družina kot steviloZamujenihDobav
- * R228). `danas` je začetek trenutnega dneva (polnoč) — klicatelj ga poda
- * IZRECNO (determinizem). */
-export function opomnikZvonekVrstice(
+/** Skupni validacijski sprehod (R289 izvleček — javno vedenje NESPREMENJENO,
+ * R287 ×15 pinov ščiti): vrne VSE veljavne nosilce (POTEKEL najprej v
+ * prihajajočem vrstnem redu odgovora, AKTIVEN po datumu naraščajoče). EN VIR
+ * za vrstice IN presežek — presežek NE more divergirati od vrstic, ker
+ * uporablja ISTI sprehod (R251/WYSIWYG kanon). */
+function opomnikZvonekNosilci(
   vhodi: readonly unknown[],
-  danas: Date,
-  max = 6,
-): OpomnikZvonekVrstica[] {
-  if (!Array.isArray(vhodi)) {
-    throw new TypeError('R287: vhodi mora biti seznam strank')
-  }
+): { vnos: OpomnikZvonekVnos; datum: Date }[] {
   const potekli: { vnos: OpomnikZvonekVnos; datum: Date }[] = []
   const aktivni: { vnos: OpomnikZvonekVnos; datum: Date }[] = []
   for (const v of vhodi) {
@@ -89,6 +85,21 @@ export function opomnikZvonekVrstice(
   aktivni.sort(
     (a, b) => a.datum.getTime() - b.datum.getTime(),
   )
+  return [...potekli, ...aktivni]
+}
+
+/** Zvončkove opomniške vrstice iz /api/crm customers (fail-closed per vnos;
+ * seznam MORA biti seznam — TypeError, ISTA družina kot steviloZamujenihDobav
+ * R228). `danas` je začetek trenutnega dneva (polnoč) — klicatelj ga poda
+ * IZRECNO (determinizem). */
+export function opomnikZvonekVrstice(
+  vhodi: readonly unknown[],
+  danas: Date,
+  max = 6,
+): OpomnikZvonekVrstica[] {
+  if (!Array.isArray(vhodi)) {
+    throw new TypeError('R287: vhodi mora biti seznam strank')
+  }
   const vrstice = (nosilec: { vnos: OpomnikZvonekVnos; datum: Date }): OpomnikZvonekVrstica => {
     const { vnos: c, datum } = nosilec
     const potekel = c.opomnikStatus === 'POTEKEL'
@@ -110,5 +121,28 @@ export function opomnikZvonekVrstice(
     }
     return { id: `opomnik-${c.id}`, ime: c.ime, opis, meta, alarm: potekel }
   }
-  return [...potekli, ...aktivni].slice(0, Math.max(0, max)).map(vrstice)
+  return opomnikZvonekNosilci(vhodi).slice(0, Math.max(0, max)).map(vrstice)
+}
+
+/** R289 — ISKREN PRESEŽEK (dopolnitev R287 — family-wide zvonček kanon):
+ * koliko VELJAVNIH opomniških vnosov NI vidnih v zvončku (zvonček prikazuje
+ * največ `max` vrstic — vzorec followup/invoice slice(0, 6)) — brez tega
+ * žigona bi 7. opomnik tiho izginil (LAŽNA VARNOST, vzorec R152/R182).
+ *
+ * EN VIR: ISTI validacijski sprehod kot opomnikZvonekVrstice (opomnikZvonekNosilci
+ * R289 izvleček) — presežek = veljavni − prikazani, NIKOLI drugačen izračun
+ * veljavnosti (R251/WYSIWYG kanon). Pokvareni vnosi (NI status, brez datuma,
+ * ne-objektni) NE štejeta v presežek — nikoli napihnjenega alarma.
+ *
+ * Fail-closed: ne-seznam → TypeError (ISTA družina kot vrstice R287);
+ * max < 0 = brez omejitve pomena (Math.max(0, max) — pariteta vrstic).
+ * Determinizem: čista funkcija, brez ure/brez uvozov (client-safe). */
+export function opomnikZvonekPresezek(
+  vhodi: readonly unknown[],
+  max = 6,
+): number {
+  if (!Array.isArray(vhodi)) {
+    throw new TypeError('R289: vhodi mora biti seznam strank')
+  }
+  return Math.max(0, opomnikZvonekNosilci(vhodi).length - Math.max(0, max))
 }
