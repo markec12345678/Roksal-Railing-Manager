@@ -553,8 +553,9 @@ export function PunchList({ project }: { project: Project | null }) {
             dot RED (napake blokirajo predajo) / AMBER (odprte čakajo) /
             GREEN (vse rešeno); žetona ŽIVO samo kadar > 0 — R256 lekcija 4;
             tabular-nums; 0 novih hex. */}
+        {/* R274 a11y: role="status" — async mini resnica oznanjena bralniku. */}
         {project && zapisnikStanjePovzetek !== null && (
-          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+          <div role="status" className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
             <span
               aria-hidden="true"
               className={`h-2 w-2 shrink-0 rounded-full ${zapisnikStanjePovzetek.napak > 0 ? 'bg-roksal-red' : zapisnikStanjePovzetek.odprtih > 0 ? 'bg-roksal-amber' : 'bg-roksal-green'}`}

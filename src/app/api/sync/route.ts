@@ -80,6 +80,7 @@ import {
   detectSyncConflict,
   nextSyncRevision,
   syncRetryable,
+  SYNC_CONTRACT_VERSION,
   SYNC_GET_DEFAULT_LIMIT,
   SYNC_GET_MAX_LIMIT,
   SYNC_TOMBSTONES_MAX,
@@ -114,6 +115,11 @@ const mobileProjectSchema = z.object({
   baseRevision: z.number().int().min(0).optional(),
   baseUpdatedAt: z.string().max(64).optional(),
   mutationId: z.string().max(128).optional(),
+  // R274 (issue #17, sekcija D) — pogodbena verzija shared payload-a. Neznana
+  // verzija se zavrne per-item (fail-closed); odsotna = star klient (izrecen
+  // warning, dokumentirano). NEznana prihodnja polja zod stripa — brez
+  // korupcije.
+  contractVersion: z.number().int().min(1).optional(),
 })
 
 type MobileProject = z.infer<typeof mobileProjectSchema>
@@ -256,6 +262,24 @@ export async function POST(request: Request) {
     }
     const mobileProject = parsed.data
 
+    // R274 (issue #17, sekcija D — versioning): item z NEZNANO pogodbeno
+    // verzijo se zavre PER-ITEM (fail-closed, odpuščivost serije velja
+    // naprej — ostali elementi serije se obdelajo normalno). Nič ugibanja,
+    // nič tihe migracije, nič spremenjenega zapisa — klientu je jasno povedano,
+    // katera verzija je podrta.
+    if (mobileProject.contractVersion !== undefined && mobileProject.contractVersion !== SYNC_CONTRACT_VERSION) {
+      results.push({
+        mobileProjectId: mobileProject.id,
+        mutationId: mobileProject.mutationId ?? null,
+        ok: false,
+        action: 'error' as never,
+        revision: null,
+        retryable: false,
+        error: `Nepodprta pogodbena verzija ${mobileProject.contractVersion} — strežnik podpira ${SYNC_CONTRACT_VERSION}. Posodobite klienta; noben zapis ni bil uporabljen.`,
+      })
+      continue
+    }
+
     try {
       // §36 TOMBSTONE: izbrisan mobilni projekt se NE ponovno ustvari —
       // iskren rezultat (klient lokalno pobriše), ne dvojnika.
@@ -328,6 +352,13 @@ async function syncOneProject(
 ): Promise<SyncOutcome> {
   const warnings: string[] = []
   const mutationId = mobileProject.mutationId ?? null
+
+  // R274 (issue #17, sekcija D): contractVersion je STROGO ADITIVEN —
+  // odsotnost = pre-kontraktni klient, ki obrati naprej BREZ novega warninga
+  // (r148 kanon: warnings so smiselni, ne hrup; stari klient ne sme dobiti
+  // novih opozoril). Sledljivost nosi audit: vsak sync zapiše
+  // contractVersion (null = pre-kontraktni). Neznana verzija je zavrnjena
+  // ŽE v per-item zanki (fail-closed, nad tem klicem).
 
   // R121: mobileProjectId je UNIQUE — dvojnikov ni niti ob vzporednem/replay
   // syncu. findUnique (ne findFirst) je zdaj kanoničen način iskanja.
@@ -421,6 +452,11 @@ async function syncOneProject(
         status: row.status,
         mobileProjectId: mobileProject.id,
         ...(mutationId ? { mutationId } : {}),
+        // R274 (issue #17 D): pogodbena verzija je sledljiva v auditu
+        // (klient trdi — strežnik je potrdil ali warningal).
+        ...(mobileProject.contractVersion !== undefined
+          ? { contractVersion: mobileProject.contractVersion }
+          : { contractVersion: null }),
         syncRevision: row.syncRevision,
         stranka: customer!.ime,
         servis: auth.kind === 'apikey' ? auth.name : 'uporabniška seja',
@@ -517,10 +553,15 @@ async function applySyncUpdate(
 
   const proposed = mobileProject.status
   let nextStatus = existingProject.status
+  // R274 (issue #17 delo): zavrnjen status se sledi z NAMENSKIM flagom —
+  // prej je warnings.length služil kot proxi, kar bi novi contractVersion
+  // legacy warning pokvaril (zavrnjeniStatus bi se nastavil brez zavrnitve).
+  let statusZavrnjen: string | undefined
   if (proposed && proposed !== existingProject.status) {
     if (isProjectStatus(proposed) && transitionAllowed({ from: existingProject.status as never, to: proposed, principal: auth, dealLocked: existingProject.dealLocked })) {
       nextStatus = proposed
     } else {
+      statusZavrnjen = proposed
       warnings.push(
         `Status "${proposed}" zavrnjen (statusni stroj) — ostaja "${existingProject.status}".`,
       )
@@ -563,8 +604,12 @@ async function applySyncUpdate(
         longitude: row.longitude,
         syncRevision: row.syncRevision,
         ...(mobileProject.mutationId ? { mutationId: mobileProject.mutationId } : {}),
+        // R274 (issue #17 D): pogodbena verzija sledljiva tudi pri posodobitvi.
+        ...(mobileProject.contractVersion !== undefined
+          ? { contractVersion: mobileProject.contractVersion }
+          : { contractVersion: null }),
         servis: auth.kind === 'apikey' ? auth.name : 'uporabniška seja',
-        zavrnjeniStatus: warnings.length > 0 ? mobileProject.status : undefined,
+        zavrnjeniStatus: statusZavrnjen,
       },
     })
     return row

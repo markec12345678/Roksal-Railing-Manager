@@ -5,6 +5,15 @@
 // R128 (issue #5 §4): `Idempotency-Key` (offline vrsta) — rezervacija ključa
 // IN snapshot odgovora v ISTI transakciji kot mutacija = exactly-once replay
 // (ponovitev istega ključa vrne originalni odgovor, brez dvojnika meritve).
+// R274 (issue #17 §A/§B/§D) — AR SKUPNI KONTRAKT gate: arMetadata, ki
+// IZRECNO nosi `contractVersion` (diskriminator isArContractPayload), se
+// validira skozi kanonično shemo skupnega kontrakta (src/lib/ar-contract.ts)
+// PRED transakcijo — napaka payload-a vrne 400 z izrecno kodo in NE
+// SPREMENI obstoječega projekta (noben zapis, noben prehod statusa, nobena
+// rezervacija Idempotency-Key). Veljaven payload se zapiše v KANONIČNI
+// (validated) obliki. Legacy payload brez contractVersion (obstoječi
+// balkonar blok) gre po stari poti NESPREMENJEN (nadgrajevljivost, R148
+// vzorec 'stari klient obrati naprej'). NI vzporednega sync protokola (§F).
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { createMeasurementSchema } from '@/lib/validations'
@@ -27,6 +36,7 @@ import {
   reserveIdempotencyIn,
   storeResponseIn,
 } from '@/lib/idempotency'
+import { ArContractError, isArContractPayload, parseArSessionPayload } from '@/lib/ar-contract'
 
 export async function POST(request: Request) {
   // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
@@ -48,12 +58,22 @@ export async function POST(request: Request) {
   const idemBinding = idemKey ? principalBindingOf(auth) : null
   try {
     const body = await request.json()
-    const validated = createMeasurementSchema.parse(body)
+    let validated = createMeasurementSchema.parse(body)
 
     // Dostop do projekta — meritev lahko doda izvajalec/vodja projekta.
     const project = await db.project.findUnique({ where: { id: validated.projectId } })
     if (!project) throw new AccessDeniedError(404, 'Projekt ne obstaja')
     assertProjectAccess(auth, project, 'update')
+
+    // R274 (issue #17 §A/§B/§D) — AR skupni kontrakt gate PRED transakcijo:
+    // kontrakt-payload (nosi contractVersion) mora biti kanonično veljaven,
+    // drugače 400 + izrecna koda — NIČ zapisov (B: 'napaka payload-a ne
+    // spremeni obstoječega projekta'). Legacy (brez contractVersion) = stara
+    // pot nespremenjena. parseArSessionPayload je ČIST — vrne kanonično
+    // obliko, ki jo zapišemo (strict — neznana polja zavrnjena, §D).
+    if (validated.arMetadata && isArContractPayload(validated.arMetadata)) {
+      validated = { ...validated, arMetadata: parseArSessionPayload(validated.arMetadata) }
+    }
 
     // Meritev + (možen prehod statusa) + audit (+ idempotenca) = ENA transakcija (§13).
     const measurement = await db.$transaction(async (tx) => {
@@ -114,6 +134,15 @@ export async function POST(request: Request) {
     }
     if (error instanceof InvalidTransitionError) {
       return NextResponse.json({ error: error.message }, { status: error.status })
+    }
+    // R274 (issue #17 §B/§D) — neveljaven kontrakt-payload = čist 400 z
+    // žično kodo (klient jo lahko obravnava programsko); originalni payload
+    // NI na voljo klientu (ne pošiljamo ga nazaj), nič ni zapisano.
+    if (error instanceof ArContractError) {
+      return NextResponse.json(
+        { error: 'Neveljaven AR skupni kontrakt', code: error.code, pot: error.pot, podrobnost: error.message },
+        { status: 400 },
+      )
     }
     if (error && typeof error === 'object' && 'issues' in error) {
       return NextResponse.json({ error: 'Neveljavni podatki', details: (error as { issues: unknown }).issues }, { status: 400 })

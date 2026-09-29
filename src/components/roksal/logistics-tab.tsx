@@ -1567,8 +1567,9 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
               žig = R256 lekcija 4: ŽIVO samo kadar je kaka akcija (zapadel
               pregled / potečena kalibracija), sicer skrit — OBE veji
               iskreni; žetoni roksal-red/green — 0 novih hex. */}
+          {/* R274 a11y: role="status" — async mini resnica oznanjena bralniku. */}
           {opremaCikelPovzetek && (
-            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            <div role="status" className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${opremaCikelPovzetek.pregledZapadel > 0 || opremaCikelPovzetek.kalPotecena > 0 ? 'bg-roksal-red' : 'bg-roksal-green'}`} />
               <span className="tabular-nums">
                 Cikl (viden seznam): {opremaCikelPovzetek.oprem} {kosBeseda(opremaCikelPovzetek.oprem)} · zapadel pregled {opremaCikelPovzetek.pregledZapadel} · potečena kalibracija {opremaCikelPovzetek.kalPotecena} · brez lokacije {opremaCikelPovzetek.brezLokacije}

@@ -1530,9 +1530,11 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
           polna resnica skladišča (dve okni, ENA matemtika); dot
           roksal-red/amber/green — RED kadar akcija (pod minimumom), AMBER
           kadar samo na meji; kondicionalna žetona ŽIVO samo kadar > 0 —
-          R256 lekcija 4; tabular-nums; 0 novih hex. */}
+          R256 lekcija 4; tabular-nums; 0 novih hex. R274 a11y detail:
+          role="status" (implicitno aria-live="polite") — async resnica po
+          mount fetchu se oznanji bralniku; pariteta R263–R273 družine. */}
       {inventuraVidenPregled !== null && (
-        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+        <div role="status" className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           <span
             aria-hidden="true"
             className={`h-2 w-2 shrink-0 rounded-full ${
@@ -1563,9 +1565,10 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
           izpeljava zalogaVrednostPregled kot PDF KPI + sklep + toast — ENA
           izpeljava): dot RED (brez cene — nič ne more oceniti) / AMBER
           (pretečena — akcija re-price) / GREEN; kondicionalna žetona ŽIVO
-          samo kadar > 0 — R256 lekcija 4; tabular-nums; 0 novih hex. */}
+          samo kadar > 0 — R256 lekcija 4; tabular-nums; 0 novih hex. R274
+          a11y detail: role="status" — async resnica oznanjena bralniku. */}
       {vrednostVidenPregled !== null && (
-        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+        <div role="status" className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           <span
             aria-hidden="true"
             className={`h-2 w-2 shrink-0 rounded-full ${

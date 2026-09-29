@@ -554,8 +554,9 @@ export function QuoteFollowUp() {
             (dve okni, ENA matemtika); dot roksal-red/green — RED kadar
             zapadla akcija; kondicionalna žetona ŽIVO samo kadar > 0 — R256
             lekcija 4; tabular-nums; 0 novih hex. */}
+        {/* R274 a11y: role="status" — async mini resnica oznanjena bralniku. */}
         {!loading && !error && pending.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+          <div role="status" className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
             <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${spomnikiPovzetek.zapadel > 0 ? 'bg-roksal-red' : 'bg-roksal-green'}`} />
             <span className="tabular-nums">
               Spomniki (viden seznam): {ponudbeLabel(spomnikiPovzetek.viden)} · zapadel {spomnikiPovzetek.zapadel} · spomnik danes {spomnikiPovzetek.danes} · brez spomnika {spomnikiPovzetek.brez}

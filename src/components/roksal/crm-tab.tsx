@@ -634,8 +634,9 @@ export function CrmTab() {
           ≥ 2 klici test dokaz); kondicionalni žig = R256 lekcija 4: ŽIVO samo
           kadar ostane slepa pika, sicer skrit — OBE veji iskreni; žetoni
           roksal-red/green — 0 novih hex. */}
+      {/* R274 a11y: role="status" — async mini resnica oznanjena bralniku. */}
       {pokritostPovzetek && (
-        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+        <div role="status" className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${pokritostPovzetek.brezN > 0 ? 'bg-roksal-red' : 'bg-roksal-green'}`} />
           <span>
             Pokritost opomnikov: {pokritostPovzetek.brezN} od {pokritostPovzetek.strankN} strank brez vpisanega opomnika · pokritost {pokritostPovzetek.pokritostNiz} %

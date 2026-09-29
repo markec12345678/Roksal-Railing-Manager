@@ -31,6 +31,23 @@ export const SYNC_DEVICE_ID_MAX = 128
 /** Varni znaki device ID-ja (brez presledkov/potnih ločil — header-safe). */
 const DEVICE_ID_RE = /^[A-Za-z0-9._:-]+$/
 
+/**
+ * R274 (issue #17, sekcija D — versioning): pogodbena verzija shared
+ * payload-a. Strežnik podriva TOČNO to verzijo:
+ *   • item z `contractVersion === 1` → sprejet;
+ *   • item BREZ `contractVersion` = pre-kontraktni klient → sprejet BREZ
+ *     novega warninga (r148 kanon: warnings smiselni, ne hrup; sledljivost
+ *     nosi audit — newValue nosi contractVersion, null za pre-kontraktne);
+ *   • item z DRUGO verzijo → per-item zavrnitev (fail-closed, retryable
+ *     false) — nikoli ugibanje, nikoli tiha migracija, nič izgubljenega
+ *     (klientu ostane lokalni payload nedotaknjen);
+ *   • neznana prihodnja polja zod ODSTRANI (strip) — ne morejo pokvariti
+ *     zapisa (issue #17 D: "unknown future fields ne povzročijo korupcije").
+ * Razširitev pogodbe = NOVA veja vrednosti + izrecna migracijska pot
+ * (dokumentirana v docs/ISSUE-17-GATE.md), ne spreminjanje pomena starih.
+ */
+export const SYNC_CONTRACT_VERSION = 1
+
 export const SYNC_GET_DEFAULT_LIMIT = 100
 export const SYNC_GET_MAX_LIMIT = 200
 

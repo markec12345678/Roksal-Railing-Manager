@@ -368,8 +368,9 @@ export function InclinometerTab({ projectId, projektIme }: { projectId: string |
               dot AMBER kadar neveljavni čakajo / GREEN; kondicionalni žeton
               ŽIVO samo kadar > 0 — R256 lekcija 4; tabular-nums; 0 novih
               hex. */}
+          {/* R274 a11y: role="status" — async mini resnica oznanjena bralniku. */}
           {projectId && nagibiStanjePovzetek !== null && (
-            <div className="flex flex-wrap items-center gap-2 self-start text-xs text-muted-foreground">
+            <div role="status" className="flex flex-wrap items-center gap-2 self-start text-xs text-muted-foreground">
               <span
                 aria-hidden="true"
                 className={`h-2 w-2 shrink-0 rounded-full ${nagibiStanjePovzetek.neveljavnih > 0 ? 'bg-roksal-amber' : 'bg-roksal-green'}`}
