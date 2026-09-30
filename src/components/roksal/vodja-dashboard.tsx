@@ -98,6 +98,10 @@ import { avtomatizacijaPregled, avtomatizacijaAuditCsv, avtomatizacijaAuditCsvFi
 // (pregled) ostane v bratu; PDF graditelj je determinističen — isti HEAD =
 // bajtno identičen PDF).
 import { generateAvtomatizacijaAuditPdf, avtomatizacijaAuditPdfFilename } from '@/lib/avtomatizacija-audit-pdf'
+// 🆕 R320 (49. člen): PDF brat JSON izvoza končne verifikacije — LOČEN lib
+// (vzorec R318 audit-pdf: jsPDF teža NE obremenjuje brata; EN VIR validacija
+// ostane v bratu; determinističen PDF — isti HEAD = bajtno identičen).
+import { generateKoncnaVerifikacijaPdf, koncnaVerifikacijaPdfFilename } from '@/lib/koncna-verifikacija-pdf'
 import {
   TrendingUp, Clock, Users, Package, Euro, CheckCircle2,
   AlertTriangle, Calendar, Truck, Bell, FileDown, Loader2, Download, Workflow,
@@ -869,6 +873,26 @@ export function VodjaDashboard() {
     }
   }
 
+  /** 🆕 R320 (49. člen, issue #1 IZVOZI družina): izvoz poročila končne
+   *  verifikacije kot DETERMINISTIČNI PDF — PDF brat JSON R316 (EN VIR isti
+   *  koncnaVerifikacija graditelj; ločen lib po vzorcu R318), brez
+   *  metapodatkov časa v vsebini (isti HEAD = bajtno identičen PDF). Fail-
+   *  verbose: razlog vidno, ne tiho (kanon). */
+  function exportKoncnaVerifikacijaPdf() {
+    try {
+      // fail-closed brezplačno: graditelj validira prek EN VIR brata —
+      // pokvarjeni vhodi ne morejo postati lažno poročilo (kanon R299/R302/R306).
+      generateKoncnaVerifikacijaPdf()
+      toast({ title: 'Poročilo končne verifikacije izvoženo ✓', description: koncnaVerifikacijaPdfFilename() })
+    } catch (e) {
+      toast({
+        title: 'Izvoz ni uspel',
+        description: e instanceof Error ? e.message : String(e),
+        variant: 'destructive',
+      })
+    }
+  }
+
   if (loading) {
     return (
       <div className="space-y-3 p-4" aria-busy="true" aria-live="polite">
@@ -1361,6 +1385,17 @@ export function VodjaDashboard() {
           >
             <Download className="h-3 w-3" aria-hidden="true" />
             JSON
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-6 gap-1 border-roksal-navy/25 px-2 text-2xs text-roksal-ink press-scale transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 dark:border-roksal-ink/25"
+            onClick={exportKoncnaVerifikacijaPdf}
+            aria-label="Izvozi poročilo končne verifikacije kot PDF"
+            title="Izvozi poročilo končne verifikacije (11 območij + 8 kriterijev + sklep) kot deterministični PDF"
+          >
+            <Download className="h-3 w-3" aria-hidden="true" />
+            PDF
           </Button>
         </div>
         <ul className="mt-1 space-y-0.5" data-testid="koncna-verifikacija-vrstice">

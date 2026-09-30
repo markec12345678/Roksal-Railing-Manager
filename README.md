@@ -103,7 +103,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 45 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **4461** (255 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **4470** (256 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 143 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -425,6 +425,20 @@ Sheet z 6 podzavihki:
   HEAD = bajtno identična datoteka); **DETERMINIZEM ŽIVO NA BAJTIH** v E2E
   Z0ap (dva izvoza bajtno enaka — prvi PDF z živim bajtnim determinizmom v
   družini; %PDF- magija + MIME application/pdf na blob bajtih)
+- **Izvoz poročila končne verifikacije kot PDF** (R320, 49. člen — issue #1
+  **IZVOZI družina**, Deliverable 7 kot tisk za pisarno/revizijo; KOLIZIJA:
+  vzporedna seja je vzela številko R319 — runda preimenovana po kanonu
+  vzporednih sej): vodjin končna-verifikacija blok dobi gumb `PDF` (PDF brat
+  JSON R316 — vzorec R318 audit-pdf, LOČEN lib `src/lib/koncna-verifikacija-pdf.ts`) —
+  `buildKoncnaVerifikacijaPdfDoc` = ČISTA projekcija `koncnaVerifikacija`
+  validacije (EN VIR — sklep = PETI potrošnik ENEGA niza [zaslon + JSON +
+  testi + docs + PDF]; kriteriji verbatim) — **determinističen** PDF (KPI ×4
+  izračunani iz kv; tabela dokaznih plasti po območjih [plasti pipe-joined]
+  + tabela 8 kriterijev; fiksni formatni žig `KONCNA_PDF_ZIG_FIKSNI` + FNV
+  soli 0xc5–0xc8 [register — bratje NE delijo semen]; brez časa v vsebini —
+  isti HEAD = bajtno identična datoteka); **DETERMINIZEM ŽIVO NA BAJTIH** v
+  E2E Z0aq (dva izvoza bajtno enaka; %PDF- magija + MIME application/pdf na
+  blob bajtih)
 - **Stil val 9 — press-scale taktilna pariteta vodja izvozne družine** (R318):
   `press-scale` mikrointerakcija ×5 na vodja izvoznih gumbov (dnevni CSV R163
   + Poročilo PDF + JSON R316 + audit CSV R317 + audit PDF R318) — taktilna
@@ -534,7 +548,7 @@ Sheet z 6 podzavihki:
 | **PWA** | Service Worker + Web Manifest |
 | **Temnitveni način** | [next-themes](https://github.com/pacocoursey/next-themes) |
 | **Validacija** | [Zod 4](https://zod.dev/) |
-| **Testiranje** | [Vitest 4](https://vitest.dev/) (4461 testov + globalSetup embedded PG) |
+| **Testiranje** | [Vitest 4](https://vitest.dev/) (4470 testov + globalSetup embedded PG) |
 | **Paketni upravitelj** | [Bun](https://bun.sh/) |
 | **Linting** | ESLint 9 + eslint-config-next |
 
@@ -656,7 +670,7 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `bun run dev` | Zažene Next.js dev server (port 3000) |
 | `bun run build` | Produkcijska build (build-prepare: generate + migrate deploy + seed) |
 | `bun run start` | Zažene produkcijski server |
-| `bun run test` | Vsi testi (vitest, 4461, embedded PG prek globalSetup) |
+| `bun run test` | Vsi testi (vitest, 4470, embedded PG prek globalSetup) |
 | `bun run check` | tsc --noEmit + vitest run (en ukaz za vse) |
 | `bunx tsc --noEmit` | Tipska kontrola celotnega projekta (trenutno 0 napak) |
 | `bun run lint` | ESLint preverjanje |

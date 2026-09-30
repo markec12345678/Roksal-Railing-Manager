@@ -49,10 +49,10 @@ describe('r317 STIL val 8 — izvozna družina: focus-visible ring STRAŽAR', ()
   const gumbi = izvozniGumbi()
   const AMBER_ZETONI = new Set(['vodja-dashboard'])
 
-  it('anti-stale: 54 izvoznih gumbov v drevesu (53 pred R318 + NOV audit PDF)', () => {
-    expect(gumbi.length).toBeGreaterThanOrEqual(54)
-    // novi gumb 48. člena je prisoten
-    expect(gumbi.some((g) => g.okno.includes('Izvozi avtomatizacijski audit kot PDF'))).toBe(true)
+  it('anti-stale: 55 izvoznih gumbov v drevesu (54 pred R320 + NOV končna verifikacija PDF)', () => {
+    expect(gumbi.length).toBeGreaterThanOrEqual(55)
+    // novi gumb 49. člena je prisoten
+    expect(gumbi.some((g) => g.okno.includes('Izvozi poročilo končne verifikacije kot PDF'))).toBe(true)
   })
 
   it('vsak izvozni gumb nosi IZRECEN focus-visible ring žeton (ne samo ui baza)', () => {
@@ -79,13 +79,14 @@ describe('r317 STIL val 8 — izvozna družina: focus-visible ring STRAŽAR', ()
       (g) => g.okno.includes('focus-visible:ring-roksal-amber/50') && !AMBER_ZETONI.has(g.datoteka),
     )
     expect(kršitve).toEqual([])
-    // R318 register je ŽIV: vodja res nosi 4 amber gumbe (dnevni CSV R163 +
-    // JSON 46. + CSV 47. + PDF 48. člen — isti vodja blok glavni vzorec z
-    // offset-2; PIN SHIFT ×3 → ×4 z obrnjeno regresijo)
+    // R320 register je ŽIV: vodja res nosi 5 amber gumbov (dnevni CSV R163 +
+    // JSON 46. + CSV 47. + audit PDF 48. + končna verifikacija PDF 49. člen —
+    // isti vodja blok glavni vzorec z offset-2; PIN SHIFT ×4 → ×5 z obrnjeno
+    // regresijo)
     const vodjaAmber = gumbi.filter(
       (g) => g.datoteka === 'vodja-dashboard' && g.okno.includes('focus-visible:ring-roksal-amber/50'),
     )
-    expect(vodjaAmber.length).toBe(4)
+    expect(vodjaAmber.length).toBe(5)
     const ariaVseh = vodjaAmber.map((g) => {
       const m = g.okno.match(/aria-label="([^"]+)"/)
       return m ? m[1] : ''
@@ -94,6 +95,7 @@ describe('r317 STIL val 8 — izvozna družina: focus-visible ring STRAŽAR', ()
     expect(ariaVseh).toContain('Izvozi poročilo končne verifikacije kot JSON')
     expect(ariaVseh).toContain('Izvozi avtomatizacijski audit kot CSV')
     expect(ariaVseh).toContain('Izvozi avtomatizacijski audit kot PDF')
+    expect(ariaVseh).toContain('Izvozi poročilo končne verifikacije kot PDF')
   })
 
   it('R317 harmonizirana vrstica: site-survey PDF gumb ima družinski ring (regresijski pin — nazaj = fail)', () => {
