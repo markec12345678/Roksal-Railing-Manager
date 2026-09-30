@@ -93,6 +93,11 @@ import type { ZmogljivostPregled } from '@/lib/zmogljivost-pregled'
 // dvojnega sklepa).
 import { koncnaVerifikacija, koncnaVerifikacijaJson } from '@/lib/koncna-verifikacija'
 import { avtomatizacijaPregled, avtomatizacijaAuditCsv, avtomatizacijaAuditCsvFilename } from '@/lib/avtomatizacija-pregled'
+// 🆕 R318 (48. člen): PDF brat izvoza — LOČEN lib (družinski vzorec R302:
+// logistics-tab uvaža buildKonfliktiPdfDoc iz konflikti-pdf; EN VIR validacija
+// (pregled) ostane v bratu; PDF graditelj je determinističen — isti HEAD =
+// bajtno identičen PDF).
+import { generateAvtomatizacijaAuditPdf, avtomatizacijaAuditPdfFilename } from '@/lib/avtomatizacija-audit-pdf'
 import {
   TrendingUp, Clock, Users, Package, Euro, CheckCircle2,
   AlertTriangle, Calendar, Truck, Bell, FileDown, Loader2, Download, Workflow,
@@ -844,6 +849,26 @@ export function VodjaDashboard() {
     }
   }
 
+  /** 🆕 R318 (48. člen, issue #1 IZVOZI družina): izvoz avtomatizacijskega
+   *  audita kot DETERMINISTIČNI PDF — EN VIR (isti pregled validacije kot
+   *  CSV brat), brez metapodatkov časa v vsebini (isti HEAD = bajtno
+   *  identičen PDF — kanon 46./47. člen). Fail-verbose: razlog vidno, ne
+   *  tiho (kanon). */
+  function exportAvtomatizacijaAuditPdf() {
+    try {
+      // fail-closed brezplačno: graditelj validira prek EN VIR pregleda —
+      // pokvaren audit ne more postati lažno poročilo (kanon R299/R302/R306).
+      generateAvtomatizacijaAuditPdf()
+      toast({ title: 'Avtomatizacijski audit izvožen ✓', description: avtomatizacijaAuditPdfFilename() })
+    } catch (e) {
+      toast({
+        title: 'Izvoz ni uspel',
+        description: e instanceof Error ? e.message : String(e),
+        variant: 'destructive',
+      })
+    }
+  }
+
   if (loading) {
     return (
       <div className="space-y-3 p-4" aria-busy="true" aria-live="polite">
@@ -910,7 +935,7 @@ export function VodjaDashboard() {
         <Button
           size="sm"
           variant="outline"
-          className="h-8 gap-1.5 border-roksal-navy/25 dark:border-roksal-ink/25 text-xs text-roksal-ink transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2"
+          className="h-8 gap-1.5 border-roksal-navy/25 dark:border-roksal-ink/25 text-xs text-roksal-ink press-scale transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2"
           onClick={exportDailyCsv}
           aria-label="Izvozi dnevni pregled vodje kot CSV"
           title="Izvozi dnevni pregled (KPI, opozorila in današnji termini) kot CSV za Excel"
@@ -922,7 +947,7 @@ export function VodjaDashboard() {
         <Button
           size="sm"
           variant="outline"
-          className="ml-auto h-8 gap-1.5 border-roksal-navy/25 dark:border-roksal-ink/25 text-xs text-roksal-ink transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2"
+          className="ml-auto h-8 gap-1.5 border-roksal-navy/25 dark:border-roksal-ink/25 text-xs text-roksal-ink press-scale transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2"
           onClick={downloadReport}
           disabled={reportLoading}
           aria-label="Prenesi mesečno PDF poročilo"
@@ -1240,19 +1265,32 @@ export function VodjaDashboard() {
           >
             {avtAudit.stObmocij} območij · {avtAudit.poRazredu.DETERMINISTICNO} DETERMINISTIČNO · {avtAudit.poRazredu.AI_OPCIJSKO} AI-OPCIJSKO
           </p>
-          {/* 🆕 R317 (47. člen): izvoz istega EN VIR audita kot CSV —
-              a11y družina (aria-label + title, R291/R293 precedens); ISTI
-              gumb vzorec kot JSON brat (46. člen) — amber ring par (WYSIWYG). */}
+          {/* 🆕 R317 (47. člen) + R318 (48. člen): izvoz istega EN VIR audita
+              kot CSV in PDF — a11y družina (aria-label + title, R291/R293
+              precedens); ISTI gumb vzorec kot JSON brat (46. člen) — amber
+              ring par (WYSIWYG); PDF brat (48. člen) nosi ISTI vzorec
+              (bratska simetrija blok glave — register val8 val9 ×4). */}
           <Button
             size="sm"
             variant="outline"
-            className="h-6 gap-1 border-roksal-navy/25 px-2 text-2xs text-roksal-ink transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 dark:border-roksal-ink/25"
+            className="h-6 gap-1 border-roksal-navy/25 px-2 text-2xs text-roksal-ink press-scale transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 dark:border-roksal-ink/25"
             onClick={exportAvtomatizacijaAuditCsv}
             aria-label="Izvozi avtomatizacijski audit kot CSV"
             title="Izvozi avtomatizacijski audit (11 območij + klasifikacije + poti) kot deterministični CSV"
           >
             <Download className="h-3 w-3" aria-hidden="true" />
             CSV
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-6 gap-1 border-roksal-navy/25 px-2 text-2xs text-roksal-ink press-scale transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 dark:border-roksal-ink/25"
+            onClick={exportAvtomatizacijaAuditPdf}
+            aria-label="Izvozi avtomatizacijski audit kot PDF"
+            title="Izvozi avtomatizacijski audit (11 območij + klasifikacije + poti) kot deterministični PDF"
+          >
+            <Download className="h-3 w-3" aria-hidden="true" />
+            PDF
           </Button>
         </div>
         <ul className="mt-1 space-y-0.5" data-testid="avtomatizacija-vrstice">
@@ -1316,7 +1354,7 @@ export function VodjaDashboard() {
           <Button
             size="sm"
             variant="outline"
-            className="h-6 gap-1 border-roksal-navy/25 px-2 text-2xs text-roksal-ink transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 dark:border-roksal-ink/25"
+            className="h-6 gap-1 border-roksal-navy/25 px-2 text-2xs text-roksal-ink press-scale transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 dark:border-roksal-ink/25"
             onClick={exportKoncnaVerifikacijaJson}
             aria-label="Izvozi poročilo končne verifikacije kot JSON"
             title="Izvozi poročilo končne verifikacije (11 območij + 8 kriterijev + sklep) kot deterministični JSON"

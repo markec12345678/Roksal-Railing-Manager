@@ -148,14 +148,22 @@ export function avtomatizacijaPregled(
 // propagira TypeError z imenom graditelja (kanon R299/R302/R306).
 // ---------------------------------------------------------------------------
 
-/** Glave CSV (WYSIWYG — ISTI niz kot prikazna tabela na vodji). */
-const AUDIT_CSV_GLAVE: readonly string[] = [
+/** Glave CSV (WYSIWYG — ISTI niz kot prikazna tabela na vodji).
+ *  🆕 R318 (48. člen): IZVOŽEN iz modula — PDF brat (avtomatizacija-audit-pdf)
+ *  uvaža ISTI niz → stolpci PDF in CSV NE moreta divergirati po konstrukciji
+ *  (vzorec KONFLIKTI_CSV_GLAVA R302: glava EN VIR za celo izvozno družino). */
+export const AUDIT_CSV_GLAVE: readonly string[] = [
   'Območje',
   'Razred',
   'Implementacije',
   'Dokazi (testi)',
   'Opomba',
 ]
+
+/** 🆕 R318 (48. člen): iskren vir niz meta vrstice — EN VIR za OBE meta vrstici
+ *  (CSV 'Vir;…' + PDF sklepno vrstico): zaslon, testi, CSV in PDF berejo ISTI
+ *  niz (NIČ dvojnega vira). Brez časa/hash — determinizem kanon 46. člen. */
+export const AUDIT_VIR_NIZ = 'AVTOMATIZACIJA_AUDIT — isti HEAD = bajtno identičen izvoz'
 
 /**
  * Zgrodi deterministični CSV avtomatizacijskega audita. Privzeti vhod = EN
@@ -197,7 +205,9 @@ export function avtomatizacijaAuditCsv(
   const meta: CsvValue[][] = [
     [], // prazna ločilna vrstica pred povzetkom (preglednost v Excelu)
     ['Sklep', pregled.sklep],
-    ['Vir', 'AVTOMATIZACIJA_AUDIT — isti HEAD = bajtno identičen izvoz'],
+    // R318 (48. člen): vir niz = izvožena konstanta AUDIT_VIR_NIZ (EN VIR —
+    // PDF brat nosi ISTI niz; izpis bajtno nespremenjen — testi R317 to pinesejo)
+    ['Vir', AUDIT_VIR_NIZ],
   ]
   return toCsv([...AUDIT_CSV_GLAVE], [...podatkovne, ...meta])
 }

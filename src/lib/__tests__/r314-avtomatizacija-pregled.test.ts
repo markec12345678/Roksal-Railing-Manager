@@ -203,6 +203,8 @@ describe('r314 STRAŽAR — vodja audit blok (EN VIR, NIČ dvojnega sklepa)', ()
     // R317 PIN SHIFT (47. člen: vodja dobi tudi CSV izvoz — enojni → trojni
     // import, precedens R306/R309/R314/R315/R316) z OBRNJENO regresijo —
     // stari enojni import je prepovedan (polzaporedje ne sme nazaj).
+    // R318: PDF brat ima LOČEN lib (družinski vzorec R302) — trojni pin
+    // OSTANE nespremenjen (r318 test pina PDF import vrstico).
     expect(src).toContain(
       "import { avtomatizacijaPregled, avtomatizacijaAuditCsv, avtomatizacijaAuditCsvFilename } from '@/lib/avtomatizacija-pregled'",
     )

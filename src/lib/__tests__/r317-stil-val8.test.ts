@@ -8,6 +8,11 @@
 // R317: site-survey PDF gumb je edini brez izrecnega žetona (speto na
 // generično bazo) → harmoniziran na družinski kanon navy/40.
 //
+// R318 PIN SHIFT (48. člen): vodja blok glava dobi ČETRTI amber gumb (PDF
+// brat CSV-ja — bratska simetrija; register ×3 → ×4 z obrnjeno regresijo:
+// stari ×3 pin je prepovedan — polzaporedje ne sme nazaj; precedens
+// R316 JSON → R317 CSV → R318 PDF).
+//
 // STRAŽAR (kanon GLOBALNI sken r310/r316 prenesen na izvozno družino):
 //  • vsak izvozni gumb (aria-label="Izvozi …") nosi IZRECEN
 //    focus-visible:ring-2 žeton (ne samo baza);
@@ -44,10 +49,10 @@ describe('r317 STIL val 8 — izvozna družina: focus-visible ring STRAŽAR', ()
   const gumbi = izvozniGumbi()
   const AMBER_ZETONI = new Set(['vodja-dashboard'])
 
-  it('anti-stale: 53 izvoznih gumbov v drevesu (52 pred R317 + NOV audit CSV)', () => {
-    expect(gumbi.length).toBeGreaterThanOrEqual(53)
-    // novi gumb 47. člena je prisoten
-    expect(gumbi.some((g) => g.okno.includes('Izvozi avtomatizacijski audit kot CSV'))).toBe(true)
+  it('anti-stale: 54 izvoznih gumbov v drevesu (53 pred R318 + NOV audit PDF)', () => {
+    expect(gumbi.length).toBeGreaterThanOrEqual(54)
+    // novi gumb 48. člena je prisoten
+    expect(gumbi.some((g) => g.okno.includes('Izvozi avtomatizacijski audit kot PDF'))).toBe(true)
   })
 
   it('vsak izvozni gumb nosi IZRECEN focus-visible ring žeton (ne samo ui baza)', () => {
@@ -74,12 +79,13 @@ describe('r317 STIL val 8 — izvozna družina: focus-visible ring STRAŽAR', ()
       (g) => g.okno.includes('focus-visible:ring-roksal-amber/50') && !AMBER_ZETONI.has(g.datoteka),
     )
     expect(kršitve).toEqual([])
-    // register je ŽIV: vodja res nosi 3 amber gumba (dnevni CSV R163 + JSON
-    // 46. + CSV 47. člen — isti vodja blok glavni vzorec z offset-2)
+    // R318 register je ŽIV: vodja res nosi 4 amber gumbe (dnevni CSV R163 +
+    // JSON 46. + CSV 47. + PDF 48. člen — isti vodja blok glavni vzorec z
+    // offset-2; PIN SHIFT ×3 → ×4 z obrnjeno regresijo)
     const vodjaAmber = gumbi.filter(
       (g) => g.datoteka === 'vodja-dashboard' && g.okno.includes('focus-visible:ring-roksal-amber/50'),
     )
-    expect(vodjaAmber.length).toBe(3)
+    expect(vodjaAmber.length).toBe(4)
     const ariaVseh = vodjaAmber.map((g) => {
       const m = g.okno.match(/aria-label="([^"]+)"/)
       return m ? m[1] : ''
@@ -87,6 +93,7 @@ describe('r317 STIL val 8 — izvozna družina: focus-visible ring STRAŽAR', ()
     expect(ariaVseh).toContain('Izvozi dnevni pregled vodje kot CSV')
     expect(ariaVseh).toContain('Izvozi poročilo končne verifikacije kot JSON')
     expect(ariaVseh).toContain('Izvozi avtomatizacijski audit kot CSV')
+    expect(ariaVseh).toContain('Izvozi avtomatizacijski audit kot PDF')
   })
 
   it('R317 harmonizirana vrstica: site-survey PDF gumb ima družinski ring (regresijski pin — nazaj = fail)', () => {
