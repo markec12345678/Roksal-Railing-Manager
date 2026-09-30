@@ -64,8 +64,10 @@ import { todayStamp } from './csv-export'
 export const KOLEDAR_PREGLEDOV_ICS_PRODID = '-//Roksal//Koledar pregledov//SL'
 
 /** ICS izpustni znaki za TEXT polja (RFC 5545 §3.3.11): poševnica nazaj,
- *  podpičje, vejica, nova vrstica (\n dobeseden par znakov). */
-function icsBesedilo(v: string): string {
+ *  podpičje, vejica, nova vrstica (\n dobeseden par znakov).
+ *  R298: IZVOŽENA — ICS brat tedenski-vozni-red-ics uporablja ISTO mašinerijo
+ *  (ENA izpeljava, vzorec R295 downloadTextFile — nič dvojnega). */
+export function icsBesedilo(v: string): string {
   return v
     .replace(/\\/g, '\\\\')
     .replace(/;/g, '\\;')
@@ -74,8 +76,9 @@ function icsBesedilo(v: string): string {
 }
 
 /** Dolžina niza v UTF-8 oktetih (čisto iz code pointov — brez odvisnosti,
- *  izomorfno node/brskalnik; useda za RFC §3.1 zavijanje). */
-function utf8Okteti(s: string): number {
+ *  izomorfno node/brskalnik; useda za RFC §3.1 zavijanje). R298: IZVOŽENA
+ *  (ENA izpeljava zavijanja čez ICS družino). */
+export function utf8Okteti(s: string): number {
   let n = 0
   for (const ch of s) {
     const c = ch.codePointAt(0) as number
@@ -85,8 +88,9 @@ function utf8Okteti(s: string): number {
 }
 
 /** Zavije LOGIČNO vrstico v RFC 5545 §3.1 fizične vrstice: prva ≤ 75 oktetov,
- *  nadaljevanja ' ' + ≤ 74 oktetov; rez po mejah znakov (čšž nikoli na polovici). */
-function zavijVrstico(logicna: string): string[] {
+ *  nadaljevanja ' ' + ≤ 74 oktetov; rez po mejah znakov (čšž nikoli na polovici).
+ *  R298: IZVOŽENA (ENA izpeljava zavijanja čez ICS družino). */
+export function zavijVrstico(logicna: string): string[] {
   if (utf8Okteti(logicna) <= 75) return [logicna]
   const fyzicne: string[] = []
   let ostane = logicna
@@ -131,8 +135,8 @@ function naslednjiDan(basic: string): string {
 }
 
 /** now (Date) → ICS UTC 'YYYYMMDDTHHMMSSZ' (DTSTAMP — deterministično iz
- *  parametra, F4). */
-function icsZigUtc(now: Date): string {
+ *  parametra, F4). R298: IZVOŽENA — DTSTAMP brata ISTA projekcija ure. */
+export function icsZigUtc(now: Date): string {
   const d = String(now.getUTCDate()).padStart(2, '0')
   const m = String(now.getUTCMonth() + 1).padStart(2, '0')
   const h = String(now.getUTCHours()).padStart(2, '0')

@@ -12,7 +12,7 @@ import { Separator } from '@/components/ui/separator'
 import { useToast } from '@/hooks/use-toast'
 import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'
 import { casOznaka } from '@/lib/osvezitev-fokus'
-import { downloadCsv, downloadCsvText, todayStamp } from '@/lib/csv-export'
+import { downloadCsv, downloadCsvText, downloadTextFile, todayStamp } from '@/lib/csv-export'
 import { icsEscape, icsFold, icsUtc } from '@/lib/ics'
 import { allowedTransitions } from '@/lib/equipment-lifecycle'
 import {
@@ -62,6 +62,13 @@ import {
   tedenskiVozniRedCsv,
   tedenskiVozniRedCsvFilename,
 } from '@/lib/tedenski-vozni-red-csv'
+// R298 — ICS brat (28. člen 'izvozi' družine): ISTI razgled TRETJI potrošnik
+// (strip R292 + CSV R292 + ICS R298 — ENA izpeljava, nič dvojnega); ICS
+// mašinerija UVOŽENA iz R296 brata (zavijanje/izpustni znaki/DTSTAMP).
+import {
+  tedenskiVozniRedIcs,
+  tedenskiVozniRedIcsFilename,
+} from '@/lib/tedenski-vozni-red-ics'
 import { cenikDatumIso } from '@/lib/cenik-pdf'
 import { QC_TEMPLATE, computePassed, countDefects } from '@/lib/qc-gate'
 import { IEV_TEMPLATE } from '@/lib/installation-evidence'
@@ -405,6 +412,8 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
   const [ocCsvVTeku, setOcCsvVTeku] = useState(false)
   // R292 — dvoklik guard tedenskega CSV (pariteta ptVTeku R265/ocVTeku R266).
   const [tedenskiCsvVTeku, setTedenskiCsvVTeku] = useState(false)
+  // R298 — dvoklik guard ICS izvoza (pariteta tedenskiCsvVTeku R292).
+  const [tedenskiIcsVTeku, setTedenskiIcsVTeku] = useState(false)
 
   // R266 — ENA izpeljava vhodov za cikl opreme (WYSIWYG ISTI vir kot PDF
   // KPI, tabela, sklep, F2 mini-vrstica IN toast): DTO pruning iz ISTEGA
@@ -482,6 +491,41 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
       toast({ title: 'Izvoz CSV ni uspel', description: err instanceof Error ? err.message : String(err), variant: 'destructive' })
     } finally {
       setTedenskiCsvVTeku(false)
+    }
+  }
+
+  // R298 — 28. člen 'izvozi' družine (P1-f): TEDENSKI VOZNI RED ICS — ICS
+  // brat PDF R256 + CSV R292: naslednjih 7 dni kot RFC 5545 koledar —
+  // EKIPA uvozi razpored v telefon (DTSTART/DTEND = resnične ure iz
+  // datumZacetka/datumKonca; DTEND izpuščen ko konec ni vpisan — NIKOLI
+  // izmišljen iz predvidenih ur). VEDNO viden (P1-k/R232 kanon): prazno
+  // okno → iskren fail-closed toast, NIKOLI prazna datoteka; toast = ISTI
+  // lib sklep kot razgled/CSV (WYSIWYG); fail-verbose catch (R291/R292
+  // vzorec); dvoklik guard (pariteta tedenskiCsvVTeku).
+  const handleTedenskiIcs = () => {
+    if (tedenskiIcsVTeku) return
+    setTedenskiIcsVTeku(true)
+    try {
+      const now = new Date()
+      const pov = tedenskiPregledPovzetek(vozniRedVnosi, now)
+      if (pov === null) {
+        toast({
+          title: 'Ni terminov v naslednjih 7 dneh',
+          description: 'ICS se izvozi, ko je vpisan termin v prihajajočem tednu.',
+        })
+        return
+      }
+      const { ics, dogodki } = tedenskiVozniRedIcs(vozniRedVnosi, now)
+      const ime = tedenskiVozniRedIcsFilename(now)
+      downloadTextFile(ime, ics, 'text/calendar;charset=utf-8')
+      toast({
+        title: `Tedenski vozni red prenešen v ICS (${ime})`,
+        description: `${dogodki} dogodkov za koledarsko aplikacijo — ${tedenskiRazgledSklep(pov)}.`,
+      })
+    } catch (err) {
+      toast({ title: 'Izvoz ICS ni uspel', description: err instanceof Error ? err.message : String(err), variant: 'destructive' })
+    } finally {
+      setTedenskiIcsVTeku(false)
     }
   }
 
@@ -1347,9 +1391,20 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                     title={`${d.ime} ${cenikDatumIso(d.dan)}: ${d.terminov} ${terminBeseda(d.terminov)} — ${sirina} % najbolj obremenjenega dne${d.preklicani > 0 ? ` · preklicani ${d.preklicani}` : ''}`}
                   >
                     <p className="truncate text-2xs font-medium text-roksal-ink">{d.ime.slice(0, 3)}</p>
-                    <p className="text-2xs text-muted-foreground tabular-nums">{cenikDatumIso(d.dan)}</p>
+                    {/* R298 — definicijski naslov datuma (izrečena resnica:
+                        ISO dan okna, ISTI izpis kot PDF/CSV bratje). */}
+                    <p
+                      className="text-2xs text-muted-foreground tabular-nums"
+                      title={`${d.ime} — ${cenikDatumIso(d.dan)} (danes + ${razgled.okno.indexOf(d.dan)} dni, UTC)`}
+                    >
+                      {cenikDatumIso(d.dan)}
+                    </p>
+                    {/* R298 — definicijski naslov številčne resnice (izrečena
+                        izpeljava: števec = VSI vidni termini dneva, preklicani
+                        ŠTETI — viden odpad, PDF pariteta). */}
                     <p
                       className={`text-2xs tabular-nums ${d.preklicani > 0 ? 'font-medium text-roksal-red' : 'text-muted-foreground'}`}
+                      title={d.terminov === 0 ? 'Brez terminov — iskreno prazen dan' : `Vsi vidni termini dneva (preklicani ŠTETI — viden odpad)`}
                     >
                       {d.terminov}
                     </p>
@@ -1486,6 +1541,27 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
             >
               <FileSpreadsheet aria-hidden="true" className="h-4 w-4 mr-1" /> CSV
             </Button>
+            {/* R298 — 28. člen 'izvozi' družine (P1-f): TEDENSKI VOZNI RED
+                ICS — ICS brat PDF R256 + CSV R292 (ISTI tedenskiRazgled —
+                TRETJI potrošnik ISTEGA razgleda): naslednjih 7 dni kot RFC
+                5545 koledar za EKIPO (uvozi v telefon; DTSTART/DTEND =
+                resnične ure + predvideno trajanje po R139/R172 kanonu;
+                STATUS = CANCELLED/TENTATIVE/CONFIRMED preslikava R139/R172;
+                X-ROKSAL-STATUS = status VERBATIM). VEDNO viden (P1-k/R232
+                kanon): prazno okno → iskren fail-closed toast, NIKOLI
+                prazna datoteka; dvoklik guard (pariteta tedenskiCsvVTeku
+                R292); ISTI žetoni kot bratje — 0 novih hex. */}
+            <Button
+              type="button"
+              variant="outline"
+              aria-label="Izvozi tedenski pregled montaž kot ICS koledar"
+              title="Tedenski pregled montaž kot ICS — naslednjih 7 dni v telefonov koledar (ekipa uvozi razpored; ure in statusi iz iste resnice kot PDF/CSV)"
+              disabled={tedenskiIcsVTeku}
+              className="shrink-0 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              onClick={handleTedenskiIcs}
+            >
+              <Calendar aria-hidden="true" className="h-4 w-4 mr-1" /> Tedenski ICS
+            </Button>
             {/* R265 — 21. člen 'izvozi' družine (P1-f): PROJEKTI — TERMINI
                 PREGLED PDF — presek VSEH terminov (/api/schedules — FRESH
                 fetch ISTEGA endpointa ob kliku, R244/R245/R264 precedens;
@@ -1517,6 +1593,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
               dobesedni PREDPONA — R255 resnica ostaja bajtno ISTA). */}
           <p className="text-2xs text-muted-foreground">
             CSV = prikazani termini · ICS = koledar v telefonu · PDF = vozni red (kronološki) · Tedenski = naslednjih 7 dni (po dnevih) · Projekti = projekti × termini (pokritost po projektih) · Tedenski CSV = ista resnica kot PDF
+            {' · Tedenski ICS = naslednjih 7 dni v telefonov koledar'}
           </p>
 
           {/* R244 — vlogo-osveščen vodič (R242/R243 recept): viden SAMO, ko
