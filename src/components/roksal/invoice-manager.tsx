@@ -155,9 +155,9 @@ const STATUS_META: Record<Invoice['status'], { label: string; className: string;
   // ISTA pot kot team-tab R228 / geselne površine R227: osnutek je NEVTRALNO
   // stanje — žetoni se sami prilagodijo; pika muted-foreground, R226 vzorec).
   OSNUTEK: { label: 'Osnutek', className: 'bg-muted text-muted-foreground border-border', dot: 'bg-muted-foreground' },
-  IZDAN: { label: 'Izdan', className: 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800', dot: 'bg-amber-500' },
-  PLACAN: { label: 'Plačan', className: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800', dot: 'bg-emerald-500' },
-  STORNIRAN: { label: 'Storniran', className: 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border-red-300 dark:border-red-800', dot: 'bg-red-500' },
+  IZDAN: { label: 'Izdan', className: 'bg-roksal-amber/10 text-roksal-ink border-roksal-amber/40', dot: 'bg-roksal-amber' },
+  PLACAN: { label: 'Plačan', className: 'bg-roksal-green/10 text-roksal-ink border-roksal-green/40', dot: 'bg-roksal-green' },
+  STORNIRAN: { label: 'Storniran', className: 'bg-roksal-red/10 text-roksal-ink border-roksal-red/40', dot: 'bg-roksal-red' },
 }
 
 const eur = (n: number) =>
@@ -1020,7 +1020,7 @@ export function InvoiceManager() {
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between gap-2">
           <CardTitle className="flex items-center gap-2 text-base">
-            <Receipt aria-hidden="true" className="h-4 w-4 text-amber-500 dark:text-amber-400" />
+            <Receipt aria-hidden="true" className="h-4 w-4 text-roksal-amber" />
             Računi <span className="text-xs font-normal text-muted-foreground">(FURS)</span>
           </CardTitle>
           {/* R180 — pečat svežine (družina R170-R178, 9 površin): tight-header klasni
@@ -1071,7 +1071,7 @@ export function InvoiceManager() {
               <Button
                 size="sm"
                 onClick={() => setDialogOpen(true)}
-                className="h-8 bg-amber-500 text-navy-900 hover:bg-amber-400 press-scale"
+                className="h-8 bg-roksal-amber text-roksal-navy hover:bg-roksal-amber/90 press-scale"
               >
                 <Plus aria-hidden="true" className="h-4 w-4" /> Nov račun
               </Button>
@@ -1103,28 +1103,28 @@ export function InvoiceManager() {
               {/* R290 MANDATORY STIL: hover title na KPI boxih — izpeljava
                   izrečena (WYSIWYG preglednost; ISTA izpeljava kot legenda
                   izvozne skupine in PDF KPI — ENA resnica na treh mestih). */}
-              <div className="rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 p-2 text-center transition-all hover:shadow-sm hover:border-emerald-300/70" title="Plačano = vsi računi s statusom PLACAN (vsota zneskov)">
-                <div className="text-2xs uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Plačano</div>
-                <div className="text-sm font-bold tabular-nums text-emerald-800 dark:text-emerald-200">{eur(summary.placano)}</div>
+              <div className="rounded-lg border border-roksal-green/30 bg-roksal-green/10 p-2 text-center transition-all hover:shadow-sm hover:border-roksal-green/50" title="Plačano = vsi računi s statusom PLACAN (vsota zneskov)">
+                <div className="text-2xs uppercase tracking-wide text-roksal-ink">Plačano</div>
+                <div className="text-sm font-bold tabular-nums text-roksal-ink">{eur(summary.placano)}</div>
               </div>
-              <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-2 text-center transition-all hover:shadow-sm hover:border-amber-300/70" title="Odprto = izdano (IZDAN + PLACAN), neplačano — ISTI trikot kot prihodki PDF">
-                <div className="text-2xs uppercase tracking-wide text-amber-700 dark:text-amber-300">Odprto</div>
-                <div className="text-sm font-bold tabular-nums text-amber-800 dark:text-amber-200">
+              <div className="rounded-lg border border-roksal-amber/30 bg-roksal-amber/10 p-2 text-center transition-all hover:shadow-sm hover:border-roksal-amber/50" title="Odprto = izdano (IZDAN + PLACAN), neplačano — ISTI trikot kot prihodki PDF">
+                <div className="text-2xs uppercase tracking-wide text-roksal-ink">Odprto</div>
+                <div className="text-sm font-bold tabular-nums text-roksal-ink">
                   {eur(Math.max(0, summary.izdano - summary.placano))}
                 </div>
               </div>
               <div
-                className={`rounded-lg border p-2 text-center transition-all hover:shadow-sm ${summary.zapadloN > 0 ? 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 hover:border-red-300/70' : 'border-border bg-muted/40'}`}
+                className={`rounded-lg border p-2 text-center transition-all hover:shadow-sm ${summary.zapadloN > 0 ? 'border-roksal-red/30 bg-roksal-red/10 hover:border-roksal-red/50' : 'border-border bg-muted/40'}`}
                 title="Zapadlo = izdani računi prek roka plačila (rok = izdaja + rokPlacilaDni)"
               >
-                <div className={`text-2xs uppercase tracking-wide ${summary.zapadloN > 0 ? 'text-red-700 dark:text-red-300' : 'text-muted-foreground'}`}>
+                <div className={`text-2xs uppercase tracking-wide ${summary.zapadloN > 0 ? 'text-roksal-ink' : 'text-muted-foreground'}`}>
                   Zapadlo
                 </div>
-                <div className={`text-sm font-bold tabular-nums ${summary.zapadloN > 0 ? 'text-red-800 dark:text-red-200' : 'text-muted-foreground'}`}>
+                <div className={`text-sm font-bold tabular-nums ${summary.zapadloN > 0 ? 'text-roksal-ink' : 'text-muted-foreground'}`}>
                   {summary.zapadloN > 0 ? eur(summary.zapadlo) : '—'}
                 </div>
                 {summary.zapadloN > 0 && (
-                  <div className="text-2xs tabular-nums text-red-600 dark:text-red-400">{summary.zapadloN} račun(ov)</div>
+                  <div className="text-2xs tabular-nums text-roksal-ink">{summary.zapadloN} račun(ov)</div>
                 )}
               </div>
             </div>
@@ -1133,7 +1133,7 @@ export function InvoiceManager() {
               <div className="space-y-1">
                 <div className="h-1.5 overflow-hidden rounded-full bg-muted">
                   <div
-                    className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-500"
+                    className="h-full rounded-full bg-gradient-to-r from-roksal-green to-roksal-green/70 transition-all duration-500"
                     style={{ width: `${Math.min(100, Math.max(0, (summary.placano / summary.izdano) * 100))}%` }}
                   />
                 </div>
@@ -1264,17 +1264,17 @@ export function InvoiceManager() {
               // Levo letvica kartice pripoveduje status — hitro prepoznavanje brez branja
               const rail =
                 zapadlo || inv.status === 'STORNIRAN'
-                  ? 'border-l-red-500'
+                  ? 'border-l-roksal-red'
                   : inv.status === 'PLACAN'
-                    ? 'border-l-emerald-500'
+                    ? 'border-l-roksal-green'
                     : inv.status === 'IZDAN'
-                      ? 'border-l-amber-500'
+                      ? 'border-l-roksal-amber'
                       : 'border-l-muted-foreground/40'
               return (
                 <div
                   key={inv.id}
                   className={`rounded-xl border border-l-4 p-3 transition-all hover:shadow-md hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25 ${rail} ${
-                    zapadlo ? 'border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/40' : 'border-border/70 bg-card'
+                    zapadlo ? 'border-roksal-red/30 bg-roksal-red/10' : 'border-border/70 bg-card'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">
@@ -1289,7 +1289,7 @@ export function InvoiceManager() {
                           {meta.label}
                         </Badge>
                         {zapadlo && (
-                          <Badge variant="outline" className="text-2xs px-1.5 border-red-300 dark:border-red-800 bg-red-100 dark:bg-red-500/15 text-red-800 dark:text-red-200 gap-1">
+                          <Badge variant="outline" className="text-2xs px-1.5 border-roksal-red/40 bg-roksal-red/10 text-roksal-ink gap-1">
                             <AlertTriangle aria-hidden="true" className="h-3 w-3" /> zapadlo {zapadlo} dni
                           </Badge>
                         )}
@@ -1344,7 +1344,7 @@ export function InvoiceManager() {
                           <Button
                             size="sm"
                             variant="outline"
-                            className="h-7 text-xs border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-500/15 hover:text-red-800 transition-colors focus-visible:ring-red-400"
+                            className="h-7 text-xs border-roksal-red/40 text-roksal-ink hover:bg-roksal-red/10 transition-colors focus-visible:ring-roksal-red/40"
                             onClick={() => generateOpomnik(inv)}
                             title={`Plačilni opomnik — zapadlo ${zapadlo} dni`}
                             aria-label={`Plačilni opomnik za račun ${inv.stevilka}`}
@@ -1356,7 +1356,7 @@ export function InvoiceManager() {
                           <Button
                             size="sm"
                             variant="outline"
-                            className={`h-7 text-xs border-red-300 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-950/40 focus-visible:ring-red-400/60 ${stornoId === inv.id ? 'bg-red-600 text-white hover:bg-red-500' : 'text-red-700 dark:text-red-300'}`}
+                            className={`h-7 text-xs border-roksal-red/40 hover:bg-roksal-red/10 focus-visible:ring-roksal-red/40 ${stornoId === inv.id ? 'bg-roksal-red text-white hover:bg-roksal-red/90' : 'text-roksal-ink'}`}
                             onClick={() => {
                               if (stornoId === inv.id) {
                                 setStornoId(null)
@@ -1440,7 +1440,7 @@ export function InvoiceManager() {
         <DialogContent className="max-h-[88vh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Receipt aria-hidden="true" className="h-4 w-4 text-amber-500 dark:text-amber-400" /> Nov račun (FURS)
+              <Receipt aria-hidden="true" className="h-4 w-4 text-roksal-amber" /> Nov račun (FURS)
             </DialogTitle>
           </DialogHeader>
 
@@ -1514,7 +1514,7 @@ export function InvoiceManager() {
                         type="button"
                         size="icon"
                         variant="ghost"
-                        className="h-8 w-8 shrink-0 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40"
+                        className="h-8 w-8 shrink-0 text-roksal-red hover:bg-roksal-red/10"
                         onClick={() => setFormPostavke((cur) => cur.filter((_, j) => j !== i))}
                         aria-label="Odstrani vrstico"
                       >
@@ -1589,7 +1589,7 @@ export function InvoiceManager() {
                   onChange={(e) => setFormRok(e.target.value)}
                 />
               </div>
-              <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-2">
+              <div className="rounded-lg border border-roksal-amber/30 bg-roksal-amber/10 p-2">
                 <div className="flex justify-between text-xs">
                   <span className="text-muted-foreground">Osnova</span>
                   <span className="font-semibold tabular-nums">{eur(formTotals.osnova)}</span>
@@ -1600,7 +1600,7 @@ export function InvoiceManager() {
                     <span className="font-semibold tabular-nums">{eur(z)}</span>
                   </div>
                 ))}
-                <div className="mt-1 flex justify-between border-t border-amber-200 dark:border-amber-800 pt-1 text-sm font-bold text-roksal-ink">
+                <div className="mt-1 flex justify-between border-t border-roksal-amber/30 pt-1 text-sm font-bold text-roksal-ink">
                   <span>Za plačilo</span>
                   <span className="tabular-nums">{eur(formTotals.znesek)}</span>
                 </div>
@@ -1623,7 +1623,7 @@ export function InvoiceManager() {
             <Button
               onClick={createInvoice}
               disabled={saving}
-              className="bg-amber-500 text-navy-900 hover:bg-amber-400"
+              className="bg-roksal-amber text-roksal-navy hover:bg-roksal-amber/90"
             >
               {saving ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <Euro aria-hidden="true" className="h-4 w-4" />}
               Shrani osnutek
@@ -1637,7 +1637,7 @@ export function InvoiceManager() {
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <QrCode aria-hidden="true" className="h-4 w-4 text-amber-500 dark:text-amber-400" />
+              <QrCode aria-hidden="true" className="h-4 w-4 text-roksal-amber" />
               UPN QR — {qrInvoice?.stevilka}
             </DialogTitle>
           </DialogHeader>
@@ -1657,7 +1657,7 @@ export function InvoiceManager() {
                   </div>
                 )}
                 <p className="flex items-center gap-1.5 text-[11px] font-medium text-roksal-ink">
-                  <Banknote aria-hidden="true" className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <Banknote aria-hidden="true" className="h-3.5 w-3.5 text-roksal-green" />
                   Skeniraj z aplikacijo svoje banke — nalog se izpolni samodejno
                 </p>
               </div>

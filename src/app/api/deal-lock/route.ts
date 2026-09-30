@@ -22,6 +22,7 @@ import {
 import { validateUploadContent } from '@/lib/upload-security'
 
 import { zapisOmejitev } from '@/lib/rate-limit'
+import { preberiJsonTelo } from '@/lib/api-telo'
 interface DealLockRequest {
   projectId: string
   customerName: string
@@ -48,7 +49,9 @@ export async function POST(request: Request) {
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
   try {
-    const body = (await request.json()) as DealLockRequest
+    const telo = await preberiJsonTelo(request)
+    if (!telo.ok) return telo.odgovor
+    const body = telo.telo as DealLockRequest
     const { projectId, customerName, monterName, customerSignature, monterSignature, quoteData } = body
 
     if (!projectId || !customerSignature || !monterSignature) {

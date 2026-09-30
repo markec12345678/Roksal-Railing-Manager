@@ -37,6 +37,7 @@ import {
   MAX_MEASURE_EXPIRY_DAYS,
   generateMeasureToken,
 } from '@/lib/measure'
+import { preberiJsonTelo } from '@/lib/api-telo'
 
 type PortalAction =
   | 'enable'
@@ -168,7 +169,9 @@ export async function POST(request: Request) {
     )
   }
   try {
-    const body = await request.json() as {
+    const telo = await preberiJsonTelo(request)
+    if (!telo.ok) return telo.odgovor
+    const body = telo.telo as {
       projectId?: string
       action?: PortalAction
       clientNotes?: string | null

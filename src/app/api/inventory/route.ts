@@ -14,6 +14,7 @@ import { correlationFromRequest } from '@/lib/correlation'
 import type { StockLedgerEventType } from '@prisma/client'
 
 import { zapisOmejitev } from '@/lib/rate-limit'
+import { preberiJsonTelo } from '@/lib/api-telo'
 /** Stari UI tipi → ledger dogodki (združljivost z obstoječim klientom). */
 function mapEventType(tip: string): StockLedgerEventType {
   switch (tip) {
@@ -94,7 +95,9 @@ export async function POST(request: Request) {
   if (!auth) return unauthorized()
   const correlationId = correlationFromRequest(request)
   try {
-    const body = await request.json()
+    const telo = await preberiJsonTelo(request)
+    if (!telo.ok) return telo.odgovor
+    const body = telo.telo
 
     if (body.tipPremika) {
       // §10 (R135): premik zaloge = konkretno dovoljenje inventory.write

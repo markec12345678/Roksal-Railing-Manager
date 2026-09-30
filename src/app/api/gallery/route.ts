@@ -22,6 +22,7 @@ import { validateUploadContent } from '@/lib/upload-security'
 import { stripExifJpeg } from '@/lib/exif-strip'
 
 import { zapisOmejitev } from '@/lib/rate-limit'
+import { preberiJsonTelo } from '@/lib/api-telo'
 function accessErrorResponse(error: unknown): NextResponse | null {
   if (error instanceof AccessDeniedError) {
     return NextResponse.json({ error: error.message }, { status: error.status })
@@ -87,7 +88,9 @@ export async function POST(request: Request) {
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
   try {
-    const body = await request.json()
+    const telo = await preberiJsonTelo(request)
+    if (!telo.ok) return telo.odgovor
+    const body = telo.telo
     if (!body.naslov || typeof body.naslov !== 'string') {
       return NextResponse.json({ error: 'naslov je obvezen' }, { status: 400 })
     }

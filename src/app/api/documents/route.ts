@@ -31,6 +31,7 @@ import {
 import { generateDocumentPdf } from '@/lib/document-pdf'
 
 import { zapisOmejitev } from '@/lib/rate-limit'
+import { preberiJsonTelo } from '@/lib/api-telo'
 // R140 (issue #5 §17): dokumenti + verzije so težki odgovori — neomejen
 // findMany bi za dolgoživim projektom povlekel vse PDF metadata + verzije.
 // Privzeti strop 200 + opcijski limit/offset. Odzivna OBLIKA (polje) ostane ista.
@@ -52,7 +53,9 @@ export async function POST(request: Request) {
     return forbidden('Izdelava dokumentov zahteva uporabniško pravico documents.generate.')
   }
   try {
-    const body = await request.json()
+    const telo = await preberiJsonTelo(request)
+    if (!telo.ok) return telo.odgovor
+    const body = telo.telo
     const validated = createDocumentSchema.parse(body)
 
     const project = await db.project.findUnique({

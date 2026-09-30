@@ -103,7 +103,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 45 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **4308** (238 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **4326** (239 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 143 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -334,12 +334,15 @@ Sheet z 6 podzavihki:
 - 100 % deterministična jedra: kalkulacije, izvozi (40+ PDF/CSV + ICS koledar — 26./27./28./29. člen izvozne družine R296/R297/R298/R299), varnost, sync — enaki vhodi = bajtno enak izhod
 - AI = neobvezna pomoč, NIKOLI vir resnice (iskren GPU stub + VLM foto ocena z determinističnim nadomestkom)
 - Skener determinizma: 0 nedokumentiranih odstopanj nad src/lib IN src/components (komponentni sloj R295 — locale* v ARTIFACT domeni NIČ, izjeme izrecne z razlogom)
-- **API I/O meja («stena ura»)** (R308, issue #1 — failure cases + malformed-input) — determinističen
+- **API I/O meja («stena ura»)** (R308+R309, issue #1 — failure cases + malformed-input) — determinističen
   skener VSEH 81 route-handlerjev (`src/lib/api-meja-audit.ts`, EN VIR lexer avtomatizacija-audit):
   vsak `json()` klic varovan (.catch/try), NIČ praznih catch blokov (iskrena resnica je IZRAZ v kodi,
   ne komentar — 2 realna primera refactorirana), NIČ `as any`, 4xx/5xx nosi `{ error }` ovojnico;
-  pokvarjen JSON na calculator → **400** (prej 500 — napaka odjemalca ni napaka strežnika), wire-level
-  dokaz v E2E (Z0ag); strazar test pregleda realno drevo (0 kršitev) — fail-closed pri vsaki novi kršitvi
+  pokvarjen JSON → **400** na VSEH mutirajočih rutah (R309: EN VIR guard `src/lib/api-telo.ts` —
+  26 handlerjev / 32 klicnih mest + calculator preseljenih z throw-style parse na izrecen fail-closed
+  400 guard; `/api/sync` izrecno izvzet; wire-level dokaz v E2E: Z0ah 26/26 → 400 z ISTO ovojnico,
+  NIČ 500 — napaka odjemalca ni napaka strežnika); strazar test pregleda realno drevo (0 kršitev,
+  fail-closed pri vsaki novi kršitvi)
 - Pregled: [docs/automacija-audit.md](docs/automacija-audit.md) (EN VIR pripet na lib + strazar testi) · kartica «Avtomatizacija — razred funkcij» v vodjinem pregledu
 
 ---
@@ -382,7 +385,7 @@ Sheet z 6 podzavihki:
 | **PWA** | Service Worker + Web Manifest |
 | **Temnitveni način** | [next-themes](https://github.com/pacocoursey/next-themes) |
 | **Validacija** | [Zod 4](https://zod.dev/) |
-| **Testiranje** | [Vitest 4](https://vitest.dev/) (4308 testov + globalSetup embedded PG) |
+| **Testiranje** | [Vitest 4](https://vitest.dev/) (4326 testov + globalSetup embedded PG) |
 | **Paketni upravitelj** | [Bun](https://bun.sh/) |
 | **Linting** | ESLint 9 + eslint-config-next |
 
@@ -504,7 +507,7 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `bun run dev` | Zažene Next.js dev server (port 3000) |
 | `bun run build` | Produkcijska build (build-prepare: generate + migrate deploy + seed) |
 | `bun run start` | Zažene produkcijski server |
-| `bun run test` | Vsi testi (vitest, 4308, embedded PG prek globalSetup) |
+| `bun run test` | Vsi testi (vitest, 4326, embedded PG prek globalSetup) |
 | `bun run check` | tsc --noEmit + vitest run (en ukaz za vse) |
 | `bunx tsc --noEmit` | Tipska kontrola celotnega projekta (trenutno 0 napak) |
 | `bun run lint` | ESLint preverjanje |

@@ -149,8 +149,10 @@ describe('R241 — [Mandatory] stil: številčna poravnava računovodske površi
   it('Nov račun CTA ima press-scale pariteto s sorojcem CSV v isti vrstici', () => {
     // oba gumba v header akcijah nosita isti mikro-interakcijski jezik —
     // točen večvrstični pin (onClick vsebuje '>', ki bi prekinil [^>]* pin)
+    // R309 pin shift: surovi par amber-500/navy-900 → žetona roksal-amber /
+    // roksal-navy (harmonizacija surovih palet invoice-managerja, 0 novih hex).
     const headerOk = uiSrc.includes(
-      '{lahkoUstvarja && (\n              <Button\n                size="sm"\n                onClick={() => setDialogOpen(true)}\n                className="h-8 bg-amber-500 text-navy-900 hover:bg-amber-400 press-scale"',
+      '{lahkoUstvarja && (\n              <Button\n                size="sm"\n                onClick={() => setDialogOpen(true)}\n                className="h-8 bg-roksal-amber text-roksal-navy hover:bg-roksal-amber/90 press-scale"',
     )
     expect(headerOk).toBe(true)
   })

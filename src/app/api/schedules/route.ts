@@ -32,6 +32,7 @@ import { isValidOverrideReason } from '@/lib/qc-gate'
 
 import { zapisOmejitev } from '@/lib/rate-limit'
 import { auditInTx } from '@/lib/audit'
+import { preberiJsonTelo } from '@/lib/api-telo'
 // R145 (§31): dodeljevanje opreme terminu — max 20 kosov na termin (§17
 // strop; več kot 20 kosov opreme na EN termin je patološki vnos).
 const MAX_EQUIPMENT_PER_SCHEDULE = 20
@@ -153,7 +154,9 @@ export async function POST(request: Request) {
   const idemBinding = idemKey ? principalBindingOf(auth) : null
 
   try {
-    const body = await request.json()
+    const telo = await preberiJsonTelo(request)
+    if (!telo.ok) return telo.odgovor
+    const body = telo.telo
     const { projectId, crewId, monterId, datumZacetka, datumKonca, predvideneUre, opombe, lokacija, equipmentIds: equipmentRaw } = body
 
     if (!projectId || !datumZacetka || !datumKonca) {
@@ -319,7 +322,9 @@ export async function PATCH(request: Request) {
   if (!auth) return unauthorized()
   const correlationId = correlationFromRequest(request)
   try {
-    const body = await request.json()
+    const telo = await preberiJsonTelo(request)
+    if (!telo.ok) return telo.odgovor
+    const body = telo.telo
     const { id, status, dejanskeUre, opombe, datumZacetka, datumKonca, crewId, monterId, equipmentIds: equipmentRaw, qcOverrideReason: qcOverrideRaw } = body
 
     if (!id || !status) {

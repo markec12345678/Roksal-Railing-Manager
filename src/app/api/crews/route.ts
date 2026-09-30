@@ -5,6 +5,7 @@ import { authenticate, unauthorized } from '@/lib/auth'
 import { denyWithoutPermission } from '@/lib/auth'
 
 import { zapisOmejitev } from '@/lib/rate-limit'
+import { preberiJsonTelo } from '@/lib/api-telo'
 // GET — ekipe ali oprema (glede na ?type=crew|equipment)
 export async function GET(request: Request) {
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
@@ -52,7 +53,9 @@ export async function POST(request: Request) {
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
   try {
-    const body = await request.json()
+    const telo = await preberiJsonTelo(request)
+    if (!telo.ok) return telo.odgovor
+    const body = telo.telo
     const type = body.type || 'crew'
 
     if (type === 'equipment') {

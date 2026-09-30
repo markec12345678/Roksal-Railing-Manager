@@ -36,6 +36,7 @@ import { validateUploadContent } from '@/lib/upload-security'
 import { stripExifJpeg } from '@/lib/exif-strip'
 
 import { zapisOmejitev } from '@/lib/rate-limit'
+import { preberiJsonTelo } from '@/lib/api-telo'
 /** Zavij resource napake v 403/404 odgovor (politika: 404 ne obstaja, 403 prepovedano). */
 function accessErrorResponse(error: unknown): NextResponse | null {
   if (error instanceof AccessDeniedError) {
@@ -133,7 +134,9 @@ export async function POST(request: Request) {
     return forbidden('Ključ nima scope-a photos:write — nalaganje fotodokumentacije ni dovoljeno.')
   }
   try {
-    const body = await request.json()
+    const telo = await preberiJsonTelo(request)
+    if (!telo.ok) return telo.odgovor
+    const body = telo.telo
     const kat = body.kategorija ?? 'MED'
     if (!['PRED', 'MED', 'PO'].includes(kat)) {
       return NextResponse.json({ error: 'kategorija mora biti PRED, MED ali PO' }, { status: 400 })

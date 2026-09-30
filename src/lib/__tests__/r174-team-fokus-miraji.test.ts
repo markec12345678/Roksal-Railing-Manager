@@ -145,12 +145,19 @@ describe('R174 STIL — pokvarjeni mirrori (dvojni poševnici v opacity modifier
       ['measurements-tab.tsx', 1],
       ['calculator-tab.tsx', 1],
       ['logistics-tab.tsx', 2],
-      ['invoice-manager.tsx', 4],
     ] as const) {
       const src = readFileSync(join(ROCSAL, file), 'utf8')
       const fixed = src.match(/dark:bg-\w+-950\/40\b/g) ?? []
       expect(fixed.length, file).toBeGreaterThanOrEqual(count)
     }
+    // R309 pin shift: invoice-manager je surove palete PRESELJAL na roksal
+    // žetone (roksal-green/amber/red z alfo) — žeton je temsko prilagodljiv
+    // PO NARAVI, zato raw `dark:bg-*-950/40` mirrorji tam ZAKONITO ne
+    // obstajajo več (0, ne ≥4). Invarianta se obrne: vsak raw mirror, ki bi
+    // se vrnil, je regresija harmonizacije.
+    const inv = readFileSync(join(ROCSAL, 'invoice-manager.tsx'), 'utf8')
+    const rawMirrors = inv.match(/dark:bg-\w+-950\/40\b/g) ?? []
+    expect(rawMirrors.length, 'invoice-manager.tsx').toBe(0)
   })
 
   it('team-tab pošteno-stanje panel je popavljen na dark:bg-amber-950/40 (brez /70 repka)', () => {

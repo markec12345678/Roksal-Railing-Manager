@@ -44,6 +44,7 @@ import {
   ODVISNI_REZULTATI_OPOMBA,
   type MeritevVir,
 } from '@/lib/meritev-verzije'
+import { preberiJsonTelo } from '@/lib/api-telo'
 
 /**
  * R276 (O4) — napaka pravil verzije z žičnim HTTP statusom (400/409).
@@ -78,7 +79,9 @@ export async function POST(request: Request) {
   }
   const idemBinding = idemKey ? principalBindingOf(auth) : null
   try {
-    const body = await request.json()
+    const telo = await preberiJsonTelo(request)
+    if (!telo.ok) return telo.odgovor
+    const body = telo.telo
     let validated = createMeasurementSchema.parse(body)
 
     // Dostop do projekta — meritev lahko doda izvajalec/vodja projekta.

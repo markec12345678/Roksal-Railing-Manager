@@ -15,6 +15,7 @@ import { auditInTx, audit } from '@/lib/audit'
 import { actorIdOf } from '@/lib/access'
 
 import { zapisOmejitev } from '@/lib/rate-limit'
+import { preberiJsonTelo } from '@/lib/api-telo'
 const DDV_STOPLNJE = [22, 9.5, 0] as const
 const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100
 
@@ -184,7 +185,9 @@ export async function POST(request: Request) {
   const actor = actorIdOf(auth)
   const correlationId = correlationFromRequest(request)
   try {
-    const body = await request.json()
+    const telo = await preberiJsonTelo(request)
+    if (!telo.ok) return telo.odgovor
+    const body = telo.telo
     const validated = createInvoiceSchema.parse(body)
 
     // Projekt + kupec (snapshot za račun)
@@ -260,7 +263,9 @@ export async function PATCH(request: Request) {
   const correlationId = correlationFromRequest(request)
   const actor = actorIdOf(auth)
   try {
-    const body = await request.json()
+    const telo = await preberiJsonTelo(request)
+    if (!telo.ok) return telo.odgovor
+    const body = telo.telo
     const validated = updateInvoiceSchema.parse(body)
     const { id, ...data } = validated
 

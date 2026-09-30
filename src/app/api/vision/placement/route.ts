@@ -24,6 +24,7 @@ import { resolveScale } from '@/lib/measurement/scale'
 import type { ProjectionResult } from '@/lib/cv-studio/types'
 
 import { zapisOmejitev } from '@/lib/rate-limit'
+import { preberiJsonTelo } from '@/lib/api-telo'
 export const runtime = 'nodejs'
 export const maxDuration = 30
 
@@ -73,12 +74,9 @@ export async function POST(request: Request) {
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
 
-  let json: unknown
-  try {
-    json = await request.json()
-  } catch {
-    return NextResponse.json({ error: 'Neveljaven JSON.', code: 'INVALID_JSON' }, { status: 400 })
-  }
+  const telo = await preberiJsonTelo(request)
+  if (!telo.ok) return telo.odgovor
+  const json = telo.telo
 
   const parsed = placementSchema.safeParse(json)
   if (!parsed.success) {

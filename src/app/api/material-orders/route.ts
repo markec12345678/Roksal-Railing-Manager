@@ -21,6 +21,7 @@ import {
   idempotencyReplayResponse,
   idempotencyConflictResponse,
 } from '@/lib/idempotency'
+import { preberiJsonTelo } from '@/lib/api-telo'
 
 // R140 (issue #5 §17): neomejen findMany → privzeta zgornja meja + opcijske
 // strani (isti kontrakt kot customers/schedules iz R138/R139). Odzivna OBLIKA
@@ -110,7 +111,9 @@ export async function POST(request: Request) {
   }
   const idemBinding = idemKey ? principalBindingOf(auth) : null
   try {
-    const body = await request.json()
+    const telo = await preberiJsonTelo(request)
+    if (!telo.ok) return telo.odgovor
+    const body = telo.telo
     const { projectId, supplierId, items, opombe } = body as {
       projectId?: string
       supplierId: string
@@ -257,7 +260,9 @@ export async function PATCH(request: Request) {
     return forbidden('Sprememba naročil je pravica vodstva (procurement.approve); skladišče sme samo prejem (procurement.receive).')
   }
   try {
-    const body = await request.json()
+    const telo = await preberiJsonTelo(request)
+    if (!telo.ok) return telo.odgovor
+    const body = telo.telo
     const { id, status } = body as { id?: string; status?: string; datumDobave?: string }
 
     if (!id || !status) {

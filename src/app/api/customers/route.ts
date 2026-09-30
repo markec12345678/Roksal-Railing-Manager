@@ -17,6 +17,7 @@ import {
   idempotencyConflictResponse,
 } from '@/lib/idempotency'
 import { auditInTx } from '@/lib/audit'
+import { preberiJsonTelo } from '@/lib/api-telo'
 
 // Meje strani (issue #5 §17): brez parametrov se vedno vrne
 // POPOLN seznam (zadržljivost s starimi klienti); z ?limit=&offset=
@@ -111,7 +112,9 @@ export async function POST(request: Request) {
   const idemBinding = idemKey ? principalBindingOf(auth) : null
 
   try {
-    const body = await request.json()
+    const telo = await preberiJsonTelo(request)
+    if (!telo.ok) return telo.odgovor
+    const body = telo.telo
     const validated = createCustomerSchema.parse(body)
 
     // R136 (§19): stranka + revizijski vpis v ENI transakciji. Prej je bila

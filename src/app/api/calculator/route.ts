@@ -16,6 +16,7 @@ import {
 } from '@/lib/calc-engineering'
 import { railingCalcSchema, anchoringCalcSchema, windLoadCalcSchema } from '@/lib/validations'
 import { authenticate, unauthorized } from '@/lib/auth'
+import { preberiJsonTelo } from '@/lib/api-telo'
 
 import { zapisOmejitev } from '@/lib/rate-limit'
 export async function GET(request: Request) {
@@ -41,14 +42,13 @@ export async function POST(request: Request) {
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
   try {
-    // R308 meja: pokvarjen/manjkajoč JSON je NAPAKA ODJEMALCA (400), ne
-    // strežnika (500) — izrecen fail-closed guard PRED uporabo (brez tihega
-    // 500 v monitoring; kanon ovojnice { error }).
-    const body = (await request.json().catch(() => null)) as unknown
-    if (typeof body !== 'object' || body === null) {
-      return NextResponse.json({ error: 'Neveljavno telo zahteve — pričakovan JSON objekt' }, { status: 400 })
-    }
-    const { type } = body as Record<string, unknown>
+    // R308 meja (R309: EN VIR — src/lib/api-telo): pokvarjen/manjkajoč JSON
+    // je NAPAKA ODJEMALCA (400), ne strežnika (500) — guard PRED uporabo
+    // (brez tihega 500 v monitoring; kanon ovojnice { error }).
+    const telo = await preberiJsonTelo(request)
+    if (!telo.ok) return telo.odgovor
+    const body = telo.telo
+    const { type } = body
 
     switch (type) {
       case 'railing': {

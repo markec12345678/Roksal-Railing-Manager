@@ -19,6 +19,7 @@ import { auditInTx } from '@/lib/audit'
 import { correlationFromRequest, logWithCorrelation } from '@/lib/correlation'
 
 import { zapisOmejitev } from '@/lib/rate-limit'
+import { preberiJsonTelo } from '@/lib/api-telo'
 // GET - Pridobi projekte s podatki o strankah in meritvah (filtrirano po vlogi)
 export async function GET(request: Request) {
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
@@ -67,7 +68,9 @@ export async function POST(request: Request) {
   const actor = actorIdOf(auth)
   const correlationId = correlationFromRequest(request)
   try {
-    const body = await request.json()
+    const telo = await preberiJsonTelo(request)
+    if (!telo.ok) return telo.odgovor
+    const body = telo.telo
     const validated = createProjectSchema.parse(body)
 
     // Projekt + audit = ENA transakcija (issue #4, §13)
@@ -118,7 +121,9 @@ export async function PATCH(request: Request) {
   const actor = actorIdOf(auth)
   const correlationId = correlationFromRequest(request)
   try {
-    const body = await request.json()
+    const telo = await preberiJsonTelo(request)
+    if (!telo.ok) return telo.odgovor
+    const body = telo.telo
     const { id, ...updateData } = body
 
     if (!id) {

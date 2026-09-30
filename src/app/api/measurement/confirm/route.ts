@@ -46,6 +46,7 @@ import {
 import type { MeasurementSession } from '@/lib/measurement'
 
 import { zapisOmejitev } from '@/lib/rate-limit'
+import { preberiJsonTelo } from '@/lib/api-telo'
 export const runtime = 'nodejs'
 export const maxDuration = 30
 
@@ -130,12 +131,9 @@ export async function POST(request: Request) {
   }
   const actor = actorIdOf(auth)
 
-  let body: unknown
-  try {
-    body = await request.json()
-  } catch {
-    return NextResponse.json({ error: 'Neveljaven JSON.' }, { status: 400 })
-  }
+  const telo = await preberiJsonTelo(request)
+  if (!telo.ok) return telo.odgovor
+  const body = telo.telo
   const parsed = confirmSchema.safeParse(body)
   if (!parsed.success) {
     return NextResponse.json(

@@ -16,6 +16,7 @@ import { authenticate, unauthorized, type AuthContext } from '@/lib/auth'
 import { assertProjectAccess, AccessDeniedError, type ProjectRef } from '@/lib/access'
 
 import { zapisOmejitev } from '@/lib/rate-limit'
+import { preberiJsonTelo } from '@/lib/api-telo'
 const PROJECT_SELECT = { id: true, monterId: true, vodjaId: true, dealLocked: true } satisfies Record<string, boolean>
 
 function accessErrorResponse(error: unknown): NextResponse | null {
@@ -89,7 +90,9 @@ export async function POST(request: Request) {
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
   try {
-    const body = await request.json()
+    const telo = await preberiJsonTelo(request)
+    if (!telo.ok) return telo.odgovor
+    const body = telo.telo
     const validated = createPunchSchema.parse(body)
     // R155: dodajanje točke = mutacija projekta; vrata PRED zapisom.
     const project = await db.project.findUnique({ where: { id: validated.projectId }, select: PROJECT_SELECT })
@@ -121,7 +124,9 @@ export async function PATCH(request: Request) {
   const auth = await authenticate(request)
   if (!auth) return unauthorized()
   try {
-    const body = await request.json()
+    const telo = await preberiJsonTelo(request)
+    if (!telo.ok) return telo.odgovor
+    const body = telo.telo
     const validated = updatePunchSchema.parse(body)
     const { id, ...data } = validated
     // R155: sprememba točke = mutacija projekta točke (404 neznana, 403 tuja).

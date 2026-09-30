@@ -21,6 +21,7 @@ import {
   NotificationNotFoundError,
   NotificationTransitionError,
 } from '@/lib/notifications'
+import { preberiJsonTelo } from '@/lib/api-telo'
 
 export const runtime = 'nodejs'
 
@@ -45,7 +46,9 @@ export async function POST(request: Request): Promise<NextResponse> {
     return res
   }
   try {
-    const parsed = readSchema.safeParse(await request.json())
+    const telo = await preberiJsonTelo(request)
+    if (!telo.ok) return telo.odgovor
+    const parsed = readSchema.safeParse(telo.telo)
     if (!parsed.success) {
       const res = NextResponse.json(
         { error: 'Neveljaven zahtevek: natanko ena izbira — id ALI all.', correlationId },
