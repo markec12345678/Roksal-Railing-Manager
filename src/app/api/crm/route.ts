@@ -23,6 +23,7 @@ import { canManageCustomers, actorIdOf } from '@/lib/access'
 
 import { zapisOmejitev } from '@/lib/rate-limit'
 import { audit } from '@/lib/audit'
+import { preberiJsonTelo } from '@/lib/api-telo'
 const CRM_STATUSI = ['AKTIVEN', 'NEAKTIVEN', 'POTENCIALEN', 'ARHIVIRAN'] as const
 const MAX_KONTAKTNA = 120
 const MAX_KATEGORIJA = 80
@@ -214,9 +215,11 @@ export async function PATCH(request: Request) {
     )
   }
   try {
-    const body = (await request.json().catch(() => null)) as Record<string, unknown> | null
+    const telo = await preberiJsonTelo(request)
+    if (!telo.ok) return telo.odgovor
+    const body = telo.telo
     const id = typeof body?.id === 'string' ? body.id : null
-    if (!body || !id) {
+    if (!id) {
       return NextResponse.json({ error: 'id je obvezen' }, { status: 400 })
     }
     if (body.status !== undefined && body.status !== null) {

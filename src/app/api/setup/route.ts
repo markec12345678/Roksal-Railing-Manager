@@ -22,6 +22,7 @@ import {
   tokenMatches,
 } from '@/lib/setup'
 import { auditInTx, auditStrict } from '@/lib/audit'
+import { preberiJsonTelo } from '@/lib/api-telo'
 
 const schema = z.object({
   email: z.string().trim().min(3).max(254).email('Neveljaven e-naslov'),
@@ -73,8 +74,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Neveljaven žeton.' }, { status: 403 })
   }
 
-  const body = await request.json().catch(() => null)
-  const parsed = schema.safeParse(body)
+  const telo = await preberiJsonTelo(request)
+  if (!telo.ok) return telo.odgovor
+  const parsed = schema.safeParse(telo.telo)
   if (!parsed.success) {
     releaseRate(limitKey) // tipkarska napaka ni poskus ugibanja žetona
     return NextResponse.json(

@@ -22,6 +22,7 @@ import { findProjectByIdempotencyKey, listProjectsForOwner } from '@/lib/viz/rep
 import { saveProjectFromStaging, type VizSaveVariantInput } from '@/lib/viz/save-flow'
 
 import { zapisOmejitev } from '@/lib/rate-limit'
+import { preberiJsonTelo } from '@/lib/api-telo'
 export const runtime = 'nodejs'
 
 interface StagedResultJson {
@@ -99,8 +100,9 @@ export async function POST(request: Request) {
   if (ctx instanceof Response) return ctx
   const createdId = randomUUID()
   try {
-    const body = await request.json().catch(() => null)
-    const parsed = createProjectSchema.safeParse(body)
+    const telo = await preberiJsonTelo(request)
+    if (!telo.ok) return telo.odgovor
+    const parsed = createProjectSchema.safeParse(telo.telo)
     if (!parsed.success) {
       return NextResponse.json(
         { error: 'Neveljavni podatki projekta', details: parsed.error.issues },

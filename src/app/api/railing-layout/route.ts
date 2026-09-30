@@ -35,6 +35,7 @@ import {
 import { railingLayoutSchema } from '@/lib/validations'
 
 import { zapisOmejitev } from '@/lib/rate-limit'
+import { preberiJsonTelo } from '@/lib/api-telo'
 export async function POST(request: Request) {
   // R191 — val 2 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
   const zavrnjeno = zapisOmejitev(request, 'railing-layout')
@@ -44,8 +45,9 @@ export async function POST(request: Request) {
   if (!auth) return unauthorized()
 
   try {
-    const body = await request.json().catch(() => null)
-    const parsed = railingLayoutSchema.safeParse(body)
+    const telo = await preberiJsonTelo(request)
+    if (!telo.ok) return telo.odgovor
+    const parsed = railingLayoutSchema.safeParse(telo.telo)
     if (!parsed.success) {
       return NextResponse.json(
         { error: 'Neveljavni podatki', detail: parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`) },

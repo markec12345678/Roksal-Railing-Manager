@@ -18,6 +18,7 @@ import { quoteInputFingerprint } from '@/lib/quote-repro'
 import { quoteSchema } from '@/lib/validations'
 
 import { zapisOmejitev } from '@/lib/rate-limit'
+import { preberiJsonTelo } from '@/lib/api-telo'
 export async function POST(request: Request) {
   // R190 — val 1 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
   const zavrnjeno = zapisOmejitev(request, 'quote')
@@ -31,8 +32,9 @@ export async function POST(request: Request) {
   }
 
   try {
-    const body = await request.json().catch(() => null)
-    const parsed = quoteSchema.safeParse(body)
+    const telo = await preberiJsonTelo(request)
+    if (!telo.ok) return telo.odgovor
+    const parsed = quoteSchema.safeParse(telo.telo)
     if (!parsed.success) {
       return NextResponse.json(
         { error: 'Neveljavni podatki', detail: parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`) },

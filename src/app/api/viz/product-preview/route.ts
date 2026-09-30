@@ -28,6 +28,7 @@ import { vizOwner } from '@/lib/viz/ownership'
 import { productSdk } from '@/lib/product-sdk'
 
 import { zapisOmejitev } from '@/lib/rate-limit'
+import { preberiJsonTelo } from '@/lib/api-telo'
 export const runtime = 'nodejs'
 
 /** S+8.1: lokalni validation error — loči 400 (vhod) od 500 (strežniška napaka). */
@@ -82,8 +83,9 @@ export async function POST(request: Request) {
   const ctx = await vizOwner(request)
   if (ctx instanceof Response) return ctx
   try {
-    const body = await request.json().catch(() => null)
-    const parsed = productPreviewSchema.safeParse(body)
+    const telo = await preberiJsonTelo(request)
+    if (!telo.ok) return telo.odgovor
+    const parsed = productPreviewSchema.safeParse(telo.telo)
     if (!parsed.success) {
       return NextResponse.json(
         { error: 'Neveljavna zahteva — klient pošlje SAMO productId + konfiguracijo (definition je server-authoritative)', details: parsed.error.issues },

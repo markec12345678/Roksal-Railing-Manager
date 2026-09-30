@@ -160,12 +160,14 @@ const STATUS_META: Record<EkipaStatus, { chip: string; icon: LucideIcon; title: 
     title: 'Varnostni zaklep — prijava blokirana',
   },
   'Povabilo poteklo': {
-    chip: 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300',
+    // R310 — chip na žetonu (bg-roksal-amber/10 + žeton-besedilo — ISTA
+    // družinska oblika kot Zaklenjen rdeča / Aktiven zelena chips)
+    chip: 'bg-roksal-amber/10 text-roksal-amber',
     icon: CalendarClock,
     title: 'Račun še ni aktiviran prek povabila',
   },
   'Čaka aktivacijo': {
-    chip: 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300',
+    chip: 'bg-roksal-amber/10 text-roksal-amber',
     icon: CalendarClock,
     title: 'Račun še ni aktiviran prek povabila',
   },
@@ -585,11 +587,13 @@ export function TeamTab() {
           </div>
         ) : (
           // §10 (R135): pošteno stanje namesto praznega seznama (strežnik: 403 users.read)
-          <div className="flex items-start gap-2 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 px-3.5 py-3">
-            <ShieldCheck aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+          // R310 — baner na žetonih (border /40 + bg /10 + ink besedilo —
+          // r162 lekcija: dolgo besedilo NI žeton-besedilo; ikona nosi žeton)
+          <div className="flex items-start gap-2 rounded-xl border border-roksal-amber/40 bg-roksal-amber/10 px-3.5 py-3">
+            <ShieldCheck aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-roksal-amber" />
             <div className="space-y-0.5">
-              <p className="text-xs font-semibold text-amber-800 dark:text-amber-200">Ekipa — ureja pisarna</p>
-              <p className="text-[11px] text-amber-700/90 dark:text-amber-300/90 leading-relaxed">
+              <p className="text-xs font-semibold text-roksal-ink">Ekipa — ureja pisarna</p>
+              <p className="text-[11px] text-roksal-ink/70 leading-relaxed">
                 Pregled računov je pravica users.read (pisarna). Za povabilo ali
                 spremembo vloge kontaktirajte administratorja.
               </p>
@@ -662,8 +666,9 @@ export function TeamTab() {
                     Zadnja aktivnost: {aktivnostOznaka(u.lastActive) ?? 'nikoli'}
                   </span>
                   {u.lifecycle.mustChangePassword && (
-                    <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400">
-                      <ShieldAlert aria-hidden="true" className="h-3 w-3" />
+                    // R310 — besedilo ink (berljivost, r162/r308 lekcija), žeton na ikoni
+                    <span className="inline-flex items-center gap-1 font-medium text-roksal-ink">
+                      <ShieldAlert aria-hidden="true" className="h-3 w-3 text-roksal-amber" />
                       mora zamenjati geslo
                     </span>
                   )}

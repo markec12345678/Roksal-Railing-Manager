@@ -27,6 +27,7 @@ import {
   nextInspectionAt,
 } from '@/lib/equipment-lifecycle'
 import { auditInTx } from '@/lib/audit'
+import { preberiJsonTelo } from '@/lib/api-telo'
 
 const DEFAULT_LIMIT = 100
 const MAX_LIMIT = 100
@@ -133,9 +134,11 @@ export async function PATCH(request: Request) {
   const correlationId = correlationFromRequest(request)
 
   try {
-    const body = (await request.json().catch(() => null)) as Record<string, unknown> | null
+    const telo = await preberiJsonTelo(request)
+    if (!telo.ok) return telo.odgovor
+    const body = telo.telo
     const id = typeof body?.id === 'string' ? body.id : null
-    if (!id || !body) {
+    if (!id) {
       return NextResponse.json({ error: 'id je obvezen' }, { status: 400 })
     }
     const unknown = Object.keys(body).filter(

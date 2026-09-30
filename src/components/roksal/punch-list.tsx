@@ -67,7 +67,9 @@ const STATUS_META: Record<PunchItem['status'], { label: string; className: strin
   // invoice-manager R229 / team-tab R228: nevtralno stanje = nevtralni žetoni).
   open: { label: 'Odprto', className: 'bg-muted text-muted-foreground border-border' },
   done: { label: 'Rešeno', className: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800' },
-  issue: { label: 'Napaka', className: 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800' },
+  // R310 — issue značka na žetonih (bg-roksal-amber/10 + ink + border /40 —
+  // ISTA oblika kot PLACAN značka R309; done ostaja r241-PINNED emerald par).
+  issue: { label: 'Napaka', className: 'bg-roksal-amber/10 text-roksal-ink border-roksal-amber/40' },
 }
 
 export function PunchList({ project }: { project: Project | null }) {
@@ -636,7 +638,7 @@ export function PunchList({ project }: { project: Project | null }) {
                       item.status === 'done'
                         ? 'border-emerald-500 bg-emerald-500 text-white'
                         : item.status === 'issue'
-                          ? 'border-amber-500 bg-amber-100 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400'
+                          ? 'border-roksal-amber bg-roksal-amber text-roksal-navy'
                           : 'border-border bg-card text-transparent hover:border-roksal-amber'
                     }`}
                   >

@@ -11,6 +11,7 @@ import { vizOwner } from '@/lib/viz/ownership'
 import { createRenderJob, getProjectForOwner, transitionRenderJob } from '@/lib/viz/repository'
 
 import { zapisOmejitev } from '@/lib/rate-limit'
+import { preberiJsonTelo } from '@/lib/api-telo'
 export const runtime = 'nodejs'
 
 const renderSchema = z.object({
@@ -28,8 +29,9 @@ export async function POST(request: Request) {
   const ctx = await vizOwner(request)
   if (ctx instanceof Response) return ctx
   try {
-    const body = await request.json().catch(() => null)
-    const parsed = renderSchema.safeParse(body)
+    const telo = await preberiJsonTelo(request)
+    if (!telo.ok) return telo.odgovor
+    const parsed = renderSchema.safeParse(telo.telo)
     if (!parsed.success) {
       return NextResponse.json(
         { error: 'Neveljavni podatki za render', details: parsed.error.issues },

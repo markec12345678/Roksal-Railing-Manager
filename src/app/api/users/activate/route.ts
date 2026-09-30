@@ -22,6 +22,7 @@ import { hashInviteToken } from '@/lib/user-lifecycle'
 import { queueNotifications } from '@/lib/notifications'
 import { casOznaka } from '@/lib/osvezitev-fokus'
 import { correlationFromRequest } from '@/lib/correlation'
+import { preberiJsonTelo } from '@/lib/api-telo'
 
 const activateSchema = z.object({
   token: z.string().min(16).max(64),
@@ -41,8 +42,9 @@ export async function POST(request: Request) {
   }
 
   try {
-    const body = await request.json().catch(() => null)
-    const parsed = activateSchema.safeParse(body)
+    const telo = await preberiJsonTelo(request)
+    if (!telo.ok) return telo.odgovor
+    const parsed = activateSchema.safeParse(telo.telo)
     if (!parsed.success) {
       return NextResponse.json(
         { error: 'Neveljavni podatki', detail: parsed.error.issues[0]?.message },

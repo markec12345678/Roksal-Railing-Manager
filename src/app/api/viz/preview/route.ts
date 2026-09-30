@@ -15,6 +15,7 @@ import { z } from 'zod'
 import { vizOwner } from '@/lib/viz/ownership'
 
 import { zapisOmejitev } from '@/lib/rate-limit'
+import { preberiJsonTelo } from '@/lib/api-telo'
 export const runtime = 'nodejs'
 
 // Strukturni tip po dokumentirani pipeline signature (contracts) — ne vezan na
@@ -45,8 +46,9 @@ export async function POST(request: Request) {
   const ctx = await vizOwner(request)
   if (ctx instanceof Response) return ctx
   try {
-    const body = await request.json().catch(() => null)
-    const parsed = previewSchema.safeParse(body)
+    const telo = await preberiJsonTelo(request)
+    if (!telo.ok) return telo.odgovor
+    const parsed = previewSchema.safeParse(telo.telo)
     if (!parsed.success) {
       return NextResponse.json(
         { error: 'Neveljavni podatki za predogled', details: parsed.error.issues },

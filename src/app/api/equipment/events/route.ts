@@ -25,6 +25,7 @@ import {
   type EquipmentEventResult,
 } from '@/lib/equipment-lifecycle'
 import { auditInTx } from '@/lib/audit'
+import { preberiJsonTelo } from '@/lib/api-telo'
 
 const MAX_EVENTS = 20
 
@@ -84,7 +85,9 @@ export async function POST(request: Request) {
   const correlationId = correlationFromRequest(request)
 
   try {
-    const body = (await request.json().catch(() => null)) as Record<string, unknown> | null
+    const telo = await preberiJsonTelo(request)
+    if (!telo.ok) return telo.odgovor
+    const body = telo.telo
     const equipmentId = typeof body?.equipmentId === 'string' ? body.equipmentId : null
     const type = typeof body?.type === 'string' ? (body.type as EquipmentEventType) : null
     const resultStr = body?.result === undefined ? 'V_REDU' : body?.result

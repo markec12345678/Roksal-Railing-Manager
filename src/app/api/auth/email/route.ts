@@ -14,6 +14,7 @@ import { revokeAllForUser } from '@/lib/session-registry'
 import { audit } from '@/lib/audit'
 import { LOGIN_LIMIT, checkRate, clientIp } from '@/lib/rate-limit'
 import { emailTaken } from '@/lib/user-lifecycle'
+import { preberiJsonTelo } from '@/lib/api-telo'
 
 const schema = z.object({
   newEmail: z.string().trim().toLowerCase().email('Neveljaven e-naslov.').max(254),
@@ -34,8 +35,9 @@ export async function POST(request: Request) {
   }
 
   try {
-    const body = await request.json().catch(() => null)
-    const parsed = schema.safeParse(body)
+    const telo = await preberiJsonTelo(request)
+    if (!telo.ok) return telo.odgovor
+    const parsed = schema.safeParse(telo.telo)
     if (!parsed.success) {
       return NextResponse.json(
         { error: 'Neveljavni podatki', detail: parsed.error.issues[0]?.message },

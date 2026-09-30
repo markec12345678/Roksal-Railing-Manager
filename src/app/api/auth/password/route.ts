@@ -14,6 +14,7 @@ import { checkRate, clientIp, LOGIN_LIMIT } from '@/lib/rate-limit'
 import { queueNotifications } from '@/lib/notifications'
 import { casOznaka } from '@/lib/osvezitev-fokus'
 import { correlationFromRequest } from '@/lib/correlation'
+import { preberiJsonTelo } from '@/lib/api-telo'
 
 const schema = z.object({
   currentPassword: z.string().min(1),
@@ -36,8 +37,9 @@ export async function POST(request: Request) {
   }
 
   try {
-    const body = await request.json().catch(() => null)
-    const parsed = schema.safeParse(body)
+    const telo = await preberiJsonTelo(request)
+    if (!telo.ok) return telo.odgovor
+    const parsed = schema.safeParse(telo.telo)
     if (!parsed.success) {
       releaseOnFailure(limitKey)
       return NextResponse.json(

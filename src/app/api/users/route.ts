@@ -37,6 +37,7 @@ import {
   profileLifecycleView,
   emailTaken,
 } from '@/lib/user-lifecycle'
+import { preberiJsonTelo } from '@/lib/api-telo'
 
 // Meje strani (R139 §17) — isti kontrakt kot customers/schedules.
 const USER_DEFAULT_LIMIT = 500
@@ -135,8 +136,9 @@ export async function POST(request: Request) {
   const correlationId = correlationFromRequest(request)
 
   try {
-    const body = await request.json().catch(() => null)
-    const parsed = actionsSchema.safeParse(body)
+    const telo = await preberiJsonTelo(request)
+    if (!telo.ok) return telo.odgovor
+    const parsed = actionsSchema.safeParse(telo.telo)
     if (!parsed.success) {
       return NextResponse.json(
         { error: 'Neveljavni podatki', detail: parsed.error.issues[0]?.message },

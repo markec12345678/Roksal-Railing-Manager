@@ -19,6 +19,7 @@ import { SESSION_COOKIE, isSecureRequest, sessionCookieAttributes } from '@/lib/
 import { createUserSession } from '@/lib/session-registry'
 import { audit } from '@/lib/audit'
 import { checkRate, clientIp } from '@/lib/rate-limit'
+import { preberiJsonTelo } from '@/lib/api-telo'
 
 const REGISTER_LIMIT = { limit: 5, windowMs: 60 * 60 * 1000 }
 
@@ -39,8 +40,9 @@ export async function POST(request: Request) {
       )
     }
 
-    const body = await request.json().catch(() => null)
-    const parsed = registerSchema.safeParse(body)
+    const telo = await preberiJsonTelo(request)
+    if (!telo.ok) return telo.odgovor
+    const parsed = registerSchema.safeParse(telo.telo)
     if (!parsed.success) {
       return NextResponse.json(
         { error: 'Neveljavni podatki za registracijo', details: parsed.error.issues },

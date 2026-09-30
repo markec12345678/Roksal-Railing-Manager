@@ -17,6 +17,7 @@ import ZAI from 'z-ai-web-dev-sdk'
 import { authenticate, unauthorized } from '@/lib/auth'
 import { checkRate, clientIp } from '@/lib/rate-limit'
 import { audit } from '@/lib/audit'
+import { preberiJsonTelo } from '@/lib/api-telo'
 
 const bodySchema = z.object({
   /** data:image/jpeg;base64,… */
@@ -97,8 +98,9 @@ export async function POST(request: Request) {
   }
 
   try {
-    const body = await request.json().catch(() => null)
-    const parsed = bodySchema.safeParse(body)
+    const telo = await preberiJsonTelo(request)
+    if (!telo.ok) return telo.odgovor
+    const parsed = bodySchema.safeParse(telo.telo)
     if (!parsed.success) {
       return NextResponse.json({ error: 'Neveljavna slika.' }, { status: 400 })
     }

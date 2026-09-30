@@ -25,6 +25,7 @@ import {
   countDefects,
 } from '@/lib/qc-gate'
 import { auditInTx } from '@/lib/audit'
+import { preberiJsonTelo } from '@/lib/api-telo'
 
 const MAX_NOTE = 500
 
@@ -92,7 +93,9 @@ export async function POST(request: Request) {
   if (!auth) return unauthorized()
   const correlationId = correlationFromRequest(request)
   try {
-    const body = (await request.json().catch(() => null)) as Record<string, unknown> | null
+    const telo = await preberiJsonTelo(request)
+    if (!telo.ok) return telo.odgovor
+    const body = telo.telo
     let projectId = typeof body?.projectId === 'string' ? body.projectId : null
     const scheduleId = typeof body?.scheduleId === 'string' ? body.scheduleId : null
     // Fail-closed derivacija: če je podan SAMO scheduleId, se projectId
@@ -117,7 +120,7 @@ export async function POST(request: Request) {
       select: { id: true, monterId: true, vodjaId: true, dealLocked: true },
     })
     assertProjectAccess(auth, gateProject, 'update')
-    if (!body || !('items' in body)) {
+    if (!('items' in body)) {
       return NextResponse.json({ error: 'items so obvezni' }, { status: 400 })
     }
     const verdict = validateQCItems(body.items)

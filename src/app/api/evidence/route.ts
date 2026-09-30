@@ -35,6 +35,7 @@ import {
   computeIEVFlags,
 } from '@/lib/installation-evidence'
 import { auditInTx } from '@/lib/audit'
+import { preberiJsonTelo } from '@/lib/api-telo'
 
 const MAX_NOTE = 500
 const DEFAULT_LIMIT = 100
@@ -196,7 +197,9 @@ export async function POST(request: Request) {
   if (!auth) return unauthorized()
   const correlationId = correlationFromRequest(request)
   try {
-    const body = (await request.json().catch(() => null)) as Record<string, unknown> | null
+    const telo = await preberiJsonTelo(request)
+    if (!telo.ok) return telo.odgovor
+    const body = telo.telo
     let projectId = typeof body?.projectId === 'string' ? body.projectId : null
     const scheduleId = typeof body?.scheduleId === 'string' ? body.scheduleId : null
     // Fail-closed derivacija: če je podan SAMO scheduleId, se projectId
@@ -212,7 +215,6 @@ export async function POST(request: Request) {
     if (!projectId) {
       return NextResponse.json({ error: 'projectId (ALI scheduleId) je obvezen' }, { status: 400 })
     }
-    if (!body) return NextResponse.json({ error: 'Manjka telo zahteve' }, { status: 400 })
 
     // R155 (IDOR zaključek): zapis dokazila = mutacija projekta (isti prag kot
     // meritve POST); vrata PRED transakcijo — po 403 je baza NESPREMENJENA.
@@ -356,9 +358,11 @@ export async function PATCH(request: Request) {
   if (!auth) return unauthorized()
   const correlationId = correlationFromRequest(request)
   try {
-    const body = (await request.json().catch(() => null)) as Record<string, unknown> | null
+    const telo = await preberiJsonTelo(request)
+    if (!telo.ok) return telo.odgovor
+    const body = telo.telo
     const id = typeof body?.id === 'string' ? body.id : null
-    if (!id || !body) return NextResponse.json({ error: 'id je obvezen' }, { status: 400 })
+    if (!id) return NextResponse.json({ error: 'id je obvezen' }, { status: 400 })
 
     const existing = await db.installationEvidence.findUnique({
       where: { id },

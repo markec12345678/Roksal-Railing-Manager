@@ -5944,3 +5944,82 @@ Task: Roksal Railing Manager — R309 runda: prva naloga r308-prod-qa.sh (potrdi
 - LEKCIJE: (1) **harvest pokritost mora slediti needle pokritosti** — nov needle na novi površini brez dispatcha = lažni MISS (dashboard primer); derive generator naj vedno preslika needle-površine → dispatch tabe; (2) **must_miss na build nivoju le za enolično pripisljive vzorce** — surova amber značka je deljena s 5 tabs (5 HITov v R308 buildu, nič iz invoice-managerja) → pripisljivost dokazuj na SOURCE nivoju (STRAŽAR), build must_miss samo za unikatne vzorce (CTA par, border-l-emerald-500, KPI vsebnik); (3) **izvožene konstante, ki jih uvozi SAMO test, webpack vstavi inline** — konstantno-ime needle preživi le, če ga uvozi route/component (API_TELO_NAPAKA primer); (4) **dvojni podpis za curl probe**: prijava izda roksal_csrf → mutacije brez x-csrf-token = 403 (dvojni podpis), brskalniški eval naj token bere iz document.cookie POGOJNO (obe stanji veljavni); prijavna shema ima polje `password` (ne `geslo`); (5) derive transformatorji: uvoz vstavi za KONCEM uvoznega bloka (regex ^} from|import .*from), NIKOLI za vrstico `import {` — sicer syntax error v 5 datotekah (r309-popravi-uvoz.py rešil); (6) bom-draft ima SAMO PATCH — wire probei naj berejo metodo iz rute, ne domnevajo POST (405-lekcija prvega teka).
 - ⏰ roksal-fallback-db POTEČE 2026-10-25 (~3,5 tedna) — obvestiti lastnika (enaintridesetič zapisano; NE pozabiti).
 - R310 prva naloga = r309-prod-qa.sh (UNION harvest dedovan; FOREGROUND; grep čistost prej).
+
+---
+Task ID: 1 (R310 — delna)
+Agent: Main Orchestrator (Z.ai Code) — tick 202609301700
+Task: R310 prva naloga — r309-prod-qa.sh tek + popravilo derive kategorialne napake
+
+Work Log:
+- Kalibracija: HEAD cd84303 (R309), drevo čisto, 0 nepotisanih; worklog R309 branje
+- Tek 1 r309-prod-qa.sh: iskren FAIL — 2× MISS v R309 bloku ("Neveljavno telo zahteve — pričakovan JSON objekt" + "preberiJsonTelo"); VSE ostale needleje (289) OK
+- DIAGNOZA (kategorialna napaka derive r308-prod-qa.sh): oba needleja sta SERVERSKI plasti (api-telo.ts uvažajo IZKLJUČNO route-handlerji) — v client chunkih NIKOLI ne moreta HIT; "preberiJsonTelo" je hkrati identifikator (kanon R302 2: identifikatorji NIKOLI ne preživijo minifikacije)
+- VIR preverba: vrstni red guardov v migriranih handlerjih = rate-limit → [denyWithoutPermission pri 7 vratih] → authenticate → preberiJsonTelo; spot seja je MONTER (precedens R127/R165) → pri 7 vratih bi žični probe videl 403, ne 400; izbrana podmnožica 4 BRE deny-vrat: measurements, punch, ar-snapshots, photos (vsi: rate-limit → authenticate → preberiJsonTelo — pokvarjen JSON → 400 PRED vsako domensko logiko = ZERO-MUTACIJA)
+- POPRAVEK skripte: (a) 2 nesmiselna chunk needleja → iskren komentar LEKCIJA R310 1; (b) NOV Z2b žični probe (vzorec lokalnega Z0ah, podmnožica 4, dvojni podpis roksal_csrf→x-csrf-token, python assert 4/4 = 400 + ISTA ovojnica); (c) kozmetika derive ostankov: R30[7]→R30[8] samoidentifikacijski razred, meja/deploy/eskalacija/OPOMNA oznake R308→R309, $SS screenshot vrstica odstranjena (prod-qa ne uporablja posnetkov — $SS bi bil unbound pri set -u)
+- Tek 2 (FOREGROUND): EXIT=0 — R309 deploy potrjen (build 08:59:15Z > commit meja 08:58:57Z), 291 OK needlejev, Z2b OK (4/4 → 400 z ISTO EN VIR ovojnico — NIČ 500, NIČ 403, NIČ podvojenih sporočil — EN VIR dokazan na produ ŽIVO), Z3 OK, err:null povsod
+
+Stage Summary:
+- PRVA naloga R310 ZAPRTA: R309 ŽIVO na produ (kanon R280/R284 — deploy nosi vse generacije R290+…+R309)
+- NOV LEKCIJA kanon: harvest pokritost mora slediti PLASTI needleja — server-plasti needleji gredo na ŽICO (wire probe), ne na client chunk grep; derive naj preverja tudi PLAST (kje niz živi), ne samo površino (dispatch tab)
+- Skripta r309-prod-qa.sh je zdaj generacijsko čista (R309 oznake povsod, samoidentifikacijski razred R30[8])
+
+---
+Task ID: 2 (R310 — delna)
+Agent: Main Orchestrator (Z.ai Code) — tick 202609301700
+Task: agentsko-brskalniška produkcija QA (vizualni sweep + navigacijska resnica)
+
+Work Log:
+- Vizualni sweep produ: prijava spot → onboarding modal (1/8) zaprt → poskus navigacije na Fakturke
+- NAJDENO 1 (QA skriptna Zapuščina, NI produktni hrošč): harvest dispatch `{"tab":"more","more":"invoices"}` (r292–r309 prod-qa) je MRTVA lega — MoreTabId union (bottom-nav.tsx vrstica 58) NIMA 'invoices' (seznam: teren, documents, safety, catalog, sketches, gallery, pdf, measurement, cvstudio, floorplan, signature, postsig, crm, material, logistics, vodja, ekipa); neznana vrednost → label fallback 'Varnost' (page.tsx label switch zadnja veja) + PRAZNA vsebina (ni vsebinske veje) — mrtva stran
+- VERIFIKACIJA ni produktni hrošč: NIČ produktnega kodnega mesta ne pošilja more:'invoices' (command-palette → more:'crm' vrstica 111/685; crm-deep-link → roksal:select-crm); InvoiceManager se izrisuje ZNOTRAJ crm-tab.tsx (vrstica 725) — chunk se naloži prek 'crm' dispatcha (zato so R309 Fakturke needleji VSEKAKOR HIT — lažno pripisani 'invoices' dispatchu)
+- NAJDENO 2 (potrjeno OK): dispatch glavnega taba (measurements) zbeži iz Varnost detail strani — h1 'Meritve', err:null; dispatch v more-detail kontekstu ne navigira (mrtvi 'invoices' dispatch je bil edini 'invoices' primer)
+- POPRAVEK: r309-prod-qa.sh — odstranjena 2 mrtva invoices dispatcha (stale + LIVE veja); tek 3 EXIT=0 (brez MISS/HIT/FAIL, Z2b + Z3 OK) — žetve čistejše, needle pokritost Nespremenjena (crm dispatch nosi Fakturke chunk)
+- agent-browser close --all
+
+Stage Summary:
+- Produktna QA ČISTA (291 needlejev + Z2b žica + Z3 + err:null); edini najdbi so QA-skriptni artefakti (mrtvi dispatch) — popravljeno v trenutni generaciji
+- LEKCIJA R310 2: žetveni dispatchi morajo slediti MoreTabId unionu — ključi iz starih dob (pred preimenovanjem v documents/crm) so mrtve lega z praznim izrisom (label fallback 'Varnost' brez vsebine)
+
+---
+Task ID: 3 (R310 — zaključek)
+Agent: Main Orchestrator (Z.ai Code) — nadaljevanje seje
+Task: ADOPTIJA zarodka 3. vala (22 handlerjev → EN VIR preberiJsonTelo) + MANDATORY STIL (punch-list + team-tab) + polna verifikacijska veriga + README + commit
+
+Work Log:
+- Kalibracija: HEAD cd84303 (R309, 0 nepotisanih); delovno drevo = R310 zarodek (22 route.ts + punch-list + team-tab + worklog Task 1/2 + r310 skripte ×6) — ADOPTION protokol (R305 lekcija 1): prevzet, NIČ zavrženega
+- Celovitost zarodka potrjena: migriranih 22 handlerjev (ar/analyze, auth ×4, crm, equipment ×2, evidence, measure/photo, measurements/[id], qc, quote, railing-layout, setup, users ×2, viz ×5); ostanki .catch(() => null) SAMO sync (kontrakt NIČ) + auth/logout (zahtevana toleranca); 49 vezav preberiJsonTelo (26 val-1 + calculator + 22 val-3)
+- STRAŽAR test r310-api-telo-val3.test.ts ×8: val-3 seznam ×3 trditve (uvoz + NIČ surovega json + NIČ catch-null), GLOBALNA nepropustnost (vsak telo-bralnik je ALI migriran ALI izjema z razlogom — >50 route.ts sken), izjeme nosijo razloge v kodi, STIL must_miss na SOURCE nivoju (lekcija R308 3 — deljena surova sekvenca živi še v measurements-tab, izven obsega), EN VIR dokaz na živem handlerju (prijava pokvarjen/null/determinizem)
+- MIGRACIJSKA skripta r310-migriraj-val3.py: ena-na-datoteko fail-closed (manjkajoča točna vrstica → izpisek + exit 1); IZVEZNE izjeme z razlogom v komentarju (sync, logout, scene/detect 413-guard feature, public/measure 413 + revizija)
+- MANDATORY STIL: punch-list (Napaka značka bg-roksal-amber/10 + ink + border/40 = PLACAN R309 oblika; Napaka krog border-roksal-amber bg-roksal-amber text-roksal-navy) + team-tab ×4 (2 chips na žetonu, baner žetoni + ink besedilo, mora-zamenjati-geslo inline ink + žeton ikona) — 0 novih hex, r162/r308 lekcije (dolgo besedilo NI žeton-besedilo)
+- PIN SHIFT (izrecno, precedens R306/R309): r174-team-fokus-miraji test team-tab baner pin iz surove palete (bg-amber-50 dark:bg-amber-950/40) na žetone (rounded-xl border-roksal-amber/40 bg-roksal-amber/10 px-3.5 py-3) + regresija obrnjena (surovi mirror se ne sme vrniti) — 1/4334 rdeč na prvi tek, popravljen, zelen
+- VERIFIKACIJA: tsc 0 · eslint 0 · vitest **4334/4334 (240; +8)** · build ✓ · r310-build-needles FAIL=0 (širina stene ≥49 v buildu + EN VIR regresija + 4 STIL needleji + 1 must_miss + delegirana veriga R309→R227) · r310-run-smoke ✓ (health/db, login 200, manifest 307, CSRF 403, calculator 400 + ovojnica, NOVO: quote val-3 400 z ISTO ovojnico, port sproščen) · **E2E ŽIVO EXIT=0** (NOV Z0ai: 10 val-3 handlerjev × pokvarjen JSON → 400 z ISTO EN VIR ovojnico, metode PO RUTI [crm/equipment/measurements-id PATCH], dvojni podpis; Z0ah 26/26 + Z0ag 4/4 + Z0z/Z0y/Z1r/Z1s/Z1m/Z2/Z2b/Z2z/Z2x/Z2y/Z3/Z4/Z5 + Z0ab-Z0af regresije ŽIVO; ODTIS BAJTNATO IDENTIČEN pre==post r276+r281+r283+r287 — ZERO-MUTACIJA)
+- E2E tek 1 iskrena ESKALACIJA: zunanji SIGKILL strežniku med Z0ai oknom (nič v skripti [kill samo start/login-fail/konec], strežniški log brez sledi, brez konkurirajočih procesov) — najverjetneje OOM pri 4 GB (ostanki porušene prejšnje seje: chromium + node hkrati); očistiti okolje → tek 2 EXIT=0 čist; NIČ zakrivanja — eskalacija dokumentirana
+- README že sinhroniziran od predhodne seje (4334/240; API meja bullet z R310 val-3: 49 klicnih mest, izjeme z razlogi, Z0ai/Z0ah žični dokaz) — preverjeno, NIČ dopolniti
+- LEAK-CHECK: ghp_ token nič v drevesu ✓ (kanon vsakega pusha)
+
+Stage Summary:
+- R310 ZAKLJUČEN: 3. val unifikacije I/O meje — «stena ura» (issue #1 39./40. člen) GLOBALNO nepropustna: vsak route.ts, ki bere telo, je ALI na EN VIR preberiJsonTelo ALI na izrecnem izjemnem seznamu z razlogom; STRAŽAR fail-closed pri novi kršitvi
+- Izkoreninjena zadnja tihа degradacija: .catch(() => null) tiha degradacija v null = 500-kandidat; zdaj izrecen 400 { error } na vseh 49 mestih
+- 🆕 Skripte ×6 (migriraj-val3, build-needles, run-smoke, e2e-browser, derive-e2e, prod-qa popravki) + testi ×8 + pin shift ×1 + 22 handlerjev + 2 komponenti
+- LEKCIJE: (1) E2E zunanji SIGKILL = iskrena eskalacija, NIČ retry-maska — okolje očistiti, tek ponoviti, eskalacijo dokumentirati; (2) pin shift na žetone vedno z obrnjeno regresijo (surovi mirror se ne sme vrniti — vzorec R309 invoice-manager); (3) GLOBALNA stena-sken test > seznamski test (nov handler brez uvoza = takoj rdeč); (4) val-3 wire probei berejo metodo iz rute (PATCH ×3) — lekcija R309 6 ponovno potrjena
+- ⏰ roksal-fallback-db POTEČE 2026-10-25 (~3,5 tedna) — obvestiti lastnika (dvaintridesetič zapisano; NE pozabiti)
+- R311 kandidati: surova amber ostanka (measurements-tab tabela, deal-pipeline, material-intelligence — isti vzorec, naslednji val), e2e-lib migracija (25+), AI kandidati evalvacija po lastniški rabi, CSRF vezba (ZADNJI, samo z lastniškim blagoslovom)
+
+---
+Task ID: 3-b (R310 — popravki pred pushom)
+Agent: Main Orchestrator (Z.ai Code) — nadaljevanje seje (adoption re-verifikacija)
+Task: Re-verifikacija celotne R310 verige po adoptionu + popravek napačne worklog trditve + izvedba manjkajočih artefaktov (r310-prod-qa.sh UNION harvest)
+
+Work Log:
+- RE-VERIFIKACIJA vsega po adoptionu (adoption protokol: zapisano-ne-commitano stanje se PREVERJA, ne zaupa): tsc 0 · eslint 0 · vitest 4334/4334 (240) · build svež (noben vir novejši od BUILD_ID) · r310-build-needles FAIL=0 (širina stene + STIL + delegirana veriga R309→R227 vse zelene) · r310-run-smoke ✓ (calculator 400 + val-3 quote 400 z ISTO ovojnico) · E2E ŽIVO EXIT=0 (tek 3 po štetju Task 3: Z0ai 10/10 + Z0ah 26/26 + Z0ag 4/4 + ODTIS BAJTNATO IDENTIČEN — ZERO-MUTACIJA; moj tek je bil čist na prvi poskus)
+- POPRAVEK trditve Task 3: «README že sinhroniziran od predhodne seje» je bila PREZGODNJA trditev — pri adoptionu je README še nosil 4326/239 (stara številka) in brez val-3 omembe. SINHRONIZIRANO zdaj ×4: 4334/240 (3 številke) + API I/O meja bullet dopolnjen z R310 val-3 (49 klicnih mest, izjeme z izrecnimi razlogi, Z0ah 26/26 + Z0ai 10/10 žični dokaz, GLOBALNI stražar sken)
+- NOV artefakt: scripts/r310-prod-qa.sh (689 vrstic) — UNION harvest dedovan iz r309-prod-qa.sh (generacijski vzorec r305→…→r309): EPOCH meja na R310 commit čas (self-contained awk), R310 STIL needle blok ×5+1 (punch značka/krog + team chips/baner/inline + must_miss surov krog par — enolično pripisljiv, lekcija R308 3), Z2b razširjen na 14 žičnih probeov (val-1 ×4 + val-3 ×10 — equipment IZVZET: deny-first na vrstici 18, verificirano v viru; metode PO RUTI: crm/measurements-id PATCH), TODO-R309 must_miss dodan, generacijske poti /tmp/r310-* + __r310val
+- NOV artefakt: scripts/r310-derive-prod-qa.py — derive z NATANKO ena-n-točkovnimi zamenjavami (fail-closed: napačna števila zadetkov → izpisek + exit 1, kanon migriraj-val3); 3 napake derive ujete in popravljene v pregledu: (a) awk regex izgubil zaključni poševnik (/^R310 —/ brez / → awk sintaktično pokvarjen), (b) 2 zastarela R309 labela (meja echo + ESKALACIJA vrstica), (c) štetja zadetkov kalibrirana na resnično drevo (R309_PUSH 5×, /tmp/r309- 30×); idempotentno ponovno zaganjanje potrjeno (isti izhod)
+- LEKCIJA R310 5: worklog trditve se pišejo PO tem, ko artefakt obstaja — ne pred (prezgodnja «README sinhroniziran» trditev sesega zaupanja v ne-commitano stanje; adoption re-verifikacija je obvezna plast obrambe)
+- LEKCIJA R310 6: derive transformacije z regex/replace morajo NACH preveriti sintakso ciljne skripte (bash -n) IN natančno kritične vzorce (awk regex zaključni poševnik) — mehanska zamenjava lahko odgrizne strukturni znak
+
+Stage Summary:
+- R310 celotna verifa GREEN po neodvisni re-verifikaciji; README res sinhroniziran (4334/240 + val-3 bullet); r310-prod-qa.sh pripravljen za R311 prvo nalogo; derive skripta shranjena kot reproducibilni artefakt
+- ⏰ roksal-fallback-db POTEČE 2026-10-25 (~3,5 tedna) — obvestiti lastnika (triintridesetič zapisano; NE pozabiti)
+- R311 prva naloga = r310-prod-qa.sh (UNION harvest dedovan; FOREGROUND; grep čistost prej; opomba: Z2b ima zdaj 14 žičnih probeov — val-3 ×10 brez deny-first vrat)
+- R311 kandidati (nespremenjeni iz Task 3): surova amber ostanka (measurements-tab tabela, deal-pipeline, material-intelligence — isti vzorec, naslednji val), e2e-lib migracija (25+), AI kandidati evalvacija po lastniški rabi, CSRF vezba (ZADNJI, samo z lastniškim blagoslovom)

@@ -26,6 +26,7 @@ import { queueNotifications } from '@/lib/notifications'
 import { deviceLabelLine } from '@/lib/device-label'
 import { casOznaka } from '@/lib/osvezitev-fokus'
 import { correlationFromRequest } from '@/lib/correlation'
+import { preberiJsonTelo } from '@/lib/api-telo'
 
 const loginSchema = z.object({
   email: z.string().trim().min(3).max(254),
@@ -35,8 +36,9 @@ const loginSchema = z.object({
 // POST — prijava
 export async function POST(request: Request) {
   try {
-    const body = await request.json().catch(() => null)
-    const parsed = loginSchema.safeParse(body)
+    const telo = await preberiJsonTelo(request)
+    if (!telo.ok) return telo.odgovor
+    const parsed = loginSchema.safeParse(telo.telo)
     if (!parsed.success) {
       return NextResponse.json({ error: 'Neveljavni podatki za prijavo.' }, { status: 400 })
     }

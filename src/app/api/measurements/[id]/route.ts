@@ -25,6 +25,7 @@ import { assertProjectAccess, actorIdOf, AccessDeniedError } from '@/lib/access'
 
 import { zapisOmejitev } from '@/lib/rate-limit'
 import { auditInTx } from '@/lib/audit'
+import { preberiJsonTelo } from '@/lib/api-telo'
 const MEASUREMENT_STATUSES = ['OSNUTEK', 'POTRJENA', 'ARHIVIRANA'] as const
 
 const patchMeasurementStatusSchema = z.object({
@@ -49,10 +50,9 @@ export async function PATCH(
   const actor = actorIdOf(auth)
   try {
     const { id } = await params
-    const body = await request.json().catch(() => null)
-    if (body === null || typeof body !== 'object') {
-      return NextResponse.json({ error: 'Manjka telo zahtevka' }, { status: 400 })
-    }
+    const telo = await preberiJsonTelo(request)
+    if (!telo.ok) return telo.odgovor
+    const body = telo.telo
     const validated = patchMeasurementStatusSchema.parse(body)
 
     const measurement = await db.measurement.findUnique({ where: { id } })

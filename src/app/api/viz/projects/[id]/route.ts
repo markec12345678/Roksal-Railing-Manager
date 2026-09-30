@@ -15,6 +15,7 @@ import {
   renameProjectForOwner,
   type VizProjectRecord,
 } from '@/lib/viz/repository'
+import { preberiJsonTelo } from '@/lib/api-telo'
 
 export const runtime = 'nodejs'
 
@@ -99,8 +100,9 @@ export async function PATCH(
   if (ctx instanceof Response) return ctx
   try {
     const { id } = await params
-    const body = await request.json().catch(() => null)
-    const parsed = renameSchema.safeParse(body)
+    const telo = await preberiJsonTelo(request)
+    if (!telo.ok) return telo.odgovor
+    const parsed = renameSchema.safeParse(telo.telo)
     if (!parsed.success) {
       return NextResponse.json(
         { error: 'Neveljavni podatki za preimenovanje', details: parsed.error.issues },

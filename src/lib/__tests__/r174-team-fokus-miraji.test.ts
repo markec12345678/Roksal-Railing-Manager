@@ -160,9 +160,16 @@ describe('R174 STIL — pokvarjeni mirrori (dvojni poševnici v opacity modifier
     expect(rawMirrors.length, 'invoice-manager.tsx').toBe(0)
   })
 
-  it('team-tab pošteno-stanje panel je popavljen na dark:bg-amber-950/40 (brez /70 repka)', () => {
+  it('team-tab pošteno-stanje panel je popavljen na žetonih (R310 pin shift — surovi amber → roksal žetoni)', () => {
+    // R310 pin shift: baner je harmoniziran iz surove palete
+    // (bg-amber-50 dark:bg-amber-950/40) na roksal žetone
+    // (border-roksal-amber/40 bg-roksal-amber/10) — žeton je temsko
+    // prilagodljiv PO NARAVI (isti precedens kot invoice-manager R309),
+    // besedilo je ink (r162 lekcija: dolgo besedilo NI žeton-besedilo).
+    // Regresija: surovi mirror se ne sme vrniti; /40/70 repka ostaja prepovedana.
     const src = team()
-    expect(src).toContain('bg-amber-50 dark:bg-amber-950/40 px-3.5 py-3')
+    expect(src).toContain('rounded-xl border border-roksal-amber/40 bg-roksal-amber/10 px-3.5 py-3')
+    expect(src).not.toContain('bg-amber-50 dark:bg-amber-950/40')
     expect(src).not.toContain('/40/70')
   })
 })
