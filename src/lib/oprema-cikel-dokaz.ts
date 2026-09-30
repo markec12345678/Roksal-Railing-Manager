@@ -47,8 +47,13 @@ export interface OpremaCikelDokazRazgled {
 
 /** Št. akcijskih žigov vrstice (4 znane akcije — pariteta PDF/CSV celic;
  *  kalNeZahteva NI akcija, brezLokacije NI akcija). IZVOŽEN — komponenta in
- *  testi brajo ISTO resnico (NIČ dvojnega štetja). */
+ *  testi brajo ISTO resnico (NIČ dvojnega štetja). Fail-closed: pokvarjena
+ *  vrsta → TypeError z imenom graditelja (kanon — sporočilo nosi ime,
+ *  needleji na string kanon; vzorec R302 lekcija 1). */
 export function opremaZigi(v: OpremaCikelVrsta): number {
+  if (!v || typeof v !== 'object' || typeof v.id !== 'string') {
+    throw new TypeError('opremaZigi: pričakovana vrsta opreme (OpremaCikelVrsta — R266 EN VIR)')
+  }
   return (
     (v.pregledZapadel ? 1 : 0) +
     (v.pregledNezabelezen ? 1 : 0) +

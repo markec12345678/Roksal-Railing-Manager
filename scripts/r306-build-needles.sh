@@ -44,6 +44,7 @@ must_miss() {
 }
 
 echo "--- R306 MANDATORY — OPREMA CIKEL DOKAZ NA ZASLONU (36. clen, ZASLON) ---"
+need_static "opremaCikelDokaz: " "R306 lib graditelj prek TypeError STRING kanona (R302 lekcija 1)"
 need_static "oprema-cikel-dokaz-prazno" "R306 prazna veja testid (zelen ziga — iskrena praznina)"
 need_static "oprema-cikel-dokaz-sklep" "R306 sklep veja testid (iskren dvojni stevec vrstic/zigov)"
 need_static "Oprema za poskrbeti" "R306 naslov (vidno besedilo)"

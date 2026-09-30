@@ -96,6 +96,12 @@ describe('R306 — filter dokazi (samo akcijska oprema + dedovan red)', () => {
     expect(razgled.ziga).toBe(0)
   })
 
+  it('opremaZigi fail-closed: pokvarjena vrsta → TypeError z imenom graditelja (string kanon — R302 lekcija 1)', () => {
+    expect(() => opremaZigi(null as unknown as OpremaCikelVrsta)).toThrow(TypeError)
+    expect(() => opremaZigi('ne-vrsta' as unknown as OpremaCikelVrsta)).toThrow(/opremaZigi:/)
+    expect(() => opremaZigi({ naziv: 'brez id' } as unknown as OpremaCikelVrsta)).toThrow(/opremaZigi:/)
+  })
+
   it('determinizem: isti pregled = ISTI razgled (filter f(pregled) — brez ure, brez slučaja)', () => {
     expect(opremaCikelDokaz(vrsteOsnova())).toEqual(opremaCikelDokaz(vrsteOsnova()))
   })

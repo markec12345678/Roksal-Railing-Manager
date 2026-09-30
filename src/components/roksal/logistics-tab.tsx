@@ -129,6 +129,11 @@ import { tedenskiEkipaDanRazgled } from '@/lib/tedenski-ekipa-dnevi'
 // (4 žigi pariteta PDF/CSV; vrstic = kosovi, ziga = vsota žigov — iskren
 // dvojni števec). route NIČ (client+lib only).
 import { opremaCikelDokaz } from '@/lib/oprema-cikel-dokaz'
+// R307 — konflikti dokaz (37. člen 'izvozi' družine): ZASLONSKI brat
+// Konflikti CSV R301 + PDF R302 — preslikava pregleda R300 v prikazne
+// vrstice (ISTI pari, ISTI red; vozniRedCasOkno R255 + statusi VERBATIM).
+// route NIČ (client+lib only).
+import { konfliktiDokaz } from '@/lib/konflikti-dokaz'
 import { cenikDatumIso } from '@/lib/cenik-pdf'
 import { QC_TEMPLATE, computePassed, countDefects } from '@/lib/qc-gate'
 import { IEV_TEMPLATE } from '@/lib/installation-evidence'
@@ -566,6 +571,15 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
   const ekipaPregled = useMemo(
     () => tedenskiEkipaPregled(vozniRedVnosi, tedenskiRazgledNow),
     [vozniRedVnosi, tedenskiRazgledNow],
+  )
+
+  // R307 — 37. člen: KONFLIKTNI DOKAZ vrstice (EN VIR — preslikava memo
+  // konfliktiPregled R300, NIKOLI drugih seznamov; vzorec R305/R306 memo
+  // EN VIR). Preslikava se zgodi SAMO pri konfliktih (null = zelen žig
+  // mini-vrstice — nič dokaza, iskrena čistost).
+  const konfliktiDokazVrstice = useMemo(
+    () => (konfliktiPregled === null ? null : konfliktiDokaz(konfliktiPregled)),
+    [konfliktiPregled],
   )
 
   // R305 — 35. člen: ZASLONSKI pregled po dnevih z ekipami (EN VIR — izpeljan
@@ -1759,10 +1773,54 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
               >
                 {konfliktiPregled === null
                   ? 'Konflikti: 0 — brez dvojnih rezervacij ekipe v okviru.'
-                  : `Konflikti: ${konfliktiPregled.stPrekrivanj} · ekipe: ${konfliktiPregled.skupine.map((s) => s.ekipa).join(', ')} — dvojne rezervacije v okviru (poli-odprto pravilo).`}
+                  : konfliktiSklep(konfliktiPregled)}
               </p>
             )}
           </div>
+          {/* R307 — 37. člen (issue #1 'izvozi' družina — bralni ZASLONSKI
+              člen): KONFLIKTNI DOKAZ NA ZASLONU — mini-vrstica pokaže
+              ŠTEVEC (rdeč žig EN VIR konfliktiSklep — R307 čistota: NIČ
+              več dvojnega besedila), dokaz pokaže PAROVE (Konflikti CSV
+              R301 = Excel, Konflikti PDF R302 = tisk, ZASLON = takoj).
+              EN VIR konfliktiDokaz (preslikava pregleda R300 — ISTI pari,
+              ISTI red; vzorec R306). Poli-odprto pravilo + statusi
+              VERBATIM — definicijski naslov izreče PRAVILA; 0 novih hex. */}
+          {razgled.pov !== null && konfliktiPregled !== null && (
+            <div
+              className="rounded-lg border border-border bg-muted/40 px-3 py-2"
+              role="group"
+              aria-label="Dokazani pari prekrivanj ekipe"
+              data-testid="konflikti-dokaz"
+              title="Dokazani pari prekrivanj — ISTI pari in ISTI vrstni red kot Konflikti CSV in Konflikti PDF: en par = ena vrstica (oba člena s časom okna, projektom in statusom VERBATIM); dan prekrivanja = ISO dan para (max začetek, UTC — prekrivanje čez polnoč nosi drug dan); poli-odprto pravilo (konec 12:00 + začetek 12:00 = dovoljen nazaj-na-nazaj); Preklicano/Zaključeno ne zasede; termin brez konca NE nosi dokazanega prekrivanja. ZASLON = takoj na pogled — brez tiska in izvoza."
+            >
+              <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
+                <p className="text-2xs font-medium text-roksal-red">Dokazani pari prekrivanj</p>
+                <p
+                  className="text-2xs tabular-nums text-muted-foreground"
+                  title="Resnica obsega pregleda (WYSIWYG — ISTI števci kot Konflikti CSV meta in PDF KPI): Pregledanih = aktivni termini z ekipo in znanim koncem v oknu; Parov = dokazana prekrivanja."
+                >
+                  Pregledanih {konfliktiPregled.pregledanih} · Parov {konfliktiPregled.stPrekrivanj}.
+                </p>
+              </div>
+              <ul className="mt-1.5 space-y-1">
+                {konfliktiDokazVrstice!.map((v) => (
+                  <li key={`${v.ekipa}#${v.dan}#${v.aOkno}#${v.bOkno}`} className="rounded border border-border/60 bg-background/60 px-2 py-1">
+                    <div className="flex flex-wrap items-baseline gap-x-1.5 text-2xs">
+                      <span className="font-medium text-roksal-red">{v.ekipa}</span>
+                      <span className="tabular-nums text-muted-foreground">{cenikDatumIso(v.dan)}</span>
+                      <span className="text-roksal-ink">{v.aProjekt ?? '—'}</span>
+                      <span className="tabular-nums text-muted-foreground">{v.aOkno}</span>
+                      <span aria-hidden className="text-muted-foreground">↔</span>
+                      <span className="text-roksal-ink">{v.bProjekt ?? '—'}</span>
+                      <span className="tabular-nums text-muted-foreground">{v.bOkno}</span>
+                      <span className="text-muted-foreground">{v.aStatus}</span>
+                      <span className="text-muted-foreground">{v.bStatus}</span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           {/* R305 — 35. člen (issue #1 'izvozi' družina — bralni ZASLONSKI
               član): TEDENSKI PREGLED PO DNEVIH Z EKIPAMI — vodja vidi teden
               TAKOJ NA POGLED (Ekipe PDF R303 = tisk za vodjo, Ekipe CSV
