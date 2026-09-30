@@ -20,6 +20,7 @@ import {
   terminBeseda,
   terminUrPovzetekRazsirjen,
   vsotaPredvidenihUr,
+  SCHEDULE_TERMINI_STATUS_LABELS,
   type TerminPrikazVnos,
 } from '@/lib/termini-prikaz'
 import {
@@ -46,6 +47,7 @@ import {
   generateVozniRedPdf,
   vozniRedPovzetek,
   vozniRedUreKpi,
+  vozniRedCasOkno,
   type VozniRedTermin,
 } from '@/lib/logistika-vozni-red-pdf'
 import {
@@ -117,6 +119,11 @@ import {
   tedenskiEkipaCsv,
   tedenskiEkipaCsvFilename,
 } from '@/lib/tedenski-vozni-red-ekipa-csv'
+// R305 — 35. člen 'izvozi' družine: TEDENSKI PREGLED PO DNEVIH Z EKIPAMI —
+// ZASLONSKI brat PDF R303 + CSV R304 (vgrupacija EN VIR pregleda R303 —
+// NIČ drugega okna/sorta; skleb UVOŽEN tedenskiEkipaPdfSklep — PETI
+// potrošnik ENEGA niza). route NIČ (client+lib only).
+import { tedenskiEkipaDanRazgled } from '@/lib/tedenski-ekipa-dnevi'
 import { cenikDatumIso } from '@/lib/cenik-pdf'
 import { QC_TEMPLATE, computePassed, countDefects } from '@/lib/qc-gate'
 import { IEV_TEMPLATE } from '@/lib/installation-evidence'
@@ -544,6 +551,16 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
     () => tedenskiEkipaPregled(vozniRedVnosi, tedenskiRazgledNow),
     [vozniRedVnosi, tedenskiRazgledNow],
   )
+
+  // R305 — 35. člen: ZASLONSKI pregled po dnevih z ekipami (EN VIR — izpeljan
+  // IZ memo ekipaPregled R303, NIKOLI iz drugih vhodov: drugo okno/sort =
+  // divergenca po konstrukciji nemogoča; vzorec R292/R300). null = mirror
+  // pregleda (0 ekip — iskrena praznina vrstica spodaj, particija dokaz).
+  const ekipaDanRazgled = useMemo(
+    () => (ekipaPregled === null ? null : tedenskiEkipaDanRazgled(ekipaPregled)),
+    [ekipaPregled],
+  )
+
 
   // R292 — 23. člen 'izvozi' družine: TEDENSKI VOZNI RED CSV — CSV brat PDF
   // R256 (vzorec R284→R285/R291): fail-closed PREJ (prazno okno → iskren
@@ -1730,6 +1747,94 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
               </p>
             )}
           </div>
+          {/* R305 — 35. člen (issue #1 'izvozi' družina — bralni ZASLONSKI
+              član): TEDENSKI PREGLED PO DNEVIH Z EKIPAMI — vodja vidi teden
+              TAKOJ NA POGLED (Ekipe PDF R303 = tisk za vodjo, Ekipe CSV
+              R304 = Excel filtriranje po ekipi, ZASLON = takoj). EN VIR
+              ekipaDanRazgled (izpeljan iz memo ekipaPregled R303 — ISTO
+              okno, ISTI sort, ISTI sklep = PETI potrošnik ENEGA niza);
+              PRAZNI dnevi = iskreno vidni (nikoli skriti — R292 kanon);
+              preklicani = rdeči bold + ŠTETI (PDF R303 pariteta); brez
+              ekipe = iskren števec v sklepu (niso vrstice — ekipa '—' ne
+              obstaja, princip R299/R303/R304). Definicijski naslov izreče
+              PRAVILA — MANDATORY STIL; 0 novih hex. */}
+          {razgled.pov !== null && (
+            <div
+              className="rounded-lg border border-border bg-muted/40 px-3 py-2"
+              role="group"
+              aria-label="Teden po dnevih in ekipah — naslednjih 7 dni"
+              data-testid="tedenski-ekipa-dnevi"
+              title="Teden po dnevih z ekipami (danes + 6 dni, UTC) — ISTI pregled in vrstni red kot Ekipe PDF in Ekipe CSV: ekipe ASC po abecedi, termini po času znotraj ekipe; preklicani vidni rdeče in šteti v števcih; brez ekipe = iskren števec v sklepu (niso vrstice); prazni dnevi vidni (iskrena resnica). ZASLON = takoj na pogled — brez tiska in izvoza."
+            >
+              <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
+                <p className="text-2xs font-medium text-roksal-ink">Teden po dnevih in ekipah</p>
+                {ekipaDanRazgled === null ? (
+                  <p
+                    className="text-2xs text-muted-foreground"
+                    data-testid="tedenski-ekipa-dnevi-prazno"
+                    title="Brez ekip z termini v okviru — vsi vidni termini v okviru so brez ekipe (particija okna: nič ekip = vsi brez ekipe, iskren števec). Dodeli ekipo v terminu, da se teden pokaže po dnevih."
+                  >
+                    Brez ekip z termini v okviru — vsi vidni termini v okviru ({razgled.pov.terminovN}) so brez ekipe. Dodeli ekipo v terminu, da se teden pokaže po dnevih.
+                  </p>
+                ) : (
+                  <p
+                    className="text-2xs text-muted-foreground"
+                    data-testid="tedenski-ekipa-dnevi-sklep"
+                    title="Isti sklep kot Ekipe PDF in Ekipe CSV — ENA resnica (PETI potrošnik ENEGA niza, WYSIWYG)."
+                  >
+                    {ekipaDanRazgled.sklep}.
+                  </p>
+                )}
+              </div>
+              {ekipaDanRazgled !== null && (
+                <div className="mt-1.5 space-y-1">
+                  {ekipaDanRazgled.dnevi.map((d) => (
+                    <div key={d.dan} className="rounded border border-border/60 bg-background/60 px-2 py-1">
+                      <div className="flex items-baseline justify-between gap-2">
+                        <p className={`text-2xs font-medium ${d.preklicani > 0 ? 'text-roksal-red' : 'text-roksal-ink'}`}>
+                          {d.ime} <span className="text-muted-foreground tabular-nums">{cenikDatumIso(d.dan)}</span>
+                        </p>
+                        <p
+                          className={`text-2xs tabular-nums ${d.preklicani > 0 ? 'font-medium text-roksal-red' : 'text-muted-foreground'}`}
+                          title={d.terminov === 0 ? 'Brez terminov na ta dan — iskrena praznina (prazni dnevi vidni, nikoli skriti — R292 kanon).' : `Vsi vidni termini dneva po ekipah (preklicani ŠTETI — viden odpad, pariteta PDF/CSV).${d.preklicani > 0 ? ` Preklicanih: ${d.preklicani}.` : ''}`}
+                        >
+                          {d.terminov === 0 ? '—' : `${d.terminov} ${terminBeseda(d.terminov)}${d.preklicani > 0 ? ` · preklicanih ${d.preklicani}` : ''}`}
+                        </p>
+                      </div>
+                      {d.vrstice.length === 0 ? (
+                        <p className="mt-0.5 text-2xs text-muted-foreground">Brez terminov na ta dan.</p>
+                      ) : (
+                        <ul className="mt-0.5 space-y-0.5">
+                          {d.vrstice.map((v, i) => {
+                            const preklican = v.termin.status === 'PREKlicANO'
+                            return (
+                              <li key={`${v.ekipa}#${v.termin.datumZacetka}#${i}`} className="flex flex-wrap items-baseline gap-x-1.5 text-2xs">
+                                <span className="font-medium text-roksal-ink">{v.ekipa}</span>
+                                <span className="tabular-nums text-muted-foreground">{vozniRedCasOkno(v.termin)}</span>
+                                <span
+                                  className={preklican ? 'font-medium text-roksal-red' : 'text-roksal-ink'}
+                                  title={preklican ? 'Preklicani termin — viden rdeče in štet v števcih (iskren odpad, pariteta PDF R303).' : undefined}
+                                >
+                                  {v.termin.projekt ?? '—'}
+                                </span>
+                                <span className="text-muted-foreground">{SCHEDULE_TERMINI_STATUS_LABELS[v.termin.status]}</span>
+                                <span
+                                  className="tabular-nums text-muted-foreground"
+                                  title={v.termin.predvideneUre === null ? 'Brez vpisane ure — ni šteta v vsoto (≥ meja, nikoli izmišljena).' : `${v.termin.predvideneUre} predvidenih ur`}
+                                >
+                                  {v.termin.predvideneUre !== null ? `${v.termin.predvideneUre} h` : '—'}
+                                </span>
+                              </li>
+                            )
+                          })}
+                        </ul>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           <div className="flex gap-2">
             {/* R244 — wave 6 RBAC ogledalo: CTA 'Nov termin montaže' je VIDEN
                 samo vlogi s pravico production.manage (API POST /api/schedules).
