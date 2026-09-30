@@ -108,6 +108,15 @@ import {
   tedenskiEkipaPdfSklep,
   tedenskiEkipaPregled,
 } from '@/lib/tedenski-vozni-red-ekipa-pdf'
+// R304 — 34. člen 'izvozi' družine: VODJA TEDENSKI CSV PO EKIPAH — CSV brat
+// PDF po ekipah R303 (tedenskiEkipaPregled EN VIR — ISTO okno, ISTI ekipa
+// seznam, ISTI sort f(množica); ENA vrstica na termin z Ekipa stolpcem;
+// Sklep EN VIR tedenskiEkipaPdfSklep — ŠTIRI potrošniki ENEGA niza). route
+// NIČ (client+lib only).
+import {
+  tedenskiEkipaCsv,
+  tedenskiEkipaCsvFilename,
+} from '@/lib/tedenski-vozni-red-ekipa-csv'
 import { cenikDatumIso } from '@/lib/cenik-pdf'
 import { QC_TEMPLATE, computePassed, countDefects } from '@/lib/qc-gate'
 import { IEV_TEMPLATE } from '@/lib/installation-evidence'
@@ -462,6 +471,8 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
   const [konfliktiPdfVTeku, setKonfliktiPdfVTeku] = useState(false)
   // R303 — dvoklik guard vodja ekipe PDF (pariteta konfliktiPdfVTeku R302).
   const [ekipaPdfVTeku, setEkipaPdfVTeku] = useState(false)
+  // R304 — dvoklik guard vodja ekipe CSV (pariteta ekipaPdfVTeku R303).
+  const [ekipaCsvVTeku, setEkipaCsvVTeku] = useState(false)
 
   // R266 — ENA izpeljava vhodov za cikl opreme (WYSIWYG ISTI vir kot PDF
   // KPI, tabela, sklep, F2 mini-vrstica IN toast): DTO pruning iz ISTEGA
@@ -1574,6 +1585,51 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
     }
   }
 
+  // R304 — 34. člen 'izvozi' družine (P1): VODJA TEDENSKI CSV PO EKIPAH —
+  // CSV brat PDF po ekipah R303: ISTA resnica, ampak ENA VRSTICA na termin
+  // z Ekipa stolpcem (PDF = tisk na en pogled, CSV = Excel za filtriranje/
+  // obdelavo po ekipi). Fail-closed PREJ (prazno okno → iskren toast; 0
+  // ekip → iskren toast — pariteta R303); potem ENA izpeljava (ISTI lib:
+  // pregled + CSV + ime; now = tedenskiRazgledNow — ENA izpeljava časa za
+  // celo družino, lekcija R121/R235); toast = ISTI tedenskiEkipaPdfSklep kot
+  // PDF toast + PDF sklepna vrstica + CSV meta 'Sklep' (ŠTIRI potrošniki
+  // ENEGA niza — WYSIWYG); fail-verbose catch (R291 vzorec); dvoklik guard
+  // (pariteta ekipaPdfVTeku R303).
+  const handleTedenskiEkipaCsv = () => {
+    if (ekipaCsvVTeku) return
+    setEkipaCsvVTeku(true)
+    try {
+      if (razgled.pov === null) {
+        toast({
+          title: 'Ni terminov v naslednjih 7 dneh',
+          description: 'CSV po ekipah se izvozi, ko je vpisan termin v prihajajočem tednu.',
+        })
+        return
+      }
+      if (ekipaPregled === null) {
+        // Iskrena praznina (termini obstajajo, ampak noben nima ekipe —
+        // mirror R299/R303: ekipa '—' NI ekipa; ni prazne datoteke).
+        toast({
+          title: 'Ni ekip z termini v naslednjih 7 dneh',
+          description: 'CSV po ekipah se izvozi, ko ima ekipa vpisan termin v prihajajočem tednu.',
+        })
+        return
+      }
+      const now = tedenskiRazgledNow
+      const { csv } = tedenskiEkipaCsv(vozniRedVnosi, now)
+      const ime = tedenskiEkipaCsvFilename(now)
+      downloadCsvText(ime, csv)
+      toast({
+        title: `Tedenski vozni red po ekipah prenešen v CSV (${ime})`,
+        description: tedenskiEkipaPdfSklep(ekipaPregled),
+      })
+    } catch (err) {
+      toast({ title: 'Izvoz CSV po ekipah ni uspel', description: err instanceof Error ? err.message : String(err), variant: 'destructive' })
+    } finally {
+      setEkipaCsvVTeku(false)
+    }
+  }
+
   return (
     <div className="space-y-4">
       {/* Subtabs */}
@@ -1893,6 +1949,31 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
             >
               <Users aria-hidden="true" className="h-4 w-4 mr-1" /> Ekipe PDF
             </Button>
+            {/* R304 — 34. člen 'izvozi' družine (P1-f): VODJA TEDENSKI CSV PO
+                EKIPAH — CSV brat PDF po ekipah R303: ISTA resnica kot tisk,
+                ampak ENA VRSTICA na termin z Ekipa stolpcem — vodja filtrira
+                po ekipi v Excelu (Ekipe PDF = tisk na en pogled, Ekipe CSV =
+                strojna obdelava). VEDNO viden (P1-k/R232 kanon): prazno okno
+                ALI 0 ekip → iskren fail-closed toast, NIKOLI prazna
+                datoteka (R250/R291 vzorec); dvoklik guard (pariteta
+                ekipaPdfVTeku R303); ISTI žetoni kot bratje — 0 novih hex
+                (FileSpreadsheet import ŽE obstaja — 0 pin premikov ikon).
+                Definicijski naslov (MANDATORY STIL): izreče PRAVILA (isti
+                pregled EN VIR kot Ekipe PDF; preklicani videni; brez ekipe =
+                iskren števec v sklepu) + vidno razliko medija (Ekipe PDF =
+                tisk za vodjo, Ekipe CSV = Excel za filtriranje). */}
+            <Button
+              type="button"
+              variant="outline"
+              aria-label="Izvozi tedenski vozni red po ekipah kot CSV"
+              title="Tedenski vozni red po ekipah kot CSV — naslednjih 7 dni, ENA vrstica na termin z Ekipa stolpcem (isti pregled in vrstni red kot Ekipe PDF; preklicani termini videni; termini brez ekipe niso vrstice — iskren števec v sklepu). Ekipe PDF = en tisk za vodjo, Ekipe CSV = Excel za filtriranje po ekipi"
+              data-testid="ekipe-csv-pill"
+              disabled={ekipaCsvVTeku}
+              className="shrink-0 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              onClick={handleTedenskiEkipaCsv}
+            >
+              <FileSpreadsheet aria-hidden="true" className="h-4 w-4 mr-1" /> Ekipe CSV
+            </Button>
             {/* R265 — 21. člen 'izvozi' družine (P1-f): PROJEKTI — TERMINI
                 PREGLED PDF — presek VSEH terminov (/api/schedules — FRESH
                 fetch ISTEGA endpointa ob kliku, R244/R245/R264 precedens;
@@ -1959,6 +2040,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
             {' · Konflikti CSV = dokazani pari prekrivanj ekipe (isti pregled kot žig)'}
             {' · Konflikti PDF = isti pregled kot CSV, tisk za pisarno'}
             {' · Ekipe PDF = ENA sekcija na ekipo (isti 7-dnevni okvir — en tisk za vodjo)'}
+            {' · Ekipe CSV = ista resnica kot Ekipe PDF (ENA vrstica na termin — Excel filtriranje po ekipi)'}
           </p>
 
           {/* R244 — vlogo-osveščen vodič (R242/R243 recept): viden SAMO, ko
