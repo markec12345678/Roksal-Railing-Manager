@@ -103,7 +103,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 45 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **4410** (247 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **4422** (249 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 143 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -391,6 +391,25 @@ Sheet z 6 podzavihki:
   časa/hash/števca testov — isti HEAD = bajtno identična datoteka); fail-closed
   propagacija TypeError graditelja; DETERMINIZEM ŽIVO dokazan v E2E (Z0an: dva
   izvoza bajtno enaka)
+- **Izvoz avtomatizacijskega audita kot CSV** (R317, 47. člen — issue #1
+  **IZVOZI družina**, Deliverable 4 kot prenosljiv artifact): vodjin
+  avtomatizacija-dokaz blok dobi gumb `CSV` (isti a11y/gumb vzorec kot JSON
+  brat) — `avtomatizacijaAuditCsv` (`src/lib/avtomatizacija-pregled.ts`) =
+  ČISTA projekcija `AVTOMATIZACIJA_AUDIT` prek `avtomatizacijaPregled`
+  validacije (fail-closed brezplačno — NIČ podvojenih pravil) — **determinističen**
+  CSV po kanonu R136 (BOM + podpičje + CRLF + RFC 4180 citiranje; glave
+  WYSIWYG + 11 območij z potmi implementacije/dokaza pipe-joined + sklep EN
+  VIR meta vrstica; brez časa/hash — isti HEAD = bajtno identična datoteka);
+  DETERMINIZEM ŽIVO v E2E Z0ao (dva izvoza bajtno enaka + BOM preverjen NA
+  BAJTIH — capture plast Response.text() BOM odstrani, blob bajti ne)
+- **Stil val 8 — izvozna družina focus-visible ring žetoni** (R317): IZRECNI
+  roksal ring žetoni po vseh 53 izvoznih gumbih (ui baza nosi generičen
+  ring-ring/50 — družina nosi žetone): site-survey PDF gumb harmoniziran
+  (edini brez izrecnega žetona) + deal-pipeline/rate-limit ring-2 širine
+  popravljene + NOV audit CSV gumb (amber/50 + offset — bratska simetrija vodja
+  blok glav ×3: dnevni R163 + JSON R316 + CSV R317); r317-stil-val8 STRAŽAR
+  (GLOBALNI sken: vsak izvozni gumb nosi izrecen ring žeton, barva = roksal
+  navy/40 ALI amber/50, amber SAMO v zaklenjenem registru — anti-stale)
 - **Stil val 7 — ZAKLJUČNI** (R316): fence-3d-viewer ×2 (ikoni) +
   notification-center ×1 (ikona, dark-par odpade) + signature-quote ×1 (hint
   ink) + photo-measure ×1 (hint ink) = 5 dotikov — surove amber → roksal
@@ -453,7 +472,7 @@ Sheet z 6 podzavihki:
 | **PWA** | Service Worker + Web Manifest |
 | **Temnitveni način** | [next-themes](https://github.com/pacocoursey/next-themes) |
 | **Validacija** | [Zod 4](https://zod.dev/) |
-| **Testiranje** | [Vitest 4](https://vitest.dev/) (4410 testov + globalSetup embedded PG) |
+| **Testiranje** | [Vitest 4](https://vitest.dev/) (4422 testov + globalSetup embedded PG) |
 | **Paketni upravitelj** | [Bun](https://bun.sh/) |
 | **Linting** | ESLint 9 + eslint-config-next |
 
@@ -575,7 +594,7 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `bun run dev` | Zažene Next.js dev server (port 3000) |
 | `bun run build` | Produkcijska build (build-prepare: generate + migrate deploy + seed) |
 | `bun run start` | Zažene produkcijski server |
-| `bun run test` | Vsi testi (vitest, 4410, embedded PG prek globalSetup) |
+| `bun run test` | Vsi testi (vitest, 4422, embedded PG prek globalSetup) |
 | `bun run check` | tsc --noEmit + vitest run (en ukaz za vse) |
 | `bunx tsc --noEmit` | Tipska kontrola celotnega projekta (trenutno 0 napak) |
 | `bun run lint` | ESLint preverjanje |

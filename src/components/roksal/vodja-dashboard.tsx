@@ -92,7 +92,7 @@ import type { ZmogljivostPregled } from '@/lib/zmogljivost-pregled'
 // VIR — koncna-verifikacija + avtomatizacija-audit; WYSIWYG sklep, NIČ
 // dvojnega sklepa).
 import { koncnaVerifikacija, koncnaVerifikacijaJson } from '@/lib/koncna-verifikacija'
-import { avtomatizacijaPregled } from '@/lib/avtomatizacija-pregled'
+import { avtomatizacijaPregled, avtomatizacijaAuditCsv, avtomatizacijaAuditCsvFilename } from '@/lib/avtomatizacija-pregled'
 import {
   TrendingUp, Clock, Users, Package, Euro, CheckCircle2,
   AlertTriangle, Calendar, Truck, Bell, FileDown, Loader2, Download, Workflow,
@@ -817,6 +817,33 @@ export function VodjaDashboard() {
     }
   }
 
+  /** 🆕 R317 (47. člen, issue #1 IZVOZI družina): izvoz avtomatizacijskega
+   *  audita kot deterministični CSV — EN VIR (avtomatizacijaAuditCsv), brez
+   *  metapodatkov časa/hash (isti HEAD = bajtno identična datoteka — kanon
+   *  koncnaVerifikacijaJson, 46. člen). Fail-verbose: razlog vidno, ne tiho
+   *  (kanon). */
+  function exportAvtomatizacijaAuditCsv() {
+    try {
+      const csv = avtomatizacijaAuditCsv()
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = avtomatizacijaAuditCsvFilename()
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+      toast({ title: 'Avtomatizacijski audit izvožen ✓', description: avtomatizacijaAuditCsvFilename() })
+    } catch (e) {
+      toast({
+        title: 'Izvoz ni uspel',
+        description: e instanceof Error ? e.message : String(e),
+        variant: 'destructive',
+      })
+    }
+  }
+
   if (loading) {
     return (
       <div className="space-y-3 p-4" aria-busy="true" aria-live="polite">
@@ -1213,6 +1240,20 @@ export function VodjaDashboard() {
           >
             {avtAudit.stObmocij} območij · {avtAudit.poRazredu.DETERMINISTICNO} DETERMINISTIČNO · {avtAudit.poRazredu.AI_OPCIJSKO} AI-OPCIJSKO
           </p>
+          {/* 🆕 R317 (47. člen): izvoz istega EN VIR audita kot CSV —
+              a11y družina (aria-label + title, R291/R293 precedens); ISTI
+              gumb vzorec kot JSON brat (46. člen) — amber ring par (WYSIWYG). */}
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-6 gap-1 border-roksal-navy/25 px-2 text-2xs text-roksal-ink transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 dark:border-roksal-ink/25"
+            onClick={exportAvtomatizacijaAuditCsv}
+            aria-label="Izvozi avtomatizacijski audit kot CSV"
+            title="Izvozi avtomatizacijski audit (11 območij + klasifikacije + poti) kot deterministični CSV"
+          >
+            <Download className="h-3 w-3" aria-hidden="true" />
+            CSV
+          </Button>
         </div>
         <ul className="mt-1 space-y-0.5" data-testid="avtomatizacija-vrstice">
           {avtAudit.vrstice.map((v) => (

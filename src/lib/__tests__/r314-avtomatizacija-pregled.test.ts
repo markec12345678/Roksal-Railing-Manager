@@ -200,7 +200,15 @@ describe('r314 STRAŽAR — vodja audit blok (EN VIR, NIČ dvojnega sklepa)', ()
 
   it('lib import: graditelj klican brez argumenta v komponenti (produkcija = EN VIR)', () => {
     const src = vodja()
-    expect(src).toContain("import { avtomatizacijaPregled } from '@/lib/avtomatizacija-pregled'")
+    // R317 PIN SHIFT (47. člen: vodja dobi tudi CSV izvoz — enojni → trojni
+    // import, precedens R306/R309/R314/R315/R316) z OBRNJENO regresijo —
+    // stari enojni import je prepovedan (polzaporedje ne sme nazaj).
+    expect(src).toContain(
+      "import { avtomatizacijaPregled, avtomatizacijaAuditCsv, avtomatizacijaAuditCsvFilename } from '@/lib/avtomatizacija-pregled'",
+    )
+    expect(src).not.toContain(
+      "import { avtomatizacijaPregled } from '@/lib/avtomatizacija-pregled'",
+    )
     expect(src).toContain('const avtAudit = avtomatizacijaPregled()')
   })
 })

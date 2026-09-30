@@ -25,6 +25,7 @@
 
 import { AVTOMATIZACIJA_AUDIT, RAZREDI } from '@/lib/avtomatizacija-audit'
 import type { RazredAudita, VrstaAudita } from '@/lib/avtomatizacija-audit'
+import { toCsv, type CsvValue } from '@/lib/csv-export'
 
 /** Prikazno ime razreda (WYSIWYG — verbatim iz tega modula). */
 export const RAZRED_PRIKAZNO: Readonly<Record<RazredAudita, string>> = {
@@ -129,4 +130,80 @@ export function avtomatizacijaPregled(
       ? ' — jedro deluje brez AI'
       : ' — vsako AI-obvezno območje zahteva izrecno utemeljitev')
   return { vrstice, poRazredu, stObmocij, sklep }
+}
+
+// ---------------------------------------------------------------------------
+// 47. člen (issue #1 — IZVOZI družina): izvoz avtomatizacijskega audita kot
+// DETERMINISTIČNI CSV (Deliverable 4 kot prenosljiv artifact — tabela iz
+// R314 na zaslonu, zdaj tudi v pisarniškem orodju). ČISTA projekcija EN VIR
+// resnic — AVTOMATIZACIJA_AUDIT je edini vir (zaslon + testi + docs + IZVOZ
+// berejo isti niz; NIČ dvojnega sklepa). WYSIWYG: razred = prikazno ime iz
+// RAZRED_PRIKAZNO; opomba verbatim. Brez metapodatkov časa/hash (isti HEAD
+// → bajtno identična datoteka — kanon koncnaVerifikacijaJson, 46. člen).
+// Format: kanon R136 toCsv (BOM + podpičje + CRLF + RFC 4180 citiranje —
+// opombe z vejicami/narekovaji so varno citirane). Poti implementacije in
+// dokaza združene z ' | ' (podpičje je ločilo — cev je varna, bralna).
+// Fail-closed: gradnja gre PREK avtomatizacijaPregled (validacija območij/
+// razredov/poti/opomb) — pokvarjen audit ne more postati lažno poročilo;
+// propagira TypeError z imenom graditelja (kanon R299/R302/R306).
+// ---------------------------------------------------------------------------
+
+/** Glave CSV (WYSIWYG — ISTI niz kot prikazna tabela na vodji). */
+const AUDIT_CSV_GLAVE: readonly string[] = [
+  'Območje',
+  'Razred',
+  'Implementacije',
+  'Dokazi (testi)',
+  'Opomba',
+]
+
+/**
+ * Zgrodi deterministični CSV avtomatizacijskega audita. Privzeti vhod = EN
+ * VIR (parametriziran SAMO za teste fail-closed poti — produkcija vedno
+ * kliče brez argumenta). Vrstni red vrstic = ISTI vrstni red kot audit
+ * (nič prerazporejanja — kanon pregleda).
+ */
+export function avtomatizacijaAuditCsv(
+  audit: readonly VrstaAudita[] = AVTOMATIZACIJA_AUDIT,
+): string {
+  // Validacija + WYSIWYG preslikava prek EN VIR graditelja (fail-closed
+  // brezplačno — ista strogost kot na zaslonu, NIČ podvojenih pravil).
+  const pregled = avtomatizacijaPregled(audit)
+  // Zip po indeksu: pregled.vrstice ohranja ISTI vrstni red kot audit
+  // (dokumentirano v AvtomatizacijaPregled — 'nič prerazporejanja'); poti
+  // živijo v auditu, prikazna resnica v pregledu — skupaj = ena vrstica.
+  if (pregled.vrstice.length !== audit.length) {
+    throw new TypeError(
+      'avtomatizacijaAuditCsv: notranja neskladja dolžin (pregled vs audit) — fail-closed',
+    )
+  }
+  const podatkovne: CsvValue[][] = audit.map((v, i) => {
+    const p = pregled.vrstice[i]
+    if (!p || p.obmocje !== v.obmocje) {
+      throw new TypeError(
+        `avtomatizacijaAuditCsv: vrstica ${i} ni usklajena z auditom (${String(v?.obmocje)}) — fail-closed`,
+      )
+    }
+    return [
+      p.obmocje,
+      p.razredPrikazno,
+      v.implementacija.join(' | '),
+      v.dokaz.join(' | '),
+      p.opomba,
+    ]
+  })
+  // Povzetek: EN VIR sklep (isti niz kot na zaslonu — NIČ dvojnega sklepa).
+  // Brez 'Izvoženo ob' — čas bi uničil determinizem (isti HEAD = isti CSV).
+  const meta: CsvValue[][] = [
+    [], // prazna ločilna vrstica pred povzetkom (preglednost v Excelu)
+    ['Sklep', pregled.sklep],
+    ['Vir', 'AVTOMATIZACIJA_AUDIT — isti HEAD = bajtno identičen izvoz'],
+  ]
+  return toCsv([...AUDIT_CSV_GLAVE], [...podatkovne, ...meta])
+}
+
+/** Deterministično ime datoteke (brez datuma — veza na HEAD je implicitna;
+ *  vzorec koncna-verifikacija.json, 46. člen). */
+export function avtomatizacijaAuditCsvFilename(): string {
+  return 'avtomatizacija-audit.csv'
 }

@@ -599,7 +599,7 @@ export function DealPipeline() {
               type="button"
               variant="ghost"
               size="sm"
-              className="h-8 shrink-0 gap-1.5 px-2 text-xs focus-visible:ring-roksal-navy/40"
+              className="h-8 shrink-0 gap-1.5 px-2 text-xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
               onClick={handleExportPloscaCsv}
               disabled={loading || exportingPlosca}
               aria-label="Izvozi prodajno ploščo kot CSV"
