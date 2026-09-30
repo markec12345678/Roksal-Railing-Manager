@@ -103,7 +103,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 45 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **4199** (231 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **4216** (232 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 143 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -296,7 +296,7 @@ Sheet z 6 podzavihki:
 - **Ponudba za stranko** — postavke, DDV, skupaj, pogoji, podpis
 - **Koledar pregledov (PDF + CSV + ICS, 10./25./26. člen izvozne družine)** — ISTA koledarska resnica v treh oblikah: PDF časovna vrsta (najbližji pregled prvi), CSV ravnina za Excel (BOM, isti 7 stolpcev) in ICS (RFC 5545 — uvoz v Google/Outlook/telefon, celodnevni dogodki, CRLF, brez BOM, zavijanje ≤ 75 oktetov)
 - **Oprema cikel (PDF + CSV, 22./27. člen izvozne družine)** — ISTA življenjska cikl resnica: pregledi, kalibracije (4 iskrene veje), statusi VSE opreme (NAZIV ASC referenčni red) — PDF dokument IN CSV ravnina za Excel/revizijo (8 stolpcev VERBATIM, Sklep VERBATIM, fail-closed pri praznem seznamu)
-- **Konflikti tedenskega vozni reda (pregled 30. člen + CSV izvoz 31. člen izvozne družine, issue #1 §7 branje)** — determinističen pregled dvojnih rezervacij ekipe v 7-dnevnem okviru NA ZASLONU (mini-vrstica zelen/rdeč) **+ Konflikti CSV** (dokazani pari prekrivanj za Excel/revizijo — en par = ena vrstica: oba člena z VERBATIM ISO časom, status labeli, meta Konfliktov/Ekip z konflikti/Pregledanih/Sklep EN VIR; zelen žig = ni datoteke, iskren toast — fail-closed): isti poli-odprto pravilo kot API 409 (nazaj-na-nazaj dovoljen; Preklicano/Zaključeno ne zasede; brez konca = brez dokazanega prekrivanja) — EN VIR tedenskiKonflikti, zrcalna sinhronizacija s strežniškim pravilom pod STRAŽAR testom
+- **Konflikti tedenskega vozni reda (pregled 30. člen + CSV izvoz 31. člen + PDF izvoz 32. člen izvozne družine, issue #1 §7 branje)** — determinističen pregled dvojnih rezervacij ekipe v 7-dnevnem okviru NA ZASLONU (mini-vrstica zelen/rdeč) **+ Konflikti CSV** (dokazani pari prekrivanj za Excel/revizijo — en par = ena vrstica: oba člena z VERBATIM ISO časom, status labeli, meta Konfliktov/Ekip z konflikti/Pregledanih/Sklep EN VIR; zelen žig = ni datoteke, iskren toast — fail-closed) **+ Konflikti PDF** (32. člen R302 — ISTI dokaz na tisku za pisarno/revizijo: glava tabele ×10 UVOŽENA iz CSV brata, Sklep = ISTO besedilo kot rdeč žig + CSV meta + toast — ŠTIRI potrošniki ENEGA niza; KPI Konfliktov/Ekip/Pregledanih/Okvir; dan prekrivanja rdeče bold; bajtni determinizem FNV-1a soli 0xb9–0xbc; zelen žig = ni datoteke — fail-closed): isti poli-odprto pravilo kot API 409 (nazaj-na-nazaj dovoljen; Preklicano/Zaključeno ne zasede; brez konca = brez dokazanega prekrivanja) — EN VIR tedenskiKonflikti, zrcalna sinhronizacija s strežniškim pravilom pod STRAŽAR testom
 - **Tedenski vozni red (PDF + CSV + ICS + ICS po ekipah, 12./23./28./29. člen izvozne družine)** — ISTA 7-dnevna resnica v treh oblikah: PDF razgled po dnevih (pisarna/vodstvo), CSV ravnina za Excel (BOM, 9 stolpcev) in ICS (RFC 5545 — ekipa uvozi razpored v telefon; DTSTART/DTEND = resnične ure + predvideno trajanje po R139/R172 kanonu, STATUS CANCELLED/TENTATIVE/CONFIRMED, X-ROKSAL-STATUS/X-ROKSAL-OBSEG VERBATIM, CRLF, brez BOM) **+ ICS po ekipi** (29. člen R299 — isti 7-dnevni okvir filtriran na eno ekipo: čipi za vsako ekipo z vsaj enim terminom, X-ROKSAL-EKIPA VERBATIM, lasten PRODID + UID predpona z FNV-1a hashom — ni trkov z osnovnim ICS ob sočasnem uvozu; neznana/prazna ekipa = fail-closed TypeError, nikoli prazna datoteka)
 
 #### 🖼️ Galerija realizacij
@@ -376,7 +376,7 @@ Sheet z 6 podzavihki:
 | **PWA** | Service Worker + Web Manifest |
 | **Temnitveni način** | [next-themes](https://github.com/pacocoursey/next-themes) |
 | **Validacija** | [Zod 4](https://zod.dev/) |
-| **Testiranje** | [Vitest 4](https://vitest.dev/) (4199 testov + globalSetup embedded PG) |
+| **Testiranje** | [Vitest 4](https://vitest.dev/) (4216 testov + globalSetup embedded PG) |
 | **Paketni upravitelj** | [Bun](https://bun.sh/) |
 | **Linting** | ESLint 9 + eslint-config-next |
 
@@ -498,7 +498,7 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `bun run dev` | Zažene Next.js dev server (port 3000) |
 | `bun run build` | Produkcijska build (build-prepare: generate + migrate deploy + seed) |
 | `bun run start` | Zažene produkcijski server |
-| `bun run test` | Vsi testi (vitest, 4199, embedded PG prek globalSetup) |
+| `bun run test` | Vsi testi (vitest, 4216, embedded PG prek globalSetup) |
 | `bun run check` | tsc --noEmit + vitest run (en ukaz za vse) |
 | `bunx tsc --noEmit` | Tipska kontrola celotnega projekta (trenutno 0 napak) |
 | `bun run lint` | ESLint preverjanje |

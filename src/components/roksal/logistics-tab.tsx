@@ -91,6 +91,14 @@ import {
   konfliktiCsvFilename,
   konfliktiSklep,
 } from '@/lib/konflikti-csv'
+// R302 — 32. člen 'izvozi' družine: KONFLIKTI PDF — PDF brat pregledu R300 +
+// CSV R301 (tedenskiKonflikti EN VIR — ISTO okno, ISTA pravila, ISTI pari
+// f(množica)); glava tabele + Sklep UVOŽENA iz CSV brata (nič dvojnega);
+// route NIČ (client+lib only).
+import {
+  generateKonfliktiPdf,
+  konfliktiPdfFilename,
+} from '@/lib/konflikti-pdf'
 import { cenikDatumIso } from '@/lib/cenik-pdf'
 import { QC_TEMPLATE, computePassed, countDefects } from '@/lib/qc-gate'
 import { IEV_TEMPLATE } from '@/lib/installation-evidence'
@@ -441,6 +449,8 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
   const [tedenskiEkipaIcsVTeku, setTedenskiEkipaIcsVTeku] = useState<string | null>(null)
   // R301 — dvoklik guard konflikti CSV (pariteta tedenskiCsvVTeku R292).
   const [konfliktiCsvVTeku, setKonfliktiCsvVTeku] = useState(false)
+  // R302 — dvoklik guard konflikti PDF (pariteta konfliktiCsvVTeku R301).
+  const [konfliktiPdfVTeku, setKonfliktiPdfVTeku] = useState(false)
 
   // R266 — ENA izpeljava vhodov za cikl opreme (WYSIWYG ISTI vir kot PDF
   // KPI, tabela, sklep, F2 mini-vrstica IN toast): DTO pruning iz ISTEGA
@@ -1459,6 +1469,49 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
     }
   }
 
+  // R302 — 32. člen 'izvozi' družine: KONFLIKTI PDF — PDF brat pregledu
+  // R300 + CSV R301 (vzorec R284→R285/R292/R297): DOKAZ na tisku za
+  // pisarno/revizijo (WYSIWYG po konstrukciji — tedenskiKonflikti EN VIR;
+  // glava tabele + Sklep UVOŽENA iz CSV brata R301). Fail-closed PREJ:
+  // prazno okno → iskren toast (ISTI gate kot CSV R301), zelen žig (null
+  // pregled = iskrena čistost) → iskren toast — NIKOLI prazna datoteka
+  // (družina R266/R297/R301). now = tedenskiRazgledNow — ENA izpeljava
+  // časa za pregled + CSV + PDF + imeni (lekcija R121/R235; žig na zaslonu,
+  // CSV in PDF sta ISTA resnica po konstrukciji). Sklep v toastu = ISTI
+  // konfliktiSklep kot meta vrstica + rdeč žig (WYSIWYG); dvoklik guard
+  // (pariteta konfliktiCsvVTeku R301); fail-verbose catch (R291 vzorec).
+  const handleKonfliktiPdf = () => {
+    if (konfliktiPdfVTeku) return
+    setKonfliktiPdfVTeku(true)
+    try {
+      if (razgled.pov === null) {
+        toast({
+          title: 'Ni terminov v naslednjih 7 dneh',
+          description: 'Konflikti PDF se izvozi, ko je vpisan termin v prihajajočem tednu.',
+        })
+        return
+      }
+      if (konfliktiPregled === null) {
+        // Iskrena čistost (zelen žig) — ni prazne datoteke (družina R266/R297/R301).
+        toast({
+          title: 'Ni dokazanih konfliktov v okviru',
+          description: 'Žig je zelen — PDF se izvozi ob prvem dokazanem prekrivanju (rdeč žig).',
+        })
+        return
+      }
+      const now = tedenskiRazgledNow
+      generateKonfliktiPdf(vozniRedVnosi, { now })
+      toast({
+        title: `Konflikti prenešeni v PDF (${konfliktiPdfFilename(now)})`,
+        description: konfliktiSklep(konfliktiPregled),
+      })
+    } catch (err) {
+      toast({ title: 'Izvoz konfliktov PDF ni uspel', description: err instanceof Error ? err.message : String(err), variant: 'destructive' })
+    } finally {
+      setKonfliktiPdfVTeku(false)
+    }
+  }
+
   return (
     <div className="space-y-4">
       {/* Subtabs */}
@@ -1729,6 +1782,30 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
             >
               <FileSpreadsheet aria-hidden="true" className="h-4 w-4 mr-1" /> Konflikti CSV
             </Button>
+            {/* R302 — 32. člen 'izvozi' družine (P1-f): KONFLIKTI PDF — PDF
+                brat pregledu R300 + CSV R301: DOKAZANI PARI prekrivanj ekipe
+                na TISKU za pisarno/revizijo (mini-vrstica pokaže ŠTEVEC, CSV
+                strojne vrstice, PDF človeški dokaz — isti pari, isti čas,
+                isti sklep; glava tabele + Sklep UVOŽENA iz CSV brata).
+                VEDNO viden (P1-k/R232 kanon): prazno okno ALI zelen žig →
+                iskren fail-closed toast, NIKOLI prazna datoteka (R250/R291
+                vzorec); dvoklik guard (pariteta konfliktiCsvVTeku R301);
+                ISTI žetoni kot bratje — 0 novih hex (AlertTriangle import
+                ŽE obstaja — 0 pin premikov ikon). Definicijski naslov
+                (MANDATORY STIL): izreče PRAVILA (poli-odprto, statusi,
+                null konec) + vidno razliko medija (CSV = Excel, PDF = tisk). */}
+            <Button
+              type="button"
+              variant="outline"
+              aria-label="Izvozi dokazane konflikte tedenskega pregleda kot PDF"
+              title="Konflikti tedenskega pregleda kot PDF — dokazani pari prekrivanj ekipe na tisku (isti poli-odprto pregled kot žig in CSV brat; konec 12:00 + začetek 12:00 je dovoljen nazaj-na-nazaj; Preklicano/Zaključeno ne zasede; termin brez konca NE nosi prekrivanja). Žig zelen = ni datoteke (iskren toast) — datoteka nastane ob prvem dokazanem prekrivanju"
+              data-testid="konflikti-pdf-pill"
+              disabled={konfliktiPdfVTeku}
+              className="shrink-0 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              onClick={handleKonfliktiPdf}
+            >
+              <AlertTriangle aria-hidden="true" className="h-4 w-4 mr-1" /> Konflikti PDF
+            </Button>
             {/* R265 — 21. člen 'izvozi' družine (P1-f): PROJEKTI — TERMINI
                 PREGLED PDF — presek VSEH terminov (/api/schedules — FRESH
                 fetch ISTEGA endpointa ob kliku, R244/R245/R264 precedens;
@@ -1793,6 +1870,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
             {' · Tedenski ICS = naslednjih 7 dni v telefonov koledar'}
             {' · ICS po ekipi = samo termini te ekipe (isti 7-dnevni okvir)'}
             {' · Konflikti CSV = dokazani pari prekrivanj ekipe (isti pregled kot žig)'}
+            {' · Konflikti PDF = isti pregled kot CSV, tisk za pisarno'}
           </p>
 
           {/* R244 — vlogo-osveščen vodič (R242/R243 recept): viden SAMO, ko
