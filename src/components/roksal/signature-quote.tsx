@@ -463,7 +463,7 @@ export function SignatureQuote({ quoteData, monterName = 'Monter Roksal', projec
         </Button>
 
         {(!customerSig || !monterSig) && (
-          <p className="text-center text-2xs text-amber-600 dark:text-amber-400">
+          <p className="text-center text-2xs text-roksal-ink">
             {!customerSig && !monterSig
               ? 'Oba podpisa (stranka + monter) sta potrebna'
               : !customerSig

@@ -267,7 +267,7 @@ export function PhotoMeasure({ projectId }: { projectId: string | null }) {
               </Button>
             </div>
             {!projectId && (
-              <p className="text-center text-[9px] text-amber-600 dark:text-amber-400">Za shranjevanje izberi projekt.</p>
+              <p className="text-center text-[9px] text-roksal-ink">Za shranjevanje izberi projekt.</p>
             )}
           </div>
         )}

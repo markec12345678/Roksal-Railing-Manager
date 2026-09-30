@@ -789,7 +789,7 @@ export function NotificationCenter() {
                             </span>
                           )}
                           {item.kind === 'weather' && (
-                            <AlertTriangle aria-hidden="true" className="h-3 w-3 shrink-0 text-amber-500 dark:text-amber-400" />
+                            <AlertTriangle aria-hidden="true" className="h-3 w-3 shrink-0 text-roksal-amber" />
                           )}
                         </div>
                         {/* R216 stil — stock številke tabular-nums (zaloge in

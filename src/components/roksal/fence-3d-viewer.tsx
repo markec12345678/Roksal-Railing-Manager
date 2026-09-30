@@ -248,7 +248,7 @@ export function Fence3dViewer() {
           )}
           {loadError && (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-4 text-center">
-              <AlertTriangle aria-hidden="true" className="h-8 w-8 text-amber-400" />
+              <AlertTriangle aria-hidden="true" className="h-8 w-8 text-roksal-amber" />
               <p className="text-xs text-white/85">{loadError}</p>
               <button
                 type="button"
@@ -364,7 +364,7 @@ export function Fence3dViewer() {
           <div className="flex items-start gap-2 rounded-lg bg-roksal-navy/[0.04] px-3 py-2 ring-1 ring-roksal-navy/10">
             {arAvailable === false ? (
               <>
-                <Smartphone aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
+                <Smartphone aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0 text-roksal-amber" />
                 <p className="text-2xs leading-relaxed text-muted-foreground">
                   AR gumb bo deloval na <strong className="text-roksal-ink">telefonu</strong> (Android: Scene Viewer · iPhone: Quick Look).
                   Na računalniku vrti 3D model s prstom/miško.

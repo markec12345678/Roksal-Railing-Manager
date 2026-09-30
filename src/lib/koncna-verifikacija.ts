@@ -302,3 +302,46 @@ export function koncnaVerifikacija(
     (stAiObveznih === 0 ? ' — jedro deluje brez AI' : ' — vsako AI-obvezno območje zahteva izrecno utemeljitev')
   return { vrstice, kriteriji, poPlasti, stObmocij, stObmocijZDokazi, stKriterijev, stAiObveznih, sklep }
 }
+
+/**
+ * 46. člen (issue #1 — IZVOZI družina): izvoz poročila končne verifikacije
+ * kot DETERMINISTIČNI JSON niz. Čista projekcija EN VIR resnic —
+ * koncnaVerifikacija() je edini vir (zaslon + testi + docs + IZVOZ berejo
+ * isti niz; NIČ dvojnega sklepa). Brez metapodatkov časa/hash/števca testov
+ * (100 % determinizem: isti HEAD → bajtno identična datoteka; veza na HEAD
+ * je implicitna — drevo je byte-določeno s HEAD). Fail-closed: propagira
+ * TypeError iz graditelja — verifikacija ne sme sanjati, tudi izvoz ne.
+ */
+export function koncnaVerifikacijaJson(
+  audit: readonly VrstaAudita[] = AVTOMATIZACIJA_AUDIT,
+  dokazi: Readonly<Record<string, DokazVezava>> = DOKAZI_AUDITA,
+  kriteriji: readonly SprejemniKriterij[] = SPREJEMNI_KRITERIJI,
+): string {
+  const kv = koncnaVerifikacija(audit, dokazi, kriteriji)
+  const porocilo = {
+    shema: 'roksal-koncna-verifikacija',
+    verzijaSheme: 1,
+    sklep: kv.sklep,
+    stObmocij: kv.stObmocij,
+    stObmocijZDokazi: kv.stObmocijZDokazi,
+    stKriterijev: kv.stKriterijev,
+    stAiObveznih: kv.stAiObveznih,
+    poPlasti: { ...kv.poPlasti },
+    obmocja: kv.vrstice.map((v) => ({
+      obmocje: v.obmocje,
+      razred: v.razred,
+      razredPrikazno: v.razredPrikazno,
+      plasti: [...v.plasti],
+      stPlasti: v.stPlasti,
+      opombaDokaza: v.opombaDokaza,
+    })),
+    kriteriji: kv.kriteriji.map((k) => ({
+      kriterij: k.kriterij,
+      izpeljava: k.izpeljava,
+      dokaz: k.dokaz,
+    })),
+  }
+  // Objektni ključi v FIKSNEM vrstnem redu vstavljanja → JSON.stringify je
+  // determinističen; 2-presledkov zamik + zaključna nova vrstica (POSIX).
+  return JSON.stringify(porocilo, null, 2) + '\n'
+}

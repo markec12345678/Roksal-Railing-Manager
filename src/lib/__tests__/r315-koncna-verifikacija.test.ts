@@ -130,7 +130,11 @@ describe('r315 STRAŽAR — vodja blok žiči EN VIR + docs dokument + diska res
 
   it('vodja-dashboard uvaža lib + nosi testide, NIČ dvojnega sklepa', () => {
     const src = vodja()
-    expect(src).toContain("import { koncnaVerifikacija } from '@/lib/koncna-verifikacija'")
+    // PIN SHIFT R316 (izrecno, precedens R306/R309/R314): import razširjen z
+    // koncnaVerifikacijaJson (46. člen — IZVOZI družina); obrnjena regresija:
+    // stari enojni import se ne sme vrniti.
+    expect(src).toContain("import { koncnaVerifikacija, koncnaVerifikacijaJson } from '@/lib/koncna-verifikacija'")
+    expect(src).not.toContain("import { koncnaVerifikacija } from '@/lib/koncna-verifikacija'")
     expect(src).toContain('koncnaVerifikacija()')
     expect(src).toContain('data-testid="koncna-verifikacija-dokaz"')
     expect(src).toContain('data-testid="koncna-verifikacija-vrstica"')

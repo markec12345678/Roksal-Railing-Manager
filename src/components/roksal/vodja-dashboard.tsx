@@ -91,7 +91,7 @@ import type { ZmogljivostPregled } from '@/lib/zmogljivost-pregled'
 // kriteriji z mehanično izpeljavo in konkretnim dokazom (ČISTA projekcija EN
 // VIR — koncna-verifikacija + avtomatizacija-audit; WYSIWYG sklep, NIČ
 // dvojnega sklepa).
-import { koncnaVerifikacija } from '@/lib/koncna-verifikacija'
+import { koncnaVerifikacija, koncnaVerifikacijaJson } from '@/lib/koncna-verifikacija'
 import { avtomatizacijaPregled } from '@/lib/avtomatizacija-pregled'
 import {
   TrendingUp, Clock, Users, Package, Euro, CheckCircle2,
@@ -791,6 +791,32 @@ export function VodjaDashboard() {
     }
   }
 
+  /** 🆕 R316 (46. člen, issue #1 IZVOZI družina): izvoz poročila končne
+   *  verifikacije kot deterministični JSON — EN VIR (koncnaVerifikacijaJson),
+   *  brez metapodatkov časa/hash (isti HEAD = bajtno identična datoteka).
+   *  Fail-verbose: razlog vidno, ne tiho (kanon). */
+  function exportKoncnaVerifikacijaJson() {
+    try {
+      const json = koncnaVerifikacijaJson()
+      const blob = new Blob([json], { type: 'application/json;charset=utf-8' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'koncna-verifikacija.json'
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+      toast({ title: 'Poročilo končne verifikacije izvoženo ✓', description: 'koncna-verifikacija.json' })
+    } catch (e) {
+      toast({
+        title: 'Izvoz ni uspel',
+        description: e instanceof Error ? e.message : String(e),
+        variant: 'destructive',
+      })
+    }
+  }
+
   if (loading) {
     return (
       <div className="space-y-3 p-4" aria-busy="true" aria-live="polite">
@@ -1244,6 +1270,19 @@ export function VodjaDashboard() {
           >
             {koncna.stObmocijZDokazi}/{koncna.stObmocij} območij · {koncna.stKriterijev} kriterijev
           </p>
+          {/* 🆕 R316 (46. člen): izvoz istega EN VIR poročila kot JSON —
+              a11y družina (aria-label + title, R291/R293 precedens). */}
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-6 gap-1 border-roksal-navy/25 px-2 text-2xs text-roksal-ink transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 dark:border-roksal-ink/25"
+            onClick={exportKoncnaVerifikacijaJson}
+            aria-label="Izvozi poročilo končne verifikacije kot JSON"
+            title="Izvozi poročilo končne verifikacije (11 območij + 8 kriterijev + sklep) kot deterministični JSON"
+          >
+            <Download className="h-3 w-3" aria-hidden="true" />
+            JSON
+          </Button>
         </div>
         <ul className="mt-1 space-y-0.5" data-testid="koncna-verifikacija-vrstice">
           {koncna.vrstice.map((v) => (

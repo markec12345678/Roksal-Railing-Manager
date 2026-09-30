@@ -103,7 +103,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 45 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **4398** (245 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **4410** (247 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 143 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -382,6 +382,22 @@ Sheet z 6 podzavihki:
   (inclinometer senzorjska lestvica denied=red/unsupported=amber; site-survey
   PODLAGA kategorija barv z rdečim bratom — R308/R311 precedens); mrtva ternara
   v site-survey poenostavljena (obe veji isti žeton)
+- **Izvoz poročila končne verifikacije kot JSON** (R316, 46. člen — issue #1
+  **IZVOZI družina**): vodjin končna-verifikacija blok dobi gumb `JSON`
+  (a11y družina: aria-label + title, R291/R293 precedens) — `koncnaVerifikacijaJson`
+  (`src/lib/koncna-verifikacija.ts`) = ČISTA projekcija `koncnaVerifikacija` —
+  **determinističen** JSON (shema + 11 območij + 8 kriterijev + sklep WYSIWYG,
+  fiksni vrstni red ključev, 2-presledkov zamik, POSIX konec; brez metapodatkov
+  časa/hash/števca testov — isti HEAD = bajtno identična datoteka); fail-closed
+  propagacija TypeError graditelja; DETERMINIZEM ŽIVO dokazan v E2E (Z0an: dva
+  izvoza bajtno enaka)
+- **Stil val 7 — ZAKLJUČNI** (R316): fence-3d-viewer ×2 (ikoni) +
+  notification-center ×1 (ikona, dark-par odpade) + signature-quote ×1 (hint
+  ink) + photo-measure ×1 (hint ink) = 5 dotikov — surove amber → roksal
+  žetoni (0 novih hex); **GLOBALNI zaklenjeni register** (r316-stil-val7
+  STRAŽAR): vsaka preostala surova amber vrstica v src/components/roksal +
+  src/app (natanko 30) je IZRECNO v registru z razlogom (semantične
+  lestvice/kategorije/palete — R308 lekcija); vsaka nova surova vrstica = fail
 - Skener determinizma: 0 nedokumentiranih odstopanj nad src/lib IN src/components (komponentni sloj R295 — locale* v ARTIFACT domeni NIČ, izjeme izrecne z razlogom)
 - **API I/O meja («stena ura»)** (R308+R309+R310, issue #1 — failure cases + malformed-input) — determinističen
   skener VSEH 81 route-handlerjev (`src/lib/api-meja-audit.ts`, EN VIR lexer avtomatizacija-audit):
@@ -437,7 +453,7 @@ Sheet z 6 podzavihki:
 | **PWA** | Service Worker + Web Manifest |
 | **Temnitveni način** | [next-themes](https://github.com/pacocoursey/next-themes) |
 | **Validacija** | [Zod 4](https://zod.dev/) |
-| **Testiranje** | [Vitest 4](https://vitest.dev/) (4398 testov + globalSetup embedded PG) |
+| **Testiranje** | [Vitest 4](https://vitest.dev/) (4410 testov + globalSetup embedded PG) |
 | **Paketni upravitelj** | [Bun](https://bun.sh/) |
 | **Linting** | ESLint 9 + eslint-config-next |
 
@@ -559,7 +575,7 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `bun run dev` | Zažene Next.js dev server (port 3000) |
 | `bun run build` | Produkcijska build (build-prepare: generate + migrate deploy + seed) |
 | `bun run start` | Zažene produkcijski server |
-| `bun run test` | Vsi testi (vitest, 4398, embedded PG prek globalSetup) |
+| `bun run test` | Vsi testi (vitest, 4410, embedded PG prek globalSetup) |
 | `bun run check` | tsc --noEmit + vitest run (en ukaz za vse) |
 | `bunx tsc --noEmit` | Tipska kontrola celotnega projekta (trenutno 0 napak) |
 | `bun run lint` | ESLint preverjanje |
