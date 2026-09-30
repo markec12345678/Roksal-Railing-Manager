@@ -228,7 +228,7 @@ export function WeatherCard({
             {weather.source === 'demo' && (
               <div
                 role="alert"
-                className="flex items-start gap-2 rounded-lg border border-roksal-amber/40 bg-roksal-amber/10 px-2.5 py-2 text-[11px] font-medium text-amber-800 dark:text-amber-200"
+                className="flex items-start gap-2 rounded-lg border border-roksal-amber/40 bg-roksal-amber/10 px-2.5 py-2 text-[11px] font-medium text-roksal-ink"
               >
                 <CloudSun className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                 <span>

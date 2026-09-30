@@ -580,18 +580,18 @@ export function PunchList({ project }: { project: Project | null }) {
         {loadError && !loading && (
           <div
             role="alert"
-            className="flex items-start gap-3 rounded-lg border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-3"
+            className="flex items-start gap-3 rounded-lg border border-roksal-amber/40 bg-roksal-amber/10 p-3"
           >
-            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-roksal-amber" aria-hidden="true" />
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-amber-900 dark:text-amber-200">Zapisnika ni bilo mogoče naložiti</p>
-              <p className="mt-0.5 break-words text-xs text-amber-800 dark:text-amber-200">{loadError}</p>
+              <p className="text-sm font-medium text-roksal-ink">Zapisnika ni bilo mogoče naložiti</p>
+              <p className="mt-0.5 break-words text-xs text-roksal-ink">{loadError}</p>
             </div>
             <Button
               type="button"
               variant="outline"
               size="sm"
-              className="h-8 shrink-0 border-amber-400 dark:border-amber-700 text-amber-900 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-500/15"
+              className="h-8 shrink-0 border-roksal-amber/60 text-roksal-ink hover:bg-roksal-amber/10"
               onClick={() => {
                 if (project?.id) void fetchItems(project.id)
               }}

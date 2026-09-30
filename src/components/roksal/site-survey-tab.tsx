@@ -506,12 +506,12 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
         {loadError && (
           <div
             role="alert"
-            className="flex items-start gap-3 rounded-lg border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-3"
+            className="flex items-start gap-3 rounded-lg border border-roksal-amber/40 bg-roksal-amber/10 p-3"
           >
-            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-roksal-amber" aria-hidden="true" />
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-amber-900 dark:text-amber-200">Zapisnika ni bilo mogoče naložiti</p>
-              <p className="mt-0.5 break-words text-xs text-amber-800 dark:text-amber-200">{loadError}</p>
+              <p className="text-sm font-medium text-roksal-ink">Zapisnika ni bilo mogoče naložiti</p>
+              <p className="mt-0.5 break-words text-xs text-roksal-ink">{loadError}</p>
             </div>
           </div>
         )}
@@ -542,9 +542,9 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
             </div>
             <Progress value={completion} className="h-2" />
             {warnings.length > 0 && (
-              <div className="mt-3 flex items-start gap-2 rounded-lg bg-amber-50 dark:bg-amber-950/40 px-3 py-2 ring-1 ring-amber-200">
-                <TriangleAlert aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
-                <p className="text-[11px] leading-relaxed text-amber-800 dark:text-amber-200">
+              <div className="mt-3 flex items-start gap-2 rounded-lg bg-roksal-amber/10 px-3 py-2 ring-1 ring-roksal-amber/30">
+                <TriangleAlert aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0 text-roksal-amber" />
+                <p className="text-[11px] leading-relaxed text-roksal-ink">
                   <strong>{warnings.length} opozorilo(i):</strong> {warnings.map((w) => w.text.toLowerCase()).slice(0, 2).join(' · ')}
                 </p>
               </div>

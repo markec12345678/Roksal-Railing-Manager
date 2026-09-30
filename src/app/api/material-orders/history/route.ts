@@ -43,6 +43,9 @@ function razcleniVrednost(vrednost: string | null): { orderId: string | null; st
     }
   } catch {
     // starejši zapisi: gol status string (npr. "POSLANO") — brez orderId.
+    // R308 meja: iskrena resnica je IZRAZ v kodi (ne samo komentar) —
+    // pokvarjen zapis → izrecen null padec, nikoli tiha izguba.
+    return { orderId: null, status: null }
   }
   return { orderId: null, status: null }
 }

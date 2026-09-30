@@ -151,7 +151,11 @@ export async function GET(
             title = 'Povezava obnovljena'
           }
         } catch {
-          // Pokvarjen audit zapis ne poruši stranke stranki.
+          // R308 meja: iskrena resnica je IZRAZ v kodi (ne samo komentar) —
+          // pokvarjen audit zapis ne poruši strankinega pogleda: ostane
+          // surova akcija kot naslov, brez opisa (`.filter` ga odkloni).
+          title = a.akcija
+          description = ''
         }
         return {
           title,

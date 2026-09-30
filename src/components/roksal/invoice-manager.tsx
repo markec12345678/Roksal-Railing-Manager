@@ -1152,7 +1152,7 @@ export function InvoiceManager() {
             {!meseciPovzetek.ok ? (
               <div
                 role="alert"
-                className="rounded-lg border border-amber-300/60 bg-amber-50 p-2 text-2xs text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200"
+                className="rounded-lg border border-roksal-amber/40 bg-roksal-amber/10 p-2 text-2xs text-roksal-ink"
               >
                 Prihodki po mesecih iz teh podatkov ni mogoče razčleniti — {meseciPovzetek.napaka}
               </div>
