@@ -3,10 +3,17 @@
 // ---------------------------------------------------------------------------
 // R326 — 53. člen issue #1 (§5 price history): PANEL ZGODOVINE CEN MATERIALA.
 //
+// R327 — 54. člen (IZVOZI družina): PDF BRAT CSV-ju — gumb na isti blok
+// glavi (bratska simetrija; vzorec vodja CSV+PDF parov R324): EN pregled =
+// ENA preslikava, DVA potrošnika (izvoziCsv + izvoziPdf); generate-
+// CenaZgodovinaPdf je determinističen (isti HEAD + isti pregled = bajtno
+// identičen dokument — vzorec vodja-dnevni-pdf R324); fail-verbose toast +
+// ista iskrena ničelna veja (brez podatkov NI izvoza — OBA gumba skrita).
+//
 // Vzorec družine (vodja-dokazni bloki R316–R324): panel je čisti BRALEC
 // /api/material-prices/zgodovina (GET — ZERO-MUTACIJA), pregled je
 // POSREDOVANA resnica liba cena-zgodovina (NIČ prerunavanja, NIČ ugibanja),
-// CSV gumb pa je brat izvozne družine (a11y aria + title, fail-verbose
+// izvozna gumba pa sta brata izvozne družine (a11y aria + title, fail-verbose
 // toast, iskrena ničelna veja — vzorec vodja gumbov R318/R320/R321/R323/R324).
 //
 // STIL val 13 (r162/…/R324 vzorec — MANDATORY): dvonivojska hierarhija
@@ -26,7 +33,7 @@ import { useToast } from '@/hooks/use-toast'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
-import { FileDown, History, Loader2, TrendingDown, TrendingUp, Minus } from 'lucide-react'
+import { FileDown, FileText, History, Loader2, TrendingDown, TrendingUp, Minus } from 'lucide-react'
 import {
   buildCenaZgodovinaCsv,
   cenaZgoSklep,
@@ -35,6 +42,7 @@ import {
   CENA_ZGODOVINA_TIMELINE_GLAVE,
 } from '@/lib/cena-zgodovina'
 import type { CenaParZgodovina, CenaZgodovinaPregled } from '@/lib/cena-zgodovina'
+import { generateCenaZgodovinaPdf, cenaZgodovinaPdfFilename } from '@/lib/cena-zgodovina-pdf'
 
 /** Iskren prevedek smeri (EN VIR — delta iz liba, besedilo = CENA_SMER_NIZ). */
 function smerNiz(p: CenaParZgodovina): string {
@@ -112,6 +120,22 @@ export function CenaZgodovinaPanel() {
     }
   }, [pregled, toast])
 
+  const izvoziPdf = useCallback(function izvoziPdf() {
+    if (!pregled) return
+    try {
+      // determinističen dokument — isti HEAD + isti pregled = bajtno identičen PDF
+      generateCenaZgodovinaPdf(pregled)
+      toast({ title: 'Zgodovina cen izvožena ✓', description: cenaZgodovinaPdfFilename() })
+    } catch (e) {
+      // fail-verbose: razlog vidno, ne tiho (kanon izvozne družine)
+      toast({
+        title: 'Izvoz ni uspel',
+        description: e instanceof Error ? e.message : String(e),
+        variant: 'destructive',
+      })
+    }
+  }, [pregled, toast])
+
   return (
     <Card
       data-testid="cena-zgodovina-dokaz"
@@ -125,17 +149,30 @@ export function CenaZgodovinaPanel() {
             Zgodovina cen materiala
           </CardTitle>
           {pregled && pregled.pari.length > 0 && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={izvoziCsv}
-              className="press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:outline-none"
-              aria-label="Izvozi zgodovino cen materiala kot CSV"
-              title="Izvozi zgodovino cen materiala kot CSV"
-            >
-              <FileDown className="mr-2 h-4 w-4" aria-hidden="true" />
-              CSV
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={izvoziCsv}
+                className="press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:outline-none"
+                aria-label="Izvozi zgodovino cen materiala kot CSV"
+                title="Izvozi zgodovino cen materiala kot CSV"
+              >
+                <FileDown className="mr-2 h-4 w-4" aria-hidden="true" />
+                CSV
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={izvoziPdf}
+                className="press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:outline-none"
+                aria-label="Izvozi zgodovino cen materiala kot PDF"
+                title="Izvozi zgodovino cen materiala kot deterministični PDF"
+              >
+                <FileText className="mr-2 h-4 w-4" aria-hidden="true" />
+                PDF
+              </Button>
+            </div>
           )}
         </div>
         {pregled && pregled.pari.length > 0 && (

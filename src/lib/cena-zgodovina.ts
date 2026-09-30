@@ -10,6 +10,12 @@
 // nihče prebrati. Ta lib je čisti bralec te resnice — NIČ ne meri znova,
 // NIČ ne spreminja, NIČ ne ugiba (issue #1 §5: 'price history').
 //
+// R327 — PDF BRAT (54. člen IZVOZI družina): cena-zgodovina-pdf.ts je ločen
+// lib (jsPDF teža NE obremenjuje tega podatkovnega brata — vzorec
+// vodja-csv/vodja-dnevni-pdf R324); vrstični graditelj cenaParVrstice je
+// EN VIR za OBA potrošnika (CSV tabela in PDF tabela ne moreta divergirati
+// po konstrukciji); FNV soli 0xd1–0xd4 živijo v PDF bratu (kanon 46.–52. člen).
+//
 // EN VIR resnice (kanon družine):
 //  • vhod = seznam CenaZgodovinaVnos (POSREDOVANA resnica — route ovoji
 //    vrstice Prisme; lib je ČISTA projekcija, drugega branja NI);
@@ -28,8 +34,9 @@
 // bajtno identičen CSV/JSON). Razvrščanje po Date.parse številu (ISO
 // nizi različnih dolžin bi pri dict. primerjavi lagali — lekcija
 // '39Z' > '39.401Z'), vezava brez locale (artikel/dobavitelj po UTF-16
-// kodnih enotah — 100 % ponovljivo). NIČ FNV semena (ni PDF brata; CSV +
-// JSON sta vhodno-določeni — FNV kanon se doda s PDF bratom, če kdaj).
+// kodnih enotah — 100 % ponovljivo). NIČ FNV semena v tem libu (CSV + JSON
+// sta vhodno-določena; FNV kanon ŽIVI v PDF bratu cena-zgodovina-pdf R327,
+// soli 0xd1–0xd4 — vzorec vodja-csv/vodja-dnevni-pdf R324).
 //
 // Fail-closed (preveriCenaZgodovinaVnose ×7 skupin): ne-seznam, ne-objekt,
 // prazni nizi (inventoryId/supplierId/artikel/dobavitelj), ne-finitna ali
@@ -306,19 +313,20 @@ export function cenaZgoSklep(pregled: CenaZgodovinaPregled): string {
 }
 
 /**
- * Zgrodi deterministični CSV zgodovine cen (par — ENA vrstica = EN
- * odločitveni sklop za naročanje; vzorec buildZmogljivostCsv R323). Brez
- * izvoznega časovnega žiga — čas bi uničil determinizem (isti HEAD = isti CSV).
- * Meta: prazna ločilna + 'Sklep' (EN VIR) + 'Vir' (CENA_ZGO_VIR_NIZ).
+ * EN VIR podatkovne vrstice parov (R327 — 54. člen: SKUPNI potrošnik CSV +
+ * PDF tabele; vzorec vodjaKpiVrstice R324 — ENA preslikava, dva potrošnika;
+ * CSV in PDF ne moreta divergirati po konstrukciji). Iskrene ničelne veje:
+ * brez prejšnje = prazno polje; brez smeri = 'prvi vpis' (NI izmišljenih
+ * vrednosti). Čista preslikava — vsak klic vrača NOVE nize, nič skupnega stanja.
  */
-export function buildCenaZgodovinaCsv(
+export function cenaParVrstice(
   pregled: CenaZgodovinaPregled,
   kje: string,
-): { csv: string; vrstic: number } {
+): string[][] {
   if (!pregled || typeof pregled !== 'object' || !Array.isArray(pregled.pari)) {
     throw new Error(`CenaZgodovina: pregled mora nositi seznam pari (${kje}).`)
   }
-  const podatkovne: CsvValue[][] = pregled.pari.map((p) => [
+  return pregled.pari.map((p) => [
     p.artikel,
     p.dobavitelj,
     p.prejsnja ? p.prejsnja.cena.toFixed(2) : '',
@@ -328,6 +336,21 @@ export function buildCenaZgodovinaCsv(
     p.smer ? CENA_SMER_NIZ[p.smer] : 'prvi vpis',
     String(p.zaprtih),
   ])
+}
+
+/**
+ * Zgrodi deterministični CSV zgodovine cen (par — ENA vrstica = EN
+ * odločitveni sklop za naročanje; vzorec buildZmogljivostCsv R323). Brez
+ * izvoznega časovnega žiga — čas bi uničil determinizem (isti HEAD = isti CSV).
+ * Meta: prazna ločilna + 'Sklep' (EN VIR) + 'Vir' (CENA_ZGO_VIR_NIZ).
+ * Podatkovne vrstice = cenaParVrstice (EN VIR — PDF brat R327 citira ISTO
+ * preslikavo; arhivska oblika ostaja bajtno nespremenjena).
+ */
+export function buildCenaZgodovinaCsv(
+  pregled: CenaZgodovinaPregled,
+  kje: string,
+): { csv: string; vrstic: number } {
+  const podatkovne: CsvValue[][] = cenaParVrstice(pregled, kje)
   const meta: CsvValue[][] = [
     [], // prazna ločilna vrstica pred povzetkom (preglednost v Excelu)
     ['Sklep', cenaZgoSklep(pregled)],

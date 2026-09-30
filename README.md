@@ -103,7 +103,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 45 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **4547** (264 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **4567** (266 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 143 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -484,6 +484,28 @@ Sheet z 6 podzavihki:
   hierarhija preverba + val 10 obrnjena regresija ×3 + register 3 pojavitve);
   PIN SHIFTI ×2 izrecno (val8 amber ×6→×7 + anti-stale 56→57; val9
   press-scale ×13→14 pojavitev, 7→8 gumbov)
+- **Izvoz zgodovine cen materiala kot PDF** (R327, 54. člen — issue #1
+  **IZVOZI** družina): NOVI lib `src/lib/cena-zgodovina-pdf.ts`
+  (deterministični PDF BRAT CSV-ju R326 — LOČEN lib, jsPDF teža ne
+  obremenjuje podatkovnega brata, vzorec vodja-csv/vodja-dnevni-pdf R324);
+  EN VIR `cenaParVrstice` = skupni potrošnik CSV+PDF tabel (ne moreta
+  divergirati po konstrukciji — vzorec vodjaKpiVrstice R324); dokument:
+  ROKSAL navy glava + KPI ×4 (Narašča rdeči alarm če > 0) + tabela parov
+  (ISTE glave kot CSV) + časovna vrstica (ISTI stolpci kot zaslon, '—'
+  fallback za odprte cene) + Sklep/Vir sklepni vrstici; DETERMINIZEM:
+  vsebina brez časa (zgodovina NIMA referenčnega dneva — filename
+  `zgodovina-cen.pdf` brez datuma), fiksni žig CENA_PDF_ZIG_FIKSNI, FNV
+  soli 0xd1–0xd4 (register nadaljuje R324 0xcd–0xd0); panel izvozni PAR
+  CSV+PDF na isti blok glavi (OBA navy/40 ring + press-scale, OBA pod
+  istim pogojem — iskrena ničelna veja); r327-cena-pdf vitest ×13 +
+  CSV bajtna stabilnost (refactor NE premakne bajta); E2E Z0au razširjen
+  (OBA gumba skrita v prazni veji)
+- **Stil val 14 — izvozni PAR harmonizacija** (R327): OBA gumba zgodovine
+  cen (CSV + PDF) z IZRECNIM navy/40 ringom + press-scale pod ISTIM
+  pogojem; r327-stil-val14 STRAŽAR ×7 (para + ničelna veja skupina + val
+  13 hierarhija ŽIVA + vodja ×4/×4 NEPREMIKNJEN + press-scale ŽIV + ikoni
+  FileText/FileDown); PIN SHIFT izrecno (val8 anti-stale 59→60 [NOVI PDF
+  gumb — amber/50 register ostane zaklenjen v vodji ×8])
 - **Zgodovina cen materiala** (R325, 53. člen — issue #1 §5 **price
   history**): NOVI lib `src/lib/cena-zgodovina.ts` (ČISTA projekcija
   MaterialPrice vključno z ZAPRTO zgodovino `veljavnostDo != null` — POST
@@ -687,7 +709,7 @@ Sheet z 6 podzavihki:
 | **PWA** | Service Worker + Web Manifest |
 | **Temnitveni način** | [next-themes](https://github.com/pacocoursey/next-themes) |
 | **Validacija** | [Zod 4](https://zod.dev/) |
-| **Testiranje** | [Vitest 4](https://vitest.dev/) (4547 testov + globalSetup embedded PG) |
+| **Testiranje** | [Vitest 4](https://vitest.dev/) (4567 testov + globalSetup embedded PG) |
 | **Paketni upravitelj** | [Bun](https://bun.sh/) |
 | **Linting** | ESLint 9 + eslint-config-next |
 
@@ -809,7 +831,7 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `bun run dev` | Zažene Next.js dev server (port 3000) |
 | `bun run build` | Produkcijska build (build-prepare: generate + migrate deploy + seed) |
 | `bun run start` | Zažene produkcijski server |
-| `bun run test` | Vsi testi (vitest, 4547, embedded PG prek globalSetup) |
+| `bun run test` | Vsi testi (vitest, 4567, embedded PG prek globalSetup) |
 | `bun run check` | tsc --noEmit + vitest run (en ukaz za vse) |
 | `bunx tsc --noEmit` | Tipska kontrola celotnega projekta (trenutno 0 napak) |
 | `bun run lint` | ESLint preverjanje |
