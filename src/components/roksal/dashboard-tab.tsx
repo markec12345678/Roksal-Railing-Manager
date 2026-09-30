@@ -2642,11 +2642,11 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                     {!portalLoading && !portalError && !portalInfo?.enabled && !canManagePortal && (
                       // §10 (R135): monter brez pravice portal.manage — pošteno
                       // stanje namesto mrtvega gumba (strežnik bi vrnil 403).
-                      <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50/70 px-2.5 py-2 dark:border-roksal-amber/25 dark:bg-roksal-amber/10">
-                        <Info aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-roksal-amber" />
+                      <div className="flex items-start gap-2 rounded-md border border-roksal-amber/40 bg-roksal-amber/10 px-2.5 py-2">
+                        <Info aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0 text-roksal-amber" />
                         <div className="space-y-0.5">
-                          <p className="text-[11px] font-medium text-amber-800 dark:text-roksal-amber">Ureja pisarna</p>
-                          <p className="text-[11px] text-amber-700/90 leading-relaxed dark:text-roksal-amber/80">
+                          <p className="text-[11px] font-medium text-roksal-ink">Ureja pisarna</p>
+                          <p className="text-[11px] text-roksal-ink/80 leading-relaxed">
                             Portal stranke izdaja in upravlja pisarna (pravica portal.manage).
                             Za povezavo kontaktirajte vodjo.
                           </p>
@@ -2710,7 +2710,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                             <div className="grid grid-cols-2 gap-1.5 rounded-md border border-border bg-secondary/30 px-2 py-1.5">
                               <div className="flex items-center gap-1.5 min-w-0">
                                 <CalendarClock aria-hidden="true"
-                                  className={`h-3.5 w-3.5 shrink-0 ${expCritical ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}
+                                  className={`h-3.5 w-3.5 shrink-0 ${expCritical ? 'text-roksal-amber' : 'text-muted-foreground'}`}
                                 />
                                 <div className="min-w-0">
                                   <p className="text-[9px] uppercase tracking-wide text-muted-foreground leading-tight">
@@ -2718,7 +2718,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                                   </p>
                                   <p
                                     className={`text-2xs font-semibold leading-tight truncate ${
-                                      expCritical ? 'text-amber-600 dark:text-amber-400' : 'text-roksal-ink'
+                                      expCritical ? 'text-roksal-amber' : 'text-roksal-ink'
                                     }`}
                                     title={portalInfo.revokedAt ? 'Povezava je preklicana' : exp ? exp.toLocaleDateString('sl-SI') : 'Brez poteka'}
                                   >
@@ -2788,7 +2788,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                           </Button>
                         </div>
                         {(!detailProject?.customer?.telefon || !detailProject?.customer?.email) && (
-                          <p className="text-2xs text-amber-600 dark:text-amber-400 leading-tight">
+                          <p className="text-2xs text-roksal-amber leading-tight">
                             {!detailProject?.customer?.telefon && 'Stranka nima telefona. '}
                             {!detailProject?.customer?.email && 'Stranka nima e-pošte.'}
                           </p>
@@ -2911,7 +2911,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                         {!canManagePortal && (
                           // §10 (R135): stanje namesto akcij za nosilca brez pravice
                           <div className="flex items-center gap-1.5 border-t border-border pt-2">
-                            <Info aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+                            <Info aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-roksal-amber" />
                             <span className="text-[11px] text-muted-foreground">
                               Ureja pisarna (pravica portal.manage)
                             </span>
@@ -2938,7 +2938,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                         Napaka
                       </Badge>
                     ) : portalInfo?.measure?.enabled ? (
-                      <Badge className="bg-roksal-amber/15 text-amber-700 dark:text-amber-300 hover:bg-roksal-amber/25 text-2xs">
+                      <Badge className="bg-roksal-amber/15 text-roksal-amber hover:bg-roksal-amber/25 text-2xs">
                         <ShieldCheck aria-hidden="true" className="mr-1 h-3 w-3" />
                         Izdana
                       </Badge>
@@ -2961,11 +2961,11 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                     )}
                     {!portalLoading && !portalError && !portalInfo?.measure?.enabled && !canManagePortal && (
                       // §10 (R135): pošteno stanje namesto gumba, ki bi vrnil 403
-                      <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50/70 px-2.5 py-2 dark:border-roksal-amber/25 dark:bg-roksal-amber/10">
-                        <Info aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-roksal-amber" />
+                      <div className="flex items-start gap-2 rounded-md border border-roksal-amber/40 bg-roksal-amber/10 px-2.5 py-2">
+                        <Info aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0 text-roksal-amber" />
                         <div className="space-y-0.5">
-                          <p className="text-[11px] font-medium text-amber-800 dark:text-roksal-amber">Ureja pisarna</p>
-                          <p className="text-[11px] text-amber-700/90 leading-relaxed dark:text-roksal-amber/80">
+                          <p className="text-[11px] font-medium text-roksal-ink">Ureja pisarna</p>
+                          <p className="text-[11px] text-roksal-ink/80 leading-relaxed">
                             Merilno povezavo izdaja pisarna (pravica portal.manage).
                           </p>
                         </div>
@@ -3031,7 +3031,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                             <div className="grid grid-cols-2 gap-1.5 rounded-md border border-border bg-secondary/30 px-2 py-1.5">
                               <div className="flex items-center gap-1.5 min-w-0">
                                 <CalendarClock aria-hidden="true"
-                                  className={`h-3.5 w-3.5 shrink-0 ${mCritical ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}
+                                  className={`h-3.5 w-3.5 shrink-0 ${mCritical ? 'text-roksal-amber' : 'text-muted-foreground'}`}
                                 />
                                 <div className="min-w-0">
                                   <p className="text-[9px] uppercase tracking-wide text-muted-foreground leading-tight">
@@ -3039,7 +3039,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                                   </p>
                                   <p
                                     className={`text-2xs font-semibold leading-tight truncate ${
-                                      mCritical ? 'text-amber-600 dark:text-amber-400' : 'text-roksal-ink'
+                                      mCritical ? 'text-roksal-amber' : 'text-roksal-ink'
                                     }`}
                                     title={m.revokedAt ? 'Povezava je preklicana' : mexp ? mexp.toLocaleDateString('sl-SI') : 'Brez poteka'}
                                   >
@@ -3153,7 +3153,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                         {!canManagePortal && (
                           // §10 (R135): stanje namesto akcij za nosilca brez pravice
                           <div className="flex items-center gap-1.5 border-t border-border pt-2">
-                            <Info aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+                            <Info aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-roksal-amber" />
                             <span className="text-[11px] text-muted-foreground">
                               Ureja pisarna (pravica portal.manage)
                             </span>

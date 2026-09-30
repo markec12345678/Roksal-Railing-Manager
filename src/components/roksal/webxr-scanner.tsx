@@ -1973,7 +1973,7 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
                       accuracyView.verdict === 'zanesljivo'
                         ? 'border-green-500/40 bg-green-500/10 text-green-300'
                         : accuracyView.verdict === 'sprejemljivo'
-                          ? 'border-amber-500/40 bg-amber-500/10 text-amber-300'
+                          ? 'border-roksal-amber/40 bg-roksal-amber/10 text-roksal-amber'
                           : 'border-red-500/40 bg-red-500/10 text-red-300'
                     }`}
                     data-xr-ui
@@ -2094,7 +2094,7 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
                   </Button>
                 </div>
                 {!projectId && (
-                  <p className="text-center text-[9px] text-amber-300/80">
+                  <p className="text-center text-[9px] text-roksal-amber/80">
                     Za shranjevanje izberi projekt (Domov → izberi projekt)
                   </p>
                 )}
@@ -2117,7 +2117,7 @@ export function WebXrArScanner({ projectId, onClose }: { projectId: string | nul
 
                 {sessionState === 'unsupported' && (
                   <div className="space-y-2 text-center">
-                    <AlertTriangle aria-hidden="true" className="mx-auto h-10 w-10 text-amber-400" />
+                    <AlertTriangle aria-hidden="true" className="mx-auto h-10 w-10 text-roksal-amber" />
                     <p className="text-sm font-medium text-white">WebXR AR ni podprt</p>
                     <p className="text-xs text-white/70">{errorMsg}</p>
                     <div className="mt-2 rounded-lg bg-white/10 p-2.5 text-left text-2xs text-white/80">
@@ -2300,11 +2300,11 @@ export function WebXrLauncher({ projectId }: { projectId: string | null }) {
 
   return (
     <>
-      <Card className={supported ? 'border-green-300' : 'border-amber-200'}>
+      <Card className={supported ? 'border-green-300' : 'border-roksal-amber/40'}>
         <CardContent className="p-4">
           <div className="flex items-start gap-3">
-            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${supported ? 'bg-green-100' : 'bg-amber-100'}`}>
-              <Box aria-hidden="true" className={`h-5 w-5 ${supported ? 'text-green-600' : 'text-amber-600'}`} />
+            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${supported ? 'bg-green-100' : 'bg-roksal-amber/10'}`}>
+              <Box aria-hidden="true" className={`h-5 w-5 ${supported ? 'text-green-600' : 'text-roksal-amber'}`} />
             </div>
             <div className="min-w-0 flex-1">
               <div className="mb-1 flex flex-wrap items-center gap-2">
@@ -2342,7 +2342,7 @@ export function WebXrLauncher({ projectId }: { projectId: string | null }) {
                 </div>
               </div>
               <div className="mb-2 flex flex-wrap items-center gap-2 text-2xs">
-                <span className={`flex items-center gap-1 ${supported ? 'text-green-600' : 'text-amber-600'}`}>
+                <span className={`flex items-center gap-1 ${supported ? 'text-green-600' : 'text-roksal-amber'}`}>
                   {supported ? <CheckCircle2 aria-hidden="true" className="h-3 w-3" /> : <AlertTriangle aria-hidden="true" className="h-3 w-3" />}
                   {supported ? 'Podprto na tej napravi' : 'Ni podprto (Chrome Android potreben)'}
                 </span>
@@ -2358,7 +2358,7 @@ export function WebXrLauncher({ projectId }: { projectId: string | null }) {
                 {supported ? 'Odpri WebXR AR' : 'Ni podprto'}
               </Button>
               {!projectId && supported && (
-                <p className="mt-1 text-center text-[9px] text-amber-600">Izberi projekt v Domov</p>
+                <p className="mt-1 text-center text-[9px] text-roksal-amber">Izberi projekt v Domov</p>
               )}
               {!supported && (
                 <p className="mt-1 text-center text-[9px] text-muted-foreground">

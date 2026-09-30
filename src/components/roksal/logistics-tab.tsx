@@ -2304,7 +2304,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                     {s.status === 'NAVRTENO' && (
                       <div className="flex flex-wrap items-center gap-1.5">
                         {lahkoUpravljaProizvodnjo && (
-                          <Button type="button" size="sm" variant="outline" className="h-6 text-2xs bg-amber-50 dark:bg-amber-950/40 focus-visible:ring-2 focus-visible:ring-roksal-navy/40" onClick={() => handleStatusChange(s.id, 'V_TEKU')}>
+                          <Button type="button" size="sm" variant="outline" className="h-6 text-2xs bg-roksal-amber/10 focus-visible:ring-2 focus-visible:ring-roksal-navy/40" onClick={() => handleStatusChange(s.id, 'V_TEKU')}>
                             Začni montažo
                           </Button>
                         )}
@@ -2597,7 +2597,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                             <AlertTriangle aria-hidden="true" className="h-3 w-3"  /> Kalibracija potečena ({e.calibrationDueDate ? formatDate(e.calibrationDueDate) : '—'})
                           </span>
                         ) : e.calibrationMissing ? (
-                          <span className="inline-flex items-center gap-1 rounded border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.5 text-amber-800 dark:text-amber-200">
+                          <span className="inline-flex items-center gap-1 rounded border border-roksal-amber/40 bg-roksal-amber/10 px-1.5 py-0.5 text-roksal-ink">
                             <AlertTriangle aria-hidden="true" className="h-3 w-3"  /> Manjka potrdilo/rok kalibracije
                           </span>
                         ) : (
@@ -2611,9 +2611,9 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                     {e.inspectionIntervalDays !== null && (
                       <div className="mt-0.5 text-2xs tabular-nums text-muted-foreground">
                         {e.inspectionDue ? (
-                          <span className="font-semibold text-amber-700 dark:text-amber-300">Pregled zadelju{e.nextInspectionAt ? ` (rok ${formatDate(e.nextInspectionAt)})` : ''}</span>
+                          <span className="font-semibold text-roksal-amber">Pregled zadelju{e.nextInspectionAt ? ` (rok ${formatDate(e.nextInspectionAt)})` : ''}</span>
                         ) : e.inspectionUnknown ? (
-                          <span className="text-amber-700 dark:text-amber-300">Pregled ni še zabeležen (interval {e.inspectionIntervalDays} dni)</span>
+                          <span className="text-roksal-amber">Pregled ni še zabeležen (interval {e.inspectionIntervalDays} dni)</span>
                         ) : (
                           <span>Naslednji pregled: {e.nextInspectionAt ? formatDate(e.nextInspectionAt) : '—'}</span>
                         )}
@@ -2967,7 +2967,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                   <CheckCircle2 aria-hidden="true" className="h-3.5 w-3.5" /> Preverba prehaja — vse izpolnjeno
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1 font-semibold text-amber-700 dark:text-amber-300">
+                <span className="inline-flex items-center gap-1 font-semibold text-roksal-amber">
                   <AlertTriangle aria-hidden="true" className="h-3.5 w-3.5" /> Napake: {qcDefects} — zaključitev ne bo prehajala
                 </span>
               )}
@@ -3172,7 +3172,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                   </Button>
                 </div>
                 {(!evExisting.hasBefore || !evExisting.hasAfter) && (
-                  <p className="mt-1 text-2xs text-amber-700 dark:text-amber-300">
+                  <p className="mt-1 text-2xs text-roksal-ink/80">
                     Predaja zahteva PRED in PO fotografijo — {(!evExisting.hasBefore && !evExisting.hasAfter) ? 'manjkata oba' : 'manjka ena'} (shranite dokazilo z izbranimi fotkami).
                   </p>
                 )}
@@ -3184,7 +3184,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                   <CheckCircle2 aria-hidden="true" className="h-3.5 w-3.5" /> {evAllChecked ? 'Checklist polno' : `Checklist: ${IEV_TEMPLATE.filter((t) => evChecked[t.key] === true).length}/${IEV_TEMPLATE.length}`} · napake: {evDefectsList.length}
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1 font-semibold text-amber-700 dark:text-amber-300">
+                <span className="inline-flex items-center gap-1 font-semibold text-roksal-amber">
                   <AlertTriangle aria-hidden="true" className="h-3.5 w-3.5" /> Neizpolnjene postavke potrebujejo opombo
                 </span>
               )}

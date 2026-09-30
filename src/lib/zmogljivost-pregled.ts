@@ -1,0 +1,373 @@
+// ---------------------------------------------------------------------------
+// R312 — 42. člen issue #1 (Deliverable 6): MERITVE ZMOGLJIVOSTI — iskrene
+// meritve pomembnih determinističnih operacij (VIZ/avtomatizacija jedra).
+// ---------------------------------------------------------------------------
+// Issue #1 (engineering requirements): «Measure execution time for important
+// VIZ/automation operations» + Deliverable 6 «performance measurements».
+//
+// ISKRENOST (kontrakt — nikoli izmišljenih števil):
+//  • Merjeno je REALNO izvajanje pravih funkcij jedra na fiksnih,
+//    predstavitvenih vhodih (isti vhodi za vse iteracije in vse naprave).
+//  • Čas je strojno odvisna resnica: pregled nosi izrecno 'na tej napravi'
+//    kontekst (sklep + enota), NIKOLI pretendira na univerzalnost.
+//  • STRUKTURA pregleda je 100 % deterministična: isti seznam operacij,
+//    isti števec iteracij, ISTA zaporedja (deterministični vhodi →
+//    deterministični izhodi — kanon issue #1), preverba vsakega izhoda.
+//    Uro je MOGOČE vbrizgati (DI) — testi dokazujejo bajtno enakost.
+//  • Vsak izhod vsake iteracije se PREVERI (preveri-izhod kontrakt) —
+//    merjenje pokvare funkcije bi bilo lažna resnica → TypeError.
+//  • Fail-closed: ne-polje operacij / manjkajoči kontrakt / < 3 iteracij /
+//    negativen delta (ura je tekla nazaj) / pokvaren izhod → TypeError z
+//    imenom graditelja (kanon R299/R302/R306/R311).
+//  • Nič odvisnosti od omrežja/db/AI — čiste funkcije jedra; jedro NIČ
+//    (samo branje + merjenje, ZERO-MUTACIJA po konstrukciji).
+// ---------------------------------------------------------------------------
+
+import { calculateRailingSpacing, calculateWindLoad } from '@/lib/calculator'
+import type { RailingCalcInput, RailingCalcResult, WindLoadCalcInput, WindLoadCalcResult } from '@/lib/calculator'
+import { tedenskiKonflikti } from '@/lib/tedenski-konflikti'
+import type { TedenskiKonfliktPregled } from '@/lib/tedenski-konflikti'
+import { konfliktiDokaz } from '@/lib/konflikti-dokaz'
+import { konfliktiCsv } from '@/lib/konflikti-csv'
+import { buildTerminiCsv } from '@/lib/termini-csv'
+import { vsotaPredvidenihUr } from '@/lib/termini-prikaz'
+import type { TerminPrikazVnos } from '@/lib/termini-prikaz'
+import type { VozniRedTermin } from '@/lib/logistika-vozni-red-pdf'
+import { aiRabaPregled } from '@/lib/ai-raba-pregled'
+
+/** Ura: (prej, zdaj) → min/mediana/max iz delt. DI za teste (kanon:
+ *  determinizem skozi vbrizgano uro, realna ura = performance.now). */
+export type ZmogljivostUra = () => number
+
+/** Enota merjenja — samo ms (kurzorna resnica; µs bi pretvarjanje skrilo). */
+export type ZmogljivostEnota = 'ms'
+
+export interface ZmogljivostMeritev {
+  /** Stabilni id operacije (npr. 'calculator.razmik') — ključ zaslona. */
+  readonly id: string
+  /** Iskren opis merjene operacije (kaj je realno izvedeno). */
+  readonly opis: string
+  /** Pot modula jedra (katalog kanon R294 — vir resnice je vidna). */
+  readonly modul: string
+  /** Število izvedenih iteracij (vsak izhod preverjen). */
+  readonly iteracij: number
+  readonly enota: ZmogljivostEnota
+  /** Najkrajši izmerjeni delta (ms) — spodnja meja stroja. */
+  readonly najmanj: number
+  /** Mediana delt (ms) — predstavljivost brez skrivanja repka. */
+  readonly mediana: number
+  /** Najdaljši izmerjeni delta (ms) — iskrena zgornja meja. */
+  readonly najvec: number
+  /** true = vsi izhodi vseh iteracij preverjeni (nikoli false v izhodu —
+   *  pokvaren izhod je TypeError, ne meritve). */
+  readonly preverjeno: true
+}
+
+export interface ZmogljivostPregled {
+  /** Meritve v ISTEM redu kot operacije (determinizem — nič re-sorta). */
+  readonly meritve: readonly ZmogljivostMeritev[]
+  readonly skupajIteracij: number
+  /** WYSIWYG sklep — zaslon + testi + prihodnji izvozi berejo ISTI niz. */
+  readonly sklep: string
+}
+
+/** Interna specifikacija ene operacije (kontrakt brez izjem — vsaka
+ *  operacija NOSI fiksni vhod + preverbo izhoda). */
+interface ZmogljivostOpSpec {
+  readonly id: string
+  readonly opis: string
+  readonly modul: string
+  readonly iteracij: number
+  /** Izvede ENO iteracijo na fiksne vhode (čista — nič stanja). */
+  readonly izvedi: () => unknown
+  /** Preverba izhoda (deterministična resnica funkcije). */
+  readonly preveri: (izhod: unknown) => boolean
+}
+
+// --- Fiksni predstavitveni vhodi (ISTI za vse iteracije in naprave) ---
+// Kanon iskrenosti: vhodi so sintetični, ampak STRUKTURNO realni (isti
+// tipe/oblike kot produkcija) — merijo strojno ceno JEDRA, ne povedo nič
+// o podatkih strank. Nič osebnih podatkov, nič izmišljenih števil na
+// zaslonu (meritve so realno izmerjene; vhodi so konstante knjižnice).
+
+const NOW_FIKSNI = new Date('2026-09-21T10:00:00Z')
+
+/** 48 terminov v 7-dnevnem oknu, 4 ekipe × 12 — oblika iz testov R300/R301
+ *  (poli-odprta prekrivanja, realen status razpon). */
+function termin(p: Partial<VozniRedTermin> & { datumZacetka: string }): VozniRedTermin {
+  return {
+    datumKonca: null,
+    status: 'NAVRTENO',
+    predvideneUre: null,
+    projekt: null,
+    stranka: null,
+    ekipa: null,
+    lokacija: null,
+    ...p,
+  }
+}
+
+const TERMINI_FIKSNI: readonly VozniRedTermin[] = (() => {
+  const ekipe = ['E1', 'E2', 'E3', 'E4']
+  const statusi = ['NAVRTENO', 'V_TEKU', 'PRELOZENO'] as const
+  const izhod: VozniRedTermin[] = []
+  for (let k = 0; k < ekipe.length; k++) {
+    const dan = 21 + k
+    const ekipa = ekipe[k]!
+    // Dokazano prekrivanje (poli-odprto [8,12) ∩ [10,14) ≠ ∅) — pregled
+    // MORA imeti pare (konstruktor knjižnice fail-closed na praznino).
+    izhod.push(
+      termin({
+        datumZacetka: `2026-09-${dan}T08:00:00Z`,
+        datumKonca: `2026-09-${dan}T12:00:00Z`,
+        status: 'NAVRTENO',
+        projekt: `P-${100 + k}`,
+        ekipa,
+      }),
+      termin({
+        datumZacetka: `2026-09-${dan}T10:00:00Z`,
+        datumKonca: `2026-09-${dan}T14:00:00Z`,
+        status: 'V_TEKU',
+        projekt: `P-${110 + k}`,
+        ekipa,
+      }),
+    )
+    // 10 zapolnitev (volumen za realen benchmark): razporejeni dnevi,
+    // 2 h okna — naključna združitev tvori dodatne pare (težje = boljše).
+    for (let j = 0; j < 10; j++) {
+      const danF = 21 + ((k + j + 1) % 7)
+      izhod.push(
+        termin({
+          datumZacetka: `2026-09-${danF}T16:00:00Z`,
+          datumKonca: `2026-09-${danF}T18:00:00Z`,
+          status: statusi[(k + j) % statusi.length]!,
+          projekt: `P-${200 + k * 10 + j}`,
+          ekipa,
+        }),
+      )
+    }
+  }
+  return izhod
+})()
+
+const PREGLED_FIKSNI: TedenskiKonfliktPregled = (() => {
+  const pregled = tedenskiKonflikti(TERMINI_FIKSNI, NOW_FIKSNI)
+  if (pregled === null) {
+    throw new TypeError('zmogljivost-pregled: fiksni vhodi MORAJO proizvesti pregled (konstruktor knjižnice pokvaren)')
+  }
+  return pregled
+})()
+
+const PRIKAZNI_FIKSNI: readonly TerminPrikazVnos[] = TERMINI_FIKSNI.map((t, i) => ({
+  id: `e2e-${i}`,
+  projectId: `proj-${i}`,
+  projektIme: t.projekt,
+  strankaIme: t.stranka,
+  strankaNaslov: null,
+  lokacija: t.lokacija,
+  ekipaIme: t.ekipa,
+  monterId: null,
+  monterIme: null,
+  status: t.status,
+  datumZacetka: t.datumZacetka,
+  predvideneUre: 4 + (i % 3),
+  moja: false,
+}))
+
+const RAZMIK_FIKSNI: RailingCalcInput = {
+  totalLengthMm: 3000,
+  slatWidthMm: 100,
+  maxGapMm: 99,
+  profileType: 'classic',
+}
+
+const VETRNA_FIKSNI: WindLoadCalcInput = {
+  heightAboveGround: 12,
+  terrainCategory: 'II',
+  windSpeedMs: 28,
+  railingAreaM2: 9,
+  railingType: 'slatted',
+}
+
+/** Registracija operacij (EN VIR za merjenje in zaslon). Nova operacija =
+ *  nova vrstica tukaj + preverba izhoda — test STRAŽAR zahteva oba. */
+export const ZMOGLJIVOST_OPS: readonly ZmogljivostOpSpec[] = [
+  {
+    id: 'calculator.razmik',
+    opis: 'Kalkulator razmikov letvic (jedro kalkulatorja)',
+    modul: 'src/lib/calculator.ts',
+    iteracij: 400,
+    izvedi: () => calculateRailingSpacing(RAZMIK_FIKSNI),
+    preveri: (i) => {
+      const r = i as RailingCalcResult
+      return (
+        r.slatCount > 0 &&
+        typeof r.actualGapMm === 'number' &&
+        Number.isFinite(r.actualGapMm) &&
+        r.actualGapMm <= 100 &&
+        r.isCompliant === true
+      )
+    },
+  },
+  {
+    id: 'calculator.vetrna',
+    opis: 'Vetrna obremenitev (SLO pravila, jedro kalkulatorja)',
+    modul: 'src/lib/calculator.ts',
+    iteracij: 400,
+    izvedi: () => calculateWindLoad(VETRNA_FIKSNI),
+    preveri: (i) => {
+      const r = i as WindLoadCalcResult
+      return (
+        r.windPressureKpa > 0 &&
+        Number.isFinite(r.totalForceKn) &&
+        (r.riskLevel === 'LOW' || r.riskLevel === 'MEDIUM' || r.riskLevel === 'HIGH' || r.riskLevel === 'CRITICAL')
+      )
+    },
+  },
+  {
+    id: 'konflikti.pregled',
+    opis: 'Tedenski konfliktni pregled (48 terminov × 4 ekipe)',
+    modul: 'src/lib/tedenski-konflikti.ts',
+    iteracij: 200,
+    izvedi: () => tedenskiKonflikti(TERMINI_FIKSNI, NOW_FIKSNI),
+    preveri: (i) => {
+      const r = i as TedenskiKonfliktPregled | null
+      return r !== null && r.pregledanih > 0 && r.skupine.length === 4
+    },
+  },
+  {
+    id: 'konflikti.dokaz',
+    opis: 'Konfliktni dokaz na zaslonu (preslikava pregleda)',
+    modul: 'src/lib/konflikti-dokaz.ts',
+    iteracij: 200,
+    izvedi: () => konfliktiDokaz(PREGLED_FIKSNI),
+    preveri: (i) => Array.isArray(i) && i.length > 0,
+  },
+  {
+    id: 'konflikti.csv',
+    opis: 'Konflikti CSV (celoten niz + meta)',
+    modul: 'src/lib/konflikti-csv.ts',
+    iteracij: 100,
+    izvedi: () => konfliktiCsv(TERMINI_FIKSNI, NOW_FIKSNI),
+    preveri: (i) => {
+      const r = i as { csv: string; vrstic: number }
+      return typeof r.csv === 'string' && r.csv.startsWith('\uFEFF') && r.vrstic > 1
+    },
+  },
+  {
+    id: 'termini.urAgregat',
+    opis: 'Agregat predvidenih ur (48 prikaznih vrstic)',
+    modul: 'src/lib/termini-prikaz.ts',
+    iteracij: 200,
+    izvedi: () => vsotaPredvidenihUr(PRIKAZNI_FIKSNI),
+    preveri: (i) => {
+      const r = i as { ure: number; stTerminov: number }
+      return r.ure > 0 && r.stTerminov === 48
+    },
+  },
+  {
+    id: 'termini.csv',
+    opis: 'Termini CSV (celoten niz + povzetek)',
+    modul: 'src/lib/termini-csv.ts',
+    iteracij: 100,
+    izvedi: () =>
+      buildTerminiCsv(PRIKAZNI_FIKSNI, {
+        urAgregat: vsotaPredvidenihUr(PRIKAZNI_FIKSNI),
+        osvezitev: NOW_FIKSNI,
+        now: NOW_FIKSNI,
+        samoMoje: false,
+      }),
+    preveri: (i) => {
+      const r = i as { csv: string; vrstic: number }
+      return typeof r.csv === 'string' && r.csv.startsWith('\uFEFF') && r.vrstic === 48
+    },
+  },
+  {
+    id: 'ai-raba.pregled',
+    opis: 'AI raba pregled (projekcija kataloga)',
+    modul: 'src/lib/ai-raba-pregled.ts',
+    iteracij: 200,
+    izvedi: () => aiRabaPregled(),
+    preveri: (i) => {
+      const r = i as { stAi: number; zive: unknown[] }
+      return r.stAi === 2 && Array.isArray(r.zive) && r.zive.length === 2
+    },
+  },
+]
+
+/** Mediana delt (klasična: središče sortiranih; sod n = povprečje srednjih
+ *  dveh). Deterministična postprodaja — nič napredne statistike. */
+function medianaDelt(delt: readonly number[]): number {
+  const s = [...delt].sort((a, b) => a - b)
+  const n = s.length
+  const mid = Math.floor(n / 2)
+  return n % 2 === 1 ? s[mid]! : (s[mid - 1]! + s[mid]!) / 2
+}
+
+/** IZMERI ZMOGLJIVOST — izvede vse registrirane operacije, meri delt po
+ *  iteraciji, preveri vsak izhod. Uro je mogoče vbrizgati (DI — testi;
+ *  produkcija = performance.now). Vrne deterministično strukturo z realno
+ *  merjenimi časi.
+ *
+ *  Fail-closed: ne-polje operacij / op brez kontrakta / < 3 iteracij /
+ *  negativen delta / izhod, ki ne preveri → TypeError z imenom graditelja. */
+export function izmeriZmogljivost(
+  ops: readonly ZmogljivostOpSpec[] = ZMOGLJIVOST_OPS,
+  ura: ZmogljivostUra = () => performance.now(),
+): ZmogljivostPregled {
+  if (!Array.isArray(ops)) {
+    throw new TypeError('izmeriZmogljivost: pričakovano polje operacij')
+  }
+  const meritve: ZmogljivostMeritev[] = []
+  let skupajIteracij = 0
+  for (const op of ops) {
+    if (
+      !op ||
+      typeof op !== 'object' ||
+      typeof op.id !== 'string' ||
+      op.id.length === 0 ||
+      typeof op.izvedi !== 'function' ||
+      typeof op.preveri !== 'function'
+    ) {
+      throw new TypeError('izmeriZmogljivost: operacija brez kontrakta (id/izvedi/preveri)')
+    }
+    if (!Number.isInteger(op.iteracij) || op.iteracij < 3) {
+      throw new TypeError(`izmeriZmogljivost: operacija '${op.id}' rabi ≥ 3 iteracij (mediana brez njih ni resnica)`)
+    }
+    const delt: number[] = []
+    let preverjeno = true
+    for (let i = 0; i < op.iteracij; i++) {
+      const zacetek = ura()
+      const izhod = op.izvedi()
+      const konec = ura()
+      const delta = konec - zacetek
+      if (!Number.isFinite(delta) || delta < 0) {
+        throw new TypeError(`izmeriZmogljivost: operacija '${op.id}' — ura je tekla nazaj ali pokvarjena (delta ${String(delta)})`)
+      }
+      if (!op.preveri(izhod)) {
+        preverjeno = false
+        break
+      }
+      delt.push(delta)
+    }
+    if (!preverjeno) {
+      throw new TypeError(
+        `izmeriZmogljivost: operacija '${op.id}' — izhod NE preveri (merjenje pokvare funkcije bi bilo lažna resnica)`,
+      )
+    }
+    meritve.push({
+      id: op.id,
+      opis: op.opis,
+      modul: op.modul,
+      iteracij: op.iteracij,
+      enota: 'ms',
+      najmanj: Math.min(...delt),
+      mediana: medianaDelt(delt),
+      najvec: Math.max(...delt),
+      preverjeno: true,
+    })
+    skupajIteracij += op.iteracij
+  }
+  const sklop = `Merjeno na tej napravi: ${meritve.length} operacij · ${skupajIteracij} iteracij · vsi izhodi preverjeni — časi so resnična meritev (strojno odvisna), struktura in izhodi deterministični.`
+  return { meritve, skupajIteracij, sklep: sklop }
+}

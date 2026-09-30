@@ -77,10 +77,15 @@ import { avtomatizacijaPovzetek } from '@/lib/automation/katalog'
 // resnica po površinah (ČISTA projekcija katalog × AI_KANDIDATI — NIČ
 // nove resnice; WYSIWYG sklep).
 import { aiRabaPregled } from '@/lib/ai-raba-pregled'
+// R312 — 42. člen issue #1 (Deliverable 6): meritve zmogljivosti — iskrene
+// meritve jedra (realno izvajanje, fiksni vhodi, vsak izhod preverjen;
+// časi strojno odvisni — izris ŠELE v brskalniku, nič SSR laži).
+import { izmeriZmogljivost } from '@/lib/zmogljivost-pregled'
+import type { ZmogljivostPregled } from '@/lib/zmogljivost-pregled'
 import {
   TrendingUp, Clock, Users, Package, Euro, CheckCircle2,
   AlertTriangle, Calendar, Truck, Bell, FileDown, Loader2, Download, Workflow,
-  History, PackageX, CalendarX, FileText, FileSpreadsheet, Sparkles,
+  History, PackageX, CalendarX, FileText, FileSpreadsheet, Sparkles, Gauge,
 } from 'lucide-react'
 
 interface VodjaStats {
@@ -203,6 +208,9 @@ export function VodjaDashboard() {
   // kot minimalni prerez za lib (status + skupajCena + projekt naziv).
   const [allOrders, setAllOrders] = useState<DobicikonostNarocilo[]>([])
   const [reportLoading, setReportLoading] = useState(false)
+  // R312 — 42. člen: meritve zmogljivosti (Deliverable 6) — izvedene ŠELE v
+  // brskalniku (useEffect; SSR izriše iskreno "teče …", NIČ hydration laži).
+  const [zmogljivost, setZmogljivost] = useState<ZmogljivostPregled | null>(null)
   const [dobicikonostVTeku, setDobicikonostVTeku] = useState(false)
   // R293 — dvoklik guard dobičkonostnega CSV (pariteta brata dobicikonostVTeku R258).
   const [dobicikonostCsvVTeku, setDobicikonostCsvVTeku] = useState(false)
@@ -609,6 +617,18 @@ export function VodjaDashboard() {
   // R311 — 41. člen: AI raba pregled (ČISTA projekcija katalog × kandidati
   // — EN VIR, NIČ dvojnega računa; vzorec R305/R306/R307 memojev).
   const aiRaba = aiRabaPregled()
+
+  // R312 — 42. člen: meritve zmogljivosti jedra — realna ura, fiksni vhodi,
+  // vsak izhod preverjen (fail-closed lib). Enkrat ob prikazu pregleda.
+  useEffect(() => {
+    try {
+      setZmogljivost(izmeriZmogljivost())
+    } catch {
+      // fail-closed: lib vrže TypeError na pokvaren izhod — zaslon ostane
+      // pri iskrenem "teče …" brez števil (nikoli izmišljenih meritev);
+      // testi + STRAŽAR čuvajo lib, tukaj je samo zaščita izrisa.
+    }
+  }, [])
 
   // R293 — MARŽNI RAZGLED merilo: največja |marža| čez vrste (ISTO merilo za
   // VSE vrstice — vzorec R291/R292 mini tir; 0 pri praznem preseku).
@@ -1050,6 +1070,69 @@ export function VodjaDashboard() {
         <p className="mt-1.5 text-2xs text-muted-foreground" data-testid="ai-raba-sklep">
           {aiRaba.sklep}
         </p>
+      </section>
+
+      {/* R312 — 42. člen issue #1 (Deliverable 6): meritve zmogljivosti —
+          iskrene meritve jedra. Realno izvajanje pravih funkcij na fiksnih
+          predstavitvenih vhodih (lib zmogljivost-pregled — vsak izhod
+          preverjen, fail-closed); časi so strojno odvisna resnica (izrecno
+          'na tej napravi') — izris šele v brskalniku, brez izvedene meritve
+          NIKOLI izmišljenih števil; struktura + izhodi deterministični.
+          WYSIWYG: sklep verbatim (NIČ dvojnega sklepa — vzorec R311). */}
+      <section
+        className="rounded-lg border border-border bg-muted/40 px-3 py-2"
+        aria-label="Meritve zmogljivosti jedra"
+        data-testid="zmogljivost-dokaz"
+      >
+        <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
+          <p className="flex items-center gap-1 text-2xs font-medium text-roksal-ink">
+            <Gauge className="h-3 w-3 text-roksal-amber" aria-hidden="true" />
+            Meritve zmogljivosti jedra
+          </p>
+          <p className="text-2xs tabular-nums text-muted-foreground" title="Realna meritev izvajanja jedra (deterministični kalkulator, konflikti, CSV, AI-raba projekcija) — struktura EN VIR z lib testi.">
+            {zmogljivost
+              ? `${zmogljivost.meritve.length} operacij · ${zmogljivost.skupajIteracij} iteracij`
+              : 'merjenje teče …'}
+          </p>
+        </div>
+        {zmogljivost ? (
+          <ul className="mt-1 space-y-0.5" data-testid="zmogljivost-vrstice">
+            {zmogljivost.meritve.map((m) => (
+              <li
+                key={m.id}
+                className="flex items-baseline justify-between gap-2 rounded-md border border-border bg-background/60 px-2 py-1"
+                data-testid="zmogljivost-vrstica"
+                title={m.modul}
+              >
+                <span className="text-2xs text-roksal-ink">
+                  <span className="font-medium">{m.opis}</span>
+                  <span className="text-muted-foreground">
+                    {' '}· {m.iteracij}× · vsi izhodi preverjeni
+                  </span>
+                </span>
+                <span
+                  className="shrink-0 text-2xs tabular-nums text-roksal-ink"
+                  title="najmanj / mediana / največ (ms) — resnična meritev na tej napravi (strojno odvisna)"
+                >
+                  {m.najmanj >= 100 ? String(Math.round(m.najmanj)) : m.najmanj.toFixed(2)}
+                  {' / '}
+                  {m.mediana >= 100 ? String(Math.round(m.mediana)) : m.mediana.toFixed(2)}
+                  {' / '}
+                  {m.najvec >= 100 ? String(Math.round(m.najvec)) : m.najvec.toFixed(2)} ms
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-1 text-2xs text-muted-foreground">
+            Merjenje se izvede v brskalniku ob odprtju pregleda — brez izvedene meritve ni izmišljenih števil.
+          </p>
+        )}
+        {zmogljivost && (
+          <p className="mt-1.5 text-2xs text-muted-foreground" data-testid="zmogljivost-sklep">
+            {zmogljivost.sklep}
+          </p>
+        )}
       </section>
 
       {/* Današnji pregled */}

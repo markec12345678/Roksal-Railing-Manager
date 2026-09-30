@@ -238,16 +238,17 @@ describe('R164 DARK strazar + fokus ringi (dashboard-tab — glavna površina)',
     expect(src).not.toContain('bg-white')
   })
 
-  it('amber opozorilni okvirji imajo dark: varianti (border + bg + besedila)', () => {
-    const zadetki = src.match(/border-amber-200 bg-amber-50[^"']*/g) ?? []
+  it('amber opozorilni okvirji: roksal žetoni OBE temi (R312 val 3 pin shift)', () => {
+    // R312 STIL val 3: surova amber (border-amber-200 bg-amber-50 + dark:
+    // dvojčki) je združena na roksal žetone — žeton deluje v OBEH temah brez
+    // dark: dvojčkov (žeton temsko prilagodljiv po naravi; vzorec R310/R311
+    // pin shifta z obrnjeno regresijo).
+    const zadetki = src.match(/border border-roksal-amber\/40 bg-roksal-amber\/10 px-2\.5 py-2/g) ?? []
     expect(zadetki.length).toBeGreaterThanOrEqual(2)
-    for (const z of zadetki) {
-      expect(z).toContain('dark:border-')
-      expect(z).toContain('dark:bg-')
-    }
-    // Besedila v okvirjih morajo imeti temno varianto.
-    expect(src).toMatch(/text-amber-800 dark:/)
-    expect(src).toMatch(/text-amber-700\/90[^'"]*dark:/)
+    // obrnjena regresija: surovi mirror se ne sme vrniti (lekcija R309/R310)
+    expect(src).not.toMatch(/border-amber-200 bg-amber-50/)
+    expect(src).not.toMatch(/text-amber-800 dark:/)
+    expect(src).not.toMatch(/text-amber-700\/90[^'"]*dark:/)
   })
 
   it('ikonski gumbi projektne kartice (kliči/uredi/arhiviraj) imajo focus-visible ring', () => {
