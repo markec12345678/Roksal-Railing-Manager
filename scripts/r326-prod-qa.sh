@@ -1,5 +1,24 @@
 #!/bin/bash
-# R326 — PRVA naloga (worklog R326): potrditi R290+…+R321+R322+R323+R324+R326 SKUPAJ na produ.
+# R326 — PRVA naloga (worklog R326): potrditi R290+…+R321+R322+R323+R324+R325+R326 SKUPAJ na produ.
+#   🆕 R326 = 53. člen issue #1 §5 (ZGODOVINA CEN MATERIALA — price history):
+#   NOVI lib cena-zgodovina (ČISTA projekcija MaterialPrice vključno z
+#   ZAPRTO zgodovino; EN VIR glave + CENA_SMER_NIZ + sklep + VIR_NIZ;
+#   EXCLUDE ogledalo NATANKO ena odprta cena per par; Date.parse
+#   razvrščanje); NOVI GET route material-prices/zgodovina (r308 81→82;
+#   edini bralec zgodovine); NOVI panel CenaZgodovinaPanel na inventory
+#   tabu (par časovnica + iskrene smeri + CSV gumb navy/40 ring — amber/50
+#   register ostane zaklenjen v vodji ×8; iskrena ničelna veja). STIL val
+#   13: dvonivojska hierarhija val 11/12 na novi površini panela (amber/30
+#   + amber/40). KOLIZIJA #7: runda R325→R326 (vzporedna lastniška seja).
+#   🆕 R325 = PRIROJENIŠKA runda (dekompozicija FAZA 2 — vzorec R319
+#   faza 1 / R322 calculator faza 1; KOLIZIJA #5: vzporedna seja je
+#   vzela R323 [8857d6e, 51. člen CSV]; NI novi člen issue #1):
+#   DEKOMPOZICIJA FAZA 2 — measurements 7.604 → 7.153 [−451; laserski BT
+#   blok → laser-bt.ts + use-laser.ts hook (onMeasurement povratni klic)
+#   + laser-panel.tsx; template localStorage blok → templates.ts] +
+#   calculator 5.372 → 4.846 [−526; 5 PDF izvozov → pdf-exports.ts z
+#   args objekti]; r172 vrstični pin 7427 → 6976 (izrecen R325 komentar).
+#   🆕 R323 = 51. člen issue #1 (IZVOZI družina): izvoz meritev zmogljivosti
 #   🆕 R323 = 51. člen issue #1 (IZVOZI družina): izvoz meritev zmogljivosti
 #   kot DETERMINISTIČNI CSV (Deliverable 6 prenosljiv artifact — družinska
 #   simetrija kanon: Del. 4 = CSV+PDF, Del. 7 = JSON+PDF, Del. 6 = PDF+CSV;
@@ -10,19 +29,6 @@
 #   STIL val 11: dokazni bloki sekcija hover (transition-colors + amber/30
 #   — 3 bloki enoten žeton, MEKŠI od vrstičnega amber/40 val 10; val8 amber
 #   ×6→×7 + val9 press-scale ×13→14 PIN SHIFTI).
-#   🆕 R326 = 53. člen issue #1 §5 (ZGODOVINA CEN MATERIALA — price
-#   history): NOVI lib cena-zgodovina (ČISTA projekcija MaterialPrice
-#   vključno z ZAPRTO zgodovino veljavnostDo != null; EN VIR: glave
-#   CENA_ZGODOVINA_CSV_GLAVE + TIMELINE_GLAVE + CENA_SMER_NIZ +
-#   cenaZgoSklep + CENA_ZGO_VIR_NIZ; EXCLUDE ogledalo NATANKO ena odprta
-#   cena per par; Date.parse razvrščanje — ISO dolžinska past); NOVI GET
-#   route material-prices/zgodovina (r308 obseg 81→82; edini bralec
-#   zgodovine); NOVI panel CenaZgodovinaPanel na inventory tabu (par =
-#   material × dobavitelj časovnica + iskrene smeri + CSV gumb izvozne
-#   družine z navy/40 ringom — amber/50 register ostane zaklenjen v
-#   vodji ×8). STIL val 13: dvonivojska hierarhija val 11/12 na NOVI
-#   površini panela (par amber/30 + časovna vrstica amber/40); val8
-#   anti-stale 58→59; HEAD pre-existing /s flag v r324 testu popravljen.
 #   🆕 R322 = PRIROJENIŠKA runda (dekompozicija — vzorec R319; KOLIZIJA:
 #   vzporedna seja je vzela R321 [43f3f7e]; NI novi člen issue #1):
 #   DEKOMPOZICIJA calculator-tab FAZA 1 — 6.074 → 5.372 vrstic [−702];
@@ -92,9 +98,10 @@
 #      2 novi izjemi ZAKLENJENI (inclinometer senzorjska lestvica
 #      denied=red/unsupported=amber; site-survey PODLAGA kategorija barv z
 #      rdečim bratom — R308/R311 precedens; r315-stil-val6 STRAŽAR).
-#   Z0  build-guard (EPOCH): health build > R322 commit čas (git log —
+#   Z0  build-guard (EPOCH): health build > R325 commit čas (git log —
 #       self-contained meja) → R315 deploy potrjen (nosi R290+…+R315 — kanon
-#       R280/R284), polni LIVE needle teki (R322 dekomp ×4 + R321 PDF ×2 +
+#       R280/R284), polni LIVE needle teki (R325 dekomp ×6 + R324 dnevni PDF ×2 + R323 CSV ×2 +
+#       R322 dekomp ×4 + R321 PDF ×2 +
 #       R320 PDF ×2 + R318 PDF ×2 + R317 CSV ×3 +
 #       must_miss ×1 + R316 izvoz JSON ×2 + STIL ×5 +
 #       must_miss ×5 + R315 verifikacija ×10 + STIL ×11 +
@@ -106,7 +113,8 @@
 #   Z1  meritve tab ŽIVO — sync žig POGOJNO (kanon r277).
 #   Z1b verzije ruta 404 + 'Meritev ne obstaja' (R276+ regresa). ZERO-MUTACIJA.
 #   Z1c zvonček POGOJNI DOM probe + Z1d presežek note POGOJNI (R287/R289).
-#   Z2  čanki needleji: R322 ×4+1 + R321 ×2+1 + R320 ×2+1 + R318 ×2+1 +
+#   Z2  čanki needleji: R325 ×6+1 + R324 ×2+1 + R323 ×2+1 + R322 ×4+1 + R321 ×2+1 +
+#       R320 ×2+1 + R318 ×2+1 +
 #       R317 ×3+1 + R316 ×7+6 + R315 ×21+6 + R314 ×18+6 + R313 ×4+6 + R312 ×5+3 +
 #       R311 ×7+1 + R310 ×5+1 + R309 ×4+3 + R308 ×7 + R307 ×11 + R306 ×11 +
 #       R295 ×8 + R294 ×9 + R293 ×8 + R292 ×8 + R291 ×8 + R290 ×8 + regresije.
@@ -114,7 +122,7 @@
 #       ovojnico + users 403 deny-first POZITIVNI dokaz (lekcija R311 1).
 #   Z3  v99 sync gate (R274). ZERO-MUTACIJA.
 #   LEKCIJA R307 3 (derive): grep čistost preverba uporablja RAZRED ZNAKOV
-#   ('R32[3]_PUSH') — preverba ne sme ujeti svojega vzorca (samozadetek).
+#   ('R32[4]_PUSH') — preverba ne sme ujeti svojega vzorca (samozadetek).
 set -u
 source /home/z/my-project/scripts/e2e-lib.sh
 # R316 — 2. prehod reprobe lista (isti 15 dispeči; žlenjeno ENKRAT, rabi
@@ -122,16 +130,16 @@ source /home/z/my-project/scripts/e2e-lib.sh
 R326_TABS='{"tab":"dashboard","more":null,"subTab":null,"osnutek":null,"filter":null} {"tab":"measurements","more":null,"subTab":null,"osnutek":null,"filter":null} {"tab":"inventory","more":null,"subTab":null,"osnutek":null,"filter":null} {"tab":"more","more":"documents","subTab":null,"osnutek":null,"filter":null} {"tab":"more","more":"material","subTab":"suppliers","osnutek":null,"filter":null} {"tab":"more","more":"crm","subTab":null,"osnutek":null,"filter":null} {"tab":"more","more":"material","subTab":"orders","osnutek":null,"filter":null} {"tab":"more","more":"logistics","subTab":null,"osnutek":null,"filter":null} {"tab":"inclinometer","more":null,"subTab":null,"osnutek":null,"filter":null} {"tab":"ar","more":null,"subTab":null,"osnutek":null,"filter":null} {"tab":"calculator","more":null,"subTab":null,"osnutek":null,"filter":null} {"tab":"photos","more":null,"subTab":null,"osnutek":null,"filter":null} {"tab":"more","more":"cvstudio","subTab":null,"osnutek":null,"filter":null} {"tab":"more","more":"vodja","subTab":null,"osnutek":null,"filter":null} {"tab":"more","more":"teren","subTab":null,"osnutek":null,"filter":null} {"tab":"more","more":"ekipa","subTab":null,"osnutek":null,"filter":null}'
 PROD="https://roksal-railing-manager.vercel.app"
 R326_COMMIT_ISO="$(git log --format='%cI ::: %s' 2>/dev/null | awk -F' ::: ' '$2 ~ /^R326 —/ {print $1; exit}')"
-[ -n "$R326_COMMIT_ISO" ] || { echo "FAIL-CLOSED: R322 commita ni v git zgodovini — EPOCH guard brez meje"; exit 1; }
+[ -n "$R326_COMMIT_ISO" ] || { echo "FAIL-CLOSED: R325 commita ni v git zgodovini — EPOCH guard brez meje"; exit 1; }
 R326_PUSH="$(date -u -d "$R326_COMMIT_ISO" +%Y-%m-%dT%H:%M:%S)"
-echo "R322 meja (commit čas, UTC): $R326_PUSH"
+echo "R325 meja (commit čas, UTC): $R326_PUSH"
 # LEKCIJA R306 2: derive transformacije — grep preverba ostankov starega imena
 # PRED tekom (unbound variable pri set -u je rešil, a čas izgubljen).
-if grep -qE 'R32[3]_PUSH|R324[_]COMMIT_ISO' "$0"; then
-  echo "FAIL-CLOSED: derive ostanki R324 PUSH/COMMIT meje v r326-prod-qa.sh — popravi pred tekom"
+if grep -qE 'R32[4]_PUSH|R325[_]COMMIT_ISO' "$0"; then
+  echo "FAIL-CLOSED: derive ostanki R325 PUSH/COMMIT meje v r326-prod-qa.sh — popravi pred tekom"
   exit 1
 fi
-echo "derive čistost: OK (nič R324 PUSH/COMMIT ostankov — razred znakov, brez samozadetka)"
+echo "derive čistost: OK (nič R325 PUSH/COMMIT ostankov — razred znakov, brez samozadetka)"
 
 
 echo "=== Z0: prod build-guard — R326 deploy detekcija (EPOCH primerjava) ==="
@@ -153,8 +161,8 @@ PYEOF
 if [ "$STALE" = "1" ]; then
   echo ""
   echo "████████████████████████████████████████████████████████████████"
-  echo "██ ESKALACIJA — PROD STALE: build $BUILD ≤ R324 commit meja ($R326_PUSH)."
-  echo "██ R318+R319+R320+R321+R322+R323+R324+R326 pričakujejo SKUPNI deploy (kanon R280/R284 — UNION harvest
+  echo "██ ESKALACIJA — PROD STALE: build $BUILD ≤ R326 commit meja ($R326_PUSH)."
+  echo "██ R318+R319+R320+R321+R322+R323+R324+R325+R326 pričakujejo SKUPNI deploy (kanon R280/R284 — UNION harvest
 ██ ob prvem prostem deployu; precedens R313/R314)."
   echo "██ Kanon R258: deployment pipeline event, NI koda-bug. Eksplicitna"
   echo "██ eskalacija LASTNIKU (Vercel dashboard — deploy stuck/limit)."
@@ -311,8 +319,8 @@ PYEOF2
   exit 0
 fi
 
-echo "R322 deploy potrjen (build $BUILD > R322 commit meja $R326_PUSH) — polni LIVE teki"
-echo "OPOMBA: deploy je nosil VSE generacije (R290+…+R322 — kanon R280/R284)"
+echo "R326 deploy potrjen (build $BUILD > R326 commit meja $R326_PUSH) — polni LIVE teki"
+echo "OPOMBA: deploy je nosil VSE generacije (R290+…+R325 — kanon R280/R284)"
 
 eb_odpri_in_prijavi || { echo "LOGIN FAIL — abort"; agent-browser close --all > /dev/null 2>&1; exit 1; }
 eb_zapri_vodic
@@ -392,8 +400,8 @@ PYEOF
 agent-browser eval "(()=>{document.body.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true})); return 'esc';})()" 2>&1 | tail -1
 eb_cakaj 2
 
-echo "=== Z2: čanki — klient needleji (R322 ×4+1 + R321 ×2+1 + R320 ×2+1 + R318 ×2+1 +
-R317 ×3+1 + R316 ×7+5 + R315 ×21+6 + R314 ×18+6 + R313 ×4+6 + R312 ×5+3 + R311 ×7+1 + R310 ×5+1 + R309 ×4+3 + R308 ×7 + R307 ×11 + R306 ×11 + R295 ×9 LIVE + R294 ×9 + R293 ×8 + R292 ×8 + R291 ×8 + R290 ×8 + regresije + must_miss) ==="
+echo "=== Z2: čanki — klient needleji (R325 ×6+1 + R324 ×2+1 + R323 ×2+1 + R322 ×4+1 + R321 ×2+1 +
+R320 ×2+1 + R318 ×2+1 + R317 ×3+1 + R316 ×7+5 + R315 ×21+6 + R314 ×18+6 + R313 ×4+6 + R312 ×5+3 + R311 ×7+1 + R310 ×5+1 + R309 ×4+3 + R308 ×7 + R307 ×11 + R306 ×11 + R295 ×9 LIVE + R294 ×9 + R293 ×8 + R292 ×8 + R291 ×8 + R290 ×8 + regresije + must_miss) ==="
 # R316: OUT + lines init ŽE pred PRIME (login-era + PRIME-era slike že v
 # datoteki — tu NE sme biti `: >` wipe).
 # R297 lekcija: ISTA UNION oblika kot stale veja (buffer 10000 + per-tab
@@ -676,33 +684,44 @@ need "Izvozi meritve zmogljivosti kot CSV" "R323 CSV izvoz gumb aria (vodja chun
 need "kot deterministični CSV" "R323 CSV izvoz title fragment (vodja chunk) — LIVE"
 must_miss "TODO-R323" "R323 — brez razvojnih ostankov"
 
-echo "--- R324 MANDATORY — 52. člen: izvoz dnevnega pregleda vodje (PDF) + STIL val 12 (LIVE) ---"
+echo "--- R324 MANDATORY — 52. člen: izvoz dnevnega pregleda vodje (PDF) — OBNOVLJEN (izpadel v KOLIZIJI #5+#6 preimenovanjih; UNION harvest kanon) ---"
 # IZVOZI družina: "Dnevni PDF" gumb v glavi "Pregled za vodjo" (vodja chunk)
-# — deterministični PDF izvoz (vhod = POSREDOVANA resnica prek vodjaIzvozVhod
-# — ENA preslikava, DVA potrošnika; EN VIR kontrakt R324 v bratu R163 —
-# glave + validacija + vodjaKpiVrstice + Vir niz; PDF lib LOČEN, NO jsPDF v
-# vodja-csv; FNV soli 0xcd–0xd0; vitest r324-vodja-dnevni-pdf ×14; E2E Z0at
-# DETERMINIZEM ŽIVO NA BAJTIH: dva izvoza bajtno enaka + %PDF- magija).
-# STIL val 12: današnji termini dvonivojski odziv (blok amber/30 + vrstica
-# amber/40 — registri ×4/×4; utility klas = build-nivo SAMO — LEKCIJA R316
-# signature).
+# — deterministični PDF izvoz (vodjaIzvozVhod EN VIR vhod — ENA preslikava,
+# DVA potrošnika; EN VIR kontrakt R324 v bratu R163; FNV soli 0xcd–0xd0;
+# vitest r324-vodja-dnevni-pdf ×14; E2E Z0at DETERMINIZEM ŽIVO NA BAJTIH).
 need "Izvozi dnevni pregled vodje kot PDF" "R324 dnevni PDF izvoz gumb aria (vodja chunk) — LIVE"
 need "kot deterministični PDF" "R324 dnevni PDF izvoz title fragment (vodja chunk) — LIVE"
 must_miss "TODO-R324" "R324 — brez razvojnih ostankov"
 
+
+echo "--- R325 MANDATORY — dekompozicija FAZA 2: premaknjena vsebina ŽIVA (LIVE) ---"
+# Dekompozicija FAZA 2 = refaktor internih sestavljenih struktur (kanon
+# R319/R322): telesa VERBATIM, closure dostop → args/props — needleji
+# dokazujejo, da NOV deploy ni izgubil premaknjene measurements/calculator
+# vsebine (regresijska zaščita premika; r324-build-needles ×9 brat
+# lokalno + measurements/calculator dispatch ŽE v harvestu — pokritost
+# needle pokritosti, LEKCIJA R314 1).
+need "0000feff-0000-1000-8000-00805f9b34fb" "R325 laser-bt.ts Leica UUID (premik živ) — LIVE"
+need "Poveži laserski daljinec preko Web Bluetooth" "R325 laser-panel.tsx tooltip (premik živ) — LIVE"
+need "Mera iz laserja: " "R325 use-laser.ts toast (premik živ) — LIVE"
+need "Standardni balkon 3m" "R325 templates.ts PREDLOGE (premik živ) — LIVE"
+need "ROKSAL — Razrezni list CNC" "R325 pdf-exports.ts CNC naslov (premik živ) — LIVE"
+need "ROKSAL — Steklena balustrada specifikacija" "R325 pdf-exports.ts steklo naslov (premik živ) — LIVE"
+must_miss "TODO-R325" "R325 — brez razvojnih ostankov"
+
 echo "--- R326 MANDATORY — 53. člen: zgodovina cen materiala (price history) + STIL val 13 (LIVE) ---"
 # IZVOZI družina + §5: panel CenaZgodovinaPanel na inventory tabu — čisti
 # bralec NOVEGA GET route /api/material-prices/zgodovina (r308 obseg
-# 81→82); par = material × dobavitelj časovnica + iskrene smeri
-# (narašča/pada/stabilna/prvi vpis); CSV gumb izvozne družine (aria +
-# title; navy/40 ring — amber/50 register ostane zaklenjen v vodji ×8;
-# fail-verbose toast; iskrena ničelna veja — brez podatkov NI izvoza).
-# EN VIR: CENA_ZGODOVINA_CSV_GLAVE + TIMELINE_GLAVE + CENA_SMER_NIZ +
-# cenaZgoSklep + CENA_ZGO_VIR_NIZ; vitest r325 ×20 + val13 stražar ×5;
-# E2E Z0au ŽIVO (iskrena prazna veja + wire GET).
+# 81→82); par = material × dobavitelj časovnica + iskrene smeri; CSV gumb
+# izvozne družine (aria + title; navy/40 ring — amber/50 register ostane
+# zaklenjen v vodji ×8; fail-verbose toast; iskrena ničelna veja — brez
+# podatkov NI izvoza). EN VIR: CENA_ZGODOVINA_CSV_GLAVE + TIMELINE_GLAVE +
+# CENA_SMER_NIZ + cenaZgoSklep + CENA_ZGO_VIR_NIZ; vitest r326 ×25 (cena
+# ×20 + val13 ×5); E2E Z0au ŽIVO (iskrena prazna veja + wire GET).
 need "Zgodovina cen materiala" "R326 panel naslov (inventory chunk) — LIVE"
 need "Izvozi zgodovino cen materiala kot CSV" "R326 zgodovina cen CSV gumb aria (panel chunk) — LIVE"
 must_miss "TODO-R326" "R326 — brez razvojnih ostankov"
+
 
 echo "=== Z2b: EN VIR ŽIVO NA ŽICI (val-1 ×4 + val-3 ×9 × pokvarjen JSON → 400 z ISTO ovojnico + users 403 deny-first POZITIVNI dokaz; ZERO-MUTACIJA — guard strelja PRED db zapisom) ==="
 # Vzorec lokalnega Z0ah/Z0ai (r309/r310-e2e-browser.sh), tu podmnožica 13:
@@ -720,9 +739,9 @@ echo "=== Z2b: EN VIR ŽIVO NA ŽICI (val-1 ×4 + val-3 ×9 × pokvarjen JSON �
 # matriki, ne samo gate simbole; tek 2 iskren FAIL: users 403]) — vrstni red:
 # rate-limit → authenticate → [pravica] → preberiJsonTelo. Dvojni podpis
 # (R194/R309 lekcija 4): roksal_csrf iz document.cookie → x-csrf-token.
-agent-browser eval "(()=>{window.__r324val=[]; const ck=document.cookie.split(';').map(s=>s.trim()).find(s=>s.startsWith('roksal_csrf=')); const tok=ck?ck.slice(12):null; const h={'Content-Type':'application/json'}; if(tok)h['x-csrf-token']=tok; const rute=[['measurements','/api/measurements','POST'],['punch','/api/punch','POST'],['ar-snapshots','/api/ar-snapshots','POST'],['photos','/api/photos','POST'],['quote','/api/quote','POST'],['railing-layout','/api/railing-layout','POST'],['users','/api/users','POST'],['crm','/api/crm','PATCH'],['qc','/api/qc','POST'],['evidence','/api/evidence','POST'],['viz-render','/api/viz/render','POST'],['measurements-id','/api/measurements/e2e-r310-ne-obstojeci-id','PATCH'],['ar-analyze','/api/ar/analyze','POST'],['measure-photo','/api/measure/photo','POST']]; (async()=>{ for (const [ime,url,metoda] of rute){ try{ const r=await fetch(url,{method:metoda,credentials:'same-origin',headers:h,body:'{pokvarjen'}); let b=null; try{b=await r.json();}catch(e){b=null;} window.__r324val.push({ime,status:r.status,error:b&&typeof b==='object'?(b.error??null):null}); }catch(e){ window.__r324val.push({ime,status:0,error:'MREŽA: '+String(e)}); } } })(); return 'poslano '+rute.length;})()" 2>&1 | tail -1
+agent-browser eval "(()=>{window.__r325val=[]; const ck=document.cookie.split(';').map(s=>s.trim()).find(s=>s.startsWith('roksal_csrf=')); const tok=ck?ck.slice(12):null; const h={'Content-Type':'application/json'}; if(tok)h['x-csrf-token']=tok; const rute=[['measurements','/api/measurements','POST'],['punch','/api/punch','POST'],['ar-snapshots','/api/ar-snapshots','POST'],['photos','/api/photos','POST'],['quote','/api/quote','POST'],['railing-layout','/api/railing-layout','POST'],['users','/api/users','POST'],['crm','/api/crm','PATCH'],['qc','/api/qc','POST'],['evidence','/api/evidence','POST'],['viz-render','/api/viz/render','POST'],['measurements-id','/api/measurements/e2e-r310-ne-obstojeci-id','PATCH'],['ar-analyze','/api/ar/analyze','POST'],['measure-photo','/api/measure/photo','POST']]; (async()=>{ for (const [ime,url,metoda] of rute){ try{ const r=await fetch(url,{method:metoda,credentials:'same-origin',headers:h,body:'{pokvarjen'}); let b=null; try{b=await r.json();}catch(e){b=null;} window.__r325val.push({ime,status:r.status,error:b&&typeof b==='object'?(b.error??null):null}); }catch(e){ window.__r325val.push({ime,status:0,error:'MREŽA: '+String(e)}); } } })(); return 'poslano '+rute.length;})()" 2>&1 | tail -1
 eb_cakaj 6
-agent-browser eval "JSON.stringify(window.__r324val??[])" 2>&1 | tail -1 > /tmp/r326-z2b.json
+agent-browser eval "JSON.stringify(window.__r325val??[])" 2>&1 | tail -1 > /tmp/r326-z2b.json
 python3 - <<'PYEOFZ2B' || exit 1
 import json
 raw = open('/tmp/r326-z2b.json').read().strip()

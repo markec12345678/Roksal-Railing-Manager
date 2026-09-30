@@ -1,4 +1,4 @@
-# R326 dimni test (vzorec r273/r296-r324) — standalone :3100 + javni health +
+# R326 dimni test (vzorec r273/r296-r325; DEDOVINA KOLIZIJE #7: vzporedna lastniška R325 = PRIROJENIŠKA dekompozicija FAZA 2 — ČIST premik, regression-only) — standalone :3100 + javni health +
 # prijavna rute + PWA manifest (brez DB mutacij — samo bralni pepperji).
 # Potrjuje, da build z R326 spremembami (53. ČLEN issue #1 §5: ZGODOVINA
 # CEN MATERIALA — price history: NOVI lib cena-zgodovina [ČISTA projekcija

@@ -35,6 +35,11 @@
 #         BOM magija NA BAJTIH (EF BB BF) + glave EN VIR pin + DETERMINIZEM
 #         ŽIVO NA BAJTIH (dva izvoza bajtno enaka) — EN VIR izvoz,
 #         ZERO-MUTACIJA;
+#   DEDOVINA KOLIZIJE #7: vzporedna lastniška R325 = PRIROJENIŠKA
+#         dekompozicija FAZA 2 (measurements 7.604 → 7.153 laserski BT +
+#         templates blok; calculator 5.372 → 4.846 PDF izvozi →
+#         pdf-exports.ts) — REGRESSION-ONLY pokritost (ČIST premik, kanon
+#         R322); measurements/calculator dispatchi ŽE v harvestu;
 #   Z0au: ZGODOVINA CEN MATERIALA ŽIVO (R326 NOVO — 53. člen issue #1 §5,
 #         price history): panel CenaZgodovinaPanel na inventory tabu —
 #         čisti bralec NOVEGA GET route /api/material-prices/zgodovina

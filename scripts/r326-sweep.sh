@@ -9,6 +9,9 @@
 #     — EPOCH pogoj, NI bug)
 #   - R326 "Zgodovina cen materiala" panel + CSV gumb — pričakovano MISS
 #     (stale produ; LIVE ob deployu — EPOCH pogoj, NI bug)
+#   DEDOVINA KOLIZIJE #7: vzporedna lastniška R325 = PRIROJENIŠKA
+#     dekompozicija FAZA 2 — brez novih gumbov (ČIST premik; measurements/
+#     calculator tabi ŽE v sweep listi — pokritost nespremenjena)
 set -u
 source /home/z/my-project/scripts/e2e-lib.sh
 
