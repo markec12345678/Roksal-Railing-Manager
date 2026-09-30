@@ -69,6 +69,14 @@ import {
   tedenskiVozniRedIcs,
   tedenskiVozniRedIcsFilename,
 } from '@/lib/tedenski-vozni-red-ics'
+// R299 — 29. člen 'izvozi' družine: ICS PO EKIPAH — izpeljani brat R298
+// (ČETRTI potrošnik ISTEGA tedenskiRazgled: strip + CSV + ICS + ekipa);
+// EN VIR ekipa seznam + filtriran ICS + ime (NIČ dvojnega).
+import {
+  tedenskiEkipaImena,
+  tedenskiEkipaIcs,
+  tedenskiEkipaIcsFilename,
+} from '@/lib/tedenski-vozni-red-ekipa-ics'
 import { cenikDatumIso } from '@/lib/cenik-pdf'
 import { QC_TEMPLATE, computePassed, countDefects } from '@/lib/qc-gate'
 import { IEV_TEMPLATE } from '@/lib/installation-evidence'
@@ -414,6 +422,9 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
   const [tedenskiCsvVTeku, setTedenskiCsvVTeku] = useState(false)
   // R298 — dvoklik guard ICS izvoza (pariteta tedenskiCsvVTeku R292).
   const [tedenskiIcsVTeku, setTedenskiIcsVTeku] = useState(false)
+  // R299 — dvoklik guard per-ekipa ICS (katera ekipa je v teku — string
+  // guard, pariteta tedenskiIcsVTeku R298; null = nič v teku).
+  const [tedenskiEkipaIcsVTeku, setTedenskiEkipaIcsVTeku] = useState<string | null>(null)
 
   // R266 — ENA izpeljava vhodov za cikl opreme (WYSIWYG ISTI vir kot PDF
   // KPI, tabela, sklep, F2 mini-vrstica IN toast): DTO pruning iz ISTEGA
@@ -457,6 +468,15 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
   const tedenskiRazgledNow = useMemo(() => new Date(), [vozniRedVnosi])
   const razgled = useMemo(
     () => tedenskiRazgled(vozniRedVnosi, tedenskiRazgledNow),
+    [vozniRedVnosi, tedenskiRazgledNow],
+  )
+
+  // R299 — 29. člen: EKIPA V OKNU (EN VIR tedenskiEkipaImena — ISTI okno/
+  // validacija/preverba kot izvoz in razgled; NULL ekipe izključene — '—' na
+  // zaslonu NI ekipa z imenom '—'). Memo per podatkovni snapshot (ISTI
+  // tedenskiRazgledNow — ena izpeljava časa za celo družino, vzorec R292).
+  const ekipaImena = useMemo(
+    () => tedenskiEkipaImena(vozniRedVnosi, tedenskiRazgledNow),
     [vozniRedVnosi, tedenskiRazgledNow],
   )
 
@@ -526,6 +546,39 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
       toast({ title: 'Izvoz ICS ni uspel', description: err instanceof Error ? err.message : String(err), variant: 'destructive' })
     } finally {
       setTedenskiIcsVTeku(false)
+    }
+  }
+
+  // R299 — 29. člen 'izvozi' družine (P1): TEDENSKI ICS PO EKIPAH — izpeljani
+  // brat R298: naslednjih 7 dni FILTRIRANO na eno ekipo (član uvozi SAMO
+  // svoje termine). Fail-closed PREJ (0 ekip v oknu → iskren toast, NIKOLI
+  // prazna datoteka — R250/R291/R292 vzorec); potem ENA izpeljava (ISTI lib
+  // tedenskiEkipaIcs: filter + PRODID/UID predpona + X-ROKSAL-EKIPA; pov
+  // FILTRIRANE množice v toastu — WYSIWYG); fail-verbose catch (R291/R292
+  // vzorec); dvoklik guard per ekipa (string guard, pariteta bratov).
+  const handleTedenskiEkipaIcs = (ekipa: string) => {
+    if (tedenskiEkipaIcsVTeku !== null) return
+    setTedenskiEkipaIcsVTeku(ekipa)
+    try {
+      const now = new Date()
+      if (ekipaImena.length === 0) {
+        toast({
+          title: 'Ni ekip z termini v naslednjih 7 dneh',
+          description: 'ICS po ekipi se izvozi, ko ima ekipa vpisan termin v prihajajočem tednu.',
+        })
+        return
+      }
+      const { ics, dogodki, pov } = tedenskiEkipaIcs(vozniRedVnosi, ekipa, now)
+      const ime = tedenskiEkipaIcsFilename(ekipa, now)
+      downloadTextFile(ime, ics, 'text/calendar;charset=utf-8')
+      toast({
+        title: `Tedenski ICS za ekipo ${ekipa} prenešen (${ime})`,
+        description: `${dogodki} dogodkov samo za to ekipo — ${tedenskiRazgledSklep(pov)}.`,
+      })
+    } catch (err) {
+      toast({ title: `Izvoz ICS za ekipo ${ekipa} ni uspel`, description: err instanceof Error ? err.message : String(err), variant: 'destructive' })
+    } finally {
+      setTedenskiEkipaIcsVTeku(null)
     }
   }
 
@@ -1586,6 +1639,36 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
             </Button>
           </div>
 
+          {/* R299 — 29. člen 'izvozi' družine: ICS PO EKIPAH — čipi za vsako
+              ekipo z vsaj enim terminom v oknu (EN VIR tedenskiEkipaImena —
+              ISTI seznam kot izvoz; null ekipe NIKOLI čip — '—' ni ekipa).
+              Podatkovno-pogojni vidnost (ekipe obstajajo → čipi; 0 ekip =
+              iskrena praznina, brez mrtvega gumba — P1-k kanon). ISTI žetoni
+              kot bratje — 0 novih hex; Users import ŽE obstaja (0 pin
+              premikov ikon). Definicijski naslov (MANDATORY STIL): izrečena
+              resnica filtra (ISTO okno + TOČEN filter ISTEGA vira). */}
+          {ekipaImena.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Tedenski ICS po ekipah">
+              <span className="text-2xs text-muted-foreground" title="Ekipa z vsaj enim terminom v naslednjih 7 dneh (danes + 6 dni, UTC) — isti vir kot Tedenski ICS; brez ekipe ('—') NIMA čipa, ker ni ekipa">
+                ICS po ekipi:
+              </span>
+              {ekipaImena.map((ekipa) => (
+                <Button
+                  key={ekipa}
+                  type="button"
+                  variant="outline"
+                  aria-label={`Izvozi tedenski ICS samo za ekipo ${ekipa}`}
+                  title={`Samo termini ekipe ${ekipa} v istem 7-dnevnem okviru (danes + 6 dni, UTC) — točen filter ISTEGA vira kot Tedenski ICS; datoteka nosi X-ROKSAL-EKIPA in lastno UID predpono (ni trkov z osnovnim ICS)`}
+                  disabled={tedenskiEkipaIcsVTeku !== null}
+                  className="h-7 shrink-0 px-2 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                  onClick={() => handleTedenskiEkipaIcs(ekipa)}
+                >
+                  <Users aria-hidden="true" className="h-3 w-3 mr-1" /> {ekipa}
+                </Button>
+              ))}
+            </div>
+          )}
+
           {/* R255 — legenda izvozne skupine (ISTI vzorec kot R250–R253
               legende na CRM/računih): vsak izvoz = svoja resnica, ločilnik
               '·' + poimenovana razlika. */}
@@ -1594,6 +1677,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
           <p className="text-2xs text-muted-foreground">
             CSV = prikazani termini · ICS = koledar v telefonu · PDF = vozni red (kronološki) · Tedenski = naslednjih 7 dni (po dnevih) · Projekti = projekti × termini (pokritost po projektih) · Tedenski CSV = ista resnica kot PDF
             {' · Tedenski ICS = naslednjih 7 dni v telefonov koledar'}
+            {' · ICS po ekipi = samo termini te ekipe (isti 7-dnevni okvir)'}
           </p>
 
           {/* R244 — vlogo-osveščen vodič (R242/R243 recept): viden SAMO, ko

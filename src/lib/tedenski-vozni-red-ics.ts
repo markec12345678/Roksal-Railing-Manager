@@ -97,6 +97,23 @@ import { todayStamp } from './csv-export'
  *  družinski vzorec R296 — LASTNI koledar, NIČ podedovanega PRODID-a). */
 export const TEDENSKI_VOZNI_RED_ICS_PRODID = '-//Roksal//Tedenski vozni red//SL'
 
+// R299 — 29. člen 'izvozi' družine: OPCIJE za izpeljane brate (per-ekipa ICS
+// — tedenski-vozni-red-ekipa-ics). ADDITIVE: brez opcij je izhod BAJTNO
+// ISTI kot R298 (vsi testi R298 ostajajo zeleni — 0 pin premikov).
+export interface TedenskiVozniRedIcsOpcije {
+  /** PRODID zamenjava (izpeljani brat nosi LASTNI PRODID — RFC §3.7.3). */
+  prodid?: string
+  /** Dodatek k X-ROKSAL-OBSEG vsebini (npr. ' · Ekipa: …' — izpeljana
+   *  resnica izvoza; RFC X- prostor). */
+  obsegDodatek?: string
+  /** UID predpona zamenjava (privzeti 'vozni-red-'; izpeljani brat nosi
+   *  ločen predpona — ni trkov ob sočasnem uvozu obeh datotek). */
+  uidPredpona?: string
+  /** X-ROKSAL-EKIPA VERBATIM (novo VCALENDAR X- polje — samo izpeljani
+   *  bratje; R298 osnovni ICS je ekipa-nevrstni in ga NE nosi). */
+  xEkipa?: string
+}
+
 /** RFC 5545 §3.8.1.11 STATUS preslikava — ISTA kot logistični R139 +
  *  terminska kartica R172: Preklicano → CANCELLED, Preloženo → TENTATIVE,
  *  ostalo → CONFIRMED (termin-domna kanon — obe obstoječi ICS izvoza ISTEGA
@@ -142,10 +159,12 @@ function icsCasUtc(iso: string, i: number, polje: 'datumZacetka' | 'datumKonca')
 /** Vrstice ICS (brez zaključkov) — glava + dogodki + noga, vsaka LOGIČNA
  *  vrstica že zavita v RFC fizične vrstice. `now` = DTSTAMP + okno (F4).
  *  PRAZNO OKNO je VELJAVEN vhod (0 VEVENT — domain pravilo tedenske
- *  družine; glej glavo). */
+ *  družine; glej glavo). R299: opcije za izpeljane brate (per-ekipa ICS —
+ *  tedenski-vozni-red-ekipa-ics); brez opcij = bajtno ISTI izhod kot R298. */
 export function tedenskiVozniRedIcsVrstice(
   vnosi: readonly VozniRedTermin[],
   now: Date,
+  opcije?: TedenskiVozniRedIcsOpcije,
 ): string[] {
   if (!(now instanceof Date) || Number.isNaN(now.getTime())) {
     throw new TypeError('tedenskiVozniRedIcsVrstice: pričakovan veljaven now: Date')
@@ -155,19 +174,42 @@ export function tedenskiVozniRedIcsVrstice(
       'tedenskiVozniRedIcsVrstice: pričakovano polje terminov (VozniRedTermin[])',
     )
   }
+  if (opcije !== undefined && (opcije === null || typeof opcije !== 'object')) {
+    throw new TypeError(
+      'tedenskiVozniRedIcsVrstice: pričakovane opcije (TedenskiVozniRedIcsOpcije) ALI undefined',
+    )
+  }
+  const prodid = opcije?.prodid ?? TEDENSKI_VOZNI_RED_ICS_PRODID
+  if (typeof prodid !== 'string' || prodid.length === 0) {
+    throw new TypeError('tedenskiVozniRedIcsVrstice: PRODID mora biti ne-prazen niz')
+  }
+  const predpona = opcije?.uidPredpona ?? 'vozni-red-'
+  if (typeof predpona !== 'string' || predpona.length === 0) {
+    throw new TypeError('tedenskiVozniRedIcsVrstice: UID predpona mora biti ne-prazen niz')
+  }
   const razgled = tedenskiRazgled(vnosi, now)
   const zig = icsZigUtc(now)
 
   const logicne: string[] = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    `PRODID:${TEDENSKI_VOZNI_RED_ICS_PRODID}`,
+    `PRODID:${prodid}`,
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     `X-ROKSAL-OBSEG:${icsBesedilo(
-      `Naslednjih 7 dni: ${cenikDatumIso(razgled.okno[0])} – ${cenikDatumIso(razgled.okno[6])} (danes + 6 dni, UTC)`,
+      `Naslednjih 7 dni: ${cenikDatumIso(razgled.okno[0])} – ${cenikDatumIso(razgled.okno[6])} (danes + 6 dni, UTC)${
+        opcije?.obsegDodatek ?? ''
+      }`,
     )}`,
   ]
+  // R299 — X-ROKSAL-EKIPA (VERBATIM vir resnica; RFC X- prostor) — samo
+  // izpeljani bratje (per-ekipa ICS); R298 osnovni ICS je ekipa-nevrsten.
+  if (opcije?.xEkipa !== undefined) {
+    if (typeof opcije.xEkipa !== 'string' || opcije.xEkipa.length === 0) {
+      throw new TypeError('tedenskiVozniRedIcsVrstice: xEkipa mora biti ne-prazen niz')
+    }
+    logicne.push(`X-ROKSAL-EKIPA:${icsBesedilo(opcije.xEkipa)}`)
+  }
   let n = 0
   for (const dan of razgled.dnevi) {
     for (const t of dan.vrstice) {
@@ -181,7 +223,7 @@ export function tedenskiVozniRedIcsVrstice(
         `Predvidene ure: ${t.predvideneUre === null ? '—' : String(t.predvideneUre)}`,
       ].join(' · ')
       logicne.push('BEGIN:VEVENT')
-      logicne.push(`UID:vozni-red-${String(n).padStart(3, '0')}-${start}@roksal`)
+      logicne.push(`UID:${predpona}${String(n).padStart(3, '0')}-${start}@roksal`)
       logicne.push(`DTSTAMP:${zig}`)
       logicne.push(`DTSTART:${start}`)
       logicne.push(`DTEND:${icsKonecUtc(t, n - 1)}`)
@@ -199,15 +241,17 @@ export function tedenskiVozniRedIcsVrstice(
 
 /** Celoten ICS niz: čist UTF-8 BREZ BOM + CRLF zaključki (RFC 5545 §3.1;
  *  odstopek od CSV bratov DOKUMENTIRAN v glavi — koledarski potrošniki).
- *  dogodki = število VEVENT (ISTI števec kot tedenskiRazgled povzetek). */
+ *  dogodki = število VEVENT (ISTI števec kot tedenskiRazgled povzetek).
+ *  R299: opcije prehajajo naprej (per-ekipa brat); brez = bajtno R298. */
 export function tedenskiVozniRedIcs(
   vnosi: readonly VozniRedTermin[],
   now: Date,
+  opcije?: TedenskiVozniRedIcsOpcije,
 ): { ics: string; dogodki: number } {
   if (!(now instanceof Date) || Number.isNaN(now.getTime())) {
     throw new TypeError('tedenskiVozniRedIcs: pričakovan veljaven now: Date')
   }
-  const fyzicne = tedenskiVozniRedIcsVrstice(vnosi, now)
+  const fyzicne = tedenskiVozniRedIcsVrstice(vnosi, now, opcije)
   return { ics: fyzicne.join('\r\n') + '\r\n', dogodki: fyzicne.filter((v) => v === 'BEGIN:VEVENT').length }
 }
 
