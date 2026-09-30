@@ -103,7 +103,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 45 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **4470** (256 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **4484** (258 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 143 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -439,6 +439,34 @@ Sheet z 6 podzavihki:
   isti HEAD = bajtno identična datoteka); **DETERMINIZEM ŽIVO NA BAJTIH** v
   E2E Z0aq (dva izvoza bajtno enaka; %PDF- magija + MIME application/pdf na
   blob bajtih)
+- **Izvoz meritev zmogljivosti kot PDF** (R321, 50. člen — issue #1
+  **IZVOZI družina**, Deliverable 6 kot tisk za pisarno/revizijo): vodjin
+  zmogljivost-dokaz blok dobi gumb `PDF` (brat zaslona R312 — vzorec
+  R318/R320, LOČEN lib `src/lib/zmogljivost-pregled-pdf.ts`) —
+  `buildZmogljivostPdfDoc` = ČISTA projekcija **POSREDOVANEGA** pregleda
+  (meritev se izvede ENKRAT v brskalniku — PDF NE meri znova; drugi tek bi
+  izkazal druge čase in lažno dvojno resnico); **EN VIR**: `formatirajMs`
+  (NOV izvoz iz brata R312 — ISTI format izraz za zaslon vrstice + PDF
+  tabela; zaslon in PDF ne moreta divergirati po konstrukciji, vzorec
+  AUDIT_CSV_GLAVE R317) + sklep = TRETJI potrošnik ENEGA niza (zaslon +
+  testi + PDF); iskrena ničelna veja v handlerju (brez izvedene meritve NI
+  izvoza — NIČ izmišljenih števil); fail-closed ×7 (meritev brez kontrakta /
+  notranja neskladja časov / preverjeno ≠ true / pokvaren števec …);
+  **determinističen** PDF (KPI ×4 izračunani iz pregled; fiksni formatni
+  žig `ZMOGLJIVOST_PDF_ZIG_FIKSNI` + FNV soli 0xc9–0xcc [register: 0xc1–0xc4
+  audit, 0xc5–0xc8 končna — bratje NE delijo semen]; brez časa v vsebini);
+  **DETERMINIZEM ŽIVO NA BAJTIH** v E2E Z0ar (dva izvoza bajtno enaka —
+  51008 bajtov; %PDF- magija + MIME application/pdf na blob bajtih)
+- **Stil val 10 — dokazni bloki vrstični hover mikrointerakcija** (R321):
+  ENOTEN `transition-colors hover:border-roksal-amber/40` žeton na vrsticah
+  vseh treh vodja dokaznih blokov (meritve zmogljivosti R312 +
+  avtomatizacijski audit R314 + končna verifikacija R315) — vrstica odgovori
+  z bratskim amber žetonom (ISTI žeton kot izvozna družina gumbov v ISTIH
+  blokih — val8 register); brez premikanja layouta (transition-colors, NE
+  transform); r321-stil-val10 STRAŽAR ×4 (vseh 3 vrstic + roksal žeton
+  preverba + pill obrnjena regresija + register 3 pojavitve — R312 lekcija
+  na pojavitve); PIN SHIFTI ×2 izrecno (val8 amber ×5→×6 + anti-stale
+  55→56; val9 press-scale ×12→13 pojavitev, 6→7 gumbov)
 - **Stil val 9 — press-scale taktilna pariteta vodja izvozne družine** (R318):
   `press-scale` mikrointerakcija ×5 na vodja izvoznih gumbov (dnevni CSV R163
   + Poročilo PDF + JSON R316 + audit CSV R317 + audit PDF R318) — taktilna
@@ -548,7 +576,7 @@ Sheet z 6 podzavihki:
 | **PWA** | Service Worker + Web Manifest |
 | **Temnitveni način** | [next-themes](https://github.com/pacocoursey/next-themes) |
 | **Validacija** | [Zod 4](https://zod.dev/) |
-| **Testiranje** | [Vitest 4](https://vitest.dev/) (4470 testov + globalSetup embedded PG) |
+| **Testiranje** | [Vitest 4](https://vitest.dev/) (4484 testov + globalSetup embedded PG) |
 | **Paketni upravitelj** | [Bun](https://bun.sh/) |
 | **Linting** | ESLint 9 + eslint-config-next |
 
@@ -670,7 +698,7 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `bun run dev` | Zažene Next.js dev server (port 3000) |
 | `bun run build` | Produkcijska build (build-prepare: generate + migrate deploy + seed) |
 | `bun run start` | Zažene produkcijski server |
-| `bun run test` | Vsi testi (vitest, 4470, embedded PG prek globalSetup) |
+| `bun run test` | Vsi testi (vitest, 4484, embedded PG prek globalSetup) |
 | `bun run check` | tsc --noEmit + vitest run (en ukaz za vse) |
 | `bunx tsc --noEmit` | Tipska kontrola celotnega projekta (trenutno 0 napak) |
 | `bun run lint` | ESLint preverjanje |

@@ -355,6 +355,19 @@ function medianaDelt(delt: readonly number[]): number {
   return n % 2 === 1 ? s[mid]! : (s[mid - 1]! + s[mid]!) / 2
 }
 
+/** 🆕 R321 (50. člen issue #1 IZVOZI družina): EN VIR formatiranje milisekund
+ *  — ISTI izraz za zaslon (vodja zmogljivost-vrstice), testi IN PDF izvoz:
+ *  < 100 ms = dve decimalki ('12.34'), ≥ 100 ms = zaokroženo celo število
+ *  ('123'). Ena definicija — zaslon in PDF ne moreta divergirati po
+ *  konstrukciji (vzorec AUDIT_CSV_GLAVE R317). Fail-closed: ne-končna
+ *  vrednost → TypeError (izmišljena številka ne sme biti izpisana). */
+export function formatirajMs(v: number): string {
+  if (!Number.isFinite(v)) {
+    throw new TypeError('formatirajMs: pričakovana končna vrednost (ms)')
+  }
+  return v >= 100 ? String(Math.round(v)) : v.toFixed(2)
+}
+
 /** IZMERI ZMOGLJIVOST — izvede vse registrirane operacije, meri delt po
  *  iteraciji, preveri vsak izhod. Uro je mogoče vbrizgati (DI — testi;
  *  produkcija = performance.now). Vrne deterministično strukturo z realno

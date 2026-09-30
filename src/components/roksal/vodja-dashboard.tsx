@@ -102,6 +102,12 @@ import { generateAvtomatizacijaAuditPdf, avtomatizacijaAuditPdfFilename } from '
 // (vzorec R318 audit-pdf: jsPDF teža NE obremenjuje brata; EN VIR validacija
 // ostane v bratu; determinističen PDF — isti HEAD = bajtno identičen).
 import { generateKoncnaVerifikacijaPdf, koncnaVerifikacijaPdfFilename } from '@/lib/koncna-verifikacija-pdf'
+// 🆕 R321 (50. člen): PDF brat zaslonu meritev zmogljivosti (Deliverable 6
+// tisk) — LOČEN lib (vzorec R318/R320); pregled = POSREDOVANA resnica
+// (meritev se izvede ENKRAT v brskalniku — R312 kontrakt; PDF NE meri
+// znova); formatirajMs = EN VIR formatiranje zaslon + PDF (iz brata R312).
+import { generateZmogljivostPdf, zmogljivostPdfFilename } from '@/lib/zmogljivost-pregled-pdf'
+import { formatirajMs } from '@/lib/zmogljivost-pregled'
 import {
   TrendingUp, Clock, Users, Package, Euro, CheckCircle2,
   AlertTriangle, Calendar, Truck, Bell, FileDown, Loader2, Download, Workflow,
@@ -893,6 +899,36 @@ export function VodjaDashboard() {
     }
   }
 
+  /** 🆕 R321 (50. člen, issue #1 IZVOZI družina): izvoz meritev zmogljivosti
+   *  kot DETERMINISTIČNI PDF — Deliverable 6 kot tisk; pregled = POSREDOVANA
+   *  resnica (meritev se izvede ENKRAT v brskalniku — R312 kontrakt; PDF NE
+   *  meri znova, drugi tek bi izkazal druge čase). Iskrena ničelna veja: brez
+   *  izvedene meritve NI izvoza (NIČ izmišljenih števil). Fail-verbose:
+   *  razlog vidno, ne tiho (kanon). */
+  function exportZmogljivostPdf() {
+    if (!zmogljivost) {
+      // iskrena ničelna veja (vzorec dobičkonost gate) — merjenje teče ali
+      // ni še zaključeno; lažnega PDF-a ni (fail-closed v handlerju).
+      toast({
+        title: 'Meritve še niso izvedene',
+        description: 'PDF se izvozi, ko je merjenje zaključeno v brskalniku.',
+      })
+      return
+    }
+    try {
+      // fail-closed brezplačno: graditelj validira kontrakt vsake meritve —
+      // pokvarena meritev ne more postati lažno poročilo (kanon R299/R302/R306).
+      generateZmogljivostPdf(zmogljivost)
+      toast({ title: 'Meritve zmogljivosti izvožene ✓', description: zmogljivostPdfFilename() })
+    } catch (e) {
+      toast({
+        title: 'Izvoz ni uspel',
+        description: e instanceof Error ? e.message : String(e),
+        variant: 'destructive',
+      })
+    }
+  }
+
   if (loading) {
     return (
       <div className="space-y-3 p-4" aria-busy="true" aria-live="polite">
@@ -1220,18 +1256,36 @@ export function VodjaDashboard() {
             <Gauge className="h-3 w-3 text-roksal-amber" aria-hidden="true" />
             Meritve zmogljivosti jedra
           </p>
-          <p className="text-2xs tabular-nums text-muted-foreground" title="Realna meritev izvajanja jedra (deterministični kalkulator, konflikti, CSV, AI-raba projekcija) — struktura EN VIR z lib testi.">
-            {zmogljivost
-              ? `${zmogljivost.meritve.length} operacij · ${zmogljivost.skupajIteracij} iteracij`
-              : 'merjenje teče …'}
-          </p>
+          <div className="flex items-center gap-1.5">
+            <p className="text-2xs tabular-nums text-muted-foreground" title="Realna meritev izvajanja jedra (deterministični kalkulator, konflikti, CSV, AI-raba projekcija) — struktura EN VIR z lib testi.">
+              {zmogljivost
+                ? `${zmogljivost.meritve.length} operacij · ${zmogljivost.skupajIteracij} iteracij`
+                : 'merjenje teče …'}
+            </p>
+            {/* R321 — 50. člen (IZVOZI družina): PDF tisk meritev (Deliverable
+                6) — a11y izvozne družine (aria + title, R291/R293); amber/50
+                ring + taktilna mikrointerakcija (družinska simetrija blok
+                glav — val8/val9 registri); fail-verbose toast + iskrena
+                ničelna veja. */}
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-6 gap-1 border-roksal-navy/25 px-2 text-2xs text-roksal-ink press-scale transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 dark:border-roksal-ink/25"
+              onClick={exportZmogljivostPdf}
+              aria-label="Izvozi meritve zmogljivosti kot PDF"
+              title="Izvozi meritve zmogljivosti jedra (operacije × iteracije × časi — EN VIR zaslon) kot deterministični PDF"
+            >
+              <Download className="h-3 w-3" aria-hidden="true" />
+              PDF
+            </Button>
+          </div>
         </div>
         {zmogljivost ? (
           <ul className="mt-1 space-y-0.5" data-testid="zmogljivost-vrstice">
             {zmogljivost.meritve.map((m) => (
               <li
                 key={m.id}
-                className="flex items-baseline justify-between gap-2 rounded-md border border-border bg-background/60 px-2 py-1"
+                className="flex items-baseline justify-between gap-2 rounded-md border border-border bg-background/60 px-2 py-1 transition-colors hover:border-roksal-amber/40"
                 data-testid="zmogljivost-vrstica"
                 title={m.modul}
               >
@@ -1245,11 +1299,11 @@ export function VodjaDashboard() {
                   className="shrink-0 text-2xs tabular-nums text-roksal-ink"
                   title="najmanj / mediana / največ (ms) — resnična meritev na tej napravi (strojno odvisna)"
                 >
-                  {m.najmanj >= 100 ? String(Math.round(m.najmanj)) : m.najmanj.toFixed(2)}
+                  {formatirajMs(m.najmanj)}
                   {' / '}
-                  {m.mediana >= 100 ? String(Math.round(m.mediana)) : m.mediana.toFixed(2)}
+                  {formatirajMs(m.mediana)}
                   {' / '}
-                  {m.najvec >= 100 ? String(Math.round(m.najvec)) : m.najvec.toFixed(2)} ms
+                  {formatirajMs(m.najvec)} ms
                 </span>
               </li>
             ))}
@@ -1321,7 +1375,7 @@ export function VodjaDashboard() {
           {avtAudit.vrstice.map((v) => (
             <li
               key={v.obmocje}
-              className="rounded-md border border-border bg-background/60 px-2 py-1.5"
+              className="rounded-md border border-border bg-background/60 px-2 py-1.5 transition-colors hover:border-roksal-amber/40"
               data-testid="avtomatizacija-vrstica"
             >
               <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5">
@@ -1402,7 +1456,7 @@ export function VodjaDashboard() {
           {koncna.vrstice.map((v) => (
             <li
               key={v.obmocje}
-              className="rounded-md border border-border bg-background/60 px-2 py-1.5"
+              className="rounded-md border border-border bg-background/60 px-2 py-1.5 transition-colors hover:border-roksal-amber/40"
               data-testid="koncna-verifikacija-vrstica"
             >
               <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5">
