@@ -215,7 +215,7 @@ describe('R299 ime datoteke + slug — deterministično', () => {
     expect(tedenskiEkipaIcsFilename('Ekipa Alfa', NOW_LOCALNO)).toBe('Tedenski-vozni-red-Ekipa-Alfa-2026-09-21.ics')
   })
 
-  it('slug: presledki → '-', več presledkov se strne, čšž ostanejo, izven črk/številk izpuščeno, prazen → \'ekipa\'', () => {
+  it('slug: presledki → pomišljaj, več presledkov se strne, čšž ostanejo, izven črk/številk izpuščeno, prazen → \'ekipa\'', () => {
     expect(tedenskiEkipaSlug('Ekipa Alfa')).toBe('Ekipa-Alfa')
     expect(tedenskiEkipaSlug('Ekipa   Alfa')).toBe('Ekipa-Alfa')
     expect(tedenskiEkipaSlug('Čišža 1')).toBe('Čišža-1')

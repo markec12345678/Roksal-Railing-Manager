@@ -77,6 +77,12 @@ import {
   tedenskiEkipaIcs,
   tedenskiEkipaIcsFilename,
 } from '@/lib/tedenski-vozni-red-ekipa-ics'
+// R300 — 30. člen (issue #1 §7 branje): TEDENSKI KONFLIKTNI PREGLED —
+// deterministična bralna stran pravil R142 (API 409 je zapisna stran):
+// isti poli-odprto pravilo + aktivni statusi, STRAŽAR test uveljavlja
+// dobesedno sinhronizacijo zrcala (schedule-conflicts.ts je strežniški —
+// @/lib/db — klientski lib ga NE sme uvažati).
+import { tedenskiKonflikti } from '@/lib/tedenski-konflikti'
 import { cenikDatumIso } from '@/lib/cenik-pdf'
 import { QC_TEMPLATE, computePassed, countDefects } from '@/lib/qc-gate'
 import { IEV_TEMPLATE } from '@/lib/installation-evidence'
@@ -477,6 +483,14 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
   // tedenskiRazgledNow — ena izpeljava časa za celo družino, vzorec R292).
   const ekipaImena = useMemo(
     () => tedenskiEkipaImena(vozniRedVnosi, tedenskiRazgledNow),
+    [vozniRedVnosi, tedenskiRazgledNow],
+  )
+
+  // R300 — 30. člen: KONFLIKTNI PREGLED OKNA (EN VIR tedenskiKonflikti —
+  // ISTO okno + uvožen pregled kot cela tedenska družina; null = iskrena
+  // čistost '0 konfliktov'). Memo per podatkovni snapshot (ISTI now).
+  const konfliktiPregled = useMemo(
+    () => tedenskiKonflikti(vozniRedVnosi, tedenskiRazgledNow),
     [vozniRedVnosi, tedenskiRazgledNow],
   )
 
@@ -1468,6 +1482,27 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                 )
               })}
             </div>
+            {/* R300 — 30. člen (issue #1 §7 branje): KONFLIKTNA MINI-VRSTICA
+                (WYSIWYG — ISTA izpeljava kot celotna tedenska družina):
+                null pregled = iskrena čistost '0' (zelen — invarianta
+                dokazana); konflikti = rdeč žig z ekipami (viden odpad,
+                PDF/razgled pariteta). Vidna SAMO, ko ima okno vsaj 1 termin
+                (razgled.pov !== null — brez terminov ni česa pregledati,
+                iskrena praznina, R295/R296 vzorec). Definicijski naslov
+                izreče PRAVILA (poli-odprto, statusi, null konec) — MANDATORY
+                STIL; 0 novih hex — samo obstoječi žetoni. */}
+            {razgled.pov !== null && (
+              <p
+                className={`mt-1 text-2xs font-medium ${konfliktiPregled === null ? 'text-roksal-green' : 'text-roksal-red'}`}
+                role="status"
+                data-testid="tedenski-konflikti-mini"
+                title="Pregled dvojnih rezervacij ekipe v 7-dnevnem okviru (danes + 6 dni, UTC) — isti poli-odprto pravilo kot API 409: konec 12:00 + začetek 12:00 je dovoljen nazaj-na-nazaj; Preklicano/Zaključeno ne zasede; termin brez vpisanega konca NE nosi dokazanega prekrivanja (nikoli izmišljen). Bralni pregled — zapisno stran brani POST/PATCH (409 z razlogom)."
+              >
+                {konfliktiPregled === null
+                  ? 'Konflikti: 0 — brez dvojnih rezervacij ekipe v okviru.'
+                  : `Konflikti: ${konfliktiPregled.stPrekrivanj} · ekipe: ${konfliktiPregled.skupine.map((s) => s.ekipa).join(', ')} — dvojne rezervacije v okviru (poli-odprto pravilo).`}
+              </p>
+            )}
           </div>
           <div className="flex gap-2">
             {/* R244 — wave 6 RBAC ogledalo: CTA 'Nov termin montaže' je VIDEN
