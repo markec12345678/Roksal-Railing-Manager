@@ -939,7 +939,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
             : 'border-border bg-background text-muted-foreground hover:bg-secondary'
         } ${voice.supported ? '' : 'opacity-40'}`}
       >
-        <Mic className="h-4 w-4" />
+        <Mic aria-hidden="true" className="h-4 w-4" />
       </button>
     )
   }
@@ -4987,7 +4987,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                 {laserStatus === 'connecting' ? (
                   <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
                 ) : (
-                  <Bluetooth className="h-4 w-4" />
+                  <Bluetooth aria-hidden="true" className="h-4 w-4" />
                 )}
               </div>
               <div className="min-w-0">
@@ -5017,7 +5017,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                       disabled={!laserSupported || laserStatus === 'connecting'}
                       className="h-8 px-3 text-[11px] bg-roksal-navy text-white hover:bg-roksal-navy/90 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <Bluetooth className="mr-1 h-3.5 w-3.5" />
+                      <Bluetooth aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
                       Poveži laser
                     </Button>
                   </TooltipTrigger>
@@ -5922,7 +5922,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                             : 'border-border bg-muted text-muted-foreground cursor-not-allowed'
                       }`}
                     >
-                      <Mic className="h-3 w-3" />
+                      <Mic aria-hidden="true" className="h-3 w-3" />
                       {voiceListening ? 'Poslušam...' : 'Glas'}
                     </button>
                   </TooltipTrigger>
@@ -5941,7 +5941,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               />
               {interimText && (
                 <p className="text-2xs text-muted-foreground italic truncate">
-                  <Mic className="inline h-2.5 w-2.5 mr-1" />
+                  <Mic aria-hidden="true" className="inline h-2.5 w-2.5 mr-1" />
                   {interimText}
                 </p>
               )}

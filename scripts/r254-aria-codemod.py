@@ -27,7 +27,13 @@ LUCIDE_IMPORT_RE = re.compile(r"import\s*\{([^}]*)\}\s*from\s*['\"]lucide-react[
 def lucide_names(src: str) -> set:
     names = set()
     for m in LUCIDE_IMPORT_RE.finditer(src):
-        for part in m.group(1).split(','):
+        # R321 — SLEPA PEGA ZAPRTA (odkrita v R319 pri dekompoziciji
+        # measurements): vejica v uvoznem komentarju je razdelila blok pri
+        # split(',') in ikona postala NEVIDNA. ISTI popravek kot v
+        # r254-aria-detektor.py in r254-aria-hidden.test.ts — enaka logika
+        # v treh virih (kanon ENA resnica).
+        block = re.sub(r'//[^\n]*', '', m.group(1))
+        for part in block.split(','):
             part = part.strip()
             if not part:
                 continue

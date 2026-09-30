@@ -31,7 +31,16 @@ def je_tip_pozicija(src: str, start: int) -> bool:
 def lucide_names(src: str) -> set:
     names = set()
     for m in LUCIDE_IMPORT_RE.finditer(src):
-        for part in m.group(1).split(','):
+        # R321 — SLEPA PEGA ZAPRTA (odkrita v R319 pri dekompoziciji
+        # measurements): vejica v uvoznem komentarju (npr.
+        # "CornerDownRight, // P3 — novi ikoni (stopnice, koti, ...)") je
+        # razdelila blok pri split(',') in ikona postala NEVIDNA detektorju.
+        # Popravek: // komentarji odstranjeni PRED split (uvozni blok med
+        # oklepaji ne vsebuje string literal → strip je varen). ISTI popravek
+        # v r254-aria-codemod.py in r254-aria-hidden.test.ts — enaka logika
+        # v treh virih (kanon ENA resnica).
+        block = re.sub(r'//[^\n]*', '', m.group(1))
+        for part in block.split(','):
             part = part.strip()
             if not part:
                 continue

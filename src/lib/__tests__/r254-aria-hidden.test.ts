@@ -37,7 +37,14 @@ function lucideImena(src: string): Set<string> {
   const re = /import\s*\{([^}]*)\}\s*from\s*['"]lucide-react['"]/g
   let m: RegExpExecArray | null
   while ((m = re.exec(src))) {
-    for (const part of m[1].split(',')) {
+    // R321 — SLEPA PEGA ZAPRTA (odkrita v R319 pri dekompoziciji
+    // measurements): vejica v uvoznem komentarju je razdelila blok pri
+    // split(',') in ikona postala NEVIDNA stražarju (primer: 5 ikon v
+    // measurements-tab, 3 v dashboard-tab). ISTI popravek kot v
+    // r254-aria-detektor.py in r254-aria-codemod.py — enaka logika v treh
+    // virih (kanon ENA resnica).
+    const blok = m[1].replace(/\/\/[^\n]*/g, '')
+    for (const part of blok.split(',')) {
       const ime = part.trim().split(' as ').pop()!.trim()
       if (/^[A-Z][A-Za-z0-9]*$/.test(ime)) imena.add(ime)
     }

@@ -500,6 +500,25 @@ Sheet z 6 podzavihki:
   (restart/TTL) → iskreno failed; prehodne napake stanja NE dotikajo —
   nikoli lažno `completed`; odjemalska poll zanka (3 s, max 6 min, cleanup)
   + prikaz PNG ob koncu; 19 novih testov (gpu-client + route)
+- **Dekompozicija calculator-tab — FAZA 1** (R322 — KOLIZIJA: vzporedna seja je vzela R321, po kanonu vzporednih sej preimenovana): 6.074 → 5.372 vrstic
+  (−702); mapa `calculator/` ×5 datotek — `shared.ts` (5 tipov + 7
+  interfejsov + 15 konstant VERBATIM + `export`; dvig importov na vrh =
+  struktura, ne vsebina) + 4 SVG diagrami (BalusterSvg, AngledSvg,
+  SloveniaWindMapSvg, GlassLayersSvg — ČIST PREMIK bajtno identično, kanon
+  R319 measurements faza 1); lucide uvozi ostanejo (vseh 10 ikon v rabi
+  tudi v glavni komponenti); NIČ pin shiftov potrebnih (vsi stražarji po
+  VSEBINI — lekcija R319 #3 potrdjena); vsebina ŽIVA v čankih dokazana
+  (r322-build-needles ×5 + delegirana veriga r321[vzporedna]→R320→…→R227 FAIL=0)
+- **R254 slepa pega aria-hidden detektorja ZAPRTA** (R322 — odkrita v R319,
+  izboljšava takrat odložena kot kandidat): vejica v uvoznem komentarju je
+  razdelila import blok pri `split(',')` → ikona NEVIDNA detektorju;
+  TROJNI popravek (r254-aria-detektor.py + r254-aria-codemod.py +
+  r254-aria-hidden.test.ts — strip `//` komentarjev PRED split, enaka
+  logika v treh virih, kanon ENA resnica); 8 novo-vidnih ikon (5
+  measurements + 3 dashboard), 5 PRAVIH a11y vrzeli odkritih in popravljenih
+  IN-PLACE (Bluetooth ×2 + Mic ×3 — aria-hidden na obstoječi vrstici, BREZ
+  novih vrstic → r172 vrstični pin 7427 NEPREMAKNJEN); pokritost 1430 →
+  1435, 0 manjkajočih
 - **QA dispatcher `scripts/qa.sh`** (R319 — konsolidacija ~891 skriptov):
   PARAMETRIZIRANA vstopna točka (`needles|smoke|e2e|prodqa|chain [runda]`,
   privzeto zadnja) — zamrznjene skripte ostajajo dokazi (kanon: NIČ brisanja);
@@ -831,8 +850,8 @@ primitivov. Največji:
 
 | Komponenta | Vrstice | Funkcija |
 |-----------|---------|----------|
-| `measurements-tab.tsx` | 7.818 | Meritve (9 tipov, stopniščni čarovnik, WPC, štebricki) |
-| `calculator-tab.tsx` | 6.010 | Kalkulator (7 načinov + 6 izpolnitev) |
+| `measurements-tab.tsx` | 7.604 | Meritve (9 tipov, stopniščni čarovnik, WPC, štebricki) |
+| `calculator-tab.tsx` | 5.372 | Kalkulator (7 načinov + 6 izpolnitev; dekompozicija faza 1 R322) |
 | `ar-scanner.tsx` | 2.789 | AR kamera z vizualizacijo ograje + AI sugestija |
 | `webxr-scanner.tsx` | 2.377 | WebXR poskus (kjer podprt) |
 | `photo-tab.tsx` | 2.570 | Slike z annotation editor, batch, pred/po |
@@ -840,9 +859,11 @@ primitivov. Največji:
 | `measurement-studio.tsx` | 1.630 | **Merilni studio** (deterministični CV + ročni način) |
 | … | | skice, zaloga, dokumenti, PDF, CRM, logistika, tloris, galerija … |
 
-> Opomba (R120/Problem 9): `measurements-tab` in `calculator-tab` sta zelo
-> velika — razcep je načrtovan ŠELE po validacijskem passu (najprej dokazati
-> kanonično verigo, potem refaktoriranje).
+> Opomba (R120/Problem 9 → R319/R322): `measurements-tab` (9.086 →
+> 7.604) in `calculator-tab` (6.074 → 5.372) sta bila razbita po fazah ČISTIH
+> PREMIKOV (kanon: bajtno identični bloki, brez spremembe obnašanja;
+> vsebina ŽIVA v čankih — r319/r322-build-needles). Faza 2 (sestavljene
+> notranje strukture) po lastniških prioritetah.
 
 ---
 
