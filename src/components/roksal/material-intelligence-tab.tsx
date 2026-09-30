@@ -262,7 +262,7 @@ function statusZnackaCls(status: string | null): string {
   if (status === 'PREKlicANO') return 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border-red-300 dark:border-red-800'
   if (status === 'DOBLJENO') return 'bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300 border-green-300 dark:border-green-800'
   if (status === 'POSLANO') return 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-800'
-  if (status === 'POTRJENO') return 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800'
+  if (status === 'POTRJENO') return 'bg-roksal-amber/10 text-roksal-ink border-roksal-amber/40' // R311 — žetoni (punch Napaka R310 oblika; POSLANO modra sorodnica ostaja)
   // R234 — nevtralna (neznana) veja → žetoni (R232 STATE_BADGE NEZNANO vzorec;
   // sorojenci PREKlicANO/DOBLJENO/POSLANO/POTRJENO ostanejo semantični).
   return 'bg-muted text-muted-foreground border-border'
@@ -1374,11 +1374,11 @@ export function MaterialIntelligenceTab({
           ) : !bomRefine && viriNapaka ? null : !bomRefine?.dealLocked ? (
             // R182 — BOM vir ni naložen (napaka vidna zgoraj) → brez lažnega
             // 'Deal ni zaklenjen' (R174: error panel je PREDNOST pred praznim stanjem)
-            <Card className="border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40">
+            <Card className="border-roksal-amber/40 bg-roksal-amber/10">
               <CardContent className="py-6 text-center">
-                <AlertTriangle aria-hidden="true" className="h-8 w-8 mx-auto text-amber-500 dark:text-amber-400 mb-2" />
-                <p className="text-sm font-medium text-amber-900 dark:text-amber-200">Deal ni zaklenjen</p>
-                <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">Zakleni deal po podpisu (V4.1) za BOM optimizacijo.</p>
+                <AlertTriangle aria-hidden="true" className="h-8 w-8 mx-auto text-roksal-amber mb-2" />
+                <p className="text-sm font-medium text-roksal-ink">Deal ni zaklenjen</p>
+                <p className="text-xs text-roksal-ink/70 mt-1">Zakleni deal po podpisu (V4.1) za BOM optimizacijo.</p>
               </CardContent>
             </Card>
           ) : bomRefine ? (
@@ -1389,9 +1389,9 @@ export function MaterialIntelligenceTab({
                   <div className="flex items-center gap-1 mb-1"><CheckCircle2 aria-hidden="true" className="h-3 w-3 text-green-600 dark:text-green-400" /><span className="text-2xs text-muted-foreground">Skupaj</span></div>
                   <div className="text-lg font-bold text-roksal-ink tabular-nums">{bomRefine.skupajCena.toFixed(0)} €</div>
                 </CardContent></Card>
-                <Card className="border-amber-200 dark:border-amber-800"><CardContent className="p-3">
-                  <div className="flex items-center gap-1 mb-1"><TrendingUp aria-hidden="true" className="h-3 w-3 text-amber-600 dark:text-amber-400" /><span className="text-2xs text-muted-foreground">Prihranek</span></div>
-                  <div className="text-lg font-bold text-amber-700 dark:text-amber-300 tabular-nums">{bomRefine.skupajPrihranek.toFixed(0)} €</div>
+                <Card className="border-roksal-amber/40"><CardContent className="p-3">
+                  <div className="flex items-center gap-1 mb-1"><TrendingUp aria-hidden="true" className="h-3 w-3 text-roksal-amber" /><span className="text-2xs text-muted-foreground">Prihranek</span></div>
+                  <div className="text-lg font-bold text-roksal-ink tabular-nums">{bomRefine.skupajPrihranek.toFixed(0)} €</div>
                 </CardContent></Card>
                 <Card className="border-blue-200 dark:border-blue-800"><CardContent className="p-3">
                   <div className="flex items-center gap-1 mb-1"><Package aria-hidden="true" className="h-3 w-3 text-blue-600 dark:text-blue-400" /><span className="text-2xs text-muted-foreground">Artikli</span></div>
@@ -1647,7 +1647,7 @@ export function MaterialIntelligenceTab({
                               order.status === 'PREKlicANO' ? 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border-red-300 dark:border-red-800' :
                               order.status === 'DOBLJENO' ? 'bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300 border-green-300 dark:border-green-800' :
                               order.status === 'POSLANO' ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-800' :
-                              order.status === 'POTRJENO' ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800' :
+                              order.status === 'POTRJENO' ? 'bg-roksal-amber/10 text-roksal-ink border-roksal-amber/40' :
                               // R234 — nevtralna (neznana) veja → žetoni (statusZnackaCls vzorec).
                               'bg-muted text-muted-foreground border-border'
                             }`}>{order.status}</Badge>
@@ -1938,7 +1938,7 @@ export function MaterialIntelligenceTab({
                             title={sup.aktivna ? 'Aktiven dobavitelj' : 'Neaktiven dobavitelj'}
                           />
                           <span className="text-sm font-semibold text-roksal-ink truncate">{sup.naziv}</span>
-                          {sup.popust > 0 && <Badge variant="outline" className="text-3xs bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300">-{sup.popust}%</Badge>}
+                          {sup.popust > 0 && <Badge variant="outline" className="text-3xs bg-roksal-amber/10 text-roksal-ink">-{sup.popust}%</Badge>}
                           {/* R260 — segmentni žigi (ISTO resnico kot CSV
                               stolpca 10/11; rokopisno po IDENTITETI — v === s):
                               najhitrejši rok VEDNO ko je nosilec; največji

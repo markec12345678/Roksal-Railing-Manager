@@ -105,7 +105,7 @@ const PIPELINE: PipeColumn[] = [
   // R228 / OSNUTEK R229: nevtralno stanje = nevtralni žetoni, dark ogledalo
   // odveč).
   { id: 'NACRTOVANO', label: 'Načrtovano', icon: ClipboardList, dot: 'bg-muted-foreground', bar: 'border-l-muted-foreground', head: 'from-muted', over: 'ring-muted-foreground/70' },
-  { id: 'V_TEKU', label: 'V teku', icon: Hammer, dot: 'bg-amber-500', bar: 'border-l-amber-500', head: 'from-amber-100 dark:from-amber-500/15', over: 'ring-amber-400/70 dark:ring-amber-500/70' },
+  { id: 'V_TEKU', label: 'V teku', icon: Hammer, dot: 'bg-amber-500', bar: 'border-l-amber-500', head: 'from-amber-100 dark:from-amber-500/15', over: 'ring-amber-400/70 dark:ring-amber-500/70' }, // R311 — kategorija barvni sistem (amber med orange/violet/blue sorodniki) IZRECNO izven harmonizacije (R308 lekcija)
   { id: 'ZA_MONTAZO', label: 'Za montažo', icon: CalendarClock, dot: 'bg-orange-500', bar: 'border-l-orange-500', head: 'from-orange-100 dark:from-orange-500/15', over: 'ring-orange-400/70 dark:ring-orange-500/70' },
   { id: 'V_IZDELAVI', label: 'V izdelavi', icon: Factory, dot: 'bg-violet-500', bar: 'border-l-violet-500', head: 'from-violet-100 dark:from-violet-500/15', over: 'ring-violet-400/70 dark:ring-violet-500/70' },
   { id: 'MONTIRANO', label: 'Montirano', icon: Wrench, dot: 'bg-teal-500', bar: 'border-l-teal-500', head: 'from-teal-100 dark:from-teal-500/15', over: 'ring-teal-400/70 dark:ring-teal-500/70' },
@@ -131,8 +131,8 @@ function followUpBadge(d: string | null): { label: string; cls: string } | null 
   target.setHours(0, 0, 0, 0)
   const diff = Math.round((target.getTime() - today.getTime()) / 86_400_000)
   if (diff < 0) return { label: `Spomnik zapadel ${Math.abs(diff)} dni`, cls: 'bg-red-100 dark:bg-red-500/15 text-red-700 dark:text-red-300 border-red-300 dark:border-red-800' }
-  if (diff === 0) return { label: 'Spomnik DANES', cls: 'bg-amber-100 dark:bg-amber-500/15 text-amber-800 dark:text-amber-200 border-amber-300 dark:border-amber-800' }
-  if (diff <= 3) return { label: `Spomnik čez ${diff} dne`, cls: 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800' }
+  if (diff === 0) return { label: 'Spomnik DANES', cls: 'bg-roksal-amber/10 text-roksal-ink border-roksal-amber/40' }
+  if (diff <= 3) return { label: `Spomnik čez ${diff} dne`, cls: 'bg-roksal-amber/10 text-roksal-ink border-roksal-amber/40' }
   return null
 }
 

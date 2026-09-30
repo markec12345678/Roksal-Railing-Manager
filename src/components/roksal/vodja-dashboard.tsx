@@ -73,10 +73,14 @@ import { SistemZdravjeCard } from '@/components/roksal/sistem-zdravje-card'
 // EN VIR razreda funkcij (deterministic / SDK / script / AI-optional);
 // AI = neobvezna pomoč, jedro deluje brez AI (docs/automacija-audit.md).
 import { avtomatizacijaPovzetek } from '@/lib/automation/katalog'
+// R311 — 41. člen issue #1 (Deliverable 5 na zaslonu): AI raba — iskrena
+// resnica po površinah (ČISTA projekcija katalog × AI_KANDIDATI — NIČ
+// nove resnice; WYSIWYG sklep).
+import { aiRabaPregled } from '@/lib/ai-raba-pregled'
 import {
   TrendingUp, Clock, Users, Package, Euro, CheckCircle2,
   AlertTriangle, Calendar, Truck, Bell, FileDown, Loader2, Download, Workflow,
-  History, PackageX, CalendarX, FileText, FileSpreadsheet,
+  History, PackageX, CalendarX, FileText, FileSpreadsheet, Sparkles,
 } from 'lucide-react'
 
 interface VodjaStats {
@@ -602,6 +606,10 @@ export function VodjaDashboard() {
   // kartica; NIKOLI ročno vpisane številke — isti povzetek kot testi + docs).
   const avtomatizacija = avtomatizacijaPovzetek()
 
+  // R311 — 41. člen: AI raba pregled (ČISTA projekcija katalog × kandidati
+  // — EN VIR, NIČ dvojnega računa; vzorec R305/R306/R307 memojev).
+  const aiRaba = aiRabaPregled()
+
   // R293 — MARŽNI RAZGLED merilo: največja |marža| čez vrste (ISTO merilo za
   // VSE vrstice — vzorec R291/R292 mini tir; 0 pri praznem preseku).
   const maxMarza = useMemo(
@@ -994,6 +1002,53 @@ export function VodjaDashboard() {
         </div>
         <p className="mt-1 text-2xs text-muted-foreground">
           AI = neobvezna pomoč ({avtomatizacija.aiZNadomestkom} zmožnosti z izrečenim determinističnim nadomestkom) — jedro deluje brez AI.
+        </p>
+      </section>
+
+      {/* R311 — 41. člen issue #1 (Deliverable 5 NA ZASLONU): AI raba —
+          iskrena resnica po površinah. ČISTA projekcija EN VIR (katalog
+          'ai' vnosi z razrešenim nadomestkom + AI_KANDIDATI verbatim) —
+          ISTI nizi kot testi in docs/automacija-audit.md (WYSIWYG);
+          AI = neobvezna pomoč z IZREČENIM nadomestkom — jedro deluje brez
+          AI; kandidati so ISKRENI (NE-IMPLEMENTIRANO, nič povezano —
+          nikoli lažna implementacija); 0 novih hex — samo žetoni;
+          dolgo besedilo ink (r162 lekcija), žeton na ikoni. */}
+      <section
+        className="rounded-lg border border-border bg-muted/40 px-3 py-2"
+        aria-label="AI raba — iskrena resnica"
+        data-testid="ai-raba-dokaz"
+      >
+        <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
+          <p className="flex items-center gap-1 text-2xs font-medium text-roksal-ink">
+            <Sparkles className="h-3 w-3 text-roksal-amber" aria-hidden="true" />
+            AI raba — iskrena resnica
+          </p>
+          <p className="text-2xs tabular-nums text-muted-foreground" title="ISTI katalog kot 'Avtomatizacija — razred funkcij' in docs/automacija-audit.md — EN VIR.">
+            {aiRaba.stAi} AI · {aiRaba.stKandidatov} kandidatov · 0 AI-obveznih
+          </p>
+        </div>
+        {aiRaba.zive.map((z) => (
+          <div key={z.id} className="mt-1.5 rounded-md border border-border bg-background/60 px-2 py-1.5">
+            <p className="text-2xs font-medium text-roksal-ink">{z.opis}</p>
+            <p className="text-2xs text-muted-foreground">
+              → nadomestek (brez AI): {z.nadomestekOpis}
+            </p>
+          </div>
+        ))}
+        <div className="mt-1.5">
+          <p className="text-2xs font-medium text-roksal-ink">
+            Kandidati — {aiRaba.kandidatiStatus ?? 'različni statusi'}:
+          </p>
+          <ul className="mt-0.5 space-y-0.5">
+            {aiRaba.kandidati.map((k) => (
+              <li key={k.funkcija} className="text-2xs leading-relaxed text-roksal-ink/80">
+                <span className="font-medium text-roksal-ink">{k.funkcija}</span> — {k.zakaj}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <p className="mt-1.5 text-2xs text-muted-foreground" data-testid="ai-raba-sklep">
+          {aiRaba.sklep}
         </p>
       </section>
 

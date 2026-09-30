@@ -102,7 +102,7 @@ describe('r310 val 3 — STRAŽAR stene ure (realno drevo)', () => {
   it('R310 STIL must_miss na SOURCE nivoju (lekcija R308 3): punch-list + team-tab brez surove amber palete', () => {
     // Build-nivo NI pripisljiv (ista surova sekvenca še živi v measurements-tab,
     // ki je izrecno izven R310 obsega — naslednji val); pripisljivost = vir.
-    const SUROVA_AMBER = /(^|[^-a-z])amber-(50|100|200|300|400|500|600|700|800|900|950)\b/
+    const SUROVA_AMBER = /amber-(50|100|200|300|400|500|600|700|800|900|950)\b/
     for (const dat of ['src/components/roksal/punch-list.tsx', 'src/components/roksal/team-tab.tsx']) {
       const vir = readFileSync(join(process.cwd(), dat), 'utf8')
       const vrstice = vir.split('\n').filter((v) => SUROVA_AMBER.test(v) && !v.includes('roksal-amber'))

@@ -578,7 +578,7 @@ const auditColors: Record<AuditEntry['akcija'], string> = {
   ADD: 'bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300',
   EDIT: 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300',
   DELETE: 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300',
-  STATUS: 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300',
+  STATUS: 'bg-roksal-amber/10 text-roksal-ink', // R311 — žetoni (družina ADD/EDIT/DELETE ostaja semantična)
 }
 
 const PREDLOGE: PredlogaDef[] = [
@@ -2581,7 +2581,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
     } else if (Math.abs(deltaPct) <= 5) {
       verdict = { label: 'V okviru — zanesljiva orientacija', cls: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800', icon: CheckCircle2 }
     } else if (Math.abs(deltaPct) <= 15) {
-      verdict = { label: 'Orientacija — preveri na terenu pred izdelavo', cls: 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-200 border-amber-300 dark:border-amber-800', icon: AlertTriangle }
+      verdict = { label: 'Orientacija — preveri na terenu pred izdelavo', cls: 'bg-roksal-amber/10 text-roksal-ink border-roksal-amber/40', icon: AlertTriangle }
     } else {
       verdict = { label: 'Veliko odstopanje — obvezen obisk na terenu', cls: 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border-red-300 dark:border-red-800', icon: AlertTriangle }
     }
@@ -5210,7 +5210,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
             </div>
           </div>
           {!laserSupported && (
-            <div className="rounded-md bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 p-2 text-2xs text-amber-700 dark:text-amber-300 flex items-start gap-1.5">
+            <div className="rounded-md bg-roksal-amber/10 border border-roksal-amber/40 p-2 text-2xs text-roksal-ink flex items-start gap-1.5">
               <AlertCircle aria-hidden="true" className="h-3 w-3 mt-0.5 shrink-0" />
               <span>
                 Web Bluetooth ni podprt v tem brskalniku. Uporabite Chrome na Androidu ali računalniku.
@@ -6348,7 +6348,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                             <button
                               type="button"
                               onClick={() => handleAddWpcPaliceAsStebri(seg)}
-                              className="w-full rounded-lg border border-dashed border-amber-400/50 dark:border-amber-700/50 py-1.5 text-2xs text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40 transition-colors"
+                              className="w-full rounded-lg border border-dashed border-roksal-amber/50 py-1.5 text-2xs text-roksal-ink hover:bg-roksal-amber/10 transition-colors"
                             >
                               <Fence aria-hidden="true" className="inline h-3 w-3 mr-1" />
                               Dodaj WPC palice kot materiale
@@ -6538,7 +6538,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
           s.type === 'WPC_VODORAVNE' ||
           s.type === 'WPC_POSEVNE'
       ) && (
-        <Card className="card-hover animate-fade-in-up border-amber-200 dark:border-amber-800">
+        <Card className="card-hover animate-fade-in-up border-roksal-amber/40">
           <Collapsible open={wpcConfigOpen} onOpenChange={setWpcConfigOpen}>
             <CollapsibleTrigger asChild>
               <button
@@ -6546,7 +6546,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                 className="flex w-full items-center justify-between p-4 text-left hover:bg-secondary/30 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-roksal-navy/40 focus-visible:outline-none transition-colors"
               >
                 <div className="flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500 text-white">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-roksal-amber text-roksal-navy">
                     <Fence aria-hidden="true" className="h-4 w-4" />
                   </div>
                   <div>
@@ -6621,7 +6621,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   </div>
                 </div>
                 {wpcRazmikPalic > 110 && (
-                  <div className="rounded-lg border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-2.5 text-2xs text-amber-700 dark:text-amber-300 flex items-center gap-1.5">
+                  <div className="rounded-lg border border-roksal-amber/40 bg-roksal-amber/10 p-2.5 text-2xs text-roksal-ink flex items-center gap-1.5">
                     <AlertCircle aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
                     Razmik {wpcRazmikPalic}mm presega 110mm — preverite skladnost s predpisi!
                   </div>
@@ -7081,7 +7081,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                       : Math.abs(strankaPrimerjava.deltaPct) <= 5
                         ? 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
                         : Math.abs(strankaPrimerjava.deltaPct) <= 15
-                          ? 'bg-amber-100 dark:bg-amber-500/15 text-amber-800 dark:text-amber-200'
+                          ? 'bg-roksal-amber/10 text-roksal-ink'
                           : 'bg-red-100 dark:bg-red-500/15 text-red-700 dark:text-red-300',
                   )}
                 >
@@ -7624,7 +7624,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                             Umerjeno
                           </Badge>
                         ) : (
-                          <Badge className="text-3xs h-3.5 px-1 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                          <Badge className="text-3xs h-3.5 px-1 bg-roksal-amber/10 text-roksal-ink border border-roksal-amber/40">
                             Ni umeritve
                           </Badge>
                         )}
@@ -8988,13 +8988,13 @@ function WpcDiagram({
         : `Poševne (${kotPosevnih}°)`
 
   return (
-    <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-2 slide-in-right">
+    <div className="rounded-lg border border-roksal-amber/40 bg-roksal-amber/10 p-2 slide-in-right">
       <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-1.5">
-          <Fence aria-hidden="true" className="h-3.5 w-3.5 text-amber-700 dark:text-amber-300" />
+          <Fence aria-hidden="true" className="h-3.5 w-3.5 text-roksal-amber" />
           <span className="text-[11px] font-semibold text-roksal-ink">{orientacijaLabel}</span>
         </div>
-        <Badge variant="outline" className="text-[9px] h-4 px-1 border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-300">
+        <Badge variant="outline" className="text-[9px] h-4 px-1 border-roksal-amber/40 text-roksal-ink">
           {stPalic} palic
         </Badge>
       </div>
@@ -9068,8 +9068,8 @@ function WpcDiagram({
         </p>
       )}
       {razmikPalic > 110 && (
-        <p className="text-[9px] text-amber-700 dark:text-amber-300 mt-0.5 text-center">
-          <AlertCircle aria-hidden="true" className="inline h-2.5 w-2.5 mr-0.5" />
+        <p className="text-[9px] text-roksal-ink mt-0.5 text-center">
+          <AlertCircle aria-hidden="true" className="inline h-2.5 w-2.5 mr-0.5 text-roksal-amber" />
           Razmik {razmikPalic}mm presega 110mm — preveri predpise!
         </p>
       )}

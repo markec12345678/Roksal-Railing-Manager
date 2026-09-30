@@ -64,7 +64,7 @@ NOVA_GLAVA = '''#!/bin/bash
 #   Z3  v99 sync gate (R274). ZERO-MUTACIJA.
 #   LEKCIJA R307 3 (derive): grep čistost preverba uporablja RAZRED ZNAKOV
 #   ('R30[9]_PUSH') — preverba ne sme ujeti svojega vzorca (samozadetek).'''
-lines[:37] = NOVA_GLAVA.split('\n')
+lines[:36] = NOVA_GLAVA.split('\n')  # set -u (index 36) ostane
 text = '\n'.join(lines)
 
 def zam(stari, novi, pricakuj=1):
@@ -142,5 +142,9 @@ for ostanek in ('R309_COMMIT_ISO', 'R309_PUSH', 'r309-prod-chunks', '/tmp/r309-'
 # Zgodovinske omembe R309 (needle blok labeli) ostanejo NAMERNO — to so LIVE
 # regresijski needleji prejšnje generacije, ne meje/mehanizmi.
 
+# IZHODNA STRAN preverba (LEKCIJA R311: vnosne asercije NE pokrijejo rezultata —
+# splice je v R310 tiho pogoltnil 'set -u' [sed z $ sidrom se ni ujel]; struktura
+# cilja se preveri NACH)
+assert text.split('\n')[37] == 'set -u' or '\nset -u\n' in text, "'set -u' izgubljen pri splice"
 DOL.write_text(text, encoding='utf-8')
 print(f'OK: {DOL} ({len(text.splitlines())} vrstic)')

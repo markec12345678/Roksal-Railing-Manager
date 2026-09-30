@@ -6023,3 +6023,30 @@ Stage Summary:
 - ⏰ roksal-fallback-db POTEČE 2026-10-25 (~3,5 tedna) — obvestiti lastnika (triintridesetič zapisano; NE pozabiti)
 - R311 prva naloga = r310-prod-qa.sh (UNION harvest dedovan; FOREGROUND; grep čistost prej; opomba: Z2b ima zdaj 14 žičnih probeov — val-3 ×10 brez deny-first vrat)
 - R311 kandidati (nespremenjeni iz Task 3): surova amber ostanka (measurements-tab tabela, deal-pipeline, material-intelligence — isti vzorec, naslednji val), e2e-lib migracija (25+), AI kandidati evalvacija po lastniški rabi, CSRF vezba (ZADNJI, samo z lastniškim blagoslovom)
+
+---
+Task ID: 1 (R311)
+Agent: Main Orchestrator (Z.ai Code) — tick 202609301806
+Task: R311 — prva naloga (r310-prod-qa.sh ŽIVO) + STIL val 2 + 41. člen (AI raba na zaslonu) + polna veriga
+
+Work Log:
+- Kalibracija: HEAD 80280c4 (R310), drevo čisto; worklog R310 branje; ISSUE #1 branje (GitHub API)
+- PRVA NALOGA tek 1: iskrena ESKALACIJA stale (prod build 08:59:15Z ≤ R310 meja 10:05:47Z — deploy še prihaja; stale zdrav, ZERO must_miss); tek 2 PO 75 s: deploy potrjen (10:06:13Z > meja) — a Z2b FAIL: users probe → 403 (MONTER nima users.manage; moj derive je mehansko preveril SAMO denyWithoutPermission simbole, spregledal inline lacksPermission)
+- POPRAVEK (defekt → dokaz): users OHRANJEN v Z2b kot IZRECEN deny-first POZITIVNI dokaz (pričakovan 403 — vrata zaprta pravilno PRED telesom); preostalih 13 (val-1 ×4 + val-3 ×9) × 400 z ISTO ovojnico; ROLE_PERMISSIONS preverba: MONTER IMA quotes.create + customers.write (empirično potrjeno v tek 2), NIMA users.manage; tek 3 EXIT=0 — R310 ŽIVO (R290+…+R310 SKUPAJ)
+- POPRAVEK derive napake R310: splice je tiho pogoltnil 'set -u' (sed z $ sidrom se ni ujel — 3 teki delali brez njega) → vrnjen + izhodna-stran asercija v obeh derive skriptah (vnosne asercije NE pokrijejo rezultata)
+- MANDATORY STIL val 2 (r162/r308 vzorec): measurements-tab ×13 mest + material-intelligence-tab ×10 + deal-pipeline spomnik ×2 — surove amber → roksal žetoni (bg-roksal-amber/10 + ink besedilo + border /40; ikona/števec žeton); 6 IZREČNIH izjem ZAKLENJENIH v STRAŽAR testu (groundType les + materialStebra WPC = kategorije barv; naklon + senzor nepodprt = gola-text lestvice; deal V_TEKU = kategorija statusov — R308 lekcija, vsaka nova surova vrstica = fail)
+- REGRESIJA regex: r310 val3 STRAŽAR je uporabljal /(^|[^-a-z])amber-/ — NIKOLI ne ujame bg-amber- (predpona '-') → okrepljen na /amber-(50|…|950)\b/ v obeh testih (r310 + r311)
+- 41. člen issue #1 (Deliverable 5 NA ZASLONU): NOV lib ai-raba-pregled.ts — ČISTA projekcija DVEH EN VIR resnic (automation/katalog 'ai' vnosi + avtomatizacija-audit AI_KANDIDATI) — NIČ nove resnice; 2 živi AI površini (VLM foto ocena + GPU render stub) z RAZREŠENIM nadomestkom iz ISTEGA kataloga; 3 iskreni kandidati (NE-IMPLEMENTIRANO — nič povezano); sklep številčno nevtralen WYSIWYG; fail-closed ×4 (ne-seznam / AI-brez-nadomestka / nadomestek-ne-obstaja / kandidat-brez-zakaj → TypeError z imenom graditelja)
+- vodja-dashboard: blok [ai-raba-dokaz + ai-raba-sklep testidi, aria, Sparkles žeton ikona; definicijski naslov; 2 nadomestek vrstici + 3 kandidati z zakaj + sklep verbatim] — EN VIR memo vzorec, NIČ dvojnega sklepa ({aiRaba.sklep} — literalski dvojnik prepovedan s STRAŽARjem)
+- 2 pin shifta (izrecno, precedens): r180 lucide blok + Sparkles (R311 opomba); r209 statusZnackaCls POTRJENO veja → žetoni z obrnjeno regresijo (surovi mirror se ne sme vrniti)
+- VERIFIKACIJA: tsc 0 · eslint 0 · vitest **4344/4344 (241; +10)** · build ✓ · r311-build-needles FAIL=0 (AI raba ×7 + STIL ×3 + must_miss ×2 + delegirana veriga R310→R227 [širina stene zdaj 65]) · r311-run-smoke ✓ (NOVO: evidence val-3 probe 400 + ovojnica; port sproščen) · E2E ŽIVO EXIT=0 (NOV Z0aj: AI raba blok ŽIVO — naslov + 2 nadomestka + 3 kandidati + sklep WYSIWYG; Z0ai 10/10 + Z0ah 26/26 + Z0ag 4/4 + polne regresije; ODTIS BAJTNATO IDENTIČEN pre==post r276+r281+r283+r287 — ZERO-MUTACIJA) · r310-prod-qa.sh tek 3 EXIT=0 (PRVA naloga ZAPRTA)
+- NOVI artefakti ×6: r311-build-needles.sh · r311-run-smoke.sh (+derive-smoke.py) · r311-e2e-browser.sh (+derive-e2e.py, Z0aj blok) · r311-prod-qa.sh 717 vrstic (+derive-prod-qa.py — R312 prva naloga; EPOCH R311 meja; R311 needleji ×7+1; Z2b 13×400+users 403; TODO-R310; idempotencia potrjena z diff)
+- LEAK-CHECK: ghp_ token nič v drevesu ✓
+
+Stage Summary:
+- R311 ZAKLJUČEN: 41. člen (AI raba — iskrena resnica na zaslonu; issue #1 Deliverable 5) + STIL val 2 (25 mest harmoniziranih, 6 izjem zaklenjenih) + prva naloga ŽIVO (R310 potrjen na produ z users 403 deny-first dokazom)
+- AI nikoli vir resnice: zaslon DOKAZUJE odsotnost AI-obveznih površin po konstrukciji (fail-closed kontrakt §11 — vsak 'ai' vnos MORA imeti nadomestek v katalogu)
+- LEKCIJE: (1) mehanski vir-check za žične probee mora pokriti VSE 403 poti (lacksPermission/canManageCustomers/forbidden) proti ROLE_PERMISSIONS matriki — NE samo en gate simbol (users 403 tek 2); (2) STRAŽAR regex brez realne predpone je slep — /(^|[^-a-z])amber-/ ni videl bg-amber-; (3) splice asercije na VHODU ne ščitijo IZHODA — 'set -u' izgubljen 3 teke; (4) defekt → dokaz: users 403 ni izključen ampak IZRECNO pričakovan (deny-first pozitivni dokaz); (5) sed z $ sidrom lahko tiho ne uspe — python replace + asercija namesto sed pri kritičnih vzorcih
+- ⏰ roksal-fallback-db POTEČE 2026-10-25 (~3,5 tedna) — obvestiti lastnika (štiriintridesetič zapisano; NE pozabiti)
+- R312 prva naloga = r311-prod-qa.sh (UNION harvest dedovan; FOREGROUND; grep čistost prej; Z2b = 13×400 + users 403 deny-first dokaz)
+- R312 kandidati: surova amber val 3 (ar-scanner, calculator-tab, cv-studio, dashboard-tab, fence-3d-viewer, inclinometer-tab, jobs-panel, map-measure … 128 vrstic ostalo — isti vzorec), e2e-lib migracija (25+), performance measurements (Deliverable 6 — iskrena meritev), CSRF vezba (ZADNJI, samo z lastniškim blagoslovom)

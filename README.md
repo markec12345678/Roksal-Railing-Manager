@@ -103,7 +103,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 45 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **4334** (240 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **4344** (241 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 143 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -333,6 +333,13 @@ Sheet z 6 podzavihki:
 #### ⚙️ Avtomatizacija (issue #1 — deterministično jedro)
 - 100 % deterministična jedra: kalkulacije, izvozi (40+ PDF/CSV + ICS koledar — 26./27./28./29. člen izvozne družine R296/R297/R298/R299), varnost, sync — enaki vhodi = bajtno enak izhod
 - AI = neobvezna pomoč, NIKOLI vir resnice (iskren GPU stub + VLM foto ocena z determinističnim nadomestkom)
+- **AI raba — iskrena resnica na zaslonu** (R311, 41. člen — issue #1 Deliverable 5): vodjin pregled
+  nosi per-površinski dokaz (`src/lib/ai-raba-pregled.ts`, ČISTA projekcija katalog × AI_KANDIDATI —
+  NIČ nove resnice): 2 živi AI površini [VLM foto ocena + GPU render stub], obe z IZREČENIM
+  determinističnim nadomestkom razrešenim iz ISTEGA kataloga; 3 iskreni kandidati
+  (NE-IMPLEMENTIRANO, nič povezano — nikoli lažna implementacija); 0 AI-obveznih — jedro deluje
+  brez AI; fail-closed: AI vnos brez nadomestka / nadomestek brez razrešitve → TypeError; WYSIWYG
+  sklep (zaslon + testi + docs berejo ISTI niz)
 - Skener determinizma: 0 nedokumentiranih odstopanj nad src/lib IN src/components (komponentni sloj R295 — locale* v ARTIFACT domeni NIČ, izjeme izrecne z razlogom)
 - **API I/O meja («stena ura»)** (R308+R309+R310, issue #1 — failure cases + malformed-input) — determinističen
   skener VSEH 81 route-handlerjev (`src/lib/api-meja-audit.ts`, EN VIR lexer avtomatizacija-audit):
@@ -388,7 +395,7 @@ Sheet z 6 podzavihki:
 | **PWA** | Service Worker + Web Manifest |
 | **Temnitveni način** | [next-themes](https://github.com/pacocoursey/next-themes) |
 | **Validacija** | [Zod 4](https://zod.dev/) |
-| **Testiranje** | [Vitest 4](https://vitest.dev/) (4334 testov + globalSetup embedded PG) |
+| **Testiranje** | [Vitest 4](https://vitest.dev/) (4344 testov + globalSetup embedded PG) |
 | **Paketni upravitelj** | [Bun](https://bun.sh/) |
 | **Linting** | ESLint 9 + eslint-config-next |
 
@@ -510,7 +517,7 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `bun run dev` | Zažene Next.js dev server (port 3000) |
 | `bun run build` | Produkcijska build (build-prepare: generate + migrate deploy + seed) |
 | `bun run start` | Zažene produkcijski server |
-| `bun run test` | Vsi testi (vitest, 4334, embedded PG prek globalSetup) |
+| `bun run test` | Vsi testi (vitest, 4344, embedded PG prek globalSetup) |
 | `bun run check` | tsc --noEmit + vitest run (en ukaz za vse) |
 | `bunx tsc --noEmit` | Tipska kontrola celotnega projekta (trenutno 0 napak) |
 | `bun run lint` | ESLint preverjanje |

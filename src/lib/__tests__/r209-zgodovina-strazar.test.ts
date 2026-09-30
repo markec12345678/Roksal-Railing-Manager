@@ -193,13 +193,20 @@ describe('R209 stražar: UI zgodovina na kartici naročila', () => {
 
   it('statusZnackaCls ogledala barvne družine značk na kartici (vsi dark: na isti vrstici)', () => {
     // R234: konec okna pomaknjen na NOVO nevtralno vejo (žetoni — R232
-    // STATE_BADGE vzorec; sorojenci red/green/blue/amber ostanejo semantični,
+    // STATE_BADGE vzorec; sorojenci red/green/blue ostanejo semantični,
     // vsi ŠE VEDNO znotraj okna — precedens R180/R229 pin sinhronizacij).
+    // R311 pin shift (izrecno, precedens R306/R309/R310): POTRJENO amber
+    // veja je harmonizirana iz surove palete (bg-amber-50
+    // dark:bg-amber-950/40) na roksal žetone (bg-roksal-amber/10 +
+    // text-roksal-ink + border-roksal-amber/40 — punch Napaka R310 oblika;
+    // žeton temsko prilagodljiv PO NARAVI; modra/rdeča/zelena sorodnica
+    // ostane). Regresija: surovi amber mirror se ne sme vrniti.
     const okno = oknoMed(src, 'function statusZnackaCls', "'bg-muted text-muted-foreground border-border'")
     expect(okno).toContain('bg-red-50 dark:bg-red-950/40')
     expect(okno).toContain('bg-green-50 dark:bg-green-950/40')
     expect(okno).toContain('bg-blue-50 dark:bg-blue-950/40')
-    expect(okno).toContain('bg-amber-50 dark:bg-amber-950/40')
+    expect(okno).toContain('bg-roksal-amber/10 text-roksal-ink border-roksal-amber/40')
+    expect(okno).not.toContain('bg-amber-50 dark:bg-amber-950/40')
   })
 
   it('0 novih hex v R209 oknih (tokeni, r166/r172 družina)', () => {
