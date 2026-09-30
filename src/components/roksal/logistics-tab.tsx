@@ -124,6 +124,11 @@ import {
 // NIČ drugega okna/sorta; skleb UVOŽEN tedenskiEkipaPdfSklep — PETI
 // potrošnik ENEGA niza). route NIČ (client+lib only).
 import { tedenskiEkipaDanRazgled } from '@/lib/tedenski-ekipa-dnevi'
+// R306 — oprema cikel dokaz (36. člen 'izvozi' družine): ZASLONSKI brat
+// Cikel PDF R266 + Cikel CSV R297 — ČIST filter pregleda na akcijsko opremo
+// (4 žigi pariteta PDF/CSV; vrstic = kosovi, ziga = vsota žigov — iskren
+// dvojni števec). route NIČ (client+lib only).
+import { opremaCikelDokaz } from '@/lib/oprema-cikel-dokaz'
 import { cenikDatumIso } from '@/lib/cenik-pdf'
 import { QC_TEMPLATE, computePassed, countDefects } from '@/lib/qc-gate'
 import { IEV_TEMPLATE } from '@/lib/installation-evidence'
@@ -509,9 +514,20 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
     zadnjiServis: e.zadnjiServis,
     assignmentsCount: e.assignmentsCount,
   })), [equipment])
-  const opremaCikelPovzetek = useMemo(
-    () => (equipment.length > 0 ? opremaCikelPregled(opremaCikelVhodi).povzetek : null),
+  // R306 — EN VIR refactor: ENA izpeljava pregleda R266 (NIČ dvojnega
+  // računa) — povzetek (mini-vrstica/toast WYSIWYG) IN vrste (dokaz zaslonu
+  // 36. člen) prihajata iz ISTEGA memo (vzorec EN VIR R121/R235).
+  const opremaCikel = useMemo(
+    () => (equipment.length > 0 ? opremaCikelPregled(opremaCikelVhodi) : null),
     [equipment.length, opremaCikelVhodi],
+  )
+  const opremaCikelPovzetek = opremaCikel === null ? null : opremaCikel.povzetek
+  // R306 — 36. člen: dokaz NA ZASLONU (EN VIR — IZ memo opremaCikel R266,
+  // NIKOLI iz drugih seznamov; vzorec R305 memo EN VIR). null = mirror
+  // pregleda (0 opreme — iskrena odsotnost bloka, pregled fail-closed).
+  const opremaCikelDokazRazgled = useMemo(
+    () => (opremaCikel === null ? null : opremaCikelDokaz(opremaCikel.vrste)),
+    [opremaCikel],
   )
   const { toast } = useToast()
 
@@ -2407,6 +2423,90 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                 <span title="Merska oprema z kalibracijskim rokom, ki je že pretekel — akcija" className="rounded-full border border-roksal-red/40 bg-roksal-red/10 px-2 py-0.5 text-2xs font-medium text-roksal-red">
                   {opremaCikelPovzetek.kalPotecena} potečena kalibracija
                 </span>
+              )}
+            </div>
+          )}
+          {/* R306 — 36. člen (issue #1 'izvozi' družina — bralni ZASLONSKI
+              član): OPREMA CIKEL DOKAZ NA ZASLONU — mini-vrstica pokaže
+              ŠTEVCE, dokaz pokaže KATERA oprema potrebuje akcijo (Cikel PDF
+              R266 = tisk, Cikel CSV R297 = Excel, ZASLON = takoj). EN VIR
+              opremaCikelDokazRazgled (izpeljan iz memo opremaCikel R266 —
+              ISTI žigi kot PDF/CSV celice = WYSIWYG; vzorec R300/R305);
+              NENEMERSKA oprema in brez-lokacije NISTA žiga (ni alarm);
+              kos z več žigi = ENA vrstica (iskren dvojni števec vrstic/
+              žigov v sklepu — N ≤ M); 0 žigov = iskren zelen žig (nikoli
+              skrit — kanon R292). Definicijski naslov izreče PRAVILA —
+              MANDATORY STIL; 0 novih hex. */}
+          {opremaCikelDokazRazgled !== null && (
+            <div
+              className="rounded-lg border border-border bg-muted/40 px-3 py-2"
+              role="group"
+              aria-label="Oprema, ki potrebuje akcijo"
+              data-testid="oprema-cikel-dokaz"
+              title="Oprema, ki potrebuje akcijo — ISTI žigi kot Cikel PDF in Cikel CSV: zapadel pregled (rdeče — rok pretekel), nezabeležen pregled (amber — interval brez zapisa, iskreno NEZNANO), potečena kalibracija (rdeče — merska oprema), manjkajoč kalibracijski rok (amber). Nemerska oprema (kalibracija ne zahteva) NI alarm; brez lokacije NI akcija (mini-vrstica jo že izreče). Kos z več žigi = ena vrstica; sklep izreče obe števci (vrstic ≤ žigov — pariteta mini-vrstice, ki šteje per žig). ZASLON = takoj na pogled — brez tiska in izvoza."
+            >
+              <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
+                <p className="text-2xs font-medium text-roksal-ink">Oprema za poskrbeti</p>
+                {opremaCikelDokazRazgled.ziga === 0 ? (
+                  <p
+                    className="text-2xs text-muted-foreground"
+                    data-testid="oprema-cikel-dokaz-prazno"
+                    title="Vsa vidna oprema je brez zapadlih pregledov, nezabeleženih intervalov in potečenih kalibracij (iskren zelen žig — nikoli skrit, kanon R292)."
+                  >
+                    Vsa vidna oprema ({opremaCikelDokazRazgled.vrstic} {kosBeseda(opremaCikelDokazRazgled.vrstic)}) je brez zapadlih pregledov in potečenih kalibracij.
+                  </p>
+                ) : (
+                  <p
+                    className="text-2xs text-muted-foreground"
+                    data-testid="oprema-cikel-dokaz-sklep"
+                    title="Iskren dvojni števec: vrstic = kosovi z vsaj enim žigom, žigov = vsota žigov (kos z več žigi šteje več — ISTO resnico kot mini-vrstica per žig)."
+                  >
+                    Vrstic {opremaCikelDokazRazgled.vrstic} · žigov {opremaCikelDokazRazgled.ziga}.
+                  </p>
+                )}
+              </div>
+              {opremaCikelDokazRazgled.ziga > 0 && (
+                <ul className="mt-1.5 space-y-1">
+                  {opremaCikelDokazRazgled.vrstice.map((v) => (
+                    <li key={v.id} className="rounded border border-border/60 bg-background/60 px-2 py-1">
+                      <div className="flex flex-wrap items-baseline gap-x-1.5 text-2xs">
+                        <span className="font-medium text-roksal-ink">{v.naziv}</span>
+                        <span className="text-muted-foreground">{v.tip}</span>
+                        <span className="text-muted-foreground">{v.status}</span>
+                        <span className="text-muted-foreground" title={v.lokacija === null ? 'Brez vpisane lokacije — higienski odpad, NI akcija (mini-vrstica izreče števec).' : `Lokacija: ${v.lokacija}`}>
+                          {v.lokacija ?? '—'}
+                        </span>
+                      </div>
+                      <div className="mt-0.5 flex flex-wrap gap-1">
+                        {v.pregledZapadel && (
+                          <span title="Interval + zadnji pregled znana in rok je pretekel (R145 jedro) — akcija. ISTI žig kot Cikel PDF/CSV." className="rounded-full border border-roksal-red/40 bg-roksal-red/10 px-2 py-0.5 text-2xs font-medium text-roksal-red">
+                            zapadel pregled{v.naslednjiPregled !== null ? ` do ${cenikDatumIso(v.naslednjiPregled)}` : ''}
+                          </span>
+                        )}
+                        {v.pregledNezabelezen && (
+                          <span title="Interval brez zabeleženega pregleda — iskreno NEZNANO (amber, NI rdeč alarm — pariteta PDF/CSV)." className="rounded-full border border-roksal-amber/40 bg-roksal-amber/10 px-2 py-0.5 text-2xs font-medium text-roksal-amber">
+                            pregled nezabeležen
+                          </span>
+                        )}
+                        {v.kalPotecena && (
+                          <span title="Merska oprema z kalibracijskim rokom, ki je že pretekel — akcija. ISTI žig kot Cikel PDF/CSV." className="rounded-full border border-roksal-red/40 bg-roksal-red/10 px-2 py-0.5 text-2xs font-medium text-roksal-red">
+                            kalibracija potečena{v.kalRok !== null ? ` do ${cenikDatumIso(v.kalRok)}` : ''}
+                          </span>
+                        )}
+                        {v.kalManjkaRok && (
+                          <span title="Merska oprema brez vpisanega kalibracijskega roka — iskreno NEZNANO (amber — pariteta PDF/CSV)." className="rounded-full border border-roksal-amber/40 bg-roksal-amber/10 px-2 py-0.5 text-2xs font-medium text-roksal-amber">
+                            kalibracija brez roka
+                          </span>
+                        )}
+                        {v.kalNeZahteva && (
+                          <span title="Nemerska oprema — kalibracija ne zahteva (sivo, NI alarm — pariteta PDF/CSV)." className="rounded-full border border-border bg-muted px-2 py-0.5 text-2xs text-muted-foreground">
+                            kalibracija ne zahteva
+                          </span>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
               )}
             </div>
           )}

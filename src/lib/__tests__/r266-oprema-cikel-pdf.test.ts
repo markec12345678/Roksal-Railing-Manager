@@ -318,11 +318,13 @@ describe('R266 — komponenta (logistics-tab) — pill, mini-vrstica, handler', 
     expect(mini).toContain('{kosBeseda(opremaCikelPovzetek.oprem)}')
   })
 
-  it('memo PRED pogojnimi vračanji (pravila hooks) + ENA izpeljava ≥ 2 klici opremaCikelPregled (memo + handler — WYSIWYG, R263 test dokaz)', () => {
-    expect(komponenta.indexOf('const opremaCikelPovzetek')).toBeGreaterThan(-1)
-    expect(komponenta.indexOf('const opremaCikelPovzetek')).toBeLessThan(komponenta.indexOf('if (loadError)'))
+  it('memo PRED pogojnimi vračanji (pravila hooks) + ENA izpeljava ≥ 2 klici opremaCikelPregled (memo + handler — WYSIWYG, R263 test dokaz) — R306 pin shift: EN VIR refactor (memo = POLNI pregled, povzetek izpeljan; dokaz 36. člen IZ ISTEGA memo — NIČ dvojnega računa)', () => {
+    expect(komponenta.indexOf('const opremaCikel = useMemo(')).toBeGreaterThan(-1)
+    expect(komponenta.indexOf('const opremaCikel = useMemo(')).toBeLessThan(komponenta.indexOf('if (loadError)'))
     expect((komponenta.match(/opremaCikelPregled\(/g) ?? []).length).toBeGreaterThanOrEqual(2)
-    expect(komponenta).toContain('opremaCikelPregled(opremaCikelVhodi).povzetek')
+    expect(komponenta).toContain('opremaCikelPregled(opremaCikelVhodi)') // ENA izpeljava memo (R306)
+    expect(komponenta).toContain('const opremaCikelPovzetek = opremaCikel === null ? null : opremaCikel.povzetek') // izpeljan — NIČ dvojnega
+    expect(komponenta).toContain('opremaCikelDokaz(opremaCikel.vrste)') // dokaz 36. člen IZ ISTEGA pregleda
   })
 
   it('handler: FRESH paginirani fetch VSE opreme — R297 pin shift: fetch mehanika v ENO funkcijo pridobiOpremoVnosi (PDF + CSV brat, ENA izpeljava vira — precedens R180/R294/R295/R296) + dvoklik guard + fail-closed PREJ (Ni vpisane opreme) → ENA izpeljava → generate; EN now; TypeError viden razlog', () => {
