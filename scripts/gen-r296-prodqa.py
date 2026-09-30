@@ -86,5 +86,78 @@ s = s.replace(
     'echo "=== R296 PROD QA — R290+R291+R292+R293+R294+R295+R296 ŽIVO SKUPAJ ==="',
 )
 
+# --- R297 POPRAVEK harvesta (prvi resnični stale tek razkril bug): per-tab
+# clear+snapshot namesto ENEGA skupnega harvesta nad privzetim bufferjem 250
+# (9-12 zavihkov × slike/pisave/chunks preplavi buffer; reload med sejo
+# ponastavi vnose — 33/44 čankov = lažni MISS stale-dokaza). Stale dispatch
+# lista se hkrati poravna na LIVE 12 zavihkov (pokritost = pokritost).
+STALE_OLD = """  OUT=/tmp/r296-prod-chunks
+  mkdir -p "$OUT" && rm -f "$OUT"/chunk-*.js "$OUT"/chunk-urls.txt
+  for d in '{"tab":"measurements","more":null,"subTab":null,"osnutek":null,"filter":null}' '{"tab":"inventory","more":null,"subTab":null,"osnutek":null,"filter":null}' '{"tab":"more","more":"documents","subTab":null,"osnutek":null,"filter":null}' '{"tab":"more","more":"crm","subTab":null,"osnutek":null,"filter":null}' '{"tab":"more","more":"material","subTab":"orders","subTab2":null,"osnutek":null,"filter":null}' '{"tab":"inclinometer","more":null,"subTab":null,"osnutek":null,"filter":null}' '{"tab":"more","more":"logistics","more2":null,"osnutek":null,"filter":null}' '{"tab":"more","more":"invoices","more2":null,"osnutek":null,"filter":null}' '{"tab":"more","more":"vodja","more2":null,"osnutek":null,"filter":null}'; do
+    eb_dispatch "$d"
+    eb_cakaj 3
+  done
+  agent-browser eval "JSON.stringify(performance.getEntriesByType('resource').map(e=>e.name).filter(u=>u.includes('/_next/static/chunks/')&&u.endsWith('.js')))" 2>&1 | tail -1 > /tmp/r296-chunkurls-raw.json
+  python3 -c "import json; raw=open('/tmp/r296-chunkurls-raw.json').read().strip(); arr=json.loads(raw); arr=json.loads(arr) if isinstance(arr,str) else arr; open('/tmp/r296-chunkurls.txt','w').write('\\n'.join(arr)+'\\n')" || { echo "PY PARSE FAIL — abort"; exit 1; }
+  cp /tmp/r296-chunkurls.txt "$OUT"/chunk-urls.txt"""
+
+LIVE_OLD = """OUT=/tmp/r296-prod-chunks
+mkdir -p "$OUT" && rm -f "$OUT"/chunk-*.js "$OUT"/chunk-urls.txt
+for d in '{"tab":"measurements","more":null,"subTab":null,"osnutek":null,"filter":null}' '{"tab":"inventory","more":null,"subTab":null,"osnutek":null,"filter":null}' '{"tab":"more","more":"documents","more2":null,"osnutek":null,"filter":null}' '{"tab":"more","more":"material","subTab":"suppliers","subTab2":null,"osnutek":null,"filter":null}' '{"tab":"more","more":"crm","more2":null,"osnutek":null,"filter":null}' '{"tab":"more","more":"material","subTab":"orders","subTab2":null,"osnutek":null,"filter":null}' '{"tab":"more","more":"logistics","more2":null,"osnutek":null,"filter":null}' '{"tab":"more","more":"invoices","more2":null,"osnutek":null,"filter":null}' '{"tab":"inclinometer","more":null,"subTab":null,"osnutek":null,"filter":null}' '{"tab":"more","more":"vodja","more2":null,"osnutek":null,"filter":null}' '{"tab":"more","more":"teren","more2":null,"osnutek":null,"filter":null}' '{"tab":"more","more":"ekipa","more2":null,"osnutek":null,"filter":null}'; do
+  eb_dispatch "$d"
+  eb_cakaj 3
+done
+agent-browser eval "JSON.stringify(performance.getEntriesByType('resource').map(e=>e.name).filter(u=>u.includes('/_next/static/chunks/')&&u.endsWith('.js')))" 2>&1 | tail -1 > /tmp/r296-chunkurls-raw.json
+python3 -c "import json; raw=open('/tmp/r296-chunkurls-raw.json').read().strip(); arr=json.loads(raw); arr=json.loads(arr) if isinstance(arr,str) else arr; open('/tmp/r296-chunkurls.txt','w').write('\\n'.join(arr)+'\\n')" || { echo "PY PARSE FAIL — abort"; exit 1; }
+cp /tmp/r296-chunkurls.txt "$OUT"/chunk-urls.txt"""
+
+# dejanski nizi iz vira (brez subTab2/more2 izmišljotin — EXACT iz r295):
+STALE_OLD = STALE_OLD.replace('"subTab":"orders","subTab2":null', '"subTab":"orders"')
+STALE_OLD = STALE_OLD.replace('"more2":null', '"subTab":null')
+LIVE_OLD = LIVE_OLD.replace('"subTab":"suppliers","subTab2":null', '"subTab":"suppliers"')
+LIVE_OLD = LIVE_OLD.replace('"subTab":"orders","subTab2":null', '"subTab":"orders"')
+LIVE_OLD = LIVE_OLD.replace('"more2":null', '"subTab":null')
+
+HARVEST_SNAPSHOT = """agent-browser eval "(()=>{{performance.setResourceTimingBufferSize(10000); return 'buf';}})()" 2>&1 | tail -1 > /dev/null
+{indent}eb_dispatch "$d"
+{indent}eb_cakaj 3
+{indent}agent-browser eval "JSON.stringify(performance.getEntriesByType('resource').map(e=>e.name).filter(u=>u.includes('/_next/static/chunks/')&&u.endsWith('.js')))" 2>&1 | tail -1 >> {lines}"""
+
+LIVE_LIST = LIVE_OLD.split("for d in '", 1)[1].split("'; do", 1)[0]
+FINAL_SHOT = "{indent}agent-browser eval \"JSON.stringify(performance.getEntriesByType('resource').map(e=>e.name).filter(u=>u.includes('/_next/static/chunks/')&&u.endsWith('.js')))\" 2>&1 | tail -1 >> {lines}"
+STALE_NEW = """  OUT=/tmp/r296-prod-chunks
+  mkdir -p "$OUT" && rm -f "$OUT"/chunk-*.js "$OUT"/chunk-urls.txt
+  : > /tmp/r296-chunkurls-lines-stale.txt
+  # R297 lekcija (prvi resnični stale + 2. LIVE tek): EN skupni harvest je
+  # NEDETERMINISTIČEN (privzeti ResourceTiming buffer 250 se preplavi pri
+  # 9-12 zavihkov; reload med sejo — med Vercel deployom! — ponastavi vnose;
+  # per-tab CLEAR pa izbriše že naložene čanke, ker ponovni obisk NE naloga
+  # nič novega → 18/44). UNION oblika: buffer 10000 ENKRAT pred zanko +
+  # per-tab posamezne slike BREZ clear (zaščita pred reload) + KONČNI en strel
+  # (polna akumulacija — zaščita pred poznimi nalaganji) → merge + dedup.
+  for d in '{LIST}'; do
+{SNAP}
+  done
+{FINAL}
+  python3 /home/z/my-project/scripts/merge-chunkurls.py /tmp/r296-chunkurls-lines-stale.txt /tmp/r296-chunkurls.txt || {{ echo "PY MERGE FAIL — abort"; exit 1; }}
+  cp /tmp/r296-chunkurls.txt "$OUT"/chunk-urls.txt""".format(LIST=LIVE_LIST, SNAP=HARVEST_SNAPSHOT.format(indent='  ', lines='/tmp/r296-chunkurls-lines-stale.txt'), FINAL=FINAL_SHOT.format(indent='  ', lines='/tmp/r296-chunkurls-lines-stale.txt'))
+
+LIVE_NEW = """OUT=/tmp/r296-prod-chunks
+mkdir -p "$OUT" && rm -f "$OUT"/chunk-*.js "$OUT"/chunk-urls.txt
+: > /tmp/r296-chunkurls-lines-live.txt
+# R297 lekcija: ISTA UNION oblika kot stale veja (buffer 10000 + per-tab
+# slike brez clear + končni en strel + merge/dedup — glej komentar tam).
+for d in '{LIST}'; do
+{SNAP}
+done
+{FINAL}
+python3 /home/z/my-project/scripts/merge-chunkurls.py /tmp/r296-chunkurls-lines-live.txt /tmp/r296-chunkurls.txt || {{ echo "PY MERGE FAIL — abort"; exit 1; }}
+cp /tmp/r296-chunkurls.txt "$OUT"/chunk-urls.txt""".format(LIST=LIVE_LIST, SNAP=HARVEST_SNAPSHOT.format(indent='  ', lines='/tmp/r296-chunkurls-lines-live.txt'), FINAL=FINAL_SHOT.format(indent='', lines='/tmp/r296-chunkurls-lines-live.txt'))
+
+assert STALE_OLD in s, 'STALE harvest blok ni najden'
+s = s.replace(STALE_OLD, STALE_NEW)
+assert LIVE_OLD in s, 'LIVE harvest blok ni najden'
+s = s.replace(LIVE_OLD, LIVE_NEW)
+
 open(DST, 'w').write(s)
 print('r296-prod-qa.sh zgeneriran:', len(s), 'znakov')

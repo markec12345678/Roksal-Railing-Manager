@@ -1,10 +1,10 @@
 #!/bin/bash
-# R296 — PRVA naloga (worklog R297): potrditi R290+R291+R292+R293+R294+R295+R296 SKUPAJ na produ.
+# R297 — PRVA naloga (worklog R298): potrditi R290+R291+R292+R293+R294+R295+R296+R297 SKUPAJ na produ.
 #   Z0  build-guard (EPOCH): health build > R295 commit čas (git log —
 #       self-contained meja; push sledi commitu v sekundah, zato je commit-čas
 #       STROŽJA in pravilna meja: med commitom in pushom ni Vercel builda)
-#       → R296 deploy potrjen (nosi R290+…+R296 — kanon R280/R284),
-#       polni LIVE needle teki (R296 ICS ×11 + R295 koledar CSV + mini-vrstica ×9 + R294 ×9 + regresije).
+#       → R297 deploy potrjen (nosi R290+…+R297 — kanon R280/R284),
+#       polni LIVE needle teki (R297 Oprema CSV ×10 + R296 ICS ×11 + R295 koledar CSV + mini-vrstica ×9 + R294 ×9 + regresije).
 #       build ≤ meja → **ESKALACIJA veja** (kanon R258: prod stale ni koda-bug
 #       — lokalni buildi ✓; needleji bi lažno FAILali). Izvede se ISKREN
 #       stale-dokaz: R289/R288/R287/R227 LIVE needleji (zdrav vzorec stale
@@ -22,16 +22,16 @@
 set -u
 source /home/z/my-project/scripts/e2e-lib.sh
 PROD="https://roksal-railing-manager.vercel.app"
-R296_COMMIT_ISO="$(git log --format='%cI ::: %s' 2>/dev/null | awk -F' ::: ' '$2 ~ /^R296 —/ {print $1; exit}')"
-[ -n "$R296_COMMIT_ISO" ] || { echo "FAIL-CLOSED: R296 commita ni v git zgodovini — EPOCH guard brez meje"; exit 1; }
-R296_PUSH="$(date -u -d "$R296_COMMIT_ISO" +%Y-%m-%dT%H:%M:%S)"
-echo "R296 meja (commit čas, UTC): $R296_PUSH"
+R297_COMMIT_ISO="$(git log --format='%cI ::: %s' 2>/dev/null | awk -F' ::: ' '$2 ~ /^R297 —/ {print $1; exit}')"
+[ -n "$R297_COMMIT_ISO" ] || { echo "FAIL-CLOSED: R297 commita ni v git zgodovini — EPOCH guard brez meje"; exit 1; }
+R297_PUSH="$(date -u -d "$R297_COMMIT_ISO" +%Y-%m-%dT%H:%M:%S)"
+echo "R297 meja (commit čas, UTC): $R297_PUSH"
 
-echo "=== Z0: prod build-guard — R296 deploy detekcija (EPOCH primerjava) ==="
+echo "=== Z0: prod build-guard — R297 deploy detekcija (EPOCH primerjava) ==="
 BUILD=$(curl -s --max-time 15 "$PROD/api/public/health" | python3 -c "import json,sys; print(json.load(sys.stdin).get('build',''))" || true)
 echo "PROD build: $BUILD"
 STALE=0
-python3 - "$BUILD" "$R296_PUSH" <<'PYEOF' || STALE=1
+python3 - "$BUILD" "$R297_PUSH" <<'PYEOF' || STALE=1
 import sys
 from datetime import datetime
 build = sys.argv[1]
@@ -46,8 +46,8 @@ PYEOF
 if [ "$STALE" = "1" ]; then
   echo ""
   echo "████████████████████████████████████████████████████████████████"
-  echo "██ ESKALACIJA — PROD STALE: build $BUILD ≤ R296 commit meja ($R296_PUSH)."
-  echo "██ R295 (ŽIVO) + R296 pričakujeta SKUPNI deploy (kanon R280/R284)."
+  echo "██ ESKALACIJA — PROD STALE: build $BUILD ≤ R297 commit meja ($R297_PUSH)."
+  echo "██ R296 (ŽIVO) + R297 pričakujeta SKUPNI deploy (kanon R280/R284)."
   echo "██ Kanon R258: deployment pipeline event, NI koda-bug. Eksplicitna"
   echo "██ eskalacija LASTNIKU (Vercel dashboard — deploy stuck/limit)."
   echo "██ Zdaj: ISKREN stale-dokaz (stale zdrav LIVE needleji; ZERO must_miss — skew lekcija R294)."
@@ -57,12 +57,12 @@ if [ "$STALE" = "1" ]; then
   eb_zapri_vodic
 
   echo "=== Z1b-stale: verzije ruta ŽIVO (ZERO-MUTACIJA GET) ==="
-  agent-browser eval "(()=>{window.__verz=null; window.__verzStatus=null; fetch('/api/measurements/r296-ne-obstojeci-id-probe/verzije',{credentials:'same-origin'}).then(r=>{window.__verzStatus=r.status; return r.json();}).then(d=>{window.__verz=d;}).catch(e=>{window.__verzErr=String(e)}); return 'poslano';})()" 2>&1 | tail -1
+  agent-browser eval "(()=>{window.__verz=null; window.__verzStatus=null; fetch('/api/measurements/r297-ne-obstojeci-id-probe/verzije',{credentials:'same-origin'}).then(r=>{window.__verzStatus=r.status; return r.json();}).then(d=>{window.__verz=d;}).catch(e=>{window.__verzErr=String(e)}); return 'poslano';})()" 2>&1 | tail -1
   eb_cakaj 3
-  agent-browser eval "JSON.stringify({status:window.__verzStatus, body:window.__verz??null, napaka:window.__verzErr??null})" 2>&1 | tail -1 > /tmp/r296-z1b.json
+  agent-browser eval "JSON.stringify({status:window.__verzStatus, body:window.__verz??null, napaka:window.__verzErr??null})" 2>&1 | tail -1 > /tmp/r297-z1b.json
   python3 - <<'PYEOF' || exit 1
 import json
-raw = open('/tmp/r296-z1b.json').read().strip()
+raw = open('/tmp/r297-z1b.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['napaka'] is None, 'Z1b mrežna napaka: ' + json.dumps(d)
@@ -72,12 +72,12 @@ print('Z1b OK — stale build zdrav: verzije ruta 404 ŽIVO (R276+ regresa)')
 PYEOF
 
   echo "=== Z3-stale: v99 sync gate (ZERO-MUTACIJA) ==="
-  agent-browser eval "(()=>{window.__v99=null; window.__v99err=null; fetch('/api/sync',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify([{id:'r296-prod-v99-probe-'+Date.now(),customerName:'r296 probe v99',contractVersion:99}])}).then(r=>r.json()).then(d=>{window.__v99=d;}).catch(e=>{window.__v99err=String(e)}); return 'poslano';})()" 2>&1 | tail -1
+  agent-browser eval "(()=>{window.__v99=null; window.__v99err=null; fetch('/api/sync',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify([{id:'r297-prod-v99-probe-'+Date.now(),customerName:'r297 probe v99',contractVersion:99}])}).then(r=>r.json()).then(d=>{window.__v99=d;}).catch(e=>{window.__v99err=String(e)}); return 'poslano';})()" 2>&1 | tail -1
   eb_cakaj 3
-  agent-browser eval "JSON.stringify({odgovor:window.__v99??null, napaka:window.__v99err??null})" 2>&1 | tail -1 > /tmp/r296-z3.json
+  agent-browser eval "JSON.stringify({odgovor:window.__v99??null, napaka:window.__v99err??null})" 2>&1 | tail -1 > /tmp/r297-z3.json
   python3 - <<'PYEOF' || exit 1
 import json
-raw = open('/tmp/r296-z3.json').read().strip()
+raw = open('/tmp/r297-z3.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['napaka'] is None, 'Z3 mrežna napaka: ' + json.dumps(d)
@@ -90,9 +90,9 @@ print('Z3 OK — stale build zdrav: v99 sync gate ŽIVO (fail-closed, ZERO-MUTAC
 PYEOF
 
   echo "=== Z2-stale: čanki — stale-dokaz needleji ==="
-  OUT=/tmp/r296-prod-chunks
+  OUT=/tmp/r297-prod-chunks
   mkdir -p "$OUT" && rm -f "$OUT"/chunk-*.js "$OUT"/chunk-urls.txt
-  : > /tmp/r296-chunkurls-lines-stale.txt
+  : > /tmp/r297-chunkurls-lines-stale.txt
   # R297 lekcija (prvi resnični stale + 2. LIVE tek): EN skupni harvest je
   # NEDETERMINISTIČEN (privzeti ResourceTiming buffer 250 se preplavi pri
   # 9-12 zavihkov; reload med sejo — med Vercel deployom! — ponastavi vnose;
@@ -104,11 +104,11 @@ PYEOF
 agent-browser eval "(()=>{performance.setResourceTimingBufferSize(10000); return 'buf';})()" 2>&1 | tail -1 > /dev/null
   eb_dispatch "$d"
   eb_cakaj 3
-  agent-browser eval "JSON.stringify(performance.getEntriesByType('resource').map(e=>e.name).filter(u=>u.includes('/_next/static/chunks/')&&u.endsWith('.js')))" 2>&1 | tail -1 >> /tmp/r296-chunkurls-lines-stale.txt
+  agent-browser eval "JSON.stringify(performance.getEntriesByType('resource').map(e=>e.name).filter(u=>u.includes('/_next/static/chunks/')&&u.endsWith('.js')))" 2>&1 | tail -1 >> /tmp/r297-chunkurls-lines-stale.txt
   done
-  agent-browser eval "JSON.stringify(performance.getEntriesByType('resource').map(e=>e.name).filter(u=>u.includes('/_next/static/chunks/')&&u.endsWith('.js')))" 2>&1 | tail -1 >> /tmp/r296-chunkurls-lines-stale.txt
-  python3 /home/z/my-project/scripts/merge-chunkurls.py /tmp/r296-chunkurls-lines-stale.txt /tmp/r296-chunkurls.txt || { echo "PY MERGE FAIL — abort"; exit 1; }
-  cp /tmp/r296-chunkurls.txt "$OUT"/chunk-urls.txt
+  agent-browser eval "JSON.stringify(performance.getEntriesByType('resource').map(e=>e.name).filter(u=>u.includes('/_next/static/chunks/')&&u.endsWith('.js')))" 2>&1 | tail -1 >> /tmp/r297-chunkurls-lines-stale.txt
+  python3 /home/z/my-project/scripts/merge-chunkurls.py /tmp/r297-chunkurls-lines-stale.txt /tmp/r297-chunkurls.txt || { echo "PY MERGE FAIL — abort"; exit 1; }
+  cp /tmp/r297-chunkurls.txt "$OUT"/chunk-urls.txt
   i=0
   while read -r url; do
     [ -z "$url" ] && continue
@@ -169,13 +169,13 @@ PYEOF2
   echo "██ (needleji + Z1b + Z3 ŽIVO; ZERO must_miss — skew protection lekcija R294)."
   echo "██ ESKALACIJA LASTNIKU: Vercel dashboard — deploy stuck/limit (4. zapis, stale od 20:46:30Z)."
   echo "██ Runda nadaljuje LOKALNO (kanon R280/R284: naslednji push nosi"
-  echo "██ vse generacije — needleji pokrijejo R290+R291+R292+R293+R294+R295+R296)."
+  echo "██ vse generacije — needleji pokrijejo R290+R291+R292+R293+R294+R295+R296+R297)."
   echo "████████████████████████████████████████████████████████████████"
   exit 0
 fi
 
-echo "R296 deploy potrjen (build $BUILD > R296 commit meja $R296_PUSH) — polni LIVE teki"
-echo "OPOMBA: deploy je nosil VSE generacije (R290+R291+R292+R293+R294+R295+R296 — kanon R280/R284)"
+echo "R297 deploy potrjen (build $BUILD > R297 commit meja $R297_PUSH) — polni LIVE teki"
+echo "OPOMBA: deploy je nosil VSE generacije (R290+R291+R292+R293+R294+R295+R296+R297 — kanon R280/R284)"
 
 eb_odpri_in_prijavi || { echo "LOGIN FAIL — abort"; agent-browser close --all > /dev/null 2>&1; exit 1; }
 eb_zapri_vodic
@@ -184,19 +184,19 @@ echo "=== Z1: meritve tab ŽIVO — sync žig (POGOJNO — spot portfel podatkov
 eb_dispatch '{"tab":"measurements","more":null,"subTab":null,"osnutek":null,"filter":null}'
 if eb_pocakaj_na "(()=>{return !!document.querySelector('button[aria-label^=\"Pokaži zgodovino verzij meritve\"]');})()" 16; then
   eb_cakaj 2
-  agent-browser eval "(()=>{const syncPill=[...document.querySelectorAll('span.cursor-help')].find(x=>(x.getAttribute('title')||'').startsWith('Sinhronizacijsko stanje:')); const viriMini=[...document.querySelectorAll('span.cursor-help')].find(x=>(x.textContent||'').startsWith('Viri (viden seznam):')); return JSON.stringify({syncPill:syncPill?(syncPill.getAttribute('title')||'').slice(0,45):null, viriMini:viriMini?viriMini.textContent.trim():null, err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r296-z1.json
-  python3 -c "import json; r=json.load(open('/tmp/r296-z1.json')); d=json.loads(r) if isinstance(r,str) else r; t = 'R281 sync žig ŽIVO (' + d['syncPill'] + ' …)' if d['syncPill'] else 'R281 OPOMBA: sync žig NE prisoten — spot portfel brez sync metadata (iskrena praznina — pogojni probe po kanonu r277 Z1)'; v = ' · R283 VIRI MINI ŽIVO (' + d['viriMini'] + ')' if d['viriMini'] else ' · R283 VIRI MINI NE prisoten — spot seznam brez virov (iskrena praznina — pogojni)'; print('Z1 OK — meritve UI ŽIVO · ' + t + v)" || exit 1
+  agent-browser eval "(()=>{const syncPill=[...document.querySelectorAll('span.cursor-help')].find(x=>(x.getAttribute('title')||'').startsWith('Sinhronizacijsko stanje:')); const viriMini=[...document.querySelectorAll('span.cursor-help')].find(x=>(x.textContent||'').startsWith('Viri (viden seznam):')); return JSON.stringify({syncPill:syncPill?(syncPill.getAttribute('title')||'').slice(0,45):null, viriMini:viriMini?viriMini.textContent.trim():null, err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r297-z1.json
+  python3 -c "import json; r=json.load(open('/tmp/r297-z1.json')); d=json.loads(r) if isinstance(r,str) else r; t = 'R281 sync žig ŽIVO (' + d['syncPill'] + ' …)' if d['syncPill'] else 'R281 OPOMBA: sync žig NE prisoten — spot portfel brez sync metadata (iskrena praznina — pogojni probe po kanonu r277 Z1)'; v = ' · R283 VIRI MINI ŽIVO (' + d['viriMini'] + ')' if d['viriMini'] else ' · R283 VIRI MINI NE prisoten — spot seznam brez virov (iskrena praznina — pogojni)'; print('Z1 OK — meritve UI ŽIVO · ' + t + v)" || exit 1
 else
   echo "Z1 OPOMBA: meritve UI ni dosegljiva spot seji (MONTER skoping?) — UI probe preskočen, ruta probe Z1b ostaja obvezen"
 fi
 
 echo "=== Z1b: verzije ruta ŽIVO — 404 + R276 žična vrstica (ZERO-MUTACIJA GET) ==="
-agent-browser eval "(()=>{window.__verz=null; window.__verzStatus=null; fetch('/api/measurements/r296-ne-obstojeci-id-probe/verzije',{credentials:'same-origin'}).then(r=>{window.__verzStatus=r.status; return r.json();}).then(d=>{window.__verz=d;}).catch(e=>{window.__verzErr=String(e)}); return 'poslano';})()" 2>&1 | tail -1
+agent-browser eval "(()=>{window.__verz=null; window.__verzStatus=null; fetch('/api/measurements/r297-ne-obstojeci-id-probe/verzije',{credentials:'same-origin'}).then(r=>{window.__verzStatus=r.status; return r.json();}).then(d=>{window.__verz=d;}).catch(e=>{window.__verzErr=String(e)}); return 'poslano';})()" 2>&1 | tail -1
 eb_cakaj 3
-agent-browser eval "JSON.stringify({status:window.__verzStatus, body:window.__verz??null, napaka:window.__verzErr??null})" 2>&1 | tail -1 > /tmp/r296-z1b.json
+agent-browser eval "JSON.stringify({status:window.__verzStatus, body:window.__verz??null, napaka:window.__verzErr??null})" 2>&1 | tail -1 > /tmp/r297-z1b.json
 python3 - <<'PYEOF' || exit 1
 import json
-raw = open('/tmp/r296-z1b.json').read().strip()
+raw = open('/tmp/r297-z1b.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['napaka'] is None, 'Z1b mrežna napaka: ' + json.dumps(d)
@@ -209,10 +209,10 @@ echo "=== Z1c: ZVONČEK ŽIVO (POGOJNI DOM probe, Escape zapri; ZERO-MUTACIJA) =
 agent-browser eval "(()=>{const b=document.querySelector('button[aria-label^=\"Obvestila\"]'); if(!b) return 'BREZ-ZVONČKA'; b.click(); return 'odprto';})()" 2>&1 | tail -1
 if eb_pocakaj_na "(()=>{const p=[...document.querySelectorAll('span')].some(x=>x.textContent.includes('CRM opomniki in poslana obvestila')); return p;})()" 16; then
   eb_cakaj 2
-  agent-browser eval "(()=>{const desc=[...document.querySelectorAll('span')].some(x=>x.textContent.includes('CRM opomniki in poslana obvestila')); const vrstice=[...document.querySelectorAll('button')].filter(x=>(x.getAttribute('aria-label')||'').includes('— odpre CRM (opomnik)')); return JSON.stringify({desc, stOpomnikov:vrstice.length, err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r296-z1c.json
+  agent-browser eval "(()=>{const desc=[...document.querySelectorAll('span')].some(x=>x.textContent.includes('CRM opomniki in poslana obvestila')); const vrstice=[...document.querySelectorAll('button')].filter(x=>(x.getAttribute('aria-label')||'').includes('— odpre CRM (opomnik)')); return JSON.stringify({desc, stOpomnikov:vrstice.length, err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r297-z1c.json
   python3 - <<'PYEOF' || exit 1
 import json
-raw = open('/tmp/r296-z1c.json').read().strip()
+raw = open('/tmp/r297-z1c.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['desc'] is True, 'Z1c SheetDescription FAIL: ' + json.dumps(d)
@@ -227,10 +227,10 @@ else
 fi
 
 echo "=== Z1d: PRESEŽEK note POGOJNI probe (spot resnica neznana) ==="
-agent-browser eval "(()=>{const note=document.querySelector('[aria-label=\"Iskren presežek signalov\"]'); return JSON.stringify({notePrisoten:!!note, vsebina:note?note.textContent.trim().slice(0,120):null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r296-z1d.json
+agent-browser eval "(()=>{const note=document.querySelector('[aria-label=\"Iskren presežek signalov\"]'); return JSON.stringify({notePrisoten:!!note, vsebina:note?note.textContent.trim().slice(0,120):null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r297-z1d.json
 python3 - <<'PYEOF' || exit 1
 import json
-raw = open('/tmp/r296-z1d.json').read().strip()
+raw = open('/tmp/r297-z1d.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['err'] is None, 'Z1d err: ' + json.dumps(d)
@@ -243,20 +243,20 @@ agent-browser eval "(()=>{document.body.dispatchEvent(new KeyboardEvent('keydown
 eb_cakaj 2
 
 echo "=== Z2: čanki — klient needleji (R295 ×9 LIVE + R294 ×9 + R293 ×8 + R292 ×8 + R291 ×8 + R290 ×8 + regresije + must_miss) ==="
-OUT=/tmp/r296-prod-chunks
+OUT=/tmp/r297-prod-chunks
 mkdir -p "$OUT" && rm -f "$OUT"/chunk-*.js "$OUT"/chunk-urls.txt
-: > /tmp/r296-chunkurls-lines-live.txt
+: > /tmp/r297-chunkurls-lines-live.txt
 # R297 lekcija: ISTA UNION oblika kot stale veja (buffer 10000 + per-tab
 # slike brez clear + končni en strel + merge/dedup — glej komentar tam).
 for d in '{"tab":"measurements","more":null,"subTab":null,"osnutek":null,"filter":null}' '{"tab":"inventory","more":null,"subTab":null,"osnutek":null,"filter":null}' '{"tab":"more","more":"documents","subTab":null,"osnutek":null,"filter":null}' '{"tab":"more","more":"material","subTab":"suppliers","osnutek":null,"filter":null}' '{"tab":"more","more":"crm","subTab":null,"osnutek":null,"filter":null}' '{"tab":"more","more":"material","subTab":"orders","osnutek":null,"filter":null}' '{"tab":"more","more":"logistics","subTab":null,"osnutek":null,"filter":null}' '{"tab":"more","more":"invoices","subTab":null,"osnutek":null,"filter":null}' '{"tab":"inclinometer","more":null,"subTab":null,"osnutek":null,"filter":null}' '{"tab":"more","more":"vodja","subTab":null,"osnutek":null,"filter":null}' '{"tab":"more","more":"teren","subTab":null,"osnutek":null,"filter":null}' '{"tab":"more","more":"ekipa","subTab":null,"osnutek":null,"filter":null}'; do
 agent-browser eval "(()=>{performance.setResourceTimingBufferSize(10000); return 'buf';})()" 2>&1 | tail -1 > /dev/null
   eb_dispatch "$d"
   eb_cakaj 3
-  agent-browser eval "JSON.stringify(performance.getEntriesByType('resource').map(e=>e.name).filter(u=>u.includes('/_next/static/chunks/')&&u.endsWith('.js')))" 2>&1 | tail -1 >> /tmp/r296-chunkurls-lines-live.txt
+  agent-browser eval "JSON.stringify(performance.getEntriesByType('resource').map(e=>e.name).filter(u=>u.includes('/_next/static/chunks/')&&u.endsWith('.js')))" 2>&1 | tail -1 >> /tmp/r297-chunkurls-lines-live.txt
 done
-agent-browser eval "JSON.stringify(performance.getEntriesByType('resource').map(e=>e.name).filter(u=>u.includes('/_next/static/chunks/')&&u.endsWith('.js')))" 2>&1 | tail -1 >> /tmp/r296-chunkurls-lines-live.txt
-python3 /home/z/my-project/scripts/merge-chunkurls.py /tmp/r296-chunkurls-lines-live.txt /tmp/r296-chunkurls.txt || { echo "PY MERGE FAIL — abort"; exit 1; }
-cp /tmp/r296-chunkurls.txt "$OUT"/chunk-urls.txt
+agent-browser eval "JSON.stringify(performance.getEntriesByType('resource').map(e=>e.name).filter(u=>u.includes('/_next/static/chunks/')&&u.endsWith('.js')))" 2>&1 | tail -1 >> /tmp/r297-chunkurls-lines-live.txt
+python3 /home/z/my-project/scripts/merge-chunkurls.py /tmp/r297-chunkurls-lines-live.txt /tmp/r297-chunkurls.txt || { echo "PY MERGE FAIL — abort"; exit 1; }
+cp /tmp/r297-chunkurls.txt "$OUT"/chunk-urls.txt
 i=0
 while read -r url; do
   [ -z "$url" ] && continue
@@ -272,7 +272,18 @@ need() {
 must_miss() {
   if grep -rqF -- "$1" "$OUT" 2>/dev/null; then echo "HIT  : $2"; FAIL=1; else echo "OK   : $2 (izginil)"; fi
 }
-echo "--- R296 MANDATORY — KOLEDAR PREGLEDOV ICS (LIVE — PRVA naloga R297) ---"
+echo "--- R297 MANDATORY — OPREMA CIKEL CSV (LIVE — PRVA naloga R298) ---"
+need "Izvozi pregled življenjskega cikla opreme kot CSV" "R297 gumb aria — LIVE"
+need "Življenjski cikl opreme kot CSV (isti stolpci kot PDF — za Excel/revizijo)" "R297 gumb title — LIVE"
+need "opremaCikelCsvVrstice" "R297 lib EN VIR graditelj (čanek) — LIVE"
+need "opremaCikelCsvFilename" "R297 ime datoteke (čanek) — LIVE"
+need "prazen seznam opreme ne nastaja datoteke" "R297 lib fail-closed — LIVE"
+need "Vsa oprema iz /api/equipment (polna resnica — tudi upokojena/izgubljena; NAZIV ASC referenčni red)" "R297 meta Obseg (čanek) — LIVE"
+need "CSV se izvozi, ko je vpisan prvi kos opreme." "R297 fail-closed toast — LIVE"
+need "Pregled opreme prenešen v CSV" "R297 uspeh toast (WYSIWYG) — LIVE"
+need "Cikl videnega seznama opreme — polna resnica prihaja s FRESH fetch izvozom (PDF/CSV — VSA oprema)" "R297 stil F2 mini title — LIVE"
+need "Merska oprema z kalibracijskim rokom, ki je že pretekel — akcija" "R297 stil kalibracija žig title — LIVE"
+echo "--- R296 MANDATORY — KOLEDAR PREGLEDOV ICS (LIVE — regresija) ---"
 need "Izvozi koledar pregledov kot ICS" "R296 gumb aria — LIVE"
 need "Koledar pregledov kot ICS (uvoz v koledarsko aplikacijo — Google/Outlook/telefon)" "R296 gumb title — LIVE"
 need "koledarPregledovIcsFilename" "R296 lib ime datoteke (čanek) — LIVE"
@@ -413,6 +424,7 @@ need "ZAPISNIK — STANJE PRED PREDAJO" "R271 PDF glava — LIVE"
 need "MERITVE — TERENSKI PREGLED" "R269 PDF glava — LIVE"
 need "Brez dobavitelja (" "R227 žig aria — LIVE"
 echo "--- must_miss (negativni) ---"
+must_miss "TODO-R297" "R297 — brez razvojnih ostankov (izginil)"
 must_miss "TODO-R296" "R296 — brez razvojnih ostankov (izginil)"
 must_miss "TODO-R295" "R295 — brez razvojnih ostankov (izginil)"
 must_miss "TODO-R294" "R294 — brez razvojnih ostankov (izginil)"
@@ -430,12 +442,12 @@ must_miss "TODO-R284" "R284 — brez razvojnih ostankov (izginil)"
 echo "Z2 OK — vsi needleji ŽIVO"
 
 echo "=== Z3: v99 sync gate regresija (R274 gate še ŽIVO — ZERO-MUTACIJA) ==="
-agent-browser eval "(()=>{window.__v99=null; window.__v99err=null; fetch('/api/sync',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify([{id:'r296-prod-v99-probe-'+Date.now(),customerName:'r296 probe v99',contractVersion:99}])}).then(r=>r.json()).then(d=>{window.__v99=d;}).catch(e=>{window.__v99err=String(e)}); return 'poslano';})()" 2>&1 | tail -1
+agent-browser eval "(()=>{window.__v99=null; window.__v99err=null; fetch('/api/sync',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify([{id:'r297-prod-v99-probe-'+Date.now(),customerName:'r297 probe v99',contractVersion:99}])}).then(r=>r.json()).then(d=>{window.__v99=d;}).catch(e=>{window.__v99err=String(e)}); return 'poslano';})()" 2>&1 | tail -1
 eb_cakaj 3
-agent-browser eval "JSON.stringify({odgovor:window.__v99??null, napaka:window.__v99err??null})" 2>&1 | tail -1 > /tmp/r296-z3.json
+agent-browser eval "JSON.stringify({odgovor:window.__v99??null, napaka:window.__v99err??null})" 2>&1 | tail -1 > /tmp/r297-z3.json
 python3 - <<'PYEOF' || exit 1
 import json
-raw = open('/tmp/r296-z3.json').read().strip()
+raw = open('/tmp/r297-z3.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['napaka'] is None, 'Z3 mrežna napaka: ' + json.dumps(d)
@@ -448,4 +460,4 @@ assert 'noben zapis ni bil uporabljen' in item.get('error', ''), 'Z3 nič-izgubl
 print('Z3 OK — v99 sync gate ŽIVO (fail-closed, nič zapisov, ZERO-MUTACIJA)')
 PYEOF
 
-echo "=== R296 PROD QA — R290+R291+R292+R293+R294+R295+R296 ŽIVO SKUPAJ ==="
+echo "=== R297 PROD QA — R290+R291+R292+R293+R294+R295+R296+R297 ŽIVO SKUPAJ ==="

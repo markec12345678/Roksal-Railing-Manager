@@ -35,6 +35,13 @@ import {
   kosBeseda,
   type OpremaCikelVnos,
 } from '@/lib/oprema-cikel-pdf'
+// R297 — oprema cikel CSV (27. člen 'izvozi' družine): CSV brat PDF R266 —
+// ISTA cikl resnica (opremaCikelPregled EN VIR, cenikDatumIso EN VIR, Sklep
+// VERBATIM) kot ravninska tabela za Excel/revizijo; route NIČ (client+lib only).
+import {
+  opremaCikelCsv,
+  opremaCikelCsvFilename,
+} from '@/lib/oprema-cikel-csv'
 import {
   generateVozniRedPdf,
   vozniRedPovzetek,
@@ -394,6 +401,8 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
   const [ptVTeku, setPtVTeku] = useState(false)
   // R266 — izvoz cikla opreme v teku (disabled guard — pariteta ptVTeku R265).
   const [ocVTeku, setOcVTeku] = useState(false)
+  // R297 — dvoklik guard oprema cikel CSV (ISTA družina, pariteta brata).
+  const [ocCsvVTeku, setOcCsvVTeku] = useState(false)
   // R292 — dvoklik guard tedenskega CSV (pariteta ptVTeku R265/ocVTeku R266).
   const [tedenskiCsvVTeku, setTedenskiCsvVTeku] = useState(false)
 
@@ -1157,63 +1166,72 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
   // HTTP napaka ALI ne-polje odgovora → viden razlog (nič tihe degradacije);
   // resnice (status 5 znanih, booleans, ISO, identitete) preverja LIB
   // fail-closed z indeksom krivca.
+  // R297 — ENA izpeljava vira opreme (PDF brat R266 + CSV brat R297): FRESH
+  // paginirani fetch VSE opreme + fail-verbose DTO pruning v ENI funkciji —
+  // NIČ dvojnega med bralci (vzorec memo koledarVnosi R295 / memo izpeljava
+  // družine); tiha rezina prepovedana, MAX_OFFSET meja poimenovana.
+  const pridobiOpremoVnosi = async (): Promise<OpremaCikelVnos[]> => {
+    const vnosi: OpremaCikelVnos[] = []
+    const limit = 100
+    let offset = 0
+    for (;;) {
+      const res = await fetch(`/api/equipment?limit=${limit}&offset=${offset}`, { credentials: 'same-origin' })
+      if (!res.ok) {
+        throw new Error(`GET /api/equipment → HTTP ${res.status}`)
+      }
+      const data: unknown = await res.json()
+      if (!Array.isArray(data)) {
+        throw new TypeError('Odgovora /api/equipment ni mogoče prebrati (ni polja).')
+      }
+      const stran = data as Array<Record<string, unknown>>
+      for (let i = 0; i < stran.length; i++) {
+        const e = stran[i]
+        if (typeof e.id !== 'string' || e.id === '' || typeof e.naziv !== 'string' || e.naziv === '') {
+          throw new TypeError(`oprema vrstica ${offset + i}: manjkajoč id/naziv v odgovoru API-ja`)
+        }
+        const tipApi = typeof e.tip === 'string' ? e.tip : ''
+        const tip = EQUIPMENT_TYPES[tipApi] ?? (tipApi !== '' ? tipApi : null)
+        if (tip === null) {
+          throw new TypeError(`oprema vrstica ${offset + i}: manjkajoč tip v odgovoru API-ja`)
+        }
+        // Fail-verbose DTO pruning (R264/R265 vzorec): identitete + tip tu
+        // (imenovan razlog), ostalo VERBATIM — lib preveri z indeksom krivca.
+        vnosi.push({
+          id: e.id,
+          naziv: e.naziv,
+          tip,
+          status: e.status as OpremaCikelVnos['status'],
+          lokacija: (e.lokacija ?? null) as string | null,
+          serijskaStevilka: (e.serijskaStevilka ?? null) as string | null,
+          lastInspectionAt: (e.lastInspectionAt ?? null) as string | null,
+          inspectionIntervalDays: (e.inspectionIntervalDays ?? null) as number | null,
+          nextInspectionAt: (e.nextInspectionAt ?? null) as string | null,
+          inspectionDue: e.inspectionDue as boolean,
+          inspectionUnknown: e.inspectionUnknown as boolean,
+          calibrationRequired: e.calibrationRequired as boolean,
+          calibrationDueDate: (e.calibrationDueDate ?? null) as string | null,
+          calibrationCertificate: (e.calibrationCertificate ?? null) as string | null,
+          calibrationOverdue: e.calibrationOverdue as boolean,
+          calibrationMissing: e.calibrationMissing as boolean,
+          zadnjiServis: (e.zadnjiServis ?? null) as string | null,
+          assignmentsCount: e.assignmentsCount as number,
+        })
+      }
+      if (stran.length < limit) break
+      offset += limit
+      if (offset > 10_000) {
+        // Iskrena meja vira (MAX_OFFSET /api/equipment) — NI tihe rezine.
+        throw new TypeError('Več kot 10.000 kosov opreme — nad mejo paginacije vira (MAX_OFFSET) — izvoz zavrnjen (ni tihe rezine).')
+      }
+    }
+    return vnosi
+  }
+
   const handleOpremaCikelPdf = async () => {
     if (ocVTeku) return
     setOcVTeku(true)
     try {
-      const vnosi: OpremaCikelVnos[] = []
-      const limit = 100
-      let offset = 0
-      for (;;) {
-        const res = await fetch(`/api/equipment?limit=${limit}&offset=${offset}`, { credentials: 'same-origin' })
-        if (!res.ok) {
-          throw new Error(`GET /api/equipment → HTTP ${res.status}`)
-        }
-        const data: unknown = await res.json()
-        if (!Array.isArray(data)) {
-          throw new TypeError('Odgovora /api/equipment ni mogoče prebrati (ni polja).')
-        }
-        const stran = data as Array<Record<string, unknown>>
-        for (let i = 0; i < stran.length; i++) {
-          const e = stran[i]
-          if (typeof e.id !== 'string' || e.id === '' || typeof e.naziv !== 'string' || e.naziv === '') {
-            throw new TypeError(`oprema vrstica ${offset + i}: manjkajoč id/naziv v odgovoru API-ja`)
-          }
-          const tipApi = typeof e.tip === 'string' ? e.tip : ''
-          const tip = EQUIPMENT_TYPES[tipApi] ?? (tipApi !== '' ? tipApi : null)
-          if (tip === null) {
-            throw new TypeError(`oprema vrstica ${offset + i}: manjkajoč tip v odgovoru API-ja`)
-          }
-          // Fail-verbose DTO pruning (R264/R265 vzorec): identitete + tip tu
-          // (imenovan razlog), ostalo VERBATIM — lib preveri z indeksom krivca.
-          vnosi.push({
-            id: e.id,
-            naziv: e.naziv,
-            tip,
-            status: e.status as OpremaCikelVnos['status'],
-            lokacija: (e.lokacija ?? null) as string | null,
-            serijskaStevilka: (e.serijskaStevilka ?? null) as string | null,
-            lastInspectionAt: (e.lastInspectionAt ?? null) as string | null,
-            inspectionIntervalDays: (e.inspectionIntervalDays ?? null) as number | null,
-            nextInspectionAt: (e.nextInspectionAt ?? null) as string | null,
-            inspectionDue: e.inspectionDue as boolean,
-            inspectionUnknown: e.inspectionUnknown as boolean,
-            calibrationRequired: e.calibrationRequired as boolean,
-            calibrationDueDate: (e.calibrationDueDate ?? null) as string | null,
-            calibrationCertificate: (e.calibrationCertificate ?? null) as string | null,
-            calibrationOverdue: e.calibrationOverdue as boolean,
-            calibrationMissing: e.calibrationMissing as boolean,
-            zadnjiServis: (e.zadnjiServis ?? null) as string | null,
-            assignmentsCount: e.assignmentsCount as number,
-          })
-        }
-        if (stran.length < limit) break
-        offset += limit
-        if (offset > 10_000) {
-          // Iskrena meja vira (MAX_OFFSET /api/equipment) — NI tihe rezine.
-          throw new TypeError('Več kot 10.000 kosov opreme — nad mejo paginacije vira (MAX_OFFSET) — izvoz zavrnjen (ni tihe rezine).')
-        }
-      }
+      const vnosi = await pridobiOpremoVnosi()
       if (vnosi.length === 0) {
         // Fail-closed jedro: prazen seznam ne nastaja dokumenta — iskren toast.
         toast({ title: 'Ni vpisane opreme', description: 'Pregled življenjskega cikla se izvozi, ko je vpisan prvi kos opreme.' })
@@ -1236,6 +1254,42 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
       }
     } finally {
       setOcVTeku(false)
+    }
+  }
+
+  // R297 — OPREMA CIKEL CSV (27. člen 'izvozi' družine): CSV brat PDF R266 —
+  // ISTA cikl resnica (opremaCikelPregled EN VIR — preverba + projekcija +
+  // NAZIV ASC sort + povzetek, cenikDatumIso EN VIR, Sklep VERBATIM) kot
+  // ravninska tabela za Excel/revizijo. Fail-closed: 0 kosov → iskren toast
+  // (ISTI gate kot brat); dvoklik guard (pariteta brata); toast pove ISTO
+  // agregatno resnico (WYSIWYG).
+  const handleOpremaCikelCsv = async () => {
+    if (ocCsvVTeku) return
+    setOcCsvVTeku(true)
+    try {
+      const vnosi = await pridobiOpremoVnosi()
+      if (vnosi.length === 0) {
+        // Fail-closed jedro: prazen seznam ne nastaja datoteke — iskren toast.
+        toast({ title: 'Ni vpisane opreme', description: 'CSV se izvozi, ko je vpisan prvi kos opreme.' })
+        return
+      }
+      const now = new Date()
+      const { csv } = opremaCikelCsv(vnosi, now)
+      const ime = opremaCikelCsvFilename(now)
+      downloadCsvText(ime, csv)
+      const { povzetek } = opremaCikelPregled(vnosi)
+      toast({
+        title: `Pregled opreme prenešen v CSV (${ime})`,
+        description: `Oprema-cikel-…csv — ${povzetek.oprem} ${kosBeseda(povzetek.oprem)}, zapadel pregled ${povzetek.pregledZapadel}, potečena kalibracija ${povzetek.kalPotecena}.`,
+      })
+    } catch (err) {
+      if (err instanceof TypeError) {
+        toast({ title: 'Pregled opreme CSV ni mogoče sestaviti iz teh podatkov', description: err instanceof Error ? err.message : String(err), variant: 'destructive' })
+      } else {
+        toast({ title: `Izvoz CSV ni uspel: ${err instanceof Error ? err.message : String(err)}`, variant: 'destructive' })
+      }
+    } finally {
+      setOcCsvVTeku(false)
     }
   }
 
@@ -1681,6 +1735,22 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
             >
               <Activity aria-hidden="true" className="h-4 w-4 mr-1" /> Cikel PDF
             </Button>
+            {/* R297 — oprema cikel CSV (27. člen 'izvozi' družine): CSV brat
+                PDF R266 — ISTA cikl resnica kot ravninska tabela za
+                Excel/revizijo. Bralna datoteka VEDNO vidna (P1-k precedens);
+                fail-closed toast pri 0 kosov. ISTI žetoni kot ostali pilli —
+                0 novih hex. */}
+            <Button
+              type="button"
+              variant="outline"
+              aria-label="Izvozi pregled življenjskega cikla opreme kot CSV"
+              title="Življenjski cikl opreme kot CSV (isti stolpci kot PDF — za Excel/revizijo)"
+              disabled={ocCsvVTeku}
+              className="shrink-0 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              onClick={() => void handleOpremaCikelCsv()}
+            >
+              <FileSpreadsheet aria-hidden="true" className="h-4 w-4 mr-1" /> Cikel CSV
+            </Button>
             <p className="text-2xs text-muted-foreground">
               PDF = življenjski cikl VSE opreme (pregledi · kalibracije · statusi — polna resnica, ne samo viden seznam)
             </p>
@@ -1696,16 +1766,16 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
           {opremaCikelPovzetek && (
             <div role="status" className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${opremaCikelPovzetek.pregledZapadel > 0 || opremaCikelPovzetek.kalPotecena > 0 ? 'bg-roksal-red' : 'bg-roksal-green'}`} />
-              <span className="tabular-nums">
+              <span className="tabular-nums" title="Cikl videnega seznama opreme — polna resnica prihaja s FRESH fetch izvozom (PDF/CSV — VSA oprema)">
                 Cikl (viden seznam): {opremaCikelPovzetek.oprem} {kosBeseda(opremaCikelPovzetek.oprem)} · zapadel pregled {opremaCikelPovzetek.pregledZapadel} · potečena kalibracija {opremaCikelPovzetek.kalPotecena} · brez lokacije {opremaCikelPovzetek.brezLokacije}
               </span>
               {opremaCikelPovzetek.pregledZapadel > 0 && (
-                <span className="rounded-full border border-roksal-red/40 bg-roksal-red/10 px-2 py-0.5 text-2xs font-medium text-roksal-red">
+                <span title="Interval + zadnji pregled znana in rok je pretekel (R145 jedro) — akcija" className="rounded-full border border-roksal-red/40 bg-roksal-red/10 px-2 py-0.5 text-2xs font-medium text-roksal-red">
                   {opremaCikelPovzetek.pregledZapadel} zapadel pregled
                 </span>
               )}
               {opremaCikelPovzetek.kalPotecena > 0 && (
-                <span className="rounded-full border border-roksal-red/40 bg-roksal-red/10 px-2 py-0.5 text-2xs font-medium text-roksal-red">
+                <span title="Merska oprema z kalibracijskim rokom, ki je že pretekel — akcija" className="rounded-full border border-roksal-red/40 bg-roksal-red/10 px-2 py-0.5 text-2xs font-medium text-roksal-red">
                   {opremaCikelPovzetek.kalPotecena} potečena kalibracija
                 </span>
               )}

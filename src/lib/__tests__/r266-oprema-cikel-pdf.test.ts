@@ -325,15 +325,10 @@ describe('R266 — komponenta (logistics-tab) — pill, mini-vrstica, handler', 
     expect(komponenta).toContain('opremaCikelPregled(opremaCikelVhodi).povzetek')
   })
 
-  it('handler: FRESH paginirani fetch VSE opreme (limit/offset — tiha rezina prepovedana) + MAX_OFFSET meja poimenovana + dvoklik guard + fail-closed PREJ (Ni vpisane opreme) → ENA izpeljava → generate; EN now; TypeError viden razlog', () => {
-    const okno = oknoMed(komponenta, 'const handleOpremaCikelPdf', 'return (')
+  it('handler: FRESH paginirani fetch VSE opreme — R297 pin shift: fetch mehanika v ENO funkcijo pridobiOpremoVnosi (PDF + CSV brat, ENA izpeljava vira — precedens R180/R294/R295/R296) + dvoklik guard + fail-closed PREJ (Ni vpisane opreme) → ENA izpeljava → generate; EN now; TypeError viden razlog', () => {
+    const okno = oknoMed(komponenta, 'const handleOpremaCikelPdf', 'const handleOpremaCikelCsv')
     expect(okno).toContain('if (ocVTeku) return')
-    expect(okno).toContain('fetch(`/api/equipment?limit=${limit}&offset=${offset}`, { credentials: \'same-origin\' })')
-    expect(okno).toContain('GET /api/equipment → HTTP ${res.status}')
-    expect(okno).toContain('Odgovora /api/equipment ni mogoče prebrati (ni polja).')
-    expect(okno).toContain('if (stran.length < limit) break')
-    expect(okno).toContain('offset > 10_000')
-    expect(okno).toContain('nad mejo paginacije vira (MAX_OFFSET)')
+    expect(okno).toContain('const vnosi = await pridobiOpremoVnosi()')
     expect(okno).toContain("title: 'Ni vpisane opreme'")
     expect(okno).toContain("'Pregled življenjskega cikla se izvozi, ko je vpisan prvi kos opreme.'")
     const prazen = okno.indexOf('vnosi.length === 0')
@@ -348,12 +343,23 @@ describe('R266 — komponenta (logistics-tab) — pill, mini-vrstica, handler', 
     expect(okno).toContain('setOcVTeku(false)')
   })
 
-  it('fail-verbose DTO pruning: vrstica brez id/naziv → TypeError; manjkajoč tip → TypeError (IDENTITETE pred libom — R264/R265 vzorec)', () => {
-    const okno = oknoMed(komponenta, 'const handleOpremaCikelPdf', 'return (')
-    expect(okno).toContain('manjkajoč id/naziv v odgovoru API-ja')
-    expect(okno).toContain('manjkajoč tip v odgovoru API-ja')
-    expect(okno).toContain('const stran = data as Array<Record<string, unknown>>')
-    expect(okno).toContain('const tip = EQUIPMENT_TYPES[tipApi] ?? (tipApi !== \'\' ? tipApi : null)')
+  it('R297 — ENA izpeljava vira: pridobiOpremoVnosi = FRESH paginirani fetch (limit/offset — tiha rezina prepovedana) + MAX_OFFSET meja poimenovana; oba brata klicata ISTO funkcijo', () => {
+    const vir = oknoMed(komponenta, 'const pridobiOpremoVnosi', 'const handleOpremaCikelPdf')
+    expect(vir).toContain('fetch(`/api/equipment?limit=${limit}&offset=${offset}`, { credentials: \'same-origin\' })')
+    expect(vir).toContain('GET /api/equipment → HTTP ${res.status}')
+    expect(vir).toContain('Odgovora /api/equipment ni mogoče prebrati (ni polja).')
+    expect(vir).toContain('if (stran.length < limit) break')
+    expect(vir).toContain('offset > 10_000')
+    expect(vir).toContain('nad mejo paginacije vira (MAX_OFFSET)')
+    expect((komponenta.match(/pridobiOpremoVnosi\(\)/g) ?? []).length).toBe(2)
+  })
+
+  it('fail-verbose DTO pruning — R297 pin shift: v ENI funkciji pridobiOpremoVnosi (oba brata); vrstica brez id/naziv → TypeError; manjkajoč tip → TypeError (IDENTITETE pred libom — R264/R265 vzorec)', () => {
+    const vir = oknoMed(komponenta, 'const pridobiOpremoVnosi', 'const handleOpremaCikelPdf')
+    expect(vir).toContain('manjkajoč id/naziv v odgovoru API-ja')
+    expect(vir).toContain('manjkajoč tip v odgovoru API-ja')
+    expect(vir).toContain('const stran = data as Array<Record<string, unknown>>')
+    expect(vir).toContain('const tip = EQUIPMENT_TYPES[tipApi] ?? (tipApi !== \'\' ? tipApi : null)')
   })
 
   it('legenda pill pariteta (družina): PDF = polna resnica, ne samo viden seznam', () => {
