@@ -54,10 +54,12 @@ describe('r317 STIL val 8 — izvozna družina: focus-visible ring STRAŽAR', ()
   const gumbi = izvozniGumbi()
   const AMBER_ZETONI = new Set(['vodja-dashboard'])
 
-  it('anti-stale: 56 izvoznih gumbov v drevesu (55 pred R321 + NOV meritve zmogljivosti PDF)', () => {
-    expect(gumbi.length).toBeGreaterThanOrEqual(56)
+  it('anti-stale: 57 izvoznih gumbov v drevesu (56 pred R323 + NOV meritve zmogljivosti CSV)', () => {
+    expect(gumbi.length).toBeGreaterThanOrEqual(57)
     // novi gumb 50. člena je prisoten
     expect(gumbi.some((g) => g.okno.includes('Izvozi meritve zmogljivosti kot PDF'))).toBe(true)
+    // novi gumb 51. člena je prisoten (R322)
+    expect(gumbi.some((g) => g.okno.includes('Izvozi meritve zmogljivosti kot CSV'))).toBe(true)
   })
 
   it('vsak izvozni gumb nosi IZRECEN focus-visible ring žeton (ne samo ui baza)', () => {
@@ -84,14 +86,14 @@ describe('r317 STIL val 8 — izvozna družina: focus-visible ring STRAŽAR', ()
       (g) => g.okno.includes('focus-visible:ring-roksal-amber/50') && !AMBER_ZETONI.has(g.datoteka),
     )
     expect(kršitve).toEqual([])
-    // R321 register je ŽIV: vodja res nosi 6 amber gumbov (dnevni CSV R163 +
+    // R323 register je ŽIV: vodja res nosi 7 amber gumbov (dnevni CSV R163 +
     // JSON 46. + CSV 47. + audit PDF 48. + končna verifikacija PDF 49. +
-    // meritve zmogljivosti PDF 50. člen — isti vodja blok glavni vzorec z
-    // offset-2; PIN SHIFT ×5 → ×6 z obrnjeno regresijo)
+    // meritve zmogljivosti PDF 50. + meritve zmogljivosti CSV 51. člen — isti
+    // vodja blok glavni vzorec z offset-2; PIN SHIFT ×6 → ×7 z obrnjeno regresijo)
     const vodjaAmber = gumbi.filter(
       (g) => g.datoteka === 'vodja-dashboard' && g.okno.includes('focus-visible:ring-roksal-amber/50'),
     )
-    expect(vodjaAmber.length).toBe(6)
+    expect(vodjaAmber.length).toBe(7)
     const ariaVseh = vodjaAmber.map((g) => {
       const m = g.okno.match(/aria-label="([^"]+)"/)
       return m ? m[1] : ''
@@ -102,6 +104,7 @@ describe('r317 STIL val 8 — izvozna družina: focus-visible ring STRAŽAR', ()
     expect(ariaVseh).toContain('Izvozi avtomatizacijski audit kot PDF')
     expect(ariaVseh).toContain('Izvozi poročilo končne verifikacije kot PDF')
     expect(ariaVseh).toContain('Izvozi meritve zmogljivosti kot PDF')
+    expect(ariaVseh).toContain('Izvozi meritve zmogljivosti kot CSV')
   })
 
   it('R317 harmonizirana vrstica: site-survey PDF gumb ima družinski ring (regresijski pin — nazaj = fail)', () => {

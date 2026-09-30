@@ -107,6 +107,7 @@ import { generateKoncnaVerifikacijaPdf, koncnaVerifikacijaPdfFilename } from '@/
 // (meritev se izvede ENKRAT v brskalniku — R312 kontrakt; PDF NE meri
 // znova); formatirajMs = EN VIR formatiranje zaslon + PDF (iz brata R312).
 import { generateZmogljivostPdf, zmogljivostPdfFilename } from '@/lib/zmogljivost-pregled-pdf'
+import { buildZmogljivostCsv, zmogljivostCsvFilename } from '@/lib/zmogljivost-pregled-csv'
 import { formatirajMs } from '@/lib/zmogljivost-pregled'
 import {
   TrendingUp, Clock, Users, Package, Euro, CheckCircle2,
@@ -929,6 +930,37 @@ export function VodjaDashboard() {
     }
   }
 
+  /** 🆕 R322 (51. člen, issue #1 IZVOZI družina): izvoz meritev zmogljivosti
+   *  kot DETERMINISTIČNI CSV — Deliverable 6 kot prenosljiv artifact
+   *  (družinska simetrija kanon: Del. 4 CSV+PDF, Del. 7 JSON+PDF, Del. 6
+   *  PDF+CSV); CSV brat PDF R321 (EN VIR validacija + glave + formatirajMs
+   *  iz brata). Iskrena ničelna veja: brez izvedene meritve NI izvoza
+   *  (NIČ izmišljenih števil). Fail-verbose: razlog vidno, ne tiho. */
+  function exportZmogljivostCsv() {
+    if (!zmogljivost) {
+      // iskrena ničelna veja (vzorec exportZmogljivostPdf) — merjenje teče
+      // ali ni še zaključeno; lažnega CSV-ja ni (fail-closed v handlerju).
+      toast({
+        title: 'Meritve še niso izvedene',
+        description: 'CSV se izvozi, ko je merjenje zaključeno v brskalniku.',
+      })
+      return
+    }
+    try {
+      // fail-closed brezplačno: graditelj validira kontrakt prek EN VIR
+      // validacije brata — pokvarena meritev ne more postati lažno poročilo.
+      const { csv } = buildZmogljivostCsv(zmogljivost)
+      downloadCsvText(zmogljivostCsvFilename(), csv)
+      toast({ title: 'Meritve zmogljivosti izvožene ✓', description: zmogljivostCsvFilename() })
+    } catch (e) {
+      toast({
+        title: 'Izvoz ni uspel',
+        description: e instanceof Error ? e.message : String(e),
+        variant: 'destructive',
+      })
+    }
+  }
+
   if (loading) {
     return (
       <div className="space-y-3 p-4" aria-busy="true" aria-live="polite">
@@ -1247,7 +1279,10 @@ export function VodjaDashboard() {
           NIKOLI izmišljenih števil; struktura + izhodi deterministični.
           WYSIWYG: sklep verbatim (NIČ dvojnega sklepa — vzorec R311). */}
       <section
-        className="rounded-lg border border-border bg-muted/40 px-3 py-2"
+        // R323 STIL val 11: dokazni blok sekcija-level hover — vrstica-level
+        // hover val 10 (amber/40) na blok kontejnerju z amber/30 (dve
+        // ravnini odgovora; transition-colors — brez layout premika).
+        className="rounded-lg border border-border bg-muted/40 px-3 py-2 transition-colors hover:border-roksal-amber/30"
         aria-label="Meritve zmogljivosti jedra"
         data-testid="zmogljivost-dokaz"
       >
@@ -1277,6 +1312,20 @@ export function VodjaDashboard() {
             >
               <Download className="h-3 w-3" aria-hidden="true" />
               PDF
+            </Button>
+            {/* R323 — 51. člen (IZVOZI družina): CSV brat PDF R321 — ISTI
+                žeton (a11y izvozne družine; amber/50 + taktilni žeton; iskrena
+                ničelna veja + fail-verbose toast). */}
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-6 gap-1 border-roksal-navy/25 px-2 text-2xs text-roksal-ink press-scale transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 dark:border-roksal-ink/25"
+              onClick={exportZmogljivostCsv}
+              aria-label="Izvozi meritve zmogljivosti kot CSV"
+              title="Izvozi meritve zmogljivosti jedra (operacije × iteracije × časi — EN VIR zaslon) kot deterministični CSV"
+            >
+              <Download className="h-3 w-3" aria-hidden="true" />
+              CSV
             </Button>
           </div>
         </div>
@@ -1328,7 +1377,9 @@ export function VodjaDashboard() {
           AI-OPCIJSKO = roksal žeton opozorilne družine (r162); sklep verbatim
           EN VIR ({avtAudit.sklep} — NIČ dvojnega sklepa, vzorec R311/R312). */}
       <section
-        className="rounded-lg border border-border bg-muted/40 px-3 py-2"
+        // R323 STIL val 11: ISTI žeton kot zmogljivost blok (družinska
+        // simetrija — vsi trije dokazni bloki odgovorijo na hover).
+        className="rounded-lg border border-border bg-muted/40 px-3 py-2 transition-colors hover:border-roksal-amber/30"
         aria-label="Avtomatizacija — audit po območjih"
         data-testid="avtomatizacija-dokaz"
       >
@@ -1412,7 +1463,9 @@ export function VodjaDashboard() {
           sme sanjati; sklep verbatim ({koncna.sklep} — NIČ dvojnega sklepa,
           vzorec R311/R312/R314). Značke plasti = roksal žetoni (r162). */}
       <section
-        className="rounded-lg border border-border bg-muted/40 px-3 py-2"
+        // R323 STIL val 11: ISTI žeton kot zmogljivost blok (družinska
+        // simetrija — vsi trije dokazni bloki odgovorijo na hover).
+        className="rounded-lg border border-border bg-muted/40 px-3 py-2 transition-colors hover:border-roksal-amber/30"
         aria-label="Končna verifikacija — dokazne plasti po območjih"
         data-testid="koncna-verifikacija-dokaz"
       >

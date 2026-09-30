@@ -14,8 +14,12 @@
 // (meritve zmogljivosti PDF — brat zaslona R312; register 12 → 13 pojavitev,
 // 6 → 7 gumbov, z obrnjeno regresijo — precedens R320).
 //
-// STRAŽAR (kanon r316/r317 — anti-stale + reverse regresija):
-//  • vsak od 7 vodja izvoznih gumbov nosi press-scale (okno ±8 vrstic okoli
+// R323 PIN SHIFT (51. člen): vodja blok glava dobi OSMI press-scale gumb
+// (meritve zmogljivosti CSV — brat PDF R321; register 13 → 14 pojavitev,
+// 7 → 8 gumbov, z obrnjeno regresijo — precedens R321).
+//
+// STRAŽAR (kanon r316/…/r321 — anti-stale + reverse regresija):
+//  • vsak od 8 vodja izvoznih gumbov nosi press-scale (okno ±8 vrstic okoli
 //    aria-label — ISTA ekstrakcija kot val8);
 //  • pill bratje ŠE VEDNO nosijo press-scale (obrnjena regresija — odstranitev
 //    = fail);
@@ -42,7 +46,7 @@ function oknoOkoli(aria: string): string {
 }
 
 describe('r318 STIL val 9 — vodja izvozna družina: press-scale taktilna pariteta', () => {
-  it('vseh 7 vodja izvoznih gumbov nosi press-scale (taktilna pariteta s pill bratje)', () => {
+  it('vseh 8 vodja izvoznih gumbov nosi press-scale (taktilna pariteta s pill bratje)', () => {
     const gumbi = [
       'aria-label="Izvozi dnevni pregled vodje kot CSV"',
       'aria-label="Prenesi mesečno PDF poročilo"',
@@ -51,6 +55,7 @@ describe('r318 STIL val 9 — vodja izvozna družina: press-scale taktilna parit
       'aria-label="Izvozi avtomatizacijski audit kot CSV"',
       'aria-label="Izvozi avtomatizacijski audit kot PDF"',
       'aria-label="Izvozi meritve zmogljivosti kot PDF"',
+      'aria-label="Izvozi meritve zmogljivosti kot CSV"',
     ]
     const brez = gumbi.filter((a) => !oknoOkoli(a).includes('press-scale'))
     expect(brez).toEqual([])
@@ -72,9 +77,9 @@ describe('r318 STIL val 9 — vodja izvozna družina: press-scale taktilna parit
     expect(globals).toContain('transform: scale(0.97)')
   })
 
-  it('register zaklenjen: natanko 13 pojavitev press-scale v vodja-dashboard (7 gumbov + 3 pill + 3 obstoječe drugje)', () => {
-    // R312 lekcija (osma potrditev): štetje POJAVITVEV, ne vrstic
+  it('register zaklenjen: natanko 14 pojavitev press-scale v vodja-dashboard (8 gumbov + 3 pill + 3 obstoječe drugje)', () => {
+    // R312 lekcija (deveta potrditev): štetje POJAVITVEV, ne vrstic
     const pojavitve = src.split('press-scale').length - 1
-    expect(pojavitve).toBe(13)
+    expect(pojavitve).toBe(14)
   })
 })

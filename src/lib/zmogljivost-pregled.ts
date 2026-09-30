@@ -368,6 +368,107 @@ export function formatirajMs(v: number): string {
   return v >= 100 ? String(Math.round(v)) : v.toFixed(2)
 }
 
+// ---------------------------------------------------------------------------
+// 🆕 R323 — 51. člen issue #1 (IZVOZI družina): EN VIR izvozni kontrakt
+// meritev zmogljivosti (glave + vir niz + fail-closed validacija) — VSA
+// izvozna raba (CSV R322 + PDF R321 brat) bere ISTA konstante in ISTO
+// validacijo iz tega liba (vzorec AUDIT_CSV_GLAVE R317: glava EN VIR za
+// celo izvozno družino — zaslon, CSV in PDF ne moreta divergirati po
+// konstrukciji). Validacija je bila R321 zasebna v PDF bratu — dvignjena
+// sem (isti pogodbi, ISTA sporočila verbatim — kje parametriziran z imenom
+// graditelja), da CSV brat NE duplicira pravil in NE uvaža jsPDF teže.
+// ---------------------------------------------------------------------------
+
+/** Glave izvoza meritev (WYSIWYG — ISTI stolpci kot tabela PDF R321 in
+ *  vrstice zaslona R312: Operacija · Opis · Modul · Iteracij · Najmanj ·
+ *  Mediana · Najvec; časi prikazno prek formatirajMs EN VIR — enota 'ms'
+ *  nosi sklep/KPI, NE glave — ISTA odločitev kot PDF R321). IZVOŽENO —
+ *  CSV brat (R322) in PDF brat (R321) uvažata ISTI niz → stolpci NE moreta
+ *  divergirati po konstrukciji. */
+export const ZMOGLJIVOST_IZVOZ_GLAVE: readonly string[] = [
+  'Operacija',
+  'Opis',
+  'Modul',
+  'Iteracij',
+  'Najmanj',
+  'Mediana',
+  'Najvec',
+]
+
+/** Iskren vir niz meta vrstice (EN VIR za CSV 'Vir;…' — vzorec AUDIT_VIR_NIZ
+ *  R318). Brez časa/hash — determinizem kanon 46.–50. člen (isti HEAD =
+ *  bajtno identičen izvoz). */
+export const ZMOGLJIVOST_VIR_NIZ =
+  'MERITVE_ZMOGLJIVOST — isti HEAD = bajtno identičen izvoz'
+
+/** Fail-closed validacija pregleda ZA IZVOZ (kontrakt brez izjem — vzorec
+ *  izmeriZmogljivost R312: pokvaren vhod ne more postati lažna resnica).
+ *  EN VIR za vse izvozne brate (CSV R322 + PDF R321 — kje = ime graditelja,
+ *  sporočila ostanejo IDENTIČNA kot R321 [regex pini testov ostanejo
+ *  zeleni]). Pravila (×7 skupin): ne-objekt pregled / prazne meritve
+ *  [brez izvedene meritve ni izmišljenih števil] / sklep / skupajIteracij /
+ *  meritev brez kontrakta (id/opis/modul/iteracij ≥ 3/enota 'ms'/ne-končni
+ *  ali negativni časi/najmanj > mediana > najvec/preverjeno !== true) /
+ *  zip usklajenost (vsota iteracij === skupajIteracij). */
+export function preveriZmogljivostPregledZaIzvoz(
+  pregled: ZmogljivostPregled,
+  kje: string,
+): void {
+  if (!pregled || typeof pregled !== 'object') {
+    throw new TypeError(`${kje}: pričakovan pregled (ZmogljivostPregled)`)
+  }
+  if (!Array.isArray(pregled.meritve) || pregled.meritve.length === 0) {
+    throw new TypeError(`${kje}: pregled brez meritev — brez izvedene meritve ni izmišljenih števil`)
+  }
+  if (typeof pregled.sklep !== 'string' || pregled.sklep.length === 0) {
+    throw new TypeError(`${kje}: pričakovan sklep (WYSIWYG — EN VIR niz)`)
+  }
+  if (!Number.isInteger(pregled.skupajIteracij) || pregled.skupajIteracij <= 0) {
+    throw new TypeError(`${kje}: pričakovan pozitiven skupajIteracij (števec resnice)`)
+  }
+  for (let i = 0; i < pregled.meritve.length; i++) {
+    const m = pregled.meritve[i]!
+    const kjeMeritev = `${kje}: meritev ${i}`
+    if (!m || typeof m !== 'object') {
+      throw new TypeError(`${kjeMeritev}: pričakovan objekt meritve`)
+    }
+    if (typeof m.id !== 'string' || m.id.length === 0) {
+      throw new TypeError(`${kjeMeritev}: pričakovan id (nestabilni ključ zaslona)`)
+    }
+    if (typeof m.opis !== 'string' || m.opis.length === 0) {
+      throw new TypeError(`${kjeMeritev} (${m.id}): pričakovan iskren opis operacije`)
+    }
+    if (typeof m.modul !== 'string' || m.modul.length === 0) {
+      throw new TypeError(`${kjeMeritev} (${m.id}): pričakovana pot modula (katalog kanon R294)`)
+    }
+    if (!Number.isInteger(m.iteracij) || m.iteracij < 3) {
+      throw new TypeError(`${kjeMeritev} (${m.id}): pričakovano ≥ 3 iteracij (mediana brez njih ni resnica)`)
+    }
+    if (m.enota !== 'ms') {
+      throw new TypeError(`${kjeMeritev} (${m.id}): pričakovana enota 'ms' (kurzorna resnica — µs bi pretvarjanje skrilo)`)
+    }
+    for (const k of ['najmanj', 'mediana', 'najvec'] as const) {
+      if (!Number.isFinite(m[k]) || m[k] < 0) {
+        throw new TypeError(`${kjeMeritev} (${m.id}): pričakovan končen, negativen ${k} (ms)`)
+      }
+    }
+    if (m.najmanj > m.mediana || m.mediana > m.najvec) {
+      throw new TypeError(`${kjeMeritev} (${m.id}): notranja neskladja časov (najmanj ≤ mediana ≤ najvec) — fail-closed`)
+    }
+    if (m.preverjeno !== true) {
+      throw new TypeError(`${kjeMeritev} (${m.id}): meritev NI preverjena — merjenje pokvare funkcije bi bilo lažna resnica`)
+    }
+  }
+  // Zip usklajenost: skupajIteracij MORA biti vsota po meritvah (števec
+  // resnice — notranja neskladja = fail-closed, vzorec zip R318/R320/R321).
+  const vsotaIteracij = pregled.meritve.reduce((s, m) => s + m.iteracij, 0)
+  if (vsotaIteracij !== pregled.skupajIteracij) {
+    throw new TypeError(
+      `${kje}: notranja neskladja skupajIteracij (vsota po meritvah) — fail-closed`,
+    )
+  }
+}
+
 /** IZMERI ZMOGLJIVOST — izvede vse registrirane operacije, meri delt po
  *  iteraciji, preveri vsak izhod. Uro je mogoče vbrizgati (DI — testi;
  *  produkcija = performance.now). Vrne deterministično strukturo z realno

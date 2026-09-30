@@ -73,8 +73,12 @@ describe('r321 zmogljivost-pregled PDF izvoz (50. člen — IZVOZI družina)', (
     // dvojna resnica) — pregled je parameter
     expect(lib).toContain('pregled: ZmogljivostPregled,')
     expect(lib).not.toContain('izmeriZmogljivost(')
-    // formatirajMs = EN VIR formatiranje (vzorec AUDIT_CSV_GLAVE R317)
-    expect(lib).toContain("import { formatirajMs } from './zmogljivost-pregled'")
+    // formatirajMs = EN VIR formatiranje (vzorec AUDIT_CSV_GLAVE R317).
+    // 🆕 R323 (51. člen): uvoz razširjen na EN VIR izvozni kontrakt (glave +
+    // validacija iz brata) — formatirajMs ostaja UVOŽEN (pin po vsebini).
+    expect(lib).toMatch(/import \{[^}]*formatirajMs[^}]*\} from '\.\/zmogljivost-pregled'/)
+    expect(lib).toContain('preveriZmogljivostPregledZaIzvoz')
+    expect(lib).toContain('ZMOGLJIVOST_IZVOZ_GLAVE')
     expect(lib).toContain('formatirajMs(m.najmanj)')
     // NI lastne definicije formata (EN VIR ostane v bratu)
     expect(lib).not.toContain('export function formatirajMs')

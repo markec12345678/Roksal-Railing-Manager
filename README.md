@@ -103,7 +103,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 45 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **4484** (258 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **4503** (260 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 143 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -457,6 +457,33 @@ Sheet z 6 podzavihki:
   audit, 0xc5–0xc8 končna — bratje NE delijo semen]; brez časa v vsebini);
   **DETERMINIZEM ŽIVO NA BAJTIH** v E2E Z0ar (dva izvoza bajtno enaka —
   51008 bajtov; %PDF- magija + MIME application/pdf na blob bajtih)
+- **Izvoz meritev zmogljivosti kot CSV** (R323, 51. člen — issue #1
+  **IZVOZI družina**, Deliverable 6 kot prenosljiv artifact; **družinska
+  simetrija kanon**: Del. 4 = CSV+PDF [R317/R318], Del. 7 = JSON+PDF
+  [R316/R320], Del. 6 = PDF+CSV [R321/R323]): vodjin zmogljivost-dokaz blok
+  dobi gumb `CSV` (CSV brat PDF R321 — vzorec R317 audit-csv, LOČEN lib
+  `src/lib/zmogljivost-pregled-csv.ts` — NO jsPDF teža) —
+  `buildZmogljivostCsv` = ČISTA projekcija **POSREDOVANEGA** pregleda;
+  **EN VIR kontrakt R323 v bratu R312**: glave `ZMOGLJIVOST_IZVOZ_GLAVE` +
+  validacija `preveriZmogljivostPregledZaIzvoz` (×7 skupin — dvignjena iz
+  PDF brata, sporočila verbatim; NIČ podvojenih pravil v družini) +
+  `formatirajMs` + `ZMOGLJIVOST_VIR_NIZ` — PDF in CSV ne moreta divergirati
+  po konstrukciji; toCsv kanon R136 (BOM + podpičje + CRLF + RFC 4180);
+  sklep = ČETRTI potrošnik ENEGA niza (zaslon + testi + PDF + CSV);
+  iskrena ničelna veja + fail-verbose toast (vzorec PDF brata);
+  **DETERMINIZEM ŽIVO NA BAJTIH** v E2E Z0as (dva izvoza bajtno enaka —
+  1386 bajtov; BOM magija EF BB BF + MIME text/csv + glave EN VIR pin +
+  Vir niz pin na blob bajtih)
+- **Stil val 11 — dokazni bloki sekcija hover mikrointerakcija** (R323):
+  ENOTEN `transition-colors hover:border-roksal-amber/30` žeton na vseh
+  treh vodja dokaznih blokih (zmogljivost + avtomatizacija + končna
+  verifikacija) — blok odgovori z MEKŠIM bratskim amber žetonom (amber/30 <
+  vrstica amber/40 val 10 — dve ravnini odgovora, jasna hierarhija
+  kontejner → vrstica); brez premikanja layouta (transition-colors, NE
+  transform); r322-stil-val11 STRAŽAR ×4 (vseh 3 sekcij + roksal žeton +
+  hierarhija preverba + val 10 obrnjena regresija ×3 + register 3 pojavitve);
+  PIN SHIFTI ×2 izrecno (val8 amber ×6→×7 + anti-stale 56→57; val9
+  press-scale ×13→14 pojavitev, 7→8 gumbov)
 - **Stil val 10 — dokazni bloki vrstični hover mikrointerakcija** (R321):
   ENOTEN `transition-colors hover:border-roksal-amber/40` žeton na vrsticah
   vseh treh vodja dokaznih blokov (meritve zmogljivosti R312 +
@@ -595,7 +622,7 @@ Sheet z 6 podzavihki:
 | **PWA** | Service Worker + Web Manifest |
 | **Temnitveni način** | [next-themes](https://github.com/pacocoursey/next-themes) |
 | **Validacija** | [Zod 4](https://zod.dev/) |
-| **Testiranje** | [Vitest 4](https://vitest.dev/) (4484 testov + globalSetup embedded PG) |
+| **Testiranje** | [Vitest 4](https://vitest.dev/) (4503 testov + globalSetup embedded PG) |
 | **Paketni upravitelj** | [Bun](https://bun.sh/) |
 | **Linting** | ESLint 9 + eslint-config-next |
 
@@ -717,7 +744,7 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `bun run dev` | Zažene Next.js dev server (port 3000) |
 | `bun run build` | Produkcijska build (build-prepare: generate + migrate deploy + seed) |
 | `bun run start` | Zažene produkcijski server |
-| `bun run test` | Vsi testi (vitest, 4484, embedded PG prek globalSetup) |
+| `bun run test` | Vsi testi (vitest, 4503, embedded PG prek globalSetup) |
 | `bun run check` | tsc --noEmit + vitest run (en ukaz za vse) |
 | `bunx tsc --noEmit` | Tipska kontrola celotnega projekta (trenutno 0 napak) |
 | `bun run lint` | ESLint preverjanje |

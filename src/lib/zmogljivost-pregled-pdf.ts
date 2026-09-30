@@ -16,6 +16,12 @@
 //  • časi prikazno = formatirajMs (UVOŽEN iz brata R321 — ISTI izraz kot
 //    zaslon vrstice; zaslon in PDF ne moreta divergirati po konstrukciji,
 //    vzorec AUDIT_CSV_GLAVE R317);
+//  • 🆕 R323 (51. člen): glave tabele = ZMOGLJIVOST_IZVOZ_GLAVE (UVOŽENE iz
+//    brata — CSV brat R322 nosi ISTI niz → stolpci PDF/CSV NE moreta
+//    divergirati po konstrukciji; vrednosti BAJTNO nespremenjene od R321);
+//  • 🆕 R323 (51. člen): fail-closed validacija = preveriZmogljivostPregled-
+//    ZaIzvoz (UVOŽENA iz brata — EN VIR pravila za celo izvozno družino;
+//    sporočila verbatim — kje = 'buildZmogljivostPdfDoc');
 //  • 'na tej napravi' kontekst = pregled.sklep verbatim (iskrena strojna
 //    odvisnost — PDF NE pretendira na univerzalnost).
 //
@@ -43,22 +49,27 @@
 // soli 0xc9–0xcc (register: 0xb0–0xc0 prejšnje, 0xc1–0xc4 audit-pdf R318,
 // 0xc5–0xc8 končna-pdf R320 — ista semena v dveh libih NE smejo dati isti ID).
 //
-// Fail-closed: ne-objekt pregled / prazne meritve / meritev brez kontrakta
-// (id/opis/modul/iteracij/enota !== 'ms'/ne-končni ali negativni časi /
-// najmanj > mediana > najvec / preverjeno !== true) / pokvaren now /
+// Fail-closed: 🆕 R322 — validacija EN VIR iz brata (preveriZmogljivost-
+// PregledZaIzvoz: ne-objekt pregled / prazne meritve / meritev brez
+// kontrakta / preverjeno !== true / zip usklajenost) + pokvaren now /
 // pokvaren options → TypeError z imenom graditelja (kanon
 // R299/R302/R306/R318). Pokvarena meritev ne more postati lažno poročilo —
 // preverjeno !== true pomeni, da je merjenje ALI javno padlo (izmeriZmogljivost
 // fail-closed) ALI je vhod ročno pokvaren (PDF ga odkloni). Obrnjena
 // regresija: PDF funkcij NI v zmogljivost-pregled libu (cikel in duplikat
-// tiran — ena definicija, EN lib; r318 lekcija 1).
+// tiran — ena definicija, EN lib; r318 lekcija 1); validacija je ENA
+// (brat) — NIČ podvojenih pravil v družini (R322).
 // ---------------------------------------------------------------------------
 
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { registerSloPdfFonts } from './pdf-sl-font'
-import { formatirajMs } from './zmogljivost-pregled'
-import type { ZmogljivostMeritev, ZmogljivostPregled } from './zmogljivost-pregled'
+import {
+  formatirajMs,
+  preveriZmogljivostPregledZaIzvoz,
+  ZMOGLJIVOST_IZVOZ_GLAVE,
+} from './zmogljivost-pregled'
+import type { ZmogljivostPregled } from './zmogljivost-pregled'
 
 // ---------- barve (ISTI dokumenti družina — usklajeno z R318/R320) ----------
 const NAVY: [number, number, number] = [29, 43, 62] // roksal-navy
@@ -106,40 +117,10 @@ function resnicaSeed(pregled: ZmogljivostPregled): string {
     .join(';')}`
 }
 
-/** Fail-closed validacija ENE meritve (kontrakt brez izjem — vzorec
- *  izmeriZmogljivost R312: pokvaren vhod ne more postati lažna resnica). */
-function preveriMeritev(m: ZmogljivostMeritev, indeks: number): void {
-  const kje = `buildZmogljivostPdfDoc: meritev ${indeks}`
-  if (!m || typeof m !== 'object') {
-    throw new TypeError(`${kje}: pričakovan objekt meritve`)
-  }
-  if (typeof m.id !== 'string' || m.id.length === 0) {
-    throw new TypeError(`${kje}: pričakovan id (nestabilni ključ zaslona)`)
-  }
-  if (typeof m.opis !== 'string' || m.opis.length === 0) {
-    throw new TypeError(`${kje} (${m.id}): pričakovan iskren opis operacije`)
-  }
-  if (typeof m.modul !== 'string' || m.modul.length === 0) {
-    throw new TypeError(`${kje} (${m.id}): pričakovana pot modula (katalog kanon R294)`)
-  }
-  if (!Number.isInteger(m.iteracij) || m.iteracij < 3) {
-    throw new TypeError(`${kje} (${m.id}): pričakovano ≥ 3 iteracij (mediana brez njih ni resnica)`)
-  }
-  if (m.enota !== 'ms') {
-    throw new TypeError(`${kje} (${m.id}): pričakovana enota 'ms' (kurzorna resnica — µs bi pretvarjanje skrilo)`)
-  }
-  for (const k of ['najmanj', 'mediana', 'najvec'] as const) {
-    if (!Number.isFinite(m[k]) || m[k] < 0) {
-      throw new TypeError(`${kje} (${m.id}): pričakovan končen, negativen ${k} (ms)`)
-    }
-  }
-  if (m.najmanj > m.mediana || m.mediana > m.najvec) {
-    throw new TypeError(`${kje} (${m.id}): notranja neskladja časov (najmanj ≤ mediana ≤ najvec) — fail-closed`)
-  }
-  if (m.preverjeno !== true) {
-    throw new TypeError(`${kje} (${m.id}): meritev NI preverjena — merjenje pokvare funkcije bi bilo lažna resnica`)
-  }
-}
+// 🆕 R323 (51. člen): zasebna preveriMeritev PREMEŠČENA v brat (preveri-
+// ZmogljivostPregledZaIzvoz — EN VIR validacija za celo izvozno družino;
+// sporočila verbatim, kje = ime graditelja). PDF lib NE nosi več lastnih
+// pravil — pokvaren pregled je odklonjen na ISTI način v CSV in PDF.
 
 function sectionTitle(doc: jsPDF, y: number, text: string): number {
   doc.setFont('Roboto', 'bold')
@@ -196,26 +177,9 @@ export function buildZmogljivostPdfDoc(
   if (!(now instanceof Date) || Number.isNaN(now.getTime())) {
     throw new TypeError('buildZmogljivostPdfDoc: pričakovan veljaven now: Date')
   }
-  if (!Array.isArray(pregled.meritve) || pregled.meritve.length === 0) {
-    throw new TypeError('buildZmogljivostPdfDoc: pregled brez meritev — brez izvedene meritve ni izmišljenih števil')
-  }
-  if (typeof pregled.sklep !== 'string' || pregled.sklep.length === 0) {
-    throw new TypeError('buildZmogljivostPdfDoc: pričakovan sklep (WYSIWYG — EN VIR niz)')
-  }
-  if (!Number.isInteger(pregled.skupajIteracij) || pregled.skupajIteracij <= 0) {
-    throw new TypeError('buildZmogljivostPdfDoc: pričakovan pozitiven skupajIteracij (števec resnice)')
-  }
-  for (let i = 0; i < pregled.meritve.length; i++) {
-    preveriMeritev(pregled.meritve[i]!, i)
-  }
-  // Zip usklajenost: skupajIteracij MORA biti vsota po meritvah (števec
-  // resnice — notranja neskladja = fail-closed, vzorec zip R318/R320).
-  const vsotaIteracij = pregled.meritve.reduce((s, m) => s + m.iteracij, 0)
-  if (vsotaIteracij !== pregled.skupajIteracij) {
-    throw new TypeError(
-      'buildZmogljivostPdfDoc: notranja neskladja skupajIteracij (vsota po meritvah) — fail-closed',
-    )
-  }
+  // 🆕 R323 (51. člen): validacija EN VIR iz brata (meritve/sklep/skupaj-
+  // Iteracij/kontrakt meritve/zip — sporočila verbatim, kje = graditelj).
+  preveriZmogljivostPregledZaIzvoz(pregled, 'buildZmogljivostPdfDoc')
 
   const doc = new jsPDF()
   registerSloPdfFonts(doc)
@@ -273,7 +237,9 @@ export function buildZmogljivostPdfDoc(
   y = sectionTitle(doc, y, `Meritve po operacijah (${pregled.meritve.length})`)
   autoTable(doc, {
     startY: y,
-    head: [['Operacija', 'Opis', 'Modul', 'Iteracij', 'Najmanj', 'Mediana', 'Najvec']],
+    // 🆕 R323 (51. člen): glave EN VIR (ZMOGLJIVOST_IZVOZ_GLAVE iz brata —
+    // vrednosti bajtno nespremenjene od R321; CSV brat nosi ISTI niz).
+    head: [...ZMOGLJIVOST_IZVOZ_GLAVE].map((g) => [g]),
     body: pregled.meritve.map((m) => [
       m.id,
       m.opis,
