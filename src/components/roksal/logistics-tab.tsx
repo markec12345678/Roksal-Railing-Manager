@@ -99,6 +99,15 @@ import {
   generateKonfliktiPdf,
   konfliktiPdfFilename,
 } from '@/lib/konflikti-pdf'
+// R303 — 33. člen 'izvozi' družine: VODJA TEDENSKI PDF PO EKIPAH — PDF brat
+// ICS po ekipah R299 (tedenskiEkipaImena EN VIR — ISTI seznam, ISTO okno;
+// ENA sekcija na ekipo). route NIČ (client+lib only).
+import {
+  generateTedenskiEkipaPdf,
+  tedenskiEkipaPdfFilename,
+  tedenskiEkipaPdfSklep,
+  tedenskiEkipaPregled,
+} from '@/lib/tedenski-vozni-red-ekipa-pdf'
 import { cenikDatumIso } from '@/lib/cenik-pdf'
 import { QC_TEMPLATE, computePassed, countDefects } from '@/lib/qc-gate'
 import { IEV_TEMPLATE } from '@/lib/installation-evidence'
@@ -451,6 +460,8 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
   const [konfliktiCsvVTeku, setKonfliktiCsvVTeku] = useState(false)
   // R302 — dvoklik guard konflikti PDF (pariteta konfliktiCsvVTeku R301).
   const [konfliktiPdfVTeku, setKonfliktiPdfVTeku] = useState(false)
+  // R303 — dvoklik guard vodja ekipe PDF (pariteta konfliktiPdfVTeku R302).
+  const [ekipaPdfVTeku, setEkipaPdfVTeku] = useState(false)
 
   // R266 — ENA izpeljava vhodov za cikl opreme (WYSIWYG ISTI vir kot PDF
   // KPI, tabela, sklep, F2 mini-vrstica IN toast): DTO pruning iz ISTEGA
@@ -511,6 +522,15 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
   // čistost '0 konfliktov'). Memo per podatkovni snapshot (ISTI now).
   const konfliktiPregled = useMemo(
     () => tedenskiKonflikti(vozniRedVnosi, tedenskiRazgledNow),
+    [vozniRedVnosi, tedenskiRazgledNow],
+  )
+
+  // R303 — 33. člen: PREGLED PO EKIPAH OKNA (EN VIR tedenskiEkipaPregled —
+  // ISTO okno + uvožen ekipa seznam R299; null = iskrena praznina 'ni ekip').
+  // Memo per podatkovni snapshot (ISTI now — ENA izpeljava časa za celo
+  // družino, vzorec R292/R299/R300).
+  const ekipaPregled = useMemo(
+    () => tedenskiEkipaPregled(vozniRedVnosi, tedenskiRazgledNow),
     [vozniRedVnosi, tedenskiRazgledNow],
   )
 
@@ -1512,6 +1532,48 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
     }
   }
 
+  // R303 — 33. člen 'izvozi' družine (P1): VODJA TEDENSKI PDF PO EKIPAH —
+  // izpeljani brat ICS po ekipah R299: naslednjih 7 dni, ENA sekcija na
+  // ekipo (vodja razporeja delo po ekipah na ENEM tisku; per-ekipa ICS je
+  // za posameznega člana). Fail-closed PREJ (prazno okno → iskren toast;
+  // 0 ekip → iskren toast — pariteta R299/R301 zelen-žig vzorec); potem ENA
+  // izpeljava (ISTI lib: pregled + PDF + ime + sklep; now = tedenskiRazgledNow
+  // — ENA izpeljava časa za celo družino, lekcija R121/R235); toast = ISTI
+  // lib sklep (WYSIWYG); fail-verbose catch (R291 vzorec); dvoklik guard
+  // (pariteta konfliktiPdfVTeku R302).
+  const handleTedenskiEkipaPdf = () => {
+    if (ekipaPdfVTeku) return
+    setEkipaPdfVTeku(true)
+    try {
+      if (razgled.pov === null) {
+        toast({
+          title: 'Ni terminov v naslednjih 7 dneh',
+          description: 'PDF po ekipah se izvozi, ko je vpisan termin v prihajajočem tednu.',
+        })
+        return
+      }
+      if (ekipaPregled === null) {
+        // Iskrena praznina (termini obstajajo, ampak noben nima ekipe —
+        // mirror R299: ekipa '—' NI ekipa; ni prazne datoteke).
+        toast({
+          title: 'Ni ekip z termini v naslednjih 7 dneh',
+          description: 'PDF po ekipah se izvozi, ko ima ekipa vpisan termin v prihajajočem tednu.',
+        })
+        return
+      }
+      const now = tedenskiRazgledNow
+      generateTedenskiEkipaPdf(vozniRedVnosi, { now })
+      toast({
+        title: `Tedenski vozni red po ekipah prenešen (${tedenskiEkipaPdfFilename(now)})`,
+        description: tedenskiEkipaPdfSklep(ekipaPregled),
+      })
+    } catch (err) {
+      toast({ title: 'Izvoz PDF po ekipah ni uspel', description: err instanceof Error ? err.message : String(err), variant: 'destructive' })
+    } finally {
+      setEkipaPdfVTeku(false)
+    }
+  }
+
   return (
     <div className="space-y-4">
       {/* Subtabs */}
@@ -1806,6 +1868,31 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
             >
               <AlertTriangle aria-hidden="true" className="h-4 w-4 mr-1" /> Konflikti PDF
             </Button>
+            {/* R303 — 33. člen 'izvozi' družine (P1-f): VODJA TEDENSKI PDF PO
+                EKIPAH — PDF brat ICS po ekipah R299: naslednjih 7 dni, ENA
+                sekcija na ekipo — vodja dobi EN tisk z vsemi ekipami
+                (per-ekipa ICS je za posameznega člana, ta tisk za vodjo).
+                VEDNO viden (P1-k/R232 kanon): prazno okno ALI 0 ekip →
+                iskren fail-closed toast, NIKOLI prazna datoteka (R250/R291
+                vzorec); dvoklik guard (pariteta konfliktiPdfVTeku R302);
+                ISTI žetoni kot bratje — 0 novih hex (Users import ŽE
+                obstaja — 0 pin premikov ikon). Definicijski naslov
+                (MANDATORY STIL): izreče PRAVILA (isti seznam in vrstni red
+                kot ICS po ekipi; preklicani vidno rdeče; brez ekipe =
+                iskren števec v sklepu) + vidno razliko (per-ekipa ICS =
+                telefon člana, Ekipe PDF = en tisk za vodjo). */}
+            <Button
+              type="button"
+              variant="outline"
+              aria-label="Izvozi tedenski vozni red po ekipah kot PDF"
+              title="Tedenski vozni red po ekipah kot PDF — naslednjih 7 dni, ENA sekcija na ekipo (isti seznam in vrstni red kot ICS po ekipi; preklicani termini vidno rdeče; termini brez ekipe niso sekcije — iskren števec v sklepu). Per-ekipa ICS = telefon posameznega člana, Ekipe PDF = en tisk za vodjo"
+              data-testid="ekipe-pdf-pill"
+              disabled={ekipaPdfVTeku}
+              className="shrink-0 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              onClick={handleTedenskiEkipaPdf}
+            >
+              <Users aria-hidden="true" className="h-4 w-4 mr-1" /> Ekipe PDF
+            </Button>
             {/* R265 — 21. člen 'izvozi' družine (P1-f): PROJEKTI — TERMINI
                 PREGLED PDF — presek VSEH terminov (/api/schedules — FRESH
                 fetch ISTEGA endpointa ob kliku, R244/R245/R264 precedens;
@@ -1871,6 +1958,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
             {' · ICS po ekipi = samo termini te ekipe (isti 7-dnevni okvir)'}
             {' · Konflikti CSV = dokazani pari prekrivanj ekipe (isti pregled kot žig)'}
             {' · Konflikti PDF = isti pregled kot CSV, tisk za pisarno'}
+            {' · Ekipe PDF = ENA sekcija na ekipo (isti 7-dnevni okvir — en tisk za vodjo)'}
           </p>
 
           {/* R244 — vlogo-osveščen vodič (R242/R243 recept): viden SAMO, ko
