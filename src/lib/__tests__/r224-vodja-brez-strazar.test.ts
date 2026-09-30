@@ -133,7 +133,10 @@ describe('R224 — CSV (IZVOŽENO = ZASLON): vodja-csv', () => {
   })
 
   it('Opozorila sekcija ima sedmo vrstico (tudi ko je 0 — arhivska resnica)', () => {
-    expect(csvSrc).toContain("kpiLine('Opozorila', 'Brez dobavitelja', String(counter(kpi.brezDobavitelja, 'brezDobavitelja')))")
+    // R324 PIN SHIFT: EN VIR dvig v družini dnevnega pregleda (52. člen) —
+    // kpiLine/counter sta v vodjaKpiVrstice/preveriVodjaStevilo (sporočila
+    // VERBATIM); VRSTICA ostaje ISTA (bajtna stabilnost — r324 test)
+    expect(csvSrc).toContain("s('Opozorila', 'Brez dobavitelja', String(preveriVodjaStevilo(kpi.brezDobavitelja, 'brezDobavitelja', kje)))")
   })
 
   it('funkcionalno: vrednost 5 pride v CSV natanko kot na zaslonu', () => {
@@ -196,9 +199,10 @@ describe('R224 — sožitje z obstoječimi signalci (brez regresij)', () => {
   })
 
   it('CSV ostale Opozorila vrstice nespremenjene (brez zamenjave vrstnega reda)', () => {
-    expect(csvSrc).toContain("kpiLine('Opozorila', 'Potekli opomniki'")
-    expect(csvSrc).toContain("kpiLine('Opozorila', 'Nizka zaloga'")
-    expect(csvSrc).toContain("kpiLine('Opozorila', 'Odprta naročila'")
+    // R324 PIN SHIFT: kpiLine → s (vodjaKpiVrstice EN VIR lift; vrstni red vrstic ISTI)
+    expect(csvSrc).toContain("s('Opozorila', 'Potekli opomniki'")
+    expect(csvSrc).toContain("s('Opozorila', 'Nizka zaloga'")
+    expect(csvSrc).toContain("s('Opozorila', 'Odprta naročila'")
   })
 
   it('PDF ostala opozorila nespremenjena', () => {

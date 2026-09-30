@@ -71,10 +71,11 @@ describe('r321 STIL val 10 — vodja dokazni bloki: vrstični hover mikrointerak
     expect(izgubljeni).toEqual([])
   })
 
-  it('anti-stale + register zaklenjen: .press-scale v globals + natanko 3 pojavitve hover žetona v vodja-dashboard', () => {
+  it('anti-stale + register zaklenjen: .press-scale v globals + natanko 4 pojavitve hover žetona v vodja-dashboard (3 dokazni + termini R324)', () => {
     expect(globals).toContain('.press-scale {')
     // R312 lekcija (osma potrditev): štetje POJAVITEV, ne vrstic
+    // R324 PIN SHIFT: register ×3 → ×4 (+ termini vrstica — val 12)
     const pojavitve = src.split(HOVER_ZETON).length - 1
-    expect(pojavitve).toBe(3)
+    expect(pojavitve).toBe(4)
   })
 })

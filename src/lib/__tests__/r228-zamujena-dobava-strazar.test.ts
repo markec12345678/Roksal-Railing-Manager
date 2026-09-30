@@ -166,7 +166,10 @@ describe('R228 — vodja pregled: kartica + iskreno vse-v-redu + EN VIR', () => 
 
 describe('R228 — IZVOŽENO = ZASLON: CSV + PDF (ISTO besedilo dimenzije)', () => {
   it('CSV vodje: vrstica Opozorila/Zamujena dobava VEDNO prisotna (tudi ko 0)', () => {
-    expect(csvLib).toContain("lines.push(kpiLine('Opozorila', 'Zamujena dobava', String(counter(kpi.zamujeneDobave, 'zamujeneDobave'))))")
+    // R324 PIN SHIFT: EN VIR dvig (52. člen) — kpiLine/counter → s/
+    // preveriVodjaStevilo (vodjaKpiVrstice); VRSTICA ostaje ISTA (bajtna
+    // stabilnost — r324 test)
+    expect(csvLib).toContain("s('Opozorila', 'Zamujena dobava', String(preveriVodjaStevilo(kpi.zamujeneDobave, 'zamujeneDobave', kje)))")
     expect(csvLib).toContain('zamujeneDobave: number')
   })
 

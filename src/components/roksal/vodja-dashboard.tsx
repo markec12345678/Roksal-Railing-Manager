@@ -24,6 +24,7 @@ import { Separator } from '@/components/ui/separator'
 import { useToast } from '@/hooks/use-toast'
 import { generateMonthlyReport } from '@/lib/boss-report-pdf'
 import { buildVodjaCsv, vodjaCsvFilename, terminStatusLabel } from '@/lib/vodja-csv'
+import { generateVodjaDnevniPdf, vodjaDnevniPdfFilename } from '@/lib/vodja-dnevni-pdf'
 import { todayStamp, downloadCsvText } from '@/lib/csv-export'
 // R293 (P1-f, 'izvozi' družina — 24. člen) — DOBIČKONOST PO PROJEKTIH CSV:
 // CSV brat PDF R258 (vzorec R284→R285/R291/R292) — EN VIR: lib uvaža presek
@@ -752,41 +753,52 @@ export function VodjaDashboard() {
     }
   }
 
+  /** 🆕 R324 (52. člen): EN VIR vhod izvozne družine dnevnega pregleda —
+   *  CSV (R163) in PDF (52. člen) potrošnika ISTEGA preslikanega vhoda
+   *  (NIČ podvojenega preslikave KPI/terminov/prihodkov v komponenti).
+   *  null = iskrena ničelna veja (statistika še ni prišla — nič izmišljenega
+   *  izvoza). */
+  function vodjaIzvozVhod() {
+    if (!stats) return null
+    return {
+      kpi: {
+        danasTermini: stats.danasTermini,
+        danasZakljuceni: stats.danasZakljuceni,
+        danasVpripravi: stats.danasVpripravi,
+        mesecnoProjektov: stats.mesecnoProjektov,
+        mesecniPrihodek: stats.mesecniPrihodek,
+        mesecnaMarza: stats.mesecnaMarza,
+        mesecnoUr: stats.mesecnoUr,
+        odprtoZnesek: stats.odprtoZnesek,
+        zapadloZnesek: stats.zapadloZnesek,
+        zapadloSt: stats.zapadloSt,
+        potekliOpomniki: stats.potekliOpomniki,
+        nizkaZaloga: stats.nizkaZaloga,
+        odprtaNarocila: stats.odprtaNarocila,
+        brezDobavitelja: stats.brezDobavitelja,
+        zamujeneDobave: stats.zamujeneDobave,
+        skupajProjektov: stats.skupajProjektov,
+        skupajStrank: stats.skupajStrank,
+        skupniLTV: stats.skupniLTV,
+      },
+      termini: termini.map((t) => ({
+        datumZacetka: t.datumZacetka,
+        status: t.status,
+        project: { nazivProjekta: t.project.nazivProjekta, customer: { ime: t.project.customer?.ime ?? null } },
+        crew: t.crew ? { naziv: t.crew.naziv } : null,
+      })),
+      prihodki,
+      danesIso: todayStamp(),
+    }
+  }
+
   /** 🆕 R163: izvoz dnevnega pregleda v CSV — točno zaslonski podatki. */
   function exportDailyCsv() {
-    if (!stats) return
+    const vhod = vodjaIzvozVhod()
+    if (!vhod) return
     try {
-      const danesIso = todayStamp()
-      const { csv } = buildVodjaCsv({
-        kpi: {
-          danasTermini: stats.danasTermini,
-          danasZakljuceni: stats.danasZakljuceni,
-          danasVpripravi: stats.danasVpripravi,
-          mesecnoProjektov: stats.mesecnoProjektov,
-          mesecniPrihodek: stats.mesecniPrihodek,
-          mesecnaMarza: stats.mesecnaMarza,
-          mesecnoUr: stats.mesecnoUr,
-          odprtoZnesek: stats.odprtoZnesek,
-          zapadloZnesek: stats.zapadloZnesek,
-          zapadloSt: stats.zapadloSt,
-          potekliOpomniki: stats.potekliOpomniki,
-          nizkaZaloga: stats.nizkaZaloga,
-          odprtaNarocila: stats.odprtaNarocila,
-          brezDobavitelja: stats.brezDobavitelja,
-          zamujeneDobave: stats.zamujeneDobave,
-          skupajProjektov: stats.skupajProjektov,
-          skupajStrank: stats.skupajStrank,
-          skupniLTV: stats.skupniLTV,
-        },
-        termini: termini.map((t) => ({
-          datumZacetka: t.datumZacetka,
-          status: t.status,
-          project: { nazivProjekta: t.project.nazivProjekta, customer: { ime: t.project.customer?.ime ?? null } },
-          crew: t.crew ? { naziv: t.crew.naziv } : null,
-        })),
-        prihodki,
-        danesIso,
-      })
+      const danesIso = vhod.danesIso
+      const { csv } = buildVodjaCsv(vhod)
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -797,6 +809,26 @@ export function VodjaDashboard() {
       a.remove()
       URL.revokeObjectURL(url)
       toast({ title: 'Dnevni pregled izvožen ✓', description: vodjaCsvFilename(danesIso) })
+    } catch (e) {
+      // fail-verbose: razlog vidno, ne tiho
+      toast({
+        title: 'Izvoz ni uspel',
+        description: e instanceof Error ? e.message : String(e),
+        variant: 'destructive',
+      })
+    }
+  }
+
+  /** 🆕 R324 (52. člen, issue #1 IZVOZI družina): izvoz DNEVNEGA pregleda
+   *  vodje kot deterministični PDF — EN VIR vhod z CSV bratom (R163) prek
+   *  vodjaIzvozVhod; brat vodja-dnevni-pdf validira EN VIR (fail-closed).
+   *  Fail-verbose: razlog vidno, ne tiho (kanon). */
+  function exportDailyPdf() {
+    const vhod = vodjaIzvozVhod()
+    if (!vhod) return
+    try {
+      generateVodjaDnevniPdf(vhod)
+      toast({ title: 'Dnevni pregled izvožen ✓', description: vodjaDnevniPdfFilename(vhod.danesIso) })
     } catch (e) {
       // fail-verbose: razlog vidno, ne tiho
       toast({
@@ -1034,6 +1066,22 @@ export function VodjaDashboard() {
         >
           <Download className="h-3.5 w-3.5" aria-hidden="true" />
           Izvozi CSV
+        </Button>
+        {/* 🆕 R324 — 52. člen (IZVOZI družina): DNEVNI pregled vodje kot
+            deterministični PDF — brat CSV R163 (EN VIR vhod prek
+            vodjaIzvozVhod); bralni dokument za pisarno/revizijo (FileText
+            pill družina, aria-hidden); bratska taktilna + obročna simetrija
+            z CSV sosedem. */}
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-8 gap-1.5 border-roksal-navy/25 dark:border-roksal-ink/25 text-xs text-roksal-ink press-scale transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2"
+          onClick={exportDailyPdf}
+          aria-label="Izvozi dnevni pregled vodje kot PDF"
+          title="Izvozi dnevni pregled (KPI, opozorila in današnji termini) kot deterministični PDF"
+        >
+          <FileText className="h-3.5 w-3.5" aria-hidden="true" />
+          Dnevni PDF
         </Button>
         {/* Mesečno poročilo PDF (runda M) — KPI + graf + računi + projekti */}
         <Button
@@ -1587,7 +1635,7 @@ export function VodjaDashboard() {
 
       {/* Današnji termini seznam */}
       {termini.length > 0 && (
-        <Card>
+        <Card className="transition-colors hover:border-roksal-amber/30">
           <CardHeader className="pb-2">
             <CardTitle className="text-xs flex items-center gap-2">
               <Calendar className="h-3.5 w-3.5 text-roksal-amber" aria-hidden="true" />
@@ -1596,7 +1644,10 @@ export function VodjaDashboard() {
           </CardHeader>
           <CardContent className="space-y-1.5">
             {termini.map((t) => (
-              <div key={t.id} className="flex items-center gap-2 rounded-lg border border-border p-2">
+              <div
+                key={t.id}
+                className="flex items-center gap-2 rounded-lg border border-border p-2 transition-colors hover:border-roksal-amber/40"
+              >
                 <div className="h-8 w-1 rounded-full" style={{ backgroundColor: t.crew?.barva || '#1d2b3e' }} />
                 <div className="min-w-0 flex-1">
                   <div className="text-xs font-medium text-roksal-ink truncate">{t.project.nazivProjekta}</div>

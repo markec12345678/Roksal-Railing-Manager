@@ -103,7 +103,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 45 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **4503** (260 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **4522** (262 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 143 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -484,6 +484,29 @@ Sheet z 6 podzavihki:
   hierarhija preverba + val 10 obrnjena regresija ×3 + register 3 pojavitve);
   PIN SHIFTI ×2 izrecno (val8 amber ×6→×7 + anti-stale 56→57; val9
   press-scale ×13→14 pojavitev, 7→8 gumbov)
+- **Izvoz dnevnega pregleda vodje kot PDF** (R324, 52. člen — issue #1
+  **IZVOZI družina**): vodja "Pregled za vodjo" dobi gumb `Dnevni PDF`
+  (brat CSV R163 — vzorec R318/R320/R321, LOČEN lib
+  `src/lib/vodja-dnevni-pdf.ts`); vhod = POSREDOVANA resnica prek
+  komponentnega EN VIR helperja `vodjaIzvozVhod` (ENA preslikava KPI/
+  terminov/prihodkov, DVA potrošnika — NIČ podvojenega preslikave);
+  **EN VIR kontrakt R324 dvignjen v brat R163**: glave `VODJA_KPI_GLAVE` +
+  `VODJA_TERMINI_GLAVE`, validacija `preveriVodjaIzvozVhod` (sporočila
+  VERBATIM, kje = graditelj), števci/zneski/ura EN VIR + KPI vrstice
+  `vodjaKpiVrstice` (17 arhivskih meritev + prihodki — ISTI vrstni red kot
+  CSV) + `VODJA_VIR_NIZ` (CSV arhivska oblika ostaja BAJTNO nespremenjena);
+  determinističen PDF (KPI ×4 izračunani; fiksni žig `VODJA_PDF_ZIG_FIKSNI`
+  + FNV soli 0xcd–0xd0 [register: 0xc9–0xcc zmogljivost]; iskren prazen
+  termini blok); a11y izvozne družine (aria + title) + fail-verbose toast +
+  iskrena ničelna veja; r324-vodja-dnevni-pdf vitest ×14 (bajtni dokazi +
+  CSV bajtna stabilnost + kje VERBATIM ×2 + EN VIR pini)
+- **Stil val 12 — današnji termini dvonivojski odziv** (R324): val 11
+  hierarhija (blok amber/30 < vrstica amber/40) razširjena na NOVO
+  površino — Današnji termini (Card + vrstice); r324-stil-val12 STRAŽAR ×5
+  (površina + žetona + hierarhija + obrnjena regresija dokaznih blokov +
+  registra ×4/×4); PIN SHIFTI ×3 izrecno (val8 amber/50 ×7→×8 + anti-stale
+  57→58; val9 press-scale ×14→15 pojavitev, 8→9 gumbov; val11 blok/vrstica
+  ×3→×4)
 - **Stil val 10 — dokazni bloki vrstični hover mikrointerakcija** (R321):
   ENOTEN `transition-colors hover:border-roksal-amber/40` žeton na vrsticah
   vseh treh vodja dokaznih blokov (meritve zmogljivosti R312 +
@@ -622,7 +645,7 @@ Sheet z 6 podzavihki:
 | **PWA** | Service Worker + Web Manifest |
 | **Temnitveni način** | [next-themes](https://github.com/pacocoursey/next-themes) |
 | **Validacija** | [Zod 4](https://zod.dev/) |
-| **Testiranje** | [Vitest 4](https://vitest.dev/) (4503 testov + globalSetup embedded PG) |
+| **Testiranje** | [Vitest 4](https://vitest.dev/) (4522 testov + globalSetup embedded PG) |
 | **Paketni upravitelj** | [Bun](https://bun.sh/) |
 | **Linting** | ESLint 9 + eslint-config-next |
 
@@ -744,7 +767,7 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `bun run dev` | Zažene Next.js dev server (port 3000) |
 | `bun run build` | Produkcijska build (build-prepare: generate + migrate deploy + seed) |
 | `bun run start` | Zažene produkcijski server |
-| `bun run test` | Vsi testi (vitest, 4503, embedded PG prek globalSetup) |
+| `bun run test` | Vsi testi (vitest, 4522, embedded PG prek globalSetup) |
 | `bun run check` | tsc --noEmit + vitest run (en ukaz za vse) |
 | `bunx tsc --noEmit` | Tipska kontrola celotnega projekta (trenutno 0 napak) |
 | `bun run lint` | ESLint preverjanje |

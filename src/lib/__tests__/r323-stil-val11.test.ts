@@ -16,15 +16,21 @@
 //  • r321-stil-val10: obrnjena regresija lista + CSV gumb (press-scale
 //    nedotaknjen); hover:border-roksal-amber/40 register ostane ×3.
 //
+// R324 PIN SHIFT (52. člen): dvonivojski odziv razširjen na NOVO površino —
+// DANAŠNJI TERMINI (val 12): blok žeton register ×3 → ×4 (+ termini Card),
+// vrstica žeton register ×3 → ×4 (+ termini vrstice) — hierarhija /30 < /40
+// ohranjena; globalna registra narasteta, okna dokaznih blokov ostanejo ×3.
+//
 // STRAŽAR (kanon r316/…/r321 — anti-stale + obrnjena regresija):
 //  • vseh 3 dokaznih sekcij nosi transition-colors + hover:border-roksal-
 //    amber/30 (okno okoli data-testid);
 //  • žeton = roksal token, NI surove barve (val7 kampanja kanon);
-//  • hierarhija: vrstica žeton (amber/40) ostane ×3 — NI pomešan z blok
-//    žetonom (amber/30);
+//  • hierarhija: vrstica žeton (amber/40) ostane IZRAZITEJŠI od bloka
+//    (amber/30) — NI pomešan;
 //  • anti-stale: .press-scale utility ŠE VEDNO v globals.css;
-//  • register zaklenjen: natanko 3 pojavitve hover:border-roksal-amber/30
-//    v vodja-dashboard (R312 lekcija: štetje POJAVITEV, ne vrstic).
+//  • register zaklenjen: natanko 4 pojavitve hover:border-roksal-amber/30
+//    v vodja-dashboard (3 dokazni bloki + termini Card R324; R312 lekcija:
+//    štetje POJAVITEV, ne vrstic).
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -67,10 +73,11 @@ describe('r323 STIL val 11 — vodja dokazni bloki: sekcija-level hover mikroint
     expect(blokNivo).toBeLessThan(vrsticaNivo)
   })
 
-  it('obrnjena regresija: vrstični hover val 10 ŠE VEDNO ×3 + izvozna družina (z NOVIM CSV gumbom) ŠE VEDNO press-scale', () => {
-    // val 10 vrstični žeton ostane ×3 (NI pomešan z blok žetonom)
+  it('obrnjena regresija: vrstični hover val 10 ŠE VEDNO prisoten (register ×4 po R324) + izvozna družina ŠE VEDNO taktilna', () => {
+    // val 10 vrstični žeton ostane (NI pomešan z blok žetonom); register je
+    // narasel ×3 → ×4 (+ termini vrstice — PIN SHIFT R324)
     const vrsticaPojavitve = src.split(VRSTICA_ZETON).length - 1
-    expect(vrsticaPojavitve).toBe(3)
+    expect(vrsticaPojavitve).toBe(4)
     const gumbi = [
       'aria-label="Izvozi dobičkonosnost projektov kot PDF"',
       'aria-label="Izvozi poročilo končne verifikacije kot PDF"',
@@ -81,10 +88,10 @@ describe('r323 STIL val 11 — vodja dokazni bloki: sekcija-level hover mikroint
     expect(izgubljeni).toEqual([])
   })
 
-  it('anti-stale + register zaklenjen: .press-scale v globals + natanko 3 pojavitve blok žetona v vodja-dashboard', () => {
+  it('anti-stale + register zaklenjen: .press-scale v globals + natanko 4 pojavitve blok žetona v vodja-dashboard (3 dokazni + termini R324)', () => {
     expect(globals).toContain('.press-scale {')
     // R312 lekcija (deveta potrditev): štetje POJAVITEV, ne vrstic
     const pojavitve = src.split(BLOK_ZETON).length - 1
-    expect(pojavitve).toBe(3)
+    expect(pojavitve).toBe(4)
   })
 })

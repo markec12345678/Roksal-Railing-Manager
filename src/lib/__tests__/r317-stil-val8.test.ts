@@ -18,6 +18,11 @@
 // register ×5 → ×6 z obrnjeno regresijo: stari ×5 pin je prepovedan —
 // polzaporedje ne sme nazaj; precedens R320 končna PDF).
 //
+// R324 PIN SHIFT (52. člen): vodja blok glava dobi OSMI amber/50 gumb
+// (dnevni pregled vodje PDF — brat CSV R163, IZVOZI družina; register
+// ×7 → ×8 z obrnjeno regresijo: stari ×7 pin je prepovedan — polzaporedje
+// ne sme nazaj; precedens R321/R323).
+//
 // STRAŽAR (kanon GLOBALNI sken r310/r316 prenesen na izvozno družino):
 //  • vsak izvozni gumb (aria-label="Izvozi …") nosi IZRECEN
 //    focus-visible:ring-2 žeton (ne samo baza);
@@ -54,12 +59,14 @@ describe('r317 STIL val 8 — izvozna družina: focus-visible ring STRAŽAR', ()
   const gumbi = izvozniGumbi()
   const AMBER_ZETONI = new Set(['vodja-dashboard'])
 
-  it('anti-stale: 57 izvoznih gumbov v drevesu (56 pred R323 + NOV meritve zmogljivosti CSV)', () => {
-    expect(gumbi.length).toBeGreaterThanOrEqual(57)
+  it('anti-stale: 58 izvoznih gumbov v drevesu (57 pred R324 + NOV dnevni pregled PDF)', () => {
+    expect(gumbi.length).toBeGreaterThanOrEqual(58)
     // novi gumb 50. člena je prisoten
     expect(gumbi.some((g) => g.okno.includes('Izvozi meritve zmogljivosti kot PDF'))).toBe(true)
     // novi gumb 51. člena je prisoten (R322)
     expect(gumbi.some((g) => g.okno.includes('Izvozi meritve zmogljivosti kot CSV'))).toBe(true)
+    // novi gumb 52. člena je prisoten (R324)
+    expect(gumbi.some((g) => g.okno.includes('Izvozi dnevni pregled vodje kot PDF'))).toBe(true)
   })
 
   it('vsak izvozni gumb nosi IZRECEN focus-visible ring žeton (ne samo ui baza)', () => {
@@ -86,19 +93,21 @@ describe('r317 STIL val 8 — izvozna družina: focus-visible ring STRAŽAR', ()
       (g) => g.okno.includes('focus-visible:ring-roksal-amber/50') && !AMBER_ZETONI.has(g.datoteka),
     )
     expect(kršitve).toEqual([])
-    // R323 register je ŽIV: vodja res nosi 7 amber gumbov (dnevni CSV R163 +
+    // R324 register je ŽIV: vodja res nosi 8 amber gumbov (dnevni CSV R163 +
     // JSON 46. + CSV 47. + audit PDF 48. + končna verifikacija PDF 49. +
-    // meritve zmogljivosti PDF 50. + meritve zmogljivosti CSV 51. člen — isti
-    // vodja blok glavni vzorec z offset-2; PIN SHIFT ×6 → ×7 z obrnjeno regresijo)
+    // meritve zmogljivosti PDF 50. + meritve zmogljivosti CSV 51. + dnevni
+    // pregled PDF 52. člen — isti vodja blok glavni vzorec z offset-2;
+    // PIN SHIFT ×7 → ×8 z obrnjeno regresijo)
     const vodjaAmber = gumbi.filter(
       (g) => g.datoteka === 'vodja-dashboard' && g.okno.includes('focus-visible:ring-roksal-amber/50'),
     )
-    expect(vodjaAmber.length).toBe(7)
+    expect(vodjaAmber.length).toBe(8)
     const ariaVseh = vodjaAmber.map((g) => {
       const m = g.okno.match(/aria-label="([^"]+)"/)
       return m ? m[1] : ''
     })
     expect(ariaVseh).toContain('Izvozi dnevni pregled vodje kot CSV')
+    expect(ariaVseh).toContain('Izvozi dnevni pregled vodje kot PDF')
     expect(ariaVseh).toContain('Izvozi poročilo končne verifikacije kot JSON')
     expect(ariaVseh).toContain('Izvozi avtomatizacijski audit kot CSV')
     expect(ariaVseh).toContain('Izvozi avtomatizacijski audit kot PDF')

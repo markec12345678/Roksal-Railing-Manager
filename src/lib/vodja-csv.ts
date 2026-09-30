@@ -25,6 +25,17 @@
 //    ("Načrtovano" za vse, kar ni ZAKLJUCENO/V_TEKU; sintetizirani termini
 //    iz projekta nosijo projektne statuse). Izvoz replicira zaslon TAKO KOT
 //    JE — sprememba UI fallbacka je ločena produktna odločitev.
+//
+// 🆕 R324 (52. člen issue #1 IZVOZI družina) — EN VIR kontrakt DVIGNJEN za
+// celo izvozno družino dnevnega pregleda (vzorec preveriZmogljivostPregled-
+// ZaIzvoz + ZMOGLJIVOST_IZVOZ_GLAVE R323): glave (VODJA_KPI_GLAVE +
+// VODJA_TERMINI_GLAVE), vhodna validacija (preveriVodjaIzvozVhod —
+// sporočila VERBATIM, kje = ime graditelja), števci/zneski/ura
+// (preveriVodjaStevilo / preveriVodjaZnesek / formatUraVodja), KPI vrstice
+// (vodjaKpiVrstice — 17 arhivskih meritev + prihodki, ISTI vrstni red) in
+// Vir niz (VODJA_VIR_NIZ). CSV izhod ostane BAJTNO nespremenjen (arhivska
+// stabilnost R163 — nič nove meta vrstice); PDF brat (vodja-dnevni-pdf)
+// uvaža ISTO resnico — CSV in PDF ne moreta divergirati po konstrukciji.
 
 export type VodjaTerminStatus = 'ZAKLJUCENO' | 'V_TEKU' | 'NACRTOVANO'
 
@@ -92,37 +103,141 @@ export function formatEurCsv(eur: number): string {
 /** Ura iz ISO niza kot HH:MM (slice, brez Date API-ja → deterministično).
  *  Zaslon prikaže lokalni čas brskalnika; izvoz vzame časovni del ISO zapisa
  *  (UTC) in TO povedno pove: glava izvoza to ne skriva — arhiv je vezan na
- *  datum iz glave. Polje je torej tehnika, ne trditev o lokalnem času. */
-function formatUra(iso: string): string {
+ *  datum iz glave. Polje je torej tehnika, ne trditev o lokalnem času.
+ *  🆕 R324: EN VIR za celo družino — kje = ime graditelja (sporočilo VERBATIM). */
+export function formatUraVodja(iso: string, kje: string): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/.exec(iso)
   if (!m) {
-    throw new TypeError(`buildVodjaCsv: neveljaven datumZacetek termina: ${String(iso)}`)
+    throw new TypeError(`${kje}: neveljaven datumZacetek termina: ${String(iso)}`)
   }
   return `${m[4]}:${m[5]}`
 }
 
-const SECTION_HEADER = '"Sekcija","Kazalnik","Vrednost"'
+/** 🆕 R324 — EN VIR glave izvozne družine (vzorec ZMOGLJIVOST_IZVOZ_GLAVE
+ *  R323): KPI tabela (Sekcija · Kazalnik · Vrednost) + termini tabela (Čas ·
+ *  Projekt · Stranka · Ekipa · Status). CSV citira (quoteField), PDF brat
+ *  (vodja-dnevni-pdf) uporablja surove nize v autoTable head — ISTI niz,
+ *  NIČ podvojenih glav. */
+export const VODJA_KPI_GLAVE = ['Sekcija', 'Kazalnik', 'Vrednost'] as const
+export const VODJA_TERMINI_GLAVE = ['Čas', 'Projekt', 'Stranka', 'Ekipa', 'Status'] as const
+
+/** 🆕 R324 — Vir niz družine (vzorec AUDIT_VIR_NIZ R318 / ZMOGLJIVOST_VIR_NIZ
+ *  R323). CSV arhivska oblika R163 ostaja BAJTNO nespremenjena (nič nove
+ *  meta vrstice) — vir niz nosi PDF brat v sklepni vrstici; kontrakt živi
+ *  TUKAJ (EN VIR za celo družino). */
+export const VODJA_VIR_NIZ = 'DNEVNI_PREGLED_VODJE — isti HEAD = bajtno identičen izvoz'
 
 function quoteField(value: string): string {
   return `"${value.replace(/"/g, '""')}"`
 }
 
-function kpiLine(sekcija: string, kazalnik: string, vrednost: string): string {
-  return [quoteField(sekcija), quoteField(kazalnik), quoteField(vrednost)].join(',')
-}
-
-function counter(v: number, ime: string): number {
+/** 🆕 R324 — EN VIR števec (celoštevilska ne-negativna resnica; vzorec
+ *  counter R163 — sporočilo VERBATIM, kje = ime graditelja). */
+export function preveriVodjaStevilo(v: number, ime: string, kje: string): number {
   if (typeof v !== 'number' || !Number.isFinite(v) || !Number.isInteger(v) || v < 0) {
-    throw new TypeError(`buildVodjaCsv: pričakovano ne-negativno celo število za ${ime}: ${String(v)}`)
+    throw new TypeError(`${kje}: pričakovano ne-negativno celo število za ${ime}: ${String(v)}`)
   }
   return v
 }
 
-function money(v: number, ime: string): number {
+/** 🆕 R324 — EN VIR znesek (končna numerična resnica; vzorec money R163). */
+export function preveriVodjaZnesek(v: number, ime: string, kje: string): number {
   if (typeof v !== 'number' || !Number.isFinite(v)) {
-    throw new TypeError(`buildVodjaCsv: pričakovano končen znesek za ${ime}: ${String(v)}`)
+    throw new TypeError(`${kje}: pričakovano končen znesek za ${ime}: ${String(v)}`)
   }
   return v
+}
+
+/** 🆕 R324 — EN VIR vhodna validacija izvozne družine dnevnega pregleda
+ *  (dvignjena iz buildVodjaCsv — vzorec preveriZmogljivostPregledZaIzvoz
+ *  R323): sporočila VERBATIM, kje = ime graditelja. Pokvaren vhod ne more
+ *  postati lažno poročilo v NITI enem potrošniku družine. */
+export function preveriVodjaIzvozVhod(
+  input: {
+    kpi: VodjaKpi
+    termini: readonly VodjaTerminCsvRow[]
+    prihodki: readonly VodjaPrihodekRow[]
+    danesIso: string
+  },
+  kje: string,
+): void {
+  const { kpi, termini, prihodki, danesIso } = input
+  if (kpi === null || typeof kpi !== 'object' || Array.isArray(kpi)) {
+    throw new TypeError(`${kje}: pričakovan objekt kpi`)
+  }
+  if (!Array.isArray(termini)) {
+    throw new TypeError(`${kje}: pričakovano polje terminov`)
+  }
+  if (!Array.isArray(prihodki)) {
+    throw new TypeError(`${kje}: pričakovano polje prihodkov`)
+  }
+  if (typeof danesIso !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(danesIso)) {
+    throw new TypeError(`${kje}: pričakovan referenčni datum danes (YYYY-MM-DD)`)
+  }
+  // Strukturna validacija referenčnega datuma (vzorec R161: "2026-13-99").
+  const mesec = Number(danesIso.slice(5, 7))
+  const dan = Number(danesIso.slice(8, 10))
+  if (mesec < 1 || mesec > 12 || dan < 1 || dan > 31) {
+    throw new TypeError(`${kje}: nemogoč referenčni datum: ${danesIso}`)
+  }
+}
+
+/** 🆕 R324 — EN VIR KPI vrstice dnevnega pregleda: 17 arhivskih meritev
+ *  (Danes ×3, Ta mesec ×6, Opozorila ×5, Skupno ×3) + prihodki po mesecih —
+ *  ISTI vrstni red kot CSV brat (kanon IZVOŽENO = ZASLON R163: vrednosti so
+ *  že prikazne — formatEurCsv / String(counter)). CSV jih citira v strojne
+ *  vrstice, PDF jih riše v autoTable — ena definicija, dva potrošnika. */
+export interface VodjaKpiVrstica {
+  sekcija: string
+  kazalnik: string
+  vrednost: string
+}
+
+export function vodjaKpiVrstice(
+  kpi: VodjaKpi,
+  prihodki: readonly VodjaPrihodekRow[],
+  kje: string,
+): VodjaKpiVrstica[] {
+  const vrstice: VodjaKpiVrstica[] = []
+  const s = (sekcija: string, kazalnik: string, vrednost: string): void => {
+    vrstice.push({ sekcija, kazalnik, vrednost })
+  }
+  // Danes
+  s('Danes', 'Termini', String(preveriVodjaStevilo(kpi.danasTermini, 'danasTermini', kje)))
+  s('Danes', 'V teku', String(preveriVodjaStevilo(kpi.danasVpripravi, 'danasVpripravi', kje)))
+  s('Danes', 'Zaključeni', String(preveriVodjaStevilo(kpi.danasZakljuceni, 'danasZakljuceni', kje)))
+  // Ta mesec
+  s('Ta mesec', 'Prihodek (plačano)', formatEurCsv(preveriVodjaZnesek(kpi.mesecniPrihodek, 'mesecniPrihodek', kje)))
+  s('Ta mesec', 'Marža (25%)', formatEurCsv(preveriVodjaZnesek(kpi.mesecnaMarza, 'mesecnaMarza', kje)))
+  s('Ta mesec', 'Projektov', String(preveriVodjaStevilo(kpi.mesecnoProjektov, 'mesecnoProjektov', kje)))
+  s('Ta mesec', 'Ure', String(preveriVodjaStevilo(kpi.mesecnoUr, 'mesecnoUr', kje)))
+  s('Ta mesec', 'Odprto (izdano)', formatEurCsv(preveriVodjaZnesek(kpi.odprtoZnesek, 'odprtoZnesek', kje)))
+  s(
+    'Ta mesec',
+    'Zapadlo',
+    `${formatEurCsv(preveriVodjaZnesek(kpi.zapadloZnesek, 'zapadloZnesek', kje))} (${preveriVodjaStevilo(kpi.zapadloSt, 'zapadloSt', kje)})`,
+  )
+  // Opozorila (tudi ničelne vrednosti — arhivska resnica)
+  s('Opozorila', 'Potekli opomniki', String(preveriVodjaStevilo(kpi.potekliOpomniki, 'potekliOpomniki', kje)))
+  s('Opozorila', 'Nizka zaloga', String(preveriVodjaStevilo(kpi.nizkaZaloga, 'nizkaZaloga', kje)))
+  s('Opozorila', 'Odprta naročila', String(preveriVodjaStevilo(kpi.odprtaNarocila, 'odprtaNarocila', kje)))
+  // R224 — sedmi signalec (IZVOŽENO = ZASLON: tudi ko je 0 — arhivska resnica)
+  s('Opozorila', 'Brez dobavitelja', String(preveriVodjaStevilo(kpi.brezDobavitelja, 'brezDobavitelja', kje)))
+  // R228 — nova tema: zamujena dobava (IZVOŽENO = ZASLON: tudi ko je 0 —
+  // arhivska resnica; ISTO besedilo dimenzije kot zaslon)
+  s('Opozorila', 'Zamujena dobava', String(preveriVodjaStevilo(kpi.zamujeneDobave, 'zamujeneDobave', kje)))
+  // Skupno
+  s('Skupno', 'Projektov', String(preveriVodjaStevilo(kpi.skupajProjektov, 'skupajProjektov', kje)))
+  s('Skupno', 'Strank', String(preveriVodjaStevilo(kpi.skupajStrank, 'skupajStrank', kje)))
+  s('Skupno', 'Skupni LTV', formatEurCsv(preveriVodjaZnesek(kpi.skupniLTV, 'skupniLTV', kje)))
+  // Prihodki po mesecih (isti podatki kot stolpčni graf na zaslonu)
+  for (const p of prihodki) {
+    if (p === null || typeof p !== 'object' || typeof p.label !== 'string' || p.label.trim() === '') {
+      throw new TypeError(`${kje}: prihodek vrstica potrebuje label`)
+    }
+    s('Prihodki', p.label, formatEurCsv(preveriVodjaZnesek(p.eur, 'prihodki', kje)))
+  }
+  return vrstice
 }
 
 export function buildVodjaCsv(input: {
@@ -131,25 +246,11 @@ export function buildVodjaCsv(input: {
   prihodki: readonly VodjaPrihodekRow[]
   danesIso: string
 }): { csv: string; vrstic: number } {
+  // 🆕 R324: vhodna validacija EN VIR (preveriVodjaIzvozVhod — sporočila
+  // VERBATIM, kje = 'buildVodjaCsv' → bajtno ISTA sporočila kot R163).
+  preveriVodjaIzvozVhod(input, 'buildVodjaCsv')
   const { kpi, termini, prihodki, danesIso } = input
-  if (kpi === null || typeof kpi !== 'object' || Array.isArray(kpi)) {
-    throw new TypeError('buildVodjaCsv: pričakovan objekt kpi')
-  }
-  if (!Array.isArray(termini)) {
-    throw new TypeError('buildVodjaCsv: pričakovano polje terminov')
-  }
-  if (!Array.isArray(prihodki)) {
-    throw new TypeError('buildVodjaCsv: pričakovano polje prihodkov')
-  }
-  if (typeof danesIso !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(danesIso)) {
-    throw new TypeError('buildVodjaCsv: pričakovan referenčni datum danes (YYYY-MM-DD)')
-  }
-  // Strukturna validacija referenčnega datuma (vzorec R161: "2026-13-99").
-  const mesec = Number(danesIso.slice(5, 7))
-  const dan = Number(danesIso.slice(8, 10))
-  if (mesec < 1 || mesec > 12 || dan < 1 || dan > 31) {
-    throw new TypeError(`buildVodjaCsv: nemogoč referenčni datum: ${danesIso}`)
-  }
+  const kje = 'buildVodjaCsv'
 
   const lines: string[] = []
   // Glava: naslov + datum izvoza (DD.MM.YYYY, čisto stringovno).
@@ -159,65 +260,29 @@ export function buildVodjaCsv(input: {
       quoteField(`${danesIso.slice(8, 10)}.${danesIso.slice(5, 7)}.${danesIso.slice(0, 4)}`),
     ].join(','),
   )
-  lines.push(SECTION_HEADER)
+  lines.push(VODJA_KPI_GLAVE.map(quoteField).join(','))
 
-  // Danes
-  lines.push(kpiLine('Danes', 'Termini', String(counter(kpi.danasTermini, 'danasTermini'))))
-  lines.push(kpiLine('Danes', 'V teku', String(counter(kpi.danasVpripravi, 'danasVpripravi'))))
-  lines.push(kpiLine('Danes', 'Zaključeni', String(counter(kpi.danasZakljuceni, 'danasZakljuceni'))))
-
-  // Ta mesec
-  lines.push(kpiLine('Ta mesec', 'Prihodek (plačano)', formatEurCsv(money(kpi.mesecniPrihodek, 'mesecniPrihodek'))))
-  lines.push(kpiLine('Ta mesec', 'Marža (25%)', formatEurCsv(money(kpi.mesecnaMarza, 'mesecnaMarza'))))
-  lines.push(kpiLine('Ta mesec', 'Projektov', String(counter(kpi.mesecnoProjektov, 'mesecnoProjektov'))))
-  lines.push(kpiLine('Ta mesec', 'Ure', String(counter(kpi.mesecnoUr, 'mesecnoUr'))))
-  lines.push(kpiLine('Ta mesec', 'Odprto (izdano)', formatEurCsv(money(kpi.odprtoZnesek, 'odprtoZnesek'))))
-  lines.push(
-    kpiLine(
-      'Ta mesec',
-      'Zapadlo',
-      `${formatEurCsv(money(kpi.zapadloZnesek, 'zapadloZnesek'))} (${counter(kpi.zapadloSt, 'zapadloSt')})`,
-    ),
-  )
-
-  // Opozorila (tudi ničelne vrednosti — arhivska resnica)
-  lines.push(kpiLine('Opozorila', 'Potekli opomniki', String(counter(kpi.potekliOpomniki, 'potekliOpomniki'))))
-  lines.push(kpiLine('Opozorila', 'Nizka zaloga', String(counter(kpi.nizkaZaloga, 'nizkaZaloga'))))
-  lines.push(kpiLine('Opozorila', 'Odprta naročila', String(counter(kpi.odprtaNarocila, 'odprtaNarocila'))))
-  // R224 — sedmi signalec (IZVOŽENO = ZASLON: tudi ko je 0 — arhivska resnica)
-  lines.push(kpiLine('Opozorila', 'Brez dobavitelja', String(counter(kpi.brezDobavitelja, 'brezDobavitelja'))))
-  // R228 — nova tema: zamujena dobava (IZVOŽENO = ZASLON: tudi ko je 0 —
-  // arhivska resnica; ISTO besedilo dimenzije kot zaslon)
-  lines.push(kpiLine('Opozorila', 'Zamujena dobava', String(counter(kpi.zamujeneDobave, 'zamujeneDobave'))))
-
-  // Skupno
-  lines.push(kpiLine('Skupno', 'Projektov', String(counter(kpi.skupajProjektov, 'skupajProjektov'))))
-  lines.push(kpiLine('Skupno', 'Strank', String(counter(kpi.skupajStrank, 'skupajStrank'))))
-  lines.push(kpiLine('Skupno', 'Skupni LTV', formatEurCsv(money(kpi.skupniLTV, 'skupniLTV'))))
-
-  // Prihodki po mesecih (isti podatki kot stolpčni graf na zaslonu)
-  for (const p of prihodki) {
-    if (p === null || typeof p !== 'object' || typeof p.label !== 'string' || p.label.trim() === '') {
-      throw new TypeError('buildVodjaCsv: prihodek vrstica potrebuje label')
-    }
-    lines.push(kpiLine('Prihodki', p.label, formatEurCsv(money(p.eur, 'prihodki'))))
+  // 🆕 R324: KPI vrstice EN VIR (vodjaKpiVrstice — 17 meritev + prihodki,
+  // ISTI vrstni red; citirane v strojne vrstice — bajtno ISTO kot R163).
+  for (const v of vodjaKpiVrstice(kpi, prihodki, kje)) {
+    lines.push([quoteField(v.sekcija), quoteField(v.kazalnik), quoteField(v.vrednost)].join(','))
   }
 
-  // Današnji termini — ISTI stolpci kot kartica: Čas · Projekt · Stranka · Ekipa · Status
+  // Današnji termini — ISTI stolpci kot kartica (EN VIR glava VODJA_TERMINI_GLAVE)
   if (termini.length > 0) {
-    lines.push(['Čas', 'Projekt', 'Stranka', 'Ekipa', 'Status'].map(quoteField).join(','))
+    lines.push(VODJA_TERMINI_GLAVE.map(quoteField).join(','))
     for (const t of termini) {
       if (t === null || typeof t !== 'object') {
-        throw new TypeError('buildVodjaCsv: termin mora biti objekt')
+        throw new TypeError(`${kje}: termin mora biti objekt`)
       }
       if (
         !t.project ||
         typeof t.project.nazivProjekta !== 'string' ||
         t.project.nazivProjekta.trim() === ''
       ) {
-        throw new TypeError('buildVodjaCsv: termin potrebuje project.nazivProjekta')
+        throw new TypeError(`${kje}: termin potrebuje project.nazivProjekta`)
       }
-      const ura = formatUra(t.datumZacetka)
+      const ura = formatUraVodja(t.datumZacetka, kje)
       const projekt = t.project.nazivProjekta
       const stranka = t.project.customer?.ime ?? null
       const ekipa = t.crew?.naziv ?? null
