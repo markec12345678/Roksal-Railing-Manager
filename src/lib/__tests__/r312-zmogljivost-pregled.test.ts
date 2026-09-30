@@ -19,10 +19,10 @@ import { izmeriZmogljivost, ZMOGLJIVOST_OPS } from '@/lib/zmogljivost-pregled'
 const vodja = () => readFileSync(join(process.cwd(), 'src/components/roksal/vodja-dashboard.tsx'), 'utf8')
 
 describe('r312 zmogljivost-pregled — registracija operacij (EN VIR)', () => {
-  it('×8 operacij, enolični id-ji, iskreni opisi, iteracij ≥ 3', () => {
-    expect(ZMOGLJIVOST_OPS.length).toBe(8)
+  it('×10 operacij, enolični id-ji, iskreni opisi, iteracij ≥ 3 (R313: +2 PDF meritve)', () => {
+    expect(ZMOGLJIVOST_OPS.length).toBe(10)
     const idji = ZMOGLJIVOST_OPS.map((o) => o.id)
-    expect(new Set(idji).size).toBe(8)
+    expect(new Set(idji).size).toBe(10)
     expect(idji).toEqual([
       'calculator.razmik',
       'calculator.vetrna',
@@ -32,6 +32,8 @@ describe('r312 zmogljivost-pregled — registracija operacij (EN VIR)', () => {
       'termini.urAgregat',
       'termini.csv',
       'ai-raba.pregled',
+      'konflikti.pdf',
+      'racuni-projekti.pdf',
     ])
     for (const op of ZMOGLJIVOST_OPS) {
       expect(op.opis.length, `${op.id}: opis prekratko (iskrenost)`).toBeGreaterThan(10)
@@ -40,6 +42,19 @@ describe('r312 zmogljivost-pregled — registracija operacij (EN VIR)', () => {
       expect(typeof op.izvedi).toBe('function')
       expect(typeof op.preveri).toBe('function')
     }
+  })
+
+  it('PDF meritvi: iteracij ≥ 3, oba modula obstajata, preverba %PDF- magija na realnem teku', () => {
+    const pdfOps = ZMOGLJIVOST_OPS.filter((o) => o.id.endsWith('.pdf'))
+    expect(pdfOps.map((o) => o.id)).toEqual(['konflikti.pdf', 'racuni-projekti.pdf'])
+    for (const op of pdfOps) {
+      expect(op.iteracij).toBeGreaterThanOrEqual(3)
+      expect(() => readFileSync(join(process.cwd(), op.modul), 'utf8'), `${op.id}: modul manjka`).not.toThrow()
+    }
+    // realen tek obeh PDF operacij — izhod MORA biti %PDF- (preverba izhoda je
+    // del kontrakta merjenja; tu izrecno pokazana tudi na test nivoju)
+    const ena = izmeriZmogljivost(pdfOps)
+    expect(ena.meritve.every((m) => m.preverjeno === true && m.najvec >= 0)).toBe(true)
   })
 
   it('STRAŽAR modulov: vsak modul res obstaja v repozitoriju (kanon kataloga R294)', () => {
@@ -230,5 +245,69 @@ describe('r312 STRAŽAR — MANDATORY STIL val 3 (dashboard-tab + logistics-tab 
     expect(logistika).toContain('border-roksal-amber/40 bg-roksal-amber/10 px-1.5 py-0.5 text-roksal-ink')
     const webxr = readFileSync(join(process.cwd(), 'src/components/roksal/webxr-scanner.tsx'), 'utf8')
     expect(webxr).toContain('border-roksal-amber/40 bg-roksal-amber/10 text-roksal-amber')
+  })
+})
+
+describe('r313 STRAŽAR — MANDATORY STIL val 4 (cv-studio + measurement-studio + crm-tab) + PDF meritve', () => {
+  const SUROVA_AMBER = /amber-(50|100|200|300|400|500|600|700|800|900|950)\b/
+  const vrstice = (dat: string): string[] =>
+    readFileSync(join(process.cwd(), 'src/components/roksal', dat), 'utf8')
+      .split('\n')
+      .filter((v) => SUROVA_AMBER.test(v) && !v.includes('roksal-amber'))
+      .map((v) => v.trim())
+
+  it('cv-studio: NATANKO 1 izjema — legend beseda (barvna legenda, R308 lekcija); ×26 harmoniziranih', () => {
+    const IZJEME = [
+      // legend: beseda 'amber' obarvana amber (pojasnjuje barvno kodo stopnic)
+      "<span className=\"text-amber-600\">amber</span> = stopnice ·{' '}",
+    ]
+    const najdene = vrstice('cv-studio.tsx')
+    expect(najdene.filter((v) => !IZJEME.some((d) => v === d)), `nove surove: ${najdene.join(' | ')}`).toEqual([])
+    for (const d of IZJEME) {
+      expect(najdene.some((v) => v === d), `izjema manjka: ${d.slice(0, 40)}`).toBe(true)
+    }
+    // žetoni val 4 živi (Alert družina + status značka + Badge)
+    const vir = readFileSync(join(process.cwd(), 'src/components/roksal/cv-studio.tsx'), 'utf8')
+    expect(vir).toContain('border-roksal-amber/40 bg-roksal-amber/10 py-2')
+    expect(vir).toContain("NEEDS_CONFIRMATION: { label: 'POTRDITEV', cls: 'border-roksal-amber/40 bg-roksal-amber/10 text-roksal-ink' }")
+    expect(vir).toContain('h-4 w-4 text-roksal-amber')
+  })
+
+  it('measurement-studio: NATANKO 3 izjeme — barvno kodirani stanji kakovosti (red/amber/green lestvica, issue #2 §4); ×5 harmoniziranih', () => {
+    const IZJEME = [
+      "DETECTED: { label: 'DETECTED', cls: 'bg-amber-100 dark:bg-amber-500/15 text-amber-800 dark:text-amber-200 border-amber-300 dark:border-amber-800' },",
+      "SCALE_REQUIRED: { label: 'SCALE_REQUIRED', cls: 'bg-amber-100 dark:bg-amber-500/15 text-amber-800 dark:text-amber-200 border-amber-300 dark:border-amber-800' },",
+      'cls: \'bg-amber-100 dark:bg-amber-500/15 text-amber-800 dark:text-amber-200 border-amber-300 dark:border-amber-800\',',
+    ]
+    const najdene = vrstice('measurement-studio.tsx')
+    expect(najdene.filter((v) => !IZJEME.some((d) => v === d)), `nove surove: ${najdene.join(' | ')}`).toEqual([])
+    for (const d of IZJEME) {
+      expect(najdene.some((v) => v === d), `izjema manjka: ${d.slice(0, 40)}`).toBe(true)
+    }
+    const vir = readFileSync(join(process.cwd(), 'src/components/roksal/measurement-studio.tsx'), 'utf8')
+    expect(vir).toContain('border-roksal-amber/40 bg-roksal-amber/10 p-2 text-[11px] text-roksal-ink')
+  })
+
+  it('crm-tab: NATANKO 1 izjema — POTENCIALEN (status med AKTIVEN green/ARHIVIRAN red, R234 precedens); ×7 harmoniziranih', () => {
+    const IZJEME = [
+      "POTENCIALEN: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30',",
+    ]
+    const najdene = vrstice('crm-tab.tsx')
+    expect(najdene.filter((v) => !IZJEME.some((d) => v === d)), `nove surove: ${najdene.join(' | ')}`).toEqual([])
+    for (const d of IZJEME) {
+      expect(najdene.some((v) => v === d), `izjema manjka: ${d.slice(0, 40)}`).toBe(true)
+    }
+    const vir = readFileSync(join(process.cwd(), 'src/components/roksal/crm-tab.tsx'), 'utf8')
+    expect(vir).toContain('<Card className="border-roksal-amber/30">')
+    expect(vir).toContain('text-lg font-bold text-roksal-amber tabular-nums')
+    // hover Uredi gumb: solid amber + navy (R311 WPC ikona družina — r162
+    // onLight pravilo: navy vedno na svetli/solid podlagi)
+    expect(vir).toContain('hover:bg-roksal-amber hover:text-roksal-navy')
+  })
+
+  it('PDF meritvi v registraciji: konflikti.pdf + racuni-projekti.pdf (Deliverable 6 razširitev)', () => {
+    const idji = ZMOGLJIVOST_OPS.map((o) => o.id)
+    expect(idji).toContain('konflikti.pdf')
+    expect(idji).toContain('racuni-projekti.pdf')
   })
 })

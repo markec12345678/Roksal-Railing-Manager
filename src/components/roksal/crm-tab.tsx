@@ -736,13 +736,13 @@ export function CrmTab({
               <div className="text-lg font-bold text-roksal-ink tabular-nums">{stats.aktivni}</div>
             </CardContent>
           </Card>
-          <Card className="border-amber-200 dark:border-amber-500/30">
+          <Card className="border-roksal-amber/30">
             <CardContent className="p-3">
               <div className="flex items-center gap-1 mb-1">
-                <Bell className="h-3 w-3 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+                <Bell className="h-3 w-3 text-roksal-amber" aria-hidden="true" />
                 <span className="text-2xs text-muted-foreground">Opomniki</span>
               </div>
-              <div className="text-lg font-bold text-amber-700 dark:text-amber-300 tabular-nums">
+              <div className="text-lg font-bold text-roksal-amber tabular-nums">
                 {stats.zOpomniki}
                 {stats.potekliOpomniki > 0 && (
                   <span className="text-2xs text-red-600 dark:text-red-400 ml-1">({stats.potekliOpomniki} poteklo)</span>
@@ -1061,7 +1061,7 @@ export function CrmTab({
                         </Badge>
                       )}
                       {c.opomnikStatus === 'AKTIVEN' && (
-                        <Badge variant="outline" className="text-3xs bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30 shrink-0">
+                        <Badge variant="outline" className="text-3xs bg-roksal-amber/10 text-roksal-ink border-roksal-amber/40 shrink-0">
                           <Bell className="h-2.5 w-2.5 mr-0.5" aria-hidden="true" />
                           Opomnik
                         </Badge>
@@ -1095,7 +1095,7 @@ export function CrmTab({
                     variant="ghost"
                     size="sm"
                     aria-label={`Uredi CRM: ${c.ime}`}
-                    className="shrink-0 h-7 outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 hover:bg-amber-50 hover:text-roksal-navy dark:hover:bg-amber-500/15 dark:hover:text-amber-300"
+                    className="shrink-0 h-7 outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 hover:bg-roksal-amber hover:text-roksal-navy"
                     onClick={(e) => {
                       e.stopPropagation()
                       handleOpenEdit(c)
@@ -1181,10 +1181,10 @@ export function CrmTab({
                 <div className={`rounded-lg border p-2 ${
                   selectedCustomer.opomnikStatus === 'POTEKEL'
                     ? 'border-red-300 bg-red-50 dark:border-red-500/30 dark:bg-red-500/10'
-                    : 'border-amber-300 bg-amber-50 dark:border-amber-500/30 dark:bg-amber-500/10'
+                    : 'border-roksal-amber/40 bg-roksal-amber/10'
                 }`}>
                   <div className="flex items-center gap-2 mb-1">
-                    <Bell className={`h-3 w-3 ${selectedCustomer.opomnikStatus === 'POTEKEL' ? 'text-red-600 dark:text-red-400' : 'text-amber-600 dark:text-amber-400'}`} aria-hidden="true" />
+                    <Bell className={`h-3 w-3 ${selectedCustomer.opomnikStatus === 'POTEKEL' ? 'text-red-600 dark:text-red-400' : 'text-roksal-amber'}`} aria-hidden="true" />
                     <span className="text-xs font-semibold">
                       {selectedCustomer.opomnikStatus === 'POTEKEL' ? 'Opomnik potekel' : 'Opomnik'}
                     </span>

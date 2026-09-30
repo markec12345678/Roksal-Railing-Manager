@@ -103,7 +103,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 45 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **4360** (242 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **4365** (242 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 143 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -340,11 +340,12 @@ Sheet z 6 podzavihki:
   (NE-IMPLEMENTIRANO, nič povezano — nikoli lažna implementacija); 0 AI-obveznih — jedro deluje
   brez AI; fail-closed: AI vnos brez nadomestka / nadomestek brez razrešitve → TypeError; WYSIWYG
   sklep (zaslon + testi + docs berejo ISTI niz)
-- **Meritve zmogljivosti — iskrene meritve jedra** (R312, 42. člen — issue #1 Deliverable 6):
-  vodjin pregled nosi blok `zmogljivost-dokaz` (`src/lib/zmogljivost-pregled.ts`) — 8 realnih
+- **Meritve zmogljivosti — iskrene meritve jedra** (R312+R313, 42./43. člen — issue #1 Deliverable 6):
+  vodjin pregled nosi blok `zmogljivost-dokaz` (`src/lib/zmogljivost-pregled.ts`) — 10 realnih
   meritev pomembnih determinističnih operacij (kalkulator razmiki/vetrna, konfliktni pregled/
-  dokaz/CSV, termini urAgregat/CSV, AI raba projekcija) na fiksnih predstavitvenih vhodih;
-  vsak izhod vsake iteracije PREVERJEN (merjenje pokvare funkcije = lažna resnica → TypeError);
+  dokaz/CSV/**PDF**, termini urAgregat/CSV, AI raba projekcija, računi po projektih **PDF**) na
+  fiksnih predstavitvenih vhodih; vsak izhod vsake iteracije PREVERJEN (PDF z %PDF- magijo;
+  merjenje pokvare funkcije = lažna resnica → TypeError);
   fail-closed: ne-polje / brez kontrakta / < 3 iteracij / ura tekla nazaj / izhod ne preveri;
   časi (min/mediana/max ms) so strojno odvisna resnica izrecno označena 'na tej napravi' —
   izris ŠELE v brskalniku (nič SSR hydration laži); struktura deterministična (DI ura — testi
@@ -404,7 +405,7 @@ Sheet z 6 podzavihki:
 | **PWA** | Service Worker + Web Manifest |
 | **Temnitveni način** | [next-themes](https://github.com/pacocoursey/next-themes) |
 | **Validacija** | [Zod 4](https://zod.dev/) |
-| **Testiranje** | [Vitest 4](https://vitest.dev/) (4360 testov + globalSetup embedded PG) |
+| **Testiranje** | [Vitest 4](https://vitest.dev/) (4365 testov + globalSetup embedded PG) |
 | **Paketni upravitelj** | [Bun](https://bun.sh/) |
 | **Linting** | ESLint 9 + eslint-config-next |
 
@@ -526,7 +527,7 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `bun run dev` | Zažene Next.js dev server (port 3000) |
 | `bun run build` | Produkcijska build (build-prepare: generate + migrate deploy + seed) |
 | `bun run start` | Zažene produkcijski server |
-| `bun run test` | Vsi testi (vitest, 4360, embedded PG prek globalSetup) |
+| `bun run test` | Vsi testi (vitest, 4365, embedded PG prek globalSetup) |
 | `bun run check` | tsc --noEmit + vitest run (en ukaz za vse) |
 | `bunx tsc --noEmit` | Tipska kontrola celotnega projekta (trenutno 0 napak) |
 | `bun run lint` | ESLint preverjanje |

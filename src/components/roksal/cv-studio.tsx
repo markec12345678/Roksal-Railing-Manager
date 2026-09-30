@@ -201,7 +201,7 @@ const ELEMENT_LABELS: Record<SceneElementType, string> = {
 
 const STATE_BADGE: Record<string, { label: string; cls: string }> = {
   PROPOSED: { label: 'PREDLOG', cls: 'border-border bg-muted text-roksal-ink' },
-  NEEDS_CONFIRMATION: { label: 'POTRDITEV', cls: 'border-amber-300 bg-amber-100 text-amber-800' },
+  NEEDS_CONFIRMATION: { label: 'POTRDITEV', cls: 'border-roksal-amber/40 bg-roksal-amber/10 text-roksal-ink' },
   UNKNOWN: { label: 'NEZNANO', cls: 'border-border bg-muted text-muted-foreground' },
 }
 
@@ -736,7 +736,7 @@ function CapsBadge({ ok, label }: { ok: boolean | 'unknown'; label: string }) {
     variant === 'emerald'
       ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
       : variant === 'amber'
-        ? 'border-amber-300 bg-amber-50 text-amber-800'
+        ? 'border-roksal-amber/40 bg-roksal-amber/10 text-roksal-ink'
         : 'border-border bg-muted text-muted-foreground'
   return (
     <Badge variant="outline" className={`text-2xs ${cls}`}>
@@ -888,9 +888,9 @@ function ReferenceSection({
         <Ruler aria-hidden="true" className="h-4 w-4 text-red-600" />
         <span className="text-xs font-semibold text-roksal-ink">Referenčna mera (obvezna za mm)</span>
       </div>
-      <Alert className="border-amber-300 bg-amber-50 py-2">
-        <TriangleAlert aria-hidden="true" className="h-4 w-4 text-amber-700" />
-        <AlertDescription className="text-[11px] text-amber-800">
+      <Alert className="border-roksal-amber/40 bg-roksal-amber/10 py-2">
+        <TriangleAlert aria-hidden="true" className="h-4 w-4 text-roksal-amber" />
+        <AlertDescription className="text-[11px] text-roksal-ink">
           Absolutne mere brez referenčne mere niso mogoče (ni ugibanja). Označite znano dolžino
           (npr. letvico 1000 mm) in vpišite njeno dolžino.
         </AlertDescription>
@@ -1048,10 +1048,10 @@ function ConfirmResults({
           )}
         </div>
       ) : (
-        <Alert className="border-amber-300 bg-amber-50" role="status">
-          <TriangleAlert aria-hidden="true" className="h-4 w-4 text-amber-700" />
-          <AlertTitle className="text-amber-900">Brez merila ni bilo mogoče shraniti geometrije</AlertTitle>
-          <AlertDescription className="text-[11px] text-amber-800">
+        <Alert className="border-roksal-amber/40 bg-roksal-amber/10" role="status">
+          <TriangleAlert aria-hidden="true" className="h-4 w-4 text-roksal-amber" />
+          <AlertTitle className="text-roksal-ink">Brez merila ni bilo mogoče shraniti geometrije</AlertTitle>
+          <AlertDescription className="text-[11px] text-roksal-ink">
             {scaleHint ?? 'Meritev brez veljavnega merila (SCALE_REQUIRED) ni shranjena — sistem ne ugiba.'}
           </AlertDescription>
         </Alert>
@@ -1958,7 +1958,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                 ✓ Projekt povezan — meritev se shrani
               </Badge>
             ) : (
-              <Badge variant="outline" className="border-amber-300 bg-amber-50 text-2xs text-amber-800">
+              <Badge variant="outline" className="border-roksal-amber/40 bg-roksal-amber/10 text-2xs text-roksal-ink">
                 Projekt ni izbran — meritev ne bo shranjena
               </Badge>
             )}
@@ -1967,16 +1967,16 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
             <p className="text-2xs leading-snug text-muted-foreground">{caps.note}</p>
           )}
           {capsLoaded && caps && !caps.camera && (
-            <Alert className="border-amber-300 bg-amber-50 py-2">
-              <Video aria-hidden="true" className="h-4 w-4 text-amber-700" />
-              <AlertDescription className="text-[11px] text-amber-800">
+            <Alert className="border-roksal-amber/40 bg-roksal-amber/10 py-2">
+              <Video aria-hidden="true" className="h-4 w-4 text-roksal-amber" />
+              <AlertDescription className="text-[11px] text-roksal-ink">
                 Kamera ni na voljo — zavihek V ŽIVO je onemogočen. Uporabi FOTO (nalaganje
                 fotografije) ali ROČNO (fail-safe brez CV).
               </AlertDescription>
             </Alert>
           )}
           {productsError && (
-            <p className="text-2xs text-amber-700" role="status">
+            <p className="text-2xs text-roksal-amber" role="status">
               ⚠ {productsError}
             </p>
           )}
@@ -2275,7 +2275,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                         točke: {segPath.length}
                       </Badge>
                       {segEdited && (
-                        <Badge variant="outline" className="border-amber-300 bg-amber-50 text-[9px] text-amber-800">
+                        <Badge variant="outline" className="border-roksal-amber/40 bg-roksal-amber/10 text-[9px] text-roksal-ink">
                           popravljen
                         </Badge>
                       )}
@@ -2362,9 +2362,9 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                     ))}
                   </div>
                   {!analysis.quality.usable && analysis.quality.reasons.length > 0 && (
-                    <Alert className="border-amber-300 bg-amber-50 py-2">
-                      <TriangleAlert aria-hidden="true" className="h-4 w-4 text-amber-700" />
-                      <AlertDescription className="text-[11px] text-amber-800">
+                    <Alert className="border-roksal-amber/40 bg-roksal-amber/10 py-2">
+                      <TriangleAlert aria-hidden="true" className="h-4 w-4 text-roksal-amber" />
+                      <AlertDescription className="text-[11px] text-roksal-ink">
                         Slika morda ni uporabna: {analysis.quality.reasons.join(' ')}
                       </AlertDescription>
                     </Alert>
@@ -2412,7 +2412,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                       </p>
                     )}
                     {analysis && allElements.length === 0 && (
-                      <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-[11px] text-amber-800" role="status">
+                      <div className="rounded-lg border border-roksal-amber/40 bg-roksal-amber/10 p-3 text-[11px] text-roksal-ink" role="status">
                         <p className="font-semibold">Ni zaznav</p>
                         <p className="mt-1">
                           {analysis.guidance.nextAction} — prazne zaznave NISO napaka in se ne
@@ -2564,7 +2564,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                         </div>
                       )}
                       {postsFromDetect && !lastScaleRef.current && (
-                        <p className="text-2xs text-amber-700" role="status">
+                        <p className="text-2xs text-roksal-amber" role="status">
                           Za stebre iz zaznav je potreben merilo — zaženi najprej oceno postavitve
                           (merilo pride s strežnika).
                         </p>
@@ -2614,7 +2614,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                             {placementRes.projection && (
                               <Badge
                                 variant="outline"
-                                className={`ml-auto text-[9px] ${placementRes.projection.kind === 'homography' ? 'border-emerald-400 bg-emerald-100 text-emerald-900' : 'border-amber-400 bg-amber-100 text-amber-900'}`}
+                                className={`ml-auto text-[9px] ${placementRes.projection.kind === 'homography' ? 'border-emerald-400 bg-emerald-100 text-emerald-900' : 'border-roksal-amber/40 bg-roksal-amber/10 text-roksal-ink'}`}
                               >
                                 {placementRes.projection.kind === 'homography' ? 'HOMOGRAFIJA' : '2D PRIBLIŽEK'}
                               </Badge>
@@ -2634,19 +2634,19 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                           {placementRes.placement.warnings.length > 0 && (
                             <ul className="space-y-0.5">
                               {placementRes.placement.warnings.map((w, i) => (
-                                <li key={i} className="text-2xs text-amber-800">
+                                <li key={i} className="text-2xs text-roksal-ink">
                                   ⚠ {w}
                                 </li>
                               ))}
                             </ul>
                           )}
                           {placementRes.projection?.warnings.map((w, i) => (
-                            <p key={`pw${i}`} className="text-2xs text-amber-800">
+                            <p key={`pw${i}`} className="text-2xs text-roksal-ink">
                               ⚠ {w}
                             </p>
                           ))}
                           {placementRes.projection?.kind === 'affine-approximation' && (
-                            <p className="text-2xs text-amber-800">
+                            <p className="text-2xs text-roksal-ink">
                               ⚠ 2D približek (brez 4 kotnikov) — ni prava perspektivna projekcija.
                             </p>
                           )}
@@ -2683,7 +2683,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                     <Badge variant="outline" className={`text-[9px] ${refValid ? 'border-emerald-300 bg-emerald-50 text-emerald-800' : 'border-red-300 bg-red-50 text-red-700'}`}>
                       referenca {refValid ? '✓' : '✗'}
                     </Badge>
-                    <Badge variant="outline" className={`text-[9px] ${fotoHasStructure ? 'border-emerald-300 bg-emerald-50 text-emerald-800' : 'border-amber-300 bg-amber-50 text-amber-800'}`}>
+                    <Badge variant="outline" className={`text-[9px] ${fotoHasStructure ? 'border-emerald-300 bg-emerald-50 text-emerald-800' : 'border-roksal-amber/40 bg-roksal-amber/10 text-roksal-ink'}`}>
                       struktura {fotoHasStructure ? '✓' : '—'}
                     </Badge>
                     <Badge variant="outline" className="border-border bg-muted text-[9px] text-muted-foreground">
@@ -3034,7 +3034,7 @@ export function CvStudio({ projectId }: { projectId?: string | null }) {
                     <Badge variant="outline" className="border-rose-300 bg-rose-50 text-[9px] text-rose-700">
                       Spodnja: {mPath.length}
                     </Badge>
-                    <Badge variant="outline" className="border-amber-300 bg-amber-50 text-[9px] text-amber-700">
+                    <Badge variant="outline" className="border-roksal-amber/40 bg-roksal-amber/10 text-[9px] text-roksal-ink">
                       Zgornja: {mTop.length}
                     </Badge>
                     <Badge variant="outline" className="border-pink-300 bg-pink-50 text-[9px] text-pink-700">

@@ -436,7 +436,7 @@ function ProductSection({
       </div>
 
       {productsError ? (
-        <p className="text-[11px] text-amber-800 dark:text-amber-200">{productsError}</p>
+        <p className="text-[11px] text-roksal-ink">{productsError}</p>
       ) : products.length === 0 ? (
         <p className="text-[11px] text-muted-foreground">Katalog se nalaga …</p>
       ) : (
@@ -555,7 +555,7 @@ function ResultsSection({ result, error }: { result: ConfirmResponse | null; err
 
       {/* Brez merila → SCALE_REQUIRED (pravilno vedenje, NE napaka) */}
       {!g && (
-        <div className="space-y-1 rounded-lg border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-3 text-[11px] text-amber-800 dark:text-amber-200">
+        <div className="space-y-1 rounded-lg border border-roksal-amber/40 bg-roksal-amber/10 p-3 text-[11px] text-roksal-ink">
           <p className="flex items-center gap-2 font-semibold">
             <AlertTriangle aria-hidden="true" className="h-4 w-4" />
             SCALE_REQUIRED — merilo ni bilo mogoče določiti
@@ -693,7 +693,7 @@ function ResultsSection({ result, error }: { result: ConfirmResponse | null; err
             </p>
           )}
           {layout?.warnings && layout.warnings.length > 0 && (
-            <div className="rounded border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-2 text-[11px] text-amber-800 dark:text-amber-200">
+            <div className="rounded border border-roksal-amber/40 bg-roksal-amber/10 p-2 text-[11px] text-roksal-ink">
               {layout.warnings.map((w, i) => (
                 <p key={i}>{w}</p>
               ))}
@@ -1407,7 +1407,7 @@ export function MeasurementStudio({ projectId }: { projectId?: string | null }) 
               {cameraError && (
                 <div
                   role="status"
-                  className="flex items-start gap-2 rounded-lg border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-2 text-[11px] text-amber-800 dark:text-amber-200"
+                  className="flex items-start gap-2 rounded-lg border border-roksal-amber/40 bg-roksal-amber/10 p-2 text-[11px] text-roksal-ink"
                 >
                   <AlertTriangle aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
                   <span>{cameraError}</span>
@@ -1546,7 +1546,7 @@ export function MeasurementStudio({ projectId }: { projectId?: string | null }) 
                   <Badge variant="outline" className="border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 text-[9px] text-rose-700 dark:text-rose-300">
                     Spodnja linija: {manualPath.length}
                   </Badge>
-                  <Badge variant="outline" className="border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 text-[9px] text-amber-700 dark:text-amber-300">
+                  <Badge variant="outline" className="border-roksal-amber/40 bg-roksal-amber/10 text-[9px] text-roksal-ink">
                     Zgornja linija: {manualTop.length}
                   </Badge>
                   <Badge variant="outline" className="border-pink-300 dark:border-pink-800 bg-pink-50 dark:bg-pink-950/40 text-[9px] text-pink-700 dark:text-pink-300">

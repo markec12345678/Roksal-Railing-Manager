@@ -29,6 +29,9 @@ import { tedenskiKonflikti } from '@/lib/tedenski-konflikti'
 import type { TedenskiKonfliktPregled } from '@/lib/tedenski-konflikti'
 import { konfliktiDokaz } from '@/lib/konflikti-dokaz'
 import { konfliktiCsv } from '@/lib/konflikti-csv'
+import { buildKonfliktiPdfDoc } from '@/lib/konflikti-pdf'
+import { buildRacuniProjektiPdfDoc } from '@/lib/racuni-projekti-pdf'
+import type { RacuniProjektiRacun, RacuniProjektiProjekt } from '@/lib/racuni-projekti-pdf'
 import { buildTerminiCsv } from '@/lib/termini-csv'
 import { vsotaPredvidenihUr } from '@/lib/termini-prikaz'
 import type { TerminPrikazVnos } from '@/lib/termini-prikaz'
@@ -189,6 +192,37 @@ const VETRNA_FIKSNI: WindLoadCalcInput = {
   railingType: 'slatted',
 }
 
+const PDF_MAGIJA = '%PDF-'
+
+/** %PDF- magija iz ArrayBuffer (String.fromCharCode — brez TextDecoder
+ *  odvisnosti; determinističen ASCII preveri). */
+function jePdf(buf: unknown): boolean {
+  if (!(buf instanceof ArrayBuffer) || buf.byteLength < 5) return false
+  const u8 = new Uint8Array(buf.slice(0, 5))
+  return String.fromCharCode(u8[0]!, u8[1]!, u8[2]!, u8[3]!, u8[4]!) === PDF_MAGIJA
+}
+
+const RACUNI_FIKSNI: readonly RacuniProjektiRacun[] = (() => {
+  const statusi = ['IZDAN', 'PLACAN', 'OSNUTEK'] as const
+  const izhod: RacuniProjektiRacun[] = []
+  for (let i = 0; i < 12; i++) {
+    izhod.push({
+      stevilka: `2026-${String(101 + i).padStart(3, '0')}`,
+      status: statusi[i % statusi.length]!,
+      znesek: 450 + i * 37.5,
+      projectId: `proj-${i % 4}`,
+      projekt: `Projekt ${i % 4}`,
+    })
+  }
+  return izhod
+})()
+
+const PROJEKTI_FIKSNI: readonly RacuniProjektiProjekt[] = [0, 1, 2, 3].map((i) => ({
+  id: `proj-${i}`,
+  nazivProjekta: `Projekt ${i}`,
+  estimatedPrice: i % 2 === 0 ? 2500 + i * 100 : null,
+}))
+
 /** Registracija operacij (EN VIR za merjenje in zaslon). Nova operacija =
  *  nova vrstica tukaj + preverba izhoda — test STRAŽAR zahteva oba. */
 export const ZMOGLJIVOST_OPS: readonly ZmogljivostOpSpec[] = [
@@ -292,6 +326,23 @@ export const ZMOGLJIVOST_OPS: readonly ZmogljivostOpSpec[] = [
       const r = i as { stAi: number; zive: unknown[] }
       return r.stAi === 2 && Array.isArray(r.zive) && r.zive.length === 2
     },
+  },
+  {
+    id: 'konflikti.pdf',
+    opis: 'Konflikti PDF dokument (fonts + autoTable + bajti)',
+    modul: 'src/lib/konflikti-pdf.ts',
+    iteracij: 4,
+    izvedi: () => buildKonfliktiPdfDoc(TERMINI_FIKSNI, { now: NOW_FIKSNI }).output('arraybuffer'),
+    preveri: (i) => jePdf(i),
+  },
+  {
+    id: 'racuni-projekti.pdf',
+    opis: 'Računi po projektih PDF (12 računov × 4 projekti)',
+    modul: 'src/lib/racuni-projekti-pdf.ts',
+    iteracij: 4,
+    izvedi: () =>
+      buildRacuniProjektiPdfDoc(RACUNI_FIKSNI, PROJEKTI_FIKSNI, { now: NOW_FIKSNI }).output('arraybuffer'),
+    preveri: (i) => jePdf(i),
   },
 ]
 

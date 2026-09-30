@@ -76,8 +76,11 @@ describe('R232 — [Mandatory] stil (P1-f): cv-studio stone → žetoni (r231 oc
   it('STATE_BADGE nevtrna stanja na žetonih (PREDLOG text-roksal-ink, NEZNANO text-muted-foreground)', () => {
     expect(cv).toContain("PROPOSED: { label: 'PREDLOG', cls: 'border-border bg-muted text-roksal-ink' }")
     expect(cv).toContain("UNKNOWN: { label: 'NEZNANO', cls: 'border-border bg-muted text-muted-foreground' }")
-    // semantični sorojenec POTRDITEV ostane amber (barvna kodiranost stanja)
-    expect(cv).toContain("NEEDS_CONFIRMATION: { label: 'POTRDITEV', cls: 'border-amber-300 bg-amber-100 text-amber-800' }")
+    // R313 STIL val 4 pin shift: POTRDITEV opozorilni status → roksal žetoni
+    // (vzorec R311 POTRJENO veja — opozorilni status med nevtralnima sorojencema;
+    // obrnjena regresija: surovi mirror se ne sme vrniti)
+    expect(cv).toContain("NEEDS_CONFIRMATION: { label: 'POTRDITEV', cls: 'border-roksal-amber/40 bg-roksal-amber/10 text-roksal-ink' }")
+    expect(cv).not.toContain("'border-amber-300 bg-amber-100 text-amber-800'")
   })
 
   it('CapsBadge nevtralna veja na žetonih (variant preimenovan stone → neutral)', () => {
