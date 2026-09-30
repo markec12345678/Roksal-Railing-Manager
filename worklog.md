@@ -6499,3 +6499,9 @@ Stage Summary:
 - R328 kandidati: **price history pri supplier-primerni pogled** (r265 dostop zrnja — dobičkonosnost po dobavitelju); AI kandidati evalvacija (Deliverable 5 poglabljanje — brez izmišljenih podatkov); dekompozicija measurements-tab FAZA 2 (7.153 vrstic — PREDLOGI/LOKACIJE konstante + parse/format helperji); e2e-lib dedup (veliko, previdno); IZVOZI družina nadaljevanje po lastniški rabi (54/47 členov IZVOZI bloka)
 - ISSUE #1: 54 členov izpolnjenih (Deliverables 7/7 ✓; IZVOZI družina = 20 gumbov drevesa — val8 anti-stale 60); issue ostaja odprt, owner 'Razvoj > QA'
 - LEKCIJE za R328: (1) python repr PRED editom (Read wrapping lažna resnica); (2) doc-komentarji brez register žetonov — ČETRTIČ; (3) test vhodi = kontraktni vnosi (podpičje, števci, pogoji); (4) derive fragmenti brez backslashov; (5) README no-op anchor = izbris — vsak edit resničen diff
+
+### PRVA NALOGA POST-commit ŽIVO (R327 — r327-prod-qa.sh, push ffa401f)
+- **ESKALACIJA veja EXIT=0** — prod build 2026-09-30T21:49:34.519Z ≤ R327 commit meja (ffa401f) → R326+R327 deploy ŠE VEDNO čaka (Vercel kvota/stuck — 4./5. zapis ESKALACIJE; kanon R258: pipeline event NI koda-bug)
+- Stale zdrav: needleji R276→R325 ŽIVO + Z1b + Z3 v99 sync gate — **ZERO must_miss, ZERO FAIL/HIT**
+- UNION harvest pripravljen: ob zelenem deployu nosi R290+…+R327 SKUPAJ (precedens R313/R314; R326+R327 gumbi PDF/CSV takrat LIVE — sweep/r327-prod-qa LIVE veja ju izkaže)
+- R328 prva naloga = r327-prod-qa.sh POST-commit re-run (pričakuj LIVE ob zelenem deployu; __r326val sledi generaciji; val8 ×8 STALEN)
