@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
+import { CenaZgodovinaPanel } from '@/components/roksal/cena-zgodovina-panel'
 import { Progress } from '@/components/ui/progress'
 import {
   Dialog,
@@ -1986,6 +1987,13 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
           )}
         </CardContent>
       </Card>
+
+      {/* R325 — 53. člen issue #1 (§5 price history): zgodovina cen
+          materiala — čisti bralec /api/material-prices/zgodovina; par =
+          material × dobavitelj časovnica + iskrene smeri (narašča/pada/
+          stabilna/prvi vpis); CSV gumb = brat izvozne družine. ZERO-MUTACIJA
+          (GET samo) — zapis ostane pri POST material-prices (R136 §19). */}
+      <CenaZgodovinaPanel />
 
       {/* Inventory Movement Dialog */}
       <Dialog open={movementOpen} onOpenChange={setMovementOpen}>

@@ -9,7 +9,10 @@
 // kršitve); (e) iskrena resnica v KODI: 2 refactorirana catch bloka
 // (material-orders/history + portal/[token]) imata izrecen padec;
 // (f) MANDATORY STIL: 4 opozorilne površine harmonizirane na roksal
-// žetone (0 novih hex).
+// žetone (0 novih hex);
+// (g) R326 PIN SHIFT (53. člen): NOVI route material-prices/zgodovina
+// (price history GET — čisti bralec) → obseg drevesa 81 → 82 routes
+// (anti-stale: stari 81 pin je prepovedan — polzaporedje ne sme nazaj).
 // ---------------------------------------------------------------------------
 
 import { describe, it, expect } from 'vitest'
@@ -42,10 +45,11 @@ function zberiRute(): { pot: string; vsebina: string }[] {
 const byId = (krš: MejaKršitev[], id: string) => krš.filter((k) => k.preverba === id)
 
 describe('R308 — REALNIM drevo: stena ura ŽIVO (0 kršitev na vseh 5 preverbah)', () => {
-  it('vseh 81 route datotek prebranih in pregledanih — obseg pregleda NI tiho skrčen', () => {
+  it('vseh 82 route datotek prebranih in pregledanih — obseg pregleda NI tiho skrčen (R326: + zgodovina cen)', () => {
     const rute = zberiRute()
-    expect(rute).toHaveLength(81)
-    expect(new Set(rute.map((r) => r.pot)).size).toBe(81)
+    expect(rute).toHaveLength(82)
+    expect(new Set(rute.map((r) => r.pot)).size).toBe(82)
+    expect(rute.some((r) => r.pot === 'src/app/api/material-prices/zgodovina/route.ts')).toBe(true)
   })
 
   it('pregledajApiMejo nad celotnim drevesom → 0 kršitev (stena ura potrjena)', () => {

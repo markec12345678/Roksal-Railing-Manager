@@ -103,7 +103,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 45 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **4522** (262 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **4547** (264 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 143 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -484,6 +484,29 @@ Sheet z 6 podzavihki:
   hierarhija preverba + val 10 obrnjena regresija ×3 + register 3 pojavitve);
   PIN SHIFTI ×2 izrecno (val8 amber ×6→×7 + anti-stale 56→57; val9
   press-scale ×13→14 pojavitev, 7→8 gumbov)
+- **Zgodovina cen materiala** (R325, 53. člen — issue #1 §5 **price
+  history**): NOVI lib `src/lib/cena-zgodovina.ts` (ČISTA projekcija
+  MaterialPrice vključno z ZAPRTO zgodovino `veljavnostDo != null` — POST
+  R136 §19 že zapira stare cene, a GET je vračal samo trenutne: zgodovina
+  je bila piškot brez bralca); NOVI GET route `material-prices/zgodovina`
+  (r308 obseg 81→82 — edini bralec zgodovine); NOVI panel
+  `CenaZgodovinaPanel` na inventory tabu (par = material × dobavitelj
+  časovnica + iskrene smeri narašča/pada/stabilna/prvi vpis + Δ EUR/%
+  zaokroženo na 2 decimalki + CSV gumb izvozne družine z navy/40 ringom);
+  EN VIR: `CENA_ZGODOVINA_CSV_GLAVE` + `CENA_ZGODOVINA_TIMELINE_GLAVE` +
+  `CENA_SMER_NIZ` + `cenaZgoSklep` + `CENA_ZGO_VIR_NIZ`; EXCLUDE ogledalo
+  (NATANKO ena odprta cena per par); Date.parse razvrščanje (ISO dolžinska
+  past '39Z' > '39.401Z'); fail-closed ×7 + iskrena prazna veja (brez
+  podatkov NI izvoza); r325-cena-zgodovina vitest ×20 + DETERMINIZEM
+  bajtno ×2; E2E Z0au ŽIVO (iskrena prazna veja + wire GET); pre-existing
+  HEAD bug popravljen (r324 test /s flag vs target ES2017)
+- **Stil val 13 — zgodovina cen panel dvonivojski odziv** (R325): val 11/12
+  hierarhija (blok amber/30 < vrstica amber/40) razširjena na NOVO
+  površino — CenaZgodovinaPanel (par-Card + časovna vrstica);
+  r325-stil-val13 STRAŽAR ×5 (površina + žetona + hierarhija + vodja
+  obrnjena regresija ×4/×4 + navy/40 ring dokaz); PIN SHIFTI ×2 izrecno
+  (val8 anti-stale 58→59 [NOVI CSV gumb — amber/50 register ostane
+  zaklenjen v vodji ×8]; r308 route obseg 81→82)
 - **Izvoz dnevnega pregleda vodje kot PDF** (R324, 52. člen — issue #1
   **IZVOZI družina**): vodja "Pregled za vodjo" dobi gumb `Dnevni PDF`
   (brat CSV R163 — vzorec R318/R320/R321, LOČEN lib
@@ -664,7 +687,7 @@ Sheet z 6 podzavihki:
 | **PWA** | Service Worker + Web Manifest |
 | **Temnitveni način** | [next-themes](https://github.com/pacocoursey/next-themes) |
 | **Validacija** | [Zod 4](https://zod.dev/) |
-| **Testiranje** | [Vitest 4](https://vitest.dev/) (4522 testov + globalSetup embedded PG) |
+| **Testiranje** | [Vitest 4](https://vitest.dev/) (4547 testov + globalSetup embedded PG) |
 | **Paketni upravitelj** | [Bun](https://bun.sh/) |
 | **Linting** | ESLint 9 + eslint-config-next |
 
@@ -786,7 +809,7 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `bun run dev` | Zažene Next.js dev server (port 3000) |
 | `bun run build` | Produkcijska build (build-prepare: generate + migrate deploy + seed) |
 | `bun run start` | Zažene produkcijski server |
-| `bun run test` | Vsi testi (vitest, 4522, embedded PG prek globalSetup) |
+| `bun run test` | Vsi testi (vitest, 4547, embedded PG prek globalSetup) |
 | `bun run check` | tsc --noEmit + vitest run (en ukaz za vse) |
 | `bunx tsc --noEmit` | Tipska kontrola celotnega projekta (trenutno 0 napak) |
 | `bun run lint` | ESLint preverjanje |
