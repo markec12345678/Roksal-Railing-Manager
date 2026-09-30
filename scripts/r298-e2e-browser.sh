@@ -453,7 +453,10 @@ fi
 
 echo "=== Z0u: TEDENSKI VOZNI RED ICS ŽIVO (R298 — 28. člen izvozne družine; pogojni probe; ZERO-MUTACIJA — lokalni blob download samo) ==="
 eb_dispatch '{"tab":"more","more":"logistics","subTab":null,"osnutek":null,"filter":null}'
-if eb_pocakaj_na "(()=>{return !!document.querySelector('button[aria-label=\"Izvozi tedenski pregled montaž kot ICS koledar\"]');})()" 16; then
+# LEKCIJA R298: Z0t klikne 'Oprema' podzavihek IN ostane tam (isti dispatch ne
+# resetira notranjega stanja) — Z0u mora sam klikniti 'Koledar' podzavihek
+# (vzorec Z0t: klik v predikatu, idempotenten na že aktivnem zavihku).
+if eb_pocakaj_na "(()=>{const gumbi=[...document.querySelectorAll('button')]; const koledar=gumbi.find(b=>b.textContent.trim()==='Koledar'); if(koledar) koledar.click(); return !!document.querySelector('button[aria-label=\"Izvozi tedenski pregled montaž kot ICS koledar\"]');})()" 16; then
   # vsi trije tedenski pilli (PDF brat R256 + CSV brat R292 + ICS R298): VEDNO vidni (P1-k precedens)
   agent-browser eval "(()=>{const pill=[...document.querySelectorAll('button')].filter(b=>(b.getAttribute('aria-label')||'').startsWith('Izvozi tedenski pregled montaž kot')); return JSON.stringify({pillPdf:pill.some(b=>b.getAttribute('aria-label')==='Izvozi tedenski pregled montaž kot PDF'), pillCsv:pill.some(b=>b.getAttribute('aria-label')==='Izvozi tedenski pregled montaž kot CSV'), pillIcs:pill.some(b=>b.getAttribute('aria-label')==='Izvozi tedenski pregled montaž kot ICS koledar'), err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r298-z0u-pilli.json
   python3 - <<'PYEOF5' || exit 1
