@@ -1,5 +1,5 @@
 #!/bin/bash
-# R324 E2E ŽIVO — REGRESSION-ONLY (KOLIZIJA #5: vzporedna R323 [8857d6e CSV];
+# R325 E2E ŽIVO — REGRESSION-ONLY (DVOJNA KOLIZIJA #5+#6: vzporedna R323 [8857d6e CSV];
 # moja runda preimenovana R323→R324): DEKOMPOZICIJA FAZA 2 — measurements
 # 7.604 → 7.153 [−451; laserski BT blok → laser-bt.ts + use-laser.ts hook
 # + laser-panel.tsx; template localStorage blok → templates.ts] + calculator
@@ -136,7 +136,7 @@ mkdir -p .next/standalone/.next
 cp -r .next/static .next/standalone/.next/static
 [ -d .next/standalone/public ] || cp -r public .next/standalone/public
 cp .env .next/standalone/.env
-setsid node .next/standalone/server.js > /tmp/R324-server-e2e.log 2>&1 < /dev/null &
+setsid node .next/standalone/server.js > /tmp/R325-server-e2e.log 2>&1 < /dev/null &
 for i in $(seq 1 20); do curl -s -o /dev/null --max-time 2 http://127.0.0.1:3100/api/public/health > /dev/null 2>&1 && break; sleep 0.5; done
 
 izberi_projekt() {
@@ -151,10 +151,10 @@ node scripts/r283-referencni-projekt.cjs restore || exit 1
 node scripts/r287-db-e2e.cjs restore || exit 1
 
 echo "--- PRSTNI ODTIS PRE (Measurement + AuditLog + Project + Customer e2e-r276% + e2e-r281% + e2e-r283%) ---"
-node scripts/r276-db-e2e.cjs fp > /tmp/r324-fp-pre-276.json || exit 1
-node scripts/r281-db-e2e.cjs fp > /tmp/r324-fp-pre-281.json || exit 1
-node scripts/r283-referencni-projekt.cjs fp > /tmp/r324-fp-pre-283.json || exit 1
-node scripts/r287-db-e2e.cjs fp > /tmp/r324-fp-pre.json || exit 1
+node scripts/r276-db-e2e.cjs fp > /tmp/r325-fp-pre-276.json || exit 1
+node scripts/r281-db-e2e.cjs fp > /tmp/r325-fp-pre-281.json || exit 1
+node scripts/r283-referencni-projekt.cjs fp > /tmp/r325-fp-pre-283.json || exit 1
+node scripts/r287-db-e2e.cjs fp > /tmp/r325-fp-pre.json || exit 1
 
 echo "--- SEED-VERZIJE (stranka + projekt + meritev v1 = 3200×1200, vir MANUAL) ---"
 node scripts/r276-db-e2e.cjs seed-verzije || exit 1
@@ -176,10 +176,10 @@ echo "=== Z0z: ZVONČEK OPOMNIK ŽIVO — signal 7 + portal akcija ((k), R287) =
 agent-browser eval "(()=>{const b=document.querySelector('button[aria-label^=\"Obvestila\"]'); if(!b) return 'BREZ-ZVONČKA'; b.click(); return 'odprto';})()" 2>&1 | tail -1
 eb_pocakaj_na "(()=>{const vr=[...document.querySelectorAll('button')].filter(x=>(x.getAttribute('aria-label')||'').includes('— odpre CRM (opomnik)')); return vr.length >= 2;})()" 20
 eb_cakaj 1
-agent-browser eval "(()=>{const vr=[...document.querySelectorAll('button')].filter(x=>(x.getAttribute('aria-label')||'').includes('— odpre CRM (opomnik)')); const info=vr.map(x=>({aria:x.getAttribute('aria-label'), meta:(x.querySelector('p.uppercase')||{}).textContent||null, red:!!x.querySelector('.text-roksal-red'), amber:!!x.querySelector('.text-roksal-amber')})); return JSON.stringify({st:vr.length, info, err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r324-z0z.json
+agent-browser eval "(()=>{const vr=[...document.querySelectorAll('button')].filter(x=>(x.getAttribute('aria-label')||'').includes('— odpre CRM (opomnik)')); const info=vr.map(x=>({aria:x.getAttribute('aria-label'), meta:(x.querySelector('p.uppercase')||{}).textContent||null, red:!!x.querySelector('.text-roksal-red'), amber:!!x.querySelector('.text-roksal-amber')})); return JSON.stringify({st:vr.length, info, err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r325-z0z.json
 python3 - <<'PYEOF' || exit 1
 import json
-raw = open('/tmp/r324-z0z.json').read().strip()
+raw = open('/tmp/r325-z0z.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['st'] >= 2, 'Z0z: pričakovani vsaj 2 opomniški vrstici: ' + json.dumps(d)
@@ -198,8 +198,8 @@ agent-browser screenshot "$SS/qa-r310-e2e-z0z-zvoncek.png" > /dev/null 2>&1
 agent-browser eval "(()=>{const vr=[...document.querySelectorAll('button')].find(x=>(x.getAttribute('aria-label')||'').startsWith('E2E R287 Potekel Opomnik')); if(!vr) return 'BREZ'; vr.click(); return 'kliknjeno';})()" 2>&1 | tail -1
 eb_pocakaj_na "(()=>{const h=[...document.querySelectorAll('h2')].find(x=>x.textContent.trim()==='CRM stranke'); return !!h;})()" 20
 eb_cakaj 1
-agent-browser eval "(()=>{const h=[...document.querySelectorAll('h2')].find(x=>x.textContent.trim()==='CRM stranke'); return JSON.stringify({crm:!!h, err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r324-z0z-crm.json
-python3 -c "import json; r=json.load(open('/tmp/r324-z0z-crm.json')); d=json.loads(r) if isinstance(r,str) else r; assert d['crm'], 'Z0z CRM tab FAIL (portal akcija): '+json.dumps(d); assert d['err'] is None, 'Z0z err: '+json.dumps(d); print('Z0z OK — portal akcija ŽIVO: klik na POTEKEL → CRM tab (R182 protokol)')" || exit 1
+agent-browser eval "(()=>{const h=[...document.querySelectorAll('h2')].find(x=>x.textContent.trim()==='CRM stranke'); return JSON.stringify({crm:!!h, err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r325-z0z-crm.json
+python3 -c "import json; r=json.load(open('/tmp/r325-z0z-crm.json')); d=json.loads(r) if isinstance(r,str) else r; assert d['crm'], 'Z0z CRM tab FAIL (portal akcija): '+json.dumps(d); assert d['err'] is None, 'Z0z err: '+json.dumps(d); print('Z0z OK — portal akcija ŽIVO: klik na POTEKEL → CRM tab (R182 protokol)')" || exit 1
 agent-browser screenshot "$SS/qa-r310-e2e-z0y-deeplink.png" > /dev/null 2>&1
 
 agent-browser screenshot "$SS/qa-r310-e2e-z0y-deeplink.png" > /dev/null 2>&1
@@ -207,10 +207,10 @@ agent-browser screenshot "$SS/qa-r310-e2e-z0y-deeplink.png" > /dev/null 2>&1
 echo "=== Z0y: DEEP-LINK ŽIVO — detail Sheet samodejno odprt + poudarjena vrstica (R294) ==="
 eb_pocakaj_na "(()=>{const t=[...document.querySelectorAll('h2')].some(x=>x.textContent.trim()==='E2E R287 Potekel Opomnik'); return t;})()" 20
 eb_cakaj 1
-agent-browser eval "(()=>{const tit=[...document.querySelectorAll('h2')].some(x=>x.textContent.trim()==='E2E R287 Potekel Opomnik'); const kartica=document.body.textContent.includes('Opomnik potekel'); const opis=document.body.textContent.includes('E2E pokliči nazaj (potekel)'); return JSON.stringify({tit, kartica, opis, err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r324-z0y-sheet.json
+agent-browser eval "(()=>{const tit=[...document.querySelectorAll('h2')].some(x=>x.textContent.trim()==='E2E R287 Potekel Opomnik'); const kartica=document.body.textContent.includes('Opomnik potekel'); const opis=document.body.textContent.includes('E2E pokliči nazaj (potekel)'); return JSON.stringify({tit, kartica, opis, err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r325-z0y-sheet.json
 python3 - <<'PYEOF' || exit 1
 import json
-raw = open('/tmp/r324-z0y-sheet.json').read().strip()
+raw = open('/tmp/r325-z0y-sheet.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['tit'] and d['kartica'] and d['opis'], 'Z0y Sheet FAIL (deep-link ni odprl detaila): ' + json.dumps(d)
@@ -219,10 +219,10 @@ print('Z0y OK — deep-link detail Sheet ŽIVO (SheetTitle + opomniška kartica 
 PYEOF
 agent-browser eval "(()=>{const g=[...document.querySelectorAll('button')].find(x=>{const s=x.querySelector('.sr-only'); return s&&s.textContent.trim()==='Zapri'&&x.closest('[data-slot="sheet-content"]');}); if(!g) { const g2=[...document.querySelectorAll('[data-radix-collection-item], button')].filter(x=>{const s=x.querySelector('.sr-only'); return s&&s.textContent.trim()==='Zapri';}).pop(); if(!g2) return 'BREZ-ZAPRI'; g2.click(); return 'zapri-fallback'; } g.click(); return 'zapri';})()" 2>&1 | tail -1
 eb_pocakaj_na "(()=>{return ![...document.querySelectorAll('h2')].some(x=>x.textContent.trim()==='E2E R287 Potekel Opomnik');})()" 14
-agent-browser eval "(()=>{const vrstica=[...document.querySelectorAll('[role="button"]')].find(x=>(x.getAttribute('aria-label')||'').startsWith('Stranka E2E R287 Potekel Opomnik')); const akt=[...document.querySelectorAll('[role="button"]')].find(x=>(x.getAttribute('aria-label')||'').startsWith('Stranka E2E R287 Aktiven Opomnik')); const poud=vrstica?vrstica.className.includes('border-roksal-amber/60'):false; const polnilo=vrstica?vrstica.className.includes('bg-roksal-amber/5'):false; const tit=vrstica?vrstica.getAttribute('title'):null; const aktCista=akt?!akt.className.includes('border-roksal-amber/60'):true; return JSON.stringify({najdena:!!vrstica, poud, polnilo, tit, aktCista, err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r324-z0y-poudarek.json
+agent-browser eval "(()=>{const vrstica=[...document.querySelectorAll('[role="button"]')].find(x=>(x.getAttribute('aria-label')||'').startsWith('Stranka E2E R287 Potekel Opomnik')); const akt=[...document.querySelectorAll('[role="button"]')].find(x=>(x.getAttribute('aria-label')||'').startsWith('Stranka E2E R287 Aktiven Opomnik')); const poud=vrstica?vrstica.className.includes('border-roksal-amber/60'):false; const polnilo=vrstica?vrstica.className.includes('bg-roksal-amber/5'):false; const tit=vrstica?vrstica.getAttribute('title'):null; const aktCista=akt?!akt.className.includes('border-roksal-amber/60'):true; return JSON.stringify({najdena:!!vrstica, poud, polnilo, tit, aktCista, err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r325-z0y-poudarek.json
 python3 - <<'PYEOF' || exit 1
 import json
-raw = open('/tmp/r324-z0y-poudarek.json').read().strip()
+raw = open('/tmp/r325-z0y-poudarek.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['najdena'], 'Z0y vrstica FAIL (seed stranka ni v CRM seznamu): ' + json.dumps(d)
@@ -239,10 +239,10 @@ echo "=== Z0m: PRIHODKI PO MESECIH ŽIVO (R294 — plačila dimenzija, POGOJNI p
 eb_dispatch '{"tab":"more","more":"crm","subTab":null,"osnutek":null,"filter":null}'
 if eb_pocakaj_na "(()=>{return !!document.querySelector('section[aria-label^=\"Prihodki po mesecih\"]');})()" 16; then
   eb_cakaj 1
-  agent-browser eval "(()=>{const s=document.querySelector('section[aria-label^=\"Prihodki po mesecih\"]'); const vrstice=[...s.querySelectorAll('ul li')]; const skupaj=s.textContent.includes('Skupaj plačano'); const prazna=s.textContent.includes('Ni plačanih računov'); const storn=s.textContent.includes('(izključeni iz zneskov)'); const vt=s.textContent.includes('v teku:'); return JSON.stringify({vrstice:vrstice.length, skupaj, prazna, storn, vt, besedilo:vrstice.length>0?vrstice[0].textContent.trim():null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r324-z0m.json
+  agent-browser eval "(()=>{const s=document.querySelector('section[aria-label^=\"Prihodki po mesecih\"]'); const vrstice=[...s.querySelectorAll('ul li')]; const skupaj=s.textContent.includes('Skupaj plačano'); const prazna=s.textContent.includes('Ni plačanih računov'); const storn=s.textContent.includes('(izključeni iz zneskov)'); const vt=s.textContent.includes('v teku:'); return JSON.stringify({vrstice:vrstice.length, skupaj, prazna, storn, vt, besedilo:vrstice.length>0?vrstice[0].textContent.trim():null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r325-z0m.json
   python3 - <<'PYEOF2' || exit 1
 import json
-raw = open('/tmp/r324-z0m.json').read().strip()
+raw = open('/tmp/r325-z0m.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['err'] is None, 'Z0m err: ' + json.dumps(d)
@@ -263,10 +263,10 @@ if eb_pocakaj_na "(()=>{return !!document.querySelector('button[aria-label=\"Izv
   eb_csv_capture prihodkiMeseci
   agent-browser eval "(()=>{const b=document.querySelector('button[aria-label=\"Izvozi prihodke po mesecih kot CSV\"]'); if(!b) return 'BREZ-GUMBA'; b.click(); return 'kliknuto';})()" 2>&1 | tail -1
   eb_cakaj 2
-  agent-browser eval "(()=>{const body=document.body.textContent; const prazno=body.includes('Ni plačanih računov') && body.includes('CSV se izvozi ob prvem plačilu.'); const uspeh=body.includes('Prihodki po mesecih prenešeni v CSV ('); const c=window.__prihodkiMeseci ?? null; const niz=(typeof c==='string'); return JSON.stringify({prazno, uspeh, csvNiz:niz, bajti:niz?c.length:0, bom:niz?c.charCodeAt(0)===0xFEFF:false, glava:niz?c.split('\n')[0].slice(0,40):null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r324-z0n.json
+  agent-browser eval "(()=>{const body=document.body.textContent; const prazno=body.includes('Ni plačanih računov') && body.includes('CSV se izvozi ob prvem plačilu.'); const uspeh=body.includes('Prihodki po mesecih prenešeni v CSV ('); const c=window.__prihodkiMeseci ?? null; const niz=(typeof c==='string'); return JSON.stringify({prazno, uspeh, csvNiz:niz, bajti:niz?c.length:0, bom:niz?c.charCodeAt(0)===0xFEFF:false, glava:niz?c.split('\n')[0].slice(0,40):null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r325-z0n.json
   python3 - <<'PYEOF3' || exit 1
 import json
-raw = open('/tmp/r324-z0n.json').read().strip()
+raw = open('/tmp/r325-z0n.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['err'] is None, 'Z0n err: ' + json.dumps(d)
@@ -289,10 +289,10 @@ echo "=== Z0o: TEDENSKI RAZGLED + TEDENSKI CSV ŽIVO (R292 — 23. člen izvozne
 eb_dispatch '{"tab":"more","more":"logistics","subTab":null,"osnutek":null,"filter":null}'
 if eb_pocakaj_na "(()=>{return !!document.querySelector('button[aria-label=\"Izvozi tedenski pregled montaž kot CSV\"]');})()" 16; then
   # RAZGLED strip (MANDATORY STIL): aria regija + 7 dni + sklep/praznina + aria-hidden tir
-  agent-browser eval "(()=>{const reg=document.querySelector('[aria-label=\"Tedenski razgled — naslednjih 7 dni\"]'); if(!reg) return JSON.stringify({strip:false, err:window.__err??null}); const celice=reg.querySelectorAll('.grid.grid-cols-7 > div').length; const sklep=document.querySelector('[data-testid=\"tedenski-razgled-sklep\"]'); const tiri=reg.querySelectorAll('[aria-hidden=\"true\"].h-1').length; return JSON.stringify({strip:true, celice, tiri, sklep:sklep?sklep.textContent.trim().slice(0,80):null, praznina:sklep?sklep.textContent.includes('Naslednjih 7 dni brez vpisanih terminov.'):false, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r324-z0o-strip.json
+  agent-browser eval "(()=>{const reg=document.querySelector('[aria-label=\"Tedenski razgled — naslednjih 7 dni\"]'); if(!reg) return JSON.stringify({strip:false, err:window.__err??null}); const celice=reg.querySelectorAll('.grid.grid-cols-7 > div').length; const sklep=document.querySelector('[data-testid=\"tedenski-razgled-sklep\"]'); const tiri=reg.querySelectorAll('[aria-hidden=\"true\"].h-1').length; return JSON.stringify({strip:true, celice, tiri, sklep:sklep?sklep.textContent.trim().slice(0,80):null, praznina:sklep?sklep.textContent.includes('Naslednjih 7 dni brez vpisanih terminov.'):false, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r325-z0o-strip.json
   python3 - <<'PYEOF4' || exit 1
 import json
-raw = open('/tmp/r324-z0o-strip.json').read().strip()
+raw = open('/tmp/r325-z0o-strip.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['err'] is None, 'Z0o strip err: ' + json.dumps(d)
@@ -306,10 +306,10 @@ PYEOF4
   eb_csv_capture tedenskiCsv
   agent-browser eval "(()=>{const b=document.querySelector('button[aria-label=\"Izvozi tedenski pregled montaž kot CSV\"]'); if(!b) return 'BREZ-GUMBA'; b.click(); return 'kliknuto';})()" 2>&1 | tail -1
   eb_cakaj 2
-  agent-browser eval "(()=>{const body=document.body.textContent; const prazno=body.includes('Ni terminov v naslednjih 7 dneh') && body.includes('CSV se izvozi, ko je vpisan termin v prihajajočem tednu.'); const uspeh=body.includes('Tedenski pregled prenešen v CSV ('); const c=window.__tedenskiCsv ?? null; const niz=(typeof c==='string'); return JSON.stringify({prazno, uspeh, csvNiz:niz, bajti:niz?c.length:0, bom:niz?c.charCodeAt(0)===0xFEFF:false, glava:niz?c.split('\n')[0].slice(0,60):null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r324-z0o-csv.json
+  agent-browser eval "(()=>{const body=document.body.textContent; const prazno=body.includes('Ni terminov v naslednjih 7 dneh') && body.includes('CSV se izvozi, ko je vpisan termin v prihajajočem tednu.'); const uspeh=body.includes('Tedenski pregled prenešen v CSV ('); const c=window.__tedenskiCsv ?? null; const niz=(typeof c==='string'); return JSON.stringify({prazno, uspeh, csvNiz:niz, bajti:niz?c.length:0, bom:niz?c.charCodeAt(0)===0xFEFF:false, glava:niz?c.split('\n')[0].slice(0,60):null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r325-z0o-csv.json
   python3 - <<'PYEOF4' || exit 1
 import json
-raw = open('/tmp/r324-z0o-csv.json').read().strip()
+raw = open('/tmp/r325-z0o-csv.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['err'] is None, 'Z0o CSV err: ' + json.dumps(d)
@@ -333,10 +333,10 @@ echo "=== Z0p: MARŽNI RAZGLED + DOBIČKONOST CSV ŽIVO (R293 — 24. člen izvo
 eb_dispatch '{"tab":"more","more":"vodja","subTab":null,"osnutek":null,"filter":null}'
 if eb_pocakaj_na "(()=>{return !!document.querySelector('button[aria-label=\"Izvozi dobičkonosnost projektov kot CSV\"]');})()" 16; then
   # MARŽNI RAZGLED strip (MANDATORY STIL): aria regija + vrstice/sklep/praznina + aria-hidden tirje
-  agent-browser eval "(()=>{const reg=document.querySelector('[aria-label=\"Maržni razgled — marža po projektih\"]'); if(!reg) return JSON.stringify({strip:false, err:window.__err??null}); const vrstice=reg.querySelectorAll('.space-y-1 > div').length; const tiri=reg.querySelectorAll('[aria-hidden=\"true\"].h-1').length; const sklep=document.querySelector('[data-testid=\"marzni-razgled-sklep\"]'); return JSON.stringify({strip:true, vrstice, tiri, sklep:sklep?sklep.textContent.trim().slice(0,90):null, praznina:sklep?sklep.textContent.includes('Ni projektov v preseku'):false, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r324-z0p-strip.json
+  agent-browser eval "(()=>{const reg=document.querySelector('[aria-label=\"Maržni razgled — marža po projektih\"]'); if(!reg) return JSON.stringify({strip:false, err:window.__err??null}); const vrstice=reg.querySelectorAll('.space-y-1 > div').length; const tiri=reg.querySelectorAll('[aria-hidden=\"true\"].h-1').length; const sklep=document.querySelector('[data-testid=\"marzni-razgled-sklep\"]'); return JSON.stringify({strip:true, vrstice, tiri, sklep:sklep?sklep.textContent.trim().slice(0,90):null, praznina:sklep?sklep.textContent.includes('Ni projektov v preseku'):false, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r325-z0p-strip.json
   python3 - <<'PYEOF4' || exit 1
 import json
-raw = open('/tmp/r324-z0p-strip.json').read().strip()
+raw = open('/tmp/r325-z0p-strip.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['err'] is None, 'Z0p strip err: ' + json.dumps(d)
@@ -357,10 +357,10 @@ PYEOF4
   agent-browser eval "(()=>{const orig=URL.createObjectURL.bind(URL); URL.createObjectURL=function(b){ b.arrayBuffer().then(ab=>{const u=new Uint8Array(ab); window.__dobicikonostBom=(u[0]===0xEF&&u[1]===0xBB&&u[2]===0xBF); window.__dobicikonostCsv=new TextDecoder('utf-8').decode(ab);}); return orig(b); }; return 'patched';})()" 2>&1 | tail -1
   agent-browser eval "(()=>{const b=document.querySelector('button[aria-label=\"Izvozi dobičkonosnost projektov kot CSV\"]'); if(!b) return 'BREZ-GUMBA'; b.click(); return 'kliknuto';})()" 2>&1 | tail -1
   eb_cakaj 2
-  agent-browser eval "(()=>{const body=document.body.textContent; const prazno=body.includes('Ni podatkov za dobičkonost') && body.includes('CSV se izvozi, ko je vpisan prvi račun ali naročilo.'); const uspeh=body.includes('Dobičkonost prenešena v CSV ('); const c=window.__dobicikonostCsv ?? null; const niz=(typeof c==='string'); const brezBom=niz?c.replace(/^\uFEFF/,''):null; return JSON.stringify({prazno, uspeh, csvNiz:niz, bom:window.__dobicikonostBom===true, bajti:niz?brezBom.length:0, glava:niz?brezBom.split('\n')[0].slice(0,60):null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r324-z0p-csv.json
+  agent-browser eval "(()=>{const body=document.body.textContent; const prazno=body.includes('Ni podatkov za dobičkonost') && body.includes('CSV se izvozi, ko je vpisan prvi račun ali naročilo.'); const uspeh=body.includes('Dobičkonost prenešena v CSV ('); const c=window.__dobicikonostCsv ?? null; const niz=(typeof c==='string'); const brezBom=niz?c.replace(/^\uFEFF/,''):null; return JSON.stringify({prazno, uspeh, csvNiz:niz, bom:window.__dobicikonostBom===true, bajti:niz?brezBom.length:0, glava:niz?brezBom.split('\n')[0].slice(0,60):null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r325-z0p-csv.json
   python3 - <<'PYEOF4' || exit 1
 import json
-raw = open('/tmp/r324-z0p-csv.json').read().strip()
+raw = open('/tmp/r325-z0p-csv.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['err'] is None, 'Z0p CSV err: ' + json.dumps(d)
@@ -382,10 +382,10 @@ fi
 
 echo "=== Z0q: AVTOMATIZACIJA KARTICA ŽIVO (R294 — issue #1; deterministična resnica — brez podatkovne odvisnosti; ZERO-MUTACIJA) ==="
 if eb_pocakaj_na "(()=>{return !!document.querySelector('[aria-label=\"Avtomatizacija — razred funkcij\"]');})()" 16; then
-  agent-browser eval "(()=>{const reg=document.querySelector('[aria-label=\"Avtomatizacija — razred funkcij\"]'); if(!reg) return JSON.stringify({kartica:false}); const t=reg.textContent||''; const m=t.match(/(\\d+) funkcij · (\\d+) območij poslovanja/); const det=t.match(/(\\d+) determinističnih/); const sdk=t.match(/(\\d+) SDK/); const ai=t.match(/(\\d+) AI \\(neobvezne\\)/); return JSON.stringify({kartica:true, skupaj:m?+m[1]:null, obmocija:m?+m[2]:null, det:det?+det[1]:null, sdk:sdk?+sdk[1]:null, ai:ai?+ai[1]:null, nadomestki:t.includes('zmožnosti z izrečenim determinističnim nadomestkom'), sklep:t.includes('jedro deluje brez AI.')});})()" 2>&1 | tail -1 > /tmp/r324-z0q.json
+  agent-browser eval "(()=>{const reg=document.querySelector('[aria-label=\"Avtomatizacija — razred funkcij\"]'); if(!reg) return JSON.stringify({kartica:false}); const t=reg.textContent||''; const m=t.match(/(\\d+) funkcij · (\\d+) območij poslovanja/); const det=t.match(/(\\d+) determinističnih/); const sdk=t.match(/(\\d+) SDK/); const ai=t.match(/(\\d+) AI \\(neobvezne\\)/); return JSON.stringify({kartica:true, skupaj:m?+m[1]:null, obmocija:m?+m[2]:null, det:det?+det[1]:null, sdk:sdk?+sdk[1]:null, ai:ai?+ai[1]:null, nadomestki:t.includes('zmožnosti z izrečenim determinističnim nadomestkom'), sklep:t.includes('jedro deluje brez AI.')});})()" 2>&1 | tail -1 > /tmp/r325-z0q.json
   python3 - <<'PYEOFQ' || exit 1
 import json
-raw = open('/tmp/r324-z0q.json').read().strip()
+raw = open('/tmp/r325-z0q.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d.get('kartica'), 'Z0q: kartica NI na zaslonu: ' + json.dumps(d)
@@ -407,10 +407,10 @@ eb_dispatch '{"tab":"more","more":"crm","subTab":null,"osnutek":null,"filter":nu
 if eb_pocakaj_na "(()=>{return !!document.querySelector('button[aria-label=\"Izvozi koledar pregledov kot CSV\"]');})()" 16; then
   # F2 koledarska mini-vrstica (WYSIWYG ISTA izpeljava koledarPovzetek):
   # pogojna resnica — viden SAMO kadar je vpisan vsaj en pregled (spot resnica)
-  agent-browser eval "(()=>{const pill=[...document.querySelectorAll('button')].filter(b=>(b.getAttribute('aria-label')||'').startsWith('Izvozi koledar pregledov kot')); return JSON.stringify({pillPdf:pill.some(b=>b.getAttribute('aria-label')==='Izvozi koledar pregledov kot PDF'), pillCsv:pill.some(b=>b.getAttribute('aria-label')==='Izvozi koledar pregledov kot CSV'), err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r324-z0r-pilli.json
+  agent-browser eval "(()=>{const pill=[...document.querySelectorAll('button')].filter(b=>(b.getAttribute('aria-label')||'').startsWith('Izvozi koledar pregledov kot')); return JSON.stringify({pillPdf:pill.some(b=>b.getAttribute('aria-label')==='Izvozi koledar pregledov kot PDF'), pillCsv:pill.some(b=>b.getAttribute('aria-label')==='Izvozi koledar pregledov kot CSV'), err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r325-z0r-pilli.json
   python3 - <<'PYEOF5' || exit 1
 import json
-raw = open('/tmp/r324-z0r-pilli.json').read().strip()
+raw = open('/tmp/r325-z0r-pilli.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['err'] is None, 'Z0r pilli err: ' + json.dumps(d)
@@ -421,10 +421,10 @@ PYEOF5
   agent-browser eval "(()=>{const orig=URL.createObjectURL.bind(URL); URL.createObjectURL=function(b){ b.arrayBuffer().then(ab=>{const u=new Uint8Array(ab); window.__koledarBom=(u[0]===0xEF&&u[1]===0xBB&&u[2]===0xBF); window.__koledarCsv=new TextDecoder('utf-8').decode(ab);}); return orig(b); }; return 'patched';})()" 2>&1 | tail -1
   agent-browser eval "(()=>{const b=document.querySelector('button[aria-label=\"Izvozi koledar pregledov kot CSV\"]'); if(!b) return 'BREZ-GUMBA'; b.click(); return 'kliknuto';})()" 2>&1 | tail -1
   eb_cakaj 2
-  agent-browser eval "(()=>{const body=document.body.textContent; const prazno=body.includes('Ni vpisanih pregledov') && body.includes('CSV se izvozi, ko je vpisan prvi datum pregleda.'); const uspeh=body.includes('Koledar pregledov prenešen v CSV ('); const mini=body.includes('Pregledi: ') && body.includes(' vpisanih · '); const c=window.__koledarCsv ?? null; const niz=(typeof c==='string'); const brezBom=niz?c.replace(/^\uFEFF/,''):null; return JSON.stringify({prazno, uspeh, mini, csvNiz:niz, bom:window.__koledarBom===true, bajti:niz?brezBom.length:0, glava:niz?brezBom.split('\n')[0].slice(0,60):null, obseg:niz?brezBom.includes('Vse stranke z vpisanim datumom pregleda (AKTIVEN + POTEKEL)'):null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r324-z0r-csv.json
+  agent-browser eval "(()=>{const body=document.body.textContent; const prazno=body.includes('Ni vpisanih pregledov') && body.includes('CSV se izvozi, ko je vpisan prvi datum pregleda.'); const uspeh=body.includes('Koledar pregledov prenešen v CSV ('); const mini=body.includes('Pregledi: ') && body.includes(' vpisanih · '); const c=window.__koledarCsv ?? null; const niz=(typeof c==='string'); const brezBom=niz?c.replace(/^\uFEFF/,''):null; return JSON.stringify({prazno, uspeh, mini, csvNiz:niz, bom:window.__koledarBom===true, bajti:niz?brezBom.length:0, glava:niz?brezBom.split('\n')[0].slice(0,60):null, obseg:niz?brezBom.includes('Vse stranke z vpisanim datumom pregleda (AKTIVEN + POTEKEL)'):null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r325-z0r-csv.json
   python3 - <<'PYEOF5' || exit 1
 import json
-raw = open('/tmp/r324-z0r-csv.json').read().strip()
+raw = open('/tmp/r325-z0r-csv.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['err'] is None, 'Z0r CSV err: ' + json.dumps(d)
@@ -452,10 +452,10 @@ eb_dispatch '{"tab":"more","more":"crm","subTab":null,"osnutek":null,"filter":nu
 if eb_pocakaj_na "(()=>{return !!document.querySelector('button[aria-label=\"Izvozi koledar pregledov kot ICS\"]');})()" 16; then
   # trije koledarski pilli (PDF brat R253 + CSV brat R295 + ICS brat R296):
   # VEDNO vidni (P1-k precedens)
-  agent-browser eval "(()=>{const pill=[...document.querySelectorAll('button')].filter(b=>(b.getAttribute('aria-label')||'').startsWith('Izvozi koledar pregledov kot')); return JSON.stringify({pillPdf:pill.some(b=>b.getAttribute('aria-label')==='Izvozi koledar pregledov kot PDF'), pillCsv:pill.some(b=>b.getAttribute('aria-label')==='Izvozi koledar pregledov kot CSV'), pillIcs:pill.some(b=>b.getAttribute('aria-label')==='Izvozi koledar pregledov kot ICS'), err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r324-z0s-pilli.json
+  agent-browser eval "(()=>{const pill=[...document.querySelectorAll('button')].filter(b=>(b.getAttribute('aria-label')||'').startsWith('Izvozi koledar pregledov kot')); return JSON.stringify({pillPdf:pill.some(b=>b.getAttribute('aria-label')==='Izvozi koledar pregledov kot PDF'), pillCsv:pill.some(b=>b.getAttribute('aria-label')==='Izvozi koledar pregledov kot CSV'), pillIcs:pill.some(b=>b.getAttribute('aria-label')==='Izvozi koledar pregledov kot ICS'), err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r325-z0s-pilli.json
   python3 - <<'PYEOF5' || exit 1
 import json
-raw = open('/tmp/r324-z0s-pilli.json').read().strip()
+raw = open('/tmp/r325-z0s-pilli.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['err'] is None, 'Z0s pilli err: ' + json.dumps(d)
@@ -466,10 +466,10 @@ PYEOF5
   agent-browser eval "(()=>{const orig=URL.createObjectURL.bind(URL); URL.createObjectURL=function(b){ b.arrayBuffer().then(ab=>{const u=new Uint8Array(ab); window.__koledarIcsBom=(u[0]===0xEF&&u[1]===0xBB&&u[2]===0xBF); window.__koledarIcs=new TextDecoder('utf-8').decode(ab);}); return orig(b); }; return 'patched';})()" 2>&1 | tail -1
   agent-browser eval "(()=>{const b=document.querySelector('button[aria-label=\"Izvozi koledar pregledov kot ICS\"]'); if(!b) return 'BREZ-GUMBA'; b.click(); return 'kliknuto';})()" 2>&1 | tail -1
   eb_cakaj 2
-  agent-browser eval "(()=>{const body=document.body.textContent; const prazno=body.includes('Ni vpisanih pregledov') && body.includes('ICS se izvozi, ko je vpisan prvi datum pregleda.'); const uspeh=body.includes('Koledar pregledov prenešen v ICS ('); const c=window.__koledarIcs ?? null; const niz=(typeof c==='string'); return JSON.stringify({prazno, uspeh, icsNiz:niz, bom:window.__koledarIcsBom===true, bajti:niz?c.length:0, glava:niz?c.slice(0,40):null, crlf:niz?c.includes('\\r\\n'):null, xstatus:niz?c.includes('X-ROKSAL-STATUS:'):null, konec:niz?c.trimEnd().endsWith('END:VCALENDAR'):null, dogodki:niz?(c.match(/BEGIN:VEVENT/g)||[]).length:null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r324-z0s-ics.json
+  agent-browser eval "(()=>{const body=document.body.textContent; const prazno=body.includes('Ni vpisanih pregledov') && body.includes('ICS se izvozi, ko je vpisan prvi datum pregleda.'); const uspeh=body.includes('Koledar pregledov prenešen v ICS ('); const c=window.__koledarIcs ?? null; const niz=(typeof c==='string'); return JSON.stringify({prazno, uspeh, icsNiz:niz, bom:window.__koledarIcsBom===true, bajti:niz?c.length:0, glava:niz?c.slice(0,40):null, crlf:niz?c.includes('\\r\\n'):null, xstatus:niz?c.includes('X-ROKSAL-STATUS:'):null, konec:niz?c.trimEnd().endsWith('END:VCALENDAR'):null, dogodki:niz?(c.match(/BEGIN:VEVENT/g)||[]).length:null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r325-z0s-ics.json
   python3 - <<'PYEOF5' || exit 1
 import json
-raw = open('/tmp/r324-z0s-ics.json').read().strip()
+raw = open('/tmp/r325-z0s-ics.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['err'] is None, 'Z0s ICS err: ' + json.dumps(d)
@@ -497,10 +497,10 @@ echo "=== Z0t: OPREMA CIKEL CSV ŽIVO (R297 — 27. člen izvozne družine; pogo
 eb_dispatch '{"tab":"more","more":"logistics","subTab":null,"osnutek":null,"filter":null}'
 if eb_pocakaj_na "(()=>{const gumbi=[...document.querySelectorAll('button')]; const oprema=gumbi.find(b=>b.textContent.trim()==='Oprema'); if(oprema) oprema.click(); return !!document.querySelector('button[aria-label=\"Izvozi pregled življenjskega cikla opreme kot CSV\"]');})()" 16; then
   # oba cikl pilli (PDF brat R266 + CSV brat R297): VEDNO vidna (P1-k precedens)
-  agent-browser eval "(()=>{const pill=[...document.querySelectorAll('button')].filter(b=>(b.getAttribute('aria-label')||'').startsWith('Izvozi pregled življenjskega cikla opreme kot')); return JSON.stringify({pillPdf:pill.some(b=>b.getAttribute('aria-label')==='Izvozi pregled življenjskega cikla opreme kot PDF'), pillCsv:pill.some(b=>b.getAttribute('aria-label')==='Izvozi pregled življenjskega cikla opreme kot CSV'), err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r324-z0t-pilli.json
+  agent-browser eval "(()=>{const pill=[...document.querySelectorAll('button')].filter(b=>(b.getAttribute('aria-label')||'').startsWith('Izvozi pregled življenjskega cikla opreme kot')); return JSON.stringify({pillPdf:pill.some(b=>b.getAttribute('aria-label')==='Izvozi pregled življenjskega cikla opreme kot PDF'), pillCsv:pill.some(b=>b.getAttribute('aria-label')==='Izvozi pregled življenjskega cikla opreme kot CSV'), err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r325-z0t-pilli.json
   python3 - <<'PYEOF5' || exit 1
 import json
-raw = open('/tmp/r324-z0t-pilli.json').read().strip()
+raw = open('/tmp/r325-z0t-pilli.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['err'] is None, 'Z0t pilli err: ' + json.dumps(d)
@@ -511,10 +511,10 @@ PYEOF5
   agent-browser eval "(()=>{const orig=URL.createObjectURL.bind(URL); URL.createObjectURL=function(b){ b.arrayBuffer().then(ab=>{const u=new Uint8Array(ab); window.__opremaBom=(u[0]===0xEF&&u[1]===0xBB&&u[2]===0xBF); window.__opremaCsv=new TextDecoder('utf-8').decode(ab);}); return orig(b); }; return 'patched';})()" 2>&1 | tail -1
   agent-browser eval "(()=>{const b=document.querySelector('button[aria-label=\"Izvozi pregled življenjskega cikla opreme kot CSV\"]'); if(!b) return 'BREZ-GUMBA'; b.click(); return 'kliknuto';})()" 2>&1 | tail -1
   eb_cakaj 3
-  agent-browser eval "(()=>{const body=document.body.textContent; const prazno=body.includes('Ni vpisane opreme') && body.includes('CSV se izvozi, ko je vpisan prvi kos opreme.'); const uspeh=body.includes('Pregled opreme prenešen v CSV ('); const c=window.__opremaCsv ?? null; const niz=(typeof c==='string'); const brezBom=niz?c.replace(/^\uFEFF/,''):null; return JSON.stringify({prazno, uspeh, csvNiz:niz, bom:window.__opremaBom===true, bajti:niz?brezBom.length:0, glava:niz?brezBom.split('\n')[0].slice(0,60):null, obseg:niz?brezBom.includes('Vsa oprema iz /api/equipment (polna resnica — tudi upokojena/izgubljena; NAZIV ASC referenčni red)'):null, sklep:niz?brezBom.includes('paginacija do 10.000 kosov.'):null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r324-z0t-csv.json
+  agent-browser eval "(()=>{const body=document.body.textContent; const prazno=body.includes('Ni vpisane opreme') && body.includes('CSV se izvozi, ko je vpisan prvi kos opreme.'); const uspeh=body.includes('Pregled opreme prenešen v CSV ('); const c=window.__opremaCsv ?? null; const niz=(typeof c==='string'); const brezBom=niz?c.replace(/^\uFEFF/,''):null; return JSON.stringify({prazno, uspeh, csvNiz:niz, bom:window.__opremaBom===true, bajti:niz?brezBom.length:0, glava:niz?brezBom.split('\n')[0].slice(0,60):null, obseg:niz?brezBom.includes('Vsa oprema iz /api/equipment (polna resnica — tudi upokojena/izgubljena; NAZIV ASC referenčni red)'):null, sklep:niz?brezBom.includes('paginacija do 10.000 kosov.'):null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r325-z0t-csv.json
   python3 - <<'PYEOF5' || exit 1
 import json
-raw = open('/tmp/r324-z0t-csv.json').read().strip()
+raw = open('/tmp/r325-z0t-csv.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['err'] is None, 'Z0t CSV err: ' + json.dumps(d)
@@ -543,10 +543,10 @@ eb_dispatch '{"tab":"more","more":"logistics","subTab":null,"osnutek":null,"filt
 # (vzorec Z0t: klik v predikatu, idempotenten na že aktivnem zavihku).
 if eb_pocakaj_na "(()=>{const gumbi=[...document.querySelectorAll('button')]; const koledar=gumbi.find(b=>b.textContent.trim()==='Koledar'); if(koledar) koledar.click(); return !!document.querySelector('button[aria-label=\"Izvozi tedenski pregled montaž kot ICS koledar\"]');})()" 16; then
   # vsi trije tedenski pilli (PDF brat R256 + CSV brat R292 + ICS R298): VEDNO vidni (P1-k precedens)
-  agent-browser eval "(()=>{const pill=[...document.querySelectorAll('button')].filter(b=>(b.getAttribute('aria-label')||'').startsWith('Izvozi tedenski pregled montaž kot')); return JSON.stringify({pillPdf:pill.some(b=>b.getAttribute('aria-label')==='Izvozi tedenski pregled montaž kot PDF'), pillCsv:pill.some(b=>b.getAttribute('aria-label')==='Izvozi tedenski pregled montaž kot CSV'), pillIcs:pill.some(b=>b.getAttribute('aria-label')==='Izvozi tedenski pregled montaž kot ICS koledar'), err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r324-z0u-pilli.json
+  agent-browser eval "(()=>{const pill=[...document.querySelectorAll('button')].filter(b=>(b.getAttribute('aria-label')||'').startsWith('Izvozi tedenski pregled montaž kot')); return JSON.stringify({pillPdf:pill.some(b=>b.getAttribute('aria-label')==='Izvozi tedenski pregled montaž kot PDF'), pillCsv:pill.some(b=>b.getAttribute('aria-label')==='Izvozi tedenski pregled montaž kot CSV'), pillIcs:pill.some(b=>b.getAttribute('aria-label')==='Izvozi tedenski pregled montaž kot ICS koledar'), err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r325-z0u-pilli.json
   python3 - <<'PYEOF5' || exit 1
 import json
-raw = open('/tmp/r324-z0u-pilli.json').read().strip()
+raw = open('/tmp/r325-z0u-pilli.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['err'] is None, 'Z0u pilli err: ' + json.dumps(d)
@@ -557,10 +557,10 @@ PYEOF5
   agent-browser eval "(()=>{const orig=URL.createObjectURL.bind(URL); URL.createObjectURL=function(b){ b.arrayBuffer().then(ab=>{const u=new Uint8Array(ab); window.__icsBom=(u[0]===0xEF&&u[1]===0xBB&&u[2]===0xBF); window.__tedenskiIcs=new TextDecoder('utf-8').decode(ab);}); return orig(b); }; return 'patched';})()" 2>&1 | tail -1
   agent-browser eval "(()=>{const b=document.querySelector('button[aria-label=\"Izvozi tedenski pregled montaž kot ICS koledar\"]'); if(!b) return 'BREZ-GUMBA'; b.click(); return 'kliknuto';})()" 2>&1 | tail -1
   eb_cakaj 3
-  agent-browser eval "(()=>{const body=document.body.textContent; const prazno=body.includes('Ni terminov v naslednjih 7 dneh') && body.includes('ICS se izvozi, ko je vpisan termin v prihajajočem tednu.'); const uspeh=body.includes('Tedenski vozni red prenešen v ICS ('); const c=window.__tedenskiIcs ?? null; const niz=(typeof c==='string'); const vrstice=niz?c.split('\r\n'):null; const veventi=niz?vrstice.filter(v=>v==='BEGIN:VEVENT').length:null; return JSON.stringify({prazno, uspeh, icsNiz:niz, bom:window.__icsBom===true, crlf:niz?c.includes('\r\n'):null, veventi, prva:niz?vrstice[0]:null, prodid:niz?vrstice.some(v=>v==='PRODID:-//Roksal//Tedenski vozni red//SL'):null, obseg:niz?vrstice.some(v=>v.startsWith('X-ROKSAL-OBSEG:')):null, dtstartZ:niz?vrstice.some(v=>v.startsWith('DTSTART:')&&v.endsWith('Z')):null, dtendZ:niz?vrstice.some(v=>v.startsWith('DTEND:')&&v.endsWith('Z')):null, status:niz?(veventi===0||vrstice.some(v=>v==='STATUS:CONFIRMED'||v==='STATUS:CANCELLED'||v==='STATUS:TENTATIVE')):null, noga:niz?vrstice[vrstice.length-1]==='END:VCALENDAR':null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r324-z0u-ics.json
+  agent-browser eval "(()=>{const body=document.body.textContent; const prazno=body.includes('Ni terminov v naslednjih 7 dneh') && body.includes('ICS se izvozi, ko je vpisan termin v prihajajočem tednu.'); const uspeh=body.includes('Tedenski vozni red prenešen v ICS ('); const c=window.__tedenskiIcs ?? null; const niz=(typeof c==='string'); const vrstice=niz?c.split('\r\n'):null; const veventi=niz?vrstice.filter(v=>v==='BEGIN:VEVENT').length:null; return JSON.stringify({prazno, uspeh, icsNiz:niz, bom:window.__icsBom===true, crlf:niz?c.includes('\r\n'):null, veventi, prva:niz?vrstice[0]:null, prodid:niz?vrstice.some(v=>v==='PRODID:-//Roksal//Tedenski vozni red//SL'):null, obseg:niz?vrstice.some(v=>v.startsWith('X-ROKSAL-OBSEG:')):null, dtstartZ:niz?vrstice.some(v=>v.startsWith('DTSTART:')&&v.endsWith('Z')):null, dtendZ:niz?vrstice.some(v=>v.startsWith('DTEND:')&&v.endsWith('Z')):null, status:niz?(veventi===0||vrstice.some(v=>v==='STATUS:CONFIRMED'||v==='STATUS:CANCELLED'||v==='STATUS:TENTATIVE')):null, noga:niz?vrstice[vrstice.length-1]==='END:VCALENDAR':null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r325-z0u-ics.json
   python3 - <<'PYEOF5' || exit 1
 import json
-raw = open('/tmp/r324-z0u-ics.json').read().strip()
+raw = open('/tmp/r325-z0u-ics.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['err'] is None, 'Z0u ICS err: ' + json.dumps(d)
@@ -589,10 +589,10 @@ eb_dispatch '{"tab":"more","more":"logistics","subTab":null,"osnutek":null,"filt
 # (idempotenten na že aktivnem zavihku — vzorec Z0t/Z0u).
 if eb_pocakaj_na "(()=>{const gumbi=[...document.querySelectorAll('button')]; const koledar=gumbi.find(b=>b.textContent.trim()==='Koledar'); if(koledar) koledar.click(); return [...document.querySelectorAll('button')].some(b=>(b.getAttribute('aria-label')||'').startsWith('Izvozi tedenski ICS samo za ekipo '));})()" 16; then
   # čipi: definicijski naslovi (MANDATORY STIL) + skupina aria + oznaka
-  agent-browser eval "(()=>{const cipi=[...document.querySelectorAll('button')].filter(b=>(b.getAttribute('aria-label')||'').startsWith('Izvozi tedenski ICS samo za ekipo ')); const oznaka=[...document.querySelectorAll('span')].find(x=>x.textContent.trim()==='ICS po ekipi:'); const prvi=cipi[0]; return JSON.stringify({stevilo:cipi.length, oznaka:!!oznaka, oznakaTitle:oznaka?(oznaka.getAttribute('title')||'').startsWith('Ekipa z vsaj enim terminom v naslednjih 7 dneh'):false, prviTitle:prvi?(prvi.getAttribute('title')||'').startsWith('Samo termini ekipe '):false, skupinaAria:!!document.querySelector('[aria-label=\"Tedenski ICS po ekipah\"]'), err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r324-z0v-cipi.json
+  agent-browser eval "(()=>{const cipi=[...document.querySelectorAll('button')].filter(b=>(b.getAttribute('aria-label')||'').startsWith('Izvozi tedenski ICS samo za ekipo ')); const oznaka=[...document.querySelectorAll('span')].find(x=>x.textContent.trim()==='ICS po ekipi:'); const prvi=cipi[0]; return JSON.stringify({stevilo:cipi.length, oznaka:!!oznaka, oznakaTitle:oznaka?(oznaka.getAttribute('title')||'').startsWith('Ekipa z vsaj enim terminom v naslednjih 7 dneh'):false, prviTitle:prvi?(prvi.getAttribute('title')||'').startsWith('Samo termini ekipe '):false, skupinaAria:!!document.querySelector('[aria-label=\"Tedenski ICS po ekipah\"]'), err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r325-z0v-cipi.json
   python3 - <<'PYEOF6' || exit 1
 import json
-raw = open('/tmp/r324-z0v-cipi.json').read().strip()
+raw = open('/tmp/r325-z0v-cipi.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['err'] is None, 'Z0v cipi err: ' + json.dumps(d)
@@ -606,10 +606,10 @@ PYEOF6
   agent-browser eval "(()=>{const orig=URL.createObjectURL.bind(URL); URL.createObjectURL=function(b){ b.arrayBuffer().then(ab=>{const u=new Uint8Array(ab); window.__ekipaBom=(u[0]===0xEF&&u[1]===0xBB&&u[2]===0xBF); window.__ekipaIcs=new TextDecoder('utf-8').decode(ab);}); return orig(b); }; return 'patched';})()" 2>&1 | tail -1
   agent-browser eval "(()=>{const cip=[...document.querySelectorAll('button')].find(b=>(b.getAttribute('aria-label')||'').startsWith('Izvozi tedenski ICS samo za ekipo ')); if(!cip) return 'BREZ-CIPA'; cip.click(); return 'kliknuto';})()" 2>&1 | tail -1
   eb_cakaj 3
-  agent-browser eval "(()=>{const c=window.__ekipaIcs ?? null; const niz=(typeof c==='string'); const vrstice=niz?c.split('\r\n').filter(v=>v.length>0):null; const razvite=niz?(():string[]=>{const o:string[]=[];for(const v of vrstice){if(v.startsWith(' ')&&o.length>0)o[o.length-1]+=v.slice(1);else o.push(v);}return o;})():null; const veventi=niz?vrstice.filter(v=>v==='BEGIN:VEVENT').length:null; return JSON.stringify({icsNiz:niz, bom:window.__ekipaBom===true, crlf:niz?c.includes('\r\n'):null, veventi, prva:niz?vrstice[0]:null, prodid:niz?vrstice.some(v=>v==='PRODID:-//Roksal//Tedenski vozni red po ekipah//SL'):null, ekipaX:niz?razvite.some(v=>v.startsWith('X-ROKSAL-EKIPA:')):null, obsegEkipa:niz?razvite.some(v=>v.startsWith('X-ROKSAL-OBSEG:')&&v.includes('Ekipa:')):null, uidPredpona:niz?vrstice.some(v=>v.startsWith('UID:vozni-red-ekipa-')):null, dtstartZ:niz?vrstice.some(v=>v.startsWith('DTSTART:')&&v.endsWith('Z')):null, noga:niz?vrstice[vrstice.length-1]==='END:VCALENDAR':null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r324-z0v-ics.json
+  agent-browser eval "(()=>{const c=window.__ekipaIcs ?? null; const niz=(typeof c==='string'); const vrstice=niz?c.split('\r\n').filter(v=>v.length>0):null; const razvite=niz?(():string[]=>{const o:string[]=[];for(const v of vrstice){if(v.startsWith(' ')&&o.length>0)o[o.length-1]+=v.slice(1);else o.push(v);}return o;})():null; const veventi=niz?vrstice.filter(v=>v==='BEGIN:VEVENT').length:null; return JSON.stringify({icsNiz:niz, bom:window.__ekipaBom===true, crlf:niz?c.includes('\r\n'):null, veventi, prva:niz?vrstice[0]:null, prodid:niz?vrstice.some(v=>v==='PRODID:-//Roksal//Tedenski vozni red po ekipah//SL'):null, ekipaX:niz?razvite.some(v=>v.startsWith('X-ROKSAL-EKIPA:')):null, obsegEkipa:niz?razvite.some(v=>v.startsWith('X-ROKSAL-OBSEG:')&&v.includes('Ekipa:')):null, uidPredpona:niz?vrstice.some(v=>v.startsWith('UID:vozni-red-ekipa-')):null, dtstartZ:niz?vrstice.some(v=>v.startsWith('DTSTART:')&&v.endsWith('Z')):null, noga:niz?vrstice[vrstice.length-1]==='END:VCALENDAR':null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r325-z0v-ics.json
   python3 - <<'PYEOF6' || exit 1
 import json
-raw = open('/tmp/r324-z0v-ics.json').read().strip()
+raw = open('/tmp/r325-z0v-ics.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['err'] is None, 'Z0v ICS err: ' + json.dumps(d)
@@ -632,10 +632,10 @@ eb_dispatch '{"tab":"more","more":"logistics","subTab":null,"osnutek":null,"filt
 # LEKCIJA R298 (podzavihek stale state): Z0w klikne 'Koledar' sam v predikatu
 # (idempotentno — vzorec Z0t/Z0u/Z0v).
 if eb_pocakaj_na "(()=>{const gumbi=[...document.querySelectorAll('button')]; const koledar=gumbi.find(b=>b.textContent.trim()==='Koledar'); if(koledar) koledar.click(); return !!document.querySelector('button[aria-label=\"Izvozi tedenski pregled monta\u017e kot ICS koledar\"]');})()" 16; then
-  agent-browser eval "(()=>{const mini=document.querySelector('[data-testid=\"tedenski-konflikti-mini\"]'); const sklep=document.querySelector('[data-testid=\"tedenski-razgled-sklep\"]'); const terminiViden=!!(sklep&&!sklep.textContent.startsWith('Naslednjih 7 dni brez')); return JSON.stringify({terminiViden, mini:!!mini, role:mini?mini.getAttribute('role'):null, text:mini?mini.textContent.trim():null, zelen:mini?mini.className.includes('text-roksal-green'):null, rdec:mini?mini.className.includes('text-roksal-red'):null, title:mini?((mini.getAttribute('title')||'').includes(' isti poli-odprto pravilo kot API 409')):null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r324-z0w-mini.json
+  agent-browser eval "(()=>{const mini=document.querySelector('[data-testid=\"tedenski-konflikti-mini\"]'); const sklep=document.querySelector('[data-testid=\"tedenski-razgled-sklep\"]'); const terminiViden=!!(sklep&&!sklep.textContent.startsWith('Naslednjih 7 dni brez')); return JSON.stringify({terminiViden, mini:!!mini, role:mini?mini.getAttribute('role'):null, text:mini?mini.textContent.trim():null, zelen:mini?mini.className.includes('text-roksal-green'):null, rdec:mini?mini.className.includes('text-roksal-red'):null, title:mini?((mini.getAttribute('title')||'').includes(' isti poli-odprto pravilo kot API 409')):null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r325-z0w-mini.json
   python3 - <<'PYEOF7' || exit 1
 import json
-raw = open('/tmp/r324-z0w-mini.json').read().strip()
+raw = open('/tmp/r325-z0w-mini.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['err'] is None, 'Z0w mini err: ' + json.dumps(d)
@@ -661,10 +661,10 @@ eb_dispatch '{"tab":"more","more":"logistics","subTab":null,"osnutek":null,"filt
 # LEKCIJA R298 (podzavihek stale state): Z0x klikne 'Koledar' sam v predikatu
 # (idempotentno — vzorec Z0t/Z0u/Z0v/Z0w).
 if eb_pocakaj_na "(()=>{const gumbi=[...document.querySelectorAll('button')]; const koledar=gumbi.find(b=>b.textContent.trim()==='Koledar'); if(koledar) koledar.click(); return !!document.querySelector('button[data-testid=\"konflikti-csv-pill\"]');})()" 16; then
-  agent-browser eval "(()=>{const pill=document.querySelector('button[data-testid=\"konflikti-csv-pill\"]'); return JSON.stringify({pill:!!pill, label:pill?pill.textContent.trim():null, aria:pill?pill.getAttribute('aria-label'):null, title:pill?((pill.getAttribute('title')||'').includes('isti poli-odprto pregled kot žig')):null, disabled:pill?pill.disabled:null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r324-z0x-pill.json
+  agent-browser eval "(()=>{const pill=document.querySelector('button[data-testid=\"konflikti-csv-pill\"]'); return JSON.stringify({pill:!!pill, label:pill?pill.textContent.trim():null, aria:pill?pill.getAttribute('aria-label'):null, title:pill?((pill.getAttribute('title')||'').includes('isti poli-odprto pregled kot žig')):null, disabled:pill?pill.disabled:null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r325-z0x-pill.json
   python3 - <<'PYEOF8' || exit 1
 import json
-raw = open('/tmp/r324-z0x-pill.json').read().strip()
+raw = open('/tmp/r325-z0x-pill.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['err'] is None, 'Z0x pill err: ' + json.dumps(d)
@@ -680,10 +680,10 @@ PYEOF8
   agent-browser eval "(()=>{const orig=URL.createObjectURL.bind(URL); URL.createObjectURL=function(b){ b.arrayBuffer().then(ab=>{const u=new Uint8Array(ab); window.__csvBom=(u[0]===0xEF&&u[1]===0xBB&&u[2]===0xBF); window.__konfliktiCsv=new TextDecoder('utf-8').decode(ab);}); return orig(b); }; return 'patched';})()" 2>&1 | tail -1
   agent-browser eval "(()=>{const b=document.querySelector('button[data-testid=\"konflikti-csv-pill\"]'); if(!b) return 'BREZ-GUMBA'; b.click(); return 'kliknuto';})()" 2>&1 | tail -1
   eb_cakaj 3
-  agent-browser eval "(()=>{const body=document.body.textContent; const prazno=body.includes('Ni terminov v naslednjih 7 dneh') && body.includes('Konflikti CSV se izvozi, ko je vpisan termin v prihajajo\u010dem tednu.'); const zelen=body.includes('Ni dokazanih konfliktov v okviru') && body.includes('\u017dig je zelen'); const uspeh=body.includes('Konflikti prenešeni v CSV ('); const c=window.__konfliktiCsv ?? null; const niz=(typeof c==='string'); const vrstice=niz?c.split('\n'):null; return JSON.stringify({prazno, zelen, uspeh, csvNiz:niz, bom:window.__csvBom===true, glava:niz?vrstice[0].includes('Dan prekrivanja'):null, ekipaStolpec:niz?vrstice[0].includes('Ekipa'):null, podatek:niz?vrstice.length>8:null, sklep:niz?vrstice.some(v=>v.startsWith('"Sklep"')):null, obseg:niz?vrstice.some(v=>v.startsWith('"Obseg"')):null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r324-z0x-csv.json
+  agent-browser eval "(()=>{const body=document.body.textContent; const prazno=body.includes('Ni terminov v naslednjih 7 dneh') && body.includes('Konflikti CSV se izvozi, ko je vpisan termin v prihajajo\u010dem tednu.'); const zelen=body.includes('Ni dokazanih konfliktov v okviru') && body.includes('\u017dig je zelen'); const uspeh=body.includes('Konflikti prenešeni v CSV ('); const c=window.__konfliktiCsv ?? null; const niz=(typeof c==='string'); const vrstice=niz?c.split('\n'):null; return JSON.stringify({prazno, zelen, uspeh, csvNiz:niz, bom:window.__csvBom===true, glava:niz?vrstice[0].includes('Dan prekrivanja'):null, ekipaStolpec:niz?vrstice[0].includes('Ekipa'):null, podatek:niz?vrstice.length>8:null, sklep:niz?vrstice.some(v=>v.startsWith('"Sklep"')):null, obseg:niz?vrstice.some(v=>v.startsWith('"Obseg"')):null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r325-z0x-csv.json
   python3 - <<'PYEOF8' || exit 1
 import json
-raw = open('/tmp/r324-z0x-csv.json').read().strip()
+raw = open('/tmp/r325-z0x-csv.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['err'] is None, 'Z0x CSV err: ' + json.dumps(d)
@@ -709,10 +709,10 @@ eb_dispatch '{"tab":"more","more":"logistics","subTab":null,"osnutek":null,"filt
 # LEKCIJA R298 (podzavihek stale state): Z0aa klikne 'Koledar' sam v predikatu
 # (idempotentno — vzorec Z0t/Z0u/Z0v/Z0w/Z0x).
 if eb_pocakaj_na "(()=>{const gumbi=[...document.querySelectorAll('button')]; const koledar=gumbi.find(b=>b.textContent.trim()==='Koledar'); if(koledar) koledar.click(); return !!document.querySelector('button[data-testid=\"konflikti-pdf-pill\"]');})()" 16; then
-  agent-browser eval "(()=>{const pill=document.querySelector('button[data-testid=\"konflikti-pdf-pill\"]'); return JSON.stringify({pill:!!pill, label:pill?pill.textContent.trim():null, aria:pill?pill.getAttribute('aria-label'):null, title:pill?((pill.getAttribute('title')||'').includes('isti poli-odprto pregled kot žig')):null, disabled:pill?pill.disabled:null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r324-z0aa-pill.json
+  agent-browser eval "(()=>{const pill=document.querySelector('button[data-testid=\"konflikti-pdf-pill\"]'); return JSON.stringify({pill:!!pill, label:pill?pill.textContent.trim():null, aria:pill?pill.getAttribute('aria-label'):null, title:pill?((pill.getAttribute('title')||'').includes('isti poli-odprto pregled kot žig')):null, disabled:pill?pill.disabled:null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r325-z0aa-pill.json
   python3 - <<'PYEOF8' || exit 1
 import json
-raw = open('/tmp/r324-z0aa-pill.json').read().strip()
+raw = open('/tmp/r325-z0aa-pill.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['err'] is None, 'Z0aa pill err: ' + json.dumps(d)
@@ -728,10 +728,10 @@ PYEOF8
   agent-browser eval "(()=>{const orig=URL.createObjectURL.bind(URL); URL.createObjectURL=function(b){ b.arrayBuffer().then(ab=>{const u=new Uint8Array(ab); window.__pdfMagic=String.fromCharCode(u[0],u[1],u[2],u[3],u[4]); window.__pdfLen=u.length;}); return orig(b); }; return 'patched';})()" 2>&1 | tail -1
   agent-browser eval "(()=>{const b=document.querySelector('button[data-testid=\"konflikti-pdf-pill\"]'); if(!b) return 'BREZ-GUMBA'; b.click(); return 'kliknuto';})()" 2>&1 | tail -1
   eb_cakaj 3
-  agent-browser eval "(()=>{const body=document.body.textContent; const prazno=body.includes('Ni terminov v naslednjih 7 dneh') && body.includes('Konflikti PDF se izvozi, ko je vpisan termin v prihajajo\u010dem tednu.'); const zelen=body.includes('Ni dokazanih konfliktov v okviru') && body.includes('\u017dig je zelen'); const uspeh=body.includes('Konflikti prenešeni v PDF ('); return JSON.stringify({prazno, zelen, uspeh, pdfMagic:window.__pdfMagic??null, pdfLen:window.__pdfLen??null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r324-z0aa-pdf.json
+  agent-browser eval "(()=>{const body=document.body.textContent; const prazno=body.includes('Ni terminov v naslednjih 7 dneh') && body.includes('Konflikti PDF se izvozi, ko je vpisan termin v prihajajo\u010dem tednu.'); const zelen=body.includes('Ni dokazanih konfliktov v okviru') && body.includes('\u017dig je zelen'); const uspeh=body.includes('Konflikti prenešeni v PDF ('); return JSON.stringify({prazno, zelen, uspeh, pdfMagic:window.__pdfMagic??null, pdfLen:window.__pdfLen??null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r325-z0aa-pdf.json
   python3 - <<'PYEOF8' || exit 1
 import json
-raw = open('/tmp/r324-z0aa-pdf.json').read().strip()
+raw = open('/tmp/r325-z0aa-pdf.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['err'] is None, 'Z0aa PDF err: ' + json.dumps(d)
@@ -756,10 +756,10 @@ eb_dispatch '{"tab":"more","more":"logistics","subTab":null,"osnutek":null,"filt
 # LEKCIJA R298 (podzavihek stale state): Z0ab klikne 'Koledar' sam v predikatu
 # (idempotentno — vzorec Z0t/Z0u/Z0v/Z0w/Z0x/Z0aa).
 if eb_pocakaj_na "(()=>{const gumbi=[...document.querySelectorAll('button')]; const koledar=gumbi.find(b=>b.textContent.trim()==='Koledar'); if(koledar) koledar.click(); return !!document.querySelector('button[data-testid=\"ekipe-pdf-pill\"]');})()" 16; then
-  agent-browser eval "(()=>{const pill=document.querySelector('button[data-testid=\"ekipe-pdf-pill\"]'); return JSON.stringify({pill:!!pill, label:pill?pill.textContent.trim():null, aria:pill?pill.getAttribute('aria-label'):null, title:pill?((pill.getAttribute('title')||'').includes('ENA sekcija na ekipo')):null, disabled:pill?pill.disabled:null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r324-z0ab-pill.json
+  agent-browser eval "(()=>{const pill=document.querySelector('button[data-testid=\"ekipe-pdf-pill\"]'); return JSON.stringify({pill:!!pill, label:pill?pill.textContent.trim():null, aria:pill?pill.getAttribute('aria-label'):null, title:pill?((pill.getAttribute('title')||'').includes('ENA sekcija na ekipo')):null, disabled:pill?pill.disabled:null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r325-z0ab-pill.json
   python3 - <<'PYEOF8' || exit 1
 import json
-raw = open('/tmp/r324-z0ab-pill.json').read().strip()
+raw = open('/tmp/r325-z0ab-pill.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['err'] is None, 'Z0ab pill err: ' + json.dumps(d)
@@ -775,10 +775,10 @@ PYEOF8
   agent-browser eval "(()=>{const orig=URL.createObjectURL.bind(URL); URL.createObjectURL=function(b){ b.arrayBuffer().then(ab=>{const u=new Uint8Array(ab); window.__pdfMagic=String.fromCharCode(u[0],u[1],u[2],u[3],u[4]); window.__pdfLen=u.length;}); return orig(b); }; return 'patched';})()" 2>&1 | tail -1
   agent-browser eval "(()=>{const b=document.querySelector('button[data-testid=\"ekipe-pdf-pill\"]'); if(!b) return 'BREZ-GUMBA'; b.click(); return 'kliknuto';})()" 2>&1 | tail -1
   eb_cakaj 3
-  agent-browser eval "(()=>{const body=document.body.textContent; const prazno=body.includes('Ni terminov v naslednjih 7 dneh') && body.includes('PDF po ekipah se izvozi, ko je vpisan termin v prihajajo\u010dem tednu.'); const niekip=body.includes('Ni ekip z termini v naslednjih 7 dneh') && body.includes('PDF po ekipah se izvozi, ko ima ekipa vpisan termin v prihajajo\u010dem tednu.'); const uspeh=body.includes('Tedenski vozni red po ekipah prenešen (Tedenski-po-ekipah-'); return JSON.stringify({prazno, niekip, uspeh, pdfMagic:window.__pdfMagic??null, pdfLen:window.__pdfLen??null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r324-z0ab-pdf.json
+  agent-browser eval "(()=>{const body=document.body.textContent; const prazno=body.includes('Ni terminov v naslednjih 7 dneh') && body.includes('PDF po ekipah se izvozi, ko je vpisan termin v prihajajo\u010dem tednu.'); const niekip=body.includes('Ni ekip z termini v naslednjih 7 dneh') && body.includes('PDF po ekipah se izvozi, ko ima ekipa vpisan termin v prihajajo\u010dem tednu.'); const uspeh=body.includes('Tedenski vozni red po ekipah prenešen (Tedenski-po-ekipah-'); return JSON.stringify({prazno, niekip, uspeh, pdfMagic:window.__pdfMagic??null, pdfLen:window.__pdfLen??null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r325-z0ab-pdf.json
   python3 - <<'PYEOF8' || exit 1
 import json
-raw = open('/tmp/r324-z0ab-pdf.json').read().strip()
+raw = open('/tmp/r325-z0ab-pdf.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['err'] is None, 'Z0ab PDF err: ' + json.dumps(d)
@@ -803,10 +803,10 @@ eb_dispatch '{"tab":"more","more":"logistics","subTab":null,"osnutek":null,"filt
 # LEKCIJA R298 (podzavihek stale state): Z0ac klikne 'Koledar' sam v predikatu
 # (idempotentno — vzorec Z0t/Z0u/Z0v/Z0w/Z0x/Z0aa/Z0ab).
 if eb_pocakaj_na "(()=>{const gumbi=[...document.querySelectorAll('button')]; const koledar=gumbi.find(b=>b.textContent.trim()==='Koledar'); if(koledar) koledar.click(); return !!document.querySelector('button[data-testid=\"ekipe-csv-pill\"]');})()" 16; then
-  agent-browser eval "(()=>{const pill=document.querySelector('button[data-testid=\"ekipe-csv-pill\"]'); return JSON.stringify({pill:!!pill, label:pill?pill.textContent.trim():null, aria:pill?pill.getAttribute('aria-label'):null, title:pill?((pill.getAttribute('title')||'').includes('ENA vrstica na termin')):null, disabled:pill?pill.disabled:null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r324-z0ac-pill.json
+  agent-browser eval "(()=>{const pill=document.querySelector('button[data-testid=\"ekipe-csv-pill\"]'); return JSON.stringify({pill:!!pill, label:pill?pill.textContent.trim():null, aria:pill?pill.getAttribute('aria-label'):null, title:pill?((pill.getAttribute('title')||'').includes('ENA vrstica na termin')):null, disabled:pill?pill.disabled:null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r325-z0ac-pill.json
   python3 - <<'PYEOF8' || exit 1
 import json
-raw = open('/tmp/r324-z0ac-pill.json').read().strip()
+raw = open('/tmp/r325-z0ac-pill.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['err'] is None, 'Z0ac pill err: ' + json.dumps(d)
@@ -822,10 +822,10 @@ PYEOF8
   agent-browser eval "(()=>{const orig=URL.createObjectURL.bind(URL); URL.createObjectURL=function(b){ b.arrayBuffer().then(ab=>{const u=new Uint8Array(ab); window.__csvBom=(u[0]===0xEF&&u[1]===0xBB&&u[2]===0xBF); window.__csvLen=u.length;}); return orig(b); }; return 'patched';})()" 2>&1 | tail -1
   agent-browser eval "(()=>{const b=document.querySelector('button[data-testid=\"ekipe-csv-pill\"]'); if(!b) return 'BREZ-GUMBA'; b.click(); return 'kliknuto';})()" 2>&1 | tail -1
   eb_cakaj 3
-  agent-browser eval "(()=>{const body=document.body.textContent; const prazno=body.includes('Ni terminov v naslednjih 7 dneh') && body.includes('CSV po ekipah se izvozi, ko je vpisan termin v prihajajo\u010dem tednu.'); const niekip=body.includes('Ni ekip z termini v naslednjih 7 dneh') && body.includes('CSV po ekipah se izvozi, ko ima ekipa vpisan termin v prihajajo\u010dem tednu.'); const uspeh=body.includes('Tedenski vozni red po ekipah prenešen v CSV (Tedenski-po-ekipah-'); return JSON.stringify({prazno, niekip, uspeh, csvBom:window.__csvBom??null, csvLen:window.__csvLen??null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r324-z0ac-csv.json
+  agent-browser eval "(()=>{const body=document.body.textContent; const prazno=body.includes('Ni terminov v naslednjih 7 dneh') && body.includes('CSV po ekipah se izvozi, ko je vpisan termin v prihajajo\u010dem tednu.'); const niekip=body.includes('Ni ekip z termini v naslednjih 7 dneh') && body.includes('CSV po ekipah se izvozi, ko ima ekipa vpisan termin v prihajajo\u010dem tednu.'); const uspeh=body.includes('Tedenski vozni red po ekipah prenešen v CSV (Tedenski-po-ekipah-'); return JSON.stringify({prazno, niekip, uspeh, csvBom:window.__csvBom??null, csvLen:window.__csvLen??null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r325-z0ac-csv.json
   python3 - <<'PYEOF8' || exit 1
 import json
-raw = open('/tmp/r324-z0ac-csv.json').read().strip()
+raw = open('/tmp/r325-z0ac-csv.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['err'] is None, 'Z0ac CSV err: ' + json.dumps(d)
@@ -854,10 +854,10 @@ eb_dispatch '{"tab":"more","more":"logistics","subTab":null,"osnutek":null,"filt
 # (termini brez ekipe — particija dokaz) / sklep (PETI potrošnik ENEGA niza).
 if eb_pocakaj_na "(()=>{const koledar=[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='Koledar'); if(koledar) koledar.click(); return !!document.querySelector('[data-testid=\"tedenski-ekipa-dnevi\"]') || document.body.textContent.includes('Ni terminov v naslednjih 7 dneh');})()" 16; then
   eb_cakaj 1
-  agent-browser eval "(()=>{const blok=document.querySelector('[data-testid=\"tedenski-ekipa-dnevi\"]'); const praznoEl=document.querySelector('[data-testid=\"tedenski-ekipa-dnevi-prazno\"]'); const sklepEl=document.querySelector('[data-testid=\"tedenski-ekipa-dnevi-sklep\"]'); const praznoOkno=!blok && document.body.textContent.includes('Ni terminov v naslednjih 7 dneh'); const dnevi=blok&&blok.children.length===2?blok.children[1].children.length:0; const uli=blok?blok.querySelectorAll('ul').length:0; const praznihDni=blok?(blok.textContent.match(/Brez terminov na ta dan/g)||[]).length:0; const vrstic=blok?blok.querySelectorAll('li').length:0; return JSON.stringify({blok:!!blok, aria:blok?blok.getAttribute('aria-label'):null, title:blok?((blok.getAttribute('title')||'').includes('ISTI pregled in vrstni red kot Ekipe PDF in Ekipe CSV')):null, prazno:!!praznoEl, praznoTekst:praznoEl?praznoEl.textContent.trim():null, sklep:!!sklepEl, sklepTekst:sklepEl?sklepEl.textContent.trim():null, dnevi, uli, praznihDni, vrstic, praznoOkno, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r324-z0ad.json
+  agent-browser eval "(()=>{const blok=document.querySelector('[data-testid=\"tedenski-ekipa-dnevi\"]'); const praznoEl=document.querySelector('[data-testid=\"tedenski-ekipa-dnevi-prazno\"]'); const sklepEl=document.querySelector('[data-testid=\"tedenski-ekipa-dnevi-sklep\"]'); const praznoOkno=!blok && document.body.textContent.includes('Ni terminov v naslednjih 7 dneh'); const dnevi=blok&&blok.children.length===2?blok.children[1].children.length:0; const uli=blok?blok.querySelectorAll('ul').length:0; const praznihDni=blok?(blok.textContent.match(/Brez terminov na ta dan/g)||[]).length:0; const vrstic=blok?blok.querySelectorAll('li').length:0; return JSON.stringify({blok:!!blok, aria:blok?blok.getAttribute('aria-label'):null, title:blok?((blok.getAttribute('title')||'').includes('ISTI pregled in vrstni red kot Ekipe PDF in Ekipe CSV')):null, prazno:!!praznoEl, praznoTekst:praznoEl?praznoEl.textContent.trim():null, sklep:!!sklepEl, sklepTekst:sklepEl?sklepEl.textContent.trim():null, dnevi, uli, praznihDni, vrstic, praznoOkno, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r325-z0ad.json
   python3 - <<'PYEOF9' || exit 1
 import json
-raw = open('/tmp/r324-z0ad.json').read().strip()
+raw = open('/tmp/r325-z0ad.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['err'] is None, 'Z0ad err: ' + json.dumps(d)
@@ -896,10 +896,10 @@ eb_dispatch '{"tab":"more","more":"logistics","subTab":null,"osnutek":null,"filt
 # LEKCIJA R298 (podzavihek stale state) + logistika subtabi (Koledar/Ekipe/Oprema): Z0ae klikne 'Oprema' sam v predikatu (idempotentno — vzorec Z0t/…/Z0ad).
 if eb_pocakaj_na "(()=>{const g=[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='Oprema'); if(g) g.click(); return !!document.querySelector('[data-testid=\"oprema-cikel-dokaz\"]') || document.body.textContent.includes('Ni opreme. Dodaj prvo.');})()" 16; then
   eb_cakaj 1
-  agent-browser eval "(()=>{const blok=document.querySelector('[data-testid=\"oprema-cikel-dokaz\"]'); const praznoEl=document.querySelector('[data-testid=\"oprema-cikel-dokaz-prazno\"]'); const sklepEl=document.querySelector('[data-testid=\"oprema-cikel-dokaz-sklep\"]'); const brezOpreme=!blok && document.body.textContent.includes('Ni opreme. Dodaj prvo.'); const mini=document.body.textContent.includes('Cikl (viden seznam):'); const vrsticne=blok?blok.querySelectorAll('li').length:0; const amber=blok?blok.querySelectorAll('span[class*=\"roksal-amber\"]').length:0; const rdece=blok?blok.querySelectorAll('span[class*=\"roksal-red\"]').length:0; const sklepTekst=sklepEl?sklepEl.textContent.trim():null; const m=sklepTekst?sklepTekst.match(/Vrstic (\\d+) [^]* zigov (\\d+)\\./):null; const n=m?parseInt(m[1],10):null; const g=m?parseInt(m[2],10):null; return JSON.stringify({blok:!!blok, aria:blok?blok.getAttribute('aria-label'):null, title:blok?((blok.getAttribute('title')||'').includes('kot Cikel PDF in Cikel CSV')):null, prazno:!!praznoEl, praznoTekst:praznoEl?praznoEl.textContent.trim():null, sklep:!!sklepEl, sklepTekst, vrsticne, amber, rdece, n, g, brezOpreme, mini, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r324-z0ae.json
+  agent-browser eval "(()=>{const blok=document.querySelector('[data-testid=\"oprema-cikel-dokaz\"]'); const praznoEl=document.querySelector('[data-testid=\"oprema-cikel-dokaz-prazno\"]'); const sklepEl=document.querySelector('[data-testid=\"oprema-cikel-dokaz-sklep\"]'); const brezOpreme=!blok && document.body.textContent.includes('Ni opreme. Dodaj prvo.'); const mini=document.body.textContent.includes('Cikl (viden seznam):'); const vrsticne=blok?blok.querySelectorAll('li').length:0; const amber=blok?blok.querySelectorAll('span[class*=\"roksal-amber\"]').length:0; const rdece=blok?blok.querySelectorAll('span[class*=\"roksal-red\"]').length:0; const sklepTekst=sklepEl?sklepEl.textContent.trim():null; const m=sklepTekst?sklepTekst.match(/Vrstic (\\d+) [^]* zigov (\\d+)\\./):null; const n=m?parseInt(m[1],10):null; const g=m?parseInt(m[2],10):null; return JSON.stringify({blok:!!blok, aria:blok?blok.getAttribute('aria-label'):null, title:blok?((blok.getAttribute('title')||'').includes('kot Cikel PDF in Cikel CSV')):null, prazno:!!praznoEl, praznoTekst:praznoEl?praznoEl.textContent.trim():null, sklep:!!sklepEl, sklepTekst, vrsticne, amber, rdece, n, g, brezOpreme, mini, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r325-z0ae.json
   python3 - <<'PYEOF10' || exit 1
 import json, re
-raw = open('/tmp/r324-z0ae.json').read().strip()
+raw = open('/tmp/r325-z0ae.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['err'] is None, 'Z0ae err: ' + json.dumps(d)
@@ -944,10 +944,10 @@ eb_dispatch '{"tab":"more","more":"logistics","subTab":null,"osnutek":null,"filt
 # subtabu): 'Naslednjih 7 dni brez vpisanih terminov.' = praznoOkno veja.
 if eb_pocakaj_na "(()=>{const koledar=[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='Koledar'); if(koledar) koledar.click(); return !!document.querySelector('[data-testid=\"tedenski-razgled-sklep\"]') || !!document.querySelector('[data-testid=\"tedenski-konflikti-mini\"]');})()" 16; then
   eb_cakaj 1
-  agent-browser eval "(()=>{const mini=document.querySelector('[data-testid=\"tedenski-konflikti-mini\"]'); const dokaz=document.querySelector('[data-testid=\"konflikti-dokaz\"]'); const razgledSklep=document.querySelector('[data-testid=\"tedenski-razgled-sklep\"]'); const miniTekst=mini?mini.textContent.trim():null; const zelen=miniTekst!==null&&miniTekst.startsWith('Konflikti: 0'); const rdec=miniTekst!==null&&!zelen; const praznoOkno=!mini && !!(razgledSklep && razgledSklep.textContent.includes('Naslednjih 7 dni brez vpisanih terminov')); const vrsticne=dokaz?dokaz.querySelectorAll('li').length:0; const shopTekst=dokaz?(dokaz.textContent.match(/Pregledanih (\\d+) [^]* Parov (\\d+)\\./)||[]):null; return JSON.stringify({mini:!!mini, miniTekst, zelen, rdec, praznoOkno, dokaz:!!dokaz, aria:dokaz?dokaz.getAttribute('aria-label'):null, title:dokaz?((dokaz.getAttribute('title')||'').includes('ISTI pari in ISTI vrstni red kot Konflikti CSV in Konflikti PDF')):null, vrsticne, pregledanih:shopTekst?parseInt(shopTekst[1],10):null, parov:shopTekst?parseInt(shopTekst[2],10):null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r324-z0af.json
+  agent-browser eval "(()=>{const mini=document.querySelector('[data-testid=\"tedenski-konflikti-mini\"]'); const dokaz=document.querySelector('[data-testid=\"konflikti-dokaz\"]'); const razgledSklep=document.querySelector('[data-testid=\"tedenski-razgled-sklep\"]'); const miniTekst=mini?mini.textContent.trim():null; const zelen=miniTekst!==null&&miniTekst.startsWith('Konflikti: 0'); const rdec=miniTekst!==null&&!zelen; const praznoOkno=!mini && !!(razgledSklep && razgledSklep.textContent.includes('Naslednjih 7 dni brez vpisanih terminov')); const vrsticne=dokaz?dokaz.querySelectorAll('li').length:0; const shopTekst=dokaz?(dokaz.textContent.match(/Pregledanih (\\d+) [^]* Parov (\\d+)\\./)||[]):null; return JSON.stringify({mini:!!mini, miniTekst, zelen, rdec, praznoOkno, dokaz:!!dokaz, aria:dokaz?dokaz.getAttribute('aria-label'):null, title:dokaz?((dokaz.getAttribute('title')||'').includes('ISTI pari in ISTI vrstni red kot Konflikti CSV in Konflikti PDF')):null, vrsticne, pregledanih:shopTekst?parseInt(shopTekst[1],10):null, parov:shopTekst?parseInt(shopTekst[2],10):null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r325-z0af.json
   python3 - <<'PYEOF11' || exit 1
 import json
-raw = open('/tmp/r324-z0af.json').read().strip()
+raw = open('/tmp/r325-z0af.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['err'] is None, 'Z0af err: ' + json.dumps(d)
@@ -982,10 +982,10 @@ echo "=== Z0ag: API I/O MEJA ŽIVO (R310 — 38. člen issue #1, «stena ura»; 
 # railing-layout + quote imata json().catch + zod safeParse (že pravilno).
 agent-browser eval "(()=>{window.__meja=[]; const p=(ime,url,telo)=>fetch(url,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:telo}).then(async r=>{let b=null; try{b=await r.json();}catch(e){b=null;} window.__meja.push({ime,status:r.status,error:b&&typeof b==='object'?(b.error??null):null});}).catch(e=>window.__meja.push({ime,status:0,error:'MREŽA: '+String(e)})); p('calculator-pokvarjen','/api/calculator','{pokvarjen'); p('calculator-null','/api/calculator','null'); p('railing-layout-pokvarjen','/api/railing-layout','{pokvarjen'); p('quote-pokvarjen','/api/quote','{pokvarjen'); return 'poslano';})()" 2>&1 | tail -1
 eb_cakaj 3
-agent-browser eval "JSON.stringify(window.__meja??[])" 2>&1 | tail -1 > /tmp/r324-z0ag.json
+agent-browser eval "JSON.stringify(window.__meja??[])" 2>&1 | tail -1 > /tmp/r325-z0ag.json
 python3 - <<'PYEOF12' || exit 1
 import json
-raw = open('/tmp/r324-z0ag.json').read().strip()
+raw = open('/tmp/r325-z0ag.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert isinstance(d, list) and len(d) == 4, 'Z0ag oblika: ' + json.dumps(d)
@@ -1014,10 +1014,10 @@ echo "=== Z0ai: 3. VAL UNIFIKACIJE ŽIVO (R310 — EN VIR I/O meja val-3; 10 han
 # ZERO-MUTACIJA: guard strelja PRED vsakim db zapisom — odtis ostane.
 agent-browser eval "(()=>{window.__val3=[]; const ck=document.cookie.split(';').map(s=>s.trim()).find(s=>s.startsWith('roksal_csrf=')); const tok=ck?ck.slice(12):null; const h={'Content-Type':'application/json'}; if(tok)h['x-csrf-token']=tok; const rute=[['quote','/api/quote','POST'],['railing-layout','/api/railing-layout','POST'],['users','/api/users','POST'],['crm','/api/crm','PATCH'],['equipment','/api/equipment','PATCH'],['qc','/api/qc','POST'],['evidence','/api/evidence','POST'],['viz-render','/api/viz/render','POST'],['measurements-id','/api/measurements/e2e-r322-ne-obstojeci-id','PATCH'],['ar-analyze','/api/ar/analyze','POST']]; (async()=>{ for (const [ime,url,metoda] of rute){ try{ const r=await fetch(url,{method:metoda,credentials:'same-origin',headers:h,body:'{pokvarjen'}); let b=null; try{b=await r.json();}catch(e){b=null;} window.__val3.push({ime,status:r.status,error:b&&typeof b==='object'?(b.error??null):null}); }catch(e){ window.__val3.push({ime,status:0,error:'MREŽA: '+String(e)}); } } })(); return 'poslano '+rute.length;})()" 2>&1 | tail -1
 eb_cakaj 8
-agent-browser eval "JSON.stringify(window.__val3??[])" 2>&1 | tail -1 > /tmp/r324-z0ai.json
+agent-browser eval "JSON.stringify(window.__val3??[])" 2>&1 | tail -1 > /tmp/r325-z0ai.json
 python3 - <<'PYEOFZ0AI' || exit 1
 import json
-raw = open('/tmp/r324-z0ai.json').read().strip()
+raw = open('/tmp/r325-z0ai.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert isinstance(d, list) and len(d) == 10, 'Z0ai oblika: pričakovano 10 zapisov, dobljeno ' + json.dumps(len(d) if isinstance(d, list) else d)
@@ -1043,10 +1043,10 @@ for poskus in 1 2 3 4; do
   agent-browser eval "(()=>{const b=document.querySelector('[data-testid=\"ai-raba-dokaz\"]'); return b ? 'najden' : 'ni';})()" 2>&1 | tail -1 | grep -q najden && { NAJDEN_Z0AJ=1; break; }
 done
 [ "$NAJDEN_Z0AJ" = "1" ] || { echo "Z0aj FAIL: ai-raba-dokaz blok ni izrisan (vodja chunk naložen? dispatch?)"; exit 1; }
-agent-browser eval "(()=>{const b=document.querySelector('[data-testid=\"ai-raba-dokaz\"]'); const s=document.querySelector('[data-testid=\"ai-raba-sklep\"]'); const ps=[...(b?.querySelectorAll('p')??[])].map(p=>p.textContent||''); return JSON.stringify({naslov:b?.getAttribute('aria-label')??null, nadom:ps.filter(t=>t.includes('→ nadomestek (brez AI):')).length, kandidati:(b?.querySelectorAll('li')??[]).length, sklep:s?.textContent??null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r324-z0aj.json
+agent-browser eval "(()=>{const b=document.querySelector('[data-testid=\"ai-raba-dokaz\"]'); const s=document.querySelector('[data-testid=\"ai-raba-sklep\"]'); const ps=[...(b?.querySelectorAll('p')??[])].map(p=>p.textContent||''); return JSON.stringify({naslov:b?.getAttribute('aria-label')??null, nadom:ps.filter(t=>t.includes('→ nadomestek (brez AI):')).length, kandidati:(b?.querySelectorAll('li')??[]).length, sklep:s?.textContent??null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r325-z0aj.json
 python3 - <<'PYEOFZ0AJ' || exit 1
 import json
-raw = open('/tmp/r324-z0aj.json').read().strip()
+raw = open('/tmp/r325-z0aj.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['err'] is None, 'Z0aj err: ' + json.dumps(d)
@@ -1075,10 +1075,10 @@ for poskus in 1 2 3 4 5; do
   agent-browser eval "(()=>{const b=document.querySelector('[data-testid=\"zmogljivost-dokaz\"]'); const v=b?b.querySelectorAll('[data-testid=\"zmogljivost-vrstica\"]').length:0; return v===10 ? 'najden' : 'ni';})()" 2>&1 | tail -1 | grep -q najden && { NAJDEN_Z0AK=1; break; }
 done
 [ "$NAJDEN_Z0AK" = "1" ] || { echo "Z0ak FAIL: zmogljivost-dokaz blok z 10 meritvami ni izrisan (useEffect meritev teče? dispatch?)"; exit 1; }
-agent-browser eval "(()=>{const b=document.querySelector('[data-testid=\"zmogljivost-dokaz\"]'); const s=document.querySelector('[data-testid=\"zmogljivost-sklep\"]'); const vr=[...document.querySelectorAll('[data-testid=\"zmogljivost-vrstica\"]')].map(x=>x.textContent||''); const num=/\\d+(\\.\\d+)? \\/ \\d+(\\.\\d+)? \\/ \\d+(\\.\\d+)? ms/; return JSON.stringify({naslov:b?.getAttribute('aria-label')??null, vrstice:vr.length, vsePreverjene:vr.every(t=>t.includes('· vsi izhodi preverjeni')), casi:vr.every(t=>num.test(t)), calculatorVrstica:vr.some(t=>t.includes('Kalkulator razmikov letvic')), aiVrstica:vr.some(t=>t.includes('AI raba pregled')), pdfVrstica:vr.some(t=>t.includes('Konflikti PDF dokument'))&&vr.some(t=>t.includes('Računi po projektih PDF')), sklep:s?.textContent??null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r324-z0ak.json
+agent-browser eval "(()=>{const b=document.querySelector('[data-testid=\"zmogljivost-dokaz\"]'); const s=document.querySelector('[data-testid=\"zmogljivost-sklep\"]'); const vr=[...document.querySelectorAll('[data-testid=\"zmogljivost-vrstica\"]')].map(x=>x.textContent||''); const num=/\\d+(\\.\\d+)? \\/ \\d+(\\.\\d+)? \\/ \\d+(\\.\\d+)? ms/; return JSON.stringify({naslov:b?.getAttribute('aria-label')??null, vrstice:vr.length, vsePreverjene:vr.every(t=>t.includes('· vsi izhodi preverjeni')), casi:vr.every(t=>num.test(t)), calculatorVrstica:vr.some(t=>t.includes('Kalkulator razmikov letvic')), aiVrstica:vr.some(t=>t.includes('AI raba pregled')), pdfVrstica:vr.some(t=>t.includes('Konflikti PDF dokument'))&&vr.some(t=>t.includes('Računi po projektih PDF')), sklep:s?.textContent??null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r325-z0ak.json
 python3 - <<'PYEOFZ0AK' || exit 1
 import json, re
-raw = open('/tmp/r324-z0ak.json').read().strip()
+raw = open('/tmp/r325-z0ak.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['err'] is None, 'Z0ak err: ' + json.dumps(d)
@@ -1107,10 +1107,10 @@ for poskus in 1 2 3 4 5; do
   agent-browser eval "(()=>{const b=document.querySelector('[data-testid=\"avtomatizacija-dokaz\"]'); const v=b?b.querySelectorAll('[data-testid=\"avtomatizacija-vrstica\"]').length:0; return v===11 ? 'najden' : 'ni';})()" 2>&1 | tail -1 | grep -q najden && { NAJDEN_Z0AL=1; break; }
 done
 [ "$NAJDEN_Z0AL" = "1" ] || { echo "Z0al FAIL: avtomatizacija-dokaz blok z 11 vrsticami ni izrisan (dispatch?)"; exit 1; }
-agent-browser eval "(()=>{const b=document.querySelector('[data-testid=\"avtomatizacija-dokaz\"]'); const s=document.querySelector('[data-testid=\"avtomatizacija-sklep\"]'); const vr=[...document.querySelectorAll('[data-testid=\"avtomatizacija-vrstica\"]')].map(x=>x.textContent||''); return JSON.stringify({naslov:b?.getAttribute('aria-label')??null, vrstice:vr.length, siVrstica:vr.some(t=>t.includes('§1 Photo/VIZ')), seVrstica:vr.some(t=>t.includes('§11 AI fallback architecture')), implDokaz:vr.every(t=>/impl · \\d+ dokazov/.test(t)), sklep:s?.textContent??null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r324-z0al.json
+agent-browser eval "(()=>{const b=document.querySelector('[data-testid=\"avtomatizacija-dokaz\"]'); const s=document.querySelector('[data-testid=\"avtomatizacija-sklep\"]'); const vr=[...document.querySelectorAll('[data-testid=\"avtomatizacija-vrstica\"]')].map(x=>x.textContent||''); return JSON.stringify({naslov:b?.getAttribute('aria-label')??null, vrstice:vr.length, siVrstica:vr.some(t=>t.includes('§1 Photo/VIZ')), seVrstica:vr.some(t=>t.includes('§11 AI fallback architecture')), implDokaz:vr.every(t=>/impl · \\d+ dokazov/.test(t)), sklep:s?.textContent??null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r325-z0al.json
 python3 - <<'PYEOFZ0AL' || exit 1
 import json
-raw = open('/tmp/r324-z0al.json').read().strip()
+raw = open('/tmp/r325-z0al.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['err'] is None, 'Z0al err: ' + json.dumps(d)
@@ -1126,7 +1126,7 @@ assert 'AI-OPCIJSKO: 1' in sk, 'Z0al AI-OPCIJSKO 1 FAIL: ' + json.dumps(d)
 assert 'AI-OBVEZNO: 0 — jedro deluje brez AI' in sk, 'Z0al AI-OBVEZNO ničla FAIL: ' + json.dumps(d)
 print('Z0al OK — audit tabela ŽIVO: 11 območij × (razred + impl/dokaz števci) + sklep WYSIWYG (10 DETERMINISTIČNO · 1 AI-OPCIJSKO · AI-OBVEZNO: 0) (Deliverable 4 na zaslonu; ZERO-MUTACIJA)')
 PYEOFZ0AL
-agent-browser screenshot "$SS/qa-r324-e2e-z0al-audit.png" > /dev/null 2>&1
+agent-browser screenshot "$SS/qa-r325-e2e-z0al-audit.png" > /dev/null 2>&1
 
 echo "=== Z0am: KONČNA VERIFIKACIJA NA ZASLONU ŽIVO (R315 — 45. člen issue #1: Deliverable 7; EN VIR WYSIWYG; ZERO-MUTACIJA) ==="
 # Vodja pregled → končna verifikacija blok [koncna-verifikacija-dokaz]:
@@ -1140,10 +1140,10 @@ for poskus in 1 2 3 4 5; do
   agent-browser eval "(()=>{const b=document.querySelector('[data-testid=\"koncna-verifikacija-dokaz\"]'); const v=b?b.querySelectorAll('[data-testid=\"koncna-verifikacija-vrstica\"]').length:0; return v===11 ? 'najden' : 'ni';})()" 2>&1 | tail -1 | grep -q najden && { NAJDEN_Z0AM=1; break; }
 done
 [ "$NAJDEN_Z0AM" = "1" ] || { echo "Z0am FAIL: koncna-verifikacija-dokaz blok z 11 vrsticami ni izrisan (dispatch?)"; exit 1; }
-agent-browser eval "(()=>{const b=document.querySelector('[data-testid=\"koncna-verifikacija-dokaz\"]'); const s=document.querySelector('[data-testid=\"koncna-verifikacija-sklep\"]'); const vr=[...document.querySelectorAll('[data-testid=\"koncna-verifikacija-vrstica\"]')].map(x=>x.textContent||''); const kr=[...document.querySelectorAll('[data-testid=\"koncna-verifikacija-kriterij\"]')].map(x=>x.textContent||''); const chips=b?[...b.querySelectorAll('span[title^=\"Plast: \"]')].length:0; return JSON.stringify({naslov:b?.getAttribute('aria-label')??null, vrstice:vr.length, siVrstica:vr.some(t=>t.includes('§1 Photo/VIZ')), seVrstica:vr.some(t=>t.includes('§11 AI fallback architecture')), chips, stKriterijev:kr.length, prviKriterij:kr.some(t=>t.includes('vsako večje področje Roksala je audirano')), zadnjiKriterij:kr.some(t=>t.includes('dokumentacija jasno ločuje')), sklep:s?.textContent??null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r324-z0am.json
+agent-browser eval "(()=>{const b=document.querySelector('[data-testid=\"koncna-verifikacija-dokaz\"]'); const s=document.querySelector('[data-testid=\"koncna-verifikacija-sklep\"]'); const vr=[...document.querySelectorAll('[data-testid=\"koncna-verifikacija-vrstica\"]')].map(x=>x.textContent||''); const kr=[...document.querySelectorAll('[data-testid=\"koncna-verifikacija-kriterij\"]')].map(x=>x.textContent||''); const chips=b?[...b.querySelectorAll('span[title^=\"Plast: \"]')].length:0; return JSON.stringify({naslov:b?.getAttribute('aria-label')??null, vrstice:vr.length, siVrstica:vr.some(t=>t.includes('§1 Photo/VIZ')), seVrstica:vr.some(t=>t.includes('§11 AI fallback architecture')), chips, stKriterijev:kr.length, prviKriterij:kr.some(t=>t.includes('vsako večje področje Roksala je audirano')), zadnjiKriterij:kr.some(t=>t.includes('dokumentacija jasno ločuje')), sklep:s?.textContent??null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r325-z0am.json
 python3 - <<'PYEOFZ0AM' || exit 1
 import json
-raw = open('/tmp/r324-z0am.json').read().strip()
+raw = open('/tmp/r325-z0am.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['err'] is None, 'Z0am err: ' + json.dumps(d)
@@ -1160,7 +1160,7 @@ assert 'plasti v dokazih: vitest, build-needleji, E2E ŽIVO, prod-qa, smoke' in 
 assert 'AI-OBVEZNO: 0 — jedro deluje brez AI' in sk, 'Z0am AI-OBVEZNO ničla FAIL: ' + json.dumps(d)
 print('Z0am OK — končna verifikacija ŽIVO: 11 območij × plast chips + 8 kriterijev (izpeljava + dokaz) + sklep WYSIWYG (5 plasti · AI-OBVEZNO: 0) (Deliverable 7 na zaslonu; ZERO-MUTACIJA)')
 PYEOFZ0AM
-agent-browser screenshot "$SS/qa-r324-e2e-z0am-verifikacija.png" > /dev/null 2>&1
+agent-browser screenshot "$SS/qa-r325-e2e-z0am-verifikacija.png" > /dev/null 2>&1
 
 echo "=== Z0an: IZVOZ POROČILA KONČNE VERIFIKACIJE KOT JSON ŽIVO (R316 — 46. člen issue #1: IZVOZI družina; EN VIR deterministični izvoz; ZERO-MUTACIJA) ==="
 # Končna verifikacija blok → gumb [aria-label="Izvozi poročilo končne
@@ -1176,10 +1176,10 @@ eb_pocakaj_na "(()=>{return typeof window.__kvjson1==='string' && window.__kvjso
 eb_csv_capture kvjson2
 eb_klik_gumb "Izvozi poročilo končne verifikacije kot JSON"
 eb_pocakaj_na "(()=>{return typeof window.__kvjson2==='string' && window.__kvjson2.length>100;})()" 12
-agent-browser eval "(()=>{try{const a=window.__kvjson1, b=window.__kvjson2; const p=JSON.parse(a); const plastiVsota=Object.values(p.poPlasti||{}).reduce((x,y)=>x+y,0); const stPlastiVsota=(p.obmocja||[]).reduce((x,o)=>x+(o.stPlasti||0),0); return JSON.stringify({bajtnoEnako:a===b, shema:p.shema, verzijaSheme:p.verzijaSheme, stObmocij:p.stObmocij, stObmocijZDokazi:p.stObmocijZDokazi, stKriterijev:(p.kriteriji||[]).length, sklepGlava:(p.sklep||'').includes('Končna verifikacija: 11/11 območij z dokaznimi plastmi'), sklepAI:(p.sklep||'').includes('AI-OBVEZNO: 0 — jedro deluje brez AI'), kljuci:Object.keys(p).join('|'), zamik:a.startsWith('{\n  \"shema\"'), posixKonec:a.endsWith('\n'), plastiVsota, stPlastiVsota, err:window.__err??null});}catch(e){return JSON.stringify({napaka:String(e), err:window.__err??null});}})()" 2>&1 | tail -1 > /tmp/r324-z0an.json
+agent-browser eval "(()=>{try{const a=window.__kvjson1, b=window.__kvjson2; const p=JSON.parse(a); const plastiVsota=Object.values(p.poPlasti||{}).reduce((x,y)=>x+y,0); const stPlastiVsota=(p.obmocja||[]).reduce((x,o)=>x+(o.stPlasti||0),0); return JSON.stringify({bajtnoEnako:a===b, shema:p.shema, verzijaSheme:p.verzijaSheme, stObmocij:p.stObmocij, stObmocijZDokazi:p.stObmocijZDokazi, stKriterijev:(p.kriteriji||[]).length, sklepGlava:(p.sklep||'').includes('Končna verifikacija: 11/11 območij z dokaznimi plastmi'), sklepAI:(p.sklep||'').includes('AI-OBVEZNO: 0 — jedro deluje brez AI'), kljuci:Object.keys(p).join('|'), zamik:a.startsWith('{\n  \"shema\"'), posixKonec:a.endsWith('\n'), plastiVsota, stPlastiVsota, err:window.__err??null});}catch(e){return JSON.stringify({napaka:String(e), err:window.__err??null});}})()" 2>&1 | tail -1 > /tmp/r325-z0an.json
 python3 - <<'PYEOFZ0AN' || exit 1
 import json
-raw = open('/tmp/r324-z0an.json').read().strip()
+raw = open('/tmp/r325-z0an.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert 'napaka' not in d, 'Z0an JSON parse FAIL: ' + json.dumps(d)
@@ -1194,7 +1194,7 @@ assert d['plastiVsota'] == d['stPlastiVsota'] and d['plastiVsota'] > 0, 'Z0an pl
 assert d['err'] is None, 'Z0an err: ' + json.dumps(d)
 print('Z0an OK — izvoz končne verifikacije JSON ŽIVO: shema + 11 območij + 8 kriterijev + sklep WYSIWYG + plasti vsota ' + str(d['plastiVsota']) + ' + DETERMINIZEM (dva izvoza bajtno enaka) (46. člen; ZERO-MUTACIJA)')
 PYEOFZ0AN
-agent-browser screenshot "$SS/qa-r324-e2e-z0an-izvoz-json.png" > /dev/null 2>&1
+agent-browser screenshot "$SS/qa-r325-e2e-z0an-izvoz-json.png" > /dev/null 2>&1
 
 echo "=== Z0ao: IZVOZ AVTOMATIZACIJSKEGA AUDITA KOT CSV ŽIVO (R317 — 47. člen issue #1: IZVOZI družina; EN VIR deterministični izvoz; ZERO-MUTACIJA) ==="
 # Avtomatizacija blok → gumb [aria-label="Izvozi avtomatizacijski audit kot
@@ -1215,10 +1215,10 @@ eb_pocakaj_na "(()=>{return typeof window.__auditcsv2==='string' && window.__aud
 # BAJTIH, ne na dekodiranem besedilu).
 agent-browser eval "((async()=>{try{const blobi=window.__auditblobi??[]; if(blobi.length===0){window.__auditbom=false; return 'brez blobov';} const u8=new Uint8Array(await blobi[0].arrayBuffer()); window.__auditbom=(u8[0]===0xEF&&u8[1]===0xBB&&u8[2]===0xBF); window.__auditmime=blobi[0].type||null; return 'bajti';}catch(e){window.__auditbom=false; window.__auditmime='NAPAKA: '+String(e); return 'napaka';}})())" 2>&1 | tail -1
 eb_pocakaj_na "(()=>{return window.__auditbom!==null;})()" 8
-agent-browser eval "(()=>{try{const a=window.__auditcsv1, b=window.__auditcsv2; const vrstice=a.split('\r\n').filter(v=>v.length>0); const glava=vrstice[0]; const obmocija=vrstice.filter(v=>v.startsWith('§')); const sklepVrstica=vrstice.find(v=>v.startsWith('Sklep;')); const virVrstica=vrstice.find(v=>v.startsWith('Vir;')); return JSON.stringify({bajtnoEnako:a===b, bom:window.__auditbom===true, mime:window.__auditmime??null, stBlobov:(window.__auditblobi??[]).length, vrstic:vrstice.length, glava, stObmocij:obmocija.length, nizObmocij:obmocija.map(v=>v.split(';')[0]).join('|'), sklepPrisoten:!!sklepVrstica, virPrisoten:!!virVrstica, sklepAI:!!sklepVrstica&&sklepVrstica.includes('AI-OBVEZNO: 0 — jedro deluje brez AI'), err:window.__err??null});}catch(e){return JSON.stringify({napaka:String(e), err:window.__err??null});}})()" 2>&1 | tail -1 > /tmp/r324-z0ao.json
+agent-browser eval "(()=>{try{const a=window.__auditcsv1, b=window.__auditcsv2; const vrstice=a.split('\r\n').filter(v=>v.length>0); const glava=vrstice[0]; const obmocija=vrstice.filter(v=>v.startsWith('§')); const sklepVrstica=vrstice.find(v=>v.startsWith('Sklep;')); const virVrstica=vrstice.find(v=>v.startsWith('Vir;')); return JSON.stringify({bajtnoEnako:a===b, bom:window.__auditbom===true, mime:window.__auditmime??null, stBlobov:(window.__auditblobi??[]).length, vrstic:vrstice.length, glava, stObmocij:obmocija.length, nizObmocij:obmocija.map(v=>v.split(';')[0]).join('|'), sklepPrisoten:!!sklepVrstica, virPrisoten:!!virVrstica, sklepAI:!!sklepVrstica&&sklepVrstica.includes('AI-OBVEZNO: 0 — jedro deluje brez AI'), err:window.__err??null});}catch(e){return JSON.stringify({napaka:String(e), err:window.__err??null});}})()" 2>&1 | tail -1 > /tmp/r325-z0ao.json
 python3 - <<'PYEOFZ0AO' || exit 1
 import json
-raw = open('/tmp/r324-z0ao.json').read().strip()
+raw = open('/tmp/r325-z0ao.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert 'napaka' not in d, 'Z0ao parse FAIL: ' + json.dumps(d)
@@ -1232,7 +1232,7 @@ assert d['stBlobov'] == 2, 'Z0ao blobi FAIL (2 klika = 2 bloba): ' + json.dumps(
 assert d['err'] is None, 'Z0ao err: ' + json.dumps(d)
 print('Z0ao OK — izvoz avtomatizacijskega audita CSV ŽIVO: BOM + glave WYSIWYG + 11 območij (vrstni red = audit) + sklep EN VIR + DETERMINIZEM (dva izvoza bajtno enaka) (47. člen; ZERO-MUTACIJA)')
 PYEOFZ0AO
-agent-browser screenshot "$SS/qa-r324-e2e-z0ao-izvoz-audit-csv.png" > /dev/null 2>&1
+agent-browser screenshot "$SS/qa-r325-e2e-z0ao-izvoz-audit-csv.png" > /dev/null 2>&1
 
 echo "=== Z0ap: IZVOZ AVTOMATIZACIJSKEGA AUDITA KOT PDF ŽIVO (R318 — 48. člen issue #1: IZVOZI družina; EN VIR deterministični izvoz; ZERO-MUTACIJA) ==="
 # Avtomatizacija blok → gumb [aria-label="Izvozi avtomatizacijski audit kot
@@ -1247,10 +1247,10 @@ eb_klik_gumb "Izvozi avtomatizacijski audit kot PDF"
 eb_cakaj 3
 eb_klik_gumb "Izvozi avtomatizacijski audit kot PDF"
 eb_cakaj 3
-agent-browser eval "((async()=>{try{const blobi=window.__auditpdfblobi??[]; if(blobi.length<2) return JSON.stringify({napaka:'pričakovana 2 bloba, dobljeno '+blobi.length, err:window.__err??null}); const u1=new Uint8Array(await blobi[0].arrayBuffer()); const u2=new Uint8Array(await blobi[1].arrayBuffer()); let enako=u1.length===u2.length; if(enako){for(let i=0;i<u1.length;i++){if(u1[i]!==u2[i]){enako=false;break;}}} return JSON.stringify({stBlobov:blobi.length, bajtov:u1.length, magija:String.fromCharCode(u1[0],u1[1],u1[2],u1[3],u1[4]), mime:blobi[0].type||null, bajtnoEnako:enako, err:window.__err??null});}catch(e){return JSON.stringify({napaka:String(e), err:window.__err??null});}})())" 2>&1 | tail -1 > /tmp/r324-z0ap.json
+agent-browser eval "((async()=>{try{const blobi=window.__auditpdfblobi??[]; if(blobi.length<2) return JSON.stringify({napaka:'pričakovana 2 bloba, dobljeno '+blobi.length, err:window.__err??null}); const u1=new Uint8Array(await blobi[0].arrayBuffer()); const u2=new Uint8Array(await blobi[1].arrayBuffer()); let enako=u1.length===u2.length; if(enako){for(let i=0;i<u1.length;i++){if(u1[i]!==u2[i]){enako=false;break;}}} return JSON.stringify({stBlobov:blobi.length, bajtov:u1.length, magija:String.fromCharCode(u1[0],u1[1],u1[2],u1[3],u1[4]), mime:blobi[0].type||null, bajtnoEnako:enako, err:window.__err??null});}catch(e){return JSON.stringify({napaka:String(e), err:window.__err??null});}})())" 2>&1 | tail -1 > /tmp/r325-z0ap.json
 python3 - <<'PYEOFZ0AP' || exit 1
 import json
-raw = open('/tmp/r324-z0ap.json').read().strip()
+raw = open('/tmp/r325-z0ap.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert 'napaka' not in d, 'Z0ap parse FAIL: ' + json.dumps(d)
@@ -1262,7 +1262,7 @@ assert d['bajtnoEnako'] is True, 'Z0ap DETERMINIZEM FAIL — dva izvoza nista ba
 assert d['err'] is None, 'Z0ap err: ' + json.dumps(d)
 print('Z0ap OK — izvoz avtomatizacijskega audita PDF ŽIVO: %PDF- magija + MIME + ' + str(d['bajtov']) + ' bajtov + DETERMINIZEM ŽIVO NA BAJTIH (dva izvoza bajtno enaka — prvi PDF z živim bajtnim determinizmom) (48. člen; ZERO-MUTACIJA)')
 PYEOFZ0AP
-agent-browser screenshot "$SS/qa-r324-e2e-z0ap-izvoz-audit-pdf.png" > /dev/null 2>&1
+agent-browser screenshot "$SS/qa-r325-e2e-z0ap-izvoz-audit-pdf.png" > /dev/null 2>&1
 
 echo "=== Z0aq: IZVOZ POROČILA KONČNE VERIFIKACIJE KOT PDF ŽIVO (R320 — 49. člen issue #1: IZVOZI družina; EN VIR deterministični izvoz; ZERO-MUTACIJA) ==="
 # Končna verifikacija blok → gumb [aria-label="Izvozi poročilo končne
@@ -1278,10 +1278,10 @@ eb_klik_gumb "Izvozi poročilo končne verifikacije kot PDF"
 eb_cakaj 3
 eb_klik_gumb "Izvozi poročilo končne verifikacije kot PDF"
 eb_cakaj 3
-agent-browser eval "((async()=>{try{const blobi=window.__kvpdfblobi??[]; if(blobi.length<2) return JSON.stringify({napaka:'pričakovana 2 bloba, dobljeno '+blobi.length, err:window.__err??null}); const u1=new Uint8Array(await blobi[0].arrayBuffer()); const u2=new Uint8Array(await blobi[1].arrayBuffer()); let enako=u1.length===u2.length; if(enako){for(let i=0;i<u1.length;i++){if(u1[i]!==u2[i]){enako=false;break;}}} return JSON.stringify({stBlobov:blobi.length, bajtov:u1.length, magija:String.fromCharCode(u1[0],u1[1],u1[2],u1[3],u1[4]), mime:blobi[0].type||null, bajtnoEnako:enako, err:window.__err??null});}catch(e){return JSON.stringify({napaka:String(e), err:window.__err??null});}})())" 2>&1 | tail -1 > /tmp/r324-z0aq.json
+agent-browser eval "((async()=>{try{const blobi=window.__kvpdfblobi??[]; if(blobi.length<2) return JSON.stringify({napaka:'pričakovana 2 bloba, dobljeno '+blobi.length, err:window.__err??null}); const u1=new Uint8Array(await blobi[0].arrayBuffer()); const u2=new Uint8Array(await blobi[1].arrayBuffer()); let enako=u1.length===u2.length; if(enako){for(let i=0;i<u1.length;i++){if(u1[i]!==u2[i]){enako=false;break;}}} return JSON.stringify({stBlobov:blobi.length, bajtov:u1.length, magija:String.fromCharCode(u1[0],u1[1],u1[2],u1[3],u1[4]), mime:blobi[0].type||null, bajtnoEnako:enako, err:window.__err??null});}catch(e){return JSON.stringify({napaka:String(e), err:window.__err??null});}})())" 2>&1 | tail -1 > /tmp/r325-z0aq.json
 python3 - <<'PYEOFZ0AQ' || exit 1
 import json
-raw = open('/tmp/r324-z0aq.json').read().strip()
+raw = open('/tmp/r325-z0aq.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert 'napaka' not in d, 'Z0aq parse FAIL: ' + json.dumps(d)
@@ -1293,7 +1293,7 @@ assert d['bajtnoEnako'] is True, 'Z0aq DETERMINIZEM FAIL — dva izvoza nista ba
 assert d['err'] is None, 'Z0aq err: ' + json.dumps(d)
 print('Z0aq OK — izvoz končne verifikacije PDF ŽIVO: %PDF- magija + MIME + ' + str(d['bajtov']) + ' bajtov + DETERMINIZEM ŽIVO NA BAJTIH (dva izvoza bajtno enaka) (49. člen; ZERO-MUTACIJA)')
 PYEOFZ0AQ
-agent-browser screenshot "$SS/qa-r324-e2e-z0aq-izvoz-koncna-pdf.png" > /dev/null 2>&1
+agent-browser screenshot "$SS/qa-r325-e2e-z0aq-izvoz-koncna-pdf.png" > /dev/null 2>&1
 
 echo "=== Z0ar: IZVOZ MERITEV ZMOGLJIVOSTI KOT PDF ŽIVO (R321 — 50. člen issue #1: IZVOZI družina; EN VIR deterministični izvoz; ZERO-MUTACIJA) ==="
 # Zmogljivost dokaz blok → gumb [aria-label="Izvozi meritve zmogljivosti kot
@@ -1309,10 +1309,10 @@ eb_klik_gumb "Izvozi meritve zmogljivosti kot PDF"
 eb_cakaj 3
 eb_klik_gumb "Izvozi meritve zmogljivosti kot PDF"
 eb_cakaj 3
-agent-browser eval "((async()=>{try{const blobi=window.__zmpdfblobi??[]; if(blobi.length<2) return JSON.stringify({napaka:'pričakovana 2 bloba, dobljeno '+blobi.length, err:window.__err??null}); const u1=new Uint8Array(await blobi[0].arrayBuffer()); const u2=new Uint8Array(await blobi[1].arrayBuffer()); let enako=u1.length===u2.length; if(enako){for(let i=0;i<u1.length;i++){if(u1[i]!==u2[i]){enako=false;break;}}} return JSON.stringify({stBlobov:blobi.length, bajtov:u1.length, magija:String.fromCharCode(u1[0],u1[1],u1[2],u1[3],u1[4]), mime:blobi[0].type||null, bajtnoEnako:enako, err:window.__err??null});}catch(e){return JSON.stringify({napaka:String(e), err:window.__err??null});}})())" 2>&1 | tail -1 > /tmp/r324-z0ar.json
+agent-browser eval "((async()=>{try{const blobi=window.__zmpdfblobi??[]; if(blobi.length<2) return JSON.stringify({napaka:'pričakovana 2 bloba, dobljeno '+blobi.length, err:window.__err??null}); const u1=new Uint8Array(await blobi[0].arrayBuffer()); const u2=new Uint8Array(await blobi[1].arrayBuffer()); let enako=u1.length===u2.length; if(enako){for(let i=0;i<u1.length;i++){if(u1[i]!==u2[i]){enako=false;break;}}} return JSON.stringify({stBlobov:blobi.length, bajtov:u1.length, magija:String.fromCharCode(u1[0],u1[1],u1[2],u1[3],u1[4]), mime:blobi[0].type||null, bajtnoEnako:enako, err:window.__err??null});}catch(e){return JSON.stringify({napaka:String(e), err:window.__err??null});}})())" 2>&1 | tail -1 > /tmp/r325-z0ar.json
 python3 - <<'PYEOFZ0AR' || exit 1
 import json
-raw = open('/tmp/r324-z0ar.json').read().strip()
+raw = open('/tmp/r325-z0ar.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert 'napaka' not in d, 'Z0ar parse FAIL: ' + json.dumps(d)
@@ -1324,7 +1324,7 @@ assert d['bajtnoEnako'] is True, 'Z0ar DETERMINIZEM FAIL — dva izvoza nista ba
 assert d['err'] is None, 'Z0ar err: ' + json.dumps(d)
 print('Z0ar OK — izvoz meritev zmogljivosti PDF ŽIVO: %PDF- magija + MIME + ' + str(d['bajtov']) + ' bajtov + DETERMINIZEM ŽIVO NA BAJTIH (dva izvoza bajtno enaka) (50. člen; ZERO-MUTACIJA)')
 PYEOFZ0AR
-agent-browser screenshot "$SS/qa-r324-e2e-z0ar-izvoz-zmogljivost-pdf.png" > /dev/null 2>&1
+agent-browser screenshot "$SS/qa-r325-e2e-z0ar-izvoz-zmogljivost-pdf.png" > /dev/null 2>&1
 
 echo "=== Z0as: IZVOZ MERITEV ZMOGLJIVOSTI KOT CSV ŽIVO (R323 — 51. člen issue #1: IZVOZI družina; EN VIR deterministični izvoz; ZERO-MUTACIJA) ==="
 # Zmogljivost dokaz blok → gumb [aria-label="Izvozi meritve zmogljivosti kot
@@ -1342,10 +1342,10 @@ eb_klik_gumb "Izvozi meritve zmogljivosti kot CSV"
 eb_cakaj 3
 eb_klik_gumb "Izvozi meritve zmogljivosti kot CSV"
 eb_cakaj 3
-agent-browser eval "((async()=>{try{const blobi=window.__zmcsvblobi??[]; if(blobi.length<2) return JSON.stringify({napaka:'pričakovana 2 bloba, dobljeno '+blobi.length, err:window.__err??null}); const u1=new Uint8Array(await blobi[0].arrayBuffer()); const u2=new Uint8Array(await blobi[1].arrayBuffer()); let enako=u1.length===u2.length; if(enako){for(let i=0;i<u1.length;i++){if(u1[i]!==u2[i]){enako=false;break;}}} const magija=String.fromCharCode(u1[0],u1[1],u1[2]); const besedilo=new TextDecoder('utf-8').decode(await blobi[0].arrayBuffer()); const vrstice=besedilo.split('\\r\\n'); return JSON.stringify({stBlobov:blobi.length, bajtov:u1.length, magija:magija, mime:blobi[0].type||null, bajtnoEnako:enako, glava:vrstice[0]??null, sklepVrstica:vrstice.find(v=>v.startsWith('Sklep;'))??null, virVrstica:vrstice.find(v=>v.startsWith('Vir;'))??null, err:window.__err??null});}catch(e){return JSON.stringify({napaka:String(e), err:window.__err??null});}})())" 2>&1 | tail -1 > /tmp/r324-z0as.json
+agent-browser eval "((async()=>{try{const blobi=window.__zmcsvblobi??[]; if(blobi.length<2) return JSON.stringify({napaka:'pričakovana 2 bloba, dobljeno '+blobi.length, err:window.__err??null}); const u1=new Uint8Array(await blobi[0].arrayBuffer()); const u2=new Uint8Array(await blobi[1].arrayBuffer()); let enako=u1.length===u2.length; if(enako){for(let i=0;i<u1.length;i++){if(u1[i]!==u2[i]){enako=false;break;}}} const magija=String.fromCharCode(u1[0],u1[1],u1[2]); const besedilo=new TextDecoder('utf-8').decode(await blobi[0].arrayBuffer()); const vrstice=besedilo.split('\\r\\n'); return JSON.stringify({stBlobov:blobi.length, bajtov:u1.length, magija:magija, mime:blobi[0].type||null, bajtnoEnako:enako, glava:vrstice[0]??null, sklepVrstica:vrstice.find(v=>v.startsWith('Sklep;'))??null, virVrstica:vrstice.find(v=>v.startsWith('Vir;'))??null, err:window.__err??null});}catch(e){return JSON.stringify({napaka:String(e), err:window.__err??null});}})())" 2>&1 | tail -1 > /tmp/r325-z0as.json
 python3 - <<'PYEOFZ0AS' || exit 1
 import json
-raw = open('/tmp/r324-z0as.json').read().strip()
+raw = open('/tmp/r325-z0as.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert 'napaka' not in d, 'Z0as parse FAIL: ' + json.dumps(d)
@@ -1360,7 +1360,7 @@ assert d['virVrstica'] == 'Vir;MERITVE_ZMOGLJIVOST — isti HEAD = bajtno identi
 assert d['err'] is None, 'Z0as err: ' + json.dumps(d)
 print('Z0as OK — izvoz meritev zmogljivosti CSV ŽIVO: BOM magija + MIME + glave EN VIR + Vir niz + ' + str(d['bajtov']) + ' bajtov + DETERMINIZEM ŽIVO NA BAJTIH (dva izvoza bajtno enaka) (51. člen; ZERO-MUTACIJA)')
 PYEOFZ0AS
-agent-browser screenshot "$SS/qa-r324-e2e-z0as-izvoz-zmogljivost-csv.png" > /dev/null 2>&1
+agent-browser screenshot "$SS/qa-r325-e2e-z0as-izvoz-zmogljivost-csv.png" > /dev/null 2>&1
 
 echo "=== Z0ah: MIGRACIJSKI VAL ŽIVO (R310 — EN VIR I/O meja api-telo; 26 handlerjev; ZERO-MUTACIJA) ==="
 # Vseh 26 migriranih handlerjev × pokvarjen JSON → NATANKO 400 z ISTO
@@ -1371,10 +1371,10 @@ echo "=== Z0ah: MIGRACIJSKI VAL ŽIVO (R310 — EN VIR I/O meja api-telo; 26 han
 # ZERO-MUTACIJA: guard strelja PRED vsakim db zapisom — odtis ostane.
 agent-browser eval "(()=>{window.__val=[]; const ck=document.cookie.split(';').map(s=>s.trim()).find(s=>s.startsWith('roksal_csrf=')); const tok=ck?ck.slice(12):null; const h={'Content-Type':'application/json'}; if(tok)h['x-csrf-token']=tok; const rute=[['ar-snapshots','/api/ar-snapshots','POST'],['bom-draft','/api/bom-draft','PATCH'],['bom-refine','/api/bom-refine','POST'],['crews','/api/crews','POST'],['customers','/api/customers','POST'],['deal-lock','/api/deal-lock','POST'],['documents','/api/documents','POST'],['gallery','/api/gallery','POST'],['inventory','/api/inventory','POST'],['invoices','/api/invoices','POST'],['material-orders','/api/material-orders','POST'],['material-prices','/api/material-prices','POST'],['measurement-confirm','/api/measurement/confirm','POST'],['measurements','/api/measurements','POST'],['notifications-read','/api/notifications/read','POST'],['photos','/api/photos','POST'],['portal','/api/portal','POST'],['profili','/api/profili','POST'],['projects','/api/projects','POST'],['punch','/api/punch','POST'],['schedules','/api/schedules','POST'],['sketches','/api/sketches','POST'],['slopes','/api/slopes','POST'],['suppliers','/api/suppliers','POST'],['surveys','/api/surveys','POST'],['vision-placement','/api/vision/placement','POST']]; (async()=>{ for (const [ime,url,metoda] of rute){ try{ const r=await fetch(url,{method:metoda,credentials:'same-origin',headers:h,body:'{pokvarjen'}); let b=null; try{b=await r.json();}catch(e){b=null;} window.__val.push({ime,status:r.status,error:b&&typeof b==='object'?(b.error??null):null}); }catch(e){ window.__val.push({ime,status:0,error:'MREŽA: '+String(e)}); } } })(); return 'poslano '+rute.length;})()" 2>&1 | tail -1
 eb_cakaj 8
-agent-browser eval "JSON.stringify(window.__val??[])" 2>&1 | tail -1 > /tmp/r324-z0ah.json
+agent-browser eval "JSON.stringify(window.__val??[])" 2>&1 | tail -1 > /tmp/r325-z0ah.json
 python3 - <<'PYEOF13' || exit 1
 import json
-raw = open('/tmp/r324-z0ah.json').read().strip()
+raw = open('/tmp/r325-z0ah.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert isinstance(d, list) and len(d) == 26, 'Z0ah oblika: pričakovano 26 zapisov, dobljeno ' + json.dumps(len(d) if isinstance(d, list) else d)
@@ -1395,8 +1395,8 @@ eb_dispatch '{"tab":"measurements","more":null,"subTab":null,"osnutek":null,"fil
 eb_pocakaj_na "(()=>{return !!document.querySelector('button[aria-label=\"Izvozi terenski pregled meritev kot PDF\"]');})()" 24
 eb_pocakaj_na "(()=>{const p=[...document.querySelectorAll('span')].find(x=>x.textContent.trim()==='v1'); return !!p;})()" 24
 eb_cakaj 1
-agent-browser eval "(()=>{const pill=[...document.querySelectorAll('span')].find(x=>x.textContent.trim()==='v1'); const vir=[...document.querySelectorAll('span')].find(x=>x.textContent.trim()==='Ročni vnos'); const mini=[...document.querySelectorAll('span.cursor-help')].find(x=>(x.textContent||'').startsWith('Meritve (viden seznam):')); const viriMini=[...document.querySelectorAll('span.cursor-help')].find(x=>(x.textContent||'').startsWith('Viri (viden seznam):')); const viriDot=viriMini?viriMini.parentElement.querySelector('span[aria-hidden=\"true\"]'):null; return JSON.stringify({pill:!!pill, vir:!!vir, miniTitle:mini?(mini.getAttribute('title')||'').startsWith('Števec stanj vidnega seznama (WYSIWYG — R269)'):false, viriMini:viriMini?viriMini.textContent.trim():null, viriTitle:viriMini?(viriMini.getAttribute('title')||'').startsWith('Pokritost virov vidnega seznama (issue #15 §3)'):false, viriDotAmber:viriDot?viriDot.className.includes('bg-roksal-amber'):false, err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r324-z1.json
-python3 -c "import json; r=json.load(open('/tmp/r324-z1.json')); d=json.loads(r) if isinstance(r,str) else r; assert d['pill'] and d['vir'], 'Z1 pill/vir FAIL: '+json.dumps(d); assert d['miniTitle'], 'Z1 R283 R269 mini title FAIL: '+json.dumps(d); assert d['viriMini'] == 'Viri (viden seznam): 1 ročnih · 0 foto-CV · 0 AR-Depth', 'Z1 VIRI MINI vsebina FAIL (r276 = samo MANUAL): '+json.dumps(d); assert d['viriTitle'], 'Z1 VIRI title FAIL: '+json.dumps(d); assert d['viriDotAmber'], 'Z1 VIRI pika FAIL (delna pokritost = amber): '+json.dumps(d); print('Z1 OK — v1 pill + vir title + R269 mini title (R283 STIL) + VIRI MINI amber delna (1 ročnih · 0 · 0)')" || exit 1
+agent-browser eval "(()=>{const pill=[...document.querySelectorAll('span')].find(x=>x.textContent.trim()==='v1'); const vir=[...document.querySelectorAll('span')].find(x=>x.textContent.trim()==='Ročni vnos'); const mini=[...document.querySelectorAll('span.cursor-help')].find(x=>(x.textContent||'').startsWith('Meritve (viden seznam):')); const viriMini=[...document.querySelectorAll('span.cursor-help')].find(x=>(x.textContent||'').startsWith('Viri (viden seznam):')); const viriDot=viriMini?viriMini.parentElement.querySelector('span[aria-hidden=\"true\"]'):null; return JSON.stringify({pill:!!pill, vir:!!vir, miniTitle:mini?(mini.getAttribute('title')||'').startsWith('Števec stanj vidnega seznama (WYSIWYG — R269)'):false, viriMini:viriMini?viriMini.textContent.trim():null, viriTitle:viriMini?(viriMini.getAttribute('title')||'').startsWith('Pokritost virov vidnega seznama (issue #15 §3)'):false, viriDotAmber:viriDot?viriDot.className.includes('bg-roksal-amber'):false, err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r325-z1.json
+python3 -c "import json; r=json.load(open('/tmp/r325-z1.json')); d=json.loads(r) if isinstance(r,str) else r; assert d['pill'] and d['vir'], 'Z1 pill/vir FAIL: '+json.dumps(d); assert d['miniTitle'], 'Z1 R283 R269 mini title FAIL: '+json.dumps(d); assert d['viriMini'] == 'Viri (viden seznam): 1 ročnih · 0 foto-CV · 0 AR-Depth', 'Z1 VIRI MINI vsebina FAIL (r276 = samo MANUAL): '+json.dumps(d); assert d['viriTitle'], 'Z1 VIRI title FAIL: '+json.dumps(d); assert d['viriDotAmber'], 'Z1 VIRI pika FAIL (delna pokritost = amber): '+json.dumps(d); print('Z1 OK — v1 pill + vir title + R269 mini title (R283 STIL) + VIRI MINI amber delna (1 ročnih · 0 · 0)')" || exit 1
 agent-browser screenshot "$SS/qa-r310-e2e-z1.png" > /dev/null 2>&1
 
 echo "=== Z1r: REF PROJEKT — VIRI MINI ŽIVO polna pokritost (issue #15 §1/§3) ==="
@@ -1408,10 +1408,10 @@ eb_dispatch '{"tab":"measurements","more":null,"subTab":null,"osnutek":null,"fil
 eb_pocakaj_na "(()=>{return !!document.querySelector('button[aria-label=\"Izvozi terenski pregled meritev kot PDF\"]');})()" 24
 eb_pocakaj_na "(()=>{const v=[...document.querySelectorAll('span')].find(x=>x.textContent.trim()==='Ročni vnos'); const f=[...document.querySelectorAll('span')].find(x=>x.textContent.trim()==='Foto-CV'); const a=[...document.querySelectorAll('span')].find(x=>x.textContent.trim()==='AR-Depth'); return !!v&&!!f&&!!a;})()" 24
 eb_cakaj 1
-agent-browser eval "(()=>{const viriMini=[...document.querySelectorAll('span.cursor-help')].find(x=>(x.textContent||'').startsWith('Viri (viden seznam):')); const viriDot=viriMini?viriMini.parentElement.querySelector('span[aria-hidden=\"true\"]'):null; const mini=[...document.querySelectorAll('span.cursor-help')].find(x=>(x.textContent||'').startsWith('Meritve (viden seznam):')); const zeton=mini?mini.parentElement.querySelector('span.rounded-full.cursor-help'):null; const pilli=['Ročni vnos','Foto-CV','AR-Depth'].map(n=>[...document.querySelectorAll('span')].some(x=>x.textContent.trim()===n)); return JSON.stringify({viriMini:viriMini?viriMini.textContent.trim():null, viriTitle:viriMini?(viriMini.getAttribute('title')||'').startsWith('Pokritost virov vidnega seznama (issue #15 §3)'):false, viriDotGreen:viriDot?viriDot.className.includes('bg-roksal-green'):false, mini:mini?mini.textContent.trim():null, zeton:zeton?zeton.textContent.trim():null, zetonTitle:zeton?(zeton.getAttribute('title')||'').startsWith('Osnutki — meritve v stanju OSNUTEK'):false, pillRočni:pilli[0], pillFoto:pilli[1], pillAR:pilli[2], err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r324-z1r.json
+agent-browser eval "(()=>{const viriMini=[...document.querySelectorAll('span.cursor-help')].find(x=>(x.textContent||'').startsWith('Viri (viden seznam):')); const viriDot=viriMini?viriMini.parentElement.querySelector('span[aria-hidden=\"true\"]'):null; const mini=[...document.querySelectorAll('span.cursor-help')].find(x=>(x.textContent||'').startsWith('Meritve (viden seznam):')); const zeton=mini?mini.parentElement.querySelector('span.rounded-full.cursor-help'):null; const pilli=['Ročni vnos','Foto-CV','AR-Depth'].map(n=>[...document.querySelectorAll('span')].some(x=>x.textContent.trim()===n)); return JSON.stringify({viriMini:viriMini?viriMini.textContent.trim():null, viriTitle:viriMini?(viriMini.getAttribute('title')||'').startsWith('Pokritost virov vidnega seznama (issue #15 §3)'):false, viriDotGreen:viriDot?viriDot.className.includes('bg-roksal-green'):false, mini:mini?mini.textContent.trim():null, zeton:zeton?zeton.textContent.trim():null, zetonTitle:zeton?(zeton.getAttribute('title')||'').startsWith('Osnutki — meritve v stanju OSNUTEK'):false, pillRočni:pilli[0], pillFoto:pilli[1], pillAR:pilli[2], err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r325-z1r.json
 python3 -c "
 import json
-r = json.load(open('/tmp/r324-z1r.json')); d = json.loads(r) if isinstance(r, str) else r
+r = json.load(open('/tmp/r325-z1r.json')); d = json.loads(r) if isinstance(r, str) else r
 assert d['viriMini'] == 'Viri (viden seznam): 1 ročnih · 1 foto-CV · 1 AR-Depth', 'Z1r VIRI MINI FAIL (pričakovano 1·1·1): ' + json.dumps(d)
 assert d['viriTitle'], 'Z1r VIRI title FAIL: ' + json.dumps(d)
 assert d['viriDotGreen'], 'Z1r pika FAIL (polna pokritost = green): ' + json.dumps(d)
@@ -1431,10 +1431,10 @@ eb_dispatch '{"tab":"measurements","more":null,"subTab":null,"osnutek":null,"fil
 eb_pocakaj_na "(()=>{return !!document.querySelector('button[aria-label=\"Izvozi terenski pregled meritev kot PDF\"]');})()" 24
 eb_pocakaj_na "(()=>{const p=[...document.querySelectorAll('span.cursor-help')].find(x=>(x.getAttribute('title')||'').startsWith('Sinhronizacijsko stanje: Sinhronizirano')); return !!p;})()" 24
 eb_cakaj 1
-agent-browser eval "(()=>{const all=[...document.querySelectorAll('span.cursor-help')]; const synced=all.find(x=>(x.getAttribute('title')||'').startsWith('Sinhronizacijsko stanje: Sinhronizirano')); const konf=all.find(x=>(x.getAttribute('title')||'').startsWith('Sinhronizacijsko stanje: Konflikt')); return JSON.stringify({synced:{prisoten:!!synced, besedilo:synced?synced.textContent.trim():null}, konflikt:{prisoten:!!konf, besedilo:konf?konf.textContent.trim():null, tombstone:konf?(konf.getAttribute('title')||'').includes('tombstone — grobnico potrdi /api/sync'):false}, err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r324-z1s.json
+agent-browser eval "(()=>{const all=[...document.querySelectorAll('span.cursor-help')]; const synced=all.find(x=>(x.getAttribute('title')||'').startsWith('Sinhronizacijsko stanje: Sinhronizirano')); const konf=all.find(x=>(x.getAttribute('title')||'').startsWith('Sinhronizacijsko stanje: Konflikt')); return JSON.stringify({synced:{prisoten:!!synced, besedilo:synced?synced.textContent.trim():null}, konflikt:{prisoten:!!konf, besedilo:konf?konf.textContent.trim():null, tombstone:konf?(konf.getAttribute('title')||'').includes('tombstone — grobnico potrdi /api/sync'):false}, err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r325-z1s.json
 python3 -c "
 import json
-r = json.load(open('/tmp/r324-z1s.json')); d = json.loads(r) if isinstance(r, str) else r
+r = json.load(open('/tmp/r325-z1s.json')); d = json.loads(r) if isinstance(r, str) else r
 assert d['synced']['prisoten'] and d['synced']['besedilo'] == 'Sinhronizirano r7', 'Z1s synced FAIL: ' + json.dumps(d)
 assert d['konflikt']['prisoten'] and d['konflikt']['besedilo'] == 'Konflikt' and d['konflikt']['tombstone'], 'Z1s konflikt FAIL: ' + json.dumps(d)
 assert d['err'] is None, 'Z1s err: ' + json.dumps(d)
@@ -1442,10 +1442,10 @@ print('Z1s OK — sync žig ŽIVO (regresija R281)')"
 agent-browser screenshot "$SS/qa-r310-e2e-sync.png" > /dev/null 2>&1
 
 echo "=== Z1m: F2 SYNC MINI-VRSTICA ŽIVO (R282 regresija — ŠE VEDNO na r281 projektu) ==="
-agent-browser eval "(()=>{const mini=[...document.querySelectorAll('span.cursor-help')].find(x=>(x.textContent||'').startsWith('Sync (viden seznam):')); const akcija=[...document.querySelectorAll('span')].find(x=>(x.textContent||'')==='Konflikt — osveži bazo in ponovi sync'); return JSON.stringify({mini:mini?mini.textContent.trim():null, akcija:!!akcija, err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r324-z1m.json
+agent-browser eval "(()=>{const mini=[...document.querySelectorAll('span.cursor-help')].find(x=>(x.textContent||'').startsWith('Sync (viden seznam):')); const akcija=[...document.querySelectorAll('span')].find(x=>(x.textContent||'')==='Konflikt — osveži bazo in ponovi sync'); return JSON.stringify({mini:mini?mini.textContent.trim():null, akcija:!!akcija, err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r325-z1m.json
 python3 -c "
 import json
-r = json.load(open('/tmp/r324-z1m.json')); d = json.loads(r) if isinstance(r, str) else r
+r = json.load(open('/tmp/r325-z1m.json')); d = json.loads(r) if isinstance(r, str) else r
 assert d['mini'] and d['mini'].startswith('Sync (viden seznam): 1 sinhroniziranih · 0 čakajoči · 1 konfliktov · 0 napak · 1 grobnic'), 'Z1m mini FAIL: ' + json.dumps(d)
 assert d['akcija'], 'Z1m akcijski žig FAIL: ' + json.dumps(d)
 assert d['err'] is None, 'Z1m err: ' + json.dumps(d)
@@ -1460,15 +1460,15 @@ echo "=== Z2: Popravi tok ŽIVO — pas → 3450 → Shrani kot novo verzijo →
 eb_klik_prefix() { agent-browser eval "(()=>{const g=document.querySelector('button[aria-label^=\"$1\"]'); if(!g) return 'ni gumba'; g.click(); return 'klik';})()" 2>&1 | tail -1; }
 eb_klik_prefix "Popravi meritev "
 eb_pocakaj_na "(()=>{return document.body.textContent.includes('Popravljanje verzije:');})()" 14
-agent-browser eval "(()=>{const t=document.body.textContent; const pas=t.includes('Popravljanje verzije:'); const stGumb=[...document.querySelectorAll('button')].some(b=>b.textContent.includes('Shrani kot novo verzijo')); return JSON.stringify({pas, stGumb, err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r324-z2-pas.json
-python3 -c "import json; r=json.load(open('/tmp/r324-z2-pas.json')); d=json.loads(r) if isinstance(r,str) else r; assert d['pas'] and d['stGumb'], 'Z2 pas FAIL: '+json.dumps(d); print('Z2 pas OK — korekcijski pas + Shrani kot novo verzijo')" || exit 1
+agent-browser eval "(()=>{const t=document.body.textContent; const pas=t.includes('Popravljanje verzije:'); const stGumb=[...document.querySelectorAll('button')].some(b=>b.textContent.includes('Shrani kot novo verzijo')); return JSON.stringify({pas, stGumb, err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r325-z2-pas.json
+python3 -c "import json; r=json.load(open('/tmp/r325-z2-pas.json')); d=json.loads(r) if isinstance(r,str) else r; assert d['pas'] and d['stGumb'], 'Z2 pas FAIL: '+json.dumps(d); print('Z2 pas OK — korekcijski pas + Shrani kot novo verzijo')" || exit 1
 agent-browser eval "(()=>{const i=document.querySelector('input[type=\"number\"]'); if(!i) return 'ni inputa'; const s=Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value').set; s.call(i,'3450'); i.dispatchEvent(new Event('input',{bubbles:true})); return 'vpisano';})()" 2>&1 | tail -1
 eb_cakaj 1
 agent-browser eval "(()=>{const b=[...document.querySelectorAll('button')].find(x=>x.textContent.includes('Shrani kot novo verzijo')); if(!b) return 'ni gumba'; b.click(); return 'klik';})()" 2>&1 | tail -1
 eb_pocakaj_tekst "Nova verzija v2 shranjena" 14
 eb_pocakaj_na "(()=>{const p=[...document.querySelectorAll('span')].find(x=>x.textContent.trim()==='v2'); return !!p;})()" 14
-agent-browser eval "(()=>{const t=document.body.textContent; const v1=[...document.querySelectorAll('span')].some(x=>x.textContent.trim()==='v1'); const v2=[...document.querySelectorAll('span')].some(x=>x.textContent.trim()==='v2'); const pasSePrisoten=t.includes('Popravljanje verzije:'); return JSON.stringify({v1, v2, pasSePrisoten, err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r324-z2.json
-python3 -c "import json; r=json.load(open('/tmp/r324-z2.json')); d=json.loads(r) if isinstance(r,str) else r; assert d['v1'] and d['v2'], 'Z2 pill FAIL (v1 in v2 obstajata): '+json.dumps(d); assert not d['pasSePrisoten'], 'Z2 pas NI zaprt po uspehu: '+json.dumps(d); print('Z2 OK — v2 ŽIVO (v1 ostane v zgodovini), pas zaprt')" || exit 1
+agent-browser eval "(()=>{const t=document.body.textContent; const v1=[...document.querySelectorAll('span')].some(x=>x.textContent.trim()==='v1'); const v2=[...document.querySelectorAll('span')].some(x=>x.textContent.trim()==='v2'); const pasSePrisoten=t.includes('Popravljanje verzije:'); return JSON.stringify({v1, v2, pasSePrisoten, err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r325-z2.json
+python3 -c "import json; r=json.load(open('/tmp/r325-z2.json')); d=json.loads(r) if isinstance(r,str) else r; assert d['v1'] and d['v2'], 'Z2 pill FAIL (v1 in v2 obstajata): '+json.dumps(d); assert not d['pasSePrisoten'], 'Z2 pas NI zaprt po uspehu: '+json.dumps(d); print('Z2 OK — v2 ŽIVO (v1 ostane v zgodovini), pas zaprt')" || exit 1
 agent-browser screenshot "$SS/qa-r310-e2e-v2.png" > /dev/null 2>&1
 
 echo "=== Z2b: TERENSKI PDF ŽIVO — 10-stolpčna resnica (issue #16 §6) ==="
@@ -1476,8 +1476,8 @@ eb_zajem_pdf val283
 eb_klik_gumb "Izvozi terenski pregled meritev kot PDF"
 eb_pocakaj_tekst "Terenski pregled meritev prenešen v PDF" 14
 eb_cakaj 1
-agent-browser eval "(()=>{const b64=window.__val283; if(typeof b64!=='string'||b64.length===0) return JSON.stringify({pdf:false, err:window.__err??null}); const bin=atob(b64); return JSON.stringify({pdf:true, magija:bin.substring(0,5), bajtov:bin.length, err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r324-z2b.json
-python3 -c "import json; r=json.load(open('/tmp/r324-z2b.json')); d=json.loads(r) if isinstance(r,str) else r; assert d['pdf'] and d['magija']=='%PDF-', 'Z2b PDF FAIL: '+json.dumps(d); assert d['bajtov']>10000, 'Z2b prekratek PDF: '+json.dumps(d); assert d['err'] is None, 'Z2b err: '+json.dumps(d); print('Z2b OK — terenski PDF ŽIVO (' + str(d['bajtov']) + ' bajtov, %PDF- magija)')" || exit 1
+agent-browser eval "(()=>{const b64=window.__val283; if(typeof b64!=='string'||b64.length===0) return JSON.stringify({pdf:false, err:window.__err??null}); const bin=atob(b64); return JSON.stringify({pdf:true, magija:bin.substring(0,5), bajtov:bin.length, err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r325-z2b.json
+python3 -c "import json; r=json.load(open('/tmp/r325-z2b.json')); d=json.loads(r) if isinstance(r,str) else r; assert d['pdf'] and d['magija']=='%PDF-', 'Z2b PDF FAIL: '+json.dumps(d); assert d['bajtov']>10000, 'Z2b prekratek PDF: '+json.dumps(d); assert d['err'] is None, 'Z2b err: '+json.dumps(d); print('Z2b OK — terenski PDF ŽIVO (' + str(d['bajtov']) + ' bajtov, %PDF- magija)')" || exit 1
 agent-browser screenshot "$SS/qa-r310-e2e-teren-pdf.png" > /dev/null 2>&1
 
 echo "=== Z2z: TERENSKI ZAPISNI LIST PDF ŽIVO — fill-in resnica (issue #15 §3) ==="
@@ -1485,22 +1485,22 @@ eb_zajem_pdf val284
 eb_klik_gumb "Izvozi terenski zapisni list kot PDF"
 eb_pocakaj_tekst "Zapisni list prenešen v PDF" 14
 eb_cakaj 1
-agent-browser eval "(()=>{const b64=window.__val284; if(typeof b64!=='string'||b64.length===0) return JSON.stringify({pdf:false, err:window.__err??null}); const bin=atob(b64); return JSON.stringify({pdf:true, magija:bin.substring(0,5), bajtov:bin.length, err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r324-z2z.json
-python3 -c "import json; r=json.load(open('/tmp/r324-z2z.json')); d=json.loads(r) if isinstance(r,str) else r; assert d['pdf'] and d['magija']=='%PDF-', 'Z2z PDF FAIL: '+json.dumps(d); assert d['bajtov']>10000, 'Z2z prekratek PDF: '+json.dumps(d); assert d['err'] is None, 'Z2z err: '+json.dumps(d); print('Z2z OK — zapisni list PDF ŽIVO (' + str(d['bajtov']) + ' bajtov, %PDF- magija — fill-in resnica)')" || exit 1
+agent-browser eval "(()=>{const b64=window.__val284; if(typeof b64!=='string'||b64.length===0) return JSON.stringify({pdf:false, err:window.__err??null}); const bin=atob(b64); return JSON.stringify({pdf:true, magija:bin.substring(0,5), bajtov:bin.length, err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r325-z2z.json
+python3 -c "import json; r=json.load(open('/tmp/r325-z2z.json')); d=json.loads(r) if isinstance(r,str) else r; assert d['pdf'] and d['magija']=='%PDF-', 'Z2z PDF FAIL: '+json.dumps(d); assert d['bajtov']>10000, 'Z2z prekratek PDF: '+json.dumps(d); assert d['err'] is None, 'Z2z err: '+json.dumps(d); print('Z2z OK — zapisni list PDF ŽIVO (' + str(d['bajtov']) + ' bajtov, %PDF- magija — fill-in resnica)')" || exit 1
 agent-browser screenshot "$SS/qa-r310-e2e-zapisni-pdf.png" > /dev/null 2>&1
 
 echo "=== Z2x: INVENTURA PREGLED CSV ŽIVO — 30. člen izvozne družine (R286) ==="
 eb_dispatch '{"tab":"inventory","more":null,"subTab":null,"osnutek":null,"filter":null}'
 eb_pocakaj_na "(()=>{return !!document.querySelector('button[aria-label=\"Izvozi inventurni pregled premoženja kot CSV\"]');})()" 24
 eb_cakaj 1
-agent-browser eval "(()=>{const gumb=document.querySelector('button[aria-label=\"Izvozi inventurni pregled premoženja kot CSV\"]'); const legenda=[...document.querySelectorAll('p')].some(p=>p.textContent.startsWith('Inventura CSV = ista resnica kot PDF v Excelu')); return JSON.stringify({gumb:!!gumb, title:gumb?(gumb.getAttribute('title')||'').startsWith('Inventurni pregled premoženja kot CSV'):false, legenda, err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r324-z2x-ui.json
-python3 -c "import json; r=json.load(open('/tmp/r324-z2x-ui.json')); d=json.loads(r) if isinstance(r,str) else r; assert d['gumb'] and d['title'] and d['legenda'], 'Z2x UI FAIL: '+json.dumps(d); assert d['err'] is None, 'Z2x err: '+json.dumps(d); print('Z2x UI OK — gumb + hover title + legenda ŽIVO (30. člen, kanon R280–R285)')" || exit 1
+agent-browser eval "(()=>{const gumb=document.querySelector('button[aria-label=\"Izvozi inventurni pregled premoženja kot CSV\"]'); const legenda=[...document.querySelectorAll('p')].some(p=>p.textContent.startsWith('Inventura CSV = ista resnica kot PDF v Excelu')); return JSON.stringify({gumb:!!gumb, title:gumb?(gumb.getAttribute('title')||'').startsWith('Inventurni pregled premoženja kot CSV'):false, legenda, err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r325-z2x-ui.json
+python3 -c "import json; r=json.load(open('/tmp/r325-z2x-ui.json')); d=json.loads(r) if isinstance(r,str) else r; assert d['gumb'] and d['title'] and d['legenda'], 'Z2x UI FAIL: '+json.dumps(d); assert d['err'] is None, 'Z2x err: '+json.dumps(d); print('Z2x UI OK — gumb + hover title + legenda ŽIVO (30. člen, kanon R280–R285)')" || exit 1
 eb_zajem_pdf val286csv
 eb_klik_gumb "Izvozi inventurni pregled premoženja kot CSV"
 eb_pocakaj_tekst "Inventurni pregled premoženja prenešen v CSV" 14
 eb_cakaj 1
-agent-browser eval "(()=>{const b64=window.__val286csv; if(typeof b64!=='string'||b64.length===0) return JSON.stringify({csv:false, err:window.__err??null}); const bin=atob(b64); const bom=bin.charCodeAt(0).toString(16)+bin.charCodeAt(1).toString(16)+bin.charCodeAt(2).toString(16); let vrs=0; for(let i=0;i<bin.length;i++){ if(bin.charCodeAt(i)===10) vrs++; } return JSON.stringify({csv:true, bom, bajtov:bin.length, vrstic:vrs, glava:bin.includes('"Naziv"')&&bin.includes('"Status"')&&bin.includes('"Enota"'), dodatni:bin.includes('"id"')&&bin.includes('"Premiki"'), err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r324-z2x.json
-python3 -c "import json; r=json.load(open('/tmp/r324-z2x.json')); d=json.loads(r) if isinstance(r,str) else r; assert d['csv'] and d['bom']=='efbbbf', 'Z2x CSV/BOM FAIL: '+json.dumps(d); assert d['glava'] and d['dodatni'], 'Z2x stolpci FAIL (ASCII needleji — atob UTF-8 je 2-bajtni za Š/ž, kanon r285): '+json.dumps(d); assert d['vrstic']>=2, 'Z2x premalo vrstic: '+json.dumps(d); assert d['bajtov']>60, 'Z2x prekratek CSV: '+json.dumps(d); assert d['err'] is None, 'Z2x err: '+json.dumps(d); print('Z2x OK — inventura CSV ŽIVO (' + str(d['bajtov']) + ' bajtov, BOM efbbbf, ' + str(d['vrstic']) + ' vrstic — pariteta R270 po konstrukciji + 3 dodatni stolpci)')" || exit 1
+agent-browser eval "(()=>{const b64=window.__val286csv; if(typeof b64!=='string'||b64.length===0) return JSON.stringify({csv:false, err:window.__err??null}); const bin=atob(b64); const bom=bin.charCodeAt(0).toString(16)+bin.charCodeAt(1).toString(16)+bin.charCodeAt(2).toString(16); let vrs=0; for(let i=0;i<bin.length;i++){ if(bin.charCodeAt(i)===10) vrs++; } return JSON.stringify({csv:true, bom, bajtov:bin.length, vrstic:vrs, glava:bin.includes('"Naziv"')&&bin.includes('"Status"')&&bin.includes('"Enota"'), dodatni:bin.includes('"id"')&&bin.includes('"Premiki"'), err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r325-z2x.json
+python3 -c "import json; r=json.load(open('/tmp/r325-z2x.json')); d=json.loads(r) if isinstance(r,str) else r; assert d['csv'] and d['bom']=='efbbbf', 'Z2x CSV/BOM FAIL: '+json.dumps(d); assert d['glava'] and d['dodatni'], 'Z2x stolpci FAIL (ASCII needleji — atob UTF-8 je 2-bajtni za Š/ž, kanon r285): '+json.dumps(d); assert d['vrstic']>=2, 'Z2x premalo vrstic: '+json.dumps(d); assert d['bajtov']>60, 'Z2x prekratek CSV: '+json.dumps(d); assert d['err'] is None, 'Z2x err: '+json.dumps(d); print('Z2x OK — inventura CSV ŽIVO (' + str(d['bajtov']) + ' bajtov, BOM efbbbf, ' + str(d['vrstic']) + ' vrstic — pariteta R270 po konstrukciji + 3 dodatni stolpci)')" || exit 1
 agent-browser screenshot "$SS/qa-r310-e2e-inventura-csv.png" > /dev/null 2>&1
 # VRNITEV na measurements tab (Z2b/Z2z/Z2y kontekst — r285 tok se nadaljuje nespremenjen):
 eb_dispatch '{"tab":"measurements","more":null,"subTab":null,"osnutek":null,"filter":null}'
@@ -1512,16 +1512,16 @@ eb_zajem_pdf val285csv
 eb_klik_gumb "Izvozi terenski zapisni list kot CSV"
 eb_pocakaj_tekst "Zapisni list prenešen v CSV" 14
 eb_cakaj 1
-agent-browser eval "(()=>{const b64=window.__val285csv; if(typeof b64!=='string'||b64.length===0) return JSON.stringify({csv:false, err:window.__err??null}); const bin=atob(b64); const bom=bin.charCodeAt(0).toString(16)+bin.charCodeAt(1).toString(16)+bin.charCodeAt(2).toString(16); let vrs=0; for(let i=0;i<bin.length;i++){ if(bin.charCodeAt(i)===10) vrs++; } return JSON.stringify({csv:true, bom, bajtov:bin.length, vrstic:vrs, imaFizicna:bin.includes('fizicna_ref_mm'), imaDelta:bin.includes('delta_mm'), imaZapiski:bin.includes('zapiski_terena'), err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r324-z2y.json
-python3 -c "import json; r=json.load(open('/tmp/r324-z2y.json')); d=json.loads(r) if isinstance(r,str) else r; assert d['csv'] and d['bom']=='efbbbf', 'Z2y CSV/BOM FAIL: '+json.dumps(d); assert d['imaFizicna'] and d['imaDelta'] and d['imaZapiski'], 'Z2y stolpci FAIL: '+json.dumps(d); assert d['vrstic']>=2, 'Z2y premalo vrstic: '+json.dumps(d); assert d['bajtov']>60, 'Z2y prekratek CSV: '+json.dumps(d); assert d['err'] is None, 'Z2y err: '+json.dumps(d); print('Z2y OK — zapisni list CSV ŽIVO (' + str(d['bajtov']) + ' bajtov, BOM efbbbf, ' + str(d['vrstic']) + ' vrstic — pariteta R186 + prazni fizični stolpci)')" || exit 1
+agent-browser eval "(()=>{const b64=window.__val285csv; if(typeof b64!=='string'||b64.length===0) return JSON.stringify({csv:false, err:window.__err??null}); const bin=atob(b64); const bom=bin.charCodeAt(0).toString(16)+bin.charCodeAt(1).toString(16)+bin.charCodeAt(2).toString(16); let vrs=0; for(let i=0;i<bin.length;i++){ if(bin.charCodeAt(i)===10) vrs++; } return JSON.stringify({csv:true, bom, bajtov:bin.length, vrstic:vrs, imaFizicna:bin.includes('fizicna_ref_mm'), imaDelta:bin.includes('delta_mm'), imaZapiski:bin.includes('zapiski_terena'), err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r325-z2y.json
+python3 -c "import json; r=json.load(open('/tmp/r325-z2y.json')); d=json.loads(r) if isinstance(r,str) else r; assert d['csv'] and d['bom']=='efbbbf', 'Z2y CSV/BOM FAIL: '+json.dumps(d); assert d['imaFizicna'] and d['imaDelta'] and d['imaZapiski'], 'Z2y stolpci FAIL: '+json.dumps(d); assert d['vrstic']>=2, 'Z2y premalo vrstic: '+json.dumps(d); assert d['bajtov']>60, 'Z2y prekratek CSV: '+json.dumps(d); assert d['err'] is None, 'Z2y err: '+json.dumps(d); print('Z2y OK — zapisni list CSV ŽIVO (' + str(d['bajtov']) + ' bajtov, BOM efbbbf, ' + str(d['vrstic']) + ' vrstic — pariteta R186 + prazni fizični stolpci)')" || exit 1
 agent-browser screenshot "$SS/qa-r310-e2e-zapisni-csv.png" > /dev/null 2>&1
 
 echo "=== Z3: Zgodovina verzij panel — veriga v1→v2 + delta +250 + aktivna v2 ==="
 eb_klik_prefix "Pokaži zgodovino verzij meritve"
 eb_pocakaj_na "(()=>{return document.body.textContent.includes('Zgodovina verzij — korekcije NE prepišejo');})()" 14
 eb_pocakaj_na "(()=>{return document.body.textContent.includes('+250');})()" 14
-agent-browser eval "(()=>{const t=document.body.textContent; const aktivnaV2=t.includes('Aktivna verzija: v2'); const delta=t.includes('+250'); const o7=t.includes('se NE izračunajo samodejno'); return JSON.stringify({aktivnaV2, delta, o7, err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r324-z3.json
-python3 -c "import json; r=json.load(open('/tmp/r324-z3.json')); d=json.loads(r) if isinstance(r,str) else r; assert d['aktivnaV2'] and d['delta'] and d['o7'], 'Z3 panel FAIL: '+json.dumps(d); print('Z3 OK — veriga v1→v2 + delta +250 + aktivna v2 + O7 resnica')" || exit 1
+agent-browser eval "(()=>{const t=document.body.textContent; const aktivnaV2=t.includes('Aktivna verzija: v2'); const delta=t.includes('+250'); const o7=t.includes('se NE izračunajo samodejno'); return JSON.stringify({aktivnaV2, delta, o7, err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r325-z3.json
+python3 -c "import json; r=json.load(open('/tmp/r325-z3.json')); d=json.loads(r) if isinstance(r,str) else r; assert d['aktivnaV2'] and d['delta'] and d['o7'], 'Z3 panel FAIL: '+json.dumps(d); print('Z3 OK — veriga v1→v2 + delta +250 + aktivna v2 + O7 resnica')" || exit 1
 agent-browser screenshot "$SS/qa-r310-e2e-panel.png" > /dev/null 2>&1
 
 echo "=== Z4: regresije — R272/R271 pilli ŽIVO (isti projekt) ==="
@@ -1548,9 +1548,9 @@ eb_klik_prefix "Pokaži zgodovino verzij meritve"
 eb_pocakaj_na "(()=>{return document.body.textContent.includes('Zgodovina verzij — korekcije NE prepišejo');})()" 14
 agent-browser eval "(()=>{document.documentElement.classList.add('dark'); return 'temna';})()" > /dev/null 2>&1
 eb_cakaj 2
-agent-browser eval "(()=>{const t=document.body.textContent; return JSON.stringify({temna:document.documentElement.classList.contains('dark'), panel:t.includes('Zgodovina verzij — korekcije NE prepišejo'), err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r324-z5.json
+agent-browser eval "(()=>{const t=document.body.textContent; return JSON.stringify({temna:document.documentElement.classList.contains('dark'), panel:t.includes('Zgodovina verzij — korekcije NE prepišejo'), err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r325-z5.json
 agent-browser eval "(()=>{document.documentElement.classList.remove('dark'); return 'svetla';})()" > /dev/null 2>&1
-python3 -c "import json; r=json.load(open('/tmp/r324-z5.json')); d=json.loads(r) if isinstance(r,str) else r; assert d['temna'] and d['panel'] and d['err'] is None, 'Z5 temna FAIL: '+json.dumps(d); print('Z5 temna OK — verzije panel vidna, err null')" || exit 1
+python3 -c "import json; r=json.load(open('/tmp/r325-z5.json')); d=json.loads(r) if isinstance(r,str) else r; assert d['temna'] and d['panel'] and d['err'] is None, 'Z5 temna FAIL: '+json.dumps(d); print('Z5 temna OK — verzije panel vidna, err null')" || exit 1
 
 echo "=== RESTORE + ODTIS (bajtnata identičnost — ZERO-MUTACIJA) ==="
 node scripts/r276-db-e2e.cjs restore || exit 1
@@ -1558,19 +1558,19 @@ node scripts/r273-db-e2e.cjs restore > /dev/null 2>&1 || true
 node scripts/r281-db-e2e.cjs restore || exit 1
 node scripts/r283-referencni-projekt.cjs restore || exit 1
 node scripts/r287-db-e2e.cjs restore || exit 1
-node scripts/r276-db-e2e.cjs fp > /tmp/r324-fp-post-276.json || exit 1
-node scripts/r281-db-e2e.cjs fp > /tmp/r324-fp-post-281.json || exit 1
-node scripts/r283-referencni-projekt.cjs fp > /tmp/r324-fp-post-283.json || exit 1
-node scripts/r287-db-e2e.cjs fp > /tmp/r324-fp-post.json || exit 1
+node scripts/r276-db-e2e.cjs fp > /tmp/r325-fp-post-276.json || exit 1
+node scripts/r281-db-e2e.cjs fp > /tmp/r325-fp-post-281.json || exit 1
+node scripts/r283-referencni-projekt.cjs fp > /tmp/r325-fp-post-283.json || exit 1
+node scripts/r287-db-e2e.cjs fp > /tmp/r325-fp-post.json || exit 1
 OK=1
-cmp -s /tmp/r324-fp-pre-276.json /tmp/r324-fp-post-276.json || OK=0
-cmp -s /tmp/r324-fp-pre-281.json /tmp/r324-fp-post-281.json || OK=0
-cmp -s /tmp/r324-fp-pre-283.json /tmp/r324-fp-post-283.json || OK=0
-cmp -s /tmp/r324-fp-pre.json /tmp/r324-fp-post.json || OK=0
+cmp -s /tmp/r325-fp-pre-276.json /tmp/r325-fp-post-276.json || OK=0
+cmp -s /tmp/r325-fp-pre-281.json /tmp/r325-fp-post-281.json || OK=0
+cmp -s /tmp/r325-fp-pre-283.json /tmp/r325-fp-post-283.json || OK=0
+cmp -s /tmp/r325-fp-pre.json /tmp/r325-fp-post.json || OK=0
 if [ "$OK" = 1 ]; then
   echo "ODTIS BAJTNATO IDENTIČEN (pre==post, r276 + r281 + r283 + r287) — ZERO-MUTACIJA dokazana"
 else
-  echo "ODTIS RAZLIČEN — FAIL"; diff <(python3 -m json.tool /tmp/r324-fp-pre-276.json) <(python3 -m json.tool /tmp/r324-fp-post-276.json) | head -10; diff <(python3 -m json.tool /tmp/r324-fp-pre-281.json) <(python3 -m json.tool /tmp/r324-fp-post-281.json) | head -10; diff <(python3 -m json.tool /tmp/r324-fp-pre-283.json) <(python3 -m json.tool /tmp/r324-fp-post-283.json) | head -10
+  echo "ODTIS RAZLIČEN — FAIL"; diff <(python3 -m json.tool /tmp/r325-fp-pre-276.json) <(python3 -m json.tool /tmp/r325-fp-post-276.json) | head -10; diff <(python3 -m json.tool /tmp/r325-fp-pre-281.json) <(python3 -m json.tool /tmp/r325-fp-post-281.json) | head -10; diff <(python3 -m json.tool /tmp/r325-fp-pre-283.json) <(python3 -m json.tool /tmp/r325-fp-post-283.json) | head -10
   exit 1
 fi
 
@@ -1578,4 +1578,4 @@ echo "=== ZAKLJUČEK: strežnik + brskalnik zaprta ==="
 for pid in $(ss -tlnp 2>/dev/null | grep ':3100' | grep -oP 'pid=\K[0-9]+' | sort -u); do kill -9 "$pid" 2>/dev/null; done
 agent-browser close --all > /dev/null 2>&1
 ss -tlnp 2>/dev/null | grep ':3100' || echo "port 3100 sproščen"
-echo "=== R324 E2E KONEC ==="
+echo "=== R325 E2E KONEC ==="

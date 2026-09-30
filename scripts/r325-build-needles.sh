@@ -40,7 +40,7 @@
 # literali; komentarji odstranjeni v buildu. Build PREJ pred needleji.
 set -u
 cd /home/z/my-project
-OUT=/tmp/r324-build-chunks
+OUT=/tmp/r325-build-chunks
 mkdir -p "$OUT" && rm -f "$OUT"/*.js 2>/dev/null
 
 # --- AWK strukturna preverba (r270 lekcija 2; r296-r322 vzorec) ---
@@ -71,24 +71,24 @@ must_miss() {
   if grep -rqF -- "$1" "$OUT" 2>/dev/null; then echo "HIT  : $2 (needle: $1 — NE SME BITI!)"; FAIL=1; else echo "OK   : $2 (odsoten)"; fi
 }
 
-echo "--- R324 MANDATORY — dekompozicija faza 2: premaknjena vsebina ŽIVA v čankih ---"
+echo "--- R325 MANDATORY — dekompozicija faza 2: premaknjena vsebina ŽIVA v čankih ---"
 echo "--- (a) measurements: laserski BT blok + template localStorage blok ---"
-need_static "0000feff-0000-1000-8000-00805f9b34fb" "R324 laser-bt.ts Leica DISTO service UUID (premik živ)"
-need_static "Poveži laserski daljinec preko Web Bluetooth" "R324 laser-panel.tsx tooltip besedilo (premik živ)"
-need_static "Poslušam meritve... Pošlji mero z gumbom na daljincu" "R324 laser-panel.tsx statusno besedilo (premik živ)"
-need_static "Mera iz laserja: " "R324 use-laser.ts toast ob prejeti meri (premik živ)"
-need_static "Standardni balkon 3m" "R324 templates.ts PREDLOGE naziv (premik živ)"
-need_static "L-oblika 4+2m" "R324 templates.ts PREDLOGE naziv (premik živ)"
+need_static "0000feff-0000-1000-8000-00805f9b34fb" "R325 laser-bt.ts Leica DISTO service UUID (premik živ)"
+need_static "Poveži laserski daljinec preko Web Bluetooth" "R325 laser-panel.tsx tooltip besedilo (premik živ)"
+need_static "Poslušam meritve... Pošlji mero z gumbom na daljincu" "R325 laser-panel.tsx statusno besedilo (premik živ)"
+need_static "Mera iz laserja: " "R325 use-laser.ts toast ob prejeti meri (premik živ)"
+need_static "Standardni balkon 3m" "R325 templates.ts PREDLOGE naziv (premik živ)"
+need_static "L-oblika 4+2m" "R325 templates.ts PREDLOGE naziv (premik živ)"
 echo "--- (b) calculator: PDF izvozi (5 funkcij → pdf-exports.ts) ---"
-need_static "ROKSAL — Predloga vrtanja" "R324 pdf-exports.ts naslov baluster PDF (premik živ)"
-need_static "ROKSAL — Razrezni list CNC" "R324 pdf-exports.ts naslov CNC PDF (premik živ)"
-need_static "ROKSAL — Steklena balustrada specifikacija" "R324 pdf-exports.ts naslov steklo PDF (premik živ)"
-echo "--- R324 must_miss (negativni) ---"
-must_miss "TODO-R324" "R324 — brez razvojnih ostankov"
-echo "R324 lastni needleji: FAIL=$FAIL (9 premik + 1 must_miss)"
-echo "=== REGRESIJE: polna veriga prek r323-build-needles.sh [VZPOREDNA R323 + R322 + r321[vzporedna] + R320 + … + R227] ==="
+need_static "ROKSAL — Predloga vrtanja" "R325 pdf-exports.ts naslov baluster PDF (premik živ)"
+need_static "ROKSAL — Razrezni list CNC" "R325 pdf-exports.ts naslov CNC PDF (premik živ)"
+need_static "ROKSAL — Steklena balustrada specifikacija" "R325 pdf-exports.ts naslov steklo PDF (premik živ)"
+echo "--- R325 must_miss (negativni) ---"
+must_miss "TODO-R325" "R325 — brez razvojnih ostankov"
+echo "R325 lastni needleji: FAIL=$FAIL (9 premik + 1 must_miss)"
+echo "=== REGRESIJE: polna veriga prek r324-build-needles.sh [VZPOREDNA R324 dnevni PDF + R323 CSV + R322 + … + R227] ==="
 REG=0
-bash scripts/r323-build-needles.sh || REG=1
+bash scripts/r324-build-needles.sh || REG=1
 if [ "$REG" = "1" ]; then echo "REGRESIJA FAIL"; exit 1; fi
-if [ "$FAIL" = "1" ]; then echo "R324 NEEDLEJI FAIL"; exit 1; fi
-echo "=== R324 BUILD NEEDLES VSE OK ==="
+if [ "$FAIL" = "1" ]; then echo "R325 NEEDLEJI FAIL"; exit 1; fi
+echo "=== R325 BUILD NEEDLES VSE OK ==="

@@ -1,13 +1,13 @@
 #!/bin/bash
-# R324 — PRVA naloga (worklog R324): potrditi R290+…+R321+R322+R323+R324 SKUPAJ na produ.
-#   🆕 R324 = PRIROJENIŠKA runda (dekompozicija FAZA 2 — vzorec R319
+# R325 — PRVA naloga (worklog R324): potrditi R290+…+R321+R322+R323+R324+R325 SKUPAJ na produ.
+#   🆕 R325 = PRIROJENIŠKA runda (dekompozicija FAZA 2 — vzorec R319
 #   faza 1 / R322 calculator faza 1; KOLIZIJA #5: vzporedna seja je
 #   vzela R323 [8857d6e, 51. člen CSV]; NI novi člen issue #1):
 #   DEKOMPOZICIJA FAZA 2 — measurements 7.604 → 7.153 [−451; laserski BT
 #   blok → laser-bt.ts + use-laser.ts hook (onMeasurement povratni klic)
 #   + laser-panel.tsx; template localStorage blok → templates.ts] +
 #   calculator 5.372 → 4.846 [−526; 5 PDF izvozov → pdf-exports.ts z
-#   args objekti]; r172 vrstični pin 7427 → 6976 (izrecen R324 komentar).
+#   args objekti]; r172 vrstični pin 7427 → 6976 (izrecen R325 komentar).
 #   🆕 R323 = 51. člen issue #1 (IZVOZI družina): izvoz meritev zmogljivosti
 #   🆕 R323 = 51. člen issue #1 (IZVOZI družina): izvoz meritev zmogljivosti
 #   kot DETERMINISTIČNI CSV (Deliverable 6 prenosljiv artifact — družinska
@@ -88,9 +88,9 @@
 #      2 novi izjemi ZAKLENJENI (inclinometer senzorjska lestvica
 #      denied=red/unsupported=amber; site-survey PODLAGA kategorija barv z
 #      rdečim bratom — R308/R311 precedens; r315-stil-val6 STRAŽAR).
-#   Z0  build-guard (EPOCH): health build > R324 commit čas (git log —
+#   Z0  build-guard (EPOCH): health build > R325 commit čas (git log —
 #       self-contained meja) → R315 deploy potrjen (nosi R290+…+R315 — kanon
-#       R280/R284), polni LIVE needle teki (R324 dekomp ×6 + R323 CSV ×2 +
+#       R280/R284), polni LIVE needle teki (R325 dekomp ×6 + R324 dnevni PDF ×2 + R323 CSV ×2 +
 #       R322 dekomp ×4 + R321 PDF ×2 +
 #       R320 PDF ×2 + R318 PDF ×2 + R317 CSV ×3 +
 #       must_miss ×1 + R316 izvoz JSON ×2 + STIL ×5 +
@@ -103,7 +103,7 @@
 #   Z1  meritve tab ŽIVO — sync žig POGOJNO (kanon r277).
 #   Z1b verzije ruta 404 + 'Meritev ne obstaja' (R276+ regresa). ZERO-MUTACIJA.
 #   Z1c zvonček POGOJNI DOM probe + Z1d presežek note POGOJNI (R287/R289).
-#   Z2  čanki needleji: R324 ×6+1 + R323 ×2+1 + R322 ×4+1 + R321 ×2+1 +
+#   Z2  čanki needleji: R325 ×6+1 + R324 ×2+1 + R323 ×2+1 + R322 ×4+1 + R321 ×2+1 +
 #       R320 ×2+1 + R318 ×2+1 +
 #       R317 ×3+1 + R316 ×7+6 + R315 ×21+6 + R314 ×18+6 + R313 ×4+6 + R312 ×5+3 +
 #       R311 ×7+1 + R310 ×5+1 + R309 ×4+3 + R308 ×7 + R307 ×11 + R306 ×11 +
@@ -117,26 +117,26 @@ set -u
 source /home/z/my-project/scripts/e2e-lib.sh
 # R316 — 2. prehod reprobe lista (isti 15 dispeči; žlenjeno ENKRAT, rabi
 # pass-2 zanka v OBEH vejah — besedila znotraj objektov NE vsebujejo presledkov).
-R324_TABS='{"tab":"dashboard","more":null,"subTab":null,"osnutek":null,"filter":null} {"tab":"measurements","more":null,"subTab":null,"osnutek":null,"filter":null} {"tab":"inventory","more":null,"subTab":null,"osnutek":null,"filter":null} {"tab":"more","more":"documents","subTab":null,"osnutek":null,"filter":null} {"tab":"more","more":"material","subTab":"suppliers","osnutek":null,"filter":null} {"tab":"more","more":"crm","subTab":null,"osnutek":null,"filter":null} {"tab":"more","more":"material","subTab":"orders","osnutek":null,"filter":null} {"tab":"more","more":"logistics","subTab":null,"osnutek":null,"filter":null} {"tab":"inclinometer","more":null,"subTab":null,"osnutek":null,"filter":null} {"tab":"ar","more":null,"subTab":null,"osnutek":null,"filter":null} {"tab":"calculator","more":null,"subTab":null,"osnutek":null,"filter":null} {"tab":"photos","more":null,"subTab":null,"osnutek":null,"filter":null} {"tab":"more","more":"cvstudio","subTab":null,"osnutek":null,"filter":null} {"tab":"more","more":"vodja","subTab":null,"osnutek":null,"filter":null} {"tab":"more","more":"teren","subTab":null,"osnutek":null,"filter":null} {"tab":"more","more":"ekipa","subTab":null,"osnutek":null,"filter":null}'
+R325_TABS='{"tab":"dashboard","more":null,"subTab":null,"osnutek":null,"filter":null} {"tab":"measurements","more":null,"subTab":null,"osnutek":null,"filter":null} {"tab":"inventory","more":null,"subTab":null,"osnutek":null,"filter":null} {"tab":"more","more":"documents","subTab":null,"osnutek":null,"filter":null} {"tab":"more","more":"material","subTab":"suppliers","osnutek":null,"filter":null} {"tab":"more","more":"crm","subTab":null,"osnutek":null,"filter":null} {"tab":"more","more":"material","subTab":"orders","osnutek":null,"filter":null} {"tab":"more","more":"logistics","subTab":null,"osnutek":null,"filter":null} {"tab":"inclinometer","more":null,"subTab":null,"osnutek":null,"filter":null} {"tab":"ar","more":null,"subTab":null,"osnutek":null,"filter":null} {"tab":"calculator","more":null,"subTab":null,"osnutek":null,"filter":null} {"tab":"photos","more":null,"subTab":null,"osnutek":null,"filter":null} {"tab":"more","more":"cvstudio","subTab":null,"osnutek":null,"filter":null} {"tab":"more","more":"vodja","subTab":null,"osnutek":null,"filter":null} {"tab":"more","more":"teren","subTab":null,"osnutek":null,"filter":null} {"tab":"more","more":"ekipa","subTab":null,"osnutek":null,"filter":null}'
 PROD="https://roksal-railing-manager.vercel.app"
-R324_COMMIT_ISO="$(git log --format='%cI ::: %s' 2>/dev/null | awk -F' ::: ' '$2 ~ /^R324 —/ {print $1; exit}')"
-[ -n "$R324_COMMIT_ISO" ] || { echo "FAIL-CLOSED: R324 commita ni v git zgodovini — EPOCH guard brez meje"; exit 1; }
-R324_PUSH="$(date -u -d "$R324_COMMIT_ISO" +%Y-%m-%dT%H:%M:%S)"
-echo "R324 meja (commit čas, UTC): $R324_PUSH"
+R325_COMMIT_ISO="$(git log --format='%cI ::: %s' 2>/dev/null | awk -F' ::: ' '$2 ~ /^R325 —/ {print $1; exit}')"
+[ -n "$R325_COMMIT_ISO" ] || { echo "FAIL-CLOSED: R325 commita ni v git zgodovini — EPOCH guard brez meje"; exit 1; }
+R325_PUSH="$(date -u -d "$R325_COMMIT_ISO" +%Y-%m-%dT%H:%M:%S)"
+echo "R325 meja (commit čas, UTC): $R325_PUSH"
 # LEKCIJA R306 2: derive transformacije — grep preverba ostankov starega imena
 # PRED tekom (unbound variable pri set -u je rešil, a čas izgubljen).
-if grep -qE 'R32[2]_PUSH|R323[_]COMMIT_ISO' "$0"; then
-  echo "FAIL-CLOSED: derive ostanki R323 PUSH/COMMIT meje v r324-prod-qa.sh — popravi pred tekom"
+if grep -qE 'R32[3]_PUSH|R324[_]COMMIT_ISO' "$0"; then
+  echo "FAIL-CLOSED: derive ostanki R324 PUSH/COMMIT meje v r325-prod-qa.sh — popravi pred tekom"
   exit 1
 fi
-echo "derive čistost: OK (nič R323 PUSH/COMMIT ostankov — razred znakov, brez samozadetka)"
+echo "derive čistost: OK (nič R324 PUSH/COMMIT ostankov — razred znakov, brez samozadetka)"
 
 
-echo "=== Z0: prod build-guard — R324 deploy detekcija (EPOCH primerjava) ==="
+echo "=== Z0: prod build-guard — R325 deploy detekcija (EPOCH primerjava) ==="
 BUILD=$(curl -s --max-time 15 "$PROD/api/public/health" | python3 -c "import json,sys; print(json.load(sys.stdin).get('build',''))" || true)
 echo "PROD build: $BUILD"
 STALE=0
-python3 - "$BUILD" "$R324_PUSH" <<'PYEOF' || STALE=1
+python3 - "$BUILD" "$R325_PUSH" <<'PYEOF' || STALE=1
 import sys
 from datetime import datetime
 build = sys.argv[1]
@@ -151,7 +151,7 @@ PYEOF
 if [ "$STALE" = "1" ]; then
   echo ""
   echo "████████████████████████████████████████████████████████████████"
-  echo "██ ESKALACIJA — PROD STALE: build $BUILD ≤ R324 commit meja ($R324_PUSH)."
+  echo "██ ESKALACIJA — PROD STALE: build $BUILD ≤ R325 commit meja ($R325_PUSH)."
   echo "██ R318+R319+R320+R321+R322+R323 pričakujejo SKUPNI deploy (kanon R280/R284 — UNION harvest
 ██ ob prvem prostem deployu; precedens R313/R314)."
   echo "██ Kanon R258: deployment pipeline event, NI koda-bug. Eksplicitna"
@@ -168,10 +168,10 @@ if [ "$STALE" = "1" ]; then
   # Zato: login-era slika PRED manipulacijo bufferja (nič ne izgubimo) +
   # reset pralna 10000 PRED PRIME (PRIME-era vodja čanki = edini zanesljivi
   # vir te seje) + posvečena slika TAKOJ PO PRIME.
-  OUT=/tmp/r324-prod-chunks
+  OUT=/tmp/r325-prod-chunks
   mkdir -p "$OUT" && rm -f "$OUT"/chunk-*.js "$OUT"/chunk-urls.txt
-  : > /tmp/r324-chunkurls-lines-stale.txt
-  agent-browser eval "JSON.stringify(performance.getEntriesByType('resource').map(e=>e.name).filter(u=>u.includes('/_next/static/chunks/')&&u.endsWith('.js')))" 2>&1 | tail -1 >> /tmp/r324-chunkurls-lines-stale.txt
+  : > /tmp/r325-chunkurls-lines-stale.txt
+  agent-browser eval "JSON.stringify(performance.getEntriesByType('resource').map(e=>e.name).filter(u=>u.includes('/_next/static/chunks/')&&u.endsWith('.js')))" 2>&1 | tail -1 >> /tmp/r325-chunkurls-lines-stale.txt
   agent-browser eval "(()=>{performance.setResourceTimingBufferSize(10000); performance.clearResourceTimings(); return 'reset';})()" > /dev/null 2>&1
   # R315 lekcija (defekt v QA orodju — aplikacija zdrava: vir + build čanke +
   # DOM aria dokaz vsi zeleni): vodja čank je HLADEN na Vercel edge za
@@ -181,15 +181,15 @@ if [ "$STALE" = "1" ]; then
   # vnosi akumulirajo v ResourceTiming bufferju (kanon R297).
   eb_dispatch '{"tab":"more","more":"vodja","subTab":null,"osnutek":null,"filter":null}'
   eb_cakaj 8
-  agent-browser eval "JSON.stringify(performance.getEntriesByType('resource').map(e=>e.name).filter(u=>u.includes('/_next/static/chunks/')&&u.endsWith('.js')))" 2>&1 | tail -1 >> /tmp/r324-chunkurls-lines-stale.txt
+  agent-browser eval "JSON.stringify(performance.getEntriesByType('resource').map(e=>e.name).filter(u=>u.includes('/_next/static/chunks/')&&u.endsWith('.js')))" 2>&1 | tail -1 >> /tmp/r325-chunkurls-lines-stale.txt
 
   echo "=== Z1b-stale: verzije ruta ŽIVO (ZERO-MUTACIJA GET) ==="
   agent-browser eval "(()=>{window.__verz=null; window.__verzStatus=null; fetch('/api/measurements/r304-ne-obstojeci-id-probe/verzije',{credentials:'same-origin'}).then(r=>{window.__verzStatus=r.status; return r.json();}).then(d=>{window.__verz=d;}).catch(e=>{window.__verzErr=String(e)}); return 'poslano';})()" 2>&1 | tail -1
   eb_cakaj 3
-  agent-browser eval "JSON.stringify({status:window.__verzStatus, body:window.__verz??null, napaka:window.__verzErr??null})" 2>&1 | tail -1 > /tmp/r324-z1b.json
+  agent-browser eval "JSON.stringify({status:window.__verzStatus, body:window.__verz??null, napaka:window.__verzErr??null})" 2>&1 | tail -1 > /tmp/r325-z1b.json
   python3 - <<'PYEOF' || exit 1
 import json
-raw = open('/tmp/r324-z1b.json').read().strip()
+raw = open('/tmp/r325-z1b.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['napaka'] is None, 'Z1b mrežna napaka: ' + json.dumps(d)
@@ -201,10 +201,10 @@ PYEOF
   echo "=== Z3-stale: v99 sync gate (ZERO-MUTACIJA) ==="
   agent-browser eval "(()=>{window.__v99=null; window.__v99err=null; fetch('/api/sync',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify([{id:'r304-prod-v99-probe-'+Date.now(),customerName:'r304 probe v99',contractVersion:99}])}).then(r=>r.json()).then(d=>{window.__v99=d;}).catch(e=>{window.__v99err=String(e)}); return 'poslano';})()" 2>&1 | tail -1
   eb_cakaj 3
-  agent-browser eval "JSON.stringify({odgovor:window.__v99??null, napaka:window.__v99err??null})" 2>&1 | tail -1 > /tmp/r324-z3.json
+  agent-browser eval "JSON.stringify({odgovor:window.__v99??null, napaka:window.__v99err??null})" 2>&1 | tail -1 > /tmp/r325-z3.json
   python3 - <<'PYEOF' || exit 1
 import json
-raw = open('/tmp/r324-z3.json').read().strip()
+raw = open('/tmp/r325-z3.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['napaka'] is None, 'Z3 mrežna napaka: ' + json.dumps(d)
@@ -230,20 +230,20 @@ PYEOF
 agent-browser eval "(()=>{performance.setResourceTimingBufferSize(10000); return 'buf';})()" 2>&1 | tail -1 > /dev/null
   eb_dispatch "$d"
   eb_cakaj 3
-  agent-browser eval "JSON.stringify(performance.getEntriesByType('resource').map(e=>e.name).filter(u=>u.includes('/_next/static/chunks/')&&u.endsWith('.js')))" 2>&1 | tail -1 >> /tmp/r324-chunkurls-lines-stale.txt
+  agent-browser eval "JSON.stringify(performance.getEntriesByType('resource').map(e=>e.name).filter(u=>u.includes('/_next/static/chunks/')&&u.endsWith('.js')))" 2>&1 | tail -1 >> /tmp/r325-chunkurls-lines-stale.txt
   done
   # R316 lekcija (tek 1: dispatchi tiho no-op — 0 novih vnosov v VSEH
   # slikah zaseje): 2. prehod = reprobe za tabe, katerih prvi fetch je
   # odpovedal (že naloženi moduli ne fetchajo nič — neškodljivo; isti GET
   # dispeči, NIČ mutacij).
-  for d in $R324_TABS; do
+  for d in $R325_TABS; do
     eb_dispatch "$d"
     eb_cakaj 2
-    agent-browser eval "JSON.stringify(performance.getEntriesByType('resource').map(e=>e.name).filter(u=>u.includes('/_next/static/chunks/')&&u.endsWith('.js')))" 2>&1 | tail -1 >> /tmp/r324-chunkurls-lines-stale.txt
+    agent-browser eval "JSON.stringify(performance.getEntriesByType('resource').map(e=>e.name).filter(u=>u.includes('/_next/static/chunks/')&&u.endsWith('.js')))" 2>&1 | tail -1 >> /tmp/r325-chunkurls-lines-stale.txt
   done
-  agent-browser eval "JSON.stringify(performance.getEntriesByType('resource').map(e=>e.name).filter(u=>u.includes('/_next/static/chunks/')&&u.endsWith('.js')))" 2>&1 | tail -1 >> /tmp/r324-chunkurls-lines-stale.txt
-  python3 /home/z/my-project/scripts/merge-chunkurls.py /tmp/r324-chunkurls-lines-stale.txt /tmp/r324-chunkurls.txt || { echo "PY MERGE FAIL — abort"; exit 1; }
-  cp /tmp/r324-chunkurls.txt "$OUT"/chunk-urls.txt
+  agent-browser eval "JSON.stringify(performance.getEntriesByType('resource').map(e=>e.name).filter(u=>u.includes('/_next/static/chunks/')&&u.endsWith('.js')))" 2>&1 | tail -1 >> /tmp/r325-chunkurls-lines-stale.txt
+  python3 /home/z/my-project/scripts/merge-chunkurls.py /tmp/r325-chunkurls-lines-stale.txt /tmp/r325-chunkurls.txt || { echo "PY MERGE FAIL — abort"; exit 1; }
+  cp /tmp/r325-chunkurls.txt "$OUT"/chunk-urls.txt
   i=0
   while read -r url; do
     [ -z "$url" ] && continue
@@ -309,31 +309,31 @@ PYEOF2
   exit 0
 fi
 
-echo "R324 deploy potrjen (build $BUILD > R324 commit meja $R324_PUSH) — polni LIVE teki"
-echo "OPOMBA: deploy je nosil VSE generacije (R290+…+R324 — kanon R280/R284)"
+echo "R325 deploy potrjen (build $BUILD > R325 commit meja $R325_PUSH) — polni LIVE teki"
+echo "OPOMBA: deploy je nosil VSE generacije (R290+…+R325 — kanon R280/R284)"
 
 eb_odpri_in_prijavi || { echo "LOGIN FAIL — abort"; agent-browser close --all > /dev/null 2>&1; exit 1; }
 eb_zapri_vodic
 # R316 LEKCIJA (isti popravek kot stale veja — OBEH vejah kanon): login-era
 # slika + reset pralna 10000 PRED PRIME + posvečena slika PO PRIME (SPA modul
 # registar fetcha vsak čank ENKRAT na sejo — re-dispatch ne zmore).
-OUT=/tmp/r324-prod-chunks
+OUT=/tmp/r325-prod-chunks
 mkdir -p "$OUT" && rm -f "$OUT"/chunk-*.js "$OUT"/chunk-urls.txt
-: > /tmp/r324-chunkurls-lines-live.txt
-agent-browser eval "JSON.stringify(performance.getEntriesByType('resource').map(e=>e.name).filter(u=>u.includes('/_next/static/chunks/')&&u.endsWith('.js')))" 2>&1 | tail -1 >> /tmp/r324-chunkurls-lines-live.txt
+: > /tmp/r325-chunkurls-lines-live.txt
+agent-browser eval "JSON.stringify(performance.getEntriesByType('resource').map(e=>e.name).filter(u=>u.includes('/_next/static/chunks/')&&u.endsWith('.js')))" 2>&1 | tail -1 >> /tmp/r325-chunkurls-lines-live.txt
 agent-browser eval "(()=>{performance.setResourceTimingBufferSize(10000); performance.clearResourceTimings(); return 'reset';})()" > /dev/null 2>&1
 # R315 lekcija (isti prime kot stale veja — cvstudio precedens: popravek v
 # OBEH vejah): vodja čank hladen na edge za MONTER sejo → PRIME pred harvestom.
 eb_dispatch '{"tab":"more","more":"vodja","subTab":null,"osnutek":null,"filter":null}'
 eb_cakaj 8
-agent-browser eval "JSON.stringify(performance.getEntriesByType('resource').map(e=>e.name).filter(u=>u.includes('/_next/static/chunks/')&&u.endsWith('.js')))" 2>&1 | tail -1 >> /tmp/r324-chunkurls-lines-live.txt
+agent-browser eval "JSON.stringify(performance.getEntriesByType('resource').map(e=>e.name).filter(u=>u.includes('/_next/static/chunks/')&&u.endsWith('.js')))" 2>&1 | tail -1 >> /tmp/r325-chunkurls-lines-live.txt
 
 echo "=== Z1: meritve tab ŽIVO — sync žig (POGOJNO — spot portfel podatkovna resnica) ==="
 eb_dispatch '{"tab":"measurements","more":null,"subTab":null,"osnutek":null,"filter":null}'
 if eb_pocakaj_na "(()=>{return !!document.querySelector('button[aria-label^=\"Pokaži zgodovino verzij meritve\"]');})()" 16; then
   eb_cakaj 2
-  agent-browser eval "(()=>{const syncPill=[...document.querySelectorAll('span.cursor-help')].find(x=>(x.getAttribute('title')||'').startsWith('Sinhronizacijsko stanje:')); const viriMini=[...document.querySelectorAll('span.cursor-help')].find(x=>(x.textContent||'').startsWith('Viri (viden seznam):')); return JSON.stringify({syncPill:syncPill?(syncPill.getAttribute('title')||'').slice(0,45):null, viriMini:viriMini?viriMini.textContent.trim():null, err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r324-z1.json
-  python3 -c "import json; r=json.load(open('/tmp/r324-z1.json')); d=json.loads(r) if isinstance(r,str) else r; t = 'R281 sync žig ŽIVO (' + d['syncPill'] + ' …)' if d['syncPill'] else 'R281 OPOMBA: sync žig NE prisoten — spot portfel brez sync metadata (iskrena praznina — pogojni probe po kanonu r277 Z1)'; v = ' · R283 VIRI MINI ŽIVO (' + d['viriMini'] + ')' if d['viriMini'] else ' · R283 VIRI MINI NE prisoten — spot seznam brez virov (iskrena praznina — pogojni)'; print('Z1 OK — meritve UI ŽIVO · ' + t + v)" || exit 1
+  agent-browser eval "(()=>{const syncPill=[...document.querySelectorAll('span.cursor-help')].find(x=>(x.getAttribute('title')||'').startsWith('Sinhronizacijsko stanje:')); const viriMini=[...document.querySelectorAll('span.cursor-help')].find(x=>(x.textContent||'').startsWith('Viri (viden seznam):')); return JSON.stringify({syncPill:syncPill?(syncPill.getAttribute('title')||'').slice(0,45):null, viriMini:viriMini?viriMini.textContent.trim():null, err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r325-z1.json
+  python3 -c "import json; r=json.load(open('/tmp/r325-z1.json')); d=json.loads(r) if isinstance(r,str) else r; t = 'R281 sync žig ŽIVO (' + d['syncPill'] + ' …)' if d['syncPill'] else 'R281 OPOMBA: sync žig NE prisoten — spot portfel brez sync metadata (iskrena praznina — pogojni probe po kanonu r277 Z1)'; v = ' · R283 VIRI MINI ŽIVO (' + d['viriMini'] + ')' if d['viriMini'] else ' · R283 VIRI MINI NE prisoten — spot seznam brez virov (iskrena praznina — pogojni)'; print('Z1 OK — meritve UI ŽIVO · ' + t + v)" || exit 1
 else
   echo "Z1 OPOMBA: meritve UI ni dosegljiva spot seji (MONTER skoping?) — UI probe preskočen, ruta probe Z1b ostaja obvezen"
 fi
@@ -341,10 +341,10 @@ fi
 echo "=== Z1b: verzije ruta ŽIVO — 404 + R276 žična vrstica (ZERO-MUTACIJA GET) ==="
 agent-browser eval "(()=>{window.__verz=null; window.__verzStatus=null; fetch('/api/measurements/r304-ne-obstojeci-id-probe/verzije',{credentials:'same-origin'}).then(r=>{window.__verzStatus=r.status; return r.json();}).then(d=>{window.__verz=d;}).catch(e=>{window.__verzErr=String(e)}); return 'poslano';})()" 2>&1 | tail -1
 eb_cakaj 3
-agent-browser eval "JSON.stringify({status:window.__verzStatus, body:window.__verz??null, napaka:window.__verzErr??null})" 2>&1 | tail -1 > /tmp/r324-z1b.json
+agent-browser eval "JSON.stringify({status:window.__verzStatus, body:window.__verz??null, napaka:window.__verzErr??null})" 2>&1 | tail -1 > /tmp/r325-z1b.json
 python3 - <<'PYEOF' || exit 1
 import json
-raw = open('/tmp/r324-z1b.json').read().strip()
+raw = open('/tmp/r325-z1b.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['napaka'] is None, 'Z1b mrežna napaka: ' + json.dumps(d)
@@ -357,10 +357,10 @@ echo "=== Z1c: ZVONČEK ŽIVO (POGOJNI DOM probe, Escape zapri; ZERO-MUTACIJA) =
 agent-browser eval "(()=>{const b=document.querySelector('button[aria-label^=\"Obvestila\"]'); if(!b) return 'BREZ-ZVONČKA'; b.click(); return 'odprto';})()" 2>&1 | tail -1
 if eb_pocakaj_na "(()=>{const p=[...document.querySelectorAll('span')].some(x=>x.textContent.includes('CRM opomniki in poslana obvestila')); return p;})()" 16; then
   eb_cakaj 2
-  agent-browser eval "(()=>{const desc=[...document.querySelectorAll('span')].some(x=>x.textContent.includes('CRM opomniki in poslana obvestila')); const vrstice=[...document.querySelectorAll('button')].filter(x=>(x.getAttribute('aria-label')||'').includes('— odpre CRM (opomnik)')); return JSON.stringify({desc, stOpomnikov:vrstice.length, err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r324-z1c.json
+  agent-browser eval "(()=>{const desc=[...document.querySelectorAll('span')].some(x=>x.textContent.includes('CRM opomniki in poslana obvestila')); const vrstice=[...document.querySelectorAll('button')].filter(x=>(x.getAttribute('aria-label')||'').includes('— odpre CRM (opomnik)')); return JSON.stringify({desc, stOpomnikov:vrstice.length, err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r325-z1c.json
   python3 - <<'PYEOF' || exit 1
 import json
-raw = open('/tmp/r324-z1c.json').read().strip()
+raw = open('/tmp/r325-z1c.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['desc'] is True, 'Z1c SheetDescription FAIL: ' + json.dumps(d)
@@ -375,10 +375,10 @@ else
 fi
 
 echo "=== Z1d: PRESEŽEK note POGOJNI probe (spot resnica neznana) ==="
-agent-browser eval "(()=>{const note=document.querySelector('[aria-label=\"Iskren presežek signalov\"]'); return JSON.stringify({notePrisoten:!!note, vsebina:note?note.textContent.trim().slice(0,120):null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r324-z1d.json
+agent-browser eval "(()=>{const note=document.querySelector('[aria-label=\"Iskren presežek signalov\"]'); return JSON.stringify({notePrisoten:!!note, vsebina:note?note.textContent.trim().slice(0,120):null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r325-z1d.json
 python3 - <<'PYEOF' || exit 1
 import json
-raw = open('/tmp/r324-z1d.json').read().strip()
+raw = open('/tmp/r325-z1d.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['err'] is None, 'Z1d err: ' + json.dumps(d)
@@ -390,7 +390,7 @@ PYEOF
 agent-browser eval "(()=>{document.body.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true})); return 'esc';})()" 2>&1 | tail -1
 eb_cakaj 2
 
-echo "=== Z2: čanki — klient needleji (R324 ×6+1 + R323 ×2+1 + R322 ×4+1 + R321 ×2+1 +
+echo "=== Z2: čanki — klient needleji (R325 ×6+1 + R324 ×2+1 + R323 ×2+1 + R322 ×4+1 + R321 ×2+1 +
 R320 ×2+1 + R318 ×2+1 + R317 ×3+1 + R316 ×7+5 + R315 ×21+6 + R314 ×18+6 + R313 ×4+6 + R312 ×5+3 + R311 ×7+1 + R310 ×5+1 + R309 ×4+3 + R308 ×7 + R307 ×11 + R306 ×11 + R295 ×9 LIVE + R294 ×9 + R293 ×8 + R292 ×8 + R291 ×8 + R290 ×8 + regresije + must_miss) ==="
 # R316: OUT + lines init ŽE pred PRIME (login-era + PRIME-era slike že v
 # datoteki — tu NE sme biti `: >` wipe).
@@ -400,18 +400,18 @@ for d in '{"tab":"dashboard","more":null,"subTab":null,"osnutek":null,"filter":n
 agent-browser eval "(()=>{performance.setResourceTimingBufferSize(10000); return 'buf';})()" 2>&1 | tail -1 > /dev/null
   eb_dispatch "$d"
   eb_cakaj 3
-  agent-browser eval "JSON.stringify(performance.getEntriesByType('resource').map(e=>e.name).filter(u=>u.includes('/_next/static/chunks/')&&u.endsWith('.js')))" 2>&1 | tail -1 >> /tmp/r324-chunkurls-lines-live.txt
+  agent-browser eval "JSON.stringify(performance.getEntriesByType('resource').map(e=>e.name).filter(u=>u.includes('/_next/static/chunks/')&&u.endsWith('.js')))" 2>&1 | tail -1 >> /tmp/r325-chunkurls-lines-live.txt
 done
 # R316 lekcija: 2. prehod reprobe (isti GET dispeči, NIČ mutacij —
 # podrobnosti v stale veji).
-for d in $R324_TABS; do
+for d in $R325_TABS; do
   eb_dispatch "$d"
   eb_cakaj 2
-  agent-browser eval "JSON.stringify(performance.getEntriesByType('resource').map(e=>e.name).filter(u=>u.includes('/_next/static/chunks/')&&u.endsWith('.js')))" 2>&1 | tail -1 >> /tmp/r324-chunkurls-lines-live.txt
+  agent-browser eval "JSON.stringify(performance.getEntriesByType('resource').map(e=>e.name).filter(u=>u.includes('/_next/static/chunks/')&&u.endsWith('.js')))" 2>&1 | tail -1 >> /tmp/r325-chunkurls-lines-live.txt
 done
-agent-browser eval "JSON.stringify(performance.getEntriesByType('resource').map(e=>e.name).filter(u=>u.includes('/_next/static/chunks/')&&u.endsWith('.js')))" 2>&1 | tail -1 >> /tmp/r324-chunkurls-lines-live.txt
-python3 /home/z/my-project/scripts/merge-chunkurls.py /tmp/r324-chunkurls-lines-live.txt /tmp/r324-chunkurls.txt || { echo "PY MERGE FAIL — abort"; exit 1; }
-cp /tmp/r324-chunkurls.txt "$OUT"/chunk-urls.txt
+agent-browser eval "JSON.stringify(performance.getEntriesByType('resource').map(e=>e.name).filter(u=>u.includes('/_next/static/chunks/')&&u.endsWith('.js')))" 2>&1 | tail -1 >> /tmp/r325-chunkurls-lines-live.txt
+python3 /home/z/my-project/scripts/merge-chunkurls.py /tmp/r325-chunkurls-lines-live.txt /tmp/r325-chunkurls.txt || { echo "PY MERGE FAIL — abort"; exit 1; }
+cp /tmp/r325-chunkurls.txt "$OUT"/chunk-urls.txt
 i=0
 while read -r url; do
   [ -z "$url" ] && continue
@@ -674,20 +674,20 @@ need "Izvozi meritve zmogljivosti kot CSV" "R323 CSV izvoz gumb aria (vodja chun
 need "kot deterministični CSV" "R323 CSV izvoz title fragment (vodja chunk) — LIVE"
 must_miss "TODO-R323" "R323 — brez razvojnih ostankov"
 
-echo "--- R324 MANDATORY — dekompozicija FAZA 2: premaknjena vsebina ŽIVA (LIVE) ---"
+echo "--- R325 MANDATORY — dekompozicija FAZA 2: premaknjena vsebina ŽIVA (LIVE) ---"
 # Dekompozicija FAZA 2 = refaktor internih sestavljenih struktur (kanon
 # R319/R322): telesa VERBATIM, closure dostop → args/props — needleji
 # dokazujejo, da NOV deploy ni izgubil premaknjene measurements/calculator
 # vsebine (regresijska zaščita premika; r324-build-needles ×9 brat
 # lokalno + measurements/calculator dispatch ŽE v harvestu — pokritost
 # needle pokritosti, LEKCIJA R314 1).
-need "0000feff-0000-1000-8000-00805f9b34fb" "R324 laser-bt.ts Leica UUID (premik živ) — LIVE"
-need "Poveži laserski daljinec preko Web Bluetooth" "R324 laser-panel.tsx tooltip (premik živ) — LIVE"
-need "Mera iz laserja: " "R324 use-laser.ts toast (premik živ) — LIVE"
-need "Standardni balkon 3m" "R324 templates.ts PREDLOGE (premik živ) — LIVE"
-need "ROKSAL — Razrezni list CNC" "R324 pdf-exports.ts CNC naslov (premik živ) — LIVE"
-need "ROKSAL — Steklena balustrada specifikacija" "R324 pdf-exports.ts steklo naslov (premik živ) — LIVE"
-must_miss "TODO-R324" "R324 — brez razvojnih ostankov"
+need "0000feff-0000-1000-8000-00805f9b34fb" "R325 laser-bt.ts Leica UUID (premik živ) — LIVE"
+need "Poveži laserski daljinec preko Web Bluetooth" "R325 laser-panel.tsx tooltip (premik živ) — LIVE"
+need "Mera iz laserja: " "R325 use-laser.ts toast (premik živ) — LIVE"
+need "Standardni balkon 3m" "R325 templates.ts PREDLOGE (premik živ) — LIVE"
+need "ROKSAL — Razrezni list CNC" "R325 pdf-exports.ts CNC naslov (premik živ) — LIVE"
+need "ROKSAL — Steklena balustrada specifikacija" "R325 pdf-exports.ts steklo naslov (premik živ) — LIVE"
+must_miss "TODO-R325" "R325 — brez razvojnih ostankov"
 
 echo "=== Z2b: EN VIR ŽIVO NA ŽICI (val-1 ×4 + val-3 ×9 × pokvarjen JSON → 400 z ISTO ovojnico + users 403 deny-first POZITIVNI dokaz; ZERO-MUTACIJA — guard strelja PRED db zapisom) ==="
 # Vzorec lokalnega Z0ah/Z0ai (r309/r310-e2e-browser.sh), tu podmnožica 13:
@@ -705,12 +705,12 @@ echo "=== Z2b: EN VIR ŽIVO NA ŽICI (val-1 ×4 + val-3 ×9 × pokvarjen JSON �
 # matriki, ne samo gate simbole; tek 2 iskren FAIL: users 403]) — vrstni red:
 # rate-limit → authenticate → [pravica] → preberiJsonTelo. Dvojni podpis
 # (R194/R309 lekcija 4): roksal_csrf iz document.cookie → x-csrf-token.
-agent-browser eval "(()=>{window.__r323val=[]; const ck=document.cookie.split(';').map(s=>s.trim()).find(s=>s.startsWith('roksal_csrf=')); const tok=ck?ck.slice(12):null; const h={'Content-Type':'application/json'}; if(tok)h['x-csrf-token']=tok; const rute=[['measurements','/api/measurements','POST'],['punch','/api/punch','POST'],['ar-snapshots','/api/ar-snapshots','POST'],['photos','/api/photos','POST'],['quote','/api/quote','POST'],['railing-layout','/api/railing-layout','POST'],['users','/api/users','POST'],['crm','/api/crm','PATCH'],['qc','/api/qc','POST'],['evidence','/api/evidence','POST'],['viz-render','/api/viz/render','POST'],['measurements-id','/api/measurements/e2e-r310-ne-obstojeci-id','PATCH'],['ar-analyze','/api/ar/analyze','POST'],['measure-photo','/api/measure/photo','POST']]; (async()=>{ for (const [ime,url,metoda] of rute){ try{ const r=await fetch(url,{method:metoda,credentials:'same-origin',headers:h,body:'{pokvarjen'}); let b=null; try{b=await r.json();}catch(e){b=null;} window.__r323val.push({ime,status:r.status,error:b&&typeof b==='object'?(b.error??null):null}); }catch(e){ window.__r323val.push({ime,status:0,error:'MREŽA: '+String(e)}); } } })(); return 'poslano '+rute.length;})()" 2>&1 | tail -1
+agent-browser eval "(()=>{window.__r324val=[]; const ck=document.cookie.split(';').map(s=>s.trim()).find(s=>s.startsWith('roksal_csrf=')); const tok=ck?ck.slice(12):null; const h={'Content-Type':'application/json'}; if(tok)h['x-csrf-token']=tok; const rute=[['measurements','/api/measurements','POST'],['punch','/api/punch','POST'],['ar-snapshots','/api/ar-snapshots','POST'],['photos','/api/photos','POST'],['quote','/api/quote','POST'],['railing-layout','/api/railing-layout','POST'],['users','/api/users','POST'],['crm','/api/crm','PATCH'],['qc','/api/qc','POST'],['evidence','/api/evidence','POST'],['viz-render','/api/viz/render','POST'],['measurements-id','/api/measurements/e2e-r310-ne-obstojeci-id','PATCH'],['ar-analyze','/api/ar/analyze','POST'],['measure-photo','/api/measure/photo','POST']]; (async()=>{ for (const [ime,url,metoda] of rute){ try{ const r=await fetch(url,{method:metoda,credentials:'same-origin',headers:h,body:'{pokvarjen'}); let b=null; try{b=await r.json();}catch(e){b=null;} window.__r324val.push({ime,status:r.status,error:b&&typeof b==='object'?(b.error??null):null}); }catch(e){ window.__r324val.push({ime,status:0,error:'MREŽA: '+String(e)}); } } })(); return 'poslano '+rute.length;})()" 2>&1 | tail -1
 eb_cakaj 6
-agent-browser eval "JSON.stringify(window.__r323val??[])" 2>&1 | tail -1 > /tmp/r324-z2b.json
+agent-browser eval "JSON.stringify(window.__r324val??[])" 2>&1 | tail -1 > /tmp/r325-z2b.json
 python3 - <<'PYEOFZ2B' || exit 1
 import json
-raw = open('/tmp/r324-z2b.json').read().strip()
+raw = open('/tmp/r325-z2b.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert isinstance(d, list) and len(d) == 14, 'Z2b oblika: pričakovano 14 zapisov, dobljeno ' + json.dumps(d if not isinstance(d, list) else len(d))
@@ -1050,10 +1050,10 @@ echo "Z2 OK — vsi needleji ŽIVO"
 echo "=== Z3: v99 sync gate regresija (R274 gate še ŽIVO — ZERO-MUTACIJA) ==="
 agent-browser eval "(()=>{window.__v99=null; window.__v99err=null; fetch('/api/sync',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify([{id:'r304-prod-v99-probe-'+Date.now(),customerName:'r304 probe v99',contractVersion:99}])}).then(r=>r.json()).then(d=>{window.__v99=d;}).catch(e=>{window.__v99err=String(e)}); return 'poslano';})()" 2>&1 | tail -1
 eb_cakaj 3
-agent-browser eval "JSON.stringify({odgovor:window.__v99??null, napaka:window.__v99err??null})" 2>&1 | tail -1 > /tmp/r324-z3.json
+agent-browser eval "JSON.stringify({odgovor:window.__v99??null, napaka:window.__v99err??null})" 2>&1 | tail -1 > /tmp/r325-z3.json
 python3 - <<'PYEOF' || exit 1
 import json
-raw = open('/tmp/r324-z3.json').read().strip()
+raw = open('/tmp/r325-z3.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['napaka'] is None, 'Z3 mrežna napaka: ' + json.dumps(d)
@@ -1066,4 +1066,4 @@ assert 'noben zapis ni bil uporabljen' in item.get('error', ''), 'Z3 nič-izgubl
 print('Z3 OK — v99 sync gate ŽIVO (fail-closed, nič zapisov, ZERO-MUTACIJA)')
 PYEOF
 
-echo "=== R324 PROD QA — R290+…+R324 ŽIVO SKUPAJ ==="
+echo "=== R325 PROD QA — R290+…+R325 ŽIVO SKUPAJ ==="

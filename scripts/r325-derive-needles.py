@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# R324 — derive r324-build-needles.sh iz r322-build-needles.sh (nadaljevanje
+# R325 — derive r325-build-needles.sh iz r322-build-needles.sh (nadaljevanje
 # prirojene runde po vzorcu R319/R322 — dekompozicija FAZA 2; KOLIZIJA #5:
 # vzporedna seja je vzela R323 [8857d6e CSV] — runda preimenovana R323→R324,
 # artefakti r323-*→r324-*, DELEGACIJA preklopljena na NJIHOV r323-build-needles
@@ -8,7 +8,7 @@
 from pathlib import Path
 
 VIR = Path('/home/z/my-project/scripts/r322-build-needles.sh')
-DOL = Path('/home/z/my-project/scripts/r324-build-needles.sh')
+DOL = Path('/home/z/my-project/scripts/r325-build-needles.sh')
 
 s = VIR.read_text(encoding='utf-8')
 
@@ -32,13 +32,13 @@ zam('#   + (1) regresije: r321-build-needles.sh (vzporedna R321: 50. člen\n#   
 zam('# LEKCIJA R289/R299-R321 (ASCII kanon)', '# LEKCIJA R289/R299-R321 (ASCII kanon)', 1)
 zam('#   POZITIVNI needleji (build): premaknjena calculator vsebina ŽIVA v čankih\n#   kljub spremembi bivališča (regresijska zaščita dekompozicije — vsebina\n#   bajtno identična, mapa nova; string literali preživijo minifikacijo).\n#   MUST_MISS (build): TODO-R322 (brez razvojnih ostankov).',
     '#   POZITIVNI needleji (build): premaknjena vsebina ŽIVA v čankih kljub\n#   spremembi bivališča (regresijska zaščita dekompozicije — vsebina bajtno\n#   identična/refaktorirana, mapa nova; string literali preživijo\n#   minifikacijo).\n#   MUST_MISS (build): TODO-R323 (brez razvojnih ostankov).', 1)
-zam('OUT=/tmp/r322-build-chunks', 'OUT=/tmp/r324-build-chunks', 1)
+zam('OUT=/tmp/r322-build-chunks', 'OUT=/tmp/r325-build-chunks', 1)
 zam('# --- AWK strukturna preverba (r270 lekcija 2; r296-r321 vzorec) ---',
     '# --- AWK strukturna preverba (r270 lekcija 2; r296-r322 vzorec) ---', 1)
 zam('echo "--- R322 MANDATORY — dekompozicija calculator faza 1: premaknjena vsebina ŽIVA v čankih ---"\nneed_static "Steklo (float/kaljeno)" "R322 GlassLayersSvg legenda — plasti stekla (premik živ)"\nneed_static "PVB folija (varnostna)" "R322 GlassLayersSvg legenda — PVB folija (premik živ)"\nneed_static "Cona 1 — celina (22 m/s)" "R322 SloveniaWindMapSvg cona oznaka (premik živ)"\nneed_static "Ni podatkov za vizualizacijo." "R322 AngledSvg/BalusterSvg fallback besedilo (premik živ)"\nneed_static "Hilti HIT-RE 500" "R322 shared.ts anchorTypeLabels konstanta (premik živ)"\necho "--- R322 must_miss (negativni) ---"\nmust_miss "TODO-R322" "R322 — brez razvojnih ostankov"\necho "R322 lastni needleji: FAIL=$FAIL (5 premik + 1 must_miss)"\necho "=== REGRESIJE: polna veriga prek r321-build-needles.sh (vzporedna R321 + R320 + … + R227) ==="\nREG=0\nbash scripts/r321-build-needles.sh || REG=1',
-    'echo "--- R324 MANDATORY — dekompozicija faza 2: premaknjena vsebina ŽIVA v čankih ---"\necho "--- (a) measurements: laserski BT blok + template localStorage blok ---"\nneed_static "0000feff-0000-1000-8000-00805f9b34fb" "R324 laser-bt.ts Leica DISTO service UUID (premik živ)"\nneed_static "Poveži laserski daljinec preko Web Bluetooth" "R324 laser-panel.tsx tooltip besedilo (premik živ)"\nneed_static "Poslušam meritve... Pošlji mero z gumbom na daljincu" "R324 laser-panel.tsx statusno besedilo (premik živ)"\nneed_static "Mera iz laserja: " "R324 use-laser.ts toast ob prejeti meri (premik živ)"\nneed_static "Standardni balkon 3m" "R324 templates.ts PREDLOGE naziv (premik živ)"\nneed_static "L-oblika 4+2m" "R324 templates.ts PREDLOGE naziv (premik živ)"\necho "--- (b) calculator: PDF izvozi (5 funkcij → pdf-exports.ts) ---"\nneed_static "ROKSAL — Predloga vrtanja" "R324 pdf-exports.ts naslov baluster PDF (premik živ)"\nneed_static "ROKSAL — Razrezni list CNC" "R324 pdf-exports.ts naslov CNC PDF (premik živ)"\nneed_static "ROKSAL — Steklena balustrada specifikacija" "R324 pdf-exports.ts naslov steklo PDF (premik živ)"\necho "--- R324 must_miss (negativni) ---"\nmust_miss "TODO-R324" "R324 — brez razvojnih ostankov"\necho "R324 lastni needleji: FAIL=$FAIL (9 premik + 1 must_miss)"\necho "=== REGRESIJE: polna veriga prek r323-build-needles.sh [VZPOREDNA R323 + R322 + r321[vzporedna] + R320 + … + R227] ==="\nREG=0\nbash scripts/r323-build-needles.sh || REG=1', 1)
+    'echo "--- R325 MANDATORY — dekompozicija faza 2: premaknjena vsebina ŽIVA v čankih ---"\necho "--- (a) measurements: laserski BT blok + template localStorage blok ---"\nneed_static "0000feff-0000-1000-8000-00805f9b34fb" "R325 laser-bt.ts Leica DISTO service UUID (premik živ)"\nneed_static "Poveži laserski daljinec preko Web Bluetooth" "R325 laser-panel.tsx tooltip besedilo (premik živ)"\nneed_static "Poslušam meritve... Pošlji mero z gumbom na daljincu" "R325 laser-panel.tsx statusno besedilo (premik živ)"\nneed_static "Mera iz laserja: " "R325 use-laser.ts toast ob prejeti meri (premik živ)"\nneed_static "Standardni balkon 3m" "R325 templates.ts PREDLOGE naziv (premik živ)"\nneed_static "L-oblika 4+2m" "R325 templates.ts PREDLOGE naziv (premik živ)"\necho "--- (b) calculator: PDF izvozi (5 funkcij → pdf-exports.ts) ---"\nneed_static "ROKSAL — Predloga vrtanja" "R325 pdf-exports.ts naslov baluster PDF (premik živ)"\nneed_static "ROKSAL — Razrezni list CNC" "R325 pdf-exports.ts naslov CNC PDF (premik živ)"\nneed_static "ROKSAL — Steklena balustrada specifikacija" "R325 pdf-exports.ts naslov steklo PDF (premik živ)"\necho "--- R325 must_miss (negativni) ---"\nmust_miss "TODO-R325" "R325 — brez razvojnih ostankov"\necho "R325 lastni needleji: FAIL=$FAIL (9 premik + 1 must_miss)"\necho "=== REGRESIJE: polna veriga prek r324-build-needles.sh [VZPOREDNA R324 dnevni PDF + R323 CSV + R322 + … + R227] ==="\nREG=0\nbash scripts/r324-build-needles.sh || REG=1', 1)
 zam('if [ "$REG" = "1" ]; then echo "REGRESIJA FAIL"; exit 1; fi\nif [ "$FAIL" = "1" ]; then echo "R322 NEEDLEJI FAIL"; exit 1; fi\necho "=== R322 BUILD NEEDLES VSE OK ==="',
-    'if [ "$REG" = "1" ]; then echo "REGRESIJA FAIL"; exit 1; fi\nif [ "$FAIL" = "1" ]; then echo "R324 NEEDLEJI FAIL"; exit 1; fi\necho "=== R324 BUILD NEEDLES VSE OK ==="', 1)
+    'if [ "$REG" = "1" ]; then echo "REGRESIJA FAIL"; exit 1; fi\nif [ "$FAIL" = "1" ]; then echo "R325 NEEDLEJI FAIL"; exit 1; fi\necho "=== R325 BUILD NEEDLES VSE OK ==="', 1)
 
 # izhodna asercija (LEKCIJA R310 5/6)
 assert '/tmp/r322-build-chunks' not in s, 'ostanki r322 chunks'

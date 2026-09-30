@@ -583,6 +583,25 @@ Sheet z 6 podzavihki:
   STRAŽARjev (r172/r231/r311/r316/r235) po kanonu R180/…/R314; BONUS:
   dekompozicija je ODKRILA slepo pego R254 codemoda (vejica v uvoznem
   komentarju je skrila `CornerDownRight` detektorju — aria-hidden dodan)
+- **Dekompozicija FAZA 2 — measurements + calculator** (R325 — nadaljevanje
+  odobrene Roadmap "razbitje monsterskih komponent", vzorec R319/R322):
+  `measurements-tab` 7.604 → 7.153 (−451) — laserski BT blok (Web Bluetooth
+  tipi/konstante/pomožne → `measurements/laser-bt.ts` ČIST PREMIK; stanje +
+  GATT povezava + odklop + auto-reconnect → `measurements/use-laser.ts` hook
+  — REFAKTOR: edina semantična sprememba = polnjenje forme prek
+  onMeasurement povratnega klica; UI → `measurements/laser-panel.tsx` s
+  props) + template localStorage blok (PREDLOGE + stopniške predloge + WPC
+  konstante → `measurements/templates.ts` ČIST PREMIK); osiroteli
+  Bluetooth/Radio/Unplug uvozi odstranjeni (štetje POJAVITEV, kanon R322);
+  `calculator-tab` 5.372 → 4.846 (−526) — 5 PDF izvozov →
+  `calculator/pdf-exports.ts` (telesa VERBATIM; closure dostop do stanja →
+  eksplicitni args objekti — čiste projekcije posredovanega stanja); tipa
+  CncSegment + GlassType preseljena; osirotela jsPDF/autoTable uvoza
+  odstranjena; PIN SHIFT r172 vrstičnega prsta 7427 → 6976 (izrecen R323
+  komentar); mikrotask vzorec PwaStatus za začetna branja v hooku (omejitev
+  pravila react-hooks/set-state-in-effect — prej skrito z bailoutom compiler
+  analize na 7,6k vrstični datoteki); vsebina ŽIVA v čankih dokazana
+  (r323-build-needles ×9 + delegirana veriga R322→…→R227)
 - **Stil val 7 — ZAKLJUČNI** (R316): fence-3d-viewer ×2 (ikoni) +
   notification-center ×1 (ikona, dark-par odpade) + signature-quote ×1 (hint
   ink) + photo-measure ×1 (hint ink) = 5 dotikov — surove amber → roksal
@@ -900,8 +919,8 @@ primitivov. Največji:
 
 | Komponenta | Vrstice | Funkcija |
 |-----------|---------|----------|
-| `measurements-tab.tsx` | 7.604 | Meritve (9 tipov, stopniščni čarovnik, WPC, štebricki) |
-| `calculator-tab.tsx` | 5.372 | Kalkulator (7 načinov + 6 izpolnitev; dekompozicija faza 1 R322) |
+| `measurements-tab.tsx` | 7.153 | Meritve (9 tipov, stopniščni čarovnik, WPC, štebricki; dekompozicija faza 1+2 R319/R325) |
+| `calculator-tab.tsx` | 4.846 | Kalkulator (7 načinov + 6 izpolnitev; dekompozicija faza 1+2 R322/R325) |
 | `ar-scanner.tsx` | 2.789 | AR kamera z vizualizacijo ograje + AI sugestija |
 | `webxr-scanner.tsx` | 2.377 | WebXR poskus (kjer podprt) |
 | `photo-tab.tsx` | 2.570 | Slike z annotation editor, batch, pred/po |
@@ -909,11 +928,13 @@ primitivov. Največji:
 | `measurement-studio.tsx` | 1.630 | **Merilni studio** (deterministični CV + ročni način) |
 | … | | skice, zaloga, dokumenti, PDF, CRM, logistika, tloris, galerija … |
 
-> Opomba (R120/Problem 9 → R319/R322): `measurements-tab` (9.086 →
-> 7.604) in `calculator-tab` (6.074 → 5.372) sta bila razbita po fazah ČISTIH
-> PREMIKOV (kanon: bajtno identični bloki, brez spremembe obnašanja;
-> vsebina ŽIVA v čankih — r319/r322-build-needles). Faza 2 (sestavljene
-> notranje strukture) po lastniških prioritetah.
+> Opomba (R120/Problem 9 → R319/R322/R325): `measurements-tab` (9.086 →
+> 7.604 → 7.153) in `calculator-tab` (6.074 → 5.372 → 4.846) sta bila razbita
+> po fazah — faza 1 ČISTIH PREMIKOV (kanon: bajtno identični bloki, brez
+> spremembe obnašanja; vsebina ŽIVA v čankih — r319/r322-build-needles) +
+> FAZA 2 REFAKTORJA internih sestavljenih struktur (R325: laserski BT hook z
+> onMeasurement povratnim klicem + PDF izvozi z args objekti — vsebina ŽIVA v
+> čankih — r325-build-needles).
 
 ---
 

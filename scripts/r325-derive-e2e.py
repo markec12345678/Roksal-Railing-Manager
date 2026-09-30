@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# R324 — derive r324-e2e-browser.sh iz r323-e2e-browser.sh [VZPOREDNA
+# R325 — derive r325-e2e-browser.sh iz r323-e2e-browser.sh [VZPOREDNA
 # runda — 51. člen CSV zmogljivost; kolizija #5 rešena po kanonu LEKCIJA 1 —
 # runda preimenovana R323→R324, QA re-derivirana iz NJIHOVE generacije].
 # REGRESSION-ONLY runda (kanon R322): dekompozicija FAZA 2 = telesa VERBATIM
@@ -11,8 +11,8 @@
 import sys
 from pathlib import Path
 
-VIR = Path('/home/z/my-project/scripts/r323-e2e-browser.sh')
-DOL = Path('/home/z/my-project/scripts/r324-e2e-browser.sh')
+VIR = Path('/home/z/my-project/scripts/r324-e2e-browser.sh')
+DOL = Path('/home/z/my-project/scripts/r325-e2e-browser.sh')
 
 text = VIR.read_text(encoding='utf-8')
 
@@ -25,14 +25,14 @@ def zam(stari, novi, pricakuj=1):
     text = text.replace(stari, novi)
 
 # ── 1. Generacijske poti ──
-zam('/tmp/r323-', '/tmp/r324-', 140)
-zam('qa-r323-', 'qa-r324-', 8)
-zam('R323-server-e2e.log', 'R324-server-e2e.log', 1)
-zam('=== R323 E2E KONEC ===', '=== R324 E2E KONEC ===', 1)
+zam('/tmp/r323-', '/tmp/r325-', 140)
+zam('qa-r323-', 'qa-r325-', 8)
+zam('R323-server-e2e.log', 'R325-server-e2e.log', 1)
+zam('=== R323 E2E KONEC ===', '=== R325 E2E KONEC ===', 1)
 
 # ── 2. Glava: REGRESSION-ONLY opis (najnovejši PRVI) ──
 zam('# R310 E2E ŽIVO (lokalni :3100, ADMIN) — API I/O MEJA ŽIVO (38. člen issue #1:',
-    '# R324 E2E ŽIVO — REGRESSION-ONLY (KOLIZIJA #5: vzporedna R323 [8857d6e CSV];\n'
+    '# R325 E2E ŽIVO — REGRESSION-ONLY (DVOJNA KOLIZIJA #5+#6: vzporedna R323 [8857d6e CSV];\n'
     '# moja runda preimenovana R323→R324): DEKOMPOZICIJA FAZA 2 — measurements\n'
     '# 7.604 → 7.153 [−451; laserski BT blok → laser-bt.ts + use-laser.ts hook\n'
     '# + laser-panel.tsx; template localStorage blok → templates.ts] + calculator\n'

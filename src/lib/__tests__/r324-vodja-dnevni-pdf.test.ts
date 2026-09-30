@@ -135,7 +135,7 @@ describe('r324 vodja-dnevni PDF izvoz (52. člen — IZVOZI družina)', () => {
 
   it('EN VIR: vhod POSREDOVAN + vse primitivne izpeljave UVOŽENE iz brata + NIČ redefinicij glav/formatov', () => {
     expect(lib).toMatch(
-      /import \{[^}]*formatEurCsv[^}]*formatUraVodja[^}]*preveriVodjaIzvozVhod[^}]*terminStatusLabel[^}]*vodjaKpiVrstice[^}]*\} from '\.\/vodja-csv'/s,
+      /import \{[^}]*formatEurCsv[^}]*formatUraVodja[^}]*preveriVodjaIzvozVhod[^}]*terminStatusLabel[^}]*vodjaKpiVrstice[^}]*\} from '\.\/vodja-csv'/, // R325: odvečni 's' (dotAll) flag odstranjen — regex NE vsebuje '.' meta-znaka (samo \./ literali); TS1501 na es2017 targetu (napaka vzporedne R324 odkrita ob zlitju, popravek IN-PLACE brez semantične spremembe)
     )
     expect(lib).toContain('VODJA_KPI_GLAVE')
     expect(lib).toContain('VODJA_TERMINI_GLAVE')

@@ -118,14 +118,12 @@ import {
   PencilRuler,
   Bookmark,
   ArrowRightLeft,
-  // MERITVE-PRO — novi ikoni (Bluetooth laser, AR sync, Foto mere)
-  Bluetooth,
+  // MERITVE-PRO — novi ikoni (AR sync, Foto mere; Bluetooth/Radio/Unplug
+  // so se R325 dekompozicijo FAZE 2 preselile v measurements/laser-panel)
   Boxes,
-  Radio,
   Image as ImageIcon,
   Link2,
   Loader2,
-  Unplug,
   UserRound,
   AlertTriangle,
   Info,
@@ -163,6 +161,24 @@ import {
   type TipMeritve,
   type TipStebra,
 } from './measurements/shared'
+// R325 — dekompozicija measurements-tab FAZA 2: laserski BT blok (hook +
+// UI + Web Bluetooth tipi/pomožne) in "template localStorage blok"
+// (PREDLOGE + stopniške predloge + WPC konstante) izluščeni v
+// ./measurements/ (kanon R319/R321 faza 1 — refaktor internih sestavljenih
+// struktur, ne čist premik).
+import { LaserPanel } from './measurements/laser-panel'
+import { useLaserDistance } from './measurements/use-laser'
+import {
+  PREDLOGE,
+  WPC_DEBELINA_DEFAULT,
+  WPC_KOT_POSEVNIH_DEFAULT,
+  WPC_RAZMAK_DEFAULT,
+  WPC_SIRINE_PALIC,
+  loadStairTemplates,
+  saveStairTemplates,
+  type StairCalc,
+  type StairTemplate,
+} from './measurements/templates'
 
 // ============================================
 // TIPI
@@ -250,13 +266,6 @@ interface AuditEntry {
   novaVrednost?: string
 }
 
-interface PredlogaDef {
-  id: string
-  naziv: string
-  opis: string
-  ikona: typeof Ruler
-}
-
 // Tipizirana oz. varovalna oblika Web Speech API
 interface SpeechRecognitionResultItem {
   transcript: string
@@ -279,48 +288,6 @@ interface SpeechRecognitionLike {
 interface SpeechRecognitionCtor {
   new (): SpeechRecognitionLike
 }
-
-// ============================================
-// MERITVE-PRO — Web Bluetooth tipi (laserski daljinec)
-// ============================================
-interface BluetoothCharacteristicLike {
-  startNotifications: () => Promise<unknown>
-  stopNotifications: () => Promise<unknown>
-  uuid: string
-  value?: DataView
-  addEventListener: (type: string, listener: (event: unknown) => void) => void
-  removeEventListener: (type: string, listener: (event: unknown) => void) => void
-}
-interface BluetoothServiceLike {
-  getCharacteristics: () => Promise<BluetoothCharacteristicLike[]>
-}
-interface BluetoothDeviceLike {
-  name?: string
-  id?: string
-  gatt?: {
-    connected?: boolean
-    connect: () => Promise<unknown>
-    disconnect: () => void
-    getPrimaryService: (uuid: string) => Promise<BluetoothServiceLike>
-  }
-  addEventListener: (type: string, listener: (event: unknown) => void) => void
-  removeEventListener: (type: string, listener: (event: unknown) => void) => void
-  watchAdvertisements?: () => Promise<void>
-}
-interface BluetoothLike {
-  requestDevice: (options: unknown) => Promise<BluetoothDeviceLike>
-  getAvailability?: () => Promise<boolean>
-}
-interface NavigatorWithBluetooth extends Navigator {
-  bluetooth?: BluetoothLike
-}
-
-// Leica DISTO service UUID (custom service)
-const LASER_SERVICE_LEICA = '0000feff-0000-1000-8000-00805f9b34fb'
-// Bosch GLM service UUID
-const LASER_SERVICE_BOSCH = '0000feaa-0000-1000-8000-00805f9b34fb'
-// Laserski proizvajalci — ime prefixi
-const LASER_NAME_PREFIXES = ['GLM', 'DISTO', 'Leica', 'Bosch', 'BOSCH', 'LEICA']
 
 // ============================================
 // KONSTANTE
@@ -482,44 +449,10 @@ const auditColors: Record<AuditEntry['akcija'], string> = {
   STATUS: 'bg-roksal-amber/10 text-roksal-ink', // R311 — žetoni (družina ADD/EDIT/DELETE ostaja semantična)
 }
 
-const PREDLOGE: PredlogaDef[] = [
-  { id: 'balkon3m', naziv: 'Standardni balkon 3m', opis: 'Balkon + 3 meritve', ikona: Ruler },
-  { id: 'stopnisce', naziv: 'Stopnišče 12 stopnic', opis: 'Stopnišče + 2 meritevi', ikona: Layers },
-  { id: 'loblika', naziv: 'L-oblika 4+2m', opis: '2 segmenta, L tloris', ikona: Triangle },
-  { id: 'terasa5m', naziv: 'Terasa 5m', opis: 'Terasa + 1 meritev', ikona: Mountain },
-  { id: 'prazen', naziv: 'Prazen začetek', opis: 'Samo nova forma', ikona: Plus },
-]
-
 const enotaLabels: Record<EnotaTip, string> = {
   mm: 'mm',
   cm: 'cm',
   m: 'm',
-}
-
-// P3 — konstante za WPC
-const WPC_SIRINE_PALIC = [140, 180] as const
-const WPC_DEBELINA_DEFAULT = 23
-const WPC_RAZMAK_DEFAULT = 110 // standardni Roksal razmik med palicami
-const WPC_KOT_POSEVNIH_DEFAULT = 45
-
-interface StairTemplate {
-  id: string
-  naziv: string
-  skupnaVisinaMm: number
-  stStopnic: number
-  globinaStopniceMm: number
-  sirinaStopniceMm?: number
-  createdAt: string
-}
-
-interface StairCalc {
-  visinaPosamezne: number
-  kotStopinje: number
-  dolzinaKosa: number
-  skupnaDolzina: number
-  priporocilo: string
-  priporociloColor: string
-  valid: boolean
 }
 
 interface MeasurementsTabProps {
@@ -671,24 +604,6 @@ function getNextStebriNumber(measurements: Measurement[], segmentId?: string): n
   return stebri.length + 1
 }
 
-// P3 — nalaganje/shranjevanje stopniških predlog
-function loadStairTemplates(): StairTemplate[] {
-  try {
-    const raw = localStorage.getItem('roksal_stair_templates')
-    return raw ? (JSON.parse(raw) as StairTemplate[]) : []
-  } catch {
-    return []
-  }
-}
-
-function saveStairTemplates(templates: StairTemplate[]) {
-  try {
-    localStorage.setItem('roksal_stair_templates', JSON.stringify(templates))
-  } catch {
-    // ignore
-  }
-}
-
 // P3 — nalaganje primarne enote
 function loadPrimaryUnit(): EnotaTip {
   try {
@@ -698,67 +613,6 @@ function loadPrimaryUnit(): EnotaTip {
     // ignore
   }
   return 'mm'
-}
-
-// ============================================
-// MERITVE-PRO — Web Bluetooth helper funkcije
-// ============================================
-
-// Zadnji povezani laserski daljinec (ime) — beremo iz localStorage
-function loadLastLaserName(): string | null {
-  try {
-    return localStorage.getItem('roksal_last_laser')
-  } catch {
-    return null
-  }
-}
-
-// Preveri ali brskalnik podpira Web Bluetooth
-function isBluetoothSupported(): boolean {
-  if (typeof navigator === 'undefined') return false
-  return !!(navigator as NavigatorWithBluetooth).bluetooth
-}
-
-// Razčleni razdaljo iz DataView (različni proizvajalci pošiljajo različno)
-function parseDistanceFromDataView(dv: DataView): number | null {
-  // 1. Poskusi uint32 little-endian kot mm (običajni format za daljince)
-  if (dv.byteLength >= 4) {
-    try {
-      const val = dv.getUint32(0, true) // little-endian
-      if (val > 0 && val < 1_000_000) return val // 0-1000m razpon
-    } catch {
-      // ignore
-    }
-  }
-  // 2. Poskusi uint16 little-endian (starejši daljinci)
-  if (dv.byteLength >= 2) {
-    try {
-      const val = dv.getUint16(0, true)
-      if (val > 0 && val < 65_535) return val
-    } catch {
-      // ignore
-    }
-  }
-  // 3. Poskusi tekstovno razčlenitev (ASCII / UTF-8)
-  try {
-    const text = new TextDecoder('utf-8').decode(dv).trim()
-    // Poišči prvo število (z možno decimalno vejico/piko)
-    const match = text.match(/(-?\d+(?:[.,]\d+)?)/)
-    if (match) {
-      const numStr = match[1].replace(',', '.')
-      const num = parseFloat(numStr)
-      if (Number.isFinite(num) && num > 0 && num < 1_000_000) {
-        // Če vsebuje decimalo, predvidevamo metre → mm
-        if (match[1].includes('.') || match[1].includes(',')) {
-          return Math.round(num * 1000)
-        }
-        return Math.round(num)
-      }
-    }
-  } catch {
-    // ignore
-  }
-  return null
 }
 
 // ============================================
@@ -978,17 +832,30 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
   // MERITVE-PRO — stanje za nove funkcije
   // ============================================
 
-  // 1. Web Bluetooth laser
-  const [laserSupported, setLaserSupported] = useState(false)
-  const [laserStatus, setLaserStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected')
-  const [laserDeviceName, setLaserDeviceName] = useState<string | null>(null)
-  const [laserLastReading, setLaserLastReading] = useState<number | null>(null)
-  const laserDeviceRef = useRef<BluetoothDeviceLike | null>(null)
-  const laserCharacteristicRef = useRef<BluetoothCharacteristicLike | null>(null)
-  const laserReconnectAttemptsRef = useRef(0)
-  const laserReconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const laserMeasurementHandlerRef = useRef<((event: unknown) => void) | null>(null)
-  const laserDisconnectHandlerRef = useRef<((event: unknown) => void) | null>(null)
+  // 1. Web Bluetooth laser — R325 dekompozicija FAZA 2: stanje + GATT
+  // povezava + odklop + auto-reconnect so izluščeni v useLaserDistance
+  // hook (VERBATIM); forma se polni prek onMeasurement povratnega klica
+  // (prej: neposredni setFormLength/setFormLengthUnit/setFormTipMeritve/
+  // setFormOpen znotraj handleLaserMeasurement).
+  const {
+    laserSupported,
+    laserStatus,
+    laserDeviceName,
+    laserLastReading,
+    connectLaser,
+    disconnectLaser,
+  } = useLaserDistance(
+    useCallback(
+      (mm: number) => {
+        // Auto-izpolni dolžino v formi (v mm enoti)
+        setFormLength(String(mm))
+        setFormLengthUnit('mm')
+        setFormTipMeritve('RAZDALJA')
+        if (!formOpen) setFormOpen(true)
+      },
+      [formOpen]
+    )
+  )
 
   // 2. AR sync (prenašanje točk iz AR posnetka v mere)
   const [arImportOpen, setArImportOpen] = useState(false)
@@ -1305,45 +1172,6 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
       webkitSpeechRecognition?: SpeechRecognitionCtor
     }
     setVoiceSupported(!!(w.SpeechRecognition || w.webkitSpeechRecognition))
-  }, [])
-
-  // MERITVE-PRO — zaznaj podporo Web Bluetooth API
-  useEffect(() => {
-    setLaserSupported(isBluetoothSupported())
-  }, [])
-
-  // MERITVE-PRO — naloži zadnje povezani lasersko ime (prikaz v badge-u)
-  useEffect(() => {
-    if (!laserDeviceName) {
-      const last = loadLastLaserName()
-      if (last) setLaserDeviceName(last)
-    }
-  }, [laserDeviceName])
-
-  // MERITVE-PRO — počisti laser povezavo ob unmountu
-  useEffect(() => {
-    return () => {
-      try {
-        if (laserReconnectTimerRef.current) {
-          clearTimeout(laserReconnectTimerRef.current)
-          laserReconnectTimerRef.current = null
-        }
-        const ch = laserCharacteristicRef.current
-        const dev = laserDeviceRef.current
-        const handler = laserMeasurementHandlerRef.current
-        const dHandler = laserDisconnectHandlerRef.current
-        if (ch && handler) {
-          try { ch.removeEventListener('characteristicvaluechanged', handler) } catch { /* ignore */ }
-          try { ch.stopNotifications() } catch { /* ignore */ }
-        }
-        if (dev && dHandler) {
-          try { dev.removeEventListener('gattserverdisconnected', dHandler) } catch { /* ignore */ }
-        }
-        try { dev?.gatt?.disconnect() } catch { /* ignore */ }
-      } catch {
-        // ignore
-      }
-    }
   }, [])
 
   // P1 — počisti voice recognition ob unmountu
@@ -3796,210 +3624,6 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
   }
 
   // ============================================
-  // MERITVE-PRO — WEB BLUETOOTH LASER
-  // ============================================
-
-  // Obdelaj prejeto mero iz laserja
-  const handleLaserMeasurement = useCallback((event: unknown) => {
-    try {
-      const e = event as { target?: { value?: DataView } }
-      const dv = e.target?.value
-      if (!dv) return
-      const mm = parseDistanceFromDataView(dv)
-      if (mm == null) return
-      setLaserLastReading(mm)
-      // Auto-izpolni dolžino v formi (v mm enoti)
-      setFormLength(String(mm))
-      setFormLengthUnit('mm')
-      setFormTipMeritve('RAZDALJA')
-      if (!formOpen) setFormOpen(true)
-      toast.success(`Mera iz laserja: ${mm}mm`)
-    } catch {
-      // ignore
-    }
-  }, [formOpen])
-
-  // Poveži se z laserskim daljincem preko Web Bluetooth
-  async function connectLaser() {
-    const nav = navigator as NavigatorWithBluetooth
-    if (!nav.bluetooth) {
-      toast.error('Bluetooth ni podprt v tem brskalniku', {
-        description: 'Uporabite Chrome na Androidu ali računalniku.',
-      })
-      return
-    }
-    setLaserStatus('connecting')
-    try {
-      const filters = [
-        // Leica DISTO
-        { services: [LASER_SERVICE_LEICA] },
-        // Bosch GLM
-        { services: [LASER_SERVICE_BOSCH] },
-        // Generični filter po imenu
-        ...LASER_NAME_PREFIXES.map((prefix) => ({ namePrefix: prefix })),
-      ]
-      const device = await nav.bluetooth.requestDevice({
-        filters,
-        optionalServices: [LASER_SERVICE_LEICA, LASER_SERVICE_BOSCH],
-      })
-      laserDeviceRef.current = device
-      const name = device.name || 'Laserski daljinec'
-      setLaserDeviceName(name)
-      try {
-        localStorage.setItem('roksal_last_laser', name)
-      } catch {
-        // ignore
-      }
-
-      // Odpri GATT povezavo
-      if (!device.gatt) {
-        toast.error('Naprava ne podpira GATT strežnika')
-        setLaserStatus('disconnected')
-        return
-      }
-      await device.gatt.connect()
-
-      // Poskusi najti znano storitev (Leica → Bosch → katerakoli)
-      let service: BluetoothServiceLike | null = null
-      let usedServiceUuid: string | null = null
-      for (const uuid of [LASER_SERVICE_LEICA, LASER_SERVICE_BOSCH]) {
-        try {
-          service = await device.gatt.getPrimaryService(uuid)
-          usedServiceUuid = uuid
-          break
-        } catch {
-          // ignore — poskusi naslednjo
-        }
-      }
-      if (!service) {
-        toast.error('Storitev laserja ni najdena na napravi', {
-          description: `${name} — preverite skladnost z Leica DISTO / Bosch GLM.`,
-        })
-        setLaserStatus('disconnected')
-        try { device.gatt.disconnect() } catch { /* ignore */ }
-        return
-      }
-
-      const characteristics = await service.getCharacteristics()
-      if (!characteristics || characteristics.length === 0) {
-        toast.error('Karakteristika laserja ni najdena')
-        setLaserStatus('disconnected')
-        try { device.gatt.disconnect() } catch { /* ignore */ }
-        return
-      }
-
-      // Prijavi se na obvestila prve karakteristike (običajno je to meritvena)
-      const ch = characteristics[0]
-      laserCharacteristicRef.current = ch
-      // Odstrani stare handlerje če obstajajo
-      const oldHandler = laserMeasurementHandlerRef.current
-      const oldDisconnect = laserDisconnectHandlerRef.current
-      if (oldHandler) {
-        try { ch.removeEventListener('characteristicvaluechanged', oldHandler) } catch { /* ignore */ }
-      }
-      if (oldDisconnect && laserDeviceRef.current) {
-        try { laserDeviceRef.current.removeEventListener('gattserverdisconnected', oldDisconnect) } catch { /* ignore */ }
-      }
-      // Dodaj nove handler
-      ch.addEventListener('characteristicvaluechanged', handleLaserMeasurement)
-      laserMeasurementHandlerRef.current = handleLaserMeasurement
-
-      const disconnectHandler = () => {
-        toast.info(`Laser ${name} je bil odklopljen`, {
-          description: 'Poskušam ponovno povezati...',
-        })
-        setLaserStatus('disconnected')
-        // Auto-reconnect (3 poskusi)
-        laserReconnectAttemptsRef.current += 1
-        if (laserReconnectAttemptsRef.current <= 3) {
-          if (laserReconnectTimerRef.current) clearTimeout(laserReconnectTimerRef.current)
-          laserReconnectTimerRef.current = setTimeout(() => {
-            // Poskusi ponovno povezati brez requestDevice (samo gatt.connect)
-            void (async () => {
-              try {
-                const dev = laserDeviceRef.current
-                if (!dev?.gatt) return
-                await dev.gatt.connect()
-                const svc = await dev.gatt.getPrimaryService(usedServiceUuid || LASER_SERVICE_LEICA)
-                const chars = await svc.getCharacteristics()
-                if (chars.length > 0) {
-                  const newCh = chars[0]
-                  laserCharacteristicRef.current = newCh
-                  newCh.addEventListener('characteristicvaluechanged', handleLaserMeasurement)
-                  await newCh.startNotifications()
-                  setLaserStatus('connected')
-                  laserReconnectAttemptsRef.current = 0
-                  toast.success(`Ponovno povezan: ${name}`)
-                }
-              } catch {
-                toast.error(`Ponovna povezava ni uspela (poskus ${laserReconnectAttemptsRef.current}/3)`)
-              }
-            })()
-          }, 1500)
-        } else {
-          toast.error('Ponovna povezava po 3 poskusih ni uspela')
-          laserReconnectAttemptsRef.current = 0
-        }
-      }
-      device.addEventListener('gattserverdisconnected', disconnectHandler)
-      laserDisconnectHandlerRef.current = disconnectHandler
-
-      try {
-        await ch.startNotifications()
-      } catch {
-        // nekatere karakteristike morda ne podpirajo notifikacij — ignoriiramo
-      }
-      setLaserStatus('connected')
-      laserReconnectAttemptsRef.current = 0
-      toast.success(`Laser povezan: ${name}`, {
-        description: 'Pošljite mero z gumbom na daljincu.',
-      })
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err)
-      if (/User cancelled|User Cancel|cancelled/i.test(msg)) {
-        toast.info('Dostop zavrnjen — povezava preklicana')
-      } else if (/No devices found|no device/i.test(msg)) {
-        toast.error('Nobena naprava ni bila najdena')
-      } else {
-        toast.error('Napaka pri povezovanju laserja', { description: msg })
-      }
-      setLaserStatus('disconnected')
-    }
-  }
-
-  // Prekini povezavo z laserjem
-  function disconnectLaser() {
-    try {
-      const ch = laserCharacteristicRef.current
-      const dev = laserDeviceRef.current
-      const handler = laserMeasurementHandlerRef.current
-      const dHandler = laserDisconnectHandlerRef.current
-      if (ch && handler) {
-        try { ch.removeEventListener('characteristicvaluechanged', handler) } catch { /* ignore */ }
-        try { ch.stopNotifications() } catch { /* ignore */ }
-      }
-      if (dev && dHandler) {
-        try { dev.removeEventListener('gattserverdisconnected', dHandler) } catch { /* ignore */ }
-      }
-      try { dev?.gatt?.disconnect() } catch { /* ignore */ }
-      laserCharacteristicRef.current = null
-      laserDeviceRef.current = null
-      laserMeasurementHandlerRef.current = null
-      laserDisconnectHandlerRef.current = null
-      if (laserReconnectTimerRef.current) {
-        clearTimeout(laserReconnectTimerRef.current)
-        laserReconnectTimerRef.current = null
-      }
-      laserReconnectAttemptsRef.current = 0
-      setLaserStatus('disconnected')
-      setLaserLastReading(null)
-      toast.info('Povezava z laserjem prekinjena')
-    } catch {
-      toast.error('Napaka pri prekinjanju povezave')
-    }
-  }
-
-  // ============================================
   // MERITVE-PRO — AR SINHRONIZACIJA (uvaz tock v mere)
   // ============================================
 
@@ -4972,91 +4596,16 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
       {/* MERITVE-PRO — LASER + AR SINHRONIZACIJA orodna vrstica */}
       <Card className="card-hover transition-all duration-200 animate-fade-in-up border-roksal-navy/15 dark:border-roksal-ink/15">
         <CardContent className="p-3 space-y-2.5">
-          {/* Laser povezava */}
-          <div className="flex items-center justify-between gap-2 flex-wrap">
-            <div className="flex items-center gap-2 min-w-0">
-              <div
-                className={`flex h-8 w-8 items-center justify-center rounded-lg shrink-0 ${
-                  laserStatus === 'connected'
-                    ? 'bg-roksal-green text-white'
-                    : laserStatus === 'connecting'
-                      ? 'bg-roksal-amber text-white'
-                      : 'bg-roksal-navy/10 text-roksal-ink'
-                }`}
-              >
-                {laserStatus === 'connecting' ? (
-                  <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Bluetooth aria-hidden="true" className="h-4 w-4" />
-                )}
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-medium text-roksal-ink">Laserski daljinec</p>
-                <p className="text-2xs text-muted-foreground truncate">
-                  {laserStatus === 'connected'
-                    ? `🟢 Laser povezan: ${laserDeviceName || 'naprava'}`
-                    : laserStatus === 'connecting'
-                      ? '🟡 Povezujem...'
-                      : '🔴 Ni povezan'}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-1.5 shrink-0">
-              {laserLastReading != null && laserStatus === 'connected' && (
-                <Badge className="bg-roksal-green/15 text-roksal-green border border-roksal-green/30 text-2xs h-6 px-2">
-                  <Radio aria-hidden="true" className="h-3 w-3 mr-1" />
-                  {laserLastReading}mm
-                </Badge>
-              )}
-              {laserStatus !== 'connected' ? (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      type="button"
-                      onClick={connectLaser}
-                      disabled={!laserSupported || laserStatus === 'connecting'}
-                      className="h-8 px-3 text-[11px] bg-roksal-navy text-white hover:bg-roksal-navy/90 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <Bluetooth aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
-                      Poveži laser
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    {laserSupported
-                      ? 'Poveži laserski daljinec preko Web Bluetooth'
-                      : 'Web Bluetooth ni podprt. Uporabite Chrome na Androidu ali računalniku.'}
-                  </TooltipContent>
-                </Tooltip>
-              ) : (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={disconnectLaser}
-                  className="h-8 px-3 text-[11px] border-roksal-red/30 text-roksal-red hover:bg-roksal-red/10"
-                >
-                  <Unplug aria-hidden="true" className="mr-1 h-3.5 w-3.5" />
-                  Prekini
-                </Button>
-              )}
-            </div>
-          </div>
-          {!laserSupported && (
-            <div className="rounded-md bg-roksal-amber/10 border border-roksal-amber/40 p-2 text-2xs text-roksal-ink flex items-start gap-1.5">
-              <AlertCircle aria-hidden="true" className="h-3 w-3 mt-0.5 shrink-0" />
-              <span>
-                Web Bluetooth ni podprt v tem brskalniku. Uporabite Chrome na Androidu ali računalniku.
-                Ročni vnos še vedno deluje.
-              </span>
-            </div>
-          )}
-          {laserStatus === 'connected' && (
-            <div className="rounded-md bg-roksal-green/5 border border-roksal-green/20 p-2 text-2xs text-roksal-green/90 flex items-start gap-1.5">
-              <Radio aria-hidden="true" className="h-3 w-3 mt-0.5 shrink-0 animate-pulse" />
-              <span>
-                Poslušam meritve... Pošlji mero z gumbom na daljincu — samodejno se izpolni dolžina v formi.
-              </span>
-            </div>
-          )}
+          {/* Laser povezava — R325 dekompozicija FAZA 2: UI blok izluščen v
+              LaserPanel (čist premik; props namesto closure spremenljivk) */}
+          <LaserPanel
+            laserSupported={laserSupported}
+            laserStatus={laserStatus}
+            laserDeviceName={laserDeviceName}
+            laserLastReading={laserLastReading}
+            onConnect={connectLaser}
+            onDisconnect={disconnectLaser}
+          />
           <Separator />
           {/* AR sinhronizacija */}
           <div className="flex items-center justify-between gap-2 flex-wrap">
