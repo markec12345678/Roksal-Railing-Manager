@@ -83,6 +83,14 @@ import {
 // dobesedno sinhronizacijo zrcala (schedule-conflicts.ts je strežniški —
 // @/lib/db — klientski lib ga NE sme uvažati).
 import { tedenskiKonflikti } from '@/lib/tedenski-konflikti'
+// R301 — 31. člen 'izvozi' družine: KONFLIKTI CSV — CSV brat pregledu R300
+// (tedenskiKonflikti EN VIR — ISTO okno, ISTA pravila, ISTI pari f(množica));
+// route NIČ (client+lib only).
+import {
+  konfliktiCsv,
+  konfliktiCsvFilename,
+  konfliktiSklep,
+} from '@/lib/konflikti-csv'
 import { cenikDatumIso } from '@/lib/cenik-pdf'
 import { QC_TEMPLATE, computePassed, countDefects } from '@/lib/qc-gate'
 import { IEV_TEMPLATE } from '@/lib/installation-evidence'
@@ -431,6 +439,8 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
   // R299 — dvoklik guard per-ekipa ICS (katera ekipa je v teku — string
   // guard, pariteta tedenskiIcsVTeku R298; null = nič v teku).
   const [tedenskiEkipaIcsVTeku, setTedenskiEkipaIcsVTeku] = useState<string | null>(null)
+  // R301 — dvoklik guard konflikti CSV (pariteta tedenskiCsvVTeku R292).
+  const [konfliktiCsvVTeku, setKonfliktiCsvVTeku] = useState(false)
 
   // R266 — ENA izpeljava vhodov za cikl opreme (WYSIWYG ISTI vir kot PDF
   // KPI, tabela, sklep, F2 mini-vrstica IN toast): DTO pruning iz ISTEGA
@@ -1404,6 +1414,51 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
     }
   }
 
+  // R301 — 31. člen 'izvozi' družine: KONFLIKTI CSV — CSV brat pregledu R300
+  // (vzorec R292/R297): dokazane PARE prekrivanj ekipe namesto števca na
+  // zaslonu (WYSIWYG po konstrukciji — tedenskiKonflikti EN VIR; ISTO okno,
+  // ISTA pravila, ISTI pari f(množica)). Fail-closed PREJ: prazno okno →
+  // iskren toast (ISTI gate kot Tedenski R292), zelen žig (null pregled =
+  // iskrena čistost) → iskren toast — NIKOLI prazna datoteka (družina
+  // R266/R297). now = tedenskiRazgledNow — ENA izpeljava časa za pregled +
+  // CSV + ime (lekcija R121/R235; žig na zaslonu in datoteka STA ISTA
+  // resnica po konstrukciji). Sklep v toastu = ISTI konfliktiSklep kot meta
+  // vrstica (WYSIWYG); dvoklik guard (pariteta tedenskiCsvVTeku R292);
+  // fail-verbose catch (R291 vzorec).
+  const handleKonfliktiCsv = () => {
+    if (konfliktiCsvVTeku) return
+    setKonfliktiCsvVTeku(true)
+    try {
+      if (razgled.pov === null) {
+        toast({
+          title: 'Ni terminov v naslednjih 7 dneh',
+          description: 'Konflikti CSV se izvozi, ko je vpisan termin v prihajajočem tednu.',
+        })
+        return
+      }
+      if (konfliktiPregled === null) {
+        // Iskrena čistost (zelen žig) — ni prazne datoteke (družina R266/R297).
+        toast({
+          title: 'Ni dokazanih konfliktov v okviru',
+          description: 'Žig je zelen — CSV se izvozi ob prvem dokazanem prekrivanju (rdeč žig).',
+        })
+        return
+      }
+      const now = tedenskiRazgledNow
+      const { csv } = konfliktiCsv(vozniRedVnosi, now)
+      const ime = konfliktiCsvFilename(now)
+      downloadCsvText(ime, csv)
+      toast({
+        title: `Konflikti prenešeni v CSV (${ime})`,
+        description: konfliktiSklep(konfliktiPregled),
+      })
+    } catch (err) {
+      toast({ title: 'Izvoz konfliktov CSV ni uspel', description: err instanceof Error ? err.message : String(err), variant: 'destructive' })
+    } finally {
+      setKonfliktiCsvVTeku(false)
+    }
+  }
+
   return (
     <div className="space-y-4">
       {/* Subtabs */}
@@ -1650,6 +1705,30 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
             >
               <Calendar aria-hidden="true" className="h-4 w-4 mr-1" /> Tedenski ICS
             </Button>
+            {/* R301 — 31. člen 'izvozi' družine (P1-f): KONFLIKTI CSV — CSV
+                brat pregledu R300: dokazani PARI prekrivanj ekipe za
+                pisarno/revizijo (mini-vrstica pokaže ŠTEVEC, CSV pokaže
+                DOKAZ — vsak par = vrstica z obema članoma, VERBATIM ISO časa
+                kot ICS bratje). VEDNO viden (P1-k/R232 kanon): prazno okno
+                ALI zelen žig → iskren fail-closed toast, NIKOLI prazna
+                datoteka (R250/R291 vzorec); dvoklik guard (pariteta
+                tedenskiCsvVTeku R292); ISTI žetoni kot bratje — 0 novih hex
+                (FileSpreadsheet import ŽE obstaja — 0 pin premikov ikon).
+                Definicijski naslov (MANDATORY STIL): izreče PRAVILA
+                (poli-odprto, statusi, null konec) + vidno razliko
+                (števec na zaslonu, pari v datoteki). */}
+            <Button
+              type="button"
+              variant="outline"
+              aria-label="Izvozi dokazane konflikte tedenskega pregleda kot CSV"
+              title="Konflikti tedenskega pregleda kot CSV — dokazani pari prekrivanj ekipe (isti poli-odprto pregled kot žig nad seznamom; konec 12:00 + začetek 12:00 je dovoljen nazaj-na-nazaj; Preklicano/Zaključeno ne zasede; termin brez konca NE nosi prekrivanja). Žig zelen = ni datoteke (iskren toast) — datoteka nastane ob prvem dokazanem prekrivanju"
+              data-testid="konflikti-csv-pill"
+              disabled={konfliktiCsvVTeku}
+              className="shrink-0 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              onClick={handleKonfliktiCsv}
+            >
+              <FileSpreadsheet aria-hidden="true" className="h-4 w-4 mr-1" /> Konflikti CSV
+            </Button>
             {/* R265 — 21. člen 'izvozi' družine (P1-f): PROJEKTI — TERMINI
                 PREGLED PDF — presek VSEH terminov (/api/schedules — FRESH
                 fetch ISTEGA endpointa ob kliku, R244/R245/R264 precedens;
@@ -1713,6 +1792,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
             CSV = prikazani termini · ICS = koledar v telefonu · PDF = vozni red (kronološki) · Tedenski = naslednjih 7 dni (po dnevih) · Projekti = projekti × termini (pokritost po projektih) · Tedenski CSV = ista resnica kot PDF
             {' · Tedenski ICS = naslednjih 7 dni v telefonov koledar'}
             {' · ICS po ekipi = samo termini te ekipe (isti 7-dnevni okvir)'}
+            {' · Konflikti CSV = dokazani pari prekrivanj ekipe (isti pregled kot žig)'}
           </p>
 
           {/* R244 — vlogo-osveščen vodič (R242/R243 recept): viden SAMO, ko
