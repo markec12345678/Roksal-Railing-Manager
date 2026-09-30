@@ -623,7 +623,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
         </Card>
 
         {/* 3. Podlaga — najpomembneje */}
-        <Card className={`border ${data.podlaga === 'estrih' ? 'border-amber-300 bg-amber-50/40 dark:border-amber-700 dark:bg-amber-950/40' : 'border-roksal-navy/10 dark:border-roksal-ink/15'}`}>
+        <Card className={`border ${data.podlaga === 'estrih' ? 'border-roksal-amber/40 bg-roksal-amber/10' : 'border-roksal-navy/10 dark:border-roksal-ink/15'}`}>
           <CardContent className="p-4">
             <Label className="mb-2 block text-2xs font-bold uppercase tracking-wide text-muted-foreground">
               3 · Podlaga (določa moznike!) 
@@ -650,8 +650,8 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
               ))}
             </div>
             {data.podlaga === 'estrih' && (
-              <p className="mt-2 flex items-start gap-1.5 rounded-lg bg-amber-100 dark:bg-amber-500/15 px-2.5 py-2 text-2xs font-medium leading-relaxed text-amber-900 dark:text-amber-200">
-                <TriangleAlert aria-hidden="true" className="mt-0.5 h-3 w-3 shrink-0" />
+              <p className="mt-2 flex items-start gap-1.5 rounded-lg bg-roksal-amber/10 px-2.5 py-2 text-2xs font-medium leading-relaxed text-roksal-ink">
+                <TriangleAlert aria-hidden="true" className="mt-0.5 h-3 w-3 shrink-0 text-roksal-amber" />
                 Estrih + folija = hidroizolacija. Ekspanzijski moznik je VDRA do folije →
                 kemija + tesnilna masa, sicer vlaga uniči ploščo (reklamacija!).
               </p>
@@ -961,7 +961,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
                       key={item.id}
                       className={`flex cursor-pointer items-start gap-2 rounded-lg border px-2.5 py-2 transition-all ${
                         item.kind === 'warn'
-                          ? 'border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40'
+                          ? 'border-roksal-amber/40 bg-roksal-amber/10'
                           : item.kind === 'material'
                             ? 'border-roksal-navy/10 dark:border-roksal-ink/15 bg-roksal-navy/[0.03]'
                             : 'border-roksal-navy/10 dark:border-roksal-ink/15'
@@ -974,7 +974,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
                         className="mt-0.5 h-4 w-4 accent-roksal-amber"
                       />
                       <span className="min-w-0">
-                        <span className={`block text-[11px] font-bold leading-snug ${item.kind === 'warn' ? 'text-amber-800 dark:text-amber-200' : 'text-roksal-ink'}`}>{item.text}</span>
+                        <span className={"block text-[11px] font-bold leading-snug text-roksal-ink"}>{item.text}</span>
                         <span className="block text-[9px] text-muted-foreground">{item.reason}</span>
                       </span>
                     </label>

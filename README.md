@@ -103,7 +103,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 45 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **4380** (243 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **4398** (245 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 143 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -365,6 +365,23 @@ Sheet z 6 podzavihki:
   20 mest harmoniziranih na roksal žetone (0 novih hex); 2 izrecni izjemi zaklenjeni
   (photo-tab kategorija faze PRED blue / MED amber / PO green — barvno kodirana
   kategorija med sorodniki, R308/R312 precedens)
+- **Končna verifikacija proti HEAD** (R315, 45. člen — issue #1 **Deliverable 7**):
+  vodjin pregled nosi blok `koncna-verifikacija-dokaz` (`src/lib/koncna-verifikacija.ts`) —
+  vsako območje audita (§1–§11) z IZRECNO vezavo na verifikacijske plasti
+  (vitest · build-needleji · E2E ŽIVO · prod-qa · smoke) + 8 sprejemnih kriterijev
+  iz issue #1 z mehanično izpeljavo in KONKRETNIM dokazom (poti na disku — strazar
+  dokazuje obstoj, glob dokazi 'r*-…' preverjeni proti drevesu); totalen fail-closed
+  join (manjkajoča vezava / neznana plast / kriterij brez izpeljave ali dokaza →
+  TypeError z imenom graditelja); dokumentirano v `docs/koncna-verifikacija-head.md`
+  (veza na HEAD iskrena: delovno drevo = byte-določeno s HEAD, verifikacija per runda,
+  dokument NE laže o števcih/hashih); WYSIWYG sklep izračunan (11/11 območij ·
+  8 kriterijev · AI-OBVEZNO: 0 — zaslon + testi + docs berejo ISTI niz)
+- **Stil val 6** (R315): inclinometer-tab ×5 + site-survey-tab ×4 + ar-scanner ×3 +
+  pwa-status ×3 + password-change-banner ×3 (+2 ikona žetoni) = 19 dotikov —
+  surove amber → roksal žetoni (0 novih hex); 2 novi izjemi zaklenjeni
+  (inclinometer senzorjska lestvica denied=red/unsupported=amber; site-survey
+  PODLAGA kategorija barv z rdečim bratom — R308/R311 precedens); mrtva ternara
+  v site-survey poenostavljena (obe veji isti žeton)
 - Skener determinizma: 0 nedokumentiranih odstopanj nad src/lib IN src/components (komponentni sloj R295 — locale* v ARTIFACT domeni NIČ, izjeme izrecne z razlogom)
 - **API I/O meja («stena ura»)** (R308+R309+R310, issue #1 — failure cases + malformed-input) — determinističen
   skener VSEH 81 route-handlerjev (`src/lib/api-meja-audit.ts`, EN VIR lexer avtomatizacija-audit):
@@ -420,7 +437,7 @@ Sheet z 6 podzavihki:
 | **PWA** | Service Worker + Web Manifest |
 | **Temnitveni način** | [next-themes](https://github.com/pacocoursey/next-themes) |
 | **Validacija** | [Zod 4](https://zod.dev/) |
-| **Testiranje** | [Vitest 4](https://vitest.dev/) (4380 testov + globalSetup embedded PG) |
+| **Testiranje** | [Vitest 4](https://vitest.dev/) (4398 testov + globalSetup embedded PG) |
 | **Paketni upravitelj** | [Bun](https://bun.sh/) |
 | **Linting** | ESLint 9 + eslint-config-next |
 
@@ -542,7 +559,7 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `bun run dev` | Zažene Next.js dev server (port 3000) |
 | `bun run build` | Produkcijska build (build-prepare: generate + migrate deploy + seed) |
 | `bun run start` | Zažene produkcijski server |
-| `bun run test` | Vsi testi (vitest, 4380, embedded PG prek globalSetup) |
+| `bun run test` | Vsi testi (vitest, 4398, embedded PG prek globalSetup) |
 | `bun run check` | tsc --noEmit + vitest run (en ukaz za vse) |
 | `bunx tsc --noEmit` | Tipska kontrola celotnega projekta (trenutno 0 napak) |
 | `bun run lint` | ESLint preverjanje |

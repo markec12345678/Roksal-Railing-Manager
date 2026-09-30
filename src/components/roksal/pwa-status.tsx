@@ -196,20 +196,20 @@ export function PwaStatus() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.2 }}
-            className="mb-1.5 flex items-center gap-2.5 rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 px-3 py-2 text-amber-900 dark:text-amber-200 shadow-sm"
+            className="mb-1.5 flex items-center gap-2.5 rounded-xl border border-roksal-amber/40 bg-roksal-amber/10 px-3 py-2 text-roksal-ink shadow-sm"
             role="status"
           >
-            <WifiOff aria-hidden="true" className="h-4 w-4 shrink-0" />
+            <WifiOff aria-hidden="true" className="h-4 w-4 shrink-0 text-roksal-amber" />
             <div className="min-w-0 flex-1">
               <p className="text-[12px] font-semibold leading-tight">Ni povezave — aplikacija deluje naprej</p>
-              <p className="truncate text-2xs leading-tight text-amber-800 dark:text-amber-200">
+              <p className="truncate text-2xs leading-tight text-roksal-ink">
                 {pending > 0
                   ? `${pending} ${pending === 1 ? 'zapis čaka' : 'zapisov čaka'} na pošiljanje (samodejno ob povezavi)`
                   : 'Zapisi se vrstijo in pošljejo samodejno ob povezavi'}
               </p>
             </div>
             {pending > 0 && (
-              <span className="flex h-6 min-w-[24px] shrink-0 items-center justify-center rounded-full bg-amber-500 px-1.5 text-2xs font-bold text-white">
+              <span className="flex h-6 min-w-[24px] shrink-0 items-center justify-center rounded-full bg-roksal-amber px-1.5 text-2xs font-bold text-white">
                 {pending}
               </span>
             )}

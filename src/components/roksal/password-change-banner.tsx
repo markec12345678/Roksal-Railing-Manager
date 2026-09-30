@@ -67,15 +67,15 @@ export function PasswordChangeBanner() {
   return (
     <div role="alert" className="border-b border-roksal-amber/30 bg-roksal-amber/10 px-4 py-2">
       <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-2">
-        <ShieldAlert aria-hidden="true" className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
-        <p className="min-w-0 flex-1 text-[12px] font-medium text-amber-800 dark:text-amber-200">
+        <ShieldAlert aria-hidden="true" className="h-4 w-4 shrink-0 text-roksal-amber" />
+        <p className="min-w-0 flex-1 text-[12px] font-medium text-roksal-ink">
           Vaše geslo je bilo ponastavljeno s strani administratorja — nastavite svoje novo geslo.
         </p>
         <Button
           type="button"
           size="sm"
           onClick={() => setOpen(!open)}
-          className="h-7 bg-amber-600 text-[11px] text-white hover:bg-amber-700"
+          className="h-7 bg-roksal-amber text-[11px] text-white hover:bg-roksal-amber/90"
         >
           <KeyRound aria-hidden="true" className="mr-1 h-3 w-3" />
           Zamenjaj geslo

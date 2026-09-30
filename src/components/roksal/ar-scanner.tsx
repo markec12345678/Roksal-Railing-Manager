@@ -2021,7 +2021,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
       {/* Calibration / mode status badge (top-right of video) */}
       <div className="absolute top-16 right-3 z-10 flex flex-col items-end gap-1.5 pointer-events-none">
         {lowLight && (
-          <Badge className="bg-amber-600/90 text-white border-transparent shadow-md animate-pulse">
+          <Badge className="bg-roksal-amber/90 text-white border-transparent shadow-md animate-pulse">
             <SunDim aria-hidden="true" className="h-3 w-3" />
             Temno — prižgi bliskavico
           </Badge>
@@ -2304,7 +2304,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
                 setZoomValue(v)
                 void applyZoom(v)
               }}
-              className="flex-1 accent-amber-500"
+              className="flex-1 accent-roksal-amber"
               aria-label="Zoom kamere"
             />
             <span className="w-10 text-right text-2xs text-white/70" aria-hidden>
@@ -2544,7 +2544,7 @@ export function ArScanner({ projectId, onClose }: ArScannerProps) {
                     'text-2xs',
                     aiAnaliza.zaupanje >= 0.7
                       ? 'bg-roksal-green/15 text-roksal-green'
-                      : 'bg-amber-100 text-amber-700',
+                      : 'bg-roksal-amber/15 text-roksal-ink',
                   )}
                 >
                   {Math.round(aiAnaliza.zaupanje * 100)} % gotovo

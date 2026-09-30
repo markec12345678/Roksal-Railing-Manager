@@ -501,7 +501,7 @@ export function InclinometerTab({ projectId, projektIme }: { projectId: string |
                 )}
                 {saving ? 'Shranjujem …' : 'Shrani nagib'}
               </Button>
-              {!projectId && <p className="text-center text-2xs text-amber-600 dark:text-amber-400">Izberite projekt v zavihku Domov.</p>}
+              {!projectId && <p className="text-center text-2xs text-roksal-ink">Izberite projekt v zavihku Domov.</p>}
             </div>
           )}
         </CardContent>
@@ -521,13 +521,13 @@ export function InclinometerTab({ projectId, projektIme }: { projectId: string |
           <CardContent className="p-3">
             <div
               role="alert"
-              className="flex flex-col gap-2 rounded-lg border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between"
+              className="flex flex-col gap-2 rounded-lg border border-roksal-amber/40 bg-roksal-amber/10 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between"
             >
               <div className="flex items-start gap-2">
-                <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+                <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-roksal-amber" aria-hidden="true" />
                 <div>
-                  <p className="text-xs font-medium text-amber-800 dark:text-amber-200">Zgodovine nagibov ni mogoče prikazati</p>
-                  <p className="text-[11px] text-amber-700 dark:text-amber-300">{historyError}</p>
+                  <p className="text-xs font-medium text-roksal-ink">Zgodovine nagibov ni mogoče prikazati</p>
+                  <p className="text-[11px] text-roksal-ink">{historyError}</p>
                 </div>
               </div>
               <Button

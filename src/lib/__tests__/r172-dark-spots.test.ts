@@ -90,7 +90,14 @@ const PRIMERI = [
   // R294: 625→626, 873→874 (prekinjena inkarnacija r294: +1 vrstica 'now: new Date(),'
   // pri generateSurveyPdf klicu :411 — now KOT parameter, issue #1 determinizem;
   // precedens R180/R203/R229 — pinane številke vrstic sledijo vsebinskim vrsticam).
-  stražar('src/components/roksal/site-survey-tab.tsx', 626, 'bg-amber-50/40', 'dark:bg-amber-950/40'),
+  // R315 PIN SHIFT (izrecno, precedens R314 calculator estrih / R309 invoice-manager):
+  // estrih kartica (vrstica 626) je harmonizirana na roksal žetone
+  // (border-roksal-amber/40 bg-roksal-amber/10) — žeton je temsko prilagodljiv
+  // PO NARAVI, zato raw svetli+dark: par tam ZAKONITO ne obstaja več; vsak raw
+  // par, ki bi se vrnil, je regresija (obrnjena regresija v lastnem it() spodaj).
+  // POZOR: surovi amber vrstici 641 (PODLAGA kategorija barv p.barva —
+  // rdeč brat v isti ternari) sta ZAKLENJENI semantični kategoriji
+  // (R308/R311 lekcija) — zaklenjeni v r315-stil-val6 STRAŽARju.
   stražar('src/components/roksal/site-survey-tab.tsx', 874, 'bg-green-50', 'dark:bg-green-950/40'),
   // measurements-tab — AR snapshot hover obroba
   // (R183: +51 vrstic — loadAll refactor + pečat meritveOsvezitev + glavna
@@ -126,6 +133,15 @@ describe('R172 dark-spot stražar — vsak svetli barvni žeton ima dark: ogleda
     expect(src.match(/'border-roksal-amber\/40 bg-roksal-amber\/10'/g)?.length).toBe(2)
     // obrnjena regresija: surovi estrih par (bg-amber-50/60 + dark:bg-amber-950/40) prepovedan
     expect(src).not.toContain('bg-amber-50/60')
+    expect(src).not.toContain('dark:bg-amber-950/40')
+  })
+
+  it('R315 obrnjena regresija: site-survey estrih kartica je na roksal žetonih — raw svetli+dark par se NE sme vrniti', () => {
+    const src = vrstice('src/components/roksal/site-survey-tab.tsx').join('\n')
+    // žetoni živi (estrih Card 626 + warn orodje element 964 — isti vzorec)
+    expect(src.match(/'border-roksal-amber\/40 bg-roksal-amber\/10'/g)?.length).toBe(2)
+    // obrnjena regresija: surovi estrih par (bg-amber-50/40 + dark:bg-amber-950/40) prepovedan
+    expect(src).not.toContain('bg-amber-50/40')
     expect(src).not.toContain('dark:bg-amber-950/40')
   })
 })

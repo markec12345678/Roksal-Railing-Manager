@@ -86,11 +86,17 @@ import type { ZmogljivostPregled } from '@/lib/zmogljivost-pregled'
 // audit tabela — ČISTA projekcija EN VIR audita (avtomatizacija-audit:
 // AVTOMATIZACIJA_AUDIT §1–§11 — vsako območje klasificirano z potmi
 // implementacije + dokaza; WYSIWYG sklep, NIČ dvojnega sklepa).
+// R315 — 45. člen issue #1 (Deliverable 7 NA ZASLONU): končna verifikacija
+// proti HEAD — vezava območij audita na verifikacijske plasti + sprejemni
+// kriteriji z mehanično izpeljavo in konkretnim dokazom (ČISTA projekcija EN
+// VIR — koncna-verifikacija + avtomatizacija-audit; WYSIWYG sklep, NIČ
+// dvojnega sklepa).
+import { koncnaVerifikacija } from '@/lib/koncna-verifikacija'
 import { avtomatizacijaPregled } from '@/lib/avtomatizacija-pregled'
 import {
   TrendingUp, Clock, Users, Package, Euro, CheckCircle2,
   AlertTriangle, Calendar, Truck, Bell, FileDown, Loader2, Download, Workflow,
-  History, PackageX, CalendarX, FileText, FileSpreadsheet, Sparkles, Gauge, ClipboardList,
+  History, PackageX, CalendarX, FileText, FileSpreadsheet, Sparkles, Gauge, ClipboardList, BadgeCheck,
 } from 'lucide-react'
 
 // R314 — razred audita → žeton značka (100 % roksal žetoni — R225/R226
@@ -639,6 +645,7 @@ export function VodjaDashboard() {
   // R314 — 44. člen: audit tabela po območjih (ČISTA projekcija EN VIR
   // audita — števec izračunani, sklep verbatim; vzorec R311/R312).
   const avtAudit = avtomatizacijaPregled()
+  const koncna = koncnaVerifikacija()
 
   // R312 — 42. člen: meritve zmogljivosti jedra — realna ura, fiksni vhodi,
   // vsak izhod preverjen (fail-closed lib). Enkrat ob prikazu pregleda.
@@ -1211,6 +1218,80 @@ export function VodjaDashboard() {
         </ul>
         <p className="mt-1.5 text-2xs text-muted-foreground" data-testid="avtomatizacija-sklep">
           {avtAudit.sklep}
+        </p>
+      </section>
+
+      {/* R315 — 45. člen issue #1 (Deliverable 7 NA ZASLONU): končna verifikacija
+          proti HEAD — vsako območje audita z IZRECNO vezavo na verifikacijske
+          plasti (vitest · build-needleji · E2E ŽIVO · prod-qa · smoke) + 8
+          sprejemnih kriterijev z mehanično izpeljavo in konkretnim dokazom.
+          Števec IZRAČUNANI iz EN VIR (koncna-verifikacija) — verifikacija ne
+          sme sanjati; sklep verbatim ({koncna.sklep} — NIČ dvojnega sklepa,
+          vzorec R311/R312/R314). Značke plasti = roksal žetoni (r162). */}
+      <section
+        className="rounded-lg border border-border bg-muted/40 px-3 py-2"
+        aria-label="Končna verifikacija — dokazne plasti po območjih"
+        data-testid="koncna-verifikacija-dokaz"
+      >
+        <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
+          <p className="flex items-center gap-1 text-2xs font-medium text-roksal-ink">
+            <BadgeCheck className="h-3 w-3 text-roksal-amber" aria-hidden="true" />
+            Končna verifikacija — dokazne plasti
+          </p>
+          <p
+            className="text-2xs tabular-nums text-muted-foreground"
+            title="Verifikacija se izvede nad delovnim drevesom PRED vsakim commitom (tsc · eslint · vitest · build · smoke · E2E ŽIVO · prod-qa) — drevo je byte-določeno s HEAD; vezava na commit je implicitna in reproduktibilna."
+          >
+            {koncna.stObmocijZDokazi}/{koncna.stObmocij} območij · {koncna.stKriterijev} kriterijev
+          </p>
+        </div>
+        <ul className="mt-1 space-y-0.5" data-testid="koncna-verifikacija-vrstice">
+          {koncna.vrstice.map((v) => (
+            <li
+              key={v.obmocje}
+              className="rounded-md border border-border bg-background/60 px-2 py-1.5"
+              data-testid="koncna-verifikacija-vrstica"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5">
+                <span className="flex items-center gap-1.5 text-2xs font-medium text-roksal-ink">
+                  {v.obmocje}
+                </span>
+                <span className="flex flex-wrap items-center gap-1">
+                  {v.plasti.map((p) => (
+                    <span
+                      key={p}
+                      className="rounded border border-roksal-navy/20 bg-roksal-navy/[0.04] px-1 py-px text-[9px] font-semibold text-roksal-ink dark:border-roksal-ink/25 dark:bg-roksal-ink/[0.08]"
+                      title={`Plast: ${p}`}
+                    >
+                      {p}
+                    </span>
+                  ))}
+                </span>
+              </div>
+              <p className="mt-0.5 text-2xs leading-relaxed text-roksal-ink/80">{v.opombaDokaza}</p>
+            </li>
+          ))}
+        </ul>
+        <p className="mt-1.5 text-2xs font-medium text-roksal-ink">Sprejemni kriteriji (issue #1):</p>
+        <ul className="mt-0.5 space-y-0.5" data-testid="koncna-verifikacija-kriteriji">
+          {koncna.kriteriji.map((k) => (
+            <li
+              key={k.kriterij}
+              className="rounded-md border border-border bg-background/60 px-2 py-1.5"
+              data-testid="koncna-verifikacija-kriterij"
+            >
+              <p className="text-2xs font-medium leading-snug text-roksal-ink">{k.kriterij}</p>
+              <p className="mt-0.5 text-2xs leading-relaxed text-roksal-ink/80">
+                <span className="font-semibold">izpeljava:</span> {k.izpeljava}
+              </p>
+              <p className="text-2xs leading-relaxed text-muted-foreground">
+                <span className="font-semibold">dokaz:</span> {k.dokaz}
+              </p>
+            </li>
+          ))}
+        </ul>
+        <p className="mt-1.5 text-2xs text-muted-foreground" data-testid="koncna-verifikacija-sklep">
+          {koncna.sklep}
         </p>
       </section>
 
