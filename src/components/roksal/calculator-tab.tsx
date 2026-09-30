@@ -2341,15 +2341,15 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
         <>
           {/* runda S — priporočilo pritrditve iz terenskega pregleda */}
           {importedFromMeasurement?.podlaga && (
-            <Card className={importedFromMeasurement.podlaga === 'estrih' ? 'border-amber-300 bg-amber-50/60 dark:border-amber-700 dark:bg-amber-950/40' : 'border-roksal-navy/15 dark:border-roksal-ink/15'}>
+            <Card className={importedFromMeasurement.podlaga === 'estrih' ? 'border-roksal-amber/40 bg-roksal-amber/10' : 'border-roksal-navy/15 dark:border-roksal-ink/15'}>
               <CardContent className="p-4">
                 <div className="flex items-start gap-2.5">
-                  <AlertTriangle aria-hidden="true" className={`mt-0.5 h-4 w-4 shrink-0 ${importedFromMeasurement.podlaga === 'estrih' ? 'text-amber-600 dark:text-amber-400' : 'text-roksal-ink/50'}`} />
+                  <AlertTriangle aria-hidden="true" className={`mt-0.5 h-4 w-4 shrink-0 ${importedFromMeasurement.podlaga === 'estrih' ? 'text-roksal-amber' : 'text-roksal-ink/50'}`} />
                   <div className="min-w-0 flex-1">
                     <p className="text-[11px] font-bold text-roksal-ink">
                       Podlaga z terena: {podlagaLabels[importedFromMeasurement.podlaga] ?? importedFromMeasurement.podlaga}
                     </p>
-                    <p className={`mt-0.5 text-2xs leading-relaxed ${importedFromMeasurement.podlaga === 'estrih' ? 'font-medium text-amber-800 dark:text-amber-200' : 'text-muted-foreground'}`}>
+                    <p className={`mt-0.5 text-2xs leading-relaxed ${importedFromMeasurement.podlaga === 'estrih' ? 'font-medium text-roksal-ink' : 'text-muted-foreground'}`}>
                       {podlagaAnchorAdvice[importedFromMeasurement.podlaga] ?? 'Preveri podlago na terenu.'}
                     </p>
                     {importedFromMeasurement.podlaga === 'estrih' && (
@@ -2363,7 +2363,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                             className={`min-h-[32px] rounded-full border px-3 text-2xs font-bold transition-all ${
                               anchorType === t
                                 ? 'border-roksal-amber bg-roksal-amber/15 text-roksal-amber'
-                                : 'border-amber-300 bg-white text-amber-800 dark:border-amber-800/60 dark:bg-amber-950/30 dark:text-amber-300 hover:border-amber-400 dark:hover:border-amber-700'
+                                : 'border-roksal-amber/40 bg-background text-roksal-ink hover:border-roksal-amber'
                             }`}
                           >
                             {anchorTypeLabels[t]}
@@ -3800,9 +3800,9 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
 
               {/* runda S — pritrditev + barva z terena v BOM pogledu */}
               {importedFromMeasurement?.podlaga && (
-                <Card className={importedFromMeasurement.podlaga === 'estrih' ? 'border-amber-300 bg-amber-50/60 dark:border-amber-700 dark:bg-amber-950/40' : 'border-roksal-navy/15 dark:border-roksal-ink/15'}>
+                <Card className={importedFromMeasurement.podlaga === 'estrih' ? 'border-roksal-amber/40 bg-roksal-amber/10' : 'border-roksal-navy/15 dark:border-roksal-ink/15'}>
                   <CardContent className="flex items-start gap-2.5 p-3">
-                    <Drill aria-hidden="true" className={`mt-0.5 h-4 w-4 shrink-0 ${importedFromMeasurement.podlaga === 'estrih' ? 'text-amber-600 dark:text-amber-400' : 'text-roksal-ink/50'}`} />
+                    <Drill aria-hidden="true" className={`mt-0.5 h-4 w-4 shrink-0 ${importedFromMeasurement.podlaga === 'estrih' ? 'text-roksal-amber' : 'text-roksal-ink/50'}`} />
                     <div className="min-w-0 flex-1">
                       <p className="text-[11px] font-bold text-roksal-ink">
                         Pritrditev: {podlagaSidraLabel[importedFromMeasurement.podlaga] ?? 'po meri'}
@@ -3810,7 +3810,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                           (podlaga: {podlagaLabels[importedFromMeasurement.podlaga] ?? importedFromMeasurement.podlaga})
                         </span>
                       </p>
-                      <p className={`mt-0.5 text-2xs leading-relaxed ${importedFromMeasurement.podlaga === 'estrih' ? 'font-medium text-amber-800 dark:text-amber-200' : 'text-muted-foreground'}`}>
+                      <p className={`mt-0.5 text-2xs leading-relaxed ${importedFromMeasurement.podlaga === 'estrih' ? 'font-medium text-roksal-ink' : 'text-muted-foreground'}`}>
                         {podlagaAnchorAdvice[importedFromMeasurement.podlaga] ?? 'Preveri podlago na terenu.'}
                       </p>
                     </div>
@@ -3910,8 +3910,8 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                         </Card>
                       </div>
                       {parseInt(concreteHoleDepthMm) < 800 && (
-                        <p className="flex items-start gap-1.5 text-[11px] leading-snug text-amber-700 dark:text-amber-300">
-                          <AlertTriangle aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                        <p className="flex items-start gap-1.5 text-[11px] leading-snug text-roksal-ink">
+                          <AlertTriangle aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0 text-roksal-amber" />
                           Globina pod 800 mm — v Sloveniji je priporočena zmrzovalna globina ≈ 80 cm,
                           sicer lahko zmrzal dviguje stebre.
                         </p>

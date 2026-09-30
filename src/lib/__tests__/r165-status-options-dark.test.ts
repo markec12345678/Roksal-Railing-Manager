@@ -221,10 +221,14 @@ describe('R165 DARK strazar — sistematični bg-white sweep (14 komponent)', ()
     expect(src).toContain('border-roksal-red/40 dark:border-roksal-red/50')
   })
 
-  it('calculator-tab: neizbrani amber čip ima dark: varianti', () => {
+  it('calculator-tab: neizbrani amber čip — R314 PIN SHIFT na roksal žetone (žeton temsko prilagodljiv po naravi — NIČ dark: dvojčkov; obrnjena regresija: surovi čip se ne sme vrniti — R311 r164 vzorec)', () => {
     const raw = readFileSync(join(process.cwd(), 'src/components/roksal/calculator-tab.tsx'), 'utf8')
     const src = raw.split('\n').map((l) => l.replace(/\/\/.*$/, '')).join('\n')
     expect(src).toMatch(
+      /border-roksal-amber\/40 bg-background text-roksal-ink hover:border-roksal-amber/,
+    )
+    // obrnjena regresija (R309/R311 vzorec): STARI surovi čip se ne sme vrniti
+    expect(src).not.toMatch(
       /border-amber-300 bg-white text-amber-800 dark:border-amber-800\/60 dark:bg-amber-950\/30 dark:text-amber-300/,
     )
   })

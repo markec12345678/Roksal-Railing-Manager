@@ -250,11 +250,11 @@ export function PostSignaturePanel({ project }: { project: Project }) {
 
   if (!project.dealLocked) {
     return (
-      <Card className="border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40">
+      <Card className="border-roksal-amber/40 bg-roksal-amber/10">
         <CardContent className="py-6 text-center">
-          <Lock aria-hidden="true" className="h-8 w-8 mx-auto text-amber-500 dark:text-amber-400 mb-2" />
-          <p className="text-sm font-medium text-amber-900 dark:text-amber-200">Deal še ni zaklenjen</p>
-          <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+          <Lock aria-hidden="true" className="h-8 w-8 mx-auto text-roksal-amber mb-2" />
+          <p className="text-sm font-medium text-roksal-ink">Deal še ni zaklenjen</p>
+          <p className="text-xs text-roksal-ink/80 mt-1">
             Po podpisu ponudbe (V4) se deal samodejno zaklene in aktivirajo post-signature avtomatizacije.
           </p>
         </CardContent>
@@ -326,10 +326,10 @@ export function PostSignaturePanel({ project }: { project: Project }) {
         </Card>
 
         {/* 3. Project auto-create (status ZA_MONTAZO) */}
-        <Card className="border-amber-200 dark:border-amber-800">
+        <Card className="border-roksal-amber/40">
           <CardContent className="p-3">
             <div className="flex items-center gap-2 mb-1">
-              <FileText aria-hidden="true" className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              <FileText aria-hidden="true" className="h-4 w-4 text-roksal-amber" />
               <span className="text-[11px] font-semibold text-roksal-ink">Projekt = ZA_MONTAZO</span>
               <CheckCircle2 aria-hidden="true" className="h-3 w-3 text-green-600 dark:text-green-400 ml-auto" />
             </div>
@@ -468,7 +468,7 @@ export function PostSignaturePanel({ project }: { project: Project }) {
       </Button>
 
       {/* Legal disclaimer */}
-      <div className="rounded-lg border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-2 text-2xs text-amber-800 dark:text-amber-200">
+      <div className="rounded-lg border border-roksal-amber/40 bg-roksal-amber/10 p-2 text-2xs text-roksal-ink">
         <AlertTriangle aria-hidden="true" className="h-3 w-3 inline mr-1" />
         Deal je zaklenjen z avtomatskim sistemom. Vsa dejanja so zabeležena v audit trail
         z IP, device fingerprint in časom. Podpisana PDF ponudba je pravno veljaven dokument.

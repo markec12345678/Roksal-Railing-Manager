@@ -34,8 +34,10 @@ describe('R180 P1 — pregled za vodjo (vodja-dashboard)', () => {
     const src = vodja()
     expect(src).toContain("import { casOznaka } from '@/lib/osvezitev-fokus'")
     expect(src).toContain("import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'")
-    expect(src).toMatch(/\n  History, PackageX, CalendarX, FileText, FileSpreadsheet, Sparkles, Gauge,\n\} from 'lucide-react'/) // R224: PackageX + R228: CalendarX (nova tema) v ISTEM bloku — History pečat ostaja; R258: FileText (dobičkonost pill) v ISTEM bloku; R293: FileSpreadsheet (dobičkonost CSV gumb, 24. člen) v ISTEM bloku; R311: Sparkles (AI raba blok, 41. člen) v ISTEM bloku — pin posodobljen z OHRANJENO namero (R291/R293 vzorec); R312: Gauge (meritve zmogljivosti blok, 42. člen) v ISTEM bloku — ISTI vzorec
+    expect(src).toMatch(/\n  History, PackageX, CalendarX, FileText, FileSpreadsheet, Sparkles, Gauge, ClipboardList,\n\} from 'lucide-react'/) // R224: PackageX + R228: CalendarX (nova tema) v ISTEM bloku — History pečat ostaja; R258: FileText (dobičkonost pill) v ISTEM bloku; R293: FileSpreadsheet (dobičkonost CSV gumb, 24. člen) v ISTEM bloku; R311: Sparkles (AI raba blok, 41. člen) v ISTEM bloku — pin posodobljen z OHRANJENO namero (R291/R293 vzorec); R312: Gauge (meritve zmogljivosti blok, 42. člen) v ISTEM bloku — ISTI vzorec; R314: ClipboardList (audit tabela blok, 44. člen) v ISTEM bloku — ISTI vzorec
     expect(src).toContain('{casOznaka(vodjaOsvezitev)}')
+    // obrnjena regresija (R309/R311 vzorec): STARI pin brez ClipboardList se ne sme vrniti
+    expect(src).not.toMatch(/\n  History, PackageX, CalendarX, FileText, FileSpreadsheet, Sparkles, Gauge,\n\} from 'lucide-react'/)
     // OPOMBA: vodja ima pre-existing formatTime() (termin listing) — to je
     // domensko formatiranje časa termina, NE pečata; EN VIR pravilo velja za
     // PEČAT (ki uporablja izključno casOznaka — dokazano v render testu).

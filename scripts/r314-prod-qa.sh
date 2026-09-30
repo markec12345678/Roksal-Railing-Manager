@@ -1,59 +1,65 @@
 #!/bin/bash
-# R313 — PRVA naloga (worklog R314): potrditi R290+…+R312+R313 SKUPAJ na produ.
-#   ⚠️ ESKALACIJA R313: R312 deploy je NA VERCEL RATE LIMITU («Deployment rate
-#      limited — retry in 24 hours», GitHub commit status — Hobby kvota).
-#      Produ lahko ŠE VEDNO nosi R311 (build 10:56:03Z) tudi potem, ko ta
-#      skripta pričakuje R313 — v tem primeru je ISKREN izid spet ESKALACIJA
-#      (kanon R258: stale ni koda-bug; lokalna veriga R313 je polno zelena).
-#      Ta skripta se teče ŠE ENKRAT po lastniškem deploy posredovanju.
-#   R313 = 43. člen issue #1 «MERITVE ZMOGLJIVOSTI — PDF RAZŠIRITEV»
-#      (Deliverable 6 dopolnitev): 2 realni PDF meritvi v bench —
-#      konflikti.pdf (fonts + autoTable + bajti, ×4) + racuni-projekti.pdf
-#      (12 računov × 4 projekti, ×4); ops 8 → 10, 1800 → 1808 iteracij; vsak
-#      izhod preverjen z %PDF- magijo. + MANDATORY STIL val 4: cv-studio ×26 +
-#      measurement-studio ×5 + crm-tab ×7 = 38 mest — surove amber → roksal
-#      žetoni (0 novih hex); 5 izrecnih izjem (legend beseda, barvno kodirani
-#      stanji kakovosti ×3 [red/amber/green lestvica], POTENCIALEN status —
-#      R308/R234 lekcije) zaklenjene na SOURCE nivoju (r313 STRAŽAR blok).
-#   Z0  build-guard (EPOCH): health build > R313 commit čas (git log —
-#       self-contained meja) → R313 deploy potrjen (nosi R290+…+R313 — kanon
-#       R280/R284), polni LIVE needle teki (R313 PDF ×4 + STIL ×3 + R312
-#       zmogljivost ×5 + STIL ×3 + R311 AI raba ×5 + STIL ×2 + R310 STIL ×5 +
-#       R309 ×4 + R308 ×7 + R307 ×11 + … + R295 ×9 + regresije).
+# R314 — PRVA naloga (worklog R315): potrditi R290+…+R313+R314 SKUPAJ na produ.
+#   ✅ ESKALACIJA R313 ZAPRTA (R314): Vercel Hobby kvota potečena — R313
+#      deploy uspešen 12:38:52Z (GitHub commit status; build 12:37:05.813Z >
+#      R313 meja 12:36:43). Produ nosi R313 (R312+R313 SKUPAJ — kanon
+#      UNION harvest); r313-prod-qa.sh polna LIVE veja EXIT=0 (329 OK,
+#      Z2b 13×400 + users 403, ZERO must_miss).
+#   ⚠️ POPRAVEK R314 (Z2 harvest): cvstudio dispatch DODAN v OBE veji —
+#      R313 cv-studio STIL needleja sta bila 2× MISS na prvem LIVE teku
+#      (chunk ni bil naložen — dispatch pokritost NI sledila needle
+#      pokritosti; LEKCIJA R309 1 ponovitev). Popravek je v QA orodju;
+#      aplikacija je bila zdrava (vir + build dokazana).
+#   R314 = 44. člen issue #1 «AUDIT TABELA NA ZASLONU» (Deliverable 4):
+#      feature-by-feature audit §1–§11 — NOV lib avtomatizacija-pregled
+#      (ČISTA projekcija EN VIR audita AVTOMATIZACIJA_AUDIT; števec
+#      izračunani, sklep verbatim, fail-closed ×6); blok na vodji
+#      [avtomatizacija-dokaz/vrstica/sklep]; značke 100 % roksal žetoni
+#      (R225/R226 čisto). + MANDATORY STIL val 5: calculator-tab ×8 +
+#      post-signature-panel ×7 + photo-tab ×5 = 20 mest — surove amber →
+#      roksal žetoni (0 novih hex); 2 izrecni izjemi (photo-tab KATEGORIJE
+#      MED značka + stats.med KPI — barvno kodirana kategorija faze
+#      PRED blue / MED amber / PO green, R308/R312 precedens).
+#   Z0  build-guard (EPOCH): health build > R314 commit čas (git log —
+#       self-contained meja) → R314 deploy potrjen (nosi R290+…+R314 — kanon
+#       R280/R284), polni LIVE needle teki (R314 audit ×7 + STIL ×11 + R313
+#       PDF ×4 + STIL ×3 + R312 zmogljivost ×5 + STIL ×3 + R311 AI raba ×5 +
+#       STIL ×2 + R310 STIL ×5 + R309 ×4 + R308 ×7 + R307 ×11 + … + R295 ×9
+#       + regresije).
 #       build ≤ meja → **ESKALACIJA veja** (kanon R258) — iskren stale-dokaz +
 #       Z1b + Z3 (ZERO-MUTACIJA). ZERO must_miss v stale veji (lekcija R294).
 #   Z1  meritve tab ŽIVO — sync žig POGOJNO (kanon r277).
 #   Z1b verzije ruta 404 + 'Meritev ne obstaja' (R276+ regresa). ZERO-MUTACIJA.
 #   Z1c zvonček POGOJNI DOM probe + Z1d presežek note POGOJNI (R287/R289).
-#   Z2  čanki needleji: R313 ×4+6 + R312 ×5+3 + R311 ×7+1 + R310 ×5+1 + R309 ×4+3 +
-#       R308 ×7 + R307 ×11 + R306 ×11 + R295 ×8 + R294 ×9 + R293 ×8 + R292 ×8 +
-#       R291 ×8 + R290 ×8 + regresije.
+#   Z2  čanki needleji: R314 ×18+6 + R313 ×4+6 + R312 ×5+3 + R311 ×7+1 +
+#       R310 ×5+1 + R309 ×4+3 + R308 ×7 + R307 ×11 + R306 ×11 + R295 ×8 +
+#       R294 ×9 + R293 ×8 + R292 ×8 + R291 ×8 + R290 ×8 + regresije.
 #   Z2b ŽIČNI EN VIR probei: val-1 ×4 + val-3 ×9 × pokvarjen JSON → 400 z ISTO
 #       ovojnico + users 403 deny-first POZITIVNI dokaz (lekcija R311 1).
 #   Z3  v99 sync gate (R274). ZERO-MUTACIJA.
 #   LEKCIJA R307 3 (derive): grep čistost preverba uporablja RAZRED ZNAKOV
-#   ('R31[2]_PUSH') — preverba ne sme ujeti svojega vzorca (samozadetek).
+#   ('R31[3]_PUSH') — preverba ne sme ujeti svojega vzorca (samozadetek).
 set -u
 source /home/z/my-project/scripts/e2e-lib.sh
 PROD="https://roksal-railing-manager.vercel.app"
-R313_COMMIT_ISO="$(git log --format='%cI ::: %s' 2>/dev/null | awk -F' ::: ' '$2 ~ /^R313 —/ {print $1; exit}')"
-[ -n "$R313_COMMIT_ISO" ] || { echo "FAIL-CLOSED: R313 commita ni v git zgodovini — EPOCH guard brez meje"; exit 1; }
-R313_PUSH="$(date -u -d "$R313_COMMIT_ISO" +%Y-%m-%dT%H:%M:%S)"
-echo "R313 meja (commit čas, UTC): $R313_PUSH"
+R314_COMMIT_ISO="$(git log --format='%cI ::: %s' 2>/dev/null | awk -F' ::: ' '$2 ~ /^R314 —/ {print $1; exit}')"
+[ -n "$R314_COMMIT_ISO" ] || { echo "FAIL-CLOSED: R314 commita ni v git zgodovini — EPOCH guard brez meje"; exit 1; }
+R314_PUSH="$(date -u -d "$R314_COMMIT_ISO" +%Y-%m-%dT%H:%M:%S)"
+echo "R314 meja (commit čas, UTC): $R314_PUSH"
 # LEKCIJA R306 2: derive transformacije — grep preverba ostankov starega imena
 # PRED tekom (unbound variable pri set -u je rešil, a čas izgubljen).
-if grep -qE 'R31[2]_PUSH|R312[_]COMMIT_ISO' "$0"; then
-  echo "FAIL-CLOSED: derive ostanki R312 PUSH/COMMIT meje v r313-prod-qa.sh — popravi pred tekom"
+if grep -qE 'R31[3]_PUSH|R313[_]COMMIT_ISO' "$0"; then
+  echo "FAIL-CLOSED: derive ostanki R313 PUSH/COMMIT meje v r314-prod-qa.sh — popravi pred tekom"
   exit 1
 fi
 echo "derive čistost: OK (nič R308 boundary ostankov — razred znakov, brez samozadetka)"
 
 
-echo "=== Z0: prod build-guard — R313 deploy detekcija (EPOCH primerjava) ==="
+echo "=== Z0: prod build-guard — R314 deploy detekcija (EPOCH primerjava) ==="
 BUILD=$(curl -s --max-time 15 "$PROD/api/public/health" | python3 -c "import json,sys; print(json.load(sys.stdin).get('build',''))" || true)
 echo "PROD build: $BUILD"
 STALE=0
-python3 - "$BUILD" "$R313_PUSH" <<'PYEOF' || STALE=1
+python3 - "$BUILD" "$R314_PUSH" <<'PYEOF' || STALE=1
 import sys
 from datetime import datetime
 build = sys.argv[1]
@@ -68,8 +74,8 @@ PYEOF
 if [ "$STALE" = "1" ]; then
   echo ""
   echo "████████████████████████████████████████████████████████████████"
-  echo "██ ESKALACIJA — PROD STALE: build $BUILD ≤ R313 commit meja ($R313_PUSH)."
-  echo "██ R313 pričakuje SKUPNI deploy (kanon R280/R284)."
+  echo "██ ESKALACIJA — PROD STALE: build $BUILD ≤ R314 commit meja ($R314_PUSH)."
+  echo "██ R314 pričakuje SKUPNI deploy (kanon R280/R284)."
   echo "██ Kanon R258: deployment pipeline event, NI koda-bug. Eksplicitna"
   echo "██ eskalacija LASTNIKU (Vercel dashboard — deploy stuck/limit)."
   echo "██ Zdaj: ISKREN stale-dokaz (stale zdrav LIVE needleji; ZERO must_miss — skew lekcija R294)."
@@ -81,10 +87,10 @@ if [ "$STALE" = "1" ]; then
   echo "=== Z1b-stale: verzije ruta ŽIVO (ZERO-MUTACIJA GET) ==="
   agent-browser eval "(()=>{window.__verz=null; window.__verzStatus=null; fetch('/api/measurements/r304-ne-obstojeci-id-probe/verzije',{credentials:'same-origin'}).then(r=>{window.__verzStatus=r.status; return r.json();}).then(d=>{window.__verz=d;}).catch(e=>{window.__verzErr=String(e)}); return 'poslano';})()" 2>&1 | tail -1
   eb_cakaj 3
-  agent-browser eval "JSON.stringify({status:window.__verzStatus, body:window.__verz??null, napaka:window.__verzErr??null})" 2>&1 | tail -1 > /tmp/r313-z1b.json
+  agent-browser eval "JSON.stringify({status:window.__verzStatus, body:window.__verz??null, napaka:window.__verzErr??null})" 2>&1 | tail -1 > /tmp/r314-z1b.json
   python3 - <<'PYEOF' || exit 1
 import json
-raw = open('/tmp/r313-z1b.json').read().strip()
+raw = open('/tmp/r314-z1b.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['napaka'] is None, 'Z1b mrežna napaka: ' + json.dumps(d)
@@ -96,10 +102,10 @@ PYEOF
   echo "=== Z3-stale: v99 sync gate (ZERO-MUTACIJA) ==="
   agent-browser eval "(()=>{window.__v99=null; window.__v99err=null; fetch('/api/sync',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify([{id:'r304-prod-v99-probe-'+Date.now(),customerName:'r304 probe v99',contractVersion:99}])}).then(r=>r.json()).then(d=>{window.__v99=d;}).catch(e=>{window.__v99err=String(e)}); return 'poslano';})()" 2>&1 | tail -1
   eb_cakaj 3
-  agent-browser eval "JSON.stringify({odgovor:window.__v99??null, napaka:window.__v99err??null})" 2>&1 | tail -1 > /tmp/r313-z3.json
+  agent-browser eval "JSON.stringify({odgovor:window.__v99??null, napaka:window.__v99err??null})" 2>&1 | tail -1 > /tmp/r314-z3.json
   python3 - <<'PYEOF' || exit 1
 import json
-raw = open('/tmp/r313-z3.json').read().strip()
+raw = open('/tmp/r314-z3.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['napaka'] is None, 'Z3 mrežna napaka: ' + json.dumps(d)
@@ -112,9 +118,9 @@ print('Z3 OK — stale build zdrav: v99 sync gate ŽIVO (fail-closed, ZERO-MUTAC
 PYEOF
 
   echo "=== Z2-stale: čanki — stale-dokaz needleji ==="
-  OUT=/tmp/r313-prod-chunks
+  OUT=/tmp/r314-prod-chunks
   mkdir -p "$OUT" && rm -f "$OUT"/chunk-*.js "$OUT"/chunk-urls.txt
-  : > /tmp/r313-chunkurls-lines-stale.txt
+  : > /tmp/r314-chunkurls-lines-stale.txt
   # R297 lekcija (prvi resnični stale + 2. LIVE tek): EN skupni harvest je
   # NEDETERMINISTIČEN (privzeti ResourceTiming buffer 250 se preplavi pri
   # 9-12 zavihkov; reload med sejo — med Vercel deployom! — ponastavi vnose;
@@ -126,11 +132,11 @@ PYEOF
 agent-browser eval "(()=>{performance.setResourceTimingBufferSize(10000); return 'buf';})()" 2>&1 | tail -1 > /dev/null
   eb_dispatch "$d"
   eb_cakaj 3
-  agent-browser eval "JSON.stringify(performance.getEntriesByType('resource').map(e=>e.name).filter(u=>u.includes('/_next/static/chunks/')&&u.endsWith('.js')))" 2>&1 | tail -1 >> /tmp/r313-chunkurls-lines-stale.txt
+  agent-browser eval "JSON.stringify(performance.getEntriesByType('resource').map(e=>e.name).filter(u=>u.includes('/_next/static/chunks/')&&u.endsWith('.js')))" 2>&1 | tail -1 >> /tmp/r314-chunkurls-lines-stale.txt
   done
-  agent-browser eval "JSON.stringify(performance.getEntriesByType('resource').map(e=>e.name).filter(u=>u.includes('/_next/static/chunks/')&&u.endsWith('.js')))" 2>&1 | tail -1 >> /tmp/r313-chunkurls-lines-stale.txt
-  python3 /home/z/my-project/scripts/merge-chunkurls.py /tmp/r313-chunkurls-lines-stale.txt /tmp/r313-chunkurls.txt || { echo "PY MERGE FAIL — abort"; exit 1; }
-  cp /tmp/r313-chunkurls.txt "$OUT"/chunk-urls.txt
+  agent-browser eval "JSON.stringify(performance.getEntriesByType('resource').map(e=>e.name).filter(u=>u.includes('/_next/static/chunks/')&&u.endsWith('.js')))" 2>&1 | tail -1 >> /tmp/r314-chunkurls-lines-stale.txt
+  python3 /home/z/my-project/scripts/merge-chunkurls.py /tmp/r314-chunkurls-lines-stale.txt /tmp/r314-chunkurls.txt || { echo "PY MERGE FAIL — abort"; exit 1; }
+  cp /tmp/r314-chunkurls.txt "$OUT"/chunk-urls.txt
   i=0
   while read -r url; do
     [ -z "$url" ] && continue
@@ -191,13 +197,13 @@ PYEOF2
   echo "██ (needleji + Z1b + Z3 ŽIVO; ZERO must_miss — skew protection lekcija R294)."
   echo "██ ESKALACIJA LASTNIKU: Vercel dashboard — deploy stuck/limit (4. zapis, stale od 20:46:30Z)."
   echo "██ Runda nadaljuje LOKALNO (kanon R280/R284: naslednji push nosi"
-  echo "██ vse generacije — needleji pokrijejo R290+…+R313 — kanon R280/R284)."
+  echo "██ vse generacije — needleji pokrijejo R290+…+R314 — kanon R280/R284)."
   echo "████████████████████████████████████████████████████████████████"
   exit 0
 fi
 
-echo "R313 deploy potrjen (build $BUILD > R313 commit meja $R313_PUSH) — polni LIVE teki"
-echo "OPOMBA: deploy je nosil VSE generacije (R290+…+R313 — kanon R280/R284)"
+echo "R314 deploy potrjen (build $BUILD > R314 commit meja $R314_PUSH) — polni LIVE teki"
+echo "OPOMBA: deploy je nosil VSE generacije (R290+…+R314 — kanon R280/R284)"
 
 eb_odpri_in_prijavi || { echo "LOGIN FAIL — abort"; agent-browser close --all > /dev/null 2>&1; exit 1; }
 eb_zapri_vodic
@@ -206,8 +212,8 @@ echo "=== Z1: meritve tab ŽIVO — sync žig (POGOJNO — spot portfel podatkov
 eb_dispatch '{"tab":"measurements","more":null,"subTab":null,"osnutek":null,"filter":null}'
 if eb_pocakaj_na "(()=>{return !!document.querySelector('button[aria-label^=\"Pokaži zgodovino verzij meritve\"]');})()" 16; then
   eb_cakaj 2
-  agent-browser eval "(()=>{const syncPill=[...document.querySelectorAll('span.cursor-help')].find(x=>(x.getAttribute('title')||'').startsWith('Sinhronizacijsko stanje:')); const viriMini=[...document.querySelectorAll('span.cursor-help')].find(x=>(x.textContent||'').startsWith('Viri (viden seznam):')); return JSON.stringify({syncPill:syncPill?(syncPill.getAttribute('title')||'').slice(0,45):null, viriMini:viriMini?viriMini.textContent.trim():null, err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r313-z1.json
-  python3 -c "import json; r=json.load(open('/tmp/r313-z1.json')); d=json.loads(r) if isinstance(r,str) else r; t = 'R281 sync žig ŽIVO (' + d['syncPill'] + ' …)' if d['syncPill'] else 'R281 OPOMBA: sync žig NE prisoten — spot portfel brez sync metadata (iskrena praznina — pogojni probe po kanonu r277 Z1)'; v = ' · R283 VIRI MINI ŽIVO (' + d['viriMini'] + ')' if d['viriMini'] else ' · R283 VIRI MINI NE prisoten — spot seznam brez virov (iskrena praznina — pogojni)'; print('Z1 OK — meritve UI ŽIVO · ' + t + v)" || exit 1
+  agent-browser eval "(()=>{const syncPill=[...document.querySelectorAll('span.cursor-help')].find(x=>(x.getAttribute('title')||'').startsWith('Sinhronizacijsko stanje:')); const viriMini=[...document.querySelectorAll('span.cursor-help')].find(x=>(x.textContent||'').startsWith('Viri (viden seznam):')); return JSON.stringify({syncPill:syncPill?(syncPill.getAttribute('title')||'').slice(0,45):null, viriMini:viriMini?viriMini.textContent.trim():null, err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r314-z1.json
+  python3 -c "import json; r=json.load(open('/tmp/r314-z1.json')); d=json.loads(r) if isinstance(r,str) else r; t = 'R281 sync žig ŽIVO (' + d['syncPill'] + ' …)' if d['syncPill'] else 'R281 OPOMBA: sync žig NE prisoten — spot portfel brez sync metadata (iskrena praznina — pogojni probe po kanonu r277 Z1)'; v = ' · R283 VIRI MINI ŽIVO (' + d['viriMini'] + ')' if d['viriMini'] else ' · R283 VIRI MINI NE prisoten — spot seznam brez virov (iskrena praznina — pogojni)'; print('Z1 OK — meritve UI ŽIVO · ' + t + v)" || exit 1
 else
   echo "Z1 OPOMBA: meritve UI ni dosegljiva spot seji (MONTER skoping?) — UI probe preskočen, ruta probe Z1b ostaja obvezen"
 fi
@@ -215,10 +221,10 @@ fi
 echo "=== Z1b: verzije ruta ŽIVO — 404 + R276 žična vrstica (ZERO-MUTACIJA GET) ==="
 agent-browser eval "(()=>{window.__verz=null; window.__verzStatus=null; fetch('/api/measurements/r304-ne-obstojeci-id-probe/verzije',{credentials:'same-origin'}).then(r=>{window.__verzStatus=r.status; return r.json();}).then(d=>{window.__verz=d;}).catch(e=>{window.__verzErr=String(e)}); return 'poslano';})()" 2>&1 | tail -1
 eb_cakaj 3
-agent-browser eval "JSON.stringify({status:window.__verzStatus, body:window.__verz??null, napaka:window.__verzErr??null})" 2>&1 | tail -1 > /tmp/r313-z1b.json
+agent-browser eval "JSON.stringify({status:window.__verzStatus, body:window.__verz??null, napaka:window.__verzErr??null})" 2>&1 | tail -1 > /tmp/r314-z1b.json
 python3 - <<'PYEOF' || exit 1
 import json
-raw = open('/tmp/r313-z1b.json').read().strip()
+raw = open('/tmp/r314-z1b.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['napaka'] is None, 'Z1b mrežna napaka: ' + json.dumps(d)
@@ -231,10 +237,10 @@ echo "=== Z1c: ZVONČEK ŽIVO (POGOJNI DOM probe, Escape zapri; ZERO-MUTACIJA) =
 agent-browser eval "(()=>{const b=document.querySelector('button[aria-label^=\"Obvestila\"]'); if(!b) return 'BREZ-ZVONČKA'; b.click(); return 'odprto';})()" 2>&1 | tail -1
 if eb_pocakaj_na "(()=>{const p=[...document.querySelectorAll('span')].some(x=>x.textContent.includes('CRM opomniki in poslana obvestila')); return p;})()" 16; then
   eb_cakaj 2
-  agent-browser eval "(()=>{const desc=[...document.querySelectorAll('span')].some(x=>x.textContent.includes('CRM opomniki in poslana obvestila')); const vrstice=[...document.querySelectorAll('button')].filter(x=>(x.getAttribute('aria-label')||'').includes('— odpre CRM (opomnik)')); return JSON.stringify({desc, stOpomnikov:vrstice.length, err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r313-z1c.json
+  agent-browser eval "(()=>{const desc=[...document.querySelectorAll('span')].some(x=>x.textContent.includes('CRM opomniki in poslana obvestila')); const vrstice=[...document.querySelectorAll('button')].filter(x=>(x.getAttribute('aria-label')||'').includes('— odpre CRM (opomnik)')); return JSON.stringify({desc, stOpomnikov:vrstice.length, err:window.__err??null});})()" 2>&1 | tail -1 | tee /tmp/r314-z1c.json
   python3 - <<'PYEOF' || exit 1
 import json
-raw = open('/tmp/r313-z1c.json').read().strip()
+raw = open('/tmp/r314-z1c.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['desc'] is True, 'Z1c SheetDescription FAIL: ' + json.dumps(d)
@@ -249,10 +255,10 @@ else
 fi
 
 echo "=== Z1d: PRESEŽEK note POGOJNI probe (spot resnica neznana) ==="
-agent-browser eval "(()=>{const note=document.querySelector('[aria-label=\"Iskren presežek signalov\"]'); return JSON.stringify({notePrisoten:!!note, vsebina:note?note.textContent.trim().slice(0,120):null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r313-z1d.json
+agent-browser eval "(()=>{const note=document.querySelector('[aria-label=\"Iskren presežek signalov\"]'); return JSON.stringify({notePrisoten:!!note, vsebina:note?note.textContent.trim().slice(0,120):null, err:window.__err??null});})()" 2>&1 | tail -1 > /tmp/r314-z1d.json
 python3 - <<'PYEOF' || exit 1
 import json
-raw = open('/tmp/r313-z1d.json').read().strip()
+raw = open('/tmp/r314-z1d.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['err'] is None, 'Z1d err: ' + json.dumps(d)
@@ -264,21 +270,21 @@ PYEOF
 agent-browser eval "(()=>{document.body.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true})); return 'esc';})()" 2>&1 | tail -1
 eb_cakaj 2
 
-echo "=== Z2: čanki — klient needleji (R313 ×4+6 + R312 ×5+3 + R311 ×7+1 + R310 ×5+1 + R309 ×4+3 + R308 ×7 + R307 ×11 + R306 ×11 + R295 ×9 LIVE + R294 ×9 + R293 ×8 + R292 ×8 + R291 ×8 + R290 ×8 + regresije + must_miss) ==="
-OUT=/tmp/r313-prod-chunks
+echo "=== Z2: čanki — klient needleji (R314 ×18+6 + R313 ×4+6 + R312 ×5+3 + R311 ×7+1 + R310 ×5+1 + R309 ×4+3 + R308 ×7 + R307 ×11 + R306 ×11 + R295 ×9 LIVE + R294 ×9 + R293 ×8 + R292 ×8 + R291 ×8 + R290 ×8 + regresije + must_miss) ==="
+OUT=/tmp/r314-prod-chunks
 mkdir -p "$OUT" && rm -f "$OUT"/chunk-*.js "$OUT"/chunk-urls.txt
-: > /tmp/r313-chunkurls-lines-live.txt
+: > /tmp/r314-chunkurls-lines-live.txt
 # R297 lekcija: ISTA UNION oblika kot stale veja (buffer 10000 + per-tab
 # slike brez clear + končni en strel + merge/dedup — glej komentar tam).
 for d in '{"tab":"dashboard","more":null,"subTab":null,"osnutek":null,"filter":null}' '{"tab":"measurements","more":null,"subTab":null,"osnutek":null,"filter":null}' '{"tab":"inventory","more":null,"subTab":null,"osnutek":null,"filter":null}' '{"tab":"more","more":"documents","subTab":null,"osnutek":null,"filter":null}' '{"tab":"more","more":"material","subTab":"suppliers","osnutek":null,"filter":null}' '{"tab":"more","more":"crm","subTab":null,"osnutek":null,"filter":null}' '{"tab":"more","more":"material","subTab":"orders","osnutek":null,"filter":null}' '{"tab":"more","more":"logistics","subTab":null,"osnutek":null,"filter":null}' '{"tab":"inclinometer","more":null,"subTab":null,"osnutek":null,"filter":null}' '{"tab":"more","more":"cvstudio","subTab":null,"osnutek":null,"filter":null}' '{"tab":"more","more":"vodja","subTab":null,"osnutek":null,"filter":null}' '{"tab":"more","more":"teren","subTab":null,"osnutek":null,"filter":null}' '{"tab":"more","more":"ekipa","subTab":null,"osnutek":null,"filter":null}'; do
 agent-browser eval "(()=>{performance.setResourceTimingBufferSize(10000); return 'buf';})()" 2>&1 | tail -1 > /dev/null
   eb_dispatch "$d"
   eb_cakaj 3
-  agent-browser eval "JSON.stringify(performance.getEntriesByType('resource').map(e=>e.name).filter(u=>u.includes('/_next/static/chunks/')&&u.endsWith('.js')))" 2>&1 | tail -1 >> /tmp/r313-chunkurls-lines-live.txt
+  agent-browser eval "JSON.stringify(performance.getEntriesByType('resource').map(e=>e.name).filter(u=>u.includes('/_next/static/chunks/')&&u.endsWith('.js')))" 2>&1 | tail -1 >> /tmp/r314-chunkurls-lines-live.txt
 done
-agent-browser eval "JSON.stringify(performance.getEntriesByType('resource').map(e=>e.name).filter(u=>u.includes('/_next/static/chunks/')&&u.endsWith('.js')))" 2>&1 | tail -1 >> /tmp/r313-chunkurls-lines-live.txt
-python3 /home/z/my-project/scripts/merge-chunkurls.py /tmp/r313-chunkurls-lines-live.txt /tmp/r313-chunkurls.txt || { echo "PY MERGE FAIL — abort"; exit 1; }
-cp /tmp/r313-chunkurls.txt "$OUT"/chunk-urls.txt
+agent-browser eval "JSON.stringify(performance.getEntriesByType('resource').map(e=>e.name).filter(u=>u.includes('/_next/static/chunks/')&&u.endsWith('.js')))" 2>&1 | tail -1 >> /tmp/r314-chunkurls-lines-live.txt
+python3 /home/z/my-project/scripts/merge-chunkurls.py /tmp/r314-chunkurls-lines-live.txt /tmp/r314-chunkurls.txt || { echo "PY MERGE FAIL — abort"; exit 1; }
+cp /tmp/r314-chunkurls.txt "$OUT"/chunk-urls.txt
 i=0
 while read -r url; do
   [ -z "$url" ] && continue
@@ -365,6 +371,37 @@ need "hover:bg-roksal-amber hover:text-roksal-navy" "R313 crm hover solid amber 
 must_miss "border-amber-300 bg-amber-50 py-2" "R313 cv-studio surovi Alert (izginil — unikatna sekvenca) — LIVE"
 must_miss "TODO-R313" "R313 — brez razvojnih ostankov"
 
+echo "--- R314 MANDATORY — 44. člen: audit tabela na zaslonu + STIL val 5 (LIVE) ---"
+# Vodja chunk nosi lib avtomatizacija-pregled (sklep template fragmenti +
+# testidi — string literali preživijo minifikacijo; kanon ASCII/UTF-8).
+# Značke = roksal žetoni (R225/R226 čisto); tabela = ČISTA projekcija EN VIR
+# audita (števec izračunani — tabela ne sme sanjati; strazar R294 dokazuje
+# poti na disku).
+need "avtomatizacija-dokaz" "R314 blok testid (vodja chunk) — LIVE"
+need "Avtomatizacija — audit po območjih" "R314 naslov (aria + glava) — LIVE"
+need "Audit območij: " "R314 sklep glava (lib template) — LIVE"
+need " — jedro deluje brez AI" "R314 sklep ničelna veja (lib ternara literal) — LIVE"
+need " impl · " "R314 vrstica impl števec (izračunan) — LIVE"
+need " dokazov" "R314 vrstica dokazi števec — LIVE"
+need "strazar R294" "R314 title referenca (poti morajo obstajati) — LIVE"
+need "mt-0.5 h-3.5 w-3.5 shrink-0 text-roksal-amber" "R314 calculator zamrzovalna ikona (žeton na ikoni) — LIVE"
+need "border-roksal-amber/40 bg-background text-roksal-ink hover:border-roksal-amber" "R314 calculator sidra gumb — LIVE"
+need "border-roksal-amber/40 bg-roksal-amber/10 p-2 text-2xs text-roksal-ink" "R314 post-signature disclaimer — LIVE"
+need "border-roksal-amber/40 bg-roksal-amber/10 p-3 text-xs text-roksal-ink" "R314 photo projekt warn — LIVE"
+need "h-10 w-10 text-roksal-amber" "R314 photo camera error ikona — LIVE"
+need "border-roksal-amber/40 bg-roksal-amber/10 px-2 py-1.5 text-2xs text-roksal-ink" "R314 photo navodila — LIVE"
+need "border-roksal-amber/40 bg-roksal-amber/10 px-3 py-2 text-[11px] text-roksal-ink" "R314 photo priporočilo — LIVE"
+need "hover:bg-roksal-amber/25" "R314 photo zapri hover (R312 Badge vzorec) — LIVE"
+need "border-roksal-green/40 bg-roksal-green/10 text-roksal-green" "R314 DETERMINISTICNO značka (roksal žeton) — LIVE"
+need "border-roksal-red/40 bg-roksal-red/10 text-roksal-red" "R314 AI_ZAHTEVANO značka (roksal žeton) — LIVE"
+need "border-roksal-navy/25 bg-roksal-navy/5 text-roksal-ink dark:border-roksal-ink/20" "R314 SKRIPTA značka (r166 dark: obrata) — LIVE"
+must_miss "bg-amber-50/60" "R314 calculator estrih surovi par (izginil — unikaten /60 fragment) — LIVE"
+must_miss "border-amber-300 bg-white text-amber-800" "R314 calculator stari surovi čip (izginil — unikaten rep) — LIVE"
+must_miss "border-amber-300 bg-amber-50 p-3" "R314 photo stari warn vsebnik (izginil — unikaten) — LIVE"
+must_miss "h-8 w-8 mx-auto text-amber-500" "R314 post-signature stara Lock ikona (izginil — unikaten rep) — LIVE"
+must_miss "hover:bg-amber-100" "R314 photo stari zapri hover (izginil) — LIVE"
+must_miss "TODO-R314" "R314 — brez razvojnih ostankov"
+
 echo "=== Z2b: EN VIR ŽIVO NA ŽICI (val-1 ×4 + val-3 ×9 × pokvarjen JSON → 400 z ISTO ovojnico + users 403 deny-first POZITIVNI dokaz; ZERO-MUTACIJA — guard strelja PRED db zapisom) ==="
 # Vzorec lokalnega Z0ah/Z0ai (r309/r310-e2e-browser.sh), tu podmnožica 13:
 # spot seja je MONTER (precedens R127/R165) — 7 vrat ima
@@ -381,12 +418,12 @@ echo "=== Z2b: EN VIR ŽIVO NA ŽICI (val-1 ×4 + val-3 ×9 × pokvarjen JSON �
 # matriki, ne samo gate simbole; tek 2 iskren FAIL: users 403]) — vrstni red:
 # rate-limit → authenticate → [pravica] → preberiJsonTelo. Dvojni podpis
 # (R194/R309 lekcija 4): roksal_csrf iz document.cookie → x-csrf-token.
-agent-browser eval "(()=>{window.__r313val=[]; const ck=document.cookie.split(';').map(s=>s.trim()).find(s=>s.startsWith('roksal_csrf=')); const tok=ck?ck.slice(12):null; const h={'Content-Type':'application/json'}; if(tok)h['x-csrf-token']=tok; const rute=[['measurements','/api/measurements','POST'],['punch','/api/punch','POST'],['ar-snapshots','/api/ar-snapshots','POST'],['photos','/api/photos','POST'],['quote','/api/quote','POST'],['railing-layout','/api/railing-layout','POST'],['users','/api/users','POST'],['crm','/api/crm','PATCH'],['qc','/api/qc','POST'],['evidence','/api/evidence','POST'],['viz-render','/api/viz/render','POST'],['measurements-id','/api/measurements/e2e-r310-ne-obstojeci-id','PATCH'],['ar-analyze','/api/ar/analyze','POST'],['measure-photo','/api/measure/photo','POST']]; (async()=>{ for (const [ime,url,metoda] of rute){ try{ const r=await fetch(url,{method:metoda,credentials:'same-origin',headers:h,body:'{pokvarjen'}); let b=null; try{b=await r.json();}catch(e){b=null;} window.__r313val.push({ime,status:r.status,error:b&&typeof b==='object'?(b.error??null):null}); }catch(e){ window.__r313val.push({ime,status:0,error:'MREŽA: '+String(e)}); } } })(); return 'poslano '+rute.length;})()" 2>&1 | tail -1
+agent-browser eval "(()=>{window.__r314val=[]; const ck=document.cookie.split(';').map(s=>s.trim()).find(s=>s.startsWith('roksal_csrf=')); const tok=ck?ck.slice(12):null; const h={'Content-Type':'application/json'}; if(tok)h['x-csrf-token']=tok; const rute=[['measurements','/api/measurements','POST'],['punch','/api/punch','POST'],['ar-snapshots','/api/ar-snapshots','POST'],['photos','/api/photos','POST'],['quote','/api/quote','POST'],['railing-layout','/api/railing-layout','POST'],['users','/api/users','POST'],['crm','/api/crm','PATCH'],['qc','/api/qc','POST'],['evidence','/api/evidence','POST'],['viz-render','/api/viz/render','POST'],['measurements-id','/api/measurements/e2e-r310-ne-obstojeci-id','PATCH'],['ar-analyze','/api/ar/analyze','POST'],['measure-photo','/api/measure/photo','POST']]; (async()=>{ for (const [ime,url,metoda] of rute){ try{ const r=await fetch(url,{method:metoda,credentials:'same-origin',headers:h,body:'{pokvarjen'}); let b=null; try{b=await r.json();}catch(e){b=null;} window.__r314val.push({ime,status:r.status,error:b&&typeof b==='object'?(b.error??null):null}); }catch(e){ window.__r314val.push({ime,status:0,error:'MREŽA: '+String(e)}); } } })(); return 'poslano '+rute.length;})()" 2>&1 | tail -1
 eb_cakaj 6
-agent-browser eval "JSON.stringify(window.__r313val??[])" 2>&1 | tail -1 > /tmp/r313-z2b.json
+agent-browser eval "JSON.stringify(window.__r314val??[])" 2>&1 | tail -1 > /tmp/r314-z2b.json
 python3 - <<'PYEOFZ2B' || exit 1
 import json
-raw = open('/tmp/r313-z2b.json').read().strip()
+raw = open('/tmp/r314-z2b.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert isinstance(d, list) and len(d) == 14, 'Z2b oblika: pričakovano 14 zapisov, dobljeno ' + json.dumps(d if not isinstance(d, list) else len(d))
@@ -726,10 +763,10 @@ echo "Z2 OK — vsi needleji ŽIVO"
 echo "=== Z3: v99 sync gate regresija (R274 gate še ŽIVO — ZERO-MUTACIJA) ==="
 agent-browser eval "(()=>{window.__v99=null; window.__v99err=null; fetch('/api/sync',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify([{id:'r304-prod-v99-probe-'+Date.now(),customerName:'r304 probe v99',contractVersion:99}])}).then(r=>r.json()).then(d=>{window.__v99=d;}).catch(e=>{window.__v99err=String(e)}); return 'poslano';})()" 2>&1 | tail -1
 eb_cakaj 3
-agent-browser eval "JSON.stringify({odgovor:window.__v99??null, napaka:window.__v99err??null})" 2>&1 | tail -1 > /tmp/r313-z3.json
+agent-browser eval "JSON.stringify({odgovor:window.__v99??null, napaka:window.__v99err??null})" 2>&1 | tail -1 > /tmp/r314-z3.json
 python3 - <<'PYEOF' || exit 1
 import json
-raw = open('/tmp/r313-z3.json').read().strip()
+raw = open('/tmp/r314-z3.json').read().strip()
 d = json.loads(raw)
 if isinstance(d, str): d = json.loads(d)
 assert d['napaka'] is None, 'Z3 mrežna napaka: ' + json.dumps(d)
@@ -742,4 +779,4 @@ assert 'noben zapis ni bil uporabljen' in item.get('error', ''), 'Z3 nič-izgubl
 print('Z3 OK — v99 sync gate ŽIVO (fail-closed, nič zapisov, ZERO-MUTACIJA)')
 PYEOF
 
-echo "=== R313 PROD QA — R290+…+R313 ŽIVO SKUPAJ ==="
+echo "=== R314 PROD QA — R290+…+R314 ŽIVO SKUPAJ ==="

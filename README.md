@@ -103,7 +103,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 45 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **4365** (242 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **4380** (243 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 143 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -350,6 +350,21 @@ Sheet z 6 podzavihki:
   časi (min/mediana/max ms) so strojno odvisna resnica izrecno označena 'na tej napravi' —
   izris ŠELE v brskalniku (nič SSR hydration laži); struktura deterministična (DI ura — testi
   dokazujejo bajtno enakost); WYSIWYG sklep (zaslon + testi berejo ISTI niz)
+- **Avtomatizacija — audit tabela na zaslonu** (R314, 44. člen — issue #1 Deliverable 4):
+  vodjin pregled nosi blok `avtomatizacija-dokaz` (`src/lib/avtomatizacija-pregled.ts`) —
+  feature-by-feature pregled vseh območij poslovanja (§1–§11), vsako IZRECNO klasificirano
+  (DETERMINISTIČNO / SDK / SKRIPTA / AI-OPCIJSKO / AI-OBVEZNO) s KONKRETIMA potmi
+  implementacije + dokaza in iskreno opombo; ČISTA projekcija EN VIR audita
+  (`AVTOMATIZACIJA_AUDIT` — števec izračunani, NIČ trdo kodiranih števil; strazar R294
+  dokazuje, da poti obstajajo na disku — tabela ne sme sanjati); fail-closed ×6
+  (ne-polje / prazen audit / prazno območje / neznani razred / vrstica brez poti ali
+  opombe → TypeError); značke 100 % roksal žetoni (R225/R226 čisto — nič numeričnih
+  barvnih klas v vodjinem pogledu); WYSIWYG sklep: 11 območij · 10 DETERMINISTIČNO ·
+  1 AI-OPCIJSKO · AI-OBVEZNO: 0 (zaslon + testi berejo ISTI niz — nič dvojnega sklepa)
+- **Stil val 5** (R314): calculator-tab ×8 + post-signature-panel ×7 + photo-tab ×5 =
+  20 mest harmoniziranih na roksal žetone (0 novih hex); 2 izrecni izjemi zaklenjeni
+  (photo-tab kategorija faze PRED blue / MED amber / PO green — barvno kodirana
+  kategorija med sorodniki, R308/R312 precedens)
 - Skener determinizma: 0 nedokumentiranih odstopanj nad src/lib IN src/components (komponentni sloj R295 — locale* v ARTIFACT domeni NIČ, izjeme izrecne z razlogom)
 - **API I/O meja («stena ura»)** (R308+R309+R310, issue #1 — failure cases + malformed-input) — determinističen
   skener VSEH 81 route-handlerjev (`src/lib/api-meja-audit.ts`, EN VIR lexer avtomatizacija-audit):
@@ -405,7 +420,7 @@ Sheet z 6 podzavihki:
 | **PWA** | Service Worker + Web Manifest |
 | **Temnitveni način** | [next-themes](https://github.com/pacocoursey/next-themes) |
 | **Validacija** | [Zod 4](https://zod.dev/) |
-| **Testiranje** | [Vitest 4](https://vitest.dev/) (4365 testov + globalSetup embedded PG) |
+| **Testiranje** | [Vitest 4](https://vitest.dev/) (4380 testov + globalSetup embedded PG) |
 | **Paketni upravitelj** | [Bun](https://bun.sh/) |
 | **Linting** | ESLint 9 + eslint-config-next |
 
@@ -527,7 +542,7 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `bun run dev` | Zažene Next.js dev server (port 3000) |
 | `bun run build` | Produkcijska build (build-prepare: generate + migrate deploy + seed) |
 | `bun run start` | Zažene produkcijski server |
-| `bun run test` | Vsi testi (vitest, 4365, embedded PG prek globalSetup) |
+| `bun run test` | Vsi testi (vitest, 4380, embedded PG prek globalSetup) |
 | `bun run check` | tsc --noEmit + vitest run (en ukaz za vse) |
 | `bunx tsc --noEmit` | Tipska kontrola celotnega projekta (trenutno 0 napak) |
 | `bun run lint` | ESLint preverjanje |

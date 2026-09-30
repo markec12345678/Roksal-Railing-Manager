@@ -143,7 +143,9 @@ describe('R174 STIL — pokvarjeni mirrori (dvojni poševnici v opacity modifier
   it('popravljeni mirrorji uporabljajo ustaljen /40 konvencijo (EN VIR z ostalimi paneli)', () => {
     for (const [file, count] of [
       ['measurements-tab.tsx', 1],
-      ['calculator-tab.tsx', 1],
+      // R314 pin shift (ISTI vzorec kot invoice-manager R309): calculator-tab
+      // estrih kartici harmonizirani na roksal žetone — raw mirror tam
+      // ZAKONITO ne obstaja več (obrnjena regresija spodaj).
       ['logistics-tab.tsx', 2],
     ] as const) {
       const src = readFileSync(join(ROCSAL, file), 'utf8')
@@ -158,6 +160,11 @@ describe('R174 STIL — pokvarjeni mirrori (dvojni poševnici v opacity modifier
     const inv = readFileSync(join(ROCSAL, 'invoice-manager.tsx'), 'utf8')
     const rawMirrors = inv.match(/dark:bg-\w+-950\/40\b/g) ?? []
     expect(rawMirrors.length, 'invoice-manager.tsx').toBe(0)
+    // R314 obrnjena regresija: calculator-tab raw mirrorjev 0 (žetoni temsko
+    // prilagodljivi po naravi) — vsak raw mirror, ki bi se vrnil, je regresija.
+    const calc = readFileSync(join(ROCSAL, 'calculator-tab.tsx'), 'utf8')
+    const calcMirrors = calc.match(/dark:bg-\w+-950\/40\b/g) ?? []
+    expect(calcMirrors.length, 'calculator-tab.tsx').toBe(0)
   })
 
   it('team-tab pošteno-stanje panel je popavljen na žetonih (R310 pin shift — surovi amber → roksal žetoni)', () => {

@@ -722,8 +722,8 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
         )}
         <CardContent className="space-y-4">
           {!projectId && (
-            <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-800">
-              <AlertTriangle aria-hidden="true" className="mb-1 inline h-3.5 w-3.5" /> Izberite projekt v zavihku Domov pred slikanjem.
+            <div className="rounded-lg border border-roksal-amber/40 bg-roksal-amber/10 p-3 text-xs text-roksal-ink">
+              <AlertTriangle aria-hidden="true" className="mb-1 inline h-3.5 w-3.5 text-roksal-amber" /> Izberite projekt v zavihku Domov pred slikanjem.
             </div>
           )}
 
@@ -1450,7 +1450,7 @@ function CameraCapture({
         )}
         {status === 'error' && (
           <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center text-white">
-            <AlertTriangle aria-hidden="true" className="h-10 w-10 text-amber-400" />
+            <AlertTriangle aria-hidden="true" className="h-10 w-10 text-roksal-amber" />
             <p className="text-sm">{errorMsg || 'Dostop do kamere je zavrnjen.'}</p>
             <p className="text-[11px] text-white/60">V nastavitvah brskalnika omogočite dostop do kamere.</p>
           </div>
@@ -2249,7 +2249,7 @@ function AnnotationEditor({
                 />
               </div>
               {/* Navodila */}
-              <div className="flex items-start gap-1.5 rounded-md border border-amber-200 bg-amber-50 px-2 py-1.5 text-2xs text-amber-900">
+              <div className="flex items-start gap-1.5 rounded-md border border-roksal-amber/40 bg-roksal-amber/10 px-2 py-1.5 text-2xs text-roksal-ink">
                 <Info aria-hidden="true" className="mt-0.5 h-3 w-3 shrink-0" />
                 <span>
                   {photoCalibration
@@ -2285,13 +2285,13 @@ function AnnotationEditor({
 
       {/* PAMETNO PRIPOROČILO — dismissable */}
       {suggestion && (
-        <div className="flex items-center gap-2 border-t border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-900">
+        <div className="flex items-center gap-2 border-t border-roksal-amber/40 bg-roksal-amber/10 px-3 py-2 text-[11px] text-roksal-ink">
           <Lightbulb aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
           <span className="flex-1">{suggestion.text}</span>
           <button
             type="button"
             onClick={() => setSuggestion(null)}
-            className="shrink-0 rounded p-0.5 hover:bg-amber-100"
+            className="shrink-0 rounded p-0.5 hover:bg-roksal-amber/25"
             aria-label="Zapri priporočilo"
           >
             <X aria-hidden="true" className="h-3 w-3" />

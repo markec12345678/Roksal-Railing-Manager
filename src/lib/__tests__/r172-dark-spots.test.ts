@@ -44,8 +44,12 @@ const PRIMERI = [
   // R295: 2343→2344, 3802→3803 (komponentna deterministična migracija:
   // +1 vrstica csv-export import — slDatumKratko/slCasDolgo/… EN VIR;
   // precedens R180/R203/R229/R294).
-  stražar('src/components/roksal/calculator-tab.tsx', 2344, 'bg-amber-50/60', 'dark:bg-amber-950/40'),
-  stražar('src/components/roksal/calculator-tab.tsx', 3803, 'bg-amber-50/60', 'dark:bg-amber-950/40'),
+  // R314 PIN SHIFT (izrecno, precedens R309 invoice-manager / R311 r164):
+  // obe estrih kartici sta harmonizirani na roksal žetone
+  // (border-roksal-amber/40 bg-roksal-amber/10) — žeton je temsko
+  // prilagodljiv PO NARAVI, zato raw svetli+dark: par tam ZAKONITO ne
+  // obstaja več; vsak raw par, ki bi se vrnil, je regresija (obrnjena
+  // regresija v lastnem it() spodaj).
   // material-intelligence-tab — NAJBOLJŠI ponudnik
   // R182: vrstica +65 (uvozi+stanja+fail-verbose loadData +47, pečat+warning
   // vrstica +18) — ogledalo ŠE VEDNO na ISTI vrstici (precedens R180 '+34').
@@ -114,5 +118,14 @@ describe('R172 dark-spot stražar — vsak svetli barvni žeton ima dark: ogleda
     for (const v of sveže) {
       expect(v, `svetli bg brez dark: ogledala: ${v.trim()}`).toMatch(/dark:(?:[\w-]+:)*bg-/)
     }
+  })
+
+  it('R314 obrnjena regresija: calculator-tab estrih kartici sta na roksal žetonih — raw svetli+dark par se NE sme vrniti', () => {
+    const src = vrstice('src/components/roksal/calculator-tab.tsx').join('\n')
+    // žetoni živi (obe mesti)
+    expect(src.match(/'border-roksal-amber\/40 bg-roksal-amber\/10'/g)?.length).toBe(2)
+    // obrnjena regresija: surovi estrih par (bg-amber-50/60 + dark:bg-amber-950/40) prepovedan
+    expect(src).not.toContain('bg-amber-50/60')
+    expect(src).not.toContain('dark:bg-amber-950/40')
   })
 })

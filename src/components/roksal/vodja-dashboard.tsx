@@ -82,11 +82,29 @@ import { aiRabaPregled } from '@/lib/ai-raba-pregled'
 // časi strojno odvisni — izris ŠELE v brskalniku, nič SSR laži).
 import { izmeriZmogljivost } from '@/lib/zmogljivost-pregled'
 import type { ZmogljivostPregled } from '@/lib/zmogljivost-pregled'
+// R314 — 44. člen issue #1 (Deliverable 4 NA ZASLONU): feature-by-feature
+// audit tabela — ČISTA projekcija EN VIR audita (avtomatizacija-audit:
+// AVTOMATIZACIJA_AUDIT §1–§11 — vsako območje klasificirano z potmi
+// implementacije + dokaza; WYSIWYG sklep, NIČ dvojnega sklepa).
+import { avtomatizacijaPregled } from '@/lib/avtomatizacija-pregled'
 import {
   TrendingUp, Clock, Users, Package, Euro, CheckCircle2,
   AlertTriangle, Calendar, Truck, Bell, FileDown, Loader2, Download, Workflow,
-  History, PackageX, CalendarX, FileText, FileSpreadsheet, Sparkles, Gauge,
+  History, PackageX, CalendarX, FileText, FileSpreadsheet, Sparkles, Gauge, ClipboardList,
 } from 'lucide-react'
+
+// R314 — razred audita → žeton značka (100 % roksal žetoni — R225/R226
+// STRAŽAR: vodjin pogled NIČ numericnih barvnih klas; kategorije med
+// sorodniki: green = deterministično/varno, navy = SDK/informacija,
+// ink = skripta/nevtralno, amber = AI-opcijsko/pozornost (r162: ink na
+// žetonu), red = AI-obvezno/prepovedano).
+const AVT_AUDIT_ZNACKA: Record<string, string> = {
+  DETERMINISTICNO: 'border-roksal-green/40 bg-roksal-green/10 text-roksal-green',
+  SDK: 'border-roksal-navy/40 bg-roksal-navy/10 text-roksal-navy dark:border-roksal-ink/30 dark:text-roksal-ink',
+  SKRIPTA: 'border-roksal-navy/25 bg-roksal-navy/5 text-roksal-ink dark:border-roksal-ink/20',
+  AI_OPCIJSKO: 'border-roksal-amber/40 bg-roksal-amber/10 text-roksal-ink',
+  AI_ZAHTEVANO: 'border-roksal-red/40 bg-roksal-red/10 text-roksal-red',
+}
 
 interface VodjaStats {
   // Dnevno
@@ -618,6 +636,10 @@ export function VodjaDashboard() {
   // — EN VIR, NIČ dvojnega računa; vzorec R305/R306/R307 memojev).
   const aiRaba = aiRabaPregled()
 
+  // R314 — 44. člen: audit tabela po območjih (ČISTA projekcija EN VIR
+  // audita — števec izračunani, sklep verbatim; vzorec R311/R312).
+  const avtAudit = avtomatizacijaPregled()
+
   // R312 — 42. člen: meritve zmogljivosti jedra — realna ura, fiksni vhodi,
   // vsak izhod preverjen (fail-closed lib). Enkrat ob prikazu pregleda.
   useEffect(() => {
@@ -1133,6 +1155,63 @@ export function VodjaDashboard() {
             {zmogljivost.sklep}
           </p>
         )}
+      </section>
+
+      {/* R314 — 44. člen issue #1 (Deliverable 4 NA ZASLONU): feature-by-feature
+          audit tabela — vsako območje (§1–§11) izrecno klasificirano z potmi
+          implementacije + dokaza (števec IZRAČUNANI iz EN VIR — tabela ne sme
+          sanjati; strazar R294 dokazuje, da poti obstajajo na disku).
+          Značke = kategorije barv med sorodniki (R308/R312 lekcija);
+          AI-OPCIJSKO = roksal žeton opozorilne družine (r162); sklep verbatim
+          EN VIR ({avtAudit.sklep} — NIČ dvojnega sklepa, vzorec R311/R312). */}
+      <section
+        className="rounded-lg border border-border bg-muted/40 px-3 py-2"
+        aria-label="Avtomatizacija — audit po območjih"
+        data-testid="avtomatizacija-dokaz"
+      >
+        <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
+          <p className="flex items-center gap-1 text-2xs font-medium text-roksal-ink">
+            <ClipboardList className="h-3 w-3 text-roksal-amber" aria-hidden="true" />
+            Avtomatizacija — audit po območjih
+          </p>
+          <p
+            className="text-2xs tabular-nums text-muted-foreground"
+            title="ISTI audit kot docs/automacija-audit.md — EN VIR. Vsaka vrstica nosi KONKRETNE poti implementacije + dokaza."
+          >
+            {avtAudit.stObmocij} območij · {avtAudit.poRazredu.DETERMINISTICNO} DETERMINISTIČNO · {avtAudit.poRazredu.AI_OPCIJSKO} AI-OPCIJSKO
+          </p>
+        </div>
+        <ul className="mt-1 space-y-0.5" data-testid="avtomatizacija-vrstice">
+          {avtAudit.vrstice.map((v) => (
+            <li
+              key={v.obmocje}
+              className="rounded-md border border-border bg-background/60 px-2 py-1.5"
+              data-testid="avtomatizacija-vrstica"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5">
+                <span className="flex items-center gap-1.5 text-2xs font-medium text-roksal-ink">
+                  <span
+                    className={`rounded border px-1 py-px text-[9px] font-bold uppercase tracking-wide ${AVT_AUDIT_ZNACKA[v.razred]}`}
+                    title={`Razred: ${v.razredPrikazno}`}
+                  >
+                    {v.razredPrikazno}
+                  </span>
+                  {v.obmocje}
+                </span>
+                <span
+                  className="shrink-0 text-2xs tabular-nums text-muted-foreground"
+                  title="vsaka pot implementacije mora obstajati (strazar R294) in imeti testni dokaz"
+                >
+                  {v.stImplementacij} impl · {v.stDokazov} dokazov
+                </span>
+              </div>
+              <p className="mt-0.5 text-2xs leading-relaxed text-roksal-ink/80">{v.opomba}</p>
+            </li>
+          ))}
+        </ul>
+        <p className="mt-1.5 text-2xs text-muted-foreground" data-testid="avtomatizacija-sklep">
+          {avtAudit.sklep}
+        </p>
       </section>
 
       {/* Današnji pregled */}
