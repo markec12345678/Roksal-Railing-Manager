@@ -90,8 +90,18 @@ QWEN_MOCK=1 .venv/bin/pytest tests/ -v      # 15 pogodbnih testov (§20/§21/§1
 Glej [LICENSES.md](LICENSES.md) — model Apache-2.0, celotna produkcijska pot
 poslovno uporabna; ponovi `pip-licenses` ob deploymentu.
 
-## Varnost (za javno izpostavitev — S+7, NE prej)
+## Varnost (S+7 — R319: avtentikacija IMPLEMENTIRANA)
 
-- API ključ / mTLS / rate-limit (Caddy/Nginx TLS), `ai.roksal.si` hostname
-- velikostne meje vhodov so vgrajene (`MAX_B64_BYTES`, `MAX_IMAGE_PIXELS`, `MAX_QUEUE`)
-- Vercel ↔ GPU: samo strežniško (skrivnost v env, ne v brskalniku)
+- **`X-API-Key` glava je OBVEZNA** za vse poslovne končne točke
+  (`POST /render`, `GET /jobs/*`) — vrednost = env `QWEN_API_KEY`.
+  Brez/napačna glava → `401` (ista koda — ne razkrivamo razloga);
+  **ne-nastavljen `QWEN_API_KEY` → `503` (fail-closed — servis NI nikoli
+  anonimno izpostavljen)**. Odprti ostajata le `/` in `/health`
+  (Docker HEALTHCHECK + živost; NE razkrivata podatkov jobov).
+  Primerjava je konstantno-časna (`hmac.compare_digest`).
+  Testi: `test_contract.py` vsebuje 5 S+7 testov (401/401/503/health/full-flow).
+- Rate-limit in TLS (Caddy/Nginx, `ai.roksal.si`) — naslednji korak za javno
+  izpostavitev (za API ključem); velikostne meje vhodov so vgrajene
+  (`MAX_B64_BYTES`, `MAX_IMAGE_PIXELS`, `MAX_QUEUE`).
+- Vercel ↔ GPU: samo strežniško (skrivnost v env, ne v brskalniku) —
+  aplikacija pošilja glavo iz `VIZ_GPU_TOKEN` (glej `.env.example` korena).

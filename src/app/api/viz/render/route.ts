@@ -1,14 +1,23 @@
-// VIZ — POST /api/viz/render — GPU job stub (Qwen-Image-Edit-2509).
-// Spec: docs/VIZ_CONTRACTS.md — Qwen NI production: ustvari render job
-// (status 'queued'). Če je VIZ_GPU_URL nastavljen, poskusi POST <url>/render
-// s 3s timeoutom in ob uspehu nastavi status 'processing'; ob napaki/neznanem
-// URL ostane 'queued' z iskrenim error zapiskom. Nikoli ne označimo 'completed'.
-// Runda S+3: job metadata gre prek repositoryja (local = Prisma, blob = JSON
-// v Vercel Blob) — iskrenost statusov se ne spremeni.
+// VIZ — POST /api/viz/render — GPU job (Qwen-Image-Edit-2509).
+// Spec: docs/VIZ_CONTRACTS.md — Qwen NI production kritičen: A-pipeline
+// predogled (determinističen, brez AI) je VEDNO na voljo.
+//
+// R319 (S+7) — GPU integracija ZAPRTÁ:
+//   • Prej: payload {jobId, engine, fileUrls} NEUSTREZEN pogodbi §20 (GPU
+//     zahteva base64 original/product/aPreview) + rezultat brez polling
+//     zanke (status 'processing' za vedno).
+//   • Zdaj: slike preberemo iz viz shrambe → base64 → veljaven RenderRequest
+//     (mode: finalize če obstaja A-predogled, sicer compose); odgovor jobId
+//     shranimo v VizRenderJob.gpuJobId; končno stanje preverja poll-on-read
+//     v GET ruti (nikoli lažno 'completed').
+//   • S+7: glava X-API-Key iz VIZ_GPU_TOKEN; URL brez žetona = fail-closed
+//     odklon (NE pošiljaj brez avtentikacije).
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { vizOwner } from '@/lib/viz/ownership'
 import { createRenderJob, getProjectForOwner, transitionRenderJob } from '@/lib/viz/repository'
+import { vizGet } from '@/lib/viz/storage'
+import { gpuConfigured, gpuRenderJob } from '@/lib/viz/gpu-client'
 
 import { zapisOmejitev } from '@/lib/rate-limit'
 import { preberiJsonTelo } from '@/lib/api-telo'
@@ -20,6 +29,14 @@ const renderSchema = z.object({
 })
 
 const GPU_ERROR_UNSET = 'GPU backend ni nastavljen (VIZ_GPU_URL) — čaka na lasten GPU strežnik'
+const GPU_ERROR_NO_TOKEN = 'GPU URL je nastavljen, žeton (VIZ_GPU_TOKEN) pa NI — fail-closed odklon (S+7)'
+
+/** Prebere sliko iz viz shrambe in vrne base64 ( ali null če manjka). */
+async function readAsBase64(key: string | null | undefined): Promise<string | null> {
+  if (!key) return null
+  const buf = await vizGet(key)
+  return buf ? buf.toString('base64') : null
+}
 
 export async function POST(request: Request) {
   // R190 — val 1 omejevanja hitrosti na pisanju (WRITE_LIMIT, kind `write`)
@@ -64,45 +81,68 @@ export async function POST(request: Request) {
         mask: project.maskPath,
         preview: project.previewPath,
       },
-      note: 'Qwen-Image-Edit-2509 — planirano, čaka na GPU strežnik',
+      note: 'Qwen-Image-Edit-2509 — GPU integracija R319 (S+7)',
     })
 
     const job = await createRenderJob({ projectId, ownerId: ctx.ownerId, status: 'queued', engine, inputJson })
 
     let gpuError: string | null = GPU_ERROR_UNSET
     const gpuUrl = process.env.VIZ_GPU_URL
-    if (gpuUrl) {
-      try {
-        const res = await fetch(`${gpuUrl.replace(/\/+$/, '')}/render`, {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({
-            jobId: job.id,
-            projectId,
-            engine,
-            prompt: prompt ?? null,
-            placement: project.placement,
-            fileUrls: {
-              original: project.originalPath,
-              product: project.productPath,
-              productMask: project.productMaskPath,
-              mask: project.maskPath,
-            },
-          }),
-          signal: AbortSignal.timeout(3000),
-        })
-        if (res.ok) {
-          // S+4: sodobno varen prehod queued → processing (zaklep + državni stroj).
-          const outcome = await transitionRenderJob(job.id, { status: 'processing', error: null })
+    const gpuToken = process.env.VIZ_GPU_TOKEN
+    if (gpuUrl && !gpuToken) {
+      // S+7 fail-closed: NE pošiljaj brez avtentikacije — odklon z iskreno napako.
+      gpuError = GPU_ERROR_NO_TOKEN
+    } else if (gpuUrl && gpuToken) {
+      // R319: preberi slike iz shrambe → base64 (pogodba §20).
+      const [original, product, mask, aPreview] = await Promise.all([
+        readAsBase64(project.originalPath),
+        readAsBase64(project.productPath),
+        readAsBase64(project.productMaskPath ?? project.maskPath),
+        readAsBase64(project.previewPath),
+      ])
+      if (!original || !product) {
+        gpuError = 'Izhodne slike manjkajo v shrambi — GPU job ni poslan (projekt shranjen?)'
+      } else {
+        // finalize (primarni) iz A-predogleda; sicer compose iz originala.
+        const mode = aPreview ? 'finalize' : 'compose'
+        let placement: { corners?: unknown } | null = null
+        try {
+          const parsedPlacement = JSON.parse(project.placement) as { corners?: unknown }
+          placement = parsedPlacement && typeof parsedPlacement === 'object' ? { corners: parsedPlacement.corners } : null
+        } catch {
+          placement = null
+        }
+        try {
+          const accepted = await gpuRenderJob({
+            projectId: project.id,
+            original,
+            product,
+            mask: mask ?? undefined,
+            aPreview: aPreview ?? undefined,
+            mode,
+            placement,
+            prompt: prompt ?? undefined,
+            resolution: 'final',
+          })
+          // S+4 sodobno varen prehod queued → processing + ZAPIŠI gpuJobId
+          // (poll-on-read v GET ruti ga rabi za poizvedbo stanja).
+          const outcome = await transitionRenderJob(job.id, {
+            status: 'processing',
+            error: null,
+            gpuJobId: accepted.jobId,
+          })
           return NextResponse.json({
             jobId: outcome.ok ? outcome.job.id : job.id,
             status: outcome.ok ? outcome.job.status : 'queued',
+            gpuJobId: accepted.jobId,
             duplicate: outcome.ok ? outcome.duplicate : false,
           })
+        } catch (error) {
+          gpuError =
+            error instanceof Error
+              ? `GPU strežnik ni sprejel joba — ${error.message} — job ostaja v vrsti`
+              : 'GPU strežnik ni sprejel joba — job ostaja v vrsti'
         }
-        gpuError = `GPU strežnik je vrnil napako HTTP ${res.status} — job ostaja v vrsti`
-      } catch {
-        gpuError = 'GPU strežnik ni dosegljiv — job ostaja v vrsti'
       }
     }
 

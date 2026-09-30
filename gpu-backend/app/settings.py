@@ -47,3 +47,11 @@ MAX_QUEUE = int(os.environ.get("QWEN_MAX_QUEUE", "32"))
 
 # TTL zaključenih jobov (sekunde) — cleanup po obdelavi
 JOB_TTL_S = int(os.environ.get("QWEN_JOB_TTL_S", str(6 * 3600)))
+
+# S+7 (R319) — avtentikacija (X-API-Key) PRED javno izpostavitvijo.
+# Fail-closed: če QWEN_API_KEY NI nastavljen, VSE zaščitene končne točke
+# odklonijo s 503 (servis NI nikoli anonimno izpostavljen). /health in /
+# sta ostala odprti (Docker HEALTHCHECK + osnovna živost — NE razkrivata
+# podatkov jobov).
+# Preverba je KONSTANTNO-ČASNA (hmac.compare_digest) — brez timing slickanja.
+API_KEY = os.environ.get("QWEN_API_KEY") or None

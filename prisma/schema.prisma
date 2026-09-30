@@ -1261,8 +1261,9 @@ model VizProject {
   @@index([ownerId])
 }
 
-// GPU render job stub (Qwen-Image-Edit-2509) — nikoli ne oznacimo 'completed',
-// dokler GPU backend ne obstaja. Statusi: queued | processing | completed | failed
+// GPU render job (Qwen-Image-Edit-2509) — R319 (S+7): končni status 'completed'
+// nastavimo SAMO na dokaz GPU strežnika (poll-on-read v GET ruti prenese PNG
+// v shrambo); nikoli lažno. Statusi: queued | processing | completed | failed
 model VizRenderJob {
   id         String     @id @default(cuid())
   // S+4: lastnik joba = seja, ki je job ustvarila (null = zapuščina, ADMIN only).
@@ -1272,6 +1273,10 @@ model VizRenderJob {
   status     String     @default("queued")
   engine     String     @default("qwen-image-edit-2509")
   inputJson  String
+  // R319 (S+7): jobId NA GPU strežniku (odgovor POST /render). Null = job
+  // brez GPU integracije (zgodovina / VIZ_GPU_URL unset) — status takih
+  // jobov NE regresira (državni stroj v repository.ts je nespremenjen).
+  gpuJobId   String?
   resultPath String?
   error      String?
   createdAt  DateTime   @default(now())

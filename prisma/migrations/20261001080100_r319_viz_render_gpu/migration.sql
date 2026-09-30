@@ -1,0 +1,18 @@
+-- R319 (S+7 — viz render GPU integracija, 1. korak) — VizRenderJob.gpuJobId.
+--
+-- Problem (analiza R319): POST /api/viz/render je do GPU strežnika pošiljal
+-- NAPAČEN payload ({jobId, engine, fileUrls} — neustrezen pogodbi §20, ki
+-- zahteva base64 original/product/aPreview) IN nikoli ni shranil GPU jobId,
+-- zato NIČ ni moglo preveriti končnega stanja (status je ostal 'processing'
+-- za vedno — iskreno, a odveč).
+--
+-- Rešitev: nov NEOBAVEZEN stolpec gpuJobId — identifikator joba NA GPU
+-- strežniku (odgovor POST /render {jobId}). Poll-on-read v GET ruti ga
+-- uporabi za poizvedbo stanja in prenos rezultata (vidi repository.ts +
+-- gpu-client.ts + route.ts).
+--
+-- String? (nullable) — zgodovinski jobi (pred R319) imajo null; NJIHOVE
+-- statusov NE dotikamo (državni stroj unchanged). Nova pošiljanja brez
+-- GPU strežnika (VIZ_GPU_URL unset) ostanejo 'queued' z iskreno napako —
+-- tudi ti imajo gpuJobId null.
+ALTER TABLE "VizRenderJob" ADD COLUMN "gpuJobId" TEXT;

@@ -110,16 +110,29 @@ describe('r311 STRAŽAR — zaslon žiči EN VIR, izjeme zaklenjene', () => {
     expect(src).toContain('{aiRaba.sklep}')
   })
 
-  it('surova amber v 3 harmoniziranih datotekah = NATANKO 6 izrecnih izjem (kategorije/lestvice — R308 lekcija)', () => {
+  it('surova amber v harmoniziranih datotekah = NATANKO 6 izrecnih izjem (kategorije/lestvice — R308 lekcija)', () => {
+    // R319 (dekomp. faza 1): measurements-tab izjeme so se RAZDELILE na
+    // measurements/ mapo (shared.ts + inline-inclinometer + inline-kotomer)
+    // — pin SHIFT po kanonu R180/R201/…/R314. Skupno število izjemnih
+    // VRSTIC ostaja NATANKO 6 (les, WPC, priporociloColor, senzor ×2, V_TEKU);
+    // nova mapa je s tem IZRECNO varovana (nič nevidnega amber).
     const IZJEME: Record<string, string[]> = {
       'measurements-tab.tsx': [
         // kategorija barv (les med beton/plosca/gramoz/metal) — R308 lekcija
         "  les: 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800',",
-        // kategorija barv (WPC med ALU/INOX/DRUGO) — R308 lekcija
-        "  WPC: 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800',",
         // gola text lestvica naklona (red/orange/amber sorodniki) — brez vsebnika
         "    priporociloColor = 'text-amber-600 dark:text-amber-400'",
-        // gola text lestvica senzorjev (denied=red sorodnik) — brez vsebnika
+      ],
+      'measurements/shared.ts': [
+        // kategorija barv (WPC med ALU/INOX/DRUGO) — R308 lekcija (R319: preseljeno iz measurements-tab)
+        "  WPC: 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800',",
+      ],
+      'measurements/inline-inclinometer.tsx': [
+        // gola text lestvica senzorjev (denied=red sorodnik) — brez vsebnika (R319: preseljeno)
+        '          <p className="text-center text-[11px] text-amber-600 dark:text-amber-400">',
+      ],
+      'measurements/inline-kotomer.tsx': [
+        // gola text lestvica senzorjev (denied=red sorodnik) — brez vsebnika (R319: preseljeno)
         '          <p className="text-center text-[11px] text-amber-600 dark:text-amber-400">',
       ],
       'deal-pipeline.tsx': [

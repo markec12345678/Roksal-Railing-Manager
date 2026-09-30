@@ -243,7 +243,9 @@ describe('R235 — [Mandatory] stil (P1-f): measurements UI površine gray → �
     expect(meritve).toContain(
       "beton: 'bg-gray-100 dark:bg-gray-500/15 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-800'",
     )
-    expect(meritve).toContain(
+    // R319 (dekomp. faza 1): materialStebraColors.DRUGO se je preselila v
+    // measurements/shared.ts — pin SHIFT po kanonu R180/R201/…/R314.
+    expect(beri('src/components/roksal/measurements/shared.ts')).toContain(
       "DRUGO: 'bg-gray-50 dark:bg-gray-950/40 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-800'",
     )
   })

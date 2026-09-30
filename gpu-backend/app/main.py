@@ -15,13 +15,14 @@ Pogodba:
 Fail-safe (spec §21): napaka modela = job `failed`, servis ostane zdrav;
 A-pipeline v aplikaciji ostane vedno na voljo (Qwen NIKOLI ni na poti do A-preview).
 """
+import hmac
 import io
 import json
 import logging
 import sys
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Response
+from fastapi import Depends, FastAPI, Header, HTTPException, Response
 from fastapi.responses import JSONResponse
 
 from . import inference, inference_mock, settings
@@ -56,6 +57,23 @@ app = FastAPI(
 )
 
 store = JobStore(settings.OUTPUT_DIR)
+
+
+def require_api_key(x_api_key: str | None = Header(default=None, alias="X-API-Key")) -> None:
+    """S+7 (R319) — fail-closed avtentikacija poslovnih končnih točk.
+
+    • QWEN_API_KEY ni nastavljen → 503 (odklon; servis NI nikoli anonimen)
+    • manjkajoča/napačna glava  → 401 (NE razkrivamo, kaj je natančno narobe)
+    • primerjava je konstantno-časna (hmac.compare_digest) — brez timing
+
+    Bere settings.API_KEY OB ZAHTEVKI (ne ob uvozu) — testi lahko varno
+    monkeypatchajo stanje brez ponovnega zagona procesa.
+    """
+    configured = settings.API_KEY
+    if not configured:
+        raise HTTPException(status_code=503, detail="QWEN_API_KEY ni nastavljen — zavrnjeno (fail-closed)")
+    if not x_api_key or not hmac.compare_digest(x_api_key.encode("utf-8"), configured.encode("utf-8")):
+        raise HTTPException(status_code=401, detail="neveljaven ali manjkajoč X-API-Key")
 
 
 def _decode(value: str, field: str):
@@ -170,7 +188,7 @@ def health() -> dict:
     return out
 
 
-@app.post("/render", response_model=RenderAccepted, status_code=202)
+@app.post("/render", response_model=RenderAccepted, status_code=202, dependencies=[Depends(require_api_key)])
 def render(req: RenderRequest) -> dict:
     # velikost vrste (zaščita)
     if store.queue_len() >= settings.MAX_QUEUE:
@@ -225,7 +243,7 @@ def render(req: RenderRequest) -> dict:
     return {"jobId": job.job_id, "status": "queued"}
 
 
-@app.get("/jobs/{job_id}", response_model=JobStatus)
+@app.get("/jobs/{job_id}", response_model=JobStatus, dependencies=[Depends(require_api_key)])
 def job_status(job_id: str) -> dict:
     job = store.get(job_id)
     if not job:
@@ -233,7 +251,7 @@ def job_status(job_id: str) -> dict:
     return job.to_status()
 
 
-@app.get("/jobs/{job_id}/result")
+@app.get("/jobs/{job_id}/result", dependencies=[Depends(require_api_key)])
 def job_result(job_id: str) -> Response:
     job = store.get(job_id)
     if not job:
@@ -251,7 +269,7 @@ def job_result(job_id: str) -> Response:
     return Response(content=p.read_bytes(), media_type="image/png")
 
 
-@app.get("/jobs/{job_id}/metadata")
+@app.get("/jobs/{job_id}/metadata", dependencies=[Depends(require_api_key)])
 def job_metadata(job_id: str) -> dict:
     """Polne meritve (§13) — PLOŠČANA struktura: status + meritve + request."""
     job = store.get(job_id)

@@ -15,7 +15,7 @@
  *   strežnik; job status queued NI lažno "completed" (spec §29)
  */
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -86,9 +86,39 @@ export function StepResult() {
 
   const [name, setName] = useState(projectName || defaultName())
   const [addingVariant, setAddingVariant] = useState(false)
-  const [renderJob, setRenderJob] = useState<{ jobId: string; status: string; error: string | null } | null>(null)
+  const [renderJob, setRenderJob] = useState<{ jobId: string; status: string; error: string | null; resultUrl: string | null } | null>(null)
   const [requestingRender, setRequestingRender] = useState(false)
   const variantInputRef = useRef<HTMLInputElement | null>(null)
+
+  // R319 (S+7) — POLL ZANKA: dokler je job queued/processing, preverjaj
+  // status vsake 3 s (max 120 poskusov = 6 min). GET ruta naredi en korak
+  // poll-on-read na GPU strežniku (dokaz končnega stanja pride SAMO odtod);
+  // prehodne napake pustimo tiho — naslednji tikk poskusi znova. Cleanup ob
+  // unmount/prekinitvi obvezno (izklop intervala).
+  const pollJobId = renderJob?.jobId
+  const pollActive = renderJob !== null && (renderJob.status === 'queued' || renderJob.status === 'processing')
+  useEffect(() => {
+    if (!pollJobId || !pollActive) return
+    let attempts = 0
+    const timer = setInterval(() => {
+      attempts += 1
+      if (attempts > 120) {
+        clearInterval(timer)
+        return
+      }
+      void getRenderJob(pollJobId)
+        .then((st) => {
+          setRenderJob((prev) =>
+            prev && prev.jobId === pollJobId
+              ? { jobId: st.jobId, status: st.status, error: st.error, resultUrl: st.resultUrl ?? null }
+              : prev
+          )
+          if (st.status === 'completed' || st.status === 'failed') clearInterval(timer)
+        })
+        .catch(() => undefined) // prehodna napaka — naslednji tikk
+    }, 3000)
+    return () => clearInterval(timer)
+  }, [pollJobId, pollActive])
 
   if (!balcony || !preview || !mask || !corners) {
     return (
@@ -170,14 +200,8 @@ export function StepResult() {
     setRequestingRender(true)
     try {
       const job = await requestRender(savedProjectId)
-      setRenderJob({ jobId: job.jobId, status: job.status, error: null })
-      // status poll (enkrat — GPU backend še ne obstaja, iskreno pokažemo queued)
-      setTimeout(() => {
-        void getRenderJob(job.jobId)
-          .then((st) => setRenderJob({ jobId: st.jobId, status: st.status, error: st.error }))
-          .catch(() => undefined)
-      }, 1500)
-      toast({ title: 'Zaporedje ustvarjeno', description: `Status: ${job.status}` })
+      setRenderJob({ jobId: job.jobId, status: job.status, error: null, resultUrl: null })
+      toast({ title: 'Zaporedje ustvarjeno', description: `Status: ${job.status} — stanje se samodejno osvežuje` })
     } catch (e) {
       console.error('request render failed:', e)
       toast({ title: 'Končna vizualizacija ni na voljo', description: friendlyError(e, 'generic'), variant: 'destructive' })
@@ -417,9 +441,10 @@ export function StepResult() {
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-[11px] leading-relaxed text-muted-foreground">
-            Fotorealistična izboljšava robov, senc in odsevov bo tekla na LASTNEM GPU strežniku.
-            Strežnik še ni postavljen — instant predogled zgoraj je deterministični A-pipeline
-            (brez AI) in deluje že zdaj.
+            Fotorealistična izboljšava robov, senc in odsevov teče na LASTNEM GPU strežniku
+            (Qwen-Image-Edit-2509). Integracija je pripravljena (R319): če strežnik še ni
+            nastavljen, job iskreno ostane v vrsti — instant predogled zgoraj je vedno na
+            voljo (deterministični A-pipeline, brez AI).
           </p>
           {renderJob && (
             <div className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs">
@@ -435,6 +460,14 @@ export function StepResult() {
                         ? `Neuspešno — ${renderJob.error ?? 'neznan vzrok'}`
                         : renderJob.status}
               </div>
+              {renderJob.status === 'completed' && renderJob.resultUrl && (
+                <img
+                  src={renderJob.resultUrl}
+                  alt="Fotorealistična končna vizualizacija ograje (GPU)"
+                  className="mt-2 w-full rounded-md border border-border"
+                  loading="lazy"
+                />
+              )}
             </div>
           )}
           <Button

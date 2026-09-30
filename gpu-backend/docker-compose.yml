@@ -10,7 +10,10 @@ services:
       - QWEN_DEVICE=cuda
       - QWEN_CPU_OFFLOAD=0        # spec §4: najprej NEoptimizirano + izmerjen vrh VRAM
       - QWEN_OUTPUT_DIR=/data/jobs
-      # - QWEN_API_KEY=spremeni-me    # (S+7: auth pred javno izpostavitvijo)
+      # S+7 (R319) — OBVEZEN ključ (fail-closed: brez njega poslovne točke
+      # odklonijo s 503). Ustvari z: openssl rand -hex 32
+      # Vrednost mora biti ENAKA kot VIZ_GPU_TOKEN v .env aplikacije.
+      - QWEN_API_KEY=${QWEN_API_KEY:?QWEN_API_KEY je obvezen — glej gpu-backend/README.md (S+7)}
     volumes:
       - hf-cache:/data/hf-cache
       - jobs:/data/jobs

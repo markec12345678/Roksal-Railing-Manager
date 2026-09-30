@@ -103,7 +103,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 45 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **4435** (251 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **4461** (255 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 143 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -433,6 +433,45 @@ Sheet z 6 podzavihki:
   SHIFT z obrnjeno regresijo); r318-stil-val9 STRAŽAR ×4 (vseh 5 gumbov
   nosi press-scale + pill obrnjena regresija + utility anti-stale + register
   11 pojavitev — R312 lekcija na pojavitve)
+- **VALIDATE CHECK — zaprtje R136 obljube** (R319, issue #5 §18): migracija
+  `r319_validate_checks` končno VALIDIRA vseh 8 CHECK omejitev iz R136
+  (invoice_amounts_nonnegative, invoice_status_allowed, invoice_tip_allowed,
+  inventory_stock_nonnegative, order_item_quantity_positive,
+  order_total_nonnegative, usage_quantity_positive, price_nonnegative) —
+  `convalidated = TRUE`; STRAŽAR r319-validate-checks dokazuje VERIGO
+  (globalSetup gradi bazo iz nič z migrate deploy — pobrisana migracija = javna
+  napaka); fail-closed poraz po zasnovi: legacy kršitev = javno padel deploy
+- **GPU backend avtentikacija (S+7)** (R319): `X-API-Key` OBVEZNA glava na
+  VSEH poslovnih končnih točkah FastAPI (`/render`, `/jobs/*`) —
+  konstantno-časna primerjava (`hmac.compare_digest`); brez/napačna glava →
+  401 (ista koda — brez razkrivanja); NE-nastavljen `QWEN_API_KEY` → 503
+  (fail-closed — servis NI nikoli anonimno izpostavljen); `/` in `/health`
+  odprta (Docker HEALTHCHECK); 5 novih testov pogodbe (401/401/503/health/
+  full-flow) + docker-compose zahteva ključ; aplikacija pošilja glavo iz
+  `VIZ_GPU_TOKEN` (URL brez žetona = fail-closed odklon, ne pošiljanje)
+- **Viz render GPU integracija — POLL-ON-READ** (R319, S+7): POST pošlje
+  VELJAVEN payload §20 (base64 original/product/aPreview iz shrambe — prej
+  napačen `fileUrls`) + shrani `gpuJobId` (nova migracija
+  `r319_viz_render_gpu`); GET `/api/viz/render/[jobId]` naredi EN korak
+  polling na GPU: `completed` → PNG prenesen v viz shrambo → zakoniti prehodi
+  (queued→processing→completed, državni stroj NEPOVRNJEN); `failed`/404
+  (restart/TTL) → iskreno failed; prehodne napake stanja NE dotikajo —
+  nikoli lažno `completed`; odjemalska poll zanka (3 s, max 6 min, cleanup)
+  + prikaz PNG ob koncu; 19 novih testov (gpu-client + route)
+- **QA dispatcher `scripts/qa.sh`** (R319 — konsolidacija ~891 skriptov):
+  PARAMETRIZIRANA vstopna točka (`needles|smoke|e2e|prodqa|chain [runda]`,
+  privzeto zadnja) — zamrznjene skripte ostajajo dokazi (kanon: NIČ brisanja);
+  PRENOSLJIV zagon (substitucija legacy poti v temp kopiji + obvezen `bash -n`
+  — originali nedotaknjeni); fail-closed izstopi (2 neznana faza / 3 manjka /
+  4 sintaksa); STRAŽAR r319-qa-konzola zaklepa preslikavo faz
+- **Dekompozicija measurements-tab — FAZA 1** (R319): 9.086 → 7.604 vrstic
+  (−1.482); 6 samostojnih komponent izluščenih v `measurements/` mapo
+  (CalibrationPhotoPicker, InlineInclinometer, StairDiagram, InlineKotomer,
+  SteberTable, WpcDiagram) + `shared.ts` (tipi/konstante/čisti helper) — ČIST
+  PREMIK brez spremembe obnašanja (bajtno identični bloki); PIN SHIFT ×5
+  STRAŽARjev (r172/r231/r311/r316/r235) po kanonu R180/…/R314; BONUS:
+  dekompozicija je ODKRILA slepo pego R254 codemoda (vejica v uvoznem
+  komentarju je skrila `CornerDownRight` detektorju — aria-hidden dodan)
 - **Stil val 7 — ZAKLJUČNI** (R316): fence-3d-viewer ×2 (ikoni) +
   notification-center ×1 (ikona, dark-par odpade) + signature-quote ×1 (hint
   ink) + photo-measure ×1 (hint ink) = 5 dotikov — surove amber → roksal
@@ -495,7 +534,7 @@ Sheet z 6 podzavihki:
 | **PWA** | Service Worker + Web Manifest |
 | **Temnitveni način** | [next-themes](https://github.com/pacocoursey/next-themes) |
 | **Validacija** | [Zod 4](https://zod.dev/) |
-| **Testiranje** | [Vitest 4](https://vitest.dev/) (4435 testov + globalSetup embedded PG) |
+| **Testiranje** | [Vitest 4](https://vitest.dev/) (4461 testov + globalSetup embedded PG) |
 | **Paketni upravitelj** | [Bun](https://bun.sh/) |
 | **Linting** | ESLint 9 + eslint-config-next |
 
@@ -617,7 +656,7 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `bun run dev` | Zažene Next.js dev server (port 3000) |
 | `bun run build` | Produkcijska build (build-prepare: generate + migrate deploy + seed) |
 | `bun run start` | Zažene produkcijski server |
-| `bun run test` | Vsi testi (vitest, 4435, embedded PG prek globalSetup) |
+| `bun run test` | Vsi testi (vitest, 4461, embedded PG prek globalSetup) |
 | `bun run check` | tsc --noEmit + vitest run (en ukaz za vse) |
 | `bunx tsc --noEmit` | Tipska kontrola celotnega projekta (trenutno 0 napak) |
 | `bun run lint` | ESLint preverjanje |

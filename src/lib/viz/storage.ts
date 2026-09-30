@@ -71,6 +71,16 @@ export function renderJobKey(jobId: string): string {
   return `${RENDER_JOBS_PREFIX}/${jobId}.json`
 }
 
+/**
+ * R319 (S+7) — ključ PNG rezultata render joba (prenesen z GPU strežnika
+ * prek poll-on-read v GET ruti). Vlasti mapa per jobId — NE ureja z
+ * `<jobId>.json` metadata dokumentom (različni prefix poti).
+ */
+export function renderResultKey(jobId: string): string {
+  assertSafeSegment(jobId, 'render job id')
+  return `${RENDER_JOBS_PREFIX}/${jobId}/result.png`
+}
+
 /** Prevera imena datoteke (izvožena za orodja/teste). */
 export function assertSafeFileName(name: string): string {
   if (!SAFE_NAME.test(name)) throw new Error('Neveljavno ime datoteke')

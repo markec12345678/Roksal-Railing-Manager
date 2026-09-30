@@ -66,6 +66,8 @@ export interface VizRenderJobRecord {
   engine: string
   /** vhodni JSON (prompt, placement, files) kot niz */
   inputJson: string
+  /** R319 (S+7): jobId NA GPU strežniku; null = job brez GPU integracije. */
+  gpuJobId: string | null
   resultPath: string | null
   error: string | null
   createdAt: string
@@ -131,6 +133,7 @@ function rowToJob(row: Awaited<ReturnType<PrismaClient['vizRenderJob']['findUniq
     status: row.status as VizRenderJobRecord['status'],
     engine: row.engine,
     inputJson: row.inputJson,
+    gpuJobId: row.gpuJobId,
     resultPath: row.resultPath,
     error: row.error,
     createdAt: row.createdAt.toISOString(),
@@ -372,6 +375,7 @@ export async function createRenderJob(input: VizRenderJobInput): Promise<VizRend
       status: input.status,
       engine: input.engine,
       inputJson: input.inputJson,
+      gpuJobId: null,
       resultPath: null,
       error: null,
       createdAt: now,
@@ -395,7 +399,7 @@ export async function createRenderJob(input: VizRenderJobInput): Promise<VizRend
 
 export async function updateRenderJob(
   id: string,
-  patch: Partial<Pick<VizRenderJobRecord, 'status' | 'error' | 'resultPath'>>
+  patch: Partial<Pick<VizRenderJobRecord, 'status' | 'error' | 'resultPath' | 'gpuJobId'>>
 ): Promise<VizRenderJobRecord | null> {
   if (storageMode() === 'blob') {
     const doc = await vizGetJson<VizRenderJobRecord>(renderJobKey(id))
@@ -413,7 +417,10 @@ export async function updateRenderJob(
 
 export async function getRenderJob(id: string): Promise<VizRenderJobRecord | null> {
   if (storageMode() === 'blob') {
-    return vizGetJson<VizRenderJobRecord>(renderJobKey(id))
+    const doc = await vizGetJson<VizRenderJobRecord>(renderJobKey(id))
+    // R319: starejši blob dokumenti (pred R319) nimajo gpuJobId — normaliziraj
+    // na null, da klicna koda NIKOLI ne vidi undefined (fail-closed tipi).
+    return doc ? { ...doc, gpuJobId: doc.gpuJobId ?? null } : null
   }
   const db = await prisma()
   const row = await db.vizRenderJob.findUnique({ where: { id } })
@@ -522,7 +529,7 @@ async function releaseJobLock(jobId: string, holder: string): Promise<void> {
  */
 export async function transitionRenderJob(
   id: string,
-  patch: Partial<Pick<VizRenderJobRecord, 'status' | 'error' | 'resultPath'>>
+  patch: Partial<Pick<VizRenderJobRecord, 'status' | 'error' | 'resultPath' | 'gpuJobId'>>
 ): Promise<VizJobTransitionResult> {
   if (storageMode() === 'blob') {
     const holder = await acquireJobLock(id)

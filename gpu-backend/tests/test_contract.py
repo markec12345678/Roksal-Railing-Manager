@@ -18,6 +18,12 @@ os.environ.setdefault("QWEN_OUTPUT_DIR", "/tmp/roksal-qwen-test-jobs")
 from app.main import app  # noqa: E402
 from app import settings  # noqa: E402
 
+# S+7 (R319) — ključ za teste pogodbe. Vsak `client` breme glavo samodejno
+# (TestClient headers) — obstoječi 15 testov se NE dotika; avtentikacija ima
+# lastne teste spodaj (anon_client / odklonjeni ključ).
+GPU_KEY = "test-gpu-key-r319"
+GPU_HEADERS = {"X-API-Key": GPU_KEY}
+
 
 def _b64_img(w=256, h=256, color=(120, 90, 60), fmt="JPEG") -> str:
     buf = io.BytesIO()
@@ -50,16 +56,30 @@ def _wait_terminal(client: TestClient, job_id: str, timeout_s: float = 20.0) -> 
     raise AssertionError("job ni zaključen v času")
 
 
-@pytest.fixture()
-def client(tmp_path, monkeypatch):
-    monkeypatch.setattr(settings, "OUTPUT_DIR", tmp_path)
-    # ponastavi store z novim output dir (enostavneje: nov JobStore)
-    from app.jobs import JobStore
+def _reset_store(tmp_path) -> None:
+    """Ponastavi globalni store na svež tmp output dir."""
     from app.main import store as main_store
 
     main_store.output_dir = tmp_path
     main_store._jobs.clear()
     main_store._queue.clear()
+
+
+@pytest.fixture()
+def client(tmp_path, monkeypatch):
+    monkeypatch.setattr(settings, "OUTPUT_DIR", tmp_path)
+    monkeypatch.setattr(settings, "API_KEY", GPU_KEY)  # S+7: veljaven ključ
+    _reset_store(tmp_path)
+    with TestClient(app, headers=GPU_HEADERS) as c:
+        yield c
+
+
+@pytest.fixture()
+def anon_client(tmp_path, monkeypatch):
+    """S+7 — odjemalec BREZ privzete glave X-API-Key (avtentikacijski testi)."""
+    monkeypatch.setattr(settings, "OUTPUT_DIR", tmp_path)
+    monkeypatch.setattr(settings, "API_KEY", GPU_KEY)
+    _reset_store(tmp_path)
     with TestClient(app) as c:
         yield c
 
@@ -210,3 +230,49 @@ def test_random_seed_is_recorded(client):
     st = _wait_terminal(client, r.json()["jobId"])
     md = client.get(f"/jobs/{r.json()['jobId']}/metadata").json()
     assert isinstance(md["seed"], int) and md["seed"] > 0  # §18: naključen seed se ZABELEŽI
+
+
+# ── S+7 (R319): avtentikacija X-API-Key — fail-closed ×4 ──────────────────
+
+
+def test_s7_missing_header_401(anon_client):
+    """Brez glave: VSE poslovne končne točke → 401 (ne 404/500)."""
+    assert anon_client.post("/render", json=_render_body()).status_code == 401
+    assert anon_client.get("/jobs/karkoli").status_code == 401
+    assert anon_client.get("/jobs/karkoli/result").status_code == 401
+    assert anon_client.get("/jobs/karkoli/metadata").status_code == 401
+
+
+def test_s7_wrong_key_401(anon_client):
+    """Napačen ključ → 401 (ista koda kot manjkajoč — NE razkrivaj razloga)."""
+    h = {"X-API-Key": "napacen-kljuc"}
+    assert anon_client.post("/render", json=_render_body(), headers=h).status_code == 401
+    assert anon_client.get("/jobs/karkoli", headers=h).status_code == 401
+
+
+def test_s7_unconfigured_key_503(anon_client, monkeypatch):
+    """Fail-closed: QWEN_API_KEY ni nastavljen → 503 ODKLON, tudi če pošiljatelj
+    pogiba glavo. Servis NI nikoli anonimno izpostavljen."""
+    monkeypatch.setattr(settings, "API_KEY", None)
+    assert anon_client.post("/render", json=_render_body()).status_code == 503
+    assert anon_client.post("/render", json=_render_body(), headers={"X-API-Key": "karkoli"}).status_code == 503
+    assert anon_client.get("/jobs/x").status_code == 503
+
+
+def test_s7_health_and_root_open(anon_client):
+    """/health (Docker HEALTHCHECK) in / (živost) ostaneta BREZ ključa —
+    ne razkrivata podatkov jobov."""
+    assert anon_client.get("/health").status_code == 200
+    assert anon_client.get("/health").json()["ok"] is True
+    assert anon_client.get("/").status_code == 200
+
+
+def test_s7_valid_key_full_flow(client):
+    """Veljaven ključ: cela pogodba deluje nespremenjeno (202 → terminal → PNG)."""
+    r = client.post("/render", json=_render_body())
+    assert r.status_code == 202
+    st = _wait_terminal(client, r.json()["jobId"])
+    assert st["status"] == "completed"
+    res = client.get(f"/jobs/{r.json()['jobId']}/result")
+    assert res.status_code == 200
+    assert res.headers["content-type"] == "image/png"

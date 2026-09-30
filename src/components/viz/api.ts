@@ -178,7 +178,7 @@ export interface RenderJobResponse {
   status: string
 }
 
-/** POST /api/viz/render — GPU job stub (Qwen NI v produkciji; iskreno stanje "queued"). */
+/** POST /api/viz/render — GPU job (R319: S+7 integracija; iskreno stanje). */
 export async function requestRender(projectId: string): Promise<RenderJobResponse> {
   const res = await fetch('/api/viz/render', {
     method: 'POST',
@@ -192,6 +192,8 @@ export interface RenderJobStatus {
   jobId: string
   status: 'queued' | 'processing' | 'completed' | 'failed'
   resultPath: string | null
+  /** R319: javni URL PNG rezultata (SAMO ob status completed). */
+  resultUrl: string | null
   error: string | null
 }
 

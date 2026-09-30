@@ -15,11 +15,20 @@ const SUROVA_AMBER = /amber-(50|100|200|300|400|500|600|700|800|900|950)\b/
 
 // Zaklenjeni register: datoteka → seznam TRIMIRANIH vrstic (bajtno = vir).
 const ZAKLENJENO: Record<string, string[]> = {
+  // R319 (dekomp. faza 1): measurements-tab izjeme so se RAZDELILE na
+  // measurements/ mapo — pin SHIFT po kanonu R180/R201/…/R314; skupno
+  // število zaklenjenih vrstic ostaja NATANKO 30 (5 v measurements družini).
   "src/components/roksal/measurements-tab.tsx": [
     "les: 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800',",
-    "WPC: 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800',",
-    "priporociloColor = 'text-amber-600 dark:text-amber-400'",
-    "<p className=\"text-center text-[11px] text-amber-600 dark:text-amber-400\">",
+    "priporociloColor = 'text-amber-600 dark:text-amber-400'"
+  ],
+  "src/components/roksal/measurements/shared.ts": [
+    "WPC: 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800',"
+  ],
+  "src/components/roksal/measurements/inline-inclinometer.tsx": [
+    "<p className=\"text-center text-[11px] text-amber-600 dark:text-amber-400\">"
+  ],
+  "src/components/roksal/measurements/inline-kotomer.tsx": [
     "<p className=\"text-center text-[11px] text-amber-600 dark:text-amber-400\">"
   ],
   "src/components/roksal/crm-tab.tsx": [
@@ -85,7 +94,10 @@ const ZAKLENJENO: Record<string, string[]> = {
 
 // Razlogi (vsaka datoteka z izjemo IMA izrecno razlago — nič tihih izjem).
 const RAZLOGI: Record<string, string> = {
-  "src/components/roksal/measurements-tab.tsx": "R311 — les/WPC kategoriji barv + priporociloColor lestvica + 2 senzorjski besedili (gola-text lestvica)",
+  "src/components/roksal/measurements-tab.tsx": "R311 — les kategorija barv + priporociloColor lestvica (R319: WPC/senzorji preseljeni v measurements/ mapo)",
+  "src/components/roksal/measurements/shared.ts": "R311 — WPC kategorija barv (R319 dekomp.: preseljeno iz measurements-tab)",
+  "src/components/roksal/measurements/inline-inclinometer.tsx": "R311 — senzorjsko besedilo gola-text lestvica (R319 dekomp.: preseljeno)",
+  "src/components/roksal/measurements/inline-kotomer.tsx": "R311 — senzorjsko besedilo gola-text lestvica (R319 dekomp.: preseljeno)",
   "src/components/roksal/crm-tab.tsx": "R234 — POTENCIALEN stanje (izrecno semantična kategorija)",
   "src/components/roksal/reference-gallery.tsx": "R231 — WPC material legenda (barvno kodiranje podatkov)",
   "src/components/roksal/quote-followup.tsx": "komentar-dokumentacija (ni UI rabe)",

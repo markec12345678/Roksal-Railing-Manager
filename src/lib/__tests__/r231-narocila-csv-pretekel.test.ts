@@ -25,6 +25,10 @@ function beri(rel: string): string {
 const material = beri('src/components/roksal/material-intelligence-tab.tsx')
 const mapMeasure = beri('src/components/roksal/map-measure.tsx')
 const measurements = beri('src/components/roksal/measurements-tab.tsx')
+// R319 (dekomp. faza 1): materialStebraColors paleta se je preselila v
+// measurements/shared.ts (izluščena skupaj s SteberTable) — pin SHIFT
+// po kanonu R180/R201/…/R314; `metal:` tla paleta je OSTALA v measurements-tab.
+const measurementsShared = beri('src/components/roksal/measurements/shared.ts')
 const refGallery = beri('src/components/roksal/reference-gallery.tsx')
 
 // okno med dvema markerjema (r207 vzorec — za funkcijo downloadOrdersCsv)
@@ -110,7 +114,8 @@ describe('R231 — [Mandatory] stil (P1-f): map-measure + measurements neutralne
     expect(refGallery).toContain("case 'Alu': return 'bg-slate-500'")
     // measurements material/ground palete — badge družina per material/tla
     expect(measurements).toContain("metal: 'bg-slate-100 dark:bg-slate-500/15")
-    expect(measurements).toContain("ALU: 'bg-slate-100 dark:bg-slate-500/15")
+    // R319: ALU vrstica se je preselila v measurements/shared.ts (pin shift)
+    expect(measurementsShared).toContain("ALU: 'bg-slate-100 dark:bg-slate-500/15")
   })
 
   it('javni portali ostanejo izjeme (regresija r230 dokumentacije); cv-studio R232 konvertiran', () => {
