@@ -148,10 +148,12 @@ describe('R277 — žične vrstice (EN VIR — lib + tab)', () => {
     expect(lib).toContain("from './meritev-verzije'")
   })
 
-  it('tab: FRESH DTO poneseta verzija + vir (fail-verbose tipovna preverba)', () => {
-    expect(komponenta).toContain('verzija: (m.verzija ?? null) as number | null')
-    expect(komponenta).toContain('vir: (m.vir ?? null) as string | null')
-    expect(komponenta).toContain('verzija mora biti pozitivno celo število ALI null')
+  it('tab: FRESH DTO poneseta verzija + vir (fail-verbose tipovna preverba) — R349 FAZA 6: EN VIR pruning živi v measurements/teren-vnosi.ts (iskren prenos; komponenta je žičenje, precedens r341/r346/r348 stale-testi = del kontrakta)', () => {
+    const modul = readFileSync(join(process.cwd(), 'src/components/roksal/measurements/teren-vnosi.ts'), 'utf8')
+    expect(modul).toContain('verzija: (m.verzija ?? null) as number | null')
+    expect(modul).toContain('vir: (m.vir ?? null) as string | null')
+    expect(modul).toContain('verzija mora biti pozitivno celo število ALI null')
+    expect(komponenta).toContain('fetchMeritveTerenVnosi')
   })
 
   it('CSV kontrakt NIČ: meritevVrstica ne uporablja verzija/vir; MeritevZaIzvoz ima samo opcijski razširitev', () => {

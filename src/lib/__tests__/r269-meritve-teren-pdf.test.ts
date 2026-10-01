@@ -313,14 +313,17 @@ describe('R269 — komponenta (measurements-tab) — pill, mini-vrstica, handler
     expect(lib).toContain("from './meritve-povzetek'")
   })
 
-  it('handler: FRESH fetch /api/measurements?projectId (polna resnica projekta ob kliku — nič state-a) + HTTP razlog + ne-polje → TypeError + brez projekta guard + dvoklik guard + fail-closed PREJ (Ni vpisanih meritev) → ENA izpeljava → generate + projektIme; razlog viden', () => {
+  it('handler: FRESH fetch /api/measurements?projectId (polna resnica projekta ob kliku — nič state-a) + HTTP razlog + ne-polje → TypeError + brez projekta guard + dvoklik guard + fail-closed PREJ (Ni vpisanih meritev) → ENA izpeljava → generate + projektIme; razlog viden — R349 FAZA 6: fetch+pruning EN VIR v measurements/teren-vnosi, handler je žičenje (zKotom: false dialekt — bajtni kontrakt R269; iskren prenos, precedens r341/r346/r348 stale-testi = del kontrakta)', () => {
     const okno = oknoMed(komponenta, 'const handleTerenPdf', '// ── Primerjava')
     expect(okno).toContain('if (pdfVteku) return')
     expect(okno).toContain("if (!selectedProject) {")
     expect(okno).toContain("'Ni izbranega projekta'")
-    expect(okno).toContain('fetch(`/api/measurements?projectId=${selectedProject}`, {')
-    expect(okno).toContain('GET /api/measurements → HTTP ${res.status}')
-    expect(okno).toContain('Odgovora /api/measurements ni mogoče prebrati (ni polja).')
+    // R349 FAZA 6 — EN VIR žičenje: FRESH fetch + ne-polje guard živita v modulu
+    expect(okno).toContain('fetchMeritveTerenVnosi(selectedProject, { zKotom: false })')
+    const modul = beri('src/components/roksal/measurements/teren-vnosi.ts')
+    expect(modul).toContain('fetch(`/api/measurements?projectId=${projectId}`, {')
+    expect(modul).toContain('GET /api/measurements → HTTP ${res.status}')
+    expect(modul).toContain('Odgovora /api/measurements ni mogoče prebrati (ni polja).')
     expect(okno).toContain("toast.error('Ni vpisanih meritev'")
     expect(okno).toContain("'Terenski pregled se izvozi, ko je vpisana prva meritev projekta.'")
     const prazen = okno.indexOf('vnosi.length === 0')
@@ -334,8 +337,9 @@ describe('R269 — komponenta (measurements-tab) — pill, mini-vrstica, handler
     expect(okno).toContain('setPdfVteku(false)')
   })
 
-  it('fail-verbose DTO pruning: vrstica brez id/createdAt, ne-fizikalne mere ALI pokvaren arMetadata → TypeError z imenovanim krivcem (R264–R268 vzorec; UI parser toleranten — dokument resnice NIČ tihega preskočevanja)', () => {
-    const okno = oknoMed(komponenta, 'const vrstice = data as Array<Record<string, unknown>>', 'if (vnosi.length === 0)')
+  it('fail-verbose DTO pruning: vrstica brez id/createdAt, ne-fizikalne mere ALI pokvaren arMetadata → TypeError z imenovanim krivcem (R264–R268 vzorec; UI parser toleranten — dokument resnice NIČ tihega preskočevanja) — R349 FAZA 6: okno na EN VIR modulu (iskren prenos; komponenta je žičenje)', () => {
+    const modul = beri('src/components/roksal/measurements/teren-vnosi.ts')
+    const okno = oknoMed(modul, 'export function pruneMeritveTerenVrstice', 'export async function fetchMeritveTerenVnosi')
     expect(okno).toContain('manjkajoč id v odgovoru API-ja')
     expect(okno).toContain('manjkajoč createdAt v odgovoru API-ja')
     expect(okno).toContain('dolzinaMm mora biti ne-negativno končno število')

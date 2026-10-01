@@ -57,7 +57,6 @@ import {
   meritevTerenPregled,
   generateMeritveTerenPdf,
   osnutekBeseda,
-  type MeritveTerenVnos,
 } from '@/lib/meritve-teren-pdf'
 import { generateTerenskiZapisniPdf } from '@/lib/terenski-zapisni-pdf'
 import { zapisniListCsv, zapisniListCsvFilename } from '@/lib/terenski-zapisni-csv'
@@ -187,6 +186,10 @@ import { getQuickSpacing, normalizeMeasurements } from './measurements/normalize
 // (csvEsc/csvDokument/MERITVE_CSV_HEADER/zgradiMeritveVrstice — vzorec
 // kalkulator FAZA 5–7; prenos ostane v tabu prek kanona downloadCsvText).
 import { csvDokument, csvEsc, MERITVE_CSV_HEADER, zgradiMeritveVrstice } from './measurements/izvoz-csv'
+// R349 — dekompozicija measurements-tab FAZA 6: EN VIR fetch + fail-verbose
+// DTO pruning terenskih izvozov (R269/R284/R285 — 3 stale telesa → 1
+// gradnik z dialektnim stikalom zKotom; vzorec FAZA 5).
+import { fetchMeritveTerenVnosi } from './measurements/teren-vnosi'
 import { renderRailingDiagram } from './measurements/railing-diagram'
 
 // ============================================
@@ -1466,12 +1469,12 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
   }, [filteredMeasurements, projects, selectedProject])
 
   // R269 — MERITVE — TERENSKI PREGLED PDF (25. člen 'izvozi' družine): FRESH
-  // fetch /api/measurements?projectId ob kliku (R244–R268 precedens — polna
-  // resnica projekta, ne filtrirani state) + fail-verbose DTO pruning
-  // (identiteta + fizikalne mere + arMetadata parse tu — imenovan razlog;
-  // ostalo VERBATIM — lib preveri z indeksom krivca). PRAZEN seznam →
-  // iskren toast (NIČ prazne datoteke); ENA izpeljava povzetka = ISTA
-  // resnica kot KPI + sklep + mini-vrstica (WYSIWYG).
+  // fetch + fail-verbose DTO pruning od R349 FAZA 6 EN VIR
+  // fetchMeritveTerenVnosi(selectedProject, { zKotom: false }) — polna
+  // resnica projekta, ne filtrirani state (R244–R268 precedens; dialekt
+  // brez kotStopinje — bajtni kontrakt lista). PRAZEN seznam → iskren toast
+  // (NIČ prazne datoteke); ENA izpeljava povzetka = ISTA resnica kot KPI +
+  // sklep + mini-vrstica (WYSIWYG).
   const handleTerenPdf = async () => {
     if (pdfVteku) return
     if (!selectedProject) {
@@ -1482,72 +1485,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
     }
     setPdfVteku(true)
     try {
-      const res = await fetch(`/api/measurements?projectId=${selectedProject}`, {
-        credentials: 'same-origin',
-      })
-      if (!res.ok) {
-        throw new Error(`GET /api/measurements → HTTP ${res.status}`)
-      }
-      const data: unknown = await res.json()
-      if (!Array.isArray(data)) {
-        throw new TypeError('Odgovora /api/measurements ni mogoče prebrati (ni polja).')
-      }
-      const vrstice = data as Array<Record<string, unknown>>
-      const vnosi: MeritveTerenVnos[] = vrstice.map((m, i) => {
-        if (typeof m.id !== 'string' || m.id === '') {
-          throw new TypeError(`meritev vrstica ${i}: manjkajoč id v odgovoru API-ja`)
-        }
-        if (typeof m.createdAt !== 'string' || m.createdAt === '') {
-          throw new TypeError(`meritev vrstica ${i} (${m.id}): manjkajoč createdAt v odgovoru API-ja`)
-        }
-        if (typeof m.dolzinaMm !== 'number' || !Number.isFinite(m.dolzinaMm) || m.dolzinaMm < 0) {
-          throw new TypeError(`meritev vrstica ${i} (${m.id}): dolzinaMm mora biti ne-negativno končno število, ne ${String(m.dolzinaMm)}`)
-        }
-        if (typeof m.visinaMm !== 'number' || !Number.isFinite(m.visinaMm) || m.visinaMm < 0) {
-          throw new TypeError(`meritev vrstica ${i} (${m.id}): visinaMm mora biti ne-negativno končno število, ne ${String(m.visinaMm)}`)
-        }
-        // R277 (issue #16 §6) — verzija + vir: fail-verbose tipovna preverba
-        // (pokvaren vir NE sme tiho priti na list kot String(number); verzija
-        // = pozitivno celo število ALI null/izostanek = legacy).
-        if (m.verzija !== null && m.verzija !== undefined && (typeof m.verzija !== 'number' || !Number.isInteger(m.verzija) || (m.verzija as number) < 1)) {
-          throw new TypeError(`meritev vrstica ${i} (${m.id}): verzija mora biti pozitivno celo število ALI null, ne ${String(m.verzija)}`)
-        }
-        if (m.vir !== null && m.vir !== undefined && typeof m.vir !== 'string') {
-          throw new TypeError(`meritev vrstica ${i} (${m.id}): vir mora biti niz ALI null, ne ${String(m.vir)}`)
-        }
-        // arMetadata parse — fail-verbose (UI parser je toleranten {}; dokument
-        // resnice NIKOLI tiho ne preskoči pokvarene vrstice).
-        let ar: Record<string, unknown> = {}
-        if (m.arMetadata !== null && m.arMetadata !== undefined) {
-          if (typeof m.arMetadata !== 'string') {
-            throw new TypeError(`meritev vrstica ${i} (${m.id}): arMetadata mora biti niz ALI null, ne ${String(m.arMetadata)}`)
-          }
-          if (m.arMetadata.trim() !== '') {
-            try {
-              const parsed: unknown = JSON.parse(m.arMetadata)
-              if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
-                throw new TypeError('ni objekt')
-              }
-              ar = parsed as Record<string, unknown>
-            } catch {
-              throw new TypeError(`meritev vrstica ${i} (${m.id}): arMetadata ni razumljen kot JSON objekt (pokvaren vir)`)
-            }
-          }
-        }
-        return {
-          id: m.id,
-          createdAt: m.createdAt,
-          dolzinaMm: m.dolzinaMm,
-          visinaMm: m.visinaMm,
-          tipMeritve: (ar.tipMeritve ?? null) as string | null,
-          oznaka: (ar.oznaka ?? null) as string | null,
-          status: (m.status ?? ar.status ?? null) as string | null,
-          lokacija: (ar.lokacija ?? null) as string | null,
-          opomba: (ar.opomba ?? null) as string | null,
-          verzija: (m.verzija ?? null) as number | null,
-          vir: (m.vir ?? null) as string | null,
-        }
-      })
+      const vnosi = await fetchMeritveTerenVnosi(selectedProject, { zKotom: false })
       if (vnosi.length === 0) {
         // Fail-closed jedro: prazen seznam ne nastaja dokumenta — iskren toast.
         toast.error('Ni vpisanih meritev', {
@@ -1577,13 +1515,15 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
     }
   }
 
-  // R284 — TERENSKI ZAPISNI LIST PDF (issue #15 §3, worklog i5): ISTI FRESH
-  // fetch + fail-verbose DTO pruning vzorec kot R269 (izolacija nove družine
-  // — namerna duplikacija pruningu, da R269 handler NIKOLI ne tvega regresije
-  // bajtnega kontrakta; skupno resnico nosi EN VIR meritevTerenPregled v
-  // libu). Zapisni list = IZPOLNJEVALNI list (X1): zapisana resnica + PRAZNI
-  // fizični stolpci (Fizična ref./Δ/Zapiski) — izpolni jih lastnik na terenu
-  // po docs/AR-FIELD-VALIDATION.md §3. PRAZEN seznam → iskren toast; ENA
+  // R284 — TERENSKI ZAPISNI LIST PDF (issue #15 §3, worklog i5): FRESH
+  // fetch + fail-verbose DTO pruning od R349 FAZA 6 EN VIR
+  // fetchMeritveTerenVnosi(selectedProject, { zKotom: true }) — skupno
+  // resnico nosi EN VIR modul (prej namerna duplikacija pruningu, da R269
+  // handler NIKOLI ne tvega regresije bajtnega kontrakta — zdaj dialektni
+  // stikalo zKotom nosi OBA kontrakta EKSPLICITNO, nič tihega). Zapisni
+  // list = IZPOLNJEVALNI list (X1): zapisana resnica + PRAZNI fizični
+  // stolpci (Fizična ref./Δ/Zapiski) — izpolni jih lastnik na terenu po
+  // docs/AR-FIELD-VALIDATION.md §3. PRAZEN seznam → iskren toast; ENA
   // izpeljava povzetka = ISTA resnica kot KPI + sklep (WYSIWYG).
   const handleZapisniListPdf = async () => {
     if (zapisniVteku) return
@@ -1595,86 +1535,8 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
     }
     setZapisniVteku(true)
     try {
-      const res = await fetch(`/api/measurements?projectId=${selectedProject}`, {
-        credentials: 'same-origin',
-      })
-      if (!res.ok) {
-        throw new Error(`GET /api/measurements → HTTP ${res.status}`)
-      }
-      const data: unknown = await res.json()
-      if (!Array.isArray(data)) {
-        throw new TypeError('Odgovora /api/measurements ni mogoče prebrati (ni polja).')
-      }
-      const vrstice = data as Array<Record<string, unknown>>
-      const vnosi: MeritveTerenVnos[] = vrstice.map((m, i) => {
-        if (typeof m.id !== 'string' || m.id === '') {
-          throw new TypeError(`meritev vrstica ${i}: manjkajoč id v odgovoru API-ja`)
-        }
-        if (typeof m.createdAt !== 'string' || m.createdAt === '') {
-          throw new TypeError(`meritev vrstica ${i} (${m.id}): manjkajoč createdAt v odgovoru API-ja`)
-        }
-        if (typeof m.dolzinaMm !== 'number' || !Number.isFinite(m.dolzinaMm) || m.dolzinaMm < 0) {
-          throw new TypeError(`meritev vrstica ${i} (${m.id}): dolzinaMm mora biti ne-negativno končno število, ne ${String(m.dolzinaMm)}`)
-        }
-        if (typeof m.visinaMm !== 'number' || !Number.isFinite(m.visinaMm) || m.visinaMm < 0) {
-          throw new TypeError(`meritev vrstica ${i} (${m.id}): visinaMm mora biti ne-negativno končno število, ne ${String(m.visinaMm)}`)
-        }
-        if (m.verzija !== null && m.verzija !== undefined && (typeof m.verzija !== 'number' || !Number.isInteger(m.verzija) || (m.verzija as number) < 1)) {
-          throw new TypeError(`meritev vrstica ${i} (${m.id}): verzija mora biti pozitivno celo število ALI null, ne ${String(m.verzija)}`)
-        }
-        if (m.vir !== null && m.vir !== undefined && typeof m.vir !== 'string') {
-          throw new TypeError(`meritev vrstica ${i} (${m.id}): vir mora biti niz ALI null, ne ${String(m.vir)}`)
-        }
+      const vnosi = await fetchMeritveTerenVnosi(selectedProject, { zKotom: true })
 
-        // R284 — kot (X2 EN VIR R186 r[5] = kotStopinje): prvorazredni DTO
-        // stolpec; fallback legacy arMetadata.kot (število). Pokvaren tip =
-        // fail-verbose (NIČ tihega String(number) na listu); odsoten = null
-        // ('—' iskren odpad).
-        let kot: number | null = null
-        if (m.kotStopinje !== null && m.kotStopinje !== undefined) {
-          if (typeof m.kotStopinje !== 'number' || !Number.isFinite(m.kotStopinje)) {
-            throw new TypeError(`meritev vrstica ${i} (${m.id}): kotStopinje mora biti končno število ALI null, ne ${String(m.kotStopinje)}`)
-          }
-          kot = m.kotStopinje
-        }
-        // arMetadata parse — fail-verbose (ISTI kontrakt kot R269 — pokvaren
-        // vir NIKOLI tiho preskočen).
-        let ar: Record<string, unknown> = {}
-        if (m.arMetadata !== null && m.arMetadata !== undefined) {
-          if (typeof m.arMetadata !== 'string') {
-            throw new TypeError(`meritev vrstica ${i} (${m.id}): arMetadata mora biti niz ALI null, ne ${String(m.arMetadata)}`)
-          }
-          if (m.arMetadata.trim() !== '') {
-            try {
-              const parsed: unknown = JSON.parse(m.arMetadata)
-              if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
-                throw new TypeError('ni objekt')
-              }
-              ar = parsed as Record<string, unknown>
-            } catch {
-              throw new TypeError(`meritev vrstica ${i} (${m.id}): arMetadata ni razumljen kot JSON objekt (pokvaren vir)`)
-            }
-          }
-        }
-        if (kot === null && typeof ar.kot === 'number' && Number.isFinite(ar.kot)) {
-          // legacy dialekt (m1/m2) — kot živi v arMetadata.kot (R283 fikstura)
-          kot = ar.kot
-        }
-        return {
-          id: m.id,
-          createdAt: m.createdAt,
-          dolzinaMm: m.dolzinaMm,
-          visinaMm: m.visinaMm,
-          kotStopinje: kot,
-          tipMeritve: (ar.tipMeritve ?? null) as string | null,
-          oznaka: (ar.oznaka ?? null) as string | null,
-          status: (m.status ?? ar.status ?? null) as string | null,
-          lokacija: (ar.lokacija ?? null) as string | null,
-          opomba: (ar.opomba ?? null) as string | null,
-          verzija: (m.verzija ?? null) as number | null,
-          vir: (m.vir ?? null) as string | null,
-        }
-      })
       if (vnosi.length === 0) {
         // Fail-closed jedro: prazen seznam ne nastaja dokumenta — iskren toast.
         toast.error('Ni vpisanih meritev', {
@@ -1702,15 +1564,16 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
     }
   }
 
-  // R285 — TERENSKI ZAPISNI LIST CSV (issue #15 §3, worklog i5b): ISTI FRESH
-  // fetch + fail-verbose DTO pruning vzorec kot R284 (namerna duplikacija —
-  // izolacija družine: R284 PDF handler NIKOLI ne tvega regresije bajtnega
-  // kontrakta; skupno resnico nosita EN VIR zapisniListVrste IN R186
-  // meritevVrstica v libih). CSV = DIGITALNO izpolnjevanje v Excelu (Y1):
-  // ista zapisana resnica + PRAZNI fizični stolpci (fizicna_ref_mm /
-  // delta_mm / zapiski_terena) — izpolni jih lastnik v Excelu. PRAZEN
-  // seznam → iskren toast (nič praznih datotek); pariteta stolpcev z R186
-  // arhivom po konstrukciji (Y2 — EN VIR meritevVrstica).
+  // R285 — TERENSKI ZAPISNI LIST CSV (issue #15 §3, worklog i5b): FRESH
+  // fetch + fail-verbose DTO pruning od R349 FAZA 6 EN VIR
+  // fetchMeritveTerenVnosi — ISTI modul kot R284/R269
+  // (prej namerna duplikacija — izolacija družine; stale telesi R284 ≡
+  // R285 bajtno identična → zdaj 1 gradnik v ./measurements/teren-vnosi).
+  // CSV = DIGITALNO izpolnjevanje v Excelu (Y1): ista zapisana resnica +
+  // PRAZNI fizični stolpci (fizicna_ref_mm / delta_mm / zapiski_terena) —
+  // izpolni jih lastnik v Excelu. PRAZEN seznam → iskren toast (nič praznih
+  // datotek); pariteta stolpcev z R186 arhivom po konstrukciji (Y2 — EN VIR
+  // meritevVrstica).
   const handleZapisniListCsv = async () => {
     if (zapisniCsvVteku) return
     if (!selectedProject) {
@@ -1721,85 +1584,8 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
     }
     setZapisniCsvVteku(true)
     try {
-      const res = await fetch(`/api/measurements?projectId=${selectedProject}`, {
-        credentials: 'same-origin',
-      })
-      if (!res.ok) {
-        throw new Error(`GET /api/measurements → HTTP ${res.status}`)
-      }
-      const data: unknown = await res.json()
-      if (!Array.isArray(data)) {
-        throw new TypeError('Odgovora /api/measurements ni mogoče prebrati (ni polja).')
-      }
-      const vrstice = data as Array<Record<string, unknown>>
-      const vnosi: MeritveTerenVnos[] = vrstice.map((m, i) => {
-        if (typeof m.id !== 'string' || m.id === '') {
-          throw new TypeError(`meritev vrstica ${i}: manjkajoč id v odgovoru API-ja`)
-        }
-        if (typeof m.createdAt !== 'string' || m.createdAt === '') {
-          throw new TypeError(`meritev vrstica ${i} (${m.id}): manjkajoč createdAt v odgovoru API-ja`)
-        }
-        if (typeof m.dolzinaMm !== 'number' || !Number.isFinite(m.dolzinaMm) || m.dolzinaMm < 0) {
-          throw new TypeError(`meritev vrstica ${i} (${m.id}): dolzinaMm mora biti ne-negativno končno število, ne ${String(m.dolzinaMm)}`)
-        }
-        if (typeof m.visinaMm !== 'number' || !Number.isFinite(m.visinaMm) || m.visinaMm < 0) {
-          throw new TypeError(`meritev vrstica ${i} (${m.id}): visinaMm mora biti ne-negativno končno število, ne ${String(m.visinaMm)}`)
-        }
-        if (m.verzija !== null && m.verzija !== undefined && (typeof m.verzija !== 'number' || !Number.isInteger(m.verzija) || (m.verzija as number) < 1)) {
-          throw new TypeError(`meritev vrstica ${i} (${m.id}): verzija mora biti pozitivno celo število ALI null, ne ${String(m.verzija)}`)
-        }
-        if (m.vir !== null && m.vir !== undefined && typeof m.vir !== 'string') {
-          throw new TypeError(`meritev vrstica ${i} (${m.id}): vir mora biti niz ALI null, ne ${String(m.vir)}`)
-        }
-        // R285 — kot (Y2 EN VIR R186 r[5] = kotStopinje): ISTI vzorec kot
-        // R284 X2 — prvorazredni DTO stolpec; fallback legacy arMetadata.kot
-        // (število). Pokvaren tip = fail-verbose; odsoten = null ('' celica
-        // v CSV — iskren odpad, pariteta R186).
-        let kot: number | null = null
-        if (m.kotStopinje !== null && m.kotStopinje !== undefined) {
-          if (typeof m.kotStopinje !== 'number' || !Number.isFinite(m.kotStopinje)) {
-            throw new TypeError(`meritev vrstica ${i} (${m.id}): kotStopinje mora biti končno število ALI null, ne ${String(m.kotStopinje)}`)
-          }
-          kot = m.kotStopinje
-        }
-        // arMetadata parse — fail-verbose (ISTI kontrakt kot R269/R284 —
-        // pokvaren vir NIKOLI tiho preskočen).
-        let ar: Record<string, unknown> = {}
-        if (m.arMetadata !== null && m.arMetadata !== undefined) {
-          if (typeof m.arMetadata !== 'string') {
-            throw new TypeError(`meritev vrstica ${i} (${m.id}): arMetadata mora biti niz ALI null, ne ${String(m.arMetadata)}`)
-          }
-          if (m.arMetadata.trim() !== '') {
-            try {
-              const parsed: unknown = JSON.parse(m.arMetadata)
-              if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
-                throw new TypeError('ni objekt')
-              }
-              ar = parsed as Record<string, unknown>
-            } catch {
-              throw new TypeError(`meritev vrstica ${i} (${m.id}): arMetadata ni razumljen kot JSON objekt (pokvaren vir)`)
-            }
-          }
-        }
-        if (kot === null && typeof ar.kot === 'number' && Number.isFinite(ar.kot)) {
-          // legacy dialekt (m1/m2) — kot živi v arMetadata.kot (R283 fikstura)
-          kot = ar.kot
-        }
-        return {
-          id: m.id,
-          createdAt: m.createdAt,
-          dolzinaMm: m.dolzinaMm,
-          visinaMm: m.visinaMm,
-          kotStopinje: kot,
-          tipMeritve: (ar.tipMeritve ?? null) as string | null,
-          oznaka: (ar.oznaka ?? null) as string | null,
-          status: (m.status ?? ar.status ?? null) as string | null,
-          lokacija: (ar.lokacija ?? null) as string | null,
-          opomba: (ar.opomba ?? null) as string | null,
-          verzija: (m.verzija ?? null) as number | null,
-          vir: (m.vir ?? null) as string | null,
-        }
-      })
+      const vnosi = await fetchMeritveTerenVnosi(selectedProject, { zKotom: true })
+
       if (vnosi.length === 0) {
         // Fail-closed jedro: prazen seznam ne nastaja datoteke — iskren toast.
         toast.error('Ni vpisanih meritev', {
@@ -4146,7 +3932,9 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   type="button"
                   onClick={() => handleApplyPredloga(p.id)}
                   disabled={!selectedProject}
-                  className="flex flex-col items-start gap-1 rounded-lg border border-border/50 bg-secondary/30 p-2.5 text-left transition-all duration-150 hover:border-roksal-amber/40 hover:bg-roksal-amber/5 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex flex-col items-start gap-1 rounded-lg border border-border/50 bg-secondary/30 p-2.5 text-left transition-all duration-150 hover:border-roksal-amber/40 hover:bg-roksal-amber/5 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                  aria-label={`Naloži predlogo meritev: ${p.naziv}`}
+                  title="Naloži predlogo — zapolni vnosni obrazec z vrednostmi predloge"
                 >
                   <div className="flex items-center gap-1.5">
                     <Icon className="h-3.5 w-3.5 text-roksal-amber" />
@@ -4232,7 +4020,9 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   key={tip}
                   type="button"
                   onClick={() => handleQuickAdd(tip)}
-                  className={`flex flex-col items-center justify-center gap-1 rounded-lg border p-2.5 transition-all duration-150 active:scale-[0.96] hover:border-roksal-navy/40 dark:hover:border-roksal-ink/40 ${tipMeritveColors[tip]}`}
+                  className={`flex flex-col items-center justify-center gap-1 rounded-lg border p-2.5 transition-all duration-150 active:scale-[0.96] hover:border-roksal-navy/40 dark:hover:border-roksal-ink/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 ${tipMeritveColors[tip]}`}
+                  aria-label={`Nova meritev: ${tipMeritveLabels[tip]}`}
+                  title={`Hitro dodaj novo meritev vrste ${tipMeritveLabels[tip]} v ta projekt`}
                 >
                   <Icon className="h-4 w-4" />
                   <span className="text-2xs font-medium">{tipMeritveLabels[tip]}</span>
@@ -4253,7 +4043,9 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   key={tip}
                   type="button"
                   onClick={() => handleQuickAdd(tip)}
-                  className={`flex flex-col items-center justify-center gap-1 rounded-lg border p-2.5 transition-all duration-150 active:scale-[0.96] hover:border-roksal-navy/40 dark:hover:border-roksal-ink/40 ${tipMeritveColors[tip]}`}
+                  className={`flex flex-col items-center justify-center gap-1 rounded-lg border p-2.5 transition-all duration-150 active:scale-[0.96] hover:border-roksal-navy/40 dark:hover:border-roksal-ink/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 ${tipMeritveColors[tip]}`}
+                  aria-label={`Nova meritev: ${tipMeritveLabels[tip]}`}
+                  title={`Hitro dodaj novo meritev vrste ${tipMeritveLabels[tip]} v ta projekt`}
                 >
                   <Icon className="h-4 w-4" />
                   <span className="text-2xs font-medium">{tipMeritveLabels[tip]}</span>
@@ -4281,11 +4073,13 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   key={u}
                   type="button"
                   onClick={() => setPrimaryUnit(u)}
-                  className={`rounded-md px-3 py-1 text-xs font-medium transition-all duration-150 active:scale-[0.96] ${
+                  className={`rounded-md px-3 py-1 text-xs font-medium transition-all duration-150 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 ${
                     primaryUnit === u
                       ? 'bg-roksal-navy text-white shadow-sm'
                       : 'text-muted-foreground hover:text-roksal-ink'
                   }`}
+                  aria-label={`Nastavi glavno enoto: ${enotaLabels[u]}`}
+                  title="Glavna enota vseh vnosnih in prikaznih polj meritev"
                 >
                   {enotaLabels[u]}
                 </button>
@@ -4481,7 +4275,9 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                           <button
                             type="button"
                             onClick={() => handleLoadStairTemplate(t)}
-                            className="flex-1 text-left min-w-0"
+                            className="flex-1 text-left min-w-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 rounded"
+                            aria-label={`Naloži stopnično predlogo: ${t.naziv}`}
+                            title="Naloži stopnično predlogo v vnosni obrazec"
                           >
                             <p className="text-[11px] font-medium text-roksal-ink truncate">{t.naziv}</p>
                             <p className="text-[9px] text-muted-foreground font-mono">

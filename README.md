@@ -103,7 +103,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 45 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **4966** (302 datoteki, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **4992** (304 datoteki, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 143 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -932,6 +932,8 @@ Sheet z 6 podzavihki:
   pogreše + FAZA 6 regresija + 0-hex] + r347-stil-val30 ×8 [3 parity
   skupine + tipografija + 0-hex + obrnjene regresije val 29/28 + R291/R293])
   — 4940/4940 (300); (4) verifikacija: tsc 0 · eslint 0 (FULL) · build svež
+  EXIT=0 · needles r347 VSE OK (veriga + union registri r340–r347) ·
+  smoke EXIT=0 · e2e EXIT=0 (ZERO-MUTACIJA)
 - **Meritve FAZA 5 + val 31** (R348): (1) NOV EN VIR
   `measurements/izvoz-csv.ts` — `csvEsc` (podvajanje navedkov; 15 inline
   kopij izginilo), `csvDokument` (BOM + zaglavje + LF; 4 inline kopije
@@ -953,8 +955,29 @@ Sheet z 6 podzavihki:
   build svež EXIT=0 · needles r348 VSE OK (veriga + union registri
   r340–r348) · smoke EXIT=0 · e2e EXIT=0 [ODTIS BAJTNATO IDENTIČEN
   pre==post — ZERO-MUTACIJA].
-  EXIT=0 · needles r347 VSE OK (veriga + union registri r340–r347) ·
-  smoke EXIT=0 · e2e EXIT=0 (ZERO-MUTACIJA)
+- **Meritve FAZA 6 + val 32** (R349): (1) NOV EN VIR
+  `measurements/teren-vnosi.ts` (132 vrstic; vzorec FAZA 5 + kalkulator
+  FAZA 5–7) — `pruneMeritveTerenVrstice` (fail-verbose DTO pruning, ENA
+  kopija prej 3 stale telesa; R284 ≡ R285 bajtno identični, razen
+  komentarjev) + `fetchMeritveTerenVnosi` (FRESH fetch + res.ok + ne-polje
+  guard); dialektno stikalo `zKotom` nosi OBA bajtna kontrakta EKSPLICITNO:
+  R269 false (DTO brez kotStopinje ključa + brez kot validacije) ALI
+  R284/R285 true (kotStopinje + legacy arMetadata.kot fallback R283);
+  `measurements-tab` 6.652 → 6.448 (−204; LEKCIJA R347 2 potrjena: stale
+  kopije dihajo v function telesih ×3); (2) **val 32** — a11y parity
+  AKCIJSKIH gumbov, kjer vidno besedilo NE razlaga akcije: predloga
+  meritev apply + hitro dodajanje ×2 + glavna enota + stopnična predloga
+  dobi aria-label + title (parity val 29/R203/R186) + izrecen ring
+  navy/40 V ISTEM commitu (LEKCIJA R346); 0 novih hex; (3) vitest r349
+  ×26 (2 NOVI datoteki: r349-meritve-faza6 ×18 [oba dialekta + legacy
+  fallback + fail-verbose VERBATIM ×5 + toleranca + determinizem + fetch
+  wrapper ×3 + EN VIR dokaz + 0-hex] + r349-stil-val32 ×8 [4 parity
+  skupine z okni + 0-hex + obrnjena regresija val 31/30]) + 3 stale
+  testa iskreno preusmerjena na novo resnico (r269 okno handler → modul
+  + žičenje; r277 DTO trditve → modul; r172 prst 6475 → 6271) — 4992/4992
+  (304); (4) verifikacija: tsc 0 · eslint 0 (FULL) · build svež EXIT=0 ·
+  needles r349 VSE OK (veriga + union registri r340–r349) · smoke EXIT=0 ·
+  e2e EXIT=0 [ODTIS BAJTNATO IDENTIČEN pre==post — ZERO-MUTACIJA].
 - **Kalkulator FAZA 6 + val 29** (R346): (1) NOV `calculator/inputs.ts` —
   zbiranje/nalaganje vhodov izluščeno VERBATIM iz taba (args objekti —
   vzorec R325/R345): `collectCurrentInputs(mode, vhodnaStanja)` (zapis za
@@ -1169,7 +1192,7 @@ Sheet z 6 podzavihki:
 | **PWA** | Service Worker + Web Manifest |
 | **Temnitveni način** | [next-themes](https://github.com/pacocoursey/next-themes) |
 | **Validacija** | [Zod 4](https://zod.dev/) |
-| **Testiranje** | [Vitest 4](https://vitest.dev/) (4966 testov + globalSetup embedded PG) |
+| **Testiranje** | [Vitest 4](https://vitest.dev/) (4992 testov + globalSetup embedded PG) |
 | **Paketni upravitelj** | [Bun](https://bun.sh/) |
 | **Linting** | ESLint 9 + eslint-config-next |
 
@@ -1291,7 +1314,7 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `bun run dev` | Zažene Next.js dev server (port 3000) |
 | `bun run build` | Produkcijska build (build-prepare: generate + migrate deploy + seed) |
 | `bun run start` | Zažene produkcijski server |
-| `bun run test` | Vsi testi (vitest, 4966, embedded PG prek globalSetup) |
+| `bun run test` | Vsi testi (vitest, 4992, embedded PG prek globalSetup) |
 | `bun run check` | tsc --noEmit + vitest run (en ukaz za vse) |
 | `bunx tsc --noEmit` | Tipska kontrola celotnega projekta (trenutno 0 napak) |
 | `bun run lint` | ESLint preverjanje |
@@ -1424,7 +1447,7 @@ primitivov. Največji:
 
 | Komponenta | Vrstice | Funkcija |
 |-----------|---------|----------|
-| `measurements-tab.tsx` | 6.652 | Meritve (9 tipov, stopniščni čarovnik, WPC, štebricki; dekompozicija faza 1+2+3+4+5 R319/R325/R338/R340/R348) |
+| `measurements-tab.tsx` | 6.448 | Meritve (9 tipov, stopniščni čarovnik, WPC, štebricki; dekompozicija faza 1+2+3+4+5+6 R319/R325/R338/R340/R348/R349) |
 | `calculator-tab.tsx` | 4.489 | Kalkulator (7 načinov + 6 izpolnitev; dekompozicija faza 1+2+3+4+5+6+7 R322/R325/R340/R341/R345/R346/R347) |
 | `ar-scanner.tsx` | 2.789 | AR kamera z vizualizacijo ograje + AI sugestija |
 | `webxr-scanner.tsx` | 2.377 | WebXR poskus (kjer podprt) |
