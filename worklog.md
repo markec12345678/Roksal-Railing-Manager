@@ -6901,8 +6901,10 @@ Stage Summary:
 - ISSUE #1: 64 členov izpolnjenih (NJIOVA R334 61. + R335 62. + R336 63. sistem zdravje + R337 64. člen AI raba pregled CSV; Deliverables 7/7 ✓; IZVOZI družina = 70 gumbov drevesa — val8 anti-stale 70 [NJIOVA R337 dodala ai-raba pill]); issue ostaja odprt, owner 'Razvoj > QA'
 - ⚠️ VAROVANJE: obe žetona (GitHub ghp_…, Vercel vcp_…) sta bila uporabljena v tej seji — priporočam ROTACIJO (regenerate) po zaključku (znova)
 
-### PRVA NALOGA POST-commit ŽIVO (R338 — r338-prod-qa.sh, push)
-- Spodaj dodatek ob izvedbi (LIVE ali ESKALACIJA; UNION harvest: ob zelenem deployu nosi R290+…+R338 SKUPAJ — precedens R313/R314/R332/R333/R335; LEKCIJA R330 7: POST-commit prod-qa takoj po pushu lahko dirje deploy — če EPOCH + needle MISS sočasno, preveri build čas NOVICE run pred interpretacijo)
+### PRVA NALOGA POST-commit ŽIVO (R338 — r338-prod-qa.sh, push 6a333ae)
+- **PUSH USPEŠEN 6a333ae na origin/main** (po KOLIZIJAH #8–#13 — 13. potrditev: fetch MED pushom ujel njihov 14e245c worklog-only [R337 POST-commit]; rebase brez razveljavitve verifikacije [worklog-only = koda identična] → push čist)
+- **Tek 1: ESKALACIJA veja EXIT=0** (iskren stale-dokaz, kanon R258 — pipeline event NI koda-bug: PROD build 2026-10-01T10:03:34.812Z ≤ R338 commit meja 10:38:12 — 10:03 build = NJIHOV R337 deploy; MOJ R338 deploy čaka na Vercel [kvota/limit vzorec od R313]; stale ZDRAV ŽIVO: needleji R276→R337 + ZERO must_miss + Z3 sync gate; ESKALACIJA LASTNIKU: Vercel dashboard)
+- kanon R280/R284: naslednji zeleni deploy nosi R318+…+R338 SKUPAJ — **R339 prva naloga = r338-prod-qa.sh re-run, pričakuj LIVE vejo** (R338 needle blok [3 premik needleji + TODO-R338] se preveri v LIVE veji ob zelenem deployu)
 Task ID: R338-derive
 Agent: general-purpose (derive R338 generational scripts — KOLIZIJA #10 re-derivacija iz NJIHOVE r335 generacije)
 Task: R338 — derive r338-build-needles.sh + r338-run-smoke.sh + r338-sweep.sh + r338-sweep-run.sh + r338-prod-qa.sh + r338-e2e-browser.sh iz r335 generacije
