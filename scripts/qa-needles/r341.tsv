@@ -1,0 +1,31 @@
+# qa-needles/r341.tsv — REGISTER needlejev runde R341 (kalkulator FAZA 3 EN
+# VIR modeLabels + 65. člen issue #1 [zgodovina CSV → kanon toCsv] + STIL
+# val 26 [hover parity zgodovina izračunov]; KOLIZIJA #14: moja runda
+# preimenovana R340→R341 po kanonu KOLIZIJE #4/R323/#13/#14 — njihov R340
+# [4da09b9] = pristala resnica, moja delta re-aplicirana na njihovo postavitev)
+# ============================================================================
+# FORMAT (TSV; EN vrstica = EN needle; TAB je LOČILO — presledki znotraj
+# needleja so POMENNI, ker grep -F išče dobesedno) — ENAK format kot
+# r340.tsv (kanon R340 qa-round.sh: needleji so PODATEK, ne koda).
+#   <needle_string><TAB><opis><TAB><vrsta>
+# vrsta:
+#   need_static  — niz MORA biti ŽIV v čankih (grep -rqF po .next/static/chunks
+#                  + .next/server, kopiranih v /tmp/r341-build-chunks)
+#   must_miss    — niz NE SME biti prisoten (razvojni ostanki)
+#
+# ── R341 lastni needleji ──
+# FAZA 3: modeLabels EN VIR v calculator/shared.ts — oznake ('Razmiki letev'
+# itd.) obstajajo TUDI v modeTabs [isti niz po konstrukciji — dogovor testiran
+# v vitest], zato NI edinstvenega needleja za SAMO modeLabels (iskrena
+# omejitev, vzorec R340 "ISKRENA OMEJITEV pokritosti": pokritost = tsc +
+# vitest r341-calc-faza3 ×9 [EN VIR + dedup + bijekcija] + E2E regresija).
+# 65. člen: zgodovina CSV → toCsv/downloadCsvText — glave/vrstice/ime/toasti
+# NESPREMENJENI po namenu (kanon 65. člena), ročni blob/anchor ples
+# odstranjen; edini NOV minifikacijo-preživeči niz = val 26 badge title
+# (spodaj); pokritost mehanike = vitest r341-zgodovina-csv ×8 + E2E regresija.
+# STIL val 26: badge title ŽIV v kalkulator čanku:
+Prstni odtis izračuna — verzija formule in hash vhodov za reproducibilnost (R150)	R341 val 26 prstni odtis badge title (hover parity — ŽIV)	need_static
+#
+# Delegirani negativni needle — OBVEZEN vsaki rundi (kanon "brez razvojnih
+# ostankov", vzorec R324–R340):
+TODO-R341	R341 — brez razvojnih ostankov	must_miss

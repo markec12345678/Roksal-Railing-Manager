@@ -52,6 +52,25 @@ export const modeTabs: { id: CalcMode; label: string; icon: React.ElementType }[
   { id: 'glass', label: 'Steklena balustrada', icon: Square },
 ]
 
+// R341 — dekompozicija calculator-tab FAZA 3: EN VIR oznake načinov (prej
+// 3× podvojen inline Record<CalcMode, string> v calculator-tab:
+// getCurrentKeyResult, addToHistory in Save-Calculation onClick — vsi trije
+// bloki bajtno identični; kanon čist premik VERBATIM, vzorec R339
+// auditActionTitles). Poravnava z modeTabs oznakami (isti niz parov, brez
+// ikon) — test r341-calc-faza3 dokazuje bijekcijo in dogovor.
+export const modeLabels: Record<CalcMode, string> = {
+  railing: 'Razmiki letev',
+  anchoring: 'Kemično sidranje',
+  wind: 'Vetrna obremenitev',
+  baluster: 'Razmak palic',
+  angled: 'Kotni izračun',
+  material: 'Skupni material',
+  compliance: 'Predpisi',
+  cnc: 'CNC rez',
+  windLocation: 'Veter po lokaciji',
+  glass: 'Steklena balustrada',
+}
+
 export const anchorTypeLabels: Record<AnchorType, string> = {
   'hilti-hit': 'Hilti HIT-RE 500',
   'fischer-fis': 'Fischer FIS V',

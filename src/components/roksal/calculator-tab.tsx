@@ -59,11 +59,12 @@ import {
   runAnchoringCalcV1,
   runWindCalcV1,
 } from '@/lib/calc-engineering'
-import { slDatumKratko, slCasDolgo, formatSlDecimalno, slMesecevaOkrajsava, slMesecevaOkrajsavaLeto, slMesecevaOkrajsavaUra } from '@/lib/csv-export'
+import { slDatumKratko, slCasDolgo, formatSlDecimalno, slMesecevaOkrajsava, slMesecevaOkrajsavaLeto, slMesecevaOkrajsavaUra, toCsv, downloadCsvText } from '@/lib/csv-export'
 
 // R321 — skupni tipi/konstante za calculator-tab + pod-komponente (faza 1).
 import {
   modeTabs,
+  modeLabels,
   anchorTypeLabels,
   podlagaLabels,
   podlagaAnchorAdvice,
@@ -387,18 +388,8 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
 
   /** Ključni rezultat trenutnega načina za prikaz v zgodovini. */
   function getCurrentKeyResult(): string {
-    const modeLabelMap: Record<CalcMode, string> = {
-      railing: 'Razmiki letev',
-      anchoring: 'Kemično sidranje',
-      wind: 'Vetrna obremenitev',
-      baluster: 'Razmak palic',
-      angled: 'Kotni izračun',
-      material: 'Skupni material',
-      compliance: 'Predpisi',
-      cnc: 'CNC rez',
-      windLocation: 'Veter po lokaciji',
-      glass: 'Steklena balustrada',
-    }
+    // R341 FAZA 3: oznake načinov = EN VIR modeLabels (shared.ts) — prej
+    // 3× podvojen inline blok, zdaj ena mapa (kanon čist premik VERBATIM).
     if (mode === 'railing' && railingResult) {
       return `${railingResult.slatCount} letvev, razmik ${railingResult.actualGapMm.toFixed(1)}mm`
     } else if (mode === 'anchoring' && anchoringResult) {
@@ -423,7 +414,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
     } else if (mode === 'glass' && glassResult) {
       return `${glassResult.recommendedThicknessMm}mm ${glassResult.layers ? `laminirano (${glassResult.layers} sloje)` : glassInput.glassType === 'tempered' ? 'kaljeno' : 'enojno'}${glassResult.isSafe ? ' — VARNO' : ' — NEVARNO'}`
     }
-    return modeLabelMap[mode]
+    return modeLabels[mode]
   }
 
   /** Naloži inpute iz predloge ali zgodovine v ustrezen način. */
@@ -573,18 +564,6 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
 
   /** Doda trenutni izračun v zgodovino (max 30). */
   function addToHistory() {
-    const modeLabelMap: Record<CalcMode, string> = {
-      railing: 'Razmiki letev',
-      anchoring: 'Kemično sidranje',
-      wind: 'Vetrna obremenitev',
-      baluster: 'Razmak palic',
-      angled: 'Kotni izračun',
-      material: 'Skupni material',
-      compliance: 'Predpisi',
-      cnc: 'CNC rez',
-      windLocation: 'Veter po lokaciji',
-      glass: 'Steklena balustrada',
-    }
     const hasResult =
       (mode === 'railing' && railingResult) ||
       (mode === 'anchoring' && anchoringResult) ||
@@ -602,7 +581,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
       id: `hist_${Date.now()}`,
       timestamp: new Date().toISOString(),
       mode,
-      modeLabel: modeLabelMap[mode],
+      modeLabel: modeLabels[mode],
       keyResult: getCurrentKeyResult(),
       inputs: collectCurrentInputs(),
       projectName: projectName.trim() || undefined,
@@ -648,6 +627,11 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
       toast.error('Zgodovina je prazna')
       return
     }
+    // R341 — 65. člen issue #1 (IZVOZI družina): ročno sestavljanje CSV
+    // (lastno citiranje, \n, ročna BOM/anchor ples) → kanon EN VIR
+    // toCsv (R136: BOM + podpičje + CRLF + RFC 4180 csvField) +
+    // downloadCsvText (R296 mehanika prenosa). Glave/vrstice/toast/ime
+    // datoteke NESPREMENJENI; iskren presledek: \n → CRLF (kanon).
     const headers = ['Datum', 'Način', 'Ključni rezultat', 'Projekt', 'Formula', 'Odtis vhodov', 'Vhodni podatki']
     const rows = history.map((h) => [
       `${slDatumKratko(new Date(h.timestamp))}, ${slCasDolgo(new Date(h.timestamp))}`,
@@ -658,19 +642,10 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
       h.inputHash ?? '',
       JSON.stringify(h.inputs),
     ])
-    const csv = [headers, ...rows]
-      .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(';'))
-      .join('\n')
-    // BOM za Excel
-    const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `roksal-zgodovina-${new Date().toISOString().slice(0, 10)}.csv`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
+    downloadCsvText(
+      `roksal-zgodovina-${new Date().toISOString().slice(0, 10)}.csv`,
+      toCsv(headers, rows),
+    )
     toast.success('Zgodovina izvožena v CSV')
   }
 
@@ -4570,18 +4545,6 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
         <Button
           type="button"
           onClick={() => {
-            const modeLabelMap: Record<CalcMode, string> = {
-              railing: 'Razmiki letev',
-              anchoring: 'Kemično sidranje',
-              wind: 'Vetrna obremenitev',
-              baluster: 'Razmak palic',
-              angled: 'Kotni izračun',
-              material: 'Skupni material',
-              compliance: 'Predpisi',
-              cnc: 'CNC rez',
-              windLocation: 'Veter po lokaciji',
-              glass: 'Steklena balustrada',
-            }
             let keyResult = ''
             let inputs: Record<string, string> = {}
             if (mode === 'railing' && railingResult) {
@@ -4620,7 +4583,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               id: `calc_${Date.now()}`,
               date: new Date().toISOString(),
               mode,
-              modeLabel: modeLabelMap[mode],
+              modeLabel: modeLabels[mode],
               keyResult,
               inputs,
             }
@@ -4779,6 +4742,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                         type="button"
                         onClick={() => loadFromHistory(entry)}
                         aria-label={`Naloži izračun: ${entry.modeLabel}, ${entry.keyResult}`}
+                        title={`${entry.modeLabel} — ${entry.keyResult}`}
                         className="flex w-full items-start gap-3 rounded-lg border border-border/50 p-3 transition-colors hover:bg-secondary/30 hover:border-roksal-navy/30 dark:hover:border-roksal-ink/30 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                       >
                         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-roksal-navy/10">
@@ -4799,7 +4763,11 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                             )}
                             {/* R150: prstni odtis izračuna (samo novejši vnoski — starejši ostanejo brez, iskreno) */}
                             {entry.formulaVersion && entry.inputHash && (
-                              <Badge variant="outline" className="text-[9px] h-4 px-1.5 font-mono tabular-nums bg-secondary/50 text-muted-foreground border-border">
+                              <Badge
+                                variant="outline"
+                                title="Prstni odtis izračuna — verzija formule in hash vhodov za reproducibilnost (R150)"
+                                className="text-[9px] h-4 px-1.5 font-mono tabular-nums bg-secondary/50 text-muted-foreground border-border cursor-help"
+                              >
                                 {entry.formulaVersion}·{entry.inputHash}
                               </Badge>
                             )}

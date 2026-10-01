@@ -103,7 +103,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 45 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **4824** (289 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **4851** (292 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 143 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -911,6 +911,23 @@ Sheet z 6 podzavihki:
   pravila react-hooks/set-state-in-effect — prej skrito z bailoutom compiler
   analize na 7,6k vrstični datoteki); vsebina ŽIVA v čankih dokazana
   (r323-build-needles ×9 + delegirana veriga R322→…→R227)
+- **Kalkulator FAZA 3 + 65. člen + val 26** (R341 — KOLIZIJA #14: vzporedna
+  lastniška R340 pristala med mojim delom; moja runda preimenovana R340→R341
+  po kanonu KOLIZIJE #4/R323/#13; delta re-aplicirana na njihovo postavitev
+  [modeLabelMap ×6, new Blob, brez val 26 — vsi dokazano edinstveni]):
+  (1) EN VIR `modeLabels` v `calculator/shared.ts` — prej 3× podvojen inline
+  `Record<CalcMode, string>` (getCurrentKeyResult / addToHistory /
+  Save-Calculation onClick; vsi trije bloki bajtno identični — čist premik
+  VERBATIM, vzorec R339 `auditActionTitles`; dogovor z modeTabs oznakami
+  testiran); (2) 65. člen issue #1 (IZVOZI družina): zgodovina izračunov CSV
+  → kanon EN VIR `toCsv` (R136: BOM + podpičje + CRLF + RFC 4180) +
+  `downloadCsvText` (R296) — glave/vrstice/ime/toasti NESPREMENJENI, ročni
+  blob/anchor ples odstranjen (iskren presledek: `\n` → CRLF); (3) STIL
+  val 26 — hover parity zgodovine: prstni odtis badge `title` +
+  `cursor-help` (vzorec R339/R280) + vnosni gumb `title` (0 novih hex);
+  vitest r341 ×27 (faza3 EN VIR izčerpnost + zgodovina-csv kanon + val 26
+  obrnjene regresije val 24/25) + `qa-needles/r341.tsv` (NOVI registrski
+  kanon qa-round.sh — needleji kot PODATEK)
 - **Dekompozicija FAZA 4 + VALIDATE residual + QA konsolidacija runner** (R340 —
   KOLIZIJA #14: vzporedna lastniška R339 [STIL val 25] pristala med delom —
   delta prenesena na R340 po kanonu KOLIZIJE #4/R323/#13):
@@ -1019,7 +1036,7 @@ Sheet z 6 podzavihki:
 | **PWA** | Service Worker + Web Manifest |
 | **Temnitveni način** | [next-themes](https://github.com/pacocoursey/next-themes) |
 | **Validacija** | [Zod 4](https://zod.dev/) |
-| **Testiranje** | [Vitest 4](https://vitest.dev/) (4824 testov + globalSetup embedded PG) |
+| **Testiranje** | [Vitest 4](https://vitest.dev/) (4851 testov + globalSetup embedded PG) |
 | **Paketni upravitelj** | [Bun](https://bun.sh/) |
 | **Linting** | ESLint 9 + eslint-config-next |
 
@@ -1141,7 +1158,7 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `bun run dev` | Zažene Next.js dev server (port 3000) |
 | `bun run build` | Produkcijska build (build-prepare: generate + migrate deploy + seed) |
 | `bun run start` | Zažene produkcijski server |
-| `bun run test` | Vsi testi (vitest, 4824, embedded PG prek globalSetup) |
+| `bun run test` | Vsi testi (vitest, 4851, embedded PG prek globalSetup) |
 | `bun run check` | tsc --noEmit + vitest run (en ukaz za vse) |
 | `bunx tsc --noEmit` | Tipska kontrola celotnega projekta (trenutno 0 napak) |
 | `bun run lint` | ESLint preverjanje |
