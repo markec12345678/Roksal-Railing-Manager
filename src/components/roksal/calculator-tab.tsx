@@ -30,18 +30,11 @@ import {
 } from '@/components/ui/collapsible'
 import { Calculator, AlertTriangle, CheckCircle2, Info, Thermometer, Wind, Anchor, Package, Save, Trash2, Clock, RotateCcw, Ruler, Scissors, ArrowLeft, ArrowDownToLine, Euro, AlignJustify, Triangle, ShieldCheck, Plus, X, FileDown, Hammer, Drill, History, BookmarkPlus, FileSpreadsheet, ChevronDown, ChevronUp, Calendar, Percent, Wallet, Truck, Users, Timer, Layers, MapPin, Square, Navigation, Crosshair, Mountain, Palette } from 'lucide-react'
 import {
-  calculateEqualSpacing,
-  calculateAngledSpacing,
   calculateHoleTemplate,
-  calculateMaterialTotal,
-  checkCompliance,
   calculateLaborCost,
   calculateDDV,
   calculateAkontacija,
   applyReserve,
-  calculateCncCutting,
-  calculateWindByLocation,
-  calculateGlassBalustrade,
   formatEUR,
   formatSI,
   type EqualSpacingResult,
@@ -54,11 +47,6 @@ import {
   type Profil as LibProfil,
   type MaterialSegment,
 } from '@/lib/calculator'
-import {
-  runRailingCalcV1,
-  runAnchoringCalcV1,
-  runWindCalcV1,
-} from '@/lib/calc-engineering'
 import { slDatumKratko, formatSlDecimalno, slMesecevaOkrajsava, slMesecevaOkrajsavaLeto, slMesecevaOkrajsavaUra, toCsv, downloadCsvText } from '@/lib/csv-export'
 
 // R321 — skupni tipi/konstante za calculator-tab + pod-komponente (faza 1).
@@ -128,6 +116,21 @@ import {
   type CncSegment,
   type GlassType,
 } from './calculator/pdf-exports'
+// R345 — dekompozicija FAZA 5: dispatch logika 10 načinov (parsanje + guard
+// + ovonjice R150) izluščena v ./calculator/calculations (args objekti —
+// vzorec R325 pdf-exports); komponenta samo zapiše rezultat v state.
+import {
+  dispatchRailing,
+  dispatchAnchoring,
+  dispatchWind,
+  dispatchBaluster,
+  dispatchAngled,
+  dispatchMaterial,
+  dispatchCompliance,
+  dispatchCnc,
+  dispatchWindLocation,
+  dispatchGlass,
+} from './calculator/calculations'
 
 export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackToMeasurements }: CalculatorTabProps) {
   const [mode, setMode] = useState<CalcMode>('railing')
@@ -305,10 +308,9 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
   // R340 — dekompozicija FAZA 4: profileLabels izluščen VERBATIM v
   // calculator/shared.ts (čist premik zbirke oznak).
 
-  function handleCalculate() {
-    // R150: vsak izračun počisti prejšnje inženirske napake in odtis.
-    setEngineeringErrors([])
-    setLastFingerprint(null)
+  // R345 FAZA 5: EN VIR veriga dispatchev — prej 2× podvojen if/else blok
+  // (handleCalculate + auto-calc useEffect); isti vrstni red, isti klici.
+  function izvediIzracunZaAktivniNacin() {
     if (mode === 'railing') {
       calculateRailingClientSide()
     } else if (mode === 'anchoring') {
@@ -330,6 +332,13 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
     } else if (mode === 'glass') {
       calculateGlassClientSide()
     }
+  }
+
+  function handleCalculate() {
+    // R150: vsak izračun počisti prejšnje inženirske napake in odtis.
+    setEngineeringErrors([])
+    setLastFingerprint(null)
+    izvediIzracunZaAktivniNacin()
     // P2: Povečaj nonce — effect ga opazuje in zapiše v zgodovino,
     // ko se bodo rezultati posodobili (re-render).
     setCalcNonce((n) => n + 1)
@@ -631,17 +640,8 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
   }
 
   function calculateRailingClientSide() {
-    // R150: inženirska ovojnica — fail-closed validacija (izven območja
-    // umerjenosti → eksplicitne napake, NIČ rezultata) + prstni odtis.
-    const L = parseFloat(effectiveTotalLength) * 1000
-    const W = parseFloat(slatWidth)
-    const G = parseFloat(maxGap)
-    const envelope = runRailingCalcV1({
-      totalLengthMm: L,
-      slatWidthMm: W,
-      maxGapMm: G,
-      profileType,
-    })
+    // R345 FAZA 5: parsanje + ovonjica R150 v calculator/calculations.ts (args objekti).
+    const envelope = dispatchRailing({ totalLength: effectiveTotalLength, slatWidth, maxGap, profileType })
     if (!envelope.ok) {
       setEngineeringErrors(envelope.errors)
       return
@@ -651,18 +651,8 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
   }
 
   function calculateAnchoringClientSide() {
-    // R150: inženirska ovojnica — fail-closed validacija + prstni odtis.
-    const hc = parseInt(holeCount)
-    const depth = parseFloat(holeDepthMm)
-    const dia = parseFloat(holeDiameterMm)
-    const temp = parseFloat(temperature)
-    const envelope = runAnchoringCalcV1({
-      holeCount: hc,
-      holeDepthMm: depth,
-      holeDiameterMm: dia,
-      temperature: temp,
-      anchorType,
-    })
+    // R345 FAZA 5: parsanje + ovonjica R150 v calculator/calculations.ts (args objekti).
+    const envelope = dispatchAnchoring({ holeCount, holeDepthMm, holeDiameterMm, temperature, anchorType })
     if (!envelope.ok) {
       setEngineeringErrors(envelope.errors)
       return
@@ -672,19 +662,8 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
   }
 
   function calculateWindClientSide() {
-    // R150: inženirska ovojnica — višina 0 m (prej tiho LOW tveganje!),
-    // negativna/neskončna hitrost in nesmiselna površina so ZDAJ eksplicitne
-    // napake, ne tihi rezultat.
-    const h = parseFloat(heightAboveGround)
-    const ws = parseFloat(windSpeedMs)
-    const area = parseFloat(railingAreaM2)
-    const envelope = runWindCalcV1({
-      heightAboveGround: h,
-      terrainCategory,
-      windSpeedMs: ws,
-      railingAreaM2: area,
-      railingType,
-    })
+    // R345 FAZA 5: parsanje + ovonjica R150 v calculator/calculations.ts (args objekti).
+    const envelope = dispatchWind({ heightAboveGround, terrainCategory, windSpeedMs, railingAreaM2, railingType })
     if (!envelope.ok) {
       setEngineeringErrors(envelope.errors)
       return
@@ -695,161 +674,49 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
 
   // ===== Baluster calculation =====
   function calculateBalusterClientSide() {
-    const L = parseFloat(balTotalLength) * 1000
-    const W = parseFloat(balWidth)
-    const G = parseFloat(balMaxGap)
-    if (!isFinite(L) || !isFinite(W) || !isFinite(G) || L <= 0 || W <= 0 || G <= 0) {
-      setBalusterResult(null)
-      return
-    }
-    const result = calculateEqualSpacing({
-      totalLengthMm: L,
-      balusterWidthMm: W,
-      maxGapMm: G,
-    })
-    setBalusterResult(result)
+    // R345 FAZA 5: parsanje + guard v calculator/calculations.ts (args objekti).
+    setBalusterResult(dispatchBaluster({ balTotalLength, balWidth, balMaxGap }))
   }
 
   // ===== Angled calculation =====
   function calculateAngledClientSide() {
-    const L = parseFloat(angHorizontalLength) * 1000
-    const angle = parseFloat(angRakeAngle)
-    const W = parseFloat(angWidth)
-    const G = parseFloat(angMaxGap)
-    if (!isFinite(L) || !isFinite(angle) || !isFinite(W) || !isFinite(G) || L <= 0 || W <= 0 || G <= 0) {
-      setAngledResult(null)
-      return
-    }
-    const result = calculateAngledSpacing({
-      horizontalLengthMm: L,
-      rakeAngleDeg: angle,
-      balusterWidthMm: W,
-      maxGapMm: G,
-    })
-    setAngledResult(result)
+    // R345 FAZA 5: parsanje + guard v calculator/calculations.ts (args objekti).
+    setAngledResult(dispatchAngled({ angHorizontalLength, angRakeAngle, angWidth, angMaxGap }))
   }
 
   // ===== Material calculation =====
   function calculateMaterialClientSide() {
-    if (segments.length === 0) {
-      setMaterialResult(null)
-      return
-    }
-    const result = calculateMaterialTotal({
-      segments,
-      profileSifra: selectedProfileSifra,
-      profili,
-    })
-    setMaterialResult(result)
+    // R345 FAZA 5: guard + izračun v calculator/calculations.ts (args objekti).
+    setMaterialResult(dispatchMaterial({ segments, profileSifra: selectedProfileSifra, profili }))
   }
 
   // ===== Compliance calculation =====
   function calculateComplianceClientSide() {
-    const gap = parseFloat(compGap)
-    const height = parseFloat(compHeight)
-    const spacing = parseFloat(compPostSpacing)
-    const drop = parseFloat(compDropHeight) || 0
-    if (!isFinite(gap) || !isFinite(height) || !isFinite(spacing)) {
-      setComplianceResult(null)
-      return
-    }
-    const result = checkCompliance({
-      gapMm: gap,
-      heightMm: height,
-      postSpacingMm: spacing,
-      loadCategory: compLoadCategory,
-      dropHeightMm: drop,
-    })
-    setComplianceResult(result)
+    // R345 FAZA 5: parsanje + guard v calculator/calculations.ts (args objekti).
+    setComplianceResult(dispatchCompliance({ compGap, compHeight, compPostSpacing, compLoadCategory, compDropHeight }))
   }
 
   // ===== CNC cutting calculation =====
   function calculateCncClientSide() {
-    const stock = parseFloat(cncStockLength)
-    const blade = parseFloat(cncSawBlade)
-    if (!isFinite(stock) || stock <= 0) {
-      setCncResult(null)
-      return
-    }
-    const segments = cncSegments
-      .filter((s) => s.lengthMm && s.count)
-      .map((s) => ({
-        lengthMm: parseFloat(s.lengthMm) || 0,
-        count: parseInt(s.count) || 0,
-        label: s.label || undefined,
-      }))
-      .filter((s) => s.lengthMm > 0 && s.count > 0)
-    if (segments.length === 0) {
-      setCncResult(null)
-      return
-    }
-    const result = calculateCncCutting({
-      segments,
-      stockLengthMm: stock,
-      sawBladeWidthMm: isFinite(blade) ? blade : 3,
-    })
-    setCncResult(result)
+    // R345 FAZA 5: parsanje + guard + preslikava segmentov v calculator/calculations.ts (args objekti).
+    setCncResult(dispatchCnc({ cncStockLength, cncSawBlade, cncSegments }))
   }
 
   // ===== Wind by location calculation =====
   function calculateWindLocClientSide() {
-    const lat = parseFloat(windLocLat)
-    const lon = parseFloat(windLocLon)
-    const h = parseFloat(windLocHeight)
-    const area = parseFloat(windLocArea)
-    if (!isFinite(lat) || !isFinite(lon) || !isFinite(h) || !isFinite(area)) {
-      setWindLocResult(null)
-      return
-    }
-    const result = calculateWindByLocation({
-      latitude: lat,
-      longitude: lon,
-      heightAboveGround: h,
-      terrainCategory: windLocTerrain,
-      railingAreaM2: area,
-      railingType: windLocType,
-    })
-    setWindLocResult(result)
+    // R345 FAZA 5: parsanje + guard v calculator/calculations.ts (args objekti).
+    setWindLocResult(dispatchWindLocation({ windLocLat, windLocLon, windLocHeight, windLocTerrain, windLocArea, windLocType }))
   }
 
   // ===== Glass balustrade calculation =====
   function calculateGlassClientSide() {
-    if (
-      !isFinite(glassInput.spanMm) ||
-      !isFinite(glassInput.heightMm) ||
-      !isFinite(glassInput.loadKnPerM) ||
-      glassInput.spanMm <= 0
-    ) {
-      setGlassResult(null)
-      return
-    }
-    const result = calculateGlassBalustrade(glassInput)
-    setGlassResult(result)
+    // R345 FAZA 5: guard + izračun v calculator/calculations.ts (args objekti).
+    setGlassResult(dispatchGlass(glassInput))
   }
 
   // Auto-calculate on input change
   useEffect(() => {
-    if (mode === 'railing') {
-      calculateRailingClientSide()
-    } else if (mode === 'anchoring') {
-      calculateAnchoringClientSide()
-    } else if (mode === 'wind') {
-      calculateWindClientSide()
-    } else if (mode === 'baluster') {
-      calculateBalusterClientSide()
-    } else if (mode === 'angled') {
-      calculateAngledClientSide()
-    } else if (mode === 'material') {
-      calculateMaterialClientSide()
-    } else if (mode === 'compliance') {
-      calculateComplianceClientSide()
-    } else if (mode === 'cnc') {
-      calculateCncClientSide()
-    } else if (mode === 'windLocation') {
-      calculateWindLocClientSide()
-    } else if (mode === 'glass') {
-      calculateGlassClientSide()
-    }
+    izvediIzracunZaAktivniNacin()
   }, [mode, profileType, effectiveTotalLength, slatWidth, maxGap, postCount, holeCount, holeDepthMm, holeDiameterMm, temperature, anchorType, heightAboveGround, terrainCategory, windSpeedMs, railingAreaM2, railingType, balTotalLength, balWidth, balMaxGap, balPostSpacing, angHorizontalLength, angRakeAngle, angWidth, angMaxGap, segments, selectedProfileSifra, compGap, compHeight, compPostSpacing, compLoadCategory, compDropHeight, cncStockLength, cncSawBlade, cncSegments, windLocLat, windLocLon, windLocHeight, windLocTerrain, windLocArea, windLocType, glassInput])
 
   // Fetch profili when material mode is selected
@@ -1143,6 +1010,8 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                   odstraniIzSkladisca(SKLADISCE_PREDLOGE)
                   toast.success('Vse predloge počiščene')
                 }}
+                aria-label="Počisti vse predloge"
+                title="Pobriši vse shranjene predloge"
               >
                 <Trash2 aria-hidden="true" className="mr-1 h-3 w-3" />
                 Počisti vse
@@ -4681,6 +4550,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                     size="sm"
                     className="h-7 px-2 text-2xs text-roksal-ink hover:text-roksal-ink hover:bg-roksal-navy/5"
                     onClick={exportHistoryCsv}
+                    title="Izvoz zgodovine izračunov kot CSV datoteka"
                   >
                     <FileSpreadsheet aria-hidden="true" className="mr-1 h-3 w-3" />
                     Izvozi CSV
@@ -4691,6 +4561,8 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                     size="sm"
                     className="h-7 px-2 text-2xs text-roksal-red hover:text-roksal-red hover:bg-roksal-red/10"
                     onClick={clearHistory}
+                    aria-label="Počisti zgodovino izračunov"
+                    title="Pobriši celotno zgodovino izračunov"
                   >
                     <Trash2 aria-hidden="true" className="mr-1 h-3 w-3" />
                     Počisti

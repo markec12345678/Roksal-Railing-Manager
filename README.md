@@ -103,7 +103,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 45 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **4870** (294 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **4896** (296 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 143 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -911,6 +911,31 @@ Sheet z 6 podzavihki:
   pravila react-hooks/set-state-in-effect — prej skrito z bailoutom compiler
   analize na 7,6k vrstični datoteki); vsebina ŽIVA v čankih dokazana
   (r323-build-needles ×9 + delegirana veriga R322→…→R227)
+- **Kalkulator FAZA 5 + val 28** (R345): (1) NOV `calculator/calculations.ts`
+  — dispatch logika 10 načinov izluščena VERBATIM iz taba (args objekti —
+  vzorec R325 pdf-exports): ovonični načini (railing/anchoring/wind) vračajo
+  `CalcEngineeringResult<T>` nespremenjen, guard načini vračajo `T | null`;
+  komponenta samo zapiše rezultat v state (tanke ovojnice); EN VIR veriga
+  dispatchev — prej 2× podvojen if/else blok (handleCalculate + auto-calc
+  useEffect) → 1 `izvediIzracunZaAktivniNacin()` + 2 klica;
+  `calculator-tab` 4.796 → 4.643 (−153); izračunska jedra (run*V1 + lib
+  kalkulator funkcije) ostanejo IZVEN taba — jedro NESPREMJENO (hard rule);
+  (2) **val 28** — parity zaglavij zgodovine/predlog: Izvozi CSV title,
+  Počisti (zgodovina) aria-label + title, Počisti vse (predloge) aria-label
+  + title (a11y družina R291/R293 + title parity val 25–27); 0 novih hex;
+  (3) vitest r345 ×26 (2 NOVI datoteki: r345-calc-faza5 ×17 [ovonjice +
+  guardi + determinizem FULL + žičenje + EN VIR veriga + 0-hex + FAZA 4
+  regresija] + r345-stil-val28 ×9 [3 parity pari + 0-hex okna + obrnjene
+  regresije val 27/26/25/24]) — 4896/4896 (296); (4) verifikacija: tsc 0 ·
+  eslint 0 (FULL) · build svež EXIT=0 · needles r345 VSE OK (celotna veriga
+  R227→…→R339 + union registri r340–r345) · smoke EXIT=0 · e2e EXIT=0
+  (ODTIS bajtno identičen pre==post — ZERO-MUTACIJA); (5) LEKCIJE: izvoz
+  `[m` v orodnem izhodu je pojedla prikaz (`const [mode` → `const ode` —
+  lažni alarm korozijske preverbe: `grep -c` + `git diff` so razkrili
+  resnico, datoteka NIKOLI bila pokvarjena); pesek-reset je spral prisma
+  client + .env + bazo → `prisma generate` + restore .env (konvencija
+  .env.example) + `db:deploy` + `seed.cjs` + `create-admin` fixture (vzorec
+  R344 incident)
 - **Kalkulator FAZA 4 + val 27** (R343 — KOLIZIJA #15: vzporedna lastniška
   R342 [75fd188 — QA-izvedbena runda brez kode] pristala med mojim delom in
   vzel številko; moja runda preimenovana R342→R343 po kanonu KOLIZIJE
@@ -1081,7 +1106,7 @@ Sheet z 6 podzavihki:
 | **PWA** | Service Worker + Web Manifest |
 | **Temnitveni način** | [next-themes](https://github.com/pacocoursey/next-themes) |
 | **Validacija** | [Zod 4](https://zod.dev/) |
-| **Testiranje** | [Vitest 4](https://vitest.dev/) (4870 testov + globalSetup embedded PG) |
+| **Testiranje** | [Vitest 4](https://vitest.dev/) (4896 testov + globalSetup embedded PG) |
 | **Paketni upravitelj** | [Bun](https://bun.sh/) |
 | **Linting** | ESLint 9 + eslint-config-next |
 
@@ -1203,7 +1228,7 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `bun run dev` | Zažene Next.js dev server (port 3000) |
 | `bun run build` | Produkcijska build (build-prepare: generate + migrate deploy + seed) |
 | `bun run start` | Zažene produkcijski server |
-| `bun run test` | Vsi testi (vitest, 4870, embedded PG prek globalSetup) |
+| `bun run test` | Vsi testi (vitest, 4896, embedded PG prek globalSetup) |
 | `bun run check` | tsc --noEmit + vitest run (en ukaz za vse) |
 | `bunx tsc --noEmit` | Tipska kontrola celotnega projekta (trenutno 0 napak) |
 | `bun run lint` | ESLint preverjanje |
@@ -1337,7 +1362,7 @@ primitivov. Največji:
 | Komponenta | Vrstice | Funkcija |
 |-----------|---------|----------|
 | `measurements-tab.tsx` | 6.702 | Meritve (9 tipov, stopniščni čarovnik, WPC, štebricki; dekompozicija faza 1+2+3+4 R319/R325/R338/R340) |
-| `calculator-tab.tsx` | 4.796 | Kalkulator (7 načinov + 6 izpolnitev; dekompozicija faza 1+2+3+4 R322/R325/R340/R341) |
+| `calculator-tab.tsx` | 4.643 | Kalkulator (7 načinov + 6 izpolnitev; dekompozicija faza 1+2+3+4+5 R322/R325/R340/R341/R345) |
 | `ar-scanner.tsx` | 2.789 | AR kamera z vizualizacijo ograje + AI sugestija |
 | `webxr-scanner.tsx` | 2.377 | WebXR poskus (kjer podprt) |
 | `photo-tab.tsx` | 2.570 | Slike z annotation editor, batch, pred/po |

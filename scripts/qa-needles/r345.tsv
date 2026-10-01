@@ -1,0 +1,28 @@
+# qa-needles/r345.tsv — REGISTER needlejev runde R345 (kalkulator FAZA 5:
+# dispatch logika 10 načinov → calculator/calculations.ts [args objekti,
+# vzorec R325 pdf-exports] + EN VIR veriga dispatchev + STIL val 28:
+# parity zaglavij zgodovine/predlog [title + aria-label]).
+# ============================================================================
+# FORMAT (TSV; EN vrstica = EN needle; TAB je LOČILO — presledki znotraj
+# needleja so POMENNI, ker grep -F išče dobesedno) — kanon R340/R341/R343.
+#   <needle_string><TAB><opis><TAB><vrsta>
+# vrsta:
+#   need_static  — niz MORA biti ŽIV v čankih (grep -rqF po .next/static/chunks
+#                  + .next/server, kopiranih v /tmp/r345-build-chunks)
+#   must_miss    — niz NE SME biti prisoten (razvojni ostanki)
+#
+# ── R345 lastni needleji ──
+# FAZA 5 je premik bajtno identičnih teles (parsanje/guard/ovonjice — ISTA
+# logika, nov modul + tanke ovojnice) → NI edinstvenega needleja za SAM premik
+# (iskrena omejitev, vzorec R340/R341/R343: pokritost = tsc + vitest
+# r345-calc-faza5 ×17 + E2E regresija).
+# STIL val 28: razlagalni title/aria nizi = NOVI minifikacijo-preživeči nizi:
+Izvoz zgodovine izračunov kot CSV datoteka	R345 val 28 Izvozi CSV title (razlaga 7-stolpčnega izvoza)	need_static
+Počisti zgodovino izračunov	R345 val 28 zgodovina aria-label (razločitev destruktivnega gumba)	need_static
+Pobriši celotno zgodovino izračunov	R345 val 28 zgodovina title (posledica)	need_static
+Počisti vse predloge	R345 val 28 predloge aria-label (razločitev destruktivnega gumba)	need_static
+Pobriši vse shranjene predloge	R345 val 28 predloge title (posledica)	need_static
+#
+# Delegirani negativni needle — OBVEZEN vsaki rundi (kanon "brez razvojnih
+# ostankov", vzorec R324–R344):
+TODO-R345	R345 — brez razvojnih ostankov	must_miss
