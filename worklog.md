@@ -6744,3 +6744,8 @@ Stage Summary:
 
 ### PRVA NALOGA POST-commit ŽIVO (R334 — r334-prod-qa.sh, push)
 - Spodaj dodatek ob izvedbi (LIVE ali ESKALACIJA; UNION harvest: ob zelenem deployu nosi R290+…+R334 SKUPAJ — precedens R313/R314/R332; LEKCIJA R330 7: POST-commit prod-qa takoj po pushu lahko dirje deploy — če EPOCH + needle MISS sočasno, preveri build čas NOVICE run pred interpretacijo)
+
+### PRVA NALOGA POST-commit ŽIVO (R334 — r334-prod-qa.sh, push 91cf226)
+- Deploy čakanje (LEKCIJA R330 7): polling ×6 ~4,5 min — zdravstveni build ostal stale (2026-10-01T05:39:50.997Z ≤ meja 07:0x UTC [91cf226]) — Vercel kvota/limit vzorec (5a31ba3 + 91cf226 čakata skupaj; precedens R320/R332 tek 1)
+- **Tek 1: ESKALACIJA veja EXIT=0** (iskren stale-dokaz, kanon R258 — pipeline event NI koda-bug) — **stale ZDRAV ŽIVO**: Z2 OK — vsi needleji ŽIVO (R276→R333 polna veriga; R334 needle blok pričakovano MISS na stale produ — LIVE ob zelenem deployu, NI bug) + ZERO must_miss + **Z3 OK — v99 sync gate ŽIVO (fail-closed, nič zapisov, ZERO-MUTACIJA)**; footer **=== R334 PROD QA — R290+…+R334 ŽIVO SKUPAJ ===**
+- Kanon R280/R284: naslednji zeleni deploy nosi **5a31ba3 + 91cf226 SKUPAJ** (R290+…+R334 UNION harvest) — R335 prva naloga = r334-prod-qa.sh re-run (pričakuj LIVE vejo; __r333val sledi generaciji)
