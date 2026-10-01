@@ -52,6 +52,12 @@
 // števec drevesa 62 → 63 z obrnjeno regresijo: stari 62 pin je prepovedan —
 // polzaporedje ne sme nazaj).
 //
+// R331 PIN SHIFT (58. člen): pregled spomnikov ponudb CSV gumb (CRM kartica
+// Ponudbe — sledenje, quote-followup — pariteta Ponudbe PDF R267, izvozna
+// PAR na isti blok glavi; ring = navy/40, amber/50 register ostane zaklenjen
+// v vodji ×8; anti-stale števec drevesa 63 → 64 z obrnjeno regresijo: stari
+// 63 pin je prepovedan — polzaporedje ne sme nazaj).
+//
 // STRAŽAR (kanon GLOBALNI sken r310/r316 prenesen na izvozno družino):
 //  • vsak izvozni gumb (aria-label="Izvozi …") nosi IZRECEN
 //    focus-visible:ring-2 žeton (ne samo baza);
@@ -88,8 +94,8 @@ describe('r317 STIL val 8 — izvozna družina: focus-visible ring STRAŽAR', ()
   const gumbi = izvozniGumbi()
   const AMBER_ZETONI = new Set(['vodja-dashboard'])
 
-  it('anti-stale: 63 izvoznih gumbov v drevesu (62 pred R330 + NOV pregled projektov in terminov CSV)', () => {
-    expect(gumbi.length).toBeGreaterThanOrEqual(63)
+  it('anti-stale: 64 izvoznih gumbov v drevesu (63 pred R331 + NOV pregled spomnikov ponudb CSV)', () => {
+    expect(gumbi.length).toBeGreaterThanOrEqual(64)
     // novi gumb 50. člena je prisoten
     expect(gumbi.some((g) => g.okno.includes('Izvozi meritve zmogljivosti kot PDF'))).toBe(true)
     // novi gumb 51. člena je prisoten (R322)
@@ -106,6 +112,8 @@ describe('r317 STIL val 8 — izvozna družina: focus-visible ring STRAŽAR', ()
     expect(gumbi.some((g) => g.okno.includes('Izvozi primerjavo dobaviteljev kot PDF'))).toBe(true)
     // novi gumb 57. člena je prisoten (R330 — pregled projektov in terminov CSV brat)
     expect(gumbi.some((g) => g.okno.includes('Izvozi pregled projektov in terminov kot CSV'))).toBe(true)
+    // novi gumb 58. člena je prisoten (R331 — pregled spomnikov ponudb CSV brat)
+    expect(gumbi.some((g) => g.okno.includes('Izvozi pregled spomnikov ponudb kot CSV'))).toBe(true)
   })
 
   it('vsak izvozni gumb nosi IZRECEN focus-visible ring žeton (ne samo ui baza)', () => {

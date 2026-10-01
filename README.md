@@ -103,7 +103,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 45 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **4647** (272 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **4672** (274 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 143 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -484,6 +484,36 @@ Sheet z 6 podzavihki:
   hierarhija preverba + val 10 obrnjena regresija ×3 + register 3 pojavitve);
   PIN SHIFTI ×2 izrecno (val8 amber ×6→×7 + anti-stale 56→57; val9
   press-scale ×13→14 pojavitev, 7→8 gumbov)
+- **Izvoz pregleda spomnikov ponudb kot CSV** (R331, 58. člen — issue #1
+  **IZVOZI** družina): NOVI lib `src/lib/ponudbe-spomniki-csv.ts` (CSV brat
+  PDF R267 — vzorec R330/R297: LOČEN lib ki UVAŽA projekcijo PDF brata —
+  EN VIR ponudbeSpomnikiPregled, NIČ podvojenih pravil; glava VERBATIM PDF
+  autoTable head ×8; celice = ISTI izpisi kot PDF body — status label R161,
+  spomnik/montaža po cenikDatumIso EN VIR, '—' iskren odpad,
+  podpisano/odprto; meta kanon R172→R296 — Obseg + števci ×12 + Sklep
+  VERBATIM PDF sklepu [stanjeSklep oznake + statusi] + Izvoženo ob; filename
+  `Ponudbe-spomniki-YYYY-MM-DD.csv` — bratska simetrija); quote-followup:
+  ENA izpeljava vira `pridobiPonudbeSpomnikiVnosi` ×2 (oba brata — NIČ
+  dvojnega med bralci) + izvozna PAR (CSV pill navy/40 ring + press-scale);
+  iskrena ločnica od R161 izvoza: R161 = prikazani seznam (prvih 12
+  odprtih), TA = polna resnica vloge (VSE ponudbe, tudi podpisane); vitest
+  r331-ponudbe-spomniki-csv ×16 (BAJTNI dokazi + ANTI-DIVERGENCA source
+  pini + VSA stanja spomnika [Zapadel/Danes/Kmalu/Planirano/Brez] +
+  determinizem + fail-closed ×6 + STRAŽAR žičenja); E2E Z0ay ŽIVO S
+  PODATKI (1267 bajtov bajtno, 17 podatkovnih vrstic — polna resnica
+  vloge, DETERMINIZEM ŽIVO na podatkovnih bajtih, ZERO-MUTACIJA)
+- **Stil val 18 — izvozna PAR pariteta na CRM kartici + TROJICA
+  press-scale** (R331): Ponudbe PDF + NOVI Ponudbe CSV = PAR z ISTIM
+  žetonom (h-7 press-scale navy/40 — pariteta bajtno); oči para
+  FileDown/FileSpreadsheet + Loader2 spinner pariteta; **TROJICA
+  press-scale**: R161 'Izvozi CSV' gumb dobi press-scale (do zdaj edini
+  izvozni gumb brez njega — iskrena nekonsistentnost odpravljena; disabled
+  pogoj NEPREMIKNJEN); definicijski naslov medija (isti pregled EN VIR +
+  iskrena ločnica od prikazanega seznama) + legenda medija ('PDF/CSV = VSE
+  ponudbe … · prikazani seznam CSV = samo odprte prvih 12'); r331-stil-val18
+  STRAŽAR ×8 (PAR pariteta bajtno + oči para + TROJICA + naslov + legenda +
+  val 17/16 obrnjene regresije + zgodovina PAR bajtno + globals + 0 surovih
+  barv); PIN SHIFT izrecno (val8 anti-stale 63→64 [NOVI CSV gumb])
 - **Izvoz pregleda projektov in terminov kot CSV** (R330, 57. člen — issue #1
   **IZVOZI** družina): NOVI lib `src/lib/projekti-termini-csv.ts` (CSV brat
   PDF R265 — vzorec R297 oprema-cikel-csv: LOČEN lib ki UVAŽA projekcijo
@@ -787,7 +817,7 @@ Sheet z 6 podzavihki:
 | **PWA** | Service Worker + Web Manifest |
 | **Temnitveni način** | [next-themes](https://github.com/pacocoursey/next-themes) |
 | **Validacija** | [Zod 4](https://zod.dev/) |
-| **Testiranje** | [Vitest 4](https://vitest.dev/) (4647 testov + globalSetup embedded PG) |
+| **Testiranje** | [Vitest 4](https://vitest.dev/) (4672 testov + globalSetup embedded PG) |
 | **Paketni upravitelj** | [Bun](https://bun.sh/) |
 | **Linting** | ESLint 9 + eslint-config-next |
 
@@ -909,7 +939,7 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `bun run dev` | Zažene Next.js dev server (port 3000) |
 | `bun run build` | Produkcijska build (build-prepare: generate + migrate deploy + seed) |
 | `bun run start` | Zažene produkcijski server |
-| `bun run test` | Vsi testi (vitest, 4647, embedded PG prek globalSetup) |
+| `bun run test` | Vsi testi (vitest, 4672, embedded PG prek globalSetup) |
 | `bun run check` | tsc --noEmit + vitest run (en ukaz za vse) |
 | `bunx tsc --noEmit` | Tipska kontrola celotnega projekta (trenutno 0 napak) |
 | `bun run lint` | ESLint preverjanje |

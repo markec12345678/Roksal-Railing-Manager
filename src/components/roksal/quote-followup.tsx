@@ -26,11 +26,12 @@ import { useToast } from '@/hooks/use-toast'
 import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus'
 import { casOznaka } from '@/lib/osvezitev-fokus'
 import { buildPonudbeCsv, ponudbeCsvFilename, ponudbeLabel, PONUDBE_STATUS_LABELS, stanjeSpomnika } from '@/lib/ponudbe-csv'
-import { todayStamp } from '@/lib/csv-export'
+import { downloadCsvText, todayStamp } from '@/lib/csv-export'
 import {
   Download,
   FileClock,
   FileDown,
+  FileSpreadsheet,
   History,
   Loader2,
   Phone,
@@ -43,6 +44,16 @@ import {
   ponudbeSpomnikiPregled,
   type PonudbaSpomnikiVnos,
 } from '@/lib/ponudbe-spomniki-pdf'
+// R331 — ponudbe-spomniki CSV (58. člen 'izvozi' družine): CSV brat PDF R267
+// (vzorec R330/R297) — ISTA polna resnica vloge (ponudbeSpomnikiPregled EN
+// VIR, cenikDatumIso EN VIR, Sklep VERBATIM PDF sklepu) kot ravninska tabela
+// za Excel/revizijo; route NIČ (client+lib only). Iskrena ločnica od R161
+// izvoza: R161 = prikazani seznam (prvih 12 odprtih), TA = polna resnica
+// (VSE ponudbe, tudi podpisane) — ISTA resnica kot PDF brat.
+import {
+  ponudbeSpomnikiCsv,
+  ponudbeSpomnikiCsvFilename,
+} from '@/lib/ponudbe-spomniki-csv'
 
 interface FollowProject {
   id: string
@@ -74,6 +85,9 @@ export function QuoteFollowUp() {
   const [exporting, setExporting] = useState(false)
   // R267 — dvoklik zaščita PDF izvoza (družinski vzorec disabled={ocVTeku} R266).
   const [pdfVteku, setPdfVteku] = useState(false)
+  // R331 — dvoklik guard ponudbe-spomniki CSV (58. člen — pariteta pdfVteku
+  // R267; ISTI dvoklik guard kot PDF brat).
+  const [csvVteku, setCsvVteku] = useState(false)
   const [busyId, setBusyId] = useState<string | null>(null)
   // R181 — pečat svežine: čas zadnjega USPEŠNEGA branja /api/projects (vzorec
   // R170/R177/R178/R180). Napaka/omrežje → null (fail-closed — NIČ lažne
@@ -216,49 +230,55 @@ export function QuoteFollowUp() {
     void setFollowUp(id, d, `Pokliči stranko — sledenje ponudbe (+${days} dni)`)
   }
 
-  // R267 — PONUDBE — SPOMNIŠKI PREGLED PDF (23. člen 'izvozi' družine):
-  // FRESH fetch ISTEGA endpointa ob kliku (R244/R245/R264/R265/R266 precedens
-  // — nič state-a, nič nove mreže) — DOKUMENT = POLNA resnica: VSE ponudbe,
-  // TUDI podpisane (viden seznam kartice = samo odprte, prvih 12; PDF je
-  // referenčni pregled cevi ponudb). HTTP napaka ALI ne-polje odgovora →
-  // viden razlog (nič tihe degradacije); resnice (status 4 znanih,
-  // dealLocked boolean, ISO, identitete) preverja LIB fail-closed z indeksom
-  // krivca.
+  // R331 — ENA izpeljava vira (58. člen, vzorec R297 pridobiOpremoVnosi /
+  // R330 pridobiProjektiTerminiVnosi): FRESH fetch /api/projects ISTEGA
+  // endpointa ob kliku (R244/R245/R264–R267 precedens — route NIČ, nič
+  // nove mreže) + fail-verbose DTO pruning v ENI funkciji — OBA brata (PDF
+  // R267 + CSV R331) jedeta ISTO izpeljavo (NIČ dvojnega med bralci).
+  // DOKUMENT = POLNA resnica: VSE ponudbe, TUDI podpisane (viden seznam
+  // kartice = samo odprte, prvih 12; izvoz = referenčni pregled cevi
+  // ponudb). HTTP napaka ALI ne-polje odgovora → viden razlog (nič tihe
+  // degradacije); resnice (status 4 znanih, dealLocked boolean, ISO,
+  // identitete) preverja LIB fail-closed z indeksom krivca.
+  const pridobiPonudbeSpomnikiVnosi = async (): Promise<PonudbaSpomnikiVnos[]> => {
+    const res = await fetch('/api/projects', { credentials: 'same-origin' })
+    if (!res.ok) {
+      throw new Error(`GET /api/projects → HTTP ${res.status}`)
+    }
+    const data: unknown = await res.json()
+    if (!Array.isArray(data)) {
+      throw new TypeError('Odgovora /api/projects ni mogoče prebrati (ni polja).')
+    }
+    const vrstice = data as Array<Record<string, unknown>>
+    // Fail-verbose DTO pruning (R264/R265/R266 vzorec): identitete tu
+    // (imenovan razlog), ostalo VERBATIM — lib preveri z indeksom krivca.
+    return vrstice.map((p, i) => {
+      if (typeof p.id !== 'string' || p.id === '' || typeof p.nazivProjekta !== 'string' || p.nazivProjekta === '') {
+        throw new TypeError(`ponudba vrstica ${i}: manjkajoč id/nazivProjekta v odgovoru API-ja`)
+      }
+      const strankaRaw = p.customer
+      const stranka =
+        strankaRaw !== null && typeof strankaRaw === 'object' && typeof (strankaRaw as { ime?: unknown }).ime === 'string'
+          ? (strankaRaw as { ime: string }).ime
+          : null
+      return {
+        id: p.id,
+        nazivProjekta: p.nazivProjekta,
+        stranka,
+        status: p.status as PonudbaSpomnikiVnos['status'],
+        dealLocked: p.dealLocked as boolean,
+        followUpDate: typeof p.followUpDate === 'string' ? p.followUpDate : null,
+        followUpOpomba: typeof p.followUpOpomba === 'string' ? p.followUpOpomba : null,
+        datumMontaze: typeof p.datumMontaze === 'string' ? p.datumMontaze : null,
+      }
+    })
+  }
+
   const handleSpomnikiPdf = async () => {
     if (pdfVteku) return
     setPdfVteku(true)
     try {
-      const res = await fetch('/api/projects', { credentials: 'same-origin' })
-      if (!res.ok) {
-        throw new Error(`GET /api/projects → HTTP ${res.status}`)
-      }
-      const data: unknown = await res.json()
-      if (!Array.isArray(data)) {
-        throw new TypeError('Odgovora /api/projects ni mogoče prebrati (ni polja).')
-      }
-      const vrstice = data as Array<Record<string, unknown>>
-      // Fail-verbose DTO pruning (R264/R265/R266 vzorec): identitete tu
-      // (imenovan razlog), ostalo VERBATIM — lib preveri z indeksom krivca.
-      const vnosi: PonudbaSpomnikiVnos[] = vrstice.map((p, i) => {
-        if (typeof p.id !== 'string' || p.id === '' || typeof p.nazivProjekta !== 'string' || p.nazivProjekta === '') {
-          throw new TypeError(`ponudba vrstica ${i}: manjkajoč id/nazivProjekta v odgovoru API-ja`)
-        }
-        const strankaRaw = p.customer
-        const stranka =
-          strankaRaw !== null && typeof strankaRaw === 'object' && typeof (strankaRaw as { ime?: unknown }).ime === 'string'
-            ? (strankaRaw as { ime: string }).ime
-            : null
-        return {
-          id: p.id,
-          nazivProjekta: p.nazivProjekta,
-          stranka,
-          status: p.status as PonudbaSpomnikiVnos['status'],
-          dealLocked: p.dealLocked as boolean,
-          followUpDate: typeof p.followUpDate === 'string' ? p.followUpDate : null,
-          followUpOpomba: typeof p.followUpOpomba === 'string' ? p.followUpOpomba : null,
-          datumMontaze: typeof p.datumMontaze === 'string' ? p.datumMontaze : null,
-        }
-      })
+      const vnosi = await pridobiPonudbeSpomnikiVnosi()
       if (vnosi.length === 0) {
         // Fail-closed jedro: prazen seznam ne nastaja dokumenta — iskren toast.
         toast({ title: 'Ni vpisanih ponudb', description: 'Pregled spomnikov se izvozi, ko je vpisana prva ponudba.' })
@@ -283,6 +303,49 @@ export function QuoteFollowUp() {
       })
     } finally {
       setPdfVteku(false)
+    }
+  }
+
+  // R331 — 58. člen 'izvozi' družine: PONUDBE — SPOMNIKI CSV — CSV brat
+  // pregledu R267 (vzorec R297/R330): ISTA polna resnica vloge
+  // (ponudbeSpomnikiPregled EN VIR prek pridobiPonudbeSpomnikiVnosi — ENA
+  // izpeljava vira, NIČ dvojnega med bralci) kot ravninska tabela za
+  // Excel/revizijo. Iskrena ločnica od R161 izvoza: R161 = prikazani seznam
+  // (prvih 12 odprtih), TA = VSE ponudbe (tudi podpisane) — ISTA resnica
+  // kot PDF brat. Fail-closed PREJ: prazen seznam → iskren toast (ISTI gate
+  // kot brat — NIKOLI prazna datoteka, družina R266/R297/R330); dvoklik
+  // guard (pariteta csvVteku); toast pove ISTO agregatno resnico
+  // (WYSIWYG); fail-verbose catch (R267 vzorec).
+  const handleSpomnikiCsv = async () => {
+    if (csvVteku) return
+    setCsvVteku(true)
+    try {
+      const vnosi = await pridobiPonudbeSpomnikiVnosi()
+      if (vnosi.length === 0) {
+        // Fail-closed jedro: prazen seznam ne nastaja datoteke — iskren toast.
+        toast({ title: 'Ni vpisanih ponudb', description: 'CSV se izvozi, ko je vpisana prva ponudba.' })
+        return
+      }
+      const now = new Date()
+      const { csv } = ponudbeSpomnikiCsv(vnosi, now)
+      const ime = ponudbeSpomnikiCsvFilename(now)
+      downloadCsvText(ime, csv)
+      const { povzetek } = ponudbeSpomnikiPregled(vnosi, now)
+      toast({
+        title: `Pregled ponudb prenešen v CSV (${ime})`,
+        description: `Ponudbe-spomniki-…csv — ${ponudbeLabel(povzetek.ponudb)}, zapadel spomnik ${povzetek.zapadelOprtih}, podpisanih ${povzetek.podpisanih}.`,
+      })
+    } catch (err) {
+      // Fail-verbose: izvoz ne sme tiho spodleteti — razlog gre v toast.
+      // Fail-closed jedro (TypeError iz liba) = pokvaren vnos → viden razlog
+      // (NIČ izmišljene datoteke).
+      toast({
+        title: 'Izvoz ni uspel',
+        description: err instanceof Error && err.message !== 'Failed to fetch' ? err.message : `Neznana napaka (${String(err)}).`,
+        variant: 'destructive',
+      })
+    } finally {
+      setCsvVteku(false)
     }
   }
 
@@ -370,11 +433,42 @@ export function QuoteFollowUp() {
               )}
               PDF
             </Button>
+            {/* R331 — 58. člen 'izvozi' družine: PONUDBE — SPOMNIKI CSV —
+                CSV brat PDF R267 (izvozna PAR — vzorec R297/R330). EN VIR:
+                ISTA izpeljava vira (pridobiPonudbeSpomnikiVnosi) + ISTA
+                projekcija (ponudbeSpomnikiPregled) kot PDF brat — WYSIWYG
+                po konstrukciji; NIČ dvojnega med bralci. Iskrena ločnica od
+                R161 izvoza: TA = VSE ponudbe (tudi podpisane — polna
+                resnica), R161 = prikazani seznam (prvih 12 odprtih).
+                ISTI žetoni kot PDF brat (press-scale + navy/40 ring) — 0
+                novih hex. Definicijski naslov (MANDATORY STIL): izreče
+                PRAVILA (isti pregled EN VIR kot Ponudbe PDF; prazen
+                seznam → iskren toast, nikoli prazna datoteka) + vidno
+                razliko medija (PDF = tisk za vodjo, CSV = Excel za
+                filtriranje) + ločnico od prikazanega seznama. */}
             <Button
               type="button"
               size="sm"
               variant="outline"
-              className="h-7 shrink-0 gap-1.5 text-[11px] focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              className="h-7 shrink-0 gap-1.5 text-[11px] press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              onClick={() => void handleSpomnikiCsv()}
+              disabled={csvVteku}
+              data-testid="ponudbe-spomniki-csv-pill"
+              aria-label="Izvozi pregled spomnikov ponudb kot CSV"
+              title="Pregled spomnikov ponudb kot CSV — isti pregled in vrstni red kot Ponudbe PDF (prazen seznam → iskren toast, nikoli prazna datoteka). Ponudbe PDF = tisk za vodjo, Ponudbe CSV = Excel za filtriranje po statusu/stanju — VSE ponudbe (tudi podpisane), ne samo prikazanih prvih 12"
+            >
+              {csvVteku ? (
+                <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
+              ) : (
+                <FileSpreadsheet className="h-3 w-3" aria-hidden="true" />
+              )}
+              CSV
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-7 shrink-0 gap-1.5 text-[11px] press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
               onClick={handleExportCsv}
               disabled={pending.length === 0 || exporting || loading || error !== null}
               aria-label={`Izvozi prikazani seznam ponudb v CSV (${ponudbeLabel(pending.length)})`}
@@ -391,11 +485,12 @@ export function QuoteFollowUp() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">
-        {/* R267 — legenda pill pariteta (družina R263–R266): poimenuje kaj nosi
-            dokument — VSE ponudbe, tudi podpisane (polna resnica, ne samo viden
-            seznam); VEDNO vidna (tudi pri praznem seznamu — pariteta z pillom). */}
+        {/* R267 — legenda pill pariteta (družina R263–R266; R331 medija
+            razlaga): poimenuje kaj nosita izvoza — VSE ponudbe, tudi
+            podpisane (polna resnica, ne samo viden seznam); VEDNO vidna
+            (tudi pri praznem seznamu — pariteta z pilli). */}
         <p className="text-2xs text-muted-foreground">
-          PDF = VSE ponudbe (tudi podpisane — polna resnica, ne samo viden seznam)
+          PDF/CSV = VSE ponudbe (tudi podpisane — polna resnica) · prikazani seznam CSV = samo odprte prvih 12
         </p>
         {loading ? (
           <div className="flex items-center justify-center py-5 text-sm text-muted-foreground" aria-busy="true" aria-live="polite">

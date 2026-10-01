@@ -300,12 +300,19 @@ describe('R267 — komponenta (quote-followup) — pill, mini-vrstica, handler, 
     expect(lib).toContain('stanjeSpomnika(o.followUpDate, danesIso)')
   })
 
-  it('handler: FRESH fetch /api/projects (polna resnica vloge — nič state-a) + HTTP razlog + ne-polje → TypeError + dvoklik guard + fail-closed PREJ (Ni vpisanih ponudb) → ENA izpeljava → generate; TypeError viden razlog', () => {
-    const okno = oknoMed(komponenta, 'const handleSpomnikiPdf', 'const handleExportCsv')
-    expect(okno).toContain('if (pdfVteku) return')
+  it('R331 helper EN VIR: FRESH fetch /api/projects (polna resnica vloge — nič state-a) + HTTP razlog + ne-polje → TypeError — OBA brata (PDF R267 + CSV R331) jedeta ISTO izpeljavo (vzorec R297/R330 pridobi*)', () => {
+    const okno = oknoMed(komponenta, 'const pridobiPonudbeSpomnikiVnosi', 'const handleSpomnikiPdf')
     expect(okno).toContain("fetch('/api/projects', { credentials: 'same-origin' })")
     expect(okno).toContain('GET /api/projects → HTTP ${res.status}')
     expect(okno).toContain('Odgovora /api/projects ni mogoče prebrati (ni polja).')
+    // ENA izpeljava vira: prav DVA klica (PDF handler + CSV handler — nič dvojnega med bralci)
+    expect((komponenta.match(/pridobiPonudbeSpomnikiVnosi\(\)/g) ?? []).length).toBe(2)
+  })
+
+  it('handler: dvoklik guard + fail-closed PREJ (Ni vpisanih ponudb) → ENA izpeljava → generate; TypeError viden razlog (R331: vir prišel iz EN VIR helperja)', () => {
+    const okno = oknoMed(komponenta, 'const handleSpomnikiPdf', 'const handleExportCsv')
+    expect(okno).toContain('if (pdfVteku) return')
+    expect(okno).toContain('await pridobiPonudbeSpomnikiVnosi()')
     expect(okno).toContain("title: 'Ni vpisanih ponudb'")
     expect(okno).toContain("'Pregled spomnikov se izvozi, ko je vpisana prva ponudba.'")
     const prazen = okno.indexOf('vnosi.length === 0')
@@ -320,16 +327,16 @@ describe('R267 — komponenta (quote-followup) — pill, mini-vrstica, handler, 
     expect(okno).toContain('setPdfVteku(false)')
   })
 
-  it('fail-verbose DTO pruning: vrstica brez id/nazivProjekta → TypeError (IDENTITETE pred libom — R264/R265/R266 vzorec)', () => {
-    const okno = oknoMed(komponenta, 'const handleSpomnikiPdf', 'const handleExportCsv')
+  it('fail-verbose DTO pruning (R331: v EN VIR helperju — oba brata dedujeta): vrstica brez id/nazivProjekta → TypeError (IDENTITETE pred libom — R264/R265/R266 vzorec)', () => {
+    const okno = oknoMed(komponenta, 'const pridobiPonudbeSpomnikiVnosi', 'const handleSpomnikiPdf')
     expect(okno).toContain('manjkajoč id/nazivProjekta v odgovoru API-ja')
     expect(okno).toContain('const vrstice = data as Array<Record<string, unknown>>')
   })
 
-  it('legenda pill pariteta (družina): PDF = VSE ponudbe, tudi podpisane — polna resnica, ne samo viden seznam; VEDNO vidna (tudi pri praznem seznamu)', () => {
-    expect(komponenta).toContain('PDF = VSE ponudbe (tudi podpisane — polna resnica, ne samo viden seznam)')
+  it('legenda pill pariteta (družina): R331 medija razlaga — PDF/CSV = VSE ponudbe (tudi podpisane — polna resnica) + iskrena ločnica prikazanega seznama; VEDNO vidna (tudi pri praznem seznamu)', () => {
+    expect(komponenta).toContain('PDF/CSV = VSE ponudbe (tudi podpisane — polna resnica) · prikazani seznam CSV = samo odprte prvih 12')
     const legenda = oknoMed(komponenta, '<CardContent className="space-y-2">', '{loading ? (')
-    expect(legenda).toContain('PDF = VSE ponudbe')
+    expect(legenda).toContain('PDF/CSV = VSE ponudbe')
   })
 
   it('brat R266 NESPREMENJEN (soli 0x95–0x98 pri bratu — bajtno zdrav tudi po R267) + CSV izvoz R161 NESPREMENJEN (disabled pogoj ostaja)', () => {
