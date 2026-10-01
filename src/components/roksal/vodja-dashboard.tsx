@@ -83,6 +83,11 @@ import { avtomatizacijaPovzetek } from '@/lib/automation/katalog'
 // resnica po površinah (ČISTA projekcija katalog × AI_KANDIDATI — NIČ
 // nove resnice; WYSIWYG sklep).
 import { aiRabaPregled } from '@/lib/ai-raba-pregled'
+// R337 — 64. člen issue #1 (IZVOZI družina): izvoz pregleda AI rabe kot
+// DETERMINISTIČNI CSV — CSV brat zaslona (EN VIR: handler poda že IZRISANI
+// pregled — NIČEVE divergence od zaslona po konstrukciji; brez-časa kanon
+// R334/R336 — isti katalog = bajtno identična datoteka).
+import { aiRabaCsv, aiRabaCsvFilename } from '@/lib/ai-raba-csv'
 // R312 — 42. člen issue #1 (Deliverable 6): meritve zmogljivosti — iskrene
 // meritve jedra (realno izvajanje, fiksni vhodi, vsak izhod preverjen;
 // časi strojno odvisni — izris ŠELE v brskalniku, nič SSR laži).
@@ -1009,6 +1014,46 @@ export function VodjaDashboard() {
     }
   }
 
+  /** 🆕 R337 (64. člen, issue #1 IZVOZI družina): izvoz pregleda AI rabe
+   *  kot DETERMINISTIČNI CSV — CSV brat zaslona R311 (Deliverable 5 kot
+   *  prenosljiv artifact — ai-raba-dokaz je bil ZADNJI vodja dokazni blok
+   *  brez izvoza). EN VIR po konstrukciji: handler poda že IZRISANI pregled
+   *  (isti objekt — zaslon in CSV NE moreta divergirati). Brez metapodatkov
+   *  časa/hash (isti katalog = bajtno identična datoteka — brez-časa kanon
+   *  R334/R336). Sinhron, BREZ spinnerja (vzorec TRIADA R334/R335/R336 —
+   *  vsak klik = ista resnica). Fail-verbose: razlog vidno, ne tiho
+   *  (kanon). */
+  function exportAiRabaCsv() {
+    try {
+      // fail-closed brezplačno: graditelj validira projcijo po imenu polja
+      // (kanon R299/R302/R306) — pokvarjeni vhodi ne morejo postati lažno
+      // poročilo. EN VIR: IZRISANI pregled, NIČ svežega računa.
+      const csv = aiRabaCsv(aiRaba)
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = aiRabaCsvFilename()
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+      // Toast pove REALNO resnico (ISTI števci kot zaslon vrstica;
+      // 'AI-obveznih' IZPELJAN — stAi − stNadomestkov = 0 po konstrukciji,
+      // NIČ trdo kodirane ničle).
+      toast({
+        title: 'Pregled AI rabe izvožen ✓',
+        description: `${aiRabaCsvFilename()} — ${aiRaba.stAi} AI (neobvezne) · ${aiRaba.stKandidatov} kandidatov · ${aiRaba.stAi - aiRaba.stNadomestkov} AI-obveznih`,
+      })
+    } catch (e) {
+      toast({
+        title: 'Izvoz ni uspel',
+        description: e instanceof Error ? e.message : String(e),
+        variant: 'destructive',
+      })
+    }
+  }
+
   /** 🆕 R321 (50. člen, issue #1 IZVOZI družina): izvoz meritev zmogljivosti
    *  kot DETERMINISTIČNI PDF — Deliverable 6 kot tisk; pregled = POSREDOVANA
    *  resnica (meritev se izvede ENKRAT v brskalniku — R312 kontrakt; PDF NE
@@ -1388,6 +1433,25 @@ export function VodjaDashboard() {
           <p className="text-2xs tabular-nums text-muted-foreground" title="ISTI katalog kot 'Avtomatizacija — razred funkcij' in docs/automacija-audit.md — EN VIR.">
             {aiRaba.stAi} AI · {aiRaba.stKandidatov} kandidatov · 0 AI-obveznih
           </p>
+          {/* 🆕 R337 (64. člen): izvoz istega EN VIR pregleda kot CSV —
+              zadnji vodja dokazni blok dobi izvoz (družina popolna:
+              avtomatizacija PDF R313 · končna verifikacija TRIADA
+              R316/R320/R334 · sistem zdravje CSV R336 · AI raba CSV R337);
+              a11y izvozne družine R291/R293; ISTI žeton kot končna
+              verifikacija CSV pill (byte-paritet — R334 vzorec);
+              definicijski naslov medija. */}
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-6 gap-1 border-roksal-navy/25 px-2 text-2xs text-roksal-ink press-scale transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 dark:border-roksal-ink/25"
+            onClick={exportAiRabaCsv}
+            aria-label="Izvozi pregled AI rabe kot CSV"
+            data-testid="ai-raba-csv-pill"
+            title="Izvozi pregled AI rabe (AI površine z nadomestki + kandidati + sklep) kot deterministični CSV — isti pregled, vrstice in sklep kot zaslon; isti katalog = bajtno identična datoteka; Excel za arhiv in filtriranje po modulu/statusu"
+          >
+            <FileSpreadsheet className="h-3 w-3" aria-hidden="true" />
+            CSV
+          </Button>
         </div>
         {aiRaba.zive.map((z) => (
           <div key={z.id} className="mt-1.5 rounded-md border border-border bg-background/60 px-2 py-1.5">
@@ -1411,6 +1475,11 @@ export function VodjaDashboard() {
         </div>
         <p className="mt-1.5 text-2xs text-muted-foreground" data-testid="ai-raba-sklep">
           {aiRaba.sklep}
+        </p>
+        {/* 🆕 R337 (64. člen): legenda medija — starejši podpisi NEPREMIKNJENI
+            (kanon R335/R336 — legenda DODANA, nič prepisanega). */}
+        <p className="mt-1 text-2xs text-muted-foreground" data-testid="ai-raba-csv-legenda">
+          AI raba CSV = ista resnica kot zaslon (isti katalog = bajtno identična datoteka — Excel za arhiv in filtriranje).
         </p>
       </section>
 

@@ -103,7 +103,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 45 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **4778** (284 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **4797** (286 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 143 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -534,6 +534,30 @@ Sheet z 6 podzavihki:
   para + naslov + legenda + val 19/18/17/16 obrnjene regresije + vodja
   ×4/×4 + globals press-scale + 0 surovih barv); val8 anti-stale drevo
   65→66 (R333 PIN SHIFT — izrecno)
+- **Izvoz pregleda AI rabe kot CSV** (R337, 64. člen — issue #1
+  **IZVOZI** družina): NOVI lib `src/lib/ai-raba-csv.ts` (CSV brat
+  zaslona ai-raba-dokaz R311 — **ZADNJI vodja dokazni blok brez izvoza**;
+  EN VIR: handler poda že IZRISANI pregled `aiRabaCsv(aiRaba)` — zaslon in
+  CSV NE moreta divergirati po konstrukciji; žive AI površine verbatim
+  [opis/modul/nadomestek*] + kandidati verbatim [funkcija/zakaj/status] +
+  vrstica statusa = ISTA formula kot zaslon + 'AI-obveznih' IZPELJAN
+  stAi − stNadomestkov = 0 po konstrukciji [NIČ trdo kodirane ničle] +
+  Sklep = ISTI niz kot zaslon/testi/docs; **BREZ časa** — kanon R334/R336
+  brez-časa: katalog je statična resnica repozitorija, isti katalog =
+  bajtno identična datoteka, nič 'Izvoženo ob'; filename `ai-raba.csv` —
+  brez datuma, bratska simetrija z `koncna-verifikacija.csv` /
+  `sistem-zdravje.csv`; format kanon R136 toCsv [BOM + podpičje + CRLF +
+  RFC 4180]; fail-closed po imenu polja — kanon R299)
+  + vodja žičenje (exportAiRabaCsv handler — sinhron EN VIR, BREZ
+  spinnerja [vzorec TRIADA R334/R335/R336]; toast REALNO resnico [števci
+  ISTI kot zaslon vrstica]; fail-verbose TypeError toast; izvozna pill
+  amber/50 družina [ISTI žeton kot končna verifikacija CSV pill —
+  byte-paritet]; testid ai-raba-csv-pill; definicijski naslov medija +
+  legenda medija) + STIL val 24 (amber/50 byte-paritet + oči para
+  FileSpreadsheet + obrnjene regresije val 23/22/21 + globals + PIN
+  SHIFTI ×4 izrecno: val8 drevo 69→70 + amber/50 register ×10→×11 + val9
+  taktilni ×17→×18 + val21/val22/val23 sodelovanje pini — vsi čez-valovni
+  pini shiftani V ENI rundi)
 - **Izvoz sistema zdravja kot CSV** (R336, 63. člen — issue #1
   **IZVOZI** družina): NOVI lib `src/lib/sistem-zdravje-csv.ts` (CSV brat
   zaslona SistemZdravjeCard R187/R188/R189 — **ZADNJA vodja kartica brez
@@ -949,7 +973,7 @@ Sheet z 6 podzavihki:
 | **PWA** | Service Worker + Web Manifest |
 | **Temnitveni način** | [next-themes](https://github.com/pacocoursey/next-themes) |
 | **Validacija** | [Zod 4](https://zod.dev/) |
-| **Testiranje** | [Vitest 4](https://vitest.dev/) (4778 testov + globalSetup embedded PG) |
+| **Testiranje** | [Vitest 4](https://vitest.dev/) (4797 testov + globalSetup embedded PG) |
 | **Paketni upravitelj** | [Bun](https://bun.sh/) |
 | **Linting** | ESLint 9 + eslint-config-next |
 
@@ -1071,7 +1095,7 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `bun run dev` | Zažene Next.js dev server (port 3000) |
 | `bun run build` | Produkcijska build (build-prepare: generate + migrate deploy + seed) |
 | `bun run start` | Zažene produkcijski server |
-| `bun run test` | Vsi testi (vitest, 4778, embedded PG prek globalSetup) |
+| `bun run test` | Vsi testi (vitest, 4797, embedded PG prek globalSetup) |
 | `bun run check` | tsc --noEmit + vitest run (en ukaz za vse) |
 | `bunx tsc --noEmit` | Tipska kontrola celotnega projekta (trenutno 0 napak) |
 | `bun run lint` | ESLint preverjanje |

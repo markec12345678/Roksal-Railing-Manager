@@ -96,6 +96,15 @@
 // register OSTANE ×10 z obrnjeno regresijo: stari ×10 pin ostane; anti-stale
 // števec drevesa 68 → 69 z obrnjeno regresijo (polzaporedje ne sme nazaj).
 //
+// R337 PIN SHIFT (64. člen): AI raba pregled CSV gumb (vodja blok glava —
+// ZADNJI vodja dokazni blok dobi izvoz; CSV brat zaslona R311, EN VIR
+// aiRabaCsv(aiRaba) — handler poda že IZRISANI pregled; ring = amber/50 +
+// offset — ISTI žeton kot končna verifikacija CSV pill; vodja amber
+// register ×10 → ×11 z obrnjeno regresijo: stari ×10 pin je prepovedan —
+// polzaporedje ne sme nazaj; precedens R316 JSON → R320 PDF → R334 CSV →
+// R335 CSV → R337 CSV; anti-stale števec drevesa 69 → 70 z obrnjeno
+// regresijo — polzaporedje ne sme nazaj).
+//
 //  • barva = roksal žeton (navy/40 ali amber/50) — 0 surovih barv;
 //  • amber/50 SAMO v vodja-dashboard (izrecen zaklenjen register z razlogom
 //    — R308/R316 lekcija: semantične izjeme + bratska simetrija blok glav);
@@ -129,8 +138,8 @@ describe('r317 STIL val 8 — izvozna družina: focus-visible ring STRAŽAR', ()
   const gumbi = izvozniGumbi()
   const AMBER_ZETONI = new Set(['vodja-dashboard'])
 
-  it('anti-stale: 69 izvoznih gumbov v drevesu (68 pred R336 + NOVI sistem zdravje CSV)', () => {
-    expect(gumbi.length).toBeGreaterThanOrEqual(69) // R335 PIN SHIFT 67 → 68 + R336 PIN SHIFT 68 → 69 (stari pini so prepovedani — obrnjena regresija, polzaporedje ne sme nazaj)
+  it('anti-stale: 70 izvoznih gumbov v drevesu (69 pred R337 + NOVI AI raba pregled CSV)', () => {
+    expect(gumbi.length).toBeGreaterThanOrEqual(70) // R335 PIN SHIFT 67 → 68 + R336 PIN SHIFT 68 → 69 + R337 PIN SHIFT 69 → 70 (stari pini so prepovedani — obrnjena regresija, polzaporedje ne sme nazaj)
     // novi gumb 50. člena je prisoten
     expect(gumbi.some((g) => g.okno.includes('Izvozi meritve zmogljivosti kot PDF'))).toBe(true)
     // novi gumb 51. člena je prisoten (R322)
@@ -185,17 +194,18 @@ describe('r317 STIL val 8 — izvozna družina: focus-visible ring STRAŽAR', ()
       (g) => g.okno.includes('focus-visible:ring-roksal-amber/50') && !AMBER_ZETONI.has(g.datoteka),
     )
     expect(kršitve).toEqual([])
-    // R335 register je ŽIV: vodja res nosi 10 amber gumbov (dnevni CSV R163 +
+    // R335 register je ŽIV: vodja res nosi 11 amber gumbov (dnevni CSV R163 +
     // JSON 46. + CSV 47. + audit PDF 48. + končna verifikacija PDF 49. +
     // meritve zmogljivosti PDF 50. + meritve zmogljivosti CSV 51. + dnevni
     // pregled PDF 52. člen + končna verifikacija CSV 61. člen + mesečno
-    // poročilo CSV 62. člen — isti vodja blok glavni vzorec z offset-2;
-    // PIN SHIFT ×9 → ×10 z obrnjeno regresijo: stari ×9 pin je prepovedan —
+    // poročilo CSV 62. člen + AI raba pregled CSV 64. člen R337 — isti vodja
+    // blok glavni vzorec z offset-2;
+    // PIN SHIFT ×10 → ×11 z obrnjeno regresijo: stari ×10 pin je prepovedan —
     // polzaporedje ne sme nazaj)
     const vodjaAmber = gumbi.filter(
       (g) => g.datoteka === 'vodja-dashboard' && g.okno.includes('focus-visible:ring-roksal-amber/50'),
     )
-    expect(vodjaAmber.length).toBe(10)
+    expect(vodjaAmber.length).toBe(11)
     const ariaVseh = vodjaAmber.map((g) => {
       const m = g.okno.match(/aria-label="([^"]+)"/)
       return m ? m[1] : ''
@@ -212,9 +222,13 @@ describe('r317 STIL val 8 — izvozna družina: focus-visible ring STRAŽAR', ()
     expect(ariaVseh).toContain('Izvozi poročilo končne verifikacije kot CSV')
     // R335: mesečno poročilo vodje CSV (62. člen) — CSV brat Poročilo PDF
     expect(ariaVseh).toContain('Izvozi mesečno poročilo vodje kot CSV')
+    // R337: AI raba pregled CSV (64. člen) — ZADNJI vodja dokazni blok dobi
+    // izvoz (EN VIR aiRabaCsv(aiRaba) — handler poda že IZRISANI pregled)
+    expect(ariaVseh).toContain('Izvozi pregled AI rabe kot CSV')
     // R336: sistem zdravje CSV (63. člen) NI v vodja datoteki — v SistemZdravjeCard
-    // (sestavljena kartica z lastnim stanjem); amber/50 register OSTANE ×10
-    // (navy/40 družina — val20 Material precedens; stari pin ostane).
+    // (sestavljena kartica z lastnim stanjem); amber/50 register je bil ×10 do
+    // R336 (navy/40 družina — val20 Material precedens), R337 AI raba CSV gumb
+    // je SPET v vodja datoteki → register ×11 (PIN SHIFT zgoraj).
   })
 
   it('R317 harmonizirana vrstica: site-survey PDF gumb ima družinski ring (regresijski pin — nazaj = fail)', () => {

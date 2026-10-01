@@ -5,7 +5,9 @@
 //    kartici sistem-zdravje-card.tsx, izven vodja-dashboard datoteke →
 //    amber/50 register OSTANE zaklenjen v vodji ×10, val8 drevo 69);
 //  • taktilni žeton press-scale (val9 vzorec) — kartica NI v vodja-dashboard
-//    števcu (17 pojavitev NEPREMIKNJENIH — register file-scoped);
+//    števcu (17 pojavitev v R336 — register file-scoped);
+//    [R337: vodja register 17 → 18 — AI raba CSV pill JE v vodji; kartičin
+//    prispevek NEPROMENJEN]
 //  • oči para: FileSpreadsheet aria-hidden (CSV brat družina R323/R334/R335);
 //  • definicijski naslov medija (title) + legenda medija (starejši podpisi
 //    NEPREMIKNJENI);
@@ -54,11 +56,12 @@ describe('r336 STIL val 23 — sistem zdravje CSV pill: navy/40 družina + takti
     expect(src.includes('focus-visible:ring-roksal-amber/50')).toBe(false)
   })
 
-  it('taktilni žeton press-scale (val9 vzorec) — vodja register ×17 NEPREMIKNJEN (file-scoped)', () => {
+  it('taktilni žeton press-scale (val9 vzorec) — vodja register ×18 (R337 PIN SHIFT 17 → 18; kartičin prispevek NEPROMENJEN)', () => {
     const gumb = oknoOkoli(src, 'aria-label="Izvozi sistem zdravje kot CSV"')
     expect(gumb).toContain('press-scale')
-    // vodja-dashboard števec ostane 17 (R336 pill je v kartici, ne v vodji)
-    expect(vodja.split('press-scale').length - 1).toBe(17)
+    // vodja-dashboard števec 18 (R337 AI raba CSV pill v vodji — R336 pill
+    // je še vedo v kartici, ven iz vodja števcu)
+    expect(vodja.split('press-scale').length - 1).toBe(18)
   })
 
   it('definicijski naslov medija (title) — ista resnica, iskren fail-closed, Excel razlika medija', () => {
@@ -93,9 +96,10 @@ describe('r336 STIL val 23 — sistem zdravje CSV pill: navy/40 družina + takti
     expect(globals).toContain('transform: scale(0.97)')
   })
 
-  it('register sodelovanje: val8 drevo 69 + R336 PIN SHIFT zapisana (register resnica čez valove — LEKCIJA R334 5)', () => {
+  it('register sodelovanje: val8 drevo 70 + R336/R337 PIN SHIFT zapisa (register resnica čez valove — LEKCIJA R334 5)', () => {
     expect(val8).toContain('R336 PIN SHIFT 68 → 69')
-    expect(val8).toContain('expect(gumbi.length).toBeGreaterThanOrEqual(69)')
+    expect(val8).toContain('R337 PIN SHIFT 69 → 70')
+    expect(val8).toContain('expect(gumbi.length).toBeGreaterThanOrEqual(70)')
     expect(val8).toContain("g.okno.includes('Izvozi sistem zdravje kot CSV')")
     // 0 surovih barv na novi pill (0-hex kanon)
     const gumb = oknoOkoli(src, 'aria-label="Izvozi sistem zdravje kot CSV"')

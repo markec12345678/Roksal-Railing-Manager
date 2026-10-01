@@ -33,15 +33,24 @@
 // obrnjeno regresijo: stari 16 pin je prepovedan — polzaporedje ne sme
 // nazaj).
 //
+// R337 PIN SHIFT (64. člen): vodja blok glava dobi DVAJESTI taktilni gumb
+// (AI raba pregled CSV — CSV brat zaslona R311, EN VIR aiRabaCsv(aiRaba) —
+// handler poda že IZRISANI pregled; register 17 → 18 pojavitev, 11 → 12
+// gumbov, z obrnjeno regresijo: stari 17 pin je prepovedan — polzaporedje
+// ne sme nazaj).
+//
 // STRAŽAR (kanon r316/…/r323 — anti-stale + reverse regresija):
 //  • vsak od 10 vodja izvoznih gumbov nosi taktilni žeton (okno ±8 vrstic
 //    okoli aria-labela — ISTA ekstrakcija kot val8);
+//    [R337: zdaj 12 gumbov — register zrastle 11 → 17 → 18 pojavitev]
 //  • pill bratje ŠE VEDNO nosijo press-scale (obrnjena regresija — odstranitev
 //    = fail);
 //  • .press-scale utility ŠE VEDNO definirana v globals.css (anti-stale);
 //  • press-scale NI umetno dodan ne-izvoznim površinam v vodji (register
 //    zaklenjen — natanko 11 pojavitev v vodja-dashboard: 5 novih + 3 pill +
-//    3 obstoječe drugje — odstopanje = fail; R312 lekcija: štetje POJAVITEV).
+//    3 obstoječe drugje — odstopanje = fail; R312 lekcija: štetje POJAVITEV;
+//    [zgodovinski zapisek — trenutna resnica: 18 pojavitev = 12 gumbov +
+//    3 pill + 3 obstoječe drugje, R337 PIN SHIFT]).
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -61,7 +70,7 @@ function oknoOkoli(aria: string): string {
 }
 
 describe('r318 STIL val 9 — vodja izvozna družina: taktilna pariteta', () => {
-  it('vseh 11 vodja izvoznih gumbov nosi taktilni žeton (pariteta s pill bratje)', () => {
+  it('vseh 12 vodja izvoznih gumbov nosi taktilni žeton (pariteta s pill bratje)', () => {
     const gumbi = [
       'aria-label="Izvozi dnevni pregled vodje kot CSV"',
       'aria-label="Izvozi dnevni pregled vodje kot PDF"',
@@ -70,6 +79,7 @@ describe('r318 STIL val 9 — vodja izvozna družina: taktilna pariteta', () => 
       'aria-label="Izvozi poročilo končne verifikacije kot PDF"',
       'aria-label="Izvozi poročilo končne verifikacije kot CSV"', // R334 (61. člen — izvozna TRIADA)
       'aria-label="Izvozi mesečno poročilo vodje kot CSV"', // R335 (62. člen — CSV brat Poročilo PDF)
+      'aria-label="Izvozi pregled AI rabe kot CSV"', // R337 (64. člen — CSV brat zaslona R311)
       'aria-label="Izvozi avtomatizacijski audit kot CSV"',
       'aria-label="Izvozi avtomatizacijski audit kot PDF"',
       'aria-label="Izvozi meritve zmogljivosti kot PDF"',
@@ -95,10 +105,11 @@ describe('r318 STIL val 9 — vodja izvozna družina: taktilna pariteta', () => 
     expect(globals).toContain('transform: scale(0.97)')
   })
 
-  it('register zaklenjen: natanko 17 pojavitev taktilnega žetona v vodja-dashboard (11 gumbov + 3 pill + 3 obstoječe drugje)', () => {
+  it('register zaklenjen: natanko 18 pojavitev taktilnega žetona v vodja-dashboard (12 gumbov + 3 pill + 3 obstoječe drugje)', () => {
     // R312 lekcija (deseta potrditev): štetje POJAVITVEV, ne vrstic
     // R335 PIN SHIFT 16 → 17 (stari 16 pin je prepovedan — obrnjena regresija)
     const pojavitve = src.split('press-scale').length - 1
-    expect(pojavitve).toBe(17)
+    // R337 PIN SHIFT 17 → 18 (stari 17 pin je prepovedan — obrnjena regresija)
+    expect(pojavitve).toBe(18)
   })
 })

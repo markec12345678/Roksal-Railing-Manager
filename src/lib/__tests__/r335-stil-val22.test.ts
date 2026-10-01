@@ -165,7 +165,7 @@ describe('r335 STIL val 22 — Mesečno poročilo CSV PAR pariteta na vodja blok
     expect(zgod).toContain(VRSTICA_ZETON)
   })
 
-  it('vodja val 11/12 register ostane ×4/×4 (novi gumb je v sestavljeni kartici, ne v blok glavi — nič novih blokov/vrstic; amber/50 register ×10 — val 8 drevo 69 po R336)', () => {
+  it('vodja val 11/12 register ostane ×4/×4 (novi gumb je v sestavljeni kartici, ne v blok glavi — nič novih blokov/vrstic; amber/50 register ×11 — val 8 drevo 70 po R337)', () => {
     expect(src.split(BLOK_ZETON).length - 1).toBe(4)
     expect(src.split(VRSTICA_ZETON).length - 1).toBe(4)
   })
@@ -178,14 +178,15 @@ describe('r335 STIL val 22 — Mesečno poročilo CSV PAR pariteta na vodja blok
     expect(csvGumb).not.toMatch(/\b(?:bg|text|border|ring)-(?:amber|navy|red|green)-\d{2,3}\b/)
   })
 
-  it('register sodelovanje: R335 zapisek + R336 PIN SHIFTI zapisana v val8 (69 + amber ×10) IN val9 (17 taktilnih) registrih — register resnica čez valove (LEKCIJA R334 5: vsi pini shiftani V ENI rundi)', () => {
+  it('register sodelovanje: R335 zapisek + R336/R337 PIN SHIFTI zapisana v val8 (70 + amber ×11) IN val9 (18 taktilnih) registrih — register resnica čez valove (LEKCIJA R334 5: vsi pini shiftani V ENI rundi)', () => {
     expect(val8).toContain('R335 PIN SHIFT 67 → 68')
     expect(val8).toContain('R336 PIN SHIFT 68 → 69')
-    expect(val8).toContain('expect(gumbi.length).toBeGreaterThanOrEqual(69)')
+    expect(val8).toContain('R337 PIN SHIFT 69 → 70')
+    expect(val8).toContain('expect(gumbi.length).toBeGreaterThanOrEqual(70)')
     expect(val8).toContain("expect(ariaVseh).toContain('Izvozi mesečno poročilo vodje kot CSV')")
-    expect(val8).toContain('vodjaAmber.length).toBe(10)')
+    expect(val8).toContain('vodjaAmber.length).toBe(11)')
     expect(val9).toContain('R335 PIN SHIFT (62. člen)')
-    expect(val9).toContain('expect(pojavitve).toBe(17)')
+    expect(val9).toContain('expect(pojavitve).toBe(18)')
     expect(val9).toContain("'aria-label=\"Izvozi mesečno poročilo vodje kot CSV\"'")
   })
 })
