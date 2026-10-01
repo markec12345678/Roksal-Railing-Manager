@@ -6606,3 +6606,8 @@ Stage Summary:
 
 ### PRVA NALOGA POST-commit ŽIVO (R330 — r330-prod-qa.sh, push)
 - Spodaj dodatek ob izvedbi (LIVE ali ESKALACIJA; UNION harvest: ob zelenem deployu nosi R290+…+R330 SKUPAJ — precedens R313/R314; pričakuj LIVE vejo ker R329 dev vsebina že ŽIVO)
+
+### PRVA NALOGA POST-commit ŽIVO (R330 — r330-prod-qa.sh, push fc6c2fd)
+- Tek 1 (02:29, takoj po pushu): **Z2-stale abort na 2 R292 needlejih** (Tedenski razgled + mini tir MISS) — VZROK odločilno dokazan v teku 2: **deploy dirli HARVEST** (Vercel build 02:28:01.488Z startal 27 s po fc6c2fd pushu 02:27:34 — čanki menjani POD tekom harvesta → mešan izbor + mrtev čank 404; kanon R258: pipeline event NI koda-bug; LEKCIJA R330 7: POST-commit prod-qa takoj po pushu lahko dirje deploy — če EPOCH + needle MISS sočasno, preveri build čas NOVICE run pred interpretacijo)
+- **Tek 2: LIVE veja EXIT=0** (9. zapis) — **R330 deploy POTRJEN** (build 2026-10-01T02:28:01.488Z > R330 commit meja 02:27:34) → **polni LIVE teki: UNION harvest R290+…+R330 ŽIVO SKUPAJ** — 438 OK / 0 MISS / ZERO must_miss; R330 needle blok LIVE (CSV aria + testid v logistics čanku), R329 PDF + R328 CSV + R327/R326 zgodovina + R324/R323/R321/R320/R318/R317…R290 vse LIVE; Z1b verzije ruta 404 ŽIVO + Z3 v99 sync gate ŽIVO (ZERO-MUTACIJA); POPRAVLJEN banner je v r330-prod-qa (ESKALACIJA veja nosi zdaj generacijsko nevtralen podpis)
+- **R330 DEV VSEBINA ŽIVO na produ** (27 s po pushu — Vercel kvota čista; 57. člen Projekti CSV pill + val 17 LIVE); R331 prva naloga = r330-prod-qa.sh POST-commit re-run (pričakuj LIVE; __r329val sledi generaciji; val8 ×8 STALEN)
