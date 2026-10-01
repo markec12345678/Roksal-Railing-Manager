@@ -43,6 +43,14 @@ import {
   opremaCikelCsv,
   opremaCikelCsvFilename,
 } from '@/lib/oprema-cikel-csv'
+// R330 — projekti-termini CSV (57. člen 'izvozi' družine): CSV brat PDF R265
+// (vzorec R297) — ISTA portfeljska resnica (projektiTerminiPregled EN VIR,
+// cenikDatumIso EN VIR, Sklep VERBATIM PDF sklepu) kot ravninska tabela za
+// Excel/revizijo; route NIČ (client+lib only).
+import {
+  projektiTerminiCsv,
+  projektiTerminiCsvFilename,
+} from '@/lib/projekti-termini-csv'
 import {
   generateVozniRedPdf,
   vozniRedPovzetek,
@@ -475,6 +483,9 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
   const [ocVTeku, setOcVTeku] = useState(false)
   // R297 — dvoklik guard oprema cikel CSV (ISTA družina, pariteta brata).
   const [ocCsvVTeku, setOcCsvVTeku] = useState(false)
+  // R330 — dvoklik guard projekti-termini CSV (57. člen — pariteta ptVTeku
+  // R265 / ocCsvVTeku R297; ISTI dvoklik guard kot PDF brat).
+  const [ptCsvVTeku, setPtCsvVTeku] = useState(false)
   // R292 — dvoklik guard tedenskega CSV (pariteta ptVTeku R265/ocVTeku R266).
   const [tedenskiCsvVTeku, setTedenskiCsvVTeku] = useState(false)
   // R298 — dvoklik guard ICS izvoza (pariteta tedenskiCsvVTeku R292).
@@ -1298,50 +1309,59 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
     )
   }
 
-  // R265 — FRESH fetch VSEH terminov ISTEGA endpointa ob kliku (R264
-  // precedens pridobiPozicijo): dokument = PORTFELJSKA resnica (vsi
-  // projekti × vsi termini), NE glede na projekt-filter taba — auto-izbor
-  // projekta ne sme skriti planskih luknij drugih projektov. Fail-verbose:
-  // HTTP napaka ALI ne-polje odgovora → viden razlog (nič tihe degradacije).
+  // R330 — ENA izpeljava vira (57. člen, vzorec R297 pridobiOpremoVnosi):
+  // FRESH fetch VSEH terminov /api/schedules ISTEGA endpointa ob kliku
+  // (R244/R245/R264/R265 precedens — route NIČ, nič nove mreže) + fail-
+  // verbose DTO pruning v ENI funkciji — OBA brata (PDF R265 + CSV R330)
+  // jedeta ISTO izpeljavo (NIČ dvojnega med bralci). PORTFELJSKA resnica
+  // (vsi projekti × vsi termini), NE glede na projekt-filter taba —
+  // auto-izbor projekta ne sme skriti planskih luknij drugih projektov.
+  // Fail-verbose: HTTP napaka ALI ne-polje odgovora → viden razlog (nič
+  // tihe degradacije).
+  const pridobiProjektiTerminiVnosi = async (): Promise<{ projekti: ProjektiTerminiProjektVnos[]; termini: ProjektiTerminiTerminVnos[] }> => {
+    const res = await fetch('/api/schedules', { credentials: 'same-origin' })
+    if (!res.ok) {
+      throw new Error(`GET /api/schedules → HTTP ${res.status}`)
+    }
+    const data: unknown = await res.json()
+    if (!Array.isArray(data)) {
+      throw new TypeError('Odgovora /api/schedules ni mogoče prebrati (ni polja).')
+    }
+    // Fail-verbose DTO pruning (R264 vzorec — nič tihe degradacije):
+    // surove resnice projectId/status/predvideneUre/datumZacetka +
+    // projekti id/naziv/datumMontaze/stranka. Resnice (status 5 znanih,
+    // ISO, identitete) preverja LIB fail-closed.
+    const termini: ProjektiTerminiTerminVnos[] = (data as Array<Record<string, unknown>>).map((s, i) => {
+      const projekt = s.project as { id?: unknown } | undefined
+      if (!projekt || typeof projekt.id !== 'string' || projekt.id === '') {
+        throw new TypeError(`termin vrstica ${i}: manjkajoč project.id v odgovoru API-ja`)
+      }
+      return {
+        projectId: projekt.id,
+        status: s.status as ProjektiTerminiTerminVnos['status'],
+        predvideneUre: typeof s.predvideneUre === 'number' ? s.predvideneUre : null,
+        datumZacetka: s.datumZacetka as string,
+      }
+    })
+    const projekti: ProjektiTerminiProjektVnos[] = projects.map((p, i) => {
+      if (typeof p.id !== 'string' || p.id === '' || typeof p.nazivProjekta !== 'string' || p.nazivProjekta === '') {
+        throw new TypeError(`projekt vrstica ${i}: manjkajoč id/nazivProjekta v odgovoru API-ja`)
+      }
+      return {
+        id: p.id,
+        nazivProjekta: p.nazivProjekta,
+        datumMontaze: typeof p.datumMontaze === 'string' ? p.datumMontaze : null,
+        stranka: p.customer && typeof p.customer.ime === 'string' ? p.customer.ime : null,
+      }
+    })
+    return { projekti, termini }
+  }
+
   const handleProjektiTerminiPdf = async () => {
     if (ptVTeku) return
     setPtVTeku(true)
     try {
-      const res = await fetch('/api/schedules', { credentials: 'same-origin' })
-      if (!res.ok) {
-        throw new Error(`GET /api/schedules → HTTP ${res.status}`)
-      }
-      const data: unknown = await res.json()
-      if (!Array.isArray(data)) {
-        throw new TypeError('Odgovora /api/schedules ni mogoče prebrati (ni polja).')
-      }
-      // Fail-verbose DTO pruning (R264 vzorec — nič tihe degradacije):
-      // surove resnice projectId/status/predvideneUre/datumZacetka +
-      // projekti id/naziv/datumMontaze/stranka. Resnice (status 5 znanih,
-      // ISO, identitete) preverja LIB fail-closed.
-      const termini: ProjektiTerminiTerminVnos[] = (data as Array<Record<string, unknown>>).map((s, i) => {
-        const projekt = s.project as { id?: unknown } | undefined
-        if (!projekt || typeof projekt.id !== 'string' || projekt.id === '') {
-          throw new TypeError(`termin vrstica ${i}: manjkajoč project.id v odgovoru API-ja`)
-        }
-        return {
-          projectId: projekt.id,
-          status: s.status as ProjektiTerminiTerminVnos['status'],
-          predvideneUre: typeof s.predvideneUre === 'number' ? s.predvideneUre : null,
-          datumZacetka: s.datumZacetka as string,
-        }
-      })
-      const projekti: ProjektiTerminiProjektVnos[] = projects.map((p, i) => {
-        if (typeof p.id !== 'string' || p.id === '' || typeof p.nazivProjekta !== 'string' || p.nazivProjekta === '') {
-          throw new TypeError(`projekt vrstica ${i}: manjkajoč id/nazivProjekta v odgovoru API-ja`)
-        }
-        return {
-          id: p.id,
-          nazivProjekta: p.nazivProjekta,
-          datumMontaze: typeof p.datumMontaze === 'string' ? p.datumMontaze : null,
-          stranka: p.customer && typeof p.customer.ime === 'string' ? p.customer.ime : null,
-        }
-      })
+      const { projekti, termini } = await pridobiProjektiTerminiVnosi()
       if (termini.length === 0) {
         // Fail-closed jedro: prazen seznam ne nastaja dokumenta — iskren toast.
         toast({ title: 'Ni vpisanih terminov', description: 'Pregled projektov in terminov se izvozi, ko je vpisan prvi termin montaže.' })
@@ -1364,6 +1384,45 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
       }
     } finally {
       setPtVTeku(false)
+    }
+  }
+
+  // R330 — 57. člen 'izvozi' družine: PROJEKTI — TERMINI CSV — CSV brat
+  // pregledu R265 (vzorec R297): ISTA portfeljska resnica
+  // (projektiTerminiPregled EN VIR prek pridobiProjektiTerminiVnosi — ENA
+  // izpeljava vira, NIČ dvojnega med bralci) kot ravninska tabela za
+  // Excel/revizijo. Fail-closed PREJ: prazen seznam terminov → iskren toast
+  // (ISTI gate kot brat — NIKOLI prazna datoteka, družina R266/R297);
+  // dvoklik guard (pariteta ptCsvVTeku); toast pove ISTO agregatno resnico
+  // (WYSIWYG); fail-verbose catch (R291 vzorec).
+  const handleProjektiTerminiCsv = async () => {
+    if (ptCsvVTeku) return
+    setPtCsvVTeku(true)
+    try {
+      const { projekti, termini } = await pridobiProjektiTerminiVnosi()
+      if (termini.length === 0) {
+        // Fail-closed jedro: prazen seznam ne nastaja datoteke — iskren toast.
+        toast({ title: 'Ni vpisanih terminov', description: 'CSV se izvozi, ko je vpisan prvi termin montaže.' })
+        return
+      }
+      const now = new Date()
+      const { csv } = projektiTerminiCsv(projekti, termini, now)
+      const ime = projektiTerminiCsvFilename(now)
+      downloadCsvText(ime, csv)
+      const { povzetek } = projektiTerminiPregled(projekti, termini)
+      toast({
+        title: `Pregled projektov in terminov prenešen v CSV (${ime})`,
+        description: `Projekti-termini-…csv — ${povzetek.zTermini} ${projektBeseda(povzetek.zTermini)} z termini, ${povzetek.terminov} ${terminBeseda(povzetek.terminov)}, brez termina ${povzetek.brezTermina}.`,
+      })
+    } catch (err) {
+      if (err instanceof TypeError) {
+        // fail-closed jedro: pokvaren vnos → viden razlog (nič izmišljene datoteke)
+        toast({ title: 'Pregled projektov in terminov CSV ni mogoče sestaviti iz teh podatkov', description: err instanceof Error ? err.message : String(err), variant: 'destructive' })
+      } else {
+        toast({ title: `Izvoz CSV ni uspel: ${err instanceof Error ? err.message : String(err)}`, variant: 'destructive' })
+      }
+    } finally {
+      setPtCsvVTeku(false)
     }
   }
 
@@ -2174,6 +2233,29 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
               onClick={handleProjektiTerminiPdf}
             >
               <ClipboardList aria-hidden="true" className="h-4 w-4 mr-1" /> Projekti
+            </Button>
+            {/* R330 — 57. člen 'izvozi' družine: PROJEKTI — TERMINI CSV —
+                CSV brat PDF R265 (izvozna PAR — vzorec R297/R329). EN VIR:
+                ISTA izpeljava vira (pridobiProjektiTerminiVnosi) + ISTA
+                projekcija (projektiTerminiPregled) kot PDF brat — WYSIWYG
+                po konstrukciji; NIČ dvojnega med bralci. ISTI žetoni kot
+                PDF brat (press-scale + navy/40 ring) — 0 novih hex.
+                Definicijski naslov (MANDATORY STIL): izreče PRAVILA (isti
+                pregled EN VIR kot Projekti PDF; prazen seznam → iskren
+                toast, nikoli prazna datoteka) + vidno razliko medija
+                (Projekti PDF = tisk za vodjo, Projekti CSV = Excel za
+                filtriranje). */}
+            <Button
+              type="button"
+              variant="outline"
+              aria-label="Izvozi pregled projektov in terminov kot CSV"
+              title="Pregled projektov in terminov kot CSV — isti pregled in vrstni red kot Projekti PDF (prazen seznam → iskren toast, nikoli prazna datoteka). Projekti PDF = tisk za vodjo, Projekti CSV = Excel za filtriranje po projektu/stranki"
+              data-testid="projekti-termini-csv-pill"
+              disabled={ptCsvVTeku}
+              className="shrink-0 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              onClick={handleProjektiTerminiCsv}
+            >
+              <FileSpreadsheet aria-hidden="true" className="h-4 w-4 mr-1" /> Projekti CSV
             </Button>
           </div>
 

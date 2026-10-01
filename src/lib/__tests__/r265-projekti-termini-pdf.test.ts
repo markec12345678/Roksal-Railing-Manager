@@ -326,12 +326,19 @@ describe('R265 — komponenta (logistics-tab) — pill, legenda, handler', () =>
     expect(komponenta).toContain('· Projekti = projekti × termini (pokritost po projektih)')
   })
 
-  it('handler: FRESH fetch VSEH terminov ISTEGA endpointa (R264 precedens — portfeljska resnica, NE glede na projekt-filter) + dvoklik guard + fail-closed PREJ (Ni vpisanih terminov) → ENA izpeljava → generate; EN now; TypeError viden razlog', () => {
-    const okno = oknoMed(komponenta, 'const handleProjektiTerminiPdf', 'return (')
-    expect(okno).toContain('if (ptVTeku) return')
+  it('R330 helper EN VIR: FRESH fetch VSEH terminov ISTEGA endpointa (R264 precedens — portfeljska resnica, NE glede na projekt-filter) + fail-verbose HTTP/ne-polje — OBA brata (PDF R265 + CSV R330) jedeta ISTO izpeljavo (vzorec R297 pridobiOpremoVnosi)', () => {
+    const okno = oknoMed(komponenta, 'const pridobiProjektiTerminiVnosi', 'const handleProjektiTerminiPdf')
     expect(okno).toContain("fetch('/api/schedules', { credentials: 'same-origin' })")
     expect(okno).toContain('GET /api/schedules → HTTP ${res.status}')
     expect(okno).toContain('Odgovora /api/schedules ni mogoče prebrati (ni polja).')
+    // ENA izpeljava vira: prav DVA klica (PDF handler + CSV handler — nič dvojnega med bralci)
+    expect((komponenta.match(/pridobiProjektiTerminiVnosi\(\)/g) ?? []).length).toBe(2)
+  })
+
+  it('handler: dvoklik guard + fail-closed PREJ (Ni vpisanih terminov) → ENA izpeljava → generate; EN now; TypeError viden razlog (R330: vir prišel iz EN VIR helperja)', () => {
+    const okno = oknoMed(komponenta, 'const handleProjektiTerminiPdf', 'return (')
+    expect(okno).toContain('if (ptVTeku) return')
+    expect(okno).toContain('await pridobiProjektiTerminiVnosi()')
     expect(okno).toContain("title: 'Ni vpisanih terminov'")
     expect(okno).toContain("'Pregled projektov in terminov se izvozi, ko je vpisan prvi termin montaže.'")
     const prazen = okno.indexOf('termini.length === 0')
@@ -347,8 +354,8 @@ describe('R265 — komponenta (logistics-tab) — pill, legenda, handler', () =>
     expect(okno).toContain('setPtVTeku(false)')
   })
 
-  it('fail-verbose DTO pruning: termin brez project.id → TypeError; projekt brez id/nazivProjekta → TypeError — nič tihe degradacije', () => {
-    const okno = oknoMed(komponenta, 'const handleProjektiTerminiPdf', 'return (')
+  it('fail-verbose DTO pruning (R330: v EN VIR helperju — oba brata dedujeta): termin brez project.id → TypeError; projekt brez id/nazivProjekta → TypeError — nič tihe degradacije', () => {
+    const okno = oknoMed(komponenta, 'const pridobiProjektiTerminiVnosi', 'const handleProjektiTerminiPdf')
     expect(okno).toContain('manjkajoč project.id v odgovoru API-ja')
     expect(okno).toContain('manjkajoč id/nazivProjekta v odgovoru API-ja')
     expect(okno).toContain('(data as Array<Record<string, unknown>>).map((s, i) => {')

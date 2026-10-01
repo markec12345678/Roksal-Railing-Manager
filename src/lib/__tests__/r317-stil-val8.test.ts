@@ -46,6 +46,12 @@
 // števec drevesa 61 → 62 z obrnjeno regresijo: stari 61 pin je prepovedan —
 // polzaporedje ne sme nazaj).
 //
+// R330 PIN SHIFT (57. člen): pregled projektov in terminov CSV gumb
+// (logistics-tab — pariteta Projekti PDF R265, izvozna PAR na isti vrsti;
+// ring = navy/40, amber/50 register ostane zaklenjen v vodji ×8; anti-stale
+// števec drevesa 62 → 63 z obrnjeno regresijo: stari 62 pin je prepovedan —
+// polzaporedje ne sme nazaj).
+//
 // STRAŽAR (kanon GLOBALNI sken r310/r316 prenesen na izvozno družino):
 //  • vsak izvozni gumb (aria-label="Izvozi …") nosi IZRECEN
 //    focus-visible:ring-2 žeton (ne samo baza);
@@ -82,8 +88,8 @@ describe('r317 STIL val 8 — izvozna družina: focus-visible ring STRAŽAR', ()
   const gumbi = izvozniGumbi()
   const AMBER_ZETONI = new Set(['vodja-dashboard'])
 
-  it('anti-stale: 62 izvoznih gumbov v drevesu (61 pred R329 + NOV primerjava dobaviteljev PDF)', () => {
-    expect(gumbi.length).toBeGreaterThanOrEqual(62)
+  it('anti-stale: 63 izvoznih gumbov v drevesu (62 pred R330 + NOV pregled projektov in terminov CSV)', () => {
+    expect(gumbi.length).toBeGreaterThanOrEqual(63)
     // novi gumb 50. člena je prisoten
     expect(gumbi.some((g) => g.okno.includes('Izvozi meritve zmogljivosti kot PDF'))).toBe(true)
     // novi gumb 51. člena je prisoten (R322)
@@ -98,6 +104,8 @@ describe('r317 STIL val 8 — izvozna družina: focus-visible ring STRAŽAR', ()
     expect(gumbi.some((g) => g.okno.includes('Izvozi primerjavo dobaviteljev kot CSV'))).toBe(true)
     // novi gumb 56. člena je prisoten (R329 — primerjava dobaviteljev PDF brat)
     expect(gumbi.some((g) => g.okno.includes('Izvozi primerjavo dobaviteljev kot PDF'))).toBe(true)
+    // novi gumb 57. člena je prisoten (R330 — pregled projektov in terminov CSV brat)
+    expect(gumbi.some((g) => g.okno.includes('Izvozi pregled projektov in terminov kot CSV'))).toBe(true)
   })
 
   it('vsak izvozni gumb nosi IZRECEN focus-visible ring žeton (ne samo ui baza)', () => {

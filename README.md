@@ -103,7 +103,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 45 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **4621** (270 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **4647** (272 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 143 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -484,6 +484,34 @@ Sheet z 6 podzavihki:
   hierarhija preverba + val 10 obrnjena regresija ×3 + register 3 pojavitve);
   PIN SHIFTI ×2 izrecno (val8 amber ×6→×7 + anti-stale 56→57; val9
   press-scale ×13→14 pojavitev, 7→8 gumbov)
+- **Izvoz pregleda projektov in terminov kot CSV** (R330, 57. člen — issue #1
+  **IZVOZI** družina): NOVI lib `src/lib/projekti-termini-csv.ts` (CSV brat
+  PDF R265 — vzorec R297 oprema-cikel-csv: LOČEN lib ki UVAŽA projekcijo
+  PDF brata — EN VIR projektiTerminiPregled, NIČ podvojenih pravil; glava
+  VERBATIM PDF autoTable head ×8; celice = ISTI izpisi kot PDF body —
+  stranka '—', ure '—' kadar nič ne šteje v vsoto, obdobje po cenikDatumIso
+  EN VIR; meta kanon R172→R296 — Obseg + števci ×10 + Sklep VERBATIM PDF
+  sklepu + Izvoženo ob; filename `Projekti-termini-YYYY-MM-DD.csv` —
+  bratska simetrija z PDF imenom); logistics-tab: ENA izpeljava vira
+  `pridobiProjektiTerminiVnosi` ×2 (oba brata — NIČ dvojnega med bralci,
+  vzorec R297 pridobiOpremoVnosi) + izvozna PAR (CSV pill navy/40 ring +
+  press-scale, fail-verbose toast ×2); vitest r330-projekti-termini-csv
+  ×17 (BAJTNI dokazi + ANTI-DIVERGENCA source pini — Sklep segmenti in
+  glava dobesedno PROTI PDF VIRU + determinizem premešan vhod + fail-closed
+  ×8 + STRAŽAR žičenja); E2E Z0ax ŽIVO S PODATKI (r330-pt-tmp.cjs
+  determinističen seed — 963 bajtov bajtno, glava EN VIR VERBATIM,
+  DETERMINIZEM ŽIVO na podatkovnih bajtih, restore ODTIS bajtnato)
+- **Stil val 17 — izvozna PAR pariteta na logistiki + definicijski naslov
+  medija** (R330): Projekti PDF + NOVI Projekti CSV = PAR z ISTIM žetonom
+  (shrink-0 press-scale navy/40 — pariteta, nič drugega občutka znotraj
+  istega para); oči para ClipboardList/FileSpreadsheet (ISTA h-4 w-4
+  mr-1); definicijski naslov izreče PRAVILA (isti pregled EN VIR; prazen
+  seznam → iskren toast, nikoli prazna datoteka) + vidno razliko medija
+  (PDF = tisk za vodjo, CSV = Excel za filtriranje); r330-stil-val17
+  STRAŽAR ×8 (PAR pariteta bajtno + oči para + naslov + dvoklik guard
+  pariteta + val 16 alarm obrnjena regresija + zgodovina PAR ×2/×2 bajtno
+  + vodja ×4/×4 + globals + 0 surovih barv); PIN SHIFT izrecno (val8
+  anti-stale 62→63 [NOVI CSV gumb])
 - **Izvoz primerjave dobaviteljev kot PDF** (R329, 56. člen — issue #1
   **IZVOZI** družina): NOVI lib `src/lib/cena-dobavitelji-pdf.ts`
   (deterministični PDF BRAT CSV-ju R328 — LOČEN lib, vzorec vodja-csv/
@@ -759,7 +787,7 @@ Sheet z 6 podzavihki:
 | **PWA** | Service Worker + Web Manifest |
 | **Temnitveni način** | [next-themes](https://github.com/pacocoursey/next-themes) |
 | **Validacija** | [Zod 4](https://zod.dev/) |
-| **Testiranje** | [Vitest 4](https://vitest.dev/) (4621 testov + globalSetup embedded PG) |
+| **Testiranje** | [Vitest 4](https://vitest.dev/) (4647 testov + globalSetup embedded PG) |
 | **Paketni upravitelj** | [Bun](https://bun.sh/) |
 | **Linting** | ESLint 9 + eslint-config-next |
 
@@ -881,7 +909,7 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `bun run dev` | Zažene Next.js dev server (port 3000) |
 | `bun run build` | Produkcijska build (build-prepare: generate + migrate deploy + seed) |
 | `bun run start` | Zažene produkcijski server |
-| `bun run test` | Vsi testi (vitest, 4621, embedded PG prek globalSetup) |
+| `bun run test` | Vsi testi (vitest, 4647, embedded PG prek globalSetup) |
 | `bun run check` | tsc --noEmit + vitest run (en ukaz za vse) |
 | `bunx tsc --noEmit` | Tipska kontrola celotnega projekta (trenutno 0 napak) |
 | `bun run lint` | ESLint preverjanje |
