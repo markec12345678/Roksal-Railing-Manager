@@ -6711,3 +6711,8 @@ Stage Summary:
 
 ### PRVA NALOGA POST-commit ŽIVO (R333 — r333-prod-qa.sh, push)
 - Spodaj dodatek ob izvedbi (LIVE ali ESKALACIJA; UNION harvest: ob zelenem deployu nosi R290+…+R333 SKUPAJ — precedens R313/R314/R332; LEKCIJA R330 7: POST-commit prod-qa takoj po pushu lahko dirje deploy — če EPOCH + needle MISS sočasno, preveri build čas NOVICE run pred interpretacijo)
+
+### PRVA NALOGA POST-commit ŽIVO (R333 — r333-prod-qa.sh, push 7b4d5d3)
+- Deploy čakanje (LEKCIJA R330 7): zdravstveni build je bil ob prvem pregledu še stale (04:24:18.467Z ≤ meja 05:39:17) — polling ×3 (~2 min) → **build 2026-10-01T05:39:50.997Z > R333 commit meja 05:39:17, ~34 s po pushu** — deploy dirli NIč (LIVE veja ob prvem teku, nič re-runov)
+- **Tek 1: LIVE veja EXIT=0** — **R333 deploy POTRJEN** → **polni LIVE teki: UNION harvest R290+…+R333 ŽIVO SKUPAJ** — **447 OK / 0 MISS / ZERO must_miss** (444→447: +3 = R333 needle blok ×2 + TODO-R333); R333 needle blok LIVE (pozicija CSV aria + testid v material chunku), R332 potekli CSV + R331 Ponudbe CSV + R330 Projekti CSV + R329 PDF + … + R290 vse LIVE; Z1b + Z2 + Z3 ŽIVO (ZERO-MUTACIJA)
+- **R333 DEV VSEBINA ŽIVO na produ** (60. člen Pozicija CSV pill + val 20 LIVE — ~34 s po pushu); R334 prva naloga = r333-prod-qa.sh POST-commit re-run (pričakuj LIVE; __r332val sledi generaciji; val8 ×8 STALEN)
