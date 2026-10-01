@@ -157,10 +157,15 @@ describe('r348 meritve FAZA 5 — stale kopije IZGINILE + žičenje EN VIR', () 
     expect(tab).toContain('zgradiMeritveVrstice(selected)')
   })
 
-  it('žičenje: MERITVE_CSV_HEADER ×4 (import + opis + 2 klica), csvDokument ×4, csvEsc ×5, downloadCsvText ×6', () => {
+  it('žičenje: MERITVE_CSV_HEADER ×4 (import + opis + 2 klica), csvDokument ×4, csvEsc ×5 (R348 resnica; R350 FAZA 7 premik → ×0 v tabu), downloadCsvText ×6', () => {
     expect((tab.match(/MERITVE_CSV_HEADER/g) ?? []).length).toBe(4)
     expect((tab.match(/csvDokument\(/g) ?? []).length).toBe(4)
-    expect((tab.match(/csvEsc\(/g) ?? []).length).toBe(5)
+    // R350 FAZA 7: steber + zgodovina vrstična gradnika sta se preselila v
+    // izvoz-csv.ts (zgradiStebriVrstice/zgradiZgodovinaVrstice) — tab nič več
+    // kliče csvEsc direktno (5 → 0; 15. premik prsta — zgodovina: 14. premik
+    // r172 6475→6271, glej R349 worklog). Stale test = del kontrakta.
+    expect((tab.match(/csvEsc\(/g) ?? []).length).toBe(0)
+    expect((mod.match(/csvEsc\(/g) ?? []).length).toBeGreaterThanOrEqual(3)
     expect((tab.match(/downloadCsvText\(/g) ?? []).length).toBe(6)
   })
 

@@ -24,10 +24,11 @@
 //    toISOString().slice(0, 10) vzorec, kot ga nosi že R186 klicatelj
 //    izvoziMeritveCsv — družinska konsistenznost);
 //  • odsotna polja → PRAZNO polje (ne 'n/a', ne ugibanje).
-import type { GroundType } from './labels'
-import { groundTypeLabels, statusLabels, tipMeritveLabels } from './labels'
-import { slDatumKratko } from '@/lib/csv-export'
-import type { MeasurementStatus, TipMeritve } from './shared'
+import type { AuditEntry, GroundType } from './labels'
+import { auditActionLabels, groundTypeLabels, statusLabels, tipMeritveLabels } from './labels'
+import { slDatumKratko, slCasDolgo } from '@/lib/csv-export'
+import type { MaterialStebra, MeasurementStatus, TipMeritve, TipStebra } from './shared'
+import { materialStebraLabels, tipStebraLabels } from './shared'
 
 /** Izsek client vmesnika Measurement (measurements-tab.tsx / shared.ts) —
  *  samo polja, ki jih 17-stolpčni kontrakt potrebuje. Odprta polja →
@@ -89,5 +90,69 @@ export function zgradiMeritveVrstice(seznam: readonly MeritveVrsticaVhod[]): str
     const opombe = csvEsc(m.opombe)
     const datum = slDatumKratko(new Date(m.createdAt))
     return `"${oznaka}","${tip}","${status}","${lokacija}","${segment}",${dMm},${dCm},${dM},${vMm},${vCm},${vM},"${stebri}","${podlaga}",${kot},"${opomba}","${opombe}",${datum}`
+  })
+}
+
+// ── R350 FAZA 7 — ostanki starejše družine: steber + zgodovina gradniki ──
+// VERBATIM premik iz taba (handleExportStebriCSV vrstice + handleExportAuditCSV
+// vrstice; vzorec FAZA 5 — gradniki NESPREMENJENI, izvožene datoteke bajtno
+// iste). Vhodni seznam = klicateljeva resnica (per-segment stebri ALI
+// projektov audit dnevnik).
+
+/** Izsek client vmesnika Measurement za 8-stolpčni steber kontrakt
+ *  (R156 status stolpec; samo polja, ki jih gradnik potrebuje). */
+export interface StebriVrsticaVhod {
+  steberOznaka?: string | null
+  oznaka?: string | null
+  tipStebra?: TipStebra | null
+  status?: MeasurementStatus | null
+  pozicijaMm?: number | null
+  razmikMm?: number | null
+  visinaStebraMm?: number | null
+  materialStebra?: MaterialStebra | null
+  opomba?: string | null
+}
+
+/** Zaglavje 8-stolpčnega per-segment steber kontrakta (R156) — EN VIR. */
+export const STEBRI_CSV_HEADER =
+  'Oznaka,Tip,Status,Pozicija(mm),Razmik(mm),Visina(mm),Material,Opomba'
+
+/** 8-stolpčne steber vrstice — VERBATIM premik iz taba (handleExportStebriCSV;
+ *  odsotna števila → prazno, razmik brez vrednosti → '—' em-dash VERBATIM). */
+export function zgradiStebriVrstice(seznam: readonly StebriVrsticaVhod[]): string[] {
+  return seznam.map((m) => {
+    const o = csvEsc(m.steberOznaka || m.oznaka)
+    const t = m.tipStebra ? tipStebraLabels[m.tipStebra] : ''
+    const status = statusLabels[m.status || 'OSNUTEK']
+    const poz = m.pozicijaMm ? String(Math.round(m.pozicijaMm)) : ''
+    const raz = m.razmikMm ? String(Math.round(m.razmikMm)) : '—'
+    const vis = m.visinaStebraMm ? String(Math.round(m.visinaStebraMm)) : ''
+    const mat = m.materialStebra ? materialStebraLabels[m.materialStebra] : ''
+    const op = csvEsc(m.opomba)
+    return `"${o}","${t}","${status}",${poz},${raz},${vis},"${mat}","${op}"`
+  })
+}
+
+/** Izsek lokalnega AuditEntry (labels.ts) — polja zgodovina kontrakta. */
+export type ZgodovinaVrsticaVhod = AuditEntry
+
+/** Zaglavje 6-stolpčnega zgodovina (projektni audit) kontrakta — EN VIR.
+ *  NB: to je LOKALNA zgodovina meritev (Cas/Akcija/MeritevId/Opis/Stara/
+ *  Nova) — NI kolizija s sistemskim revizijskim sledilnim lib/audit-csv.ts
+ *  (R162; user/IP/Vloga kontrakt — druga družina). */
+export const ZGODOVINA_CSV_HEADER =
+  'Cas,Akcija,MeritevId,Opis,StaraVrednost,NovaVrednost'
+
+/** 6-stolpčne zgodovina vrstice — VERBATIM premik iz taba
+ *  (handleExportAuditCSV; čas = slDatumKratko + ', ' + slCasDolgo — ISTI
+ *  prikaz kot zaslon). */
+export function zgradiZgodovinaVrstice(seznam: readonly ZgodovinaVrsticaVhod[]): string[] {
+  return seznam.map((e) => {
+    const cas = `${slDatumKratko(new Date(e.timestamp))}, ${slCasDolgo(new Date(e.timestamp))}`
+    const akcija = auditActionLabels[e.akcija]
+    const opis = csvEsc(e.opis)
+    const stara = csvEsc(e.staraVrednost)
+    const nova = csvEsc(e.novaVrednost)
+    return `"${cas}","${akcija}","${e.meritevId}","${opis}","${stara}","${nova}"`
   })
 }

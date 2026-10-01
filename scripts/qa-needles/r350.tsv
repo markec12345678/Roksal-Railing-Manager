@@ -1,0 +1,29 @@
+# qa-needles/r350.tsv — REGISTER needlejev runde R350 (measurements FAZA
+# 7: ostanki starejše izvozne družine EN VIR → izvoz-csv.ts razširitev
+# [STEBRI_CSV_HEADER/zgradiStebriVrstice + ZGODOVINA_CSV_HEADER/
+# zgradiZgodovinaVrstice — VERBATIM] + NOV measurements/pdf-seznam.ts
+# [buildSeznamPdfDoc + exportSeznamPdf — 85-vrstični inline jsPDF blok
+# izluščen; setFileId FNV soli 0xd9–0xdc + setCreationDate kanon r269]
+# + STIL val 33: a11y parity skupinske akcije / izbira — bulk orodna
+# vrstica 4 brata [Izberi vse / Počisti / Kopiraj / Izbriši izbrane]
+# aria+title+ring navy/40 V ISTEM commitu — LEKCIJA R346 kanon).
+# ============================================================================
+# FORMAT (TSV; EN vrstica = EN needle; TAB je LOČILO) — kanon R340–R349.
+#   <needle_string><TAB><opis><TAB><vrsta>
+# vrsta: need_static (MORA biti ŽIV v čankih) | must_miss (NE SME biti)
+
+# ── R350 lastni needleji ──
+# FAZA 7 je premik teles — EDINSTVEN needle = PDF glava string literal
+# (modul pdf-seznam.ts; minifikacija ohrani string literale):
+ROKSAL — Seznam meritev	R350 FAZA 7 seznam PDF glava (pdf-seznam.ts, izginil iz taba)	need_static
+# STIL val 33: aria/title so STATIČNI nizi (ne template literali — ×4
+# gumba; parity val 31 brata Izvozi izbrane CSV ostaja v r348 registru):
+Izberi vse vidne meritve za skupinske akcije	R350 val 33 Izberi vse aria	need_static
+Izberi vse meritve vidnega (filtriranega) seznama	R350 val 33 Izberi vse title	need_static
+Počisti izbor izbranih meritev	R350 val 33 Počisti aria	need_static
+Odizbori vse izbrane meritve	R350 val 33 Počisti title	need_static
+Kopiraj izbrane meritve v ciljni segment	R350 val 33 Kopiraj aria (vidno besedilo NE razlaga cilja)	need_static
+Kopiraj izbrane meritve v izbrani ciljni segment	R350 val 33 Kopiraj title	need_static
+Izbriši izbrane meritve	R350 val 33 Izbriši aria	need_static
+Trajno izbriši vse izbrane meritve	R350 val 33 Izbriši title	need_static
+TODO-R350	R350 — brez razvojnih ostankov	must_miss

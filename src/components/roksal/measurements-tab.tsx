@@ -132,8 +132,6 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Progress } from '@/components/ui/progress'
-import jsPDF from 'jspdf'
-import autoTable from 'jspdf-autotable'
 import { slDatumKratko, slCasDolgo, slDatumOkrajsava, MESCI_SL } from '@/lib/csv-export'
 // R319 — dekompozicija measurements-tab (faza 1): samostojne pod-komponente
 // izluščene v ./measurements/ (čist premik — BREZ spremembe obnašanja).
@@ -185,7 +183,22 @@ import { getQuickSpacing, normalizeMeasurements } from './measurements/normalize
 // R348 — dekompozicija measurements-tab FAZA 5: EN VIR gradnja CSV izvozov
 // (csvEsc/csvDokument/MERITVE_CSV_HEADER/zgradiMeritveVrstice — vzorec
 // kalkulator FAZA 5–7; prenos ostane v tabu prek kanona downloadCsvText).
-import { csvDokument, csvEsc, MERITVE_CSV_HEADER, zgradiMeritveVrstice } from './measurements/izvoz-csv'
+// R350 — FAZA 7 ostanki starejše družine: steber + zgodovina gradniki
+// (STEBRI_CSV_HEADER/zgradiStebriVrstice + ZGODOVINA_CSV_HEADER/
+// zgradiZgodovinaVrstice — VERBATIM iz taba; izvožene datoteke bajtno iste).
+import {
+  csvDokument,
+  MERITVE_CSV_HEADER,
+  STEBRI_CSV_HEADER,
+  ZGODOVINA_CSV_HEADER,
+  zgradiMeritveVrstice,
+  zgradiStebriVrstice,
+  zgradiZgodovinaVrstice,
+} from './measurements/izvoz-csv'
+// R350 — dekompozicija measurements-tab FAZA 7: seznam meritev PDF izvoz
+// (85-vrstični inline jsPDF gradnik izluščen — vzorec FAZA 2/R325
+// pdf-exports + r269 build/generate razcep; guard + toasti ostanejo v tabu).
+import { exportSeznamPdf } from './measurements/pdf-seznam'
 // R349 — dekompozicija measurements-tab FAZA 6: EN VIR fetch + fail-verbose
 // DTO pruning terenskih izvozov (R269/R284/R285 — 3 stale telesa → 1
 // gradnik z dialektnim stikalom zKotom; vzorec FAZA 5).
@@ -2283,22 +2296,10 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
     // R156: Status stolpec — usklajen s splošnim CSV izvozom (P1 dodan tudi
     // v per-segment izvoz; R154 odloženo, zdaj dopolnjeno. Vrednosti iz
     // statusLabels jedra — enak vir resnice kot UI in strežniški filter).
-    const header = 'Oznaka,Tip,Status,Pozicija(mm),Razmik(mm),Visina(mm),Material,Opomba'
-    // R348 FAZA 5 — EN VIR: csvEsc + csvDokument + kanon downloadCsvText
-    // (prej inline Blob blok + 2 inline escape kopiji — ista semantika,
-    // vsebina bajtno ista; MIME kanon 'text/csv;charset=utf-8').
-    const rows = stebri.map((m) => {
-      const o = csvEsc(m.steberOznaka || m.oznaka)
-      const t = m.tipStebra ? tipStebraLabels[m.tipStebra] : ''
-      const status = statusLabels[m.status || 'OSNUTEK']
-      const poz = m.pozicijaMm ? String(Math.round(m.pozicijaMm)) : ''
-      const raz = m.razmikMm ? String(Math.round(m.razmikMm)) : '—'
-      const vis = m.visinaStebraMm ? String(Math.round(m.visinaStebraMm)) : ''
-      const mat = m.materialStebra ? materialStebraLabels[m.materialStebra] : ''
-      const op = csvEsc(m.opomba)
-      return `"${o}","${t}","${status}",${poz},${raz},${vis},"${mat}","${op}"`
-    })
-    const csvContent = csvDokument(header, rows)
+    // R350 FAZA 7 — EN VIR: STEBRI_CSV_HEADER + zgradiStebriVrstice (prej
+    // inline vrstični gradnik; vsebina bajtno ista) + csvDokument + kanon
+    // downloadCsvText (R348 FAZA 5 ostanki).
+    const csvContent = csvDokument(STEBRI_CSV_HEADER, zgradiStebriVrstice(stebri))
     downloadCsvText(`stebri_${segmentId}_${new Date().toISOString().slice(0, 10)}.csv`, csvContent)
     pushAudit({
       akcija: 'EDIT',
@@ -2470,85 +2471,22 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
       return
     }
 
-    const doc = new jsPDF({ unit: 'mm', format: 'a4' })
-    const pageW = doc.internal.pageSize.getWidth()
-    const projectName = projects.find((p) => p.id === selectedProject)?.nazivProjekta || 'Brez projekta'
-
-    // Glava
-    doc.setFillColor(29, 43, 62) // roksal-navy
-    doc.rect(0, 0, pageW, 22, 'F')
-    doc.setTextColor(255, 255, 255)
-    doc.setFontSize(16)
-    doc.setFont('helvetica', 'bold')
-    doc.text('ROKSAL — Seznam meritev', 14, 14)
-    doc.setFontSize(9)
-    doc.setFont('helvetica', 'normal')
-    doc.text(`Projekt: ${projectName}`, 14, 19)
-
-    // Povzetek
-    doc.setTextColor(40, 40, 40)
-    doc.setFontSize(10)
-    doc.setFont('helvetica', 'bold')
-    doc.text('Povzetek', 14, 32)
-
-    doc.setFont('helvetica', 'normal')
-    doc.setFontSize(9)
-    const summary = [
-      `Skupna dolžina: ${formatDimension(totalLength)}`,
-      `Povprečna višina: ${formatDimension(Math.round(avgHeight))}`,
-      `Število meritev: ${measurements.length}`,
-      `Število segmentov: ${allSegments.length}`,
-      `Najdaljša meritev: ${longestMeasurement ? formatDimension(longestMeasurement.dolzinaMm) : '—'}`,
-      `Skupna površina: ${formatM2(totalArea)}`,
-      // R154 — statusi so del iskrenega povzetka (ŠT=okvirni prikaz, ne
-      // poslovna matematika: dolžine/višine ostanejo nespremenjene)
-      `Status — Osnutek: ${statusCounts.OSNUTEK} · Potrjena: ${statusCounts.POTRJENA} · Arhivirana: ${statusCounts.ARHIVIRANA}`,
-    ]
-    summary.forEach((s, i) => {
-      const x = 14 + (i % 2) * (pageW / 2 - 14)
-      const y = 38 + Math.floor(i / 2) * 5
-      doc.text(s, x, y)
+    // R350 FAZA 7 — EN VIR: gradnik v ./measurements/pdf-seznam.ts (prej
+    // 85-vrstični inline jsPDF blok — glava/povzetek/tabela/noga VERBATIM;
+    // izvoženi PDF bajtno enak). Povzetek številke = ISTA izpeljava kot KPI
+    // kartice (WYSIWYG); guard + toast = klicateljeva UI resnica.
+    exportSeznamPdf({
+      measurements,
+      projectName: projects.find((p) => p.id === selectedProject)?.nazivProjekta || 'Brez projekta',
+      totalLength,
+      avgHeight,
+      stSegmentov: allSegments.length,
+      najdalsaDolzinaMm: longestMeasurement ? longestMeasurement.dolzinaMm : null,
+      totalArea,
+      statusCounts,
+      izvozenoOb: new Date(),
+      filename: `meritve_${selectedProject}_${new Date().toISOString().slice(0, 10)}.pdf`,
     })
-
-    // Tabela meritev
-    autoTable(doc, {
-      startY: 56,
-      head: [['#', 'Oznaka', 'Tip', 'Status', 'Segment', 'Dolžina', 'Višina', 'Kot', 'Datum']],
-      body: measurements.map((m, i) => [
-        String(i + 1),
-        m.oznaka || m.lokacija || `Meritev #${m.id.slice(-4)}`,
-        m.tipMeritve ? tipMeritveLabels[m.tipMeritve] : 'Razdalja',
-        statusLabels[(m.status || 'OSNUTEK') as MeasurementStatus],
-        m.segmentId || '—',
-        formatDimension(m.dolzinaMm),
-        formatDimension(m.visinaMm),
-        m.kot ? `${m.kot}°` : '—',
-        slDatumKratko(new Date(m.createdAt)),
-      ]),
-      theme: 'grid',
-      headStyles: { fillColor: [29, 43, 62], textColor: 255, fontSize: 8 },
-      bodyStyles: { fontSize: 8 },
-      alternateRowStyles: { fillColor: [245, 245, 245] },
-      columnStyles: {
-        0: { cellWidth: 8 },
-        5: { halign: 'right' },
-        6: { halign: 'right' },
-        7: { halign: 'right' },
-      },
-      margin: { left: 14, right: 14 },
-    })
-
-    // Noga
-    const finalY = (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 56
-    doc.setFontSize(8)
-    doc.setTextColor(120, 120, 120)
-    doc.text(
-      `Izvozeno ${slDatumKratko(new Date())}, ${slCasDolgo(new Date())} • Roksal Kranj`,
-      14,
-      Math.min(finalY + 10, doc.internal.pageSize.getHeight() - 10)
-    )
-
-    doc.save(`meritve_${selectedProject}_${new Date().toISOString().slice(0, 10)}.pdf`)
     toast.success('PDF izvožen!')
   }
 
@@ -2887,19 +2825,11 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
       toast.error('Ni zgodovine za izvoz')
       return
     }
-    const header = 'Cas,Akcija,MeritevId,Opis,StaraVrednost,NovaVrednost'
-    // R348 FAZA 5 — EN VIR: csvEsc ×3 + csvDokument + kanon
-    // downloadCsvText (prej inline Blob blok — ista semantika, bajtno
-    // ista vsebina).
-    const rows = auditEntries.map((e) => {
-      const cas = `${slDatumKratko(new Date(e.timestamp))}, ${slCasDolgo(new Date(e.timestamp))}`
-      const akcija = auditActionLabels[e.akcija]
-      const opis = csvEsc(e.opis)
-      const stara = csvEsc(e.staraVrednost)
-      const nova = csvEsc(e.novaVrednost)
-      return `"${cas}","${akcija}","${e.meritevId}","${opis}","${stara}","${nova}"`
-    })
-    const csvContent = csvDokument(header, rows)
+    // R350 FAZA 7 — EN VIR: ZGODOVINA_CSV_HEADER + zgradiZgodovinaVrstice
+    // (prej inline vrstični gradnik — vsebina bajtno ista; čas = ISTI
+    // slDatumKratko + ', ' + slCasDolgo prikaz kot zaslon) + csvDokument +
+    // kanon downloadCsvText (R348 FAZA 5 ostanki).
+    const csvContent = csvDokument(ZGODOVINA_CSV_HEADER, zgradiZgodovinaVrstice(auditEntries))
     downloadCsvText(`zgodovina_${selectedProject}_${new Date().toISOString().slice(0, 10)}.csv`, csvContent)
     toast.success('Zgodovina izvožena (CSV)')
   }
@@ -5630,7 +5560,9 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   <button
                     type="button"
                     onClick={handleBulkSelectAll}
-                    className="flex items-center gap-1 rounded-md border border-border bg-background px-2 py-0.5 text-2xs font-medium hover:bg-secondary/50 transition-colors"
+                    className="flex items-center gap-1 rounded-md border border-border bg-background px-2 py-0.5 text-2xs font-medium hover:bg-secondary/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                    aria-label="Izberi vse vidne meritve za skupinske akcije"
+                    title="Izberi vse meritve vidnega (filtriranega) seznama"
                   >
                     <CheckSquare aria-hidden="true" className="h-3 w-3" />
                     Izberi vse
@@ -5638,7 +5570,9 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   <button
                     type="button"
                     onClick={handleBulkClear}
-                    className="flex items-center gap-1 rounded-md border border-border bg-background px-2 py-0.5 text-2xs font-medium hover:bg-secondary/50 transition-colors"
+                    className="flex items-center gap-1 rounded-md border border-border bg-background px-2 py-0.5 text-2xs font-medium hover:bg-secondary/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                    aria-label="Počisti izbor izbranih meritev"
+                    title="Odizbori vse izbrane meritve"
                   >
                     <Square aria-hidden="true" className="h-3 w-3" />
                     Počisti
@@ -5677,7 +5611,9 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                     type="button"
                     onClick={handleBulkCopyToSegment}
                     disabled={selectedIds.size === 0 || !bulkCopyTarget}
-                    className="flex items-center gap-1 rounded-md border border-roksal-amber/30 bg-roksal-amber/10 px-2 py-1 text-2xs font-medium text-roksal-amber hover:bg-roksal-amber/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+                    className="flex items-center gap-1 rounded-md border border-roksal-amber/30 bg-roksal-amber/10 px-2 py-1 text-2xs font-medium text-roksal-amber hover:bg-roksal-amber/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                    aria-label="Kopiraj izbrane meritve v ciljni segment"
+                    title="Kopiraj izbrane meritve v izbrani ciljni segment"
                   >
                     <Copy aria-hidden="true" className="h-3 w-3" />
                     Kopiraj
@@ -5687,7 +5623,9 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   type="button"
                   onClick={() => setBulkDeleteOpen(true)}
                   disabled={selectedIds.size === 0}
-                  className="flex items-center justify-center gap-1 rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 px-2 py-1 text-2xs font-medium text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/15 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  className="flex items-center justify-center gap-1 rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 px-2 py-1 text-2xs font-medium text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/15 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                  aria-label="Izbriši izbrane meritve"
+                  title="Trajno izbriši vse izbrane meritve"
                 >
                   <Trash2 aria-hidden="true" className="h-3 w-3" />
                   Izbriši izbrane
