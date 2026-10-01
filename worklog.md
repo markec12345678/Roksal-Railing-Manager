@@ -6570,5 +6570,7 @@ Stage Summary:
 - R330 kandidati: **AI kandidati evalvacija** (Deliverable 5 poglabljanje — brez izmišljenih podatkov); dekompozicija measurements-tab FAZA 2 (7.153 vrstic — PREDLOGI/LOKACIJE konstante + parse/format helperji); e2e-lib dedup (veliko, previdno); IZVOZI družina nadaljevanje po lastniški rabi (56/47 členov IZVOZI bloka — issue ostaja odprt); zgodovina cen časovna tabela val detajli (če lastniška raba)
 - ISSUE #1: 56 členov izpolnjenih (Deliverables 7/7 ✓; IZVOZI družina = 21 gumbov drevesa — val8 anti-stale 62); issue ostaja odprt, owner 'Razvoj > QA'
 
-### PRVA NALOGA POST-commit ŽIVO (R329 — r329-prod-qa.sh, push __R329_PUSH__)
-- Spodaj dodatek ob izvedbi (LIVE ali ESKALACIJA; UNION harvest: ob zelenem deployu nosi R290+…+R329 SKUPAJ — precedens R313/R314; pričakuj LIVE vejo ker R328 dev vsebina že ŽIVO in Vercel kvota sproščena)
+### PRVA NALOGA POST-commit ŽIVO (R329 — r329-prod-qa.sh, push d259a2a)
+- **ESKALACIJA veja EXIT=0** (7. zapis R329 konteksta) — prod build 2026-10-01T00:27:55.880Z ≤ R329 commit meja (d259a2a @ push 00:52) → edaf21d+d259a2a deploy ŠE VEDNO čaka (Vercel kvota/stuck; kanon R258: pipeline event NI koda-bug); **bistveno**: build 00:27:55 = R328 dev vsebina ŽIVO (0d06ce6, 29 s po pushu) — UNION harvest ob zelenem deployu nosi R290+…+R329 SKUPAJ (R328 panel + CSV + R329 PDF gumbi takrat LIVE — sweep/r329-prod-qa LIVE veja ju izkaže)
+- Stale zdrav: needleji R276→R328 ŽIVO + Z1b (verzije ruta 404 ŽIVO) + Z3 (v99 sync gate fail-closed ZERO-MUTACIJA) — **ZERO must_miss, ZERO FAIL/HIT**
+- R330 prva naloga = r329-prod-qa.sh POST-commit re-run (pričakuj LIVE ob zelenem deployu; __r328val sledi generaciji; val8 ×8 STALEN)
