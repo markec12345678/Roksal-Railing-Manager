@@ -37,6 +37,14 @@ import {
   potekliPovzetek,
   type PotekelOpomnikVnos,
 } from '@/lib/potekli-opomniki-pdf'
+// R332 — potekli opomniki CSV (59. člen 'izvozi' družine): CSV brat PDF
+// R252 — ISTA akcijska resnica (izbor EN VIR, preverba EN VIR, sort EN VIR,
+// dni prek EN VIR) kot ravninska tabela za Excel/računovodstvo; route NIČ
+// (client+lib only).
+import {
+  potekliOpomnikiCsv,
+  potekliOpomnikiCsvFilename,
+} from '@/lib/potekli-opomniki-csv'
 // R253 — koledar pregledov (10. člen 'izvozi' družine): časovna vrsta VSEH
 // vpisanih pregledov (AKTIVEN + POTEKEL) iz ISTEGA /api/crm odgovora —
 // route NIČ (client+lib only); EN now za žig + ime + dni (lekcija R121/R235).
@@ -119,6 +127,28 @@ interface CrmCustomer {
   skupajProjektov: number
   zadnjiProjekt: string | null
   opomnikStatus: 'NI' | 'AKTIVEN' | 'POTEKEL'
+}
+
+// R332 — ENA izpeljava izbora poteklih (EN VIR za OBA brata — PDF R252 +
+// CSV R332): ISTI filter opomnikStatus === 'POTEKEL' + ISTA preslikava v
+// PotekelOpomnikVnos. Čista funkcija (client-safe, R283 vzorec izvlečene
+// funkcije); fail-closed preverba delata liba (preveriPotekliVnos EN VIR).
+function potekliVnosiIzCustomers(customers: CrmCustomer[]): PotekelOpomnikVnos[] {
+  return customers
+    .filter((c): c is CrmCustomer & { opomnikStatus: 'POTEKEL' } => c.opomnikStatus === 'POTEKEL')
+    .map((c) => ({
+      ime: c.ime,
+      naslov: c.naslov,
+      telefon: c.telefon,
+      kontaktnaOseba: c.kontaktnaOseba,
+      // POTEKEL ⇒ opomnikDatum obstaja (API nastavi status SAMO znotraj
+      // if (opomnikDatum)) — invarianta + runtime fail-closed preverba v libu.
+      opomnikDatum: c.opomnikDatum as string,
+      opomnikOpis: c.opomnikOpis,
+      // Status VERBATIM iz API-ja (žig na kartici — lib še enkrat zavrne
+      // nepotečen vnos: pokvarena izpeljava → viden razlog).
+      opomnikStatus: c.opomnikStatus,
+    }))
 }
 
 interface CrmStats {
@@ -204,6 +234,9 @@ export function CrmTab({
   const [opomnikVTeku, setOpomnikVTeku] = useState(false)
   // R252 — dvoklik guard poteklih opomnikov PDF (ISTA družina).
   const [potekliVTeku, setPotekliVTeku] = useState(false)
+  // R332 — dvoklik guard poteklih opomnikov CSV (ISTA družina — pariteta
+  // z PDF guardom R252; ločen state — vsak brat svoj vteku).
+  const [potekliCsvVTeku, setPotekliCsvVTeku] = useState(false)
   // R253 — dvoklik guard koledarja pregledov PDF (ISTA družina).
   const [koledarVTeku, setKoledarVTeku] = useState(false)
   // R295 — dvoklik guard koledarja pregledov CSV (ISTA družina, pariteta brata).
@@ -367,10 +400,10 @@ export function CrmTab({
   // povprečje — ISTI izpeljava kot PDF KPI; WYSIWYG).
   const handlePotekliOpomnikiPdf = () => {
     if (potekliVTeku) return
-    const potekli = customers.filter(
-      (c): c is CrmCustomer & { opomnikStatus: 'POTEKEL' } => c.opomnikStatus === 'POTEKEL',
-    )
-    if (potekli.length === 0) {
+    // R332 — izbor preurejen na EN VIR helper (vedenje bajtno nespremenjeno;
+    // ISTI filter + ISTA preslikava kot CSV brat — ena izpeljava, dva brata).
+    const vnosi = potekliVnosiIzCustomers(customers)
+    if (vnosi.length === 0) {
       // Fail-closed jedro: prazen seznam ne nastaja dokumenta — iskren toast.
       toast({ title: 'Ni poteklih opomnikov', description: 'PDF se izvozi, ko opomnik preteče.' })
       return
@@ -378,19 +411,6 @@ export function CrmTab({
     setPotekliVTeku(true)
     try {
       const now = new Date()
-      const vnosi: PotekelOpomnikVnos[] = potekli.map((c) => ({
-        ime: c.ime,
-        naslov: c.naslov,
-        telefon: c.telefon,
-        kontaktnaOseba: c.kontaktnaOseba,
-        // POTEKEL ⇒ opomnikDatum obstaja (API nastavi status SAMO znotraj
-        // if (opomnikDatum)) — invarianta + runtime fail-closed preverba v libu.
-        opomnikDatum: c.opomnikDatum as string,
-        opomnikOpis: c.opomnikOpis,
-        // Status VERBATIM iz API-ja (žig na kartici — lib še enkrat zavrne
-        // nepotečen vnos: pokvarena izpeljava → viden razlog).
-        opomnikStatus: c.opomnikStatus,
-      }))
       const doc = buildPotekliOpomnikiPdfDoc(vnosi, { now })
       doc.save(potekliOpomnikiPdfFilename(now))
       // Toast pove REALNO agregatno resnico (ISTI trikot kot PDF KPI IN
@@ -409,6 +429,44 @@ export function CrmTab({
       }
     } finally {
       setPotekliVTeku(false)
+    }
+  }
+
+  // R332 — POTEKLI OPOMNIKI CSV (59. člen 'izvozi' družine): CSV brat PDF
+  // R252 — ISTI izbor EN VIR (potekliVnosiIzCustomers), ISTA preverba + sort
+  // + agregat v libu (fail-closed podedovana). Bralna datoteka VEDNO vidna
+  // (P1-k precedens); fail-closed: 0 poteklih → iskren toast, NI datoteke.
+  // EN now za žig + ime + dni; toast pove REALNO agregatno resnico (ISTI
+  // trikot kot PDF toast — WYSIWYG).
+  const handlePotekliOpomnikiCsv = () => {
+    if (potekliCsvVTeku) return
+    const vnosi = potekliVnosiIzCustomers(customers)
+    if (vnosi.length === 0) {
+      // Fail-closed jedro: prazen seznam ne nastaja datoteke — iskren toast.
+      toast({ title: 'Ni poteklih opomnikov', description: 'CSV se izvozi, ko opomnik preteče.' })
+      return
+    }
+    setPotekliCsvVTeku(true)
+    try {
+      const now = new Date()
+      const { csv } = potekliOpomnikiCsv(vnosi, now)
+      downloadCsvText(potekliOpomnikiCsvFilename(now), csv)
+      // Toast pove REALNO agregatno resnico (ISTI trikot kot PDF toast IN
+      // KPI — WYSIWYG; ',' ločilo — R248 lekcija).
+      const pov = potekliPovzetek(vnosi, now)
+      toast({
+        title: 'Potekli opomniki prenešeni v CSV',
+        description: `Potekli-opomniki-…csv — ${pov.potekliN} poteklih, najstarejši ${pov.najstarejsi} dni prek, povprečno ${pov.povprecjeNiz} dni.`,
+      })
+    } catch (err) {
+      if (err instanceof TypeError) {
+        // fail-closed jedro: pokvaren vnos → viden razlog (nič izmišljene datoteke)
+        toast({ title: 'Potekli opomniki CSV ni mogoče sestaviti iz teh podatkov', description: err instanceof Error ? err.message : String(err), variant: 'destructive' })
+      } else {
+        toast({ title: `Izvoz CSV ni uspel: ${err instanceof Error ? err.message : String(err)}`, variant: 'destructive' })
+      }
+    } finally {
+      setPotekliCsvVTeku(false)
     }
   }
 
@@ -905,6 +963,25 @@ export function CrmTab({
               <FileDown className="h-3 w-3" aria-hidden="true" />
               PDF
             </Button>
+            {/* R332 — potekli opomniki CSV (59. člen 'izvozi' družine):
+                CSV brat PDF R252 — ISTA akcijska resnica kot ravninska
+                tabela za Excel/računovodstvo. Bralna datoteka VEDNO vidna
+                (P1-k precedens); fail-closed toast pri 0 poteklih. ISTI
+                žetoni kot PDF pill (PAR pariteta bajtno) — 0 novih hex. */}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handlePotekliOpomnikiCsv}
+              disabled={potekliCsvVTeku}
+              className="h-7 shrink-0 gap-1.5 text-[11px] press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              aria-label="Izvozi potekle opomnike kot CSV"
+              title="Potekli opomniki kot CSV — isti akcijski pregled in vrstni red kot PDF (prazen seznam → iskren toast, nikoli prazna datoteka). PDF = tisk za pisarno, CSV = Excel za filtriranje po stranki/dni"
+              data-testid="potekli-opomniki-csv-pill"
+            >
+              <FileSpreadsheet className="h-3 w-3" aria-hidden="true" />
+              CSV
+            </Button>
             {/* R253 — koledar pregledov PDF (10. člen 'izvozi' družine):
                 časovna vrsta vpisanih pregledov. Bralni dokument VEDNO viden
                 (P1-k precedens); fail-closed toast pri 0 vpisanih. ISTI žetoni
@@ -983,7 +1060,7 @@ export function CrmTab({
             Imenuje ISTO izpeljavo kot PDF KPI IN '(X poteklo)' na stats —
             ENA resnica na treh mestih. */}
         <p className="text-right text-2xs text-muted-foreground">
-          CSV = prikazani seznam · PDF = potekli opomniki (akcija) · Potekel = prek datuma · Koledar = vsi vpisani pregledi (časovna vrsta) · Pokritost = stranke × opomnikStatus (slepe pike = brez datuma)
+          CSV = prikazani seznam · PDF = potekli opomniki (akcija) · Potekli CSV = isti akcijski pregled kot PDF (Excel) · Potekel = prek datuma · Koledar = vsi vpisani pregledi (časovna vrsta) · Pokritost = stranke × opomnikStatus (slepe pike = brez datuma)
         </p>
       </div>
 

@@ -249,7 +249,9 @@ describe('R252 — komponenta: pill + legenda + toast (WYSIWYG, ENA resnica na t
   })
 
   it('legenda imenuje ISTO izpeljavo (CSV prikazani seznam · PDF akcija · Potekel = prek datuma) — žetoni text-2xs, JSX ohrani ·', () => {
-    expect(komponenta).toContain('CSV = prikazani seznam · PDF = potekli opomniki (akcija) · Potekel = prek datuma')
+    // R332 — legenda razširjena (Potekli CSV medija razlaga — 59. člen;
+    // pin na NOV podpis z izrecnim komentarjem, vzorec R330/R331)
+    expect(komponenta).toContain('CSV = prikazani seznam · PDF = potekli opomniki (akcija) · Potekli CSV = isti akcijski pregled kot PDF (Excel) · Potekel = prek datuma')
   })
 })
 

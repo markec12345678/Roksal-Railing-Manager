@@ -103,7 +103,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 45 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **4672** (274 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **4698** (276 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 143 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -484,6 +484,34 @@ Sheet z 6 podzavihki:
   hierarhija preverba + val 10 obrnjena regresija ×3 + register 3 pojavitve);
   PIN SHIFTI ×2 izrecno (val8 amber ×6→×7 + anti-stale 56→57; val9
   press-scale ×13→14 pojavitev, 7→8 gumbov)
+- **Izvoz poteklih opomnikov kot CSV** (R332, 59. člen — issue #1
+  **IZVOZI** družina): NOVI lib `src/lib/potekli-opomniki-csv.ts` (CSV brat
+  PDF R252 — vzorec R330/R331/R297: LOČEN lib ki UVAŽA projekcijo PDF
+  brata — EN VIR preverba + sort + agregat [preveriPotekliVnos +
+  sortirajPotekle + potekliPovzetek + potekelDniPrek — ISTA sekvenca kot
+  buildPotekliOpomnikiPdfDoc], NIČ podvojenih pravil; glava VERBATIM PDF
+  autoTable head ×6; celice = ISTI izpisi kot PDF body — trim, '—' iskren
+  odpad, opomnik po cenikDatumIso EN VIR, dni prek po potekelDniPrek EN
+  VIR ≥ 1 monotona; meta kanon R172→R296 — Obseg + KPI trio ISTI izpisi +
+  Sklep VERBATIM PDF sklepu + Izvoženo ob; filename
+  `Potekli-opomniki-YYYY-MM-DD.csv` — bratska simetrija); crm-tab: ENA
+  izpeljava izbora `potekliVnosiIzCustomers` ×3 (definicija + OBA brata —
+  NIČ dvojnega izbora) + izvozna PAR (CSV pill navy/40 ring +
+  press-scale); vitest r332-potekli-opomniki-csv ×18 (BAJTNI dokazi +
+  ANTI-DIVERGENCA source pini + eksakt 30 dni prek po konstrukciji +
+  determinizem + fail-closed ×6 + STRAŽAR žičenja); E2E Z0az ŽIVO S
+  PODATKI (568 bajtov bajtno, seed r332-po-tmp [POTEKEL resnica],
+  DETERMINIZEM ŽIVO na podatkovnih bajtih, restore + ODTIS ZERO-MUTACIJA)
+- **Stil val 19 — izvozna PAR pariteta na CRM izvozni coni** (R332):
+  Potekli opomniki PDF + NOVI Potekli opomniki CSV = PAR z ISTIM žetonom
+  (h-7 press-scale navy/40 — pariteta bajtno); oči para
+  FileDown/FileSpreadsheet (PAR spinner-prosta — disabled žig pariteta);
+  definicijski naslov medija (isti pregled EN VIR + PDF = tisk za
+  pisarno, CSV = Excel za filtriranje) + legenda medija ('Potekli CSV =
+  isti akcijski pregled kot PDF (Excel)'); r332-stil-val19 STRAŽAR ×8
+  (PAR pariteta bajtno + oči para + naslov + legenda + val 18/17/16
+  obrnjene regresije + zgodovina PAR bajtno + vodja ×4/×4 + globals + 0
+  surovih barv); PIN SHIFT izrecno (val8 anti-stale 64→65 [NOVI CSV gumb])
 - **Izvoz pregleda spomnikov ponudb kot CSV** (R331, 58. člen — issue #1
   **IZVOZI** družina): NOVI lib `src/lib/ponudbe-spomniki-csv.ts` (CSV brat
   PDF R267 — vzorec R330/R297: LOČEN lib ki UVAŽA projekcijo PDF brata —
@@ -817,7 +845,7 @@ Sheet z 6 podzavihki:
 | **PWA** | Service Worker + Web Manifest |
 | **Temnitveni način** | [next-themes](https://github.com/pacocoursey/next-themes) |
 | **Validacija** | [Zod 4](https://zod.dev/) |
-| **Testiranje** | [Vitest 4](https://vitest.dev/) (4672 testov + globalSetup embedded PG) |
+| **Testiranje** | [Vitest 4](https://vitest.dev/) (4698 testov + globalSetup embedded PG) |
 | **Paketni upravitelj** | [Bun](https://bun.sh/) |
 | **Linting** | ESLint 9 + eslint-config-next |
 
@@ -939,7 +967,7 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `bun run dev` | Zažene Next.js dev server (port 3000) |
 | `bun run build` | Produkcijska build (build-prepare: generate + migrate deploy + seed) |
 | `bun run start` | Zažene produkcijski server |
-| `bun run test` | Vsi testi (vitest, 4672, embedded PG prek globalSetup) |
+| `bun run test` | Vsi testi (vitest, 4698, embedded PG prek globalSetup) |
 | `bun run check` | tsc --noEmit + vitest run (en ukaz za vse) |
 | `bunx tsc --noEmit` | Tipska kontrola celotnega projekta (trenutno 0 napak) |
 | `bun run lint` | ESLint preverjanje |

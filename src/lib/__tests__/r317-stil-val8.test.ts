@@ -58,6 +58,12 @@
 // v vodji ×8; anti-stale števec drevesa 63 → 64 z obrnjeno regresijo: stari
 // 63 pin je prepovedan — polzaporedje ne sme nazaj).
 //
+// R332 PIN SHIFT (59. člen): potekli opomniki CSV gumb (CRM tab izvozna
+// cona — CSV BRAT PDF R252, bratska simetrija para na isti vrsti; ring =
+// navy/40, amber/50 register ostane zaklenjen v vodji ×8; anti-stale števec
+// drevesa 64 → 65 z obrnjeno regresijo: stari 64 pin je prepovedan —
+// polzaporedje ne sme nazaj).
+//
 // STRAŽAR (kanon GLOBALNI sken r310/r316 prenesen na izvozno družino):
 //  • vsak izvozni gumb (aria-label="Izvozi …") nosi IZRECEN
 //    focus-visible:ring-2 žeton (ne samo baza);
@@ -94,8 +100,8 @@ describe('r317 STIL val 8 — izvozna družina: focus-visible ring STRAŽAR', ()
   const gumbi = izvozniGumbi()
   const AMBER_ZETONI = new Set(['vodja-dashboard'])
 
-  it('anti-stale: 64 izvoznih gumbov v drevesu (63 pred R331 + NOV pregled spomnikov ponudb CSV)', () => {
-    expect(gumbi.length).toBeGreaterThanOrEqual(64)
+  it('anti-stale: 65 izvoznih gumbov v drevesu (64 pred R332 + NOV potekli opomniki CSV brat)', () => {
+    expect(gumbi.length).toBeGreaterThanOrEqual(65) // R332 PIN SHIFT 64 → 65 (stari 64 pin je prepovedan — obrnjena regresija)
     // novi gumb 50. člena je prisoten
     expect(gumbi.some((g) => g.okno.includes('Izvozi meritve zmogljivosti kot PDF'))).toBe(true)
     // novi gumb 51. člena je prisoten (R322)
@@ -114,6 +120,8 @@ describe('r317 STIL val 8 — izvozna družina: focus-visible ring STRAŽAR', ()
     expect(gumbi.some((g) => g.okno.includes('Izvozi pregled projektov in terminov kot CSV'))).toBe(true)
     // novi gumb 58. člena je prisoten (R331 — pregled spomnikov ponudb CSV brat)
     expect(gumbi.some((g) => g.okno.includes('Izvozi pregled spomnikov ponudb kot CSV'))).toBe(true)
+    // novi gumb 59. člena je prisoten (R332 — potekli opomniki CSV brat)
+    expect(gumbi.some((g) => g.okno.includes('Izvozi potekle opomnike kot CSV'))).toBe(true)
   })
 
   it('vsak izvozni gumb nosi IZRECEN focus-visible ring žeton (ne samo ui baza)', () => {

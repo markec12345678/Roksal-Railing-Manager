@@ -250,7 +250,9 @@ describe('R263 — komponenta (crm-tab) — pill, legenda, handler, mini-vrstica
   })
 
   it('legenda substring-parna nadgradna (R260 lekcija 3): stara R252 resnica dobesedno + nova R263 append — NIČ starega pina zlomljenega', () => {
-    expect(komponenta).toContain('CSV = prikazani seznam · PDF = potekli opomniki (akcija) · Potekel = prek datuma · Koledar = vsi vpisani pregledi (časovna vrsta)')
+    // R332 — legenda razširjena (Potekli CSV medija razlaga — 59. člen;
+    // pin na NOV podpis z izrecnim komentarjem, vzorec R330/R331)
+    expect(komponenta).toContain('CSV = prikazani seznam · PDF = potekli opomniki (akcija) · Potekli CSV = isti akcijski pregled kot PDF (Excel) · Potekel = prek datuma · Koledar = vsi vpisani pregledi (časovna vrsta)')
     expect(komponenta).toContain('· Pokritost = stranke × opomnikStatus (slepe pike = brez datuma)')
   })
 
