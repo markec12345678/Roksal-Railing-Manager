@@ -55,11 +55,8 @@ import { meritveCsv, meritveCsvFilename } from '@/lib/meritve-csv'
 import { buildMeritvePovzetek, meritvePovzetekBeseda } from '@/lib/meritve-povzetek'
 import {
   meritevTerenPregled,
-  generateMeritveTerenPdf,
   osnutekBeseda,
 } from '@/lib/meritve-teren-pdf'
-import { generateTerenskiZapisniPdf } from '@/lib/terenski-zapisni-pdf'
-import { zapisniListCsv, zapisniListCsvFilename } from '@/lib/terenski-zapisni-csv'
 import { downloadCsvText } from '@/lib/csv-export'
 import {
   Dialog,
@@ -202,7 +199,7 @@ import { exportSeznamPdf } from './measurements/pdf-seznam'
 // R349 — dekompozicija measurements-tab FAZA 6: EN VIR fetch + fail-verbose
 // DTO pruning terenskih izvozov (R269/R284/R285 — 3 stale telesa → 1
 // gradnik z dialektnim stikalom zKotom; vzorec FAZA 5).
-import { fetchMeritveTerenVnosi } from './measurements/teren-vnosi'
+import { izvediTerenIzvoz } from './measurements/teren-izvozi'
 import { renderRailingDiagram } from './measurements/railing-diagram'
 
 // ============================================
@@ -1498,31 +1495,33 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
     }
     setPdfVteku(true)
     try {
-      const vnosi = await fetchMeritveTerenVnosi(selectedProject, { zKotom: false })
-      if (vnosi.length === 0) {
+      // R354 FAZA 8: orkestracija (fetch FAZA 6 EN VIR + prazno guard +
+      // gradnja + fail-verbose) v ./measurements/teren-izvozi — rezultat je
+      // diskriminiran, toast besedila ostanejo VERBATIM tu (UI resnica).
+      const r = await izvediTerenIzvoz('teren-pdf', {
+        selectedProject,
+        // Ime projekta = točno to, kar pokaže izbirnik; brez izbire → null
+        // (jedro pošteno pokaže 'Brez imena projekta' — brez izmišljenih imen).
+        projektIme: projects.find((p) => p.id === selectedProject)?.nazivProjekta || null,
+        zdaj: new Date(),
+      })
+      if (r.izid === 'prazno') {
         // Fail-closed jedro: prazen seznam ne nastaja dokumenta — iskren toast.
         toast.error('Ni vpisanih meritev', {
           description: 'Terenski pregled se izvozi, ko je vpisana prva meritev projekta.',
         })
         return
       }
-      // ENA izpeljava: povzetek za toast = ISTA resnica kot KPI IN sklep na
-      // listu (WYSIWYG).
-      const { povzetek } = meritevTerenPregled(vnosi)
-      // Ime projekta = točno to, kar pokaže izbirnik; brez izbire → null
-      // (jedro pošteno pokaže 'Brez imena projekta' — brez izmišljenih imen).
-      const projektIme = projects.find((p) => p.id === selectedProject)?.nazivProjekta || null
-      generateMeritveTerenPdf(vnosi, { now: new Date(), projektIme })
-      toast.success('Terenski pregled meritev prenešen v PDF', {
-        description: `Meritve-teren-…pdf — ${povzetek.meritev} ${meritvePovzetekBeseda(povzetek.meritev)}, osnutki ${povzetek.osnutkov}, potrjenih ${povzetek.potrjenih}, arhiviranih ${povzetek.arhiviranih}.`,
-      })
-    } catch (err) {
-      // Fail-verbose: izvoz ne sme tiho spodleteti — razlog gre v toast.
-      // Fail-closed jedro (TypeError iz liba) = pokvaren vnos → viden razlog
-      // (NIČ izmišljenega dokumenta).
-      toast.error('Izvoz ni uspel', {
-        description: err instanceof Error ? err.message : `Neznana napaka (${String(err)}).`,
-      })
+      if (r.izid === 'napaka') {
+        // Fail-verbose: izvoz ne sme tiho spodleteti — razlog gre v toast.
+        toast.error('Izvoz ni uspel', { description: r.sporocilo })
+        return
+      }
+      if (r.izid === 'uspeh-pdf') {
+        toast.success('Terenski pregled meritev prenešen v PDF', {
+          description: `Meritve-teren-…pdf — ${r.povzetek.meritev} ${meritvePovzetekBeseda(r.povzetek.meritev)}, osnutki ${r.povzetek.osnutkov}, potrjenih ${r.povzetek.potrjenih}, arhiviranih ${r.povzetek.arhiviranih}.`,
+        })
+      }
     } finally {
       setPdfVteku(false)
     }
@@ -1548,30 +1547,28 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
     }
     setZapisniVteku(true)
     try {
-      const vnosi = await fetchMeritveTerenVnosi(selectedProject, { zKotom: true })
-
-      if (vnosi.length === 0) {
-        // Fail-closed jedro: prazen seznam ne nastaja dokumenta — iskren toast.
+      // R354 FAZA 8: orkestracija v ./measurements/teren-izvozi (zKotom: true
+      // — izpolnjevalni list nosi tudi kot; rezultat diskriminiran).
+      const r = await izvediTerenIzvoz('zapisni-pdf', {
+        selectedProject,
+        projektIme: projects.find((p) => p.id === selectedProject)?.nazivProjekta || null,
+        zdaj: new Date(),
+      })
+      if (r.izid === 'prazno') {
         toast.error('Ni vpisanih meritev', {
           description: 'Terenski zapisni list se izvozi, ko je vpisana prva meritev projekta.',
         })
         return
       }
-      // ENA izpeljava: povzetek za toast = ISTA resnica kot KPI IN sklep na
-      // listu (WYSIWYG — EN VIR meritevTerenPregled).
-      const { povzetek } = meritevTerenPregled(vnosi)
-      // Ime projekta = točno to, kar pokaže izbirnik; brez izbire → null
-      // (jedro pošteno pokaže 'Brez imena projekta' — brez izmišljenih imen).
-      const projektIme = projects.find((p) => p.id === selectedProject)?.nazivProjekta || null
-      generateTerenskiZapisniPdf(vnosi, { now: new Date(), projektIme })
-      toast.success('Zapisni list prenešen v PDF', {
-        description: `Terenski-zapisni-…pdf — ${povzetek.meritev} ${meritvePovzetekBeseda(povzetek.meritev)}; fizični stolpci (ref./Δ/zapiski) ostajajo prazni — izpolni jih na terenu (issue #15 §3).`,
-      })
-    } catch (err) {
-      // Fail-verbose: izvoz ne sme tiho spodleteti — razlog gre v toast.
-      toast.error('Izvoz ni uspel', {
-        description: err instanceof Error ? err.message : `Neznana napaka (${String(err)}).`,
-      })
+      if (r.izid === 'napaka') {
+        toast.error('Izvoz ni uspel', { description: r.sporocilo })
+        return
+      }
+      if (r.izid === 'uspeh-pdf') {
+        toast.success('Zapisni list prenešen v PDF', {
+          description: `Terenski-zapisni-…pdf — ${r.povzetek.meritev} ${meritvePovzetekBeseda(r.povzetek.meritev)}; fizični stolpci (ref./Δ/zapiski) ostajajo prazni — izpolni jih na terenu (issue #15 §3).`,
+        })
+      }
     } finally {
       setZapisniVteku(false)
     }
@@ -1597,27 +1594,31 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
     }
     setZapisniCsvVteku(true)
     try {
-      const vnosi = await fetchMeritveTerenVnosi(selectedProject, { zKotom: true })
-
-      if (vnosi.length === 0) {
+      // R354 FAZA 8: orkestracija v ./measurements/teren-izvozi; lib vrne
+      // {csv, imeDatoteke, vrstic} — prenos ostane v tabu prek kanona
+      // downloadCsvText (brskalniški kanon, vzorec kalkulator FAZA 5–7).
+      const r = await izvediTerenIzvoz('zapisni-csv', {
+        selectedProject,
+        projektIme: projects.find((p) => p.id === selectedProject)?.nazivProjekta || null,
+        zdaj: new Date(),
+      })
+      if (r.izid === 'prazno') {
         // Fail-closed jedro: prazen seznam ne nastaja datoteke — iskren toast.
         toast.error('Ni vpisanih meritev', {
           description: 'Terenski zapisni list (CSV) se izvozi, ko je vpisana prva meritev projekta.',
         })
         return
       }
-      // EN VIR R285 lib: validacija + akcijski sort + R186 pariteta + prazni
-      // fizični stolpci — čisto jedro, komponenta je samo žičenje (Y7).
-      const { csv, vrstic } = zapisniListCsv(vnosi)
-      downloadCsvText(zapisniListCsvFilename(new Date()), csv)
-      toast.success('Zapisni list prenešen v CSV', {
-        description: `Terenski-zapisni-…csv — ${vrstic - 1} vrstic; stolpci fizicna_ref_mm/delta_mm/zapiski_terena ostajajo PRAZNI — izpolni jih v Excelu (issue #15 §3).`,
-      })
-    } catch (err) {
-      // Fail-verbose: izvoz ne sme tiho spodleteti — razlog gre v toast.
-      toast.error('Izvoz ni uspel', {
-        description: err instanceof Error ? err.message : `Neznana napaka (${String(err)}).`,
-      })
+      if (r.izid === 'napaka') {
+        toast.error('Izvoz ni uspel', { description: r.sporocilo })
+        return
+      }
+      if (r.izid === 'uspeh-csv') {
+        downloadCsvText(r.imeDatoteke, r.csv)
+        toast.success('Zapisni list prenešen v CSV', {
+          description: `Terenski-zapisni-…csv — ${r.vrstic - 1} vrstic; stolpci fizicna_ref_mm/delta_mm/zapiski_terena ostajajo PRAZNI — izpolni jih v Excelu (issue #15 §3).`,
+        })
+      }
     } finally {
       setZapisniCsvVteku(false)
     }
@@ -6147,7 +6148,9 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               type="button"
               onClick={handleReopenConfirm}
               disabled={reopenBusy}
-              className="bg-roksal-amber text-white hover:bg-roksal-amber/90 focus-visible:ring-roksal-amber disabled:cursor-wait disabled:opacity-70"
+              aria-label="Potrdi ponovno odpiranje meritve z razlogom"
+              title="Ponovno odpri to meritev za urejanje — zapisana razlog gre v revizijsko sled"
+              className="bg-roksal-amber text-white hover:bg-roksal-amber/90 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-70"
             >
               {reopenBusy ? 'Shranjevanje …' : 'Odpri z razlogom'}
             </Button>
@@ -6372,7 +6375,9 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               type="button"
               onClick={handleOpenInPhotos}
               disabled={!photoViewerUrl || photoViewerLoading}
-              className="sm:flex-1 bg-roksal-amber text-white hover:bg-roksal-amber/90"
+              aria-label="Odpri to fotografijo meritve v zavihku Slike"
+              title="Prenesi pogled na zavihek Slike s to fotografijo meritve odprto"
+              className="sm:flex-1 bg-roksal-amber text-white hover:bg-roksal-amber/90 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
             >
               <ImageIcon aria-hidden="true" className="mr-1.5 h-4 w-4" />
               Odpri v slikah

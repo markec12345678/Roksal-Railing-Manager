@@ -191,7 +191,7 @@ export function OnboardingTour({ onClose, onNavigate }: { onClose: () => void; o
                 {current.akcija.label} <ChevronRight aria-hidden="true" className="h-4 w-4 ml-1" />
               </Button>
             ) : (
-              <Button type="button" size="sm" onClick={handleNext} className="text-[11px] bg-roksal-navy text-white">
+              <Button type="button" size="sm" onClick={handleNext} aria-label={korak === KORAKI.length - 1 ? 'Zaključi vodeno predstavitev vmesnika' : 'Naprej na naslednji korak vodnika'} title={korak === KORAKI.length - 1 ? 'Zapri vodnik — lahko ga znova odpreš prek pomoči' : 'Pokaži naslednji korak vodnika'} className="text-[11px] bg-roksal-navy text-white focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2">
                 {korak === KORAKI.length - 1 ? (
                   <>
                     <CheckCircle2 aria-hidden="true" className="h-4 w-4 mr-1" /> Zaključi

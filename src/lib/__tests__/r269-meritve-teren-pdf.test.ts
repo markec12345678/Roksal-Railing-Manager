@@ -304,9 +304,14 @@ describe('R269 — komponenta (measurements-tab) — pill, mini-vrstica, handler
   })
 
   it('dve okni, ENA matemtika: mini (state) IN PDF (fresh) = ISTA funkcija meritevTerenPregled (import + memo + handler) — NIKOLI zasegana kopija; lib EN VIR ×3 (meritve-csv R186 + measurement-status R154 + meritve-povzetek R203)', () => {
-    expect(komponenta).toContain('meritevTerenPregled,\n  generateMeritveTerenPdf,')
+    // R354 FAZA 8: generateMeritveTerenPdf preseljen v teren-izvozi (orkestracija
+    // EN VIR); tab ohrani meritevTerenPregled (mini-vrstica WYSIWYG — drug
+    // potrošnik ENEGA liba) — brez zasegane kopije, po konstrukciji.
+    expect(komponenta).toContain('meritevTerenPregled,')
+    const faza8 = beri('src/components/roksal/measurements/teren-izvozi.ts')
+    expect(faza8).toContain("from '@/lib/meritve-teren-pdf'")
+    expect(faza8).toContain('const { povzetek } = meritevTerenPregled(vnosi)')
     expect(komponenta).toContain('meritevTerenPregled(\n      filteredMeasurements.map')
-    expect(komponenta).toContain('const { povzetek } = meritevTerenPregled(vnosi)')
     expect(lib).toContain("from './meritve-csv'")
     expect(lib).toContain('meritevVrstica(o)')
     expect(lib).toContain("from './measurement-status'")
@@ -318,22 +323,31 @@ describe('R269 — komponenta (measurements-tab) — pill, mini-vrstica, handler
     expect(okno).toContain('if (pdfVteku) return')
     expect(okno).toContain("if (!selectedProject) {")
     expect(okno).toContain("'Ni izbranega projekta'")
-    // R349 FAZA 6 — EN VIR žičenje: FRESH fetch + ne-polje guard živita v modulu
-    expect(okno).toContain('fetchMeritveTerenVnosi(selectedProject, { zKotom: false })')
+    // R354 FAZA 8 — orkestracija EN VIR v teren-izvozi: adapter = žičenje +
+    // toasti (VERBATIM); fetch/prazno/gradnja živita v libu (dvonivojski EN
+    // VIR: lib → teren-vnosi FAZA 6)
+    expect(okno).toContain("izvediTerenIzvoz('teren-pdf'")
+    const faza8h = beri('src/components/roksal/measurements/teren-izvozi.ts')
+    expect(faza8h).toContain('await fetchMeritveTerenVnosi(kontekst.selectedProject, {')
+    expect(faza8h).toContain("const zKotom = vrsta !== 'teren-pdf'")
     const modul = beri('src/components/roksal/measurements/teren-vnosi.ts')
     expect(modul).toContain('fetch(`/api/measurements?projectId=${projectId}`, {')
     expect(modul).toContain('GET /api/measurements → HTTP ${res.status}')
     expect(modul).toContain('Odgovora /api/measurements ni mogoče prebrati (ni polja).')
     expect(okno).toContain("toast.error('Ni vpisanih meritev'")
     expect(okno).toContain("'Terenski pregled se izvozi, ko je vpisana prva meritev projekta.'")
-    const prazen = okno.indexOf('vnosi.length === 0')
-    const generiraj = okno.indexOf('generateMeritveTerenPdf(')
-    expect(prazen).toBeGreaterThanOrEqual(0)
-    expect(generiraj).toBeGreaterThan(prazen)
-    expect(okno).toContain('generateMeritveTerenPdf(vnosi, { now: new Date(), projektIme })')
+    // R354: prazno/napaka veji PRIJEJO pred uspeh (rezultat diskriminiran —
+    // gradnja je v libu; vrstni red vej = fail-closed pred uspehom)
+    const prazno = okno.indexOf("r.izid === 'prazno'")
+    const napaka = okno.indexOf("r.izid === 'napaka'")
+    const uspeh = okno.indexOf("r.izid === 'uspeh-pdf'")
+    expect(prazno).toBeGreaterThanOrEqual(0)
+    expect(napaka).toBeGreaterThan(prazno)
+    expect(uspeh).toBeGreaterThan(napaka)
+    expect(faza8h).toContain('generateMeritveTerenPdf(vnosi, { now: kontekst.zdaj, projektIme: kontekst.projektIme })')
     expect(okno).toContain("projects.find((p) => p.id === selectedProject)?.nazivProjekta || null")
     expect(okno).toContain("toast.success('Terenski pregled meritev prenešen v PDF'")
-    expect(okno).toContain('Meritve-teren-…pdf — ${povzetek.meritev} ${meritvePovzetekBeseda(povzetek.meritev)}, osnutki ${povzetek.osnutkov}, potrjenih ${povzetek.potrjenih}, arhiviranih ${povzetek.arhiviranih}.')
+    expect(okno).toContain('Meritve-teren-…pdf — ${r.povzetek.meritev} ${meritvePovzetekBeseda(r.povzetek.meritev)}, osnutki ${r.povzetek.osnutkov}, potrjenih ${r.povzetek.potrjenih}, arhiviranih ${r.povzetek.arhiviranih}.')
     expect(okno).toContain('setPdfVteku(false)')
   })
 

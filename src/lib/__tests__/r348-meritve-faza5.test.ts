@@ -178,7 +178,8 @@ describe('r348 meritve FAZA 5 — stale kopije IZGINILE + žičenje EN VIR', () 
   it('FAZA regresija: R186 kanon lib/meritve-csv nedotaknjen (izvoziMeritveCsv še EN VIR)', () => {
     expect(tab).toContain('meritveCsv(filteredMeasurements)')
     expect(tab).toContain('meritveCsvFilename(')
-    expect(tab).toContain('downloadCsvText(zapisniListCsvFilename(new Date()), csv)')
+    // R354 FAZA 8: ime/csv iz liba (teren-izvozi {imeDatoteke, csv}); prenos kanon ostane v tabu
+    expect(tab).toContain('downloadCsvText(r.imeDatoteke, r.csv)')
   })
 
   it('žičenje: 4 CSV izvozi prek kanona nosijo R348 oznako (stebri/meritve/izbrane/zgodovina)', () => {

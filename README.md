@@ -103,7 +103,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 45 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **5075** (312 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **5093** (314 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 143 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -1069,6 +1069,29 @@ Sheet z 6 podzavihki:
   verifikacija: tsc 0 · eslint 0 (FULL) · build svež EXIT=0 · needles r353
   VSE OK (veriga + union registri r340–r353) · smoke EXIT=0 · e2e EXIT=0
   [ODTIS BAJTNATO IDENTIČEN pre==post — ZERO-MUTACIJA].
+- **Measurements FAZA 8 + val 37 + era-harvest hash rezolucija** (R354):
+  (1) **FAZA 8** — teren izvozi ORKESTRACIJA izluščena VERBATIM v
+  `measurements/teren-izvozi.ts` (vzorec FAZA 5–7): guard/fetch/prazno/
+  gradnja/napaka kontrolni tok 3 bratov [teren PDF R269 + zapisni list PDF
+  R284 + zapisni list CSV R285] → EN `izvediTerenIzvoz(vrsta, kontekst)` z
+  DISKRIMINIRANIM rezultatom (manjka-projekt / prazno / uspeh-pdf / uspeh-csv
+  / napaka); lib NE pozna toastov (UI resnica v UI — VERBATIM besedila v
+  tabu); bajtni kontrakt izvozov NESPREMENJEN; downloadCsvText ostane v
+  tabu; (2) **val 37** — a11y parity dialog akcija bratov: reopen 'Odpri z
+  razlogom' [ring parity: prej bos amber → navy/40 + offset] + foto viewer
+  'Odpri v slikah' [NOV ring] + onboarding 'Naprej/Zaključi' [pogojna
+  aria/title, NOV ring]; 0 novih hex; (3) **era-harvest hash rezolucija**
+  (LEKCIJA R354, inverz R351): needle MISS ≠ deploy pending — REZOLUCIJA prek
+  lokalnega content-hash čanka → prod CDN (200 + niz = era ŽIVO; hash dokaz:
+  enako ime = enaka vsebina); fail-closed: brez lokalnega builda → EXIT=2 z
+  glasnim dvoumjem; (4) vitest r354 ×18 (r354-teren-faza8 ×10 [mock dokaz
+  diskriminiranih rezultatov + zKotom dialekti + fail-verbose VERBATIM +
+  determinizem + EN VIR žičenje 3 klicev + 0 stale lib-uvozov] +
+  r354-stil-val37 ×8 [3 bratje + 0-hex + obrnjene regresije val 36/35/34])
+  + r172 prst 6214→6217 (17. zapis; ŠTEJ VRSTICE IZ DISKA) — 5093/5093 (314);
+  (5) verifikacija: tsc 0 · eslint 0 (FULL) · build svež EXIT=0 · needles
+  r354 VSE OK (veriga + union registri r340–r354) · smoke EXIT=0 · e2e
+  EXIT=0 [ODTIS BAJTNATO IDENTIČEN pre==post — ZERO-MUTACIJA].
 - **Kalkulator FAZA 6 + val 29** (R346): (1) NOV `calculator/inputs.ts` —
   zbiranje/nalaganje vhodov izluščeno VERBATIM iz taba (args objekti —
   vzorec R325/R345): `collectCurrentInputs(mode, vhodnaStanja)` (zapis za
@@ -1283,7 +1306,7 @@ Sheet z 6 podzavihki:
 | **PWA** | Service Worker + Web Manifest |
 | **Temnitveni način** | [next-themes](https://github.com/pacocoursey/next-themes) |
 | **Validacija** | [Zod 4](https://zod.dev/) |
-| **Testiranje** | [Vitest 4](https://vitest.dev/) (5075 testov + globalSetup embedded PG) |
+| **Testiranje** | [Vitest 4](https://vitest.dev/) (5093 testov + globalSetup embedded PG) |
 | **Paketni upravitelj** | [Bun](https://bun.sh/) |
 | **Linting** | ESLint 9 + eslint-config-next |
 
@@ -1405,7 +1428,7 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `bun run dev` | Zažene Next.js dev server (port 3000) |
 | `bun run build` | Produkcijska build (build-prepare: generate + migrate deploy + seed) |
 | `bun run start` | Zažene produkcijski server |
-| `bun run test` | Vsi testi (vitest, 5075, embedded PG prek globalSetup) |
+| `bun run test` | Vsi testi (vitest, 5093, embedded PG prek globalSetup) |
 | `bun run check` | tsc --noEmit + vitest run (en ukaz za vse) |
 | `bunx tsc --noEmit` | Tipska kontrola celotnega projekta (trenutno 0 napak) |
 | `bun run lint` | ESLint preverjanje |

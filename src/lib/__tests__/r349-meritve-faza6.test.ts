@@ -165,10 +165,11 @@ describe('r349 FAZA 6 — EN VIR DTO pruning (teren-vnosi.ts)', () => {
     expect(vnosi[0].kotStopinje).toBe(30)
   })
 
-  it('(G) EN VIR dokaz: tab ima 3 EN VIR klice (×1 R269 false + ×2 R284/R285 true) in 0 stale kopij (LEKCIJA R347 2 — stale kopije dihajo v function telesih; LEKCIJA R348 4 — štejemo SAMO await klice, komentarji izključeni)', () => {
-    expect(tab.split('await fetchMeritveTerenVnosi(selectedProject, { zKotom: false })').length - 1).toBe(1)
-    expect(tab.split('await fetchMeritveTerenVnosi(selectedProject, { zKotom: true })').length - 1).toBe(2)
-    expect(tab).toContain("import { fetchMeritveTerenVnosi } from './measurements/teren-vnosi'")
+  it('(G) EN VIR dokaz — R354 FAZA 8: tab = 3 klice izvediTerenIzvoz (0 stale fetch kopij v tabu); orkestracija ima ENO fetch točko prek FAZA 6 modula (LEKCIJA R347 2 — stale kopije dihajo v telesih; LEKCIJA R348 4 — štejemo await klice, komentarji izključeni)', () => {
+    expect((tab.match(/izvediTerenIzvoz\('/g) || []).length).toBe(3)
+    const faza8 = readFileSync(join(process.cwd(), 'src/components/roksal/measurements/teren-izvozi.ts'), 'utf8')
+    expect((faza8.match(/await fetchMeritveTerenVnosi\(/g) || []).length).toBe(1)
+    expect(tab).toContain("import { izvediTerenIzvoz } from './measurements/teren-izvozi'")
     expect(tab).not.toContain('const vrstice = data as Array<Record<string, unknown>>')
     expect(tab).not.toContain('manjkajoč id v odgovoru API-ja')
     expect(tab).not.toContain('arMetadata ni razumljen kot JSON objekt (pokvaren vir)')

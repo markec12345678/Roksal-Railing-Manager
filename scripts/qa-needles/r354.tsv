@@ -1,0 +1,26 @@
+# qa-needles/r354.tsv — REGISTER needlejev runde R354 (measurements FAZA 8:
+# teren izvozi ORKESTRACIJA — guard/fetch/prazno/gradnja/napaka kontrolni tok
+# 3 bratov [teren PDF R269 + zapisni list PDF R284 + zapisni list CSV R285]
+# izluščen VERBATIM v measurements/teren-izvozi.ts — diskriminiran rezultat,
+# toast besedila VERBATIM ostanejo v tabu, bajtni kontrakt izvozov
+# NESPREMENJEN; vzorec FAZA 5/R348 + 6/R349 + 7/R350]
+# + STIL val 37: a11y parity 'dialog akcija' bratov [reopen 'Odpri z razlogom'
+# + foto viewer 'Odpri v slikah' + onboarding 'Naprej/Zaključi'] — aria-label
+# akcija+cilj + title + izrecen ring navy/40 V ISTEM commitu — LEKCIJA R346
+# kanon; reopen ring parity [prej bos focus-visible:ring-roksal-amber brez
+# ring-2 širine → navy/40 + ring-offset]; 0 novih hex.
+# ============================================================================
+# FORMAT (TSV; EN vrstica = EN needle; TAB je LOČILO) — kanon R340–R353.
+#   <needle_string><TAB><opis><TAB><vrsta>
+# vrsta: need_static (MORA biti ŽIV v čankih) | must_miss (NE SME biti)
+
+# ── R354 lastni needleji ──
+# FAZA 8: NI edinstvenega build needleja (orkestracija je logika; izvozi
+# bajtno identični — pokritost = vitest r354-teren-faza8 ×10 [mock dokaz
+# diskriminiranih rezultatov + EN VIR žičenje 3 klicev + 0 stale lib-uvozov]
+# + E2E regresija PDF/CSV izvozov).
+# STIL val 37: statične aria celote (NOVI nizi — era-diskriminatorji):
+Potrdi ponovno odpiranje meritve z razlogom	R354 val 37 reopen aria (razlog gre v revizijsko sled; ring parity navy/40)	need_static
+Odpri to fotografijo meritve v zavihku Slike	R354 val 37 foto viewer aria (NOV ring v istem commitu)	need_static
+Zaključi vodeno predstavitev vmesnika	R354 val 37 vodnik Zaključi aria (pogojni izraz, NOV ring)	need_static
+TODO-R354	R354 — brez razvojnih ostankov	must_miss
