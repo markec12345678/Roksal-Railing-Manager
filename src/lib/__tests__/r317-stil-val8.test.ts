@@ -70,6 +70,14 @@
 // anti-stale števec drevesa 65 → 66 z obrnjeno regresijo: stari 65 pin je
 // prepovedan — polzaporedje ne sme nazaj).
 //
+// R334 PIN SHIFT (61. člen): poročilo končne verifikacije CSV gumb (vodja
+// blok glava — CSV BRAT JSON R316 + PDF R320, izvozna TRIADA na isti blok
+// glavi; ring = amber/50 + offset-2 — ISTI žeton kot brata; vodja amber
+// register ×8 → ×9 z obrnjeno regresijo: stari ×8 pin je prepovedan —
+// polzaporedje ne sme nazaj; precedens R316 JSON → R320 PDF → R334 CSV;
+// anti-stale števec drevesa 66 → 67 z obrnjeno regresijo: stari 66 pin je
+// prepovedan — polzaporedje ne sme nazaj).
+//
 // STRAŽAR (kanon GLOBALNI sken r310/r316 prenesen na izvozno družino):
 //  • vsak izvozni gumb (aria-label="Izvozi …") nosi IZRECEN
 //    focus-visible:ring-2 žeton (ne samo baza);
@@ -106,8 +114,8 @@ describe('r317 STIL val 8 — izvozna družina: focus-visible ring STRAŽAR', ()
   const gumbi = izvozniGumbi()
   const AMBER_ZETONI = new Set(['vodja-dashboard'])
 
-  it('anti-stale: 66 izvoznih gumbov v drevesu (65 pred R333 + NOVA pozicija dobaviteljev CSV brat)', () => {
-    expect(gumbi.length).toBeGreaterThanOrEqual(66) // R333 PIN SHIFT 65 → 66 (stari 65 pin je prepovedan — obrnjena regresija)
+  it('anti-stale: 67 izvoznih gumbov v drevesu (66 pred R334 + NOVO končna verifikacija CSV brat)', () => {
+    expect(gumbi.length).toBeGreaterThanOrEqual(67) // R334 PIN SHIFT 66 → 67 (stari 66 pin je prepovedan — obrnjena regresija)
     // novi gumb 50. člena je prisoten
     expect(gumbi.some((g) => g.okno.includes('Izvozi meritve zmogljivosti kot PDF'))).toBe(true)
     // novi gumb 51. člena je prisoten (R322)
@@ -130,6 +138,8 @@ describe('r317 STIL val 8 — izvozna družina: focus-visible ring STRAŽAR', ()
     expect(gumbi.some((g) => g.okno.includes('Izvozi potekle opomnike kot CSV'))).toBe(true)
     // novi gumb 60. člena je prisoten (R333 — pozicija dobaviteljev CSV brat)
     expect(gumbi.some((g) => g.okno.includes('Izvozi pozicijo dobaviteljev kot CSV'))).toBe(true)
+    // novi gumb 61. člena je prisoten (R334 — končna verifikacija CSV brat)
+    expect(gumbi.some((g) => g.okno.includes('Izvozi poročilo končne verifikacije kot CSV'))).toBe(true)
   })
 
   it('vsak izvozni gumb nosi IZRECEN focus-visible ring žeton (ne samo ui baza)', () => {
@@ -156,15 +166,16 @@ describe('r317 STIL val 8 — izvozna družina: focus-visible ring STRAŽAR', ()
       (g) => g.okno.includes('focus-visible:ring-roksal-amber/50') && !AMBER_ZETONI.has(g.datoteka),
     )
     expect(kršitve).toEqual([])
-    // R324 register je ŽIV: vodja res nosi 8 amber gumbov (dnevni CSV R163 +
+    // R334 register je ŽIV: vodja res nosi 9 amber gumbov (dnevni CSV R163 +
     // JSON 46. + CSV 47. + audit PDF 48. + končna verifikacija PDF 49. +
     // meritve zmogljivosti PDF 50. + meritve zmogljivosti CSV 51. + dnevni
-    // pregled PDF 52. člen — isti vodja blok glavni vzorec z offset-2;
-    // PIN SHIFT ×7 → ×8 z obrnjeno regresijo)
+    // pregled PDF 52. člen + končna verifikacija CSV 61. člen — isti vodja
+    // blok glavni vzorec z offset-2; PIN SHIFT ×8 → ×9 z obrnjeno regresijo:
+    // stari ×8 pin je prepovedan — polzaporedje ne sme nazaj)
     const vodjaAmber = gumbi.filter(
       (g) => g.datoteka === 'vodja-dashboard' && g.okno.includes('focus-visible:ring-roksal-amber/50'),
     )
-    expect(vodjaAmber.length).toBe(8)
+    expect(vodjaAmber.length).toBe(9)
     const ariaVseh = vodjaAmber.map((g) => {
       const m = g.okno.match(/aria-label="([^"]+)"/)
       return m ? m[1] : ''
@@ -177,6 +188,8 @@ describe('r317 STIL val 8 — izvozna družina: focus-visible ring STRAŽAR', ()
     expect(ariaVseh).toContain('Izvozi poročilo končne verifikacije kot PDF')
     expect(ariaVseh).toContain('Izvozi meritve zmogljivosti kot PDF')
     expect(ariaVseh).toContain('Izvozi meritve zmogljivosti kot CSV')
+    // R334: končna verifikacija CSV (61. člen) — izvozna TRIADA
+    expect(ariaVseh).toContain('Izvozi poročilo končne verifikacije kot CSV')
   })
 
   it('R317 harmonizirana vrstica: site-survey PDF gumb ima družinski ring (regresijski pin — nazaj = fail)', () => {

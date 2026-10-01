@@ -93,6 +93,10 @@ import type { ZmogljivostPregled } from '@/lib/zmogljivost-pregled'
 // VIR — koncna-verifikacija + avtomatizacija-audit; WYSIWYG sklep, NIČ
 // dvojnega sklepa).
 import { koncnaVerifikacija, koncnaVerifikacijaJson } from '@/lib/koncna-verifikacija'
+// 🆕 R334 (61. člen, issue #1 IZVOZI družina): CSV brat JSON R316 + PDF R320
+// — EN VIR graditelj koncnaVerifikacija (fail-closed podedovan, NIČ
+// podvojenih pravil); kanon R136 toCsv (BOM + podpičje + CRLF + RFC 4180).
+import { koncnaVerifikacijaCsv, koncnaVerifikacijaCsvFilename } from '@/lib/koncna-verifikacija-csv'
 import { avtomatizacijaPregled, avtomatizacijaAuditCsv, avtomatizacijaAuditCsvFilename } from '@/lib/avtomatizacija-pregled'
 // 🆕 R318 (48. člen): PDF brat izvoza — LOČEN lib (družinski vzorec R302:
 // logistics-tab uvaža buildKonfliktiPdfDoc iz konflikti-pdf; EN VIR validacija
@@ -932,6 +936,36 @@ export function VodjaDashboard() {
     }
   }
 
+  /** 🆕 R334 (61. člen, issue #1 IZVOZI družina): izvoz poročila končne
+   *  verifikacije kot DETERMINISTIČNI CSV — CSV brat JSON R316 + PDF R320
+   *  (EN VIR isti koncnaVerifikacija graditelj; ločen lib po vzorcu R317
+   *  audit-csv), brez metapodatkov časa/hash (isti HEAD = bajtno identična
+   *  datoteka — kanon 46./47. člen). Fail-verbose: razlog vidno, ne tiho
+   *  (kanon). */
+  function exportKoncnaVerifikacijaCsv() {
+    try {
+      // fail-closed brezplačno: graditelj validira prek EN VIR brata —
+      // pokvarjeni vhodi ne morejo postati lažno poročilo (kanon R299/R302/R306).
+      const csv = koncnaVerifikacijaCsv()
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = koncnaVerifikacijaCsvFilename()
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+      toast({ title: 'Poročilo končne verifikacije izvoženo ✓', description: koncnaVerifikacijaCsvFilename() })
+    } catch (e) {
+      toast({
+        title: 'Izvoz ni uspel',
+        description: e instanceof Error ? e.message : String(e),
+        variant: 'destructive',
+      })
+    }
+  }
+
   /** 🆕 R321 (50. člen, issue #1 IZVOZI družina): izvoz meritev zmogljivosti
    *  kot DETERMINISTIČNI PDF — Deliverable 6 kot tisk; pregled = POSREDOVANA
    *  resnica (meritev se izvede ENKRAT v brskalniku — R312 kontrakt; PDF NE
@@ -1552,6 +1586,23 @@ export function VodjaDashboard() {
             <Download className="h-3 w-3" aria-hidden="true" />
             PDF
           </Button>
+          {/* 🆕 R334 (61. člen): izvoz istega EN VIR poročila kot CSV —
+              izvozna TRIADA (JSON + PDF + CSV, bratska simetrija — ISTI
+              žeton kot brata; a11y družina R291/R293; definicijski naslov
+              medija: PDF = tisk za pisarno, CSV = Excel za filtriranje
+              po območju/plasti). */}
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-6 gap-1 border-roksal-navy/25 px-2 text-2xs text-roksal-ink press-scale transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 dark:border-roksal-ink/25"
+            onClick={exportKoncnaVerifikacijaCsv}
+            aria-label="Izvozi poročilo končne verifikacije kot CSV"
+            data-testid="koncna-verifikacija-csv-pill"
+            title="Izvozi poročilo končne verifikacije (11 območij + 8 kriterijev + sklep) kot deterministični CSV — isti pregled, plasti in sklep kot PDF; prazen/pokvaren audit → iskren toast; PDF = tisk za pisarno, CSV = Excel za filtriranje po območju/plasti"
+          >
+            <FileSpreadsheet className="h-3 w-3" aria-hidden="true" />
+            CSV
+          </Button>
         </div>
         <ul className="mt-1 space-y-0.5" data-testid="koncna-verifikacija-vrstice">
           {koncna.vrstice.map((v) => (
@@ -1600,6 +1651,11 @@ export function VodjaDashboard() {
         </ul>
         <p className="mt-1.5 text-2xs text-muted-foreground" data-testid="koncna-verifikacija-sklep">
           {koncna.sklep}
+        </p>
+        {/* 🆕 R334 (61. člen) legenda medija: izvozna TRIADA imenovana —
+            starejši segmenti (sklep) NEPREMIKNJENI (vzorec R330/R331/R332). */}
+        <p className="mt-0.5 text-2xs text-muted-foreground" data-testid="koncna-verifikacija-csv-legenda">
+          Končna verifikacija CSV = ista dokazna resnica kot PDF in JSON (Excel — dve tabeli + sklep).
         </p>
       </section>
 
