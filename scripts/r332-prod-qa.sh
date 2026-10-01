@@ -201,7 +201,7 @@
 #       ovojnico + users 403 deny-first POZITIVNI dokaz (lekcija R311 1).
 #   Z3  v99 sync gate (R274). ZERO-MUTACIJA.
 #   LEKCIJA R307 3 (derive): grep čistost preverba uporablja RAZRED ZNAKOV
-#   ('R33[0-1]_PUSH') — preverba ne sme ujeti svojega vzorca (samozadetek).
+#   ('R33[0]_PUSH') — preverba ne sme ujeti svojega vzorca (samozadetek).
 set -u
 source /home/z/my-project/scripts/e2e-lib.sh
 # R316 — 2. prehod reprobe lista (isti 15 dispeči; žlenjeno ENKRAT, rabi
@@ -214,7 +214,7 @@ R332_PUSH="$(date -u -d "$R332_COMMIT_ISO" +%Y-%m-%dT%H:%M:%S)"
 echo "R325 meja (commit čas, UTC): $R332_PUSH"
 # LEKCIJA R306 2: derive transformacije — grep preverba ostankov starega imena
 # PRED tekom (unbound variable pri set -u je rešil, a čas izgubljen).
-if grep -qE 'R33[0-1]_PUSH|R332[_]COMMIT_ISO' "$0"; then
+if grep -qE 'R33[0]_PUSH|R331[_]COMMIT_ISO' "$0"; then
   echo "FAIL-CLOSED: derive ostanki R331 PUSH/COMMIT meje v r332-prod-qa.sh — popravi pred tekom"
   exit 1
 fi

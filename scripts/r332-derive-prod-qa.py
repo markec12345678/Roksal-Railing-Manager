@@ -55,9 +55,9 @@ zam('R331_COMMIT_ISO', 'R332_COMMIT_ISO', 3)
 zam('R331_PUSH', 'R332_PUSH', 3)  # ×3 PO meja-zamenjavah ×2 (LEKCIJA R312: zaporedne zamenjave spreminjajo števec)
 zam("$2 ~ /^R331 —/", "$2 ~ /^R332 —/", 1)
 zam('R331_TABS', 'R332_TABS', 3)
-zam("R32[9]_PUSH|R330[_]COMMIT_ISO", "R33[0-1]_PUSH|R332[_]COMMIT_ISO", 1)
+zam("R32[9]_PUSH|R330[_]COMMIT_ISO", "R33[0]_PUSH|R331[_]COMMIT_ISO", 1)
 zam("('R32[9]_PUSH') — preverba ne sme ujeti svojega vzorca (samozadetek).",
-    "('R33[0-1]_PUSH') — preverba ne sme ujeti svojega vzorca (samozadetek).", 1)
+    "('R33[0]_PUSH') — preverba ne sme ujeti svojega vzorca (samozadetek).", 1)
 zam('derive ostanki R330 PUSH/COMMIT meje v r331-prod-qa.sh',
     'derive ostanki R331 PUSH/COMMIT meje v r332-prod-qa.sh', 1)
 zam('derive čistost: OK (nič R330 PUSH/COMMIT ostankov — razred znakov, brez samozadetka)',
