@@ -1,0 +1,15 @@
+# qa-needles/r348.tsv — REGISTER needlejev runde R348 (measurements
+# FAZA 5: EN VIR gradnja starejše družine CSV izvozov
+# [measurements/izvoz-csv.ts: csvEsc/csvDokument/MERITVE_CSV_HEADER/
+# zgradiMeritveVrstice — 4 × inline Blob → kanon downloadCsvText,
+# 15 × inline escape → csvEsc, 4 × inline BOM → csvDokument,
+# handleExportCSV ≡ handleBulkExportCSV stale telesi → 1 gradnik]
+# + STIL val 31: a11y parity izvozne družine meritev (5 gumbov).
+# FORMAT (TSV; TAB ločilo — kanon R340–R347):
+#   <needle_string><TAB><opis><TAB><vrsta>
+Izvozi vse meritve kot CSV	R348 val 31 CSV vse meritve aria-label (parity R186 vodja)	need_static
+Izvozi pregled meritev kot PDF	R348 val 31 PDF pregled aria-label	need_static
+Izvozi izbrane meritve kot CSV	R348 val 31 bulk CSV aria-label	need_static
+Izvozi zgodovino meritev kot CSV	R348 val 31 zgodovina CSV aria-label (shadcn Button)	need_static
+Izvozi preglednico stebrov kot CSV	R348 val 31 steber-table CSV aria-label	need_static
+TODO-R348	R348 — brez razvojnih ostankov	must_miss

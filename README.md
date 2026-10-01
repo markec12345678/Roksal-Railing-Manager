@@ -103,7 +103,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 45 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **4940** (300 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **4966** (302 datoteki, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 143 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -932,6 +932,27 @@ Sheet z 6 podzavihki:
   pogreše + FAZA 6 regresija + 0-hex] + r347-stil-val30 ×8 [3 parity
   skupine + tipografija + 0-hex + obrnjene regresije val 29/28 + R291/R293])
   — 4940/4940 (300); (4) verifikacija: tsc 0 · eslint 0 (FULL) · build svež
+- **Meritve FAZA 5 + val 31** (R348): (1) NOV EN VIR
+  `measurements/izvoz-csv.ts` — `csvEsc` (podvajanje navedkov; 15 inline
+  kopij izginilo), `csvDokument` (BOM + zaglavje + LF; 4 inline kopije
+  izginile), `MERITVE_CSV_HEADER` + `zgradiMeritveVrstice` (17-stolpčni P1
+  kontrakt — stale telesi handleExportCSV ≡ handleBulkExportCSV sta bila
+  bajtno identična 2. resnica; zdaj 1 gradnik, vhodni seznam = klicateljeva
+  resnica); 4 × inline Blob prenos → kanon `downloadCsvText` (R171/R296;
+  MIME 'text/csv;charset=utf-8;' izgubi navlečno piko — vsebina bajtno
+  ista); `measurements-tab` 6.702 → 6.652 (−50); (2) **val 31** — a11y
+  parity izvozne družine meritev: 5 gumbov (CSV vse / PDF / bulk CSV /
+  zgodovina CSV / steber-table CSV) dobi aria-label + title; 3 gola
+  <button> + steber-table dobi izrecen focus ring navy/40 (LEKCIJA R346
+  val 8 stražar potrjen ×2: nov aria gumb v družinskem skenu razkrije
+  manjkajoč ring); 0 novih hex; (3) vitest r348 ×26 (2 NOVI datoteki:
+  r348-meritve-faza5 ×18 [realni labeli + determinizem + EN VIR dokaz +
+  stale-izginili + žičenje + R186 regresija + 0-hex] + r348-stil-val31 ×8
+  [5 parity skupin + 0-hex + obrnjene regresije R186/R269/R284/R285 +
+  val 30/28]) — 4966/4966 (302); (4) verifikacija: tsc 0 · eslint 0 (FULL) ·
+  build svež EXIT=0 · needles r348 VSE OK (veriga + union registri
+  r340–r348) · smoke EXIT=0 · e2e EXIT=0 [ODTIS BAJTNATO IDENTIČEN
+  pre==post — ZERO-MUTACIJA].
   EXIT=0 · needles r347 VSE OK (veriga + union registri r340–r347) ·
   smoke EXIT=0 · e2e EXIT=0 (ZERO-MUTACIJA)
 - **Kalkulator FAZA 6 + val 29** (R346): (1) NOV `calculator/inputs.ts` —
@@ -1148,7 +1169,7 @@ Sheet z 6 podzavihki:
 | **PWA** | Service Worker + Web Manifest |
 | **Temnitveni način** | [next-themes](https://github.com/pacocoursey/next-themes) |
 | **Validacija** | [Zod 4](https://zod.dev/) |
-| **Testiranje** | [Vitest 4](https://vitest.dev/) (4940 testov + globalSetup embedded PG) |
+| **Testiranje** | [Vitest 4](https://vitest.dev/) (4966 testov + globalSetup embedded PG) |
 | **Paketni upravitelj** | [Bun](https://bun.sh/) |
 | **Linting** | ESLint 9 + eslint-config-next |
 
@@ -1270,7 +1291,7 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `bun run dev` | Zažene Next.js dev server (port 3000) |
 | `bun run build` | Produkcijska build (build-prepare: generate + migrate deploy + seed) |
 | `bun run start` | Zažene produkcijski server |
-| `bun run test` | Vsi testi (vitest, 4940, embedded PG prek globalSetup) |
+| `bun run test` | Vsi testi (vitest, 4966, embedded PG prek globalSetup) |
 | `bun run check` | tsc --noEmit + vitest run (en ukaz za vse) |
 | `bunx tsc --noEmit` | Tipska kontrola celotnega projekta (trenutno 0 napak) |
 | `bun run lint` | ESLint preverjanje |
@@ -1403,7 +1424,7 @@ primitivov. Največji:
 
 | Komponenta | Vrstice | Funkcija |
 |-----------|---------|----------|
-| `measurements-tab.tsx` | 6.702 | Meritve (9 tipov, stopniščni čarovnik, WPC, štebricki; dekompozicija faza 1+2+3+4 R319/R325/R338/R340) |
+| `measurements-tab.tsx` | 6.652 | Meritve (9 tipov, stopniščni čarovnik, WPC, štebricki; dekompozicija faza 1+2+3+4+5 R319/R325/R338/R340/R348) |
 | `calculator-tab.tsx` | 4.489 | Kalkulator (7 načinov + 6 izpolnitev; dekompozicija faza 1+2+3+4+5+6+7 R322/R325/R340/R341/R345/R346/R347) |
 | `ar-scanner.tsx` | 2.789 | AR kamera z vizualizacijo ograje + AI sugestija |
 | `webxr-scanner.tsx` | 2.377 | WebXR poskus (kjer podprt) |

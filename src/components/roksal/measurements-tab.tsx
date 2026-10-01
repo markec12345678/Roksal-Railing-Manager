@@ -183,6 +183,10 @@ import {
 // v ./measurements/railing-diagram.tsx (čist premik — BREZ spremembe
 // obnašanja, vzorec R319/R325/R338).
 import { getQuickSpacing, normalizeMeasurements } from './measurements/normalize'
+// R348 — dekompozicija measurements-tab FAZA 5: EN VIR gradnja CSV izvozov
+// (csvEsc/csvDokument/MERITVE_CSV_HEADER/zgradiMeritveVrstice — vzorec
+// kalkulator FAZA 5–7; prenos ostane v tabu prek kanona downloadCsvText).
+import { csvDokument, csvEsc, MERITVE_CSV_HEADER, zgradiMeritveVrstice } from './measurements/izvoz-csv'
 import { renderRailingDiagram } from './measurements/railing-diagram'
 
 // ============================================
@@ -2494,27 +2498,22 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
     // v per-segment izvoz; R154 odloženo, zdaj dopolnjeno. Vrednosti iz
     // statusLabels jedra — enak vir resnice kot UI in strežniški filter).
     const header = 'Oznaka,Tip,Status,Pozicija(mm),Razmik(mm),Visina(mm),Material,Opomba'
+    // R348 FAZA 5 — EN VIR: csvEsc + csvDokument + kanon downloadCsvText
+    // (prej inline Blob blok + 2 inline escape kopiji — ista semantika,
+    // vsebina bajtno ista; MIME kanon 'text/csv;charset=utf-8').
     const rows = stebri.map((m) => {
-      const o = (m.steberOznaka || m.oznaka || '').replace(/"/g, '""')
+      const o = csvEsc(m.steberOznaka || m.oznaka)
       const t = m.tipStebra ? tipStebraLabels[m.tipStebra] : ''
       const status = statusLabels[m.status || 'OSNUTEK']
       const poz = m.pozicijaMm ? String(Math.round(m.pozicijaMm)) : ''
       const raz = m.razmikMm ? String(Math.round(m.razmikMm)) : '—'
       const vis = m.visinaStebraMm ? String(Math.round(m.visinaStebraMm)) : ''
       const mat = m.materialStebra ? materialStebraLabels[m.materialStebra] : ''
-      const op = (m.opomba || '').replace(/"/g, '""')
+      const op = csvEsc(m.opomba)
       return `"${o}","${t}","${status}",${poz},${raz},${vis},"${mat}","${op}"`
     })
-    const csvContent = '\uFEFF' + header + '\n' + rows.join('\n')
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `stebri_${segmentId}_${new Date().toISOString().slice(0, 10)}.csv`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
+    const csvContent = csvDokument(header, rows)
+    downloadCsvText(`stebri_${segmentId}_${new Date().toISOString().slice(0, 10)}.csv`, csvContent)
     pushAudit({
       akcija: 'EDIT',
       meritevId: 'stebri-csv',
@@ -2665,38 +2664,13 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
       toast.error('Ni meritev za izvoz')
       return
     }
-    // P1 — dodani stolpci za multi-unit (mm, cm, m) in status
-    const header = 'Oznaka,Tip,Status,Lokacija,Segment,Dolzina(mm),Dolzina(cm),Dolzina(m),Visina(mm),Visina(cm),Visina(m),Stebri,Podlaga,Kot,Opomba,Opombe,Datum'
-    const rows = measurements.map((m) => {
-      const oznaka = (m.oznaka || '').replace(/"/g, '""')
-      const tip = m.tipMeritve ? tipMeritveLabels[m.tipMeritve] : 'Razdalja'
-      const status = statusLabels[m.status || 'OSNUTEK']
-      const lokacija = (m.lokacija || '').replace(/"/g, '""')
-      const segment = (m.segmentId || '').replace(/"/g, '""')
-      const dMm = String(m.dolzinaMm)
-      const dCm = String(Math.round(m.dolzinaMm / 10))
-      const dM = (m.dolzinaMm / 1000).toFixed(2)
-      const vMm = String(m.visinaMm)
-      const vCm = String(Math.round(m.visinaMm / 10))
-      const vM = (m.visinaMm / 1000).toFixed(2)
-      const stebri = m.steviloStebrov ? String(m.steviloStebrov) : ''
-      const podlaga = m.tipPodlage ? (groundTypeLabels[m.tipPodlage as GroundType] || m.tipPodlage) : ''
-      const kot = m.kot ? String(m.kot) : ''
-      const opomba = (m.opomba || '').replace(/"/g, '""')
-      const opombe = (m.opombe || '').replace(/"/g, '""')
-      const datum = slDatumKratko(new Date(m.createdAt))
-      return `"${oznaka}","${tip}","${status}","${lokacija}","${segment}",${dMm},${dCm},${dM},${vMm},${vCm},${vM},"${stebri}","${podlaga}",${kot},"${opomba}","${opombe}",${datum}`
-    })
-    const csvContent = '\uFEFF' + header + '\n' + rows.join('\n')
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `meritve_${selectedProject}_${new Date().toISOString().slice(0, 10)}.csv`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
+    // R348 FAZA 5 — EN VIR: vrstice prek zgradiMeritveVrstice (prej stale
+    // kopija — bajtno identična telesu handleBulkExportCSV; zdaj ISTA
+    // resnica, vhodni seznam = klicateljeva resnica); prenos prek kanona
+    // downloadCsvText (R171/R296) — vsebina bajtno ista, MIME kanon
+    // 'text/csv;charset=utf-8' (navlečna pika odpade).
+    const csvContent = csvDokument(MERITVE_CSV_HEADER, zgradiMeritveVrstice(measurements))
+    downloadCsvText(`meritve_${selectedProject}_${new Date().toISOString().slice(0, 10)}.csv`, csvContent)
     toast.success('CSV izvožen!')
   }
 
@@ -2981,37 +2955,10 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
       toast.error('Ni izbranih meritev')
       return
     }
-    const header = 'Oznaka,Tip,Status,Lokacija,Segment,Dolzina(mm),Dolzina(cm),Dolzina(m),Visina(mm),Visina(cm),Visina(m),Stebri,Podlaga,Kot,Opomba,Opombe,Datum'
-    const rows = selected.map((m) => {
-      const oznaka = (m.oznaka || '').replace(/"/g, '""')
-      const tip = m.tipMeritve ? tipMeritveLabels[m.tipMeritve] : 'Razdalja'
-      const status = statusLabels[m.status || 'OSNUTEK']
-      const lokacija = (m.lokacija || '').replace(/"/g, '""')
-      const segment = (m.segmentId || '').replace(/"/g, '""')
-      const dMm = String(m.dolzinaMm)
-      const dCm = String(Math.round(m.dolzinaMm / 10))
-      const dM = (m.dolzinaMm / 1000).toFixed(2)
-      const vMm = String(m.visinaMm)
-      const vCm = String(Math.round(m.visinaMm / 10))
-      const vM = (m.visinaMm / 1000).toFixed(2)
-      const stebri = m.steviloStebrov ? String(m.steviloStebrov) : ''
-      const podlaga = m.tipPodlage ? (groundTypeLabels[m.tipPodlage as GroundType] || m.tipPodlage) : ''
-      const kot = m.kot ? String(m.kot) : ''
-      const opomba = (m.opomba || '').replace(/"/g, '""')
-      const opombe = (m.opombe || '').replace(/"/g, '""')
-      const datum = slDatumKratko(new Date(m.createdAt))
-      return `"${oznaka}","${tip}","${status}","${lokacija}","${segment}",${dMm},${dCm},${dM},${vMm},${vCm},${vM},"${stebri}","${podlaga}",${kot},"${opomba}","${opombe}",${datum}`
-    })
-    const csvContent = '\uFEFF' + header + '\n' + rows.join('\n')
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `meritve_izbrane_${new Date().toISOString().slice(0, 10)}.csv`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
+    // R348 FAZA 5 — EN VIR: ISTI gradnik kot handleExportCSV (prej stale
+    // kopija z 2. resnico); samo vhodni seznam = izbrane meritve.
+    const csvContent = csvDokument(MERITVE_CSV_HEADER, zgradiMeritveVrstice(selected))
+    downloadCsvText(`meritve_izbrane_${new Date().toISOString().slice(0, 10)}.csv`, csvContent)
     pushAudit({
       akcija: 'EDIT',
       meritevId: 'bulk',
@@ -3155,24 +3102,19 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
       return
     }
     const header = 'Cas,Akcija,MeritevId,Opis,StaraVrednost,NovaVrednost'
+    // R348 FAZA 5 — EN VIR: csvEsc ×3 + csvDokument + kanon
+    // downloadCsvText (prej inline Blob blok — ista semantika, bajtno
+    // ista vsebina).
     const rows = auditEntries.map((e) => {
       const cas = `${slDatumKratko(new Date(e.timestamp))}, ${slCasDolgo(new Date(e.timestamp))}`
       const akcija = auditActionLabels[e.akcija]
-      const opis = e.opis.replace(/"/g, '""')
-      const stara = (e.staraVrednost || '').replace(/"/g, '""')
-      const nova = (e.novaVrednost || '').replace(/"/g, '""')
+      const opis = csvEsc(e.opis)
+      const stara = csvEsc(e.staraVrednost)
+      const nova = csvEsc(e.novaVrednost)
       return `"${cas}","${akcija}","${e.meritevId}","${opis}","${stara}","${nova}"`
     })
-    const csvContent = '\uFEFF' + header + '\n' + rows.join('\n')
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `zgodovina_${selectedProject}_${new Date().toISOString().slice(0, 10)}.csv`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
+    const csvContent = csvDokument(header, rows)
+    downloadCsvText(`zgodovina_${selectedProject}_${new Date().toISOString().slice(0, 10)}.csv`, csvContent)
     toast.success('Zgodovina izvožena (CSV)')
   }
 
@@ -5915,7 +5857,9 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   type="button"
                   onClick={handleBulkExportCSV}
                   disabled={selectedIds.size === 0}
-                  className="flex items-center justify-center gap-1 rounded-md border border-roksal-navy/20 dark:border-roksal-ink/20 bg-background px-2 py-1 text-2xs font-medium text-roksal-ink hover:bg-roksal-navy/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  className="flex items-center justify-center gap-1 rounded-md border border-roksal-navy/20 dark:border-roksal-ink/20 bg-background px-2 py-1 text-2xs font-medium text-roksal-ink hover:bg-roksal-navy/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                  aria-label="Izvozi izbrane meritve kot CSV"
+                  title="Izvozi samo izbrane meritve kot CSV za Excel"
                 >
                   <Download aria-hidden="true" className="h-3 w-3" />
                   Izvozi izbrane CSV
@@ -6184,7 +6128,9 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               <button
                 type="button"
                 onClick={handleExportCSV}
-                className="flex items-center gap-1 rounded-lg border border-roksal-navy/20 dark:border-roksal-ink/20 bg-roksal-navy/5 px-2 py-1 text-2xs font-medium text-roksal-ink hover:bg-roksal-navy/10 active:scale-[0.96] transition-all duration-150"
+                className="flex items-center gap-1 rounded-lg border border-roksal-navy/20 dark:border-roksal-ink/20 bg-roksal-navy/5 px-2 py-1 text-2xs font-medium text-roksal-ink hover:bg-roksal-navy/10 active:scale-[0.96] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                aria-label="Izvozi vse meritve kot CSV"
+                title="Izvozi VSE meritve projekta (brez filtra) kot CSV za Excel"
                 disabled={loading || measurements.length === 0}
               >
                 <Download aria-hidden="true" className="h-3 w-3" />
@@ -6193,7 +6139,9 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               <button
                 type="button"
                 onClick={handleExportPDF}
-                className="flex items-center gap-1 rounded-lg border border-roksal-amber/30 bg-roksal-amber/10 px-2 py-1 text-2xs font-medium text-roksal-amber hover:bg-roksal-amber/20 active:scale-[0.96] transition-all duration-150"
+                className="flex items-center gap-1 rounded-lg border border-roksal-amber/30 bg-roksal-amber/10 px-2 py-1 text-2xs font-medium text-roksal-amber hover:bg-roksal-amber/20 active:scale-[0.96] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                aria-label="Izvozi pregled meritev kot PDF"
+                title="Pregled vseh meritev projekta kot PDF za arhiv"
                 disabled={loading || measurements.length === 0}
               >
                 <FileText aria-hidden="true" className="h-3 w-3" />
@@ -6359,9 +6307,11 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                       type="button"
                       variant="outline"
                       size="sm"
-                      className="h-7 text-[11px] ml-auto"
+                      className="h-7 text-[11px] ml-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
                       onClick={handleExportAuditCSV}
                       disabled={auditEntries.length === 0}
+                      aria-label="Izvozi zgodovino meritev kot CSV"
+                      title="Revizijska zgodovina meritev (akcije, statusi) kot CSV"
                     >
                       <FileSpreadsheet aria-hidden="true" className="mr-1 h-3 w-3" />
                       Izvozi zgodovino
