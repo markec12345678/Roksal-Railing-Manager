@@ -2810,8 +2810,9 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
             <Button type="button" variant="outline" onClick={() => setNewScheduleOpen(false)}>Prekliči</Button>
             {/* R244 — pisalni submit viden SAMO s pravico (R243 Osnutek
                 precedens); mikro-pritisk = družina ostalih dialogov. */}
+            {/* R352 — val 35 a11y pariteta (kanon R346): vidno besedilo "Shrani" NE razlaga CILJA — aria-label + title + ring v istem commitu. */}
             {lahkoUpravljaProizvodnjo && (
-              <Button type="button" onClick={handleCreateSchedule} className="bg-roksal-navy hover:bg-roksal-navy/90 text-white shadow-sm transition-all press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 disabled:opacity-50">Shrani</Button>
+              <Button type="button" onClick={handleCreateSchedule} aria-label="Shrani nov razpored" title="Shrani nov razpored v proizvodnjo" className="bg-roksal-navy hover:bg-roksal-navy/90 text-white shadow-sm transition-all press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 disabled:opacity-50">Shrani</Button>
             )}
           </DialogFooter>
         </DialogContent>
@@ -2868,7 +2869,8 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
           <div><Label className="text-xs">Naziv ekipe</Label><Input value={crewNaziv} onChange={(e) => setCrewNaziv(e.target.value)} placeholder="npr. Ekipa A" className="h-9" /></div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setNewCrewOpen(false)}>Prekliči</Button>
-            <Button type="button" onClick={handleCreateCrew} className="bg-roksal-navy text-white">Shrani</Button>
+            {/* R352 — val 35 a11y pariteta (kanon R346): aria-label + title + izrecen ring navy/40 V ISTEM commitu. */}
+            <Button type="button" onClick={handleCreateCrew} aria-label="Shrani novo ekipo" title="Shrani novo ekipo v proizvodnjo" className="bg-roksal-navy text-white focus-visible:ring-2 focus-visible:ring-roksal-navy/40">Shrani</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -2889,8 +2891,9 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setNewEquipOpen(false)}>Prekliči</Button>
             {/* R244 — pisalni submit viden SAMO s pravico + mikro-pritisk. */}
+            {/* R352 — val 35 a11y pariteta (kanon R346): aria-label + title + ring v istem commitu. */}
             {lahkoUpravljaProizvodnjo && (
-              <Button type="button" onClick={handleCreateEquip} className="bg-roksal-navy hover:bg-roksal-navy/90 text-white shadow-sm transition-all press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 disabled:opacity-50">Shrani</Button>
+              <Button type="button" onClick={handleCreateEquip} aria-label="Shrani novo opremo" title="Shrani novo opremo v zalogo opreme" className="bg-roksal-navy hover:bg-roksal-navy/90 text-white shadow-sm transition-all press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 disabled:opacity-50">Shrani</Button>
             )}
           </DialogFooter>
         </DialogContent>

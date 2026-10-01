@@ -1,0 +1,30 @@
+# qa-needles/r352.tsv — REGISTER needlejev runde R352 (kalkulator
+# pdf-exports GLIFNI POPRAVEK: helvetica → registerSloPdfFonts [Roboto
+# subset latin-ext — r269/R351 vzorec; 29 setFont mest × 5 gradnikov:
+# predloga vrtanja / materialni list / razrezni list CNC / vetrno poročilo /
+# steklena balustrada; č/š/ž v glavah/povzetkih/tabelah sedaj pravilni;
+# ENA vsebinska sprememba izvoza iskreno dokumentirana; kalkulator jedro
+# NIČ] + STIL val 35: a11y parity dialog "Shrani" bratov [logistika
+# razpored/ekipa/oprema + materialna inteligenca dobavitelj] — aria-label
+# akcija+cilj + title + izrecen ring navy/40 V ISTEM commitu — LEKCIJA
+# R346 kanon; 2 brata NOV ring [ekipa, dobavitelj]).
+# ============================================================================
+# FORMAT (TSV; EN vrstica = EN needle; TAB je LOČILO) — kanon R340–R351.
+#   <needle_string><TAB><opis><TAB><vrsta>
+# vrsta: need_static (MORA biti ŽIV v čankih) | must_miss (NE SME biti)
+
+# ── R352 lastni needleji ──
+# GLIFNI POPRAVEK: NI edinstvenega build needleja (registerSloPdfFonts je v
+# čankih ŽE od R269 prek lib/meritve-teren-pdf + R351 prek pdf-seznam —
+# iskrena omejitev, ista kot R351: pokritost = tsc + vitest r352-kalkulator-font
+# ×10 [FontFile2 bajtni dokaz + 0 × helvetica counting] + E2E regresija).
+# STIL val 35: statične aria/title celote (NOVI nizi — era-diskriminatorji):
+Shrani nov razpored	R352 val 35 razpored Shrani aria (logistika — vidno besedilo NE razlaga cilja)	need_static
+Shrani nov razpored v proizvodnjo	R352 val 35 razpored Shrani title	need_static
+Shrani novo ekipo	R352 val 35 ekipa Shrani aria (logistika — NOV ring v istem commitu)	need_static
+Shrani novo ekipo v proizvodnjo	R352 val 35 ekipa Shrani title	need_static
+Shrani novo opremo	R352 val 35 oprema Shrani aria (logistika)	need_static
+Shrani novo opremo v zalogo opreme	R352 val 35 oprema Shrani title	need_static
+Shrani novega dobavitelja	R352 val 35 dobavitelj Shrani aria (materialna inteligenca — NOV ring)	need_static
+Shrani novega dobavitelja v register dobaviteljev	R352 val 35 dobavitelj Shrani title	need_static
+TODO-R352	R352 — brez razvojnih ostankov	must_miss

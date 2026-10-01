@@ -2194,7 +2194,8 @@ export function MaterialIntelligenceTab({
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setSupplierDialogOpen(false)}>Prekliči</Button>
-            <Button type="button" onClick={handleCreateSupplier} className="w-full bg-roksal-navy text-white press-scale">Shrani</Button>
+            {/* R352 — val 35 a11y pariteta (kanon R346): vidno besedilo "Shrani" NE razlaga CILJA — aria-label + title + izrecen ring navy/40 V ISTEM commitu. */}
+            <Button type="button" onClick={handleCreateSupplier} aria-label="Shrani novega dobavitelja" title="Shrani novega dobavitelja v register dobaviteljev" className="w-full bg-roksal-navy text-white press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40">Shrani</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -7,10 +7,22 @@
 // projekcije POSREDOVANEGA stanja). Tipa CncSegment + GlassType sta se
 // preselila iz telesa komponente (uporaba: stanje + PDF + JSX).
 // Brez 'use client' — del client drevesa (kanon R319/R321).
+// R352 — GLIFNI POPRAVEK (r269/R351 vzorec): standard helvetica (WinAnsi —
+// č/š/ž NE renderirata: 'Širina palice' → artefakt, 'Število letvev' →
+// pokvarjeno) → registerSloPdfFonts (Roboto subset latin-ext, 23 KB na
+// varianto, base64 v lib/pdf-sl-font-data) + setFont Roboto na VSEH 29
+// mestih (5 gradnikov). ENA vsebinska sprememba izvoza — iskreno
+// dokumentirana (r269/R351 kanon): izvoženi PDF-i se SPROTI spremenijo
+// (vgrajeni fonti + pravilni šumniki v glavah/povzetkih/tabelah/nogah);
+// vsebina (številke, izračuni, oznake) ostane NESPREMENJENA — kalkulator
+// jedro (@/lib/calculator) NIČ. Časovni žigi (new Date/Date.now) so
+// OBSTOJEČA klicateljeva resnica tega modula (izven r350/R351
+// build/generate kontrakta) — izven obsega tega poprava.
 
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { toast } from 'sonner'
+import { registerSloPdfFonts } from '@/lib/pdf-sl-font'
 import {
   applyReserve,
   calculateAkontacija,
@@ -57,6 +69,9 @@ export function exportBalusterPdf(args: {
   const W = parseFloat(balWidth)
   const G = parseFloat(balMaxGap)
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
+  // R352 — slovenski glifi: Roboto subset (kanon r269/R351 — kliči pred
+  // prvo setFont; VFS je na dokumentu, registracija je idempotentna).
+  registerSloPdfFonts(doc)
   const pageW = doc.internal.pageSize.getWidth()
 
   // Navy header
@@ -64,10 +79,10 @@ export function exportBalusterPdf(args: {
   doc.rect(0, 0, pageW, 22, 'F')
   doc.setTextColor(255, 255, 255)
   doc.setFontSize(15)
-  doc.setFont('helvetica', 'bold')
+  doc.setFont('Roboto', 'bold')
   doc.text('ROKSAL — Predloga vrtanja', 14, 12)
   doc.setFontSize(9)
-  doc.setFont('helvetica', 'normal')
+  doc.setFont('Roboto', 'normal')
   doc.text('Kranj, Slovenija', 14, 18)
   // Amber accent
   doc.setFillColor(245, 158, 11)
@@ -76,14 +91,14 @@ export function exportBalusterPdf(args: {
   let y = 30
   doc.setTextColor(20, 20, 20)
   doc.setFontSize(11)
-  doc.setFont('helvetica', 'bold')
+  doc.setFont('Roboto', 'bold')
   doc.text('Parameter', 14, y)
   doc.text('Vrednost', 80, y)
   y += 4
   doc.setDrawColor(220, 220, 220)
   doc.line(14, y, pageW - 14, y)
   y += 5
-  doc.setFont('helvetica', 'normal')
+  doc.setFont('Roboto', 'normal')
   doc.setFontSize(10)
   const rows: [string, string][] = [
     ['Skupna dolžina', `${L.toFixed(0)}mm (${(L / 1000).toFixed(2)}m)`],
@@ -106,7 +121,7 @@ export function exportBalusterPdf(args: {
   // Hole template table (centers for drilling)
   y += 4
   doc.setFontSize(11)
-  doc.setFont('helvetica', 'bold')
+  doc.setFont('Roboto', 'bold')
   doc.setTextColor(29, 43, 62)
   doc.text('Pozicije lukenj (centri palic) od prve točke', 14, y)
   y += 3
@@ -167,6 +182,9 @@ export function exportMaterialPdf(args: {
   } = args
   if (!materialResult) return
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
+  // R352 — slovenski glifi: Roboto subset (kanon r269/R351 — kliči pred
+  // prvo setFont; VFS je na dokumentu, registracija je idempotentna).
+  registerSloPdfFonts(doc)
   const pageW = doc.internal.pageSize.getWidth()
 
   // Navy header
@@ -174,10 +192,10 @@ export function exportMaterialPdf(args: {
   doc.rect(0, 0, pageW, 22, 'F')
   doc.setTextColor(255, 255, 255)
   doc.setFontSize(15)
-  doc.setFont('helvetica', 'bold')
+  doc.setFont('Roboto', 'bold')
   doc.text('ROKSAL — Materialni list', 14, 12)
   doc.setFontSize(9)
-  doc.setFont('helvetica', 'normal')
+  doc.setFont('Roboto', 'normal')
   doc.text('Kranj, Slovenija', 14, 18)
   // Amber accent
   doc.setFillColor(245, 158, 11)
@@ -186,7 +204,7 @@ export function exportMaterialPdf(args: {
   let y = 30
   doc.setTextColor(20, 20, 20)
   doc.setFontSize(10)
-  doc.setFont('helvetica', 'normal')
+  doc.setFont('Roboto', 'normal')
   doc.text(`Profil: ${materialResult.selectedProfile?.naziv ?? '—'} (${materialResult.selectedProfile?.sifra ?? '—'})`, 14, y)
   y += 5
   if (projectName.trim()) {
@@ -307,6 +325,9 @@ export function exportCncPdf(args: {
   const { cncResult, cncStockLength, cncSawBlade, cncSegments, projectName } = args
   if (!cncResult) return
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
+  // R352 — slovenski glifi: Roboto subset (kanon r269/R351 — kliči pred
+  // prvo setFont; VFS je na dokumentu, registracija je idempotentna).
+  registerSloPdfFonts(doc)
   const pageW = doc.internal.pageSize.getWidth()
 
   // Navy header
@@ -314,10 +335,10 @@ export function exportCncPdf(args: {
   doc.rect(0, 0, pageW, 22, 'F')
   doc.setTextColor(255, 255, 255)
   doc.setFontSize(15)
-  doc.setFont('helvetica', 'bold')
+  doc.setFont('Roboto', 'bold')
   doc.text('ROKSAL — Razrezni list CNC', 14, 12)
   doc.setFontSize(9)
-  doc.setFont('helvetica', 'normal')
+  doc.setFont('Roboto', 'normal')
   doc.text('Kranj, Slovenija', 14, 18)
   doc.setFillColor(245, 158, 11)
   doc.rect(0, 22, pageW, 1.5, 'F')
@@ -325,7 +346,7 @@ export function exportCncPdf(args: {
   let y = 30
   doc.setTextColor(20, 20, 20)
   doc.setFontSize(10)
-  doc.setFont('helvetica', 'normal')
+  doc.setFont('Roboto', 'normal')
   doc.text(`Dolžina profila: ${cncStockLength}mm`, 14, y)
   y += 5
   doc.text(`Širina reza: ${cncSawBlade}mm`, 14, y)
@@ -341,7 +362,7 @@ export function exportCncPdf(args: {
 
   // Seznam odsekov
   doc.setFontSize(11)
-  doc.setFont('helvetica', 'bold')
+  doc.setFont('Roboto', 'bold')
   doc.setTextColor(29, 43, 62)
   doc.text('Zahtevani odseki', 14, y)
   y += 4
@@ -361,7 +382,7 @@ export function exportCncPdf(args: {
 
   let y2 = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8
   doc.setFontSize(11)
-  doc.setFont('helvetica', 'bold')
+  doc.setFont('Roboto', 'bold')
   doc.setTextColor(29, 43, 62)
   doc.text('Razrezni načrt', 14, y2)
   y2 += 4
@@ -390,10 +411,10 @@ export function exportCncPdf(args: {
   if (cncResult.warnings.length > 0) {
     const y3 = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8
     doc.setFontSize(10)
-    doc.setFont('helvetica', 'bold')
+    doc.setFont('Roboto', 'bold')
     doc.setTextColor(245, 158, 11)
     doc.text('Opozorila', 14, y3)
-    doc.setFont('helvetica', 'normal')
+    doc.setFont('Roboto', 'normal')
     doc.setFontSize(8)
     doc.setTextColor(80, 80, 80)
     cncResult.warnings.forEach((w, i) => {
@@ -432,6 +453,9 @@ export function exportWindLocPdf(args: {
   } = args
   if (!windLocResult) return
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
+  // R352 — slovenski glifi: Roboto subset (kanon r269/R351 — kliči pred
+  // prvo setFont; VFS je na dokumentu, registracija je idempotentna).
+  registerSloPdfFonts(doc)
   const pageW = doc.internal.pageSize.getWidth()
 
   // Navy header
@@ -439,10 +463,10 @@ export function exportWindLocPdf(args: {
   doc.rect(0, 0, pageW, 22, 'F')
   doc.setTextColor(255, 255, 255)
   doc.setFontSize(15)
-  doc.setFont('helvetica', 'bold')
+  doc.setFont('Roboto', 'bold')
   doc.text('ROKSAL — Vetrno poročilo', 14, 12)
   doc.setFontSize(9)
-  doc.setFont('helvetica', 'normal')
+  doc.setFont('Roboto', 'normal')
   doc.text('Kranj, Slovenija', 14, 18)
   doc.setFillColor(245, 158, 11)
   doc.rect(0, 22, pageW, 1.5, 'F')
@@ -450,10 +474,10 @@ export function exportWindLocPdf(args: {
   let y = 30
   doc.setTextColor(20, 20, 20)
   doc.setFontSize(11)
-  doc.setFont('helvetica', 'bold')
+  doc.setFont('Roboto', 'bold')
   doc.text('Lokacija', 14, y)
   y += 5
-  doc.setFont('helvetica', 'normal')
+  doc.setFont('Roboto', 'normal')
   doc.setFontSize(10)
   doc.text(`${windLocResult.locationDescription}`, 14, y)
   y += 5
@@ -484,11 +508,11 @@ export function exportWindLocPdf(args: {
   let y2 = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8
   if (windLocResult.recommendations.length > 0) {
     doc.setFontSize(11)
-    doc.setFont('helvetica', 'bold')
+    doc.setFont('Roboto', 'bold')
     doc.setTextColor(245, 158, 11)
     doc.text('Priporočila', 14, y2)
     y2 += 5
-    doc.setFont('helvetica', 'normal')
+    doc.setFont('Roboto', 'normal')
     doc.setFontSize(9)
     doc.setTextColor(60, 60, 60)
     windLocResult.recommendations.forEach((r, i) => {
@@ -526,6 +550,9 @@ export function exportGlassPdf(args: {
   const { glassResult, glassInput, projectName } = args
   if (!glassResult) return
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
+  // R352 — slovenski glifi: Roboto subset (kanon r269/R351 — kliči pred
+  // prvo setFont; VFS je na dokumentu, registracija je idempotentna).
+  registerSloPdfFonts(doc)
   const pageW = doc.internal.pageSize.getWidth()
 
   // Navy header
@@ -533,10 +560,10 @@ export function exportGlassPdf(args: {
   doc.rect(0, 0, pageW, 22, 'F')
   doc.setTextColor(255, 255, 255)
   doc.setFontSize(15)
-  doc.setFont('helvetica', 'bold')
+  doc.setFont('Roboto', 'bold')
   doc.text('ROKSAL — Steklena balustrada specifikacija', 14, 12)
   doc.setFontSize(9)
-  doc.setFont('helvetica', 'normal')
+  doc.setFont('Roboto', 'normal')
   doc.text('Kranj, Slovenija', 14, 18)
   doc.setFillColor(245, 158, 11)
   doc.rect(0, 22, pageW, 1.5, 'F')
@@ -544,7 +571,7 @@ export function exportGlassPdf(args: {
   let y = 30
   doc.setTextColor(20, 20, 20)
   doc.setFontSize(10)
-  doc.setFont('helvetica', 'normal')
+  doc.setFont('Roboto', 'normal')
   const glassTypeLabelsLocal: Record<GlassType, string> = {
     single: 'Enojno steklo',
     laminated: 'Laminirano steklo',
@@ -579,7 +606,7 @@ export function exportGlassPdf(args: {
 
   let y2 = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8
   doc.setFontSize(11)
-  doc.setFont('helvetica', 'bold')
+  doc.setFont('Roboto', 'bold')
   doc.setTextColor(29, 43, 62)
   doc.text('Alternativne debeline', 14, y2)
   y2 += 4
@@ -601,11 +628,11 @@ export function exportGlassPdf(args: {
   let y3 = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8
   if (glassResult.warnings.length > 0) {
     doc.setFontSize(11)
-    doc.setFont('helvetica', 'bold')
+    doc.setFont('Roboto', 'bold')
     doc.setTextColor(245, 158, 11)
     doc.text('Opozorila', 14, y3)
     y3 += 5
-    doc.setFont('helvetica', 'normal')
+    doc.setFont('Roboto', 'normal')
     doc.setFontSize(8)
     doc.setTextColor(80, 80, 80)
     glassResult.warnings.forEach((w, i) => {
@@ -618,11 +645,11 @@ export function exportGlassPdf(args: {
 
   if (glassResult.recommendations.length > 0) {
     doc.setFontSize(11)
-    doc.setFont('helvetica', 'bold')
+    doc.setFont('Roboto', 'bold')
     doc.setTextColor(29, 43, 62)
     doc.text('Priporočila', 14, y3)
     y3 += 5
-    doc.setFont('helvetica', 'normal')
+    doc.setFont('Roboto', 'normal')
     doc.setFontSize(8)
     doc.setTextColor(60, 60, 60)
     glassResult.recommendations.forEach((r, i) => {

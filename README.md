@@ -103,7 +103,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 45 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **5039** (308 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **5057** (310 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 143 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -1025,6 +1025,29 @@ Sheet z 6 podzavihki:
   5039/5039 (308); (4) verifikacija: tsc 0 · eslint 0 (FULL) · build svež
   EXIT=0 · needles r351 VSE OK (veriga + union registri r340–r351) · smoke
   EXIT=0 · e2e EXIT=0 [ODTIS BAJTNATO IDENTIČEN pre==post — ZERO-MUTACIJA].
+- **Kalkulator pdf-exports glifni popravek + val 35** (R352): (1)
+  **helvetica → registerSloPdfFonts** (r269/R351 vzorec): standard WinAnsi
+  NI nosil č/š/ž ('Širina palice', 'Število letvev', 'Širina reza' →
+  pokvarjeno); 29 × setFont Roboto (15 bold + 14 normal) prek 5 gradnikov
+  [predloga vrtanja / materialni list / razrezni list CNC / vetrno poročilo /
+  steklena balustrada] + 5 × registerSloPdfFonts (po new jsPDF, pred prvo
+  setFont) — ENA vsebinska sprememba izvoza iskreno dokumentirana (izvoženi
+  PDF-i se spremenijo: vgrajeni fonti + pravilni šumniki; vsebina/izračuni
+  NESPREMENJENI — kalkulator jedro NIČ; časovni žigi = obstoječa klicateljeva
+  resnica); /FontFile2 bajtni dokaz glifne zmogljivosti; (2) **val 35** —
+  a11y parity dialog "Shrani" bratov: logistika razpored/ekipa/oprema +
+  materialna inteligenca dobavitelj dobi aria-label (akcija + cilj) + title
+  + izrecen ring navy/40 V ISTEM commitu (ekipa + dobavitelj NOV ring,
+  razpored + oprema že od val 30/32); 0 novih hex; (3) vitest r352 ×18
+  (2 NOVI datoteki: r352-kalkulator-font ×10 [vir dokaz ×5 + pozicije per
+  gradnik + 0-helvetica counting 15/14 + FontFile2 glifni dokaz na ujetih
+  dokumentih prek podrazred-mocka jsPDF 4.x (save = instančna own property
+  — LEKCIJA) + getFontList Roboto + VERBATIM regresija + družinska
+  konsistenznost 3 potrošniki] + r352-stil-val35 ×8 [4 parity bratje +
+  ring struktura + 0-hex + obrnjena regresija val 33/34]) — 5057/5057
+  (310); (4) verifikacija: tsc 0 · eslint 0 (FULL) · build svež EXIT=0 ·
+  needles r352 VSE OK (veriga + union registri r340–r352) · smoke EXIT=0 ·
+  e2e EXIT=0 [ODTIS BAJTNATO IDENTIČEN pre==post — ZERO-MUTACIJA].
 - **Kalkulator FAZA 6 + val 29** (R346): (1) NOV `calculator/inputs.ts` —
   zbiranje/nalaganje vhodov izluščeno VERBATIM iz taba (args objekti —
   vzorec R325/R345): `collectCurrentInputs(mode, vhodnaStanja)` (zapis za
@@ -1239,7 +1262,7 @@ Sheet z 6 podzavihki:
 | **PWA** | Service Worker + Web Manifest |
 | **Temnitveni način** | [next-themes](https://github.com/pacocoursey/next-themes) |
 | **Validacija** | [Zod 4](https://zod.dev/) |
-| **Testiranje** | [Vitest 4](https://vitest.dev/) (5039 testov + globalSetup embedded PG) |
+| **Testiranje** | [Vitest 4](https://vitest.dev/) (5057 testov + globalSetup embedded PG) |
 | **Paketni upravitelj** | [Bun](https://bun.sh/) |
 | **Linting** | ESLint 9 + eslint-config-next |
 
@@ -1361,7 +1384,7 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `bun run dev` | Zažene Next.js dev server (port 3000) |
 | `bun run build` | Produkcijska build (build-prepare: generate + migrate deploy + seed) |
 | `bun run start` | Zažene produkcijski server |
-| `bun run test` | Vsi testi (vitest, 5039, embedded PG prek globalSetup) |
+| `bun run test` | Vsi testi (vitest, 5057, embedded PG prek globalSetup) |
 | `bun run check` | tsc --noEmit + vitest run (en ukaz za vse) |
 | `bunx tsc --noEmit` | Tipska kontrola celotnega projekta (trenutno 0 napak) |
 | `bun run lint` | ESLint preverjanje |
