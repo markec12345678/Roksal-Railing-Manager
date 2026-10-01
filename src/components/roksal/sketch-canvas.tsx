@@ -811,7 +811,9 @@ export function SketchCanvas({ projectId, onClose }: SketchCanvasProps) {
               type="button"
               onClick={handleSave}
               disabled={saving}
-              className="bg-roksal-amber hover:bg-roksal-amber/90 text-white"
+              aria-label="Shrani skico v register skic projekta"
+              title="Shrani novo skico v register skic projekta"
+              className="bg-roksal-amber hover:bg-roksal-amber/90 text-white focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
             >
               {saving ? (
                 <>

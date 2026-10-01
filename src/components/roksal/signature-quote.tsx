@@ -12,6 +12,7 @@ import SignatureCanvas from 'react-signature-canvas'
 import { Pen, Eraser, Check, X, FileText, User, Download } from 'lucide-react'
 import { slDatumKratko } from '@/lib/csv-export'
 import jsPDF from 'jspdf'
+import { registerSloPdfFonts } from '@/lib/pdf-sl-font'
 
 interface SignedQuoteData {
   projectName: string
@@ -97,6 +98,9 @@ export function SignatureQuote({ quoteData, monterName = 'Monter Roksal', projec
     setGenerating(true)
     try {
       const doc = new jsPDF({ unit: 'mm', format: 'a4' })
+      // R353 — slovenski glifi: Roboto subset (kanon r269/R351/R352 — kliči
+      // pred prvo setFont; VFS je na dokumentu, registracija je idempotentna).
+      registerSloPdfFonts(doc)
       const pageW = doc.internal.pageSize.getWidth()
       const COLORS = {
         navy: [29, 43, 62] as [number, number, number],
@@ -113,32 +117,32 @@ export function SignatureQuote({ quoteData, monterName = 'Monter Roksal', projec
       doc.rect(14, 8, 14, 14, 'F')
       doc.setTextColor(...COLORS.white)
       doc.setFontSize(18)
-      doc.setFont('helvetica', 'bold')
+      doc.setFont('Roboto', 'bold')
       doc.text('R', 19, 19)
       doc.setFontSize(15)
       doc.text('ROKSAL d.o.o.', 32, 15)
       doc.setFontSize(9)
-      doc.setFont('helvetica', 'normal')
+      doc.setFont('Roboto', 'normal')
       doc.text('Kranj · Ograje in terase po meri', 32, 21)
       doc.setFontSize(14)
-      doc.setFont('helvetica', 'bold')
+      doc.setFont('Roboto', 'bold')
       doc.text('PONUDBA S PODPISOM', pageW - 14, 15, { align: 'right' })
       doc.setFontSize(8)
-      doc.setFont('helvetica', 'normal')
+      doc.setFont('Roboto', 'normal')
       doc.text(quoteData.datum, pageW - 14, 21, { align: 'right' })
 
       let y = 44
       // Stranka
       doc.setTextColor(...COLORS.dark)
       doc.setFontSize(11)
-      doc.setFont('helvetica', 'bold')
+      doc.setFont('Roboto', 'bold')
       doc.text('STRANKA', 14, y)
       doc.setDrawColor(...COLORS.amber)
       doc.setLineWidth(0.5)
       doc.line(14, y + 1.5, pageW - 14, y + 1.5)
       y += 6
       doc.setFontSize(9)
-      doc.setFont('helvetica', 'normal')
+      doc.setFont('Roboto', 'normal')
       doc.text(`Ime: ${customerName || quoteData.customerName}`, 14, y)
       doc.text(`Naslov: ${quoteData.customerAddress}`, 14, y + 5)
       if (quoteData.customerPhone) {
@@ -147,19 +151,19 @@ export function SignatureQuote({ quoteData, monterName = 'Monter Roksal', projec
       y += 18
 
       // Projekt
-      doc.setFont('helvetica', 'bold')
+      doc.setFont('Roboto', 'bold')
       doc.setFontSize(11)
       doc.text('PROJEKT', 14, y)
       doc.setDrawColor(...COLORS.amber)
       doc.line(14, y + 1.5, pageW - 14, y + 1.5)
       y += 6
-      doc.setFont('helvetica', 'normal')
+      doc.setFont('Roboto', 'normal')
       doc.setFontSize(9)
       doc.text(quoteData.projectName, 14, y)
       y += 8
 
       // Postavke
-      doc.setFont('helvetica', 'bold')
+      doc.setFont('Roboto', 'bold')
       doc.setFontSize(11)
       doc.text('POSTAVKE', 14, y)
       doc.setDrawColor(...COLORS.amber)
@@ -168,7 +172,7 @@ export function SignatureQuote({ quoteData, monterName = 'Monter Roksal', projec
 
       // Tabela postavk
       doc.setFontSize(8)
-      doc.setFont('helvetica', 'bold')
+      doc.setFont('Roboto', 'bold')
       doc.setFillColor(...COLORS.navy)
       doc.rect(14, y, pageW - 28, 6, 'F')
       doc.setTextColor(...COLORS.white)
@@ -180,7 +184,7 @@ export function SignatureQuote({ quoteData, monterName = 'Monter Roksal', projec
       y += 6
 
       doc.setTextColor(...COLORS.dark)
-      doc.setFont('helvetica', 'normal')
+      doc.setFont('Roboto', 'normal')
       quoteData.items.forEach((item, i) => {
         if (i % 2 === 0) {
           doc.setFillColor(245, 247, 250)
@@ -200,12 +204,12 @@ export function SignatureQuote({ quoteData, monterName = 'Monter Roksal', projec
       doc.rect(pageW - 80, y, 66, 22, 'F')
       doc.setTextColor(...COLORS.white)
       doc.setFontSize(9)
-      doc.setFont('helvetica', 'normal')
+      doc.setFont('Roboto', 'normal')
       doc.text('Brez DDV:', pageW - 76, y + 6)
       doc.text(`${quoteData.skupajBrezDDV.toFixed(2)} €`, pageW - 18, y + 6, { align: 'right' })
       doc.text('DDV (22%):', pageW - 76, y + 12)
       doc.text(`${quoteData.ddv.toFixed(2)} €`, pageW - 18, y + 12, { align: 'right' })
-      doc.setFont('helvetica', 'bold')
+      doc.setFont('Roboto', 'bold')
       doc.setFontSize(11)
       doc.text('SKUPAJ:', pageW - 76, y + 19)
       doc.text(`${quoteData.skupajZDDV.toFixed(2)} €`, pageW - 18, y + 19, { align: 'right' })
@@ -215,7 +219,7 @@ export function SignatureQuote({ quoteData, monterName = 'Monter Roksal', projec
       // Pogoji
       doc.setTextColor(...COLORS.gray)
       doc.setFontSize(7)
-      doc.setFont('helvetica', 'normal')
+      doc.setFont('Roboto', 'normal')
       const veljavnost = quoteData.veljavnostDni || 30
       const pogoji = `Ponudba velja ${veljavnost} dni. Cena vključuje material in montažo. Garancija 15 let na WPC. Plačilo: 50% akontacija ob naročilu, 50% ob prevzemu.`
       const pogojiLines = doc.splitTextToSize(pogoji, pageW - 28)
@@ -225,7 +229,7 @@ export function SignatureQuote({ quoteData, monterName = 'Monter Roksal', projec
       // Podpisni del
       doc.setTextColor(...COLORS.dark)
       doc.setFontSize(11)
-      doc.setFont('helvetica', 'bold')
+      doc.setFont('Roboto', 'bold')
       doc.text('PRIMOPREDAJA S PODPISOM', 14, y)
       doc.setDrawColor(...COLORS.amber)
       doc.setLineWidth(0.8)
@@ -257,7 +261,7 @@ export function SignatureQuote({ quoteData, monterName = 'Monter Roksal', projec
 
       // Labele
       doc.setFontSize(9)
-      doc.setFont('helvetica', 'normal')
+      doc.setFont('Roboto', 'normal')
       doc.setTextColor(...COLORS.dark)
       doc.text('Stranka:', podpisLevi, y + 30)
       doc.text(customerName || quoteData.customerName, podpisLevi + 18, y + 30)

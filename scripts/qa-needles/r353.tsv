@@ -1,0 +1,27 @@
+# qa-needles/r353.tsv — REGISTER needlejev runde R353 (GLIFNI POPRAVEK za
+# preostale komponentne PDF potrošnike: helvetica → registerSloPdfFonts
+# [kanon r269/R351/R352; 4 potrošniki × 41 setFont mest: post-signature-panel
+# 11 + floor-plan-tab 8 + reference-gallery 6 [1× italic→normal, iskreno
+# dokumentirano] + signature-quote 16; č/š/ž v izvoženih PDF-ih sedaj pravilni;
+# ENA vsebinska sprememba izvoza na potrošnika — iskreno dokumentirana]
+# + STIL val 36: a11y parity Shrani/Dodaj/Uvozi dialog bratov [reference-gallery
+# Dodaj + sketch-canvas Shrani skico + CRM Shrani urejanje + meritve AR uvoz] —
+# aria-label akcija+cilj + title + izrecen ring navy/40 V ISTEM commitu —
+# LEKCIJA R346 kanon; 3 brata NOV ring, CRM ga je že nosil.
+# ============================================================================
+# FORMAT (TSV; EN vrstica = EN needle; TAB je LOČILO) — kanon R340–R352.
+#   <needle_string><TAB><opis><TAB><vrsta>
+# vrsta: need_static (MORA biti ŽIV v čankih) | must_miss (NE SME biti)
+
+# ── R353 lastni needleji ──
+# GLIFNI POPRAVEK: NI edinstvenega build needleja (registerSloPdfFonts je v
+# čankih ŽE od R269 prek lib/meritve-teren-pdf + R351 prek pdf-seznam + R352
+# prek kalkulator pdf-exports — iskrena omejitev, ista kot R351/R352:
+# pokritost = tsc + vitest r353-pdf-font ×10 [ŽIV dokaz modula FontFile2 +
+# idempotentnost + fs hoja 0 × helvetica] + E2E regresija).
+# STIL val 36: statične aria celote (NOVI nizi — era-diskriminatorji):
+Dodaj realizacijo v galerijo realizacij	R353 val 36 gallery Dodaj aria (vidno besedilo NE razlaga cilja)	need_static
+Shrani skico v register skic projekta	R353 val 36 skica Shrani aria (NOV ring v istem commitu)	need_static
+Shrani spremembe CRM zapisa stranke	R353 val 36 CRM Shrani aria (ring že od starejše ere)	need_static
+Uvozi mere iz AR posnetka v meritev	R353 val 36 AR uvoz aria (NOV ring v istem commitu)	need_static
+TODO-R353	R353 — brez razvojnih ostankov	must_miss

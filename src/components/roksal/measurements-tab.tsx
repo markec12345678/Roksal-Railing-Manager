@@ -6298,7 +6298,9 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               type="button"
               onClick={handleImportFromAr}
               disabled={!arSelectedSnapshotId || !!arImportProgress}
-              className="sm:flex-1 bg-cyan-600 text-white hover:bg-cyan-700"
+              aria-label="Uvozi mere iz AR posnetka v meritev"
+              title="Prenesi izbrane mere iz AR posnetka v aktivno meritev"
+              className="sm:flex-1 bg-cyan-600 text-white hover:bg-cyan-700 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
             >
               {arImportProgress ? (
                 <>

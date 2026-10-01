@@ -1396,6 +1396,8 @@ export function CrmTab({
               onClick={handleSaveEdit}
               disabled={saving}
               aria-busy={saving}
+              aria-label="Shrani spremembe CRM zapisa stranke"
+              title="Shrani urejene podatke stranke v CRM register"
               className="bg-roksal-navy text-white focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 disabled:opacity-50"
             >
               {saving ? (

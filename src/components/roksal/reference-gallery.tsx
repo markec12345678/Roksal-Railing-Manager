@@ -39,6 +39,8 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { jsPDF } from 'jspdf';
+// R353 — slovenski glifi: Roboto subset (kanon r269/R351/R352).
+import { registerSloPdfFonts } from '@/lib/pdf-sl-font';
 import {
   Plus,
   MapPin,
@@ -986,6 +988,9 @@ export function ReferenceGallery() {
     setExporting(true);
     try {
       const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+      // R353 — slovenski glifi: Roboto subset (kanon r269/R351/R352 — kliči
+      // pred prvo setFont; VFS je na dokumentu, registracija je idempotentna).
+      registerSloPdfFonts(doc);
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
       const margin = 10;
@@ -1010,9 +1015,9 @@ export function ReferenceGallery() {
         // Title text
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(14);
-        doc.setFont('helvetica', 'bold');
+        doc.setFont('Roboto', 'bold');
         doc.text('ROKSAL', margin, 11);
-        doc.setFont('helvetica', 'normal');
+        doc.setFont('Roboto', 'normal');
         doc.setFontSize(10);
         doc.text('Katalog realizacij', margin + 28, 11);
         // Page number
@@ -1025,7 +1030,7 @@ export function ReferenceGallery() {
         doc.rect(0, pageHeight - footerHeight, pageWidth, footerHeight, 'F');
         doc.setTextColor(220, 220, 220);
         doc.setFontSize(8);
-        doc.setFont('helvetica', 'normal');
+        doc.setFont('Roboto', 'normal');
         const dateStr = slDatumPolni(new Date());
         doc.text(`Roksal Kranj · Izvoz ${dateStr}`, margin, pageHeight - 3.5);
         doc.text('www.roksal.si', pageWidth - margin, pageHeight - 3.5, { align: 'right' });
@@ -1093,20 +1098,24 @@ export function ReferenceGallery() {
         doc.rect(x, y, w, h);
         doc.setTextColor(150, 150, 150);
         doc.setFontSize(10);
-        doc.setFont('helvetica', 'italic');
+        // R353: italic NI registriran (Roboto subset ima samo normal+bold) —
+        // glifni popravek ima prednost pred stilom; sprememba iskreno
+        // dokumentirana (placeholder 'Brez slike' izgubi naklon, dobi pravilne
+        // č/š/ž glife).
+        doc.setFont('Roboto', 'normal');
         doc.text('Brez slike', x + w / 2, y + h / 2, { align: 'center' });
       };
 
       const drawItemMeta = (item: GalleryItem, x: number, y: number, w: number) => {
         // Title
         doc.setTextColor(29, 43, 62);
-        doc.setFont('helvetica', 'bold');
+        doc.setFont('Roboto', 'bold');
         doc.setFontSize(12);
         const title = (item.naslov || 'Brez naslova').slice(0, 70);
         doc.text(title, x, y);
 
         // Meta lines
-        doc.setFont('helvetica', 'normal');
+        doc.setFont('Roboto', 'normal');
         doc.setFontSize(9);
         doc.setTextColor(80, 80, 80);
         let yMeta = y + 6;
@@ -1859,7 +1868,9 @@ export function ReferenceGallery() {
               type="button"
               onClick={handleSave}
               disabled={saving}
-              className="bg-roksal-amber hover:bg-roksal-amber/90 text-white"
+              aria-label="Dodaj realizacijo v galerijo realizacij"
+              title="Dodaj novo realizacijo s slikama pred/po v galerijo realizacij"
+              className="bg-roksal-amber hover:bg-roksal-amber/90 text-white focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
             >
               {saving ? (
                 <>

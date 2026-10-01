@@ -20,6 +20,7 @@ import {
   Download,
 } from 'lucide-react'
 import jsPDF from 'jspdf'
+import { registerSloPdfFonts } from '@/lib/pdf-sl-font'
 
 import type { Project, SignatureAuditEntry } from '@/lib/types'
 
@@ -81,6 +82,9 @@ export function PostSignaturePanel({ project }: { project: Project }) {
     setExporting(true)
     try {
       const doc = new jsPDF({ unit: 'mm', format: 'a4' })
+      // R353 — slovenski glifi: Roboto subset (kanon r269/R351/R352 — kliči
+      // pred prvo setFont; VFS je na dokumentu, registracija je idempotentna).
+      registerSloPdfFonts(doc)
       const pageW = doc.internal.pageSize.getWidth()
       const COLORS = {
         navy: [29, 43, 62] as [number, number, number],
@@ -97,31 +101,31 @@ export function PostSignaturePanel({ project }: { project: Project }) {
       doc.rect(14, 8, 14, 14, 'F')
       doc.setTextColor(...COLORS.white)
       doc.setFontSize(18)
-      doc.setFont('helvetica', 'bold')
+      doc.setFont('Roboto', 'bold')
       doc.text('R', 19, 19)
       doc.setFontSize(15)
       doc.text('ROKSAL d.o.o.', 32, 15)
       doc.setFontSize(9)
-      doc.setFont('helvetica', 'normal')
+      doc.setFont('Roboto', 'normal')
       doc.text('Kranj · Ograje in terase po meri', 32, 21)
       doc.setFontSize(14)
-      doc.setFont('helvetica', 'bold')
+      doc.setFont('Roboto', 'bold')
       doc.text('AUDIT TRAIL — PODPISI', pageW - 14, 15, { align: 'right' })
       doc.setFontSize(8)
-      doc.setFont('helvetica', 'normal')
+      doc.setFont('Roboto', 'normal')
       doc.text(`${slDatumKratko(new Date())}, ${slCasDolgo(new Date())}`, pageW - 14, 21, { align: 'right' })
 
       let y = 44
       // Projekt info
       doc.setTextColor(...COLORS.dark)
       doc.setFontSize(11)
-      doc.setFont('helvetica', 'bold')
+      doc.setFont('Roboto', 'bold')
       doc.text('PROJEKT', 14, y)
       doc.setDrawColor(...COLORS.amber)
       doc.line(14, y + 1.5, pageW - 14, y + 1.5)
       y += 6
       doc.setFontSize(9)
-      doc.setFont('helvetica', 'normal')
+      doc.setFont('Roboto', 'normal')
       doc.text(`Naziv: ${project.nazivProjekta}`, 14, y)
       doc.text(`Stranka: ${project.customer?.ime || '—'}`, 14, y + 5)
       doc.text(`Status: ZA_MONTAZO (podpisano)`, 14, y + 10)
@@ -137,7 +141,7 @@ export function PostSignaturePanel({ project }: { project: Project }) {
       y += 32
 
       // Podpisi audit
-      doc.setFont('helvetica', 'bold')
+      doc.setFont('Roboto', 'bold')
       doc.setFontSize(11)
       doc.text('PODPISI (AUDIT TRAIL)', 14, y)
       doc.setDrawColor(...COLORS.amber)
@@ -150,9 +154,9 @@ export function PostSignaturePanel({ project }: { project: Project }) {
           y = 20
         }
         doc.setFontSize(9)
-        doc.setFont('helvetica', 'bold')
+        doc.setFont('Roboto', 'bold')
         doc.text(`${i + 1}. ${a.signatureType === 'CUSTOMER' ? 'STRANKA' : 'MONTER'}`, 14, y)
-        doc.setFont('helvetica', 'normal')
+        doc.setFont('Roboto', 'normal')
         y += 5
         doc.text(`Ime: ${a.signedByName}`, 18, y)
         y += 4
@@ -185,14 +189,14 @@ export function PostSignaturePanel({ project }: { project: Project }) {
           doc.addPage()
           y = 20
         }
-        doc.setFont('helvetica', 'bold')
+        doc.setFont('Roboto', 'bold')
         doc.setFontSize(11)
         doc.text('BOM DRAFT (NE NAROČILO)', 14, y)
         doc.setDrawColor(...COLORS.amber)
         doc.line(14, y + 1.5, pageW - 14, y + 1.5)
         y += 6
         doc.setFontSize(8)
-        doc.setFont('helvetica', 'normal')
+        doc.setFont('Roboto', 'normal')
         if (bomDraft.items.length === 0) {
           doc.text('Ni artiklov v BOM draft-u.', 14, y)
         } else {

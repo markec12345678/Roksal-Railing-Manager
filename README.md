@@ -103,7 +103,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 45 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **5057** (310 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **5075** (312 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 143 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -1048,6 +1048,27 @@ Sheet z 6 podzavihki:
   (310); (4) verifikacija: tsc 0 · eslint 0 (FULL) · build svež EXIT=0 ·
   needles r352 VSE OK (veriga + union registri r340–r352) · smoke EXIT=0 ·
   e2e EXIT=0 [ODTIS BAJTNATO IDENTIČEN pre==post — ZERO-MUTACIJA].
+- **Komponentni PDF glifni popravek + val 36** (R353): (1) **helvetica →
+  registerSloPdfFonts** za ZADNJE 4 potrošnike (fetch-first sken celotnega
+  repa: post-signature-panel 11 × setFont, floor-plan-tab 8,
+  reference-gallery 6, signature-quote 16 — skupaj 41 setFont mest × Roboto;
+  r269/R351/R352 kanon: register po new jsPDF, pred prvo setFont) — ENA
+  vsebinska sprememba izvoza na potrošnika iskreno dokumentirana (izvoženi
+  PDF-i se SPROTI spremenijo: vgrajeni fonti + pravilni č/š/ž; vsebina
+  NESPREMENJENA); posebnost reference-gallery: italic NI registriran →
+  placeholder 'Brez slike' izgubi naklon, dobi pravilne glife (fail-closed:
+  brez tihega fallbacka, dokumentirano v viru); (2) **val 36** — a11y parity
+  Shrani/Dodaj/Uvozi dialog bratov: reference-gallery Dodaj realizacijo +
+  sketch-canvas Shrani skico + CRM Shrani spremembe stranke + meritve AR
+  uvoz — aria-label (akcija + cilj) + title + izrecen ring navy/40 V ISTEM
+  commitu (3 brata NOV ring, CRM ga je že nosil); 0 novih hex; (3) vitest
+  r353 ×18 (2 NOVI datoteki: r353-pdf-font ×10 [vir pozicije ×4 + counting
+  41 + ŽIV dokaz modula FontFile2 + idempotentnost + fs hoja 0 × helvetica
+  + družinska konsistenznost 7 potrošnikov] + r353-stil-val36 ×8 [4 parity
+  bratje + 0-hex + obrnjena regresija val 35/34]) — 5075/5075 (312); (4)
+  verifikacija: tsc 0 · eslint 0 (FULL) · build svež EXIT=0 · needles r353
+  VSE OK (veriga + union registri r340–r353) · smoke EXIT=0 · e2e EXIT=0
+  [ODTIS BAJTNATO IDENTIČEN pre==post — ZERO-MUTACIJA].
 - **Kalkulator FAZA 6 + val 29** (R346): (1) NOV `calculator/inputs.ts` —
   zbiranje/nalaganje vhodov izluščeno VERBATIM iz taba (args objekti —
   vzorec R325/R345): `collectCurrentInputs(mode, vhodnaStanja)` (zapis za
@@ -1262,7 +1283,7 @@ Sheet z 6 podzavihki:
 | **PWA** | Service Worker + Web Manifest |
 | **Temnitveni način** | [next-themes](https://github.com/pacocoursey/next-themes) |
 | **Validacija** | [Zod 4](https://zod.dev/) |
-| **Testiranje** | [Vitest 4](https://vitest.dev/) (5057 testov + globalSetup embedded PG) |
+| **Testiranje** | [Vitest 4](https://vitest.dev/) (5075 testov + globalSetup embedded PG) |
 | **Paketni upravitelj** | [Bun](https://bun.sh/) |
 | **Linting** | ESLint 9 + eslint-config-next |
 
@@ -1384,7 +1405,7 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `bun run dev` | Zažene Next.js dev server (port 3000) |
 | `bun run build` | Produkcijska build (build-prepare: generate + migrate deploy + seed) |
 | `bun run start` | Zažene produkcijski server |
-| `bun run test` | Vsi testi (vitest, 5057, embedded PG prek globalSetup) |
+| `bun run test` | Vsi testi (vitest, 5075, embedded PG prek globalSetup) |
 | `bun run check` | tsc --noEmit + vitest run (en ukaz za vse) |
 | `bunx tsc --noEmit` | Tipska kontrola celotnega projekta (trenutno 0 napak) |
 | `bun run lint` | ESLint preverjanje |

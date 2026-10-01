@@ -43,6 +43,7 @@ import { Switch } from '@/components/ui/switch'
 import { useToast } from '@/hooks/use-toast'
 import { slDatumKratko, slCasDolgo } from '@/lib/csv-export'
 import jsPDF from 'jspdf'
+import { registerSloPdfFonts } from '@/lib/pdf-sl-font'
 import {
   Minus,
   Columns3,
@@ -1204,6 +1205,9 @@ export function FloorPlanTab({ projectId }: FloorPlanTabProps) {
     if (!canvas) return
     try {
       const doc = new jsPDF({ unit: 'mm', format: 'a4' })
+      // R353 — slovenski glifi: Roboto subset (kanon r269/R351/R352 — kliči
+      // pred prvo setFont; VFS je na dokumentu, registracija je idempotentna).
+      registerSloPdfFonts(doc)
       const pageW = doc.internal.pageSize.getWidth()
       const pageH = doc.internal.pageSize.getHeight()
 
@@ -1215,13 +1219,13 @@ export function FloorPlanTab({ projectId }: FloorPlanTabProps) {
       doc.rect(14, 7, 12, 12, 'F')
       doc.setTextColor(255, 255, 255)
       doc.setFontSize(16)
-      doc.setFont('helvetica', 'bold')
+      doc.setFont('Roboto', 'bold')
       doc.text('R', 18, 16)
       // Naziv
       doc.setFontSize(14)
       doc.text('ROKSAL d.o.o. Kranj', 30, 13)
       doc.setFontSize(9)
-      doc.setFont('helvetica', 'normal')
+      doc.setFont('Roboto', 'normal')
       doc.text('Tloris balkona z elementi', 30, 19)
       // Datum desno
       doc.setFontSize(8)
@@ -1241,10 +1245,10 @@ export function FloorPlanTab({ projectId }: FloorPlanTabProps) {
       // Statistike
       doc.setTextColor(17, 24, 39)
       doc.setFontSize(11)
-      doc.setFont('helvetica', 'bold')
+      doc.setFont('Roboto', 'bold')
       doc.text('STATISTIKE', 14, y)
       y += 5
-      doc.setFont('helvetica', 'normal')
+      doc.setFont('Roboto', 'normal')
       doc.setFontSize(9)
       doc.text(`Skupna dolžina sten: ${stats.wallLengthM.toFixed(2)} m`, 14, y)
       y += 5
@@ -1258,11 +1262,11 @@ export function FloorPlanTab({ projectId }: FloorPlanTabProps) {
       y += 8
 
       // Legenda
-      doc.setFont('helvetica', 'bold')
+      doc.setFont('Roboto', 'bold')
       doc.setFontSize(11)
       doc.text('LEGENDA', 14, y)
       y += 5
-      doc.setFont('helvetica', 'normal')
+      doc.setFont('Roboto', 'normal')
       doc.setFontSize(9)
       // Stene
       doc.setDrawColor(29, 43, 62)
@@ -1297,11 +1301,11 @@ export function FloorPlanTab({ projectId }: FloorPlanTabProps) {
       // Dimenzije tabela
       const dims = elements.filter((e): e is DimensionElement => e.type === 'dimension')
       if (dims.length > 0) {
-        doc.setFont('helvetica', 'bold')
+        doc.setFont('Roboto', 'bold')
         doc.setFontSize(11)
         doc.text('DIMENZIJE', 14, y)
         y += 5
-        doc.setFont('helvetica', 'normal')
+        doc.setFont('Roboto', 'normal')
         doc.setFontSize(9)
         dims.forEach((d, i) => {
           doc.text(`${i + 1}. ${d.label} (oznaka: ${d.id.slice(-4).toUpperCase()})`, 14, y)
