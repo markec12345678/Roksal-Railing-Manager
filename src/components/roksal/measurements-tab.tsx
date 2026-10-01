@@ -186,6 +186,7 @@ import {
 // (čist premik — kanon R319 faza 1 / R325 faza 2).
 import {
   auditActionLabels,
+  auditActionTitles,
   auditColors,
   auditIcons,
   enotaLabels,
@@ -6434,7 +6435,14 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                                 <span className="text-2xs text-muted-foreground">
                                   {`${slDatumKratko(new Date(entry.timestamp))}, ${slCasDolgo(new Date(entry.timestamp))}`}
                                 </span>
-                                <Badge variant="outline" className="text-3xs h-3.5 px-1 py-0">
+                                {/* R339 STIL val 25 — hover parity za revizijsko sled
+                                    (isti vzorec kot R280 tip badge + R281 sync žig:
+                                    title razložljivost EN VIR; 0 novih hex). */}
+                                <Badge
+                                  variant="outline"
+                                  className="cursor-help text-3xs h-3.5 px-1 py-0"
+                                  title={auditActionTitles[entry.akcija]}
+                                >
                                   {auditActionLabels[entry.akcija]}
                                 </Badge>
                               </div>

@@ -195,6 +195,16 @@ export const auditColors: Record<AuditEntry['akcija'], string> = {
   STATUS: 'bg-roksal-amber/10 text-roksal-ink', // R311 — žetoni (družina ADD/EDIT/DELETE ostaja semantična)
 }
 
+// R339 STIL val 25 — hover parity za revizijsko sled (isti vzorec kot
+// R280 tip badge + R281 sync žig: title razložljivost; EN VIR niz — badge
+// in testi bereta ISTO mapo; 0 novih hex).
+export const auditActionTitles: Record<AuditEntry['akcija'], string> = {
+  ADD: 'Revizija: Dodano — nova meritev vnesena v ta projekt (vrstica v zgodovini sprememb).',
+  EDIT: 'Revizija: Spremenjeno — obstoječa meritev popravljena (shranjevanje ustvari novo verzijo; stara ostane v zgodovini).',
+  DELETE: 'Revizija: Izbrisano — meritev odstranjena iz projekta (iskrena praznina — vnosa ni več).',
+  STATUS: 'Revizija: Status — cikel OSNUTEK → POTRJENA → ARHIVIRANA (perzistentno, z revizijsko sledjo).',
+}
+
 export const enotaLabels: Record<EnotaTip, string> = {
   mm: 'mm',
   cm: 'cm',

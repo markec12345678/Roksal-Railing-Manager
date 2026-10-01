@@ -103,7 +103,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 45 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **4797** (286 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **4821** (288 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 143 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -911,6 +911,17 @@ Sheet z 6 podzavihki:
   pravila react-hooks/set-state-in-effect — prej skrito z bailoutom compiler
   analize na 7,6k vrstični datoteki); vsebina ŽIVA v čankih dokazana
   (r323-build-needles ×9 + delegirana veriga R322→…→R227)
+- **STIL val 25 — hover parity revizijske sledi** (R339 — KOLIZIJA #13:
+  vzporedna lastniška seja je oddala identično FAZA 3 dekompozicijo kot
+  R338; moja izvedba SUPERSEDIRANA po kanonu KOLIZIJE #4/R323 — ohranjena
+  SAMO val 25 plast): NOVI EN VIR `auditActionTitles` v
+  `measurements/labels.ts` (ADD/EDIT/DELETE/STATUS — vsak naslov z
+  utemeljitvijo) + revizijski badge dobi `title` EN VIR + `cursor-help`
+  (vzorec R280 tip badge + R281 sync žig; 0 novih hex); vitest r339 ×24
+  (r339-measurements-faza3 +16 — izčerpnost ključev/determinizem/fail-closed
+  adaptirana na R338 postavitev + r339-stil-val25 +8 — EN VIR + obrnjene
+  regresije val 24/23 + register sodelovanje); r172 pin 6632→6640 (+7
+  vrstic badge bloka)
 - **Dekompozicija measurements-tab — FAZA 3** (R338 — nadaljevanje odobrene
   Roadmap "razbitje monsterskih komponent", vzorec R319/R322/R325):
   7.153 → 6.809 vrstic (−344); NOVA mapa `measurements/` ×2 — `labels.ts`
@@ -991,7 +1002,7 @@ Sheet z 6 podzavihki:
 | **PWA** | Service Worker + Web Manifest |
 | **Temnitveni način** | [next-themes](https://github.com/pacocoursey/next-themes) |
 | **Validacija** | [Zod 4](https://zod.dev/) |
-| **Testiranje** | [Vitest 4](https://vitest.dev/) (4797 testov + globalSetup embedded PG) |
+| **Testiranje** | [Vitest 4](https://vitest.dev/) (4821 testov + globalSetup embedded PG) |
 | **Paketni upravitelj** | [Bun](https://bun.sh/) |
 | **Linting** | ESLint 9 + eslint-config-next |
 
@@ -1113,7 +1124,7 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `bun run dev` | Zažene Next.js dev server (port 3000) |
 | `bun run build` | Produkcijska build (build-prepare: generate + migrate deploy + seed) |
 | `bun run start` | Zažene produkcijski server |
-| `bun run test` | Vsi testi (vitest, 4797, embedded PG prek globalSetup) |
+| `bun run test` | Vsi testi (vitest, 4821, embedded PG prek globalSetup) |
 | `bun run check` | tsc --noEmit + vitest run (en ukaz za vse) |
 | `bunx tsc --noEmit` | Tipska kontrola celotnega projekta (trenutno 0 napak) |
 | `bun run lint` | ESLint preverjanje |
