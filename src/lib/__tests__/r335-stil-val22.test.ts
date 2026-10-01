@@ -25,9 +25,9 @@
 //    val 20 PAR ŽIVA (material pozicija) + val 19 PAR ŽIVA (crm potekli) +
 //    val 18 PAR ŽIVA (quote-followup) + val 17 PAR ŽIVA (logistika) + val 16
 //    alarm ŽIVA + zgodovina PAR bajtno;
-//  • vodja val 11/12 register ×4/×4 ostane (novi gumb je v OBSTOJEČI vrstici
-//    blok glave — nič novih blokov/vrstic); amber/50 register ×10 (val 8
-//    drevesni števec 68 po R335; val 9 taktilni 17);
+//  • vodja val 11/12 register ×4/×4 ostane (R336 novi gumb je v sestavljeni
+//    kartici SistemZdravjeCard, ne v blok glavi — nič novih blokov/vrstic);
+//    amber/50 register ×10 (val 8 drevesni števec 69 po R336; val 9 taktilni 17);
 //  • globals anti-stale: .press-scale definicija ŽIVA; 0 surovih barv v
 //    novem bloku (amber/50 ring + roksal tokena — 0-hex kanon val 15–21).
 // ---------------------------------------------------------------------------
@@ -165,7 +165,7 @@ describe('r335 STIL val 22 — Mesečno poročilo CSV PAR pariteta na vodja blok
     expect(zgod).toContain(VRSTICA_ZETON)
   })
 
-  it('vodja val 11/12 register ostane ×4/×4 (novi gumb je v obstoječi blok glavni vrstici — nič novih blokov/vrstic; amber/50 register ×10 — val 8 drevo 68 po R335)', () => {
+  it('vodja val 11/12 register ostane ×4/×4 (novi gumb je v sestavljeni kartici, ne v blok glavi — nič novih blokov/vrstic; amber/50 register ×10 — val 8 drevo 69 po R336)', () => {
     expect(src.split(BLOK_ZETON).length - 1).toBe(4)
     expect(src.split(VRSTICA_ZETON).length - 1).toBe(4)
   })
@@ -178,9 +178,10 @@ describe('r335 STIL val 22 — Mesečno poročilo CSV PAR pariteta na vodja blok
     expect(csvGumb).not.toMatch(/\b(?:bg|text|border|ring)-(?:amber|navy|red|green)-\d{2,3}\b/)
   })
 
-  it('register sodelovanje: R335 PIN SHIFTI zapisana v val8 (68 + amber ×10) IN val9 (17 taktilnih) registrih — register resnica čez valove', () => {
+  it('register sodelovanje: R335 zapisek + R336 PIN SHIFTI zapisana v val8 (69 + amber ×10) IN val9 (17 taktilnih) registrih — register resnica čez valove (LEKCIJA R334 5: vsi pini shiftani V ENI rundi)', () => {
     expect(val8).toContain('R335 PIN SHIFT 67 → 68')
-    expect(val8).toContain('expect(gumbi.length).toBeGreaterThanOrEqual(68)')
+    expect(val8).toContain('R336 PIN SHIFT 68 → 69')
+    expect(val8).toContain('expect(gumbi.length).toBeGreaterThanOrEqual(69)')
     expect(val8).toContain("expect(ariaVseh).toContain('Izvozi mesečno poročilo vodje kot CSV')")
     expect(val8).toContain('vodjaAmber.length).toBe(10)')
     expect(val9).toContain('R335 PIN SHIFT (62. člen)')

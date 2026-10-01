@@ -89,6 +89,13 @@
 // STRAŽAR (kanon GLOBALNI sken r310/r316 prenesen na izvozno družino):
 //  • vsak izvozni gumb (aria-label="Izvozi …") nosi IZRECEN
 //    focus-visible:ring-2 žeton (ne samo baza);
+// R336 PIN SHIFT (63. člen): sistem zdravje CSV gumb (SistemZdravjeCard —
+// zadnja vodja kartica brez izvoza) — gumb je v SESTAVLJENI kartici
+// (sistem-zdravje-card.tsx), NE v vodja-dashboard datoteki → ring =
+// navy/40 (val20 Material precedens — izven vodja datoteke), amber/50
+// register OSTANE ×10 z obrnjeno regresijo: stari ×10 pin ostane; anti-stale
+// števec drevesa 68 → 69 z obrnjeno regresijo (polzaporedje ne sme nazaj).
+//
 //  • barva = roksal žeton (navy/40 ali amber/50) — 0 surovih barv;
 //  • amber/50 SAMO v vodja-dashboard (izrecen zaklenjen register z razlogom
 //    — R308/R316 lekcija: semantične izjeme + bratska simetrija blok glav);
@@ -122,8 +129,8 @@ describe('r317 STIL val 8 — izvozna družina: focus-visible ring STRAŽAR', ()
   const gumbi = izvozniGumbi()
   const AMBER_ZETONI = new Set(['vodja-dashboard'])
 
-  it('anti-stale: 68 izvoznih gumbov v drevesu (67 pred R335 + NOVI mesečno poročilo CSV brat)', () => {
-    expect(gumbi.length).toBeGreaterThanOrEqual(68) // R335 PIN SHIFT 67 → 68 (stari 67 pin je prepovedan — obrnjena regresija)
+  it('anti-stale: 69 izvoznih gumbov v drevesu (68 pred R336 + NOVI sistem zdravje CSV)', () => {
+    expect(gumbi.length).toBeGreaterThanOrEqual(69) // R335 PIN SHIFT 67 → 68 + R336 PIN SHIFT 68 → 69 (stari pini so prepovedani — obrnjena regresija, polzaporedje ne sme nazaj)
     // novi gumb 50. člena je prisoten
     expect(gumbi.some((g) => g.okno.includes('Izvozi meritve zmogljivosti kot PDF'))).toBe(true)
     // novi gumb 51. člena je prisoten (R322)
@@ -150,6 +157,8 @@ describe('r317 STIL val 8 — izvozna družina: focus-visible ring STRAŽAR', ()
     expect(gumbi.some((g) => g.okno.includes('Izvozi poročilo končne verifikacije kot CSV'))).toBe(true)
     // novi gumb 62. člena je prisoten (R335 — mesečno poročilo vodje CSV brat)
     expect(gumbi.some((g) => g.okno.includes('Izvozi mesečno poročilo vodje kot CSV'))).toBe(true)
+    // novi gumb 63. člena je prisoten (R336 — sistem zdravje CSV, SistemZdravjeCard)
+    expect(gumbi.some((g) => g.okno.includes('Izvozi sistem zdravje kot CSV'))).toBe(true)
   })
 
   it('vsak izvozni gumb nosi IZRECEN focus-visible ring žeton (ne samo ui baza)', () => {
@@ -203,6 +212,9 @@ describe('r317 STIL val 8 — izvozna družina: focus-visible ring STRAŽAR', ()
     expect(ariaVseh).toContain('Izvozi poročilo končne verifikacije kot CSV')
     // R335: mesečno poročilo vodje CSV (62. člen) — CSV brat Poročilo PDF
     expect(ariaVseh).toContain('Izvozi mesečno poročilo vodje kot CSV')
+    // R336: sistem zdravje CSV (63. člen) NI v vodja datoteki — v SistemZdravjeCard
+    // (sestavljena kartica z lastnim stanjem); amber/50 register OSTANE ×10
+    // (navy/40 družina — val20 Material precedens; stari pin ostane).
   })
 
   it('R317 harmonizirana vrstica: site-survey PDF gumb ima družinski ring (regresijski pin — nazaj = fail)', () => {

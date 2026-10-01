@@ -40,8 +40,21 @@ import {
   visinaPalice,
 } from '@/lib/zdravje-zgodovina'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Activity, History, RefreshCw, AlertTriangle } from 'lucide-react'
+import { Activity, FileSpreadsheet, History, RefreshCw, AlertTriangle } from 'lucide-react'
+import { useToast } from '@/hooks/use-toast'
+import { downloadCsvText } from '@/lib/csv-export'
+// R336 — 63. člen (IZVOZI družina): SISTEM — ZDRAVJE CSV — zadnja vodja
+// kartica brez izvoza. EN VIR: ISTA seja zgodovina + ISTI odziviStatistika
+// + ISTI zigIzpis + ISTI žeton niz (BAZA_NIZ — precedens R335 STATUS_SL:
+// const → export, zero-behavior). Sinhron graditelj — BREZ spinnerja
+// (vzorec TRIADA R334/R335: vsak klik = ista resnica).
+import {
+  BAZA_NIZ,
+  sistemZdravjeCsv,
+  sistemZdravjeCsvFilename,
+} from '@/lib/sistem-zdravje-csv'
 
 /** Izsek javnega odgovora /api/public/health (R186) — nič PII. */
 interface ZdravjeOdgovor {
@@ -71,6 +84,31 @@ export function SistemZdravjeCard() {
   // validiran (samo realne meritve skozi sejaZgodovinaDodaj), a pokvarjen
   // izračun NE sme podreti kartice: null → vrstica odsotna, trak ostane.
   const [statistika, setStatistika] = useState<OdziviStatistika | null>(null)
+  const { toast } = useToast()
+
+  // R336 (63. člen, IZVOZI družina): SISTEM — ZDRAVJE CSV — EN VIR seja
+  // zgodovina (sejaZgodovinaPreber — modul je avtoriteta, state je samo
+  // render kopija, vzorec R188) + data.build (surov ISO — graditelj klice
+  // ISTI zigIzpis kot kartica). Format kanon R136; fail-verbose toast
+  // (vzorec R291/R293); BREZ spinnerja — sinhron EN VIR graditelj.
+  const handleZdravjeCsv = useCallback(() => {
+    try {
+      const zgodovinaMerjitve = sejaZgodovinaPreber()
+      const csv = sistemZdravjeCsv(zgodovinaMerjitve, data?.build ?? null)
+      downloadCsvText(sistemZdravjeCsvFilename(), csv)
+      toast({
+        title: 'Zdravje CSV shranjeno ✓',
+        description: `${sistemZdravjeCsvFilename()} — ${obsegZgodovine(zgodovinaMerjitve.length)} (iste meritve kot trak)`,
+      })
+    } catch (err) {
+      if (err instanceof TypeError) {
+        // fail-closed jedro: pokvaren vnos → viden razlog (nič izmišljenega izvoza)
+        toast({ title: 'Zdravje CSV ni mogoče sestaviti iz teh podatkov', description: err instanceof Error ? err.message : String(err), variant: 'destructive' })
+      } else {
+        toast({ title: `Izvoz CSV ni uspel: ${err instanceof Error ? err.message : String(err)}`, variant: 'destructive' })
+      }
+    }
+  }, [data, toast])
 
   const load = useCallback(async () => {
     const zacetek = performance.now()
@@ -155,6 +193,23 @@ export function SistemZdravjeCard() {
                 Osveženo ob <span className="tabular-nums">{casOznaka(zdravjeOsvezitev)}</span>
               </span>
             )}
+            {/* R336 — 63. člen (IZVOZI družina): sistem zdravje CSV pill —
+                EN VIR seja zgodovina; navy/40 družina (val20 Material vzorec —
+                amber/50 register ostane zaklenjen v vodja-dashboard). */}
+            {!napaka && data && zgodovina.length > 0 && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleZdravjeCsv}
+                className="press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:outline-none"
+                aria-label="Izvozi sistem zdravje kot CSV"
+                title="Izvozi sistem zdravje (iste meritve odzivnih časov te seje) kot CSV za Excel — prazna/pokvarena zgodovina → iskren toast; zaslon in CSV = ista resnica; CSV = Excel za arhiv in filtriranje"
+                data-testid="sistem-zdravje-csv-pill"
+              >
+                <FileSpreadsheet className="mr-2 h-4 w-4" aria-hidden="true" />
+                CSV
+              </Button>
+            )}
           </div>
         </CardTitle>
       </CardHeader>
@@ -191,7 +246,7 @@ export function SistemZdravjeCard() {
             <span
               className="inline-flex items-center gap-1 rounded-md border border-roksal-green/30 bg-roksal-green/10 px-2 py-0.5 text-2xs font-semibold text-roksal-green"
             >
-              Baza odgovarja
+              {BAZA_NIZ}
             </span>
             {odzivMs != null && (
               <span className="text-[11px] text-muted-foreground tabular-nums">
@@ -204,6 +259,12 @@ export function SistemZdravjeCard() {
             <span className="text-2xs text-muted-foreground/70">
               Javna sonda /api/public/health — pinguje bazo (3 s vrata).
             </span>
+            {/* R336 — legenda medija (starejši podpisi NEPREMIKNJENI): */}
+            {zgodovina.length > 0 && (
+              <span className="text-2xs text-muted-foreground/70">
+                Zdravje CSV = iste meritve te seje (Excel za arhiv in filtriranje).
+              </span>
+            )}
           </div>
         )}
         {/* R188 — zgodovina odzivnih časov te seje: trak palic (samo realne
