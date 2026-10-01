@@ -6537,3 +6537,8 @@ Stage Summary:
 
 ### PRVA NALOGA POST-commit ŽIVO (R328 — r328-prod-qa.sh, po pushu)
 - Spodaj dodatek ob izvedbi (LIVE ali ESKALACIJA; UNION harvest: ob zelenem deployu nosi R290+…+R328 SKUPAJ — precedens R313/R314; pričakuj LIVE vejo ker R327 dev vsebina že ŽIVO)
+
+### PRVA NALOGA POST-commit ŽIVO (R328 — r328-prod-qa.sh, push 0d06ce6)
+- **ESKALACIJA veja EXIT=0** (6. zapis) — prod build 2026-09-30T23:29:50.975Z ≤ R328 commit meja (0d06ce6 @ 00:27:26) → cd934d0+R328 deploy ŠE VEDNO čaka (Vercel kvota/stuck; kanon R258: pipeline event NI koda-bug); **bistveno**: build 23:29:50 = R327 dev vsebina ŽIVO (ffa401f + chunk-34 dokaz) — UNION harvest ob zelenem deployu nosi R290+…+R328 SKUPAJ
+- Stale zdrav: needleji + Z1b (verzije ruta 404 ŽIVO) + Z3 (v99 sync gate fail-closed ZERO-MUTACIJA) — **ZERO must_miss, ZERO FAIL**
+- R329 prva naloga = r328-prod-qa.sh POST-commit re-run (pričakuj LIVE ob zelenem deployu; __r327val sledi generaciji; val8 ×8 STALEN)
