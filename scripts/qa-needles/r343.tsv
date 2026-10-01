@@ -1,0 +1,24 @@
+# qa-needles/r343.tsv — REGISTER needlejev runde R343 (kalkulator FAZA 4:
+# skladišče zgodovine/predlog EN VIR [ključi ×7 dedup + fail-closed nalagalnik
+# + limiti 30/50 EN VIR + zgodovinaCsvVrstice čisti podatkovni modul] + STIL
+# val 27 [hover parity prihranjenih predlog])
+# ============================================================================
+# FORMAT (TSV; EN vrstica = EN needle; TAB je LOČILO — presledki znotraj
+# needleja so POMENNI, ker grep -F išče dobesedno) — kanon R340/R341.
+#   <needle_string><TAB><opis><TAB><vrsta>
+# vrsta:
+#   need_static  — niz MORA biti ŽIV v čankih (grep -rqF po .next/static/chunks
+#                  + .next/server, kopiranih v /tmp/r343-build-chunks)
+#   must_miss    — niz NE SME biti prisoten (razvojni ostanki)
+#
+# ── R343 lastni needleji ──
+# FAZA 4 je premik bajtno identičnih blokov (ključi/limiti/vrstice — ISTI
+# literali, nov modul) → NI edinstvenega needleja za SAM premik (iskrena
+# omejitev, vzorec R340/R341: pokritost = tsc + vitest r343-calc-faza4 ×10 +
+# E2E regresija).
+# STIL val 27: razlagalni badge title = EDINI nov minifikacijo-preživeči niz:
+Predloga shranjenega izračuna — nalaganje zapolni vsa vnosna polja načina	R343 val 27 način badge title (hover parity predlog — ŽIV)	need_static
+#
+# Delegirani negativni needle — OBVEZEN vsaki rundi (kanon "brez razvojnih
+# ostankov", vzorec R324–R341):
+TODO-R343	R343 — brez razvojnih ostankov	must_miss

@@ -59,7 +59,7 @@ import {
   runAnchoringCalcV1,
   runWindCalcV1,
 } from '@/lib/calc-engineering'
-import { slDatumKratko, slCasDolgo, formatSlDecimalno, slMesecevaOkrajsava, slMesecevaOkrajsavaLeto, slMesecevaOkrajsavaUra, toCsv, downloadCsvText } from '@/lib/csv-export'
+import { slDatumKratko, formatSlDecimalno, slMesecevaOkrajsava, slMesecevaOkrajsavaLeto, slMesecevaOkrajsavaUra, toCsv, downloadCsvText } from '@/lib/csv-export'
 
 // R321 — skupni tipi/konstante za calculator-tab + pod-komponente (faza 1).
 import {
@@ -98,6 +98,19 @@ import {
   profileLabels,
 } from './calculator/shared'
 import { getCutList, getPostPositions } from './calculator/cut-list'
+// R342 — dekompozicija FAZA 4: skladišče zgodovine/predlog EN VIR (ključi,
+// zmogljivostne omejitve, fail-closed nalagalnik, čiste CSV vrstice).
+import {
+  SKLADISCE_PREDLOGE,
+  SKLADISCE_ZGODOVINA,
+  MAX_ZGODOVINA,
+  MAX_PREDLOG,
+  naloziIzSkladisca,
+  shraniVSkladisce,
+  odstraniIzSkladisca,
+  ZGODOVINA_CSV_GLAVE,
+  zgodovinaCsvVrstice,
+} from './calculator/history'
 import { BalusterSvg } from './calculator/baluster-svg'
 import { AngledSvg } from './calculator/angled-svg'
 import { SloveniaWindMapSvg } from './calculator/wind-map-svg'
@@ -250,31 +263,15 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
   })
 
   // ===== P2: Predloge (templates) =====
-  const [templates, setTemplates] = useState<CalcTemplate[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const stored = localStorage.getItem('roksal_calc_templates')
-        if (stored) return JSON.parse(stored)
-      } catch {
-        // ignore
-      }
-    }
-    return []
-  })
+  const [templates, setTemplates] = useState<CalcTemplate[]>(() =>
+    naloziIzSkladisca<CalcTemplate[]>(SKLADISCE_PREDLOGE, []),
+  )
   const [activeTemplateId, setActiveTemplateId] = useState<string | null>(null)
 
   // ===== P2: Zgodovina izračunov =====
-  const [history, setHistory] = useState<HistoryEntry[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const stored = localStorage.getItem('roksal_calc_history')
-        if (stored) return JSON.parse(stored)
-      } catch {
-        // ignore
-      }
-    }
-    return []
-  })
+  const [history, setHistory] = useState<HistoryEntry[]>(() =>
+    naloziIzSkladisca<HistoryEntry[]>(SKLADISCE_ZGODOVINA, []),
+  )
   const [historyOpen, setHistoryOpen] = useState(false)
   const [projectName, setProjectName] = useState('')
 
@@ -530,13 +527,9 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
       inputs: collectCurrentInputs(),
       createdAt: new Date().toISOString(),
     }
-    const updated = [tpl, ...templates].slice(0, 50)
+    const updated = [tpl, ...templates].slice(0, MAX_PREDLOG)
     setTemplates(updated)
-    try {
-      localStorage.setItem('roksal_calc_templates', JSON.stringify(updated))
-    } catch {
-      // ignore
-    }
+    shraniVSkladisce(SKLADISCE_PREDLOGE, updated)
     setActiveTemplateId(tpl.id)
     toast.success(`Predloga "${tpl.naziv}" shranjena`)
   }
@@ -554,15 +547,11 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
     const updated = templates.filter((t) => t.id !== id)
     setTemplates(updated)
     if (activeTemplateId === id) setActiveTemplateId(null)
-    try {
-      localStorage.setItem('roksal_calc_templates', JSON.stringify(updated))
-    } catch {
-      // ignore
-    }
+    shraniVSkladisce(SKLADISCE_PREDLOGE, updated)
     toast.success('Predloga izbrisana')
   }
 
-  /** Doda trenutni izračun v zgodovino (max 30). */
+  /** Doda trenutni izračun v zgodovino (max MAX_ZGODOVINA). */
   function addToHistory() {
     const hasResult =
       (mode === 'railing' && railingResult) ||
@@ -589,13 +578,9 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
       // ovojnice); brez izmišljanja za ostale načine.
       ...(lastFingerprint ?? {}),
     }
-    const updated = [entry, ...history].slice(0, 30)
+    const updated = [entry, ...history].slice(0, MAX_ZGODOVINA)
     setHistory(updated)
-    try {
-      localStorage.setItem('roksal_calc_history', JSON.stringify(updated))
-    } catch {
-      // ignore
-    }
+    shraniVSkladisce(SKLADISCE_ZGODOVINA, updated)
   }
 
   // P2: Effect — ko se calcNonce spremeni (uporabnik je kliknil "Izračunaj"),
@@ -613,11 +598,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
   /** Počisti zgodovino. */
   function clearHistory() {
     setHistory([])
-    try {
-      localStorage.removeItem('roksal_calc_history')
-    } catch {
-      // ignore
-    }
+    odstraniIzSkladisca(SKLADISCE_ZGODOVINA)
     toast.success('Zgodovina počiščena')
   }
 
@@ -627,24 +608,12 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
       toast.error('Zgodovina je prazna')
       return
     }
-    // R341 — 65. člen issue #1 (IZVOZI družina): ročno sestavljanje CSV
-    // (lastno citiranje, \n, ročna BOM/anchor ples) → kanon EN VIR
-    // toCsv (R136: BOM + podpičje + CRLF + RFC 4180 csvField) +
-    // downloadCsvText (R296 mehanika prenosa). Glave/vrstice/toast/ime
-    // datoteke NESPREMENJENI; iskren presledek: \n → CRLF (kanon).
-    const headers = ['Datum', 'Način', 'Ključni rezultat', 'Projekt', 'Formula', 'Odtis vhodov', 'Vhodni podatki']
-    const rows = history.map((h) => [
-      `${slDatumKratko(new Date(h.timestamp))}, ${slCasDolgo(new Date(h.timestamp))}`,
-      h.modeLabel,
-      h.keyResult,
-      h.projectName ?? '',
-      h.formulaVersion ?? '',
-      h.inputHash ?? '',
-      JSON.stringify(h.inputs),
-    ])
+    // R341 65. člen + R342 FAZA 4: podatki (glave + vrstice) EN VIR iz
+    // calculator/history.ts; mehanika ostaja kanon toCsv (R136) +
+    // downloadCsvText (R296). Vsebina NESPREMENJENA (VERBATIM vrstice).
     downloadCsvText(
       `roksal-zgodovina-${new Date().toISOString().slice(0, 10)}.csv`,
-      toCsv(headers, rows),
+      toCsv([...ZGODOVINA_CSV_GLAVE], zgodovinaCsvVrstice(history)),
     )
     toast.success('Zgodovina izvožena v CSV')
   }
@@ -1171,7 +1140,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                 onClick={() => {
                   setTemplates([])
                   setActiveTemplateId(null)
-                  try { localStorage.removeItem('roksal_calc_templates') } catch { /* ignore */ }
+                  odstraniIzSkladisca(SKLADISCE_PREDLOGE)
                   toast.success('Vse predloge počiščene')
                 }}
               >
@@ -1196,6 +1165,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                     <button
                       type="button"
                       onClick={() => loadTemplate(tpl)}
+                      title={`${tpl.naziv} — ${templateModeLabels[tpl.mode]}`}
                       className="flex w-full items-start gap-2 text-left"
                     >
                       <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-roksal-navy/10">
@@ -1204,7 +1174,11 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                       <div className="min-w-0 flex-1">
                         <p className="text-xs font-semibold text-roksal-ink truncate">{tpl.naziv}</p>
                         <div className="flex items-center gap-1.5 mt-0.5">
-                          <Badge variant="outline" className="text-[9px] h-4 px-1.5 bg-roksal-navy/5 border-roksal-navy/20 dark:border-roksal-ink/20 text-roksal-ink">
+                          <Badge
+                            variant="outline"
+                            title="Predloga shranjenega izračuna — nalaganje zapolni vsa vnosna polja načina"
+                            className="text-[9px] h-4 px-1.5 bg-roksal-navy/5 border-roksal-navy/20 dark:border-roksal-ink/20 text-roksal-ink"
+                          >
                             {templateModeLabels[tpl.mode]}
                           </Badge>
                           <span className="text-[9px] text-muted-foreground">
@@ -1219,6 +1193,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                         onClick={() => deleteTemplate(tpl.id)}
                         className="flex items-center gap-1 text-[9px] text-roksal-red hover:text-roksal-red/80 transition-colors"
                         aria-label="Izbriši predlogo"
+                        title="Izbriši predlogo"
                       >
                         <Trash2 aria-hidden="true" className="h-3 w-3" />
                         Izbriši
@@ -4784,7 +4759,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               )}
               {history.length > 0 && (
                 <p className="mt-2 text-2xs text-muted-foreground text-center">
-                  Prikaže se zadnjih {history.length} {history.length === 1 ? 'izračun' : history.length < 5 ? 'izračune' : 'izračunov'} (max 30).
+                  Prikaže se zadnjih {history.length} {history.length === 1 ? 'izračun' : history.length < 5 ? 'izračune' : 'izračunov'} (max {MAX_ZGODOVINA}).
                 </p>
               )}
             </CardContent>

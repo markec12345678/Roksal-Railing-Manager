@@ -32,10 +32,10 @@ describe('r341 zgodovina CSV — kanon toCsv + downloadCsvText (65. člen)', () 
     )
   })
 
-  it('exportHistoryCsv uporablja kanon (okno okoli klica)', () => {
+  it('exportHistoryCsv uporablja kanon (okno okoli klica) — podatki EN VIR iz history.ts (R342)', () => {
     const okno = oknoOkoli(tab, "toast.success('Zgodovina izvožena v CSV')")
     expect(okno).toContain('downloadCsvText(')
-    expect(okno).toContain('toCsv(headers, rows)')
+    expect(okno).toContain('toCsv([...ZGODOVINA_CSV_GLAVE], zgodovinaCsvVrstice(history))')
     expect(okno).toContain('roksal-zgodovina-')
   })
 
@@ -46,22 +46,31 @@ describe('r341 zgodovina CSV — kanon toCsv + downloadCsvText (65. člen)', () 
     expect(tab).not.toContain('replace(/"/g')
   })
 
-  it('glave VERBATIM ohranjene (7 stolpcev, enak vrstni red)', () => {
-    expect(tab).toContain(
-      "['Datum', 'Način', 'Ključni rezultat', 'Projekt', 'Formula', 'Odtis vhodov', 'Vhodni podatki']",
-    )
+  it('glave VERBATIM ohranjene (7 stolpcev) — EN VIR ZGODOVINA_CSV_GLAVE (R342 FAZA 4)', () => {
+    const hist = readFileSync(join(process.cwd(), 'src/components/roksal/calculator/history.ts'), 'utf8')
+    expect(hist).toContain("'Datum',")
+    expect(hist).toContain("'Način',")
+    expect(hist).toContain("'Ključni rezultat',")
+    expect(hist).toContain("'Projekt',")
+    expect(hist).toContain("'Formula',")
+    expect(hist).toContain("'Odtis vhodov',")
+    expect(hist).toContain("'Vhodni podatki',")
+    // tab ne podvaja glav (EN VIR)
+    expect(tab).not.toContain("['Datum', 'Način'")
   })
 
-  it('vrstica zgodovine VERBATIM (7 celic — datum/način/rezultat/projekt/formula/odtis/vhodi)', () => {
-    const okno = oknoOkoli(tab, 'const rows = history.map((h) => [')
-    expect(okno).toContain('slDatumKratko(new Date(h.timestamp))')
-    expect(okno).toContain('slCasDolgo(new Date(h.timestamp))')
-    expect(okno).toContain('h.modeLabel,')
-    expect(okno).toContain('h.keyResult,')
-    expect(okno).toContain('h.projectName ?? \'\',')
-    expect(okno).toContain('h.formulaVersion ?? \'\',')
-    expect(okno).toContain('h.inputHash ?? \'\',')
-    expect(okno).toContain('JSON.stringify(h.inputs),')
+  it('vrstica zgodovine VERBATIM (7 celic) — EN VIR zgodovinaCsvVrstice (R342 FAZA 4)', () => {
+    const hist = readFileSync(join(process.cwd(), 'src/components/roksal/calculator/history.ts'), 'utf8')
+    expect(hist).toContain('slDatumKratko(new Date(h.timestamp))')
+    expect(hist).toContain('slCasDolgo(new Date(h.timestamp))')
+    expect(hist).toContain('h.modeLabel,')
+    expect(hist).toContain('h.keyResult,')
+    expect(hist).toContain("h.projectName ?? ''")
+    expect(hist).toContain("h.formulaVersion ?? ''")
+    expect(hist).toContain("h.inputHash ?? ''")
+    expect(hist).toContain('JSON.stringify(h.inputs),')
+    // tab ne podvaja gradnje vrstic (EN VIR)
+    expect(tab).not.toContain('history.map((h) => [')
   })
 
   it('prazna zgodovina: fail-closed toast ostaja (guardo kanon)', () => {

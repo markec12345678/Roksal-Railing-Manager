@@ -103,7 +103,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 45 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **4851** (292 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **4870** (294 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 143 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -911,6 +911,21 @@ Sheet z 6 podzavihki:
   pravila react-hooks/set-state-in-effect — prej skrito z bailoutom compiler
   analize na 7,6k vrstični datoteki); vsebina ŽIVA v čankih dokazana
   (r323-build-needles ×9 + delegirana veriga R322→…→R227)
+- **Kalkulator FAZA 4 + val 27** (R343 — KOLIZIJA #15: vzporedna lastniška
+  R342 [75fd188 — QA-izvedbena runda brez kode] pristala med mojim delom in
+  vzel številko; moja runda preimenovana R342→R343 po kanonu KOLIZIJE
+  #4/R323/#13/#14; moja delta = čista koda, brez prekrivanja z njihovo):
+  (1) NOV `calculator/history.ts` — skladišče zgodovine/predlog EN VIR:
+  localStorage ključi (prej 7× podvojeni literali), fail-closed nalagalnik
+  (ENA funkcija namesto 2 kopij inicializatorjev; pokvaren JSON = privzeto,
+  NIČ metanja), varni zapisovalnik/brisač (ENA namesto 5 kopij plesa),
+  zmogljivostni limiti 30/50 EN VIR (prej magic števila ×3 + UI besedilo),
+  `zgodovinaCsvVrstice` + `ZGODOVINA_CSV_GLAVE` (čista podatkovna resnica
+  65. člena; mehanika toCsv/downloadCsvText ostaja v tabu); (2) STIL
+  val 27 — hover parity prihranjenih predlog: load gumb `title`, način
+  badge razlagalni `title` (edini nov needle-niz; iskreno BREZ cursor-help
+  — badge je znotraj kliknega gumba), izbriši gumb `title` (0 novih hex);
+  vitest r343 ×19 + `qa-needles/r343.tsv`
 - **QA-izvedbena runda — dolg R340/R341 poravnan + PROD mejnik R339+R340+R341** (R342 —
   KOLIZIJA #15 [LEKCIJA 1 15. potrditev]: vzporedna lastniška R341 [6fd3f6e,
   12:52:00Z] pristala MED mojimi QA teki [smoke/e2e/prod-qa/sweep nad R340
@@ -1066,7 +1081,7 @@ Sheet z 6 podzavihki:
 | **PWA** | Service Worker + Web Manifest |
 | **Temnitveni način** | [next-themes](https://github.com/pacocoursey/next-themes) |
 | **Validacija** | [Zod 4](https://zod.dev/) |
-| **Testiranje** | [Vitest 4](https://vitest.dev/) (4851 testov + globalSetup embedded PG) |
+| **Testiranje** | [Vitest 4](https://vitest.dev/) (4870 testov + globalSetup embedded PG) |
 | **Paketni upravitelj** | [Bun](https://bun.sh/) |
 | **Linting** | ESLint 9 + eslint-config-next |
 
@@ -1188,7 +1203,7 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `bun run dev` | Zažene Next.js dev server (port 3000) |
 | `bun run build` | Produkcijska build (build-prepare: generate + migrate deploy + seed) |
 | `bun run start` | Zažene produkcijski server |
-| `bun run test` | Vsi testi (vitest, 4851, embedded PG prek globalSetup) |
+| `bun run test` | Vsi testi (vitest, 4870, embedded PG prek globalSetup) |
 | `bun run check` | tsc --noEmit + vitest run (en ukaz za vse) |
 | `bunx tsc --noEmit` | Tipska kontrola celotnega projekta (trenutno 0 napak) |
 | `bun run lint` | ESLint preverjanje |
