@@ -113,6 +113,8 @@ import { avtomatizacijaPregled, avtomatizacijaAuditCsv, avtomatizacijaAuditCsvFi
 // (pregled) ostane v bratu; PDF graditelj je determinističen — isti HEAD =
 // bajtno identičen PDF).
 import { generateAvtomatizacijaAuditPdf, avtomatizacijaAuditPdfFilename } from '@/lib/avtomatizacija-audit-pdf'
+// R355 — 65. člen (IZVOZI družina): polni katalog zmožnosti (§11) kot CSV.
+import { avtomatizacijaKatalogCsv, avtomatizacijaKatalogCsvFilename } from '@/lib/avtomatizacija-katalog-csv'
 // 🆕 R320 (49. člen): PDF brat JSON izvoza končne verifikacije — LOČEN lib
 // (vzorec R318 audit-pdf: jsPDF teža NE obremenjuje brata; EN VIR validacija
 // ostane v bratu; determinističen PDF — isti HEAD = bajtno identičen).
@@ -944,6 +946,33 @@ export function VodjaDashboard() {
     }
   }
 
+  /** 🆕 R355 (65. člen, issue #1 IZVOZI družina): izvoz POLNEGA kataloga
+   *  zmožnosti (§11 — ENA vrstica na zmožnost + razrešeni nadomestki) kot
+   *  deterministični CSV — EN VIR (avtomatizacijaKatalogCsv), brez
+   *  metapodatkov časa/hash (isti HEAD = bajtno identična datoteka — kanon
+   *  46.–50. člen). Fail-verbose: razlog vidno, ne tiho (kanon). */
+  function exportAvtomatizacijaKatalogCsv() {
+    try {
+      const csv = avtomatizacijaKatalogCsv()
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = avtomatizacijaKatalogCsvFilename()
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+      toast({ title: 'Avtomatizacijski katalog izvožen ✓', description: avtomatizacijaKatalogCsvFilename() })
+    } catch (e) {
+      toast({
+        title: 'Izvoz ni uspel',
+        description: e instanceof Error ? e.message : String(e),
+        variant: 'destructive',
+      })
+    }
+  }
+
   /** 🆕 R318 (48. člen, issue #1 IZVOZI družina): izvoz avtomatizacijskega
    *  audita kot DETERMINISTIČNI PDF — EN VIR (isti pregled validacije kot
    *  CSV brat), brez metapodatkov časa v vsebini (isti HEAD = bajtno
@@ -1632,6 +1661,21 @@ export function VodjaDashboard() {
           >
             <Download className="h-3 w-3" aria-hidden="true" />
             PDF
+          </Button>
+          {/* 🆕 R355 (65. člen): KATALOG pill — polni katalog zmožnosti (§11,
+              ENA vrstica na zmožnost + razrešeni nadomestki) kot CSV;
+              bratska simetrija z CSV/PDF sosedom (ISTI vzorec žetona —
+              amber/50 izvozna družina vodje; a11y R291/R293). */}
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-6 gap-1 border-roksal-navy/25 px-2 text-2xs text-roksal-ink press-scale transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 dark:border-roksal-ink/25"
+            onClick={exportAvtomatizacijaKatalogCsv}
+            aria-label="Izvozi polni katalog avtomatizacijskih zmožnosti kot CSV"
+            title="Izvozi polni katalog zmožnosti (§11 — ENA vrstica na zmožnost; AI vnosi z razrešenim nadomestkom — dokaz 'jedro deluje brez AI') kot deterministični CSV"
+          >
+            <Download className="h-3 w-3" aria-hidden="true" />
+            KATALOG
           </Button>
         </div>
         <ul className="mt-1 space-y-0.5" data-testid="avtomatizacija-vrstice">

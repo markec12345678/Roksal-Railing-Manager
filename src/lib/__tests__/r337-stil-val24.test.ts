@@ -14,8 +14,8 @@
 //  • obrnjena regresija: val 23 navy/40 pill ŽIVA + val 22 PAR ŽIVA + val 21
 //    TRIADA ŽIVA + globals .press-scale ŽIV + 0 surovih barv na novi pill
 //    (0-hex kanon val 15–23);
-//  • register sodelovanje: val8 (70 + amber ×11) + val9 (18 taktilnih) +
-//    val23 (×18) pini shiftani V ENI rundi (LEKCIJA R334 5).
+//  • register sodelovanje: val8 (70 + amber ×12 [R355]) + val9 (19 taktilnih [R355]) +
+//    val23 (×19 [R355]) pini shiftani V ENI rundi (LEKCIJA R334 5).
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -68,7 +68,8 @@ describe('r337 STIL val 24 — AI raba pregled CSV pill: amber/50 družina + tak
   it('taktilni register ×18 (val9 sodelovanje — PIN SHIFT 17 → 18, LEKCIJA R334 5: V ENI rundi)', () => {
     const gumb = oknoOkoli(vodja, 'aria-label="Izvozi pregled AI rabe kot CSV"')
     expect(gumb).toContain('press-scale')
-    expect(vodja.split('press-scale').length - 1).toBe(18)
+    // R355: 18 → 19 (KATALOG pill — 65. člen)
+    expect(vodja.split('press-scale').length - 1).toBe(19)
   })
 
   it('definicijski naslov medija (title) — ista resnica + determinizem + Excel razlika medija', () => {
@@ -105,11 +106,13 @@ describe('r337 STIL val 24 — AI raba pregled CSV pill: amber/50 družina + tak
     expect(globals).toContain('transform: scale(0.97)')
   })
 
-  it('register sodelovanje: val8 (70 + amber ×11) + val9 (18) + val23 (18) — vsi čez-valovni pini shiftani V ENI rundi + 0-hex', () => {
+  it('register sodelovanje: val8 (70 + amber ×12) + val9 (19) + val23 (19) — vsi čez-valovni pini shiftani V ENI rundi + 0-hex', () => {
     expect(val8).toContain('R337 PIN SHIFT 69 → 70')
-    expect(val8).toContain('vodjaAmber.length).toBe(11)')
-    expect(val9).toContain('expect(pojavitve).toBe(18)')
-    expect(val23).toContain('expect(vodja.split(\'press-scale\').length - 1).toBe(18)')
+    // R355: val8 amber pin 11 → 12 (KATALOG pill — 65. člen)
+    expect(val8).toContain('vodjaAmber.length).toBe(12)')
+    // R355: križni pini 18 → 19 (KATALOG pill — oba registrska testa posodobljena V ENI rundi, LEKCIJA R334 5)
+    expect(val9).toContain('expect(pojavitve).toBe(19)')
+    expect(val23).toContain('expect(vodja.split(\'press-scale\').length - 1).toBe(19)')
     // 0 surovih barv na novi pill (0-hex kanon)
     const gumb = oknoOkoli(vodja, 'aria-label="Izvozi pregled AI rabe kot CSV"')
     expect(gumb).not.toMatch(/#[0-9a-fA-F]{3,8}\b/)

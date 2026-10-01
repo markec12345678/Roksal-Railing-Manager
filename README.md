@@ -103,7 +103,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 45 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **5093** (314 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **5111** (316 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 143 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -1092,6 +1092,27 @@ Sheet z 6 podzavihki:
   (5) verifikacija: tsc 0 · eslint 0 (FULL) · build svež EXIT=0 · needles
   r354 VSE OK (veriga + union registri r340–r354) · smoke EXIT=0 · e2e
   EXIT=0 [ODTIS BAJTNATO IDENTIČEN pre==post — ZERO-MUTACIJA].
+- **Katalog zmožnosti CSV + val 38** (R355): (1) **65. člen issue #1
+  (IZVOZI družina)** — NOV `avtomatizacija-katalog-csv.ts`: POLNI katalog
+  zmožnosti (§11 AutomationProvider — ENA vrstica na zmožnost: id/vrsta/
+  območje/opis/modul + RAZREŠEN nadomestek [id + opis] za AI vnose) kot
+  deterministični CSV; EN VIR katalog.ts = ISTI vir kot UI kartice,
+  ponudniki in docs/automacija-audit.md; fail-closed ×3 (podvojen id / AI
+  brez nadomestka / neobstoječ nadomestek → TypeError — pokvaren katalog ne
+  more postati lažno poročilo); toCsv kanon (BOM + podpičje + CRLF); brez
+  časa/hash (isti HEAD = bajtno identično); sklep = izpeljava iz
+  avtomatizacijaPovzetek (iste številke kot kartica); KATALOG pill na vodji
+  (bratska simetrija amber/50 z CSV/PDF sosedom); (2) **val 38** — a11y
+  izvozne družine: KATALOG pill aria-label (akcija + cilj) + title +
+  amber/50 ring (pini amber/50 12→13 + press-scale 18→19 posodobljeni s
+  zgodovino); 0 novih hex; (3) vitest r355 ×18 (r355-katalog-csv ×10
+  [determinizem + format + pokritost/vrstni red + AI razrešeni nadomestki +
+  fail-closed ×3 + sklep EN VIR + filename + žičenje + 0-hex] +
+  r355-stil-val38 ×8 [pill struktura + bratska simetrija + pini + toast
+  VERBATIM + obrnjene regresije]) — 5111/5111 (316); (4) verifikacija:
+  tsc 0 · eslint 0 (FULL) · build svež EXIT=0 · needles r355 VSE OK (veriga
+  + union registri r340–r355) · smoke EXIT=0 · e2e EXIT=0 [ODTIS BAJTNATO
+  IDENTIČEN pre==post — ZERO-MUTACIJA].
 - **Kalkulator FAZA 6 + val 29** (R346): (1) NOV `calculator/inputs.ts` —
   zbiranje/nalaganje vhodov izluščeno VERBATIM iz taba (args objekti —
   vzorec R325/R345): `collectCurrentInputs(mode, vhodnaStanja)` (zapis za
@@ -1306,7 +1327,7 @@ Sheet z 6 podzavihki:
 | **PWA** | Service Worker + Web Manifest |
 | **Temnitveni način** | [next-themes](https://github.com/pacocoursey/next-themes) |
 | **Validacija** | [Zod 4](https://zod.dev/) |
-| **Testiranje** | [Vitest 4](https://vitest.dev/) (5093 testov + globalSetup embedded PG) |
+| **Testiranje** | [Vitest 4](https://vitest.dev/) (5111 testov + globalSetup embedded PG) |
 | **Paketni upravitelj** | [Bun](https://bun.sh/) |
 | **Linting** | ESLint 9 + eslint-config-next |
 
@@ -1428,7 +1449,7 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `bun run dev` | Zažene Next.js dev server (port 3000) |
 | `bun run build` | Produkcijska build (build-prepare: generate + migrate deploy + seed) |
 | `bun run start` | Zažene produkcijski server |
-| `bun run test` | Vsi testi (vitest, 5093, embedded PG prek globalSetup) |
+| `bun run test` | Vsi testi (vitest, 5111, embedded PG prek globalSetup) |
 | `bun run check` | tsc --noEmit + vitest run (en ukaz za vse) |
 | `bunx tsc --noEmit` | Tipska kontrola celotnega projekta (trenutno 0 napak) |
 | `bun run lint` | ESLint preverjanje |

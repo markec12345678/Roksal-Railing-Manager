@@ -61,8 +61,8 @@ describe('r343 STIL val 27 — hover parity prihranjenih predlog: title parity',
     expect(mTab).toContain('title={auditActionTitles[entry.akcija]}')
   })
 
-  it('obrnjena regresija val 24: vodja amber/50 ring ×12 (11 pill + 1 okno) + globals press-scale ŽIV', () => {
-    expect(vodja.split('focus-visible:ring-roksal-amber/50').length - 1).toBe(12)
+  it('obrnjena regresija val 24: vodja amber/50 ring ×13 (12 pill + 1 okno; R355 +1 KATALOG pill) + globals press-scale ŽIV', () => {
+    expect(vodja.split('focus-visible:ring-roksal-amber/50').length - 1).toBe(13) // R355: 12→13 (KATALOG pill — 65. člen IZVOZI družine: polni katalog zmožnosti §11 kot CSV, bratska simetrija amber/50 izvozne družine vodje)
     expect(globals).toContain('.press-scale')
   })
 

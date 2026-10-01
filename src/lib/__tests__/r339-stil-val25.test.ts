@@ -7,7 +7,7 @@
 //    testi bereta ISTO mapo — divergenca nemogoča);
 //  • 0 novih hex (0-hex kanon val 15–24);
 //  • obrnjene regresije: val 24 pill ŽIVA (vodja nespremenjen: amber/50 ×11,
-//    press-scale ×18) + val 23 navy/40 ŽIVA + globals .press-scale ŽIV;
+//    press-scale ×19 [R355 +1 KATALOG]) + val 23 navy/40 ŽIVA + globals .press-scale ŽIV;
 //  • register sodelovanje: R338 NE ureja vodje → vsi val8/val9/val23/val24
 //    pini OSTANEJO na R337 resnici (anti-stale dokaz obratne smeri).
 import { describe, expect, it } from 'vitest'
@@ -95,8 +95,8 @@ describe('r339 STIL val 25 — hover parity revizijske sledi: EN VIR + R280 vzor
     // surovi niz = 12 pojavitev (11 gumbov + 1 odstopanje okna ekstrakcije
     // na sosednjih blokih — enota gumb ostane kanon, pin na surovi resnici
     // dokumentira obe štetji).
-    expect(vodja.split('focus-visible:ring-roksal-amber/50').length - 1).toBe(12)
-    // val9 taktilni register ×18 (R337 PIN SHIFT ne-dvig)
-    expect(vodja.split('press-scale').length - 1).toBe(18)
+    expect(vodja.split('focus-visible:ring-roksal-amber/50').length - 1).toBe(13) // R355: 12→13 (KATALOG pill — 65. člen IZVOZI družine: polni katalog zmožnosti §11 kot CSV, bratska simetrija amber/50 izvozne družine vodje)
+    // val9 taktilni register ×19 (R337 PIN SHIFT ne-dvig; R355: 18→19 — KATALOG pill nosi ISTI taktilni žeton, bratska simetrija)
+    expect(vodja.split('press-scale').length - 1).toBe(19)
   })
 })

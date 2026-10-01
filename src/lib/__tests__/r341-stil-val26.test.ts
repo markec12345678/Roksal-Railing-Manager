@@ -52,7 +52,7 @@ describe('r341 STIL val 26 — hover parity zgodovine izračunov: title + cursor
   })
 
   it('obrnjena regresija val 24: vodja amber/50 pill družina ŽIVA (ring ×12 = 11 pill val8 + 1 okno odstopanje)', () => {
-    expect(vodja.split('focus-visible:ring-roksal-amber/50').length - 1).toBe(12)
+    expect(vodja.split('focus-visible:ring-roksal-amber/50').length - 1).toBe(13) // R355: 12→13 (KATALOG pill — 65. člen IZVOZI družine: polni katalog zmožnosti §11 kot CSV, bratska simetrija amber/50 izvozne družine vodje)
   })
 
   it('obrnjena regresija val 23: navy/40 ring ŽIVA v vodji', () => {

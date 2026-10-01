@@ -1,0 +1,23 @@
+# qa-needles/r355.tsv — REGISTER needlejev runde R355 (65. člen issue #1
+# IZVOZI družina: POLNI katalog zmožnosti [§11 AutomationProvider — ENA
+# vrstica na zmožnost + razrešeni nadomestki za AI vnose — dokaz 'jedro
+# deluje brez AI'] kot DETERMINISTIČNI CSV [avtomatizacija-katalog-csv.ts;
+# EN VIR katalog.ts = ISTI vir kot UI kartice + ponudniki + docs;
+# fail-closed ×3: podvojen id / AI brez nadomestka / neobstoječ nadomestek;
+# toCsv kanon BOM+podpičje+CRLF; brez časa/hash — isti HEAD = bajtno
+# identično; filename brez datuma]
+# + STIL val 38: a11y izvozne družine — KATALOG pill na vodji [aria-label
+# akcija+cilj + title + amber/50 ring bratska simetrija z CSV/PDF sosedom
+# — LEKCIJA R346 kanon, R291/R293 precedens; pini amber/50 12→13 +
+# press-scale 18→19 posodobljeni s zgodovino]; 0 novih hex.
+# ============================================================================
+# FORMAT (TSV; EN vrstica = EN needle; TAB je LOČILO) — kanon R340–R354.
+#   <needle_string><TAB><opis><TAB><vrsta>
+# vrsta: need_static (MORA biti ŽIV v čankih) | must_miss (NE SME biti)
+
+# ── R355 lastni needleji ──
+# statične celote (NOVI nizi — era-diskriminatorji):
+Izvozi polni katalog avtomatizacijskih zmožnosti kot CSV	R355 val 38 KATALOG pill aria (akcija+cilj; bratska simetrija amber/50)	need_static
+Avtomatizacijski katalog izvožen	R355 toast naslov VERBATIM (fail-verbose kanon izvozne družine)	need_static
+avtomatizacija-katalog.csv	R355 filename determinističen (brez datuma — vzorec audit 47. člen)	need_static
+TODO-R355	R355 — brez razvojnih ostankov	must_miss

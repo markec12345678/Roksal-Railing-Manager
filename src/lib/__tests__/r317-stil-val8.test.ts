@@ -19,6 +19,7 @@
 // polzaporedje ne sme nazaj; precedens R320 končna PDF).
 //
 // R324 PIN SHIFT (52. člen): vodja blok glava dobi OSMI amber/50 gumb
+// R355 PIN SHIFT (65. člen): vodja blok glava dobi DEVETI amber/50 gumb (KATALOG)
 // (dnevni pregled vodje PDF — brat CSV R163, IZVOZI družina; register
 // ×7 → ×8 z obrnjeno regresijo: stari ×7 pin je prepovedan — polzaporedje
 // ne sme nazaj; precedens R321/R323).
@@ -139,7 +140,7 @@ describe('r317 STIL val 8 — izvozna družina: focus-visible ring STRAŽAR', ()
   const AMBER_ZETONI = new Set(['vodja-dashboard'])
 
   it('anti-stale: 70 izvoznih gumbov v drevesu (69 pred R337 + NOVI AI raba pregled CSV)', () => {
-    expect(gumbi.length).toBeGreaterThanOrEqual(70) // R335 PIN SHIFT 67 → 68 + R336 PIN SHIFT 68 → 69 + R337 PIN SHIFT 69 → 70 (stari pini so prepovedani — obrnjena regresija, polzaporedje ne sme nazaj)
+    expect(gumbi.length).toBeGreaterThanOrEqual(71) // R335 PIN SHIFT 67 → 68 + R336 PIN SHIFT 68 → 69 + R337 PIN SHIFT 69 → 70 + R355 PIN SHIFT 70 → 71 (KATALOG pill — 65. člen; stari pini so prepovedani — obrnjena regresija, polzaporedje ne sme nazaj)
     // novi gumb 50. člena je prisoten
     expect(gumbi.some((g) => g.okno.includes('Izvozi meritve zmogljivosti kot PDF'))).toBe(true)
     // novi gumb 51. člena je prisoten (R322)
@@ -205,7 +206,8 @@ describe('r317 STIL val 8 — izvozna družina: focus-visible ring STRAŽAR', ()
     const vodjaAmber = gumbi.filter(
       (g) => g.datoteka === 'vodja-dashboard' && g.okno.includes('focus-visible:ring-roksal-amber/50'),
     )
-    expect(vodjaAmber.length).toBe(11)
+    // R355: 11 → 12 (KATALOG pill — 65. člen, bratska simetrija izvozne družine)
+    expect(vodjaAmber.length).toBe(12)
     const ariaVseh = vodjaAmber.map((g) => {
       const m = g.okno.match(/aria-label="([^"]+)"/)
       return m ? m[1] : ''
@@ -222,6 +224,8 @@ describe('r317 STIL val 8 — izvozna družina: focus-visible ring STRAŽAR', ()
     expect(ariaVseh).toContain('Izvozi poročilo končne verifikacije kot CSV')
     // R335: mesečno poročilo vodje CSV (62. člen) — CSV brat Poročilo PDF
     expect(ariaVseh).toContain('Izvozi mesečno poročilo vodje kot CSV')
+    // R355: polni katalog zmožnosti CSV (65. člen) — KATALOG pill
+    expect(ariaVseh).toContain('Izvozi polni katalog avtomatizacijskih zmožnosti kot CSV')
     // R337: AI raba pregled CSV (64. člen) — ZADNJI vodja dokazni blok dobi
     // izvoz (EN VIR aiRabaCsv(aiRaba) — handler poda že IZRISANI pregled)
     expect(ariaVseh).toContain('Izvozi pregled AI rabe kot CSV')

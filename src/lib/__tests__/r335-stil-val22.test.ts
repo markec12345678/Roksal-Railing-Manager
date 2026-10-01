@@ -178,15 +178,16 @@ describe('r335 STIL val 22 — Mesečno poročilo CSV PAR pariteta na vodja blok
     expect(csvGumb).not.toMatch(/\b(?:bg|text|border|ring)-(?:amber|navy|red|green)-\d{2,3}\b/)
   })
 
-  it('register sodelovanje: R335 zapisek + R336/R337 PIN SHIFTI zapisana v val8 (70 + amber ×11) IN val9 (18 taktilnih) registrih — register resnica čez valove (LEKCIJA R334 5: vsi pini shiftani V ENI rundi)', () => {
+  it('register sodelovanje: R335 zapisek + R336/R337 PIN SHIFTI zapisana v val8 (70 + amber ×11) IN val9 (19 taktilnih [R355]) registrih — register resnica čez valove (LEKCIJA R334 5: vsi pini shiftani V ENI rundi)', () => {
     expect(val8).toContain('R335 PIN SHIFT 67 → 68')
     expect(val8).toContain('R336 PIN SHIFT 68 → 69')
     expect(val8).toContain('R337 PIN SHIFT 69 → 70')
-    expect(val8).toContain('expect(gumbi.length).toBeGreaterThanOrEqual(70)')
+    expect(val8).toContain('R355 PIN SHIFT 70 → 71')
+    expect(val8).toContain('expect(gumbi.length).toBeGreaterThanOrEqual(71)') // R355 70 → 71
     expect(val8).toContain("expect(ariaVseh).toContain('Izvozi mesečno poročilo vodje kot CSV')")
-    expect(val8).toContain('vodjaAmber.length).toBe(11)')
+    expect(val8).toContain('vodjaAmber.length).toBe(12)') // R355 11 → 12
     expect(val9).toContain('R335 PIN SHIFT (62. člen)')
-    expect(val9).toContain('expect(pojavitve).toBe(18)')
+    expect(val9).toContain('expect(pojavitve).toBe(19)') // R355 18 → 19
     expect(val9).toContain("'aria-label=\"Izvozi mesečno poročilo vodje kot CSV\"'")
   })
 })

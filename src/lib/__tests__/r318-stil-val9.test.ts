@@ -110,6 +110,7 @@ describe('r318 STIL val 9 — vodja izvozna družina: taktilna pariteta', () => 
     // R335 PIN SHIFT 16 → 17 (stari 16 pin je prepovedan — obrnjena regresija)
     const pojavitve = src.split('press-scale').length - 1
     // R337 PIN SHIFT 17 → 18 (stari 17 pin je prepovedan — obrnjena regresija)
-    expect(pojavitve).toBe(18)
+    // R355: 18 → 19 (KATALOG pill nosi ISTI taktilni žeton — bratska simetrija)
+    expect(pojavitve).toBe(19)
   })
 })
