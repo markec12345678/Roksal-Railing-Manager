@@ -1,0 +1,30 @@
+# qa-needles/r344.tsv — REGISTER needlejev runde R344 (QA-IZVEDBENA runda,
+# vzorec njihov R342: brez nove kode → brez novih pozitivnih needlejev)
+# ============================================================================
+# KOLIZIJA #16 [16. potrditev LEKCIJE 1]: moja runda (izhodišče R248 stale
+# klon, HEAD fcaa1da) je NEODVISNO razvila KPI 'Največji razpon' % + audit
+# dokument — vmes je origin napredoval na R343 [b868440], kjer je vzporedna
+# seja ISTO nalogo že pristala kot NJIHOV R249 [najvecjiRazpon: max per-row
+# % razlike, fail-closed prazen seznam NIKOLI -Infinity, brez notranje sorte
+# — urejenostna invarianta] + docs/automacija-audit.md. Po kanonu
+# KOLIZIJE #4/R323/#13/#14/#15: njihova resnica = pristala; moja delta =
+# DUPLIKAT → opuščena (arhiv: lokalni branch r249-moja-delta, commit 49c77c7,
+# NIKOLI pushan). Moja runda preimenovana R249→R344.
+#
+# ISKRENA OMEJITEV (vzorec R340/R341/R342): QA-IZVEDBENA runda brez nove kode
+# → pokritost = izvedene faze (tsc 0 / eslint 0 / vitest 4870/4870 (294) /
+# build svež EXIT=0 / needles veriga OK / smoke EXIT=0 / e2e EXIT=0 /
+# prod-qa LIVE veja EXIT=0 + era harvest: R340 ×4 + R341 ×1 ŽIVO na produ,
+# R343 val 27 MISS = pričakovano [R343 čaka zeleni deploy], TODO-R340/341/
+# 342/343 vsi čisto) + prva naloga R344 (qa-round.sh 343 prod-qa POST-commit
+# re-run) IZVEDENA z 2. tekom kanonom LEKCIJA R337 6 (run 1 EXIT=0 — LIVE
+# že na 1. teku, 2. tek ni bil potreben).
+#
+# FORMAT (TSV; EN vrstica = EN needle; TAB je LOČILO) — kanon R340–R343.
+#
+# ── R344 lastni needleji ──
+# (brez — ni nove kode; glej iskreno omejitev zgoraj)
+#
+# Delegirani negativni needle — OBVEZEN vsaki rundi (kanon "brez razvojnih
+# ostankov", vzorec R324–R343):
+TODO-R344	R344 — brez razvojnih ostankov	must_miss
