@@ -103,7 +103,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 45 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **4567** (266 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **4601** (268 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 143 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -484,6 +484,32 @@ Sheet z 6 podzavihki:
   hierarhija preverba + val 10 obrnjena regresija ×3 + register 3 pojavitve);
   PIN SHIFTI ×2 izrecno (val8 amber ×6→×7 + anti-stale 56→57; val9
   press-scale ×13→14 pojavitev, 7→8 gumbov)
+- **Primerjava dobaviteljev (CSV izvoz + zaslon)** (R328, 55. člen — issue
+  #1 §5 **supplier comparison**): NOVI lib `src/lib/cena-dobavitelji.ts`
+  (drugo grupiranje ISTEGA pregleda zgodovine R326 — EN VIR, pregled kot
+  PROP, nič drugega fetcha; iskren agregat ŠTEVCEV smeri narašča/pada/
+  stabilna/prvi vpis — NI izmišljenega povprečnega trenda; razpon trenutnih
+  cen min/max; sort naziv+supplierId po UTF-16 kodnih enotah — 100 %
+  ponovljivo; kontrolna vsota parov brani sama; fail-closed ×6 skupin,
+  sporočila VERBATIM z kje); filename `primerjava-dobaviteljev.csv` brez
+  datuma (primerjava NIMA referenčnega dneva — kanon družine); NOVI pod
+  panel `cena-dobavitelji-panel.tsx` (LOČEN datoteka — LEKCIJA R325 5:
+  vodja registri se NE premaknejo; tabelska resnica + CSV gumb izvozne
+  družine — navy/40 ring + press-scale, fail-verbose toast); vitest ×34
+  (r328-cena-dobavitelji ×27: projekcija + CSV kanon bajtno + determinizem
+  ×2 + permutacija + fail-closed ×6 + EN VIR žičenje + ARHIVSKA stabilnost
+  zgodovina CSV R326; r328-stil-val15 ×7); E2E Z0av ŽIVO S PODATKI
+  (determinističen seed r328-cena-tmp.cjs raise/restore — WPC-120-A: zaprt
+  10.00 → odprt 12.50; CSV 321 bajtov DETERMINIZEM ŽIVO NA BAJTIH ×2
+  klika; ODTIS pre==post — ZERO-MUTACIJA končnega stanja)
+- **Stil val 15 — dvonivojska hierarhija na panelu Primerjava
+  dobaviteljev** (R328): Card kontejner MEKŠI amber/30 + tabelska vrstica
+  IZRAZITEJŠI amber/40 (val 11/12/13/14 kanon na NOVI površini);
+  r328-stil-val15 STRAŽAR ×7 (hierarhija /40 > /30 + izvozni gumb navy/40
+  + press-scale + zgodovina PAR obrnjena regresija bajtno ×2/×2 + vodja
+  val 11/12 register ×4/×4 NEPREMIKNJEN + globals .press-scale ŽIV + 0
+  surovih barv); PIN SHIFT izrecno (val8 anti-stale 60→61 [NOVI CSV gumb
+  — amber/50 register ostane zaklenjen v vodji ×8])
 - **Izvoz zgodovine cen materiala kot PDF** (R327, 54. člen — issue #1
   **IZVOZI** družina): NOVI lib `src/lib/cena-zgodovina-pdf.ts`
   (deterministični PDF BRAT CSV-ju R326 — LOČEN lib, jsPDF teža ne
@@ -709,7 +735,7 @@ Sheet z 6 podzavihki:
 | **PWA** | Service Worker + Web Manifest |
 | **Temnitveni način** | [next-themes](https://github.com/pacocoursey/next-themes) |
 | **Validacija** | [Zod 4](https://zod.dev/) |
-| **Testiranje** | [Vitest 4](https://vitest.dev/) (4567 testov + globalSetup embedded PG) |
+| **Testiranje** | [Vitest 4](https://vitest.dev/) (4601 testov + globalSetup embedded PG) |
 | **Paketni upravitelj** | [Bun](https://bun.sh/) |
 | **Linting** | ESLint 9 + eslint-config-next |
 
@@ -831,7 +857,7 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `bun run dev` | Zažene Next.js dev server (port 3000) |
 | `bun run build` | Produkcijska build (build-prepare: generate + migrate deploy + seed) |
 | `bun run start` | Zažene produkcijski server |
-| `bun run test` | Vsi testi (vitest, 4567, embedded PG prek globalSetup) |
+| `bun run test` | Vsi testi (vitest, 4601, embedded PG prek globalSetup) |
 | `bun run check` | tsc --noEmit + vitest run (en ukaz za vse) |
 | `bunx tsc --noEmit` | Tipska kontrola celotnega projekta (trenutno 0 napak) |
 | `bun run lint` | ESLint preverjanje |

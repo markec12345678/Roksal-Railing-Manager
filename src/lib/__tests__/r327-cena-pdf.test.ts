@@ -210,8 +210,9 @@ describe('r327 cena-zgodovina PDF izvoz (54. člen — IZVOZI družina)', () => 
     expect(komponenta).toContain('generateCenaZgodovinaPdf(pregled)')
     expect(komponenta).toContain('cenaZgodovinaPdfFilename()')
     // iskrena ničelna veja: OBA izvozna gumba pod ISTIM pogojem (brez podatkov
-    // NI izvoza) — trije potrošniki iste resnice: gumbi-div + sklep + seznam
-    expect(komponenta.match(/pregled\.pari\.length > 0 &&/g)?.length).toBe(3)
+    // NI izvoza) — štirje potrošniki iste resnice: gumbi-div + sklep + seznam
+    // + R328 (55. člen) pod panel CenaDobaviteljiPanel mount pogoj
+    expect(komponenta.match(/pregled\.pari\.length > 0 &&/g)?.length).toBe(4)
     // fail-verbose: razlog vidno, ne tiho (kanon r203) — CSV + PDF handlerja
     expect(komponenta.match(/Izvoz ni uspel/g)?.length).toBe(2)
   })

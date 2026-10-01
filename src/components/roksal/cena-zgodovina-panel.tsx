@@ -10,6 +10,12 @@
 // identičen dokument — vzorec vodja-dnevni-pdf R324); fail-verbose toast +
 // ista iskrena ničelna veja (brez podatkov NI izvoza — OBA gumba skrita).
 //
+// R328 — 55. člen (§5 'supplier comparison'): POD panel Primerjave
+// dobaviteljev (CenaDobaviteljiPanel — LOČEN datoteka, LEKCIJA R325 5:
+// vodja registri se NE premaknejo) dobi ISTI pregled kot PROP (EN VIR —
+// nič drugega fetcha, nič dvojne resnice); iskrena ničelna veja je SKUPNA
+// (brez parov NI zgodovine, NI primerjave, NI izvoza).
+//
 // Vzorec družine (vodja-dokazni bloki R316–R324): panel je čisti BRALEC
 // /api/material-prices/zgodovina (GET — ZERO-MUTACIJA), pregled je
 // POSREDOVANA resnica liba cena-zgodovina (NIČ prerunavanja, NIČ ugibanja),
@@ -43,6 +49,7 @@ import {
 } from '@/lib/cena-zgodovina'
 import type { CenaParZgodovina, CenaZgodovinaPregled } from '@/lib/cena-zgodovina'
 import { generateCenaZgodovinaPdf, cenaZgodovinaPdfFilename } from '@/lib/cena-zgodovina-pdf'
+import { CenaDobaviteljiPanel } from '@/components/roksal/cena-dobavitelji-panel'
 
 /** Iskren prevedek smeri (EN VIR — delta iz liba, besedilo = CENA_SMER_NIZ). */
 function smerNiz(p: CenaParZgodovina): string {
@@ -137,6 +144,7 @@ export function CenaZgodovinaPanel() {
   }, [pregled, toast])
 
   return (
+    <>
     <Card
       data-testid="cena-zgodovina-dokaz"
       className="transition-colors hover:border-roksal-amber/30"
@@ -266,5 +274,9 @@ export function CenaZgodovinaPanel() {
         )}
       </CardContent>
     </Card>
+    {pregled && pregled.pari.length > 0 && !napaka && (
+      <CenaDobaviteljiPanel pregled={pregled} />
+    )}
+    </>
   )
 }
