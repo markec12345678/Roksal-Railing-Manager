@@ -186,7 +186,9 @@ describe('R208 stražar: PREKlicANO vidnost + stil', () => {
     const hist = uvozi.indexOf('History,')
     expect(xc).toBeGreaterThanOrEqual(0)
     expect(hist).toBeGreaterThan(xc)
-    expect(src).toMatch(/\n  History,\n  FileText,\n} from 'lucide-react'/) // R235: FileText (PDF pill) za History
+    // R235: FileText (PDF pill) za History — rep nadgrajen;
+    // R333: FileSpreadsheet (CSV pill 60. člen) za FileText — rep nadgrajen (vzorec R235)
+    expect(src).toMatch(/\n  History,\n  FileText,\n  FileSpreadsheet,\n} from 'lucide-react'/)
   })
 
   it('dekorativne ikone aria-hidden (družina R177)', () => {

@@ -158,8 +158,11 @@ function deterministichenId(seed: string): string {
 }
 
 /** Odstotek kot stabilen prikazni niz — 1 decimalna + vejica (ISTI niz
- *  KPI/tabela/sklep/toast; vzorec povprecjeNiz R252/pokritostNiz R263). */
-function odstotekNiz(p: number): string {
+ *  KPI/tabela/sklep/toast; vzorec povprecjeNiz R252/pokritostNiz R263).
+ *  R333: IZVOŽEN — CSV brat (dobavitelji-pozicija-csv, 60. člen) dela ISTI
+ *  odstotek izpis iz EN VIR (nič podvojenega formatiranja; vedenje bajtno
+ *  nespremenjeno). */
+export function odstotekNiz(p: number): string {
   return p.toFixed(1).replace('.', ',')
 }
 

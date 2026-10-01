@@ -64,6 +64,12 @@
 // drevesa 64 → 65 z obrnjeno regresijo: stari 64 pin je prepovedan —
 // polzaporedje ne sme nazaj).
 //
+// R333 PIN SHIFT (60. člen): pozicija dobaviteljev CSV gumb (Material
+// pregled izvozna cona — CSV BRAT PDF R264, bratska simetrija para na isti
+// vrsti; ring = navy/40, amber/50 register ostane zaklenjen v vodji ×8;
+// anti-stale števec drevesa 65 → 66 z obrnjeno regresijo: stari 65 pin je
+// prepovedan — polzaporedje ne sme nazaj).
+//
 // STRAŽAR (kanon GLOBALNI sken r310/r316 prenesen na izvozno družino):
 //  • vsak izvozni gumb (aria-label="Izvozi …") nosi IZRECEN
 //    focus-visible:ring-2 žeton (ne samo baza);
@@ -100,8 +106,8 @@ describe('r317 STIL val 8 — izvozna družina: focus-visible ring STRAŽAR', ()
   const gumbi = izvozniGumbi()
   const AMBER_ZETONI = new Set(['vodja-dashboard'])
 
-  it('anti-stale: 65 izvoznih gumbov v drevesu (64 pred R332 + NOV potekli opomniki CSV brat)', () => {
-    expect(gumbi.length).toBeGreaterThanOrEqual(65) // R332 PIN SHIFT 64 → 65 (stari 64 pin je prepovedan — obrnjena regresija)
+  it('anti-stale: 66 izvoznih gumbov v drevesu (65 pred R333 + NOVA pozicija dobaviteljev CSV brat)', () => {
+    expect(gumbi.length).toBeGreaterThanOrEqual(66) // R333 PIN SHIFT 65 → 66 (stari 65 pin je prepovedan — obrnjena regresija)
     // novi gumb 50. člena je prisoten
     expect(gumbi.some((g) => g.okno.includes('Izvozi meritve zmogljivosti kot PDF'))).toBe(true)
     // novi gumb 51. člena je prisoten (R322)
@@ -122,6 +128,8 @@ describe('r317 STIL val 8 — izvozna družina: focus-visible ring STRAŽAR', ()
     expect(gumbi.some((g) => g.okno.includes('Izvozi pregled spomnikov ponudb kot CSV'))).toBe(true)
     // novi gumb 59. člena je prisoten (R332 — potekli opomniki CSV brat)
     expect(gumbi.some((g) => g.okno.includes('Izvozi potekle opomnike kot CSV'))).toBe(true)
+    // novi gumb 60. člena je prisoten (R333 — pozicija dobaviteljev CSV brat)
+    expect(gumbi.some((g) => g.okno.includes('Izvozi pozicijo dobaviteljev kot CSV'))).toBe(true)
   })
 
   it('vsak izvozni gumb nosi IZRECEN focus-visible ring žeton (ne samo ui baza)', () => {

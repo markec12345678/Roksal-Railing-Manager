@@ -20,7 +20,7 @@ import type { MaterialSubTab, MaterialSubTabHint } from '@/lib/material-sub-tab'
 import { jeZamujenaDobava } from '@/lib/zamujena-dobava'
 // R229 — ENA definicija badgea 'Pretekel rok' (ISTA komponenta kot zvonček).
 import { BadgeZamujenaDobava } from '@/components/roksal/badge-zamujena-dobava'
-import { downloadCsv, todayStamp, type CsvValue } from '@/lib/csv-export'
+import { downloadCsv, downloadCsvText, todayStamp, type CsvValue } from '@/lib/csv-export'
 import {
   buildNarocilnicaIzNarocila,
   narociloPostavkaBeseda,
@@ -82,6 +82,15 @@ import {
   type PozicijaCenaVnos,
   type PozicijaBestVnos,
 } from '@/lib/dobavitelji-pozicija-pdf'
+// R333 (60. člen issue #1 'izvozi' družina) — DOBAVITELJI — POZICIJA CEN CSV
+// (CSV brat PDF R264 — vzorec R330/R331/R332: LOČEN lib ki UVAŽA projekcijo
+// PDF brata — EN VIR dobaviteljiPozicijaCen + odstotekNiz; ISTI presek
+// prices × bestPerMaterial, ISTI sort IME ASC, ISTI odstotki; fail-closed
+// podedovana — prazen seznam → iskren toast, NIKOLI prazna datoteka).
+import {
+  pozicijaDobaviteljevCsv,
+  pozicijaDobaviteljevCsvFilename,
+} from '@/lib/dobavitelji-pozicija-csv'
 // R244 (P1 'izvozi' družina — 5. člen) — CENIK MATERIALA PDF (pravi PDF brat
 // CSV cenika R244 — ISTI prerez vrstic, fail-closed, bajtni determinizem;
 // ISTI PDF pill družina kot Zaloga R234 / Naročilnica R235 / Dobavitelji R236).
@@ -127,6 +136,7 @@ import {
   XCircle,
   History,
   FileText,
+  FileSpreadsheet,
 } from 'lucide-react'
 
 interface Supplier {
@@ -1235,6 +1245,9 @@ export function MaterialIntelligenceTab({
   // IN ime (lekcija R121/R235). Bralni dokument — brez dodatnega pravicnega
   // gate (P1-k precedens; isti vir kot cenik/primerjalni).
   const [pozicijaVTeku, setPozicijaVTeku] = useState(false)
+  // R333 — dvoklik guard CSV brata (pariteta z PDF bratom — vsak svoj state,
+  // ISTI vzorec; disabled žig pove vteku, PAR spinner-prosta).
+  const [pozicijaCsvVTeku, setPozicijaCsvVTeku] = useState(false)
   const pridobiPozicijo = useCallback(async (): Promise<{ ceny: PozicijaCenaVnos[]; najboljse: PozicijaBestVnos[] }> => {
     const res = await fetch('/api/material-prices')
     if (!res.ok) {
@@ -1300,6 +1313,44 @@ export function MaterialIntelligenceTab({
       }
     } finally {
       setPozicijaVTeku(false)
+    }
+  }
+
+  // R333 — POZICIJA DOBAVITELJEV CSV (60. člen 'izvozi' družine): CSV brat
+  // PDF R264 — ISTA izpeljava pridobiPozicijo EN VIR (EN fetch — NIČ dvojnega
+  // preseka), ISTA preverba + JOIN + agregat + sort v libu (fail-closed
+  // podedovana). Bralna datoteka VEDNO vidna (P1-k precedens); fail-closed:
+  // 0 cen → iskren toast, NI datoteke. EN now za žig + ime; toast pove
+  // REALNO agregatno resnico (ISTI trikot kot PDF toast — WYSIWYG).
+  const handlePozicijaCsv = async () => {
+    if (pozicijaCsvVTeku) return
+    setPozicijaCsvVTeku(true)
+    try {
+      const { ceny, najboljse } = await pridobiPozicijo()
+      if (ceny.length === 0) {
+        // Fail-closed jedro: prazen seznam ne nastaja datoteke — iskren toast.
+        toast({ title: 'Ni vpisanih cen', description: 'CSV se izvozi, ko je vpisana prva nabavna cena.' })
+        return
+      }
+      const now = new Date()
+      const { csv } = pozicijaDobaviteljevCsv(ceny, najboljse, now)
+      downloadCsvText(pozicijaDobaviteljevCsvFilename(now), csv)
+      // Toast pove REALNO agregatno resnico (ISTA izpeljava
+      // dobaviteljiPozicijaCen kot PDF KPI IN sklep — WYSIWYG).
+      const { povzetek } = dobaviteljiPozicijaCen(ceny, najboljse)
+      toast({
+        title: 'Pozicija dobaviteljev prenešena v CSV',
+        description: `Pozicija-dobaviteljev-…csv — ${povzetek.dobaviteljev} ${dobaviteljBeseda(povzetek.dobaviteljev)}, ${povzetek.ponudb} ${ponudbaBeseda(povzetek.ponudb)}, brez alternative ${povzetek.brezAlternative}.`,
+      })
+    } catch (err) {
+      if (err instanceof TypeError) {
+        // fail-closed jedro: pokvaren vnos → viden razlog (nič izmišljene datoteke)
+        toast({ title: 'Pozicija dobaviteljev CSV ni mogoče sestaviti iz teh podatkov', description: err instanceof Error ? err.message : String(err), variant: 'destructive' })
+      } else {
+        toast({ title: `Izvoz CSV ni uspel: ${err instanceof Error ? err.message : String(err)}`, variant: 'destructive' })
+      }
+    } finally {
+      setPozicijaCsvVTeku(false)
     }
   }
 
@@ -2042,6 +2093,26 @@ export function MaterialIntelligenceTab({
                     viden (P1-k precedens); fail-closed toast pri 0 cen.
                     ISTI žetoni kot ostali pilli — 0 novih hex. */}
                 <div className="flex justify-end gap-2">
+                  {/* R333 — POZICIJA DOBAVITELJEV CSV (60. člen 'izvozi'
+                      družine): CSV brat PDF R264 — ISTA pozicijska resnica
+                      (presek prices × bestPerMaterial, ISTI sort + odstotki)
+                      za Excel/računovodstvo. Bralna datoteka VEDNO vidna
+                      (P1-k precedens); fail-closed toast pri 0 cen. ISTI
+                      žetoni kot PDF pill (PAR pariteta bajtno) — 0 novih hex. */}
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={handlePozicijaCsv}
+                    disabled={loading || pozicijaCsvVTeku}
+                    aria-label="Izvozi pozicijo dobaviteljev kot CSV"
+                    title="Pozicija dobaviteljev kot CSV — isti pregled, vrstni red in odstotki kot PDF (prazen seznam → iskren toast, nikoli prazna datoteka). PDF = tisk za pogajanja, CSV = Excel za filtriranje po dobavitelju"
+                    data-testid="pozicija-dobaviteljev-csv-pill"
+                    className="h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
+                  >
+                    <FileSpreadsheet className="h-3 w-3" aria-hidden="true" />
+                    CSV
+                  </Button>
                   <Button
                     type="button"
                     size="sm"
@@ -2066,7 +2137,7 @@ export function MaterialIntelligenceTab({
                     % (KJE je prostor za pogajanja največji, ISTI vir kot
                     7. KPI box). */}
                 <p className="text-right text-2xs text-muted-foreground">
-                  Cenik = vse ponudbe · Primerjalni = najnižja per artikel · % = razpon do najvišje · Povprečni razpon = vsota razlik / vsota najboljših · Največji razpon = najširši % med artikli · Pozicija = dobavitelji × najnižja per artikel · Brez alternative = samo ena ponudba
+                  Cenik = vse ponudbe · Primerjalni = najnižja per artikel · % = razpon do najvišje · Povprečni razpon = vsota razlik / vsota najboljših · Največji razpon = najširši % med artikli · Pozicija = dobavitelji × najnižja per artikel · Brez alternative = samo ena ponudba · Pozicija CSV = ista pozicijska resnica kot PDF (Excel)
                 </p>
               </div>
               <Label className="text-xs">Izberi material za dodajanje cene</Label>

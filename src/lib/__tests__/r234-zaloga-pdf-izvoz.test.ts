@@ -224,9 +224,10 @@ describe('R234 — [Mandatory] stil (P1-f): nevtralne status veje gray → žeto
     expect(src).not.toContain('bg-gray-400 text-white border-gray-400')
   })
 
-  it('r172 PIN sinhroniziran (material-intelligence 1648 — R264, roksal-catalog 234)', () => {
+  it('r172 PIN sinhroniziran (material-intelligence 1699 — R333, roksal-catalog 234)', () => {
     const src = beri('src/lib/__tests__/r172-dark-spots.test.ts')
-    expect(src).toContain("'src/components/roksal/material-intelligence-tab.tsx', 1648,")
+    // R333: 1648→1699 (+51: import CSV brat +9, FileSpreadsheet +1, state +3, handler +38 — ogledalo ŠE VEDNO na ISTI vsebinski vrstici, DOBLJENO značka)
+    expect(src).toContain("'src/components/roksal/material-intelligence-tab.tsx', 1699,")
     expect(src).toContain("'src/components/roksal/roksal-catalog.tsx', 234,")
   })
 })
