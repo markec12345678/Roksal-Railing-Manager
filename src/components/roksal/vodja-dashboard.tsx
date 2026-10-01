@@ -22,7 +22,12 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { useToast } from '@/hooks/use-toast'
-import { generateMonthlyReport } from '@/lib/boss-report-pdf'
+import { generateMonthlyReport, type ReportData } from '@/lib/boss-report-pdf'
+// 🆕 R335 (62. člen, issue #1 IZVOZI družina): CSV brat mesečnemu PDF
+// poročilu (runda M) — EN VIR vhod mesecniPregledData (DVA potrošnika:
+// generateMonthlyReport + vodjaMesecniCsv — divergenca nemogoča, vzorec
+// vodjaIzvozVhod R293); kanon R136 toCsv (BOM + podpičje + CRLF).
+import { vodjaMesecniCsv, vodjaMesecniCsvFilename } from '@/lib/vodja-mesecni-csv'
 import { buildVodjaCsv, vodjaCsvFilename, terminStatusLabel } from '@/lib/vodja-csv'
 import { generateVodjaDnevniPdf, vodjaDnevniPdfFilename } from '@/lib/vodja-dnevni-pdf'
 import { todayStamp, downloadCsvText } from '@/lib/csv-export'
@@ -494,70 +499,108 @@ export function VodjaDashboard() {
     }
   }, [clearOnFail])
 
+  // 🆕 R335 (62. člen, IZVOZI družina): EN VIR vhod mesečnega pregleda — ISTI
+  // ReportData za PDF brata (runda M, downloadReport) IN NOVI CSV brat
+  // (handleMesecniCsv). ENA konstrukcija — divergenca PDF/CSV nemogoča
+  // (WYSIWYG; vzorec vodjaIzvozVhod R293). Vsebina + filtri NESPREMENJENI
+  // (identično rundi M — samo izluščeno iz downloadReport).
+  function mesecniPregledData(now: Date): ReportData | null {
+    if (!stats) return null
+    const mesecZacetek = new Date(now.getFullYear(), now.getMonth(), 1)
+    const row = (inv: InvLite) => ({
+      stevilka: inv.stevilka,
+      kupec: kupecIme(inv.kupec),
+      projekt: inv.project?.nazivProjekta ?? '',
+      znesek: inv.znesek,
+      datumIzdaje: inv.datumIzdaje,
+      rokPlacilaDni: inv.rokPlacilaDni,
+      status: inv.status,
+      placanoAt: inv.placanoAt,
+    })
+    const placaniTaMesec = allInvoices
+      .filter((inv) => inv.status === 'PLACAN' && inv.placanoAt && new Date(inv.placanoAt) >= mesecZacetek)
+      .map(row)
+    const izdaniZapadli = allInvoices
+      .filter((inv) => {
+        if (inv.status !== 'IZDAN') return false
+        const rok = new Date(inv.datumIzdaje)
+        rok.setDate(rok.getDate() + (inv.rokPlacilaDni || 8))
+        return rok < now
+      })
+      .map(row)
+    return {
+      mesec: { year: now.getFullYear(), month: now.getMonth() },
+      generatedAt: now,
+      stats: {
+        prihodekMesec: stats.mesecniPrihodek,
+        marza: stats.mesecnaMarza,
+        odprtoZnesek: stats.odprtoZnesek,
+        zapadloZnesek: stats.zapadloZnesek,
+        zapadloSt: stats.zapadloSt,
+        projektovNovih: stats.mesecnoProjektov,
+        ureMesec: stats.mesecnoUr,
+        skupajProjektov: stats.skupajProjektov,
+        skupajStrank: stats.skupajStrank,
+        skupniLTV: stats.skupniLTV,
+        nizkaZaloga: stats.nizkaZaloga,
+        odprtaNarocila: stats.odprtaNarocila,
+        brezDobavitelja: stats.brezDobavitelja,
+        zamujeneDobave: stats.zamujeneDobave,
+        potekliOpomniki: stats.potekliOpomniki,
+      },
+      prihodki6: prihodki,
+      placaniTaMesec,
+      izdaniZapadli,
+      projekti: allProjects.map((p) => ({
+        naziv: p.nazivProjekta,
+        stranka: p.customer?.ime ?? '',
+        status: p.status,
+        cena: p.estimatedPrice ?? null,
+      })),
+    }
+  }
+
   /** Mesečno PDF poročilo — KPI + graf + računi + projekti + opozorila. */
   function downloadReport() {
     if (!stats) return
     setReportLoading(true)
     try {
       const now = new Date()
-      const mesecZacetek = new Date(now.getFullYear(), now.getMonth(), 1)
-      const row = (inv: InvLite) => ({
-        stevilka: inv.stevilka,
-        kupec: kupecIme(inv.kupec),
-        projekt: inv.project?.nazivProjekta ?? '',
-        znesek: inv.znesek,
-        datumIzdaje: inv.datumIzdaje,
-        rokPlacilaDni: inv.rokPlacilaDni,
-        status: inv.status,
-        placanoAt: inv.placanoAt,
-      })
-      const placaniTaMesec = allInvoices
-        .filter((inv) => inv.status === 'PLACAN' && inv.placanoAt && new Date(inv.placanoAt) >= mesecZacetek)
-        .map(row)
-      const izdaniZapadli = allInvoices
-        .filter((inv) => {
-          if (inv.status !== 'IZDAN') return false
-          const rok = new Date(inv.datumIzdaje)
-          rok.setDate(rok.getDate() + (inv.rokPlacilaDni || 8))
-          return rok < now
-        })
-        .map(row)
-
-      generateMonthlyReport({
-        mesec: { year: now.getFullYear(), month: now.getMonth() },
-        generatedAt: now,
-        stats: {
-          prihodekMesec: stats.mesecniPrihodek,
-          marza: stats.mesecnaMarza,
-          odprtoZnesek: stats.odprtoZnesek,
-          zapadloZnesek: stats.zapadloZnesek,
-          zapadloSt: stats.zapadloSt,
-          projektovNovih: stats.mesecnoProjektov,
-          ureMesec: stats.mesecnoUr,
-          skupajProjektov: stats.skupajProjektov,
-          skupajStrank: stats.skupajStrank,
-          skupniLTV: stats.skupniLTV,
-          nizkaZaloga: stats.nizkaZaloga,
-          odprtaNarocila: stats.odprtaNarocila,
-          brezDobavitelja: stats.brezDobavitelja,
-          zamujeneDobave: stats.zamujeneDobave,
-          potekliOpomniki: stats.potekliOpomniki,
-        },
-        prihodki6: prihodki,
-        placaniTaMesec,
-        izdaniZapadli,
-        projekti: allProjects.map((p) => ({
-          naziv: p.nazivProjekta,
-          stranka: p.customer?.ime ?? '',
-          status: p.status,
-          cena: p.estimatedPrice ?? null,
-        })),
-      })
+      const data = mesecniPregledData(now)
+      if (!data) return
+      generateMonthlyReport(data)
       toast({ title: 'Poročilo shranjeno ✓', description: `Mesečno poročilo ${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')} PDF` })
     } catch {
       toast({ title: 'Napaka pri generiranju poročila', variant: 'destructive' })
     } finally {
       setReportLoading(false)
+    }
+  }
+
+  // 🆕 R335 (62. člen, IZVOZI družina): MESEČNO poročilo vodje kot CSV — CSV
+  // brat PDF poročilu (runda M). EN VIR: ISTA mesecniPregledData resnica
+  // (WYSIWYG — isti KPI, prihodki, računi in projekti kot PDF); format kanon
+  // R136 toCsv; fail-verbose toast (vzorec R291/R292/R334); BREZ spinnerja —
+  // sinhron graditelj (vzorec R334 TRIADA: vsak klik = ista resnica).
+  function handleMesecniCsv() {
+    if (!stats) return
+    try {
+      const now = new Date()
+      const data = mesecniPregledData(now)
+      if (!data) return
+      const csv = vodjaMesecniCsv(data, now)
+      downloadCsvText(vodjaMesecniCsvFilename(data), csv)
+      toast({
+        title: 'Poročilo CSV shranjeno ✓',
+        description: `${vodjaMesecniCsvFilename(data)} — ${data.placaniTaMesec.length} plačanih računov, ${data.projekti.length} projektov (ista resnica kot PDF)`,
+      })
+    } catch (err) {
+      if (err instanceof TypeError) {
+        // fail-closed jedro: pokvaren vnos → viden razlog (nič izmišljenega izvoza)
+        toast({ title: 'Mesečni CSV ni mogoče sestaviti iz teh podatkov', description: err instanceof Error ? err.message : String(err), variant: 'destructive' })
+      } else {
+        toast({ title: `Izvoz CSV ni uspel: ${err instanceof Error ? err.message : String(err)}`, variant: 'destructive' })
+      }
     }
   }
 
@@ -1128,6 +1171,24 @@ export function VodjaDashboard() {
         >
           {reportLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <FileDown className="h-3.5 w-3.5" aria-hidden="true" />}
           Poročilo PDF
+        </Button>
+        {/* 🆕 R335 — 62. člen (IZVOZI družina): MESEČNO poročilo kot CSV —
+            CSV brat Poročilo PDF (runda M) — bratska simetrija (ISTI h-8
+            žeton kot brat + FileSpreadsheet aria-hidden, pill družina R334);
+            EN VIR mesecniPregledData — isti KPI, prihodki, računi in
+            projekti kot PDF (WYSIWYG); sinhron + fail-closed (BREZ
+            spinnerja — vzorec TRIADA R334). */}
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-8 gap-1.5 border-roksal-navy/25 dark:border-roksal-ink/25 text-xs text-roksal-ink press-scale transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2"
+          onClick={handleMesecniCsv}
+          aria-label="Izvozi mesečno poročilo vodje kot CSV"
+          title="Izvozi mesečno poročilo (isti KPI, prihodki, računi in projekti kot PDF) kot CSV za Excel — prazen/pokvaren vnos → iskren toast; PDF = tisk za pisarno, CSV = Excel za filtriranje po mesecu/statusu"
+          data-testid="vodja-mesecni-csv-pill"
+        >
+          <FileSpreadsheet className="h-3.5 w-3.5" aria-hidden="true" />
+          Poročilo CSV
         </Button>
         {/* R258 — DOBIČKONOST PO PROJEKTIH PDF (14. člen 'izvozi' družine):
             presek prihodkov (računi) in stroškov materiala (naročila) —
@@ -1770,6 +1831,11 @@ export function VodjaDashboard() {
             </CardContent>
           </Card>
         </div>
+        {/* 🆕 R335 — legenda medija (MANDATORY STIL — vzorec R334): CSV brat
+            imenovan ob PDF bratu — ista resnica, drugačno orodje. */}
+        <p className="mt-1.5 text-2xs text-muted-foreground">
+          Poročilo CSV = ista resnica kot Poročilo PDF (KPI, prihodki po mesecih, plačani in zapadli računi, projekti po statusu — Excel za filtriranje).
+        </p>
       </div>
 
       {/* Prihodki — zadnjih 6 mesecev (plačani računi) + stevca odprto/zapadlo.

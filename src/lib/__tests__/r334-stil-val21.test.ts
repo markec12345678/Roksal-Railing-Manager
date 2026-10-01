@@ -167,10 +167,13 @@ describe('r334 STIL val 21 — Končna verifikacija CSV TRIADA pariteta na vodja
     expect(csvGumb).not.toMatch(/\b(?:bg|text|border|ring)-(?:amber|navy|red|green)-\d{2,3}\b/)
   })
 
-  it('val 8 register sodelovanje: R334 PIN SHIFT 66 → 67 zapisan v val8 registru + NOVI aria pin + vodja amber ×9 (register resnica čez valove)', () => {
-    expect(val8).toContain('R334 PIN SHIFT 66 → 67')
-    expect(val8).toContain("expect(gumbi.length).toBeGreaterThanOrEqual(67)")
+  it('val 8 register sodelovanje: R334 zapisek (61. člen) ostane v val8 registru + R335 PIN SHIFT 67 → 68 + NOVI aria pin + vodja amber ×10 (register resnica čez valove — LEKCIJA R334 5: vsi pini shiftani V ENI rundi)', () => {
+    // R334 zgodovinski zapisek ostane v val8 headerju (anti-stale zgodovina)
+    expect(val8).toContain('R334 PIN SHIFT (61. člen)')
+    // R335: trenutna resnica registra (62. člen — mesečno poročilo CSV)
+    expect(val8).toContain('R335 PIN SHIFT 67 → 68')
+    expect(val8).toContain('expect(gumbi.length).toBeGreaterThanOrEqual(68)')
     expect(val8).toContain("expect(ariaVseh).toContain('Izvozi poročilo končne verifikacije kot CSV')")
-    expect(val8).toContain('vodjaAmber.length).toBe(9)')
+    expect(val8).toContain('vodjaAmber.length).toBe(10)')
   })
 })

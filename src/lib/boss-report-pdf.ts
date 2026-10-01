@@ -69,7 +69,9 @@ export interface ReportData {
   projekti: ReportProjectRow[]
 }
 
-const STATUS_SL: Record<string, string> = {
+// R335: IZVOŽEN (EN VIR — CSV brat 62. člen uvaža ISTO preslikava statusov;
+// nič podvojenih pravil, vzorec projektiTerminiPregled R330).
+export const STATUS_SL: Record<string, string> = {
   NACRTOVANO: 'Načrtovano',
   V_TEKU: 'V teku',
   ZA_MONTAZO: 'Za montažo',

@@ -27,6 +27,12 @@
 // TRIADA; register 15 → 16 pojavitev, 9 → 10 gumbov, z obrnjeno regresijo
 // — precedens R324).
 //
+// R335 PIN SHIFT (62. člen): vodja blok glava dobi ENAJSTI taktilni gumb
+// (mesečno poročilo vodje CSV — CSV brat Poročilo PDF rundi M, EN VIR
+// mesecniPregledData; register 16 → 17 pojavitev, 10 → 11 gumbov, z
+// obrnjeno regresijo: stari 16 pin je prepovedan — polzaporedje ne sme
+// nazaj).
+//
 // STRAŽAR (kanon r316/…/r323 — anti-stale + reverse regresija):
 //  • vsak od 10 vodja izvoznih gumbov nosi taktilni žeton (okno ±8 vrstic
 //    okoli aria-labela — ISTA ekstrakcija kot val8);
@@ -55,7 +61,7 @@ function oknoOkoli(aria: string): string {
 }
 
 describe('r318 STIL val 9 — vodja izvozna družina: taktilna pariteta', () => {
-  it('vseh 10 vodja izvoznih gumbov nosi taktilni žeton (pariteta s pill bratje)', () => {
+  it('vseh 11 vodja izvoznih gumbov nosi taktilni žeton (pariteta s pill bratje)', () => {
     const gumbi = [
       'aria-label="Izvozi dnevni pregled vodje kot CSV"',
       'aria-label="Izvozi dnevni pregled vodje kot PDF"',
@@ -63,6 +69,7 @@ describe('r318 STIL val 9 — vodja izvozna družina: taktilna pariteta', () => 
       'aria-label="Izvozi poročilo končne verifikacije kot JSON"',
       'aria-label="Izvozi poročilo končne verifikacije kot PDF"',
       'aria-label="Izvozi poročilo končne verifikacije kot CSV"', // R334 (61. člen — izvozna TRIADA)
+      'aria-label="Izvozi mesečno poročilo vodje kot CSV"', // R335 (62. člen — CSV brat Poročilo PDF)
       'aria-label="Izvozi avtomatizacijski audit kot CSV"',
       'aria-label="Izvozi avtomatizacijski audit kot PDF"',
       'aria-label="Izvozi meritve zmogljivosti kot PDF"',
@@ -88,10 +95,10 @@ describe('r318 STIL val 9 — vodja izvozna družina: taktilna pariteta', () => 
     expect(globals).toContain('transform: scale(0.97)')
   })
 
-  it('register zaklenjen: natanko 16 pojavitev taktilnega žetona v vodja-dashboard (10 gumbov + 3 pill + 3 obstoječe drugje)', () => {
+  it('register zaklenjen: natanko 17 pojavitev taktilnega žetona v vodja-dashboard (11 gumbov + 3 pill + 3 obstoječe drugje)', () => {
     // R312 lekcija (deseta potrditev): štetje POJAVITVEV, ne vrstic
-    // R334 PIN SHIFT 15 → 16 (stari 15 pin je prepovedan — obrnjena regresija)
+    // R335 PIN SHIFT 16 → 17 (stari 16 pin je prepovedan — obrnjena regresija)
     const pojavitve = src.split('press-scale').length - 1
-    expect(pojavitve).toBe(16)
+    expect(pojavitve).toBe(17)
   })
 })

@@ -103,7 +103,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 45 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **4742** (280 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **4759** (282 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 143 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -534,6 +534,24 @@ Sheet z 6 podzavihki:
   para + naslov + legenda + val 19/18/17/16 obrnjene regresije + vodja
   ×4/×4 + globals press-scale + 0 surovih barv); val8 anti-stale drevo
   65→66 (R333 PIN SHIFT — izrecno)
+- **Izvoz mesečnega poročila vodje kot CSV** (R335, 62. člen — issue #1
+  **IZVOZI** družina): NOVI lib `src/lib/vodja-mesecni-csv.ts` (CSV brat
+  Poročilo PDF rundi M — EN VIR: ISTI `ReportData` vhod prek komponentne
+  izpeljave `mesecniPregledData`, DVA potrošnika [generateMonthlyReport +
+  vodjaMesecniCsv — divergenca nemogoča]; mesecIme + STATUS_SL UVOŽENA iz
+  PDF brata — anti-divergenca po konstrukciji; celice = ISTI izpisi kot
+  PDF body — eur/eur0 EN VIR csv-export, zapadli 'Dni zapadlo' = ISTA
+  izpeljava kot PDF; glave VERBATIM PDF autoTable head ×3 + predstavitvena
+  prihodki glava; sklep = VERBATIM PDF sklepna vrstica; 'Izvoženo ob' =
+  PODATKOVNI izvoz z referenčnim mesecem [kanon R330–R333]; filename
+  `porocilo-YYYY-MM.csv` — bratska simetrija, mesec IZ VHODA; format kanon
+  R136 toCsv [BOM + podpičje + CRLF + RFC 4180]; fail-closed po imenu polja)
+  + vodja žičenje (handleMesecniCsv handler + izvozna PAR pill — amber/50
+  ring + offset-2 + press-scale, ISTI žeton kot PDF brat; testid
+  vodja-mesecni-csv-pill; definicijski naslov medija + legenda medija) +
+  STIL val 22 (PAR pariteta bajtno + oči para + obrnjene regresije val
+  21/20/19/18/17/16 + vodja ×4/×4 + globals; val 8 drevo 67→68 + vodja
+  amber ×9→×10 + val 9 taktilni 16→17 — vsi pini shiftani V ENI rundi)
 - **Izvoz poročila končne verifikacije kot CSV** (R334, 61. člen — issue #1
   **IZVOZI** družina): NOVI lib `src/lib/koncna-verifikacija-csv.ts` (CSV
   brat JSON R316 + PDF R320 — **izvozna TRIADA** na vodja blok glavi;
@@ -910,7 +928,7 @@ Sheet z 6 podzavihki:
 | **PWA** | Service Worker + Web Manifest |
 | **Temnitveni način** | [next-themes](https://github.com/pacocoursey/next-themes) |
 | **Validacija** | [Zod 4](https://zod.dev/) |
-| **Testiranje** | [Vitest 4](https://vitest.dev/) (4742 testov + globalSetup embedded PG) |
+| **Testiranje** | [Vitest 4](https://vitest.dev/) (4759 testov + globalSetup embedded PG) |
 | **Paketni upravitelj** | [Bun](https://bun.sh/) |
 | **Linting** | ESLint 9 + eslint-config-next |
 
@@ -1032,7 +1050,7 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `bun run dev` | Zažene Next.js dev server (port 3000) |
 | `bun run build` | Produkcijska build (build-prepare: generate + migrate deploy + seed) |
 | `bun run start` | Zažene produkcijski server |
-| `bun run test` | Vsi testi (vitest, 4742, embedded PG prek globalSetup) |
+| `bun run test` | Vsi testi (vitest, 4759, embedded PG prek globalSetup) |
 | `bun run check` | tsc --noEmit + vitest run (en ukaz za vse) |
 | `bunx tsc --noEmit` | Tipska kontrola celotnega projekta (trenutno 0 napak) |
 | `bun run lint` | ESLint preverjanje |
