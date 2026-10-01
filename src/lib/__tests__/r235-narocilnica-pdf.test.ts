@@ -237,10 +237,13 @@ describe('R235 — [Mandatory] stil (P1-f): measurements UI površine gray → �
   })
 
   it('NAMERNE IZJEME (r231): semantične legende SEGMENT/beton/DRUGO ostanejo gray (data-viz)', () => {
-    expect(meritve).toContain(
+    // R338 (dekomp. faza 3): tipMeritveColors.SEGMENT + groundTypeColors.beton
+    // sta se preselili v measurements/labels.ts — pin SHIFT po kanonu
+    // R180/R201/…/R314/R319.
+    expect(beri('src/components/roksal/measurements/labels.ts')).toContain(
       "SEGMENT: 'bg-gray-50 dark:bg-gray-950/40 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-800'",
     )
-    expect(meritve).toContain(
+    expect(beri('src/components/roksal/measurements/labels.ts')).toContain(
       "beton: 'bg-gray-100 dark:bg-gray-500/15 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-800'",
     )
     // R319 (dekomp. faza 1): materialStebraColors.DRUGO se je preselila v

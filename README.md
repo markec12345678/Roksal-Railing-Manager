@@ -911,6 +911,24 @@ Sheet z 6 podzavihki:
   pravila react-hooks/set-state-in-effect — prej skrito z bailoutom compiler
   analize na 7,6k vrstični datoteki); vsebina ŽIVA v čankih dokazana
   (r323-build-needles ×9 + delegirana veriga R322→…→R227)
+- **Dekompozicija measurements-tab — FAZA 3** (R338 — nadaljevanje odobrene
+  Roadmap "razbitje monsterskih komponent", vzorec R319/R322/R325):
+  7.153 → 6.809 vrstic (−344); NOVA mapa `measurements/` ×2 — `labels.ts`
+  (202 vrstic: GroundType + AuditEntry tipa + 17 Record zbirk
+  oznak/barv/ikon — tipMeritve/syncStanje/groundType/segmentType/status/
+  audit/enota) + `format.ts` (217 vrstic: ArMetadata tip + 13 čistih
+  parse/format funkcij — parseArMetadata, parseGPS, formatDimension,
+  calculateStairDimensions, loadAudit, loadPrimaryUnit …) — ČIST PREMIK
+  bajtno identično (verify_r338.py NULPREMIK dokaz: bloki bajtno identični,
+  glava/rep enaki, 33 identifikatorjev točno 1×); osiroteli ikonski uvozi
+  odstranjeni (Gauge/Triangle/Mountain/RefreshCw/CornerDownRight →
+  measurements/labels); PIN SHIFT ×6 (r172 6976→6632, r316-stil-val7
+  register [2 amber vrstici → labels.ts/format.ts — skupno 30 ostaja],
+  r311-ai-raba IZJEME [isti premik — skupno 6 ostaja], r231/r234/r235 pini
+  na labels.ts); vsebina ŽIVA v čankih — r338-build-needles (8 premik
+  needlejev + must_miss); regression-only runda (NOV Z-blok NI dodan —
+  vzorec R322: premik nima nove žive interakcije; polne E2E regresije
+  Z0aa–Z0ba ŽIVE po premiku + ODTIS ZERO-MUTACIJA)
 - **Stil val 7 — ZAKLJUČNI** (R316): fence-3d-viewer ×2 (ikoni) +
   notification-center ×1 (ikona, dark-par odpade) + signature-quote ×1 (hint
   ink) + photo-measure ×1 (hint ink) = 5 dotikov — surove amber → roksal
@@ -1228,7 +1246,7 @@ primitivov. Največji:
 
 | Komponenta | Vrstice | Funkcija |
 |-----------|---------|----------|
-| `measurements-tab.tsx` | 7.153 | Meritve (9 tipov, stopniščni čarovnik, WPC, štebricki; dekompozicija faza 1+2 R319/R325) |
+| `measurements-tab.tsx` | 6.809 | Meritve (9 tipov, stopniščni čarovnik, WPC, štebricki; dekompozicija faza 1+2+3 R319/R325/R338) |
 | `calculator-tab.tsx` | 4.846 | Kalkulator (7 načinov + 6 izpolnitev; dekompozicija faza 1+2 R322/R325) |
 | `ar-scanner.tsx` | 2.789 | AR kamera z vizualizacijo ograje + AI sugestija |
 | `webxr-scanner.tsx` | 2.377 | WebXR poskus (kjer podprt) |
@@ -1237,13 +1255,15 @@ primitivov. Največji:
 | `measurement-studio.tsx` | 1.630 | **Merilni studio** (deterministični CV + ročni način) |
 | … | | skice, zaloga, dokumenti, PDF, CRM, logistika, tloris, galerija … |
 
-> Opomba (R120/Problem 9 → R319/R322/R325): `measurements-tab` (9.086 →
-> 7.604 → 7.153) in `calculator-tab` (6.074 → 5.372 → 4.846) sta bila razbita
+> Opomba (R120/Problem 9 → R319/R322/R325/R338): `measurements-tab` (9.086 →
+> 7.604 → 7.153 → 6.809) in `calculator-tab` (6.074 → 5.372 → 4.846) sta bila razbita
 > po fazah — faza 1 ČISTIH PREMIKOV (kanon: bajtno identični bloki, brez
 > spremembe obnašanja; vsebina ŽIVA v čankih — r319/r322-build-needles) +
 > FAZA 2 REFAKTORJA internih sestavljenih struktur (R325: laserski BT hook z
 > onMeasurement povratnim klicem + PDF izvozi z args objekti — vsebina ŽIVA v
-> čankih — r325-build-needles).
+  čankih — r325-build-needles) + FAZA 3 ČISTIH PREMIKOV podatkovnih blokov
+  (R338: labels.ts + format.ts — NULPREMIK verify_r338.py; vsebina ŽIVA v
+  čankih — r338-build-needles).
 
 ---
 

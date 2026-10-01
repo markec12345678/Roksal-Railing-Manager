@@ -89,11 +89,7 @@ import {
   FileText,
   Crosshair,
   Layers,
-  Gauge,
-  Triangle,
-  Mountain,
   CheckCircle2,
-  RefreshCw,
   Camera,
   X,
   Save,
@@ -110,8 +106,9 @@ import {
   Filter,
   Clock,
   FileSpreadsheet,
-  // P3 — novi ikoni (stopnice, koti, štebricki, WPC)
-  CornerDownRight,
+  // P3 — novi ikoni (stopnice, koti, štebricki, WPC; Gauge/Triangle/
+  // Mountain/RefreshCw/CornerDownRight so se R338 dekompozicijo FAZE 3
+  // preselile v measurements/labels)
   Layers2,
   Columns3,
   Fence,
@@ -184,58 +181,46 @@ import {
 // TIPI
 // ============================================
 
-type GroundType = 'beton' | 'les' | 'plosca' | 'gramoz' | 'metal'
-
-interface ArMetadata {
-  tipMeritve?: TipMeritve
-  oznaka?: string
-  segmentId?: string
-  opomba?: string
-  status?: MeasurementStatus
-  // starejše polje (združljivost)
-  lokacija?: string
-  steviloStebrov?: number
-  tipPodlage?: string
-  kot?: number
-  opombe?: string
-  // kalibracija
-  pixelsPerMm?: number
-  calibrationNote?: string
-  // inclinometer
-  kotStopinje?: number
-  smer?: string
-  // P3 — enote (mm/cm/m)
-  enota?: 'mm' | 'cm' | 'm'
-  originalnaVrednost?: number
-  // P3 — kotomer (vogal: notranji + zunanji kot)
-  notranjiKot?: number
-  zunanjiKot?: number
-  // P3 — štebricki (STEBR)
-  tipStebra?: 'KONCNI' | 'VMESNI' | 'VOGALNI'
-  materialStebra?: 'ALU' | 'INOX' | 'WPC' | 'DRUGO'
-  visinaStebraMm?: number
-  pozicijaMm?: number
-  razmikMm?: number
-  steberOznaka?: string
-  // P3 — WPC palice
-  orientacijaPalic?: 'WPC_POKOCNE' | 'WPC_VODORAVNE' | 'WPC_POSEVNE'
-  sirinaPalice?: number
-  debelinaPalice?: number
-  razmikPalic?: number
-  kotPosevnih?: number
-  stPalic?: number
-  // MERITVE-PRO — vir meritve (photo / ar_snapshot / laser / manual)
-  source?: 'photo' | 'ar_snapshot' | 'laser' | 'manual' | string
-  photoId?: string
-  snapshotId?: string
-  // MERITVE-PRO — AR točke (x, y) za AR-sourced mere
-  x?: number
-  y?: number
-  // R281 (issue #16 §10, V1–V6) — sync metadata iz kontrakta: OPAZOVANO
-  // stanje klienta (provenance), NIKOLI sync resnica (ta ostane v
-  // obstoječem /api/sync — 'strežnik ne zaupa klientu', R148).
-  sync?: ArSyncMeta
-}
+// R338 — dekompozicija measurements-tab FAZA 3: zbirke oznak/barv/ikon
+// (labels) + parse/format pomožne (format) izluščene v ./measurements/
+// (čist premik — kanon R319 faza 1 / R325 faza 2).
+import {
+  auditActionLabels,
+  auditColors,
+  auditIcons,
+  enotaLabels,
+  groundTypeColors,
+  groundTypeLabels,
+  segmentTypeLabels,
+  statusColors,
+  statusCycle,
+  statusLabels,
+  syncStanjeColors,
+  syncStanjeLabels,
+  syncStanjeTitles,
+  tipMeritveColors,
+  tipMeritveIcons,
+  tipMeritveLabels,
+  tipMeritveTitles,
+  type AuditEntry,
+  type GroundType,
+} from './measurements/labels'
+import {
+  calculateStairDimensions,
+  convertToMm,
+  formatAngleMulti,
+  formatDimension,
+  formatInPrimaryUnit,
+  formatM2,
+  formatMultiUnit,
+  formatSlopeMulti,
+  getNextStebriNumber,
+  loadAudit,
+  loadPrimaryUnit,
+  parseArMetadata,
+  parseGPS,
+  type ArMetadata,
+} from './measurements/format'
 
 interface Project {
   id: string
@@ -256,15 +241,6 @@ interface CalibrationState {
 }
 
 type StatusFilter = 'VSE' | MeasurementStatus
-
-interface AuditEntry {
-  timestamp: string
-  akcija: 'ADD' | 'EDIT' | 'DELETE' | 'STATUS'
-  meritevId: string
-  opis: string
-  staraVrednost?: string
-  novaVrednost?: string
-}
 
 // Tipizirana oz. varovalna oblika Web Speech API
 interface SpeechRecognitionResultItem {
@@ -289,330 +265,10 @@ interface SpeechRecognitionCtor {
   new (): SpeechRecognitionLike
 }
 
-// ============================================
-// KONSTANTE
-// ============================================
-
-const tipMeritveLabels: Record<TipMeritve, string> = {
-  RAZDALJA: 'Razdalja',
-  VISINA: 'Višina',
-  KOT: 'Kot',
-  NAGIB: 'Nagib',
-  GLOBINA: 'Globina',
-  PREMER: 'Premer',
-  SEGMENT: 'Segment',
-  // P3 — novi tipi
-  KOT_VOGAL: 'Vogal',
-  KOT_STOPNISCE: 'Kot stopnice',
-  STEBR: 'Stebriček/Palica',
-}
-
-// R280 MANDATORY STIL — hover parity za tip badge (isti vzorec kot R278 vir
-// pill + R279 segmentId Badge: cursor-help + title razložljivost; 0 novih hex).
-const tipMeritveTitles: Record<TipMeritve, string> = {
-  RAZDALJA: 'Vrsta meritve: Razdalja — vodoravna dolžina; določa širino segmenta.',
-  VISINA: 'Vrsta meritve: Višina — navpična dimenzija; določa višino ograje.',
-  KOT: 'Vrsta meritve: Kot — izmerjen kot v stopinjah (vrednost = resnica, verbatim).',
-  NAGIB: 'Vrsta meritve: Nagib — naklon tal/plošče; znak je del resnice.',
-  GLOBINA: 'Vrsta meritve: Globina — globinska meritev (npr. stopnice).',
-  PREMER: 'Vrsta meritve: Premer — premer objekta (npr. droga).',
-  SEGMENT: 'Vrsta meritve: Segment — meritev pripisana segmentu (stabilen segmentId — identiteta preživi re-anchor, issue #16 §1).',
-  KOT_VOGAL: 'Vrsta meritve: Vogal — notranji/zunanji kot vogala.',
-  KOT_STOPNISCE: 'Vrsta meritve: Kot stopnice — naklon stopniščnega kosa (rake).',
-  STEBR: 'Vrsta meritve: Stebriček/Palica — samostojen steber s pozicijo v segmentu (avto-številčenje S1, S2 …).',
-}
-
-const tipMeritveIcons: Record<TipMeritve, typeof Ruler> = {
-  RAZDALJA: Ruler,
-  VISINA: Gauge,
-  KOT: Triangle,
-  NAGIB: Mountain,
-  GLOBINA: Crosshair,
-  PREMER: Crosshair,
-  SEGMENT: Layers,
-  // P3 — novi tipi
-  KOT_VOGAL: CornerDownRight,
-  KOT_STOPNISCE: Layers2,
-  STEBR: Columns3,
-}
-
-const tipMeritveColors: Record<TipMeritve, string> = {
-  RAZDALJA: 'bg-roksal-navy/10 text-roksal-ink border-roksal-navy/20 dark:border-roksal-ink/20',
-  VISINA: 'bg-roksal-amber/10 text-roksal-amber border-roksal-amber/30',
-  KOT: 'bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800',
-  NAGIB: 'bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800',
-  GLOBINA: 'bg-cyan-50 dark:bg-cyan-950/40 text-cyan-700 dark:text-cyan-300 border-cyan-200 dark:border-cyan-800',
-  PREMER: 'bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 border-teal-200 dark:border-teal-800',
-  SEGMENT: 'bg-gray-50 dark:bg-gray-950/40 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-800',
-  // P3 — novi tipi
-  KOT_VOGAL: 'bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 border-teal-200 dark:border-teal-800',
-  KOT_STOPNISCE: 'bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800',
-  STEBR: 'bg-roksal-navy/10 text-roksal-ink border-roksal-navy/20 dark:border-roksal-ink/20',
-}
-
-// R281 MANDATORY STIL (issue #16 §10) — hover parity za sync žig (isti
-// vzorec kot R280 tip badge + R278 vir pill: cursor-help + title
-// razložljivost; 0 novih hex — vse barvne ulomke že obstoječe v datoteki).
-const syncStanjeLabels: Record<NonNullable<ArSyncMeta['syncState']>, string> = {
-  synced: 'Sinhronizirano',
-  pending: 'V čakalni vrsti',
-  conflict: 'Konflikt',
-  error: 'Napaka sync',
-}
-
-const syncStanjeTitles: Record<NonNullable<ArSyncMeta['syncState']>, string> = {
-  synced:
-    'Sinhronizacijsko stanje: Sinhronizirano — opazovano stanje klienta (provenance), NI sync resnica; revizije in konflikti ostanejo v obstoječem /api/sync (issue #16 §10).',
-  pending:
-    'Sinhronizacijsko stanje: V čakalni vrsti — odjavno delo (issue #16 §13) še ni poslano; opazovano stanje klienta, NI sync resnica (issue #16 §10).',
-  conflict:
-    'Sinhronizacijsko stanje: Konflikt — obstoječi /api/sync je zaznal odstopanje baseRevision (strežnik ne zaupa klientu); nobena sprememba se ne izgubi tiho, obe verziji ohranjeni (issue #16 §10).',
-  error:
-    'Sinhronizacijsko stanje: Napaka — zadnji poskus sync ni uspel; opazovano stanje klienta, NI sync resnica (issue #16 §10).',
-}
-
-// 0 novih hex — ulomki povzeti iz obstoječih žigov v tej datoteki
-// (R234 nevtralni / R280 amber / obstoječa semantična rdeča).
-const syncStanjeColors: Record<NonNullable<ArSyncMeta['syncState']>, string> = {
-  synced: 'bg-muted text-muted-foreground border-border',
-  pending: 'bg-roksal-amber/10 text-roksal-amber border-roksal-amber/30',
-  conflict: 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border-red-300 dark:border-red-800',
-  error: 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border-red-300 dark:border-red-800',
-}
-
-const groundTypeLabels: Record<GroundType, string> = {
-  beton: 'Beton',
-  les: 'Lesena podlaga',
-  plosca: 'Plošča (kompozit)',
-  gramoz: 'Gramoz',
-  metal: 'Kovinska podlaga',
-}
-
-const groundTypeColors: Record<GroundType, string> = {
-  beton: 'bg-gray-100 dark:bg-gray-500/15 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-800',
-  les: 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800',
-  plosca: 'bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300 border-green-300 dark:border-green-800',
-  gramoz: 'bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300 border-orange-300 dark:border-orange-800',
-  metal: 'bg-slate-100 dark:bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-800',
-}
-
-const segmentTypeLabels: Record<Segment['type'], string> = {
-  ravni: 'Ravni odsek',
-  kotni: 'Kotni odsek',
-  stopniscje: 'Stopnišče',
-  lokan: 'Lokan / ukrivljen',
-  // P3 — WPC orientacije
-  WPC_POKOCNE: 'WPC pokončne palice',
-  WPC_VODORAVNE: 'WPC vodoravne palice',
-  WPC_POSEVNE: 'WPC poševne palice',
-}
-
-const statusLabels: Record<MeasurementStatus, string> = {
-  OSNUTEK: 'Osnutek',
-  POTRJENA: 'Potrjena',
-  ARHIVIRANA: 'Arhivirana',
-}
-
-const statusColors: Record<MeasurementStatus, string> = {
-  // R234 — nevtralni statusi → žetoni (R229 OSNUTEK/Zapadlo vzorec: en razred
-  // obe temi; ARHIVIRANA obdrži line-through — prečrtanost je SEMANTIKA
-  // arhiva, ne barva; POTRJENA ostane semantična zeleni sorojenec).
-  OSNUTEK: 'bg-muted text-muted-foreground border-border',
-  POTRJENA: 'bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300 border-green-300 dark:border-green-800',
-  ARHIVIRANA: 'bg-muted text-muted-foreground border-border line-through',
-}
-
-const statusCycle: Record<MeasurementStatus, MeasurementStatus> = {
-  OSNUTEK: 'POTRJENA',
-  POTRJENA: 'ARHIVIRANA',
-  ARHIVIRANA: 'OSNUTEK',
-}
-
-const auditActionLabels: Record<AuditEntry['akcija'], string> = {
-  ADD: 'Dodano',
-  EDIT: 'Spremenjeno',
-  DELETE: 'Izbrisano',
-  STATUS: 'Status',
-}
-
-const auditIcons: Record<AuditEntry['akcija'], typeof Ruler> = {
-  ADD: Plus,
-  EDIT: RefreshCw,
-  DELETE: Trash2,
-  STATUS: RotateCcw,
-}
-
-const auditColors: Record<AuditEntry['akcija'], string> = {
-  ADD: 'bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300',
-  EDIT: 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300',
-  DELETE: 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300',
-  STATUS: 'bg-roksal-amber/10 text-roksal-ink', // R311 — žetoni (družina ADD/EDIT/DELETE ostaja semantična)
-}
-
-const enotaLabels: Record<EnotaTip, string> = {
-  mm: 'mm',
-  cm: 'cm',
-  m: 'm',
-}
-
 interface MeasurementsTabProps {
   onNavigateToCalculator?: (dolzinaMm: number, visinaMm: number, locationName: string) => void
   /** Združi izbrnik projekta z glavno aplikacijo (runda H — QA popravek iz runde G) */
   selectedProjectId?: string | null
-}
-
-// ============================================
-// POMOŽNE FUNKCIJE
-// ============================================
-
-function parseArMetadata(raw: string | null | undefined): ArMetadata {
-  if (!raw) return {}
-  try {
-    return JSON.parse(raw) as ArMetadata
-  } catch {
-    return {}
-  }
-}
-
-function parseGPS(gpsStr: string | null): { lat: number; lng: number } | null {
-  if (!gpsStr) return null
-  try {
-    return JSON.parse(gpsStr)
-  } catch {
-    return null
-  }
-}
-
-function formatDimension(mm: number): string {
-  if (mm >= 1000) return `${(mm / 1000).toFixed(2)}m`
-  return `${mm}mm`
-}
-
-function formatM2(mm2: number): string {
-  return `${(mm2 / 1_000_000).toFixed(2)}m²`
-}
-
-// P1 — multi-unit prikaz mer
-function formatMultiUnit(mm: number): string {
-  return `${mm}mm · ${Math.round(mm / 10)}cm · ${(mm / 1000).toFixed(2)}m`
-}
-
-function formatAngleMulti(deg: number): string {
-  const rad = (deg * Math.PI) / 180
-  return `${deg}° · ${rad.toFixed(2)}rad`
-}
-
-function formatSlopeMulti(deg: number): string {
-  const pct = Math.tan((deg * Math.PI) / 180) * 100
-  return `${deg.toFixed(1)}° · ${pct.toFixed(1)}%`
-}
-
-function loadAudit(projectId: string): AuditEntry[] {
-  try {
-    const raw = localStorage.getItem(`roksal_audit_${projectId}`)
-    return raw ? (JSON.parse(raw) as AuditEntry[]) : []
-  } catch {
-    return []
-  }
-}
-
-// P3 — pretvorba enot (mm/cm/m) v mm
-function convertToMm(value: number, unit: EnotaTip): number {
-  if (!Number.isFinite(value)) return 0
-  switch (unit) {
-    case 'mm':
-      return value
-    case 'cm':
-      return value * 10
-    case 'm':
-      return value * 1000
-  }
-}
-
-// P3 — prikaz v primarni enoti (default mm)
-function formatInPrimaryUnit(mm: number, primary: EnotaTip): string {
-  if (!Number.isFinite(mm)) return '—'
-  switch (primary) {
-    case 'mm':
-      return `${Math.round(mm)}mm`
-    case 'cm':
-      return `${(mm / 10).toFixed(1)}cm`
-    case 'm':
-      return `${(mm / 1000).toFixed(2)}m`
-  }
-}
-
-// P3 — izračun stopniščnih dimenzij
-function calculateStairDimensions(
-  skupnaVisinaMm: number,
-  stStopnic: number,
-  globinaStopniceMm: number,
-  sirinaStopniceMm?: number
-): StairCalc {
-  if (
-    skupnaVisinaMm <= 0 ||
-    stStopnic <= 0 ||
-    globinaStopniceMm <= 0 ||
-    !Number.isFinite(skupnaVisinaMm) ||
-    !Number.isFinite(stStopnic) ||
-    !Number.isFinite(globinaStopniceMm)
-  ) {
-    return {
-      visinaPosamezne: 0,
-      kotStopinje: 0,
-      dolzinaKosa: 0,
-      skupnaDolzina: 0,
-      priporocilo: 'Vnesite veljavne vhodne podatke',
-      priporociloColor: 'text-muted-foreground',
-      valid: false,
-    }
-  }
-  const visinaPosamezne = skupnaVisinaMm / stStopnic
-  const kotRad = Math.atan(visinaPosamezne / globinaStopniceMm)
-  const kotStopinje = (kotRad * 180) / Math.PI
-  const dolzinaKosa = Math.sqrt(visinaPosamezne ** 2 + globinaStopniceMm ** 2) * stStopnic
-  const rezerva = sirinaStopniceMm ? sirinaStopniceMm * 0.5 : 200 // dodaten rob
-  const skupnaDolzina = dolzinaKosa + rezerva
-  let priporocilo = 'Standardni kot 30–35°'
-  let priporociloColor = 'text-green-700 dark:text-green-300'
-  if (kotStopinje > 40) {
-    priporocilo = 'Nevarno: >40° (prestrmo!)'
-    priporociloColor = 'text-red-600 dark:text-red-400'
-  } else if (kotStopinje > 37) {
-    priporocilo = 'Prestrmo: >37°'
-    priporociloColor = 'text-orange-600 dark:text-orange-400'
-  } else if (kotStopinje < 25) {
-    priporocilo = 'Ploščato: <25°'
-    priporociloColor = 'text-amber-600 dark:text-amber-400'
-  }
-  return {
-    visinaPosamezne,
-    kotStopinje,
-    dolzinaKosa,
-    skupnaDolzina,
-    priporocilo,
-    priporociloColor,
-    valid: true,
-  }
-}
-
-// P3 — avto-številčenje stebrov v segmentu (S1, S2, ...)
-function getNextStebriNumber(measurements: Measurement[], segmentId?: string): number {
-  const stebri = measurements.filter(
-    (m) => m.tipMeritve === 'STEBR' && (!segmentId || m.segmentId === segmentId)
-  )
-  return stebri.length + 1
-}
-
-// P3 — nalaganje primarne enote
-function loadPrimaryUnit(): EnotaTip {
-  try {
-    const raw = localStorage.getItem('roksal_primary_unit')
-    if (raw === 'mm' || raw === 'cm' || raw === 'm') return raw
-  } catch {
-    // ignore
-  }
-  return 'mm'
 }
 
 // ============================================

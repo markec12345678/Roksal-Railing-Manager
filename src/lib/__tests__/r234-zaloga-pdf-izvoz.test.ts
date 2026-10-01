@@ -211,17 +211,24 @@ describe('R234 — [Mandatory] stil (P1-f): nevtralne status veje gray → žeto
   })
 
   it('measurements statusColors + status filtri OSNUTEK/ARHIVIRANA → žetoni (line-through semantika arhiva ostane)', () => {
-    const src = beri('src/components/roksal/measurements-tab.tsx')
+    // R338 (dekomp. faza 3): statusColors se je preselil v measurements/labels.ts
+    // — pin SHIFT po kanonu R319; status filtri (čipi) ostajajo v telesu.
+    const src = beri('src/components/roksal/measurements/labels.ts')
     expect(src).toContain("OSNUTEK: 'bg-muted text-muted-foreground border-border'")
     expect(src).toContain("ARHIVIRANA: 'bg-muted text-muted-foreground border-border line-through'")
-    // Filtrski čipi (neaktivna + aktivna 'solid' nevtralna veja):
-    expect(src).toContain("'bg-muted-foreground text-white border-muted-foreground'")
+    const srcTelo = beri('src/components/roksal/measurements-tab.tsx')
+    // Filtrski čipi (neaktivna + aktivna 'solid' nevtralna veja) — telo:
+    expect(srcTelo).toContain("'bg-muted-foreground text-white border-muted-foreground'")
     // Gray unikati izginili (POTRJENA ostane semantična; beton = DOKUMENTIRANA
     // materialna palete — r231 izjema, drugačen tekst-gray-700):
     expect(src).not.toContain('bg-gray-100 dark:bg-gray-500/15 text-gray-600 dark:text-gray-400')
     expect(src).not.toContain('bg-gray-50 dark:bg-gray-950/40 text-gray-400 border-gray-200')
     expect(src).not.toContain('bg-gray-600 text-white border-gray-600')
     expect(src).not.toContain('bg-gray-400 text-white border-gray-400')
+    expect(srcTelo).not.toContain('bg-gray-100 dark:bg-gray-500/15 text-gray-600 dark:text-gray-400')
+    expect(srcTelo).not.toContain('bg-gray-50 dark:bg-gray-950/40 text-gray-400 border-gray-200')
+    expect(srcTelo).not.toContain('bg-gray-600 text-white border-gray-600')
+    expect(srcTelo).not.toContain('bg-gray-400 text-white border-gray-400')
   })
 
   it('r172 PIN sinhroniziran (material-intelligence 1699 — R333, roksal-catalog 234)', () => {

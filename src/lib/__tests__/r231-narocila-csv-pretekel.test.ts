@@ -113,7 +113,9 @@ describe('R231 — [Mandatory] stil (P1-f): map-measure + measurements neutralne
     expect(refGallery).toContain("case 'Inox': return 'bg-slate-400'")
     expect(refGallery).toContain("case 'Alu': return 'bg-slate-500'")
     // measurements material/ground palete — badge družina per material/tla
-    expect(measurements).toContain("metal: 'bg-slate-100 dark:bg-slate-500/15")
+    // R338 (dekomp. faza 3): groundTypeColors.metal se je preselil v
+    // measurements/labels.ts — pin SHIFT po kanonu R319.
+    expect(beri('src/components/roksal/measurements/labels.ts')).toContain("metal: 'bg-slate-100 dark:bg-slate-500/15")
     // R319: ALU vrstica se je preselila v measurements/shared.ts (pin shift)
     expect(measurementsShared).toContain("ALU: 'bg-slate-100 dark:bg-slate-500/15")
   })

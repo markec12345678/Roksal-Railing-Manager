@@ -15,11 +15,14 @@ const SUROVA_AMBER = /amber-(50|100|200|300|400|500|600|700|800|900|950)\b/
 
 // Zaklenjeni register: datoteka → seznam TRIMIRANIH vrstic (bajtno = vir).
 const ZAKLENJENO: Record<string, string[]> = {
-  // R319 (dekomp. faza 1): measurements-tab izjeme so se RAZDELILE na
-  // measurements/ mapo — pin SHIFT po kanonu R180/R201/…/R314; skupno
-  // število zaklenjenih vrstic ostaja NATANKO 30 (5 v measurements družini).
-  "src/components/roksal/measurements-tab.tsx": [
-    "les: 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800',",
+  // R319 (dekomp. faza 1) + R338 (dekomp. faza 3): measurements-tab izjeme
+  // so se RAZDELILE na measurements/ mapo — pin SHIFT po kanonu
+  // R180/R201/…/R314; skupno število zaklenjenih vrstic ostaja NATANKO 30
+  // (7 v measurements družini; measurements-tab same ima 0 — vse preseljene).
+  "src/components/roksal/measurements/labels.ts": [
+    "les: 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800',"
+  ],
+  "src/components/roksal/measurements/format.ts": [
     "priporociloColor = 'text-amber-600 dark:text-amber-400'"
   ],
   "src/components/roksal/measurements/shared.ts": [
@@ -94,7 +97,8 @@ const ZAKLENJENO: Record<string, string[]> = {
 
 // Razlogi (vsaka datoteka z izjemo IMA izrecno razlago — nič tihih izjem).
 const RAZLOGI: Record<string, string> = {
-  "src/components/roksal/measurements-tab.tsx": "R311 — les kategorija barv + priporociloColor lestvica (R319: WPC/senzorji preseljeni v measurements/ mapo)",
+  "src/components/roksal/measurements/labels.ts": "R311 — les kategorija barv (R338 dekomp. faza 3: preseljeno iz measurements-tab groundTypeColors)",
+  "src/components/roksal/measurements/format.ts": "R311 — priporociloColor lestvica naklona (R338 dekomp. faza 3: preseljeno iz measurements-tab calculateStairDimensions)",
   "src/components/roksal/measurements/shared.ts": "R311 — WPC kategorija barv (R319 dekomp.: preseljeno iz measurements-tab)",
   "src/components/roksal/measurements/inline-inclinometer.tsx": "R311 — senzorjsko besedilo gola-text lestvica (R319 dekomp.: preseljeno)",
   "src/components/roksal/measurements/inline-kotomer.tsx": "R311 — senzorjsko besedilo gola-text lestvica (R319 dekomp.: preseljeno)",

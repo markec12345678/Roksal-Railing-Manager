@@ -117,10 +117,18 @@ describe('r311 STRAŽAR — zaslon žiči EN VIR, izjeme zaklenjene', () => {
     // VRSTIC ostaja NATANKO 6 (les, WPC, priporociloColor, senzor ×2, V_TEKU);
     // nova mapa je s tem IZRECNO varovana (nič nevidnega amber).
     const IZJEME: Record<string, string[]> = {
-      'measurements-tab.tsx': [
-        // kategorija barv (les med beton/plosca/gramoz/metal) — R308 lekcija
+      // R338 (dekomp. faza 3): measurements-tab izjeme so se preselile v
+      // measurements/labels.ts (les kategorija barv) + measurements/format.ts
+      // (priporociloColor lestvica) — pin SHIFT po kanonu R319; measurements-tab
+      // same ima 0 surovih amber vrstic (vse preseljene — datoteka ostaja v
+      // seznamu kot varovana površina).
+      'measurements-tab.tsx': [],
+      'measurements/labels.ts': [
+        // kategorija barv (les med beton/plosca/gramoz/metal) — R308 lekcija (R338: preseljeno iz measurements-tab)
         "  les: 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800',",
-        // gola text lestvica naklona (red/orange/amber sorodniki) — brez vsebnika
+      ],
+      'measurements/format.ts': [
+        // gola text lestvica naklona (red/orange/amber sorodniki) — brez vsebnika (R338: preseljeno iz measurements-tab)
         "    priporociloColor = 'text-amber-600 dark:text-amber-400'",
       ],
       'measurements/shared.ts': [
