@@ -221,7 +221,9 @@ describe('r346 calc FAZA 6 — žičenje taba (EN VIR, brez podvajanj)', () => {
   it('tab: NO enega definicije collectCurrentInputs/applyInputs — modul je edini vir', () => {
     expect(tab).not.toContain('function collectCurrentInputs(')
     expect(tab).not.toContain('function applyInputs(')
-    expect((tab.match(/collectCurrentInputs\(mode, vhodnaStanja\(\)\)/g) ?? []).length).toBe(2)
+    // R347 FAZA 7: 3. klicna mesta — "Shrani izračun" gumb je zamenjal stale
+    // inline kopijo z EN VIR collectCurrentInputs (prej 2: saveTemplate + zgodovina).
+    expect((tab.match(/collectCurrentInputs\(mode, vhodnaStanja\(\)\)/g) ?? []).length).toBe(3)
     expect((tab.match(/applyInputs\(tpl\.mode, tpl\.inputs, nastavljalci\(\)\)/g) ?? []).length).toBe(1)
     expect((tab.match(/applyInputs\(entry\.mode, entry\.inputs, nastavljalci\(\)\)/g) ?? []).length).toBe(1)
   })

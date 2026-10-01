@@ -98,6 +98,8 @@ import {
   odstraniIzSkladisca,
   ZGODOVINA_CSV_GLAVE,
   zgodovinaCsvVrstice,
+  getCurrentKeyResult,
+  type RezultatiNacinov,
 } from './calculator/history'
 import { BalusterSvg } from './calculator/baluster-svg'
 import { AngledSvg } from './calculator/angled-svg'
@@ -373,6 +375,14 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
     glassInput,
   })
 
+  // R347 FAZA 7: ključni rezultat = EN VIR calculator/history.ts (prej
+  // function v tabu + stale inline kopija v "Shrani izračun" gumbu).
+  const rezultatiNacinov = (): RezultatiNacinov => ({
+    railingResult, anchoringResult, windResult, balusterResult, angledResult, materialResult,
+    complianceResult, cncResult, windLocResult, glassResult,
+    rezervaPctBaluster, rezervaPctMaterial, glassInput,
+  })
+
   const nastavljalci = (): NastavljalciVhodov => ({
     setProfileType, setTotalLength, setSlatWidth, setMaxGap, setPostCount,
     setHoleCount, setHoleDepthMm, setHoleDiameterMm, setTemperature, setAnchorType,
@@ -386,37 +396,6 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
     setWindLocLat, setWindLocLon, setWindLocHeight, setWindLocTerrain, setWindLocArea, setWindLocType,
     setGlassInput,
   })
-
-  /** Ključni rezultat trenutnega načina za prikaz v zgodovini. */
-  function getCurrentKeyResult(): string {
-    // R341 FAZA 3: oznake načinov = EN VIR modeLabels (shared.ts) — prej
-    // 3× podvojen inline blok, zdaj ena mapa (kanon čist premik VERBATIM).
-    if (mode === 'railing' && railingResult) {
-      return `${railingResult.slatCount} letvev, razmik ${railingResult.actualGapMm.toFixed(1)}mm`
-    } else if (mode === 'anchoring' && anchoringResult) {
-      return `${anchoringResult.totalResinMl}ml smola, ${anchoringResult.cartridgesNeeded} patronov`
-    } else if (mode === 'wind' && windResult) {
-      return `${windResult.windPressureKpa.toFixed(2)} kPa, ${riskLabels[windResult.riskLevel]}`
-    } else if (mode === 'baluster' && balusterResult) {
-      const baseCount = balusterResult.balusterCount
-      const withReserve = applyReserve(baseCount, rezervaPctBaluster)
-      return `${withReserve} palic (rezerva ${rezervaPctBaluster}%), razmik ${balusterResult.actualGapMm.toFixed(1)}mm`
-    } else if (mode === 'angled' && angledResult) {
-      return `${angledResult.balusterCount} palic, rake ${(angledResult.rakeLengthMm / 1000).toFixed(2)}m, kot ${angledResult.rakeAngleDeg.toFixed(1)}°`
-    } else if (mode === 'material' && materialResult) {
-      return `${materialResult.totalLinearMeters.toFixed(2)}m profila, ${applyReserve(materialResult.balusterCount, rezervaPctMaterial)} palic, ${formatEUR(materialResult.totalCost)}`
-    } else if (mode === 'compliance' && complianceResult) {
-      const ok = complianceResult.checks.filter((c) => c.passed).length
-      return `${ok}/${complianceResult.checks.length} preverb uspešnih`
-    } else if (mode === 'cnc' && cncResult) {
-      return `${cncResult.stockCount} profilov, izkoristek ${cncResult.overallUtilizationPct.toFixed(1)}%, ostanek ${cncResult.totalWasteMm}mm`
-    } else if (mode === 'windLocation' && windLocResult) {
-      return `${windLocResult.locationDescription} — cona ${windLocResult.windZone}, ${riskLabels[windLocResult.riskLevel]}`
-    } else if (mode === 'glass' && glassResult) {
-      return `${glassResult.recommendedThicknessMm}mm ${glassResult.layers ? `laminirano (${glassResult.layers} sloje)` : glassInput.glassType === 'tempered' ? 'kaljeno' : 'enojno'}${glassResult.isSafe ? ' — VARNO' : ' — NEVARNO'}`
-    }
-    return modeLabels[mode]
-  }
 
   /** Shrani trenutne inpute kot predlogo (samo za 4 podprte načine). */
   function saveTemplate() {
@@ -478,7 +457,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
       timestamp: new Date().toISOString(),
       mode,
       modeLabel: modeLabels[mode],
-      keyResult: getCurrentKeyResult(),
+      keyResult: getCurrentKeyResult(mode, rezultatiNacinov()),
       inputs: collectCurrentInputs(mode, vhodnaStanja()),
       projectName: projectName.trim() || undefined,
       // R150: prstni odtis samo če obstaja (railing/anchoring/wind prek
@@ -4296,40 +4275,11 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
         <Button
           type="button"
           onClick={() => {
-            let keyResult = ''
-            let inputs: Record<string, string> = {}
-            if (mode === 'railing' && railingResult) {
-              keyResult = `${railingResult.slatCount} letvev, razmik ${railingResult.actualGapMm.toFixed(1)}mm`
-              inputs = { profileType, totalLength: effectiveTotalLength, slatWidth, maxGap, postCount }
-            } else if (mode === 'anchoring' && anchoringResult) {
-              keyResult = `${anchoringResult.totalResinMl}ml smola, ${anchoringResult.cartridgesNeeded} patronov`
-              inputs = { holeCount, holeDepthMm, holeDiameterMm, temperature, anchorType }
-            } else if (mode === 'wind' && windResult) {
-              keyResult = `${windResult.windPressureKpa.toFixed(2)} kPa, ${riskLabels[windResult.riskLevel]}`
-              inputs = { heightAboveGround, terrainCategory, windSpeedMs, railingAreaM2, railingType }
-            } else if (mode === 'baluster' && balusterResult) {
-              keyResult = `${balusterResult.balusterCount} palic, razmik ${balusterResult.actualGapMm.toFixed(1)}mm`
-              inputs = { balTotalLength, balWidth, balMaxGap, balPostSpacing }
-            } else if (mode === 'angled' && angledResult) {
-              keyResult = `${angledResult.balusterCount} palic, rake ${(angledResult.rakeLengthMm / 1000).toFixed(2)}m, kot ${angledResult.rakeAngleDeg.toFixed(1)}°`
-              inputs = { angHorizontalLength, angRakeAngle, angWidth, angMaxGap }
-            } else if (mode === 'material' && materialResult) {
-              keyResult = `${materialResult.totalLinearMeters.toFixed(2)}m profila, ${materialResult.balusterCount} palic, ${materialResult.totalCost.toFixed(2)}€`
-              inputs = { profileSifra: selectedProfileSifra, segments: JSON.stringify(segments) }
-            } else if (mode === 'compliance' && complianceResult) {
-              const ok = complianceResult.checks.filter((c) => c.passed).length
-              keyResult = `${ok}/${complianceResult.checks.length} preverb uspešnih`
-              inputs = { compGap, compHeight, compPostSpacing, compLoadCategory, compDropHeight }
-            } else if (mode === 'cnc' && cncResult) {
-              keyResult = `${cncResult.stockCount} profilov, izkoristek ${cncResult.overallUtilizationPct.toFixed(1)}%`
-              inputs = { cncStockLength: String(cncStockLength), cncSawBlade: String(cncSawBlade), cncSegments: JSON.stringify(cncSegments) }
-            } else if (mode === 'windLocation' && windLocResult) {
-              keyResult = `${windLocResult.locationDescription}, ${riskLabels[windLocResult.riskLevel]}`
-              inputs = { windLocLat: String(windLocLat), windLocLon: String(windLocLon), windLocHeight: String(windLocHeight), windLocTerrain: windLocTerrain, windLocArea: String(windLocArea), windLocType: windLocType }
-            } else if (mode === 'glass' && glassResult) {
-              keyResult = `${glassResult.recommendedThicknessMm}mm ${glassResult.isSafe ? 'VARNO' : 'NEVARNO'}`
-              inputs = { glassSpan: String(glassInput.spanMm), glassHeight: String(glassInput.heightMm), glassLoad: String(glassInput.loadKnPerM), glassType: glassInput.glassType }
-            }
+            // R347 FAZA 7: EN VIR — prej stale inline kopija (starejši formati:
+            // baluster brez rezerve, material z toFixed(2)€, cnc brez ostanka;
+            // zdaj ISTA resnica kot zgodovina prek modulov).
+            const keyResult = getCurrentKeyResult(mode, rezultatiNacinov())
+            const inputs = collectCurrentInputs(mode, vhodnaStanja())
             const newCalc: SavedCalculation = {
               id: `calc_${Date.now()}`,
               date: new Date().toISOString(),
@@ -4348,6 +4298,8 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
             toast.success('Izračun shranjen')
           }}
           className="w-full bg-roksal-navy hover:bg-roksal-navy/90 text-white h-11 transition-all duration-200"
+          aria-label="Shrani trenutni izračun v shranjene izračune"
+          title="Shrani trenutni izračun z vsemi vnosi načina"
         >
           <Save aria-hidden="true" className="mr-2 h-4 w-4" />
           Shrani izračun
@@ -4361,7 +4313,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2 text-sm font-semibold text-roksal-ink">
                 <Clock aria-hidden="true" className="h-4 w-4" />
-                Shrjeni izračuni
+                Shranjeni izračuni
               </CardTitle>
               <Button
                 variant="ghost"
@@ -4372,6 +4324,8 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                   try { localStorage.removeItem('roksal-saved-calculations') } catch { /* ignore */ }
                   toast.success('Vsi izračuni počiščeni')
                 }}
+                aria-label="Počisti vse shranjene izračune"
+                title="Pobriši celoten seznam shranjenih izračunov"
               >
                 <Trash2 aria-hidden="true" className="mr-1 h-3 w-3" />
                 Počisti vse
@@ -4384,31 +4338,15 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                 <button
                   key={calc.id}
                   onClick={() => {
-                    // Load saved inputs back
-                    if (calc.mode === 'railing') {
-                      if (calc.inputs.profileType) setProfileType(calc.inputs.profileType as ProfileType)
-                      if (calc.inputs.totalLength) setTotalLength(calc.inputs.totalLength)
-                      if (calc.inputs.slatWidth) setSlatWidth(calc.inputs.slatWidth)
-                      if (calc.inputs.maxGap) setMaxGap(calc.inputs.maxGap)
-                      if (calc.inputs.postCount) setPostCount(calc.inputs.postCount)
-                      setMode('railing')
-                    } else if (calc.mode === 'anchoring') {
-                      if (calc.inputs.holeCount) setHoleCount(calc.inputs.holeCount)
-                      if (calc.inputs.holeDepthMm) setHoleDepthMm(calc.inputs.holeDepthMm)
-                      if (calc.inputs.holeDiameterMm) setHoleDiameterMm(calc.inputs.holeDiameterMm)
-                      if (calc.inputs.temperature) setTemperature(calc.inputs.temperature)
-                      if (calc.inputs.anchorType) setAnchorType(calc.inputs.anchorType as AnchorType)
-                      setMode('anchoring')
-                    } else if (calc.mode === 'wind') {
-                      if (calc.inputs.heightAboveGround) setHeightAboveGround(calc.inputs.heightAboveGround)
-                      if (calc.inputs.terrainCategory) setTerrainCategory(calc.inputs.terrainCategory as TerrainCategory)
-                      if (calc.inputs.windSpeedMs) setWindSpeedMs(calc.inputs.windSpeedMs)
-                      if (calc.inputs.railingAreaM2) setRailingAreaM2(calc.inputs.railingAreaM2)
-                      if (calc.inputs.railingType) setRailingType(calc.inputs.railingType as RailingType)
-                      setMode('wind')
-                    }
+                    // R347 FAZA 7: EN VIR applyInputs — prej stale inline blok
+                    // SAMO za railing/anchoring/wind (ostalih 7 načinov = tih
+                    // no-op z toastom, brez nalaganja!); zdaj vsi 10 načinov,
+                    // konsistentno z nalaganjem zgodovine.
+                    setMode(calc.mode)
+                    applyInputs(calc.mode, calc.inputs, nastavljalci())
                     toast.info(`Izračun "${calc.modeLabel}" naložen`)
                   }}
+                  aria-label={`Naloži shranjeni izračun: ${calc.modeLabel}, ${calc.keyResult}`}
                   className="flex w-full items-center justify-between rounded-lg border border-border/50 p-3 transition-colors hover:bg-secondary/30 text-left"
                 >
                   <div className="min-w-0 flex-1">

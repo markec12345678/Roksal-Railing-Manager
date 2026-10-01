@@ -32,7 +32,12 @@ describe('r341 calc FAZA 3 — EN VIR modeLabels: dedup + čist premik', () => {
 
   it('calculator-tab: uvoz modeLabels iz shared (EN VIR potrošnja)', () => {
     expect(tab).toContain('  modeLabels,')
-    expect(tab.match(/modeLabels\[/g)?.length).toBe(3) // return + entry.modeLabel + saved.modeLabel
+    // R347 FAZA 7: fallback `return modeLabels[mode]` je selil v history.ts
+    // modul (getCurrentKeyResult) — v tabu ostanejo 2 potrošnika (entry.modeLabel
+    // + saved.modeLabel); modulni fallback = 1 potrošnik (EN VIR ohranjen).
+    expect(tab.match(/modeLabels\[/g)?.length).toBe(2)
+    const hist = readFileSync(join(process.cwd(), 'src/components/roksal/calculator/history.ts'), 'utf8')
+    expect(hist.match(/modeLabels\[/g)?.length).toBe(1)
   })
 
   it('izčerpnost: 10 ključev = CalcMode bijekcija (modeTabs ids)', () => {
@@ -79,10 +84,15 @@ describe('r341 calc FAZA 3 — EN VIR modeLabels: dedup + čist premik', () => {
     }
   })
 
-  it('potrošniki v tabu so na pričakovanih mestih (getCurrentKeyResult / addToHistory / shrani gumb)', () => {
-    expect(tab).toContain('return modeLabels[mode]')
+  it('potrošniki so na pričakovanih mestih (R347 FAZA 7: fallback selil v history.ts)', () => {
+    // R347 FAZA 7: `return modeLabels[mode]` (fallback) je sedaj v modulu
+    // getCurrentKeyResult (calculator/history.ts) — EN VIR ohranjen, samo
+    // lokacija selila; v tabu ostane saved.modeLabel potrošnik.
+    const hist = readFileSync(join(process.cwd(), 'src/components/roksal/calculator/history.ts'), 'utf8')
+    expect(hist).toContain('return modeLabels[mode]')
     expect(tab).toContain('modeLabel: modeLabels[mode],')
-    expect(tab).toContain('R341 FAZA 3: oznake načinov = EN VIR modeLabels (shared.ts)')
+    // R341 kanon ohranjen: modul uvozi modeLabels iz shared (EN VIR potrošnja)
+    expect(hist).toContain("from './shared'")
   })
 
   it('registrska usklajenost: r339 postavitev nedotaknjena (measurements/labels.ts ostaja njihova resnica)', () => {

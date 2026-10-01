@@ -1,0 +1,29 @@
+# qa-needles/r347.tsv — REGISTER needlejev runde R347 (kalkulator FAZA 7:
+# ključni rezultat + shranjevanje izračunov EN VIR [calculator/history.ts,
+# args objekti — vzorec R325/R345/R346] + popravek pogreše nalaganja
+# shranjenih izračunov [prej 3-načinsko, 7 načinov tih no-op] + STIL val 30:
+# a11y parity shranjenih izračunov + tipografija Shranjeni izračuni).
+# ============================================================================
+# FORMAT (TSV; EN vrstica = EN needle; TAB je LOČILO — presledki znotraj
+# needleja so POMENNI, ker grep -F išče dobesedno) — kanon R340–R346.
+#   <needle_string><TAB><opis><TAB><vrsta>
+# vrsta:
+#   need_static  — niz MORA biti ŽIV v čankih (grep -rqF po .next/static/chunks
+#                  + .next/server, kopiranih v /tmp/r347-build-chunks)
+#   must_miss    — niz NE SME biti prisoten (razvojni ostanki)
+#
+# ── R347 lastni needleji ──
+# FAZA 7 je unifikacija stale kopij + popravek pogreše (premik logike v
+# history.ts, NOVI vidni nizi) → NI edinstvenega needleja za SAM premik
+# (iskrena omejitev: pokritost = tsc + vitest r347-calc-faza7 ×13 + E2E
+# regresija; popravek pogreše = vitest wiring + ročni E2E sken).
+# STIL val 30: razlagalni aria/title nizi = NOVI minifikacijo-preživeči nizi
+# ( SAMO NOVI — parity nizi val 28/29 so že v registrh r345/r346 ):
+Naloži shranjeni izračun:	R347 val 30 Naloži shranjeni izračun aria-label (parity zgodovina + predloga)	need_static
+Počisti vse shranjene izračune	R347 val 30 Počisti vse aria-label (parity z val 28 predloge)	need_static
+Pobriši celoten seznam shranjenih izračunov	R347 val 30 Počisti vse title (posledica)	need_static
+Shrani trenutni izračun v shranjene izračune	R347 val 30 Shrani izračun aria-label (primarni akcijski gumb)	need_static
+#
+# Delegirani negativni needle — OBVEZEN vsaki rundi (kanon "brez razvojnih
+# ostankov", vzorec R324–R346):
+TODO-R347	R347 — brez razvojnih ostankov	must_miss
