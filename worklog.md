@@ -6835,3 +6835,9 @@ Stage Summary:
 
 ### PRVA NALOGA POST-commit ŽIVO (R337 — r337-prod-qa.sh, push)
 - Spodaj dodatek ob izvedbi (LIVE ali ESKALACIJA; UNION harvest: ob zelenem deployu nosi R290+…+R337 SKUPAJ — precedens R313/R314/R332/R335; LEKCIJA R330 7: POST-commit prod-qa takoj po pushu lahko dirje deploy — če EPOCH + needle MISS sočasno, preveri build čas NOVICE run pred interpretacijo)
+
+### PRVA NALOGA POST-commit ŽIVO (R337 — r337-prod-qa.sh, push 1a3e776)
+- Deploy čakanje (LEKCIJA R330 7): polling — build ostal stale (2026-10-01T09:02:11.761Z ≤ meja 09:57:21 [1a3e776]) — Vercel kvota/limit vzorec (R337 dev čaka skupaj z naslednjim zelenim deployom; precedens R320/R332/R334/R335)
+- Tek 1: ESKALACIJA stale-healthy **abort na R293 false-MISS** [vodja čank HLADEN na Vercel edge — LEKCIJA R315 header (a) reprodukcija: ISTI build 09:02:11.761Z je ob 09:1x nosil R293 needleja v LIVE teku r336-prod-qa — transient harvest race, NI string-regrese, NI koda-bug; kanon R258]; izhod exit 1 (fail-closed abort — iskreno)
+- Tek 2: **ESKALACIJA veja EXIT=0** — **stale ZDRAV ŽIVO**: Z2 OK — vsi needleji ŽIVO (R276→R336 polna veriga; R293 OK — cold-edge transient razrešen z drugim tekom; R337 + R336 needle bloka: R336 ŽIVO, R337 pričakovan MISS na stale produ — LIVE ob zelenem deployu, NI bug) + ZERO must_miss + **Z3 OK — v99 sync gate ŽIVO (fail-closed, nič zapisov, ZERO-MUTACIJA)**; footer **=== R337 PROD QA — R290+…+R337 ŽIVO SKUPAJ ===**
+- Kanon R280/R284: naslednji zeleni deploy nosi **1a3e776 SKUPAJ** (R290+…+R337 UNION harvest) — R338 prva naloga = r337-prod-qa.sh re-run (pričakuj LIVE vejo; __r336val sledi generaciji); LEKCIJA R337 6: dva zaporedna abort/OK teka na ISTEM buildu = cold-edge harvest nestanovitnost — re-run je kanoniziran odziv, interpretacija ŠELE po 2. teku
