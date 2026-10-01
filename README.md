@@ -911,6 +911,36 @@ Sheet z 6 podzavihki:
   pravila react-hooks/set-state-in-effect — prej skrito z bailoutom compiler
   analize na 7,6k vrstični datoteki); vsebina ŽIVA v čankih dokazana
   (r323-build-needles ×9 + delegirana veriga R322→…→R227)
+- **QA-izvedbena runda — dolg R340/R341 poravnan + PROD mejnik R339+R340+R341** (R342 —
+  KOLIZIJA #15 [LEKCIJA 1 15. potrditev]: vzporedna lastniška R341 [6fd3f6e,
+  12:52:00Z] pristala MED mojimi QA teki [smoke/e2e/prod-qa/sweep nad R340
+  buildom 4da09b9] — moja runda preimenovana R341→R342 po kanonu KOLIZIJE
+  #4/R323/#13/#14; `pull --ff-only`, moja delta BREZ kode [register + dokumentacija]
+  → nič re-aplikacije): (1) **QA dolg zaprt** — `qa-round.sh 342 smoke` EXIT=0
+  [health/login/CSRF 403 + fail-closed ovojnice ×3 → 400] + `qa-round.sh 342
+  e2e` EXIT=0 [delegacija r339-e2e-browser.sh: Z0a→Z0be ŽIVO + sejdi
+  raise/RESTORE + **ODTIS BAJTNATO IDENTIČEN pre==post — ZERO-MUTACIJA**] +
+  POST-commit `prod-qa` EXIT=0 **LIVE veja** [Z2 needleji R276→R339 ŽIVO + Z3
+  v99 sync gate ŽIVO; footer R290+…+R339 ŽIVO SKUPAJ]; (2) **NOVA ERA TEHNIKA —
+  prod-needle preverba era rund** (dokumentirana v worklogu R342; nadgradnja
+  kanona R280/R284): ker je r339-prod-qa.sh zamrznjena pri generaciji R339 (EPOCH
+  meja ne loči rund 340+), so lastni needleji era rund preverjeni NEPOSREDNO na
+  produkcijskih čankih [žetev URL-jev /tmp/r339-chunkurls.txt iz prod-qa teka →
+  curl ×62 čankov → grep -rqF po registrih]: R340 ×4 ('letvev × 80mm = razmik',
+  '✓ SKLADNO', '✗ NESKLADNO', 'Z-line') + R341 ×1 (val 26 badge title) VSI ŽIVI
+  + TODO-R340/R341/R342 odsotni → **R339+R340+R341 ŽIVO SKUPAJ na produ**
+  [prod build 12:52:26.150Z > R341 commit 12:52:00Z — ⏳ Deploy PENDING iz
+  R341 worklog ZAPRT]; (3) **disk-resnica verifikacija združenega drevesa**
+  6fd3f6e v lastnem klonu [LEKCIJA R338 5 — ne zaupaj commit sporočilu]: tsc 0 ·
+  eslint 0 (FULL) · vitest **4851/4851 (292)** · build svež EXIT=0 (rm -rf
+  .next, max-old-space 2560) · `qa-round.sh 342 needles` VSE OK [era registri
+  r340 ×4 + r341 ×1 + r342 TODO + delegirana veriga r339→…→R227] · sweep
+  31/31 err null [26 sidro TRUE + 1 transiento potrjen z 8s čakanjem (vodja
+  `koncna-verifikacija-dokaz` — kanon LEKCIJA R337 6: interpretacija po 2.
+  teku) + 4 znana R326–R329 veja]; (4) register `qa-needles/r342.tsv` [must_miss
+  TODO-R342 — QA runda brez nove kode, iskrena omejitev pokritosti vzorec
+  R340/R341] + popravek stale tabele: calculator-tab 4.828 → 4.796 (R341 FAZA 3
+  zamudil posodobitev vrstične tabele — disk resnica)
 - **Kalkulator FAZA 3 + 65. člen + val 26** (R341 — KOLIZIJA #14: vzporedna
   lastniška R340 pristala med mojim delom; moja runda preimenovana R340→R341
   po kanonu KOLIZIJE #4/R323/#13; delta re-aplicirana na njihovo postavitev
@@ -1292,7 +1322,7 @@ primitivov. Največji:
 | Komponenta | Vrstice | Funkcija |
 |-----------|---------|----------|
 | `measurements-tab.tsx` | 6.702 | Meritve (9 tipov, stopniščni čarovnik, WPC, štebricki; dekompozicija faza 1+2+3+4 R319/R325/R338/R340) |
-| `calculator-tab.tsx` | 4.828 | Kalkulator (7 načinov + 6 izpolnitev; dekompozicija faza 1+2+4 R322/R325/R340) |
+| `calculator-tab.tsx` | 4.796 | Kalkulator (7 načinov + 6 izpolnitev; dekompozicija faza 1+2+3+4 R322/R325/R340/R341) |
 | `ar-scanner.tsx` | 2.789 | AR kamera z vizualizacijo ograje + AI sugestija |
 | `webxr-scanner.tsx` | 2.377 | WebXR poskus (kjer podprt) |
 | `photo-tab.tsx` | 2.570 | Slike z annotation editor, batch, pred/po |
@@ -1301,7 +1331,7 @@ primitivov. Največji:
 | … | | skice, zaloga, dokumenti, PDF, CRM, logistika, tloris, galerija … |
 
 > Opomba (R120/Problem 9 → R319/R322/R325/R338/R340): `measurements-tab` (9.086 →
-> 7.604 → 7.153 → 6.809 → 6.702) in `calculator-tab` (6.074 → 5.372 → 4.846 → 4.828) sta bila razbita
+> 7.604 → 7.153 → 6.809 → 6.702) in `calculator-tab` (6.074 → 5.372 → 4.846 → 4.828 → 4.796) sta bila razbita
 > po fazah — faza 1 ČISTIH PREMIKOV (kanon: bajtno identični bloki, brez
 > spremembe obnašanja; vsebina ŽIVA v čankih — r319/r322-build-needles) +
 > FAZA 2 REFAKTORJA internih sestavljenih struktur (R325: laserski BT hook z

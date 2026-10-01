@@ -1,0 +1,40 @@
+# qa-needles/r342.tsv — REGISTER needlejev runde R342 (QA-IZVEDBENA runda:
+# poravnavanje QA dolga R340/R341 + disk-resnica verifikacija združenega
+# drevesa 6fd3f6e + PROD mejnik; KOLIZIJA #15 [LEKCIJA 1 15. potrditev]:
+# vzporedna lastniška R341 [6fd3f6e, 12:52:00Z — kalkulator FAZA 3 modeLabels
+# + 65. člen zgodovina CSV + STIL val 26] pristala MED mojimi QA teki
+# [smoke/e2e/prod-qa/sweep nad R340 buildom 4da09b9] — moja runda preimenovana
+# R341→R342 po kanonu KOLIZIJE #4/R323/#13/#14; njihova R341 = pristala
+# resnica [git pull --ff-only 4da09b9..6fd3f6e], moja delta = BREZ kode
+# [samo ta register + dokumentacija] → nič re-aplikacije, nič konfliktov)
+# ============================================================================
+# FORMAT (TSV; EN vrstica = EN needle; TAB je LOČILO — presledki znotraj
+# needleja so POMENNI, ker grep -F išče dobesedno) — ENAK format kot
+# r340.tsv/r341.tsv (kanon R340 qa-round.sh: needleji so PODATEK, ne koda).
+#   <needle_string><TAB><opis<TAB><vrsta>
+# vrsta:
+#   need_static  — niz MORA biti ŽIV v čankih (grep -rqF po .next/static/chunks
+#                  + .next/server, kopiranih v /tmp/r342-build-chunks)
+#   must_miss    — niz NE SME biti prisoten (razvojni ostanki)
+#
+# ── R342 lastni needleji ──
+# ISKRENA OMEJITEV pokritosti (vzorec R340/R341): ta runda NE DODA nove kode
+# (QA-izvedbena runda — poravnan QA dolg R340 [e2e/smoke/prod-qa] + dodelitev
+# R341 [prod-qa POST-commit] + disk-resnica verifikacija 6fd3f6e), zato NI
+# novih minifikacijo-preživečih string literalov. Pokritost te runde =
+# izvedene QA faze (smoke/e2e/prod-qa/sweep EXIT=0) + era registri
+# (r340.tsv ×4 + r341.tsv ×1 ŽIVI v svežem buildu — spodaj, UNION harvest)
+# + PROD ERA-NEEDLE dokaz [NOVA TEHNIKA te runde, glej worklog R342]:
+# ker je r339-prod-qa.sh zamrznjena pri generaciji R339 (EPOCH meja ne loči
+# era rund 340+), so bili R340 lastni needleji preverjeni NEPOSREDNO na
+# produkcijskih čankih [žetev URL-jev /tmp/r339-chunkurls.txt iz prod-qa
+# teka → curl 62 čankov → grep -rqF po registru r340.tsv]:
+#   'letvev × 80mm = razmik' ✓ ŽIV · '✓ SKLADNO' ✓ ŽIV · '✗ NESKLADNO' ✓ ŽIV
+#   · 'Z-line' ✓ ŽIV · TODO-R340 odsoten — R339+R340 ŽIVO SKUPAJ na produ
+#   [prod build 2026-10-01T11:54:01.055Z > R340 commit 11:53:39Z].
+# Prihodnje era runde: po zelenem deployu preverijo SVOJ register tako
+# (dokumentirano v worklogu R342 kot kanon nadgradnja kanona R280/R284).
+
+# Delegirani negativni needle — OBVEZEN vsaki rundi (kanon "brez razvojnih
+# ostankov", vzorec R324–R341):
+TODO-R342	R342 — brez razvojnih ostankov	must_miss
