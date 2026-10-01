@@ -91,7 +91,12 @@ import {
   type CalcTemplate,
   type HistoryEntry,
   type CalculatorTabProps,
+  // R340 — dekompozicija FAZA 4 (KOLIZIJA #14: prenesena delta s R339):
+  // profileLabels (čista zbirka oznak) + getCutList/getPostPositions (čisti
+  // izračun, closure → eksplicitni args vzorec R325) izluščeni v ./calculator/.
+  profileLabels,
 } from './calculator/shared'
+import { getCutList, getPostPositions } from './calculator/cut-list'
 import { BalusterSvg } from './calculator/baluster-svg'
 import { AngledSvg } from './calculator/angled-svg'
 import { SloveniaWindMapSvg } from './calculator/wind-map-svg'
@@ -299,11 +304,8 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
   const [engineeringErrors, setEngineeringErrors] = useState<string[]>([])
   const [lastFingerprint, setLastFingerprint] = useState<{ formulaVersion: string; inputHash: string } | null>(null)
 
-  const profileLabels: Record<ProfileType, string> = {
-    classic: 'Classic',
-    'z-line': 'Z-line',
-    vertical: 'Vertical',
-  }
+  // R340 — dekompozicija FAZA 4: profileLabels izluščen VERBATIM v
+  // calculator/shared.ts (čist premik zbirke oznak).
 
   function handleCalculate() {
     // R150: vsak izračun počisti prejšnje inženirske napake in odtis.
@@ -925,29 +927,9 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
     }
   }, [mode, profili.length, selectedProfileSifra])
 
-  // Generate cut list positions
-  function getCutList(): { num: number; type: 'razmik' | 'letva'; startPosMm: number; widthMm: number }[] {
-    if (!railingResult) return []
-    const L = parseFloat(effectiveTotalLength) * 1000
-    const W = parseFloat(slatWidth)
-    const gap = railingResult.actualGapMm
-    const positions: { num: number; type: 'razmik' | 'letva'; startPosMm: number; widthMm: number }[] = []
-    let pos = gap // first gap
-    for (let i = 0; i < railingResult.slatCount; i++) {
-      positions.push({ num: i + 1, type: 'letva', startPosMm: Math.round(pos), widthMm: W })
-      pos += W + gap
-    }
-    return positions
-  }
-
-  function getPostPositions(): number[] {
-    if (!railingResult || !postCount) return []
-    const L = parseFloat(effectiveTotalLength) * 1000
-    const n = parseInt(postCount)
-    if (n < 2) return [0]
-    const spacing = L / (n - 1)
-    return Array.from({ length: n }, (_, i) => Math.round(i * spacing))
-  }
+  // Generate cut list positions — R340 dekompozicija FAZA 4: getCutList +
+  // getPostPositions izluščena v calculator/cut-list.ts (telesa VERBATIM,
+  // closure dostop do stanja → eksplicitni args — vzorec R325 pdf-exports).
 
   function renderRailingVisual() {
     if (!railingResult) return null
@@ -959,7 +941,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
     const total = totalSlatWidth + totalGapWidth
     const slatPct = (totalSlatWidth / total) * 100
     const gapPct = (totalGapWidth / total) * 100
-    const postPositions = getPostPositions()
+    const postPositions = getPostPositions({ railingResult, effectiveTotalLength, postCount })
     const displayCount = Math.min(railingResult.slatCount, 20)
 
     return (
@@ -1058,7 +1040,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
 
   function renderCutList() {
     if (!railingResult) return null
-    const cutList = getCutList()
+    const cutList = getCutList({ railingResult, effectiveTotalLength, slatWidth })
     const W = parseFloat(slatWidth)
     const gap = railingResult.actualGapMm
     const L = parseFloat(effectiveTotalLength) * 1000

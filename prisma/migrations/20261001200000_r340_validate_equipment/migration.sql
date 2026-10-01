@@ -1,0 +1,32 @@
+-- R340 (issue #5 §31/§18 — ZAKLJUČEK odložene obveznosti iz R145).
+-- VALIDATE CONSTRAINT za Equipment CHECK "equipment_status_allowed".
+--
+-- R145 (20260926) je CHECK namenoma dodal z NOT VALID (fail-closed brez
+-- tveganja deploja: veljal je takoj za VSE NOVE zapise, obstoječe vrstice
+-- se niso skenirale) in v glavi migracije izrecno zapisal namero:
+--   "NOT VALID = velja za vse NOVE zapise takoj; legacy vrstice (vse v
+--    starih statusih) ne morejo prekiniti deploya."
+-- R319 je zaprl obljubo za vseh 8 R136 CHECKov — ta CHECK iz R145 je bil
+-- izpuščen (najdba analize R339: R319 validacija pokriva le R136 nabor).
+-- Ta runda zapre to vrzel.
+--
+-- Dokazi, da je zdaj varno (isti vzorec kot R319):
+--   • Testna baza (embedded PG :5433) zgradi CELO verigo migracij iz nič
+--     (tools/vitest-global-setup.ts → prisma migrate deploy) — vsak zapis
+--     po R145 je ŽE šel skozi CHECK.
+--   • r340-validate-equipment.test.ts (STRAŽAR): po migrate deploy mora
+--     biti pg_constraint.convalidated = TRUE za equipment_status_allowed —
+--     sicer veriga ni cela in test JAVNO pade.
+--   • Aplikacijska raven varuje isti nabor (EQUIPMENT_STATUSES —
+--     src/lib/equipment-lifecycle.ts: NA_VOLJO/V_UPORABI/V_SERVISU/
+--     IZGUBLJENO/UPOKOJENO — identičen CHECK naboru).
+--
+-- Fail-closed poraz po zasnovi (R136 §18 komentar, R145 ista zasnova):
+-- če bi kdorkoli IMEL legacy vrstico, ki krši omejitev, migrate deploy
+-- JAVNO pade — brez tihe zaobvoze (integriteta > zunanji videz zelenega
+-- deploja).
+--
+-- Tehnično: VALIDATE CONSTRAINT drži LE SHARE UPDATE EXCLUSIVE zaklep na
+-- tabeli (bralci/pisalci NISO blokirani), skenira obstoječe vrstice in
+-- preklopi convalidated → true.
+ALTER TABLE "Equipment" VALIDATE CONSTRAINT "equipment_status_allowed";

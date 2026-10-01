@@ -176,6 +176,14 @@ import {
   type StairCalc,
   type StairTemplate,
 } from './measurements/templates'
+// R340 — dekompozicija measurements-tab FAZA 4 (KOLIZIJA #14: vzporedna
+// lastniška R339 vzela številko med mojim delom — delta prenesena na R340):
+// normalizeMeasurements + getQuickSpacing (čisti funkciji) v
+// ./measurements/normalize.ts in renderRailingDiagram (čista JSX funkcija)
+// v ./measurements/railing-diagram.tsx (čist premik — BREZ spremembe
+// obnašanja, vzorec R319/R325/R338).
+import { getQuickSpacing, normalizeMeasurements } from './measurements/normalize'
+import { renderRailingDiagram } from './measurements/railing-diagram'
 
 // ============================================
 // TIPI
@@ -218,10 +226,11 @@ import {
   getNextStebriNumber,
   loadAudit,
   loadPrimaryUnit,
-  parseArMetadata,
   parseGPS,
   type ArMetadata,
 } from './measurements/format'
+// R340 — osiroteli uvoz parseArMetadata odstranjen (edin uporabnik je bil
+// normalizeMeasurements, zdaj v ./measurements/normalize.ts).
 
 interface Project {
   id: string
@@ -885,56 +894,9 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
   // ============================================
   // NORMALIZACIJA MERITEV IZ API-ja
   // ============================================
-
-  function normalizeMeasurements(raw: unknown[]): Measurement[] {
-    return raw.map((item) => {
-      const m = item as Measurement
-      const ar = parseArMetadata(m.arMetadata)
-      return {
-        ...m,
-        lokacija: m.lokacija ?? ar.lokacija ?? null,
-        steviloStebrov: m.steviloStebrov ?? ar.steviloStebrov ?? null,
-        tipPodlage: m.tipPodlage ?? ar.tipPodlage ?? null,
-        kot: m.kot ?? ar.kot ?? null,
-        opombe: m.opombe ?? ar.opombe ?? null,
-        tipMeritve: ar.tipMeritve,
-        oznaka: ar.oznaka,
-        segmentId: ar.segmentId,
-        opomba: ar.opomba,
-        // R153: status pride iz baze (stolpec status) — strežnik je vir
-        // resnice; arMetadata.status samo za star vnose brez stolpca.
-        status: m.status ?? ar.status ?? 'OSNUTEK',
-        kotStopinje: m.kotStopinje ?? ar.kotStopinje ?? null,
-        // P3 — enote
-        enota: ar.enota ?? m.enota,
-        originalnaVrednost: ar.originalnaVrednost ?? m.originalnaVrednost,
-        // P3 — kotomer
-        notranjiKot: ar.notranjiKot ?? m.notranjiKot ?? null,
-        zunanjiKot: ar.zunanjiKot ?? m.zunanjiKot ?? null,
-        // P3 — štebricki
-        tipStebra: ar.tipStebra ?? m.tipStebra,
-        materialStebra: ar.materialStebra ?? m.materialStebra,
-        visinaStebraMm: ar.visinaStebraMm ?? m.visinaStebraMm ?? null,
-        pozicijaMm: ar.pozicijaMm ?? m.pozicijaMm ?? null,
-        razmikMm: ar.razmikMm ?? m.razmikMm ?? null,
-        steberOznaka: ar.steberOznaka ?? m.steberOznaka,
-        // P3 — WPC palice
-        orientacijaPalic: ar.orientacijaPalic ?? m.orientacijaPalic,
-        sirinaPalice: ar.sirinaPalice ?? m.sirinaPalice,
-        debelinaPalice: ar.debelinaPalice ?? m.debelinaPalice,
-        razmikPalic: ar.razmikPalic ?? m.razmikPalic,
-        kotPosevnih: ar.kotPosevnih ?? m.kotPosevnih,
-        stPalic: ar.stPalic ?? m.stPalic,
-        // MERITVE-PRO — vir meritve + povezave
-        source: ar.source ?? m.source,
-        photoId: ar.photoId ?? m.photoId,
-        snapshotId: ar.snapshotId ?? m.snapshotId,
-        // R281 (issue #16 §10) — sync metadata (provenance; iskrena
-        // praznina, če je klient NI poročal)
-        sync: ar.sync,
-      }
-    })
-  }
+  // R340 — dekompozicija FAZA 4: normalizeMeasurements izluščena VERBATIM
+  // v measurements/normalize.ts (čist premik; spoj arMetadata fallback po
+  // poljih ostaja identičen).
 
   // ============================================
   // OBRAZEC — RESET / SUBMIT
@@ -1297,17 +1259,9 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
     }
   }
 
-  // Hitri izračun razmikov
-  function getQuickSpacing(dolzinaMm: number, visinaMm: number, slatWidth = 80, maxGap = 100) {
-    const n = Math.ceil((dolzinaMm - maxGap) / (maxGap + slatWidth))
-    const actualGap = (dolzinaMm - n * slatWidth) / (n + 1)
-    return {
-      slatCount: n,
-      gap: Math.round(actualGap * 10) / 10,
-      compliant: actualGap <= 100,
-      postSpacing: dolzinaMm / Math.max(1, n > 5 ? Math.ceil(n / 5) : 2),
-    }
-  }
+  // Hitri izračun razmikov — R340 dekompozicija FAZA 4: getQuickSpacing
+  // izluščen VERBATIM v measurements/normalize.ts (čist premik; rabi ga
+  // railing-diagram.tsx in predogled obrazca spodaj).
 
   // ============================================
   // POVZETKI / STATISTIKA
@@ -3606,78 +3560,9 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
   // ============================================
   // RENDERS — RAILING DIAGRAM (obstoječa logika)
   // ============================================
-
-  function renderRailingDiagram(dolzina: number, visina: number) {
-    const maxDim = Math.max(dolzina, visina)
-    const heightPct = Math.min((visina / maxDim) * 40, 40)
-    const calc = getQuickSpacing(dolzina, visina)
-    const numSlats = Math.min(calc.slatCount, 15)
-    const gapWidth = numSlats > 0 ? (dolzina - numSlats * 80) / (numSlats + 1) : 0
-    const gapPct = (gapWidth / dolzina) * 100
-
-    return (
-      <div className="w-full">
-        <div className="relative rounded-lg border border-roksal-navy/20 dark:border-roksal-ink/20 bg-gradient-to-b from-roksal-navy/3 to-roksal-navy/8 p-3">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-[9px] font-mono text-muted-foreground">0</span>
-            <span className="text-[9px] font-mono text-muted-foreground">{formatDimension(dolzina)}</span>
-          </div>
-          <div className="relative flex items-end gap-0" style={{ height: `${Math.max(heightPct, 20)}px` }}>
-            <div className="w-[4px] h-full bg-roksal-navy rounded-full" />
-            <div className="flex-1 flex items-end h-full gap-0">
-              {numSlats > 0 ? (
-                <div className="flex-1 h-full flex items-end gap-0">
-                  <div className="h-full bg-transparent" style={{ width: `${gapPct}%` }} />
-                  {Array.from({ length: numSlats }).map((_, i) => (
-                    <div key={i} className="flex h-full">
-                      <div
-                        className="h-[85%] bg-roksal-navy/70 rounded-[1px]"
-                        style={{ width: `${(80 / dolzina) * 100}%`, minWidth: '2px' }}
-                      />
-                      {i < numSlats - 1 && (
-                        <div
-                          className="h-full bg-roksal-amber/30"
-                          style={{ width: `${gapPct}%`, minWidth: '1px' }}
-                        />
-                      )}
-                    </div>
-                  ))}
-                  <div className="h-full bg-transparent" style={{ width: `${gapPct}%` }} />
-                </div>
-              ) : (
-                <div className="flex-1 h-full border-t-2 border-dashed border-roksal-navy/30 dark:border-roksal-ink/30" />
-              )}
-            </div>
-            <div className="w-[4px] h-full bg-roksal-navy rounded-full" />
-          </div>
-          <div className="mt-0.5 flex">
-            <div className="w-[4px] bg-roksal-navy rounded-full" />
-            <div className="flex-1 h-[3px] bg-roksal-navy/40 rounded" />
-            <div className="w-[4px] bg-roksal-navy rounded-full" />
-          </div>
-          <div className="absolute -right-1 top-2 flex items-center gap-0.5">
-            <div className="w-[1px] h-4 border-l border-dashed border-muted-foreground/40" />
-            <span className="text-3xs font-mono text-muted-foreground">{formatDimension(visina)}</span>
-          </div>
-        </div>
-
-        {numSlats > 0 && (
-          <div
-            className={`mt-1.5 flex items-center justify-between rounded-lg px-2.5 py-1.5 text-2xs border ${
-              calc.compliant
-                ? 'bg-roksal-green/8 border-roksal-green/20 text-roksal-green'
-                : 'bg-roksal-red/8 border-roksal-red/20 text-roksal-red'
-            }`}
-          >
-            <span className="font-medium">
-              {calc.slatCount} letvev × 80mm = razmik {calc.gap}mm
-            </span>
-            <span className="font-bold">{calc.compliant ? '✓ SKLADNO' : '✗ NESKLADNO'}</span>
-          </div>
-        )}
-      </div>
-    )
-  }
+  // R340 — dekompozicija FAZA 4: renderRailingDiagram izluščen VERBATIM v
+  // measurements/railing-diagram.tsx (čist premik čiste JSX funkcije; edina
+  // odvisnost = getQuickSpacing + formatDimension, obe v mapi measurements/).
 
   // ============================================
   // RENDER — MERITVE LIST (ena kartica)

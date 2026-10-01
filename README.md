@@ -103,7 +103,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 45 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **4821** (288 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **4824** (289 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 143 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -911,6 +911,23 @@ Sheet z 6 podzavihki:
   pravila react-hooks/set-state-in-effect — prej skrito z bailoutom compiler
   analize na 7,6k vrstični datoteki); vsebina ŽIVA v čankih dokazana
   (r323-build-needles ×9 + delegirana veriga R322→…→R227)
+- **Dekompozicija FAZA 4 + VALIDATE residual + QA konsolidacija runner** (R340 —
+  KOLIZIJA #14: vzporedna lastniška R339 [STIL val 25] pristala med delom —
+  delta prenesena na R340 po kanonu KOLIZIJE #4/R323/#13):
+  `measurements-tab` 6.817 → 6.702 (−115) — `normalizeMeasurements` +
+  `getQuickSpacing` → `measurements/normalize.ts` in `renderRailingDiagram` →
+  `measurements/railing-diagram.tsx` (ČIST PREMIK VERBATIM; osiroteli uvoz
+  parseArMetadata odstranjen); `calculator-tab` 4.846 → 4.828 (−18) —
+  `getCutList`/`getPostPositions` → `calculator/cut-list.ts` (R325 vzorec:
+  telesa VERBATIM, closure → eksplicitni args) + `profileLabels` →
+  `calculator/shared.ts`; **VALIDATE CONSTRAINT `equipment_status_allowed`**
+  (R145 NOT VALID izpust, najdba analize — migracija
+  20261001200000_r340_validate_equipment + stražar ×3: convalidated=TRUE +
+  CHECK nabor ≡ aplikacijski EQUIPMENT_STATUSES); **qa-round.sh** —
+  parameteriziran QA runner z needle REGISTROM (`qa-needles/rNNN.tsv`) —
+  prihodnje runde NE generirajo več 11 skriptov (needleji = podatek);
+  UNION harvest + delegacija na r339→…→R227 verigo; r172 pin 6640→6525;
+  vitest r340-validate-equipment ×3 (4824 skupaj)
 - **STIL val 25 — hover parity revizijske sledi** (R339 — KOLIZIJA #13:
   vzporedna lastniška seja je oddala identično FAZA 3 dekompozicijo kot
   R338; moja izvedba SUPERSEDIRANA po kanonu KOLIZIJE #4/R323 — ohranjena
@@ -1002,7 +1019,7 @@ Sheet z 6 podzavihki:
 | **PWA** | Service Worker + Web Manifest |
 | **Temnitveni način** | [next-themes](https://github.com/pacocoursey/next-themes) |
 | **Validacija** | [Zod 4](https://zod.dev/) |
-| **Testiranje** | [Vitest 4](https://vitest.dev/) (4821 testov + globalSetup embedded PG) |
+| **Testiranje** | [Vitest 4](https://vitest.dev/) (4824 testov + globalSetup embedded PG) |
 | **Paketni upravitelj** | [Bun](https://bun.sh/) |
 | **Linting** | ESLint 9 + eslint-config-next |
 
@@ -1124,7 +1141,7 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `bun run dev` | Zažene Next.js dev server (port 3000) |
 | `bun run build` | Produkcijska build (build-prepare: generate + migrate deploy + seed) |
 | `bun run start` | Zažene produkcijski server |
-| `bun run test` | Vsi testi (vitest, 4821, embedded PG prek globalSetup) |
+| `bun run test` | Vsi testi (vitest, 4824, embedded PG prek globalSetup) |
 | `bun run check` | tsc --noEmit + vitest run (en ukaz za vse) |
 | `bunx tsc --noEmit` | Tipska kontrola celotnega projekta (trenutno 0 napak) |
 | `bun run lint` | ESLint preverjanje |
@@ -1257,8 +1274,8 @@ primitivov. Največji:
 
 | Komponenta | Vrstice | Funkcija |
 |-----------|---------|----------|
-| `measurements-tab.tsx` | 6.809 | Meritve (9 tipov, stopniščni čarovnik, WPC, štebricki; dekompozicija faza 1+2+3 R319/R325/R338) |
-| `calculator-tab.tsx` | 4.846 | Kalkulator (7 načinov + 6 izpolnitev; dekompozicija faza 1+2 R322/R325) |
+| `measurements-tab.tsx` | 6.702 | Meritve (9 tipov, stopniščni čarovnik, WPC, štebricki; dekompozicija faza 1+2+3+4 R319/R325/R338/R340) |
+| `calculator-tab.tsx` | 4.828 | Kalkulator (7 načinov + 6 izpolnitev; dekompozicija faza 1+2+4 R322/R325/R340) |
 | `ar-scanner.tsx` | 2.789 | AR kamera z vizualizacijo ograje + AI sugestija |
 | `webxr-scanner.tsx` | 2.377 | WebXR poskus (kjer podprt) |
 | `photo-tab.tsx` | 2.570 | Slike z annotation editor, batch, pred/po |
@@ -1266,8 +1283,8 @@ primitivov. Največji:
 | `measurement-studio.tsx` | 1.630 | **Merilni studio** (deterministični CV + ročni način) |
 | … | | skice, zaloga, dokumenti, PDF, CRM, logistika, tloris, galerija … |
 
-> Opomba (R120/Problem 9 → R319/R322/R325/R338): `measurements-tab` (9.086 →
-> 7.604 → 7.153 → 6.809) in `calculator-tab` (6.074 → 5.372 → 4.846) sta bila razbita
+> Opomba (R120/Problem 9 → R319/R322/R325/R338/R340): `measurements-tab` (9.086 →
+> 7.604 → 7.153 → 6.809 → 6.702) in `calculator-tab` (6.074 → 5.372 → 4.846 → 4.828) sta bila razbita
 > po fazah — faza 1 ČISTIH PREMIKOV (kanon: bajtno identični bloki, brez
 > spremembe obnašanja; vsebina ŽIVA v čankih — r319/r322-build-needles) +
 > FAZA 2 REFAKTORJA internih sestavljenih struktur (R325: laserski BT hook z

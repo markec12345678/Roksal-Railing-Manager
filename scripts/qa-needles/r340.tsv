@@ -1,0 +1,43 @@
+# qa-needles/r340.tsv — REGISTER needlejev runde R340 (dekompozicija FAZA 4;
+# seja R339→R340 [KOLIZIJA #14: vzporedna lastniška R339 vzela številko —
+# delta prenesena], naloga 6-a — konsolidacija QA: needleji so od zdaj
+# PODATEK, ne koda)
+# ============================================================================
+# FORMAT (TSV; EN vrstica = EN needle; TAB je LOČILO — presledki znotraj
+# needleja so POMENNI, ker grep -F išče dobesedno):
+#   <needle_string><TAB><opis><TAB><vrsta>
+# vrsta:
+#   need_static  — niz MORA biti ŽIV v čankih (grep -rqF po .next/static/chunks
+#                  + .next/server, kopiranih v /tmp/r340-build-chunks)
+#   must_miss    — niz NE SME biti prisoten (razvojni ostanki)
+# Kanon LEKCIJA R289/R299–R321: needleji = ASCII/UTF-8 string literali
+# premaknjene/žive kode (komentarji v buildu ne preživijo minifikacije).
+# Komentarji (stolpec 1 se začne z '#') in prazne vrstice so dovoljeni;
+# datoteka MORA biti zaključena z novo vrstico (varuh Z-STRUCT-REG v
+# qa-round.sh sicer GLASNO abortira — zadnja vrstica se ne sme tiho izgubiti).
+# UNION harvest: qa-round.sh požene TA register + delegacijo na r339 verigo
+# (r${X}.tsv z X < 340 ne obstajajo in se NE ustvarjajo vzvratno — kultura
+# dokazov lastnika: zgodovina ostaja v zamrznjenih r${X}-build-needles.sh).
+#
+# ── R340 lastni needleji — DEKOMPOZICIJA FAZA 4 ──
+# measurements-tab 6.817 → 6.702 (−115; KOLIZIJA #14: vzporedni R339 +8 nad prstom): normalizeMeasurements + getQuickSpacing
+# → measurements/normalize.ts (VERBATIM); renderRailingDiagram →
+# measurements/railing-diagram.tsx (VERBATIM čista JSX funkcija).
+# calculator-tab 4.846 → 4.828 (−18): profileLabels → calculator/shared.ts
+# (VERBATIM); getCutList + getPostPositions → calculator/cut-list.ts
+# (R325 vzorec: telesa VERBATIM, closure → eksplicitni args).
+#
+# ISKRENA OMEJITEV pokritosti (vzorec R338 "NOV Z-blok NI dodan — iskren
+# razlog"): normalizeMeasurements in getCutList/getPostPositions sta ČISTI
+# podatkovno-izračunski funkciji BREZ edinstvenih minifikaciji-odpornih
+# string literalov ('OSNUTEK'/'letva' obstajajo tudi drugod — needle ne
+# bi dokazoval TA premik). Pokritost teh premikov = tsc 0 + eslint 0 +
+# vitest + E2E regresija + render-tabih vidna vsebina spodaj.
+letvev × 80mm = razmik	R340 railing-diagram.tsx JSX besedilo skladnosti (premik živ)	need_static
+✓ SKLADNO	R340 railing-diagram.tsx oznaka skladnosti (premik živ)	need_static
+✗ NESKLADNO	R340 railing-diagram.tsx oznaka neskladnosti (premik živ)	need_static
+Z-line	R340 calculator/shared.ts profileLabels oznaka profila (premik živ)	need_static
+#
+# Delegirani negativni needle — OBVEZEN vsaki rundi (kanon "brez razvojnih
+# ostankov", vzorec R324–R338):
+TODO-R340	R340 — brez razvojnih ostankov	must_miss

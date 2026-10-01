@@ -58,6 +58,16 @@ export const anchorTypeLabels: Record<AnchorType, string> = {
   'generic': 'Splošno',
 }
 
+// R340 — dekompozicija calculator-tab FAZA 4 (KOLIZIJA #14: delta prenesena
+// s R339): profileLabels izluščen VERBATIM iz calculator-tab.tsx (čist
+// premik — zbirka oznakov kot anchorTypeLabels zgoraj; edina sprememba je
+// izrecni export).
+export const profileLabels: Record<ProfileType, string> = {
+  classic: 'Classic',
+  'z-line': 'Z-line',
+  vertical: 'Vertical',
+}
+
 // runda S — podlaga z terena (Terenski pregled): oznake + priporočilo pritrditve
 export const podlagaLabels: Record<string, string> = {
   beton: 'Beton', estrih: 'Estrih + folija', les: 'Les', kovina: 'Kovina', plocice: 'Ploščice', neznan: 'Neznana',
