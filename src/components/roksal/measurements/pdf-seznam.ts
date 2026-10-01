@@ -2,6 +2,13 @@
 // (vzorec FAZA 5/R348 CSV gradniki + kalkulator FAZA 2/R325 pdf-exports +
 // lib/meritve-teren-pdf r269 build/generate razcep: čisti buildXDoc gradnik
 // + tanka generate wrapper z doc.save).
+// R351 — GLIFNI POPRAVEK (r269 vzorec): standard helvetica (WinAnsi — č/š/ž
+// NE renderirata, 'Dolžina' → 'Dol�žina' artefakt) → registerSloPdfFonts
+// (Roboto subset latin-ext, 23 KB na varianto, base64 v lib/pdf-sl-font-data).
+// ENA vsebinska sprememba izvoza — iskreno dokumentirana: izvoženi PDF se
+// SPROTI spremeni (fonti vgrajeni + pravilni šumniki v glavi/povzetku/tabeli);
+// determinizem ostane čist (enak vhod = bajtno enak dokument — registerSloPdfFonts
+// je idempotenten na dokumentu, b64 konstante = statični modul).
 // ---------------------------------------------------------------------------
 // Motiv: handleExportPDF je nosil 85-vrstični inline jsPDF gradnik (glava +
 // povzetek + autoTable tabela + noga) ZNOTREJ komponente — zadnji veliki
@@ -11,17 +18,16 @@
 // Načela:
 //  • IZVOŽENO = ZASLON: isti fallbacki kot UI (oznaka || lokacija ||
 //    `Meritev #xxxx`, tipMeritveLabels / statusLabels jedra, kot || '—');
-//  • VERBATIM premik: telesa gradnika NESPREMENJENA — izvoženi PDF je
-//    bajtno enak (font standard helvetica — GLIFNA RESNICA obstoječa,
-//    izven FAZA kontrakta; kandidat za naslednjo rundu prek
-//    registerSloPdfFonts vzorca r269, če lastnik želi);
+//  • R351: font Roboto normal/bold na VSEH setFont mestih (glava, povzetek,
+//    autoTable podeduje trenutni font) — IZVOŽENO = ZASLON tudi za glife;
 //  • determinizem: čist gradnik nad izrecnimi vhodi — izvozeni časovni žig
 //    (noga) je VHOD izvozenoOb: Date, ime datoteke je klicateljeva resnica
-//    (VERBATIM toISOString().slice(0, 10) vzorec ostane v klicatelju);
+//    (toISOString().slice(0, 10) vzorec ostane v klicatelju);
 //  • povzetek številke = klicateljeva izpeljava (totalLength/avgHeight/
 //    totalArea/statusCounts — ISTA resnica kot KPI kartice, WYSIWYG).
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import { registerSloPdfFonts } from '@/lib/pdf-sl-font'
 import { slCasDolgo, slDatumKratko } from '@/lib/csv-export'
 import { formatDimension, formatM2 } from './format'
 import { statusLabels, tipMeritveLabels } from './labels'
@@ -98,6 +104,9 @@ export function buildSeznamPdfDoc(args: SeznamPdfArgs): jsPDF {
   } = args
 
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
+  // R351 — slovenski glifi: Roboto subset (kanon r269 — kliči pred prvo
+  // setFont; VFS je na dokumentu, registracija je idempotentna).
+  registerSloPdfFonts(doc)
   const pageW = doc.internal.pageSize.getWidth()
 
   // Glava
@@ -105,19 +114,19 @@ export function buildSeznamPdfDoc(args: SeznamPdfArgs): jsPDF {
   doc.rect(0, 0, pageW, 22, 'F')
   doc.setTextColor(255, 255, 255)
   doc.setFontSize(16)
-  doc.setFont('helvetica', 'bold')
+  doc.setFont('Roboto', 'bold')
   doc.text('ROKSAL — Seznam meritev', 14, 14)
   doc.setFontSize(9)
-  doc.setFont('helvetica', 'normal')
+  doc.setFont('Roboto', 'normal')
   doc.text(`Projekt: ${projectName}`, 14, 19)
 
   // Povzetek
   doc.setTextColor(40, 40, 40)
   doc.setFontSize(10)
-  doc.setFont('helvetica', 'bold')
+  doc.setFont('Roboto', 'bold')
   doc.text('Povzetek', 14, 32)
 
-  doc.setFont('helvetica', 'normal')
+  doc.setFont('Roboto', 'normal')
   doc.setFontSize(9)
   const summary = [
     `Skupna dolžina: ${formatDimension(totalLength)}`,

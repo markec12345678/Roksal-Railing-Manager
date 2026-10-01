@@ -5320,7 +5320,10 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   key={f}
                   type="button"
                   onClick={() => setStatusFilter(f)}
-                  className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-2xs font-medium transition-all duration-150 active:scale-[0.96] ${color}`}
+                  aria-pressed={isActive}
+                  aria-label={`Filtriraj po statusu: ${label} (${count})`}
+                  title={`Pokaži meritve statusa ${label} (${count})`}
+                  className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-2xs font-medium transition-all duration-150 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 ${color}`}
                 >
                   {label}
                   <span className="rounded-full bg-black/10 px-1 text-[9px]">{count}</span>
@@ -5331,7 +5334,9 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
             <button
               type="button"
               onClick={() => setFotoFilterActive(!fotoFilterActive)}
-              className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-2xs font-medium transition-all duration-150 active:scale-[0.96] ${
+              aria-pressed={fotoFilterActive}
+              aria-label="Foto mere filter: prikaži samo meritve zajete na foto zavihku"
+              className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-2xs font-medium transition-all duration-150 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 ${
                 fotoFilterActive
                   ? 'bg-roksal-amber text-white border-roksal-amber'
                   : 'bg-roksal-amber/5 text-roksal-amber border-roksal-amber/30 hover:bg-roksal-amber/10'

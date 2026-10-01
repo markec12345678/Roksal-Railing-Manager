@@ -1,0 +1,25 @@
+# qa-needles/r351.tsv — REGISTER needlejev runde R351 (pdf-seznam GLIFNI
+# POPRAVEK: helvetica → registerSloPdfFonts [Roboto subset latin-ext —
+# r269 vzorec; č/š/ž v glavi/povzetku/tabeli sedaj pravilni; ENA
+# vsebinska sprememba izvoza iskreno dokumentirana, determinizem čist —
+# FontFile2 bajtni dokaz na modulu] + STIL val 34: a11y parity filter
+# čipi družine [status čipi ×4 + Foto mere pill] — aria-pressed toggle
+# stanje + aria-label z countom + title + izrecen ring navy/40 V ISTEM
+# commitu — LEKCIJA R346 kanon).
+# ============================================================================
+# FORMAT (TSV; EN vrstica = EN needle; TAB je LOČILO) — kanon R340–R350.
+#   <needle_string><TAB><opis><TAB><vrsta>
+# vrsta: need_static (MORA biti ŽIV v čankih) | must_miss (NE SME biti)
+
+# ── R351 lastni needleji ──
+# GLIFNI POPRAVEK: NI edinstvenega build needleja (registerSloPdfFonts je
+# v measurements čankih ŽE od R269 prek lib/meritve-teren-pdf — iskrena
+# omejitev: pokritost = tsc + vitest r351-pdf-font ×10 [FontFile2 bajtni
+# dokaz] + E2E regresija). TUDI "ROKSAL — Seznam meritev" ni R350
+# diskriminator (string obstaja v tabu že pred R350 — odkrito v R351
+# harvestu; ostane v r350 registru kot prisotnost, ne era-diskriminator).
+# STIL val 34: statični predponi deli template literalov + celoti:
+Filtriraj po statusu: 	R351 val 34 status čipi aria prefix (×4 čipi, template literal)	need_static
+Pokaži meritve statusa 	R351 val 34 status čipi title prefix (template literal)	need_static
+Foto mere filter: prikaži samo meritve zajete na foto zavihku	R351 val 34 foto pill aria (statična celota — NOV niz)	need_static
+TODO-R351	R351 — brez razvojnih ostankov	must_miss

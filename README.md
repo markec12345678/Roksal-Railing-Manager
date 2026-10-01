@@ -103,7 +103,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 45 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **5021** (306 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **5039** (308 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 143 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -1006,6 +1006,25 @@ Sheet z 6 podzavihki:
   verifikacija: tsc 0 · eslint 0 (FULL) · build svež EXIT=0 · needles
   r350 VSE OK (veriga + union registri r340–r350) · smoke EXIT=0 · e2e
   EXIT=0 [ODTIS BAJTNATO IDENTIČEN pre==post — ZERO-MUTACIJA].
+- **pdf-seznam glifni popravek + val 34** (R351): (1) **helvetica →
+  registerSloPdfFonts** (r269 vzorec — Roboto subset latin-ext, 23 KB na
+  varianto): standard WinAnsi NI nosil č/š/ž ('Dolžina' → pokvarjeno); 4 ×
+  setFont Roboto (glava bold/normal + povzetek bold/normal, autoTable
+  podeduje) — ENA vsebinska sprememba izvoza iskreno dokumentirana
+  (izvoženi PDF se spremeni, determinizem čist: /FontFile2 vgrajeni TrueType
+  = glifni dokaz, helvetica standard-14 ga nima); (2) **val 34** — a11y
+  parity filter čipi družine: status čipi ×4 [Vse/Osnutek/Potrjena/
+  Arhivirana] dobi aria-pressed [toggle stanje — bralnik zaslona pove
+  stanje] + aria-label `Filtriraj po statusu: ${label} (${count})` + title
+  + izrecen ring navy/40 V ISTEM commitu; Foto mere pill dobi aria-pressed
+  + NOV aria-label + ring (LEKCIJA R346 kanon); 0 novih hex; (3) vitest
+  r351 ×18 (2 NOVI datoteki: r351-pdf-font ×10 [vir dokaz ×4 + determinizem
+  čist z Roboto + FontFile2 glifni dokaz + VERBATIM literali + FNV soli
+  regresija + družinska konsistenznost r269] + r351-stil-val34 ×8 [4 parity
+  skupine + ring struktura + 0-hex + obrnjena regresija val 31/33]) —
+  5039/5039 (308); (4) verifikacija: tsc 0 · eslint 0 (FULL) · build svež
+  EXIT=0 · needles r351 VSE OK (veriga + union registri r340–r351) · smoke
+  EXIT=0 · e2e EXIT=0 [ODTIS BAJTNATO IDENTIČEN pre==post — ZERO-MUTACIJA].
 - **Kalkulator FAZA 6 + val 29** (R346): (1) NOV `calculator/inputs.ts` —
   zbiranje/nalaganje vhodov izluščeno VERBATIM iz taba (args objekti —
   vzorec R325/R345): `collectCurrentInputs(mode, vhodnaStanja)` (zapis za
@@ -1220,7 +1239,7 @@ Sheet z 6 podzavihki:
 | **PWA** | Service Worker + Web Manifest |
 | **Temnitveni način** | [next-themes](https://github.com/pacocoursey/next-themes) |
 | **Validacija** | [Zod 4](https://zod.dev/) |
-| **Testiranje** | [Vitest 4](https://vitest.dev/) (5021 testov + globalSetup embedded PG) |
+| **Testiranje** | [Vitest 4](https://vitest.dev/) (5039 testov + globalSetup embedded PG) |
 | **Paketni upravitelj** | [Bun](https://bun.sh/) |
 | **Linting** | ESLint 9 + eslint-config-next |
 
@@ -1342,7 +1361,7 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `bun run dev` | Zažene Next.js dev server (port 3000) |
 | `bun run build` | Produkcijska build (build-prepare: generate + migrate deploy + seed) |
 | `bun run start` | Zažene produkcijski server |
-| `bun run test` | Vsi testi (vitest, 5021, embedded PG prek globalSetup) |
+| `bun run test` | Vsi testi (vitest, 5039, embedded PG prek globalSetup) |
 | `bun run check` | tsc --noEmit + vitest run (en ukaz za vse) |
 | `bunx tsc --noEmit` | Tipska kontrola celotnega projekta (trenutno 0 napak) |
 | `bun run lint` | ESLint preverjanje |
@@ -1475,7 +1494,7 @@ primitivov. Največji:
 
 | Komponenta | Vrstice | Funkcija |
 |-----------|---------|----------|
-| `measurements-tab.tsx` | 6.386 | Meritve (9 tipov, stopniščni čarovnik, WPC, štebricki; dekompozicija faza 1+2+3+4+5+6+7 R319/R325/R338/R340/R348/R349/R350) |
+| `measurements-tab.tsx` | 6.391 | Meritve (9 tipov, stopniščni čarovnik, WPC, štebricki; dekompozicija faza 1+2+3+4+5+6+7 R319/R325/R338/R340/R348/R349/R350) |
 | `calculator-tab.tsx` | 4.489 | Kalkulator (7 načinov + 6 izpolnitev; dekompozicija faza 1+2+3+4+5+6+7 R322/R325/R340/R341/R345/R346/R347) |
 | `ar-scanner.tsx` | 2.789 | AR kamera z vizualizacijo ograje + AI sugestija |
 | `webxr-scanner.tsx` | 2.377 | WebXR poskus (kjer podprt) |
