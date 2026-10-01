@@ -1,0 +1,26 @@
+# qa-needles/r346.tsv — REGISTER needlejev runde R346 (kalkulator FAZA 6:
+# zbiranje/nalaganje vhodov → calculator/inputs.ts [args objekti — vzorec
+# R325/R345] + STIL val 29: a11y parity nalaganja/shranjevanja predlog).
+# ============================================================================
+# FORMAT (TSV; EN vrstica = EN needle; TAB je LOČILO — presledki znotraj
+# needleja so POMENNI, ker grep -F išče dobesedno) — kanon R340–R345.
+#   <needle_string><TAB><opis><TAB><vrsta>
+# vrsta:
+#   need_static  — niz MORA biti ŽIV v čankih (grep -rqF po .next/static/chunks
+#                  + .next/server, kopiranih v /tmp/r346-build-chunks)
+#   must_miss    — niz NE SME biti prisoten (razvojni ostanki)
+#
+# ── R346 lastni needleji ──
+# FAZA 6 je premik bajtno identičnih teles (collect/apply — ISTA logika, nov
+# modul + args objekti) → NI edinstvenega needleja za SAM premik (iskrena
+# omejitev, vzorec R340/R341/R343/R345: pokritost = tsc + vitest
+# r346-calc-faza6 + E2E regresija).
+# STIL val 29: razlagalni aria nizi = NOVI minifikacijo-preživeči nizi
+# ( SAMO NOVI — title "Izvoz zgodovine izračunov kot CSV datoteka" je
+# val 28 era in je ZATO tukaj NE; to je diskriminatorna razlika med era ):
+Naloži predlogo:	R346 val 29 Naloži predlogo aria-label (parity z zgodovinskim »Naloži izračun: …«)	need_static
+Shrani trenutne vnose kot predlogo	R346 val 29 Shrani predlogo aria+title (×4 načini, isti akcijski niz)	need_static
+#
+# Delegirani negativni needle — OBVEZEN vsaki rundi (kanon "brez razvojnih
+# ostankov", vzorec R324–R345):
+TODO-R346	R346 — brez razvojnih ostankov	must_miss

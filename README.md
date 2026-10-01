@@ -103,7 +103,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 45 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **4896** (296 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **4919** (298 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 143 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -911,6 +911,25 @@ Sheet z 6 podzavihki:
   pravila react-hooks/set-state-in-effect — prej skrito z bailoutom compiler
   analize na 7,6k vrstični datoteki); vsebina ŽIVA v čankih dokazana
   (r323-build-needles ×9 + delegirana veriga R322→…→R227)
+- **Kalkulator FAZA 6 + val 29** (R346): (1) NOV `calculator/inputs.ts` —
+  zbiranje/nalaganje vhodov izluščeno VERBATIM iz taba (args objekti —
+  vzorec R325/R345): `collectCurrentInputs(mode, vhodnaStanja)` (zapis za
+  predloge/zgodovino — String() + JSON.stringify pretvorbe nespremenjene) in
+  `applyInputs(targetMode, inputs, nastavljalci)` (nalaganje prek 49
+  eksplicitnih nastavljalcev — isti if-guardi, isti parseFloat/isFinite +
+  JSON.parse guardi); 4 klicna mesta (saveTemplate + zgodovina collect ×2 +
+  loadTemplate/loadFromHistory); `calculator-tab` 4.643 → 4.551 (−92);
+  (2) **val 29** — a11y parity nalaganja/shranjevanja predlog: Naloži
+  predlogo aria-label (parity z zgodovinskim "Naloži izračun: …"), Izvozi
+  CSV aria-label (parity z lastnim title iz val 28), Shrani predlogo
+  aria-label + title ×4 načini (a11y družina R291/R293 + parity val 25–28);
+  0 novih hex; (3) vitest r346 ×23 (2 NOVI datoteki: r346-calc-faza6 ×15
+  [collect ×5 + apply ×6 + žičenje ×4: EN VIR 1 definicija/4 klica + args
+  objekta + 0-hex + FAZA 5 regresija] + r346-stil-val29 ×8 [3 parity
+  skupine + 0-hex okno + navy/40 ring vstop izvozne družine val 8 STRAŽAR
+  + obrnjene regresije val 28/27/26 + R291/R293]) — 4919/4919 (298); (4) verifikacija: tsc 0 · eslint 0 (FULL) · build svež
+  EXIT=0 · needles r346 VSE OK (veriga + union registri r340–r346) ·
+  smoke EXIT=0 · e2e EXIT=0 (ZERO-MUTACIJA)
 - **Kalkulator FAZA 5 + val 28** (R345): (1) NOV `calculator/calculations.ts`
   — dispatch logika 10 načinov izluščena VERBATIM iz taba (args objekti —
   vzorec R325 pdf-exports): ovonični načini (railing/anchoring/wind) vračajo
@@ -1106,7 +1125,7 @@ Sheet z 6 podzavihki:
 | **PWA** | Service Worker + Web Manifest |
 | **Temnitveni način** | [next-themes](https://github.com/pacocoursey/next-themes) |
 | **Validacija** | [Zod 4](https://zod.dev/) |
-| **Testiranje** | [Vitest 4](https://vitest.dev/) (4896 testov + globalSetup embedded PG) |
+| **Testiranje** | [Vitest 4](https://vitest.dev/) (4919 testov + globalSetup embedded PG) |
 | **Paketni upravitelj** | [Bun](https://bun.sh/) |
 | **Linting** | ESLint 9 + eslint-config-next |
 
@@ -1228,7 +1247,7 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `bun run dev` | Zažene Next.js dev server (port 3000) |
 | `bun run build` | Produkcijska build (build-prepare: generate + migrate deploy + seed) |
 | `bun run start` | Zažene produkcijski server |
-| `bun run test` | Vsi testi (vitest, 4896, embedded PG prek globalSetup) |
+| `bun run test` | Vsi testi (vitest, 4919, embedded PG prek globalSetup) |
 | `bun run check` | tsc --noEmit + vitest run (en ukaz za vse) |
 | `bunx tsc --noEmit` | Tipska kontrola celotnega projekta (trenutno 0 napak) |
 | `bun run lint` | ESLint preverjanje |
@@ -1362,7 +1381,7 @@ primitivov. Največji:
 | Komponenta | Vrstice | Funkcija |
 |-----------|---------|----------|
 | `measurements-tab.tsx` | 6.702 | Meritve (9 tipov, stopniščni čarovnik, WPC, štebricki; dekompozicija faza 1+2+3+4 R319/R325/R338/R340) |
-| `calculator-tab.tsx` | 4.643 | Kalkulator (7 načinov + 6 izpolnitev; dekompozicija faza 1+2+3+4+5 R322/R325/R340/R341/R345) |
+| `calculator-tab.tsx` | 4.551 | Kalkulator (7 načinov + 6 izpolnitev; dekompozicija faza 1+2+3+4+5+6 R322/R325/R340/R341/R345/R346) |
 | `ar-scanner.tsx` | 2.789 | AR kamera z vizualizacijo ograje + AI sugestija |
 | `webxr-scanner.tsx` | 2.377 | WebXR poskus (kjer podprt) |
 | `photo-tab.tsx` | 2.570 | Slike z annotation editor, batch, pred/po |

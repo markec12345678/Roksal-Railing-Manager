@@ -131,6 +131,15 @@ import {
   dispatchWindLocation,
   dispatchGlass,
 } from './calculator/calculations'
+// R346 FAZA 6: zbiranje/nalaganje vhodov = EN VIR calculator/inputs.ts
+// (args objekti — vzorec R325/R345: closure dostop do stanja → eksplicitni
+// args objekti; komponenta podaja stanja in nastavljalce, modul čisto logiko).
+import {
+  collectCurrentInputs,
+  applyInputs,
+  type VhodnaStanja,
+  type NastavljalciVhodov,
+} from './calculator/inputs'
 
 export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackToMeasurements }: CalculatorTabProps) {
   const [mode, setMode] = useState<CalcMode>('railing')
@@ -346,51 +355,37 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
 
   // P2: Effect za pisanje v zgodovino je definiran za addToHistory (glej spodaj).
 
-  /** Zbere vhodne podatke trenutnega načina (za predloge in zgodovino). */
-  function collectCurrentInputs(): Record<string, string> {
-    if (mode === 'railing') {
-      return { profileType, totalLength: effectiveTotalLength, slatWidth, maxGap, postCount }
-    } else if (mode === 'anchoring') {
-      return { holeCount, holeDepthMm, holeDiameterMm, temperature, anchorType }
-    } else if (mode === 'wind') {
-      return { heightAboveGround, terrainCategory, windSpeedMs, railingAreaM2, railingType }
-    } else if (mode === 'baluster') {
-      return {
-        balTotalLength, balWidth, balMaxGap, balPostSpacing,
-        rezervaPctBaluster: String(rezervaPctBaluster),
-      }
-    } else if (mode === 'angled') {
-      return { angHorizontalLength, angRakeAngle, angWidth, angMaxGap }
-    } else if (mode === 'material') {
-      return {
-        profileSifra: selectedProfileSifra,
-        segments: JSON.stringify(segments),
-        urnaPostavka, stUr, stMonterjev, transport,
-        rezervaPctMaterial: String(rezervaPctMaterial),
-        ddvPct: String(ddvPct),
-        akontacijaPct: String(akontacijaPct),
-      }
-    } else if (mode === 'compliance') {
-      return { compGap, compHeight, compPostSpacing, compLoadCategory, compDropHeight }
-    } else if (mode === 'cnc') {
-      return {
-        cncStockLength, cncSawBlade,
-        cncSegments: JSON.stringify(cncSegments),
-      }
-    } else if (mode === 'windLocation') {
-      return {
-        windLocLat, windLocLon, windLocHeight,
-        windLocTerrain, windLocArea, windLocType,
-      }
-    } else {
-      return {
-        glassSpan: String(glassInput.spanMm),
-        glassHeight: String(glassInput.heightMm),
-        glassLoad: String(glassInput.loadKnPerM),
-        glassType: glassInput.glassType,
-      }
-    }
-  }
+  // R346 FAZA 6: args objekta za calculator/inputs.ts — stanja in nastavljalci
+  // so LASTNINA komponente, modul je čista funkcija nad njima (vzorec
+  // R325 pdf-exports / R345 calculations). Klicni mesti: saveTemplate +
+  // zgodovina (collect) ter loadTemplate + loadSaved (apply).
+  const vhodnaStanja = (): VhodnaStanja => ({
+    profileType, effectiveTotalLength, slatWidth, maxGap, postCount,
+    holeCount, holeDepthMm, holeDiameterMm, temperature, anchorType,
+    heightAboveGround, terrainCategory, windSpeedMs, railingAreaM2, railingType,
+    balTotalLength, balWidth, balMaxGap, balPostSpacing, rezervaPctBaluster,
+    angHorizontalLength, angRakeAngle, angWidth, angMaxGap,
+    selectedProfileSifra, segments, urnaPostavka, stUr, stMonterjev, transport,
+    rezervaPctMaterial, ddvPct, akontacijaPct,
+    compGap, compHeight, compPostSpacing, compLoadCategory, compDropHeight,
+    cncStockLength, cncSawBlade, cncSegments,
+    windLocLat, windLocLon, windLocHeight, windLocTerrain, windLocArea, windLocType,
+    glassInput,
+  })
+
+  const nastavljalci = (): NastavljalciVhodov => ({
+    setProfileType, setTotalLength, setSlatWidth, setMaxGap, setPostCount,
+    setHoleCount, setHoleDepthMm, setHoleDiameterMm, setTemperature, setAnchorType,
+    setHeightAboveGround, setTerrainCategory, setWindSpeedMs, setRailingAreaM2, setRailingType,
+    setBalTotalLength, setBalWidth, setBalMaxGap, setBalPostSpacing, setRezervaPctBaluster,
+    setAngHorizontalLength, setAngRakeAngle, setAngWidth, setAngMaxGap,
+    setSelectedProfileSifra, setSegments, setUrnaPostavka, setStUr, setStMonterjev, setTransport,
+    setRezervaPctMaterial, setDdvPct, setAkontacijaPct,
+    setCompGap, setCompHeight, setCompPostSpacing, setCompLoadCategory, setCompDropHeight,
+    setCncStockLength, setCncStockPreset, setCncSawBlade, setCncSegments,
+    setWindLocLat, setWindLocLon, setWindLocHeight, setWindLocTerrain, setWindLocArea, setWindLocType,
+    setGlassInput,
+  })
 
   /** Ključni rezultat trenutnega načina za prikaz v zgodovini. */
   function getCurrentKeyResult(): string {
@@ -423,103 +418,6 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
     return modeLabels[mode]
   }
 
-  /** Naloži inpute iz predloge ali zgodovine v ustrezen način. */
-  function applyInputs(targetMode: CalcMode, inputs: Record<string, string>) {
-    if (targetMode === 'railing') {
-      if (inputs.profileType) setProfileType(inputs.profileType as ProfileType)
-      if (inputs.totalLength) setTotalLength(inputs.totalLength)
-      if (inputs.slatWidth) setSlatWidth(inputs.slatWidth)
-      if (inputs.maxGap) setMaxGap(inputs.maxGap)
-      if (inputs.postCount !== undefined) setPostCount(inputs.postCount)
-    } else if (targetMode === 'anchoring') {
-      if (inputs.holeCount) setHoleCount(inputs.holeCount)
-      if (inputs.holeDepthMm) setHoleDepthMm(inputs.holeDepthMm)
-      if (inputs.holeDiameterMm) setHoleDiameterMm(inputs.holeDiameterMm)
-      if (inputs.temperature) setTemperature(inputs.temperature)
-      if (inputs.anchorType) setAnchorType(inputs.anchorType as AnchorType)
-    } else if (targetMode === 'wind') {
-      if (inputs.heightAboveGround) setHeightAboveGround(inputs.heightAboveGround)
-      if (inputs.terrainCategory) setTerrainCategory(inputs.terrainCategory as TerrainCategory)
-      if (inputs.windSpeedMs) setWindSpeedMs(inputs.windSpeedMs)
-      if (inputs.railingAreaM2) setRailingAreaM2(inputs.railingAreaM2)
-      if (inputs.railingType) setRailingType(inputs.railingType as RailingType)
-    } else if (targetMode === 'baluster') {
-      if (inputs.balTotalLength) setBalTotalLength(inputs.balTotalLength)
-      if (inputs.balWidth) setBalWidth(inputs.balWidth)
-      if (inputs.balMaxGap) setBalMaxGap(inputs.balMaxGap)
-      if (inputs.balPostSpacing) setBalPostSpacing(inputs.balPostSpacing)
-      if (inputs.rezervaPctBaluster) {
-        const r = parseFloat(inputs.rezervaPctBaluster)
-        if (isFinite(r)) setRezervaPctBaluster(r)
-      }
-    } else if (targetMode === 'angled') {
-      if (inputs.angHorizontalLength) setAngHorizontalLength(inputs.angHorizontalLength)
-      if (inputs.angRakeAngle) setAngRakeAngle(inputs.angRakeAngle)
-      if (inputs.angWidth) setAngWidth(inputs.angWidth)
-      if (inputs.angMaxGap) setAngMaxGap(inputs.angMaxGap)
-    } else if (targetMode === 'material') {
-      if (inputs.profileSifra) setSelectedProfileSifra(inputs.profileSifra)
-      if (inputs.segments) {
-        try {
-          const parsed = JSON.parse(inputs.segments)
-          if (Array.isArray(parsed) && parsed.length > 0) setSegments(parsed)
-        } catch { /* ignore */ }
-      }
-      if (inputs.urnaPostavka) setUrnaPostavka(inputs.urnaPostavka)
-      if (inputs.stUr) setStUr(inputs.stUr)
-      if (inputs.stMonterjev) setStMonterjev(inputs.stMonterjev)
-      if (inputs.transport) setTransport(inputs.transport)
-      if (inputs.rezervaPctMaterial) {
-        const r = parseFloat(inputs.rezervaPctMaterial)
-        if (isFinite(r)) setRezervaPctMaterial(r)
-      }
-      if (inputs.ddvPct) {
-        const d = parseFloat(inputs.ddvPct)
-        if (isFinite(d)) setDdvPct(d)
-      }
-      if (inputs.akontacijaPct) {
-        const a = parseFloat(inputs.akontacijaPct)
-        if (isFinite(a)) setAkontacijaPct(a)
-      }
-    } else if (targetMode === 'compliance') {
-      if (inputs.compGap) setCompGap(inputs.compGap)
-      if (inputs.compHeight) setCompHeight(inputs.compHeight)
-      if (inputs.compPostSpacing) setCompPostSpacing(inputs.compPostSpacing)
-      if (inputs.compLoadCategory) setCompLoadCategory(inputs.compLoadCategory as 'A' | 'B' | 'C')
-      if (inputs.compDropHeight) setCompDropHeight(inputs.compDropHeight)
-    } else if (targetMode === 'cnc') {
-      if (inputs.cncStockLength) {
-        setCncStockLength(inputs.cncStockLength)
-        setCncStockPreset(['6000', '4000', '2200'].includes(inputs.cncStockLength) ? inputs.cncStockLength : 'custom')
-      }
-      if (inputs.cncSawBlade) setCncSawBlade(inputs.cncSawBlade)
-      if (inputs.cncSegments) {
-        try {
-          const parsed = JSON.parse(inputs.cncSegments)
-          if (Array.isArray(parsed) && parsed.length > 0) setCncSegments(parsed)
-        } catch { /* ignore */ }
-      }
-    } else if (targetMode === 'windLocation') {
-      if (inputs.windLocLat) setWindLocLat(inputs.windLocLat)
-      if (inputs.windLocLon) setWindLocLon(inputs.windLocLon)
-      if (inputs.windLocHeight) setWindLocHeight(inputs.windLocHeight)
-      if (inputs.windLocTerrain) setWindLocTerrain(inputs.windLocTerrain as TerrainCategory)
-      if (inputs.windLocArea) setWindLocArea(inputs.windLocArea)
-      if (inputs.windLocType) setWindLocType(inputs.windLocType as RailingType)
-    } else if (targetMode === 'glass') {
-      const span = parseFloat(inputs.glassSpan)
-      const height = parseFloat(inputs.glassHeight)
-      const load = parseFloat(inputs.glassLoad)
-      const gType = inputs.glassType as GlassType
-      setGlassInput({
-        spanMm: isFinite(span) ? span : 1200,
-        heightMm: isFinite(height) ? height : 1100,
-        loadKnPerM: isFinite(load) ? load : 1.0,
-        glassType: gType || 'laminated',
-      })
-    }
-  }
-
   /** Shrani trenutne inpute kot predlogo (samo za 4 podprte načine). */
   function saveTemplate() {
     const supported: TemplateMode[] = ['baluster', 'angled', 'material', 'compliance']
@@ -533,7 +431,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
       id: `tpl_${Date.now()}`,
       naziv: naziv.trim(),
       mode: mode as TemplateMode,
-      inputs: collectCurrentInputs(),
+      inputs: collectCurrentInputs(mode, vhodnaStanja()),
       createdAt: new Date().toISOString(),
     }
     const updated = [tpl, ...templates].slice(0, MAX_PREDLOG)
@@ -546,7 +444,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
   /** Naloži predlogo v ustrezni način. */
   function loadTemplate(tpl: CalcTemplate) {
     setMode(tpl.mode)
-    applyInputs(tpl.mode, tpl.inputs)
+    applyInputs(tpl.mode, tpl.inputs, nastavljalci())
     setActiveTemplateId(tpl.id)
     toast.info(`Predloga "${tpl.naziv}" naložena`)
   }
@@ -581,7 +479,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
       mode,
       modeLabel: modeLabels[mode],
       keyResult: getCurrentKeyResult(),
-      inputs: collectCurrentInputs(),
+      inputs: collectCurrentInputs(mode, vhodnaStanja()),
       projectName: projectName.trim() || undefined,
       // R150: prstni odtis samo če obstaja (railing/anchoring/wind prek
       // ovojnice); brez izmišljanja za ostale načine.
@@ -630,7 +528,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
   /** Naloži vnos iz zgodovine in ponovno izračuna. */
   function loadFromHistory(entry: HistoryEntry) {
     setMode(entry.mode)
-    applyInputs(entry.mode, entry.inputs)
+    applyInputs(entry.mode, entry.inputs, nastavljalci())
     if (entry.projectName) setProjectName(entry.projectName)
     // Pri loadu iz zgodovine NE želimo ponovno zapisati v zgodovino.
     skipHistoryRef.current = true
@@ -1034,6 +932,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                     <button
                       type="button"
                       onClick={() => loadTemplate(tpl)}
+                      aria-label={`Naloži predlogo: ${tpl.naziv} (${templateModeLabels[tpl.mode]})`}
                       title={`${tpl.naziv} — ${templateModeLabels[tpl.mode]}`}
                       className="flex w-full items-start gap-2 text-left"
                     >
@@ -2087,6 +1986,8 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               type="button"
               variant="outline"
               onClick={saveTemplate}
+              aria-label="Shrani trenutne vnose kot predlogo"
+              title="Shrani trenutne vnose kot predlogo"
               className="w-full h-11 border-roksal-amber/40 text-roksal-ink hover:bg-roksal-amber/10"
             >
               <BookmarkPlus aria-hidden="true" className="mr-2 h-4 w-4" />
@@ -2357,6 +2258,8 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               type="button"
               variant="outline"
               onClick={saveTemplate}
+              aria-label="Shrani trenutne vnose kot predlogo"
+              title="Shrani trenutne vnose kot predlogo"
               className="w-full h-11 border-roksal-amber/40 text-roksal-ink hover:bg-roksal-amber/10"
             >
               <BookmarkPlus aria-hidden="true" className="mr-2 h-4 w-4" />
@@ -2865,6 +2768,8 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               type="button"
               variant="outline"
               onClick={saveTemplate}
+              aria-label="Shrani trenutne vnose kot predlogo"
+              title="Shrani trenutne vnose kot predlogo"
               className="w-full h-11 border-roksal-amber/40 text-roksal-ink hover:bg-roksal-amber/10"
             >
               <BookmarkPlus aria-hidden="true" className="mr-2 h-4 w-4" />
@@ -3371,6 +3276,8 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
               type="button"
               variant="outline"
               onClick={saveTemplate}
+              aria-label="Shrani trenutne vnose kot predlogo"
+              title="Shrani trenutne vnose kot predlogo"
               className="w-full h-11 border-roksal-amber/40 text-roksal-ink hover:bg-roksal-amber/10"
             >
               <BookmarkPlus aria-hidden="true" className="mr-2 h-4 w-4" />
@@ -4548,8 +4455,9 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="h-7 px-2 text-2xs text-roksal-ink hover:text-roksal-ink hover:bg-roksal-navy/5"
+                    className="h-7 px-2 text-2xs text-roksal-ink hover:text-roksal-ink hover:bg-roksal-navy/5 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                     onClick={exportHistoryCsv}
+                    aria-label="Izvozi zgodovino izračunov kot CSV datoteka"
                     title="Izvoz zgodovine izračunov kot CSV datoteka"
                   >
                     <FileSpreadsheet aria-hidden="true" className="mr-1 h-3 w-3" />
