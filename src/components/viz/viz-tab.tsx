@@ -122,7 +122,7 @@ function ProductHeader() {
         <button
           type="button"
           onClick={() => setStep('home')}
-          className="flex shrink-0 items-center gap-2 rounded-md outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-amber"
+          className="flex shrink-0 items-center gap-2 rounded-md outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-amber focus-visible:ring-offset-2"
           aria-label="Roksal — domača stran vizualizacije"
         >
           <span

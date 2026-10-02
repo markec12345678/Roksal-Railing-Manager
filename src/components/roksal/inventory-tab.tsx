@@ -1226,7 +1226,7 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
         {lahkoZapisujePremike && (
           <Button
             size="icon"
-            className="h-9 w-9 bg-roksal-amber hover:bg-roksal-amber/90 text-roksal-navy shadow-sm focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-1 press-scale"
+            className="h-9 w-9 bg-roksal-amber hover:bg-roksal-amber/90 text-roksal-navy shadow-sm focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 press-scale"
             onClick={() => setMovementOpen(true)}
             aria-label="Dodaj gibanje zaloge"
             title="Dodaj gibanje zaloge"

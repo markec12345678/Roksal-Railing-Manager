@@ -135,7 +135,7 @@ need "Pregled dobaviteljev je samo za branje" "R243 vodič dobaviteljev besedilo
 need "catalog.manage" "R243 ime pravice 3 v klientu"
 need "Vpisi cen zahtevajo pravico" "R243 vodič cen aria (role=note)"
 need "price.override" "R243 ime pravice 4 v klientu"
-need "bg-roksal-amber hover:bg-roksal-amber/90 text-roksal-navy shadow-sm focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-1 press-scale" "R243 Potrdi premik CTA mikro-pritisk"
+need "bg-roksal-amber hover:bg-roksal-amber/90 text-roksal-navy shadow-sm focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 press-scale" "R243 Potrdi premik CTA mikro-pritisk [PIN SHIFT R368 val 51: offset-1→2 amber pariteta]"
 need "w-full bg-roksal-navy text-white press-scale" "R243 dialog Shrani/Shrani ceno mikro-pritisk"
 echo "--- R242/R241/R240/R238 regresije ---"
 need "Pregled naročil je samo za branje" "R242 vlogo-osveščen vodič"

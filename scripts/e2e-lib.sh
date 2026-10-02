@@ -242,3 +242,23 @@ eb_sonda_zaloge() {
 eb_sonda_status_chipi() {
   agent-browser eval "(()=>{return JSON.stringify({statusChipi:[...document.querySelectorAll('button')].filter(b=>(b.getAttribute('aria-label')||'').startsWith('Filtriraj po statusu')).length,statusChipiOffset2:[...document.querySelectorAll('button')].filter(b=>(b.getAttribute('aria-label')||'').startsWith('Filtriraj po statusu')&&(b.className||'').includes('ring-offset-2')).length});})()" 2>&1 | tail -1
 }
+
+# R368 (e2e-lib dedup 8. val) — navy/40 ŠTEVEC SONDA (val 43–49 paritetna
+# resnica na KATERI KOLI površini): 3-poljni segment (mainNavy40 +
+# mainOffset2 + mainBrezOffset) byte-identičen ×3 v spot skriptah (r366-qa-spot
+# B polja 8–10, r367-qa-spot A polja 8–10 IN B polja 7–9 — md5
+# d1f0004c299648ab1ff88f06bdafc889 nad 420-bajtnim oknom, potrjeno prek
+# python) — prag LEKCIJE R352 (×3) IZENAČEN; precedens eb_sonda_status_chipi
+# R367 (proaktiven pri ×2) in eb_sonda_zaloge R365 (natanko ob ×3).
+# Kanonizirana OBLIKA = samostojen 3-poljni JSON eval (polja so bila v
+# inline blokih vgrajena v večje JSON-e — semantika polj byte-navzkostna,
+# ISTI vzorec kot eb_sonda_status_chipi R367); dispatch + poll ostanejo
+# ločena kanona (kompozicija klicateljeva); V REPu ENOVRSTIČNI IIFE eval —
+# r231 invariant; zamrznjeni spot skripti NI mutirani (kanon R361–R367);
+# poraba ob 1. uporabi v r368-qa-spot.sh V ISTI rundi (LEKCIJA R362 (3):
+# kanon ne sme biti papir). Fail-open: prazen izpis = sonda ni tekla, NE
+# tiha '0' resnica. Uporaba:
+#   eb_sonda_navy_stetje
+eb_sonda_navy_stetje() {
+  agent-browser eval "(()=>{return JSON.stringify({mainNavy40:[...document.querySelectorAll('main button')].filter(b=>(b.className||'').includes('ring-roksal-navy/40')).length,mainOffset2:[...document.querySelectorAll('main button')].filter(b=>(b.className||'').includes('ring-roksal-navy/40')&&(b.className||'').includes('ring-offset-2')).length,mainBrezOffset:[...document.querySelectorAll('main button')].filter(b=>(b.className||'').includes('ring-roksal-navy/40')&&!(b.className||'').includes('ring-offset')).length});})()" 2>&1 | tail -1
+}

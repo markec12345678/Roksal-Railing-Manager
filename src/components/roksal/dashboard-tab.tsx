@@ -1746,7 +1746,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); toast.info(`Urejanje: ${project.nazivProjekta}`) }}
-                      className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:text-roksal-amber hover:bg-roksal-amber/10 focus-visible:ring-2 focus-visible:ring-roksal-amber/40 outline-none transition-colors"
+                      className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:text-roksal-amber hover:bg-roksal-amber/10 focus-visible:ring-2 focus-visible:ring-roksal-amber/40 focus-visible:ring-offset-2 outline-none transition-colors"
                       aria-label="Uredi projekt"
                     >
                       <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
@@ -1943,7 +1943,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
       {!invLoading && !invError && brezDobaviteljaCount > 0 ? (
         <button
           type="button"
-          className="flex w-full items-center gap-3 rounded-xl border border-roksal-amber/40 bg-roksal-amber/5 p-3 text-left animate-fade-in-up cursor-pointer transition-colors hover:bg-roksal-amber/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-amber/40 focus-visible:ring-offset-1"
+          className="flex w-full items-center gap-3 rounded-xl border border-roksal-amber/40 bg-roksal-amber/5 p-3 text-left animate-fade-in-up cursor-pointer transition-colors hover:bg-roksal-amber/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-amber/40 focus-visible:ring-offset-2"
           aria-label={`Brez dobavitelja (${brezDobaviteljaCount}) — odpre Zalogo s filtrom brez dobavitelja`}
           title="Artikli brez vpisane nabavne cene — klik odpre Zalogo s filtrom 'Brez dobavitelja'"
           onClick={() =>

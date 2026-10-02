@@ -745,7 +745,7 @@ export function NotificationCenter() {
                     <button
                       type="button"
                       onClick={() => handleClick(item)}
-                      className="group flex w-full items-center gap-3 rounded-xl border border-border/60 bg-card p-3 text-left transition-all hover:-translate-y-0.5 hover:border-roksal-amber/40 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-amber/60 dark:focus-visible:ring-roksal-amber/40 active:scale-[0.98]"
+                      className="group flex w-full items-center gap-3 rounded-xl border border-border/60 bg-card p-3 text-left transition-all hover:-translate-y-0.5 hover:border-roksal-amber/40 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-amber/60 focus-visible:ring-offset-2 dark:focus-visible:ring-roksal-amber/40 active:scale-[0.98]"
                       /* R217 (P1-f) — dostopnost: stock vrstica naj v
                          zaslonskem bralniku pove, kam dejanje vodi (odpre
                          naročilni tok), namesto da samo prebere napis.

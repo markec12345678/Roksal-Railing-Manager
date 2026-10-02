@@ -2090,7 +2090,7 @@ export function VodjaDashboard() {
             // list in poniža stare namige).
             <button
               type="button"
-              className="flex w-full cursor-pointer items-center gap-2 rounded-xl border border-roksal-amber/40 bg-roksal-amber/5 p-3 text-left shadow-sm animate-fade-in-up transition-colors hover:bg-roksal-amber/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-amber/40 focus-visible:ring-offset-1"
+              className="flex w-full cursor-pointer items-center gap-2 rounded-xl border border-roksal-amber/40 bg-roksal-amber/5 p-3 text-left shadow-sm animate-fade-in-up transition-colors hover:bg-roksal-amber/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-amber/40 focus-visible:ring-offset-2"
               aria-label={`Brez dobavitelja (${stats.brezDobavitelja}) — odpre Zalogo s filtrom brez dobavitelja`}
               title="Artikli brez vpisane nabavne cene — klik odpre Zalogo s filtrom 'Brez dobavitelja'"
               onClick={() =>

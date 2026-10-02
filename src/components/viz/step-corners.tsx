@@ -399,7 +399,7 @@ export function StepCorners() {
               role="button"
               tabIndex={0}
               aria-label={`Vogal ${i + 1} — povleci ali usmeri s tipkami`}
-              className={`absolute flex touch-none select-none items-center justify-center rounded-full border-2 text-xs font-bold shadow-lg outline-hidden transition-colors focus-visible:ring-2 focus-visible:ring-roksal-amber ${
+              className={`absolute flex touch-none select-none items-center justify-center rounded-full border-2 text-xs font-bold shadow-lg outline-hidden transition-colors focus-visible:ring-2 focus-visible:ring-roksal-amber focus-visible:ring-offset-2 ${
                 activeCorner === i
                   ? 'border-white bg-roksal-amber text-white'
                   : 'border-roksal-amber bg-white text-roksal-navy'

@@ -737,7 +737,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
                   type="button"
                   onClick={() => setActiveKategorija(k.id as 'PRED' | 'MED' | 'PO')}
                   aria-pressed={activeKategorija === k.id}
-                  className={`rounded-md border px-2 py-2 text-[11px] font-medium transition-colors focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:outline-none ${
+                  className={`rounded-md border px-2 py-2 text-[11px] font-medium transition-colors focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 focus-visible:outline-none ${
                     activeKategorija === k.id
                       ? 'border-roksal-amber bg-roksal-amber text-white'
                       : 'border-border bg-white text-muted-foreground hover:bg-muted'
@@ -1159,7 +1159,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label={`Odpri lokacijo fotografije v Google Maps (${previewPhoto.latitude.toFixed(5)}, ${previewPhoto.longitude.toFixed(5)})`}
-                    className="flex items-center gap-1.5 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-amber/50 hover:text-roksal-amber"
+                    className="flex items-center gap-1.5 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 hover:text-roksal-amber"
                   >
                     <MapPin className="h-3 w-3 text-roksal-amber" aria-hidden="true" />
                     {previewPhoto.latitude.toFixed(5)}, {previewPhoto.longitude.toFixed(5)}
@@ -2110,7 +2110,7 @@ function AnnotationEditor({
               key={s.value}
               type="button"
               onClick={() => setStroke(s.value)}
-              className={`flex h-6 w-9 items-center justify-center rounded-md border text-2xs focus-visible:ring-2 focus-visible:ring-roksal-amber/60 ${
+              className={`flex h-6 w-9 items-center justify-center rounded-md border text-2xs focus-visible:ring-2 focus-visible:ring-roksal-amber/60 focus-visible:ring-offset-2 ${
                 stroke === s.value
                   ? 'border-roksal-amber bg-roksal-amber/20 text-roksal-amber'
                   : 'border-white/20 text-white/70'
@@ -2411,7 +2411,7 @@ function AnnotationEditor({
               type="button"
               onClick={() => setTool(t.id)}
               aria-pressed={tool === t.id}
-              className={`flex shrink-0 flex-col items-center gap-0.5 rounded-md px-2.5 py-1.5 text-[9px] transition-colors focus-visible:ring-2 focus-visible:ring-roksal-amber/60 focus-visible:outline-none ${
+              className={`flex shrink-0 flex-col items-center gap-0.5 rounded-md px-2.5 py-1.5 text-[9px] transition-colors focus-visible:ring-2 focus-visible:ring-roksal-amber/60 focus-visible:ring-offset-2 focus-visible:outline-none ${
                 tool === t.id
                   ? 'bg-roksal-amber text-white'
                   : 'bg-white/10 text-white/70 hover:bg-white/20'

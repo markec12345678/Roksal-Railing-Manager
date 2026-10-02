@@ -3326,7 +3326,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   <button
                     type="button"
                     onClick={() => handleViewPhoto(m)}
-                    className="p-1.5 rounded-lg hover:bg-roksal-amber/10 focus-visible:ring-2 focus-visible:ring-roksal-amber/40 focus-visible:outline-none transition-colors"
+                    className="p-1.5 rounded-lg hover:bg-roksal-amber/10 focus-visible:ring-2 focus-visible:ring-roksal-amber/40 focus-visible:ring-offset-2 focus-visible:outline-none transition-colors"
                     title="Poglej foto"
                     aria-label={`Poglej pripadajočo foto mero za ${m.oznaka || 'meritev'}`}
                   >
@@ -3475,7 +3475,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               <button
                 type="button"
                 onClick={() => handleViewPhoto(m)}
-                className="flex items-center gap-1 rounded-lg border border-roksal-amber/30 bg-roksal-amber/5 px-2 py-1 text-[11px] font-medium text-roksal-amber hover:bg-roksal-amber/10 active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-roksal-amber/40 focus-visible:outline-none transition-all duration-150"
+                className="flex items-center gap-1 rounded-lg border border-roksal-amber/30 bg-roksal-amber/5 px-2 py-1 text-[11px] font-medium text-roksal-amber hover:bg-roksal-amber/10 active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-roksal-amber/40 focus-visible:ring-offset-2 focus-visible:outline-none transition-all duration-150"
                 title="Poglej pripadajočo foto mero"
                 aria-label={`Poglej pripadajočo foto mero za ${m.oznaka || 'meritev'}`}
               >

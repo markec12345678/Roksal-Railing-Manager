@@ -430,7 +430,7 @@ export function InclinometerTab({ projectId, projektIme }: { projectId: string |
 
           {/* Kontrola senzorja */}
           {permission === 'idle' && (
-            <Button type="button" onClick={enableSensor} className="w-full bg-roksal-amber text-white hover:bg-roksal-amber/90 focus-visible:ring-2 focus-visible:ring-roksal-amber/50">
+            <Button type="button" onClick={enableSensor} className="w-full bg-roksal-amber text-white hover:bg-roksal-amber/90 focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2">
               <Compass aria-hidden="true" className="mr-2 h-4 w-4" />
               Vklopi libelo
             </Button>
@@ -536,7 +536,7 @@ export function InclinometerTab({ projectId, projektIme }: { projectId: string |
                 size="sm"
                 variant="outline"
                 onClick={() => void loadSaved()}
-                className="shrink-0 transition-colors hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50"
+                className="shrink-0 transition-colors hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2"
                 aria-label="Poskusi znova naložiti zgodovino nagibov"
               >
                 <RefreshCw className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" /> Poskusi znova

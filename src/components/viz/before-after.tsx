@@ -169,7 +169,7 @@ export function BeforeAfter({
               aria-valuemin={0}
               aria-valuemax={100}
               aria-valuenow={Math.round(pos * 100)}
-              className="pointer-events-auto absolute left-1/2 top-1/2 flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 cursor-ew-resize items-center justify-center rounded-full border-2 border-roksal-amber bg-white/95 shadow-lg outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-amber"
+              className="pointer-events-auto absolute left-1/2 top-1/2 flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 cursor-ew-resize items-center justify-center rounded-full border-2 border-roksal-amber bg-white/95 shadow-lg outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-amber focus-visible:ring-offset-2"
               onPointerDown={onHandlePointerDown}
               onKeyDown={onHandleKeyDown}
             >
