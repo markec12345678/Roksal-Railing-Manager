@@ -1,0 +1,23 @@
+# qa-needles/r363.tsv — REGISTER needlejev runde R363 (STIL val 46:
+# ring PARITETA inventory-tab družine — 22 × focus-visible:ring-offset-2
+# dodan [12 vrstic-rep + 5 template + 4 disabled + 1 active:scale]; 23/23
+# navy/40 nosi offset-2 [razcep števca = 0]; aria/title ZAMRZNJENI
+# (ring-only runda — val 44 precedens). LEKCIJA R362 (1): 'družina ≠
+# datoteka' — ta runda skenira TUDI vir datoteko po datoteki [fetch-first
+# rg sken: 23 navy/40, 0 non-focus]. Stale pini shiftani V ISTI rundi:
+# r242 L176/177 (eksaktna invSrc pina) + r237:230 (substring pin —
+# offset se vstavi MED niza). Era-diskriminatorji = 4 NOVI className
+# nizi [vsi ×0 v HEAD fetch-first git grep; multiplicita ×1/×1/×2/×1;
+# statični segmenti brez interpolacijske meje — LEKCIJA R361]. 0 novih
+# hex (števec = 0). FEATURE: e2e-lib dedup 3. val — eb_pocakaj_csv_pilli
+# (prag ×7 presežen; poraba ob 1. uporabi v r363-qa-spot.sh).
+# FORMAT (TSV; EN vrstica = EN needle; TAB je LOČILO) — kanon R340–R362.
+#   <needle_string><TAB><opis><TAB><vrsta>
+# vrsta: need_static (MORA biti ŽIV v čankih) | must_miss (NE SME biti)
+
+# ── R363 lastni needleji ──
+h-8 shrink-0 gap-1.5 text-[11px] font-medium tabular-nums press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 active:scale-[0.96]	R363 val 46 inventory premik-gumb CTA ring offset-2 (×1; 0 v HEAD)	need_static
+inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 text-2xs font-semibold text-roksal-ink/70 transition-colors hover:bg-secondary hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2	R363 val 46 inventory filter čip ring offset-2 (×1; 0 v HEAD)	need_static
+bg-roksal-navy hover:bg-roksal-navy/90 text-white shadow-sm transition-all press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 disabled:opacity-50	R363 val 46 inventory Shrani osnutek primarni ring offset-2 (×2; 0 v HEAD)	need_static
+h-8 gap-1.5 text-[11px] press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2	R363 val 46 inventory header pilule ring offset-2 (×1; 0 v HEAD)	need_static
+TODO-R363	must_miss: razvojni ostane (nesme biti v produkcijskih čankih)	must_miss

@@ -157,3 +157,17 @@ eb_sonda_ring_pariteta() {
   agent-browser eval "(()=>{return JSON.stringify({pressScaleOffset2:[...document.querySelectorAll('button')].filter(b=>(b.className||'').includes('press-scale')&&(b.className||'').includes('ring-roksal-navy/40')&&(b.className||'').includes('ring-offset-2')).length,pressScaleBrezOffset:[...document.querySelectorAll('button')].filter(b=>(b.className||'').includes('press-scale')&&(b.className||'').includes('ring-roksal-navy/40')&&!(b.className||'').includes('ring-offset')).length,statusFilterOffset2:[...document.querySelectorAll('button')].filter(b=>(b.className||'').includes('text-[11px]')&&!(b.className||'').includes('press-scale')&&(b.className||'').includes('ring-roksal-navy/40')&&(b.className||'').includes('ring-offset-2')).length});})()" 2>&1 | tail -1
 }
 
+# R363 (e2e-lib dedup 3. val) — poll do CRM izvoznih pillov: identičen
+# predikat `[...querySelectorAll('button')].some(aria-label startsWith
+# 'Izvozi CSV (')` se je ponavljal ×7 v 5 spot skriptah (r361-qa-spot ×2,
+# r361-qa-spot2 ×1, r362-qa-spot ×2, r362-qa-spot2 ×1, r362-qa-spot3 ×1) —
+# prag LEKCIJE R352 (3. ponovitev) DOLG presežen → EN VIR. Helper + poraba
+# ob 1. uporabi v r363-qa-spot.sh V ISTI rundi (LEKCIJA R362 (3): kanon ne
+# sme biti papir); zamrznjeni spot skripti NI mutirani. Uporaba:
+#   eb_pocakaj_csv_pilli 15
+eb_pocakaj_csv_pilli() {
+  local maks="${1:-15}"
+  eb_pocakaj_na "(()=>{return [...document.querySelectorAll('button')].some(b=>(b.getAttribute('aria-label')||'').startsWith('Izvozi CSV ('));})()" "$maks"
+}
+
+

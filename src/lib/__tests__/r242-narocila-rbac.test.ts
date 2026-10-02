@@ -173,8 +173,8 @@ describe('R242 — [Mandatory] stil: press-scale pariteta ISTIH akcij čez konte
 
   it('inventory Osnutek dialog footer: CSV/PDF/Shrani = ISTI jezik kot header pilule sorojenci', () => {
     // dialog footer CSV + PDF (gap-1.5) + Shrani osnutek primarni
-    expect(invSrc).toContain('"gap-1.5 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 disabled:opacity-50"')
-    expect(invSrc).toContain('"bg-roksal-navy hover:bg-roksal-navy/90 text-white shadow-sm transition-all press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 disabled:opacity-50"')
+    expect(invSrc).toContain('"gap-1.5 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 disabled:opacity-50"')
+    expect(invSrc).toContain('"bg-roksal-navy hover:bg-roksal-navy/90 text-white shadow-sm transition-all press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 disabled:opacity-50"')
   })
 
   it('0 novih hex: material-intelligence-tab ostane brez literalnih barv (žetoni)', () => {

@@ -227,7 +227,7 @@ describe('R237 — [Mandatory] stil (P1-f): focus-visible revizija 2. faza — s
   })
 
   it('app glavni fokus ostaja roksal-navy/40 (revizija R236 konverzije ostanejo)', () => {
-    expect(komponenta).toContain('focus-visible:ring-2 focus-visible:ring-roksal-navy/40 disabled:opacity-50')
+    expect(komponenta).toContain('focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 disabled:opacity-50')
     const racuni = beri('src/components/roksal/invoice-manager.tsx')
     expect(racuni).not.toContain('focus-visible:ring-amber-500/50')
     expect(racuni).not.toContain('focus-visible:ring-emerald-400/50')

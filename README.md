@@ -103,7 +103,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 45 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **5199** (326 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **5204** (327 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 143 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -1180,6 +1180,40 @@ Sheet z 6 podzavihki:
   aria statična segmenta ×1, vsi ×0 v HEAD fetch-first; must_miss; python
   write z \t; awk NF=3 čisto] + README disk resnica [števec 5199/326 + R362
   bullet].
+- **Ring pariteta val 46 + e2e-lib dedup 3. val** (R363): (1) **prva naloga**
+  — prod-qa re-run prek kanona `r359-prod-qa-retry.sh 362` ZELEN ob poskusu
+  1 + **ŠESTNAJSTIJNA era preverba** `r363-era-harvest.sh` EXIT=0 ob 1. teku:
+  16 registrov r347–r362 (≥69 need_static), 67 ŽIVO direktno + 2 R353 prek
+  hash rezolucije, **R362 val 45 vsi 4 needleji ŽIVO DIREKTNO** [chunk_036]
+  → deploy potrjen v celoti, must_miss ×16 čisto, era kontrole ŽIV; (2)
+  **val 45 post-deploy verifikacija** — spot3 re-run: časovni kontrakt
+  IZPOLNJEN (pressScaleBrezOffset 3→**0**, izvoznaTrojicaOffset2
+  **[true,true,true]**, pressScaleOffset2 6→9; per-item aria DOM false =
+  pogojni render pri 0 ponudbah — iskrena praznina, statični needleji ŽIVO);
+  (3) **agent-browser QA** spot-r167/8: helper 1. uporaba ZELEN, val 45
+  parity stabilna (9/0/7), Zaloge baseline iskreno dokumentiran
+  (sondaPressScale 15/15 brez offset PRED deployom; dodajGibanje ne-mountan
+  = per-pravica render, kanon r277); kolektor 0 errorjev; (4) **MANDATORY
+  STIL val 46 — ring PARITETA inventory-tab družine** (R362 kandidat;
+  LEKCIJA R362 (1) aplikirana: vir sken datoteko po datoteki = 23 × navy/40
+  [22 brez + 1 že nosi], 0 non-focus): 22 × `focus-visible:ring-offset-2`
+  dodan [12 vrstic-rep + 5 template + 4 disabled + 1 active:scale];
+  aria/title ZAMRZNJENI (ring-only); **stale pini shiftani V ISTI rundi**:
+  r242 L176/177 (eksaktna invSrc pina) + r237:230 (substring pin — offset
+  se vstavi MED; proaktiven rg sken po vseh 10 testih, ki berejo
+  inventory-tab); 0 novih hex (števec 0); (5) **FEATURE e2e-lib dedup 3.
+  val** — NOV pomočnik `eb_pocakaj_csv_pilli` (identičen poll predikat
+  'Izvozi CSV (' ×7 v 5 spot skriptah r361/r362 — prag LEKCIJE R352 DOLG
+  presežen) s porabo ob 1. uporabi v `r363-qa-spot.sh` V ISTI rundi
+  (zamrznjeni NI mutirani). VERIFIKACIJA (na KONČNI viri): tsc 0 · eslint 0
+  (FULL) · vitest **5204/5204 (327)** = R362 baza 5199/326 + mojih +5 − 0
+  [tek 1 zeleno] · build svež EXIT=0 [rm -rf .next; max-old-space-size
+  2560] · `qa-round.sh 363 needles` VSE OK [4 need_static ŽIVO + TODO-R363
+  odsoten; veriga + union registri r340–r363] · smoke EXIT=0 · e2e EXIT=0
+  [ODTIS IDENTIČEN — ZERO-MUTACIJA] · leak-check čist. NOVO:
+  scripts/qa-needles/r363.tsv [4 need_static ×1/×1/×2/×1, vsi ×0 v HEAD
+  fetch-first git grep; must_miss; python write z \t; awk NF=3 čisto] +
+  README disk resnica [5204/327 + R363 bullet].
 - **Ring pariteta val 44 + e2e-lib dedup 1. val** (R361): (1) **prva naloga**
   — prod-qa re-run prek kanona `r359-prod-qa-retry.sh 360` ZELEN ob poskusu
   1 + **ŠTIRINAJSTIJNA era preverba** `r361-era-harvest.sh` EXIT=0 ob 1. teku
