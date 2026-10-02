@@ -1,0 +1,16 @@
+# qa-needles/r356.tsv — REGISTER needlejev runde R356 (FAZA 9
+# orkestracija + STIL val 39). Kanon R340–R355: TSV, TAB ločilo,
+# need_static = ŽIV v čankih, must_miss = NE SME biti prisoten.
+# FAZA 9 ni build-diskriminator (logika, bajtni kontrakt POST)
+# — needleji = val 39 statične celote.
+# ============================================================================
+# FORMAT (TSV; EN vrstica = EN needle; TAB je LOČILO) — kanon R340–R355.
+#   <needle_string><TAB><opis><TAB><vrsta>
+# vrsta: need_static (MORA biti ŽIV v čankih) | must_miss (NE SME biti)
+
+# ── R356 lastni needleji ──
+# statične celote (NOVI nizi — era-diskriminatorji):
+Ustvari stopniščne meritve v izbrani segment	R356 val 39 stopniščni čarovnik Ustvari aria (akcija+cilj; NOV ring navy/40)	need_static
+Dodaj izračunane WPC palice kot meritve v segment 	R356 val 39 WPC palice aria prefix (akcija+cilj; template literal s seg.name)	need_static
+Odpre formo za novega stebrička, že tarčno na segment 	R356 val 39 steber per-segment title prefix (template literal s seg.name)	need_static
+TODO-R356	R356 — brez razvojnih ostankov	must_miss

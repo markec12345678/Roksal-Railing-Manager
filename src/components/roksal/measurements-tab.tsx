@@ -201,6 +201,12 @@ import { exportSeznamPdf } from './measurements/pdf-seznam'
 // gradnik z dialektnim stikalom zKotom; vzorec FAZA 5).
 import { izvediTerenIzvoz } from './measurements/teren-izvozi'
 import { renderRailingDiagram } from './measurements/railing-diagram'
+// R356 — dekompozicija measurements-tab FAZA 9: EN VIR vnos meritve POST
+// orkestracija (stopniščni čarovnik batch + WPC palice batch + ročni steber
+// single — ISTI per-item tok POST → uspeh/osnutek R152; prej 9 podvojenih
+// payload literalov + 9× gps literal; vzorec FAZA 5–8). Preslikava odgovora
+// + osnutki + toasti ostanejo v tabu (UI resnica v UI — LEKCIJA R354).
+import { posljiVnosMere } from './measurements/vnos-meritve'
 
 // ============================================
 // TIPI
@@ -1976,62 +1982,39 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
     let okCount = 0
     let localCount = 0
     for (const item of newMeas) {
-      try {
-        const res = await fetch('/api/measurements', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            projectId: selectedProject,
-            dolzinaMm: item.dolzinaMm,
-            visinaMm: item.visinaMm,
-            arMetadata: item.ar,
-            gpsLokacija: { lat: 46.2397, lng: 14.3556 },
-          }),
-        })
-        if (res.ok) {
-          const data = await res.json()
-          const newM: Measurement = {
-            ...data,
-            lokacija: null,
-            steviloStebrov: null,
-            tipPodlage: null,
-            kot: null,
-            opombe: null,
-            tipMeritve: item.ar.tipMeritve,
-            oznaka: item.ar.oznaka,
-            segmentId: item.ar.segmentId,
-            opomba: item.ar.opomba,
-            status: 'OSNUTEK',
-            enota: 'mm',
-            kotStopinje: item.ar.kotStopinje ?? null,
-          }
-          setMeasurements((prev) => [newM, ...prev])
-          okCount++
-        } else {
-          // R152: neuspeh → ekspliciten osnutek (ni fake-success).
-          createMeasurementDraft(
-            {
-              projectId: selectedProject,
-              dolzinaMm: item.dolzinaMm,
-              visinaMm: item.visinaMm,
-              arMetadata: item.ar,
-              gpsLokacija: { lat: 46.2397, lng: 14.3556 },
-            },
-            item.ar.oznaka || 'stopnica'
-          )
-          localCount++
+      // R356 FAZA 9 — EN VIR vnos meritve POST orkestracija (vzorec FAZA
+      // 5–8): per-item tok (POST → uspeh = preslikava + prepend; ne-ok ALI
+      // napaka = ekspliciten osnutek R152) zdaj v measurements/vnos-meritve;
+      // preslikava odgovora ostane tu (prikazna polja stopniščnega čarovnika,
+      // bajtno ista kot stale telo).
+      const rezultat = await posljiVnosMere({
+        projectId: selectedProject,
+        dolzinaMm: item.dolzinaMm,
+        visinaMm: item.visinaMm,
+        arMetadata: item.ar,
+      })
+      if (rezultat.izid === 'uspeh') {
+        const newM: Measurement = {
+          ...rezultat.podatki,
+          lokacija: null,
+          steviloStebrov: null,
+          tipPodlage: null,
+          kot: null,
+          opombe: null,
+          tipMeritve: item.ar.tipMeritve,
+          oznaka: item.ar.oznaka,
+          segmentId: item.ar.segmentId,
+          opomba: item.ar.opomba,
+          status: 'OSNUTEK',
+          enota: 'mm',
+          kotStopinje: item.ar.kotStopinje ?? null,
         }
-      } catch {
-        createMeasurementDraft(
-          {
-            projectId: selectedProject,
-            dolzinaMm: item.dolzinaMm,
-            visinaMm: item.visinaMm,
-            arMetadata: item.ar,
-            gpsLokacija: { lat: 46.2397, lng: 14.3556 },
-          },
-          item.ar.oznaka || 'stopnica'
-        )
+        setMeasurements((prev) => [newM, ...prev])
+        okCount++
+      } else {
+        // R152: neuspeh → ekspliciten osnutek (ni fake-success); telo = ISTI
+        // payload kot POST (EN VIR — gradnik ga nosi v rezultatu).
+        createMeasurementDraft(rezultat.telo, item.ar.oznaka || 'stopnica')
         localCount++
       }
     }
@@ -2214,68 +2197,46 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
       originalnaVrednost: parseFloat(stebriPozicija) || 0,
     }
 
-    try {
-      const res = await fetch('/api/measurements', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          projectId: selectedProject,
-          dolzinaMm: Math.max(1, Math.round(pozicijaMm)),
-          visinaMm: visinaStebra,
-          arMetadata,
-          gpsLokacija: { lat: 46.2397, lng: 14.3556 },
-        }),
-      })
-      if (res.ok) {
-        const data = await res.json()
-        const newM: Measurement = {
-          ...data,
-          lokacija: null,
-          tipMeritve: 'STEBR',
-          oznaka,
-          segmentId: stebriSegmentId,
-          opomba: arMetadata.opomba,
-          status: 'OSNUTEK',
-          tipStebra: stebriTipStebra,
-          materialStebra: stebriMaterial,
-          visinaStebraMm: visinaStebra,
-          pozicijaMm: Math.round(pozicijaMm),
-          razmikMm: razmikMm || null,
-          steberOznaka: oznaka,
-          enota: stebriPozicijaUnit,
-          originalnaVrednost: parseFloat(stebriPozicija) || 0,
-        }
-        setMeasurements((prev) => [newM, ...prev])
-        pushAudit({
-          akcija: 'ADD',
-          meritevId: newM.id,
-          opis: `Stebriček ${oznaka} dodan — ${tipStebraLabels[stebriTipStebra]}, pozicija ${Math.round(pozicijaMm)}mm`,
-        })
-        toast.success(`Stebriček ${oznaka} dodan!`)
-      } else {
-        // R152: neuspeh → ekspliciten osnutek, ni fake-success "(lokalno)".
-        createMeasurementDraft(
-          {
-            projectId: selectedProject,
-            dolzinaMm: Math.max(1, Math.round(pozicijaMm)),
-            visinaMm: visinaStebra,
-            arMetadata,
-            gpsLokacija: { lat: 46.2397, lng: 14.3556 },
-          },
-          `Stebriček ${oznaka}`
-        )
+    // R356 FAZA 9 — EN VIR vnos meritve POST orkestracija (vzorec FAZA
+    // 5–8): per-item tok (POST → uspeh = preslikava + prepend; ne-ok ALI
+    // napaka = ekspliciten osnutek R152) zdaj v measurements/vnos-meritve;
+    // preslikava odgovora ostane tu (prikazna polja STEBR, bajtno ista kot
+    // stale telo).
+    const rezultat = await posljiVnosMere({
+      projectId: selectedProject,
+      dolzinaMm: Math.max(1, Math.round(pozicijaMm)),
+      visinaMm: visinaStebra,
+      arMetadata,
+    })
+    if (rezultat.izid === 'uspeh') {
+      const newM: Measurement = {
+        ...rezultat.podatki,
+        lokacija: null,
+        tipMeritve: 'STEBR',
+        oznaka,
+        segmentId: stebriSegmentId,
+        opomba: arMetadata.opomba,
+        status: 'OSNUTEK',
+        tipStebra: stebriTipStebra,
+        materialStebra: stebriMaterial,
+        visinaStebraMm: visinaStebra,
+        pozicijaMm: Math.round(pozicijaMm),
+        razmikMm: razmikMm || null,
+        steberOznaka: oznaka,
+        enota: stebriPozicijaUnit,
+        originalnaVrednost: parseFloat(stebriPozicija) || 0,
       }
-    } catch {
-      createMeasurementDraft(
-        {
-          projectId: selectedProject,
-          dolzinaMm: Math.max(1, Math.round(pozicijaMm)),
-          visinaMm: visinaStebra,
-          arMetadata,
-          gpsLokacija: { lat: 46.2397, lng: 14.3556 },
-        },
-        `Stebriček ${oznaka}`
-      )
+      setMeasurements((prev) => [newM, ...prev])
+      pushAudit({
+        akcija: 'ADD',
+        meritevId: newM.id,
+        opis: `Stebriček ${oznaka} dodan — ${tipStebraLabels[stebriTipStebra]}, pozicija ${Math.round(pozicijaMm)}mm`,
+      })
+      toast.success(`Stebriček ${oznaka} dodan!`)
+    } else {
+      // R152: neuspeh → ekspliciten osnutek, ni fake-success "(lokalno)";
+      // telo = ISTI payload kot POST (EN VIR — gradnik ga nosi v rezultatu).
+      createMeasurementDraft(rezultat.telo, `Stebriček ${oznaka}`)
     }
     // reset forme
     setStebriPozicija('')
@@ -2367,68 +2328,45 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
         stPalic,
         enota: 'mm',
       }
-      try {
-        const res = await fetch('/api/measurements', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            projectId: selectedProject,
-            dolzinaMm: Math.max(1, Math.round(pozicijaMm)),
-            visinaMm: visinaMm || 1100,
-            arMetadata,
-            gpsLokacija: { lat: 46.2397, lng: 14.3556 },
-          }),
-        })
-        if (res.ok) {
-          const data = await res.json()
-          const newM: Measurement = {
-            ...data,
-            lokacija: null,
-            tipMeritve: 'STEBR',
-            oznaka,
-            segmentId: segment.id,
-            opomba: arMetadata.opomba,
-            status: 'OSNUTEK',
-            tipStebra: 'VMESNI',
-            materialStebra: 'WPC',
-            visinaStebraMm: visinaMm || 1100,
-            pozicijaMm: Math.round(pozicijaMm),
-            steberOznaka: oznaka,
-            orientacijaPalic: orientacija,
-            sirinaPalice: wpcSirinaPalice,
-            debelinaPalice: wpcDebelinaPalice,
-            razmikPalic: wpcRazmikPalic,
-            kotPosevnih: segment.type === 'WPC_POSEVNE' ? wpcKotPosevnih : undefined,
-            stPalic,
-            enota: 'mm',
-          }
-          setMeasurements((prev) => [newM, ...prev])
-          okCount++
-        } else {
-          // R152: neuspeh → ekspliciten osnutek (ni fake-success).
-          createMeasurementDraft(
-            {
-              projectId: selectedProject,
-              dolzinaMm: Math.max(1, Math.round(pozicijaMm)),
-              visinaMm: visinaMm || 1100,
-              arMetadata,
-              gpsLokacija: { lat: 46.2397, lng: 14.3556 },
-            },
-            `WPC stebriček ${oznaka}`
-          )
-          localCount++
+      // R356 FAZA 9 — EN VIR vnos meritve POST orkestracija (vzorec FAZA
+      // 5–8): per-item tok (POST → uspeh = preslikava + prepend; ne-ok ALI
+      // napaka = ekspliciten osnutek R152) zdaj v measurements/vnos-meritve;
+      // preslikava odgovora ostane tu (prikazna polja STEBR/WPC, bajtno
+      // ista kot stale telo).
+      const rezultat = await posljiVnosMere({
+        projectId: selectedProject,
+        dolzinaMm: Math.max(1, Math.round(pozicijaMm)),
+        visinaMm: visinaMm || 1100,
+        arMetadata,
+      })
+      if (rezultat.izid === 'uspeh') {
+        const newM: Measurement = {
+          ...rezultat.podatki,
+          lokacija: null,
+          tipMeritve: 'STEBR',
+          oznaka,
+          segmentId: segment.id,
+          opomba: arMetadata.opomba,
+          status: 'OSNUTEK',
+          tipStebra: 'VMESNI',
+          materialStebra: 'WPC',
+          visinaStebraMm: visinaMm || 1100,
+          pozicijaMm: Math.round(pozicijaMm),
+          steberOznaka: oznaka,
+          orientacijaPalic: orientacija,
+          sirinaPalice: wpcSirinaPalice,
+          debelinaPalice: wpcDebelinaPalice,
+          razmikPalic: wpcRazmikPalic,
+          kotPosevnih: segment.type === 'WPC_POSEVNE' ? wpcKotPosevnih : undefined,
+          stPalic,
+          enota: 'mm',
         }
-      } catch {
-        createMeasurementDraft(
-          {
-            projectId: selectedProject,
-            dolzinaMm: Math.max(1, Math.round(pozicijaMm)),
-            visinaMm: visinaMm || 1100,
-            arMetadata,
-            gpsLokacija: { lat: 46.2397, lng: 14.3556 },
-          },
-          `WPC stebriček ${oznaka}`
-        )
+        setMeasurements((prev) => [newM, ...prev])
+        okCount++
+      } else {
+        // R152: neuspeh → ekspliciten osnutek (ni fake-success); telo = ISTI
+        // payload kot POST (EN VIR — gradnik ga nosi v rezultatu).
+        createMeasurementDraft(rezultat.telo, `WPC stebriček ${oznaka}`)
         localCount++
       }
     }
@@ -4174,7 +4112,9 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                     type="button"
                     onClick={handleStairCreateMeasurements}
                     disabled={!stairCalc.valid || !selectedProject}
-                    className="flex-1 h-9 bg-roksal-navy text-white hover:bg-roksal-navy/90"
+                    aria-label="Ustvari stopniščne meritve v izbrani segment"
+                    title="Ustvari 5 meritev čarovnika (višina, globina, kot, kos, št. stopnic) v izbrani segment"
+                    className="flex-1 h-9 bg-roksal-navy text-white hover:bg-roksal-navy/90 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
                   >
                     <Plus aria-hidden="true" className="mr-1.5 h-4 w-4" />
                     Ustvari meritve
@@ -4920,14 +4860,20 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                             <Plus aria-hidden="true" className="inline h-3 w-3 mr-1" />
                             Dodaj meritev v ta segment
                           </button>
-                          {/* P3 — dodaj stebriček v ta segment */}
+                          {/* P3 — dodaj stebriček v ta segment — R356 val 39:
+                              vidno besedilo NE razlaga CILJA (odpre formo,
+                              že tarčno na ta segment) → aria akcija+cilj +
+                              title + izrecen ring navy/40 (LEKCIJA R346
+                              kanon; 0 novih hex). */}
                           <button
                             type="button"
                             onClick={() => {
                               setStebriSegmentId(seg.id)
                               setStebriFormOpen(true)
                             }}
-                            className="w-full rounded-lg border border-dashed border-roksal-amber/40 py-1.5 text-2xs text-roksal-amber hover:bg-roksal-amber/5 transition-colors"
+                            aria-label={`Dodaj stebriček v segment ${seg.name}`}
+                            title={`Odpre formo za novega stebrička, že tarčno na segment ${seg.name}`}
+                            className="w-full rounded-lg border border-dashed border-roksal-amber/40 py-1.5 text-2xs text-roksal-amber hover:bg-roksal-amber/5 transition-colors focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
                           >
                             <Columns3 aria-hidden="true" className="inline h-3 w-3 mr-1" />
                             Dodaj stebriček v ta segment
@@ -4939,7 +4885,9 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                             <button
                               type="button"
                               onClick={() => handleAddWpcPaliceAsStebri(seg)}
-                              className="w-full rounded-lg border border-dashed border-roksal-amber/50 py-1.5 text-2xs text-roksal-ink hover:bg-roksal-amber/10 transition-colors"
+                              aria-label={`Dodaj izračunane WPC palice kot meritve v segment ${seg.name}`}
+                              title={`Izračuna št. WPC palic iz meritev segmenta ${seg.name} in jih doda kot meritev STEBR`}
+                              className="w-full rounded-lg border border-dashed border-roksal-amber/50 py-1.5 text-2xs text-roksal-ink hover:bg-roksal-amber/10 transition-colors focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
                             >
                               <Fence aria-hidden="true" className="inline h-3 w-3 mr-1" />
                               Dodaj WPC palice kot materiale
@@ -5113,7 +5061,8 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               type="button"
               onClick={handleAddSteber}
               disabled={!stebriSegmentId || !stebriPozicija}
-              className="w-full h-9 bg-roksal-amber text-white hover:bg-roksal-amber/90"
+              title="Dodaj meritve STEBR z izračunom pozicije in vrstno oznako"
+              className="w-full h-9 bg-roksal-amber text-white hover:bg-roksal-amber/90 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
             >
               <Plus aria-hidden="true" className="mr-1.5 h-4 w-4" />
               Dodaj stebriček S{getNextStebriNumber(measurements, stebriSegmentId || undefined)}

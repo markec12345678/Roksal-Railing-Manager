@@ -103,7 +103,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 45 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **5111** (316 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **5129** (318 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 143 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -1113,6 +1113,28 @@ Sheet z 6 podzavihki:
   tsc 0 · eslint 0 (FULL) · build svež EXIT=0 · needles r355 VSE OK (veriga
   + union registri r340–r355) · smoke EXIT=0 · e2e EXIT=0 [ODTIS BAJTNATO
   IDENTIČEN pre==post — ZERO-MUTACIJA].
+- **Vnos meritve orkestracija + val 39** (R356): (1) **measurements FAZA 9**
+  — NOV `measurements/vnos-meritve.ts`: kontrolni tok treh bratov izluščen
+  VERBATIM (stopniščni čarovnik batch ×5 + WPC palice batch ×stPalic + ročni
+  steber single — ISTI per-item tok POST → uspeh = preslikava + prepend;
+  ne-ok ALI omrežna napaka = ekspliciten osnutek R152, ni fake-success) →
+  EN `posljiVnosMere(zahteva)` z diskriminiranim rezultatom
+  uspeh+podatki / osnutek+telo (telo = ISTI payload kot POST — brez
+  ponovnega literala, brez razhajanja POST/osnutek); 9 podvojenih payload
+  literalov + 9× gps literal → ENA definicija (TERENSKA_GPS_TOCKA, Kranj
+  R166 izvor — nič novih podatkov); UI resnica v UI (LEKCIJA R354):
+  preslikava odgovora + osnutki + toasti ostanejo v tabu, gradnik NE pozna
+  toastov; (2) **val 39** — a11y parity FAZA 9 družine (4 gumbi):
+  steber per-segment + WPC palice + stopniščni čarovnik aria (akcija+cilj) +
+  title + NOV izrecen ring navy/40+offset-2; steber submit title+ring brez
+  aria (vidno besedilo že nosi cilj S# — brez dvojnega besedila); 0 novih
+  hex; (3) vitest r356 ×18 (r356-vnos-faza9 ×10 [bajtni POST kontrakt +
+  osnutek R152 ×2 + determinizem + EN VIR 3 klici + UI resnica + kontrakt
+  oblike + 0-hex] + r356-stil-val39 ×8 [4 bloki strukturno + ring kanon +
+  0-hex + obrnjena regresija val 38]) — 5129/5129 (318); (4) verifikacija:
+  tsc 0 · eslint 0 (FULL) · build svež EXIT=0 · needles r356 VSE OK (veriga
+  + union registri r340–r356) · smoke EXIT=0 · e2e EXIT=0 [ODTIS BAJTNATO
+  IDENTIČEN pre==post — ZERO-MUTACIJA].
 - **Kalkulator FAZA 6 + val 29** (R346): (1) NOV `calculator/inputs.ts` —
   zbiranje/nalaganje vhodov izluščeno VERBATIM iz taba (args objekti —
   vzorec R325/R345): `collectCurrentInputs(mode, vhodnaStanja)` (zapis za
@@ -1327,7 +1349,7 @@ Sheet z 6 podzavihki:
 | **PWA** | Service Worker + Web Manifest |
 | **Temnitveni način** | [next-themes](https://github.com/pacocoursey/next-themes) |
 | **Validacija** | [Zod 4](https://zod.dev/) |
-| **Testiranje** | [Vitest 4](https://vitest.dev/) (5111 testov + globalSetup embedded PG) |
+| **Testiranje** | [Vitest 4](https://vitest.dev/) (5129 testov + globalSetup embedded PG) |
 | **Paketni upravitelj** | [Bun](https://bun.sh/) |
 | **Linting** | ESLint 9 + eslint-config-next |
 
@@ -1449,7 +1471,7 @@ BASE_URL=http://localhost:3000 EMAIL=ti@roksal.si PASSWORD='TvojeGeslo' \
 | `bun run dev` | Zažene Next.js dev server (port 3000) |
 | `bun run build` | Produkcijska build (build-prepare: generate + migrate deploy + seed) |
 | `bun run start` | Zažene produkcijski server |
-| `bun run test` | Vsi testi (vitest, 5111, embedded PG prek globalSetup) |
+| `bun run test` | Vsi testi (vitest, 5129, embedded PG prek globalSetup) |
 | `bun run check` | tsc --noEmit + vitest run (en ukaz za vse) |
 | `bunx tsc --noEmit` | Tipska kontrola celotnega projekta (trenutno 0 napak) |
 | `bun run lint` | ESLint preverjanje |
