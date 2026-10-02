@@ -170,4 +170,21 @@ eb_pocakaj_csv_pilli() {
   eb_pocakaj_na "(()=>{return [...document.querySelectorAll('button')].some(b=>(b.getAttribute('aria-label')||'').startsWith('Izvozi CSV ('));})()" "$maks"
 }
 
+# R364 (e2e-lib dedup 4. val) — poll do inventory površine (h2 'Zaloga'):
+# identičen predikat ×2 (r363-qa-spot B, r364-qa-spot B — byte-identičen
+# `...querySelectorAll('h2')].some(h=>h.textContent.trim()==='Zaloga')...`)
+# + ×1 semantično enakovreden brat z O-R razširitvijo (r362-qa-spot2 D2:
+# h2 ALI 'Dodaj gibanje zaloge' gumb — deli isti h2 segment). Kanon
+# PROAKTIVNO pri 2. ponovitvi (LEKCIJA R362 (3): prag R352 je 3., a helper
+# + 1. uporaba skupaj je čistejša kot čakati; obrat 'papir' lekcije).
+# Kanonizirana OBLIKA = preprosta h2 oblika (×2 byte-identični); različica
+# z O-R je dokumentirana kot bližnji izstrelek, NE kanon. Zamrznjeni spot
+# skripti NI mutirani (kanon R361–R363); poraba ob 1. uporabi v
+# r364-qa-spot.sh V ISTI rundi. Uporaba:
+#   eb_pocakaj_zalogo 15
+eb_pocakaj_zalogo() {
+  local maks="${1:-15}"
+  eb_pocakaj_na "(()=>{return [...document.querySelectorAll('h2')].some(h=>h.textContent.trim()==='Zaloga');})()" "$maks"
+}
+
 

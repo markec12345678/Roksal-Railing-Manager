@@ -1,0 +1,28 @@
+# qa-needles/r364.tsv — REGISTER needlejev runde R364 (STIL val 47:
+# ring PARITETA measurements-tab družine — 29 × popravkov [28 ×
+# focus-visible:ring-offset-2 dodan + 1 × ring-offset-1→2 normalizacija
+# (val 44 precedens)]; 47/47 navy/40 nosi offset-2 [razcep števca = 0;
+# 18 je ŽE nosilo pred rundom]. aria/title ZAMRZNJENI (ring-only runda —
+# val 44/46 precedens); r172 prst 6051 POTRJEN IZ DISKA [ring-only
+# in-place = 0 novih vrstic: 6232→6232]. LEKCIJA R362 (1) aplikirana:
+# vir sken datoteko po datoteki [fetch-first rg sken: 47 navy/40, 0
+# non-focus, 29 brez offset vključno ring-inset družina ×5]. Stale pini
+# PRED-SCAN: exact-quote pini (r242:157 → material-intelligence-tab,
+# r268:290 → team-tab) NE kažejo na measurements-tab → 0 shiftov
+# potrebnih; substring pini preživijo in-place razširitev. Era-
+# diskriminatorji = 4 NOVI className nizi [vsi ×0 v HEAD fetch-first
+# git grep; multiplicita ×1/×1/×5/×1; statični segmenti brez
+# interpolacijske meje — LEKCIJA R361]. 0 novih hex (števec = 0).
+# FEATURE: e2e-lib dedup 4. val — eb_pocakaj_zalogo (identičen predikat
+# ×2 + ×1 O-R brat; proaktiven pri 2. ponovitvi, LEKCIJA R362 (3);
+# poraba ob 1. uporabi v r364-qa-spot.sh V ISTI rundi).
+# FORMAT (TSV; EN vrstica = EN needle; TAB je LOČILO) — kanon R340–R363.
+#   <needle_string><TAB><opis><TAB><vrsta>
+# vrsta: need_static (MORA biti ŽIV v čankih) | must_miss (NE SME biti)
+
+# ── R364 lastni needleji ──
+text-3xs font-medium border transition-all hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2	R364 val 47 status cikel chip ring offset-1→2 normalizacija (×1; 0 v HEAD)	need_static
+px-2.5 py-1 text-[11px] font-medium hover:bg-roksal-navy/90 active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2	R364 val 47 primarni navy akcijski gumb ring offset-2 (×1; 0 v HEAD)	need_static
+focus-visible:ring-inset focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:outline-none transition-colors	R364 val 47 ring-inset druzina (filtri/ckipi) ring offset-2 (×5; 0 v HEAD)	need_static
+h-8 px-3 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"	R364 val 47 h-8 pilula zaprti niz ring offset-2 (×1; 0 v HEAD)	need_static
+TODO-R364	must_miss: razvojni ostane (nesme biti v produkcijskih čankih)	must_miss

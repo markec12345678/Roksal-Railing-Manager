@@ -45,7 +45,10 @@ describe('r348 STIL val 31 — a11y parity izvozne družine meritev', () => {
   })
 
   it('bulk CSV izbrane: aria + title + izrecen ring (disabled ohranjen)', () => {
-    const okno = oknoOkoli(tab, 'onClick={handleBulkExportCSV}')
+    // R364: okno 600→800 — val 47 ring-only className razširitev (+28 znakov)
+    // je title potisnil iz okna (LEKCIJA R359: test okno ≥800 ob dolgih
+    // className verigah; precedens R359 lastna okna 400→500/800).
+    const okno = oknoOkoli(tab, 'onClick={handleBulkExportCSV}', 800)
     expect(okno).toContain('aria-label="Izvozi izbrane meritve kot CSV"')
     expect(okno).toContain('title="Izvozi samo izbrane meritve kot CSV za Excel"')
     expect(okno).toContain(RING)
