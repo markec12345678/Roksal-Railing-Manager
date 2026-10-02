@@ -3286,7 +3286,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   <button
                     type="button"
                     onClick={() => toggleZgodovina(m)}
-                    className="p-1.5 rounded-lg hover:bg-roksal-navy/10 dark:hover:bg-roksal-ink/10 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:outline-none transition-colors"
+                    className="p-1.5 rounded-lg hover:bg-roksal-navy/10 dark:hover:bg-roksal-ink/10 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:outline-none transition-colors"
                     title="Zgodovina verzij"
                     aria-label={`Pokaži zgodovino verzij meritve ${m.oznaka || m.lokacija || `#${m.id.slice(-4)}`}`}
                   >
@@ -3307,7 +3307,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   <button
                     type="button"
                     onClick={() => handleStartCorrection(m)}
-                    className="p-1.5 rounded-lg hover:bg-roksal-navy/10 dark:hover:bg-roksal-ink/10 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:outline-none transition-colors"
+                    className="p-1.5 rounded-lg hover:bg-roksal-navy/10 dark:hover:bg-roksal-ink/10 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:outline-none transition-colors"
                     title="Popravi meritev (ustvari novo verzijo)"
                     aria-label={`Popravi meritev ${m.oznaka || m.lokacija || `#${m.id.slice(-4)}`} — ustvari novo verzijo`}
                   >
@@ -5456,7 +5456,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   type="button"
                   onClick={() => setBulkDeleteOpen(true)}
                   disabled={selectedIds.size === 0}
-                  className="flex items-center justify-center gap-1 rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 px-2 py-1 text-2xs font-medium text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/15 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                  className="flex items-center justify-center gap-1 rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 px-2 py-1 text-2xs font-medium text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/15 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
                   aria-label="Izbriši izbrane meritve"
                   title="Trajno izbriši vse izbrane meritve"
                 >
@@ -5911,6 +5911,8 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               variant="outline"
               onClick={() => setBulkDeleteOpen(false)}
               disabled={bulkArchiveBusy}
+              title="Zapri pogovorno okno — nič se ne arhivira, izbira meritev ostane"
+              className="focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
             >
               Prekliči
             </Button>
@@ -5918,7 +5920,9 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               type="button"
               onClick={handleBulkDelete}
               disabled={bulkArchiveBusy}
-              className="bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-500 disabled:cursor-wait disabled:opacity-70"
+              aria-label="Potrdi arhiviranje izbranih meritev v bazo"
+              title="Zaporedno arhiviraj izbrane meritve — že arhivirane se štejejo kot opravljene (idempotentno)"
+              className="bg-red-600 text-white hover:bg-red-700 focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-70"
             >
               <Archive aria-hidden="true" className="mr-1.5 h-4 w-4" />
               {bulkArchiveBusy ? 'Arhiviranje …' : `Arhiviraj (${selectedIds.size})`}

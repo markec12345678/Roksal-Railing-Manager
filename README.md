@@ -103,7 +103,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 45 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **5165** (322 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **5173** (323 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 143 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -1113,6 +1113,37 @@ Sheet z 6 podzavihki:
   tsc 0 · eslint 0 (FULL) · build svež EXIT=0 · needles r355 VSE OK (veriga
   + union registri r340–r355) · smoke EXIT=0 · e2e EXIT=0 [ODTIS BAJTNATO
   IDENTIČEN pre==post — ZERO-MUTACIJA].
+- **Status-orkestracija val 42 + QA-infra hardening** (R359): (1) **fetch-first
+  sken FAZA 12** — PATCH/status klaster potrjen kot 2 mikro brata
+  (patchMeasurementStatus + bulk arhiviranje; ISTI endpoint/headers/odgovor
+  `{ changed, measurement }` + ista normalize preslikava, a trivialni 1–2
+  ključni telesi) → **FAZA 12 NI utemeljena** (LEKCIJA R352: 2 brata mikro;
+  vsiljena abstrakcija ne za šalo) — samo sken, meja dokumentirana za
+  prihodnji 3. klic; (2) **QA-infra hardening (feature runde)** —
+  dokumentiran transient R358+R359 (Z2 harvest curl ×60 brez retry: EN
+  padel chunk = lažni MISSi, tek 1 failal v DVEH zaporednih rundah) rešen z
+  DVEMA NOVIMA skriptama (zamrznjeni r339 NI mutiran): `scripts/qa-harvest.sh`
+  [kanonska utrjena žetev: retry ×3 z determinističnim backoffom 1s/2s +
+  parcialna-žeteva guard + fail-closed vhodi; demo 60/60 EXIT=0 + 2 guard
+  EXIT=1] + `scripts/r359-prod-qa-retry.sh` [retry ovoj prod-qa faze: do 3
+  poskusi, deterministična pavza 5s, EXIT 0 ob prvem zelenem, vsi poskusi
+  poročani; demo poskus 1 zelen EXIT=0]; (3) **val 42** — a11y resnica
+  status-orkestracije družine (5 gumbov × 1 datoteko, VSE SPREMEMBE DODATNE):
+  verzije toggle + Popravi + bulk trigger ring PARITETA (offset-2 dopolnjen —
+  precedens val 40/41) + bulk dialog Prekliči NOVI title (nič se ne arhivira)
+  + NOV ring + Arhiviraj NOVI aria + NOVI title (idempotentno) + ring-2
+  red-500 offset-2 (destruktivni žig ohranjen); 0 novih hex; **OPOMBA za
+  lastnika**: bulk trigger title 'Trajno izbriši' je zgodovinska netočnost
+  (handler arhivira, dialog je iskren) — pinan kot need_static v register
+  r350.tsv, menjava bi prelomila zamrznjeno era-verigo (potreben register-
+  retirement kanon); (4) vitest r359 ×8 (r359-stil-val42: 3 ring parity bloki
+  + zamrznjeni nizi r350 bajtno + NOVI title/aria bloki + 0-hex + obrnjena
+  regresija val 39/40/41 + enolični era-diskriminatorji) — 5173/5173 (323);
+  (5) verifikacija: tsc 0 · eslint 0 (FULL) · build svež EXIT=0 · needles
+  r359 VSE OK (veriga + union registri r340–r359) · smoke EXIT=0 · e2e
+  EXIT=0 [Z0ax→Z0be ŽIVO + ODTIS — ZERO-MUTACIJA] · r359-era-harvest EXIT=0
+  ob 1. teku [DVANAJSTIJNA: 12 er ŽIVO — 54 direktno + 2 R353 hash
+  rezolucija; R358 val 41 ×3 direktno].
 - **Repost družine EN VIR + val 41** (R358): (1) **measurements FAZA 11** —
   iskrena meja FAZA 10 prevzeta: 3 preostali per-item re-post tokovi
   (sinhronizacija osnutka syncSingleDraft [draft.payload VERBATIM, kontrakt
