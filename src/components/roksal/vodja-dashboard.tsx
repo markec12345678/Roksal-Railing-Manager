@@ -1271,7 +1271,7 @@ export function VodjaDashboard() {
         <Button
           size="sm"
           variant="outline"
-          className="h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
+          className="h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
           onClick={handleDobicikonostPdf}
           disabled={loading || dobicikonostVTeku}
           aria-label="Izvozi dobičkonosnost projektov kot PDF"
@@ -1287,7 +1287,7 @@ export function VodjaDashboard() {
         <Button
           size="sm"
           variant="outline"
-          className="h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
+          className="h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
           onClick={handleRacuniProjektiPdf}
           disabled={loading || racuniProjektiVTeku}
           aria-label="Izvozi račune po projektih kot PDF"
@@ -1303,7 +1303,7 @@ export function VodjaDashboard() {
         <Button
           size="sm"
           variant="outline"
-          className="h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
+          className="h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
           onClick={handleDobicikonostCsv}
           disabled={loading || dobicikonostCsvVTeku}
           aria-label="Izvozi dobičkonosnost projektov kot CSV"

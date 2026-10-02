@@ -4379,7 +4379,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                 <button
                   type="button"
                   aria-expanded={historyOpen}
-                  className="flex items-center gap-2 rounded-lg text-sm font-semibold text-roksal-ink hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
+                  className="flex items-center gap-2 rounded-lg text-sm font-semibold text-roksal-ink hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
                 >
                   <History aria-hidden="true" className="h-4 w-4 text-roksal-amber" />
                   Zgodovina izračunov

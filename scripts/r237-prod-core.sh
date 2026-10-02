@@ -61,7 +61,7 @@ need "Dobavitelji PDF ni mogoče sestaviti iz tega seznama" "R236 fail-closed Ty
 need "Izvoz PDF ni uspel: " "R236 fail-verbose catch"
 need "preveriDobaviteljPdfVnos" "R236 lib preverba"
 need "dobaviteljBeseda" "R236 sklanjatev"
-need "press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1" "R236 fokus revizija invoice CSV pill"
+need "press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2" "R236 fokus revizija invoice CSV pill [PIN SHIFT R370 val 53: offset-1→2 navy rep normalizacija]"
 must_miss "focus-visible:ring-amber-500/50" "invoice amber fokus (unikatna oblika)"
 must_miss "focus-visible:ring-emerald-400/50" "Izdaj/Plačan emerald fokus (unikatna oblika)"
 echo "NEEDLE FAIL=$FAIL"

@@ -1,0 +1,106 @@
+#!/usr/bin/env python3
+# r370-register-write.py — R370 register scripts/qa-needles/r370.tsv
+# (kanon: python write z \t — LEKCIJA R365; NF=3 validacija po zapisu).
+# 4 need_static = val 53 NOVI className tokeni (navy/40 OFFSET-1 REP
+# normalizacija 1→2 — 8 vrstic × 4 datoteke), vsi ×0 v HEAD pred rundo
+# (fetch-first git grep -F na 2628e52 components — GLASNO potrjeno);
+# multiplicita v POJAVITVAH per-datoteka grep -rlF (LEKCIJA R368 (6) —
+# cat brez ločila laže): N1 ×1 (calculator L4382), N2 ×1 (dashboard
+# L2666), N3 ×1 (invoice L1182), N4 ×1 (dashboard L2666 rep — era
+# diskriminator 'offset-2 transition-colors').
+# Izpuščeni kandidati (iskreno dokumentirano, kanon r366–r369):
+#  - vodja L1274/L1290/L1306 className 'h-6 gap-1 text-2xs press-scale
+#    … navy/40 offset-2' — NI ×0 v HEAD (×8 material-intelligence ISTI
+#    niz iz R242 press-scale paritete) — className-only needle NE
+#    diskriminira ere; vodja pokrit prek vitest (A) guard per datoteko;
+#  - invoice L1045/L1061 'h-8 gap-1.5 px-2.5 text-[11px] … offset-2' —
+#    NI ×0 v HEAD (×1 crm-tab ISTI niz) — isti razlog; pokrito prek
+#    vitest (A) guard;
+#  - NONE ×54 + ?INTERP ×3 navy/40 brez offseta — ISKRENO izven val 53
+#    (val 54+ triaža; D2 spot: 'Izvozi CSV' dashboard L1678 = shadcn
+#    Button + brand override = namerna izjema #1 iz val 52).
+# must_miss: TODO-R370.
+import pathlib
+
+rows = [
+    ("hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2",
+     "R370 val 53 calculator L4382 fokus vrstica offset-1→2 (x1 pojavitev; 0 v HEAD)",
+     "need_static"),
+    ("bg-roksal-navy hover:bg-roksal-navy/90 text-white h-9 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2",
+     "R370 val 53 dashboard L2666 Izvozi CSV navy gumb offset-1→2 (x1 pojavitev; 0 v HEAD)",
+     "need_static"),
+    ("text-2xs font-medium press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2",
+     "R370 val 53 invoice L1182 meseci CSV pill offset-1→2 (x1 pojavitev; 0 v HEAD)",
+     "need_static"),
+    ("focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 transition-colors",
+     "R370 val 53 dashboard L2666 rep — era diskriminator offset-2 transition-colors (x1 pojavitev; 0 v HEAD)",
+     "need_static"),
+    ("TODO-R370",
+     "must_miss: razvojni ostanki (nesme biti v produkcijskih cankih)",
+     "must_miss"),
+]
+
+header = """# qa-needles/r370.tsv — REGISTER needlejev runde R370 (STIL val 53:
+# ring OBLIKOVNA pariteta navy/40 OFFSET-1 REP — normalizacija 1→2;
+# per-barvni split kanon nadaljevanje: navy = val 43–49 + val 52 pari,
+# red = val 50, amber = val 51, navy offset-1 rep = val 53): 8 vrstic
+# × 4 datoteke (calculator L4382, dashboard L2666, invoice L1045/L1061/
+# L1182, vodja L1274/L1290/L1306) zdaj nosi ring-offset-2. Census iz
+# diska scripts/r369-census.py (RE-POGNAN R370): navy/40 pred = {'O2':
+# 184, 'O1': 8, 'NONE': 54, '?INTERP': 3} gap 65; PO = {'O2': 192,
+# 'NONE': 54, '?INTERP': 3} gap 57 — O1 razcep = 0. Substitucija
+# DOLŽINSKO NEVTRALNA (13→13 znakov) = 0 okenskih premikov (orodje
+# r370-window-scan.py: 65 okenskih regexov enumeriranih, 0 preozkih —
+# FEATURE QA-infra hardening 3. val, LEKCIJA R369 (2) formalizirana).
+# In-place = 0 novih vrstic; 0 novih hex; aria/title ZAMRZNJENI
+# (ring-only runda — val 44–52 precedens). Stale-pini: 6 SHIFTOV V ISTI
+# RUNDI z žigi [PIN SHIFT R370 val 53] — r236 test L276 + r236-build
+# L47/L48/L49 (L48/L49 ŽE zastarela pred R370 — osveženi na disk
+# resnico, najdba dokumentirana) + r237-build L43 + r237-prod-core L64
+# (legacy proaktivno); r366 (C) not.toContain bere r242 TEST datoteko —
+# preživi; r364 (A) MERITVE-only — preživi; r368/r369 (A) amber/pari
+# iteracije — preživijo.
+# FEATURE e2e-lib dedup 10. val: ISKRENO IZPUŠČEN — python skan
+# r370-dedup-scan.py nad r365–r369 spot skriptami: 13 eval blokov, 13
+# unikatnih (normalizirano), 0 ponovitev ≥2 → NI kandidata (kanon R368:
+# NI prag — iskreno izpustiti če ni ponovitve).
+# Era preverba: kanonski skript r370-era-harvest.sh (TRIINDVJSETIJNA —
+# 23 registrov r347–r369, ≥97 need_static) EXIT=0 ob 1. teku — vseh 23
+# er ŽIVO; val 52 vsi 4 needleji ŽIVO prek hash rezolucije (3abf34ec… +
+# dc5a9c95… HTTP 200) → val 52 deploy potrjen v celoti; prod-qa re-run
+# 369 ZELEN ob poskusu 1 FOREGROUND; val 52 POST-deploy spot
+# (r370-qa-spot.sh spot-r167/15 + r370-spot-reprobe.sh): bottom-nav 9/9/
+# 9/0 (VEDNO montirane pariške vrstice — znani 'tab bar 9 ostanki'
+# kandidat IZ R368 handoverja REŠEN z val 52), Sheet kartice 51/51,
+# 'Označi vse' 1/1, termini pari 4/4/0, kolektor 0 errorjev; D2 dokaz:
+# 1× navy/40 BrezOffset gumb = 'Izvozi CSV' L1678 = shadcn kit override
+# = namerna izjema #1.
+"""
+
+out = pathlib.Path("scripts/qa-needles/r370.tsv")
+with out.open("w", encoding="utf-8") as f:
+    f.write(header)
+    for needle, opis, vrsta in rows:
+        f.write(f"{needle}\t{opis}\t{vrsta}\n")
+
+# NF=3 validacija
+bad = []
+for i, line in enumerate(out.read_text(encoding="utf-8").splitlines(), 1):
+    if line.startswith("#") or not line.strip():
+        continue
+    if len(line.split("\t")) != 3:
+        bad.append((i, line[:50]))
+if bad:
+    raise SystemExit(f"FAILOVEDANO: NF≠3: {bad}")
+
+# fetch-first potrditev: vsi need_static ×0 v HEAD 2628e52
+import subprocess
+for needle, opis, vrsta in rows:
+    if vrsta != "need_static":
+        continue
+    r = subprocess.run(["git", "grep", "-oF", needle, "2628e52", "--", "src/components"], capture_output=True, text=True)
+    n = len(r.stdout.strip().splitlines()) if r.stdout.strip() else 0
+    print(f"HEAD ×{n}: {needle[:60]}…")
+    if n != 0:
+        raise SystemExit("FAILOVEDANO: needle NI ×0 v HEAD")
+print("OK: r370.tsv zapisan, NF=3 čisto, vsi need_static ×0 v HEAD 2628e52")

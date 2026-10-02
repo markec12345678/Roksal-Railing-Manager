@@ -2663,7 +2663,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                           type="button"
                           onClick={() => portalAction('enable')}
                           disabled={portalActionLoading}
-                          className="w-full bg-roksal-navy hover:bg-roksal-navy/90 text-white h-9 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1 transition-colors"
+                          className="w-full bg-roksal-navy hover:bg-roksal-navy/90 text-white h-9 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 transition-colors"
                           size="sm"
                         >
                           {portalActionLoading ? (

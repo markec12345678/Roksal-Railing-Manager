@@ -1042,7 +1042,7 @@ export function InvoiceManager() {
               size="sm"
               variant="outline"
               onClick={() => exportRacuniCsv(invoices)}
-              className="h-8 gap-1.5 px-2.5 text-[11px] font-medium press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
+              className="h-8 gap-1.5 px-2.5 text-[11px] font-medium press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
               aria-label="Izvozi račune kot CSV"
               title="Izvozi vse račune (številka, status, zneski) kot CSV za Excel"
             >
@@ -1058,7 +1058,7 @@ export function InvoiceManager() {
               variant="outline"
               onClick={handlePrihodkiPdf}
               disabled={prihodkiVTeku}
-              className="h-8 gap-1.5 px-2.5 text-[11px] font-medium press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
+              className="h-8 gap-1.5 px-2.5 text-[11px] font-medium press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
               aria-label="Izvozi prihodke kot PDF"
               title="Prihodki, terjatve in zapadli računi kot pravi PDF — povzetek za vodstvo"
             >
@@ -1179,7 +1179,7 @@ export function InvoiceManager() {
                       variant="outline"
                       onClick={handleMeseciCsv}
                       disabled={meseciCsvVTeku}
-                      className="h-6 gap-1 px-1.5 text-2xs font-medium press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
+                      className="h-6 gap-1 px-1.5 text-2xs font-medium press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
                       aria-label="Izvozi prihodke po mesecih kot CSV"
                       title="Prihodki po mesecih kot CSV — ista resnica kot sekcija (skupaj + v teku + stornirani)"
                     >

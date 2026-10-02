@@ -40,7 +40,7 @@ echo "--- R237 pozitivni (ENA resnica — prerez CSV R205) ---"
 need 'Šifra","Naziv","Enota","Zaloga","Min. zaloga","Naroči"]' "R237 tabela glava = CSV R205 (kompilirana oblika — dvojni navedki, r229 lekcija)"
 echo "--- R237 pozitivni (P1-f fokus revizija 2. faza — 14 konverzij) ---"
 need "focus-visible:ring-2 focus-visible:ring-roksal-navy/40" "R237 navy/40 fokus (konverzirane vrstice)"
-need "focus-visible:ring-offset-1 transition-colors" "R237 dashboard navy gumb fokus (2635)"
+need "focus-visible:ring-offset-2 transition-colors" "R237 dashboard navy gumb fokus [PIN SHIFT R370 val 53: offset-1→2 navy rep normalizacija; vrstica zdaj 2666]"
 echo "--- R237 negativni (osamljeni amber fokus ostajajo odsotni) ---"
 must_miss "focus-visible:ring-roksal-amber/70" "deal-pipeline slider amber fokus (unikatna oblika)"
 # OPOMBA: notification-center:653 ring amber/60+/40 je AMBER-TEMA vrstica
