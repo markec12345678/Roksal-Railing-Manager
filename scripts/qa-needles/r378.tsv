@@ -1,0 +1,41 @@
+# qa-needles/r378.tsv — REGISTER needlejev runde R378 (issue #13, korak
+# R167 iz §9 + §10 — PROIZVODNA + AS-INSTALLED DOMENA: ProductionOrder/
+# Line/Operation + InstallationRecord/Line verzionirana "tretja resnica" +
+# količinska veriga QUOTE → BOM → PRODUCTION → INSTALLATION s producedQty
+# (Σ VSI nalogi nad vrstico) in installedQty (Σ SAMO POTRJENIH zapisov —
+# DRAFT ne šteje) v /api/bom/procurement; §10 stražar geometrije —
+# produkcija NE izračunava, uporablja snapshote ODOBRENEGA BOM).
+# KOLIZIJA #20 [kanon KOLIZIJE #4/R323/#13–#19]: vzporedna lastniška QA
+# R377 [aea8720 — STIL val 58 + era-clone --server-probe] pristala MED
+# mojim delom in vzela številko → moja runda preimenovana R377→R378
+# (migracija 20261005080000_r378_production_domain + r378-*.test.ts +
+# PIN SHIFT žigi); njihovi r377-* artefakti ostanejo = delegirana
+# zgodovina; njihov r377.tsv RESTAVRIRAN nedotaknjen.
+# ============================================================================
+# FORMAT (TSV; EN vrstica = EN needle; TAB je LOČILO — presledki znotraj
+# needleja so POMENNI, ker grep -F išče dobesedno) — ENAK format kot
+# r340.tsv…r377.tsv (kanon R340 qa-round.sh: needleji so PODATEK):
+#   <needle_string><TAB><opis><TAB><vrsta>
+# Vrste: need_static (MORA biti ŽIV v svežem buildu) | must_miss (NESME
+# biti v produkcijskih čankih).
+# Fetch-first preverba (kanon R366–R377): VSAK need_static je ×0 v
+# trenutnem HEAD pred commitom (git grep -F GLASNO) — needleji spodaj
+# so vsi ×0 potrjeni nad HEAD aea8720 (R377 QA lastniška — po KOLIZIJI
+# #20 resetu; predhodna potrditev ×0 še nad 6176878 v pred-rename seji).
+# Izpuščeni kandidati (iskreno): 'Proizvodno naročilo ne obstaja' (2
+# datoteki production-store.ts + [id]/route.ts — deli ga obe ruti, ne
+# diskriminira površine), 'bomVersionId' (splošen identifikator — 10+
+# pojavitev po datotekah od R376, ne needle), 'SIDRA' (testni fixture,
+# ×0 v src — živi le v testih), 'quotes.create' (podedovana pravica
+# RBAC kataloga — ×6 v HEAD); kanon 4 needleje/rundo.
+# Pokritost virov: production-store fail-closed vrata (2: zaklep as-
+# installed zaveze + BOM statusna vrata §9) + jedro invariantov (1:
+# rejected ≤ produced) + jedro validacije vrstic (1: zapis brez vrstic
+# ni resnica). Server-side stringi živijo v .next/server čankih (LEKCIJA
+# R375 (6): mešani client+server registerji — server needleji se preverijo
+# prek grep -rF nad CELIM .next [server + static], kanon R340).
+Zaklenjen projekt — nov zapis as-installed je nova zaveza	R378 store vrata zaklepa za as-installed zaveze (×1; 0 v HEAD)	need_static
+Zapis as-installed se izraža proti odobreni BOM verziji	R378 store statusna vrata §9 (APPROVED-only; ×1; 0 v HEAD)	need_static
+ne moreš zavrniti neizdelanega	R378 zapisProdukcije invariant rejected ≤ produced (×1; 0 v HEAD)	need_static
+Zapis as-installed brez vrstic ni resnica	R378 jedro validacije vgrajenih vrstic (×1; 0 v HEAD)	need_static
+TODO-R378	must_miss: razvojni ostanki (nesme biti v produkcijskih cankih)	must_miss

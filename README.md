@@ -1743,6 +1743,57 @@ Sheet z 6 podzavihki:
   površina, izjema #2 iz val 52] — vedno z fetch-first + TSV kanonom + stale-pin
   PRED-skanom + ŠTEVEC guard skenom (LEKCIJA (7)). ISSUE #1: vsa sprejemna merila ✓;
   ostaja odprt, owner 'Razvoj > QA' [AGENT STARTUP RULE: razvoj > QA].
+- **Issue #13, korak R167 — PROIZVODNA + AS-INSTALLED DOMENA: ProductionOrder/Line/Operation + InstallationRecord/Line + količinska veriga QUOTE → BOM → PRODUCTION → INSTALLATION (§9 + §10)** (R378 —
+  KOLIZIJA #20 [kanon KOLIZIJE #4/R323/#13–#19]: vzporedna lastniška QA R377 [aea8720 — STIL val 58 + era-clone --server-probe]
+  pristala MED mojim delom in vzela številko → moja runda preimenovana R377→R378; reset --hard origin/main, delta re-aplicirana s
+  preimenovanjem artefaktov [r378.tsv + r378-*.test.ts ×4 + migracija 20261005080000_r378_production_domain + PIN SHIFT žigi];
+  njihovi r377-* artefakti ostanejo = delegirana zgodovina; njihov r377.tsv RESTAVRIRAN nedotaknjen; jedro iz prejšnje prekinjene
+  seje ostalo v delovnem drevesu in je bilo KVALITETNO — dokončano, preimenovano in preverjeno v tej rundi): (1) **§10
+  ProductionOrder** — proizvodni nalog NAD ODOBRENIM BOM [statusni stroj PLANNED→RELEASED→IN_PRODUCTION→QC→PRODUCED→
+  READY_FOR_INSTALLATION + izidi REWORK/REJECTED/SCRAPPED/REPLACED v src/lib/production-orders.ts EN VIR; vsak izid ZAHTEVA
+  razlog (odmik brez razloga = tiha mutacija zgodovine); IZRECNO PREPOVEDANI robovi dokumentirani (preskok izpusta, lažni REWORK
+  pred izdelavo, oživljanje terminalcev, nazaj-paženi); prioritetna validacija NIZKA/NORMALNA/URGENTNO]; (2) **ProductionOrderLine**
+  — vrstica = SNAPSHOT BOMLine [plannedQty = quantity ob ustvarjanju; produced/rejected/scrapped/remaining — remainingQty
+  STREŽNIŠKO izračunan (planned − produced − scrapped), klientov total SE NE SPREJME ( forged test); invarianti: rejected ≤
+  produced, produced + scrapped ≤ planned (409 — sprememba načrta je change order)]; (3) **ProductionOperation** — operacije
+  [operationType prosto ≤ 100 znakov (izumi so izum), sequence, plannedDurationMin/actualDurationMin Int NULL honest §8,
+  operatorId FK Profile SetNull, statusni stroj PLANNED→IN_PROGRESS→DONE|FAILED (FAILED→PLANNED ponovni poskus)]; (4) **§9
+  InstallationRecord** — VERZIONIRANA tretja resnica [DRAFT→POTRJENO terminalno — sprememba potrjene resnice = NOVA verzija
+  zapisa (kanon QuoteVersion/BOMVersion); @@unique([projectId, versionNumber]); vezave na obstoječe entitete (schedule/crew/
+  monter/qc/evidence PONOVNA UPORABA QualityControl + InstallationEvidence — brez duplikacije fotografij) vse ENAKO projektno
+  področje (prečni dostop 409); VEZANA vrstica dobí internalSku SNAPSHOT strežniško (klientov SKU se PREPISE — testirano);
+  bomLineId NULL = vgrajen material IZVEN BOM (iskreno, ne tiho pripet); defectsJson isti fail-closed vzorec kot R147 (≤ 20,
+  opomba obvezna); handover dokaz OB potrditvi; actualMeasurementsJson NULL ali VELJAVEN JSON]; (5) **meja zaklepa R167**
+  (dokumentirana odločitev): USTVARJANJE naročila/zapisa po zaklepu → 409 (nova zaveza = change-order teritorij §6/§7), IZVEDBA
+  obstoječega (prehodi + zapis produkcije + potrditev zapisa) LAHKO teče naprej — fizično delo v teku se ne sme zadaviti z
+  zaklepom papirja (monter na zaklenjenem projektu dobi 403 od RBAC — zaklenjen dogovor ne dovoljuje monterjevih sprememb);
+  (6) **§9 količinska veriga v /api/bom/procurement** — DODATNO (additivno, bajtno združljivo): producedQty = Σ
+  ProductionOrderLine.producedQty VSEH nalogov nad vrstico (BREZ statusnega filtriranja — števec živi na VRSTICI; pravilo
+  »samo PRODUCED nalogi« bi tiho izbrisala fizično izdelano v REWORK/REPLACED); installedQty = Σ InstallationRecordLine.
+  installedQty SAMO POTRJENIH zapisov (DRAFT NI resnica — osnutek v pisanju OSTANE NEVIDEN, test IZRECNO dokazuje izključitev);
+  NEVEZANA vrstica → obe NULL (količinska veriga nad nevezanim materialom ni DOKAZLJIVA — iskreno NULL, nikoli ničle);
+  preslikava.viri dokumentira oba vira v odgovoru; (7) **API rute** — POST/GET /api/production + GET/PATCH /api/production/[id]
+  (PATCH: action transition | record-production — stroga shema, forged remainingQty → 400 GLASNO) + POST/GET /api/
+  installation-records + GET/PATCH /api/installation-records/[id] (SAMO approve; handover ob potrditvi) — hišni vzorec
+  authenticate/lacksPermission/assertProjectAccess/zapisOmejitev/preberiJsonTelo/auditInTx/fail-closed (RBAC matrika
+  ZAMRZNJENA — quotes.create izpeljava kataloga §10, isti prag kot /api/bom); (8) **§10 STRAŽAR GEOMETRIJE** — produkcija NE
+  izračunava (test bere VIR modula: ni uvoza railing-layout/quote) — snapshoti ODOBRENEGA BOM so EDINI vhod; (9) **migracija
+  20261005080000_r378_production_domain** [5 tabel + indexi; CHECK vse VALIDATED; brez seeda — prazno je iskreno §8; FK:
+  bomVersionId RESTRICT (odobreni BOM je vir), projectId CASCADE, schedule/crew/monter/qc/evidence SET NULL (resnica preživi
+  brisanje termina), bomLineId RESTRICT (sled ne laže)]. PIN SHIFT-i: r191 val2 48/63→52/67 handlerjev (skupaj 57/73→61/77 —
+  tudi VARNOST.md pokritost vrstica) + r308 88→92 route datotek (+production, +production/[id], +installation-records ×2) —
+  legitimna rast obsega novih kanonskih rut, dokumentirana v testih s PIN SHIFT žigi. Verifikacija: tsc 0 · eslint 0 · vitest
+  5417/5417 (350 datotek = lastniška R377 baza 5363/346 + mojih +54/+4: r378-production-orders ×23 [matrika VSEH robov —
+  dovoljeni + prepovedani + terminalci + rework zanka + razlogi + determinizem + fail-closed izpeljava + strážar geometrije
+  iz vira] + r378-production-store ×15 [APPROVED-only vrata 409; prečni 409; zaklenjen 409; forged totali — remainingQty
+  strežniški; invarianti 409; terminalno ne zapisuje; izvedba OB zaklepu teče] + r378-installation-records ×10 [SKU snapshot
+  PREPISAN; qty 0 → 400; podvojen bomLineId → 400; prečna vrstica 409; zaklenjen 409 (vodja prečka vrata); verzioniranje;
+  approve terminalno 409; approve OB zaklepu uspe (vodja); prazen seznam iskren] + r378-quantity-chain ×6 [produced = Σ vsi
+  nalogi; installed = Σ SAMO POTRJENIH — DRAFT izrecno NE šteje; seštevanje verzij; NEVEZANO NULL; idempotentna branja;
+  preslikava.viri dokumentacija]] · build svež EXIT=0 [roksal_dev DROPPAN + rebuildan iz nič + seed — kanonično sandbox
+  stanje po lastniški R377 lekciji] · qa-needles/r378.tsv [4 need_static ŽIVO v .next/server+static + TODO-R378 must_miss
+  čisto 0; fetch-first ×0 v HEAD aea8720 potrjeno — po KOLIZIJI #20 re-verify]. Naslednji korak #13: R168 (§12 real units +
+  Decimal + centralno zaokroževanje).
 - **Issue #13, korak R166 — KANONIČNI BOM: BOM/BOMVersion/BOMLine + EXACT inventarna vezava + procurement agregacija (§5/§6/§11 + §7 vezava)** (R376 —
   KOLIZIJA #18 [kanon KOLIZIJE #4/R323/#13–#17]: vzporedna lastniška QA R375 [f2242729 — val 57 ring↔border + era-clone.py]
   pristala MED mojim delom in vzela številko → moja runda preimenovana R375→R376; reset --hard origin/main, delta

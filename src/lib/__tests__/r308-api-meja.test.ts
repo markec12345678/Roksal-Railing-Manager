@@ -45,10 +45,10 @@ function zberiRute(): { pot: string; vsebina: string }[] {
 const byId = (krš: MejaKršitev[], id: string) => krš.filter((k) => k.preverba === id)
 
 describe('R308 — REALNIM drevo: stena ura ŽIVO (0 kršitev na vseh 5 preverbah)', () => {
-  it('vseh 88 route datotek prebranih in pregledanih — obseg pregleda NI tiho skrčen (R326: + zgodovina cen; PIN SHIFT R374: 82→85 — +price-book, +quotes, +quotes/[id]; PIN SHIFT R376: 85→88 — +bom, +bom/[id], +bom/procurement [kanonični BOM #13 R166])', () => {
+  it('vseh 92 route datotek prebranih in pregledanih — obseg pregleda NI tiho skrčen (R326: + zgodovina cen; PIN SHIFT R374: 82→85 — +price-book, +quotes, +quotes/[id]; PIN SHIFT R376: 85→88 — +bom, +bom/[id], +bom/procurement [kanonični BOM #13 R166]; PIN SHIFT R378: 88→92 — +production, +production/[id], +installation-records, +installation-records/[id] [produkcija §10 + as-installed §9 #13 R167])', () => {
     const rute = zberiRute()
-    expect(rute).toHaveLength(88)
-    expect(new Set(rute.map((r) => r.pot)).size).toBe(88)
+    expect(rute).toHaveLength(92)
+    expect(new Set(rute.map((r) => r.pot)).size).toBe(92)
     expect(rute.some((r) => r.pot === 'src/app/api/material-prices/zgodovina/route.ts')).toBe(true)
     // R374 (issue #13 R165): nove kanonske rute morajo ostati v obsegu pregleda
     expect(rute.some((r) => r.pot === 'src/app/api/price-book/route.ts')).toBe(true)
@@ -58,6 +58,12 @@ describe('R308 — REALNIM drevo: stena ura ŽIVO (0 kršitev na vseh 5 preverba
     expect(rute.some((r) => r.pot === 'src/app/api/bom/route.ts')).toBe(true)
     expect(rute.some((r) => r.pot === 'src/app/api/bom/[id]/route.ts')).toBe(true)
     expect(rute.some((r) => r.pot === 'src/app/api/bom/procurement/route.ts')).toBe(true)
+    // R378 (issue #13 R167): produkcija + as-installed rute morajo ostati v
+    // obsegu pregleda (količinska veriga §9 + §10 nad odobrenim BOM):
+    expect(rute.some((r) => r.pot === 'src/app/api/production/route.ts')).toBe(true)
+    expect(rute.some((r) => r.pot === 'src/app/api/production/[id]/route.ts')).toBe(true)
+    expect(rute.some((r) => r.pot === 'src/app/api/installation-records/route.ts')).toBe(true)
+    expect(rute.some((r) => r.pot === 'src/app/api/installation-records/[id]/route.ts')).toBe(true)
   })
 
   it('pregledajApiMejo nad celotnim drevesom → 0 kršitev (stena ura potrjena)', () => {

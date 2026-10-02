@@ -1,4 +1,9 @@
 // R376 (issue #13, korak R166 iz §11) — API: PROCUREMENT/INVENTORY NAD BOM.
+// R378 (korak R167 iz §9) — razširitev o količinski verigi QUOTE → BOM →
+// PRODUCTION → INSTALLATION: po vrstici DODANI polji producedQty (Σ izdelano
+// prek proizvodnih nalogov) in installedQty (Σ vgrajeno prek POTRJENIH
+// as-installed zapisov) — odgovor je SAMO DODATEN (additiven), vsa obstoječa
+// polja R376 ostajajo bajtno združljiva.
 // ---------------------------------------------------------------------------
 // GET /api/bom/procurement?projectId=X — po VRSTICI zadnje APPROVED verzije
 // BOM projekta (dostop 'read' do projekta):
@@ -16,6 +21,19 @@
 //   wastedQty    = −Σ StockLedger WASTE dogodkov projekta+artikla (odpis);
 //   variance     = planned − consumed − wasted + returned (SAMO vezane).
 //
+// R378 §9 VERIGA (DODATNO, additivno — dokumentirano v preslikava.viri):
+//   producedQty  = Σ ProductionOrderLine.producedQty VSEH nalogov nad TO
+//                  BOM vrstico (BREZ statusnega filtriranja naročil — števec
+//                  živi na VRSTICI, ne na statusu naročila; pravilo »štejejo
+//                  samo PRODUCED nalogi« bi bila izumljena pravila, ki bi
+//                  tiho izbrisala fizično izdelano proti nalogom v
+//                  REWORK/REPLACED);
+//   installedQty = Σ InstallationRecordLine.installedQty SAMO POTRJENIH
+//                  zapisov (status POTRJENO — DRAFT NI resnica: osnutek je
+//                  lahko v pisanju/popravku in njegove količine morajo
+//                  OSTATI NEVIDNE za verigo, sicer bi osnutek postal
+//                  »tretja resnica«, preden ga kdo potrdi).
+//
 // POŠTEN odnos do virov (§11 »map EXACTLY, no invention«):
 //   • reservedQty beremo iz StockLedger, NE iz LotAllocation — sledljiv
 //     razlog: LotAllocation nastaja SAMO za ODHODE (recordMovementInTx
@@ -30,7 +48,11 @@
 //     toku R376) — vsi IZRECNO naštetí v odgovoru (preslikava.nePreslikano).
 //   • NEVEZANA vrstica (inventoryId = NULL — EXACT sifraMateriala ujemanje
 //     ni uspelo): VSE dejanske količine so NULL (NIKOLI ničle — ničla bi
-//     bila laž »ni se nič zgodilo«), vezava = 'NEVEZANO' + razlog.
+//     bila laž »ni se nič zgodilo«), vezava = 'NEVEZANO' + razlog. To velja
+//     tudi za producedQty/installedQty (R378): nevezana vrstica je IZVEN
+//     nadzorne verige §9 — količinska veriga nad nevezanim materialom ni
+//     DOKAZLJIVA, zato iskreno NULL (konsistentno z družino dejanskih
+//     količin, NIKOLI ničle).
 //   • Ni APPROVED verzije → 404 (fail-closed: prazen odgovor bi bil tiha
 //     zamenjava za manjkajočo odločitev — najprej odobrite BOM).
 import { NextResponse } from 'next/server'
@@ -59,6 +81,10 @@ interface ProcurementLineDto {
   consumedQty: number | null
   returnedQty: number | null
   wastedQty: number | null
+  /** R378 §9: Σ izdelano iz VSEH proizvodnih nalogov nad vrstico (NULL nevezano). */
+  producedQty: number | null
+  /** R378 §9: Σ vgrajeno iz POTRJENIH as-installed zapisov (NULL nevezano). */
+  installedQty: number | null
   /** planned − consumed − wasted + returned; NULL za nevezane vrstice. */
   variance: number | null
   /** VEZANO (EXACT inventarna vezava) | NEVEZANO (razlog spodaj). */
@@ -144,6 +170,33 @@ export async function GET(request: Request) {
       : []
     const porabaPoArtiklu = new Map(poraba.map((r) => [r.inventoryId, r._sum.porabljenaKolicina ?? 0]))
 
+    // 4) R378 §9 — PRODUCTION: Σ producedQty VSEH proizvodnih vrstic nad
+    //    vrsticami TE verzije (števec živi na VRSTICI — brez statusnega
+    //    filtriranja naročil, izumljena pravila so izum). Vezava je EXACT:
+    //    bomLineId pripada NATANKO tej verziji (BOMLine → ena verzija).
+    const bomLineIds = verzija.lines.map((l) => l.id)
+    const izdelano = bomLineIds.length > 0
+      ? await db.productionOrderLine.groupBy({
+          by: ['bomLineId'],
+          where: { bomLineId: { in: bomLineIds } },
+          _sum: { producedQty: true },
+        })
+      : []
+    const izdelanoPoVrstici = new Map(izdelano.map((r) => [r.bomLineId, r._sum.producedQty?.toNumber() ?? 0]))
+
+    // 5) R378 §9 — INSTALLATION: Σ installedQty vrstic SAMO POTRJENIH
+    //    zapisov (DRAFT NI resnica — ne šteje; test r378-quantity-chain
+    //    DOKAZUJE to izključitev). Vezava prav tako EXACT prek bomLineId
+    //    (vrstica zapisa pripada vrstici TE verzije — store to zagotavlja).
+    const vgrajeno = bomLineIds.length > 0
+      ? await db.installationRecordLine.groupBy({
+          by: ['bomLineId'],
+          where: { bomLineId: { in: bomLineIds }, installationRecord: { status: 'POTRJENO' } },
+          _sum: { installedQty: true },
+        })
+      : []
+    const vgrajenoPoVrstici = new Map(vgrajeno.map((r) => [r.bomLineId, r._sum.installedQty?.toNumber() ?? 0]))
+
     const lines: ProcurementLineDto[] = verzija.lines.map((l) => {
       if (l.inventoryId === null) {
         // NEVEZANO: dejanske količine NEZNANE (NULL — nikoli ničle!), ker
@@ -165,6 +218,10 @@ export async function GET(request: Request) {
           consumedQty: null,
           returnedQty: null,
           wastedQty: null,
+          // R378: §9 veriga nad nevezanim materialom ni dokazljiva — NULL
+          // (konsistentno z družino dejanskih količin, NIKOLI ničle).
+          producedQty: null,
+          installedQty: null,
           variance: null,
           vezava: 'NEVEZANO',
           vezavaRazlog: `internalSku '${l.internalSku}' ni v inventarju (EXACT sifraMateriala ujemanje) — količine so NEZNANE, ne nič.`,
@@ -196,6 +253,10 @@ export async function GET(request: Request) {
         consumedQty: Math.round(consumedQty * 1000) / 1000,
         returnedQty: Math.round(returnedQty * 1000) / 1000,
         wastedQty: Math.round(wastedQty * 1000) / 1000,
+        // R378 §9 veriga: izdelano (VSI nalogi nad vrstico) + vgrajeno
+        // (SAMO POTRJENI zapisi — DRAFT ne šteje).
+        producedQty: Math.round((izdelanoPoVrstici.get(l.id) ?? 0) * 1000) / 1000,
+        installedQty: Math.round((vgrajenoPoVrstici.get(l.id) ?? 0) * 1000) / 1000,
         variance: Math.round((plannedQty - consumedQty - wastedQty + returnedQty) * 1000) / 1000,
         vezava: 'VEZANO',
         vezavaRazlog: null,
@@ -224,6 +285,9 @@ export async function GET(request: Request) {
           consumedQty: 'MaterialUsage: Σ porabljenaKolicina projekta+artikla',
           returnedQty: 'StockLedger: Σ RETURN dogodkov projekta+artikla',
           wastedQty: 'StockLedger: −Σ WASTE dogodkov projekta+artikla',
+          // R378 §9 — količinska veriga QUOTE → BOM → PRODUCTION → INSTALLATION:
+          producedQty: 'ProductionOrderLine: Σ producedQty VSEH nalogov nad vrstico (brez statusnega filtriranja — števec živi na vrstici)',
+          installedQty: 'InstallationRecordLine: Σ installedQty SAMO POTRJENIH zapisov (DRAFT ni resnica — ne šteje)',
           variance: 'plannedQty − consumedQty − wastedQty + returnedQty (samo VEZANE vrstice)',
         },
         nePreslikano: [

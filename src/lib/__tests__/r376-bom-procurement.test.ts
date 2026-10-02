@@ -384,6 +384,14 @@ describe('R376 — §11 PROCUREMENT agregacija (planned/reserved/ordered/…/var
     expect(sidra.consumedQty).toBe(4) // Σ MaterialUsage.porabljenaKolicina
     expect(sidra.returnedQty).toBe(1) // Σ StockLedger RETURN
     expect(sidra.wastedQty).toBe(1) // −Σ StockLedger WASTE
+    // PIN SHIFT R378: odgovor /api/bom/procurement je bil NADGRAJEN o §9
+    // verigo — po vrstici DODANA polji producedQty (Σ ProductionOrderLine nad
+    // vrstico, VSI nalogi) in installedQty (Σ InstallationRecordLine SAMO
+    // POTRJENIH zapisov). VEZANA vrstica BREZ nalogov/zapisov → 0 (iskrena
+    // ničla: nič ni izdelano/vgrajeno PROTI vrstici — to NI NEVEZANO NULL).
+    // Vsa obstoječa polja R376 ostajajo nedotaknjena (additivna razširitev).
+    expect(sidra.producedQty).toBe(0) // ni proizvodnih nalogov nad to vrstico
+    expect(sidra.installedQty).toBe(0) // ni as-installed zapisov nad to vrstico
     expect(sidra.variance).toBe(verzijaIssued.sidraQty - 4 - 1 + 1) // planned − consumed − wasted + returned
   })
 
@@ -394,7 +402,9 @@ describe('R376 — §11 PROCUREMENT agregacija (planned/reserved/ordered/…/var
     expect(steklo.vezava).toBe('NEVEZANO')
     expect(steklo.vezavaRazlog).toContain('NEZNANE, ne nič')
     // NIČLA bi bila laž "nič se ni zgodilo" — dejansko je NEZNANO:
-    for (const polje of ['reservedQty', 'orderedQty', 'receivedQty', 'issuedQty', 'consumedQty', 'returnedQty', 'wastedQty', 'variance'] as const) {
+    // PIN SHIFT R378: med polja NULL-ov dodani producedQty/installedQty (§9
+    // veriga nad nevezanim materialom ni dokazljiva — NULL, ne nič).
+    for (const polje of ['reservedQty', 'orderedQty', 'receivedQty', 'issuedQty', 'consumedQty', 'returnedQty', 'wastedQty', 'producedQty', 'installedQty', 'variance'] as const) {
       expect(steklo[polje]).toBeNull()
     }
     // plannedQty pa je znana iz kanonske vrstice (§5 sled):
@@ -412,8 +422,9 @@ describe('R376 — §11 PROCUREMENT agregacija (planned/reserved/ordered/…/var
   it('Preslikava je DOKUMENTIRANA v odgovoru (viri + nePreslikano tipi)', async () => {
     const r = await procurementGet(jsonReq(`/bom/procurement?projectId=${projektId}`, monter.token))
     const telo = await r.json()
-    // Vsako §11 polje ima izrecen vir (brez ugibanj):
-    for (const polje of ['plannedQty', 'reservedQty', 'orderedQty', 'receivedQty', 'issuedQty', 'consumedQty', 'returnedQty', 'wastedQty', 'variance'] as const) {
+    // Vsako §11 polje ima izrecen vir (brez ugibanj) — PIN SHIFT R378: med
+    // viri dodana producedQty/installedQty (§9 veriga, dodani viri):
+    for (const polje of ['plannedQty', 'reservedQty', 'orderedQty', 'receivedQty', 'issuedQty', 'consumedQty', 'returnedQty', 'wastedQty', 'producedQty', 'installedQty', 'variance'] as const) {
       expect(telo.preslikava.viri[polje]).toBeTruthy()
     }
     // Nepreslikani tipi so IZRECNO naštetí (honest fail-closed):
