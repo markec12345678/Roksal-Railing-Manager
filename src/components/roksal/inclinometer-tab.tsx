@@ -491,8 +491,9 @@ export function InclinometerTab({ projectId, projektIme }: { projectId: string |
                 type="button"
                 onClick={handleSave}
                 disabled={saving || !projectId}
-                className="w-full bg-roksal-navy text-white hover:bg-roksal-navy/90 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 disabled:cursor-not-allowed disabled:opacity-50 aria-busy:cursor-wait"
+                className="w-full bg-roksal-navy text-white hover:bg-roksal-navy/90 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 aria-busy:cursor-wait"
                 aria-busy={saving}
+                title="Shrani izmerjeni nagib kot meritev projekta"
               >
                 {saving ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />

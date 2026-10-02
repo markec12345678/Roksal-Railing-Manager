@@ -33,22 +33,35 @@ import type { Measurement } from './shared'
 export const TERENSKA_GPS_TOCKA = { lat: 46.2397, lng: 14.3556 } as const
 
 /** Telo POST /api/measurements — ENA kopija (prej 3 stale telesa ×3 veje:
- *  POST + osnutek-ne-ok + osnutek-napaka = 9 podvojenih literalov). */
+ *  POST + osnutek-ne-ok + osnutek-napaka = 9 podvojenih literalov; R357
+ *  FAZA 10: od tega rounda še 5 enojnih tokov [vnos forma, nagib, kotomer,
+ *  predloga, AR uvoz ×2 zanki] — 15 gps literalov → 0).
+ *  predhodnikId (R276 korekcijska veriga) je OPCIJONALEN in — kadar je
+ *  prisoten — VEDNO ZADNJI ključ v telesu (bajtno isti vrstni red kot stale
+ *  telo korekcije, kjer je bil dodeljen PO konstrukciji literal). */
 export type VnosMereTelo = {
   readonly projectId: string
   readonly dolzinaMm: number
   readonly visinaMm: number
   readonly arMetadata: ArMetadata
   readonly gpsLokacija: { readonly lat: number; readonly lng: number }
+  readonly predhodnikId?: string
 }
 
 /** Zahteva ENEGA vnosa mere — končne vrednosti (klicatelj izračuna
- *  Math.max/round pretvorbe; orkestracija jih NE podvaja). */
+ *  Math.max/round pretvorbe; orkestracija jih NE podvaja). predhodnikId
+ *  (R276): korekcija meritve — strežnik ustvari NOVO verzijo v verigi;
+ *  osnutek korekcije NOSI predhodnikId v VSEH neuspešnih vejah (R357
+ *  popravek: stale catch-veja handleSubmitMeasurement je telo
+ *  REKONSTRUIRALA BREZ predhodnikId → sinhronizacija bi ustvarila
+ *  standalone namesto verzije — kršitev kontrakta R276, zdaj gradnik
+ *  nosi telo VEDNO z istim predhodnikom kot POST). */
 export interface VnosMereZahteva {
   readonly projectId: string
   readonly dolzinaMm: number
   readonly visinaMm: number
   readonly arMetadata: ArMetadata
+  readonly predhodnikId?: string
 }
 
 /** Diskriminiran rezultat — VSE veje VIDNE (R152: neuspeh = EKSPLICITEN
@@ -75,6 +88,11 @@ export async function posljiVnosMere(
     visinaMm: zahteva.visinaMm,
     arMetadata: zahteva.arMetadata,
     gpsLokacija: TERENSKA_GPS_TOCKA,
+    // R276/R357: predhodnikId ZADNJI ključ (bajtno isti vrstni red kot stale
+    // telo korekcije — dodeljen PO konstrukciji); odsoten = ključ NE obstaja
+    // (JSON.stringify brez ključa — bajtno identično stale telesom brez
+    // korekcije).
+    ...(zahteva.predhodnikId ? { predhodnikId: zahteva.predhodnikId } : {}),
   }
   try {
     const res = await fetch('/api/measurements', {

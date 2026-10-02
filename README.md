@@ -103,7 +103,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 45 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **5129** (318 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **5147** (320 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 143 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -1113,6 +1113,35 @@ Sheet z 6 podzavihki:
   tsc 0 · eslint 0 (FULL) · build svež EXIT=0 · needles r355 VSE OK (veriga
   + union registri r340–r355) · smoke EXIT=0 · e2e EXIT=0 [ODTIS BAJTNATO
   IDENTIČEN pre==post — ZERO-MUTACIJA].
+- **Vnosnih tokov EN VIR + val 40** (R357): (1) **measurements FAZA 10** —
+  preostalih 5 enojnih vnosnih tokov migriranih na FAZA 9 gradnik
+  `posljiVnosMere` (vnos forma handleSubmitMeasurement + nagib
+  saveInclinometerReading + kotomer saveKotomerReading + predloge
+  handleApplyPredloga + AR uvoz handleImportFromAr ×2 zanki = 6 klicnih
+  mest, 9 klicev skupaj s FAZA 9): 15 gps literalov → 0 (24 → 15 R356 → 0;
+  TERENSKA_GPS_TOCKA ENA definicija); gradnik razširjen z OPCIJONALNIM
+  `predhodnikId` (R276 korekcijska veriga) — **popravek stale buga**:
+  catch-veja handleSubmitMeasurement je telo rekonstruirala BREZ
+  predhodnikId (sinhronizacija bi ustvarila standalone namesto verzije —
+  kršitev kontrakta R276); zdaj osnutek korekcije NOSI predhodnikId v OBEH
+  neuspešnih vejah (ne-ok IN omrežna napaka); predhodnikId = ZADNJI ključ v
+  telesu (bajtno isti vrstni red kot stale telo korekcije); preslikava
+  odgovora + toasti ostanejo pri klicatelju (UI resnica v UI); iskrena
+  meja: 3 preostali POST fetchi [sinhronizacija osnutka re-pošlje
+  draft.payload VERBATIM, podvojenost/kopiranje re-pošljeta obstoječo
+  meritev] NE gradijo teles — izven FAZA 10; (2) **val 40** — a11y parity
+  FAZA 10 družine (4 gumbi v 3 datotekah): vnos forma submit POGOJNA title
+  (2 stanji — verzija vs. običajna) + NOV ring brez aria (vidno besedilo že
+  nosi cilj); Scaniraj aria+title (iskren stub — 'kmalu na voljo') + NOV
+  ring; InlineKotomer title + NOV ring; InlineInclinometer ring pariteta
+  (offset-2 dopolnjen) + title; 0 novih hex; (3) vitest r357 ×18
+  (r357-vnos-faza10 ×10 [predhodnikId vrstni red + brez ključa + popravek
+  obeh vej + EN VIR 9 klici + gps 0 + determinizem + regresijski stražar
+  rekonstrukcije] + r357-stil-val40 ×8 [4 bloki + 0-hex + obrnjena
+  regresija val 38/39]) — 5147/5147 (320); (4) verifikacija: tsc 0 ·
+  eslint 0 (FULL) · build svež EXIT=0 · needles r357 VSE OK (veriga + union
+  registri r340–r357) · smoke EXIT=0 · e2e EXIT=0 [ODTIS BAJTNATO IDENTIČEN
+  pre==post — ZERO-MUTACIJA].
 - **Vnos meritve orkestracija + val 39** (R356): (1) **measurements FAZA 9**
   — NOV `measurements/vnos-meritve.ts`: kontrolni tok treh bratov izluščen
   VERBATIM (stopniščni čarovnik batch ×5 + WPC palice batch ×stPalic + ročni

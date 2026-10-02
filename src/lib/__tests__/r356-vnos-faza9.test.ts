@@ -8,11 +8,11 @@
 // (D) telo = ENA definicija: TERENSKA_GPS_TOCKA (46.2397 / 14.3556 — Kranj,
 //     R166 izvor; NIč novih podatkov, samo ENA definicija);
 // (E) determinizem: isti vhod ×2 → bajtno isti POST body;
-// (F) EN VIR dokaz: tab = 1 uvoz + 3 klici posljiVnosMere (stopniščni
-//     čarovnik + WPC palice + steber — LEKCIJA R347: stale kopije dihajo v
-//     telesih); gps literali v tabu 24 → 15 (9 iz klastra izginilo, 15
-//     enojnih tokov izven FAZA 9 — iskreno dokumentirano);
-// (G) UI resnica v UI: createMeasurementDraft(rezultat.telo, …) ×3 v tabu
+// (F) EN VIR dokaz: tab = 1 uvoz + 9 klici posljiVnosMere (R356: 3 —
+//     stopniščni čarovnik + WPC palice + steber; R357 FAZA 10: +6 — vnos
+//     forma, nagib, kotomer, predloga, AR uvoz ×2 zanki); gps literali v
+//     tabu 24 → 15 (R356) → 0 (R357 FAZA 10 — vsi v gradniku);
+// (G) UI resnica v UI: createMeasurementDraft nosi rezultat.telo ×9 v tabu
 //     (osnutek ostane komponenta — zapira stanje + revizijsko sled) + lib
 //     NE pozna toastov (0 × sonner/toast v modulu);
 // (H) kontrakt oblike: VnosMereTelo + VnosMereZahteva + RezultatVnosaMere
@@ -123,17 +123,21 @@ describe('r356 FAZA 9 — vnos meritve POST orkestracija (vnos-meritve.ts)', () 
     expect(b1).toBe(JSON.stringify(PricakovanTelo))
   })
 
-  it('(F) EN VIR dokaz: tab = 1 uvoz + 3 klici await posljiVnosMere; gps literali v tabu 24 → 15 (9 iz klastra izginilo; 15 enojnih tokov izven FAZA 9 — iskreno)', () => {
+  it('(F) EN VIR dokaz: tab = 1 uvoz + 9 klici await posljiVnosMere (3× FAZA 9 + 6× FAZA 10); gps literali v tabu 24 → 15 → 0 (R357 FAZA 10 — vsi v gradniku)', () => {
     expect(tab.match(/import \{ posljiVnosMere \} from '\.\/measurements\/vnos-meritve'/g)?.length).toBe(1)
-    expect(tab.match(/await posljiVnosMere\(/g)?.length).toBe(3)
-    // Zgodovina števca: R355 stanje = 24; R356 FAZA 9 odstrani 9 (3 bratje ×
-    // POST+osnutek-ne-ok+osnutek-napaka); 15 ostane (handleSubmitMeasurement,
-    // AR uvoz, podvojenost, … — ENOJNI tokovi, ne podvojen kontrolni tok).
-    expect(tab.match(/46\.2397/g)?.length).toBe(15)
+    // Zgodovina števca klicev: R356 = 3 (FAZA 9 bratje); R357 FAZA 10 = 9
+    // (+ vnos forma, nagib, kotomer, predloga, AR uvoz ×2 zanki).
+    expect(tab.match(/await posljiVnosMere\(/g)?.length).toBe(9)
+    // Zgodovina števca gps: R355 stanje = 24; R356 FAZA 9 odstrani 9 (3
+    // bratje × POST+osnutek-ne-ok+osnutek-napaka); R357 FAZA 10 odstrani
+    // preostalih 15 (5 enojnih tokov) — vse prek TERENSKA_GPS_TOCKA.
+    expect((tab.match(/46\.2397/g)?.length ?? 0)).toBe(0)
   })
 
-  it('(G) UI resnica v UI: createMeasurementDraft(rezultat.telo, …) ×3 v tabu + modul NE pozna toastov (0 × sonner/toast)', () => {
-    expect(tab.match(/createMeasurementDraft\(rezultat\.telo,/g)?.length).toBe(3)
+  it('(G) UI resnica v UI: createMeasurementDraft nosi rezultat.telo ×9 v tabu (3× FAZA 9 + 6× FAZA 10 — R357) + modul NE pozna toastov (0 × sonner/toast)', () => {
+    // Zgodovina: R356 = 3 single-line klici; R357 FAZA 10 = 9 skupno
+    // (4 single-line + 5 multiline — štejemo VSE pojavitve rezultat.telo).
+    expect(tab.match(/rezultat\.telo/g)?.length).toBe(9)
     expect(modul).not.toContain('from \'sonner\'')
     expect(modul).not.toContain('toast.')
     expect(modul).not.toContain('toast(')

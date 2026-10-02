@@ -1060,28 +1060,21 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
       // R276 (O4/O8) — korekcija: predhodnikId v telesu → strežnik ustvari
       // NOVO verzijo v verigi (fail-closed meje na strežniku; vir je
       // strežniško izpeljan — klient ga ne pošilja).
-      const postPayload: {
-        projectId: string
-        dolzinaMm: number
-        visinaMm: number
-        arMetadata: ArMetadata
-        gpsLokacija: { lat: number; lng: number }
-        predhodnikId?: string
-      } = {
+      // R357 FAZA 10 — EN VIR vnos meritve POST orkestracija (vzorec FAZA
+      // 5–9): telo + POST + osnutek-ne-ok + osnutek-napaka zdaj v
+      // measurements/vnos-meritve (predhodnikId nosi gradnik v VSEH vejah —
+      // R357 popravek: stale catch-veja je telo rekonstruirala BREZ
+      // predhodnikId, kar je kršilo kontrakt R276 »osnutek korekcije NOSI
+      // predhodnikId«); preslikava odgovora + audit + toasti ostanejo tu.
+      const rezultat = await posljiVnosMere({
         projectId: selectedProject,
         dolzinaMm,
         visinaMm,
         arMetadata,
-        gpsLokacija: { lat: 46.2397, lng: 14.3556 },
-      }
-      if (popravljaMeritev) postPayload.predhodnikId = popravljaMeritev.id
-      const res = await fetch('/api/measurements', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(postPayload),
+        ...(popravljaMeritev ? { predhodnikId: popravljaMeritev.id } : {}),
       })
-      if (res.ok) {
-        const data = await res.json()
+      if (rezultat.izid === 'uspeh') {
+        const data = rezultat.podatki
         const newMeasurement: Measurement = {
           ...data,
           lokacija: formLocation || null,
@@ -1119,24 +1112,14 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
         }
       } else {
         // R152: neuspeh → ekspliciten lokalni osnutek (ni izmišljene vrstice,
-        // ni lažnega "uspešno shranjeno"). R276: osnutek korekcije NOSI
-        // predhodnikId (sinhronizacija ustvari verzijo, ne nove standalone).
+        // ni lažnega "uspešno shranjeno"). R276 + R357: osnutek korekcije
+        // NOSI predhodnikId v OBEH neuspešnih vejah (ne-ok IN omrežna napaka
+        // — sinhronizacija ustvari verzijo, ne nove standalone).
         createMeasurementDraft(
-          postPayload,
+          rezultat.telo,
           formOznaka || formLocation || formatMultiUnit(dolzinaMm)
         )
       }
-    } catch {
-      createMeasurementDraft(
-        {
-          projectId: selectedProject,
-          dolzinaMm,
-          visinaMm,
-          arMetadata,
-          gpsLokacija: { lat: 46.2397, lng: 14.3556 },
-        },
-        formOznaka || formLocation || formatMultiUnit(dolzinaMm)
-      )
     } finally {
       setSubmitting(false)
     }
@@ -1828,54 +1811,40 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
       lokacija,
     }
 
-    try {
-      const postPayload = {
-        projectId: selectedProject,
-        dolzinaMm: 1,
-        visinaMm: 1,
-        arMetadata,
-        gpsLokacija: { lat: 46.2397, lng: 14.3556 },
+    // R357 FAZA 10 — EN VIR (vzorec FAZA 5–9): telo + POST + osnutki v
+    // measurements/vnos-meritve; preslikava + toasti ostanejo tu (prikazna
+    // polja nagibnega merilnika, bajtno ista kot stale telo).
+    const rezultat = await posljiVnosMere({
+      projectId: selectedProject,
+      dolzinaMm: 1,
+      visinaMm: 1,
+      arMetadata,
+    })
+    if (rezultat.izid === 'uspeh') {
+      const data = rezultat.podatki
+      const newMeasurement: Measurement = {
+        ...data,
+        lokacija,
+        tipMeritve: inclinometerMode,
+        oznaka: arMetadata.oznaka,
+        opomba: arMetadata.opomba,
+        status: 'OSNUTEK',
+        kotStopinje,
       }
-      const res = await fetch('/api/measurements', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(postPayload),
+      setMeasurements((prev) => [newMeasurement, ...prev])
+      pushAudit({
+        akcija: 'ADD',
+        meritevId: newMeasurement.id,
+        opis: `${inclinometerMode === 'KOT' ? 'Kot' : 'Nagib'} ${kotStopinje}° shranjen (${lokacija})`,
       })
-      if (res.ok) {
-        const data = await res.json()
-        const newMeasurement: Measurement = {
-          ...data,
-          lokacija,
-          tipMeritve: inclinometerMode,
-          oznaka: arMetadata.oznaka,
-          opomba: arMetadata.opomba,
-          status: 'OSNUTEK',
-          kotStopinje,
-        }
-        setMeasurements((prev) => [newMeasurement, ...prev])
-        pushAudit({
-          akcija: 'ADD',
-          meritevId: newMeasurement.id,
-          opis: `${inclinometerMode === 'KOT' ? 'Kot' : 'Nagib'} ${kotStopinje}° shranjen (${lokacija})`,
-        })
-        toast.success(`${inclinometerMode === 'KOT' ? 'Kot' : 'Nagib'} ${kotStopinje}° shranjen`)
-        setInclinometerOpen(false)
-      } else {
-        // R152: neuspeh → ekspliciten osnutek, ni fake-success "(lokalno)".
-        createMeasurementDraft(
-          postPayload,
-          `${inclinometerMode === 'KOT' ? 'Kot' : 'Nagib'} ${kotStopinje}° — ${lokacija}`
-        )
-      }
-    } catch {
+      toast.success(`${inclinometerMode === 'KOT' ? 'Kot' : 'Nagib'} ${kotStopinje}° shranjen`)
+      setInclinometerOpen(false)
+    } else {
+      // R152: neuspeh → ekspliciten osnutek, ni fake-success "(lokalno)";
+      // telo = ISTI payload kot POST (EN VIR — gradnik ga nosi v rezultatu).
+      // stale obnašanje: dialog ostane odprt tudi ob osnutku (VERBATIM).
       createMeasurementDraft(
-        {
-          projectId: selectedProject,
-          dolzinaMm: 1,
-          visinaMm: 1,
-          arMetadata,
-          gpsLokacija: { lat: 46.2397, lng: 14.3556 },
-        },
+        rezultat.telo,
         `${inclinometerMode === 'KOT' ? 'Kot' : 'Nagib'} ${kotStopinje}° — ${lokacija}`
       )
     }
@@ -2105,56 +2074,40 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
       status: 'OSNUTEK',
     }
 
-    try {
-      const postPayload = {
-        projectId: selectedProject,
-        dolzinaMm: 1,
-        visinaMm: 1,
-        arMetadata,
-        gpsLokacija: { lat: 46.2397, lng: 14.3556 },
+    // R357 FAZA 10 — EN VIR (vzorec FAZA 5–9): telo + POST + osnutki v
+    // measurements/vnos-meritve; preslikava + toasti ostanejo tu (prikazna
+    // polja kotomera, bajtno ista kot stale telo).
+    const rezultat = await posljiVnosMere({
+      projectId: selectedProject,
+      dolzinaMm: 1,
+      visinaMm: 1,
+      arMetadata,
+    })
+    if (rezultat.izid === 'uspeh') {
+      const data = rezultat.podatki
+      const newM: Measurement = {
+        ...data,
+        lokacija,
+        tipMeritve: kotomerMode,
+        oznaka,
+        opomba: arMetadata.opomba,
+        status: 'OSNUTEK',
+        kotStopinje,
+        notranjiKot: notranjiKot ?? null,
+        zunanjiKot: zunanjiKot ?? null,
       }
-      const res = await fetch('/api/measurements', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(postPayload),
+      setMeasurements((prev) => [newM, ...prev])
+      pushAudit({
+        akcija: 'ADD',
+        meritevId: newM.id,
+        opis: `${oznaka} shranjen — ${kotStopinje}°`,
       })
-      if (res.ok) {
-        const data = await res.json()
-        const newM: Measurement = {
-          ...data,
-          lokacija,
-          tipMeritve: kotomerMode,
-          oznaka,
-          opomba: arMetadata.opomba,
-          status: 'OSNUTEK',
-          kotStopinje,
-          notranjiKot: notranjiKot ?? null,
-          zunanjiKot: zunanjiKot ?? null,
-        }
-        setMeasurements((prev) => [newM, ...prev])
-        pushAudit({
-          akcija: 'ADD',
-          meritevId: newM.id,
-          opis: `${oznaka} shranjen — ${kotStopinje}°`,
-        })
-        toast.success(`${oznaka} shranjen`)
-        setKotomerOpen(false)
-      } else {
-        // R152: neuspeh → ekspliciten osnutek, ni fake-success "(lokalno)".
-        createMeasurementDraft(postPayload, oznaka)
-        setKotomerOpen(false)
-      }
-    } catch {
-      createMeasurementDraft(
-        {
-          projectId: selectedProject,
-          dolzinaMm: 1,
-          visinaMm: 1,
-          arMetadata,
-          gpsLokacija: { lat: 46.2397, lng: 14.3556 },
-        },
-        oznaka
-      )
+      toast.success(`${oznaka} shranjen`)
+      setKotomerOpen(false)
+    } else {
+      // R152: neuspeh → ekspliciten osnutek, ni fake-success "(lokalno)";
+      // telo = ISTI payload kot POST (EN VIR — gradnik ga nosi v rezultatu).
+      createMeasurementDraft(rezultat.telo, oznaka)
       setKotomerOpen(false)
     }
   }
@@ -2518,58 +2471,37 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
     let successCount = 0
     let localCount = 0
     for (const item of newMeas) {
-      try {
-        const res = await fetch('/api/measurements', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            projectId: selectedProject,
-            dolzinaMm: item.dolzinaMm,
-            visinaMm: item.visinaMm,
-            arMetadata: item.ar,
-            gpsLokacija: { lat: 46.2397, lng: 14.3556 },
-          }),
-        })
-        if (res.ok) {
-          const data = await res.json()
-          const newM: Measurement = {
-            ...data,
-            lokacija: null,
-            steviloStebrov: null,
-            tipPodlage: null,
-            kot: null,
-            opombe: null,
-            tipMeritve: item.ar.tipMeritve,
-            oznaka: item.ar.oznaka,
-            segmentId: item.ar.segmentId,
-            opomba: item.ar.opomba,
-            status: item.ar.status || 'OSNUTEK',
-          }
-          setMeasurements((prev) => [newM, ...prev])
-          successCount++
-        } else {
-          // R152: neuspeh → ekspliciten osnutek (ni fake-success).
-          createMeasurementDraft(
-            {
-              projectId: selectedProject,
-              dolzinaMm: item.dolzinaMm,
-              visinaMm: item.visinaMm,
-              arMetadata: item.ar,
-              gpsLokacija: { lat: 46.2397, lng: 14.3556 },
-            },
-            item.ar.oznaka || 'predloga'
-          )
-          localCount++
+      // R357 FAZA 10 — EN VIR vnos meritve POST orkestracija (vzorec FAZA
+      // 5–9): per-item tok v measurements/vnos-meritve; preslikava odgovora
+      // ostane tu (prikazna polja predlog, bajtno ista kot stale telo).
+      const rezultat = await posljiVnosMere({
+        projectId: selectedProject,
+        dolzinaMm: item.dolzinaMm,
+        visinaMm: item.visinaMm,
+        arMetadata: item.ar,
+      })
+      if (rezultat.izid === 'uspeh') {
+        const data = rezultat.podatki
+        const newM: Measurement = {
+          ...data,
+          lokacija: null,
+          steviloStebrov: null,
+          tipPodlage: null,
+          kot: null,
+          opombe: null,
+          tipMeritve: item.ar.tipMeritve,
+          oznaka: item.ar.oznaka,
+          segmentId: item.ar.segmentId,
+          opomba: item.ar.opomba,
+          status: item.ar.status || 'OSNUTEK',
         }
-      } catch {
+        setMeasurements((prev) => [newM, ...prev])
+        successCount++
+      } else {
+        // R152: neuspeh → ekspliciten osnutek (ni fake-success); telo = ISTI
+        // payload kot POST (EN VIR — gradnik ga nosi v rezultatu).
         createMeasurementDraft(
-          {
-            projectId: selectedProject,
-            dolzinaMm: item.dolzinaMm,
-            visinaMm: item.visinaMm,
-            arMetadata: item.ar,
-            gpsLokacija: { lat: 46.2397, lng: 14.3556 },
-          },
+          rezultat.telo,
           item.ar.oznaka || 'predloga'
         )
         localCount++
@@ -2944,56 +2876,35 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
         x: p.a.x,
         y: p.a.y,
       }
-      try {
-        const res = await fetch('/api/measurements', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            projectId: selectedProject,
-            dolzinaMm: Math.max(1, p.dolzinaMm),
-            visinaMm: 1100,
-            arMetadata,
-            gpsLokacija: { lat: 46.2397, lng: 14.3556 },
-          }),
-        })
-        if (res.ok) {
-          const data = await res.json()
-          const newM: Measurement = {
-            ...data,
-            lokacija: null,
-            tipMeritve: 'RAZDALJA',
-            oznaka: arMetadata.oznaka,
-            opomba: arMetadata.opomba,
-            status: 'OSNUTEK',
-            source: 'ar_snapshot',
-            snapshotId: snapshot.id,
-            enota: 'mm',
-          }
-          setMeasurements((prev) => [newM, ...prev])
-          okCount++
-        } else {
-          // R152: neuspeh → ekspliciten osnutek (ni fake-success).
-          createMeasurementDraft(
-            {
-              projectId: selectedProject,
-              dolzinaMm: Math.max(1, p.dolzinaMm),
-              visinaMm: 1100,
-              arMetadata,
-              gpsLokacija: { lat: 46.2397, lng: 14.3556 },
-            },
-            arMetadata.oznaka || 'AR uvoz'
-          )
-          localCount++
+      // R357 FAZA 10 — EN VIR (vzorec FAZA 5–9): per-item tok v
+      // measurements/vnos-meritve; preslikava odgovora ostane tu (prikazna
+      // polja AR RAZDALJA, bajtno ista kot stale telo).
+      const rezultat = await posljiVnosMere({
+        projectId: selectedProject,
+        dolzinaMm: Math.max(1, p.dolzinaMm),
+        visinaMm: 1100,
+        arMetadata,
+      })
+      if (rezultat.izid === 'uspeh') {
+        const data = rezultat.podatki
+        const newM: Measurement = {
+          ...data,
+          lokacija: null,
+          tipMeritve: 'RAZDALJA',
+          oznaka: arMetadata.oznaka,
+          opomba: arMetadata.opomba,
+          status: 'OSNUTEK',
+          source: 'ar_snapshot',
+          snapshotId: snapshot.id,
+          enota: 'mm',
         }
-      } catch {
+        setMeasurements((prev) => [newM, ...prev])
+        okCount++
+      } else {
+        // R152: neuspeh → ekspliciten osnutek (ni fake-success); telo = ISTI
+        // payload kot POST (EN VIR — gradnik ga nosi v rezultatu).
         createMeasurementDraft(
-          {
-            projectId: selectedProject,
-            dolzinaMm: Math.max(1, p.dolzinaMm),
-            visinaMm: 1100,
-            arMetadata,
-            gpsLokacija: { lat: 46.2397, lng: 14.3556 },
-          },
+          rezultat.telo,
           arMetadata.oznaka || 'AR uvoz'
         )
         localCount++
@@ -3022,61 +2933,40 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
         x: t.x,
         y: t.y,
       }
-      try {
-        const res = await fetch('/api/measurements', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            projectId: selectedProject,
-            dolzinaMm: 1,
-            visinaMm: 1100,
-            arMetadata,
-            gpsLokacija: { lat: 46.2397, lng: 14.3556 },
-          }),
-        })
-        if (res.ok) {
-          const data = await res.json()
-          const newM: Measurement = {
-            ...data,
-            lokacija: null,
-            tipMeritve: 'STEBR',
-            oznaka: arMetadata.oznaka,
-            opomba: arMetadata.opomba,
-            status: 'OSNUTEK',
-            source: 'ar_snapshot',
-            snapshotId: snapshot.id,
-            enota: 'mm',
-            tipStebra: 'VMESNI',
-            materialStebra: 'ALU',
-            visinaStebraMm: 1100,
-            pozicijaMm: 0,
-            steberOznaka: `AR-${label}`,
-          }
-          setMeasurements((prev) => [newM, ...prev])
-          okCount++
-        } else {
-          // R152: neuspeh → ekspliciten osnutek (ni fake-success).
-          createMeasurementDraft(
-            {
-              projectId: selectedProject,
-              dolzinaMm: 1,
-              visinaMm: 1100,
-              arMetadata,
-              gpsLokacija: { lat: 46.2397, lng: 14.3556 },
-            },
-            arMetadata.oznaka || `AR-${label}`
-          )
-          localCount++
+      // R357 FAZA 10 — EN VIR (vzorec FAZA 5–9): per-item tok v
+      // measurements/vnos-meritve; preslikava odgovora ostane tu (prikazna
+      // polja AR STEBR, bajtno ista kot stale telo).
+      const rezultat = await posljiVnosMere({
+        projectId: selectedProject,
+        dolzinaMm: 1,
+        visinaMm: 1100,
+        arMetadata,
+      })
+      if (rezultat.izid === 'uspeh') {
+        const data = rezultat.podatki
+        const newM: Measurement = {
+          ...data,
+          lokacija: null,
+          tipMeritve: 'STEBR',
+          oznaka: arMetadata.oznaka,
+          opomba: arMetadata.opomba,
+          status: 'OSNUTEK',
+          source: 'ar_snapshot',
+          snapshotId: snapshot.id,
+          enota: 'mm',
+          tipStebra: 'VMESNI',
+          materialStebra: 'ALU',
+          visinaStebraMm: 1100,
+          pozicijaMm: 0,
+          steberOznaka: `AR-${label}`,
         }
-      } catch {
+        setMeasurements((prev) => [newM, ...prev])
+        okCount++
+      } else {
+        // R152: neuspeh → ekspliciten osnutek (ni fake-success); telo = ISTI
+        // payload kot POST (EN VIR — gradnik ga nosi v rezultatu).
         createMeasurementDraft(
-          {
-            projectId: selectedProject,
-            dolzinaMm: 1,
-            visinaMm: 1100,
-            arMetadata,
-            gpsLokacija: { lat: 46.2397, lng: 14.3556 },
-          },
+          rezultat.telo,
           arMetadata.oznaka || `AR-${label}`
         )
         localCount++
@@ -4665,8 +4555,10 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               <Button
                 type="button"
                 variant="outline"
-                className="h-9 px-3 text-[11px] gap-1.5 shrink-0 transition-colors"
+                className="h-9 px-3 text-[11px] gap-1.5 shrink-0 transition-colors focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
                 onClick={() => toast.info('LiDAR skeniranje bo kmalu na voljo')}
+                aria-label="LiDAR skeniranje meritev — kmalu na voljo"
+                title="LiDAR skeniranje meritev (iskren stub — funkcija bo kmalu na voljo)"
               >
                 <Scan aria-hidden="true" className="h-3.5 w-3.5" />
                 Scaniraj
@@ -4674,8 +4566,13 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               <Button
                 type="button"
                 onClick={handleSubmitMeasurement}
-                className="flex-1 h-9 bg-roksal-navy hover:bg-roksal-navy/90 text-white press-scale"
+                className="flex-1 h-9 bg-roksal-navy hover:bg-roksal-navy/90 text-white press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
                 disabled={submitting || !formLength || !formHeight}
+                title={
+                  popravljaMeritev
+                    ? 'Shrani novo verzijo — predhodna meritev ostane v zgodovini (korekcijska veriga)'
+                    : 'Shrani vneseno meritev v izbrani projekt'
+                }
               >
                 {submitting ? (
                   <span className="flex items-center gap-1.5">

@@ -408,7 +408,8 @@ export function InlineKotomer({
         <Button
           type="button"
           onClick={handleSaveKotomer}
-          className="w-full bg-roksal-navy text-white hover:bg-roksal-navy/90 h-9"
+          className="w-full bg-roksal-navy text-white hover:bg-roksal-navy/90 h-9 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+          title="Shrani izmerjeni kot v meritev izbrane lokacije"
         >
           <Save aria-hidden="true" className="mr-2 h-4 w-4" />
           Shrani kot {mode === 'KOT_VOGAL' ? 'vogal' : mode === 'KOT_STOPNISCE' ? 'kot stopnice' : 'kot'}
