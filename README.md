@@ -103,7 +103,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 45 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **5147** (320 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **5165** (322 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 143 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -1113,6 +1113,33 @@ Sheet z 6 podzavihki:
   tsc 0 · eslint 0 (FULL) · build svež EXIT=0 · needles r355 VSE OK (veriga
   + union registri r340–r355) · smoke EXIT=0 · e2e EXIT=0 [ODTIS BAJTNATO
   IDENTIČEN pre==post — ZERO-MUTACIJA].
+- **Repost družine EN VIR + val 41** (R358): (1) **measurements FAZA 11** —
+  iskrena meja FAZA 10 prevzeta: 3 preostali per-item re-post tokovi
+  (sinhronizacija osnutka syncSingleDraft [draft.payload VERBATIM, kontrakt
+  R152 "točno telo"], podvojenost handleDuplicateMeasurement, kopiranje v
+  segment handleBulkCopyToSegment [batch]) → EN gradnik
+  `posljiRepostMere(telo)` + EN builder `teloRepostaIzMeritve(m, fallback)`
+  (prej 2 podvojena stale payload telesa ×5 vrstic); KLJUČNA meja:
+  repost telo GRADI KLICATELJ — RepostTelo nosi NULLABLE
+  arMetadata/gpsLokacija (vir brez AR/GPS) in gpsLokacija NI vsiljena
+  TERENSKA_GPS_TOCKA (no fabricated data — kopija nosi izvorno točko,
+  null ostane null); korekcijski osnutek ohrani predhodnikId (R276);
+  preslikava + audit + toasti ostanejo pri klicatelju (UI resnica v UI);
+  tab zdaj ima 0 × POST fetch na /api/measurements (vse telesa gradi ALI
+  nosi gradnik); (2) **val 41** — a11y parity FAZA 11 družine (5 gumbov ×
+  1 datoteko): syncAll + per-draft Sinhroniziraj + discard X NOVI titleji
+  (iskrena posledica; aria že nosi akcija+cilj) + Podvoji/Kopiraj ring
+  PARITETA (offset-2 dopolnjen — precedens val 40 InlineInclinometer);
+  0 novih hex; (3) vitest r358 ×18 (r358-vnos-faza11 ×10 [builder 5-ključni
+  vrstni red + null/null + body bajtno + ne-ok/omrežna → osnutek z ISTIM
+  telesom + no-fabricated-gps + EN VIR 3 repost klici + 0 POST fetch v
+  tabu + determinizem + modul čist + stale stringify izginil] +
+  r358-stil-val41 ×8 [3 bloki strukturno + 2 ring pariteta + 0-hex +
+  obrnjena regresija val 38/39/40 + enolični era-diskriminatorji]) —
+  5165/5165 (322); (4) verifikacija: tsc 0 · eslint 0 (FULL) · build svež
+  EXIT=0 · needles r358 VSE OK (veriga + union registri r340–r358) ·
+  smoke EXIT=0 · e2e EXIT=0 [ODTIS BAJTNATO IDENTIČEN pre==post —
+  ZERO-MUTACIJA].
 - **Vnosnih tokov EN VIR + val 40** (R357): (1) **measurements FAZA 10** —
   preostalih 5 enojnih vnosnih tokov migriranih na FAZA 9 gradnik
   `posljiVnosMere` (vnos forma handleSubmitMeasurement + nagib

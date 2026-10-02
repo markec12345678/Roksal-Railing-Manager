@@ -124,9 +124,12 @@ describe('r356 FAZA 9 — vnos meritve POST orkestracija (vnos-meritve.ts)', () 
   })
 
   it('(F) EN VIR dokaz: tab = 1 uvoz + 9 klici await posljiVnosMere (3× FAZA 9 + 6× FAZA 10); gps literali v tabu 24 → 15 → 0 (R357 FAZA 10 — vsi v gradniku)', () => {
-    expect(tab.match(/import \{ posljiVnosMere \} from '\.\/measurements\/vnos-meritve'/g)?.length).toBe(1)
+    expect(tab.match(/from '\.\/measurements\/vnos-meritve'/g)?.length).toBe(1)
     // Zgodovina števca klicev: R356 = 3 (FAZA 9 bratje); R357 FAZA 10 = 9
-    // (+ vnos forma, nagib, kotomer, predloga, AR uvoz ×2 zanki).
+    // (+ vnos forma, nagib, kotomer, predloga, AR uvoz ×2 zanki); R358
+    // FAZA 11: uvoz razširjen (posljiRepostMere + teloRepostaIzMeritve +
+    // type RepostTelo — 1 uvoz ostaja, zgodovinski pin enojne oblike →
+    // oblike 'from ...').
     expect(tab.match(/await posljiVnosMere\(/g)?.length).toBe(9)
     // Zgodovina števca gps: R355 stanje = 24; R356 FAZA 9 odstrani 9 (3
     // bratje × POST+osnutek-ne-ok+osnutek-napaka); R357 FAZA 10 odstrani
@@ -148,7 +151,9 @@ describe('r356 FAZA 9 — vnos meritve POST orkestracija (vnos-meritve.ts)', () 
     expect(modul).toContain('export interface VnosMereZahteva {')
     expect(modul).toContain("export type RezultatVnosaMere =")
     expect(modul).toContain("| { readonly izid: 'uspeh'; readonly podatki: Measurement }")
-    expect(modul).toContain("| { readonly izid: 'osnutek'; readonly telo: VnosMereTelo }")
+    // R358 FAZA 11: telo veje 'osnutek' je RepostTelo (nadtip — VnosMereTelo
+    // zanj ostaja dodeljiv; zgodovinski pin VnosMereTelo → RepostTelo).
+    expect(modul).toContain("| { readonly izid: 'osnutek'; readonly telo: RepostTelo }")
   })
 
   it('(I) preslikava odgovora ostane pri klicatelju: prikazna polja v tabu (3× …rezultat.podatki,), NISO v modulu', () => {

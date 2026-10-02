@@ -206,7 +206,12 @@ import { renderRailingDiagram } from './measurements/railing-diagram'
 // single — ISTI per-item tok POST → uspeh/osnutek R152; prej 9 podvojenih
 // payload literalov + 9× gps literal; vzorec FAZA 5–8). Preslikava odgovora
 // + osnutki + toasti ostanejo v tabu (UI resnica v UI — LEKCIJA R354).
-import { posljiVnosMere } from './measurements/vnos-meritve'
+import {
+  posljiVnosMere,
+  posljiRepostMere,
+  teloRepostaIzMeritve,
+  type RepostTelo,
+} from './measurements/vnos-meritve'
 
 // ============================================
 // TIPI
@@ -756,30 +761,25 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
     }
   }
 
-  /** Poskusi sinhronizirati enega osnutek. Vrne true ob uspehu. */
+  /** Poskusi sinhronizirati enega osnutek. Vrne true ob uspehu.
+   *  R358 FAZA 11: repost prek gradnika posljiRepostMere — telo = shranjen
+   *  draft.payload VERBATIM (kontrakt R152: "Točno telo, ki ga je treba
+   *  ponovno POSTati"; korekcijski osnutek nosi predhodnikId — R276). Osnutek
+   *  že OBSTAJA — neuspeh NE ustvari novega (vrne false; R152 ni fake-success,
+   *  toast/konteksta ostanejeta pri klicatelju). */
   async function syncSingleDraft(draft: MeasurementDraft): Promise<boolean> {
-    try {
-      const res = await fetch('/api/measurements', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(draft.payload),
-      })
-      if (res.ok) {
-        const data = await res.json()
-        setMeasurements((prev) => [normalizeMeasurements([data])[0], ...prev])
-        const next = removeDraft(selectedProject, draft.draftId)
-        setDrafts(next)
-        pushAudit({
-          akcija: 'ADD',
-          meritevId: data.id,
-          opis: `Osnutek „${draft.label}" sinhroniziran v bazo`,
-        })
-        return true
-      }
-      return false
-    } catch {
-      return false
-    }
+    const rezultat = await posljiRepostMere(draft.payload as RepostTelo)
+    if (rezultat.izid !== 'uspeh') return false
+    const data = rezultat.podatki
+    setMeasurements((prev) => [normalizeMeasurements([data])[0], ...prev])
+    const next = removeDraft(selectedProject, draft.draftId)
+    setDrafts(next)
+    pushAudit({
+      akcija: 'ADD',
+      meritevId: data.id,
+      opis: `Osnutek „${draft.label}" sinhroniziran v bazo`,
+    })
+    return true
   }
 
   /** Sinhroniziraj vse osnutke (zaporedno, determinističen vrstni red). */
@@ -1145,42 +1145,33 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
 
   // R152: podvajanje POSKUSI resnični POST; ob neuspehu → ekspliciten
   // osnutek (prej: izmišljena lokalna vrstica, izgubljena ob reloadu).
+  // R358 FAZA 11: telo gradi EN builder teloRepostaIzMeritve (ist kot
+  // kopiranje v segment — bajtno isti vrstni red 5 ključev; izvirna GPS
+  // točka ostane, NIČ vsiljene terenske točke), per-item tok v
+  // posljiRepostMere; preslikava + audit + toast ostanejo tu (UI resnica
+  // v UI — LEKCIJA R354); ne-ok ALI omrežna napaka = osnutek z ISTIM telesom.
   async function handleDuplicateMeasurement(m: Measurement) {
     const label = `${m.oznaka || m.lokacija || 'meritev'} (kopija)`
-    const payload: Record<string, unknown> = {
-      projectId: m.projectId || selectedProject,
-      dolzinaMm: m.dolzinaMm,
-      visinaMm: m.visinaMm,
-      arMetadata: m.arMetadata ? JSON.parse(m.arMetadata) : null,
-      gpsLokacija: m.gpsLokacija ? JSON.parse(m.gpsLokacija) : null,
-    }
-    try {
-      const res = await fetch('/api/measurements', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-      if (res.ok) {
-        const data = await res.json()
-        const duplicate: Measurement = {
-          ...data,
-          lokacija: m.lokacija ? `${m.lokacija} (kopija)` : 'Kopija',
-          oznaka: m.oznaka ? `${m.oznaka} (kopija)` : undefined,
-          status: 'OSNUTEK',
-        }
-        setMeasurements((prev) => [duplicate, ...prev])
-        pushAudit({
-          akcija: 'ADD',
-          meritevId: duplicate.id,
-          opis: `Meritev \"${m.oznaka || m.lokacija || m.id.slice(-4)}\" podvojena`,
-        })
-        toast.success('Meritev podvojena!')
-        return
+    const payload = teloRepostaIzMeritve(m, selectedProject)
+    const rezultat = await posljiRepostMere(payload)
+    if (rezultat.izid === 'uspeh') {
+      const data = rezultat.podatki
+      const duplicate: Measurement = {
+        ...data,
+        lokacija: m.lokacija ? `${m.lokacija} (kopija)` : 'Kopija',
+        oznaka: m.oznaka ? `${m.oznaka} (kopija)` : undefined,
+        status: 'OSNUTEK',
       }
-      createMeasurementDraft(payload, label)
-    } catch {
-      createMeasurementDraft(payload, label)
+      setMeasurements((prev) => [duplicate, ...prev])
+      pushAudit({
+        akcija: 'ADD',
+        meritevId: duplicate.id,
+        opis: `Meritev \"${m.oznaka || m.lokacija || m.id.slice(-4)}\" podvojena`,
+      })
+      toast.success('Meritev podvojena!')
+      return
     }
+    createMeasurementDraft(payload, label)
   }
 
   // R153 (§19) — cikliranje statusa meritve je zdaj PERZISTENTNO
@@ -2565,6 +2556,11 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
   // R152: kopiranje v segment POSKUSI resnični POST za vsako meritev;
   // neuspele gredo v eksplicitne osnutke (prej: samo izmišljene lokalne
   // vrstice, izgubljene ob reloadu).
+  // R358 FAZA 11: per-item telo gradi SKUPNI builder teloRepostaIzMeritve
+  // (ist kot podvojenost — bajtno isti vrstni red 5 ključev), per-item tok
+  // v posljiRepostMere (gradnik nikoli ne meče — try/catch ovojnica
+  // izginila; ne-ok ALI omrežna napaka = osnutek z ISTIM telesom R152);
+  // zbirni audit + toasti + brisanje izbire ostanejo tu (UI resnica v UI).
   async function handleBulkCopyToSegment() {
     if (!bulkCopyTarget) {
       toast.error('Izberite ciljni segment')
@@ -2578,39 +2574,24 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
     let okCount = 0
     let draftCount = 0
     for (const m of selected) {
-      const payload: Record<string, unknown> = {
-        projectId: m.projectId || selectedProject,
-        dolzinaMm: m.dolzinaMm,
-        visinaMm: m.visinaMm,
-        arMetadata: m.arMetadata ? JSON.parse(m.arMetadata) : null,
-        gpsLokacija: m.gpsLokacija ? JSON.parse(m.gpsLokacija) : null,
-      }
-      try {
-        const res = await fetch('/api/measurements', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        })
-        if (res.ok) {
-          const data = await res.json()
-          const copy: Measurement = {
-            ...data,
-            lokacija: m.lokacija,
-            tipMeritve: m.tipMeritve,
-            segmentId: bulkCopyTarget,
-            oznaka: m.oznaka ? `${m.oznaka} (kopija)` : 'Kopija',
-            status: 'OSNUTEK' as MeasurementStatus,
-          }
-          setMeasurements((prev) => [copy, ...prev])
-          okCount++
-          continue
+      const payload = teloRepostaIzMeritve(m, selectedProject)
+      const rezultat = await posljiRepostMere(payload)
+      if (rezultat.izid === 'uspeh') {
+        const data = rezultat.podatki
+        const copy: Measurement = {
+          ...data,
+          lokacija: m.lokacija,
+          tipMeritve: m.tipMeritve,
+          segmentId: bulkCopyTarget,
+          oznaka: m.oznaka ? `${m.oznaka} (kopija)` : 'Kopija',
+          status: 'OSNUTEK' as MeasurementStatus,
         }
-        createMeasurementDraft(payload, `${m.oznaka || 'meritev'} (kopija → ${bulkCopyTarget})`)
-        draftCount++
-      } catch {
-        createMeasurementDraft(payload, `${m.oznaka || 'meritev'} (kopija → ${bulkCopyTarget})`)
-        draftCount++
+        setMeasurements((prev) => [copy, ...prev])
+        okCount++
+        continue
       }
+      createMeasurementDraft(payload, `${m.oznaka || 'meritev'} (kopija → ${bulkCopyTarget})`)
+      draftCount++
     }
     pushAudit({
       akcija: 'ADD',
@@ -3358,7 +3339,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
             <button
               type="button"
               onClick={() => handleDuplicateMeasurement(m)}
-              className="p-1.5 rounded-lg hover:bg-secondary/60 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:outline-none transition-colors"
+              className="p-1.5 rounded-lg hover:bg-secondary/60 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:outline-none transition-colors"
               title="Podvoji meritev"
               aria-label={`Podvoji meritev ${m.oznaka || m.id.slice(-4)}`}
             >
@@ -5463,7 +5444,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                     type="button"
                     onClick={handleBulkCopyToSegment}
                     disabled={selectedIds.size === 0 || !bulkCopyTarget}
-                    className="flex items-center gap-1 rounded-md border border-roksal-amber/30 bg-roksal-amber/10 px-2 py-1 text-2xs font-medium text-roksal-amber hover:bg-roksal-amber/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                    className="flex items-center gap-1 rounded-md border border-roksal-amber/30 bg-roksal-amber/10 px-2 py-1 text-2xs font-medium text-roksal-amber hover:bg-roksal-amber/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
                     aria-label="Kopiraj izbrane meritve v ciljni segment"
                     title="Kopiraj izbrane meritve v izbrani ciljni segment"
                   >
@@ -5644,6 +5625,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   onClick={syncAllDrafts}
                   disabled={syncingDrafts}
                   aria-label={`Sinhroniziraj vse osnutke (${drafts.length}) v bazo`}
+                  title="Sinhroniziraj vse lokalne osnutke v bazo — zaporedno v determinističnem vrstnem redu"
                   className="flex items-center gap-1 rounded-lg bg-roksal-navy px-2.5 py-1 text-2xs font-semibold text-white hover:bg-roksal-navy/90 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 active:scale-[0.96] transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <CloudUpload className="h-3 w-3" aria-hidden="true" />
@@ -5684,6 +5666,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                           })}
                           disabled={syncingDrafts}
                           aria-label={`Sinhroniziraj osnutek ${d.label || 'brez oznake'} v bazo`}
+                          title="Pošlji shranjeno telo osnutka v bazo (neuspeh ostane lokalni osnutek)"
                           className="rounded-lg border border-roksal-navy/20 dark:border-roksal-ink/20 bg-roksal-navy/5 px-2 py-1 text-2xs font-medium text-roksal-ink hover:bg-roksal-navy/10 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 active:scale-[0.96] transition-all duration-150 disabled:opacity-50"
                         >
                           Sinhroniziraj
@@ -5692,6 +5675,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                           type="button"
                           onClick={() => discardMeasurementDraft(d.draftId)}
                           aria-label={`Odstrani osnutek ${d.label || 'brez oznake'} (ni bil nikoli v bazi)`}
+                          title="Odstrani lokalni osnutek — ni bil nikoli poslan v bazo"
                           className="rounded-lg border border-roksal-red/30 bg-roksal-red/5 p-1 text-roksal-red hover:bg-roksal-red/10 focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2 active:scale-[0.96] transition-all duration-150"
                         >
                           <X className="h-3.5 w-3.5" aria-hidden="true" />

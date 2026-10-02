@@ -9,6 +9,21 @@
 // (R152 — ni fake-success). Prej: 9 podvojenih payload literalov + 9× gps
 // literal {46.2397, 14.3556} + 3× isti fetch blok; zdaj EN gradnik.
 //
+// R358 — MEASUREMENTS FAZA 11: REPOST družina — 3 preostali per-item tokovi
+// (iskrena meja FAZA 10, zdaj prevzeta):
+//   • sinhronizacija osnutka (syncSingleDraft — re-pošlje draft.payload VERBATIM,
+//     kontrakt R152: "Točno telo, ki ga je treba ponovno POSTati"),
+//   • podvojenost obstoječe meritve (handleDuplicateMeasurement),
+//   • kopiranje v segment (handleBulkCopyToSegment — batch po izbranih).
+// Skupni per-item tok je ISTI kot FAZA 9, a telo GRADI KLICATELJ (re-post
+// obstoječih podatkov — NIČ novih teles, NIČ vsiljenih vrednosti): RepostTelo
+// nosi NULLABLE arMetadata/gpsLokacija (vir brez AR/GPS) in gpsLokacija NI
+// vsiljena TERENSKA_GPS_TOCKA (no fabricated data — kopija nosi IZVORNO
+// GPS točko; stale telo podvojenosti/kopiranja je to 1:1 ohranjalo).
+// Podvojenost + kopiranje delita EN builder teloRepostaIzMeritve (prej 2
+// podvojena stale literalna telesa — bajtno isti ključni vrstni red
+// projectId→dolzinaMm→visinaMm→arMetadata→gpsLokacija).
+//
 // MEJE (vzorec FAZA 8 — lib/orkestracija NE pozna UI):
 //   • orkestracija NE pozna toastov IN NE ustvarja osnutkov — vrača
 //     DISKRIMINIRAN REZULTAT; veja 'osnutek' nosi Telo = ISTI payload, kot
@@ -67,10 +82,83 @@ export interface VnosMereZahteva {
 /** Diskriminiran rezultat — VSE veje VIDNE (R152: neuspeh = EKSPLICITEN
  *  osnutek, ni fake-success). Veja 'osnutek' nosi telo — ISTI payload kot
  *  POST (klicatelj ga posreduje createMeasurementDraft; brez ponovnega
- *  literala, brez nevarnosti razhajanja POST/osnutek telesa). */
+ *  literala, brez nevarnosti razhajanja POST/osnutek telesa).
+ *  R358 FAZA 11: telo veje 'osnutek' je RepostTelo (nadtip — VnosMereTelo
+ *  je zanj dodeljiv: strogi arMetadata/gpsLokacija so podmnožica nullable). */
 export type RezultatVnosaMere =
   | { readonly izid: 'uspeh'; readonly podatki: Measurement }
-  | { readonly izid: 'osnutek'; readonly telo: VnosMereTelo }
+  | { readonly izid: 'osnutek'; readonly telo: RepostTelo }
+
+/** R358 FAZA 11 — telo REPOSTA: obstoječa meritev/osnutek, poslan VERBATIM.
+ *  Razlika od strogega VnosMereTelo (gradnja iz vnosnih polj):
+ *    • arMetadata/gpsLokacija NULLABLE (meritev brez AR/GPS vira —
+ *      stale telo podvojenosti/kopiranja je pošiljalo null, NIČ izmišljenega);
+ *    • gpsLokacija NI vsiljena TERENSKA_GPS_TOCKA (kopija nosi izvorno
+ *      točko — no fabricated data);
+ *    • predhodnikId OPCIONALEN (osnutek korekcijske verige R276 ga NOSI —
+ *      re-post ga ohranja, sinhronizacija ustvari verzijo, ne standalone).
+ *  Type alias (ne interface) — implicitni indeksni podpis: RepostTelo je
+ *  dodeljiv createMeasurementDraft(payload: Record<string, unknown>). */
+export type RepostTelo = {
+  readonly projectId: string
+  readonly dolzinaMm: number
+  readonly visinaMm: number
+  readonly arMetadata: ArMetadata | null
+  readonly gpsLokacija: { readonly lat: number; readonly lng: number } | null
+  readonly predhodnikId?: string
+}
+
+/** R358 FAZA 11 — telo reposta IZ obstoječe meritve — ENA definicija (prej
+ *  2 podvojena stale literalna telesa: podvojenost + kopiranje v segment —
+ *  bajtno isti ključni vrstni red projectId→dolzinaMm→visinaMm→arMetadata→
+ *  gpsLokacija; vrednosti iz meritve, null = vir brez AR/GPS — nič
+ *  izmišljenega, nič vsiljene terenske točke). */
+export function teloRepostaIzMeritve(
+  m: Pick<
+    Measurement,
+    'projectId' | 'dolzinaMm' | 'visinaMm' | 'arMetadata' | 'gpsLokacija'
+  >,
+  fallbackProjekt: string,
+): RepostTelo {
+  return {
+    projectId: m.projectId || fallbackProjekt,
+    dolzinaMm: m.dolzinaMm,
+    visinaMm: m.visinaMm,
+    arMetadata: m.arMetadata ? (JSON.parse(m.arMetadata) as ArMetadata) : null,
+    gpsLokacija: m.gpsLokacija
+      ? (JSON.parse(m.gpsLokacija) as { lat: number; lng: number })
+      : null,
+  }
+}
+
+/**
+ * R358 FAZA 11 — pošlje REPOST obstoječega telesa na POST /api/measurements
+ * in vrne diskriminiran rezultat (ISTI per-item tok kot posljiVnosMere, a
+ * telo gradi klicatelj — nič novih teles, nič vsiljenih vrednosti):
+ * 'uspeh' z odgovorom strežnika ALI 'osnutek' z ISTIM telom (ne-ok ALI
+ * omrežna napaka). Klicatelji: syncSingleDraft (osnutek že OBSTAJA —
+ * neuspeh NE ustvari novega, vrne false), podvojenost/kopiranje
+ * (osnutek = createMeasurementDraft z ISTIM telesom — R152).
+ */
+export async function posljiRepostMere(
+  telo: RepostTelo,
+): Promise<RezultatVnosaMere> {
+  try {
+    const res = await fetch('/api/measurements', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(telo),
+    })
+    if (res.ok) {
+      // Odgovor strežnika = ustvarjen DTO; klicatelj razširi s svojimi
+      // prikaznimi polja (preslikava pri klicatelju — vzorec FAZA 9/10).
+      return { izid: 'uspeh', podatki: (await res.json()) as Measurement }
+    }
+    return { izid: 'osnutek', telo }
+  } catch {
+    return { izid: 'osnutek', telo }
+  }
+}
 
 /**
  * Pošlje EN vnos mere na POST /api/measurements in vrne diskriminiran

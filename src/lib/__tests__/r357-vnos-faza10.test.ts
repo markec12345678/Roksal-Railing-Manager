@@ -135,16 +135,20 @@ describe('r357 FAZA 10 — 5 enojnih tokov na EN gradnik (vnos-meritve.ts)', () 
     expect((r1 as { telo: unknown }).telo).toEqual((r2 as { telo: unknown }).telo)
   })
 
-  it('(D) EN VIR dokaz: tab = 1 uvoz + 9 klici + 0 × gps literal (24 → 15 → 0); 3 preostali POST fetchi = druge vrste (iskrena meja)', () => {
-    expect(tab.match(/import \{ posljiVnosMere \} from '\.\/measurements\/vnos-meritve'/g)?.length).toBe(1)
+  it('(D) EN VIR dokaz: tab = 1 uvoz + 9 klici + 0 × gps literal (24 → 15 → 0); POST fetchi v tabu 0 (R358 FAZA 11: 3 re-post tokovi → posljiRepostMere)', () => {
+    expect(tab.match(/from '\.\/measurements\/vnos-meritve'/g)?.length).toBe(1)
     expect(tab.match(/await posljiVnosMere\(/g)?.length).toBe(9)
     expect((tab.match(/46\.2397/g)?.length ?? 0)).toBe(0)
-    // Preostali 3 POST /api/measurements klici NE gradijo teles (ni novih
-    // gps/gradenj): sinhronizacija osnutka re-pošlje draft.payload,
-    // podvojenost/kopiranje re-pošljeta obstoječo meritev.
+    // R358 FAZA 11 (zgodovinski komentar): stale pin je tu štel 3 preostala
+    // POST fetcha (iskrena meja FAZA 10 — sinhronizacija osnutka,
+    // podvojenost, kopiranje); R358 jih je prevzel gradnik posljiRepostMere
+    // — tab zdaj ima 0 × POST fetch na /api/measurements (vse telesa gradi
+    // ALI nosi gradnik).
     const postKlici = tab.match(/fetch\('\/api\/measurements', \{\n/g)?.length ?? 0
-    expect(postKlici).toBe(3)
-    expect(tab).toContain('JSON.stringify(draft.payload)')
+    expect(postKlici).toBe(0)
+    // Sinhronizacija osnutka: telo = shranjen draft.payload VERBATIM (R152
+    // kontrakt) — zdaj kot argument gradnika (stringify v gradniku).
+    expect(tab).toContain('posljiRepostMere(draft.payload as RepostTelo)')
   })
 
   it('(E) determinizem: korekcijski vhod ×2 → bajtni isti POST body (100% determinizem)', async () => {
@@ -158,20 +162,23 @@ describe('r357 FAZA 10 — 5 enojnih tokov na EN gradnik (vnos-meritve.ts)', () 
     expect(b1).toContain('"gpsLokacija":{"lat":46.2397,"lng":14.3556}')
   })
 
-  it('(F) UI resnica v UI: preslikava odgovora ostane pri klicatelju (const data = rezultat.podatki ×6) — modul ne ve nič o prikazu', () => {
+  it('(F) UI resnica v UI: preslikava odgovora ostane pri klicatelju (const data = rezultat.podatki ×9) — modul ne ve nič o prikazu', () => {
     // FAZA 10 klicatelji razširijo odgovor s svojimi prikaznimi poljami
     // (bajtno ista preslikava kot stale telesa — vzorec preslikave pri
-    // klicatelju iz FAZA 9).
-    expect(tab.match(/const data = rezultat\.podatki/g)?.length).toBe(6)
+    // klicatelju iz FAZA 9); R358 FAZA 11: +3 (sinhronizacija osnutka +
+    // podvojenost + kopiranje — preslikava ostane pri klicatelju;
+    // zgodovinski pin 6 → 9).
+    expect(tab.match(/const data = rezultat\.podatki/g)?.length).toBe(9)
     expect(modul).not.toContain('tipStebra')
     expect(modul).not.toContain('kotStopinje')
     expect(modul).not.toContain('setMeasurements')
   })
 
-  it('(G) kontrakt oblike: VnosMereTelo + VnosMereZahteva nosita opcionalen readonly predhodnikId (R276)', () => {
+  it('(G) kontrakt oblike: VnosMereTelo + VnosMereZahteva + RepostTelo nosijo opcionalen readonly predhodnikId (R276)', () => {
     expect(modul).toContain('readonly predhodnikId?: string')
-    // Ena definicija tipa v modulu (ni podvojenih deklaracij).
-    expect(modul.match(/readonly predhodnikId\?: string/g)?.length).toBe(2)
+    // Tri definicije v modulu (R358 FAZA 11: RepostTelo se je pridružil —
+    // re-post osnutka korekcije NOSI predhodnikId; zgodovinski pin 2 → 3).
+    expect(modul.match(/readonly predhodnikId\?: string/g)?.length).toBe(3)
   })
 
   it('(H) regresijski stražar: buggy rekonstrukcija telesa IZGINILA — 0 × `gpsLokacija: { lat:` v tabu', () => {
