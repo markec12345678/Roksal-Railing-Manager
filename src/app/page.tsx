@@ -558,22 +558,18 @@ export default function Home() {
             {moreTab === 'teren' && <SiteSurveyTab projectId={selectedProjectId} project={selectedProject} />}
             {moreTab === 'measurement' && <MeasurementStudio projectId={selectedProjectId} />}
             {moreTab === 'cvstudio' && <CvStudio projectId={selectedProjectId} />}
+            {/* R374 (issue #13 R165): V5 — zaklep nad KANONIČNO strežniško
+                verzijo ponudbe (GET/POST /api/quotes + PATCH issue); konec
+                hardcodiranim NIČELNIM quoteData iz page.tsx (prej: skupajZDDV 0
+                + ena WPC postavka s ceno 0 → produkcijski zaklepi so pisali
+                PRAZNO komercialno resnico). */}
             {moreTab === 'signature' && selectedProject && (
               <SignatureQuote
                 projectId={selectedProject.id}
-                quoteData={{
-                  projectName: selectedProject.nazivProjekta,
-                  customerName: selectedProject.customer?.ime || '—',
-                  customerAddress: selectedProject.customer?.naslov || '—',
-                  customerPhone: selectedProject.customer?.telefon ?? undefined,
-                  items: [
-                    { opis: 'Ograja WPC H-Line (po meri)', kolicina: '1', enota: 'kos', cena: '0', skupaj: '0' },
-                  ],
-                  skupajBrezDDV: 0,
-                  ddv: 0,
-                  skupajZDDV: 0,
-                  datum: new Date().toLocaleDateString('sl-SI'),
-                }}
+                projectName={selectedProject.nazivProjekta}
+                customerName={selectedProject.customer?.ime || '—'}
+                customerAddress={selectedProject.customer?.naslov || '—'}
+                customerPhone={selectedProject.customer?.telefon ?? undefined}
                 monterName={selectedProject.monter?.ime || 'Monter Roksal'}
                 onDealLocked={() => {
                   // Po deal-locku osveži projekte da se status posodobi

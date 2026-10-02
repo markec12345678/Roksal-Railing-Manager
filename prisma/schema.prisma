@@ -107,6 +107,7 @@ model Customer {
   kategorija     String? // "Stanovanjska skupnost" | "Posameznik" | "Podjetje"
 
   projects Project[]
+  quotes    Quote[] // R373 — ponudbe stranke (§3)
 }
 
 // ============================================
@@ -212,6 +213,7 @@ model Project {
   qualityControls      QualityControl[] // R146 §27 — preverbe kakovosti projekta
   installationEvidence InstallationEvidence[] // R147 §28 — montažna dokazila projekta
   syncTombstones       SyncTombstone[] // R148 §36 — grobnice sync (SetNull preživijo brisanje projekta)
+  quotes               Quote[] // R373 §3 — kanonične ponudbe projekta
 }
 
 // ============================================
@@ -779,6 +781,11 @@ model SignatureAudit {
   geoLongitude      Float?
   pdfUrl            String? // povezava do generiranega PDF (če shranjen)
   pdfHash           String? // SHA-256 hash PDF vsebine za pravno integriteto
+  // R373 (issue #13 korak R165, §16 veriga): podpis je vezan na TOČNO to
+  // verzijo ponudbe. Nullable — vsi zapisi pred R373 (legacy deal-lock s
+  // klientovim quoteData) nimajo verzije in ostanejo nespremenjeni.
+  quoteVersionId    String? // kanonična QuoteVersion, nad katero je bil podpis dan
+  quoteInputHash    String? // inputHash verzije v trenutku podpisa (dokaz istosti)
   isValid           Boolean  @default(true)
   createdAt         DateTime @default(now())
 
@@ -787,6 +794,7 @@ model SignatureAudit {
   @@index([projectId])
   @@index([createdAt])
   @@index([storageKey])
+  @@index([quoteVersionId])
 }
 
 // ============================================
@@ -1363,4 +1371,119 @@ model JobRun {
 
   @@index([type, createdAt])
   @@index([createdAt])
+}
+
+// ============================================
+// 24. R373 — KANONIČNA POSLOVNA RESNICA PONUDB (issue #13 korak R165)
+// PriceBookVersion/PriceBookItem + Quote/QuoteVersion: strežniško avtoritativni
+// cenik in NESPREMENLJIVE (immutable) verzije ponudb.Deal-lock se od R373
+// veže EXKLUZIVNO na QuoteVersion (§2/§3/§4/§7/§8/§16/§17).
+// ============================================
+
+/// R373 (§4): strežniško avtoritativna verzija cenika. Statusni stroj
+/// DRAFT → ACTIVE → RETIRED (en vir: src/lib/price-book-store.ts). Aktivacija
+/// nove verzije TRANSAKCIJSKO upokoji prejšnjo ACTIVE — DVE hkrati je pokvarjeno
+/// stanje in se JAVNO odkloni (nikoli "izberi novejšo").
+model PriceBookVersion {
+  id            String    @id @default(cuid())
+  /// Zaporedna številka verzije cenika (1 = seed iz defaultPriceBook).
+  version       Int       @unique
+  /// DRAFT | ACTIVE | RETIRED (CHECK v migraciji; statusni stroj v lib).
+  status        String
+  currency      String    @default("EUR")
+  effectiveFrom DateTime
+  effectiveTo   DateTime?
+  note          String?
+  createdById   String?
+  approvedById  String?
+  createdAt     DateTime  @default(now())
+  approvedAt    DateTime?
+
+  items  PriceBookItem[]
+  quoteVersions QuoteVersion[] // R373 §3 — verzije, vezane na to verzijo cenika
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+/// R373 (§4): posamezna postavka cenika. `key` = numerični ključ iz
+/// PriceBook (defaultPriceBook — src/lib/quote.ts; whitelist fail-closed).
+/// referenceCost NULL = lastnik še NI VNESel realne nabavne cene → načrtovana
+/// marža je iskreno NEZNANA (§8: nikoli izmišljeni odstotki).
+model PriceBookItem {
+  id                 String   @id @default(cuid())
+  priceBookVersionId String
+  /// Numerični ključ PriceBook (npr. "glassPerM2", "vatPercent").
+  key                String
+  label              String
+  unit               String
+  /// Kategorija BOM skupine (GLASS/PROFILES/POSTS/INFILL/FIXINGS/LABOUR/OTHER).
+  category           String
+  salesPrice         Decimal  @db.Decimal(12, 2) // CHECK >= 0 v migraciji
+  /// NULL = NEZNANO (iskrena marža; §8) — nikoli placeholder 0.6/0.15.
+  referenceCost      Decimal? @db.Decimal(12, 2)
+
+  priceBookVersion PriceBookVersion @relation(fields: [priceBookVersionId], references: [id], onDelete: Cascade)
+
+  @@unique([priceBookVersionId, key])
+  @@index([priceBookVersionId])
+}
+
+/// R373 (§3): ponudba projekta — nosilec zaporednih verzij.
+model Quote {
+  id               String    @id @default(cuid())
+  projectId        String
+  customerId       String?
+  /// ŽIVLJENJSKI CIKL ponudbe (vedno odprt — verzije so tiste z življenjskim ciklom).
+  status           String    @default("ODPRTA")
+  /// Kazalnik na trenutno (zadnjo) verzijo — skalarne reference (brez FK
+  /// cikla Quote→QuoteVersion→Quote); resnico o verzijah nosi QuoteVersion.
+  currentVersionId String?
+  createdById      String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  project  Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  customer Customer?      @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  versions QuoteVersion[]
+
+  @@index([projectId])
+}
+
+/// R373 (§3): NESPREMENLJIVA verzija ponudbe. Po ISSUED/APPROVED se NE spreminja
+/// (sprememba = nova verzija; statusni stroj DRAFT→ISSUED→APPROVED,
+/// DRAFT→REJECTED, supersede ob novi verziji — src/lib/quote-versions.ts).
+/// inputsJson = točno vhodi izračuna (points/closed/overridesMm/spec override),
+/// linesJson = postavke (QuoteItem[] z sourceKey), seštevki subtotal/vat/total
+/// pa so VEZANI na priceBookVersionId + inputHash (verifyQuoteVersionIntegrity).
+model QuoteVersion {
+  id                String   @id @default(cuid())
+  quoteId           String
+  versionNumber     Int
+  /// DRAFT | ISSUED | APPROVED | REJECTED | SUPERSEDED (CHECK v migraciji).
+  status            String
+  /// VHODI izračuna (surovi, ne zliti) — rekonstrukcija iz njih + VEZANE knjige.
+  inputsJson        Json
+  /// Postavke QuoteItem[] (vključno sourceKey za maržo).
+  linesJson         Json
+  subtotal          Decimal  @db.Decimal(12, 2) // CHECK >= 0
+  vat               Decimal  @db.Decimal(12, 2) // CHECK >= 0
+  total             Decimal  @db.Decimal(12, 2) // CHECK >= 0
+  currency          String   @default("EUR")
+  /// Prstni odtis učinkovitih vhodov (quoteInputFingerprint, quote-v1).
+  inputHash         String
+  /// VEZANA verzija cenika — integriteta se preverja PROTI NJOJ (§4).
+  priceBookVersionId String
+  createdById       String?
+  approvedById      String?
+  createdAt         DateTime @default(now())
+  approvedAt        DateTime?
+
+  quote           Quote            @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  priceBookVersion PriceBookVersion @relation(fields: [priceBookVersionId], references: [id])
+
+  @@unique([quoteId, versionNumber])
+  @@index([quoteId])
+  @@index([priceBookVersionId])
+  @@index([status])
 }

@@ -103,7 +103,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 45 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **5254** (337 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **5294** (340 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 143 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -1743,6 +1743,36 @@ Sheet z 6 podzavihki:
   površina, izjema #2 iz val 52] — vedno z fetch-first + TSV kanonom + stale-pin
   PRED-skanom + ŠTEVEC guard skenom (LEKCIJA (7)). ISSUE #1: vsa sprejemna merila ✓;
   ostaja odprt, owner 'Razvoj > QA' [AGENT STARTUP RULE: razvoj > QA].
+- **Issue #13, korak R165 — KANONIČNA POSLOVNA RESNICA PONUDB: QuoteVersion + PriceBookVersion + kanonični deal-lock** (R374 —
+  KOLIZIJA #16 [LEKCIJA 1 16. potrditev]: vzporedna lastniška R373 [a26107d — QA/STIL val 56 runda] pristala MED mojim delom in vzela
+  številko → moja runda preimenovana R373→R374 po kanonu KOLIZIJE #4/R323/#13–#15; `git reset --hard origin/main`, delta re-aplicirana
+  z preimenovanjem artefaktov [r374.tsv + r374-*.test.ts + migracija 20261003080000_r374_quote_versions]; njihovi r373-* artefakti
+  ostanejo = delegirana zgodovina; strežnik je vir denarja; konec klientovega quoteData, lažne marže ×0.6/×0.15 in BOM tekstovne
+  hevristike; IDOR na GET deal-lock zaprt; SignatureQuote V5 nad strežniškimi verzijami — konec hardcodiranim ničelnim zaklepom iz
+  page.tsx): (1) **PriceBookVersion/PriceBookItem** — strežniško-avtoritativni, verzionirani cenik [GET/POST /api/price-book;
+  aktivacija = price.override ADMIN/VODJA, transakcijsko upokoji prejšnjo (R294 F4: now kot parameter — stena ure živi v ruti);
+  fail-closed whitelist nad manjkajočimi/neznanimi ključi (reconstruct 409, nikoli default iz kode); seed v1 = defaultPriceBook()
+  vrednosti, referenceCost NULL = marža iskreno NEZNANO — 60 %/15 % placeholder IZBRISAN (§8)]; (2) **Quote/QuoteVersion** —
+  nemutabilne verzije [POST/GET /api/quotes + GET/PATCH /api/quotes/[id]; seštevki/postavke/odtis izračuna STREŽNIK iz vezane knjige
+  — klientov total/prices/lines NIMA učinka (testirano forged); statusni stroj DRAFT→ISSUED→APPROVED (APPROVED SAMO ob zaklepu s
+  podpisom, atomarno); nova verzija supersede DRAFT; zaklenjen projekt → 403/409]; (3) **POST /api/deal-lock REWRITE** —
+  quoteVersionId OBVEZNO, legacy klientov quoteData → 400; prečni projekt → 409; DRAFT → 409; CELOVITOST: rekonstrukcija iz
+  shranjenih vhodov + VEZANE knjige mora dati iste postavke/seštevke/odtis (tampiranje DB → javna napaka 409, testirano); BOM draft
+  iz STRUKTURIRANIH postavk [sku = code, konec includes('wpc') hevristike in Math.ceil(EUR/50)]; marginLocked = NULL dokler
+  referenceCost manjka (rastna pot: nova knjiga z referencami → marža realna BREZ spremembe kode); SignatureAudit.quoteVersionId +
+  quoteInputHash (§16 veriga); estimatedPrice = total verzije; (4) **GET /api/deal-lock IDOR ZAPRT** (§17: assertProjectAccess
+  'read' + minimalni DTO — storageKey/ip/UA/fingerprint/geo/sha256 ODHANJENI; SKLADISCE zakonito bere vse — material kontekst);
+  (5) **/api/quote** — osnova cenika = AKTIVNA strežniška verzija (override ostane samo PREDogLED kalkulatorja; 503 fail-closed brez
+  aktivne knjige); (6) **QuoteItem.sourceKey** — push() v lib/quote.ts je EN VIR odločitve cenik ključa (handrail switch prek
+  handrailBookKey — brez vzporedne resnice); (7) **SignatureQuote V5** — seznam verzij projekta + hitra ponudba (dolžina/višina →
+  POST /api/quotes) + izdaja (PATCH issue) + zaklep SAMO nad ISSUED/APPROVED; PDF iz postavk verzije; page.tsx NE pošilja več
+  HARDCODIRANIH NIČEL (prej: skupajZDDV 0 + ena WPC postavka cena 0 → produkcijski zaklepi so pisali PRAZNO komercialno resnico);
+  migracija 20261003080000_r374_quote_versions [4 tabele + SignatureAudit kolone + seed 25 postavk, CHECK ×6 vse VALIDATED].
+  PIN SHIFT-i: r191 val2 43/58→46/61 (skupaj 55/71) + r308 82→85 rut + r316 amber register 30→31 (+SUPERSEDED badge) + r167 dark
+  fallback badge. Verifikacija: tsc 0 · eslint 0 · vitest 5294/5294 (340 datotek; +40 novih: r374-quote-versions ×22 +
+  r374-price-book-store ×9 + r374-canonical-deal-lock ×9 — forged totals/tampiranje/prečni projekt/DRAFT zaklep/dvojni zaklep/IDOR/
+  minimalni DTO/dve ACTIVE 409/fail-closed reconstruct] · build svež EXIT=0 · qa-needles/r374.tsv [4 need_static ŽIVO v buildu +
+  TODO-R374 must_miss čisto]. Naslednji korak #13: R166 strukturiran BOM + BOMVersion + SKU/inventory vezava (§5/§6/§11).
 - **Ring pariteta val 56 (male družine: white + white/60 + roksal-green/40 RAW) — per-barvni split kanon ZAKLJUČEN** (R373): (1) **prva naloga**
   — prod-qa re-run prek kanona `r359-prod-qa-retry.sh 372`: **ZELEN ob poskusu 1**
   (12. runda zapored) + **ŠESTINDVJSETIJNA era preverba** NOV kanonski skript

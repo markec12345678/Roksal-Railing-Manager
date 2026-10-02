@@ -1,0 +1,31 @@
+# qa-needles/r374.tsv — REGISTER needlejev runde R374 (issue #13, korak
+# R165 iz §32/§2–§8/§16/§17 — KANONIČNA POSLOVNA RESNICA PONUDB:
+# QuoteVersion + PriceBookVersion + kanonični deal-lock; strežnik je vir
+# denarja; konec klientovega quoteData, lažne marže ×0.6/×0.15 in BOM
+# tekstovne hevristike includes('wpc')/Math.ceil(EUR/50); IDOR na GET
+# deal-lock zaprt (assertProjectAccess 'read' + minimalni DTO); V5
+# signature-quote nad strežniškimi verzijami — konec hardcodiranim
+# ničelnim zaklepom iz page.tsx).
+# ============================================================================
+# FORMAT (TSV; EN vrstica = EN needle; TAB je LOČILO — presledki znotraj
+# needleja so POMENNI, ker grep -F išče dobesedno) — ENAK format kot
+# r340.tsv…r372.tsv (kanon R340 qa-round.sh: needleji so PODATEK):
+#   <needle_string><TAB><opis<TAB><vrsta>
+# Vrste: need_static (MORA biti ŽIV v svežem buildu) | must_miss (NESME
+# biti v produkcijskih čankih).
+# Fetch-first preverba (kanon R366–R372): VSAK need_static je ×0 v
+# trenutnem HEAD pred commitom (git grep -F GLASNO) — needleji spodaj
+# so vsi ×0 potrjeni nad HEAD 777e84f (R372).
+# Izpuščeni kandidati (iskreno): 'Ni aktivne verzije cenika' (3 datoteke —
+# ne diskriminira), 'quoteVersionId' (16+ pojavitev v 8 datotekah —
+# splošen identifikator, ne needle), 'getActivePriceBookVersion' (7
+# datotek — uvoz, ne površina); kanon 4 needleje/rundo.
+# Pokritost virov: V5 UI (2 needleja: izdaj/ustvari gumb + podpis guard),
+# price-book POST rute (1: permission vrata), deal-lock POST (1: legacy
+# quoteData zavrnitev — R374 podpisni niz). Server-side stringi živijo v
+# .next/server čankih (grep -rF nad celotnim .next kanon R340).
+Ustvari ponudbo (osnutek)	R374 V5 signature-quote hitra ponudba gumb (x1 pojavitev; 0 v HEAD)	need_static
+Izdaj verzijo (DRAFT → ISSUED)	R374 V5 signature-quote izdaja osnutka title (x1 pojavitev; 0 v HEAD)	need_static
+Osnutek se ne podpisuje — najprej ga izdajte	R374 V5 signature-quote zaklep guard opomba (x1 pojavitev; 0 v HEAD)	need_static
+Spreminjanje cenika zahteva pravico price.override	R374 price-book POST permission vrata (x1 pojavitev; 0 v HEAD)	need_static
+TODO-R374	must_miss: razvojni ostanki (nesme biti v produkcijskih cankih)	must_miss

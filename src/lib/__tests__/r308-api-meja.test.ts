@@ -45,11 +45,15 @@ function zberiRute(): { pot: string; vsebina: string }[] {
 const byId = (krš: MejaKršitev[], id: string) => krš.filter((k) => k.preverba === id)
 
 describe('R308 — REALNIM drevo: stena ura ŽIVO (0 kršitev na vseh 5 preverbah)', () => {
-  it('vseh 82 route datotek prebranih in pregledanih — obseg pregleda NI tiho skrčen (R326: + zgodovina cen)', () => {
+  it('vseh 85 route datotek prebranih in pregledanih — obseg pregleda NI tiho skrčen (R326: + zgodovina cen; PIN SHIFT R374: 82→85 — +price-book, +quotes, +quotes/[id])', () => {
     const rute = zberiRute()
-    expect(rute).toHaveLength(82)
-    expect(new Set(rute.map((r) => r.pot)).size).toBe(82)
+    expect(rute).toHaveLength(85)
+    expect(new Set(rute.map((r) => r.pot)).size).toBe(85)
     expect(rute.some((r) => r.pot === 'src/app/api/material-prices/zgodovina/route.ts')).toBe(true)
+    // R374 (issue #13 R165): nove kanonske rute morajo ostati v obsegu pregleda
+    expect(rute.some((r) => r.pot === 'src/app/api/price-book/route.ts')).toBe(true)
+    expect(rute.some((r) => r.pot === 'src/app/api/quotes/route.ts')).toBe(true)
+    expect(rute.some((r) => r.pot === 'src/app/api/quotes/[id]/route.ts')).toBe(true)
   })
 
   it('pregledajApiMejo nad celotnim drevesom → 0 kršitev (stena ura potrjena)', () => {

@@ -92,6 +92,12 @@ const ZAKLENJENO: Record<string, string[]> = {
     "bg: 'bg-amber-50 dark:bg-amber-950/40',",
     "ring: 'ring-amber-200 dark:ring-amber-800',",
     "<section className=\"rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/40\">"
+  ],
+  // PIN SHIFT R374 (issue #13 R165): V5 signature-quote STATUS_BADGE.SUPERSEDED —
+  // semantični statusni badge (SUPERSEDED = opozorilna zamenjava verzije),
+  // isti vzorec kot measurement-studio STATE_BADGE lestvica.
+  "src/components/roksal/signature-quote.tsx": [
+    "SUPERSEDED: { label: 'Zamenjana', cls: 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800' },"
   ]
 }
 
@@ -118,7 +124,8 @@ const RAZLOGI: Record<string, string> = {
   "src/components/roksal/photo-measure.tsx": "zaupanje 3-nivojska lestvica (visoko green / srednje amber / nizko red)",
   "src/app/setup/setup-client.tsx": "setup warning vsebnik (semantični warning container — zunaj roksal lupine)",
   "src/app/portal/[token]/gallery.tsx": "portal faza PRED (PRED/MED/PO faze lestvica)",
-  "src/app/portal/[token]/page.tsx": "portal warning/faza vsebniki (zunanja portal površina, semantična)"
+  "src/app/portal/[token]/page.tsx": "portal warning/faza vsebniki (zunanja portal površina, semantična)",
+  "src/components/roksal/signature-quote.tsx": "R374 — STATUS_BADGE.SUPERSEDED (V5 kanonične verzije: opozorilna zamenjena verzija, vzorec measurement-studio STATE_BADGE)"
 }
 
 function beriDrevo(dir: string, izhod: string[] = []): string[] {
@@ -162,7 +169,8 @@ describe('r316 stil val 7 STRAŽAR — zaključni GLOBALNI register surove amber
         expect(vrstice.includes(d), rel + ': zaklenjena vrstica manjka (zastarel register): ' + d.slice(0, 60)).toBe(true)
       }
     }
-    expect(najdenihSkupaj).toBe(30)
+    // PIN SHIFT R374: 30 → 31 (+signature-quote SUPERSEDED badge — V5)
+    expect(najdenihSkupaj).toBe(31)
     expect(nezgodbene, 'nove surove amber vrstice IZVEN registra: ' + nezgodbene.join(' | ')).toEqual([])
   })
 

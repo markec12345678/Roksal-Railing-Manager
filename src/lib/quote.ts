@@ -49,6 +49,14 @@ export interface QuoteItem {
   unit: BomUnit
   unitPrice: number
   total: number
+  /**
+   * R374 (issue #13 §8): ključ cenika, iz katerega je cena te postavke
+   * (npr. 'glassPerM2'). EN VIR za načrtovano maržo — plannedMargin() v
+   * quote-versions.ts prek njega poišče referenceCost. Odsoten pri
+   * izpelanih postavkah (DROBNI — odstotek materiala, brez cenikovske
+   * cene); te so za maržo IZRECNO izven (iskreno, ne izmišljeni strošek).
+   */
+  sourceKey?: string
 }
 
 export interface Quote {
@@ -146,14 +154,19 @@ export function defaultPriceBook(over: Partial<PriceBook> = {}): PriceBook {
 }
 
 /**
- * Zlije delni cenik s privzetim — samo za znane ključe in samo števila.
+ * Zlije delni cenik z OSNOVO — samo za znane ključe in samo števila.
  *
  * API ne sme sprejeti poljubnega JSON kot cenik: `{ "vatPercent": "nič" }` ali
  * `{ "total": 1 }` bi sicer prišlo do računanja. Zato beli seznam in preverba
  * tipov; neznani ključi se tiho ignorirajo (starejši klient ne sme podreti rute).
+ *
+ * R374 (issue #13 §4): osnova je privzeto defaultPriceBook, lahko pa je
+ * STREŽNIŠKO AVTORITATIVNA aktivna verzija (getActivePriceBookVersion →
+ * prices) — klientov override ostane SAMO kalkulatorjev PREDogLED, nikoli
+ * uradna cena verzije ponudbe (ta se veže na PriceBookVersion iz baze).
  */
-export function mergePriceBook(over: Record<string, unknown> = {}): PriceBook {
-  const out: PriceBook = { ...defaultPriceBook() }
+export function mergePriceBook(over: Record<string, unknown> = {}, base: PriceBook = defaultPriceBook()): PriceBook {
+  const out: PriceBook = { ...base }
   // Beli seznam številskih ključev, izpeljan iz samega cenika — ko dodaš polje,
   // ga ni treba prepisovati še tu.
   const numeric = new Set<string>(
@@ -175,20 +188,31 @@ export function mergePriceBook(over: Record<string, unknown> = {}): PriceBook {
   return out
 }
 
-/** Cena pokrovne letev glede na izbrani tip. */
-export function handrailPricePerM(spec: RailingSpec, prices: PriceBook): number {
+/**
+ * R374 (issue #13 §8 — EN VIR odločitve): ključ cenika za pokrovno letev
+ * glede na izbrani tip. CENO in sourceKey postavke deluje ISTA odločitev
+ * (handrailPricePerM spodaj bere ta ključ — brez vzporedne resnice, kjer bi
+ * cena šla po enem switch-u in marža po drugem).
+ */
+export function handrailBookKey(spec: RailingSpec): 'woodHandrailPerM' | 'roundHandrailPerM' | 'coverRailPerM' | null {
   switch (spec.handrail.type) {
     case 'WOOD':
-      return prices.woodHandrailPerM
+      return 'woodHandrailPerM'
     case 'ROUND_42':
     case 'ROUND_48':
-      return prices.roundHandrailPerM
+      return 'roundHandrailPerM'
     case 'U_COVER_ALU':
     case 'RECT':
-      return prices.coverRailPerM
+      return 'coverRailPerM'
     case 'NONE':
-      return 0
+      return null
   }
+}
+
+/** Cena pokrovne letev glede na izbrani tip (ključ iz handrailBookKey — EN VIR). */
+export function handrailPricePerM(spec: RailingSpec, prices: PriceBook): number {
+  const key = handrailBookKey(spec)
+  return key === null ? 0 : prices[key]
 }
 
 function handrailName(spec: RailingSpec): string {
@@ -232,6 +256,8 @@ export function buildQuote(layout: LayoutResult, spec: RailingSpec, prices: Pric
   const runM = totalRunMm(layout) / 1000
   const waste = 1 + spec.wastePercent / 100
 
+  // R374: push nosi sourceKey (ključ cenika postavke — EN VIR za maržo).
+  // Količine/cene/seštevki so NESPREMENJENI (računi canonical-chain ostajajo).
   const push = (
     code: string,
     group: BomGroup,
@@ -240,7 +266,8 @@ export function buildQuote(layout: LayoutResult, spec: RailingSpec, prices: Pric
     qty: number,
     unit: BomUnit,
     unitPrice: number,
-  ) => items.push({ code, group, name, detail, qty, unit, unitPrice, total: money(qty * unitPrice) })
+    sourceKey?: string,
+  ) => items.push({ code, group, name, detail, qty, unit, unitPrice, sourceKey, total: money(qty * unitPrice) })
 
   // ── Steklo ────────────────────────────────────────────────────────────────
   const glass = layout.panels.filter((p) => p.kind === 'GLASS')
@@ -268,6 +295,7 @@ export function buildQuote(layout: LayoutResult, spec: RailingSpec, prices: Pric
         group.length,
         'kos',
         money(areaM2 * prices.glassPerM2),
+        'glassPerM2',
       )
     }
     const perimeterM = glass.reduce((s, p) => s + (2 * (p.widthMm + p.heightMm)) / 1000, 0)
@@ -279,6 +307,7 @@ export function buildQuote(layout: LayoutResult, spec: RailingSpec, prices: Pric
       money(perimeterM),
       'm',
       prices.polishedEdgePerM,
+      'polishedEdgePerM',
     )
   }
 
@@ -292,6 +321,7 @@ export function buildQuote(layout: LayoutResult, spec: RailingSpec, prices: Pric
       money(runM * waste),
       'm',
       prices.baseProfilePerM,
+      'baseProfilePerM',
     )
   }
   if (hasHandrail(spec) && spec.handrail.type !== 'NONE') {
@@ -304,6 +334,7 @@ export function buildQuote(layout: LayoutResult, spec: RailingSpec, prices: Pric
       money(railM * waste),
       'm',
       handrailPricePerM(spec, prices),
+      handrailBookKey(spec) ?? undefined,
     )
   }
 
@@ -317,6 +348,7 @@ export function buildQuote(layout: LayoutResult, spec: RailingSpec, prices: Pric
       layout.posts.length,
       'kos',
       prices.postPerEach,
+      'postPerEach',
     )
     const side = spec.postFixing === 'SIDE_BRACKET'
     push(
@@ -327,6 +359,7 @@ export function buildQuote(layout: LayoutResult, spec: RailingSpec, prices: Pric
       layout.posts.length,
       'kos',
       side ? prices.postSideBracketPerEach : prices.postBasePlatePerEach,
+      side ? 'postSideBracketPerEach' : 'postBasePlatePerEach',
     )
   }
 
@@ -341,6 +374,7 @@ export function buildQuote(layout: LayoutResult, spec: RailingSpec, prices: Pric
       money(barM * waste),
       'm',
       prices.barPerM,
+      'barPerM',
     )
   }
   const mesh = layout.panels.filter((p) => p.kind === 'MESH')
@@ -353,6 +387,7 @@ export function buildQuote(layout: LayoutResult, spec: RailingSpec, prices: Pric
       money(mesh.reduce((s, p) => s + p.areaM2, 0)),
       'm2',
       prices.meshPerM2,
+      'meshPerM2',
     )
   }
   const wood = layout.panels.filter((p) => p.kind === 'WOOD')
@@ -365,6 +400,7 @@ export function buildQuote(layout: LayoutResult, spec: RailingSpec, prices: Pric
       money(wood.reduce((s, p) => s + p.areaM2, 0)),
       'm2',
       prices.woodPerM2,
+      'woodPerM2',
     )
   }
   const custom = layout.panels.filter((p) => p.kind === 'CUSTOM')
@@ -377,6 +413,7 @@ export function buildQuote(layout: LayoutResult, spec: RailingSpec, prices: Pric
       custom.length,
       'kos',
       prices.customElementPerEach,
+      'customElementPerEach',
     )
   }
 
@@ -391,6 +428,7 @@ export function buildQuote(layout: LayoutResult, spec: RailingSpec, prices: Pric
       anchors,
       'kos',
       prices.anchorPerEach,
+      'anchorPerEach',
     )
   }
   if (glass.length > 0) {
@@ -402,34 +440,35 @@ export function buildQuote(layout: LayoutResult, spec: RailingSpec, prices: Pric
       money(runM * waste),
       'm',
       prices.gasketPerM,
+      'gasketPerM',
     )
     const jointM = Math.max(0, runM - glass.reduce((s, p) => s + p.widthMm / 1000, 0))
     if (jointM > 0.05) {
-      push('SILIKON', 'FIXINGS', 'Silikon za steklene fuge', 'Prozoren, UV obstojen', money(jointM), 'm', prices.siliconeJointPerM)
+      push('SILIKON', 'FIXINGS', 'Silikon za steklene fuge', 'Prozoren, UV obstojen', money(jointM), 'm', prices.siliconeJointPerM, 'siliconeJointPerM')
     }
   }
   const corners = cornerCount(layout)
   if (corners > 0 && hasHandrail(spec)) {
-    push('KOT', 'FIXINGS', 'Kotni element / varjeni vogal letev', finishLabel(spec), corners, 'kos', prices.cornerElementPerEach)
+    push('KOT', 'FIXINGS', 'Kotni element / varjeni vogal letev', finishLabel(spec), corners, 'kos', prices.cornerElementPerEach, 'cornerElementPerEach')
   }
   const freeEnds = hasHandrail(spec) && spec.handrail.returnsAtEnds ? freeEndCount(layout) : 0
   if (freeEnds > 0) {
-    push('KAPICA', 'FIXINGS', 'Zaključna kapica / vračilo letev', finishLabel(spec), freeEnds, 'kos', prices.endCapPerEach)
+    push('KAPICA', 'FIXINGS', 'Zaključna kapica / vračilo letev', finishLabel(spec), freeEnds, 'kos', prices.endCapPerEach, 'endCapPerEach')
   }
 
   // ── Storitve ──────────────────────────────────────────────────────────────
   if (runM > 0.01) {
     if (spec.demolition) {
-      push('DEMONT', 'LABOUR', 'Demontaža obstoječe ograje', 'Vključno z odvozom materiala', money(runM), 'm', prices.demolitionPerM)
+      push('DEMONT', 'LABOUR', 'Demontaža obstoječe ograje', 'Vključno z odvozom materiala', money(runM), 'm', prices.demolitionPerM, 'demolitionPerM')
     }
     if (spec.mountingIncluded) {
-      push('MONTAZA', 'LABOUR', 'Montaža in nastavljanje', 'Sidranje, polnilo, letev, čiščenje', money(runM), 'm', prices.mountingPerM)
+      push('MONTAZA', 'LABOUR', 'Montaža in nastavljanje', 'Sidranje, polnilo, letev, čiščenje', money(runM), 'm', prices.mountingPerM, 'mountingPerM')
     }
     if (prices.transportFlat > 0) {
-      push('PREVOZ', 'LABOUR', 'Prevoz in logistika', 'Pavšal', 1, 'komplet', prices.transportFlat)
+      push('PREVOZ', 'LABOUR', 'Prevoz in logistika', 'Pavšal', 1, 'komplet', prices.transportFlat, 'transportFlat')
     }
     if (prices.surveyFlat > 0) {
-      push('IZMERA', 'LABOUR', 'Izmera na objektu', 'AR izmera in zapisnik', 1, 'komplet', prices.surveyFlat)
+      push('IZMERA', 'LABOUR', 'Izmera na objektu', 'AR izmera in zapisnik', 1, 'komplet', prices.surveyFlat, 'surveyFlat')
     }
   }
 
