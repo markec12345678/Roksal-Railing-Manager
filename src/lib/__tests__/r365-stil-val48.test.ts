@@ -37,14 +37,16 @@ const R364SPOT = readFileSync(join(process.cwd(), 'scripts/r364-qa-spot.sh'), 'u
 const R244 = readFileSync(join(process.cwd(), 'src/lib/__tests__/r244-wave6-rbac.test.ts'), 'utf8')
 
 describe('R365 — STIL val 48: ring pariteta logistics-tab družine', () => {
-  it('(A) PARITETA guard: vsak navy/40 žeton v datoteki nosi ring-offset-2 (razcep števca = 0; 36/36) + red-400/50 stray družina ostane nespremenjena (per-barvni split — iskren popis)', () => {
+  it('(A) PARITETA guard: vsak navy/40 žeton v datoteki nosi ring-offset-2 (razcep števca = 0; 36/36) + red-400/50 stray družina: val 50 (R367) oblikovna pariteta — ring-2 + offset-2, barva OHRANJENA (per-barvni split; 2/2)', () => {
     const vsi = LOG.split('focus-visible:ring-roksal-navy/40').length - 1
     const zOffsetom = LOG.split('focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2').length - 1
     expect(vsi).toBe(36)
     expect(vsi - zOffsetom).toBe(0)
-    // stray rdeča družina: dokumentirana, NE tiho pomešana (LEKCIJA R362 (4): sonda definira svoj obseg iskreno)
+    // red-400/50: števec nespremenjen (val 50 = shape-only, barva bajtno ista);
+    // stale pin shiftan val 50 (R367): offset-2 števec 0→2 (oblikovna pariteta
+    // rdeče družine — precedens val 44/47 normalizacija)
     expect(LOG.split('focus-visible:ring-red-400/50').length - 1).toBe(2)
-    expect(LOG.split('focus-visible:ring-red-400/50 focus-visible:ring-offset-2').length - 1).toBe(0)
+    expect(LOG.split('focus-visible:ring-red-400/50 focus-visible:ring-offset-2').length - 1).toBe(2)
   })
 
   it('(B) era-diskriminatorji ×1/×1/×3/×5 (vsi ×0 v HEAD pred rundo — fetch-first git show grep; multiplicita = grep -o POJAVITVE, ne vrstice — LEKCIJA R365)', () => {

@@ -103,7 +103,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 45 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **5219** (330 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **5224** (331 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 143 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -1325,6 +1325,49 @@ Sheet z 6 podzavihki:
   ×1/×1/×4/×8 v POJAVITVAH, vsi ×0 v HEAD fetch-first git grep; 5. kandidat
   izpuščen — redundanten z N1; must_miss; python write z \t; NF=3 čisto]
   + README disk resnica [5219/330 + R366 bullet].
+- **Ring pariteta val 50 + e2e-lib dedup 7. val** (R367): (1) **prva naloga**
+  — prod-qa re-run prek kanona `r359-prod-qa-retry.sh 366` ZELEN ob **poskusu
+  2** (1. teek je zadetel znani transient — retry kanon PRAVIČNO porabljen,
+  8. runda zapored) + **DVAJSETIJNA era preverba** `r367-era-harvest.sh`
+  EXIT=0 ob 1. teku: 20 registrov r347–r366 (≥85 need_static = 81 + 4), 83
+  ŽIVO direktno + 2 R353 prek hash rezolucije (CDN HTTP 200), R366 val 49 ×4
+  ŽIVO DIREKTNO [chunk_036] → deploy potrjen v celoti, must_miss ×20 čisto,
+  era kontrole R340/R341/R343/R345 ŽIV; (2) **val 49 POST-deploy
+  verifikacija** (spot-r167/12, mounted + className LOČENO): material
+  naročila/dobavitelji — izvozna pillola VEDNO vidna z offset-2 (nacrtiCsv,
+  dobaCsv, dobaPdf true ×3), **mainBrezOffset 0 na obeh podzavihkih**
+  (mainNavy40 3/3 + 8/8); pogojne površine iskreno NEmontirane z razlogom
+  iz vira: chipCls filter za `orders.length > 0` vrati (L1646, kanon r277),
+  Nov dobavitelj CTA za `lahkoUpravljaKatalog` vrata (fail-closed R242);
+  val 46 stabilnost (3. uporaba kanona eb_sonda_zaloge); kolektor 0
+  errorjev; (3) **MANDATORY STIL val 50** — ring OBLIKOVNA pariteta rdeče
+  focus družine, per-barvni split zaključen (LEKCIJA R365 (3)): 5 članov
+  čez 4 datoteke vsi z ring-2 + offset-2 — logistics L2732 (+offset-2),
+  L3081 (BREZ ring-2! +oba), photo L2378 (+offset-2), sketch L602
+  (+offset-2, red-400/60), material L2352 (offset-1→2 — val 49 jo je
+  iskreno pustil izven); **BARVNI ŽIGI bajtno nespremenjeni** (shape-only,
+  destruktivna semantika r236 ohranjena); in-place 0 novih vrstic
+  (3294/2684/938/2366); 0 novih hex (1/12/14/0); aria/title ZAMRZNJENI;
+  **3 testne datoteke shiftane V ISTI rundi** (r365 (A) števec 0→2,
+  r244-wave6 eksakten pin — LEKCIJA R363 vzorec, r366 (A) lastni pin
+  offset-1→2; r236 prefix pin preživi); (4) **FEATURE e2e-lib dedup 7.
+  val** — NOV pomočnik `eb_sonda_status_chipi` (2-poljna sonda ×2
+  byte-identična v r365 D + r366 D — PROAKTIVEN kanon pri 2. ponovitvi po
+  LEKCIJI R362 (3), precedens eb_sonda_ring_pariteta/eb_pocakaj_zalogo) s
+  porabo ob 1. uporabi v `r367-qa-spot.sh` C V ISTI rundi (statusChipi 4/4
+  z offset-2; zamrznjeni NI mutirani). VERIFIKACIJA (na KONČNI viri):
+  tsc 0 · eslint 0 (FULL) · vitest **5224/5224 (331)** = R366 baza
+  5219/330 + mojih +5 − 0 [tek 1: 2 faila = split('\n') vs wc -l +1
+  past + sosednji-niz guard past (barvni žeton med ring-2 in offset-2 —
+  LEKCIJA R363) → wcLinije helper + žetona LOČENO, V ISTI rundi; tek 2
+  zeleno] · build svež EXIT=0 [rm -rf .next; max-old-space-size 2560] ·
+  `qa-round.sh 367 needles` VSE OK [4 need_static ŽIVO + TODO-R367
+  odsoten; veriga + union registri r340–r367] · smoke EXIT=0 · e2e EXIT=0
+  [ODTIS IDENTIČEN — ZERO-MUTACIJA] · leak-check čist. NOVO:
+  scripts/qa-needles/r367.tsv [4 need_static ×1 vsak, vsi ×0 v HEAD
+  fetch-first git grep; 5. kandidat izpuščen — isti čanek kot N1;
+  must_miss; python validacija NF=3] + README disk resnica [5224/331 +
+  R367 bullet].
 - **Ring pariteta val 44 + e2e-lib dedup 1. val** (R361): (1) **prva naloga**
   — prod-qa re-run prek kanona `r359-prod-qa-retry.sh 360` ZELEN ob poskusu
   1 + **ŠTIRINAJSTIJNA era preverba** `r361-era-harvest.sh` EXIT=0 ob 1. teku

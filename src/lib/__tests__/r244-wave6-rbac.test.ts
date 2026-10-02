@@ -233,7 +233,10 @@ describe('R244 — [Mandatory] stil: press-scale pariteta + žeton migracija', (
     // če se žeton vstavi MED dva dela pina — shiftan V ISTI rundi, precedens
     // R362 r242 L176/177 + R363 r237:230); števec ostane 5.
     expect(logUi.split('bg-roksal-navy hover:bg-roksal-navy/90 text-white shadow-sm transition-all press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 disabled:opacity-50').length - 1).toBe(5)
-    expect(logUi).toContain('bg-red-600 text-[11px] text-white hover:bg-red-700 focus-visible:ring-red-400/50 press-scale')
+    // stale pin shiftan val 50 (R367, precedens R362/R363/R365): red-400/50
+    // oblikovna pariteta — ring-2 + offset-2 vstavljen MED barvo in
+    // press-scale; barvni žig OHRANJEN (destruktivna semantika r236)
+    expect(logUi).toContain('bg-red-600 text-[11px] text-white hover:bg-red-700 focus-visible:ring-2 focus-visible:ring-red-400/50 focus-visible:ring-offset-2 press-scale')
   })
   it('accent-[#1d2b3e] migriran na žeton accent-roksal-navy (4 mesta, 0 arbitrary accent ostane)', () => {
     expect(logUi.split('accent-roksal-navy').length - 1).toBe(4)

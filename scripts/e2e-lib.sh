@@ -223,3 +223,22 @@ eb_sonda_zaloge() {
 }
 
 
+
+# R367 (e2e-lib dedup 7. val) — Meritve statusChipi SONDA (val 47/49
+# stabilnost): 2-poljna sonda (statusChipi + statusChipiOffset2, aria
+# 'Filtriraj po statusu' startsWith) byte-identična ×2 v zamrznjenih spot
+# skriptah (r365-qa-spot D polji 11–12, r366-qa-spot D polja 2–3) —
+# PROAKTIVEN kanon pri 2. ponovitvi (LEKCIJA R362 (3): prag R352 je ×3, a
+# helper + 1. uporaba skupaj je čistejša — obrat 'papir' lekcije; precedens
+# eb_sonda_ring_pariteta R362 in eb_pocakaj_zalogo R364). Kanonizirana
+# OBLIKA = samostojen 2-poljni JSON eval (polji sta v inline blokih
+# vgrajeni v večje JSON-e — semantika polj byte-navzkostna, ISTI vzorec
+# kot eb_sonda_zaloge R365); dispatch + poll ostanejo ločena kanona
+# (kompozicija klicateljeva); V REPu ENOVRSTIČNI IIFE eval — r231
+# invariant; zamrznjeni spot skripti NI mutirani (kanon R361–R366);
+# poraba ob 1. uporabi v r367-qa-spot.sh D V ISTI rundi. Fail-open: prazen
+# izpis = sonda ni tekla, NE tiha '0' resnica. Uporaba:
+#   eb_sonda_status_chipi
+eb_sonda_status_chipi() {
+  agent-browser eval "(()=>{return JSON.stringify({statusChipi:[...document.querySelectorAll('button')].filter(b=>(b.getAttribute('aria-label')||'').startsWith('Filtriraj po statusu')).length,statusChipiOffset2:[...document.querySelectorAll('button')].filter(b=>(b.getAttribute('aria-label')||'').startsWith('Filtriraj po statusu')&&(b.className||'').includes('ring-offset-2')).length});})()" 2>&1 | tail -1
+}

@@ -2375,7 +2375,7 @@ function AnnotationEditor({
                       <button
                         type="button"
                         onClick={() => deleteMeasure(m.id ?? '')}
-                        className="rounded p-1 text-muted-foreground hover:bg-red-50 hover:text-red-600 focus-visible:ring-2 focus-visible:ring-red-400/50 focus-visible:outline-none"
+                        className="rounded p-1 text-muted-foreground hover:bg-red-50 hover:text-red-600 focus-visible:ring-2 focus-visible:ring-red-400/50 focus-visible:ring-offset-2 focus-visible:outline-none"
                         aria-label="Izbriši mero"
                       >
                         <Trash2 aria-hidden="true" className="h-3 w-3" />

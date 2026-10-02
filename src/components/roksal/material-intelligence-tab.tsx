@@ -2349,7 +2349,7 @@ export function MaterialIntelligenceTab({
               onClick={() => {
                 if (cancelDialogOrder) void handleOrderStatus(cancelDialogOrder.id, 'PREKlicANO')
               }}
-              className="focus-visible:ring-2 focus-visible:ring-red-600/40 focus-visible:ring-offset-1"
+              className="focus-visible:ring-2 focus-visible:ring-red-600/40 focus-visible:ring-offset-2"
             >
               {cancelSending ? (
                 <Loader2 className="mr-1 h-3 w-3 animate-spin" aria-hidden="true" />

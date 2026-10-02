@@ -65,9 +65,11 @@ describe('r366 STIL val 49 — ring PARITETA material-intelligence družine', ()
     ).length
     expect(nonFocus).toBe(0)
     // ring-offset-1 NI več v navy družini (normalizacija) — red-600/40 (×1,
-    // destruktivni žig) je edini preostani offset-1 v datoteki (izrecno izven)
-    expect(pojavitve(MATERIAL, 'focus-visible:ring-offset-1')).toBe(1)
-    expect(pojavitve(MATERIAL, 'ring-red-600/40 focus-visible:ring-offset-1')).toBe(1)
+    // destruktivni žig) je bila izrecno izven val 49 (per-barvni split);
+    // stale pin shiftan val 50 (R367): red-600/40 je dobila oblikovno pariteto
+    // ring-2 + offset-2 (barva ohranjena) — offset-1 v datoteki = 0
+    expect(pojavitve(MATERIAL, 'focus-visible:ring-offset-1')).toBe(0)
+    expect(pojavitve(MATERIAL, 'ring-red-600/40 focus-visible:ring-offset-2')).toBe(1)
     // in-place: prst varovalka ni na prizadetih (val 49 = material only)
   })
 

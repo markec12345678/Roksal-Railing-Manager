@@ -2729,7 +2729,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                         type="button"
                         size="sm"
                         variant="outline"
-                        className="h-6 text-2xs border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/40 focus-visible:ring-2 focus-visible:ring-red-400/50"
+                        className="h-6 text-2xs border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/40 focus-visible:ring-2 focus-visible:ring-red-400/50 focus-visible:ring-offset-2"
                         aria-label={`Upokoji ${e.naziv} (terminalno — ni mogoče razveljaviti)`}
                         title="Upokojitev je terminalna — ni mogoče razveljaviti"
                         onClick={() => void handleEquipmentStatus(e, 'UPOKOJENO')}
@@ -3078,7 +3078,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                     type="button"
                     size="sm"
                     disabled={qcBusy || !qcOverrideReason.trim()}
-                    className="h-7 bg-red-600 text-[11px] text-white hover:bg-red-700 focus-visible:ring-red-400/50 press-scale"
+                    className="h-7 bg-red-600 text-[11px] text-white hover:bg-red-700 focus-visible:ring-2 focus-visible:ring-red-400/50 focus-visible:ring-offset-2 press-scale"
                     onClick={() => void handleQcOverride()}
                   >
                     {qcBusy && <Loader2 aria-hidden="true" className="mr-1 h-3 w-3 animate-spin" />}

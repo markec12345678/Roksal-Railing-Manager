@@ -1,0 +1,33 @@
+# qa-needles/r367.tsv — REGISTER needlejev runde R367 (STIL val 50:
+# ring OBLIKOVNA pariteta rdeče focus družine — per-barvni split kanon
+# (LEKCIJA R365 (3)) zaključen: 5 članov čez 4 datoteke, vsi nosijo
+# focus-visible:ring-2 + focus-visible:ring-offset-2; BARVNI ŽIGI bajtno
+# nespremenjeni — destruktivna semantika r236 ohranjena (red-400/50 ×3
+# [logistics L2732+L3081, photo L2378], red-400/60 ×1 [sketch L602],
+# red-600/40 ×1 [material L2352]; opacity/tone ostanejo, samo OBLIKA se
+# poravna; L3081 je bila brez ring-2 — dodana oba žetona).
+# Disk resnica (LEKCIJA R364 (4)): logistics L2732 ring-2+barva brez
+# offseta → +offset-2; L3081 barva BREZ ring-2 → +ring-2 +offset-2;
+# photo/sketch brez offseta → +offset-2; material offset-1→2 (val 49 jo
+# je iskreno pustil izven — val 50 zaključi družino).
+# In-place = 0 novih vrstic (logistics 3294, photo 2684, sketch 938,
+# material 2366 — wc -l kanon); 0 novih hex (števci 1/12/14/0 pred = po);
+# aria/title ZAMRZNJENI (ring-only runda — val 44–49 precedens).
+# Stale pini shiftani V ISTI rundi (PRED-scan po ring-red-\d+ po VSEH
+# testih): r365-stil-val48 (A) offset-2 števec 0→2, r244-wave6 L236
+# eksakten pin (ring-2+offset-2 MED barvo in press-scale — LEKCIJA R363
+# vzorec), r366-stil-val49 (A) material red offset-1→2 (lastni pin);
+# r236:301 prefix pin PREŽIVI (toContain se ne seká vstavitvi za pinom).
+# NEEDLEJI: 4 need_static className tokeni, vsi ×0 v HEAD pred rundo
+# (fetch-first git grep na HEAD components — GLASNO potrjeno ×5
+# kandidatov); multiplicita ×1 vsak (POJAVITVE grep -o — LEKCIJA R365 (2)).
+# 5. kandidat (logistics L2732 hover-red kontekst, ×1) IZPUŠČEN iz
+# registra — isti čanek/chunk kot N1, dokumentiran v val 50 testu (B).
+# must_miss: TODO-R367 (nesme biti v produkcijskih čankih).
+# Era preverba: kanonski skript r367-era-harvest.sh (20 registrov
+# r347–r366, ≥85 need_static) + R368 pričakuje r367.tsv 4 needleje ŽIVO.
+focus-visible:ring-2 focus-visible:ring-red-400/50 focus-visible:ring-offset-2 press-scale	R367 val 50 logistics L3081 red CTA ring-2 + offset-2 (x1; 0 v HEAD)	need_static
+focus-visible:ring-red-400/50 focus-visible:ring-offset-2 focus-visible:outline-none	R367 val 50 photo izbriši mero offset-2 (x1; 0 v HEAD)	need_static
+focus-visible:ring-red-400/60 focus-visible:ring-offset-2	R367 val 50 sketch orodje offset-2 (x1; 0 v HEAD)	need_static
+focus-visible:ring-red-600/40 focus-visible:ring-offset-2	R367 val 50 material status brisi offset-1→2 (x1; 0 v HEAD)	need_static
+TODO-R367	must_miss: razvojni ostanki (nesme biti v produkcijskih čankih)	must_miss

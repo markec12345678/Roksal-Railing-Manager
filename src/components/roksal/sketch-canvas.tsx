@@ -599,7 +599,7 @@ export function SketchCanvas({ projectId, onClose }: SketchCanvasProps) {
                 variant="ghost"
                 onClick={handleClear}
                 disabled={strokes.length === 0}
-                className="h-8 w-8 p-0 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 focus-visible:ring-2 focus-visible:ring-red-400/60"
+                className="h-8 w-8 p-0 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 focus-visible:ring-2 focus-visible:ring-red-400/60 focus-visible:ring-offset-2"
                 aria-label="Pobriši celotno skico"
               >
                 <Trash2 className="w-4 h-4" aria-hidden="true" />
