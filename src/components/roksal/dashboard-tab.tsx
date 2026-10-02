@@ -1984,7 +1984,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
       {!narocilaLoading && !narocilaError && zamujeneDobaveDomov > 0 ? (
         <button
           type="button"
-          className="flex w-full items-center gap-3 rounded-xl border border-roksal-red/20 bg-roksal-red/5 p-3 text-left animate-fade-in-up cursor-pointer transition-colors hover:bg-roksal-red/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-1"
+          className="flex w-full items-center gap-3 rounded-xl border border-roksal-red/20 bg-roksal-red/5 p-3 text-left animate-fade-in-up cursor-pointer transition-colors hover:bg-roksal-red/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2"
           aria-label={`Zamujena dobava (${zamujeneDobaveDomov}) — odpre Material → Naročila`}
           title="Obljubljeni datum dobave je pretekel, naročilo pa še ni prejeto — klik odpre Naročila"
           onClick={() =>

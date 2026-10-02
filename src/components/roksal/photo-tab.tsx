@@ -714,7 +714,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
               type="button"
               onClick={() => void loadPhotos()}
               aria-label="Ponovno naloži fotografije"
-              className="rounded px-1 py-0.5 font-bold transition-colors hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-red/40"
+              className="rounded px-1 py-0.5 font-bold transition-colors hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2"
             >
               Poskusi znova
             </button>

@@ -225,7 +225,7 @@ export function SistemZdravjeCard() {
               type="button"
               onClick={() => void load()}
               aria-label="Ponovno preveri zdravje sistema"
-              className="flex items-center gap-1 transition-colors hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-red/40"
+              className="flex items-center gap-1 transition-colors hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2"
             >
               <RefreshCw className="h-3 w-3" aria-hidden="true" />
               Poskusi znova

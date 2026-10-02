@@ -3348,7 +3348,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
             <button
               type="button"
               onClick={() => handleDeleteMeasurement(m.id)}
-              className="p-1.5 rounded-lg hover:bg-roksal-red/10 focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:outline-none transition-colors"
+              className="p-1.5 rounded-lg hover:bg-roksal-red/10 focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2 focus-visible:outline-none transition-colors"
               title="Izbriši meritev"
               aria-label={`Izbriši meritev ${m.oznaka || m.id.slice(-4)}`}
             >
@@ -4029,7 +4029,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                           <button
                             type="button"
                             onClick={() => handleDeleteStairTemplate(t.id)}
-                            className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors shrink-0 focus-visible:ring-2 focus-visible:ring-roksal-red/40"
+                            className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors shrink-0 focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2"
                             title="Izbriši predlogo"
                             aria-label={`Izbriši predlogo ${t.naziv}`}
                           >

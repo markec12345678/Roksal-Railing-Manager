@@ -93,7 +93,15 @@ describe('R371 stil val 54 — navy/40 NONE triaža (13 surovih brand vrstic)', 
     // dokumentirani ne-tarčni: sistem-zdravje-card L204 kit override (spot D2-dokaz)
     const SZC = R('src/components/roksal/sistem-zdravje-card.tsx')
     expect(SZC).toContain('press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:outline-none')
-    expect(SZC.includes('ring-offset')).toBe(false)
+    // [PIN SHIFT R372 val 55: izvirnik 'SZC.includes("ring-offset") === false'
+    // (celo-datoteka) → navy-vrstični guard z ISTO namero — val 55 je dodala
+    // focus-visible:ring-offset-2 na RAW red/40 brand vrstico L228 (rdeča
+    // pariteta); kit override L204 (navy) ostaja brez offseta]
+    expect(
+      SZC.split('\n')
+        .filter((v) => v.includes('focus-visible:ring-roksal-navy/40'))
+        .every((v) => !v.includes('ring-offset')),
+    ).toBe(true)
     // iskalni vnosi (INPUT) brez offseta — izven obsega, dokumentirano
     expect(R('src/components/roksal/dashboard-tab.tsx')).toContain('pl-9 h-10 bg-background focus-visible:ring-roksal-navy/40')
     expect(R('src/components/roksal/roksal-catalog.tsx')).toContain('h-10 pl-9 focus-visible:ring-2 focus-visible:ring-roksal-navy/40')
