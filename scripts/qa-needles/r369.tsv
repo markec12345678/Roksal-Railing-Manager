@@ -1,0 +1,35 @@
+# qa-needles/r369.tsv — REGISTER needlejev runde R369 (STIL val 52:
+# ring OBLIKOVNA pariteta navy+ink PARIŠKIH vrstic — per-barvni
+# split kanon nadaljevanje (navy = val 43–49 površinsko, red = val
+# 50, amber = val 51, navy+ink pari = val 52): 12 pariških vrstic
+# × 4 datoteke (termini-card ×6, bottom-nav ×2, notification-center
+# ×3, quick-actions-fab ×1) zdaj nosi EN focus-visible:ring-offset-2
+# TIK ZA navy/40 — tema-neodvisen žeton pokrije svetlo navy/40 IN
+# temno ink/40 varianto ISTEGA elementa (kanon R368 'EN offset
+# pokrije svetlo+temno'). Census iz diska scripts/r369-census.py:
+# ink/40 po = {'O2': 12} razcep = 0; navy gap 77 → 65 (točno 12
+# parov rešenih — ostali navy rep = val 53+ kandidat, iskreno).
+# In-place = 0 novih vrstic; 0 novih hex; aria/title ZAMRZNJENI
+# (ring-only runda — val 44–51 precedens). Stale-pini: 1 PIN
+# SHIFTAN — r167 okenski kvantifikator {0,400}→{0,430} z žigom
+# [PIN SHIFT R369 val 52] (val 52 vstavil 28 znakov v className
+# 'Samo moje' gumba; okno 380→408; PRED-skan sosledja ga NI ulovil,
+# ulov ga je FULL vitest — LEKCIJA: pre-skan mora enumerirati VSE
+# okenske kvantifikatorje nad tarčnimi datotemi); r167 sosledja
+# ink/40 preživita, r214 števca 2/2, r268 = team-tab izven tarče,
+# r361 (E) = crm-tab izven tarče.
+# FEATURE e2e-lib dedup 9. val: eb_sonda_red_stetje (rdeči trio
+# byte-identičen ×2 v r368-qa-spot A/C — per-blok md5
+# 03c8497dc9baf54c87e78a7dcb6f8ad8 nad 449 bajti; skrajšani par ×3 —
+# md5 640fec6de79293af75c9b021268b8a15 nad 278 bajti, prag R352
+# izenačen; kanon = POLNI trio 3-poljni eval, B-okrnjena oblika se
+# ne kanonizira; 1. uporaba v r369-qa-spot.sh V ISTI rundi;
+# zamrznjeni NI mutirani — kanon R361–R368).
+# Era preverba: kanonski skript r369-era-harvest.sh (22 registrov
+# r347–r368, ≥93 need_static) + prod-qa re-run 368 ob začetku
+# runde; val 51 POST-deploy spot (amber površine, spot-r167/14).
+focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 dark:focus-visible:ring-roksal-ink/40	R369 val 52 navy+ink pariske vrstice — offset med svetlo in temno varianto (x10 pojavitev; 0 v HEAD)	need_static
+hover:text-roksal-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 disabled:cursor-not-allowed	R369 val 52 notification L855 split vrstica offset pred disabled (x1 pojavitev; 0 v HEAD)	need_static
+focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 active:scale-[0.97]	R369 val 52 notification L940 split vrstica offset pred active (x1 pojavitev; 0 v HEAD)	need_static
+md:text-[11px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2	R369 val 52 bottom-nav L123 glavni zavihek offset (x1 pojavitev; 0 v HEAD)	need_static
+TODO-R369	must_miss: razvojni ostanki (nesme biti v produkcijskih cankih)	must_miss

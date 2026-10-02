@@ -262,3 +262,29 @@ eb_sonda_status_chipi() {
 eb_sonda_navy_stetje() {
   agent-browser eval "(()=>{return JSON.stringify({mainNavy40:[...document.querySelectorAll('main button')].filter(b=>(b.className||'').includes('ring-roksal-navy/40')).length,mainOffset2:[...document.querySelectorAll('main button')].filter(b=>(b.className||'').includes('ring-roksal-navy/40')&&(b.className||'').includes('ring-offset-2')).length,mainBrezOffset:[...document.querySelectorAll('main button')].filter(b=>(b.className||'').includes('ring-roksal-navy/40')&&!(b.className||'').includes('ring-offset')).length});})()" 2>&1 | tail -1
 }
+
+# R369 (e2e-lib dedup 9. val) — rdeči ŠTEVEC SONDA (val 50 paritetna
+# resnica na KATERI KOLI površini): rdeči trio (mainRed + mainRedOffset2 +
+# mainRedBrezOffset) byte-identičen ×2 v zamrznjenem r368-qa-spot.sh (A
+# polja 4–6 IN C polja 4–6 — per-blok md5 03c8497dc9baf54c87e78a7dcb6f8ad8
+# nad 449-bajtnim oknom, potrjeno prek python r369-trio-identity.py) IN
+# skrajšani 2-poljni par (mainRed + mainRedOffset2) byte-identičen ×3 (md5
+# 640fec6de79293af75c9b021268b8a15 nad 278-bajtnim oknom — prag LEKCIJE
+# R352 (×3) IZENAČEN; polni trio ×2 = precedens eb_sonda_status_chipi
+# R367 proaktiven pri ×2, LEKCIJA R362 (3)). Kanonizirana OBLIKA =
+# samostojen 3-poljni JSON eval (polja so bila v inline blokih vgrajena v
+# večje JSON-e — semantika polj byte-navzkostna, ISTI vzorec kot
+# eb_sonda_navy_stetje R368); kanon je POLNI trio (B-jeva okrnjena oblika
+# se ne kanonizira — 2 polja pomenita izgubo BrezOffset resnice); regex
+# /ring-red-\d+\// ohranjen natanko kot v inline blokih (razlog: rdeči
+# žetoni so heterogeni — red-400/50, red-400/60, red-500, red-600/40 —
+# regex je INLINE resnica, ne nov izum); dispatch + poll ostanejo ločena
+# kanona (kompozicija klicateljeva); V REPu ENOVRSTIČNI IIFE eval — r231
+# invariant; zamrznjeni spot skripti NI mutirani (kanon R361–R368);
+# poraba ob 1. uporabi v r369-qa-spot.sh V ISTI rundi (LEKCIJA R362 (3):
+# kanon ne sme biti papir). Fail-open: prazen izpis = sonda ni tekla, NE
+# tiha '0' resnica. Uporaba:
+#   eb_sonda_red_stetje
+eb_sonda_red_stetje() {
+  agent-browser eval "(()=>{return JSON.stringify({mainRed:[...document.querySelectorAll('main button')].filter(b=>/ring-red-\d+\//.test(b.className||'')).length,mainRedOffset2:[...document.querySelectorAll('main button')].filter(b=>/ring-red-\d+\//.test(b.className||'')&&(b.className||'').includes('ring-offset-2')).length,mainRedBrezOffset:[...document.querySelectorAll('main button')].filter(b=>/ring-red-\d+\//.test(b.className||'')&&!(b.className||'').includes('ring-offset')).length});})()" 2>&1 | tail -1
+}

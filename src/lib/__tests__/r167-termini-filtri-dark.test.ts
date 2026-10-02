@@ -160,7 +160,10 @@ describe('R167 žičenje stražar (TerminiCard)', () => {
     expect(raw).toContain('aria-pressed={samoMoje}')
     expect(raw).toContain('aria-label="Samo moje termine"')
     // stikalo znotraj pogoja myUserId && — brez identitete se ne izriše
-    expect(raw).toMatch(/\{myUserId && \(\s*<Button[\s\S]{0,400}?Samo moje/)
+    // [PIN SHIFT R369 val 52: okno 400→430 — val 52 je vstavil
+    // focus-visible:ring-offset-2 (28 znakov) v className tega gumba
+    // (navy+ink pariška pariteta); dejansko okno 380→408, headroom 430]
+    expect(raw).toMatch(/\{myUserId && \(\s*<Button[\s\S]{0,430}?Samo moje/)
   })
 
   it('kopiraj gumb je SIBLING, ne gnezden gumb (neveljavni HTML/hidracija)', () => {

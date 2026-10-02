@@ -852,7 +852,7 @@ export function NotificationCenter() {
                         type="button"
                         onClick={() => void oznaciVsePrebrano()}
                         disabled={oznacujemVse}
-                        className="ml-auto flex items-center gap-1 rounded-md px-1.5 py-0.5 text-2xs font-bold uppercase tracking-wider text-muted-foreground transition-colors hover:bg-roksal-navy/5 hover:text-roksal-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 disabled:cursor-not-allowed disabled:opacity-50 dark:text-muted-foreground dark:hover:bg-roksal-ink/10 dark:hover:text-roksal-ink dark:focus-visible:ring-roksal-ink/40"
+                        className="ml-auto flex items-center gap-1 rounded-md px-1.5 py-0.5 text-2xs font-bold uppercase tracking-wider text-muted-foreground transition-colors hover:bg-roksal-navy/5 hover:text-roksal-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:text-muted-foreground dark:hover:bg-roksal-ink/10 dark:hover:text-roksal-ink dark:focus-visible:ring-roksal-ink/40"
                         aria-label={`Označi vse kot prebrano (${neprebrana})`}
                         title={`Označi vse kot prebrano (${neprebrana})`}
                       >
@@ -878,7 +878,7 @@ export function NotificationCenter() {
                         <button
                           type="button"
                           onClick={() => void openPersisted(n)}
-                          className="group flex w-full items-start gap-3 rounded-xl border border-border/60 bg-card p-3 text-left transition-all hover:-translate-y-0.5 hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 dark:focus-visible:ring-roksal-ink/40 active:scale-[0.98]"
+                          className="group flex w-full items-start gap-3 rounded-xl border border-border/60 bg-card p-3 text-left transition-all hover:-translate-y-0.5 hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 dark:focus-visible:ring-roksal-ink/40 active:scale-[0.98]"
                           aria-label={`${n.naslov} — ${st.label}`}
                         >
                           <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${varnostna ? 'bg-roksal-amber/10' : 'bg-roksal-navy/5'}`}>
@@ -937,7 +937,7 @@ export function NotificationCenter() {
                           <button
                             type="button"
                             onClick={() => void odpriEkipoZaPregled(n)}
-                            className="ml-11 mt-1.5 inline-flex items-center gap-1 rounded-full bg-roksal-navy/5 px-2.5 py-1 text-2xs font-bold uppercase tracking-wider text-roksal-navy transition-colors hover:bg-roksal-navy/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 active:scale-[0.97] dark:bg-roksal-ink/10 dark:text-roksal-ink dark:hover:bg-roksal-ink/20 dark:focus-visible:ring-roksal-ink/40"
+                            className="ml-11 mt-1.5 inline-flex items-center gap-1 rounded-full bg-roksal-navy/5 px-2.5 py-1 text-2xs font-bold uppercase tracking-wider text-roksal-navy transition-colors hover:bg-roksal-navy/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 active:scale-[0.97] dark:bg-roksal-ink/10 dark:text-roksal-ink dark:hover:bg-roksal-ink/20 dark:focus-visible:ring-roksal-ink/40"
                             aria-label="Odpri Ekipa — pregled ekipnih računov"
                             title="Pregled ekipnih računov (zaklep, vloge, aktivnost)"
                           >

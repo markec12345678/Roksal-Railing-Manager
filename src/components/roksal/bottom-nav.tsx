@@ -120,7 +120,7 @@ export function BottomNav({ activeTab, onTabChange, badges = {}, moreActive = nu
                     onTabChange(tab.id)
                   }
                 }}
-                className={`relative flex flex-1 flex-col items-center gap-0.5 rounded-lg px-0.5 py-2 text-[9px] font-medium transition-all duration-200 min-h-[48px] md:gap-1 md:text-[11px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 dark:focus-visible:ring-roksal-ink/40 ${
+                className={`relative flex flex-1 flex-col items-center gap-0.5 rounded-lg px-0.5 py-2 text-[9px] font-medium transition-all duration-200 min-h-[48px] md:gap-1 md:text-[11px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 dark:focus-visible:ring-roksal-ink/40 ${
                   isActive || isMoreActive
                     ? tab.highlight
                       ? 'bg-roksal-amber text-white'
@@ -183,7 +183,7 @@ export function BottomNav({ activeTab, onTabChange, badges = {}, moreActive = nu
                   role="menuitem"
                   onClick={() => handleMoreClick(t.id)}
                   style={{ animationDelay: `${Math.min(i, 8) * 30}ms` }}
-                  className={`more-tile flex flex-col items-center gap-2 rounded-xl border-2 p-4 text-center transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 dark:focus-visible:ring-roksal-ink/40 ${
+                  className={`more-tile flex flex-col items-center gap-2 rounded-xl border-2 p-4 text-center transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 dark:focus-visible:ring-roksal-ink/40 ${
                     active
                       ? 'border-roksal-amber bg-roksal-amber/10 shadow-[0_0_0_3px] shadow-roksal-amber/10'
                       : 'border-border bg-card hover:border-roksal-navy/30 dark:hover:border-roksal-ink/30'
