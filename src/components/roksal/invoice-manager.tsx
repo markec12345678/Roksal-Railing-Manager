@@ -1316,14 +1316,16 @@ export function InvoiceManager() {
                         {lahkoIzdaja && (
                           <Button
                             size="sm"
-                            className="h-7 text-xs bg-emerald-600 hover:bg-emerald-500 focus-visible:ring-roksal-navy/40"
+                            className="h-7 text-xs bg-emerald-600 hover:bg-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
                             onClick={() => patchStatus(inv, 'IZDAN')}
+                            aria-label="Izdaj račun — status iz osnutka v izdan"
+                            title="Potrdi izdajo računa — status se spremeni v izdan; neuspeh vrne prejšnje stanje"
                           >
                             <Send aria-hidden="true" className="h-3 w-3" /> Izdaj
                           </Button>
                         )}
                         {lahkoUstvarja && (
-                          <Button size="sm" variant="outline" className="h-7 text-xs focus-visible:ring-roksal-navy/40" onClick={() => deleteInvoice(inv)}>
+                          <Button size="sm" variant="outline" className="h-7 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2" onClick={() => deleteInvoice(inv)} aria-label="Trajno izbriši osnutek računa" title="Trajno izbriši osnutek računa — brisanje ni možno razveljaviti">
                             <Trash2 aria-hidden="true" className="h-3 w-3" /> Briši
                           </Button>
                         )}
@@ -1334,8 +1336,10 @@ export function InvoiceManager() {
                         {lahkoIzdaja && (
                           <Button
                             size="sm"
-                            className="h-7 text-xs bg-emerald-600 hover:bg-emerald-500 focus-visible:ring-roksal-navy/40"
+                            className="h-7 text-xs bg-emerald-600 hover:bg-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
                             onClick={() => patchStatus(inv, 'PLACAN')}
+                            aria-label="Označi račun kot plačan"
+                            title="Potrdi plačilo računa — status se spremeni v plačan; neuspeh vrne prejšnje stanje"
                           >
                             <CheckCircle2 aria-hidden="true" className="h-3 w-3" /> Plačan
                           </Button>
@@ -1344,7 +1348,7 @@ export function InvoiceManager() {
                           <Button
                             size="sm"
                             variant="outline"
-                            className="h-7 text-xs border-roksal-red/40 text-roksal-ink hover:bg-roksal-red/10 transition-colors focus-visible:ring-roksal-red/40"
+                            className="h-7 text-xs border-roksal-red/40 text-roksal-ink hover:bg-roksal-red/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2"
                             onClick={() => generateOpomnik(inv)}
                             title={`Plačilni opomnik — zapadlo ${zapadlo} dni`}
                             aria-label={`Plačilni opomnik za račun ${inv.stevilka}`}
@@ -1356,7 +1360,7 @@ export function InvoiceManager() {
                           <Button
                             size="sm"
                             variant="outline"
-                            className={`h-7 text-xs border-roksal-red/40 hover:bg-roksal-red/10 focus-visible:ring-roksal-red/40 ${stornoId === inv.id ? 'bg-roksal-red text-white hover:bg-roksal-red/90' : 'text-roksal-ink'}`}
+                            className={`h-7 text-xs border-roksal-red/40 hover:bg-roksal-red/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2 ${stornoId === inv.id ? 'bg-roksal-red text-white hover:bg-roksal-red/90' : 'text-roksal-ink'}`}
                             onClick={() => {
                               if (stornoId === inv.id) {
                                 setStornoId(null)
@@ -1366,6 +1370,8 @@ export function InvoiceManager() {
                                 setTimeout(() => setStornoId((cur) => (cur === inv.id ? null : cur)), 3000)
                               }
                             }}
+                            aria-label="Storniraj račun — drugi klik potrdi"
+                            title="Storniraj račun — prvi klik prikaže potrditev, drugi klik stornira (3 s okno)"
                           >
                             <Ban aria-hidden="true" className="h-3 w-3" />
                             {stornoId === inv.id ? 'Potrdi storno?' : 'Storno'}
@@ -1377,7 +1383,7 @@ export function InvoiceManager() {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="h-7 text-xs"
+                        className="h-7 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
                         onClick={() => {
                           setFormProject(inv.projectId)
                           setFormTip(inv.tip)
@@ -1387,18 +1393,20 @@ export function InvoiceManager() {
                           deleteInvoice(inv)
                           setDialogOpen(true)
                         }}
+                        aria-label="Uredi osnutek računa"
+                        title="Uredi osnutek — osnutek se odstrani, dialog zapolni polja; shranjevanje ustvari nov račun"
                       >
                         <Pencil aria-hidden="true" className="h-3 w-3" /> Uredi
                       </Button>
                     )}
-                    <Button size="sm" variant="outline" className="h-7 text-xs focus-visible:ring-roksal-navy/40" onClick={() => generatePdf(inv)}>
+                    <Button size="sm" variant="outline" className="h-7 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2" onClick={() => generatePdf(inv)} aria-label="Prenesi račun kot PDF" title="Generiraj in prenesi račun kot PDF dokument">
                       <FileDown aria-hidden="true" className="h-3 w-3" /> PDF
                     </Button>
                     {inv.status !== 'STORNIRAN' && (
                       <Button
                         size="sm"
                         variant="outline"
-                        className="h-7 text-xs focus-visible:ring-roksal-navy/40"
+                        className="h-7 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
                         onClick={() => setQrInvoice(inv)}
                         title="UPN QR koda za plačilo"
                         aria-label="UPN QR koda za plačilo"
@@ -1410,7 +1418,7 @@ export function InvoiceManager() {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="h-7 text-xs focus-visible:ring-roksal-navy/40"
+                        className="h-7 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
                         onClick={() => void downloadXml(inv)}
                         disabled={xmlLoading === inv.id}
                         title="eRačun XML (eSlog 2.1 / EN 16931)"

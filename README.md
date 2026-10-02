@@ -103,7 +103,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 45 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **5173** (323 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **5183** (324 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 143 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -1144,6 +1144,44 @@ Sheet z 6 podzavihki:
   EXIT=0 [Z0ax→Z0be ŽIVO + ODTIS — ZERO-MUTACIJA] · r359-era-harvest EXIT=0
   ob 1. teku [DVANAJSTIJNA: 12 er ŽIVO — 54 direktno + 2 R353 hash
   rezolucija; R358 val 41 ×3 direktno].
+- **Računovodske akcije val 43 + QA-infra hardening 2. val** (R360): (1)
+  **prva naloga** — prod-qa re-run prek NOVEGA kanona `r359-prod-qa-retry.sh
+  359` ZELEN ob poskusu 1 + **TRIJESTIJNA era preverba** `r360-era-harvest.sh`
+  EXIT=0 ob 1. teku: 13 registr r347–r359 (≥59 need_static = 4+5+8+9+3+8+4
+  +3+3+3+3+3+3), 57 ŽIVO direktno + 2 R353 prek hash rezolucije (CDN HTTP
+  200), R359 val 42 ×3 ŽIVO DIREKTNO → deploy potrjen v celoti, must_miss
+  ×13 čisto, era kontrole R340/R341/R343/R345 ŽIV; (2) **fetch-first sken
+  FAZA 13** — GET/verzije + portal klaster: 6 fetchi (projects,
+  measurements ×2, verzije, ar-snapshots, photos) na 5 RAZLIČNIH endpointih
+  z 5 različnimi oblikami odgovorov in 5 state stroji (portal: 0 client
+  fetchi) → **FAZA 13 NI utemeljena** (LEKCIJA R352/R359 — heterogeni viri,
+  vsiljena abstrakcija ne za šalo; 2 isti-endpoint brata v strukturno
+  različnih funkcijah), samo sken; (3) **MANDATORY STIL val 43** — a11y
+  resnica računovodskih akcij (invoice-manager.tsx, 9 gumbov × 1 datoteko,
+  0 novih hex, VSE DODATNO): Izdaj/Briši/Plačan/Storno/Uredi/PDF NOVI
+  aria+title (iskrene posledice: rollback pri statusnih, PRAVI DELETE pri
+  Briši [za razliko od bulk meritev arhiviranja], izbriši+zaključi pri
+  Uredi, dvoklik 3-s okno pri Storno) + ring kanon navy/40 ali roksal-red/40
+  (destruktivni žig barva ohranjena) + ring PARITETA pri Opomnik/QR/XML
+  (zamrznjeni aria/title byte-identični); stale pini shiftani V ENI rundi:
+  r241 'Briši' + r236 'Izdaj' className (precedens R334/R355–R359); (4)
+  **FEATURE — QA-infra hardening 2. val: kanon PORABLJEN** —
+  `r360-era-harvest.sh` žetev faza pokliče kanonski `qa-harvest.sh` (retry
+  ×3 + parcialna guard + fail-closed; R359: "r360+ ga lahko pokličejo
+  namesto lastnega inline curla") — demo 60/60 čankov, 0 failov, EXIT=0 ×2
+  + guard demo EXIT=1; **spot-probe poll kanon**: `r360-qa-spot.sh` (fiksna
+  spanja → poll do znane glave, LEKCIJA R359 aplikirana) + re-probe
+  `r360-qa-spot2.sh` (poll do NAJZAKASNEJŠEGA elementa — 'AI raba' /
+  'Ni projektov' — refined lekcija; katalog probe substring popravljen na
+  'katalog avtomatizacijskih' — LEKCIJA R359 (2)); spot-r167: kolektor 0
+  errorjev, Meritve iskrena praznina, vodja vse ŽIVO (csvPills 9); (5)
+  vitest r360 ×10 (r360-stil-val43: 7 blokov + zamrznjeni nizi +
+  zamrznjen hex seznam [3 × QR par — edini hex v datoteki] + obrnjena
+  regresija val 41/42 + enolični era-diskriminatorji) — 5183/5183 (324);
+  (6) verifikacija: tsc 0 · eslint 0 (FULL) · build svež EXIT=0 · needles
+  r360 VSE OK (veriga + union registri r340–r360) · smoke EXIT=0 · e2e
+  EXIT=0 [ODTIS — ZERO-MUTACIJA] · leak-check čist · r172 prst 6051
+  potrjen iz diska (val 43 ni premaknil measurements-tab).
 - **Repost družine EN VIR + val 41** (R358): (1) **measurements FAZA 11** —
   iskrena meja FAZA 10 prevzeta: 3 preostali per-item re-post tokovi
   (sinhronizacija osnutka syncSingleDraft [draft.payload VERBATIM, kontrakt

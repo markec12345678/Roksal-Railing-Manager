@@ -274,7 +274,9 @@ describe('R236 — komponenta: PDF pill v zavihku Dobavitelji (ISTI pill družin
 describe('R236 — [Mandatory] stil (P1-f): focus-visible prstan revizija — ENA fokusrna družina', () => {
   it('app glavni fokus = roksal-navy/40 (revizija: 4 odstopanja konvertirana)', () => {
     expect(racuni).toContain('focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"')
-    expect(racuni).toContain("className=\"h-7 text-xs bg-emerald-600 hover:bg-emerald-500 focus-visible:ring-roksal-navy/40\"")
+    // stale pin shiftan val 43 (R360, precedens R334/R355–R359): ring kanon
+    // (outline-none + ring-2 + offset-2) — emerald/roksal-navy barvi ostajata.
+    expect(racuni).toContain("className=\"h-7 text-xs bg-emerald-600 hover:bg-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2\"")
     expect(komponenta).toContain('bg-green-50 dark:bg-green-950/40 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40')
     // Konvertirana odstopanja NE obstajajo več (amber/emerald/green fokusrni žetoni).
     expect(racuni).not.toContain('focus-visible:ring-amber-500/50')

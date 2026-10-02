@@ -91,8 +91,8 @@ describe('R241 — UI vrata: akcije so pogojno upodobljene po pravicah', () => {
     expect(uiSrc).toMatch(/\{lahkoIzdaja && \(\n\s*<Button\n\s*size="sm"\n\s*className="h-7 text-xs bg-emerald-600[^"]*"\n\s*onClick=\{\(\) => patchStatus\(inv, 'PLACAN'\)\}/)
   })
 
-  it('Briši zahteva invoices.create (DELETE vrata)', () => {
-    expect(uiSrc).toContain('{lahkoUstvarja && (\n                          <Button size="sm" variant="outline" className="h-7 text-xs focus-visible:ring-roksal-navy/40" onClick={() => deleteInvoice(inv)}>')
+  it('Briši zahteva invoices.create (DELETE vrata) — stale pin shiftan val 43 (R360, precedens R334/R355–R359: className ring kanon + aria/title dodana, vrata in pogoj ostajata)', () => {
+    expect(uiSrc).toContain('{lahkoUstvarja && (\n                          <Button size="sm" variant="outline" className="h-7 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2" onClick={() => deleteInvoice(inv)} aria-label="Trajno izbriši osnutek računa" title="Trajno izbriši osnutek računa — brisanje ni možno razveljaviti">')
   })
 
   it('Storno zahteva invoices.cancel (destruktivna pravna akcija)', () => {
