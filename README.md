@@ -103,7 +103,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 45 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **5194** (325 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **5199** (326 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 143 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -1144,6 +1144,42 @@ Sheet z 6 podzavihki:
   EXIT=0 [Z0ax→Z0be ŽIVO + ODTIS — ZERO-MUTACIJA] · r359-era-harvest EXIT=0
   ob 1. teku [DVANAJSTIJNA: 12 er ŽIVO — 54 direktno + 2 R353 hash
   rezolucija; R358 val 41 ×3 direktno].
+- **Ring pariteta val 45 + e2e-lib dedup 2. val** (R362): (1) **prva naloga**
+  — prod-qa re-run prek kanona `r359-prod-qa-retry.sh 361` ZELEN ob poskusu
+  1 + **PETNAJSTIJNA era preverba** `r362-era-harvest.sh` EXIT=0 ob 1. teku:
+  15 registrov r347–r361 (≥65 need_static = 4+5+8+9+3+8+4+3+3+3+3+3+3+3+3),
+  63 ŽIVO direktno + 2 R353 prek hash rezolucije (CDN HTTP 200), R361 val 44
+  ×3 ŽIVO DIREKTNO → deploy potrjen v celoti, must_miss ×15 čisto, era
+  kontrole R340/R341/R343/R345 ŽIV; (2) **agent-browser QA** spot-r167/5+6+7
+  — NIČ runtime errorjev (kolektor 0 ×3 seji); iskreni re-probi (iskalnik
+  eksakten aria `'Odpri iskalnik (Ctrl+K)'` — 1. tek eval exact-match
+  neprecizen; Zaloga h2 `'Zaloga'` ankor iz vira); iskren NAJDI: 3 izvozna
+  brata v `quote-followup.tsx` BREZ ring-offset-2 (val 44 je pokril SAMO
+  crm-tab.tsx — isti CRM pogled, druga datoteka); (3) **MANDATORY STIL val
+  45** — ring PARITETA zaključek quote-followup družine: 6 ×
+  `focus-visible:ring-offset-2` (3 press-scale izvozna brata + 3 h-8 akcije
+  Pokliči/+3/+7) + 3 NOVI per-item aria-label z nazivProjekta (kanon
+  R346/R356; `'Datum spomnika:'` precedent v isti datoteki; title 'Spomnik
+  danes' ZAMRZNJEN); stale pin r267:281 shiftan V ISTI rundi (precedens
+  R334/R355–R360); 0 novih hex (števec najdišč = 0 — LEKCIJA R360 (4));
+  (4) **FEATURE e2e-lib dedup 2. val** — NOV pomočnik `eb_sonda_ring_pariteta`
+  (OŽKA ring-paritetna sonda press-scale + status-filter družine; 2.
+  ponovitev bloka → kanon ustvarjen PROAKTIVNO, prag LEKCIJE R352 je 3.) s
+  PORABO ob 1. uporabi v `r362-qa-spot3.sh` + refactor `r362-qa-spot.sh`
+  (zamrznjeni spot skripti NI mutirani; IIFE ovojnica — r231 invariant);
+  PRED-deploy baseline iskreno dokumentiran (brezOffset=3 → po deployu
+  pričakovano 0). VERIFIKACIJA (na KONČNI viri): tsc 0 · eslint 0 (FULL,
+  `npm run lint`) · vitest **5199/5199 (326)** = R361 baza 5194/325 + mojih
+  +5 − 0 [tek 1 zeleno] · build svež EXIT=0 [rm -rf .next;
+  max-old-space-size 2560] · `qa-round.sh 362 needles` VSE OK [4 need_static
+  ŽIVO v lokalnem buildu + TODO-R362 odsoten; veriga R227→…→R339 + union
+  registri r340–r362] · `qa-round.sh 362 smoke` EXIT=0 [ISTA EN VIR] ·
+  `qa-round.sh 362 e2e` EXIT=0 [ODTIS BAJTNATO IDENTIČEN pre==post —
+  ZERO-MUTACIJA] · leak-check čist [ghp_[A-Za-z0-9]{36} → 0]. NOVO:
+  scripts/qa-needles/r362.tsv [4 need_static = className token ×3-viri + 3
+  aria statična segmenta ×1, vsi ×0 v HEAD fetch-first; must_miss; python
+  write z \t; awk NF=3 čisto] + README disk resnica [števec 5199/326 + R362
+  bullet].
 - **Ring pariteta val 44 + e2e-lib dedup 1. val** (R361): (1) **prva naloga**
   — prod-qa re-run prek kanona `r359-prod-qa-retry.sh 360` ZELEN ob poskusu
   1 + **ŠTIRINAJSTIJNA era preverba** `r361-era-harvest.sh` EXIT=0 ob 1. teku

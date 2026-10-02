@@ -278,7 +278,7 @@ describe('R267 — komponenta (quote-followup) — pill, mini-vrstica, handler, 
     // press-scale = pariteta žetona z družino (className je pred onClick v JSX —
     // ločena preverba na točno tisto vrsto, ki jo ima SAMO PDF gumb; CSV gumb
     // iste klase NIMA press-scale).
-    expect(komponenta).toContain('className="h-7 shrink-0 gap-1.5 text-[11px] press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"')
+    expect(komponenta).toContain('className="h-7 shrink-0 gap-1.5 text-[11px] press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"')
     expect(komponenta).toContain('<FileDown className="h-3 w-3" aria-hidden="true"')
   })
 

@@ -420,7 +420,7 @@ export function QuoteFollowUp() {
               type="button"
               size="sm"
               variant="outline"
-              className="h-7 shrink-0 gap-1.5 text-[11px] press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              className="h-7 shrink-0 gap-1.5 text-[11px] press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
               onClick={() => void handleSpomnikiPdf()}
               disabled={pdfVteku}
               aria-label="Izvozi pregled spomnikov ponudb kot PDF"
@@ -450,7 +450,7 @@ export function QuoteFollowUp() {
               type="button"
               size="sm"
               variant="outline"
-              className="h-7 shrink-0 gap-1.5 text-[11px] press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              className="h-7 shrink-0 gap-1.5 text-[11px] press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
               onClick={() => void handleSpomnikiCsv()}
               disabled={csvVteku}
               data-testid="ponudbe-spomniki-csv-pill"
@@ -468,7 +468,7 @@ export function QuoteFollowUp() {
               type="button"
               size="sm"
               variant="outline"
-              className="h-7 shrink-0 gap-1.5 text-[11px] press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              className="h-7 shrink-0 gap-1.5 text-[11px] press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
               onClick={handleExportCsv}
               disabled={pending.length === 0 || exporting || loading || error !== null}
               aria-label={`Izvozi prikazani seznam ponudb v CSV (${ponudbeLabel(pending.length)})`}
@@ -571,15 +571,22 @@ export function QuoteFollowUp() {
                     </div>
                   </div>
                   <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                    {/* val 45 — ring PARITETA zaključek + per-item aria (kanon
+                        R346/R356): vidno besedilo ne nosi cilja (kateri
+                        spomnik?) → aria-label z nazivProjekta (precedens
+                        'Datum spomnika:' spodaj) + focus-visible:ring-offset-2
+                        na vseh navy/40 žetonih te kartice (DOM preverba R362:
+                        3 izvozna brata + 3 akcije brez offseta). 0 novih hex. */}
                     <Button
                       type="button"
                       size="sm"
                       variant={isOverdue ? 'default' : 'outline'}
-                      className={`h-8 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 ${
+                      className={`h-8 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 ${
                         isOverdue ? 'bg-roksal-navy hover:bg-roksal-navy/90' : ''
                       }`}
                       disabled={busyId === p.id}
                       onClick={() => plusDays(p.id, 0)}
+                      aria-label={`Pokliči — spomnik za ${p.nazivProjekta} — današnji datum`}
                       title="Spomnik danes"
                     >
                       {busyId === p.id ? (
@@ -593,9 +600,10 @@ export function QuoteFollowUp() {
                       type="button"
                       size="sm"
                       variant="outline"
-                      className="h-8 focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                      className="h-8 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
                       disabled={busyId === p.id}
                       onClick={() => plusDays(p.id, 3)}
+                      aria-label={`Premakni spomnik za ${p.nazivProjekta} na +3 dni`}
                     >
                       +3 dni
                     </Button>
@@ -603,9 +611,10 @@ export function QuoteFollowUp() {
                       type="button"
                       size="sm"
                       variant="outline"
-                      className="h-8 focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                      className="h-8 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
                       disabled={busyId === p.id}
                       onClick={() => plusDays(p.id, 7)}
+                      aria-label={`Premakni spomnik za ${p.nazivProjekta} na +7 dni`}
                     >
                       +7 dni
                     </Button>

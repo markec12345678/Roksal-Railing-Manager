@@ -141,3 +141,19 @@ eb_preberi_kolektor() {
   local varname="$1"
   agent-browser eval "(()=>{return JSON.stringify({napake:window.__$varname, stevilo:(window.__$varname||[]).length});})()" 2>&1 | tail -1
 }
+
+# R362 (e2e-lib dedup 2. val) — OŽKA ring-paritetna sonda: šteje gumbe
+# press-scale + status-filter družine z/z brez focus-visible:ring-offset-2
+# (navy/40 žeton). Identičen counting blok se ponavljal v r361-qa-spot2.sh
+# (C2) in r362-qa-spot.sh (C) — 2. ponovitev → kanon ustvarjen PROAKTIVNO
+# (prag LEKCIJE R352 je 3. ponovitev), s PORABO ob 1. uporabi v
+# r362-qa-spot3.sh v ISTI rundi (LEKCIJA R361: kanon, ki se ne porabi, je
+# le papir). OŽKI obseg = filtriranje po className žetonih, NE štetje celega
+# dokumenta brez filtra (LEKCIJA R361: DOM probe obseg = VES dokument).
+# IIFE ovojnica OBVEZNA (r231 invariant). Vrne eval izpis JSON — klicatelj
+# sam interpretira (fail-open: prazen izpis = sonda ni tekla, NE tiha '0'
+# resnica).
+eb_sonda_ring_pariteta() {
+  agent-browser eval "(()=>{return JSON.stringify({pressScaleOffset2:[...document.querySelectorAll('button')].filter(b=>(b.className||'').includes('press-scale')&&(b.className||'').includes('ring-roksal-navy/40')&&(b.className||'').includes('ring-offset-2')).length,pressScaleBrezOffset:[...document.querySelectorAll('button')].filter(b=>(b.className||'').includes('press-scale')&&(b.className||'').includes('ring-roksal-navy/40')&&!(b.className||'').includes('ring-offset')).length,statusFilterOffset2:[...document.querySelectorAll('button')].filter(b=>(b.className||'').includes('text-[11px]')&&!(b.className||'').includes('press-scale')&&(b.className||'').includes('ring-roksal-navy/40')&&(b.className||'').includes('ring-offset-2')).length});})()" 2>&1 | tail -1
+}
+

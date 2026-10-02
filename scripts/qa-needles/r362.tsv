@@ -1,0 +1,20 @@
+# qa-needles/r362.tsv — REGISTER needlejev runde R362 (STIL val 45:
+# ring PARITETA zaključek quote-followup družine — 3 izvozna brata
+# (press-scale) + 3 h-8 akcije dobili focus-visible:ring-offset-2; + 3
+# NOVI per-item aria-label z nazivProjekta (kanon R346/R356; 'Datum
+# spomnika:' precedent v isti datoteki). QA-dokazano R362 spot-r167/6:
+# val 44 je pokril SAMO crm-tab.tsx (1 datoteka × 1 družina) —
+# quote-followup = isti CRM pogled, druga datoteka, 3 brata brez
+# offseta. Era-diskriminatorji: className token (×3) + aria statična
+# segmenta brez interpolacijske meje (LEKCIJA R361 — SWC transpilira
+# template literal v konkatenacijo). 0 novih hex (števec = 0).
+# FORMAT (TSV; EN vrstica = EN needle; TAB je LOČILO) — kanon R340–R361.
+#   <needle_string><TAB><opis><TAB><vrsta>
+# vrsta: need_static (MORA biti ŽIV v čankih) | must_miss (NE SME biti)
+
+# ── R362 lastni needleji ──
+h-8 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2	R362 val 45 h-8 akcije trojica ring offset-2 (×3 v quote-followup; 0 v HEAD)	need_static
+Pokliči — spomnik za 	R362 val 45 Pokliči per-item aria statični predpon (×1; 0 v HEAD)	need_static
+ na +3 dni	R362 val 45 +3 dni per-item aria statični pripon (×1; 0 v HEAD)	need_static
+ na +7 dni	R362 val 45 +7 dni per-item aria statični pripon (×1; 0 v HEAD)	need_static
+TODO-R362	must_miss: razvojni ostane (nesme biti v produkcijskih čankih)	must_miss
