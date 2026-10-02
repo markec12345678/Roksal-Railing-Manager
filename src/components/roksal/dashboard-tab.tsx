@@ -1739,7 +1739,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                     {/* Swipe action icons */}
                     <button
                       onClick={(e) => { e.stopPropagation(); toast.info(`Klic stranke: ${project.customer?.ime || '—'}`) }}
-                      className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:text-roksal-green hover:bg-roksal-green/10 focus-visible:ring-2 focus-visible:ring-roksal-green/40 outline-none transition-colors"
+                      className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:text-roksal-green hover:bg-roksal-green/10 focus-visible:ring-2 focus-visible:ring-roksal-green/40 focus-visible:ring-offset-2 outline-none transition-colors"
                       aria-label="Pokliči stranko"
                     >
                       <Phone className="h-3.5 w-3.5" aria-hidden="true" />

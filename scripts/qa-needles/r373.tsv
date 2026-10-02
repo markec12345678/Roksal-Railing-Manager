@@ -1,0 +1,38 @@
+# qa-needles/r373.tsv — REGISTER needlejev runde R373 (STIL val 56:
+# ring OBLIKOVNA pariteta MALIH družin — per-barvni split kanon
+# nadaljevanje (navy = val 43–49+52+53+54, red = 50+55, amber = 51,
+# white + white/60 + roksal-green/40 = val 56): 8 × INS
+# ' focus-visible:ring-offset-2' TIK ZA žetonom (photo-tab white RAW
+# ×3 [L978/L1129/L1137] + white/60 RAW ×4 [L1414/L2048/L2061/L2071],
+# dashboard roksal-green/40 RAW ×1 [L1742 'Pokliči stranko']) —
+# precedent val 54/55 INS (+28 znakov, in-place 0 novih vrstic).
+# Orodje: NOVI r373-family-census.py (4. korak generalizacije:
+# r369-census → r371-none-triage → r372-token-triage → TA —
+# poljuben seznam družin + census + element triaža v eni prehoju;
+# 1. uporaba V ISTI rundi; navzkrižna validacija: navy/40
+# {'O2': 205, 'NONE': 43, '?INTERP': 1} = TOČNO r371 PO census).
+# Census PRED → PO: white {'NONE': 3} → {'O2': 3} gap 3→0;
+# white/60 {'NONE': 8, 'O0': 3} → {'NONE': 4, 'O0': 3, 'O2': 4}
+# gap 8→4 — vsi 4 = KIT (izjema #1); O0 ×3 = top-bar izjema #2
+# (zamrznjena v r369-stil-val52.test.ts); roksal-green/40
+# {'NONE': 1} → {'O2': 1} gap 1→0. Dokumentirane izjeme BREZ
+# sprememb: ring/50 ×14 (vse ui/* shadcn kit fokus jezik),
+# white/60 KIT ×4, destructive/20+/40 ×4 (ui badge/button),
+# resizable ring O1 ×1, navy ?INTERP ×1 → KIT (roksal-catalog L110).
+# Stale-pin PRED-skan: r373-window-scan.py (klon r372, TARGETS =
+# photo-tab + dashboard-tab) delta +28 ×3 žetona = 0 preozkih
+# (14/14 PRED in PO); ŠTEVEC guard sken: r370 (A) navy-obsegani
+# števci + r371/r372 per-datoteka hex/aria/title čisto (INS ne
+# doda hex/aria/title/vrstic); r348/r346/r271/r272/r268 pini
+# preživijo. Era preverba: r373-era-harvest.sh (ŠESTINDVJSETIJNA
+# — 26 registrov r347–r372, ≥109 need_static) EXIT=0 ob 1. teku —
+# vseh 26 er ŽIVO; val 55 vsi 4 needleji ŽIVO DIREKTNO; val 55
+# POST-deploy spot (r373-qa-spot.sh spot-r167/18 + re-proba 18b):
+# vse 4 val 55 površine podatkovno/napačno-gated v demo seji →
+# iskreno NEmontirane z razlogom iz diska (kanon r277); sidra ŽIVO
+# (CSV izvoz + 'Sistem — zdravje'); kolektor 0 errorjev.
+group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2	R373 val 56 photo-tab L978 white RAW pika offset tik za zetonom (x1 pojavitev; 0 v HEAD)	need_static
+hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2	R373 val 56 photo-tab L1414 white/60 RAW zapri slikanje offset (x1 pojavitev; 0 v HEAD)	need_static
+font-medium hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2	R373 val 56 photo-tab L2048 white/60 RAW orodjarna shranjuj offset (x1 pojavitev; 0 v HEAD)	need_static
+hover:text-roksal-green hover:bg-roksal-green/10 focus-visible:ring-2 focus-visible:ring-roksal-green/40 focus-visible:ring-offset-2 outline-none transition-colors	R373 val 56 dashboard L1742 green RAW poklici stranko offset (x1 pojavitev; 0 v HEAD)	need_static
+TODO-R373	must_miss: razvojni ostanki (nesme biti v produkcijskih cankih)	must_miss

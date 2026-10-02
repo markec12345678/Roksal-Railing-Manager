@@ -975,7 +975,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
                         e.stopPropagation()
                         handleDelete(p.id)
                       }}
-                      className="absolute right-1 top-1 rounded-full bg-black/50 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
+                      className="absolute right-1 top-1 rounded-full bg-black/50 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:outline-none"
                       aria-label={`Izbriši sliko${p.opomba ? ` (${p.opomba})` : ''}`}
                     >
                       <Trash2 aria-hidden="true" className="h-3 w-3" />
@@ -1126,7 +1126,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); navPreview(-1) }}
-                      className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/60 p-1.5 text-white hover:bg-black/80 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
+                      className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/60 p-1.5 text-white hover:bg-black/80 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:outline-none"
                       aria-label="Prejšnja"
                     >
                       <ChevronLeft aria-hidden="true" className="h-5 w-5" />
@@ -1134,7 +1134,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); navPreview(1) }}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/60 p-1.5 text-white hover:bg-black/80 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/60 p-1.5 text-white hover:bg-black/80 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:outline-none"
                       aria-label="Naslednja"
                     >
                       <ChevronRight aria-hidden="true" className="h-5 w-5" />
@@ -1411,7 +1411,7 @@ function CameraCapture({
     <div className="fixed inset-0 z-[60] flex flex-col bg-black">
       {/* Header */}
       <div className="flex items-center justify-between bg-black/80 px-4 py-3 text-white">
-        <button type="button" onClick={handleClose} className="rounded-full p-1.5 hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-white/60" aria-label="Zapri slikanje">
+        <button type="button" onClick={handleClose} className="rounded-full p-1.5 hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2" aria-label="Zapri slikanje">
           <X className="h-5 w-5" aria-hidden="true" />
         </button>
         <span className="text-sm font-medium">Slikanje — {KATEGORIJE.find((k) => k.id === kategorija)?.label}</span>
@@ -2045,7 +2045,7 @@ function AnnotationEditor({
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-md bg-white/10 px-2.5 py-1.5 text-[11px] font-medium hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-white/60"
+          className="rounded-md bg-white/10 px-2.5 py-1.5 text-[11px] font-medium hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2"
           aria-label="Zapri urejevalnik anotacij"
         >
           <X className="h-4 w-4" aria-hidden="true" />
@@ -2058,7 +2058,7 @@ function AnnotationEditor({
             type="button"
             onClick={undoLast}
             disabled={anns.length === 0}
-            className="rounded-md bg-white/10 px-2 py-1.5 text-[11px] hover:bg-white/20 disabled:opacity-30 focus-visible:ring-2 focus-visible:ring-white/60"
+            className="rounded-md bg-white/10 px-2 py-1.5 text-[11px] hover:bg-white/20 disabled:opacity-30 focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2"
             title="Radiraj zadnjo"
             aria-label="Radiraj zadnjo anotacijo"
           >
@@ -2068,7 +2068,7 @@ function AnnotationEditor({
             type="button"
             onClick={clearAll}
             disabled={anns.length === 0}
-            className="rounded-md bg-white/10 px-2 py-1.5 text-[11px] hover:bg-white/20 disabled:opacity-30 focus-visible:ring-2 focus-visible:ring-white/60"
+            className="rounded-md bg-white/10 px-2 py-1.5 text-[11px] hover:bg-white/20 disabled:opacity-30 focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2"
             title="Počisti vse"
             aria-label="Počisti vse anotacije"
           >
