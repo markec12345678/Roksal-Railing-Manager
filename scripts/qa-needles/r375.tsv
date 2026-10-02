@@ -1,0 +1,45 @@
+# qa-needles/r375.tsv — REGISTER needlejev runde R375 (STIL val 57:
+# ring↔border OBLIKOVNA pariteta navy/40 obrobljenih gumbov —
+# NON-ring kandidat #1 iz R373 handoverja: 22 × INS
+# ' focus-visible:border-roksal-navy/40
+# dark:focus-visible:border-roksal-ink/40' TIK ZA offset
+# 'focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2'
+# (kanon calculator L4396/L4439 precedens + r166 dark obramba;
+# +76 znakov/vrstico ×22 = +1672, in-place 0 novih vrstic; ring na
+# tarčah ŽE naprej brez dark: variante — PRED disk resnica).
+# Orodja: NOVI era-clone.py (5. korak generalizacije era verige:
+# r370–r373 hardcodirani kloni → PARAMETRIZIRAN kloner; 1. uporaba
+# V ISTI rundi → r374-era-harvest.sh SEDEMINDVJSETIJNA — 27
+# registrov r347–r373, ≥113 need_static, disk vsota — EXIT=0 ob 1.
+# teku, val 56 vsi 4 needleji ŽIVO DIREKTNO; 2. uporaba →
+# r375-era-harvest.sh OSEMINDVJSETIJNA — 28 registrov r347–r374,
+# ≥117, --dst-label override za poslovno rundi R374) +
+# r375-val57-apply.py (transformacijski dokument, fail-closed
+# per vrstica, idempotenca) + r375-window-scan.py (klon r373,
+# TARGETS = measurements-tab; 25 okenskih regexov, delta +76 = 0
+# preozkih). Stale-pin + ŠTEVEC guard sken: r372 per-datoteka
+# vrstice/hex/aria/title + tarce [3351/4032] pozicije čisto;
+# r370 (A) MERITVE offset-1 = 0; r373 navy92 = 92 (INS ne doda
+# ring/offset/hex/aria/title/vrstic). Iskrene izjeme BREZ
+# sprememb: amber/red bordered ×2 (lastni družini), INPUT ×4
+# accent checkbowerji (border ne nosi fokus barve), navy brez
+# border širine ×25 (mrtev CSS), ui KIT border-ring ×11.
+# Era preverba: r374-era-harvest.sh (SEDEMINDVJSETIJNA — 27
+# registrov r347–r373, ≥113 need_static) EXIT=0 ob 1. teku —
+# vseh 27 er ŽIVO NA PRODU; val 56 vsi 4 needleji ŽIVO DIREKTNO
+# [chunk_045 ×3 + chunk_028 ×1]; r375-era-harvest.sh
+# (OSEMINDVJSETIJNA — 28 registrov) EXIT=0 prek svežega builda
+# hash rezolucije (r374 issue #13 poslovni needleji — njihov
+# deploy potrjen); val 56 POST-deploy spot (r375-qa-spot.sh
+# spot-r167/19 + re-proba 19b): vse 4 val 56 površine
+# podatkovno-gated v demo seji → iskreno NEmontirane z razlogom
+# iz diska (kanon r277); sidra ŽIVO ('Slikaj' disabled dok. vrata
+# + CSV izvoz + 'Ni projektov'); kolektor 0 errorjev v OBEH
+# runah. prod-qa re-run 373: ZELEN ob poskusu 1 (13. runda
+# zapored). KOLIZIJA #17: njihova poslovna R374 (8db6a1c) brez
+# worklog vnosa → adopcijski vnos dopisan ob R375.
+font-medium border transition-all hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40	R375 val 57 measurements L3125 filter chip border pariteta tik za offset (x1 pojavitev; 0 v HEAD)	need_static
+hover:border-roksal-amber/40 hover:bg-roksal-amber/5 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40	R375 val 57 measurements L3675 karticna vrstica border pariteta tik za offset (x1 pojavitev; 0 v HEAD)	need_static
+border border-dashed border-roksal-amber/40 py-1.5 text-2xs text-roksal-amber hover:bg-roksal-amber/5 transition-colors focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40	R375 val 57 measurements L4754 crta amber/40 border pariteta tik za offset (x1 pojavitev; 0 v HEAD)	need_static
+border border-dashed border-roksal-amber/50 py-1.5 text-2xs text-roksal-ink hover:bg-roksal-amber/10 transition-colors focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40	R375 val 57 measurements L4768 crta amber/50 border pariteta tik za offset (x1 pojavitev; 0 v HEAD)	need_static
+TODO-R375	must_miss: razvojni ostanki (nesme biti v produkcijskih cankih)	must_miss

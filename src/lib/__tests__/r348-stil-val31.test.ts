@@ -31,7 +31,11 @@ function oknoOkoli(vir: string, dejnik: string, dolzina = 600): string {
 
 describe('r348 STIL val 31 — a11y parity izvozne družine meritev', () => {
   it('CSV vse meritve: aria + title + izrecen ring', () => {
-    const okno = oknoOkoli(tab, 'onClick={handleExportCSV}')
+    // PIN SHIFT R375 val 57 (INS +76 znakov na vrstici className — razdalja
+    // anchor→title 528→604; okno 600→700, headroom 96; LEKCIJA R369 (2) +
+    // R375: oknoOkoli SLICE okna niso regex — window-scan jih ne vidi,
+    // FULL vitest je mreža)
+    const okno = oknoOkoli(tab, 'onClick={handleExportCSV}', 700)
     expect(okno).toContain('aria-label="Izvozi vse meritve kot CSV"')
     expect(okno).toContain('title="Izvozi VSE meritve projekta (brez filtra) kot CSV za Excel"')
     expect(okno).toContain(RING)
