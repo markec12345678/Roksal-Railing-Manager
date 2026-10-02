@@ -7966,3 +7966,29 @@ Stage Summary:
 - ⏰ roksal-fallback-db POTEČE 2026-10-25 (~3 tedne) — obvestiti lastnika (81. zapis). ⚠️ njihova nota: žetona (GitHub + Vercel) uporabljena — priporočena ROTACIJA.
 - R380 prva naloga = qa-round.sh 379 prod-qa re-run [prek r359-prod-qa-retry.sh 379] + triintrideseta era preverba r347–r379 [33 registrov, ≥134 = 126 + 4 + 4; prek era-clone.py --src-round 379 --expected-total 134 --dst-label "R380 val 60" [oz. kandidatska val]; pričakuj 134/134 ŽIVO [r379 4 needleji razrešeni ob TEM pushu]] + val 59 POST-deploy verifikacija [4 needleji r379.tsv; vrata: rdeči akcijski gumbi — top-bar odjava CMP meni, sessions-dialog odjava naprave, dashboard rdeči KIT akcije; mounted + className LOČENO].
 - R380 kandidati: 1. **B/transition-colors družina** [crm-tab ×12 + dashboard ×3 + cena paneli ×4 + audit ×2 + calculator ×1 + sketch ×1 + vodja ×4 + termini ×4 — KIT vrstice N/A (transition-all iz baze) — nativni <button> triaža po kanonu val 58]; 2. **C/border-pariteta družina** [crm-tab ×13 + dashboard ×7 + bottom-nav ×2 + calculator ×2 + audit ×3 + cena paneli ×4 + safety ×2 + team ×6 + termini ×6 + vodja ×4 + site-survey ×1 + sketch ×1 — r379-census.sh]; 3. A/offset ostanki ×11 [dashboard Input L1623 = izjema #2 zamrznjena]; 4. era-harvest needle→ruta mapping stolpec [preciznejši server dokaz]; 5. e2e-lib dedup 17. val [po kanonu]. ISSUE #1: vsa sprejemna merila ✓; ostaja odprt, owner 'Razvoj > QA' [AGENT STARTUP RULE: razvoj > QA].
+---
+Task ID: R380
+Agent: main-agent (z.ai — poslovna runda, issue #13 korak R168)
+Task: §12 REAL UNITS + DECIMAL — centralna zaokroževalna politika + kanonične enote + konverzija na Inventarju + 21 Float→Decimal stolpcev
+
+Work Log:
+- KOLIZIJA #21 [kanon KOLIZIJE #4/R323/#13–#20, 21. potrditev]: njihova QA R379 [9c36c51 — STIL val 59] pristala MED mojim delom; moj lokalni commit d25d2cf kot R379 ob pushu ZAVRNJEN → preimenovanje R379→R380 [migracija 20261006080000_r380_decimal_units + r380.tsv + 4× r380-*.test.ts + žigi]; njihovi r379-* artefakti ostanejo = lastniška zgodovina; njihov r379.tsv NEDOTAKNJEN; backup branch r379-ai-delta-backup.
+- SCRATCH EKSPERIMENT PRED zavezovanjem: Float→Decimal v shemi + tsc = 41 napak v 16 datotekah → izmerjen obseg, odločitev za lastnoročno izvedbo.
+- src/lib/decimal-policy.ts [ČISTO jedro + direktna decimal.js 10.6.0 — ista verzija kot transicijska]: preciznost po domenu ZAMRZNJENA [denar 2 · količina 3 · faktor 4 · odstotek 2]; GORI/DOL/NAJBLIŽE [half-up = PG numeric]; EKSAKTNA aritmetika prek String(v) [0.145 → 0.15]; vsota v Decimal [0.1+0.2 = TOČNO 0.3]; decToNum/decToNumObvezno [honest NULL §8]; decToPlain [globoki DTO serializer].
+- src/lib/units.ts [ČISTO jedro]: KANONIČNE_ENOTE EXACT 8 [kos/m/m²/kg/l/komplet/ura/paket — m² s SUPERSCRIPT U+00B2; 'm2' → JAVNA 400 s seznamom, NE tiha normalizacija — kanon §5]; konverzijska validacija [delna prisotnost honest §8; izračun zahteva popolnost].
+- Migracija r380: 21 ALTER TYPE [denar 12,2: marginLocked/estimatedPrice [issue #13 SRCE]/osnova/ddv/znesek/cena/cenaM/skupajCena/purchasePrice + popust 5,2; količine 12,3: zaloga/premiki/ledger balanceAfter [revizijska sled eksaktna]/šarže/alokacije] + 7 NULLABLE konverzijskih stolpcev na Inventory + CHECK ×7 [kanon ×3, pozitivni ×2, precision 0–6, nabor]; GEO ostaja Float [dokumentirana meja]; BREZ dropa — prireditveni cast ohrani vrstice [po KOLIZIJI obe bazi rebuildani — P3009 precedens R376].
+- FAILO-CLOSED PRECIZNOST: količina z >3 decimalkami → 400 [DB bi TIHO zaokrožil = tiha mutacija].
+- LOKALNA zaokroževanja IZBRISANA v korist politike [invoices round2, procurement Math.round ×11, evidence ×1, lots round6 → delegacija + epsilon 1e-9 ×2 ODSTRANJEN].
+- DECIMAL STRING-COMPARISON PAST ZAPRTA [LOW_STOCK: Decimal < Decimal = valueOf STRING primerjava "5"<"10"=false — ujel jo samo POLN testni tek, ne tsc!].
+- DTO: decToPlain na ~20 rutah [Decimal v JSON = string → klientova aritmetika NaN]; r374-r378 rute so imele .toNumber() od začetka.
+- 65 novih testov [r380-decimal-policy ×22 + r380-units ×16 + r380-decimal-db ×7 + r380-conversion-api ×9]; PIN SHIFT-i: r144-lots ×15, inventory-ledger ×9, db-integrity ×6, r374 ×1, r209 ×1.
+- VERIFIKACIJA (PO rebaseu KOLIZIJE #21): tsc 0 · eslint 0 · vitest 5488/5488 (355 = NJIHOVA R379 baza 5423/351 + mojih +65/+4) · build EXIT=0 [OOM@2560, uspešno@3072 — 4GB stroj z živim PG] · qa-round.sh 380 needles EXIT=0 [UNION r340–r379 + NJIHOV register ŽIV + moj r380.tsv: 4 need_static ŽIVO ×1 .js + TODO-R380 čisto] · fetch-first ×0 nad 9c36c51.
+
+Stage Summary:
+- R380 ŽIV na origin/main — commit 2f5cb30d1182b76486bdfe473955df4bd9b80e09 (9c36c51..2f5cb30).
+- Deliverables: decimal-policy.ts + units.ts + migracija r380 + konverzija API + decToPlain DTO most + 65 testov.
+- Naslednji korak #13: R169 (§13 Customer/Lead/Opportunity — Lead/Opportunity modeli + lifecycle NEW→CONTACTED→SITE_SURVEY→QUOTE→FOLLOW_UP→ACCEPTED/LOST + Customer delitev).
+- ⏰ roksal-fallback-db POTEČE 2026-10-25 — obvestiti lastnika (83. zapis).
+- ⚠️ žetona (GitHub + Vercel) uporabljena — priporočena ROTACIJA po zaključku.
+- LEKCIJA (orodje): izpis Bash orodja POŽRE [m/[h zaporedja (ANSI-strip) — datoteke pisane prek heredoc/Write so CELE; po sumu korupcije preveri z Read orodjem (bajtna resnica), ne z bash izpisom [3 lažne okvarjenosti diagnosticirane v tej rundi].
+- LEKCIJA (build): SIGKILL build workerja pri max-old-space 2560 na 4GB stroju z živim embedded PG — 3072 uspe; ni koda-bug.
