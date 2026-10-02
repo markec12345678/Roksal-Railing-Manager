@@ -1,4 +1,13 @@
 #!/usr/bin/env python3
+# R376 generalizacija (6. korak era verige): (a) labeli regex vidi TUDI
+# poslovne runde brez val številke ('R374 issue #13' — r375-era-harvest.sh
+# zadnji register; prej: regex 'R(\d+) val (\d+)' je bil slep zanje →
+# FAILOVEDANO zadnji register R373 ≠ R374); (b) --server-probe —
+# SERVER-NEEDLE razširitev (LEKCIJA R375 (6)): mešani client+server
+# registerji, server koda (API rute) NIKOLI v .next/static/chunks niti na
+# prod CDN — dvodelni dokaz: needle v lokalnem .next/server +
+# determinističen vedenjski probe lastniške rute na produ (fail-closed
+# status, npr. 401). Generirana sekcija 2c + hash-dokaz datoteka.
 # era-clone.py — R375 FEATURE: PARAMETRIZIRAN generični kloner era-harvest
 # skriptov (5. korak generalizacije era verige: r370-era-clone → r371-era-clone
 # → r372-era-clone → r373-era-clone [VSE hardcodirane] → TA).
@@ -83,6 +92,8 @@ def main() -> None:
                     help="override za poslovne runde brez val številke (npr. 'R374 issue #13')")
     ap.add_argument("--dst-chain-seg", type=str, default=None,
                     help="override za glavni verižni segment (npr. 'IN r374.tsv ×4 na')")
+    ap.add_argument("--server-probe", action="append", default=None,
+                    help="SERVER-NEEDLE razširitev 'REGVAR|ruta|status' (ponovljivo, npr. 'AB|/api/price-book|401')")
     args = ap.parse_args()
 
     src = args.src_round
@@ -104,17 +115,21 @@ def main() -> None:
 
     content = SRC_F.read_text(encoding="utf-8")
 
-    labeli = re.findall(r'preberi_register "\$REG_([A-Z]+)" "(R(\d+) val (\d+))"', content)
+    labeli = re.findall(r'preberi_register "\$REG_([A-Z]+)" "(R(\d+)[^"]*)"', content)
     if not labeli:
         sys.exit("FAILOVEDANO: vhod nima preberi_register klicev")
-    last_var, srclabel, src_r, src_val = labeli[-1]
+    last_var, srclabel, src_r = labeli[-1]
     if int(src_r) != src - 1:
         sys.exit(f"FAILOVEDANO: zadnji register v vhodu je R{src_r} ≠ R{src-1}")
+    mval = re.search(r" val (\d+)$", srclabel)
+    src_val = int(mval.group(1)) if mval else None  # poslovna runda = brez val
     dst_n = need_static_disk(src)  # ×N vedno IZ DISKA
     if args.dst_label:
         dstlabel = args.dst_label
+    elif src_val is not None:
+        dstlabel = f"R{src} val {src_val + 1}"
     else:
-        dstlabel = f"R{src} val {int(src_val) + 1}"
+        sys.exit(f"FAILOVEDANO: zadnji register R{src_r} je poslovna runda brez val — podaj --dst-label iz diska (kanon R375)")
 
     src_total = args.expected_total - need_static_disk(src)
     pred = [
@@ -144,19 +159,26 @@ def main() -> None:
         f"# r{dst}-era-harvest.sh — R{dst} {ERA} era preverba: r347.tsv val 30", 1)
     # 2) glava — register veriga (override za poslovne runde)
     if args.dst_chain_seg:
-        rep(f"IN r{src-1}.tsv val {src_val} ×4 na", args.dst_chain_seg, 1)
+        if src_val is not None:
+            rep(f"IN r{src-1}.tsv val {src_val} ×4 na", args.dst_chain_seg, 1)
+        else:
+            rep(f"IN r{src-1}.tsv ×{need_static_disk(src-1)} na", args.dst_chain_seg, 1)
     else:
+        if src_val is None:
+            sys.exit("FAILOVEDANO: poslovni rep v glavi zahteva --dst-chain-seg (kanon R375)")
         rep(f"IN r{src-1}.tsv val {src_val} ×4 na",
-            f"IN r{src-1}.tsv val {src_val} ×4 IN r{src}.tsv val {int(src_val)+1} ×{dst_n} na", 1)
+            f"IN r{src-1}.tsv val {src_val} ×4 IN r{src}.tsv val {src_val+1} ×{dst_n} na", 1)
     # 3) glava — 'pride na produ SAM' + zaostanek ere-besede POPRAVLJEN
     rep(f"(R{src} pride na produ SAM — R347–R{src-1} so ŽE ŽIVI od\n# {ERA_BESODE[stevec-1][1]} preverbe R{src},",
         f"(R{dst} pride na produ SAM — R347–R{src} so ŽE ŽIVI od\n# {low_prev} preverbe R{dst},", 1)
     # 4) glava — kanon žig
     rep(f"Kanon R345–R{src}\n# (r{src}-era-harvest.sh)",
         f"Kanon R345–R{dst}\n# (r{dst}-era-harvest.sh)", 1)
-    # 5) poti + začasne datoteke
+    # 5) poti + začasne datoteke (števec DINAMIČNO iz vira — vir lahko ŽE
+    #    nosi server sekcijo z resolucija-hash/server datotekami)
+    c_res_src = content.count(f"r{src}-resolucija-")
     rep(f"/tmp/r{src}-prod-chunks", f"/tmp/r{dst}-prod-chunks", 1)
-    rep(f"r{src}-resolucija-", f"r{dst}-resolucija-", 2)
+    rep(f"r{src}-resolucija-", f"r{dst}-resolucija-", c_res_src)
     # 6) NOV register var + klic
     rep(f'REG_{reg_var(src-1)}="scripts/qa-needles/r{src-1}.tsv"\n',
         f'REG_{reg_var(src-1)}="scripts/qa-needles/r{src-1}.tsv"\nREG_{reg_var(src)}="scripts/qa-needles/r{src}.tsv"\n', 1)
@@ -190,6 +212,97 @@ def main() -> None:
     rep(f"=== R{src} {ERA_BESODE[stevec-1][0]} ERA PREVERBA",
         f"=== R{dst} {ERA} ERA PREVERBA", 3)
 
+    # 12) SERVER-NEEDLE razširitev (R376/R377, LEKCIJA R375 (6)) — samo ob
+    #     --server-probe [7. generalizacija: PONOVLJIV — več specov za več
+    #     mešanih registerjev, npr. r374 price-book + r376 BOM rute]:
+    #     hash-dokaz datoteka + sekcija 2c (generirana, deterministična,
+    #     fail-closed). Needle se razreši, če KATERI KOLI spec uspe
+    #     (server čanki so v grafu več rut).
+    if args.server_probe:
+        sp_sez = []
+        for sp in args.server_probe:
+            deli = sp.split("|")
+            if len(deli) != 3:
+                sys.exit(f"FAILOVEDANO: --server-probe rabi 'REGVAR|ruta|status': {sp}")
+            sp_var, sp_route, sp_expect = deli
+            if f'REG_{sp_var}=' not in out:
+                sys.exit(f"FAILOVEDANO: --server-probe REG_{sp_var} ne obstaja (niti v vhodu niti kot nov register)")
+            sp_sez.append((sp_var, sp_route, sp_expect))
+        had_server = "# 2c) SERVER-NEEDLE razširitev" in content
+        if not had_server:
+            rep('if [ "${#MISS_NEEDLES[@]}" -gt 0 ]; then',
+                f'if [ "${{#MISS_NEEDLES[@]}}" -gt 0 ]; then\n  : > "/tmp/r{dst}-resolucija-hash.txt"', 1)
+            rep('echo "REZOLUCIJA ŽIVO: hash dokaz $ime na prod CDN: HTTP 200 + niz prisoten — $needle"',
+                'echo "REZOLUCIJA ŽIVO: hash dokaz $ime na prod CDN: HTTP 200 + niz prisoten — $needle"\n'
+                f'      printf \'%s\\n\' "$needle" >> "/tmp/r{dst}-resolucija-hash.txt"', 1)
+        spec_bash = " ".join(f'"{v}|{r}|{e}"' for v, r, e in sp_sez)
+        server_blok = f'''# 2c) SERVER-NEEDLE razširitev (R376/R377, LEKCIJA R375 (6)): mešani client+server
+#     registerji — server koda (API rute) NIKOLI v .next/static/chunks niti
+#     na prod CDN. Dvodelni dokaz za nehashirane needleje: (a) needle v
+#     lokalnem .next/server (produkcijski build, kompilirani čanek — .map
+#     izključen); (b) determinističen vedenjski probe lastniške rute na
+#     produ (fail-closed status; 404 = rute ni na produ = NI deployan).
+#     Needle se razreši, če KATERI KOLI spec uspe (server čanki v grahu več rut).
+SERVER_PROBE_SPECS=({spec_bash})
+SERVER_RES="/tmp/r{dst}-resolucija-server.txt"
+: > "$SERVER_RES"
+if [ "${{#MISS_NEEDLES[@]}}" -gt 0 ] && [ -d ".next/server" ]; then
+  for needle in "${{MISS_NEEDLES[@]}}"; do
+    grep -qxF -- "$needle" "/tmp/r{dst}-resolucija-hash.txt" 2>/dev/null && continue
+    resolved=""
+    for spec in "${{SERVER_PROBE_SPECS[@]}}"; do
+      regvar="${{spec%%|*}}"; rest="${{spec#*|}}"; ruta="${{rest%%|*}}"; expect="${{rest##*|}}"
+      regfile_var="REG_$regvar"; regfile="${{!regfile_var}}"
+      grep -qF -- "$needle" "$regfile" 2>/dev/null || continue
+      server_hit=$(grep -rlF -- "$needle" .next/server/ 2>/dev/null | grep -v '\\.map$' | head -1)
+      if [ -z "$server_hit" ]; then
+        continue
+      fi
+      probe_koda=$(curl -sS --max-time 30 -o /dev/null -w "%{{http_code}}" "$BASE$ruta" 2>/dev/null || echo 000)
+      if [ "$probe_koda" = "$expect" ]; then
+        echo "SERVER-REZOLUCIJA ŽIVO: .next/server [$server_hit] + prod $ruta HTTP $probe_koda (fail-closed vrata, deterministično) — $needle"
+        resolved=1
+        printf '%s\\n' "$needle" >> "$SERVER_RES"
+        break
+      else
+        echo "SERVER-REZOLUCIJA MISS [prod $ruta HTTP $probe_koda ≠ $expect] — $needle"
+      fi
+    done
+    if [ -z "$resolved" ]; then
+      echo "SERVER-REZOLUCIJA: needle NI razrešen prek nobenega probe spec-a — $needle"
+    fi
+  done
+  preostalo=0
+  for needle in "${{MISS_NEEDLES[@]}}"; do
+    if ! grep -qxF -- "$needle" "/tmp/r{dst}-resolucija-hash.txt" 2>/dev/null && ! grep -qxF -- "$needle" "$SERVER_RES" 2>/dev/null; then
+      preostalo=$((preostalo+1))
+    fi
+  done
+  if [ "$preostalo" -eq 0 ]; then
+    echo "SERVER-REZOLUCIJA: vsi MISS needleji razrešeni (hash + server dokazi)"
+    NEED_OK=1
+  fi
+else
+  if [ "${{#MISS_NEEDLES[@]}}" -gt 0 ] && [ ! -d ".next/server" ]; then
+    echo "SERVER-REZOLUCIJA NEMOŽNA: lokalni .next/server ne obstaja (fail-closed)"
+  fi
+fi
+
+'''
+        rep("# 3) must_miss", server_blok + "# 3) must_miss", 1) if not had_server else None
+        if had_server:
+            # vir je ŽE nosil 2c sekcijo [veriženje harvestov s probe]:
+            # ZAMENJAJ celotno staro sekcijo z novo (stari spec-i izginejo)
+            start = out.index("# 2c) SERVER-NEEDLE razširitev")
+            end = out.index("# 3) must_miss")
+            out = out[:start] + server_blok + out[end:]
+
+    if args.dst_chain_seg:
+        seg_check = (args.dst_chain_seg, 1)
+    elif src_val is not None:
+        seg_check = (f"IN r{src}.tsv val {src_val+1} ×{dst_n} na", 1)
+    else:
+        seg_check = (f"IN r{src}.tsv", 1)
     checks = [
         (f'REG_{reg_var(src)}="scripts/qa-needles/r{src}.tsv"', 1),
         (f'preberi_register "$REG_{reg_var(src)}" "{dstlabel}"', 1),
@@ -198,7 +311,7 @@ def main() -> None:
         (f'[ "$need_n" -lt {tot} ]', 1),
         (f"IN {dstlabel} (×{dst_n}) ŽIVO NA PRODU", 1),
         (f"/tmp/r{dst}-prod-chunks", 1),
-        (f"r{dst}-resolucija-", 2),
+        (f"r{dst}-resolucija-", c_res_src + ((5 if not had_server else 0) if args.server_probe else 0)),
         (f"{low_prev} preverbe R{dst}", 1),
         (f"{ERA_BESODE[stevec-1][1]} preverbe R{src}", 0),
         (f"R{src} pride na produ SAM", 0),
@@ -209,9 +322,17 @@ def main() -> None:
         (ERA_PL, 1),
         (f"Kanon R345–R{src}", 0),
         (f"Kanon R345–R{dst}", 1),
-        (f"IN r{src}.tsv val {int(src_val)+1} ×{dst_n} na", 1 if not args.dst_chain_seg else 0),
-        (args.dst_chain_seg, 1) if args.dst_chain_seg else (f"IN r{src}.tsv", 1),
+        seg_check,
     ]
+    if args.server_probe:
+        checks += [
+            ("SERVER_PROBE_SPECS=", 1),
+            ("/tmp/r{0}-resolucija-hash.txt".format(dst), 4),
+            ("/tmp/r{0}-resolucija-server.txt".format(dst), 1),
+            ("SERVER-REZOLUCIJA", 5),
+        ]
+        for v, r, e in sp_sez:
+            checks.append((f'"{v}|{r}|{e}"', 1))
     ok = True
     for pat, n in checks:
         c = out.count(pat)

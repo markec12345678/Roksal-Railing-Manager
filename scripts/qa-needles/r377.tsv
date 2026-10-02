@@ -1,0 +1,29 @@
+# qa-needles/r377.tsv — REGISTER needlejev runde R377 (STIL val 58:
+# transition-colors SKLADNOST — NON-ring kandidat #1 iz R375
+# handoverja: 1 × INS ' transition-colors' PRED
+# 'focus-visible:ring-2' na edinem nativnem navy/40 gumbu
+# dashboard-tab 'Počisti iskanje projektov' L1628 (kanon
+# measurements L4754/L4768 precedens; +18 znakov, in-place 0 novih
+# vrstic; KIT <Button> nosi transition-all iz baze, <Input> ima
+# lastni fokus jezik [izjema #2], amber/red ×2 = spani N/A — VSE
+# dokumentirane izjeme BREZ sprememb). Orodja: era-clone.py --server-probe
+# [6. generalizacija: labeli regex vidi poslovne runde + SERVER-NEEDLE
+# razširitev — needle v .next/server + determinističen vedenjski probe
+# lastniške rute na produ 401] → r377-era-harvest.sh TRIDESETIJNA [30 registrov] + r376-era-harvest.sh DEVETINDVJSETIJNA
+# [29 registrov r347–r375, ≥121 = 117 + 4, vsota iz diska]: EXIT=0 ob
+# 1. teku — 114 direktno + 7 rezolucij ŽIVO [3 hash starejši navy +
+# 3 hash r374 client + 1 SERVER r374 price-book: .next/server/chunks/
+# _8b39314d._.js + prod /api/price-book HTTP 401 fail-closed] — PRVI
+# EXIT=0 od mešanega r374 registra [r375-era-harvest je bil EXIT=2];
+# val 57 vsi 4 needleji ŽIVO DIREKTNO [chunk_026 ×4] → val 57 deploy
+# potrjen v celoti; must_miss ×29 čisto. val 57 POST-deploy spot
+# (r377-qa-spot.sh spot-r167/21; mounted + className LOČENO,
+# dispatch+poll VSAKA): N2 predloga MONTIRANA 5, border-pariteta 5/5
+# ŽIVO DOM dokaz; N1/N3/N4 iskreno NEmontirane [vrata: meritve/
+# segmenti projekta — demo 'Ni projektov' testid
+# meritve-brez-projektov, kanon r277]; navy sonda 27/27 BrezOffset=0;
+# kolektor 0 errorjev. prod-qa re-run 375: ZELEN ob poskusu 1 (14.
+# runda zapored). KOLIZIJA #18: NI (fetch-first origin/main == HEAD
+# f224272). 
+absolute right-3 top-1/2 -translate-y-1/2 transition-colors focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 rounded	R377 val 58 dashboard L1628 pocisti-iskanje transition-colors tik pred fokus nizom (x1 pojavitev; 0 v HEAD)	need_static
+TODO-R377	must_miss: razvojni ostanki (nesme biti v produkcijskih cankih)	must_miss

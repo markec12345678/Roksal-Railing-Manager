@@ -84,7 +84,12 @@ describe('R371 stil val 54 — navy/40 NONE triaža (13 surovih brand vrstic)', 
   it('(B) era-diskriminatorji val 54: N1 ×1 / N2 ×1 / N3 ×1 / N4 ×1 (per-datoteka grep -rlF) + dokumentirani ne-tarčni ostanki (KIT ×35 / INPUT ×2 / CMP ×5 / drag ×1 — vsi NE-tarče brez offseta)', () => {
     const N1 = 'rounded-full border px-2 py-0.5 text-2xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2'
     const N2 = 'p-1 rounded-md hover:bg-secondary/60 transition-colors shrink-0 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2'
-    const N3 = 'top-1/2 -translate-y-1/2 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2'
+    // [PIN SHIFT R377 val 58: izvirnik N3 'top-1/2 -translate-y-1/2
+    // focus-visible:ring-2 …' — val 58 je vstavila ' transition-colors' NA
+    // ISTO vrstico (dashboard 'Počisti iskanje projektov', kanon
+    // measurements L4754/L4768); r371.tsv vrstica = komentirana
+    // 'EVOLVED R377' + NASLEDNICA need_static z evoluiranim nizom]
+    const N3 = 'top-1/2 -translate-y-1/2 transition-colors focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2'
     const N4 = 'focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40'
     expect(pod(R('src/components/roksal/audit-trail-dialog.tsx'), N1)).toBe(1)
     expect(pod(R('src/components/roksal/calculator-tab.tsx'), N2)).toBe(1)
