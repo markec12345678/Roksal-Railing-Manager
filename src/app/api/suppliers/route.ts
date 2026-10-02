@@ -1,6 +1,7 @@
 // Roksal Field - API: Dobavitelji (V5)
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { decToPlain } from '@/lib/decimal-policy'
 import { authenticate, unauthorized } from '@/lib/auth'
 import { denyWithoutPermission } from '@/lib/auth'
 
@@ -22,7 +23,7 @@ export async function GET(request: Request) {
       },
       orderBy: { naziv: 'asc' },
     })
-    return NextResponse.json(suppliers)
+    return NextResponse.json(decToPlain(suppliers))
   } catch (error) {
     console.error('Suppliers GET Error:', error)
     return NextResponse.json({ error: 'Napaka pri branju dobaviteljev' }, { status: 500 })
@@ -58,7 +59,7 @@ export async function POST(request: Request) {
         popust: body.popust ?? 0,
       },
     })
-    return NextResponse.json(supplier, { status: 201 })
+    return NextResponse.json(decToPlain(supplier), { status: 201 })
   } catch (error) {
     console.error('Suppliers POST Error:', error)
     return NextResponse.json({ error: 'Napaka pri ustvarjanju dobavitelja' }, { status: 500 })
@@ -85,7 +86,7 @@ export async function PATCH(request: Request) {
     const { id, ...data } = body
     if (!id) return NextResponse.json({ error: 'id je obvezen' }, { status: 400 })
     const updated = await db.supplier.update({ where: { id }, data })
-    return NextResponse.json(updated)
+    return NextResponse.json(decToPlain(updated))
   } catch (error) {
     console.error('Suppliers PATCH Error:', error)
     return NextResponse.json({ error: 'Napaka pri posodabljanju' }, { status: 500 })

@@ -119,8 +119,9 @@ export async function GET(request: Request) {
         id: i.id,
         naziv: i.naziv,
         sifra: i.sifraMateriala,
-        kolicinaZaloga: i.kolicinaZaloga,
-        minimalnaZaloga: i.minimalnaZaloga,
+        // R380 (§12): Decimal → number na DTO meji.
+        kolicinaZaloga: i.kolicinaZaloga.toNumber(),
+        minimalnaZaloga: i.minimalnaZaloga.toNumber(),
         enota: i.enota,
         // R222 — števec zasidranj (MaterialPrice) za badge 'Brez dobavitelja'
         // (=== 0 → nihče ni vpisan; paleta sodi prek lib brezDobaviteljaIzIskanja).

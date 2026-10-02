@@ -351,7 +351,7 @@ export default async function PortalPage({ params }: PageProps) {
                 <div className="min-w-0">
                   <p className="text-2xs text-muted-foreground leading-tight">Predvidena cena</p>
                   <p className="text-sm font-semibold text-roksal-ink truncate">
-                    {formatPrice(project.estimatedPrice)}
+                    {formatPrice(project.estimatedPrice.toNumber()) /* R380 (§12): Decimal → number (DTO meja) */}
                   </p>
                 </div>
               </div>

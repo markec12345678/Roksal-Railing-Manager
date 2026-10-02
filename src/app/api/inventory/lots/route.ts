@@ -10,21 +10,25 @@
 // §17: minimalni DTO, stropi (100 šarži / 10 alokacij na šaržo).
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import type { Prisma } from '@prisma/client'
 import { authenticate, unauthorized } from '@/lib/auth'
 import { correlationFromRequest, CORRELATION_HEADER } from '@/lib/correlation'
 import { LOT_STATUS_ACTIVE, LOT_STATUS_EXHAUSTED, LOT_STATUS_CLOSED } from '@/lib/lots'
+import { decToNum } from '@/lib/decimal-policy'
 
 const MAX_LOTS = 100
 const MAX_ALLOCATIONS_PER_LOT = 10
 
 /** Minimalni DTO šarže (§17) — brez internih polj. */
+// R380 (§12): vhodni tip nosi Prisma Decimal (DB DECIMAL) — izhod je number
+// (DTO pogodba decimal-policy).
 function lotDto(lot: {
   id: string
   lotNumber: string
   deliveryDate: Date
-  purchasePrice: number | null
-  quantityInitial: number
-  quantityRemaining: number
+  purchasePrice: Prisma.Decimal | null
+  quantityInitial: Prisma.Decimal
+  quantityRemaining: Prisma.Decimal
   status: string
   note: string | null
   supplier: { naziv: string } | null
@@ -32,7 +36,7 @@ function lotDto(lot: {
   allocations: {
     id: string
     eventType: string
-    kolicina: number
+    kolicina: Prisma.Decimal
     createdAt: Date
     project: { nazivProjekta: string } | null
   }[]
@@ -43,15 +47,17 @@ function lotDto(lot: {
     dobavitelj: lot.supplier?.naziv ?? null,
     orderId: lot.order?.id ?? null,
     deliveryDate: lot.deliveryDate.toISOString(),
-    purchasePrice: lot.purchasePrice,
-    quantityInitial: lot.quantityInitial,
-    quantityRemaining: lot.quantityRemaining,
+    // R380 (§12): Decimal → number na DTO meji (decToNum — honest NULL
+    // za purchasePrice; DECIMAL(12,3)/(12,2) izgube nimajo).
+    purchasePrice: decToNum(lot.purchasePrice),
+    quantityInitial: lot.quantityInitial.toNumber(),
+    quantityRemaining: lot.quantityRemaining.toNumber(),
     status: lot.status,
     note: lot.note,
     allocations: lot.allocations.map((a) => ({
       id: a.id,
       eventType: a.eventType,
-      kolicina: a.kolicina,
+      kolicina: a.kolicina.toNumber(),
       projekt: a.project?.nazivProjekta ?? null,
       createdAt: a.createdAt.toISOString(),
     })),

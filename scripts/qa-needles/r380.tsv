@@ -1,0 +1,41 @@
+# qa-needles/r380.tsv — REGISTER needlejev runde R380 (issue #13, korak
+# R168 iz §12 — REAL UNITS + DECIMAL: 21 Float → Decimal stolpcev po domenu
+# [denar DECIMAL(12,2), količina DECIMAL(12,3), odstotek DECIMAL(5,2)] +
+# centralna zaokroževalna politika src/lib/decimal-policy.ts [EN VIR:
+# GORI/DOL/NAJBLIZJE, eksaktna decimal.js aritmetika prek najkrajše
+# reprezentacije, decToNum/decToPlain DTO most] + kanonične enote
+# src/lib/units.ts [EXACT 8: kos/m/m²/kg/l/komplet/ura/paket — 'm2' NE
+# obstaja, superscript U+00B2] + konverzija na Inventarju [purchaseUnit/
+# stockUnit/consumptionUnit/supplierPackSize/conversionFactor/precision/
+# rounding — VSI nullable honest §8, CHECK sloj ×7] + fail-closed
+# preciznost premikov [>3 decimalke → 400, ne tiho zaokroževanje]).
+# ============================================================================
+# FORMAT (TSV; EN vrstica = EN needle; TAB je LOČILO — presledki znotraj
+# needleja so POMENNI, ker grep -F išče dobesedno) — ENAK format kot
+# r340.tsv…r379.tsv (kanon R340 qa-round.sh: needleji so PODATEK):
+#   <needle_string><TAB><opis><TAB><vrsta>
+# Vrste: need_static (MORA biti ŽIV v svežem buildu) | must_miss (NESME
+# biti v produkcijskih čankih).
+# KOLIZIJA #21 [kanon KOLIZIJE #4/R323/#13–#20, 21. potrditev]:
+# vzporedna lastniška QA R379 [9c36c51 — STIL val 59 red/40 offset-2 +
+# era-clone generalizacije + NJIHOV register r379.tsv] pristala MED mojim
+# delom (moj local commit d25d2cf kot 'R379' je bil ZAVRNJEN ob pushu) →
+# moja runda preimenovana R379→R380 (migracija 20261006080000_r380_
+# decimal_units + r380.tsv + 4× r380-*.test.ts + žigi); NJIHOVI r379-*
+# artefakti ostanejo = lastniška zgodovina; NJIHOV r379.tsv NEDOTIKNJEN.
+# Fetch-first preverba (kanon R366–R379): VSAK need_static je ×0 v
+# trenutnem HEAD pred commitom (git grep -F GLASNO) — needleji spodaj
+# so vsi ×0 potrjeni nad HEAD 9c36c51 (R379 — lastniška QA runda,
+# trenutni origin/main po KOLIZIJI #21).
+# Izpuščeni kandidati (iskreno): 'Količina sme imeti največ 3 decimalke'
+# (template literal s ${KOLICINA_DECIMALKE} — v minificiranem JS NEDOSEGLJIV
+# kot celoten niz); 'Obvezno polje' (prekratko — lažni zadetki zunaj moje
+# površine); 'decToPlain' (minifikator preimenuje/fusionira — kot funkcija
+# NI zanesljiv literal); KANONICNE_ENOTE array literal (minifikacija
+# preoblikuje presledke — dobesedno ujemanje odpove); 'komplet'/'paket'
+# (splošna beseda — ne diskriminira moje površine).
+[decimal-policy]	R380 centralna politika: prefix javne napake v vseh build chunkih decimal-policy (×1 .js; 0 v HEAD)	need_static
+[units]	R380 kanon enot: prefix UnitsError napak v app-route chunku (×1 .js; 0 v HEAD)	need_static
+NI kanonična enota	R380 EXACT kanon §5 na enotah — sporočilo validacije v inventory ruti (×1 .js; 0 v HEAD)	need_static
+Nekončna vhodna vrednost	R380 fail-closed politike — zavrnitev NaN/Infinity (×1 .js; 0 v HEAD)	need_static
+TODO-R380	must_miss: razvojni ostanki (nesme biti v produkcijskih čankih)	must_miss

@@ -545,7 +545,7 @@ export async function PATCH(request: Request) {
                 data: { kolicinaZaloga: { decrement: item.kolicina } },
               })
               if (decremented.count === 0) {
-                throw new InsufficientStockError(inv.naziv, item.kolicina, inv.kolicinaZaloga)
+                throw new InsufficientStockError(inv.naziv, item.kolicina, inv.kolicinaZaloga.toNumber())
               }
               await tx.inventoryMovement.create({
                 data: { inventoryId: inv.id, kolicina: -item.kolicina, tipPremika: 'PORABA', projectId: row.projectId },

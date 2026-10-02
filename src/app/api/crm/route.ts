@@ -24,6 +24,7 @@ import { canManageCustomers, actorIdOf } from '@/lib/access'
 import { zapisOmejitev } from '@/lib/rate-limit'
 import { audit } from '@/lib/audit'
 import { preberiJsonTelo } from '@/lib/api-telo'
+import { vsotaDenarja, decToPlain } from '@/lib/decimal-policy'
 const CRM_STATUSI = ['AKTIVEN', 'NEAKTIVEN', 'POTENCIALEN', 'ARHIVIRAN'] as const
 const MAX_KONTAKTNA = 120
 const MAX_KATEGORIJA = 80
@@ -107,15 +108,19 @@ export async function GET(request: Request) {
       }
 
       // Izračunaj LTV (Life Time Value)
-      const ltv = customer.projects.reduce((sum, p) => sum + (p.estimatedPrice || 0), 0)
+      // R380 (§12): estimatedPrice je Decimal — vsota po centralni politiki
+      // (denar 2dp, eksaktna Decimal vsota — float noise izločen).
+      const ltv = vsotaDenarja(customer.projects.map((p) => p.estimatedPrice?.toNumber() ?? 0))
       const zaklenjeniProjekti = customer.projects.filter(p => p.dealLocked).length
 
-      return NextResponse.json({
-        ...customer,
-        ltv,
-        zaklenjeniProjekti,
-        skupajProjektov: customer.projects.length,
-      })
+      return NextResponse.json(
+        decToPlain({
+          ...customer,
+          ltv,
+          zaklenjeniProjekti,
+          skupajProjektov: customer.projects.length,
+        })
+      )
     }
 
     // Seznam vseh strank z CRM podatki
@@ -142,7 +147,7 @@ export async function GET(request: Request) {
 
     // Obogatite z LTV, št. projektov, opomnik status
     const enriched = customers.map((c) => {
-      const ltv = c.projects.reduce((sum, p) => sum + (p.estimatedPrice || 0), 0)
+      const ltv = vsotaDenarja(c.projects.map((p) => p.estimatedPrice?.toNumber() ?? 0))
       const zaklenjeni = c.projects.filter((p) => p.dealLocked).length
       const zadnjiProjekt = c.projects[0]?.createdAt || null
 

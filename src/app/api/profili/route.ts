@@ -1,6 +1,7 @@
 // Roksal Field - API: Katalog profilov ograj
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { decToPlain } from '@/lib/decimal-policy'
 import { authenticate, unauthorized } from '@/lib/auth'
 import { denyWithoutPermission } from '@/lib/auth'
 
@@ -23,7 +24,7 @@ export async function GET(request: Request) {
       },
       orderBy: { naziv: 'asc' },
     })
-    return NextResponse.json(profili)
+    return NextResponse.json(decToPlain(profili))
   } catch (error) {
     console.error('Profili GET Error:', error)
     return NextResponse.json({ error: 'Napaka pri branju profilov' }, { status: 500 })
@@ -60,7 +61,7 @@ export async function POST(request: Request) {
         slikaUrl: body.slikaUrl ?? null,
       },
     })
-    return NextResponse.json(profil, { status: 201 })
+    return NextResponse.json(decToPlain(profil), { status: 201 })
   } catch (error) {
     console.error('Profili POST Error:', error)
     return NextResponse.json({ error: 'Napaka pri ustvarjanju profila' }, { status: 500 })

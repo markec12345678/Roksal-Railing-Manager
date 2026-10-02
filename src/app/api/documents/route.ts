@@ -32,6 +32,7 @@ import { generateDocumentPdf } from '@/lib/document-pdf'
 
 import { zapisOmejitev } from '@/lib/rate-limit'
 import { preberiJsonTelo } from '@/lib/api-telo'
+import { zaokroziDenar } from '@/lib/decimal-policy'
 // R140 (issue #5 §17): dokumenti + verzije so težki odgovori — neomejen
 // findMany bi za dolgoživim projektom povlekel vse PDF metadata + verzije.
 // Privzeti strop 200 + opcijski limit/offset. Odzivna OBLIKA (polje) ostane ista.
@@ -119,9 +120,11 @@ export async function POST(request: Request) {
       invoice: invoice
         ? {
             stevilka: invoice.stevilka,
-            osnova: invoice.osnova,
-            ddv: invoice.ddv,
-            skupaj: invoice.osnova + invoice.ddv,
+            // R380 (§12): osnova/ddv sta Decimal — prehod v number; skupaj
+            // po centralni politiki (denar 2dp, half-up).
+            osnova: invoice.osnova.toNumber(),
+            ddv: invoice.ddv.toNumber(),
+            skupaj: zaokroziDenar(invoice.osnova.toNumber() + invoice.ddv.toNumber()),
           }
         : null,
     })

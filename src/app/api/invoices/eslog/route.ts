@@ -6,6 +6,7 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { authenticate, unauthorized } from '@/lib/auth'
 import { buildUblInvoiceXml, type EslogInvoice, type EslogKupec, type EslogPostavka } from '@/lib/eslog-xml'
+import { decToNumObvezno } from '@/lib/decimal-policy'
 
 export async function GET(request: Request) {
   const auth = await authenticate(request)
@@ -58,9 +59,11 @@ export async function GET(request: Request) {
       rokPlacilaDni: inv.rokPlacilaDni,
       postavke,
       kupec,
-      osnova: inv.osnova,
-      ddv: inv.ddv,
-      znesek: inv.znesek,
+      // R380 (§12): osnova/ddv/znesek so Decimal — prehod v number na
+      // tej meji (eSlog XML zahteva centno točnost; DECIMAL(12,2) je vir).
+      osnova: decToNumObvezno(inv.osnova, 'osnova'),
+      ddv: decToNumObvezno(inv.ddv, 'ddv'),
+      znesek: decToNumObvezno(inv.znesek, 'znesek'),
       opombe: inv.opombe,
     }
 

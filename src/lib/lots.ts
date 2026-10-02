@@ -23,6 +23,7 @@
 import { randomUUID } from 'node:crypto'
 import type { Prisma } from '@prisma/client'
 import { StockError } from '@/lib/inventory'
+import { zaokroziKolicino, vsotaKolicin, zaokrozi } from '@/lib/decimal-policy'
 
 type Tx = Prisma.TransactionClient
 
@@ -78,7 +79,9 @@ export async function creditLotInTx(tx: Tx, input: CreditLotInput) {
     if (lot.status === LOT_STATUS_CLOSED) {
       throw new StockError(409, 'Šarža je zaprta — vračilo ni mogoče')
     }
-    const remaining = lot.quantityRemaining + input.kolicina
+    // R380 (§12): quantityRemaining je Decimal — vsota po centralni politiki
+    // (3 decimalke, eksaktno — float noise izločen).
+    const remaining = zaokroziKolicino(lot.quantityRemaining.toNumber() + input.kolicina)
     return tx.inventoryLot.update({
       where: { id: lot.id },
       data: {
@@ -168,8 +171,11 @@ export async function allocateLotsInTx(tx: Tx, input: AllocateLotsInput): Promis
     orderBy: [{ deliveryDate: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }],
   })
 
-  const available = lots.reduce((s, l) => s + l.quantityRemaining, 0)
-  if (available + 1e-9 < input.kolicina) {
+  // R380 (§12): vsota šarž po centralni politiki — EKSAKTNA (Decimal) vsota
+  // 3dp vrednosti. Epsilon 1e-9 iz float ere je ODSTRANJEN: primerjava je
+  // zdaj točna (ni več tolerance, ki bi pokrivala float laž).
+  const available = vsotaKolicin(lots.map((l) => l.quantityRemaining.toNumber()))
+  if (available < input.kolicina) {
     throw new StockError(
       409,
       `Šarže ne pokrijejo odhoda: potrebno ${input.kolicina}, na šaržah ${round6(available)} (premalo porekla — fail-closed)`
@@ -182,19 +188,21 @@ export async function allocateLotsInTx(tx: Tx, input: AllocateLotsInput): Promis
   const plan: { lot: (typeof lots)[number]; take: number }[] = []
   for (const lot of lots) {
     if (remaining <= 0) break
-    const take = Math.min(lot.quantityRemaining, remaining)
+    const take = Math.min(lot.quantityRemaining.toNumber(), remaining)
     plan.push({ lot, take })
     remaining -= take
   }
 
   const rows: AllocationRow[] = []
   for (const { lot, take } of plan) {
-    const after = round6(lot.quantityRemaining - take)
+    // R380 (§12): odvod po centralni politiki — 3 decimalke EKSAKTNO
+    // (DB nosi DECIMAL(12,3); round6/1e-9 iz float ere nadomeščena).
+    const after = zaokroziKolicino(lot.quantityRemaining.toNumber() - take)
     await tx.inventoryLot.update({
       where: { id: lot.id },
       data: {
         quantityRemaining: after,
-        status: after <= 1e-9 ? LOT_STATUS_EXHAUSTED : lot.status,
+        status: after <= 0 ? LOT_STATUS_EXHAUSTED : lot.status,
       },
     })
     await tx.lotAllocation.create({
@@ -212,7 +220,11 @@ export async function allocateLotsInTx(tx: Tx, input: AllocateLotsInput): Promis
   return rows
 }
 
-/** Zaokroži na 6 decimalk (plavajoča točka pri seštevanju alokacij). */
+/**
+ * R380 (§12): KOMPATIBILNOSTNI vzdevek — delegira na CENTRALNO politiko
+ * (src/lib/decimal-policy.ts, 6 decimalk NAIJBLIZJE). Ohranjen za obstoječe
+ * klice (r144 testi); nova koda naj uporablja zaokrozi/zaokroziKolicino.
+ */
 export function round6(n: number): number {
-  return Math.round(n * 1e6) / 1e6
+  return zaokrozi(n, 6)
 }

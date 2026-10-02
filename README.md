@@ -103,7 +103,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 45 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **5423** (351 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **5488** (355 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 143 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -1743,6 +1743,55 @@ Sheet z 6 podzavihki:
   površina, izjema #2 iz val 52] — vedno z fetch-first + TSV kanonom + stale-pin
   PRED-skanom + ŠTEVEC guard skenom (LEKCIJA (7)). ISSUE #1: vsa sprejemna merila ✓;
   ostaja odprt, owner 'Razvoj > QA' [AGENT STARTUP RULE: razvoj > QA].
+- **Issue #13, korak R168 — REAL UNITS + DECIMAL: centralna zaokroževalna politika + kanonične enote + konverzija + 21 Float→Decimal stolpcev (§12)** (R380 — KOLIZIJA #21 [kanon KOLIZIJE #4/R323/#13–#20, 21. potrditev]: vzporedna lastniška QA R379 [9c36c51 — STIL val 59 red/40 offset-2 + era-clone generalizacije + NJIHOV register r379.tsv] pristala MED mojim delom (moj lokalni commit d25d2cf kot 'R379' je bil ob pushu ZAVRNJEN — fetch-first kanon LEKCIJA R344) → moja runda preimenovana R379→R380 [migracija 20261006080000_r380_decimal_units + r380.tsv + 4× r380-*.test.ts + žigi]; njihovi r379-* artefakti ostanejo = lastniška zgodovina; njihov r379.tsv NEDOTAKNJEN): (1) **centralna politika**
+  `src/lib/decimal-policy.ts` [ČISTO jedro + direktna odvisnost decimal.js 10.6.0 — ISTA verzija kot Prisma-va transicijska,
+  ena kopija]: preciznost po domenu ZAMRZNJENA [denar 2 · količina 3 · faktor 4 · odstotek 2 — pogodba s shemo
+  DECIMAL(12,2)/(12,3)/(6,4)/(5,2)]; načini GORI/DOL/NAJBLIZJE [half-up = PG numeric semantika]; EKSAKTNA aritmetika
+  prek String(v) najkrajše reprezentacije [0.145 → 0.15; Math.round bi dal 0.14 — float laž ubita] + vsota v Decimal
+  [0.1+0.2 = TOČNO 0.3 — ne 0.30000000000000004]; decToNum/decToNumObvezno [honest NULL §8 — null → null, ne izmišljena
+  ničla; smeten string → javna napaka, NE Number('')=0 tiha ničla]; decToPlain [globoki DTO serializer — Decimal → number
+  v CELEM drevesu; Date/null/primitivi nedotaknjeni; vhod NI mutiran]; fail-closed NaN/Infinity/neveljavne decimalke;
+  (2) **kanonične enote** `src/lib/units.ts` [EXACT 8: kos · m · m² · kg · l · komplet · ura · paket — 'm²' ima SUPERSCRIPT
+  U+00B2, NE 'm2'; case-sensitive + presledek-občutljivo — kanon §5 BREZ fuzzy: 'm2' → JAVNA 400 s seznamom veljavnih
+  vrednosti, NE tiha normalizacija]; nabor zaokroževanja + preciznost 0–6 podedovana iz decimal-policy [EN VIR];
+  (3) **konverzija na Inventarju** [7 NULLABLE stolpcev — purchaseUnit/stockUnit/consumptionUnit/supplierPackSize/
+  conversionFactor/precision/rounding; VSI honest NULL §8 — obstoječi materiali NIMAJO teh podatkov, izumljanje bi bilo
+  laž; CHECK sloj ×7 na DB [kanon ×3 + pozitivni ×2 + precision 0–6 + nabor]; API: delna prisotnost DOVOLJENA
+  [neodvisno znano], izračun zahteva POPOLNOST [izracunajKonverzijo — manjka karkoli → null, ne ugibanje]; zod
+  NAMENOMA minimalen — units.ts je EDINA avtoriteta; (4) **migracija 20261006080000_r379_decimal_units** [21 ALTER
+  TYPE z explicit USING cast — Project.estimatedPrice/marginLocked [issue #13 SRCE — marža vezana na podpis točna do
+  centa], Profil.cenaM, Supplier.popust (5,2), MaterialPrice.cena, InventoryLot.purchasePrice, MaterialOrder.skupajCena,
+  MaterialOrderItem.cena, Invoice.osnova/ddv/znesek [eRačun centna točnost] → (12,2); Inventory.kolicinaZaloga/
+  minimalnaZaloga, MaterialUsage.porabljenaKolicina, InventoryMovement/StockLedger.kolicina+balanceAfter [revizijska
+  sled — verižno izpeljevanje zahteva eksaktnost], InventoryLot.quantityInitial/Remaining, LotAllocation.kolicina,
+  MaterialOrderItem.kolicina → (12,3)]; GEOGRAFSKE vrednosti [lat/lng/gps/kotStopinje] OSTAJAJO Float — niso poslovne
+  vrednosti §12 [dokumentirana meja]; obstoječi CHECK-i R136/R319 prenesejo ALTER TYPE; legacy enota/unit ostajajo
+  prosti string [produkcijska data pred kanonom — prisilna normalizacija bi bila fuzzy preslikava §5]; BREZ seeda —
+  prazno je iskreno; (5) **FAILO-CLOSED PRECIZNOST premikov**: količina z >3 decimalkami → 400 z javno mejo [DB bi jo
+  TIHO zaokrožil = tiha mutacija]; (6) **LOKALNA zaokroževanja IZBRISANA v korist politike**: invoices round2
+  [Math.round+EPSILON], procurement Math.round(*1000)/1000 ×11, evidence Math.round ×1, lots round6 → kompatibilnostni
+  vzdevek ki delegira na politiko + epsilon 1e-9 ×2 ODSTRANJENA [vsota je zdaj eksaktna — toleranca je pokrivala
+  float laž]; (7) **Decimal string-comparison PAST zaprta** [inventory LOW_STOCK: Decimal < Decimal v JS gre prek
+  valueOf → STRING primerjava "5"<"10"=false — prehod v number edini varni način; dokumentirano]; (8) **DTO serializacija**
+  [decToPlain na vseh rutah ki vračajo surove vrstice: inventory ×4, invoices ×5, material-orders ×4, suppliers ×3,
+  profili ×2, projects ×2, crm, search, material-prices ×3 — Decimal v JSON = string → klientova aritmetika NaN;
+  r374/r376/r378 rute so imele .toNumber() že od začetka]; (9) 65 novih testov [r380-decimal-policy ×22: half-up
+  simetrija, GORI/DOL, 0.145→0.15, vsota 0.1+0.2=0.3 [dokaz float laži + njene odstranitve], enkratna zaokrožitev
+  vsote, honest NULL, smeten string, decToPlain drevo/Date/nemutacija + r380-units ×16: nabor bajtno zamrznjen
+  [charCodeAt U+00B2 dokaz], EXACT zavrnitve m2/M/presledki, sporočilo s seznamom, konverzija delna/poplena/
+  neveljavna, izračun null pri pomanjkljivosti + r380-decimal-db ×7: round-trip 0.1+0.2=0.3 v bilanci IN ledger
+  verigi, fail-closed 3dp z nespremenjeno zalogo, Invoice/Project centna točnost, MaterialPrice/Supplier/Profil,
+  DB CHECK zavrnitve [m2 + faktor 0] + r380-conversion-api ×9: popolna 201, m2 → 400 s seznamom, KOS → 400,
+  faktor 0 → 400, packSize < 0 → 400, precision 7 → 400, NAJBLIŽJE → 400, brez konverzije → VSA NULL, delna →
+  samo prisotna]; PIN SHIFT-i: r144-lots [Decimal toNumber ×15 + round6 policy delegacija], inventory-ledger ×9,
+  db-integrity ×6, r374-deal-lock ×1, r209 [decToPlain window — PATCH odgovor teče prek mostu], r172 [portal page
+  enovrstični komentar — PIN NESPREMENJEN]; decimal.js direktna odvisnost 10.6.0 [ista verzija kot transicijska —
+  dedup, ena kopija]; VERIFIKACIJA: tsc 0 · eslint 0 · vitest 5488/5488 (355 = lastniška R379 baza 5423/351 [rebase po KOLIZIJI #21] + mojih +65/+4 —
+  POLN TEK 1 zelen) · build svež rm -rf .next EXIT=0 [roksal_dev migrate deploy r379 + podatki preživeli: zaloga
+  180.000 exact, purchaseUnit NULL honest — BREZ dropa: ALTER TYPE prireditveni cast ohrani vrstice] · qa-round.sh
+  380 needles EXIT=0 [QA_LEGACY_ROOT + BASH_ENV cd-shim kanon R376; lastni register r380.tsv 4 need_static ŽIVO ×1
+  .js + TODO-R379 must_miss čisto; UNION r340–r379 + legacy veriga VSE ŽIVE] · fetch-first ×0 v HEAD 9c36c51
+  potrjeno za VSE 4 needleje. Naslednji korak #13: R169 (§13 Customer/Lead/Opportunity — CRM konsolidacija).
 - **Issue #13, korak R167 — PROIZVODNA + AS-INSTALLED DOMENA: ProductionOrder/Line/Operation + InstallationRecord/Line + količinska veriga QUOTE → BOM → PRODUCTION → INSTALLATION (§9 + §10)** (R378 —
   KOLIZIJA #20 [kanon KOLIZIJE #4/R323/#13–#19]: vzporedna lastniška QA R377 [aea8720 — STIL val 58 + era-clone --server-probe]
   pristala MED mojim delom in vzela številko → moja runda preimenovana R377→R378; reset --hard origin/main, delta re-aplicirana s

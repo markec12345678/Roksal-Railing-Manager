@@ -6,6 +6,7 @@
 // PATCH: resource-level dostop + ENOTEN statusni stroj (preprečuje preskoke).
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { decToPlain } from '@/lib/decimal-policy'
 import { createProjectSchema, updateProjectSchema } from '@/lib/validations'
 import { authenticate, unauthorized, denyUnless, MANAGER_ROLES } from '@/lib/auth'
 import {
@@ -41,7 +42,8 @@ export async function GET(request: Request) {
       },
       orderBy: { createdAt: 'desc' }
     })
-    return NextResponse.json(projects)
+    // R380 (§12): Decimal → number (estimatedPrice, marginLocked).
+    return NextResponse.json(decToPlain(projects))
   } catch (error) {
     logWithCorrelation('projects.get', correlationId, error)
     return NextResponse.json({ error: 'Napaka pri branju projektov', correlationId }, { status: 500 })
@@ -99,7 +101,7 @@ export async function POST(request: Request) {
       return created
     })
 
-    return NextResponse.json(newProject, { status: 201 })
+    return NextResponse.json(decToPlain(newProject), { status: 201 })
   } catch (error: unknown) {
     if (error && typeof error === 'object' && 'issues' in error) {
       return NextResponse.json({ error: 'Neveljavni podatki', details: (error as { issues: unknown }).issues }, { status: 400 })

@@ -158,7 +158,7 @@ model Project {
   clientTokenRevokedAt  DateTime? // revokacija = žeton MRTAV (regenerate ga oživi z novim)
   clientTokenLastUsedAt DateTime? // zadnji uspešen dostop (telemetrija za pisarno)
   clientNotes           String? // sporočilo monterja, vidno stranki
-  estimatedPrice        Float? // predvidena cena, vidna stranki
+  estimatedPrice        Decimal? @db.Decimal(12, 2) // predvidena cena, vidna stranki
 
   // R133 (§8): scoped MERILNI žeton — LOČEN od portal žetona. Portal povezava
   // pomeni "vidi napredek projekta"; merilna povezava pomeni "lahko pošlje
@@ -179,7 +179,7 @@ model Project {
   dealSignatureIp     String? // IP naslov ob podpisu
   dealSignatureDevice String? // User-Agent ob podpisu
   bomDraftJson        String? // BOM (Bill of Materials) draft JSON — ne naročilo še
-  marginLocked        Float? // zaklenjena marža ob podpisu
+  marginLocked        Decimal? @db.Decimal(12, 2) // zaklenjena marža ob podpisu
 
   // FOLLOW-UP PONUDBE — sledenje odzivu stranke na poslano ponudbo
   followUpDate   DateTime? // kdaj poslati/narediti spomnik
@@ -287,11 +287,24 @@ model Inventory {
   sifraMateriala  String   @unique
   naziv           String
   tip             String
-  kolicinaZaloga  Float    @default(0)
+  kolicinaZaloga  Decimal  @default(0) @db.Decimal(12, 3)
   enota           String
-  minimalnaZaloga Float    @default(5)
+  minimalnaZaloga Decimal  @default(5) @db.Decimal(12, 3)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+
+  // R380 (issue #13 §12) — KONVERZIJA ENOT: VSI nullable — obstoječi
+  // materiali teh podatkov NIMAJO in izumljanje bi bilo laž (§8 honest
+  // NULL). Ko je polje prisotno, velja kanonična enota (CHECK v migraciji
+  // + src/lib/units.ts — EXACT zapis, 'm²' ne 'm2'). Legacy 'enota' zgoraj
+  // ostaja prost string (produkcijski podatki so pred kanonom).
+  purchaseUnit       String?   // enota nabave pri dobavitelju (kanonična)
+  stockUnit          String?   // enota vodenja zaloge (kanonična)
+  consumptionUnit    String?   // enota porabe v BOM/produkciji (kanonična)
+  supplierPackSize   Decimal?  @db.Decimal(12, 3) // kosov (stockUnit) na enoto nabave — CHECK > 0
+  conversionFactor   Decimal?  @db.Decimal(12, 6) // množilnik nabavna količina → zaloga — CHECK > 0
+  precision          Int?      // decimalke količin tega materiala — CHECK 0–6
+  rounding           String?   // GORI | DOL | NAIJBLIZJE (vir nabora: decimal-policy)
 
   usages        MaterialUsage[]
   movements     InventoryMovement[]
@@ -310,7 +323,7 @@ model MaterialUsage {
   id                 String   @id @default(cuid())
   projectId          String
   inventoryId        String
-  porabljenaKolicina Float
+  porabljenaKolicina Decimal @db.Decimal(12, 3)
   datumVpisa         DateTime @default(now())
 
   project   Project   @relation(fields: [projectId], references: [id])
@@ -330,7 +343,7 @@ model InventoryMovement {
   /// že ves čas pisal `orderId` — brez tega polja je bila vsaka dobava
   /// tipkovna napaka in 500 ob prejemu naročila.
   orderId     String?
-  kolicina    Float
+  kolicina    Decimal  @db.Decimal(12, 3)
   tipPremika  String
   createdAt   DateTime @default(now())
   createdBy   String?
@@ -368,10 +381,10 @@ model StockLedger {
   inventoryId    String
   eventType      StockLedgerEventType
   /// Predznacena delta: pozitivno = prihod, negativno = odhod.
-  kolicina       Float
+  kolicina       Decimal  @db.Decimal(12, 3)
   enota          String
   /// Bilanca zaloge TAKOJ po tem dogodku (znotraj iste transakcije).
-  balanceAfter   Float
+  balanceAfter   Decimal  @db.Decimal(12, 3)
   /// Referenca vira dogodka.
   orderId        String?
   orderItemId    String?
@@ -432,11 +445,11 @@ model InventoryLot {
   /// Datum prejema/dobave (FIFO primarni ključ).
   deliveryDate      DateTime @default(now())
   /// Nabavna cena na enoto ob prejemu (EUR) — iz MaterialOrderItem.cena.
-  purchasePrice     Float?
+  purchasePrice     Decimal? @db.Decimal(12, 2)
   /// Originalna količina šarže ob kreaciji.
-  quantityInitial   Float
+  quantityInitial   Decimal  @db.Decimal(12, 3)
   /// Trenutno preostanek = quantityInitial - Σ negativnih + Σ pozitivnih alokacij.
-  quantityRemaining Float
+  quantityRemaining Decimal  @db.Decimal(12, 3)
   /// ACTIVE | EXHAUSTED (remaining = 0) | CLOSED (ročno zaprta, ne sodeluje v FIFO).
   status            String   @default("ACTIVE")
   note              String?
@@ -469,7 +482,7 @@ model LotAllocation {
   /// Kopija eventType (berljivost DTO — brez joina za osnovni prikaz).
   eventType String
   /// Predznačena: minus = odhod iz šarže, plus = vračilo v šaržo.
-  kolicina  Float
+  kolicina  Decimal  @db.Decimal(12, 3)
   projectId String?
   actorId   String?
   createdAt DateTime @default(now())
@@ -638,7 +651,7 @@ model Profil {
   kategorija String // npr. "WPC H-Line", "Inox Line", "Steklo"
   visinaMm   Int      @default(1100)
   sirinaMm   Int      @default(140)
-  cenaM      Float // EUR na meter linearni
+  cenaM      Decimal  @db.Decimal(12, 2) // EUR na meter linearni
   barvaRal   String? // privzeta RAL koda
   slikaUrl   String?
   aktivna    Boolean  @default(true)
@@ -823,7 +836,7 @@ model Supplier {
   naslov     String?
   iban       String?
   dobavniRok Int      @default(7) // dni
-  popust     Float    @default(0) // % popust za Roksal
+  popust     Decimal  @default(0) @db.Decimal(5, 2) // % popust za Roksal
   aktivna    Boolean  @default(true)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
@@ -839,7 +852,7 @@ model MaterialPrice {
   id           String    @id @default(cuid())
   inventoryId  String
   supplierId   String
-  cena         Float // EUR na enoto
+  cena         Decimal  @db.Decimal(12, 2) // EUR na enoto
   veljavnostOd DateTime  @default(now())
   veljavnostDo DateTime?
   opomba       String? // npr. "akcijska cena", "letni okvir"
@@ -858,7 +871,7 @@ model MaterialOrder {
   projectId     String?
   supplierId    String
   status        String    @default("OSNUTEK") // OSNUTEK | POSLANO | POTRJENO | DOBLJENO | PREKlicANO
-  skupajCena    Float     @default(0)
+  skupajCena    Decimal  @default(0) @db.Decimal(12, 2)
   datumNarocila DateTime  @default(now())
   datumDobave   DateTime?
   opombe        String?
@@ -876,8 +889,8 @@ model MaterialOrderItem {
   id          String   @id @default(cuid())
   orderId     String
   inventoryId String
-  kolicina    Float
-  cena        Float // cena na enoto ob naročilu
+  kolicina    Decimal  @db.Decimal(12, 3)
+  cena        Decimal  @db.Decimal(12, 2) // cena na enoto ob naročilu
   naziv       String // snapshot naziva
   enota       String // snapshot enote
   createdAt   DateTime @default(now())
@@ -1202,11 +1215,11 @@ model Invoice {
   /// Snapshot kupca ob izdaji: {ime, naslov, telefon?, email?, davcnaSt?}
   kupec         String?
   /// Skupaj brez DDV (EUR)
-  osnova        Float     @default(0)
+  osnova        Decimal  @default(0) @db.Decimal(12, 2)
   /// DDV 22 % (EUR)
-  ddv           Float     @default(0)
+  ddv           Decimal  @default(0) @db.Decimal(12, 2)
   /// Za plačilo (EUR)
-  znesek        Float     @default(0)
+  znesek        Decimal  @default(0) @db.Decimal(12, 2)
   opombe        String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt

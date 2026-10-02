@@ -13,6 +13,7 @@ import type { SessionPayload } from '@/lib/session'
 import { allocateDocumentNumber, createWithNumber } from '@/lib/numbering'
 import { auditInTx, audit } from '@/lib/audit'
 import { actorIdOf } from '@/lib/access'
+import { decToPlain } from '@/lib/decimal-policy'
 
 import { zapisOmejitev } from '@/lib/rate-limit'
 import { preberiJsonTelo } from '@/lib/api-telo'
@@ -134,7 +135,7 @@ export async function GET(request: Request) {
           },
           orderBy: { createdAt: 'desc' },
         })
-        return NextResponse.json(invoices)
+        return NextResponse.json(decToPlain(invoices))
       }
       const uid = auth.session.sub
       const ownProjects = await db.project.findMany({
@@ -150,7 +151,7 @@ export async function GET(request: Request) {
         },
         orderBy: { createdAt: 'desc' },
       })
-      return NextResponse.json(invoices)
+      return NextResponse.json(decToPlain(invoices))
     }
 
     const invoices = await db.invoice.findMany({
@@ -162,7 +163,7 @@ export async function GET(request: Request) {
       },
       orderBy: { createdAt: 'desc' },
     })
-    return NextResponse.json(invoices)
+    return NextResponse.json(decToPlain(invoices))
   } catch (error) {
     if (error instanceof AccessDeniedError) {
       return NextResponse.json({ error: error.message }, { status: error.status })
@@ -237,7 +238,7 @@ export async function POST(request: Request) {
       })
       return created
     })
-    return NextResponse.json(invoice, { status: 201 })
+    return NextResponse.json(decToPlain(invoice), { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues[0]?.message ?? 'Neveljavni podatki' }, { status: 400 })
@@ -317,7 +318,7 @@ export async function PATCH(request: Request) {
           return updated
         })
       : await db.invoice.update({ where: { id }, data: updateData })
-    return NextResponse.json(invoice)
+    return NextResponse.json(decToPlain(invoice))
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues[0]?.message ?? 'Neveljavni podatki' }, { status: 400 })

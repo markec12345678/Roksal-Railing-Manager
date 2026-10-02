@@ -59,6 +59,7 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { authenticate, unauthorized } from '@/lib/auth'
 import { assertProjectAccess, AccessDeniedError } from '@/lib/access'
+import { zaokroziKolicino } from '@/lib/decimal-policy'
 
 /** Dogodki, ki se PRESLIKAVO v §11 količine (vsi ostali so nePreslikano). */
 const PRESLIKANI_DOGODKI = ['RESERVATION', 'RELEASE', 'RECEIPT', 'ISSUE', 'RETURN', 'WASTE'] as const
@@ -146,7 +147,8 @@ export async function GET(request: Request) {
       const inv = row.inventoryId
       let m = poDogodku.get(inv)
       if (!m) { m = new Map<string, number>(); poDogodku.set(inv, m) }
-      m.set(row.eventType, (m.get(row.eventType) ?? 0) + (row._sum.kolicina ?? 0))
+      // R380 (§12): _sum.kolicina je Decimal — prehod v number na tej meji.
+      m.set(row.eventType, (m.get(row.eventType) ?? 0) + (row._sum.kolicina?.toNumber() ?? 0))
     }
 
     // 2) MaterialOrderItem — postavke naročil PROJEKTA po artikelih (vsi
@@ -158,7 +160,7 @@ export async function GET(request: Request) {
           _sum: { kolicina: true },
         })
       : []
-    const narocenoPoArtiklu = new Map(narocila.map((r) => [r.inventoryId, r._sum.kolicina ?? 0]))
+    const narocenoPoArtiklu = new Map(narocila.map((r) => [r.inventoryId, r._sum.kolicina?.toNumber() ?? 0]))
 
     // 3) MaterialUsage — kanonski zapis porabe materiala na projektu.
     const poraba = inventoryIds.length > 0
@@ -168,7 +170,7 @@ export async function GET(request: Request) {
           _sum: { porabljenaKolicina: true },
         })
       : []
-    const porabaPoArtiklu = new Map(poraba.map((r) => [r.inventoryId, r._sum.porabljenaKolicina ?? 0]))
+    const porabaPoArtiklu = new Map(poraba.map((r) => [r.inventoryId, r._sum.porabljenaKolicina?.toNumber() ?? 0]))
 
     // 4) R378 §9 — PRODUCTION: Σ producedQty VSEH proizvodnih vrstic nad
     //    vrsticami TE verzije (števec živi na VRSTICI — brez statusnega
@@ -246,18 +248,20 @@ export async function GET(request: Request) {
         descriptionSnapshot: l.descriptionSnapshot,
         unit: l.unit,
         plannedQty,
-        reservedQty: Math.round(reservedQty * 1000) / 1000,
-        orderedQty: Math.round((narocenoPoArtiklu.get(l.inventoryId) ?? 0) * 1000) / 1000,
-        receivedQty: Math.round(receivedQty * 1000) / 1000,
-        issuedQty: Math.round(issuedQty * 1000) / 1000,
-        consumedQty: Math.round(consumedQty * 1000) / 1000,
-        returnedQty: Math.round(returnedQty * 1000) / 1000,
-        wastedQty: Math.round(wastedQty * 1000) / 1000,
+        // R380 (§12): lokalni Math.round(*1000)/1000 ad-hoc iz float ere
+        // ZAMENJAN z centralno politiko (3 decimalke, eksaktno half-up).
+        reservedQty: zaokroziKolicino(reservedQty),
+        orderedQty: zaokroziKolicino(narocenoPoArtiklu.get(l.inventoryId) ?? 0),
+        receivedQty: zaokroziKolicino(receivedQty),
+        issuedQty: zaokroziKolicino(issuedQty),
+        consumedQty: zaokroziKolicino(consumedQty),
+        returnedQty: zaokroziKolicino(returnedQty),
+        wastedQty: zaokroziKolicino(wastedQty),
         // R378 §9 veriga: izdelano (VSI nalogi nad vrstico) + vgrajeno
         // (SAMO POTRJENI zapisi — DRAFT ne šteje).
-        producedQty: Math.round((izdelanoPoVrstici.get(l.id) ?? 0) * 1000) / 1000,
-        installedQty: Math.round((vgrajenoPoVrstici.get(l.id) ?? 0) * 1000) / 1000,
-        variance: Math.round((plannedQty - consumedQty - wastedQty + returnedQty) * 1000) / 1000,
+        producedQty: zaokroziKolicino(izdelanoPoVrstici.get(l.id) ?? 0),
+        installedQty: zaokroziKolicino(vgrajenoPoVrstici.get(l.id) ?? 0),
+        variance: zaokroziKolicino(plannedQty - consumedQty - wastedQty + returnedQty),
         vezava: 'VEZANO',
         vezavaRazlog: null,
       }

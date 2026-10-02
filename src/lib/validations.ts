@@ -80,6 +80,19 @@ export const createInventorySchema = z.object({
   kolicinaZaloga: z.number().min(0, 'Količina ne more biti negativna'),
   enota: z.enum(['kos', 'm', 'kg']),
   minimalnaZaloga: z.number().min(0).default(5),
+  // R380 (issue #13 §12) — KONVERZIJA ENOT: NEODVISNA neobvezna polja
+  // (honest NULL — vsako polje je samo po sebi znano/neznano). Zod je
+  // NAMENOMA minimalen (samo tip) — EDINA avtoriteta za kanonične enote,
+  // pozitivne faktorje, preciznost 0–6 in nabor GORI/DOL/NAJBLIZJE je
+  // src/lib/units.ts v RUTI (EXACT — 'm2' NE bo tiho normaliziran v 'm²';
+  // fail-closed 400 s seznamom veljavnih vrednosti in IMENOM polja).
+  purchaseUnit: z.string().optional().nullable(),
+  stockUnit: z.string().optional().nullable(),
+  consumptionUnit: z.string().optional().nullable(),
+  supplierPackSize: z.number().optional().nullable(),
+  conversionFactor: z.number().optional().nullable(),
+  precision: z.number().optional().nullable(),
+  rounding: z.string().optional().nullable(),
 })
 
 export const inventoryMovementSchema = z.object({

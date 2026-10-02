@@ -76,7 +76,9 @@ describe('R209 stražar: PATCH audit obogatitev ({ orderId, status })', () => {
   const ruta = beri('src/app/api/material-orders/route.ts')
 
   it('MATERIAL_ORDER_STATUS nosi orderId v oldValue IN newValue (prej gol status)', () => {
-    const okno = oknoMed(ruta, "akcija: 'MATERIAL_ORDER_STATUS'", 'NextResponse.json(updated)')
+    // PIN SHIFT R380 (§12): odgovor PATCH-a teče prek decToPlain (Decimal →
+    // number na DTO meji) — okno seže do NOVE oblike klica.
+    const okno = oknoMed(ruta, "akcija: 'MATERIAL_ORDER_STATUS'", 'NextResponse.json(decToPlain(updated))')
     expect(okno).toContain('oldValue: { orderId: id, status: existing.status }')
     expect(okno).toContain('newValue: { orderId: id, status }')
   })

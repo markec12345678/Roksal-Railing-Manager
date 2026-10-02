@@ -8,6 +8,7 @@ import { denyWithoutPermission } from '@/lib/auth'
 
 import { zapisOmejitev } from '@/lib/rate-limit'
 import { preberiJsonTelo } from '@/lib/api-telo'
+import { zaokroziDenar, decToPlain } from '@/lib/decimal-policy'
 // GET — cene materiala (z option za primerjavo dobaviteljev)
 export async function GET(request: Request) {
   // Zaščita: brez veljavne seje ali API ključa ni dostopa do podatkov.
@@ -27,7 +28,13 @@ export async function GET(request: Request) {
         orderBy: { cena: 'asc' },
       })
       const najboljsa = prices[0] || null
-      return NextResponse.json({ prices, najboljsa, razlika: prices.length > 1 ? prices[0].cena - prices[prices.length - 1].cena : 0 })
+      // R380 (§12): cena je Decimal — aritmetika po centralni politiki
+      // (2 decimalke, denar); razlika je denarna vrednost.
+      const razlika =
+        prices.length > 1
+          ? zaokroziDenar(prices[0].cena.toNumber() - prices[prices.length - 1].cena.toNumber())
+          : 0
+      return NextResponse.json(decToPlain({ prices, najboljsa, razlika }))
     }
 
     const where = {
@@ -47,11 +54,11 @@ export async function GET(request: Request) {
       const byMaterial = new Map<string, { inventoryId: string; inventory: unknown; bestPrice: number; bestSupplier: string; suppliers: number }>()
       for (const p of prices) {
         const existing = byMaterial.get(p.inventoryId)
-        if (!existing || p.cena < existing.bestPrice) {
+        if (!existing || p.cena.toNumber() < existing.bestPrice) {
           byMaterial.set(p.inventoryId, {
             inventoryId: p.inventoryId,
             inventory: p.inventory,
-            bestPrice: p.cena,
+            bestPrice: p.cena.toNumber(),
             bestSupplier: p.supplier.naziv,
             suppliers: (existing?.suppliers || 0) + 1,
           })
@@ -59,13 +66,16 @@ export async function GET(request: Request) {
           existing.suppliers += 1
         }
       }
-      return NextResponse.json({
-        prices,
-        bestPerMaterial: Array.from(byMaterial.values()),
-      })
+      return NextResponse.json(
+        decToPlain({
+          prices,
+          bestPerMaterial: Array.from(byMaterial.values()),
+        })
+      )
     }
 
-    return NextResponse.json(prices)
+    // R380 (§12): surove vrstice vsebujejo Decimal — decToPlain je DTO meja.
+    return NextResponse.json(decToPlain(prices))
   } catch (error) {
     console.error('Material Prices GET Error:', error)
     return NextResponse.json({ error: 'Napaka pri branju cen' }, { status: 500 })
@@ -129,7 +139,7 @@ export async function POST(request: Request) {
       })
     })
 
-    return NextResponse.json(price, { status: 201 })
+    return NextResponse.json(decToPlain(price), { status: 201 })
   } catch (error) {
     console.error('Material Prices POST Error:', error)
     return NextResponse.json({ error: 'Napaka pri shranjevanju cene' }, { status: 500 })

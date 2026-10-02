@@ -101,7 +101,8 @@ async function makeProject() {
  * recordMovement 409-al PRED alokacijo ("zaloga ne more biti negativna"). */
 async function syncBalance(inventoryId: string) {
   const lots = await db.inventoryLot.findMany({ where: { inventoryId } })
-  const sum = lots.reduce((s, l) => s + l.quantityRemaining, 0)
+  // R380 (§12): quantityRemaining je Decimal — prehod v number (PIN SHIFT).
+  const sum = lots.reduce((s, l) => s + l.quantityRemaining.toNumber(), 0)
   await db.inventory.update({ where: { id: inventoryId }, data: { kolicinaZaloga: sum } })
 }
 
@@ -127,8 +128,8 @@ describe('R144 §24 — kredit šarže (prihodki)', () => {
     const lots = await db.inventoryLot.findMany({ where: { inventoryId: inv.id } })
     expect(lots).toHaveLength(1)
     expect(lots[0].lotNumber.startsWith('LOT-M-')).toBe(true)
-    expect(lots[0].quantityInitial).toBe(10)
-    expect(lots[0].quantityRemaining).toBe(10)
+    expect(lots[0].quantityInitial.toNumber()).toBe(10)
+    expect(lots[0].quantityRemaining.toNumber()).toBe(10)
     expect(lots[0].status).toBe('ACTIVE')
 
     const ledger = await db.stockLedger.findFirst({ where: { inventoryId: inv.id } })
@@ -154,7 +155,7 @@ describe('R144 §24 — kredit šarže (prihodki)', () => {
 
     const lots = await db.inventoryLot.findMany({ where: { inventoryId: created.id } })
     expect(lots).toHaveLength(1)
-    expect(lots[0].quantityRemaining).toBe(7)
+    expect(lots[0].quantityRemaining.toNumber()).toBe(7)
     const ledger = await db.stockLedger.findFirst({ where: { inventoryId: created.id } })
     expect(ledger?.eventType).toBe('OPENING')
     expect(ledger?.lotId).toBe(lots[0].id)
@@ -183,8 +184,8 @@ describe('R144 §24 — kredit šarže (prihodki)', () => {
     expect(lots).toHaveLength(1)
     expect(lots[0].lotNumber).toBe(`LOT-${order.id.slice(-8)}-1`)
     expect(lots[0].supplierId).toBe(supplier.id)
-    expect(lots[0].purchasePrice).toBe(2.5)
-    expect(lots[0].quantityRemaining).toBe(12)
+    expect(lots[0].purchasePrice!.toNumber()).toBe(2.5)
+    expect(lots[0].quantityRemaining.toNumber()).toBe(12)
 
     // Idempotenca: drugi prejem NE doda šarže.
     const again = await receiveOrder(order.id, 'test-actor')
@@ -211,12 +212,12 @@ describe('R144 §24 — deterministična FIFO alokacija (odhodki)', () => {
       db.inventoryLot.findUniqueOrThrow({ where: { id: old.id } }),
       db.inventoryLot.findUniqueOrThrow({ where: { id: newer.id } }),
     ])
-    expect(oldAfter.quantityRemaining).toBe(2)
-    expect(newAfter.quantityRemaining).toBe(5) // nedotaknjena
+    expect(oldAfter.quantityRemaining.toNumber()).toBe(2)
+    expect(newAfter.quantityRemaining.toNumber()).toBe(5) // nedotaknjena
 
     // Sled: alokacija kaže na staro šaržo z negativno količino.
     const alloc = await db.lotAllocation.findFirst({ where: { lotId: old.id }, orderBy: { createdAt: 'desc' } })
-    expect(alloc?.kolicina).toBe(-3)
+    expect(alloc?.kolicina.toNumber()).toBe(-3)
     expect(alloc?.eventType).toBe('ISSUE')
     const ledger = await db.stockLedger.findFirst({ where: { inventoryId: inv.id, eventType: 'ISSUE' } })
     expect(alloc?.ledgerId).toBe(ledger?.id)
@@ -238,7 +239,7 @@ describe('R144 §24 — deterministična FIFO alokacija (odhodki)', () => {
     await recordMovement({ inventoryId: inv.id, eventType: 'ISSUE', kolicina: 1 })
 
     const firstAfter = await db.inventoryLot.findUniqueOrThrow({ where: { id: first.id } })
-    expect(firstAfter.quantityRemaining).toBe(1)
+    expect(firstAfter.quantityRemaining.toNumber()).toBe(1)
   })
 
   it('odhod čez VEČ šarž: razliva se po FIFO redu (brez dvojnikov, brez naključja)', async () => {
@@ -259,16 +260,17 @@ describe('R144 §24 — deterministična FIFO alokacija (odhodki)', () => {
     })
     const s1 = lots.find((l) => l.lotNumber === 'L-S1')
     const s2 = lots.find((l) => l.lotNumber === 'L-S2')
-    expect(s1?.quantityRemaining).toBe(0)
+    expect(s1?.quantityRemaining.toNumber()).toBe(0)
     expect(s1?.status).toBe('EXHAUSTED')
-    expect(s2?.quantityRemaining).toBe(5)
+    expect(s2?.quantityRemaining.toNumber()).toBe(5)
 
     const allocs = await db.lotAllocation.findMany({
       where: { lot: { inventoryId: inv.id } },
       orderBy: { kolicina: 'asc' },
     })
     expect(allocs).toHaveLength(2)
-    expect(allocs.map((a) => a.kolicina).sort((x, y) => x - y)).toEqual([-4, -1])
+    // R380 (§12): kolicina je Decimal — prehod v number (PIN SHIFT).
+    expect(allocs.map((a) => a.kolicina.toNumber()).sort((x, y) => x - y)).toEqual([-4, -1])
   })
 
   it('premalo porekla → 409 PRED zapisom (brez delne alokacije, bilanca nespremenjena)', async () => {
@@ -284,7 +286,7 @@ describe('R144 §24 — deterministična FIFO alokacija (odhodki)', () => {
 
     // Transakcija rolled back: bilanca, ledger, alokacije — nič ni zapisano.
     const fresh = await db.inventory.findUniqueOrThrow({ where: { id: inv.id } })
-    expect(fresh.kolicinaZaloga).toBe(3)
+    expect(fresh.kolicinaZaloga.toNumber()).toBe(3)
     const ledger = await db.stockLedger.findMany({ where: { inventoryId: inv.id } })
     expect(ledger).toHaveLength(0)
     const allocs = await db.lotAllocation.findMany({ where: { lot: { inventoryId: inv.id } } })
@@ -310,7 +312,7 @@ describe('R144 §24 — vračila v eksplicitno šaržo + invarianta', () => {
       lotId: lot.id,
     })
     after = await db.inventoryLot.findUniqueOrThrow({ where: { id: lot.id } })
-    expect(after.quantityRemaining).toBe(2)
+    expect(after.quantityRemaining.toNumber()).toBe(2)
     expect(after.status).toBe('ACTIVE') // ponovno odprta
 
     const ledger = await db.stockLedger.findFirst({ where: { inventoryId: inv.id, eventType: 'RETURN' } })
@@ -342,9 +344,10 @@ describe('R144 §24 — vračila v eksplicitno šaržo + invarianta', () => {
 
     const fresh = await db.inventory.findUniqueOrThrow({ where: { id: inv.id } })
     const lots = await db.inventoryLot.findMany({ where: { inventoryId: inv.id } })
-    const lotSum = lots.reduce((s, l) => s + l.quantityRemaining, 0)
-    expect(round6(lotSum)).toBe(round6(fresh.kolicinaZaloga))
-    expect(fresh.kolicinaZaloga).toBe(14)
+    // R380 (§12): Decimal branja — prehod v number (PIN SHIFT).
+    const lotSum = lots.reduce((s, l) => s + l.quantityRemaining.toNumber(), 0)
+    expect(round6(lotSum)).toBe(round6(fresh.kolicinaZaloga.toNumber()))
+    expect(fresh.kolicinaZaloga.toNumber()).toBe(14)
   })
 
   it('allocateLotsInTx: ne-štirsedem-mestna količina se zaokroži deterministično (round6)', () => {
@@ -393,7 +396,7 @@ describe('R144 §24 — projekt × šarža (sled Project → … → Supplier)',
       where: { lot: { inventoryId: inv.id }, projectId: project.id },
     })
     expect(alloc).not.toBeNull()
-    expect(alloc?.kolicina).toBe(-3)
+    expect(alloc?.kolicina.toNumber()).toBe(-3)
 
     // Polna sled: projekt → alokacija → šarža → dobavitelj.
     const trace = await db.lotAllocation.findUniqueOrThrow({

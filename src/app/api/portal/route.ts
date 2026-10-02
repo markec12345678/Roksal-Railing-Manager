@@ -22,6 +22,7 @@
 //   popravljeno tudi za portal, kjer je enable pustil revokedAt postavljen).
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import type { Prisma } from '@prisma/client'
 import { authenticate, unauthorized } from '@/lib/auth'
 import { assertProjectAccess, AccessDeniedError, lacksPermission } from '@/lib/access'
 import { zapisOmejitev } from '@/lib/rate-limit'
@@ -87,7 +88,8 @@ type PortalProjectRow = {
   clientTokenRevokedAt: Date | null
   clientTokenLastUsedAt: Date | null
   clientNotes: string | null
-  estimatedPrice: number | null
+  // R380 (§12): Decimal iz DECIMAL(12,2) — prehod v number v portalPayload.
+  estimatedPrice: Prisma.Decimal | null
   measureToken: string | null
   measureEnabled: boolean
   measureTokenExpiresAt: Date | null
@@ -104,7 +106,7 @@ function portalPayload(p: PortalProjectRow) {
     revokedAt: p.clientTokenRevokedAt?.toISOString() ?? null,
     lastUsedAt: p.clientTokenLastUsedAt?.toISOString() ?? null,
     clientNotes: p.clientNotes,
-    estimatedPrice: p.estimatedPrice,
+    estimatedPrice: p.estimatedPrice?.toNumber() ?? null,
     // R133 (§8): merilna povezava — ločen blok, ločen cikl.
     measure: {
       enabled: p.measureEnabled,

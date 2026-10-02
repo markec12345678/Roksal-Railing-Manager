@@ -36,6 +36,7 @@ import {
 } from '@/lib/installation-evidence'
 import { auditInTx } from '@/lib/audit'
 import { preberiJsonTelo } from '@/lib/api-telo'
+import { zaokroziKolicino } from '@/lib/decimal-policy'
 
 const MAX_NOTE = 500
 const DEFAULT_LIMIT = 100
@@ -135,7 +136,7 @@ export async function GET(request: Request) {
           naziv: inv?.naziv ?? '(neznana artikel)',
           sifra: inv?.sifraMateriala ?? null,
           enota: inv?.enota ?? '',
-          kolicina: Math.round((l._sum.kolicina ?? 0) * 1000) / 1000,
+          kolicina: zaokroziKolicino(l._sum.kolicina?.toNumber() ?? 0),
           dogodki: l._count._all,
         }
       })

@@ -10,6 +10,7 @@ import { authenticate, unauthorized } from '@/lib/auth'
 
 import { zapisOmejitev } from '@/lib/rate-limit'
 import { preberiJsonTelo } from '@/lib/api-telo'
+import { zaokroziDenar } from '@/lib/decimal-policy'
 interface BomDraftItem {
   kategorija: string
   naziv: string
@@ -74,10 +75,16 @@ export async function GET(request: Request) {
       return {
         bomItem,
         inventory: matched || null,
-        bestPrice: bestPrice ? { cena: bestPrice.cena, supplier: bestPrice.supplier.naziv, supplierId: bestPrice.supplierId } : null,
-        allPrices: allPrices.map((p) => ({ cena: p.cena, supplier: p.supplier.naziv, supplierId: p.supplierId })),
-        razlikaCen: allPrices.length > 1 ? allPrices[0].cena - allPrices[allPrices.length - 1].cena : 0,
-        skupajCena: bestPrice ? bestPrice.cena * bomItem.kolicina : 0,
+        // R380 (§12): cena je Decimal — prehod v number + centralna politika.
+        bestPrice: bestPrice
+          ? { cena: bestPrice.cena.toNumber(), supplier: bestPrice.supplier.naziv, supplierId: bestPrice.supplierId }
+          : null,
+        allPrices: allPrices.map((p) => ({ cena: p.cena.toNumber(), supplier: p.supplier.naziv, supplierId: p.supplierId })),
+        razlikaCen:
+          allPrices.length > 1
+            ? zaokroziDenar(allPrices[0].cena.toNumber() - allPrices[allPrices.length - 1].cena.toNumber())
+            : 0,
+        skupajCena: bestPrice ? zaokroziDenar(bestPrice.cena.toNumber() * bomItem.kolicina) : 0,
       }
     })
 
@@ -170,7 +177,9 @@ export async function POST(request: Request) {
         orderItems.push({
           inventoryId: matched.id,
           kolicina: bomItem.kolicina,
-          cena: matched.prices[0].cena,
+          // R380 (§12): cena je Decimal — prehod v number (naročilo piše
+          // prek /api/material-orders, ki ceno validira po politiki).
+          cena: matched.prices[0].cena.toNumber(),
         })
       }
     }

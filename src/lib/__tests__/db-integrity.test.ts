@@ -164,7 +164,7 @@ describe('§18 — DB CHECK omejitve (zadnja linija obrambe)', () => {
 
     // isti material, DRUG dobavitelj → dovoljeno (par je (inventory, supplier))
     const ok = await db.materialPrice.create({ data: { inventoryId: inv.id, supplierId: s2.id, cena: 9 } })
-    expect(ok.cena).toBe(9)
+    expect(ok.cena.toNumber()).toBe(9)
 
     // zaprta okna ne štejejo kot prekrivanje (nova cena začne NOVO okno)
     await db.materialPrice.updateMany({
@@ -172,7 +172,7 @@ describe('§18 — DB CHECK omejitve (zadnja linija obrambe)', () => {
       data: { veljavnostDo: new Date() },
     })
     const ok2 = await db.materialPrice.create({ data: { inventoryId: inv.id, supplierId: s1.id, cena: 11 } })
-    expect(ok2.cena).toBe(11)
+    expect(ok2.cena.toNumber()).toBe(11)
 
     await cleanupInventory(inv.id)
     await db.supplier.delete({ where: { id: s1.id } }).catch(() => undefined)
@@ -232,7 +232,7 @@ describe('§19 — atomske poslovne transakcije', () => {
     const pAfter = await db.project.findUnique({ where: { id: project.id } })
     expect(pAfter!.status).not.toBe('MONTIRANO')
     const invAfter = await db.inventory.findUnique({ where: { id: inv.id } })
-    expect(invAfter!.kolicinaZaloga).toBe(2)
+    expect(invAfter!.kolicinaZaloga.toNumber()).toBe(2)
     const movements = await db.inventoryMovement.count({ where: { inventoryId: inv.id, projectId: project.id } })
     expect(movements).toBe(0)
     const audits = await db.auditLog.count({ where: { akcija: 'SCHEDULE_STATUS', projectId: project.id } })
@@ -260,11 +260,11 @@ describe('§19 — atomske poslovne transakcije', () => {
     expect(res.status).toBe(200)
 
     const invAfter = await db.inventory.findUnique({ where: { id: inv.id } })
-    expect(invAfter!.kolicinaZaloga).toBe(5) // 8 − 3
+    expect(invAfter!.kolicinaZaloga.toNumber()).toBe(5) // 8 − 3
     const pAfter = await db.project.findUnique({ where: { id: project.id } })
     expect(pAfter!.status).toBe('MONTIRANO')
     const movement = await db.inventoryMovement.findFirst({ where: { inventoryId: inv.id, projectId: project.id } })
-    expect(movement!.kolicina).toBe(-3)
+    expect(movement!.kolicina.toNumber()).toBe(-3)
     const audit = await db.auditLog.findFirst({ where: { akcija: 'SCHEDULE_STATUS', projectId: project.id } })
     expect(audit).not.toBeNull()
 
@@ -329,7 +329,7 @@ describe('§19 — atomske poslovne transakcije', () => {
     expect(res2.status).toBe(201)
     const openPrices = await db.materialPrice.findMany({ where: { inventoryId: inv.id, veljavnostDo: null } })
     expect(openPrices).toHaveLength(1)
-    expect(openPrices[0].cena).toBe(12.5)
+    expect(openPrices[0].cena.toNumber()).toBe(12.5)
     // zaprta cena ima VELJAVEN interval (od <= do) — GREATEST varovalka
     const closed = await db.materialPrice.findFirst({ where: { inventoryId: inv.id, veljavnostDo: { not: null } } })
     expect(closed!.veljavnostOd.getTime()).toBeLessThanOrEqual(closed!.veljavnostDo!.getTime())

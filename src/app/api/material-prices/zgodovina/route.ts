@@ -33,7 +33,9 @@ export async function GET(request: Request) {
       artikel: r.inventory.naziv,
       supplierId: r.supplierId,
       dobavitelj: r.supplier.naziv,
-      cena: r.cena,
+      // R380 (§12): cena je Decimal — prehod v number na tej meji (DTO
+      // pogodba decimal-policy; DECIMAL(12,2) izgube nima).
+      cena: r.cena.toNumber(),
       veljavnostOd: r.veljavnostOd.toISOString(),
       veljavnostDo: r.veljavnostDo ? r.veljavnostDo.toISOString() : null,
       opomba: r.opomba,

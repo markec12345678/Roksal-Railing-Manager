@@ -88,13 +88,13 @@ describe('recordMovement — transakcijski ledger', () => {
     expect(after).toBe(10)
 
     const fresh = await db.inventory.findUniqueOrThrow({ where: { id: inv.id } })
-    expect(fresh.kolicinaZaloga).toBe(10)
+    expect(fresh.kolicinaZaloga.toNumber()).toBe(10)
 
     const ledger = await db.stockLedger.findMany({ where: { inventoryId: inv.id } })
     expect(ledger).toHaveLength(1)
     expect(ledger[0].eventType).toBe('PURCHASE')
-    expect(ledger[0].kolicina).toBe(10)
-    expect(ledger[0].balanceAfter).toBe(10)
+    expect(ledger[0].kolicina.toNumber()).toBe(10)
+    expect(ledger[0].balanceAfter.toNumber()).toBe(10)
     expect(ledger[0].actorId).toBe('test-actor')
 
     // Združljivost: InventoryMovement odraz obstaja
@@ -117,7 +117,7 @@ describe('recordMovement — transakcijski ledger', () => {
 
     // Nič ni posodobljeno — transakcija rollback
     const fresh = await db.inventory.findUniqueOrThrow({ where: { id: inv.id } })
-    expect(fresh.kolicinaZaloga).toBe(2)
+    expect(fresh.kolicinaZaloga.toNumber()).toBe(2)
     const ledger = await db.stockLedger.findMany({ where: { inventoryId: inv.id } })
     expect(ledger).toHaveLength(1) // samo uspešen ISSUE
   })
@@ -131,9 +131,10 @@ describe('recordMovement — transakcijski ledger', () => {
 
     const fresh = await db.inventory.findUniqueOrThrow({ where: { id: inv.id } })
     const entries = await db.stockLedger.findMany({ where: { inventoryId: inv.id } })
-    const sum = entries.reduce((s, e) => s + e.kolicina, 0)
-    expect(fresh.kolicinaZaloga).toBe(sum)
-    expect(fresh.kolicinaZaloga).toBe(17)
+    // R380 (§12): kolicina/kolicinaZaloga so Decimal — prehod v number (PIN SHIFT).
+    const sum = entries.reduce((s, e) => s + e.kolicina.toNumber(), 0)
+    expect(fresh.kolicinaZaloga.toNumber()).toBe(sum)
+    expect(fresh.kolicinaZaloga.toNumber()).toBe(17)
 
     // zaporedje balanceAfter je konsistentno
     const sorted = [...entries].sort(
@@ -141,8 +142,8 @@ describe('recordMovement — transakcijski ledger', () => {
     )
     let running = 0
     for (const e of sorted) {
-      running += e.kolicina
-      expect(e.balanceAfter).toBe(running)
+      running += e.kolicina.toNumber()
+      expect(e.balanceAfter.toNumber()).toBe(running)
     }
   })
 
@@ -177,7 +178,7 @@ describe('recordMovement — transakcijski ledger', () => {
     )
     // Vsi so uspeli — bilanca = 100 - 20
     const fresh = await db.inventory.findUniqueOrThrow({ where: { id: inv.id } })
-    expect(fresh.kolicinaZaloga).toBe(80)
+    expect(fresh.kolicinaZaloga.toNumber()).toBe(80)
     // Vsak rezultat je bilanca po premiku (unikatna)
     expect(new Set(results).size).toBe(10)
     const ledger = await db.stockLedger.findMany({ where: { inventoryId: inv.id } })
@@ -196,7 +197,7 @@ describe('receiveOrder — idempotenten prejem naročila (issue #4 §5)', () => 
     expect(result.balanceAfter[inv.id]).toBe(7)
 
     const fresh = await db.inventory.findUniqueOrThrow({ where: { id: inv.id } })
-    expect(fresh.kolicinaZaloga).toBe(7)
+    expect(fresh.kolicinaZaloga.toNumber()).toBe(7)
 
     const updated = await db.materialOrder.findUniqueOrThrow({ where: { id: order.id } })
     expect(updated.status).toBe('DOBLJENO')
@@ -221,7 +222,7 @@ describe('receiveOrder — idempotenten prejem naročila (issue #4 §5)', () => 
     }
 
     const fresh = await db.inventory.findUniqueOrThrow({ where: { id: inv.id } })
-    expect(fresh.kolicinaZaloga).toBe(5) // ne 10, ne 55
+    expect(fresh.kolicinaZaloga.toNumber()).toBe(5) // ne 10, ne 55
 
     const receipts = await db.stockLedger.findMany({
       where: { inventoryId: inv.id, eventType: 'RECEIPT' },
@@ -240,7 +241,7 @@ describe('receiveOrder — idempotenten prejem naročila (issue #4 §5)', () => 
     expect(successful.length).toBe(1)
 
     const fresh = await db.inventory.findUniqueOrThrow({ where: { id: inv.id } })
-    expect(fresh.kolicinaZaloga).toBe(3)
+    expect(fresh.kolicinaZaloga.toNumber()).toBe(3)
 
     const receipts = await db.stockLedger.findMany({
       where: { inventoryId: inv.id, eventType: 'RECEIPT' },

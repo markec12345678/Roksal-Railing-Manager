@@ -15,6 +15,7 @@
 import { db } from '@/lib/db'
 import type { Prisma, StockLedgerEventType } from '@prisma/client'
 import { creditLotInTx, allocateLotsInTx } from '@/lib/lots'
+import { zaokroziKolicino, KOLICINA_DECIMALKE } from '@/lib/decimal-policy'
 
 export class StockError extends Error {
   readonly status: number
@@ -121,13 +122,21 @@ export async function recordMovementInTx(tx: Tx, cmd: MovementCommand): Promise<
   if (!Number.isFinite(cmd.kolicina) || cmd.kolicina <= 0) {
     throw new StockError(400, 'Količina mora biti pozitivno končno število')
   }
+  // R380 (§12) — FAILO-CLOSED PRECIZNOST: DB nosi DECIMAL(12,3); količina z
+  // >3 decimalkami bi bila ob zapisu TIHO zaokrožena (tiha mutacija). Ne —
+  // javno zavrnjeno: klient vidi natančno mejo in popravi vhod.
+  if (zaokroziKolicino(cmd.kolicina) !== cmd.kolicina) {
+    throw new StockError(400, `Količina sme imeti največ ${KOLICINA_DECIMALKE} decimalke (dobili: ${cmd.kolicina})`)
+  }
 
   // Idempotency: isti ključ → vrni obstoječi rezultat brez novega dogodka.
   if (cmd.idempotencyKey) {
     const existing = await tx.stockLedger.findUnique({
       where: { idempotencyKey: cmd.idempotencyKey },
     })
-    if (existing) return existing.balanceAfter
+    // R380: balanceAfter je Decimal — prehod v number na tej meji (DTO
+    // pogodba decimal-policy decToNum).
+    if (existing) return existing.balanceAfter.toNumber()
   }
 
   // Optimistična zanka (portabilno PG + SQLite): preberi stanje, poskus pogojno
@@ -143,7 +152,10 @@ export async function recordMovementInTx(tx: Tx, cmd: MovementCommand): Promise<
     enota = inv.enota
 
     delta = deltaFor(cmd.eventType, cmd.kolicina)
-    target = inv.kolicinaZaloga + delta
+    // R380 (§12): zaloga je Decimal — branje v number na tej meji; vsota
+    // gre skozi centralno politiko (3 decimalke, half-up) — pomnilnik se
+    // UJEMA s DECIMAL(12,3) zapisom v PG (float 0.1+0.2 noise izločen).
+    target = zaokroziKolicino(inv.kolicinaZaloga.toNumber() + delta)
     if (!cmd.allowNegative && target < 0) {
       throw new StockError(
         409,
@@ -274,10 +286,13 @@ export async function receiveOrder(
 
     const balanceAfter: Record<string, number> = {}
     for (const [idx, item] of order.items.entries()) {
+      // R380 (§12): postavka je Decimal — prehod na tej meji (3dp iz
+      // DECIMAL(12,3) / 2dp iz DECIMAL(12,2) — izgube NI, ŠARŽA in ledger
+      // nadaljujeta v number po centralni politiki).
       const bal = await recordMovementInTx(tx, {
         inventoryId: item.inventoryId,
         eventType: 'RECEIPT',
-        kolicina: item.kolicina,
+        kolicina: item.kolicina.toNumber(),
         actorId,
         reason: reason ?? `Prejem naročila ${orderId}`,
         orderId: order.id,
@@ -287,7 +302,7 @@ export async function receiveOrder(
         // R144 (§24) — šarža po postavki: poreklo + nabavna cena + zap. št.
         orderItemIndex: idx,
         supplierId: order.supplierId,
-        purchasePrice: item.cena,
+        purchasePrice: item.cena.toNumber(),
       })
       balanceAfter[item.inventoryId] = bal
     }

@@ -6,6 +6,7 @@
 // PREKlicANO iz vseh stanj razen DOBLJENO.
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { decToPlain } from '@/lib/decimal-policy'
 import { authenticate, unauthorized, forbidden, denyWithoutPermission } from '@/lib/auth'
 import { receiveOrder, StockError } from '@/lib/inventory'
 import { auditInTx, audit } from '@/lib/audit'
@@ -78,7 +79,8 @@ export async function GET(request: Request) {
       take: limit,
       skip: offset,
     })
-    return NextResponse.json(orders)
+    // R380 (§12): Decimal → number na DTO meji (skupajCena, items).
+    return NextResponse.json(decToPlain(orders))
   } catch (error) {
     logWithCorrelation('material-orders.get', correlationId, error)
     return NextResponse.json({ error: 'Napaka pri branju naročil', correlationId }, { status: 500 })
@@ -224,7 +226,7 @@ export async function POST(request: Request) {
       return created
     })
 
-    return NextResponse.json(order, { status: 201 })
+    return NextResponse.json(decToPlain(order), { status: 201 })
   } catch (error) {
     // R140 (§20): P2002 na rezervaciji (vzporedni poizkus istega ključa) →
     // odloči replay/conflict — ISTA odločitev kot customers/measurements.
@@ -309,7 +311,7 @@ export async function PATCH(request: Request) {
         oldValue: { orderId: id, status: existing.status },
         newValue: { orderId: id, status: 'DOBLJENO' },
       })
-      return NextResponse.json({ ...updated, alreadyReceived: result.alreadyReceived })
+      return NextResponse.json(decToPlain({ ...updated, alreadyReceived: result.alreadyReceived }))
     }
 
     const updated = await db.materialOrder.update({
@@ -331,7 +333,7 @@ export async function PATCH(request: Request) {
       newValue: { orderId: id, status },
     })
 
-    return NextResponse.json(updated)
+    return NextResponse.json(decToPlain(updated))
   } catch (error) {
     if (error instanceof StockError) {
       return NextResponse.json({ error: error.message }, { status: error.status })

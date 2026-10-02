@@ -254,7 +254,8 @@ describe('R374 — KANONIČNI DEAL-LOCK (issue #13 R165)', () => {
       select: { dealLocked: true, estimatedPrice: true, marginLocked: true, status: true },
     })
     expect(po!.dealLocked).toBe(true)
-    expect(po!.estimatedPrice).toBe(v.total)
+    // R380 (§12): estimatedPrice je Decimal — prehod v number (PIN SHIFT).
+    expect(po!.estimatedPrice!.toNumber()).toBe(v.total)
     expect(po!.marginLocked).toBeNull()
     expect(po!.status).toBe('ZA_MONTAZO')
 

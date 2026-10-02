@@ -10,6 +10,8 @@ import { recordMovement, StockError } from '@/lib/inventory'
 import { creditLotInTx } from '@/lib/lots'
 import { hasPermission, actorIdOf } from '@/lib/access'
 import { queueNotifications } from '@/lib/notifications'
+import { decToPlain } from '@/lib/decimal-policy'
+import { veljavajKonverzijoZaZapis, UnitsError } from '@/lib/units'
 import { correlationFromRequest } from '@/lib/correlation'
 import type { StockLedgerEventType } from '@prisma/client'
 
@@ -62,7 +64,9 @@ export async function GET(request: Request) {
       if (!item) {
         return NextResponse.json({ error: 'Artikel ne obstaja' }, { status: 404 })
       }
-      return NextResponse.json({ inventory: item, ledger })
+      // R380 (§12): Decimal → number na DTO meji (kolicinaZaloga,
+      // minimalnaZaloga, ledger kolicina/balanceAfter, konverzija …).
+      return NextResponse.json(decToPlain({ inventory: item, ledger }))
     }
 
     const inventory = await db.inventory.findMany({
@@ -78,7 +82,7 @@ export async function GET(request: Request) {
       orderBy: { naziv: 'asc' },
     })
 
-    return NextResponse.json(inventory)
+    return NextResponse.json(decToPlain(inventory))
   } catch (error) {
     console.error('Inventory GET Error:', error)
     return NextResponse.json({ error: 'Napaka pri branju zaloge' }, { status: 500 })
@@ -123,7 +127,10 @@ export async function POST(request: Request) {
         where: { id: validated.inventoryId },
       })
 
-      if (updated.kolicinaZaloga < updated.minimalnaZaloga) {
+      // R380 (§12): obe polji sta Decimal — RELACIJSKA primerjava Decimal <
+      // Decimal v JS gre prek valueOf() → STRING primerjava ("5" < "10" =
+      // false!). Prehod v number (3dp izgube ni) je EDINI varni način.
+      if (updated.kolicinaZaloga.toNumber() < updated.minimalnaZaloga.toNumber()) {
         // R143 (§29): obvestilo gre skozi dispatcher (QUEUED → SENT → …) —
         // predloga LOW_STOCK v1, naslovljeno na VLOGO SKLADISCE (prej pseudo-
         // uporabnik 'skladisce', ki ga nobena seja ne ujame), z entiteto in
@@ -138,13 +145,26 @@ export async function POST(request: Request) {
         })
       }
 
-      return NextResponse.json({ balanceAfter, inventory: updated }, { status: 201 })
+      return NextResponse.json(decToPlain({ balanceAfter, inventory: updated }), { status: 201 })
     } else {
       // Nova inventarna postavka = master podatek kataloga (vodstvo).
       const denied = await denyWithoutPermission(request, 'catalog.manage')
       if (denied) return denied
       const validated = createInventorySchema.parse(body)
       const actor = actorIdOf(auth)
+
+      // R380 (§12) — konverzija enot: FAIL-CLOSED validacija kanona
+      // (EXACT 'm²' ≠ 'm2'; pozitivni faktorji; preciznost 0–6; nabor
+      // GORI/DOL/NAJBLIŽJE). Neveljaven zapis → javna 400 s seznamom.
+      let konverzija
+      try {
+        konverzija = veljavajKonverzijoZaZapis(validated)
+      } catch (e) {
+        if (e instanceof UnitsError) {
+          return NextResponse.json({ error: e.message }, { status: e.suggestedStatus })
+        }
+        throw e
+      }
 
       // Artikel + OPENING ledger dogodek + ustanovitvena ŠARŽA (§24) = ENA transakcija.
       const item = await db.$transaction(async (tx) => {
@@ -156,6 +176,14 @@ export async function POST(request: Request) {
             kolicinaZaloga: validated.kolicinaZaloga,
             enota: validated.enota,
             minimalnaZaloga: validated.minimalnaZaloga,
+            // R380 (§12): validirana konverzija (veljavna polja ali NULL).
+            purchaseUnit: konverzija.purchaseUnit,
+            stockUnit: konverzija.stockUnit,
+            consumptionUnit: konverzija.consumptionUnit,
+            supplierPackSize: konverzija.supplierPackSize,
+            conversionFactor: konverzija.conversionFactor,
+            precision: konverzija.precision,
+            rounding: konverzija.rounding,
           }
         })
         if (validated.kolicinaZaloga > 0) {
@@ -182,7 +210,7 @@ export async function POST(request: Request) {
         }
         return created
       })
-      return NextResponse.json(item, { status: 201 })
+      return NextResponse.json(decToPlain(item), { status: 201 })
     }
   } catch (error: unknown) {
     if (error instanceof StockError) {
