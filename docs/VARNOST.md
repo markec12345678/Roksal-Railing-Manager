@@ -350,3 +350,22 @@ Loader2 med shranjevanjem, Label/htmlFor vezave + maxLength na vseh poljih,
 strankina kartica `role="button"` + `tabIndex` + Enter/Space tipkovnica
 (prej samo div onClick — nedosegljiva s tipkovnico), Edit svinčnik z
 aria-label `Uredi CRM: {ime}`.
+
+## CRM lijak: Lead/Opportunity/Naslovi (R382 — issue #13 §13)
+
+Trije novi CRM vhodi (sleadi, priložnosti, naslovi stranke) PONAVLJATA
+R156 prag vrata — noben novo-izumljen dovoljenja (matrika §10 ostaja
+zamrznjena; CRM = domena `customers.*`):
+
+| | Pravilo |
+|---|---|
+| **Vrata pisanja** | `canManageCustomers` (customers.write — isti prag kot POST /api/customers in PATCH /api/crm: MONTER+ piše, SKLADISCE samo bere, apikey nič). Velja za POST/PATCH/DELETE na /api/leads, /api/opportunities, /api/customer-addresses. |
+| **Vrata branja** | `authenticate` (enak prag kot GET /api/customers — vsi avtenticirani principalci). |
+| **Statusni stroji** | Lead: NOV\|KONTAKTIRAN\|PRETVORJEN\|ZAVRNJEN; Opportunity stage §13 EXACT (NEW→…→ACCEPTED\|LOST). Matrika EN VIR v `src/lib/crm-pipeline.ts` (čisto jedro — stražar vira v testu); prehod POZUNAR matrike → 409 z izpisom dovoljenih; neznan status/stage/tip → 400 GLASNO (NE tiha normalizacija — kanon §5). |
+| **Terminalna stanja** | PRETVORJEN/ZAVRNJEN (slead) in ACCEPTED/LOST (priložnost) se NE urejajo (409) — zamrznjena zgodovina, kanon terminalnosti R378. |
+| **LOST zahteva razlog** | `razlogIzgube` min 3 znaki → 400 brez (§13 loss reason — izguba brez razloga je tiha mutacija zgodovine). |
+| **Pretvorba ACCEPTED** | Zahteva stranko (409 brez — projekt brez stranke ne obstaja) + nazivProjekta (400 brez); Projekt nastane V ISTI transakciji (convertedProjectId UNIQUE + FK RESTRICT — invariant sprejetosti ⇒ obstoj projekta ne razpade tiho). |
+| **Decimal domena** | ocenjenaVrednost ≤ 2 decimalki (zaokroziDenar R380 eksaktna preverba) → 400 GLASNO pri 3; verjetnost = int 0–100 (§13 "CRM polje brez poslovne logike" — nikoli vhod v izračun). |
+| **Naslovi** | tip STROGO KONTAKTNI\|RACUNSKI\|MONTAZNI (400 s seznamom); GET brez customerId → 400 (naslovi so VEDNO last stranke — IDOR vprašanje); en privzet na (stranka, tip) — partial UNIQUE v DB + demote V ISTI transakciji. |
+| **Revizija §19** | VSAKA mutacija prek crm-store (rute NE pisjejo direktno) z auditInTx ATOMSKO z dogodkom: LEAD_CREATED/UPDATED/STATUS/CONVERTED, OPPORTUNITY_CREATED/STAGE/UPDATED/CONVERTED (+ PROJECT_CREATED ob pretvorbi), CUSTOMER_ADDRESS_CREATED/UPDATED/DELETED — oldValue/newValue, pravi akter. |
+| **Rate limit** | `zapisOmejitev` (R191 val 2) na vseh pisanjih. |

@@ -62,6 +62,7 @@ model Profile {
   syncTombstones       SyncTombstone[] // R148 §36 — grobnice sync, ki jih je ustvaril
   operatedOperations   ProductionOperation[] @relation("ProductionOperationOperator") // R378 §10 — proizvodne operacije, ki jih je izvajal
   installedRecords     InstallationRecord[] @relation("InstallationRecordMonter") // R378 §9 — as-installed zapisi, kjer je monter
+  ownedLeads           Lead[] @relation("LeadOwner") // R382 §13 — sleadi, ki jih ta uporabnik vodi (owner)
 }
 
 /// #5 §2 — Session revocation: registracija izdanih sejnih žetonov.
@@ -110,6 +111,129 @@ model Customer {
 
   projects Project[]
   quotes    Quote[] // R373 — ponudbe stranke (§3)
+  addresses    CustomerAddress[] // R382 §13 — ločeni naslovi (kontaktni/računski/montažni)
+  opportunities Opportunity[] // R382 §13 — poslovne priložnosti stranke
+}
+
+// R382 (issue #13, korak R169 iz §13) — LEAD: surovi stik PRED stranko.
+// §13: trenutni Customer model je "preveč blizu končni stranki" — povpraševanje
+// (telefon/mail/sprehod) se je zapisovalo DIREKTNO v stranke, brez sledi, od kod
+// je prišlo. Lead je vhodni lijak: source (odkod), kontakt (kdo), tip
+// povpraševanja (česa), status (kje v predkvalifikaciji), owner (kdo vodi),
+// nextActionAt (kdaj naslednji korak). Stranka še NE obstaja — nastane š ob
+// PRETVORJEN (skupaj z Opportunity, isto transakcijo, crm-store).
+//
+// Statusi (manjši kot §13 lifecycle — ta živi na OPPORTUNITY.stage, ki ima
+// polje "stage" v specu; Lead.status je PREDkvalifikacijski nabor, ne druga
+// kopija prodajne cevi): NOV | KONTAKTIRAN | PRETVORJEN | ZAVRNJEN.
+// CHECK v migraciji; matrika prehodov = src/lib/crm-pipeline.ts (EN VIR).
+model Lead {
+  id               String    @id @default(cuid())
+  // Odkod je povpraševanje prišlo ( starter nabor + DRUGO — v repu NI
+  // obstoječega CRM nabora virov, enaka iskrena odločitev kot prioritete
+  // R378; širjenje = nova migracija, ne tiha inflacija):
+  // WEB | TELEFON | EMAIL | PREPOROKA | OBSTOJECA_STRANKA | SEJEM | DRUGO
+  source           String    @default("DRUGO")
+  // Kontakt (§13): ime + telefon/email — OSEBA, ne stranka (stranka je pravna
+  // entiteta z naslovi; lead je človek, ki je vprašal).
+  ime              String
+  telefon          String?
+  email            String?
+  // Česa se sprašuje: BALKON | TERASA | STOPNISCE | OGRAJA | DRUGO (CHECK).
+  tipPovprasevanja String    @default("DRUGO")
+  status           String    @default("NOV")
+  // Lastnik sleada (§13 owner) — Profile.id; NULL = neprevzet (iskreno,
+  // §8: nič ne izmišljujemo). Odhod lastnika (delete) NE pobije sleada.
+  ownerId          String?
+  // Opomnik naslednje akcije (§13 nextActionAt) — NULL = ni dogovorjene
+  // naslednje akcije (iskreno, ne izmišljan datum).
+  nextActionAt     DateTime?
+  opombe           String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  owner         Profile?      @relation("LeadOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  opportunities Opportunity[] // priložnosti, rojene iz tega sleada (PRETVORJEN)
+
+  @@index([status, nextActionAt])
+  @@index([ownerId])
+}
+
+// R382 (issue #13, korak R169 iz §13) — OPPORTUNITY: poslovna priložnost.
+// §13 polja: leadId (izvor — NULL = direktna/repeat poslovna priložnost
+// obstoječe stranke), customerId (NULL dokler ni stranke — zgodnja faza
+// pogajanj še NI stranka; ob ACCEPTED OBVEZNO, fail-closed v crm-store),
+// potential project (naziv/opis), estimated value (ocena — Decimal(12,2),
+// denarni domene R380; NULL = neznana, §8 — nikoli 0 kot "neznano"),
+// stage (§13 lifecycle — spodaj), probability (verjetnost 0–100 — §13
+// izrecno: "ni potrebna kot napoved, lahko pa kot CRM polje BREZ poslovne
+// logike" — int, ne Decimal: to je mnenje, ne izračun), loss reason
+// (obvezen pri LOST — crm-store), convertedProjectId (nastavi se ob
+// ACCEPTED — nastanek projekta je ISTA transakcija).
+//
+// Stage lifecycle §13 (EXACT iz speca, EN VIR matrica v crm-pipeline.ts):
+//   NEW → CONTACTED → SITE_SURVEY → QUOTE → FOLLOW_UP → ACCEPTED / LOST
+model Opportunity {
+  id                 String    @id @default(cuid())
+  leadId             String?
+  customerId         String?
+  naziv              String
+  opis               String?
+  ocenjenaVrednost   Decimal?  @db.Decimal(12, 2)
+  stage              String    @default("NEW")
+  verjetnost         Int?
+  razlogIzgube       String?
+  convertedProjectId String?   @unique
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  lead             Lead?     @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  customer         Customer? @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  // RESTRICT (ne SetNull): sprejeta priložnost DOKAZUJE nastanek projekta —
+  // invariant stage=ACCEPTED ⇒ convertedProjectId NOT NULL ne sme tiho
+  // razpasti. Projekta NI mogoče brisati prek API-ja (pregledano R382 —
+  // DELETE pot ne obstaja), RESTRICT torej ne zadržuje nobenega legalnega
+  // toka, zapira pa tihle razpad resnice.
+  convertedProject Project?  @relation("OpportunityConversion", fields: [convertedProjectId], references: [id], onDelete: Restrict)
+
+  @@index([stage, createdAt])
+  @@index([customerId])
+  @@index([leadId])
+}
+
+// R382 (issue #13, korak R169 iz §13) — LOČENI NASLOVI STRANKE.
+// §13: "Customer mora ločiti vsaj: contact/mailing address; billing
+// address; installation/site address." Do R382 je bil NASAMO en flat
+// Customer.naslov — računski naslov in montažna lokacija sta bila ISTA
+// resnica. Ločitev:
+//   KONTAKTNI  — kontakt/mailing (kam pošiljamo pošto);
+//   RACUNSKI   — billing (kam se izstavi račun);
+//   MONTAZNI   — installation/site (kje se montaža izvaja — lahko VEČ naslovov:
+//                upravniki stanovanjskih skupnosti imajo več objektov).
+// CHECK tip + partial UNIQUE (customerId, tip) WHERE jePrivzet v
+// migraciji (strežniška plast demote-a starih privzetih; DB je zadnja
+// linija).
+//
+// LEGACY SINHRON (dokumentirana meja, ne tiha dvojna resnica):
+// Customer.naslov (NOT NULL, od init migracije — mobilni klienti/PDF ga
+// berejo) ostane FLAT PRIKAZNO polje: ob zapisu/brisanju PRIVZETEGA
+// KONTAKTNI naslova ga crm-store posodobi v ISTI transakciji. Brez
+// privzetega KONTAKTNI nosi zadnjo znano vrednost (legacy prikaz). Kanon
+// §1 (ne ruši determinističnih temeljev) + §8 (brez izmišljanja).
+model CustomerAddress {
+  id         String   @id @default(cuid())
+  customerId String
+  tip        String   @default("KONTAKTNI")
+  naslov     String
+  kraj       String?
+  postnaSt   String?
+  jePrivzet  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId, tip])
 }
 
 // ============================================
@@ -219,6 +343,7 @@ model Project {
   bom                  BOM? // R376 §6 — kanonični BOM nosilec (EN na projekt, UNIQUE projectId)
   productionOrders     ProductionOrder[] // R378 §10 — proizvodni nalogi nad odobrenim BOM
   installationRecords  InstallationRecord[] // R378 §9 — as-installed resnica projekta (verzionirana)
+  convertedFromOpportunity Opportunity? @relation("OpportunityConversion") // R382 §13 — nastal iz SPREJETE priložnosti (EN na projekt, UNIQUE convertedProjectId)
 }
 
 // ============================================

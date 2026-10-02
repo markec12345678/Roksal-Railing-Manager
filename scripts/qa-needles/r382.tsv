@@ -1,0 +1,43 @@
+# qa-needles/r382.tsv — REGISTER needlejev runde R382 (issue #13, korak
+# R169 iz §13 — CUSTOMER/LEAD/OPPORTUNITY CRM: Lead [vir/kontakt/tip
+# povpraševanja/status/owner/nextActionAt] + Opportunity [§13 lifecycle
+# NEW→CONTACTED→SITE_SURVEY→QUOTE→FOLLOW_UP→ACCEPTED|LOST EXACT, ocena
+# Decimal(12,2), verjetnost int 0-100 = §13 "CRM polje BREZ poslovne
+# logike", razlogIzgube obvezen pri LOST, convertedProjectId UNIQUE =
+# transakcijska pretvorba ACCEPTED → Projekt] + CustomerAddress [ločitev
+# KONTAKTNI/RACUNSKI/MONTAZNI §13 + partial UNIQUE (customerId, tip) WHERE
+# jePrivzet + legacy sinhron Customer.naslov V ISTI transakciji] + backfill
+# obstoječih naslovov v PRIVZETE KONTAKTNE [konsolidacija, NE izmišljanje
+# §8 — deterministični id 'custaddr-' || customer.id]).
+# ============================================================================
+# KOLIZIJA #22 [kanon KOLIZIJE #4/R323/#13–#21, 22. potrditev]: vzporedna
+# lastniška QA R381 [30f856e — STIL val 60 nativni prehod-paritetni zaključek
+# + NJIHOV register r381.tsv + r381-stil-val60.test.ts] je pristala MED mojim
+# delom (fetch ob needle preverbi: c63ee37..30f856e) in vzela številko →
+# moja runda preimenovana R381→R382 [migracija 20261007080000_r382_crm_lead_
+# opportunity + 4× r382-*.test.ts + žigi; _prisma_migrations vrstica
+# preimenovana v OBEH bazah (dev + test) — ista vsebina, novo ime]; NJIHOVI
+# r381-* artefakti ostanejo = lastniška zgodovina; NJIHOV r381.tsv
+# NEDOTAKNJEN (TODO-R381 je NJIHOV must_miss — moj je TODO-R382).
+# FORMAT (TSV; EN vrstica = EN needle; TAB je LOČILO — presledki znotraj
+# needleja so POMENNI, ker grep -F išče dobesedno) — ENAK format kot
+# r340.tsv…r381.tsv (kanon R340 qa-round.sh: needleji so PODATEK):
+#   <needle_string><TAB><opis><TAB><vrsta>
+# Vrste: need_static (MORA biti ŽIV v svežem buildu) | must_miss (NESME
+# biti v produkcijskih čankih).
+# Fetch-first preverba (kanon R366–R380): VSAK need_static je ×0 v
+# trenutnem HEAD pred commitom (git grep -F GLASNO) — needleji spodaj so
+# vsi ×0 potrjeni nad HEAD 30f856e (R381 — lastniška QA runda, trenutni
+# origin/main po KOLIZIJI #22).
+# Izpuščeni kandidati (iskreno): 'pretvorba priložnosti' (template literal
+# s ${opp.id} — v minificiranem JS NI zvezno dobesedno); 'PRETVORJEN'
+# (enum vrednost — prekratko/splošno, lažni zadetki); 'ocenjenaVrednost'
+# (ime polja v JSON telesu, ne string literal v chunku); 'Podprta dejanja'
+# (generično sporočilo R378 kanona — ne diskriminira moje površine);
+# '§13 lifecycle' (komentar — v buildu ne preživi).
+Sleade ustvarjajo uporabniki s pravico customers.write	R382 vrata POST /api/leads — sporočilo 403 v leads chunku (×1 .js; 0 v HEAD 30f856e)	need_static
+Priložnost nima stranke	R382 fail-closed pretvorba ACCEPTED brez stranke — 409 sporočilo v opportunities chunku (×1 .js; 0 v HEAD 30f856e)	need_static
+Neznan tip naslova	R382 EXACT kanon §5 na tipih naslovov — prefix javne napake v customer-addresses chunku (×1 .js; 0 v HEAD 30f856e)	need_static
+izguba brez razloga je tiha mutacija zgodovine	R382 §13 loss reason — del sporočila 400 v opportunities chunku (×1 .js; 0 v HEAD 30f856e)	need_static
+Naslove urejajo uporabniki s pravico customers.write	R382 vrata PATCH/DELETE naslovov — sporočilo 403 v customer-addresses/[id] chunku (×1 .js; 0 v HEAD 30f856e)	need_static
+TODO-R382	must_miss: razvojni ostanki (nesme biti v produkcijskih čankih)	must_miss

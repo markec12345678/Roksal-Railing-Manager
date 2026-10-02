@@ -45,11 +45,11 @@ const stHandlerjev = (src: string): number =>
   (src.match(/export async function (?:POST|PATCH|DELETE|PUT)\(/g) ?? []).length
 const stGuardov = (src: string): number => (src.match(/const zavrnjeno = zapisOmejitev\(request, /g) ?? []).length
 
-describe('R191 — val 2 žičenje (52 datotek / 67 handlerjev, ENAK vzorec kot val 1; PIN SHIFT R374: 43/58→46/61 — +price-book POST, +quotes POST, +quotes/[id] PATCH; PIN SHIFT R376: 46/61→48/63 — +bom POST, +bom/[id] PATCH [kanonični BOM #13 R166]; PIN SHIFT R378: 48/63→52/67 — +production POST, +production/[id] PATCH, +installation-records POST, +installation-records/[id] PATCH [produkcija §10 + as-installed §9 #13 R167])', () => {
-  it('val 2 dejansko pokriva pričakovano množico (52 datotek, 67 handlerjev)', () => {
-    expect(val2.length).toBe(52)
+describe('R191 — val 2 žičenje (58 datotek / 74 handlerjev, ENAK vzorec kot val 1; PIN SHIFT R374: 43/58→46/61 — +price-book POST, +quotes POST, +quotes/[id] PATCH; PIN SHIFT R376: 46/61→48/63 — +bom POST, +bom/[id] PATCH [kanonični BOM #13 R166]; PIN SHIFT R378: 48/63→52/67 — +production POST, +production/[id] PATCH, +installation-records POST, +installation-records/[id] PATCH [produkcija §10 + as-installed §9 #13 R167]; PIN SHIFT R382: 52/67→58/74 — +leads POST, +leads/[id] PATCH, +opportunities POST, +opportunities/[id] PATCH, +customer-addresses POST, +customer-addresses/[id] PATCH+DELETE [CRM lijak §13 #13 R169 — customers/[id] je GET-samo, brez rate-limit vrata])', () => {
+  it('val 2 dejansko pokriva pričakovano množico (58 datotek, 74 handlerjev)', () => {
+    expect(val2.length).toBe(58)
     const handlerji = val2.reduce((n, p) => n + stHandlerjev(srcOf(p)), 0)
-    expect(handlerji).toBe(67)
+    expect(handlerji).toBe(74)
     // vsaka val-2 datoteka: št. guardov == št. handlerjev
     for (const p of val2) {
       const src = srcOf(p)
@@ -107,8 +107,8 @@ describe('R191 — INVENTARNI STRAŽAR: 100 % mutirajočih rut omejenih (trajno)
     expect(brez).toEqual([])
   })
 
-  it('množice se štejejo konsistentno (61 z zapisOmejitev = val1 9 + val2 52; preostanek z checkRate; PIN SHIFT R374: 52→55; PIN SHIFT R376: 55→57 — +bom, +bom/[id] [kanonični BOM #13 R166]; PIN SHIFT R378: 57→61 — +production, +production/[id], +installation-records, +installation-records/[id] [produkcija/as-installed #13 R167])', () => {
-    expect(zZapisOmejitev.length).toBe(61)
+  it('množice se štejejo konsistentno (67 z zapisOmejitev = val1 9 + val2 58; preostanek z checkRate; PIN SHIFT R374: 52→55; PIN SHIFT R376: 55→57 — +bom, +bom/[id] [kanonični BOM #13 R166]; PIN SHIFT R378: 57→61 — +production, +production/[id], +installation-records, +installation-records/[id] [produkcija/as-installed #13 R167]; PIN SHIFT R382: 61→67 — +leads, +leads/[id], +opportunities, +opportunities/[id], +customer-addresses, +customer-addresses/[id] [CRM lijak #13 R169])', () => {
+    expect(zZapisOmejitev.length).toBe(67)
     const zCheckRate = vseMutirajoce.filter((p) => srcOf(p).includes('checkRate('))
     expect(zZapisOmejitev.length + zCheckRate.length).toBe(vseMutirajoce.length)
     expect(zCheckRate.length).toBe(10)
