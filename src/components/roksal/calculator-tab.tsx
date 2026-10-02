@@ -857,7 +857,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
           <button
             type="button"
             onClick={onClearImport}
-            className="p-1 rounded-md hover:bg-secondary/60 transition-colors shrink-0 focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+            className="p-1 rounded-md hover:bg-secondary/60 transition-colors shrink-0 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
             title="Počisti uvoz"
             aria-label="Počisti uvoz meritve"
           >
@@ -4436,7 +4436,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                         onClick={() => loadFromHistory(entry)}
                         aria-label={`Naloži izračun: ${entry.modeLabel}, ${entry.keyResult}`}
                         title={`${entry.modeLabel} — ${entry.keyResult}`}
-                        className="flex w-full items-start gap-3 rounded-lg border border-border/50 p-3 transition-colors hover:bg-secondary/30 hover:border-roksal-navy/30 dark:hover:border-roksal-ink/30 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
+                        className="flex w-full items-start gap-3 rounded-lg border border-border/50 p-3 transition-colors hover:bg-secondary/30 hover:border-roksal-navy/30 dark:hover:border-roksal-ink/30 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                       >
                         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-roksal-navy/10">
                           <Icon className="h-4 w-4 text-roksal-ink" />

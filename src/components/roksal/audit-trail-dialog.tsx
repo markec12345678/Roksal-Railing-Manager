@@ -246,7 +246,7 @@ export function AuditTrailDialog({
                   type="button"
                   onClick={() => setFilter(key)}
                   aria-pressed={aktiv}
-                  className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-2xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 ${
+                  className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-2xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 ${
                     aktiv ? razred : 'bg-muted text-muted-foreground border-border opacity-70 hover:opacity-100'
                   }`}
                 >
@@ -307,7 +307,7 @@ export function AuditTrailDialog({
                           type="button"
                           onClick={() => toggle(e.id)}
                           aria-expanded={isOpen}
-                          className="mt-1 inline-flex items-center gap-0.5 rounded text-2xs text-muted-foreground hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                          className="mt-1 inline-flex items-center gap-0.5 rounded text-2xs text-muted-foreground hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
                         >
                           {isOpen ? (
                             <ChevronDown aria-hidden="true" className="h-3 w-3"  />

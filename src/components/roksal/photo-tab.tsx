@@ -2367,7 +2367,7 @@ function AnnotationEditor({
                             isCalibration: false,
                           })
                         }
-                        className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:outline-none"
+                        className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:outline-none"
                         aria-label="Uredi mero"
                       >
                         <Pencil aria-hidden="true" className="h-3 w-3" />

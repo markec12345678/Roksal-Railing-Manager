@@ -50,8 +50,8 @@ const pod = (src: string, needle: string): number =>
 const wcLinije = (src: string): number => (src.match(/\n/g) ?? []).length
 
 const DATOTEKE = [
-  { f: 'roksal/calculator-tab.tsx', vrstice: 4489, navy40: 4, offset2: 1, hex: 16, aria: 16, title: 19 },
-  { f: 'roksal/dashboard-tab.tsx', vrstice: 3188, navy40: 9, offset2: 2, hex: 0, aria: 13, title: 22 },
+  { f: 'roksal/calculator-tab.tsx', vrstice: 4489, navy40: 4, offset2: 3, hex: 16, aria: 16, title: 19 },
+  { f: 'roksal/dashboard-tab.tsx', vrstice: 3188, navy40: 9, offset2: 4, hex: 0, aria: 13, title: 22 },
   { f: 'roksal/invoice-manager.tsx', vrstice: 1722, navy40: 10, offset2: 10, hex: 6, aria: 14, title: 18 },
   { f: 'roksal/vodja-dashboard.tsx', vrstice: 2199, navy40: 4, offset2: 4, hex: 1, aria: 25, title: 34 },
 ]
@@ -59,7 +59,7 @@ const DATOTEKE = [
 const NAVY = 'focus-visible:ring-roksal-navy/40'
 
 describe('R370 stil val 53 — navy/40 offset-1 rep normalizacija 1→2', () => {
-  it('(A) PARITETA guard: offset-1 = 0 v vseh 4 tarčah + navy/40 števci nespremenjeni (4/9/10/4) + offset-2 po pričakovanju (1/2/10/4) + barvni žigi nespremenjeni', () => {
+  it('(A) PARITETA guard: offset-1 = 0 v vseh 4 tarčah + navy/40 števci nespremenjeni (4/9/10/4) + offset-2 po pričakovanju (3/4/10/4 — [PIN SHIFT R371 val 54: števec +2 calculator L860/L4439 in +2 dashboard L1628/L1756 — val 54 NONE triaža je dodala offset-2 na novih surovih vrsticih ISTIH datotek]) + barvni žigi nespremenjeni', () => {
     for (const { f, vrstice, navy40, offset2 } of DATOTEKE) {
       const src = R(`src/components/${f}`)
       const vrstice2 = src.split('\n')

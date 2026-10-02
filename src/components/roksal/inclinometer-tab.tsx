@@ -338,7 +338,7 @@ export function InclinometerTab({ projectId, projektIme }: { projectId: string |
                   type="button"
                   onClick={() => void handleNagibiPdf()}
                   disabled={pdfNagibiVteku}
-                  className="flex shrink-0 items-center gap-1 rounded-lg border border-border/50 bg-secondary/50 px-2 py-1 text-2xs font-medium text-muted-foreground transition-all duration-150 press-scale active:scale-[0.96] hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                  className="flex shrink-0 items-center gap-1 rounded-lg border border-border/50 bg-secondary/50 px-2 py-1 text-2xs font-medium text-muted-foreground transition-all duration-150 press-scale active:scale-[0.96] hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
                   aria-label="Izvozi terenski pregled nagibov kot PDF"
                   title="Terenski pregled nagibov kot pravi PDF — VSI nagibi projekta (tudi označeni neveljavni)"
                 >

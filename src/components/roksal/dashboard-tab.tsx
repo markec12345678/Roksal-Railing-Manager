@@ -1625,7 +1625,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 rounded"
+              className="absolute right-3 top-1/2 -translate-y-1/2 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 rounded"
               aria-label="Počisti iskanje projektov"
             >
               <X className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" aria-hidden="true" />
@@ -1753,7 +1753,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); toast.info(`Arhiviranje: ${project.nazivProjekta}`) }}
-                      className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:text-roksal-ink hover:bg-roksal-navy/10 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 outline-none transition-colors"
+                      className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:text-roksal-ink hover:bg-roksal-navy/10 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 outline-none transition-colors"
                       aria-label="Arhiviraj projekt"
                     >
                       <Archive className="h-3.5 w-3.5" aria-hidden="true" />

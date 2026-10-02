@@ -223,7 +223,7 @@ export function RateLimitPanel() {
               }
             }}
             disabled={loading || napaka !== null || !data}
-            className="h-8 px-2 transition-colors hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+            className="h-8 px-2 transition-colors hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
             aria-label="Izvozi telemetrijo omejevanja hitrosti kot CSV"
             title="Prenesi trenutno telemetrijo (CSV, ločilo ;)"
           >

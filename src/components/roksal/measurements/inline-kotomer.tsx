@@ -182,7 +182,7 @@ export function InlineKotomer({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-secondary/60 transition-colors focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+            className="p-1.5 rounded-lg hover:bg-secondary/60 transition-colors focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
             aria-label={`Zapri ${modeTitle}`}
           >
             <X className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
