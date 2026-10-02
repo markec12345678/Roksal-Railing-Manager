@@ -1,5 +1,9 @@
 // Roksal Field - API: BOM Refine (V5)
 // Iz BOM draft (V4.1) → optimiziran nakup z najboljšimi cenami
+//
+// ZASTARELO (R376 — issue #13 korak R166): operira nad LEGACY read-modelom
+// Project.bomDraftJson, ki NI kanonični vir. KANONIČNI BOM je BOMVersion/
+// BOMLine (/api/bom*). Pusti se za starega UIja — izrecno OZNAČENA opuščena.
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { authenticate, unauthorized } from '@/lib/auth'

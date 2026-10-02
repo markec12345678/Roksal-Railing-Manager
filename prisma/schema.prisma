@@ -214,6 +214,7 @@ model Project {
   installationEvidence InstallationEvidence[] // R147 §28 — montažna dokazila projekta
   syncTombstones       SyncTombstone[] // R148 §36 — grobnice sync (SetNull preživijo brisanje projekta)
   quotes               Quote[] // R373 §3 — kanonične ponudbe projekta
+  bom                  BOM? // R376 §6 — kanonični BOM nosilec (EN na projekt, UNIQUE projectId)
 }
 
 // ============================================
@@ -294,6 +295,7 @@ model Inventory {
   prices        MaterialPrice[]
   orderItems    MaterialOrderItem[]
   lots          InventoryLot[]
+  bomLines      BOMLine[] // R376 §6 — kanonične BOM vrstice, vezane EXACT na sifraMateriala
 }
 
 // ============================================
@@ -786,6 +788,12 @@ model SignatureAudit {
   // klientovim quoteData) nimajo verzije in ostanejo nespremenjeni.
   quoteVersionId    String? // kanonična QuoteVersion, nad katero je bil podpis dan
   quoteInputHash    String? // inputHash verzije v trenutku podpisa (dokaz istosti)
+  // R376 (issue #13 korak R166, §7 BOM vezava): podpis je vezan tudi na
+  // kanonično BOMVersion, ustvarjeno ob zaklepu. Nullable — zapisi pred R376
+  // (R374 zaklepi še brez BOM entitete) ostanejo nespremenjeni (brez
+  // izmišljanja zgodovine). Mehka referenca (brez FK) — isti vzorec kot
+  // quoteVersionId: brisanje BOM verzije ne brše podpisne zgodovine.
+  bomVersionId      String?
   isValid           Boolean  @default(true)
   createdAt         DateTime @default(now())
 
@@ -795,6 +803,7 @@ model SignatureAudit {
   @@index([createdAt])
   @@index([storageKey])
   @@index([quoteVersionId])
+  @@index([bomVersionId])
 }
 
 // ============================================
@@ -818,6 +827,7 @@ model Supplier {
   materialPrices MaterialPrice[]
   orders         MaterialOrder[]
   lots           InventoryLot[]
+  bomLines       BOMLine[] // R376 §6 — BOM vrstice z vezavo na dobavitelja
 }
 
 // Cena materiala pri posameznem dobavitelju (zgodovina cen)
@@ -1401,6 +1411,7 @@ model PriceBookVersion {
 
   items  PriceBookItem[]
   quoteVersions QuoteVersion[] // R373 §3 — verzije, vezane na to verzijo cenika
+  bomVersions   BOMVersion[]  // R376 §6 — BOM verzije, vezane na to verzijo cenika
 
   @@index([status])
   @@index([createdAt])
@@ -1482,8 +1493,131 @@ model QuoteVersion {
   quote           Quote            @relation(fields: [quoteId], references: [id], onDelete: Cascade)
   priceBookVersion PriceBookVersion @relation(fields: [priceBookVersionId], references: [id])
 
+  sourceBomVersions BOMVersion[] @relation("BomSourceQuoteVersions") // R376 §6 — BOM verzije, izpeljane iz te verzije ponudbe
+
   @@unique([quoteId, versionNumber])
   @@index([quoteId])
   @@index([priceBookVersionId])
   @@index([status])
+}
+
+// ============================================
+// 25. R376 — KANONIČNI BOM (issue #13 korak R166, §5/§6/§11 + §7 vezava)
+// BOM/BOMVersion/BOMLine: strukturiran kosovnik nad NESPREMENLJIVIMI
+// verzijami; Project.bomDraftJson ostane SAMO kot legacy/read-model
+// (NIČ več kanonski vir — deal-lock ga še vedno piše za stari UI).
+// ============================================
+
+/// R376 (§6): nosilec BOM projekta — EN vrstica na projekt (projectId UNIQUE:
+/// življenjski cikel nosijo VERZIJE, drugi "nosilec" za isti projekt nima
+/// poslovnega pomena; DB zagotavlja enojnost brez delnega indeksa). Status
+/// nosilca: AKTIVEN (privzeto) | ZAPRT (rezervirano za zaključek projekta —
+/// v tej rundi ŠE BREZ prehoda, iskreno dokumentirano, ne izmišljeno).
+model BOM {
+  id        String   @id @default(cuid())
+  projectId String   @unique
+  status    String   @default("AKTIVEN")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project  Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  versions BOMVersion[]
+
+  @@index([status])
+}
+
+/// R376 (§6): NESPREMENLJIVA verzija BOM. Po APPROVED se NE spreminja
+/// (sprememba = nova verzija, ki prejšnjo postavi v SUPERSEDED; statusni
+/// stroj v src/lib/bom-versions.ts — EN VIR). Vsaka verzija hrani sled
+/// izvora: sourceQuoteVersionId (kanonična ponudba), priceBookVersionId
+/// (vezana knjiga — vir stroškovnih referenc), productSdkVersion (snapshot
+/// verzije izračuna, npr. 'quote-v1') in layoutFingerprint (= inputHash
+/// izvorne verzije ponudbe — geometrijska/izračunska sledljivost, §5).
+model BOMVersion {
+  id                   String    @id @default(cuid())
+  bomId                String
+  versionNumber        Int
+  /// DRAFT | APPROVED | SUPERSEDED (CHECK v migraciji; matrika v lib).
+  status               String
+  /// Kanonična QuoteVersion, iz katere je BOM izpeljan (§6 sled izvora).
+  sourceQuoteVersionId String
+  /// Vezana verzija cenika (PREPISAN iz izvorne QuoteVersion — isti vir stroškov).
+  priceBookVersionId   String
+  /// Snapshot verzije izračuna (QUOTE_FORMULA_VERSION — sol odtisa 'quote-v1').
+  productSdkVersion    String
+  /// Odtis geometrije/izračuna = sourceQuoteVersion.inputHash (§5 sledljivost).
+  layoutFingerprint    String
+  createdById          String?
+  approvedById          String?
+  createdAt            DateTime  @default(now())
+  approvedAt           DateTime?
+
+  bom               BOM              @relation(fields: [bomId], references: [id], onDelete: Cascade)
+  sourceQuoteVersion QuoteVersion     @relation("BomSourceQuoteVersions", fields: [sourceQuoteVersionId], references: [id], onDelete: Cascade)
+  priceBookVersion   PriceBookVersion @relation(fields: [priceBookVersionId], references: [id])
+  lines              BOMLine[]
+
+  @@unique([bomId, versionNumber])
+  @@index([bomId])
+  @@index([sourceQuoteVersionId])
+  @@index([priceBookVersionId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+/// R376 (§5): ENA vrstica na materialno postavko BOM verzije. internalSku =
+/// QuoteItem.code (strukturiran identifikator — NIKOLI tekstovna hevristika
+/// 'vsebuje wpc'); inventoryId se VEŽE SAMO prek EXACT ujemanja
+/// Inventory.sifraMateriala === internalSku (brez fuzzy, brez includes) —
+/// neujemana postavka ostane NEVEZANA (NULL + javni razlog v procurement
+/// pogledu, §11). Honest NULLs (§8): wasteFactor/grossQuantity/unitCost/
+/// totalCost so NULL, dokler vir resnice ne obstaja — NIKOLI izmišljeni
+/// odstotki/količine/cene.
+model BOMLine {
+  id             String   @id @default(cuid())
+  bomVersionId   String
+  /// Zaporedna številka vrstice znotraj verzije (determinizem — vrstni red).
+  lineOrder      Int
+  /// Ključ postavke ponudbe (QuoteItem.sourceKey ?? code) — direktna sled.
+  quoteLineKey   String?
+  /// Kanonični interni SKU = QuoteItem.code (EN VIR identitete postavke).
+  internalSku    String
+  /// Dobaviteljeva šifra — v bazi ŠE ni vira (iskreno NULL; §8).
+  supplierSku    String?
+  /// EXACT vezava na Inventory (sifraMateriala === internalSku) ali NULL.
+  inventoryId    String?
+  /// Kategorija BomGroup (GLASS/PROFILES/POSTS/INFILL/FIXINGS/LABOUR/OTHER — CHECK).
+  category       String
+  /// Zmrznjen opis: `${name} — ${detail}` izvirne postavke ponudbe.
+  descriptionSnapshot String
+  /// NETO količina = QuoteItem.qty (iz LayoutResult — NE ocena iz EUR; CHECK > 0).
+  quantity       Decimal  @db.Decimal(12, 3)
+  unit           String
+  /// Odpadek — NEZNAN brez vira (NULL; §8). Nikoli izmišljen odstotek.
+  wasteFactor    Decimal? @db.Decimal(6, 4)
+  /// Bruto količina — izpeljiva ŠELE, ko je wasteFactor znan (NULL; §8).
+  grossQuantity  Decimal? @db.Decimal(12, 3)
+  /// Nabavna referenca iz VEZANE knjige (PriceBookItem.referenceCost prek
+  /// sourceKey) — NULL = iskreno NEZNANO (§8, nikoli 0.6-hevistika).
+  unitCost       Decimal? @db.Decimal(12, 2)
+  /// unitCost × quantity, SAMO kadar je unitCost znan (sicer NULL).
+  totalCost      Decimal? @db.Decimal(12, 2)
+  /// Dobavitelj iz EXACT inventarne vezave (zadnja MaterialPrice) ali NULL.
+  supplierId     String?
+  /// Besedilni snapshot sledi: quoteLineKey + layoutFingerprint reference.
+  geometrySource String?
+  /// Verzija izračunskega pravila (QUOTE_FORMULA_VERSION — 'quote-v1').
+  calculationRuleVersion String
+  /// AKTIVEN (privzeto) | PREKINJAN (rezervirano za change-order — v tej rundi
+  /// ŠE BREZ prehoda, iskreno; CHECK v migraciji).
+  status         String
+
+  bomVersion BOMVersion @relation(fields: [bomVersionId], references: [id], onDelete: Cascade)
+  inventory  Inventory? @relation(fields: [inventoryId], references: [id], onDelete: SetNull)
+  supplier   Supplier?  @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+
+  @@index([bomVersionId])
+  @@index([inventoryId])
+  @@index([supplierId])
+  @@index([internalSku])
 }

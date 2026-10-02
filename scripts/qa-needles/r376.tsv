@@ -1,0 +1,33 @@
+# qa-needles/r376.tsv — REGISTER needlejev runde R376 (issue #13, korak
+# R166 iz §5/§6/§11 + §7 BOM vezava — KANONIČNI BOM: BOM/BOMVersion/BOMLine
+# + EXACT inventarna vezava (sifraMateriala === QuoteItem.code, BREZ fuzzy)
+# + honest NULL stroški (§8) + procurement agregacija (§11) + deal-lock
+# TRANSAKCIJSKO ustvari APPROVED BOMVersion + SignatureAudit.bomVersionId).
+# ============================================================================
+# FORMAT (TSV; EN vrstica = EN needle; TAB je LOČILO — presledki znotraj
+# needleja so POMENNI, ker grep -F išče dobesedno) — ENAK format kot
+# r340.tsv…r375.tsv (kanon R340 qa-round.sh: needleji so PODATEK;
+# r375.tsv = vzporedna QA runda val 57 — KOLIZIJA #18, moja runda R375→R376):
+#   <needle_string><TAB><opis><TAB><vrsta>
+# Vrste: need_static (MORA biti ŽIV v svežem buildu) | must_miss (NESME
+# biti v produkcijskih čankih).
+# Fetch-first preverba (kanon R366–R375): VSAK need_static je ×0 v
+# trenutnem HEAD pred commitom (git grep -F GLASNO) — needleji spodaj
+# so vsi ×0 potrjeni nad HEAD f2242729 (R375 QA — po KOLIZIJI #18 resetu;
+# predhodna potrditev ×0 še nad 8db6a1c v pred-rename seji).
+# Izpuščeni kandidati (iskreno): 'Verzija ponudbe ne pripada temu projektu
+# (prečni dostop zavrnjen)' (×1 v HEAD — niz R374 deal-locka, moja ruta
+# bom/route.ts ga DELI — ne diskriminira moje površine), 'bomVersionId'
+# (splošen identifikator — 10+ pojavitev po datotekah, ne needle),
+# 'quote-v1' (podedovana konstanta quote-repro — ×5 v HEAD), 'NEVEZANO'
+# sama (prekratek niz — pojavi se v več kontekstih); kanon 4 needleje/rundo.
+# Pokritost virov: bom-store fail-closed (1: prazna verzija ponudbe → 409),
+# PATCH approve rute (1: statusna vrata DRAFT→APPROVED), immutabilnostni
+# guard (1: zaklenjen projekt — BOM nespremenljiv §7), §11 procurement
+# NEVEZANO razlog (1: NULL ne ničle). Server-side stringi živijo v
+# .next/server čankih (grep -rF nad celotnim .next kanon R340).
+Verzija ponudbe nima postavk — BOM brez vrstic je pokvarjen vhod.	R376 bom-store fail-closed: prazna verzija ponudbe → 409 (x1 pojavitev; 0 v HEAD)	need_static
+Odobritev BOM verzije je mogoča samo nad osnutkom (DRAFT)	R376 PATCH /api/bom/[id] statusna vrata approve DRAFT→APPROVED (x1 pojavitev; 0 v HEAD)	need_static
+Zaklenjen projekt — BOM je nespremenljiv	R376 BOM immutabilnostni guard po zaklepu (bom + bom/[id] rute; 0 v HEAD)	need_static
+NEZNANE, ne nič	R376 §11 procurement NEVEZANO razlog — dejanske količine NULL nikoli ničle (x1 pojavitev; 0 v HEAD)	need_static
+TODO-R376	must_miss: razvojni ostanki (nesme biti v produkcijskih cankih)	must_miss

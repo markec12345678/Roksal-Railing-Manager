@@ -45,11 +45,11 @@ const stHandlerjev = (src: string): number =>
   (src.match(/export async function (?:POST|PATCH|DELETE|PUT)\(/g) ?? []).length
 const stGuardov = (src: string): number => (src.match(/const zavrnjeno = zapisOmejitev\(request, /g) ?? []).length
 
-describe('R191 — val 2 žičenje (46 datotek / 61 handlerjev od R195, ENAK vzorec kot val 1; PIN SHIFT R374: 43/58→46/61 — +price-book POST, +quotes POST, +quotes/[id] PATCH)', () => {
-  it('val 2 dejansko pokriva pričakovano množico (46 datotek, 61 handlerjev)', () => {
-    expect(val2.length).toBe(46)
+describe('R191 — val 2 žičenje (48 datotek / 63 handlerjev od R195, ENAK vzorec kot val 1; PIN SHIFT R374: 43/58→46/61 — +price-book POST, +quotes POST, +quotes/[id] PATCH; PIN SHIFT R376: 46/61→48/63 — +bom POST, +bom/[id] PATCH [kanonični BOM #13 R166])', () => {
+  it('val 2 dejansko pokriva pričakovano množico (48 datotek, 63 handlerjev)', () => {
+    expect(val2.length).toBe(48)
     const handlerji = val2.reduce((n, p) => n + stHandlerjev(srcOf(p)), 0)
-    expect(handlerji).toBe(61)
+    expect(handlerji).toBe(63)
     // vsaka val-2 datoteka: št. guardov == št. handlerjev
     for (const p of val2) {
       const src = srcOf(p)
@@ -107,8 +107,8 @@ describe('R191 — INVENTARNI STRAŽAR: 100 % mutirajočih rut omejenih (trajno)
     expect(brez).toEqual([])
   })
 
-  it('množice se štejejo konsistentno (55 z zapisOmejitev = val1 9 + val2 46; preostanek z checkRate; PIN SHIFT R374: 52→55)', () => {
-    expect(zZapisOmejitev.length).toBe(55)
+  it('množice se štejejo konsistentno (57 z zapisOmejitev = val1 9 + val2 48; preostanek z checkRate; PIN SHIFT R374: 52→55; PIN SHIFT R376: 55→57 — +bom, +bom/[id] [kanonični BOM #13 R166])', () => {
+    expect(zZapisOmejitev.length).toBe(57)
     const zCheckRate = vseMutirajoce.filter((p) => srcOf(p).includes('checkRate('))
     expect(zZapisOmejitev.length + zCheckRate.length).toBe(vseMutirajoce.length)
     expect(zCheckRate.length).toBe(10)
@@ -129,6 +129,6 @@ describe('R191 — VARNOST.md: postavka "Omejevanje hitrosti na drugih rutah" ZA
     expect(odsekNi).not.toContain('Omejevanje hitrosti')
     // zaključna sekcija obstaja in nosi val 1+2 pokritje:
     expect(src).toContain('## Omejevanje hitrosti na pisanju — ZAPRTO (R190/R191 — val 1+2)')
-    expect(src).toContain('55 datotek / 71 handlerjev') // PIN SHIFT R374 (issue #13 R165: +price-book POST, +quotes POST, +quotes/[id] PATCH)
+    expect(src).toContain('57 datotek / 73 handlerjev') // PIN SHIFT R376 (issue #13 R166: +bom POST, +bom/[id] PATCH — kanonični BOM); prejšnji R374 PIN: 55/71 (+price-book POST, +quotes POST, +quotes/[id] PATCH)
   })
 })

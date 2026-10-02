@@ -1,6 +1,12 @@
 // Roksal Field - API: BOM Draft (V4.1)
 // GET /api/bom-draft?projectId=X — pridobi BOM draft za projekt
 // PATCH /api/bom-draft — posodobi BOM draft (dodaj/odstrani artikle)
+//
+// ZASTARELO (R376 — issue #13 korak R166): ta ruta operira nad LEGACY
+// read-modelom Project.bomDraftJson, ki NI kanonični vir. KANONIČNI BOM je
+// BOMVersion/BOMLine (GET /api/bom, GET /api/bom/[id], POST /api/bom,
+// PATCH /api/bom/[id], GET /api/bom/procurement). Pusti se za starega UIja —
+// izrecno OZNAČENA opuščena, ne tiho mrtva.
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { authenticate, unauthorized } from '@/lib/auth'

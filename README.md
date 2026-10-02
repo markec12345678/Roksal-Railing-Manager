@@ -103,7 +103,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 45 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **5299** (341 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **5357** (345 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 143 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -1743,6 +1743,42 @@ Sheet z 6 podzavihki:
   površina, izjema #2 iz val 52] — vedno z fetch-first + TSV kanonom + stale-pin
   PRED-skanom + ŠTEVEC guard skenom (LEKCIJA (7)). ISSUE #1: vsa sprejemna merila ✓;
   ostaja odprt, owner 'Razvoj > QA' [AGENT STARTUP RULE: razvoj > QA].
+- **Issue #13, korak R166 — KANONIČNI BOM: BOM/BOMVersion/BOMLine + EXACT inventarna vezava + procurement agregacija (§5/§6/§11 + §7 vezava)** (R376 —
+  KOLIZIJA #18 [kanon KOLIZIJE #4/R323/#13–#17]: vzporedna lastniška QA R375 [f2242729 — val 57 ring↔border + era-clone.py]
+  pristala MED mojim delom in vzela številko → moja runda preimenovana R375→R376; reset --hard origin/main, delta
+  re-aplicirana s preimenovanjem artefaktov [r376.tsv + r376-*.test.ts + migracija 20261004080000_r376_bom_versions];
+  njihovi r375-* artefakti ostanejo = delegirana zgodovina; jedro iz prejšnje prekinjene seje ostalo v delovnem drevesu
+  in je bilo KVALITETNO — dokončano, preimenovano in preverjeno v tej rundi): (1) **BOM** — nosilec projekta
+  [projectId UNIQUE = EN nosilec na projekt; status AKTIVEN (ZAPRT rezerviran, še brez prehoda — iskreno dokumentirano)];
+  (2) **BOMVersion** — NESPREMENLJIVA verzija [statusni stroj DRAFT→APPROVED + SUPERSEDED v src/lib/bom-versions.ts EN VIR;
+  APPROVED/SUPERSEDED terminalni — sprememba = nova verzija/change order (nikoli tiha mutacija, §6); @@unique([bomId,
+  versionNumber]); SLED IZVORA: sourceQuoteVersionId + priceBookVersionId + productSdkVersion ('quote-v1') + layoutFingerprint
+  (= inputHash izvorne verzije ponudbe — geometrijska sledljivost §5) + createdById/approvedById/approvedAt]; (3) **BOMLine** —
+  ENA vrstica na materialno postavko [internalSku = QuoteItem.code (strukturna identiteta — NE tekstovna hevristika);
+  inventoryId SAMO prek EXACT Inventory.sifraMateriala === code (BREZ fuzzy/includes/normalizacije — neujemana postavka
+  ostane NEVEZANA z javnim razlogom); category = BomGroup (CHECK); descriptionSnapshot = 'name — detail' (zmrznjen);
+  quantity = qty iz LayoutResult (NIKOLI ocena iz EUR); HONEST NULLs (§8): wasteFactor/grossQuantity/unitCost/totalCost NULL
+  dokler vir ne obstaja — nikoli izmišljeni odstotki/cene; quoteLineKey = sourceKey ?? code + geometrySource snapshot;
+  calculationRuleVersion = 'quote-v1']; (4) **deal-lock (§7 vezava)** — ob zaklepu strežnik TRANSAKCIJSKO ustvari APPROVED
+  BOMVersion iz strukturiranih postavk + veže OBEMA podpisa nanjo (SignatureAudit.bomVersionId, nullable za zapise pred R376
+  — brez izmišljanja zgodovine); Project.bomDraftJson se še vedno piše (LEGACY read-model, NI kanoničen); GET/POST
+  deal-lock vračata minimalni bomVersion DTO (id/številka/status/št. vrstic); po zaklepu je BOM NESPREMENLJIV
+  (POST/PATCH → 403 monter/409 vodja); (5) **API rute** — GET /api/bom (seznam verzij; read RBAC) + POST /api/bom
+  (DRAFT iz {projectId, quoteVersionId} — vrata: quotes.create + update dostop + prečni projekt 409 + REJECTED/SUPERSEDED
+  409 + integriteta §16 PRED izpeljavo + zaklenjen 409) + GET /api/bom/[id] (detajl + NEVEZANO razlogi) + PATCH /api/bom/[id]
+  (SAMO approve DRAFT→APPROVED + audit) + GET /api/bom/procurement (§11: planned/reserved/ordered/received/issued/consumed/
+  returned/wasted/variance PO VRSTICI zadnje APPROVED verzije; preslikava DOKUMENTIRANA v odgovoru [viri + nePreslikano tipi
+  DAMAGE/ADJUSTMENT/OPENING/PURCHASE/PROJECT_ALLOCATION]; NEVEZANA vrstica → VSE dejanske količine NULL + razlog 'NEZNANE,
+  ne nič' — NIKOLI ničle); legacy /api/bom-draft + /api/bom-refine izrecno označeni ZASTARELO (pripisi v glavah);
+  bomDraftFromLines označen NEKANONIČEN (comment v quote-versions.ts); (6) **migracija 20261004080000_r376_bom_versions**
+  [3 tabele + SignatureAudit.bomVersionId + index ×8; CHECK ×8 vse VALIDATED (status ×3 + category + quantity > 0 +
+  stroški ≥ 0 + waste ≥ 0 + gross > 0); brez seeda — prazno je iskreno]. PIN SHIFT-i: r308 85→88 route datotek (+bom, +bom/[id], +bom/procurement) + r191 val2 46/61→48/63 handlerjev (skupaj 55/71→57/73 — tudi VARNOST.md pokritje) — legitimna rast obsega novih rut, dokumentirana v testih. Verifikacija: tsc 0 · eslint 0 ·
+  vitest 5357/5357 (345 datotek = R375 QA baza 5299/341 + mojih +58/+4: r376-bom-versions ×14 + r376-canonical-bom ×17 +
+  r376-bom-procurement ×17 + r376-bom-deal-lock ×10 — statusni stroj/determinizem/fail-closed generacija/EXACT vezava/
+  honest NULL/vrata rut/§11 matematika/NEVEZANO NULL/idempotentna branja/zaklep §17 veriga/dvojni zaklep/immutabilnost po
+  zaklepu] · build svež EXIT=0 · qa-needles/r376.tsv [4 need_static ŽIVO v buildu + TODO-R376 must_miss čisto 0;
+  fetch-first ×0 v HEAD f2242729 (R375 QA) potrjeno — po KOLIZIJI #18 re-verify]. Naslednji korak #13: R167 (§9 as-installed / §10 produkcija — po vrstnem redu
+  issue naloge).
 - **Issue #13, korak R165 — KANONIČNA POSLOVNA RESNICA PONUDB: QuoteVersion + PriceBookVersion + kanonični deal-lock** (R374 —
   KOLIZIJA #16 [LEKCIJA 1 16. potrditev]: vzporedna lastniška R373 [a26107d — QA/STIL val 56 runda] pristala MED mojim delom in vzela
   številko → moja runda preimenovana R373→R374 po kanonu KOLIZIJE #4/R323/#13–#15; `git reset --hard origin/main`, delta re-aplicirana

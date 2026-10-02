@@ -6,6 +6,13 @@
 // do R372 je lahko klient pošiljal poljuben denar, ki je določal BOM draft,
 // marginLocked, estimatedPrice in podpisano vsebino.
 //
+// R376 (issue #13, korak R166, §7 BOM vezava): ob zaklepu strežnik
+// TRANSAKCIJSKO ustvari tudi KANONIČNO BOMVersion (status APPROVED) iz
+// strukturiranih postavk verzije (bomVersionFromQuoteVersion — EXACT inventarne
+// vezave, honest NULL stroški §8) in veže OBEMA podpisa nanjo
+// (SignatureAudit.bomVersionId). Project.bomDraftJson se ŠE VEDNO piše —
+// LEGACY read-model za stari BOM UI, NI KANONIČEN (komentar na mestu zapisa).
+//
 // POST /api/deal-lock { projectId, quoteVersionId, customerName, monterName,
 //                        customerSignature, monterSignature, geoLatitude?,
 //                        geoLongitude?, pdfHash? } — strežnik:
@@ -14,19 +21,23 @@
 //   3. status ISSUED ali APPROVED (DRAFT → 409 — nezaključena ponudba se ne
 //      podpisuje; ISSUED→APPROVED se zgodi SAMO tu, ob uspešnem podpisu);
 //   4. verifyQuoteVersionIntegrity nad VEZANE knjige — tampiranje → 409 (§16);
-//   5. BOM draft iz STRUKTURIRANIH postavk verzije (sku = code, qty = qty);
+//   5. KANONIČNI BOM iz STRUKTURIRANIH postavk verzije (R376 §6/§7) + legacy
+//      bomDraftJson (sku = code, qty = qty — brez hevristike);
 //   6. marginLocked = NAČRTOVANA marža iz referenceCost VEZANE knjige —
 //      manjka katerikoli → NULL (iskreno NEZNANO; lažni ×0.6/×0.15 IZBRISANI);
 //   7. estimatedPrice = total VEZANE verzije (ne klientov, ne ničel);
-//   8. ATOMSKO (ena transakcija): zaklep projekta + SignatureAudit ×2 z
-//      quoteVersionId + quoteInputHash (§16 veriga) + verzija → APPROVED +
-//      AuditLog; podpisi v object storage (R122 vzorec: bajti PRE transakcije,
-//      kompenzacija ob padcu — 0 sirot) + R149 validacija vsebine.
+//   8. ATOMSKO (ena transakcija): zaklep projekta + KANONIČNA BOMVersion
+//      (APPROVED + supersede prejšnjih DRAFT) + SignatureAudit ×2 z
+//      quoteVersionId + quoteInputHash + bomVersionId (§16/§7 veriga) +
+//      verzija → APPROVED + AuditLog; podpisi v object storage (R122 vzorec:
+//      bajti PRE transakcije, kompenzacija ob padcu — 0 sirot) + R149
+//      validacija vsebine.
 //
 // GET ?projectId= (§17 IDOR fix): dostop 'read' do projekta (do R372 se je
 //   preverila SAMO prijava) + MINIMALNI DTO — BREZ storageKey/ip/userAgent/
 //   deviceFingerprint/geo v odgovoru (allowlist: tip, ime, vloga, veljavnost,
-//   verzija, čas). Surovi SignatureAudit NI vračan.
+//   verzija, BOM verzija id/številka/status/št. vrstic, čas). Surovi
+//   SignatureAudit NI vračan.
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import crypto from 'crypto'
@@ -47,6 +58,8 @@ import { preberiJsonTelo } from '@/lib/api-telo'
 import { getPriceBookVersionById } from '@/lib/price-book-store'
 import type { QuoteItem } from '@/lib/quote'
 import { bomDraftFromLines, plannedMargin, verifyQuoteVersionIntegrity } from '@/lib/quote-versions'
+import { bomVersionFromQuoteVersion } from '@/lib/bom-versions'
+import { naloziInventarneVezave, ustvariBomVerzijoVTx, BomStoreError } from '@/lib/bom-store'
 
 interface DealLockRequest {
   projectId: string
@@ -178,6 +191,18 @@ export async function POST(request: Request) {
     // ── Strežniška resnica iz verzije (§7/§8) ─────────────────────────────
     const lines = version.linesJson as unknown as QuoteItem[]
     const bomDraft = bomDraftFromLines(lines, project.nazivProjekta, version.total.toNumber(), new Date().toISOString())
+    // R376 §6: KANONIČNI BOM — vrstice iz strukturiranih postavk + EXACT
+    // inventarne vezave (sifraMateriala === code, brez fuzzy) + honest NULL
+    // stroški (§8). Izračun PRE transakcije (baza se ne dotika); zapis pa
+    // ATOMSKO znotraj nje spodaj.
+    const inventoryBindings = await naloziInventarneVezave(lines)
+    const computedBom = bomVersionFromQuoteVersion(
+      { linesJson: version.linesJson, inputHash: version.inputHash },
+      bound.items,
+      inventoryBindings,
+      new Date().toISOString(),
+    )
+    // LEGACY read-model (NI kanoničen od R376 — kanonični vir je BOMVersion):
     const bomJson = JSON.stringify(bomDraft)
 
     // NAČRTOVANA marža iz VEZANE knjige (referenceCost); manjka katerikoli →
@@ -250,7 +275,9 @@ export async function POST(request: Request) {
     // Artefakti se zapišejo PRE transakcije; ključi ostanejo lokalni — ob
     // padcu transakcije spodaj jih kompenzacija zbriše (0 sirot).
     const uploadedSignatureKeys: string[] = []
-    let updatedProject: Awaited<ReturnType<typeof db.project.update>>
+    // R376: transakcija vrne { project, bomVerzija } — zaklep IN kanonična
+    // BOM verzija sta ENA atomarna enota (§7).
+    let transactionResult: { project: Awaited<ReturnType<typeof db.project.update>>; bomVerzija: Awaited<ReturnType<typeof ustvariBomVerzijoVTx>> }
     try {
       await putObject(customerKey, customerParsed.bytes, customerParsed.mime)
       uploadedSignatureKeys.push(customerKey)
@@ -263,7 +290,7 @@ export async function POST(request: Request) {
       // userId = prijavljeni uporabnik (FK na Profile); servisni ključ → null.
       const actorId = auth.kind === 'user' ? auth.session.sub : null
 
-      updatedProject = await db.$transaction(async (tx) => {
+      transactionResult = await db.$transaction(async (tx) => {
         const updated = await tx.project.update({
           where: { id: projectId },
           data: {
@@ -281,8 +308,22 @@ export async function POST(request: Request) {
           },
         })
 
-        // §16 veriga: SignatureAudit nosi quoteVersionId + quoteInputHash —
-        // podpis je vezan na TOČNO to (nespremenljivo) verzijo ponudbe.
+        // R376 §7: KANONIČNA BOM verzija (APPROVED) ATOMSKO z zaklepom —
+        // supersede prejšnjih DRAFT verzij naredi EN VIR (bom-store). Podpisa
+        // se nanjo vežeta prek SignatureAudit.bomVersionId spodaj (§16/§7).
+        const bomVerzija = await ustvariBomVerzijoVTx(tx, {
+          projectId,
+          sourceQuoteVersionId: version.id,
+          priceBookVersionId: version.priceBookVersionId,
+          status: 'APPROVED',
+          computed: computedBom,
+          actorId,
+          now: new Date(),
+        })
+
+        // §16/§7 veriga: SignatureAudit nosi quoteVersionId + quoteInputHash +
+        // bomVersionId — podpis je vezan na TOČNO to (nespremenljivo) verzijo
+        // ponudbe IN kanonično BOM verzijo, ustvarjeno ob zaklepu.
         await tx.signatureAudit.createMany({
           data: [
             {
@@ -290,6 +331,7 @@ export async function POST(request: Request) {
               projectId,
               quoteVersionId,
               quoteInputHash: version.inputHash,
+              bomVersionId: bomVerzija.versionId,
               signatureType: 'CUSTOMER',
               signedByName: customerName,
               signedByRole: 'stranka',
@@ -310,6 +352,7 @@ export async function POST(request: Request) {
               projectId,
               quoteVersionId,
               quoteInputHash: version.inputHash,
+              bomVersionId: bomVerzija.versionId,
               signatureType: 'MONTER',
               signedByName: monterName,
               signedByRole: 'monter',
@@ -345,6 +388,9 @@ export async function POST(request: Request) {
           newValue: {
             quoteVersionId,
             quoteInputHash: version.inputHash,
+            bomVersionId: bomVerzija.versionId,
+            bomVersionNumber: bomVerzija.versionNumber,
+            bomLineCount: bomVerzija.lineCount,
             customerName,
             monterName,
             total: estimatedPrice,
@@ -354,7 +400,7 @@ export async function POST(request: Request) {
           },
         })
 
-        return updated
+        return { project: updated, bomVerzija }
       })
     } catch (txError) {
       // R122 kompenzacija: transakcija DB padla → zbriši že zapisane
@@ -364,6 +410,9 @@ export async function POST(request: Request) {
       }
       throw txError
     }
+
+    const updatedProject = transactionResult.project
+    const bomVerzija = transactionResult.bomVerzija
 
     const signatureAuditCount = 2
 
@@ -375,6 +424,14 @@ export async function POST(request: Request) {
       status: 'ZA_MONTAZO',
       quoteVersionId,
       quoteInputHash: version.inputHash,
+      // R376 §7: KANONIČNA BOM verzija, ustvarjena ob zaklepu (minimalni DTO —
+      // vrstice so na GET /api/bom/[id], agregati na /api/bom/procurement).
+      bomVersion: {
+        id: bomVerzija.versionId,
+        versionNumber: bomVerzija.versionNumber,
+        status: bomVerzija.status,
+        lineCount: bomVerzija.lineCount,
+      },
       bomDraft,
       // NULL = načrtovana marža NEZNANA (manjka referenceCost v vezani knjigi).
       marginLocked,
@@ -385,6 +442,9 @@ export async function POST(request: Request) {
   } catch (error) {
     if (error instanceof AccessDeniedError) {
       return NextResponse.json({ error: error.message }, { status: error.status })
+    }
+    if (error instanceof BomStoreError) {
+      return NextResponse.json({ error: error.message }, { status: error.suggestedStatus })
     }
     console.error('Deal Lock Error:', error)
     return NextResponse.json({ error: 'Napaka pri zaklepu deal-a' }, { status: 500 })
@@ -440,9 +500,19 @@ export async function GET(request: Request) {
         isValid: true,
         quoteVersionId: true,
         quoteInputHash: true,
+        bomVersionId: true,
         pdfHash: true,
         createdAt: true,
       },
+    })
+
+    // R376 §7: KANONIČNA BOM verzija projekta (najnovejša po številki) —
+    // minimalni DTO (id/številka/status/št. vrstic); vrstice so na
+    // GET /api/bom/[id], procurement agregati na GET /api/bom/procurement.
+    const bomVersionRow = await db.bOMVersion.findFirst({
+      where: { bom: { projectId } },
+      orderBy: { versionNumber: 'desc' },
+      select: { id: true, versionNumber: true, status: true, _count: { select: { lines: true } } },
     })
 
     return NextResponse.json({
@@ -455,6 +525,15 @@ export async function GET(request: Request) {
       marginLocked: project.marginLocked,
       estimatedPrice: project.estimatedPrice,
       bomDraft: project.bomDraftJson ? JSON.parse(project.bomDraftJson) : null,
+      // R376 §7: kanonična BOM verzija (null = projekt še brez zaklepa/BOM).
+      bomVersion: bomVersionRow
+        ? {
+            id: bomVersionRow.id,
+            versionNumber: bomVersionRow.versionNumber,
+            status: bomVersionRow.status,
+            lineCount: bomVersionRow._count.lines,
+          }
+        : null,
       signatures,
     })
   } catch (error) {

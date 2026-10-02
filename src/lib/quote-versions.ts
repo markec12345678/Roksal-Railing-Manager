@@ -285,6 +285,11 @@ export interface BomDraft {
  * (sku = code, količina = qty). Do R372 je ruta iz klientovega opisa ugibala
  * kategorijo ('vsebuje wpc' → WPC letve) in ocenjevala vijake iz zneska
  * (Math.ceil(skupaj/50)) — oboje izbrisano: vir je sedaj strežniška verzija.
+ *
+ * R376 (issue #13 korak R166): ta funkcija je NEKANONIČNA — pusti se SAMO za
+ * legacy/read-model (Project.bomDraftJson, stari BOM UI). KANONIČNI vir
+ * resnice je BOMVersion/BOMLine (src/lib/bom-versions.ts +
+ * bomVersionFromQuoteVersion) — nova koda MORA iti tja.
  */
 export function bomDraftFromLines(
   lines: QuoteItem[],
