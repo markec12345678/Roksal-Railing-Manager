@@ -79,7 +79,10 @@ describe('R379 stil val 59 — red/40 offset-2 pariteta (14 × INS, val 43 RED_K
 
   it('(D) era-diskriminatorji val 59: top-bar CMP par ×2 z O2 (prej brez) + sessions-dialog par ×2 + dashboard KIT izjema #1 RESOLVANA', () => {
     const TB = R('roksal/top-bar.tsx')
-    expect(pod(TB, 'gap-2 focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2')).toBe(2)
+    // [PIN SHIFT R381 val 60 / EVOLVED: val 60 INS ' transition-colors' PRED
+    // ring-2 na ISTI vrstici (kanon val 58) — pin evoluiral na nov niz;
+    // O2 sosledje red/40+' '+O2 ostaja neovirano (INS je PRED ring-2).]
+    expect(pod(TB, 'gap-2 transition-colors focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2')).toBe(2)
     const SD = R('roksal/sessions-dialog.tsx')
     expect(pod(SD, 'press-scale focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2')).toBe(2)
     const DB = R('roksal/dashboard-tab.tsx')

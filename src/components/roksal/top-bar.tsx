@@ -236,21 +236,21 @@ export function TopBar({ onSync, syncing, onOpenPalette, hidden = false }: TopBa
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={() => setPwdOpen(true)}
-                className="gap-2 focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                className="gap-2 transition-colors focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
               >
                 <KeyRound className="h-4 w-4 text-roksal-ink/70" aria-hidden="true" />
                 Zamenjaj geslo
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => setSessionsOpen(true)}
-                className="gap-2 focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                className="gap-2 transition-colors focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
               >
                 <MonitorSmartphone className="h-4 w-4 text-roksal-ink/70" aria-hidden="true" />
                 Aktivne seje
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => setVlogaOpen(true)}
-                className="gap-2 focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                className="gap-2 transition-colors focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
               >
                 <ShieldCheck className="h-4 w-4 text-roksal-ink/70" aria-hidden="true" />
                 Moja vloga in dovoljenja
@@ -258,14 +258,14 @@ export function TopBar({ onSync, syncing, onOpenPalette, hidden = false }: TopBa
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={() => void handleLogout(false)}
-                className="gap-2 focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2"
+                className="gap-2 transition-colors focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2"
               >
                 <LogOut className="h-4 w-4 text-roksal-ink/70" aria-hidden="true" />
                 Ta naprava
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => void handleLogout(true)}
-                className="gap-2 focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2"
+                className="gap-2 transition-colors focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2"
               >
                 <LogOut className="h-4 w-4 text-roksal-ink/70" aria-hidden="true" />
                 Vse naprave (tudi ta)

@@ -92,7 +92,11 @@ describe('R372 stil val 55 — red/40 RAW pariteta (2 SUB O1→O2 + 6 INS offset
     // L1914 (izjema #1) zdaj nosijo offset-2; asercije ostanejo zelene, ker
     // so podnizi, ki se končajo na red/40, neovirani (INS je ZA njimi).]
     const TB = R('src/components/roksal/top-bar.tsx')
-    expect(pod(TB, 'gap-2 focus-visible:ring-2 focus-visible:ring-roksal-red/40')).toBe(2)
+    // [PIN SHIFT R381 val 60 / EVOLVED: val 60 INS ' transition-colors' PRED
+    // ring-2 na ISTI vrstici (kanon val 58) — pin evoluiral na nov niz; stara
+    // oblika ×0 (meni-notranja pariteta v OBEH smerih).]
+    expect(pod(TB, 'gap-2 transition-colors focus-visible:ring-2 focus-visible:ring-roksal-red/40')).toBe(2)
+    expect(pod(TB, 'gap-2 focus-visible:ring-2 focus-visible:ring-roksal-red/40')).toBe(0)
     expect(TB).toContain('<DropdownMenuItem')
     // KIT ostanki: shadcn Button + brand override (izjema #1) — red/40 BREZ offseta
     const DB = R('src/components/roksal/dashboard-tab.tsx')

@@ -4017,7 +4017,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                           <button
                             type="button"
                             onClick={() => handleLoadStairTemplate(t)}
-                            className="flex-1 text-left min-w-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 rounded"
+                            className="flex-1 text-left min-w-0 focus-visible:outline-none transition-colors focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 rounded"
                             aria-label={`Naloži stopnično predlogo: ${t.naziv}`}
                             title="Naloži stopnično predlogo v vnosni obrazec"
                           >
