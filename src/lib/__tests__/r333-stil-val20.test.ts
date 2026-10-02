@@ -8,7 +8,8 @@
 // polzaporedje ne sme nazaj) IN doda na NOVI površini (material-intelligence
 // izvozna cona, podzavihek Cenik):
 //  • izvozna PAR = PDF (R264) + NOVI CSV (R333) z ISTIM žetonom (press-scale
-//    + navy/40 ring + h-6 gap-1 text-2xs + ring-offset-1 — pariteta bajtno,
+//    + navy/40 ring + h-6 gap-1 text-2xs + ring-offset-2 (val 49 normalizacija
+//    R366; izvorno offset-1) — pariteta bajtno,
 //    nič drugega občutka znotraj istega para; TA površina nosi h-6 žeton —
 //    val 19 CRM par je h-7 — vsaka površina svoja družinska žetona);
 //  • oči para: FileText (PDF) + FileSpreadsheet (CSV) — ISTA h-3 w-3
@@ -58,7 +59,9 @@ const VRSTICA_ZETON = 'transition-colors hover:border-roksal-amber/40'
 const RING_NAVY = 'focus-visible:ring-2 focus-visible:ring-roksal-navy/40'
 // val 20 PAR žeton = material-intelligence površinska družina (h-6 — ISTI
 // kot cenik/primerjalni pilli na ISTI coni; CRM par val 19 je h-7 družina).
-const PAR_ZETON_MATERIAL = 'h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1'
+// val 49 (R366): ring-offset-1→2 normalizacija (precedens val 44/47) — žeton
+// bajtno isti razen offseta; pariteta 26/26 navy/40 offset-2.
+const PAR_ZETON_MATERIAL = 'h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2'
 
 /** Vrni okno N vrstic okoli prve vrstice, ki vsebuje marker (vzorec R324–R332). */
 function oknoOkoli(vir: string, marker: string, okno = 10): string {
@@ -69,7 +72,7 @@ function oknoOkoli(vir: string, marker: string, okno = 10): string {
 }
 
 describe('r333 STIL val 20 — Pozicija CSV PAR pariteta na Material izvozni coni', () => {
-  it('izvozna PAR = PDF + CSV z ISTIM žetonom (press-scale + navy/40 + h-6 + ring-offset-1) — bratska simetrija bajtno', () => {
+  it('izvozna PAR = PDF + CSV z ISTIM žetonom (press-scale + navy/40 + h-6 + ring-offset-2 po val 49) — bratska simetrija bajtno', () => {
     const pdfGumb = oknoOkoli(src, 'aria-label="Izvozi pozicijo dobaviteljev kot PDF"', 9)
     const csvGumb = oknoOkoli(src, 'aria-label="Izvozi pozicijo dobaviteljev kot CSV"', 9)
     expect(pdfGumb).toContain(PAR_ZETON_MATERIAL)

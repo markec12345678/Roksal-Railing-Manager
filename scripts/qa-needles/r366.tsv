@@ -1,0 +1,33 @@
+# qa-needles/r366.tsv — REGISTER needlejev runde R366 (STIL val 49:
+# ring PARITETA material-intelligence-tab družine — NAJVEČJI preostali
+# enobarvni gap po val 48; mehansko čista družina: 26 × navy/40, VSE
+# focus-visible, 0 non-focus).
+# Disk resnica PRED rundom (LEKCIJA R364 (4) — štej iz diska, ne iz
+# handoverja; handover je domneval "offset-1 ×2", disk je pokazal 24):
+# 24 × ring-offset-1 + 2 × brez offseta (L1949 Nov dobavitelj CTA +
+# L2198 Shrani dobavitelja). val 49: 24 × ring-offset-1→2 normalizacija
+# (precedens val 44 opomnik PDF / val 47 status cikel chip) + 2 ×
+# focus-visible:ring-offset-2 dodan → 26/26 navy/40 nosi offset-2
+# (razcep števca = 0). In-place = 0 novih vrstic 2366→2366 (prst
+# varovalka združljiva); 0 novih hex (števec 0 pred in po); aria/title
+# ZAMRZNJENI (ring-only runda — val 44/46/47/48 precedens).
+# Per-barvni split (LEKCIJA R365 (3)): stray ring-red-600/40 ×1 (L2352)
+# ostaja offset-1 — IZRECNO izven val 49, dokumentirano ne tiho.
+# Stale pini shiftani V ISTI rundi (PRED-scan čez VSE 40 testnih
+# datotek, ki berejo material-intelligence): r242 L155–157 (3 quote
+# pina), r244-cenik ×2, r245 ×2, r333 PAR_ZETON_MATERIAL (era žeton
+# val 20), r207 chipCls okno pin. r236 offset-1 pin bere invoice-manager
+# (NI material) — preživi. r361 (D) not.toContain bere CRM — preživi.
+# NEEDLEJI: 4 need_static className tokeni, vsi ×0 v HEAD pred rundo
+# (fetch-first git grep GLASNO potrjeno ×5 kandidatov); multiplicita v
+# POJAVITVAH (grep -o — LEKCIJA R365 (2)): N1 ×1, N3 ×1, N4 ×4, N5 ×8.
+# 5. kandidat (L2198 brez shadow-sm, ×1) IZPUŠČEN iz registra —
+# redundanten z N1 (ista dialog površina), dokumentiran v val 49 testu (B).
+# must_miss: TODO-R366 (nesme biti v produkcijskih čankih).
+# Era preverba: kanonski skript r366-era-harvest.sh (19 registrov
+# r347–r365, ≥81 need_static) + R367 pričakuje r366.tsv 4 needleje ŽIVO.
+w-full bg-roksal-navy text-white shadow-sm press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2	R366 val 49 Nov dobavitelj CTA ring offset-2 (x1; 0 v HEAD)	need_static
+tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2	R366 val 49 chipCls status filter template statičen segment ring offset-2 (x1; 0 v HEAD)	need_static
+h-8 text-xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2	R366 val 49 h-8 izvozni pilli ring offset-2 (x4 pojavitve; 0 v HEAD)	need_static
+h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2	R366 val 49 h-6 pilli ring offset-2 (x8 pojavitve; 0 v HEAD)	need_static
+TODO-R366	must_miss: razvojni ostanki (nesme biti v produkcijskih čankih)	must_miss

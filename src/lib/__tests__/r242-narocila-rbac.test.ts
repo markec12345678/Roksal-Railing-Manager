@@ -152,9 +152,12 @@ describe('R242 — fail-verbose: detail PRED error (R241 vzorec)', () => {
 
 describe('R242 — [Mandatory] stil: press-scale pariteta ISTIH akcij čez kontekste', () => {
   it('material-intelligence: izvoza Naročila CSV + Dobavitelji CSV/PDF + Nov dobavitelj CTA', () => {
-    expect(uiSrc).toContain('"h-8 text-xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"')
-    expect(uiSrc).toContain('"h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"')
-    expect(uiSrc).toContain('"w-full bg-roksal-navy text-white shadow-sm press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"')
+    // stale pini shiftani val 49 (R366, precedens R334/R355–R365): ring-offset
+    // kanon (val 43–48 družinski standard — vsi navy/40 nosijo ring-offset-2;
+    // material pariteta 26/26), tokeni ostajajo bajtno isti razen offseta.
+    expect(uiSrc).toContain('"h-8 text-xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"')
+    expect(uiSrc).toContain('"h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"')
+    expect(uiSrc).toContain('"w-full bg-roksal-navy text-white shadow-sm press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"')
   })
 
   it('material-intelligence: vsi štirje statusni prehodi nosijo mikro-pritisk (19× press-scale — R333)', () => {

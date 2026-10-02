@@ -512,9 +512,9 @@ describe('R245 — primerjalni CSV + pilli v material-intelligence-tab', () => {
     expect(material).toContain('aria-label="Izvozi primerjalni cenik kot CSV"')
     expect(material).toContain('aria-label="Izvozi primerjalni cenik kot PDF"')
     const csvPill = oknoMed(material, 'Izvozi primerjalni cenik kot CSV', 'Izvozi primerjalni cenik kot PDF')
-    expect(csvPill).toContain('h-8 text-xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1')
+    expect(csvPill).toContain('h-8 text-xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2')
     const pdfPill = oknoMed(material, 'Izvozi primerjalni cenik kot PDF', '</Button>\n                </div>')
-    expect(pdfPill).toContain('h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1')
+    expect(pdfPill).toContain('h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2')
   })
 
   it('pilli VEDNO vidni (bralni tok, P1-k precedens) — NISO znotraj lahkoUrejaCene veje', () => {

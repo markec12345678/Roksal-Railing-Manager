@@ -187,6 +187,22 @@ eb_pocakaj_zalogo() {
   eb_pocakaj_na "(()=>{return [...document.querySelectorAll('h2')].some(h=>h.textContent.trim()==='Zaloga');})()" "$maks"
 }
 
+# R366 (e2e-lib dedup 6. val) — Meritve PRALZNINA/GA poll: predikat
+# "Ni projektov ALI tabela>0" byte-identičen v ŠTIRIH zamrznjenih spot
+# skriptah (r360-qa-spot2 L19 + r361-qa-spot + r362-qa-spot [maks 12] +
+# r365-qa-spot L29 [maks 15]) — prag LEKCIJE R352 (×3) DOLG presežen;
+# r366-qa-spot D = 5. ponovitev (ISTI predikat, maks 15). Kanonizirana
+# OBLIKA = preprosten predikat SAMO (dispatch ostane ločena kanona
+# eb_dispatch — kompozicija klicateljeva; ISTI vzorec kot
+# eb_pocakaj_zalogo/eb_pocakaj_csv_pilli); zamrznjeni spot skripti NI
+# mutirani (kanon R361–R365); poraba ob 1. uporabi v r366-qa-spot.sh V
+# ISTI rundi (LEKCIJA R362 (3): kanon ne sme biti papir). Uporaba:
+#   eb_pocakaj_meritve 15
+eb_pocakaj_meritve() {
+  local maks="${1:-15}"
+  eb_pocakaj_na "(()=>{return document.body.textContent.includes('Ni projektov') || document.querySelectorAll('table').length > 0;})()" "$maks"
+}
+
 # R365 (e2e-lib dedup 5. val) — inventory SONDA (val 46 paritetna resnica):
 # byte-identičen eval blok (md5 d3da517025ad391c3646b0cc572a0045 — 9 polj:
 # h2Zaloga + 3 izvozna offseta + dodajGibanje offset/mounted + izvoziCsv

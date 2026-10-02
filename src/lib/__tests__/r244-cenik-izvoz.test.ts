@@ -247,13 +247,14 @@ describe('R244 — cenik CSV + pilli v material-intelligence-tab', () => {
     expect(material).toContain('aria-label="Izvozi cenik materiala kot CSV"')
     expect(material).toContain('aria-label="Izvozi cenik materiala kot PDF"')
     const csvPill = oknoMed(material, 'Izvozi cenik materiala kot CSV', 'Izvozi cenik materiala kot PDF')
-    expect(csvPill).toContain('h-8 text-xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1')
+    expect(csvPill).toContain('h-8 text-xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2')
     // R245 sinhronizacija: izvozna skupina na Cene kartici je dobila notranji
     // ovojnici (space-y-1.5 + drugi pill par + legenda) — pilli so se legitimo
     // premaknili za eno nivo globje (18/16 presledkov); vsebina razredov je
-    // NESPREMENJENA (lekcija r172: pin preverjen proti HEAD vsebini).
+    // NESPREMENJENA (lekcija r172: pin preverjen proti HEAD vsebini; val 49
+    // R366: ring-offset-1→2 normalizacija — precedens val 44/47).
     const pdfPill = oknoMed(material, 'Izvozi cenik materiala kot PDF', '</Button>\n                </div>')
-    expect(pdfPill).toContain('h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1')
+    expect(pdfPill).toContain('h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2')
   })
 
   it('pilli VEDNO vidni (bralni tok, P1-k precedens) — NISO znotraj lahkoUrejaCene veje', () => {

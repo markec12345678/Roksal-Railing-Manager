@@ -68,7 +68,10 @@ describe('R207 stražar: pill filter (družina R136/R204/R206)', () => {
       'export function MaterialIntelligenceTab',
     )
     expect(okno).toContain('rounded-full')
-    expect(okno).toContain('focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1')
+    // stale pin shiftan val 49 (R366, precedens R334/R355–R365): chipCls
+    // ring-offset-1→2 normalizacija (LEKCIJA R346 kanon — val 43–48 družinski
+    // standard; precedens val 44 opomnik PDF / val 47 status cikel chip).
+    expect(okno).toContain('focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2')
     expect(okno).toContain('border-roksal-navy bg-roksal-navy text-white')
     expect(okno).toContain('border-border bg-background text-muted-foreground')
     expect(okno).toContain('tabular-nums')
