@@ -187,4 +187,23 @@ eb_pocakaj_zalogo() {
   eb_pocakaj_na "(()=>{return [...document.querySelectorAll('h2')].some(h=>h.textContent.trim()==='Zaloga');})()" "$maks"
 }
 
+# R365 (e2e-lib dedup 5. val) — inventory SONDA (val 46 paritetna resnica):
+# byte-identičen eval blok (md5 d3da517025ad391c3646b0cc572a0045 — 9 polj:
+# h2Zaloga + 3 izvozna offseta + dodajGibanje offset/mounted + izvoziCsv
+# mounted + sonnaPressScale + sonnaBrezOffset) se je ponovil ×2
+# (r363-qa-spot B, r364-qa-spot B); r365-qa-spot B = ×3 ponovitev — prag
+# LEKCIJE R352 natanko ob 3. → EN VIR. Kanonizirana OBLIKA = eval JSON
+# sonda SAMO (dispatch + poll sta že ločena kanona eb_dispatch/
+# eb_pocakaj_zalogo — kompozicija ostane klicateljeva); V REPu je zapisana
+# kot ENOVRSTIČNI IIFE eval (r231 invariant — vsaka eval vrstica brez $pred
+# nosi `})()"`; ISTI vzorec kot eb_sonda_ring_pariteta) — semantika polj
+# byte-navrzkostna z inline blokoma. Zamrznjeni spot skripti NI mutirani
+# (kanon R361–R364); poraba ob 1. uporabi v r365-qa-spot.sh V ISTI rundi
+# (LEKCIJA R362 (3): kanon ne sme biti papir). Fail-open: prazen izpis =
+# sonda ni tekla, NE tiha '0' resnica. Uporaba:
+#   eb_sonda_zaloge
+eb_sonda_zaloge() {
+  agent-browser eval "(()=>{return JSON.stringify({h2Zaloga:[...document.querySelectorAll('h2')].some(h=>h.textContent.trim()==='Zaloga'),izvoziCsvOffset2:(document.querySelector('button[aria-label=\"Izvozi vidno zalogo kot CSV\"]')?.className||'').includes('ring-offset-2'),izvoziPdfOffset2:(document.querySelector('button[aria-label=\"Izvozi vidno zalogo kot PDF\"]')?.className||'').includes('ring-offset-2'),kopirajNarocilnicoOffset2:(document.querySelector('button[aria-label=\"Kopiraj naročilnico vidnih artiklov pod minimalno zalogo\"]')?.className||'').includes('ring-offset-2'),dodajGibanjeOffset2:(document.querySelector('button[aria-label=\"Dodaj gibanje zaloge\"]')?.className||'').includes('ring-offset-2'),dodajGibanjeMounted:!!document.querySelector('button[aria-label=\"Dodaj gibanje zaloge\"]'),izvoziCsvMounted:!!document.querySelector('button[aria-label=\"Izvozi vidno zalogo kot CSV\"]'),sonnaPressScale:[...document.querySelectorAll('button')].filter(b=>(b.className||'').includes('press-scale')&&(b.className||'').includes('ring-roksal-navy/40')).length,sonnaBrezOffset:[...document.querySelectorAll('button')].filter(b=>(b.className||'').includes('press-scale')&&(b.className||'').includes('ring-roksal-navy/40')&&!(b.className||'').includes('ring-offset')).length});})()" 2>&1 | tail -1
+}
+
 

@@ -1984,7 +1984,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
               disabled={schedules.length === 0}
               aria-label="Izvozi vidne termine kot CSV"
               title="Termine kot preglednico (Excel)"
-              className="shrink-0 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              className="shrink-0 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
               onClick={() => {
                 // R173 — EN VIR RESNICE: povzetek = ISTI lib klic kot vrstica
                 // nad seznamom; osvezitev = ISTI pečat kot glava; obseg =
@@ -2005,7 +2005,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
               disabled={schedules.length === 0}
               aria-label="Izvozi termine montaže kot koledarsko datoteko (.ics)"
               title="Termine odpri v Google/Apple/Outlook koledarju"
-              className="shrink-0 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              className="shrink-0 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
               onClick={() => {
                 const n = downloadIcs(schedules)
                 if (n > 0) toast({ title: `Koledar izvožen (${n} terminov)`, description: 'Datoteko odpri v telefonu — dogodki se dodajo v koledar.' })
@@ -2024,7 +2024,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
               variant="outline"
               aria-label="Izvozi vozni red montaž kot PDF"
               title="Vozni red montaž kot terenski list (kronološki red)"
-              className="shrink-0 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              className="shrink-0 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
               onClick={() => {
                 if (vozniRedVnosi.length === 0) {
                   toast({
@@ -2056,7 +2056,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
               variant="outline"
               aria-label="Izvozi tedenski pregled montaž kot PDF"
               title="Tedenski pregled montaž — naslednjih 7 dni (razgled po dnevih)"
-              className="shrink-0 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              className="shrink-0 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
               onClick={() => {
                 const pov = tedenskiPregledPovzetek(vozniRedVnosi, new Date())
                 if (pov === null) {
@@ -2088,7 +2088,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
               aria-label="Izvozi tedenski pregled montaž kot CSV"
               title="Tedenski pregled montaž kot CSV — ista resnica kot PDF (dnevi · termini · ure)"
               disabled={tedenskiCsvVTeku}
-              className="shrink-0 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              className="shrink-0 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
               onClick={handleTedenskiCsv}
             >
               <FileSpreadsheet aria-hidden="true" className="h-4 w-4 mr-1" /> CSV
@@ -2109,7 +2109,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
               aria-label="Izvozi tedenski pregled montaž kot ICS koledar"
               title="Tedenski pregled montaž kot ICS — naslednjih 7 dni v telefonov koledar (ekipa uvozi razpored; ure in statusi iz iste resnice kot PDF/CSV)"
               disabled={tedenskiIcsVTeku}
-              className="shrink-0 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              className="shrink-0 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
               onClick={handleTedenskiIcs}
             >
               <Calendar aria-hidden="true" className="h-4 w-4 mr-1" /> Tedenski ICS
@@ -2133,7 +2133,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
               title="Konflikti tedenskega pregleda kot CSV — dokazani pari prekrivanj ekipe (isti poli-odprto pregled kot žig nad seznamom; konec 12:00 + začetek 12:00 je dovoljen nazaj-na-nazaj; Preklicano/Zaključeno ne zasede; termin brez konca NE nosi prekrivanja). Žig zelen = ni datoteke (iskren toast) — datoteka nastane ob prvem dokazanem prekrivanju"
               data-testid="konflikti-csv-pill"
               disabled={konfliktiCsvVTeku}
-              className="shrink-0 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              className="shrink-0 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
               onClick={handleKonfliktiCsv}
             >
               <FileSpreadsheet aria-hidden="true" className="h-4 w-4 mr-1" /> Konflikti CSV
@@ -2157,7 +2157,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
               title="Konflikti tedenskega pregleda kot PDF — dokazani pari prekrivanj ekipe na tisku (isti poli-odprto pregled kot žig in CSV brat; konec 12:00 + začetek 12:00 je dovoljen nazaj-na-nazaj; Preklicano/Zaključeno ne zasede; termin brez konca NE nosi prekrivanja). Žig zelen = ni datoteke (iskren toast) — datoteka nastane ob prvem dokazanem prekrivanju"
               data-testid="konflikti-pdf-pill"
               disabled={konfliktiPdfVTeku}
-              className="shrink-0 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              className="shrink-0 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
               onClick={handleKonfliktiPdf}
             >
               <AlertTriangle aria-hidden="true" className="h-4 w-4 mr-1" /> Konflikti PDF
@@ -2182,7 +2182,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
               title="Tedenski vozni red po ekipah kot PDF — naslednjih 7 dni, ENA sekcija na ekipo (isti seznam in vrstni red kot ICS po ekipi; preklicani termini vidno rdeče; termini brez ekipe niso sekcije — iskren števec v sklepu). Per-ekipa ICS = telefon posameznega člana, Ekipe PDF = en tisk za vodjo"
               data-testid="ekipe-pdf-pill"
               disabled={ekipaPdfVTeku}
-              className="shrink-0 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              className="shrink-0 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
               onClick={handleTedenskiEkipaPdf}
             >
               <Users aria-hidden="true" className="h-4 w-4 mr-1" /> Ekipe PDF
@@ -2207,7 +2207,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
               title="Tedenski vozni red po ekipah kot CSV — naslednjih 7 dni, ENA vrstica na termin z Ekipa stolpcem (isti pregled in vrstni red kot Ekipe PDF; preklicani termini videni; termini brez ekipe niso vrstice — iskren števec v sklepu). Ekipe PDF = en tisk za vodjo, Ekipe CSV = Excel za filtriranje po ekipi"
               data-testid="ekipe-csv-pill"
               disabled={ekipaCsvVTeku}
-              className="shrink-0 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              className="shrink-0 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
               onClick={handleTedenskiEkipaCsv}
             >
               <FileSpreadsheet aria-hidden="true" className="h-4 w-4 mr-1" /> Ekipe CSV
@@ -2229,7 +2229,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
               aria-label="Izvozi pregled projektov in terminov kot PDF"
               title="Pregled projektov in terminov kot pravi PDF — kateri projekti imajo termine in koliko dela je še pred nami"
               disabled={ptVTeku}
-              className="shrink-0 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              className="shrink-0 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
               onClick={handleProjektiTerminiPdf}
             >
               <ClipboardList aria-hidden="true" className="h-4 w-4 mr-1" /> Projekti
@@ -2252,7 +2252,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
               title="Pregled projektov in terminov kot CSV — isti pregled in vrstni red kot Projekti PDF (prazen seznam → iskren toast, nikoli prazna datoteka). Projekti PDF = tisk za vodjo, Projekti CSV = Excel za filtriranje po projektu/stranki"
               data-testid="projekti-termini-csv-pill"
               disabled={ptCsvVTeku}
-              className="shrink-0 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              className="shrink-0 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
               onClick={handleProjektiTerminiCsv}
             >
               <FileSpreadsheet aria-hidden="true" className="h-4 w-4 mr-1" /> Projekti CSV
@@ -2280,7 +2280,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                   aria-label={`Izvozi tedenski ICS samo za ekipo ${ekipa}`}
                   title={`Samo termini ekipe ${ekipa} v istem 7-dnevnem okviru (danes + 6 dni, UTC) — točen filter ISTEGA vira kot Tedenski ICS; datoteka nosi X-ROKSAL-EKIPA in lastno UID predpono (ni trkov z osnovnim ICS)`}
                   disabled={tedenskiEkipaIcsVTeku !== null}
-                  className="h-7 shrink-0 px-2 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                  className="h-7 shrink-0 px-2 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
                   onClick={() => handleTedenskiEkipaIcs(ekipa)}
                 >
                   <Users aria-hidden="true" className="h-3 w-3 mr-1" /> {ekipa}
@@ -2386,7 +2386,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                     {s.status === 'NAVRTENO' && (
                       <div className="flex flex-wrap items-center gap-1.5">
                         {lahkoUpravljaProizvodnjo && (
-                          <Button type="button" size="sm" variant="outline" className="h-6 text-2xs bg-roksal-amber/10 focus-visible:ring-2 focus-visible:ring-roksal-navy/40" onClick={() => handleStatusChange(s.id, 'V_TEKU')}>
+                          <Button type="button" size="sm" variant="outline" className="h-6 text-2xs bg-roksal-amber/10 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2" onClick={() => handleStatusChange(s.id, 'V_TEKU')}>
                             Začni montažo
                           </Button>
                         )}
@@ -2395,7 +2395,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                           type="button"
                           size="sm"
                           variant="outline"
-                          className="h-6 text-2xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                          className="h-6 text-2xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
                           aria-label={`Preloži termin za ${s.project.nazivProjekta}`}
                           onClick={() => {
                             const d = new Date(s.datumZacetka)
@@ -2414,11 +2414,11 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                     {s.status === 'V_TEKU' && (
                       <>
                         {lahkoUpravljaProizvodnjo && (
-                          <Button type="button" size="sm" variant="outline" className="h-6 text-2xs bg-green-50 dark:bg-green-950/40 focus-visible:ring-2 focus-visible:ring-roksal-navy/40" aria-label={`Zaključi termin ${s.project.nazivProjekta} s preverbo kakovosti`} onClick={() => openQcDialog(s.id, s.project.id, s.project.nazivProjekta)}>
+                          <Button type="button" size="sm" variant="outline" className="h-6 text-2xs bg-green-50 dark:bg-green-950/40 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2" aria-label={`Zaključi termin ${s.project.nazivProjekta} s preverbo kakovosti`} onClick={() => openQcDialog(s.id, s.project.id, s.project.nazivProjekta)}>
                             <CheckCircle2 aria-hidden="true" className="h-3 w-3 mr-1" /> Zaključi (preverba + odštej material)
                           </Button>
                         )}
-                        <Button type="button" size="sm" variant="outline" className="h-6 text-2xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40" aria-label={`Montažno dokazilo za ${s.project.nazivProjekta} (pred/po, checklist, predaja)`} onClick={() => void openEvidenceDialog(s.id, s.project.id, s.project.nazivProjekta)}>
+                        <Button type="button" size="sm" variant="outline" className="h-6 text-2xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2" aria-label={`Montažno dokazilo za ${s.project.nazivProjekta} (pred/po, checklist, predaja)`} onClick={() => void openEvidenceDialog(s.id, s.project.id, s.project.nazivProjekta)}>
                           <FileCheck2 aria-hidden="true" className="h-3 w-3 mr-1" /> Montažno dokazilo
                         </Button>
                       </>
@@ -2428,7 +2428,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                         type="button"
                         size="sm"
                         variant="outline"
-                        className="h-6 text-2xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                        className="h-6 text-2xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
                         aria-label={`Premakni preloženi termin ${s.project.nazivProjekta}`}
                         onClick={() => {
                           const d = new Date(s.datumZacetka)
@@ -2515,7 +2515,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
               aria-label="Izvozi pregled življenjskega cikla opreme kot PDF"
               title="Življenjski cikl opreme kot pravi PDF — pregledi, kalibracije, statusi (vsa oprema)"
               disabled={ocVTeku}
-              className="shrink-0 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              className="shrink-0 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
               onClick={() => void handleOpremaCikelPdf()}
             >
               <Activity aria-hidden="true" className="h-4 w-4 mr-1" /> Cikel PDF
@@ -2531,7 +2531,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
               aria-label="Izvozi pregled življenjskega cikla opreme kot CSV"
               title="Življenjski cikl opreme kot CSV (isti stolpci kot PDF — za Excel/revizijo)"
               disabled={ocCsvVTeku}
-              className="shrink-0 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              className="shrink-0 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
               onClick={() => void handleOpremaCikelCsv()}
             >
               <FileSpreadsheet aria-hidden="true" className="h-4 w-4 mr-1" /> Cikel CSV
@@ -2717,7 +2717,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                         type="button"
                         size="sm"
                         variant="outline"
-                        className="h-6 text-2xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                        className="h-6 text-2xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
                         aria-label={`${EQUIPMENT_STATUS_LABELS[s] ?? s}: ${e.naziv}`}
                         onClick={() => void handleEquipmentStatus(e, s)}
                       >
@@ -2741,7 +2741,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                       type="button"
                       size="sm"
                       variant="outline"
-                      className="h-6 text-2xs bg-roksal-navy/5 focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                      className="h-6 text-2xs bg-roksal-navy/5 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
                       aria-label={`Zabeleži dogodek za ${e.naziv}`}
                       onClick={() => void openEventDialog(e)}
                     >
@@ -2792,7 +2792,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                     <label key={e0.id} className="flex cursor-pointer items-center gap-2 text-xs">
                       <input
                         type="checkbox"
-                        className="h-3.5 w-3.5 accent-roksal-navy focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                        className="h-3.5 w-3.5 accent-roksal-navy focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
                         checked={schedEquipment.includes(e0.id)}
                         onChange={(ev) => {
                           setSchedEquipment((prev) => ev.target.checked ? [...prev, e0.id] : prev.filter((x) => x !== e0.id))
@@ -2812,7 +2812,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                 precedens); mikro-pritisk = družina ostalih dialogov. */}
             {/* R352 — val 35 a11y pariteta (kanon R346): vidno besedilo "Shrani" NE razlaga CILJA — aria-label + title + ring v istem commitu. */}
             {lahkoUpravljaProizvodnjo && (
-              <Button type="button" onClick={handleCreateSchedule} aria-label="Shrani nov razpored" title="Shrani nov razpored v proizvodnjo" className="bg-roksal-navy hover:bg-roksal-navy/90 text-white shadow-sm transition-all press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 disabled:opacity-50">Shrani</Button>
+              <Button type="button" onClick={handleCreateSchedule} aria-label="Shrani nov razpored" title="Shrani nov razpored v proizvodnjo" className="bg-roksal-navy hover:bg-roksal-navy/90 text-white shadow-sm transition-all press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 disabled:opacity-50">Shrani</Button>
             )}
           </DialogFooter>
         </DialogContent>
@@ -2852,7 +2852,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
               type="button"
               onClick={() => void handleMoveSchedule()}
               disabled={moveBusy || !moveDate}
-              className="bg-roksal-navy hover:bg-roksal-navy/90 text-white shadow-sm transition-all press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 disabled:opacity-50"
+              className="bg-roksal-navy hover:bg-roksal-navy/90 text-white shadow-sm transition-all press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 disabled:opacity-50"
             >
               {moveBusy && <Loader2 aria-hidden="true" className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
               Preloži
@@ -2870,7 +2870,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setNewCrewOpen(false)}>Prekliči</Button>
             {/* R352 — val 35 a11y pariteta (kanon R346): aria-label + title + izrecen ring navy/40 V ISTEM commitu. */}
-            <Button type="button" onClick={handleCreateCrew} aria-label="Shrani novo ekipo" title="Shrani novo ekipo v proizvodnjo" className="bg-roksal-navy text-white focus-visible:ring-2 focus-visible:ring-roksal-navy/40">Shrani</Button>
+            <Button type="button" onClick={handleCreateCrew} aria-label="Shrani novo ekipo" title="Shrani novo ekipo v proizvodnjo" className="bg-roksal-navy text-white focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2">Shrani</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -2893,7 +2893,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
             {/* R244 — pisalni submit viden SAMO s pravico + mikro-pritisk. */}
             {/* R352 — val 35 a11y pariteta (kanon R346): aria-label + title + ring v istem commitu. */}
             {lahkoUpravljaProizvodnjo && (
-              <Button type="button" onClick={handleCreateEquip} aria-label="Shrani novo opremo" title="Shrani novo opremo v zalogo opreme" className="bg-roksal-navy hover:bg-roksal-navy/90 text-white shadow-sm transition-all press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 disabled:opacity-50">Shrani</Button>
+              <Button type="button" onClick={handleCreateEquip} aria-label="Shrani novo opremo" title="Shrani novo opremo v zalogo opreme" className="bg-roksal-navy hover:bg-roksal-navy/90 text-white shadow-sm transition-all press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 disabled:opacity-50">Shrani</Button>
             )}
           </DialogFooter>
         </DialogContent>
@@ -2994,7 +2994,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                 type="button"
                 onClick={() => void handleLogEvent()}
                 disabled={eventBusy || !eventDate || (eventType === 'KALIBRACIJA' && eventTarget?.calibrationRequired && !eventCertificate)}
-                className="bg-roksal-navy hover:bg-roksal-navy/90 text-white shadow-sm transition-all press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 disabled:opacity-50"
+                className="bg-roksal-navy hover:bg-roksal-navy/90 text-white shadow-sm transition-all press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 disabled:opacity-50"
               >
                 {eventBusy && <Loader2 aria-hidden="true" className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
                 Zabeleži
@@ -3028,7 +3028,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                   <label className="flex cursor-pointer items-start gap-2 text-xs">
                     <input
                       type="checkbox"
-                      className="mt-0.5 h-3.5 w-3.5 accent-roksal-navy focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                      className="mt-0.5 h-3.5 w-3.5 accent-roksal-navy focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
                       checked={qcChecked[t.key] === true}
                       aria-label={t.label}
                       onChange={(e) => setQcChecked((prev) => ({ ...prev, [t.key]: e.target.checked }))}
@@ -3106,7 +3106,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
               type="button"
               onClick={() => void handleQcSubmit()}
               disabled={qcBusy || !qcValid}
-              className="bg-roksal-navy hover:bg-roksal-navy/90 text-white shadow-sm transition-all press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 disabled:opacity-50"
+              className="bg-roksal-navy hover:bg-roksal-navy/90 text-white shadow-sm transition-all press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 disabled:opacity-50"
             >
               {qcBusy && <Loader2 aria-hidden="true" className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
               {qcPassed ? 'Preverba + zaključi' : 'Shrani preverbo (z napakami)'}
@@ -3183,7 +3183,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
             <label className="flex cursor-pointer items-start gap-2 text-xs">
               <input
                 type="checkbox"
-                className="mt-0.5 h-3.5 w-3.5 accent-roksal-navy focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                className="mt-0.5 h-3.5 w-3.5 accent-roksal-navy focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
                 checked={evGpsConsent}
                 aria-label="Z dovoljenjem zabeleži GPS lokacijo"
                 onChange={(e) => handleEvGpsConsent(e.target.checked)}
@@ -3203,7 +3203,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                     <label className="flex cursor-pointer items-start gap-2 text-xs">
                       <input
                         type="checkbox"
-                        className="mt-0.5 h-3.5 w-3.5 accent-roksal-navy focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                        className="mt-0.5 h-3.5 w-3.5 accent-roksal-navy focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
                         checked={evChecked[t.key] === true}
                         aria-label={t.label}
                         onChange={(e) => setEvChecked((prev) => ({ ...prev, [t.key]: e.target.checked }))}
@@ -3230,7 +3230,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                 placeholder="Ena napaka na vrstico (prazno = brez napak)"
                 rows={2}
                 aria-label="Napake in defekti (ena na vrstico)"
-                className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
               />
             </div>
             {/* Dokaz predaje — strežnik zavrača brez PRED+PO fotk (fail-closed 409). */}
@@ -3249,7 +3249,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
                     type="button"
                     size="sm"
                     disabled={evBusy || !evHandoverName.trim() || !evExisting.hasBefore || !evExisting.hasAfter}
-                    className="h-8 bg-roksal-navy text-[11px] text-white hover:bg-roksal-navy/90 focus-visible:ring-roksal-navy/40"
+                    className="h-8 bg-roksal-navy text-[11px] text-white hover:bg-roksal-navy/90 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
                     onClick={() => void handleEvidenceHandover()}
                   >
                     {evBusy && <Loader2 aria-hidden="true" className="mr-1 h-3 w-3 animate-spin" />}
@@ -3281,7 +3281,7 @@ export function LogisticsTab({ projectId }: { projectId: string | null }) {
               type="button"
               onClick={() => void handleEvidenceSave()}
               disabled={evBusy || evExisting?.locked === true || !evValid || !evLokacija.trim()}
-              className="bg-roksal-navy hover:bg-roksal-navy/90 text-white focus-visible:ring-roksal-navy/40"
+              className="bg-roksal-navy hover:bg-roksal-navy/90 text-white focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
             >
               {evBusy && <Loader2 aria-hidden="true" className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
               {evExisting ? 'Posodobi dokazilo' : 'Shrani dokazilo'}

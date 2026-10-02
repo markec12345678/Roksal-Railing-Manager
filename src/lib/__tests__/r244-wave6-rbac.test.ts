@@ -228,7 +228,11 @@ describe('R244 — [Mandatory] stil: press-scale pariteta + žeton migracija', (
   })
   it('dialog submiti (5 navy + override rdeč) nosijo mikro-pritisk — ISTI jezik čez aplikacijo', () => {
     // 4 navy submiti z ISTIM receptom (termin/oprema/dogodek/QC/preloži)
-    expect(logUi.split('bg-roksal-navy hover:bg-roksal-navy/90 text-white shadow-sm transition-all press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 disabled:opacity-50').length - 1).toBe(5)
+    // R365 val 48: ring pariteta — focus-visible:ring-offset-2 vstavljen MED
+    // navy/40 in disabled:opacity-50 (LEKCIJA R363: substring pin se prelomi,
+    // če se žeton vstavi MED dva dela pina — shiftan V ISTI rundi, precedens
+    // R362 r242 L176/177 + R363 r237:230); števec ostane 5.
+    expect(logUi.split('bg-roksal-navy hover:bg-roksal-navy/90 text-white shadow-sm transition-all press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 disabled:opacity-50').length - 1).toBe(5)
     expect(logUi).toContain('bg-red-600 text-[11px] text-white hover:bg-red-700 focus-visible:ring-red-400/50 press-scale')
   })
   it('accent-[#1d2b3e] migriran na žeton accent-roksal-navy (4 mesta, 0 arbitrary accent ostane)', () => {
