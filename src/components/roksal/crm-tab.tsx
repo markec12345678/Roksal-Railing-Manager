@@ -928,7 +928,7 @@ export function CrmTab({
                 variant={statusFilter === s ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setStatusFilter(s)}
-                className={`h-7 shrink-0 text-[11px] focus-visible:ring-2 focus-visible:ring-roksal-navy/40 ${statusFilter === s ? 'bg-roksal-navy text-white' : ''}`}
+                className={`h-7 shrink-0 text-[11px] focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 ${statusFilter === s ? 'bg-roksal-navy text-white' : ''}`}
               >
                 {s === 'ALL' ? 'Vsi' : STATUS_LABELS[s]}
               </Button>
@@ -939,7 +939,7 @@ export function CrmTab({
               size="sm"
               onClick={handleExportCsv}
               disabled={filtered.length === 0}
-              className="ml-auto h-7 shrink-0 gap-1.5 text-[11px] focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              className="ml-auto h-7 shrink-0 gap-1.5 text-[11px] focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
               aria-label={`Izvozi CSV (${filtered.length} ${filtered.length === 1 ? 'stranka' : 'strank'})`}
               title="Izvozi prikazani seznam strank v CSV"
             >
@@ -956,7 +956,7 @@ export function CrmTab({
               size="sm"
               onClick={handlePotekliOpomnikiPdf}
               disabled={potekliVTeku}
-              className="h-7 shrink-0 gap-1.5 text-[11px] press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              className="h-7 shrink-0 gap-1.5 text-[11px] press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
               aria-label="Izvozi potekle opomnike kot PDF"
               title="Potekli opomniki kot akcijski PDF seznam za pisarno (najstarejši prvi)"
             >
@@ -974,7 +974,7 @@ export function CrmTab({
               size="sm"
               onClick={handlePotekliOpomnikiCsv}
               disabled={potekliCsvVTeku}
-              className="h-7 shrink-0 gap-1.5 text-[11px] press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              className="h-7 shrink-0 gap-1.5 text-[11px] press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
               aria-label="Izvozi potekle opomnike kot CSV"
               title="Potekli opomniki kot CSV — isti akcijski pregled in vrstni red kot PDF (prazen seznam → iskren toast, nikoli prazna datoteka). PDF = tisk za pisarno, CSV = Excel za filtriranje po stranki/dni"
               data-testid="potekli-opomniki-csv-pill"
@@ -992,7 +992,7 @@ export function CrmTab({
               size="sm"
               onClick={handleKoledarPregledovPdf}
               disabled={koledarVTeku}
-              className="h-7 shrink-0 gap-1.5 text-[11px] press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              className="h-7 shrink-0 gap-1.5 text-[11px] press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
               aria-label="Izvozi koledar pregledov kot PDF"
               title="Koledar pregledov kot PDF časovna vrsta (vsi vpisani datumi, najbližji prvi)"
             >
@@ -1010,7 +1010,7 @@ export function CrmTab({
               size="sm"
               onClick={handleKoledarPregledovCsv}
               disabled={koledarCsvVTeku}
-              className="h-7 shrink-0 gap-1.5 text-[11px] press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              className="h-7 shrink-0 gap-1.5 text-[11px] press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
               aria-label="Izvozi koledar pregledov kot CSV"
               title="Koledar pregledov kot CSV (isti stolpci kot PDF — za Excel/računovodstvo)"
             >
@@ -1028,7 +1028,7 @@ export function CrmTab({
               size="sm"
               onClick={handleKoledarPregledovIcs}
               disabled={koledarIcsVTeku}
-              className="h-7 shrink-0 gap-1.5 text-[11px] press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              className="h-7 shrink-0 gap-1.5 text-[11px] press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
               aria-label="Izvozi koledar pregledov kot ICS"
               title="Koledar pregledov kot ICS (uvoz v koledarsko aplikacijo — Google/Outlook/telefon)"
             >
@@ -1046,7 +1046,7 @@ export function CrmTab({
               size="sm"
               onClick={handlePokritostPdf}
               disabled={pokritostVTeku}
-              className="h-7 shrink-0 gap-1.5 text-[11px] press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              className="h-7 shrink-0 gap-1.5 text-[11px] press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
               aria-label="Izvozi pokritost opomnikov kot PDF"
               title="Pokritost opomnikov kot PDF (slepe pike — najvrednejše prve)"
             >
@@ -1286,7 +1286,7 @@ export function CrmTab({
                       variant="outline"
                       onClick={handleOpomnikPdf}
                       disabled={opomnikVTeku}
-                      className="h-8 gap-1.5 px-2.5 text-[11px] font-medium press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-1"
+                      className="h-8 gap-1.5 px-2.5 text-[11px] font-medium press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
                       aria-label="Pripravi opomnik kot PDF"
                       title="Terenski list za ponovni kontakt kot pravi PDF — stranka, naloga, kontekst"
                     >

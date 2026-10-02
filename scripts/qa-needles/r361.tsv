@@ -1,0 +1,18 @@
+# qa-needles/r361.tsv — REGISTER needlejev runde R361 (STIL val 44: ring
+# PARITETA crm-tab družine — 8 × manjkajoč focus-visible:ring-offset-2
+# [status filter bratje L931 + CSV pill L942 + 6 izvoznih bratov L959–1049]
+# + 1 × ring-offset-1→2 [opomnik PDF L1289]; 0 novih hex; aria/title
+# ZAMRZNJENI (vsi že nosijo — proaktiven pin sken: r353/r354/r234/r166/
+# zivostna/r332 vse contains-pini, nič ne prelomi). Era-diskriminatorji =
+# NOVI className token nizi (nov tip needleja, iskreno dokumentiran).
+# ============================================================================
+# FORMAT (TSV; EN vrstica = EN needle; TAB je LOČILO) — kanon R340–R360.
+#   <needle_string><TAB><opis><TAB><vrsta>
+# vrsta: need_static (MORA biti ŽIV v čankih) | must_miss (NE SME biti)
+
+# ── R361 lastni needleji ──
+# STIL val 44: statične className celote (NOVI nizi — era-diskriminatorji):
+ml-auto h-7 shrink-0 gap-1.5 text-[11px] focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2	R361 val 44 CSV pill ring offset-2 (×1 v virih; 0 v HEAD)	need_static
+font-medium press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2	R361 val 44 opomnik PDF ring offset-1→2 (×1 v virih; 0 v HEAD)	need_static
+text-[11px] focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2	R361 val 44 status filter + CSV pill ring offset-2 (statičen segment ×2 mesti; 0 v HEAD)	need_static
+TODO-R361	R361 — brez razvojnih ostankov	must_miss

@@ -119,3 +119,25 @@ eb_zajem_pdf() {
   local varname="$1"
   agent-browser eval "(()=>{const orig=URL.createObjectURL.bind(URL); URL.createObjectURL=function(b){ b.arrayBuffer().then(buf=>{ const u=new Uint8Array(buf); let s=''; const K=8192; for(let i=0;i<u.length;i+=K){ s+=String.fromCharCode.apply(null,u.subarray(i,Math.min(i+K,u.length))); } window.__$varname=btoa(s); }); return orig(b); }; return 'patched';})()" 2>&1 | tail -1
 }
+
+# R361 (e2e-lib dedup 1. val) — kolektor konzolnih napak: window.onerror +
+# unhandledrejection → window.__<varname>[]. Identičen inline blok se
+# ponavljal v r358/r359/r360 spot skriptah (3. klic = prag LEKCIJA R352 →
+# EN VIR kanon). ⚠ KLICATI ŠELE PO prijavi (LEKCIJA R358: eb_odpri_in_prijavi
+# svoj open /login WIPE-a kontekst — kolektor pred prijavo ne preživi).
+# Uporaba:  eb_kolektor_napak r361err   → kasneje window.__r361err
+eb_kolektor_napak() {
+  local varname="$1"
+  agent-browser eval "(()=>{window.__$varname=[];window.addEventListener('error',e=>window.__$varname.push(String(e.message||e)));window.addEventListener('unhandledrejection',e=>window.__$varname.push('rej:'+String(e.reason)));return 'kolektor';})()" 2>&1 | tail -1
+}
+
+# R361 (e2e-lib dedup 1. val) — branje kolektorja: JSON.stringify({napake,
+# stevilo}) iz window.__<varname>. IDENTIČEN reader blok se ponavljal v
+# r358/r359/r360. Vrne eval izpis — klicatelj sam interpretira (fail-open:
+# prazen izpis = kolektor ni bil nameščen, NE tiha '0 napak' resnica).
+# IIFE ovojnica OBVEZNA (r231 invariant + LEKCIJA r225/r227: vsak eval v
+# knjižnici je klican IIFE — drugačne rabe NISO dovoljene).
+eb_preberi_kolektor() {
+  local varname="$1"
+  agent-browser eval "(()=>{return JSON.stringify({napake:window.__$varname, stevilo:(window.__$varname||[]).length});})()" 2>&1 | tail -1
+}

@@ -103,7 +103,7 @@
 | API končne točke | 61 route handlerjev v 41 skupinah |
 | Prisma modelov | 45 (PostgreSQL) |
 | Prisma migracij | verzionirane (`migrate deploy`) |
-| Testi (vitest) | **5183** (324 datotek, vključno z globalSetup embedded PG) |
+| Testi (vitest) | **5194** (325 datotek, vključno z globalSetup embedded PG) |
 | Varnostni smoke | 143 preverjanj na zagnanem strežniku (`tools/security-smoke.py`, del pogojno) |
 | Product SDK katalog | 8 WoodCore profilov (server-authoritative) |
 | Katalog profilov (Profil) | 20 sejanih (WPC, ALU, Inox, Steklo) |
@@ -1144,6 +1144,37 @@ Sheet z 6 podzavihki:
   EXIT=0 [Z0ax→Z0be ŽIVO + ODTIS — ZERO-MUTACIJA] · r359-era-harvest EXIT=0
   ob 1. teku [DVANAJSTIJNA: 12 er ŽIVO — 54 direktno + 2 R353 hash
   rezolucija; R358 val 41 ×3 direktno].
+- **Ring pariteta val 44 + e2e-lib dedup 1. val** (R361): (1) **prva naloga**
+  — prod-qa re-run prek kanona `r359-prod-qa-retry.sh 360` ZELEN ob poskusu
+  1 + **ŠTIRINAJSTIJNA era preverba** `r361-era-harvest.sh` EXIT=0 ob 1. teku
+  (×2): 14 registrov r347–r360 (≥62 need_static = 4+5+8+9+3+8+4+3+3+3+3+3+3
+  +3), 60 ŽIVO direktno + 2 R353 prek hash rezolucije (CDN HTTP 200), R360
+  val 43 ×3 ŽIVO DIREKTNO → deploy potrjen v celoti, must_miss ×14 čisto,
+  era kontrole R340/R341/R343/R345 ŽIV; (2) **fetch-first sken** — FAZA 13
+  3. isti-endpoint klic NE obstaja (L627+L672 edina normalizeMeasurements
+  brata) → NI utemeljena (samo sken); e2e-lib prag DOSEŽEN za kolektor (3
+  identična inline bloka r358/r359/r360); (3) **MANDATORY STIL val 44** —
+  ring PARITETA crm-tab družine (1 datoteka × 1 družina; 9 popravkov: 6
+  izvoznih bratov + CSV pill + status filter bratje [8 × manjkajoč
+  focus-visible:ring-offset-2] + opomnik PDF [offset-1→2]; 13/13 navy/40 z
+  offset-2; aria/title ZAMRZNJENI; 0 novih hex); **NOV tip era needleja** =
+  className token nizi (r361.tsv, iskreno dokumentiran; ⭐ LEKCIJA R361:
+  SWC transpilira template literal v konkatenacijo — needle = statičen
+  segment BREZ interpolacijske meje; 1. kandidat MISSAL v 1. build teku,
+  zamenjan); (4) **FEATURE — e2e-lib dedup 1. val**: NOVA pomočnika
+  `eb_kolektor_napak` + `eb_preberi_kolektor` (3. identični inline blok =
+  prag LEKCIJA R352 → EN VIR; IIFE ovojnica obvezna — r231 invariant;
+  LEKCIJA R358 zaprta v helperju; zamrznjeni spot skripti NI mutirani) —
+  **kanon PORABLJEN ob 1. uporabi** v `r361-qa-spot.sh` + re-probi
+  `r361-qa-spot2.sh` (ožji obseg: prod DOM še stari crm-tab — deploy
+  pending, produkcijska verifikacija val 44 = R362 era preverba); kolektor
+  0 errorjev ×2 seji; (5) vitest r361 ×11 (r361-stil-val44: paritetni
+  bloki A–F + 0-hex števec + era-kontrakt r353 + obrnjena regresija val
+  41/42/43 + era-diskriminatorji ×1/×1/×2) — 5194/5194 (325); (6)
+  verifikacija: tsc 0 · eslint 0 (FULL) · build svež EXIT=0 · needles r361
+  VSE OK (veriga + union registri r340–r361) · smoke EXIT=0 · e2e EXIT=0
+  [ODTIS — ZERO-MUTACIJA] · leak-check čist · r172 prst 6051 potrjen iz
+  diska (val 44 ni premaknil measurements-tab).
 - **Računovodske akcije val 43 + QA-infra hardening 2. val** (R360): (1)
   **prva naloga** — prod-qa re-run prek NOVEGA kanona `r359-prod-qa-retry.sh
   359` ZELEN ob poskusu 1 + **TRIJESTIJNA era preverba** `r360-era-harvest.sh`
