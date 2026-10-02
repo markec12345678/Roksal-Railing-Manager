@@ -159,10 +159,17 @@ def main() -> None:
         f"# r{dst}-era-harvest.sh — R{dst} {ERA} era preverba: r347.tsv val 30", 1)
     # 2) glava — register veriga (override za poslovne runde)
     if args.dst_chain_seg:
-        if src_val is not None:
-            rep(f"IN r{src-1}.tsv val {src_val} ×4 na", args.dst_chain_seg, 1)
-        else:
-            rep(f"IN r{src-1}.tsv ×{need_static_disk(src-1)} na", args.dst_chain_seg, 1)
+        # 9. generalizacija (R379 KOLIZIJA #21): dejanski glavni rep je
+        # lahko MEŠAN (ročni chain-seg iz prejšnje kolizije, npr.
+        # 'IN r376.tsv ×4 IN r377.tsv val 58 ×1 na') in multiplicita je
+        # lahko ≠ ×4 — statični vzorci ('… val N ×4 na' / '… ×N na') NE
+        # ujamejo. Najdi DEJANSKI zadnji segment od 'IN r{src-1}.tsv' do
+        # ' na' in ga zamenjaj celotnega (count-check == 1, fail-closed).
+        pat = re.compile(r"IN r" + str(src - 1) + r"\.tsv[^#\n]*? na")
+        najdeni = pat.findall(out)
+        if len(najdeni) != 1:
+            sys.exit(f"FAILOVEDANO: verižni rep 'IN r{src-1}.tsv … na' = {len(najdeni)} najdenih ≠ 1")
+        out = pat.sub(args.dst_chain_seg.replace("\\", "\\\\"), out, count=1)
     else:
         if src_val is None:
             sys.exit("FAILOVEDANO: poslovni rep v glavi zahteva --dst-chain-seg (kanon R375)")
@@ -206,8 +213,14 @@ def main() -> None:
     # 9) sekcija komentar — plural era beseda
     rep(f"VSEH {ERA_BESODE[stevec-1][3]} registrov", f"VSEH {ERA_PL} registrov", 1)
     # 10) banner — ×N iz diska
-    rep(f"IN {srclabel} (×4) ŽIVO NA PRODU",
-        f"IN {srclabel} (×4) IN {dstlabel} (×{dst_n}) ŽIVO NA PRODU", 1)
+    # 10b) banner — ×N IZ DISKA (9. generalizacija: r{src-1} register je
+    #      lahko ×N ≠ ×4, in oznaka po label-fixu je lastna — poišči
+    #      DEJANSKI segment 'IN {srclabel} (×N) ŽIVO NA PRODU')
+    ban = re.compile(r"IN " + re.escape(srclabel) + r" \(×\d+\) ŽIVO NA PRODU")
+    ban_naj = ban.findall(out)
+    if len(ban_naj) != 1:
+        sys.exit(f"FAILOVEDANO: banner seg 'IN {srclabel} (×N) ŽIVO NA PRODU' = {len(ban_naj)} ≠ 1")
+    out = ban.sub(f"IN {srclabel} (×{need_static_disk(src-1)}) IN {dstlabel} (×{dst_n}) ŽIVO NA PRODU".replace("\\", "\\\\"), out, count=1)
     # 11) tri končni bannerji
     rep(f"=== R{src} {ERA_BESODE[stevec-1][0]} ERA PREVERBA",
         f"=== R{dst} {ERA} ERA PREVERBA", 3)
@@ -333,9 +346,27 @@ fi
         ]
         for v, r, e in sp_sez:
             checks.append((f'"{v}|{r}|{e}"', 1))
+    # LEKCIJA R378 (1): slovenska sestavljena številska beseda vsebuje
+    # prejšnjo kot PODNIZ (ENAINTRIDESIJNA ⊃ TRIDESIJNA, ENAINTRIDESETIH ⊃
+    # TRIDESETIH, enaintrideset ⊃ trideset; enako 32–34 družina) — 'expected
+    # 0' preverbe starih era besed MORAJO šteti z LEVO črkovno mejo, sicer
+    # lažno pozitivne ob prvi prehodi v INTRIDESIJNA družino (31. preverba
+    # = prvič; fail-closed POST preverba ujela ORODJEVO hroščo, ne outputa).
+    stari_era_podniz = {
+        f"{ERA_BESODE[stevec-1][2]} registrov",
+        f"{ERA_BESODE[stevec-1][1]} preverbe R{src}",
+        ERA_BESODE[stevec-1][0],
+        ERA_BESODE[stevec-1][3],
+    }
+
+    def stej(text: str, pat: str) -> int:
+        if pat in stari_era_podniz:
+            return len(re.findall(r"(?<![A-Za-zŠČŽščž])" + re.escape(pat), text))
+        return text.count(pat)
+
     ok = True
     for pat, n in checks:
-        c = out.count(pat)
+        c = stej(out, pat)
         if c != n:
             print(f"FAILOVEDANO: '{pat}' = {c} (pričakovano {n})")
             ok = False

@@ -40,12 +40,46 @@ eb_dispatch() {
 }
 
 # Zapri uvodni vodič (×3 — radix animacije; en klik ni zanesljiv).
+# R378 UTRDITEV v2 (disk resnica spot-r167/22, sledenje z Bilden): vodič se
+# pokaže ŠELE ~10s po prijavi (hidracija + dynamic chunk + setTimeout 1000
+# v OnboardingWrapper) — v1 je "dokaz zaprtja" glejela PRALAZNO, ko vodič
+# ŠE NI bil odprt (lažno pozitivno), potem pa se je odprl sredi seje in je
+# z ozadjem fixed inset-0 z-[100] (pointer-events auto) BLOKAL VSE prave
+# klike [eval sonde niso prizadele — zato nezaznano]. Post-pogoj, ki ga
+# je VREDNO zaupati: ozadje odsotno IN storage='roksal_onboarding_done'=
+# 'true' (handleSkip VEDNO piše storage PRED zaprtjem — disk resnica
+# onboarding-tour.tsx). Dve fazi, deterministično, omejeno:
+#   Faza 1 (okno pojavitve, do 45s): čakaj na ozadje ALI storage='true'
+#     [že opravljeno — takoj 0]; prazno okno + null storage = nehidriran
+#     wrapper → fail-closed 1. [45s: disk resnica spot-r167/22 3. tek —
+#     hladen prod seja: hidracija + dynamic chunk + 1s timer > 25s]
+#   Faza 2 (zapiranje, do 5 klikov × 2s): dokaz šele ozadje=0 IN
+#     storage='true'.
+# Klicatelji zamrznjenih tokov vračila NE preverjajo (disk resnica), izhod
+# 1 je za ISKRENO poročanje novih rund. Selector ozadja je EDINSTVEN za
+# vodič (toast je fixed top-0, ne inset-0 — disk resnica).
 eb_zapri_vodic() {
-  local i
-  for i in 1 2 3; do
+  local i ozadje shranjeno
+  for i in $(seq 1 45); do
+    ozadje=$(agent-browser eval "(()=>{return document.querySelector('div.fixed.inset-0.z-\\\\[100\\\\]') ? '1' : '0';})()" 2>&1 | tail -1)
+    shranjeno=$(agent-browser eval "(()=>{return localStorage.getItem('roksal_onboarding_done') || '0';})()" 2>&1 | tail -1)
+    if [ "$ozadje" = "1" ]; then break; fi
+    if [ "$shranjeno" = "true" ]; then return 0; fi
+    sleep 1
+  done
+  if [ "$ozadje" != "1" ]; then
+    echo "  eb_zapri_vodic: vodič se v 45s NI pojavil in storage ni 'true' (nehidriran wrapper?) — iskreno poročanje" >&2
+    return 1
+  fi
+  for i in 1 2 3 4 5; do
     agent-browser eval "(()=>{const z=document.querySelector('button[aria-label=\"Zapri uvodni vodič\"]'); if(z){z.click(); return 'zaprt';} return 'ni';})()" > /dev/null 2>&1
     sleep 2
+    ozadje=$(agent-browser eval "(()=>{return document.querySelector('div.fixed.inset-0.z-\\\\[100\\\\]') ? '1' : '0';})()" 2>&1 | tail -1)
+    shranjeno=$(agent-browser eval "(()=>{return localStorage.getItem('roksal_onboarding_done') || '0';})()" 2>&1 | tail -1)
+    if [ "$ozadje" = "0" ] && [ "$shranjeno" = "true" ]; then return 0; fi
   done
+  echo "  eb_zapri_vodic: FAILOVEDANO — vodič ostaja odprt oz. storage ni nastavljen" >&2
+  return 1
 }
 
 # Odpri bazo + prijava (privzeto spot seja; LOCAL E2E lahko prekliče z

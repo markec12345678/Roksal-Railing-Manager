@@ -88,6 +88,9 @@ describe('R372 stil val 55 — red/40 RAW pariteta (2 SUB O1→O2 + 6 INS offset
     expect(pod(R('src/components/roksal/measurements-tab.tsx'), N3)).toBe(1)
     expect(pod(R('src/components/roksal/sistem-zdravje-card.tsx'), N4)).toBe(1)
     // ne-tarčni ostanki: top-bar CMP (DropdownMenuItem odjava) — lastni fokus jezik
+    // [EVOLVED R378 val 59: ostanki RESOLVANI — top-bar ×2 + dashboard KIT
+    // L1914 (izjema #1) zdaj nosijo offset-2; asercije ostanejo zelene, ker
+    // so podnizi, ki se končajo na red/40, neovirani (INS je ZA njimi).]
     const TB = R('src/components/roksal/top-bar.tsx')
     expect(pod(TB, 'gap-2 focus-visible:ring-2 focus-visible:ring-roksal-red/40')).toBe(2)
     expect(TB).toContain('<DropdownMenuItem')
@@ -127,7 +130,7 @@ describe('R372 stil val 55 — red/40 RAW pariteta (2 SUB O1→O2 + 6 INS offset
     expect(navyO2).toBe(4)
   })
 
-  it('(D) census klasa dokaz: red/40 PO stanje čez vseh 15 nosilnih datotek (skupaj 25 = O2 11 + NONE 14, O1 0 — O1 razcep = 0) + vsi 14 NONE dokumentirani (12 KIT + 2 CMP) + navy/40 vsota 249 nespremenjena', () => {
+  it('(D) census klasa dokaz: red/40 PO stanje čez vseh 15 nosilnih datotek (skupaj 25 = O2 25 + NONE 0, O1 0 — O1 razcep = 0) + navy/40 vsota 249 nespremenjena [PIN SHIFT R378 val 59: 14 NONE (12 KIT + 2 CMP) → O2 — rdeča družina zaključena]', () => {
     // disk resnica — census semantika (r369-census.py) replika V TESTU
     // (LEKCIJA R364 (4): replika = ISTA semantika kot orodje)
     const nosilke = ['dashboard-tab', 'vodja-dashboard', 'floor-plan-tab', 'inventory-tab', 'material-intelligence-tab', 'measurements-tab', 'notification-center', 'photo-tab', 'quote-followup', 'roksal-catalog', 'sessions-dialog', 'sistem-zdravje-card', 'termini-card', 'top-bar', 'invoice-manager']
@@ -146,9 +149,9 @@ describe('R372 stil val 55 — red/40 RAW pariteta (2 SUB O1→O2 + 6 INS offset
     }
     expect(nosilke.length).toBe(15)
     expect(skupaj).toBe(25) // žig: val 55 ni dodal/odstranil nobene red/40 vrstice
-    expect(o2).toBe(11) // 8 val 55 tarč + 3 že-O2 (invoice ×2 + measurements 5679)
+    expect(o2).toBe(25) // [PIN SHIFT R378 val 59] prej 11 (8 val 55 + 3 že-O2); val 59 pariral 14 (12 KIT + 2 CMP) — družina 25/25
     expect(o1).toBe(0) // O1 razcep = 0 (SUB ×2 normalizirani)
-    expect(none).toBe(14) // vsi dokumentirani: 12 KIT (izjema #1) + 2 CMP (top-bar)
+    expect(none).toBe(0) // [PIN SHIFT R378 val 59] prej 14 dokumentiranih — val 59 resolval (r378-stil-val59.test.ts (D) dokaz)
     // navy/40 vsota čez 7 val 55 datotek (disk resnica: 9+4+26+47+3+2+1 =
     // 92 — val 55 jih NI spremenil; žig per-datoteka, red-only runda)
     let navy = 0
@@ -180,7 +183,11 @@ describe('R372 stil val 55 — red/40 RAW pariteta (2 SUB O1→O2 + 6 INS offset
     expect(SCAN).toContain('sistem-zdravje-card.tsx')
     expect(pod(SCAN, 'src/components/roksal/')).toBe(7) // 7 TARGETS
     // in-test klasifikacijska replika (ISTA semantika kot orodje):
-    // triaža GAP klasa = KIT ×12 + RAW ×0 + CMP ×2 (po applyu RAW = 0)
+    // [EVOLVED R378 val 59] prej: triaža GAP klas (red/40 BREZ O2) =
+    // {KIT: 12, CMP: 2}; val 59 je pariral vseh 14 → zanka OBRNJENA:
+    // triaža RED+O2 vrstic v 8 tarčnih datotekah = 15 (14 val 59 + L1987
+    // val 55 SUB) = {KIT: 12, CMP: 2, RAW: 1} — L1987 = RAW (nativni
+    // <button>, val 55 SUB tarča, že O2) — isto orodje, OBRNjen pogoj.
     const CMP_PAT = /<(DropdownMenu|Command|Card|Popover|Sheet|Tabs|Accordion|Dialog|Tooltip|Select|Calendar|Combobox)\w*/
     const DIV_PAT = /<(div|span|li|td|p|Badge|h[1-6])(?![-\w])/
     const klas = (lines: string[], i: number): string => {
@@ -201,14 +208,15 @@ describe('R372 stil val 55 — red/40 RAW pariteta (2 SUB O1→O2 + 6 INS offset
     for (const f of ['top-bar', 'dashboard-tab', 'floor-plan-tab', 'inventory-tab', 'quote-followup', 'roksal-catalog', 'sessions-dialog', 'termini-card']) {
       const lines = R(`src/components/roksal/${f}.tsx`).split('\n')
       for (const [i, v] of lines.entries()) {
-        if (!v.includes(RED) || v.includes(O2)) continue
+        if (!v.includes(RED) || !v.includes(O2)) continue // [EVOLVED R378 val 59] obrnjeno: triaža PARIRANIH
         const k = klas(lines, i)
         klasa[k] = (klasa[k] ?? 0) + 1
       }
     }
-    // KIT vrstice: dashboard ×5, floor-plan ×1, inventory ×1, quote-followup ×1,
-    // roksal-catalog ×1, sessions-dialog ×2, termini-card ×1 = 12; CMP: top-bar ×2
-    expect(klasa).toEqual({ KIT: 12, CMP: 2 })
+    // KIT vrstice (val 59 tarče): dashboard ×5, floor-plan ×1, inventory ×1,
+    // quote-followup ×1, roksal-catalog ×1, sessions-dialog ×2, termini-card
+    // ×1 = 12; CMP: top-bar ×2; RAW ×1 = dashboard L1987 (val 55 SUB, nativni)
+    expect(klasa).toEqual({ KIT: 12, CMP: 2, RAW: 1 })
     // era klon kanon: r372-era-harvest.sh nosi PETINDVJSETIJNA + REG_Y + prag 105
     // (LEKCIJA R371 (1): PRED-pogoje od POST-pogojev ločene preverbe)
     const era = R('scripts/r372-era-harvest.sh')

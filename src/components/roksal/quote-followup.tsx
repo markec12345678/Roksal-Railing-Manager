@@ -638,7 +638,7 @@ export function QuoteFollowUp() {
                         type="button"
                         size="icon"
                         variant="ghost"
-                        className="h-8 w-8 text-muted-foreground hover:text-roksal-red focus-visible:ring-2 focus-visible:ring-roksal-red/40"
+                        className="h-8 w-8 text-muted-foreground hover:text-roksal-red focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2"
                         aria-label={`Odstrani spomnik: ${p.nazivProjekta}`}
                         disabled={busyId === p.id}
                         onClick={() => void setFollowUp(p.id, null)}

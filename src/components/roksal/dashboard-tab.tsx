@@ -1911,7 +1911,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
           <Button
             variant="outline"
             size="sm"
-            className="h-7 border-roksal-red/40 text-roksal-red hover:bg-roksal-red/10 hover:text-roksal-red focus-visible:ring-2 focus-visible:ring-roksal-red/40"
+            className="h-7 border-roksal-red/40 text-roksal-red hover:bg-roksal-red/10 hover:text-roksal-red focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2"
             onClick={() => void fetchInventory()}
           >
             Poskusi znova
@@ -2056,7 +2056,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
           <Button
             variant="outline"
             size="sm"
-            className="h-7 border-roksal-red/40 text-roksal-red hover:bg-roksal-red/10 hover:text-roksal-red focus-visible:ring-2 focus-visible:ring-roksal-red/40"
+            className="h-7 border-roksal-red/40 text-roksal-red hover:bg-roksal-red/10 hover:text-roksal-red focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2"
             onClick={() => void fetchNarocila()}
           >
             Poskusi znova
@@ -2182,7 +2182,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="h-6 shrink-0 border-roksal-red/40 px-2 text-2xs text-roksal-red hover:bg-roksal-red/10 hover:text-roksal-red focus-visible:ring-2 focus-visible:ring-roksal-red/40"
+                    className="h-6 shrink-0 border-roksal-red/40 px-2 text-2xs text-roksal-red hover:bg-roksal-red/10 hover:text-roksal-red focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2"
                     onClick={() => void fetchCustomers()}
                   >
                     Poskusi znova
@@ -2488,7 +2488,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                             type="button"
                             variant="outline"
                             size="sm"
-                            className="mt-2 h-7 text-[11px] border-roksal-red/40 text-roksal-red hover:bg-roksal-red/10 hover:text-roksal-red focus-visible:ring-2 focus-visible:ring-roksal-red/40"
+                            className="mt-2 h-7 text-[11px] border-roksal-red/40 text-roksal-red hover:bg-roksal-red/10 hover:text-roksal-red focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2"
                             onClick={() => detailProject && refetchDetailMeasurements(detailProject)}
                           >
                             Poskusi znova
@@ -2632,7 +2632,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                           type="button"
                           variant="outline"
                           size="sm"
-                          className="mt-2 h-7 text-[11px] border-roksal-red/40 text-roksal-red hover:bg-roksal-red/10 hover:text-roksal-red focus-visible:ring-2 focus-visible:ring-roksal-red/40"
+                          className="mt-2 h-7 text-[11px] border-roksal-red/40 text-roksal-red hover:bg-roksal-red/10 hover:text-roksal-red focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2"
                           onClick={() => detailProject && refetchPortal(detailProject)}
                         >
                           Poskusi znova

@@ -1,0 +1,29 @@
+# qa-needles/r379.tsv — REGISTER needlejev runde R379 (STIL val 59:
+# red/40 offset-2 PARITETA — 14 × INS ' focus-visible:ring-offset-2'
+# TIK ZA 'focus-visible:ring-roksal-red/40' na 8 datotekah; val 52
+# pairing kanon (navy) generaliziran na rdečo družino; ciljni kanon
+# = val 43 RED_KANON; 11 že-pariranih = dokazana konvencija;
+# r372 val 55 izjema #1 (top-bar ×2 + dashboard KIT) RESOLVANA —
+# r372 (D)/(E) PIN SHIFT/EVOLVED žigi. Orodja: r379-census.sh
+# [disk resnica triaža: B/transition gap = NASLEDNJI val kandidat:
+# crm-tab ×12 + dashboard ×3 + cena paneli ×4 …; C/border gap ×37;
+# A/offset gap ×11] + r379-val59-apply.py fail-closed [scan→14,
+# apply 14, idempotenca 0] + r379-window-scan.py [8. generalizacija:
+# DEL 1 regex okna 53 + DEL 2 NOVO: needle pini iz registrov r340+
+# 139 vseh ŽIVIH v src (LEKCIJA R377 (4) formalizacija) + DEL 3
+# slice-okna 17; delta 28 → 0 preozkih] + spot-r167/22 [val 58
+# POST-deploy ZELEN; vodič race 2-fazni post-pogoj storage='true'].
+# KOLIZIJA #21: njihova poslovna R378 (73d57b0, PROIZVODNA DOMENA) je
+# pristala MED mojim delom — moja runda preimenovana R378→R379 po kanonu
+# KOLIZIJE #4/R323/#13–#20 (21. potrditev); fetch-first origin/main ==
+# HEAD 73d57b0 PO resetu + re-aplikaciji.
+#
+# FORMAT (TSV; EN vrstica = EN needle; TAB je LOČILO — presledki
+# znotraj needleja so POMENNI, ker grep -F išče dobesedno).
+# Vrste: need_static (MORA biti ŽIV v svežem buildu) | must_miss
+# (NESME biti v produkcijskih čankih).
+gap-2 focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2	R379 val 59 top-bar CMP par (L261+L268) — red/40 + offset-2 pariteta (x2 pojavitev v top-bar; 0 v HEAD)	need_static
+press-scale focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2	R379 val 59 sessions-dialog par (L316+L348) — red/40 + offset-2 pariteta (x2 pojavitev v sessions-dialog; 0 v HEAD)	need_static
+h-7 border-roksal-red/40 text-roksal-red hover:bg-roksal-red/10 hover:text-roksal-red focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2	R379 val 59 dashboard KIT par (L1914+L2059) — red/40 + offset-2 (x2 pojavitev v dashboard-tab; 0 v HEAD)	need_static
+mt-2 h-7 border-roksal-red/40 text-roksal-red hover:bg-roksal-red/10 hover:text-roksal-red focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2	R379 val 59 termini-card L474 (x1) + roksal-catalog L201 (x1) — isti niz per-datoteka (0 v HEAD)	need_static
+TODO-R379	must_miss: razvojni ostanki (nesme biti v produkcijskih cankih)	must_miss

@@ -258,14 +258,14 @@ export function TopBar({ onSync, syncing, onOpenPalette, hidden = false }: TopBa
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={() => void handleLogout(false)}
-                className="gap-2 focus-visible:ring-2 focus-visible:ring-roksal-red/40"
+                className="gap-2 focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2"
               >
                 <LogOut className="h-4 w-4 text-roksal-ink/70" aria-hidden="true" />
                 Ta naprava
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => void handleLogout(true)}
-                className="gap-2 focus-visible:ring-2 focus-visible:ring-roksal-red/40"
+                className="gap-2 focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2"
               >
                 <LogOut className="h-4 w-4 text-roksal-ink/70" aria-hidden="true" />
                 Vse naprave (tudi ta)

@@ -1737,7 +1737,7 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="h-7 px-2.5 text-2xs gap-1 border-roksal-red/30 text-roksal-red hover:bg-roksal-red/10 press-scale focus-visible:ring-2 focus-visible:ring-roksal-red/40"
+                            className="h-7 px-2.5 text-2xs gap-1 border-roksal-red/30 text-roksal-red hover:bg-roksal-red/10 press-scale focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2"
                             onClick={() => handleReorder(item)}
                             /* R217 (P1-f) — dostopnost je RESNICA: gumb ne
                                odpre naročila, ampak KPIRA naročilnico
