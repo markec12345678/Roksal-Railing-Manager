@@ -808,7 +808,7 @@ export function NotificationCenter() {
                           </p>
                         )}
                       </div>
-                      <ChevronRight aria-hidden="true" className="h-4 w-4 shrink-0 text-muted-foreground/50 transition-transform group-hover:translate-x-0.5 group-hover:text-roksal-amber" />
+                      <ChevronRight aria-hidden="true" className="h-4 w-4 shrink-0 text-muted-foreground/50 transition-[transform,color] group-hover:translate-x-0.5 group-hover:text-roksal-amber" />
                     </button>
                   </li>
                 )

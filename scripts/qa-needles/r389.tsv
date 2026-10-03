@@ -1,0 +1,38 @@
+# qa-needles/r389.tsv — REGISTER needlejev runde R389 (STIL val 67:
+# LASTNA-PREHOD GLADKOST — property-list nadgradnja; 2 × REPL in-place,
+# 0 novih vrstic). Disk resnica rundi [r389-triaza.py element-točna +
+# kaskadna analiza zgrajenega CSS]: konfliktna družina (transition-transform
+# + hover barvni žeton na istem elementu) = TOČNO 2: notification L811
+# (nativni ChevronRight — group-hover:text SNAP; aditivni transition-colors
+# bi OVERIL transform: .transition-colors @117441 < .transition-transform
+# @118190) + safety-tab L254 (ui-kit Button — baza transition-all OVERRIDANA
+# s strani elementa @118190 > @117243; LEKCIJA R389 (3): cva baza pokritost
+# je NIČNA, če element sam nosi ožjo transition-* utility).
+# ANKOR: REPL in-place (star ožji token IZGINIL z tarčne vrstice — needle
+# = NOVI najdaljši span); pre-skan r389-window-scan.py [13. generacija;
+# REG_DO 388; delta +8/+30 ×transition-transform: 304 regexov 0 preozkih
+# + 184 pinov 0 mrtvih + 150 slice-oknen + 0 vrstičnih odstopanj].
+# EVOLVED V ISTI RUNDI (kanon R368): r388-stil-val66 (C) L811 pin →
+# nadgrajena trditev + r388-hover-gladkost-generalizacija izjeme ×12→×11
+# (L811 pokritost sedaj resnična — stražar jo PREVERJA); žigi
+# [EVOLVED R389 val 67].
+# ERA (R389): DVAINŠTIRIDESIJNA preverba EXIT=0 ×2 — 171/171 ŽIVO
+# [42 registrov r347–r388]; LEKCIJA R389: (1) Vercel Security Checkpoint
+# (403) onesnažil žetev [večina 60 čankov = 403 strani (velikostna porazdelitev; natančen števec ni vztrajen); qa-harvest uspeh =
+# ne-prazno telo] → CHECKPOINT GUARD v era-clone.py (GLASNA razširitev);
+# (2) zamrznjen URL seznam iz R339 OPADE [5/60 = 'Not Found' telesa] →
+# ODPADNI CENZUS + era kontrole dobile hash-rezolucijski fallback
+# (R340 kontrola ŽIV prek fd237717403ebc43.js — izkazano).
+# PROD (R389): prod-qa re-run 388 ZELEN ob poskusu 1 [23. runda] + spot
+# r171/29 [val 66 MONTIRANO: n2Navy=1 + n4Red=1 className split; POGOJNE
+# iskrene 0: setup done-stanje + foto uredjevalnik; sonde 27/27/0 + red 0;
+# kolektor 0].
+# KOLIZIJA: brez (fetch-first origin/main == HEAD 2ccba6c == R388 push).
+#
+# FORMAT (TSV; EN vrstica = EN needle; TAB je LOČILO — presledki
+# znotraj needleja so POMENNI, ker grep -F išče dobesedno).
+# Vrste: need_static (MORA biti ŽIV v svežem buildu) | must_miss
+# (NESME biti v produkcijskih čankih).
+transition-[transform,color] group-hover:translate-x-0.5 group-hover:text-roksal-amber	R389 val 67 notification L811 (×1, nativni ChevronRight — property-list nadgradnja transition-transform → transition-[transform,color]; group-hover:text-roksal-amber NEHA biti snap; aditivno NI šlo — kaskada) (0 v HEAD 2ccba6c)	need_static
+transition-[transform,background-color,box-shadow] duration-200	R389 val 67 safety-tab L254 (×1, ui-kit Button — baza transition-all OVERRIDANA; nadgradnja → [transform,background-color,box-shadow]; hover:bg-roksal-navy/90 NEHA biti snap) (0 v HEAD 2ccba6c)	need_static
+TODO-R389	must_miss: razvojni ostanki (nesme biti v produkcijskih čankih)	must_miss

@@ -15,10 +15,11 @@
 //      viz/before-after L182+L185 (pointer-events-none — hover ne more
 //      ogniti), viz/step-product L275 + roksal/measurements L5609 +
 //      roksal/sessions-dialog L292 + roksal/quote-followup L409
-//      (hover:bg == bg — vizualno NIČ), roksal/notification-center L811
-//      (transition-transform konflikt — rabil bi property-list nadgradnjo,
-//      NI aditivno), lib/termini-prikaz L47/L49/L51/L53 (mrtvi izvozi —
-//      SCHEDULE_TERMINI_STATUS_COLORS brez .tsx potrošnika).
+//      (hover:bg == bg — vizualno NIČ), lib/termini-prikaz L47/L49/L51/L53
+//      (mrtvi izvozi — SCHEDULE_TERMINI_STATUS_COLORS brez .tsx potrošnika).
+//      [EVOLVED R389 val 67] roksal/notification-center L811 IZ IZJEM —
+//      property-list nadgradnja transition-[transform,color] (konflikt
+//      rešen; pokritost sedaj resnična in stražar jo PREVERJA).
 //  - vsaka NOVA kršitev = glasna regresija (stražar predstavlja kanon za
 //    prihodnje val-runde).
 import { describe, expect, it } from 'vitest'
@@ -39,7 +40,8 @@ const ZAMRZNJENE_IZJEME = new Set([
   // nosi transition-colors (pokritost resnično prisotna), iskalnik ne more
   // vezati elementa (disk resnica r388-triaza5.py — isti artefakt)
   'components/roksal/material-intelligence-tab.tsx:459',
-  'components/roksal/notification-center.tsx:811',
+  // [EVOLVED R389 val 67] notification-center.tsx:811 odstranjena —
+  // property-list nadgradnja; pokritost preverjena v glavnem skanu
   'lib/termini-prikaz.ts:47',
   'lib/termini-prikaz.ts:49',
   'lib/termini-prikaz.ts:51',

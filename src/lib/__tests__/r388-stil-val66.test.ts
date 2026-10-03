@@ -117,9 +117,13 @@ describe('R388 stil val 66 — hover-barvna gladkost (21 × INS transition-color
     const tp = R('lib/termini-prikaz.ts')
     expect(pod(tp, 'hover:bg-roksal-')).toBe(5)
     expect(tp.includes(TC)).toBe(false)
-    // transition-transform konflikt (L811) — NI aditivno rešljiv, ostaja
+    // [EVOLVED R389 val 67] L811 konflikt REŠEN: property-list nadgradnja
+    // transition-transform → transition-[transform,color] (NI aditivno —
+    // kaskada: .transition-transform @118190 > .transition-colors @117441;
+    // transform + color SEDAJ OBA gladka)
     const nc = R('components/roksal/notification-center.tsx').split('\n')[810]
-    expect(nc.includes('transition-transform')).toBe(true)
+    expect(nc.includes('transition-[transform,color]')).toBe(true)
+    expect(nc.includes('transition-transform')).toBe(false)
     expect(nc.includes('group-hover:text-roksal-amber')).toBe(true)
   })
 

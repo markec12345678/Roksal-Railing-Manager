@@ -36,6 +36,10 @@
 #     klon r{src}-era-ruta-map.py z žigi r{src}→r{dst}; tolerantno
 #     preskočen, če vhodni companion ne obstaja — poslovne runde).
 #     Fail-closed: companion preverba PRED zapisom obeh datotek.
+#   - R389 CHECKPOINT GUARD (LEKCIJA R389): vsak generiran era-harvest nosi
+#     guard po žetevi — 403 "Vercel Security Checkpoint" strani v žetevi
+#     (qa-harvest uspeh = ne-prazno telo, 403 stran JE ne-prazna) = glasno
+#     abort z diagnozo, NIKOLI lažni MISS storm.
 import argparse, pathlib, re, sys
 
 REPO = pathlib.Path("/home/z/my-project")
@@ -62,6 +66,8 @@ ERA_BESODE = {
     40: ("ŠTIRIDESIJNA", "štiridesete", "štirideset", "ŠTIRIDESETIH"),
     # R388: GLASNA razširitev (guard zahteva) — 41. era preverba
     41: ("ENAINŠTIRIDESIJNA", "enainštiridesete", "enainštirideset", "ENAINŠTIRIDESETIH"),
+    # R389: GLASNA razširitev (guard zahteva) — 42. era preverba
+    42: ("DVAINŠTIRIDESIJNA", "dvainštiridesete", "dvainštirideset", "DVAINŠTIRIDESETIH"),
 }
 ERA_MEJA = max(ERA_BESODE)
 
@@ -165,6 +171,37 @@ def main() -> None:
     # 1) glava — vrstica z imenom skripta + era beseda
     rep(f"# r{src}-era-harvest.sh — R{src} {ERA_BESODE[stevec-1][0]} era preverba: r347.tsv val 30",
         f"# r{dst}-era-harvest.sh — R{dst} {ERA} era preverba: r347.tsv val 30", 1)
+    # 1b) R389 CHECKPOINT GUARD — vstavljen TIK za žetev povzetkom (glasen
+    #     fail-closed; LEKCIJA R389: 403 "Vercel Security Checkpoint" strani
+    #     v žetevi = onesnažena žeteva, ker qa-harvest uspeh = ne-prazno telo
+    #     in 403 stran JE ne-prazna; brez guardarja lažni MISS storm)
+    rep('echo "ŽETEV: $n čankov (kanonska utrjena žeteva — retry ×3 kanon)"\n',
+        'echo "ŽETEV: $n čankov (kanonska utrjena žeteva — retry ×3 kanon)"\n'
+        '\n'
+        '# R389 CHECKPOINT GUARD (LEKCIJA R389): 403 "Vercel Security Checkpoint"\n'
+        '# strani V ŽETEVI = onesnažena žeteva (qa-harvest uspeh = ne-prazno telo —\n'
+        '# 403 stran JE ne-prazna!). Brez guardarja: lažni MISS storm + zavajajoč\n'
+        "# 'neuspešno razrešeni' namesto prave diagnoze. Glasen fail-closed abort:\n"
+        'if grep -rlq "Vercel Security Checkpoint" "$OUT" 2>/dev/null; then\n'
+        '  pol=0\n'
+        '  for f in "$OUT"/*.bin; do\n'
+        '    if grep -q "Vercel Security Checkpoint" "$f" 2>/dev/null; then pol=$((pol+1)); fi\n'
+        '  done\n'
+        '  echo "FAILOVEDANO: prod CDN vrača Vercel Security Checkpoint (403) — $pol/$n čankov onesnaženih; era preverba NEVELJAVNA (deterministična pavza + ponovni poskus kasneje; NI code-bug, NI pokritostna vrzel)"\n'
+        '  exit 2\n'
+        'fi\n'
+        '\n'
+        '# R389 ODPADNI CENZUS (LEKCIJA R389 (2)): zamrznjen URL seznam je iz R339 —\n'
+        '# stari Vercel artefakti OPADEJO ("Not Found" telesa). Iskren vidni popis\n'
+        '# (poročilo, NE abort — need_static ima hash-rezolucijski fallback):\n'
+        'odpad=0\n'
+        'for f in "$OUT"/*.bin; do\n'
+        '  if [ "$(head -c 9 "$f" 2>/dev/null)" = "Not Found" ]; then odpad=$((odpad+1)); fi\n'
+        'done\n'
+        'if [ "$odpad" -gt 0 ]; then\n'
+        '  echo "OPOMBA: $odpad/$n čankov iz zamrznjenega URL seznama (R339) = \'Not Found\' (opadel artefakt — pokritost gredo prek hash rezolucije, LEKCIJA R354)"\n'
+        'fi\n', 1)
+
     # 2) glava — register veriga (override za poslovne runde)
     if args.dst_chain_seg:
         # 9. generalizacija (R379 KOLIZIJA #21): dejanski glavni rep je
@@ -229,6 +266,21 @@ def main() -> None:
     if len(ban_naj) != 1:
         sys.exit(f"FAILOVEDANO: banner seg 'IN {srclabel} (×N) ŽIVO NA PRODU' = {len(ban_naj)} ≠ 1")
     out = ban.sub(f"IN {srclabel} (×{need_static_disk(src-1)}) IN {dstlabel} (×{dst_n}) ŽIVO NA PRODU".replace("\\", "\\\\"), out, count=1)
+    rep('  if grep -rlqF -- "$needle" "$OUT" 2>/dev/null; then echo "era kontrola $tag: ŽIV"; else echo "era kontrola $tag: MISS"; fi',
+        '  if grep -rlqF -- "$needle" "$OUT" 2>/dev/null; then echo "era kontrola $tag: ŽIV"; else\n'
+        '    # R389 hash-rezolucija fallback (LEKCIJA R354 kanon; R389: URL seznam iz\n'
+        '    # R339 OPADE — era kontrola dobi ISTI rezolucijski mehanizem kot need_static):\n'
+        '    lokalni=$(grep -rlF -- "$needle" .next/static/chunks/ 2>/dev/null | head -1)\n'
+        '    res=""\n'
+        '    if [ -n "$lokalni" ]; then\n'
+        '      ime=$(basename "$lokalni")\n'
+        f'      koda=$(curl -sS --max-time 30 -o "/tmp/r{dst}-kontrola-$ime" -w "%{{http_code}}" "$BASE/_next/static/chunks/$ime" 2>/dev/null || echo 000)\n'
+        '      if [ "$koda" = "200" ] && grep -qF -- "$needle" "/tmp/r{0}-kontrola-$ime" 2>/dev/null; then\n'.format(dst) +
+        '        echo "era kontrola $tag: ŽIV (hash rezolucija $ime — URL seznam opadel)"; res=1\n'
+        '      fi\n'
+        '    fi\n'
+        '    [ -n "$res" ] || echo "era kontrola $tag: MISS"\n'
+        '  fi', 1)
     # 11) tri končni bannerji
     rep(f"=== R{src} {ERA_BESODE[stevec-1][0]} ERA PREVERBA",
         f"=== R{dst} {ERA} ERA PREVERBA", 3)
@@ -325,6 +377,10 @@ fi
     else:
         seg_check = (f"IN r{src}.tsv", 1)
     checks = [
+        ("CHECKPOINT GUARD", 1),
+        ("Vercel Security Checkpoint", 2),
+        ("ODPADNI CENZUS", 1),
+        ("era kontrola $tag: ŽIV (hash rezolucija", 1),
         (f'REG_{reg_var(src)}="scripts/qa-needles/r{src}.tsv"', 1),
         (f'preberi_register "$REG_{reg_var(src)}" "{dstlabel}"', 1),
         (ERA, 4),

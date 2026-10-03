@@ -251,7 +251,7 @@ export function SafetyTab() {
         </div>
         <Button
           size="sm"
-          className="h-9 px-3 bg-roksal-navy hover:bg-roksal-navy/90 text-white gap-1.5 transition-transform duration-200 active:scale-95 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+          className="h-9 px-3 bg-roksal-navy hover:bg-roksal-navy/90 text-white gap-1.5 transition-[transform,background-color,box-shadow] duration-200 active:scale-95 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
           onClick={handleShareReport}
           disabled={!windData}
           aria-label="Kopiraj varnostno poročilo na odložišče"
