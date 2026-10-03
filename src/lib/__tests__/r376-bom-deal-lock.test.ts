@@ -71,6 +71,15 @@ async function pocisti() {
     for (const z of znaki) {
       if (z.storageKey) await deleteObject(z.storageKey).catch(() => undefined)
     }
+    // R395 (§16): zaklep zdaj izda tudi PONUDBA PDF — artefakt počistimo
+    // PRED brisanjem vrstic (ključi živijo na DocumentVersion):
+    const dvs = await db.documentVersion.findMany({
+      where: { document: { projectId: { in: ids } } },
+      select: { storageKey: true },
+    })
+    for (const dv of dvs) {
+      await deleteObject(dv.storageKey).catch(() => undefined)
+    }
     await db.signatureAudit.deleteMany({ where: { projectId: { in: ids } } })
     await db.auditLog.deleteMany({ where: { projectId: { in: ids } } })
     await db.bOM.deleteMany({ where: { projectId: { in: ids } } }) // verzije+vrstice kaskadajo

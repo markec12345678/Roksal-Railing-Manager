@@ -13,36 +13,55 @@
 // (SignatureAudit.bomVersionId). Project.bomDraftJson se ŠE VEDNO piše —
 // LEGACY read-model za stari BOM UI, NI KANONIČEN (komentar na mestu zapisa).
 //
+// R395 (issue #13, korak R172, §16 SIGNATURE + DOCUMENT CHAIN): NEPREKINJENA
+// vez QuoteVersion → DocumentVersion → DEJANSKI PDF bajti → SHA-256 →
+// SignatureAudit → DealLock:
+//   • telo lahko prinese documentVersionId (EXACT PDF verzija, izdana prek
+//     POST /api/quotes/[id]/pdf) — rutna jo PREVERI: vezava na TISO verzijo
+//     ponudbe, pripadnost projektu, tip PONUDBA, bajti FIZIČNO v storage in
+//     RE-HASH bajtov == zabeležen sha256 (document-chain.ts — jedro §16
+//     "PDF hash = hash dejanskih PDF bajtov");
+//   • brez njega strežnik SAM izda PONUDBA PDF iz kanonične verzije
+//     (quote-pdf.ts renderer; bajti PRE transakcije po R122 vzorcu) in
+//     podpiše NAD NJIM — klientova pot do tuje/višje vsebine NE OBSTOJA;
+//   • klientov pdfHash (do R393 sprejet kot resnica) je DEPRECIERAN: če ga
+//     telo pošlje, se MORA ujemati s strežniško izračunanim (409 sicer —
+//     odkrito, ne tiho ignoriranje);
+//   • SignatureAudit ×2 nosita documentVersionId + pdfHash = sha256 TE
+//     verzije dokumenta; BAZA trigger signature_audit_document_chain zavrne
+//     nedosledno vrstico TUDI mimo te plasti (migracija r395).
+//
 // POST /api/deal-lock { projectId, quoteVersionId, customerName, monterName,
 //                        customerSignature, monterSignature, geoLatitude?,
-//                        geoLongitude?, pdfHash? } — strežnik:
+//                        geoLongitude?, documentVersionId?, pdfHash? } — strežnik:
 //   1. avtentikacija + deal.lock pravica + dostop 'update' do projekta (R120);
 //   2. naloži QuoteVersion; pripadati mora TALEMU projektu (prečni → 409);
 //   3. status ISSUED ali APPROVED (DRAFT → 409 — nezaključena ponudba se ne
 //      podpisuje; ISSUED→APPROVED se zgodi SAMO tu, ob uspešnem podpisu);
 //   4. verifyQuoteVersionIntegrity nad VEZANE knjige — tampiranje → 409 (§16);
-//   5. KANONIČNI BOM iz STRUKTURIRANIH postavk verzije (R376 §6/§7) + legacy
+//   5. §16 DOKUMENTNA VERIGA (zgoraj) — pdfHash = SHA-256 DEJANSKIH PDF bajtov;
+//   6. KANONIČNI BOM iz STRUKTURIRANIH postavk verzije (R376 §6/§7) + legacy
 //      bomDraftJson (sku = code, qty = qty — brez hevristike);
-//   6. marginLocked = NAČRTOVANA marža iz referenceCost VEZANE knjige —
+//   7. marginLocked = NAČRTOVANA marža iz referenceCost VEZANE knjige —
 //      manjka katerikoli → NULL (iskreno NEZNANO; lažni ×0.6/×0.15 IZBRISANI);
-//   7. estimatedPrice = total VEZANE verzije (ne klientov, ne ničel);
-//   8. ATOMSKO (ena transakcija): zaklep projekta + KANONIČNA BOMVersion
-//      (APPROVED + supersede prejšnjih DRAFT) + SignatureAudit ×2 z
-//      quoteVersionId + quoteInputHash + bomVersionId (§16/§7 veriga) +
-//      verzija → APPROVED + AuditLog; podpisi v object storage (R122 vzorec:
-//      bajti PRE transakcije, kompenzacija ob padcu — 0 sirot) + R149
-//      validacija vsebine.
+//   8. estimatedPrice = total VEZANE verzije (ne klientov, ne ničel);
+//   9. ATOMSKO (ena transakcija): zaklep projekta + KANONIČNA BOMVersion
+//      (APPROVED + supersede prejšnjih DRAFT) + (§16) PONUDBA Document +
+//      DocumentVersion + SignatureAudit ×2 z quoteVersionId + quoteInputHash +
+//      bomVersionId + documentVersionId (§16/§7 veriga) + verzija → APPROVED +
+//      AuditLog; podpisi in PDF v object storage (R122 vzorec: bajti PRE
+//      transakcije, kompenzacija ob padcu — 0 sirot) + R149 validacija vsebine.
 //
 // GET ?projectId= (§17 IDOR fix): dostop 'read' do projekta (do R372 se je
 //   preverila SAMO prijava) + MINIMALNI DTO — BREZ storageKey/ip/userAgent/
 //   deviceFingerprint/geo v odgovoru (allowlist: tip, ime, vloga, veljavnost,
-//   verzija, BOM verzija id/številka/status/št. vrstic, čas). Surovi
-//   SignatureAudit NI vračan.
+//   verzija, BOM verzija id/številka/status/št. vrstic, dokument verzija id/št.,
+//   čas). Surovi SignatureAudit NI vračan.
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import crypto from 'crypto'
 import { authenticate, unauthorized } from '@/lib/auth'
-import { assertProjectAccess, lacksPermission, AccessDeniedError } from '@/lib/access'
+import { assertProjectAccess, lacksPermission, actorLabelOf, AccessDeniedError } from '@/lib/access'
 import { auditInTx } from '@/lib/audit'
 import {
   deleteObject,
@@ -60,6 +79,8 @@ import type { QuoteItem } from '@/lib/quote'
 import { bomDraftFromLines, plannedMargin, verifyQuoteVersionIntegrity } from '@/lib/quote-versions'
 import { bomVersionFromQuoteVersion } from '@/lib/bom-versions'
 import { naloziInventarneVezave, ustvariBomVerzijoVTx, BomStoreError } from '@/lib/bom-store'
+import { ponudbaKontekst, preveriVerzijoDokumenta } from '@/lib/document-chain'
+import { generateQuotePdf } from '@/lib/quote-pdf'
 
 interface DealLockRequest {
   projectId: string
@@ -71,6 +92,13 @@ interface DealLockRequest {
   monterSignature: string // base64 PNG
   geoLatitude?: number
   geoLongitude?: number
+  /** R395 (§16): EXACT verzija PONUDBA PDF-ja, nad katero se podpisuje
+   * (izdana prek POST /api/quotes/[id]/pdf). Opcijsko — brez njega strežnik
+   * SAM izda PDF iz kanonične verzije (znotraj istega zaklepa). */
+  documentVersionId?: string
+  /** ZASTARELO (R395 §16): klientov pdfHash NI VEČ vir resnice — PDF hash je
+   * SHA-256 DEJANSKIH PDF bajtov (DocumentVersion). Če ga telo pošlje, se
+   * MORA ujemati s strežniškim (409 sicer — odkrito, ne tiho). */
   pdfHash?: string
   /** ZASTARELO (do R372) — klientovi finančni podatki. ZAVRNJENO (400). */
   quoteData?: unknown
@@ -131,7 +159,8 @@ export async function POST(request: Request) {
     // ── KANONIČNA VERZIJA (§2/§3): naloži + vrata ──────────────────────────
     const version = await db.quoteVersion.findUnique({
       where: { id: quoteVersionId },
-      include: { quote: { select: { projectId: true } } },
+      // R395 §16: customerId potrebujemo za PONUDBA PDF (stranka ponudbe).
+      include: { quote: { select: { projectId: true, customerId: true } } },
     })
     if (!version) {
       return NextResponse.json({ error: 'Verzija ponudbe ne obstaja' }, { status: 404 })
@@ -214,14 +243,91 @@ export async function POST(request: Request) {
     // Skupaj z DDV = total VEZANE verzije (edini vir; klientov vpliv = 0).
     const estimatedPrice = version.total.toNumber()
 
-    // Hash podpisanega dokumenta: prioriteta klientov pdfHash (resnična
-    // datoteka), sicer determinističen sintetični hash pogodbenih podatkov —
-    // vezan na kanonično verzijo (quoteVersionId + inputHash).
-    const pdfHash = body.pdfHash ||
-      crypto
-        .createHash('sha256')
-        .update(`${projectId}|${quoteVersionId}|${version.inputHash}|${customerName}|${monterName}|${bomJson}`)
-        .digest('hex')
+    // ── §16 (R395): DOKUMENTNA VERIGA — QuoteVersion → DocumentVersion →
+    //    dejanski PDF bajti → SHA-256 → SignatureAudit → zaklep ──────────
+    // (a) telo je prineslo documentVersionId → EXACT preverba (vezava na
+    //     TISO verzijo ponudbe + projekt + tip PONUDBA + bajti FIZIČNO v
+    //     storage + RE-HASH bajtov == zabeležen sha256 — document-chain.ts);
+    // (b) sicer strežnik SAM izda PONUDBA PDF iz kanonične verzije
+    //     (bajti PRE transakcije, R122 vzorec — kompenzacija spodaj);
+    // (c) klientov pdfHash (ZASTARELO) se SAMO preveri proti strežniškemu.
+    let pdfHash: string
+    let podpisanaDokumentVerzija: {
+      id: string
+      documentId: string
+      version: number
+      sha256: string
+      sizeBytes: number
+    }
+    // Samo za pot (b) — zapis v transakciji + kompenzacija ob padcu:
+    let novPdf: { documentId: string; version: number; key: string; sizeBytes: number; isNewDocument: boolean } | null = null
+    if (body.documentVersionId) {
+      const preverba = await preveriVerzijoDokumenta(body.documentVersionId, quoteVersionId, projectId)
+      if (!preverba.ok) {
+        return NextResponse.json({ error: preverba.error }, { status: preverba.status })
+      }
+      podpisanaDokumentVerzija = {
+        id: preverba.dv.id,
+        documentId: preverba.dv.documentId,
+        version: preverba.dv.version,
+        sha256: preverba.dv.sha256,
+        sizeBytes: preverba.dv.sizeBytes,
+      }
+      pdfHash = preverba.dv.sha256
+    } else {
+      const kontekst = await ponudbaKontekst(version.id)
+      const stranka = (await db.customer.findFirst({
+        where: { id: version.quote.customerId ?? project.customerId ?? undefined },
+        select: { ime: true, naslov: true, telefon: true, email: true },
+      })) ?? null
+      const pdfBytes = generateQuotePdf({
+        documentId: kontekst.documentId,
+        version: kontekst.nextVersion,
+        datumIzdaje: new Date().toISOString(),
+        quoteVersion: {
+          id: version.id,
+          versionNumber: version.versionNumber,
+          status: version.status,
+          inputHash: version.inputHash,
+          subtotal: version.subtotal.toNumber(),
+          vat: version.vat.toNumber(),
+          total: version.total.toNumber(),
+          currency: version.currency,
+          lines,
+        },
+        project: { naziv: project.nazivProjekta, status: project.status },
+        customer: stranka,
+        priceBookVersionNumber: bound.version,
+        actor: actorLabelOf(auth),
+      })
+      const pdfKey = objectKey('documents', kontekst.documentId, `v${kontekst.nextVersion}.${extensionForMime('application/pdf')}`)
+      const put = await putObject(pdfKey, pdfBytes, 'application/pdf')
+      novPdf = {
+        documentId: kontekst.documentId,
+        version: kontekst.nextVersion,
+        key: put.key,
+        sizeBytes: put.sizeBytes,
+        isNewDocument: kontekst.isNewDocument,
+      }
+      podpisanaDokumentVerzija = {
+        id: '', // določi se znotraj transakcije (create vrne id)
+        documentId: kontekst.documentId,
+        version: kontekst.nextVersion,
+        sha256: put.sha256,
+        sizeBytes: put.sizeBytes,
+      }
+      pdfHash = put.sha256
+    }
+    // (c) ZASTARELI klientov pdfHash: odkrita preverba ujemanja (409).
+    if (body.pdfHash && body.pdfHash !== pdfHash) {
+      return NextResponse.json(
+        {
+          error:
+            'Poslani pdfHash se ne ujema s strežniškim SHA-256 podpisovanega PDF-ja (R395 §16 — hash izhaja IZKLJUČNO iz dejanskih PDF bajtov).',
+        },
+        { status: 409 },
+      )
+    }
 
     // IP + User-Agent iz headers (za audit — NE v GET odgovoru, §17)
     const forwarded = request.headers.get('x-forwarded-for')
@@ -321,9 +427,51 @@ export async function POST(request: Request) {
           now: new Date(),
         })
 
+        // §16 (R395): PONUDBA PDF — če ga telo NI prineslo, ga strežnik izda
+        // SAMO (atomsko z zaklepom): zabojnik Document (tip PONUDBA, vezan
+        // na verzijo ponudbe — partial UNIQUE je zadnja linija) + NOVA
+        // DocumentVersion (bajti so ŽE v object storage zgoraj; tu SAMO
+        // metadata). Zelo namenoma PRED SignatureAudit zapisom: baza trigger
+        // signature_audit_document_chain zahteva, da verzija, ki jo podpis
+        // referencira, ŽE obstaja znotraj transakcije.
+        if (novPdf) {
+          if (novPdf.isNewDocument) {
+            await tx.document.create({
+              data: {
+                id: novPdf.documentId,
+                projectId,
+                tipDokumenta: 'PONUDBA',
+                quoteVersionId: version.id,
+                storageKey: novPdf.key,
+                sha256: podpisanaDokumentVerzija.sha256,
+                status: 'GENERIRANO',
+              },
+            })
+          } else {
+            await tx.document.update({
+              where: { id: novPdf.documentId },
+              data: { storageKey: novPdf.key, sha256: podpisanaDokumentVerzija.sha256, status: 'GENERIRANO' },
+            })
+          }
+          const novaDv = await tx.documentVersion.create({
+            data: {
+              documentId: novPdf.documentId,
+              version: novPdf.version,
+              storageKey: novPdf.key,
+              mime: 'application/pdf',
+              sizeBytes: novPdf.sizeBytes,
+              sha256: podpisanaDokumentVerzija.sha256,
+              quoteVersionId: version.id,
+            },
+          })
+          podpisanaDokumentVerzija = { ...podpisanaDokumentVerzija, id: novaDv.id }
+        }
+
         // §16/§7 veriga: SignatureAudit nosi quoteVersionId + quoteInputHash +
-        // bomVersionId — podpis je vezan na TOČNO to (nespremenljivo) verzijo
-        // ponudbe IN kanonično BOM verzijo, ustvarjeno ob zaklepu.
+        // bomVersionId + documentVersionId — podpis je vezan na TOČNO to
+        // (nespremenljivo) verzijo ponudbe, kanonično BOM verzijo, ustvarjeno
+        // ob zaklepu, IN EXACT verzijo PDF dokumenta (pdfHash = njen sha256,
+        // izračunan nad DEJANSKIMI bajti — trigger čuva nadalje).
         await tx.signatureAudit.createMany({
           data: [
             {
@@ -332,6 +480,7 @@ export async function POST(request: Request) {
               quoteVersionId,
               quoteInputHash: version.inputHash,
               bomVersionId: bomVerzija.versionId,
+              documentVersionId: podpisanaDokumentVerzija.id,
               signatureType: 'CUSTOMER',
               signedByName: customerName,
               signedByRole: 'stranka',
@@ -353,6 +502,7 @@ export async function POST(request: Request) {
               quoteVersionId,
               quoteInputHash: version.inputHash,
               bomVersionId: bomVerzija.versionId,
+              documentVersionId: podpisanaDokumentVerzija.id,
               signatureType: 'MONTER',
               signedByName: monterName,
               signedByRole: 'monter',
@@ -391,6 +541,10 @@ export async function POST(request: Request) {
             bomVersionId: bomVerzija.versionId,
             bomVersionNumber: bomVerzija.versionNumber,
             bomLineCount: bomVerzija.lineCount,
+            // §16 veriga dokumenta: EXACT verzija PONUDBA PDF-ja + njen
+            // SHA-256 (hash DEJANSKIH PDF bajtov v object storage).
+            documentVersionId: podpisanaDokumentVerzija.id,
+            documentVersionNumber: podpisanaDokumentVerzija.version,
             customerName,
             monterName,
             total: estimatedPrice,
@@ -404,9 +558,13 @@ export async function POST(request: Request) {
       })
     } catch (txError) {
       // R122 kompenzacija: transakcija DB padla → zbriši že zapisane
-      // artefakte podpisov (idempotentno; 0 sirot v object storage).
+      // artefakte podpisov IN (R395) morebitni samodejno izdani PONUDBA PDF
+      // (idempotentno; 0 sirot v object storage).
       for (const k of uploadedSignatureKeys) {
         await deleteObject(k).catch(() => undefined)
+      }
+      if (novPdf) {
+        await deleteObject(novPdf.key).catch(() => undefined)
       }
       throw txError
     }
@@ -436,6 +594,14 @@ export async function POST(request: Request) {
       // NULL = načrtovana marža NEZNANA (manjka referenceCost v vezani knjigi).
       marginLocked,
       estimatedPrice,
+      // §16 (R395): EXACT verzija PONUDBA PDF-ja, nad katero je podpis dan —
+      // pdfHash = njen SHA-256 (izračunan nad DEJANSKIMI bajti; minimalni DTO
+      // brez storageKey/sha256 polj — enak kanon kot bomVersion zgoraj).
+      documentVersion: {
+        id: podpisanaDokumentVerzija.id,
+        versionNumber: podpisanaDokumentVerzija.version,
+        sizeBytes: podpisanaDokumentVerzija.sizeBytes,
+      },
       pdfHash,
       signatureAuditCount,
     })
@@ -501,6 +667,8 @@ export async function GET(request: Request) {
         quoteVersionId: true,
         quoteInputHash: true,
         bomVersionId: true,
+        // §16 (R395): veriga dokumenta — EXACT verzija PONUDBA PDF-ja.
+        documentVersionId: true,
         pdfHash: true,
         createdAt: true,
       },

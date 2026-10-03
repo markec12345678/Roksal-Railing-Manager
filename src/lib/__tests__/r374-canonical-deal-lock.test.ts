@@ -108,6 +108,15 @@ describe('R374 — KANONIČNI DEAL-LOCK (issue #13 R165)', () => {
     for (const z of znaki) {
       if (z.storageKey) await deleteObject(z.storageKey).catch(() => undefined)
     }
+    // R395 (§16): zaklep zdaj izda tudi PONUDBA PDF — artefakt počistimo
+    // PRED brisanjem vrstic (ključi živijo na DocumentVersion):
+    const dvs = await db.documentVersion.findMany({
+      where: { document: { project: { nazivProjekta: { contains: 'r374-kanon' } } } },
+      select: { storageKey: true },
+    })
+    for (const dv of dvs) {
+      await deleteObject(dv.storageKey).catch(() => undefined)
+    }
     await db.signatureAudit.deleteMany({ where: { project: { nazivProjekta: { contains: 'r374-kanon' } } } })
     await db.quoteVersion.deleteMany({ where: { quote: { project: { nazivProjekta: { contains: 'r374-kanon' } } } } })
     await db.quote.deleteMany({ where: { project: { nazivProjekta: { contains: 'r374-kanon' } } } })

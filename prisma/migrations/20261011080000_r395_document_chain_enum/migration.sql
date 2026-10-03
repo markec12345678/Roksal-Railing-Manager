@@ -1,0 +1,13 @@
+-- R395 — SIGNATURE + DOCUMENT CHAIN (issue #13, korak R172 iz §16), 1/2.
+-- ============================================================================
+-- SAMO enum razširitev DocumentType + PONUDBA (PDF ponudbe — kanonični
+-- artefakt, nad katerim se podpisuje deal; SignatureAudit → DocumentVersion).
+--
+-- ZAKAJ LOČENA MIGRACIJA (iskrena tehnična meja, ne stil): Prisma migrate
+-- deploy poganja VSAKO migracijo v ENI transakciji; PostgreSQL zavrne
+-- uporabo SVEŽE dodane vrednosti enuma v ISTI transakciji ("unsafe use of
+-- new value" — velja za primerjave v DDL, npr. WHERE pogoj delnega UNIQUE
+-- indeksa v 2/2). Vrednost mora biti zapisana (COMMIT) pred uporabo →
+-- enum prvi, ostalo (stolpci + indeksi + triggerji) v 2/2. Precedens:
+-- vsaka '..._enum' ločitev je dokazano nujna, ne okrasna.
+ALTER TYPE "DocumentType" ADD VALUE 'PONUDBA';

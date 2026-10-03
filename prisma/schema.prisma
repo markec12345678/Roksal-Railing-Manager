@@ -644,6 +644,9 @@ enum DocumentType {
   PRIMOPREDAJA
   E_RACUN
   ZAPISNIK_NAVORA
+  // R395 (issue #13, korak R172 iz §16): PDF ponudbe — kanonični artefakt,
+  // nad katerim se podpisuje deal (SignatureAudit → DocumentVersion).
+  PONUDBA
 }
 
 model Document {
@@ -656,9 +659,18 @@ model Document {
   tipDokumenta DocumentType @default(TEHNICNI_LIST)
   status       String       @default("GENERIRANO")
   createdAt    DateTime     @default(now())
+  // R395 (§16 veriga): ZABOJNIK PONUDBA PDF-jev ene verzije ponudbe —
+  // regeneracije = NOVE DocumentVersion vrstice pod TEM Documentom.
+  // Partial UNIQUE Document_ponudba_quote_key (v migraciji, raw SQL —
+  // Prisma ne izraža delnih indeksev): EN PONUDBA dokument na verzijo
+  // ponudbe (zadnja linija za vzporedne zapise; prva = store/plast).
+  quoteVersionId String?
 
   versions DocumentVersion[]
   project  Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  quoteVersion QuoteVersion? @relation("QuotePonudbaDocuments", fields: [quoteVersionId], references: [id], onDelete: Cascade)
+
+  @@index([quoteVersionId])
 }
 
 // ============================================
@@ -668,6 +680,16 @@ model Document {
 // object storage → DocumentVersion. DB hrani SAMO metadata; bajti v
 // object storage (src/lib/object-storage.ts). Verzija se poveča ob vsaki
 // regeneraciji — prejšnje verzije ostajo (neizbrisna revizijska sled).
+//
+// R395 (issue #13, korak R172 iz §16 — SIGNATURE + DOCUMENT CHAIN):
+//   QuoteVersion → DocumentVersion → dejanski PDF bajti → SHA-256 →
+//   SignatureAudit → DealLock.
+// IMMUTABILNOST na ravni BAZE: trigger document_version_no_update
+// (migracija) ZAVRNE vsako UPDATE vrstico — vsebina verzije dokumenta je
+// ZAMRZNJENA ob nastanku (nova vsebina = NOVA verzija, kanon R121);
+// prej je bila nespremenljivost SAMO konvencija kode (nikjer ni bil update,
+// a nič je ni preprečil). DELETE ostaja dovoljen (kaskade Projekta —
+// destruktivno dejanje izbriše celotno projektno zgodovino, kanon iz init).
 model DocumentVersion {
   id         String   @id @default(cuid())
   documentId String
@@ -677,11 +699,18 @@ model DocumentVersion {
   sizeBytes  Int
   sha256     String // SHA-256 bajtov artefakta
   createdAt  DateTime @default(now())
+  // R395 §16 veriga: KANONIČNA povezava na verzijo ponudbe, iz katere je
+  // PDF izračunan (samo PONUDBA dokumenti jo nosijo; ostali tipi = NULL).
+  // SignatureAudit.documentVersionId se veže NA TO vrstico — podpis vedno
+  // referencira EXACT verzijo dokumenta z zabeleženim SHA-256 dejanskih bajtov.
+  quoteVersionId String?
 
   document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  quoteVersion QuoteVersion? @relation("QuoteVersionDocumentVersions", fields: [quoteVersionId], references: [id], onDelete: Cascade)
 
   @@unique([documentId, version])
   @@index([documentId])
+  @@index([quoteVersionId])
 }
 
 // ============================================
@@ -936,6 +965,15 @@ model SignatureAudit {
   // izmišljanja zgodovine). Mehka referenca (brez FK) — isti vzorec kot
   // quoteVersionId: brisanje BOM verzije ne brše podpisne zgodovine.
   bomVersionId      String?
+  // R395 (issue #13 korak R172, §16 SIGNATURE + DOCUMENT CHAIN): podpis
+  // referencira EXACT verzijo dokumenta (DocumentVersion) — tista, katere
+  // SHA-256 (izračunan nad DEJANSKIMI PDF bajti v object storage) se zapiše
+  // v pdfHash. Nullable — zapisi pred R395 (sintetični/klientov pdfHash)
+  // ostanejo nespremenjeni. Mehka referenca (brez FK) — isti vzorec kot
+  // quoteVersionId/bomVersionId. BAZA trigger signature_audit_document_chain
+  // (migracija) zavrne vrstico, katerega pdfHash ≠ sha256 vezane verzije
+  // dokumenta — tudi mimo store-plasti (kanon erv_uradno_zahteva_pregled R393).
+  documentVersionId String?
   isValid           Boolean  @default(true)
   createdAt         DateTime @default(now())
 
@@ -946,6 +984,7 @@ model SignatureAudit {
   @@index([storageKey])
   @@index([quoteVersionId])
   @@index([bomVersionId])
+  @@index([documentVersionId])
 }
 
 // ============================================
@@ -1614,6 +1653,17 @@ model Quote {
 /// inputsJson = točno vhodi izračuna (points/closed/overridesMm/spec override),
 /// linesJson = postavke (QuoteItem[] z sourceKey), seštevki subtotal/vat/total
 /// pa so VEZANI na priceBookVersionId + inputHash (verifyQuoteVersionIntegrity).
+///
+/// R395 (§16 — quoteVersion cannot silently change after signing):
+/// PODPISANA (APPROVED) verzija je zamrznjena NA RAVNI BAZE — trigger
+/// quote_version_signed_immutable (migracija) zavrne vsako spremembo VSEBINE
+/// (inputsJson/linesJson/seštevki/inputHash/priceBookVersionId/identiteta)
+/// IN vsak prehod iz APPROVED (terminalno). Prej je bila nespremenljivost
+/// SAMO statusni stroj v kodi (matrika prehodov) + integritetna preverba ob
+/// izdaji/zaklepu — direkten UPDATE vrstice v DB je bil možen (dokaz:
+/// r374 TAMPIRANA test je z UPDATE manipulacijo nad ISSUED vrstico delal). DRAFT/ISSUED ostajata
+/// mutabilni (urejanje osnutka + prehod ISSUED→APPROVED ob podpisu) —
+/// integriteto nad NJIMA še vedno preverja verifyQuoteVersionIntegrity.
 model QuoteVersion {
   id                String   @id @default(cuid())
   quoteId           String
@@ -1641,6 +1691,8 @@ model QuoteVersion {
   priceBookVersion PriceBookVersion @relation(fields: [priceBookVersionId], references: [id])
 
   sourceBomVersions BOMVersion[] @relation("BomSourceQuoteVersions") // R376 §6 — BOM verzije, izpeljane iz te verzije ponudbe
+  documentVersions DocumentVersion[] @relation("QuoteVersionDocumentVersions") // R395 §16 — PDF verzije, izračunane iz te verzije ponudbe
+  ponudbaDocuments Document[] @relation("QuotePonudbaDocuments") // R395 §16 — PONUDBA zabojniki (EN na verzijo, partial UNIQUE v migraciji)
 
   @@unique([quoteId, versionNumber])
   @@index([quoteId])

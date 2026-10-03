@@ -1,0 +1,45 @@
+# qa-needles/r395.tsv — REGISTER needlejev runde R395 (issue #13, korak R172
+# iz §16 — SIGNATURE + DOCUMENT CHAIN: neprekinjena vez QuoteVersion →
+# DocumentVersion → DEJANSKI PDF bajti → SHA-256 → SignatureAudit → DealLock.
+# KOLIZIJA #27 (kanon KOLIZIJE #4/R323/#13–#26): vzporedna lastniška QA runda
+# R394 [cf71787 — STIL val 70 forced-colors fokus pariteta + NJIOV r394.tsv +
+# NJIOV r394-window-scan.py + r394-stil-val70 + r394-outline-disciplina] je
+# pristala MED mojim delom → njihova runda = pristala resnica, MOJA
+# preimenovana R394→R395; NJIHOVI r394-* artefakti ostanejo nedotaknjeni.
+# [1] POST/GET /api/quotes/[id]/pdf — strežniško izdana PONUDBA PDF verzija
+#     [quote-pdf.ts renderer — determinističen; Document tip PONUDBA EN
+#     zabojnik na verzijo (partial UNIQUE Document_ponudba_quote_key);
+#     DocumentVersion.quoteVersionId = KANONIČNA veriga; vrata: DRAFT → 409,
+#     REJECTED/SUPERSEDED → 409, integrity pred izdajo, documents.generate +
+#     'read' dostop]; regeneracija = NOVA verzija (v2, v3 …).
+# [2] deal-lock §16: telo lahko prinese documentVersionId (EXACT preverba:
+#     vezava na TISO verzijo + projekt + tip PONUDBA + bajti FIZIČNO v
+#     storage + RE-HASH bajtov == zabeležen sha256) ALI strežnik SAM izda
+#     PONUDBA PDF (bajti PRE transakcije, R122 kompenzacija ×3 vrste
+#     artefaktov); klientov pdfHash DEPRECIERAN — samo preverba ujemanja
+#     (409 ob razliki); SignatureAudit ×2 z documentVersionId + pdfHash =
+#     DV.sha256; deal-lock GET signatures + documentVersionId.
+# [3] BAZA linije (migraciji 20261011080000_r395_document_chain_enum +
+#     20261011080100_r395_document_chain — LOČENI transakciji: PostgreSQL
+#     "unsafe use of new value" nad partial UNIQUE z novim enum členom):
+#     trigger document_version_no_update [UPDATE vrstice ZAVRNJEN — immutable
+#     DocumentVersion, prej samo konvencija], trigger
+#     quote_version_signed_immutable [PODPISANA (APPROVED) verzija — vsebina
+#     (10 polj IS DISTINCT FROM) IN status ZAMRZNJENA; DRAFT/ISSUED ostajata
+#     mutabilni — r374 TAMPIRANA test nespremenjena], trigger
+#     signature_audit_document_chain [vrstica z documentVersionId + pdfHash ≠
+#     sha256 vezane verzije NE pristane — kanon erv_uradno_zahteva_pregled].
+# [4] signature-audit GET+POST DTO: §16 allowlist — ipAddress/userAgent/
+#     deviceFingerprint/geoLatitude/geoLongitude ODSTRANJENI iz obeh DTO-jev
+#     (v bazi ostanejo — revizijska sled NI izbrisana); + §16 veriga
+#     (quoteVersionId/bomVersionId/documentVersionId); + IDOR fix (prej SAMO
+#     prijava — zdaj vrata 'read' na ravni vira, kanon deal-lock GET R374).
+# 17 testov v r395-document-chain.test.ts [PDF vrata 6 + zaklep veriga 5 +
+# baza triggerji 3 + DTO 3]; r374/r376 čistki +PDF artefakti (0 sirot).
+# 3 need_static (živi stringi literalov novih rut/domaina; 0 v HEAD 0634c2b/cf71787);
+# TODO-R395 must_miss. Era veriga: NJIHOVA 48. preverba (r347–r394) ≥189 = 188 + 1
+# [val 70 ×1]; MOJA naslednja (r347–r395) ≥192 = 189 + mojih 3.
+Izdaja PDF ponudbe zahteva uporabniško pravico documents.generate.	R395 vrata POST /api/quotes/[id]/pdf — sporočilo 403 v quotes/[id]/pdf chunku (×1 .js; 0 v HEAD 0634c2b (R393))	need_static
+Verzija dokumenta ni vezana na podpisovano verzijo ponudbe (prečna vezava zavrnjena).	R395 §16 EXACT veriga — javna napaka preveriVerzijoDokumenta v deal-lock/document-chain chunku (409 prečna verzija; 0 v HEAD 0634c2b (R393))	need_static
+PDF bajti se ne ujemajo s SHA-256 verzije dokumenta — zapečatenje ne drži (zavrnjeno).	R395 §16 hash dejanskih PDF bajtov — javna napaka preveriVerzijoDokumenta (409 tampirani artefakt v storage; 0 v HEAD 0634c2b (R393))	need_static
+TODO-R395	must_miss: razvojni ostanki (nesme biti v produkcijskih čankih)	must_miss

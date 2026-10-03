@@ -41,9 +41,11 @@ interface BomDraft {
   notes?: string
 }
 
-// SignatureAuditEntry moved to src/lib/types.ts — the API returns geoLatitude
-// and geoLongitude (signature-audit/route.ts) and this component reads both, so
-// the old local copy made six property accesses type-errors.
+// SignatureAuditEntry moved to src/lib/types.ts — R395 (§16): API NE vrača
+// več geoLatitude/geoLongitude/ipAddress/userAgent/deviceFingerprint
+// (allowlist kanon §17 — nepotrebna občutljiva polja IZ DTO-ja); vrne pa
+// §16 verigo (quoteVersionId/bomVersionId/documentVersionId), ki jo ta
+// komponenta prikazuje.
 
 export function PostSignaturePanel({ project }: { project: Project }) {
   const [loading, setLoading] = useState(true)
@@ -162,22 +164,25 @@ export function PostSignaturePanel({ project }: { project: Project }) {
         y += 4
         doc.text(`Datum: ${slDatumKratko(new Date(a.createdAt))}, ${slCasDolgo(new Date(a.createdAt))}`, 18, y)
         y += 4
-        if (a.ipAddress) {
-          doc.text(`IP: ${a.ipAddress}`, 18, y)
+        // R395 (§16): IP/fingerprint/GPS so IZ DTO-ja odstranjeni (nepotrebna
+        // občutljiva polja — kanon deal-lock GET §17). Dodana je VERIGA
+        // dokumenta (quote/dokument verzija).
+        if (a.quoteVersionId) {
+          doc.setFontSize(7)
+          doc.text(`Verzija ponudbe: ${a.quoteVersionId}`, 18, y)
+          doc.setFontSize(9)
           y += 4
         }
-        if (a.deviceFingerprint) {
-          doc.text(`Device fingerprint: ${a.deviceFingerprint}`, 18, y)
+        if (a.documentVersionId) {
+          doc.setFontSize(7)
+          doc.text(`PDF verzija dokumenta: ${a.documentVersionId}`, 18, y)
+          doc.setFontSize(9)
           y += 4
         }
         if (a.pdfHash) {
           doc.setFontSize(7)
           doc.text(`PDF hash: ${a.pdfHash.slice(0, 40)}...`, 18, y)
           doc.setFontSize(9)
-          y += 4
-        }
-        if (a.geoLatitude) {
-          doc.text(`GPS: ${a.geoLatitude.toFixed(4)}, ${a.geoLongitude?.toFixed(4)}`, 18, y)
           y += 4
         }
         y += 4
@@ -433,14 +438,14 @@ export function PostSignaturePanel({ project }: { project: Project }) {
                   <Clock aria-hidden="true" className="h-2.5 w-2.5" />
                   {`${slDatumKratko(new Date(a.createdAt))}, ${slCasDolgo(new Date(a.createdAt))}`}
                 </div>
-                {a.ipAddress && (
-                  <div className="truncate">IP: {a.ipAddress}</div>
+                {/* R395 (§16): IP/GPS/fingerprint so IZ DTO-ja odstranjeni
+                    (nepotrebna občutljiva polja — kanon §17 allowlist);
+                    prikazana je VERIGA dokumenta. */}
+                {a.documentVersionId && (
+                  <div className="truncate">PDF: {a.documentVersionId.slice(0, 12)}…</div>
                 )}
-                {a.geoLatitude && (
-                  <div className="truncate">GPS: {a.geoLatitude.toFixed(4)}, {a.geoLongitude?.toFixed(4)}</div>
-                )}
-                {a.deviceFingerprint && (
-                  <div className="truncate">Device: {a.deviceFingerprint}</div>
+                {a.quoteVersionId && (
+                  <div className="truncate">Ponudba: {a.quoteVersionId.slice(0, 12)}…</div>
                 )}
               </div>
               {a.pdfHash && (

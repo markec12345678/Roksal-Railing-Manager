@@ -64,18 +64,25 @@ export interface Project {
   measurements?: ProjectMeasurementLite[]
 }
 
-/** One audit row as returned by `GET /api/signature-audit?projectId=…`. */
+/** One audit row as returned by `GET /api/signature-audit?projectId=…`.
+ *
+ * R395 (issue #13 §16 — "signature audit DTO ne sme vračati nepotrebnih
+ * občutljivih polj"): ipAddress/userAgent/deviceFingerprint/geoLatitude/
+ * geoLongitude so IZ DTO-ja ODSTRANJENI (allowlist kanon deal-lock GET §17;
+ * v bazi ostanejo — revizijska sled NI izbrisana). Dodana je §16 veriga
+ * dokumenta: quoteVersionId/bomVersionId/documentVersionId. */
 export interface SignatureAuditEntry {
   id: string
   signatureType: string
   signedByName: string
   signedByRole: string | null
   hasSignature: boolean
-  ipAddress: string | null
-  userAgent: string | null
-  deviceFingerprint: string | null
+  signatureUrl?: string | null
+  storageMode?: 'object-storage' | 'legacy-base64' | 'none'
+  quoteVersionId?: string | null
+  bomVersionId?: string | null
+  documentVersionId?: string | null
   pdfHash: string | null
+  isValid?: boolean
   createdAt: string
-  geoLatitude: number | null
-  geoLongitude: number | null
 }
