@@ -263,7 +263,7 @@ phase_needles() {
     else
       echo "     .next: MANJKA — pravi tek se GLASNO izjalovi (exit 6)"
     fi
-    echo "  2. čanki: find .next/static/chunks .next/server -name '*.js' → cp v $OUT (md5 prefix, vzorec r338)"
+    echo "  2. čanki: find .next/static/chunks .next/server \( -name '*.js' -o -name '*.css' \) → cp v $OUT (md5 prefix, vzorec r338; R395 + .css — CSS-nivojski needleji)"
     echo "  3. UNION harvest registrov r${REGISTRY_FIRST_ROUND}…r${ROUND} (validacija Z-STRUCT-REG je varno branje — izvedena TUKAJ):"
     local stats VRSTIC NS MM POK dry_rc=0
     # shellcheck disable=SC2013  # seq izpiše samo številke — delitev po presledkih je varna
@@ -320,7 +320,9 @@ phase_needles() {
 
   # Čanki harvest — VERBATIM vzorec r338-build-needles.sh (md5 prefix varuje
   # pred trki imen med static/ in server/).
-  find .next/static/chunks .next/server -name '*.js' -type f | while read -r f; do
+  # R395: '*.css' v žetvi — val 71 je PRVI CSS-nivojski needle (kompilirani
+  # globals.css živi v .next/static/chunks/*.css); .js ostaja glavna plast.
+  find .next/static/chunks .next/server \( -name '*.js' -o -name '*.css' \) -type f | while read -r f; do
     cp "$f" "$OUT/$(echo "$f" | md5sum | cut -c1-12)-$(basename "$f")"
   done
   echo "  cankov: $(ls "$OUT"/*.js 2>/dev/null | wc -l)"

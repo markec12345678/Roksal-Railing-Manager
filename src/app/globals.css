@@ -201,6 +201,21 @@
     border-radius: 20px;
   }
 
+  /* val 71 (R396) — DARK-MODE SCROLLBAR PARITETA: .scrollbar-thin je nosil
+     svetli palec (#cbd5e1) v OBEH temah — v temni temi svetel palec na
+     temni površini (33 rab čez app/roksal). Temna govorica družine ŽE
+     obstaja kot .scrollbar-thin-dark (#475569 + hover #334155, STYLE 1
+     zgoraj — definirana, a ×0 rab); val 71 jo poveže na .scrollbar-thin
+     pod .dark — VREDNOSTI IZ ISTIH ŽETONOV, nič izuma. Svetla tema
+     nespremenjena; eksplicitni -dark utility ostane (namenski Always-dark
+     primeri). */
+  .dark .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: #475569;
+  }
+  .dark .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: #334155;
+  }
+
   /* STYLE 1: Thin scrollbar — dark variant for dark mode sections */
   .scrollbar-thin-dark::-webkit-scrollbar {
     width: 4px;
