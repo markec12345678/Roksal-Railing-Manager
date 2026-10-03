@@ -2080,6 +2080,7 @@ model Product {
   compatSource     ProductCompatibility[]   @relation("ProductCompatSource")
   compatTarget     ProductCompatibility[]   @relation("ProductCompatTarget")
   supplierMappings ProductSupplierMapping[]
+  engineeringRules EngineeringRule[]          // R393 §15 — tehnična pravila vezana na ta produkt
 
   @@index([familyId])
   @@index([catalogVersionId])
@@ -2199,4 +2200,95 @@ model ProductSupplierMapping {
   @@unique([productId, supplierId, veljavnostOd])
   @@index([productId])
   @@index([supplierId])
+}
+
+/// R393 (issue #13, korak R171 iz §15) — ENGINEERING / COMPLIANCE
+/// VERSIONING: identiteta tehničnega pravila (stabilna šifra čez verzije).
+/// Vsebinske + izvorne lastnosti živijo na VERZIJI (immutable snapshot) —
+/// sprememba pravila = NOVA verzija prek DRAFT→ACTIVE→RETIRED stroja,
+/// NE tiho prefinjanje obstoječe vrstice (issue #13 §15 + kanon R373/R390).
+model EngineeringRule {
+  id          String   @id @default(cuid())
+  /// EXACT kanonska šifra pravila (npr. 'MONT-SPLOSNO-01') — kanon §5 brez fuzzy.
+  sifra       String   @unique
+  naziv       String
+  /// MONTAZA | RAZMAK | MATERIAL | OBREMENITEV | GEOMETRIJA (CHECK v migraciji).
+  kategorija  String
+  /// §15 "application" — §14 EXACT nabor (HORIZONTALNA_OGRAJA|POKONCNA_OGRAJA|
+  /// TERASA|PREDELNA_STENA|FASADA|STROP); NULL = splošno (vse aplikacije).
+  aplikacija  String?
+  /// Produkt-specifično pravilo (npr. razmaki profilov); NULL = splošno.
+  productId   String?
+  /// horizontal | vertical (CHECK) — pri razmakih; NULL = nevezano na orientacijo.
+  orientacija String?
+  aktivno     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  versions EngineeringRuleVersion[]
+  product  Product?               @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([kategorija])
+  @@index([aplikacija])
+  @@index([productId])
+}
+
+/// R393 (§15): verzija pravila — IMMUTABLE zapis, ki nosi VSAKO §15 polje:
+/// rule id (FK na identiteto), source (vir), standard/reference, standard
+/// version, jurisdiction, application (na identiteti), effectiveFrom,
+/// reviewedAt, reviewer, calculator version + overitev — LOČITEV
+/// informativnega inženirskega izračuna od uradnega projektantskega oziroma
+/// statičnega preverjanja (§15: "Informativni engineering calculation mora biti
+/// jasno ločen od uradnega projektantskega/statističnega preverjanja.").
+/// URADNO (PROJEKTANTSKA/STATISTICNA) ZAHTEVA reviewedAt + reviewerId —
+/// nepreverjeno pravilo LAHKO je SAMO INFORMATIVNO (store guard + partial
+/// UNIQUE). Honest NULL (§8): standardReferenca/standardVerzija/jurisdikcija/
+/// reviewedAt/reviewerId/calculatorVerzija so NULL, ko vir NE dokumentira.
+model EngineeringRuleVersion {
+  id        String   @id @default(cuid())
+  ruleId    String
+  /// Zaporedna številka verzije tega pravila (per pravilo, 1 = seed).
+  verzija   Int
+  /// DRAFT | ACTIVE | RETIRED (CHECK; stroj v engineering-rules-store).
+  status    String
+  /// Vsebina pravila — CITAT vira (byte-exact iz kataloga/kalkulatorja).
+  vsebina   String
+  /// Strukturirana vrednost (JSON, zod v engineering-rules-domain); NULL = čisto besedilno pravilo.
+  strukturaJson String?
+  /// §15 "source" — KATALOG_PROIZVAJALCA | URADNI_STANDARD |
+  /// INTERNI_INZENIRING | SEKUNDARNI_VIR (CHECK).
+  vir       String
+  /// Citat vira (URL/dokument/vrstice kode) — sledljivost.
+  virZapis  String?
+  /// §15 "standard/reference" — NULL = pravilo NI standardno utemeljeno (§8 — NE izmišljamo).
+  standardReferenca String?
+  /// §15 "standard version" — NULL = vir ne dokumentira verzije standarda (§8).
+  standardVerzija   String?
+  /// §15 "jurisdiction" — NULL = neznana ali ni relevantna (§8).
+  jurisdikcija      String?
+  /// LOČITEV (§15): INFORMATIVNO | PROJEKTANTSKA | STATISTICNA (CHECK).
+  overitev  String
+  /// §15 "calculator version" — verzija formule/kalkulatorja, ki pravilo porablja;
+  /// NULL = pravilo ni porabljeno v kalkulatorju (ročna navodila — odkrito).
+  calculatorVerzija String?
+  /// §15 "effectiveFrom".
+  veljavnostOd DateTime
+  /// NULL = odprt interval — velja do preklica (§8).
+  veljavnostDo DateTime?
+  /// §15 "reviewedAt" — NULL = NI pregledano (honest; URADNO brez tega = zavrnjeno).
+  reviewedAt DateTime?
+  /// §15 "reviewer" — mehka referenca na Profile (vzorec R374/R378 — brez FK);
+  /// NULL = pregledalca NI (§8).
+  reviewerId String?
+  /// Mehka revizijska referenca na Profile (vzorec R374/R378 — brez FK).
+  createdById String?
+  createdAt DateTime @default(now())
+
+  rule EngineeringRule @relation(fields: [ruleId], references: [id], onDelete: Restrict)
+
+  @@unique([ruleId, verzija])
+  @@index([status])
+  @@index([ruleId, status])
+  @@index([vir])
+  @@index([overitev])
 }

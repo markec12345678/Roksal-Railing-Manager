@@ -101,6 +101,16 @@ export function canManageCatalog(principal: AuthContext): boolean {
   return hasPermission(principal, 'catalog.manage')
 }
 
+/**
+ * Inženirska/compliance pravila (R393 §15): pisanje = engineering.manage
+ * (vodstvo — ADMIN/VODJA; matrika v permissions-core; spec: false = dodatek
+ * kanona R393, vzorec r135). Branje je authenticated (teren/prevozi
+ * potrebujejo honest kontekst — enak prag kot GET /api/catalog).
+ */
+export function canManageEngineeringRules(principal: AuthContext): boolean {
+  return hasPermission(principal, 'engineering.manage')
+}
+
 export function canDeleteCustomer(principal: AuthContext): boolean {
   // Brisanje stranke ni v katalogu dovoljenj (§10 ni customers.delete) —
   // vodstvena pravica: customers.write + manager vloga (ADMIN/VODJA).

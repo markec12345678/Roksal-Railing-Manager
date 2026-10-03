@@ -5,6 +5,11 @@
 // NIČ tihega nonsensa), odgovor nosi verzijo formule + deterministični
 // prstni odtis vhodov (reproducibilnost). GET = register formul (odkritje
 // verzij za audite; anon → 401 kot povsod).
+// R393 (issue #13 §15 — LOČITEV): VSAK uspešen odgovor nosi razred
+// 'INFORMATIVNO' + opozorilo ENega vira (lib/engineering-rules
+// SKLADNOST_OPOZORILO) — informativni inženirski izračun je JASNO ločen od
+// uradnega projektantskega/statističnega preverjanja. DODATNA polja —
+// izračuni/determinizem (§1 temelji) so NESPREMENJENI.
 import { NextResponse } from 'next/server'
 import {
   runRailingCalcV1,
@@ -19,6 +24,7 @@ import { authenticate, unauthorized } from '@/lib/auth'
 import { preberiJsonTelo } from '@/lib/api-telo'
 
 import { zapisOmejitev } from '@/lib/rate-limit'
+import { SKLADNOST_OPOZORILO } from '@/lib/engineering-rules'
 export async function GET(request: Request) {
   // Zaščita: brez veljavne seje ali API ključa ni dostopa.
   const auth = await authenticate(request)
@@ -31,6 +37,9 @@ export async function GET(request: Request) {
   return NextResponse.json({
     formulas,
     determinism: 'isti vhod + ista verzija formule = isti rezultat in isti odtis',
+    // R393 §15 — ločitev informativnega izračuna od uradne preverbe.
+    razred: 'INFORMATIVNO' as const,
+    opozorilo: SKLADNOST_OPOZORILO,
   })
 }
 
@@ -64,6 +73,9 @@ export async function POST(request: Request) {
           ...envelope.result,
           formulaVersion: envelope.formulaVersion,
           inputHash: envelope.inputHash,
+          // R393 §15 — ločitev informativnega izračuna od uradne preverbe.
+          razred: 'INFORMATIVNO' as const,
+          opozorilo: SKLADNOST_OPOZORILO,
         })
       }
       case 'anchoring': {
@@ -79,6 +91,9 @@ export async function POST(request: Request) {
           ...envelope.result,
           formulaVersion: envelope.formulaVersion,
           inputHash: envelope.inputHash,
+          // R393 §15 — ločitev informativnega izračuna od uradne preverbe.
+          razred: 'INFORMATIVNO' as const,
+          opozorilo: SKLADNOST_OPOZORILO,
         })
       }
       case 'wind': {
@@ -94,6 +109,9 @@ export async function POST(request: Request) {
           ...envelope.result,
           formulaVersion: envelope.formulaVersion,
           inputHash: envelope.inputHash,
+          // R393 §15 — ločitev informativnega izračuna od uradne preverbe.
+          razred: 'INFORMATIVNO' as const,
+          opozorilo: SKLADNOST_OPOZORILO,
         })
       }
       default:

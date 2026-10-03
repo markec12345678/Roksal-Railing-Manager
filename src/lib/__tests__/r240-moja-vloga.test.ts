@@ -97,8 +97,9 @@ describe('R240 — [Mandatory] stil: žetoni družine, 0 novih hex', () => {
 })
 
 describe('R240 — resnica kataloga v UI (dokaz iz vira, ne izmišljeni nizi)', () => {
-  it('suma dovoljenj = dolžina kataloga (28) in ADMIN vidi vse', () => {
-    expect(ALL_PERMISSIONS.length).toBe(28)
+  it('suma dovoljenj = dolžina kataloga (29) in ADMIN vidi vse', () => {
+    // PIN SHIFT R393: 28→29 — +engineering.manage (issue #13 §15).
+    expect(ALL_PERMISSIONS.length).toBe(29)
     expect(PERMISSION_CATALOG['users.manage'].opis).toContain('ADMIN')
   })
 })

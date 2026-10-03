@@ -45,10 +45,10 @@ function zberiRute(): { pot: string; vsebina: string }[] {
 const byId = (krš: MejaKršitev[], id: string) => krš.filter((k) => k.preverba === id)
 
 describe('R308 — REALNIM drevo: stena ura ŽIVO (0 kršitev na vseh 5 preverbah)', () => {
-  it('vseh 107 route datotek prebranih in pregledanih — obseg pregleda NI tiho skrčen (R326: + zgodovina cen; PIN SHIFT R374: 82→85 — +price-book, +quotes, +quotes/[id]; PIN SHIFT R376: 85→88 — +bom, +bom/[id], +bom/procurement [kanonični BOM #13 R166]; PIN SHIFT R378: 88→92 — +production, +production/[id], +installation-records, +installation-records/[id] [produkcija §10 + as-installed §9 #13 R167]; PIN SHIFT R382: 92→99 — +leads, +leads/[id], +opportunities, +opportunities/[id], +customers/[id], +customer-addresses, +customer-addresses/[id] [CRM lijak §13 #13 R169]; PIN SHIFT R390: 99→107 — +catalog, +catalog/products/[id], +catalog/products/[id]/applications, +catalog/products/[id]/variants, +catalog/versions, +catalog/versions/[id], +catalog/compatibility, +catalog/supplier-mappings [produktini katalog §14 #13 R170])', () => {
+  it('vseh 111 route datotek prebranih in pregledanih — obseg pregleda NI tiho skrčen (R326: + zgodovina cen; PIN SHIFT R374: 82→85 — +price-book, +quotes, +quotes/[id]; PIN SHIFT R376: 85→88 — +bom, +bom/[id], +bom/procurement [kanonični BOM #13 R166]; PIN SHIFT R378: 88→92 — +production, +production/[id], +installation-records, +installation-records/[id] [produkcija §10 + as-installed §9 #13 R167]; PIN SHIFT R382: 92→99 — +leads, +leads/[id], +opportunities, +opportunities/[id], +customers/[id], +customer-addresses, +customer-addresses/[id] [CRM lijak §13 #13 R169]; PIN SHIFT R390: 99→107 — +catalog, +catalog/products/[id], +catalog/products/[id]/applications, +catalog/products/[id]/variants, +catalog/versions, +catalog/versions/[id], +catalog/compatibility, +catalog/supplier-mappings [produktini katalog §14 #13 R170]; PIN SHIFT R393: 107→111 — +engineering-rules, +engineering-rules/[id], +engineering-rules/[id]/versions, +engineering-rules/versions/[id] [inženirska/compliance pravila §15 #13 R171])', () => {
     const rute = zberiRute()
-    expect(rute).toHaveLength(107)
-    expect(new Set(rute.map((r) => r.pot)).size).toBe(107)
+    expect(rute).toHaveLength(111)
+    expect(new Set(rute.map((r) => r.pot)).size).toBe(111)
     expect(rute.some((r) => r.pot === 'src/app/api/material-prices/zgodovina/route.ts')).toBe(true)
     // R374 (issue #13 R165): nove kanonske rute morajo ostati v obsegu pregleda
     expect(rute.some((r) => r.pot === 'src/app/api/price-book/route.ts')).toBe(true)
@@ -73,6 +73,12 @@ describe('R308 — REALNIM drevo: stena ura ŽIVO (0 kršitev na vseh 5 preverba
     expect(rute.some((r) => r.pot === 'src/app/api/customers/[id]/route.ts')).toBe(true)
     expect(rute.some((r) => r.pot === 'src/app/api/customer-addresses/route.ts')).toBe(true)
     expect(rute.some((r) => r.pot === 'src/app/api/customer-addresses/[id]/route.ts')).toBe(true)
+    // R392 (issue #13 R171): inženirska/compliance pravila §15 morajo ostati v
+    // obsegu pregleda (provenanca tehničnih pravil + ločitev informativno/uradno):
+    expect(rute.some((r) => r.pot === 'src/app/api/engineering-rules/route.ts')).toBe(true)
+    expect(rute.some((r) => r.pot === 'src/app/api/engineering-rules/[id]/route.ts')).toBe(true)
+    expect(rute.some((r) => r.pot === 'src/app/api/engineering-rules/[id]/versions/route.ts')).toBe(true)
+    expect(rute.some((r) => r.pot === 'src/app/api/engineering-rules/versions/[id]/route.ts')).toBe(true)
   })
 
   it('pregledajApiMejo nad celotnim drevesom → 0 kršitev (stena ura potrjena)', () => {

@@ -76,8 +76,10 @@ describe('katalog dovoljenj (§10 spec + read-pariteta)', () => {
     }
     expect(PERMISSION_CATALOG['users.read'].spec).toBe(false)
     expect(PERMISSION_CATALOG['invoices.read'].spec).toBe(false)
-    expect(ALL_PERMISSIONS).toHaveLength(28)
-    expect(new Set(ALL_PERMISSIONS).size).toBe(28)
+    expect(ALL_PERMISSIONS).toHaveLength(29)
+    // PIN SHIFT R393: 28→29 — +engineering.manage (issue #13 §15 —
+    // inženirska/compliance pravila; ADMIN/VODJA, MONTER/SKLADISCE NE).
+    expect(new Set(ALL_PERMISSIONS).size).toBe(29)
     for (const p of ALL_PERMISSIONS) {
       expect(PERMISSION_CATALOG[p].label.length).toBeGreaterThan(2)
       expect(PERMISSION_CATALOG[p].opis.length).toBeGreaterThan(4)
@@ -95,7 +97,8 @@ describe('vloga → dovoljenja (deterministična matrika)', () => {
   it('ADMIN ima VSE; VODJA vse razen users.manage; noben tihi prisluh', () => {
     expect(permissionsForRole('ADMIN')).toEqual(ALL_PERMISSIONS)
     const vodja = permissionsForRole('VODJA')
-    expect(vodja).toHaveLength(27)
+    // PIN SHIFT R393: 27→28 — +engineering.manage (issue #13 §15).
+    expect(vodja).toHaveLength(28)
     expect(vodja).not.toContain('users.manage')
     expect(vodja).toContain('price.override')
     expect(vodja).toContain('portal.manage')

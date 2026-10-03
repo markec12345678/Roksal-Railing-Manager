@@ -54,6 +54,7 @@ export type Permission =
   | 'portal.manage'
   | 'users.manage'
   | 'catalog.manage'
+  | 'engineering.manage'
   | 'production.manage'
   | 'warranty.manage'
   // r135 dodatka za natančen izraz obstoječe matrike branja
@@ -91,6 +92,7 @@ export const PERMISSION_CATALOG: Readonly<
   'portal.manage': { label: 'Upravljanje portalov', opis: 'Povezave za stranke: izdaja, izklop, preklic (pisarna)', spec: true },
   'users.manage': { label: 'Upravljanje uporabnikov', opis: 'Povabila, deaktivacija, zaklep, vloge, reset gesla (ADMIN)', spec: true },
   'catalog.manage': { label: 'Upravljanje kataloga', opis: 'Profili, dobavitelji, novi artikli zaloge', spec: true },
+  'engineering.manage': { label: 'Upravljanje tehničnih pravil', opis: 'Inženirska/compliance pravila in verzije (issue #13 §15)', spec: false },
   'production.manage': { label: 'Upravljanje proizvodnje', opis: 'Razpored montaž in ekipe', spec: true },
   'warranty.manage': { label: 'Upravljanje garancij', opis: 'Rezervirano: garancijski spisi in reclamacije', spec: true },
   'users.read': { label: 'Pregled ekipe', opis: 'Seznam uporabnikov in njihovih statusov (r135 dodatek)', spec: false },

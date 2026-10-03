@@ -37,8 +37,11 @@ const beri = (p: string) => readFileSync(join(process.cwd(), p), 'utf8')
 
 describe('R240 — permissions-core: fail-closed matrika (EN VIR z permissions.ts)', () => {
   it('katalog je popoln: vsak Permission iz tipa ima label+opis, ALL_PERMISSIONS = ključi', () => {
-    // 26 §10 spec + 2 r135 dodatka = 28 (zapisano tudi v README vrstici matrike).
-    expect(ALL_PERMISSIONS.length).toBe(28)
+    // 26 §10 spec + 2 r135 dodatka + 1 R392 dodatek (engineering.manage —
+    // issue #13 §15) = 29 (zapisano tudi v README vrstici matrike).
+    // PIN SHIFT R393: 28→29 — +engineering.manage [inženirska/compliance
+    // pravila §15 #13 R171 — ADMIN/VODJA prek matrike, MONTER/SKLADISCE NE].
+    expect(ALL_PERMISSIONS.length).toBe(29)
     for (const p of ALL_PERMISSIONS) {
       const vnos = PERMISSION_CATALOG[p]
       expect(vnos, `katalog manjka za ${p}`).toBeDefined()

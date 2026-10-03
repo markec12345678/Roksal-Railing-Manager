@@ -1,0 +1,23 @@
+# qa-needles/r393.tsv — REGISTER needlejev runde R393 (issue #13, korak R171
+# iz §15 — ENGINEERING / COMPLIANCE VERSIONING: EngineeringRule +
+# EngineeringRuleVersion [VSA §15 polja: vir/source, standardReferenca,
+# standardVerzija, jurisdikcija, overitev INFORMATIVNO|PROJEKTANTSKA|
+# STATISTICNA, calculatorVerzija, veljavnostOd/effectiveFrom, reviewedAt,
+# reviewerId + rule id na identiteti] DRAFT→ACTIVE→RETIRED stroj [partial
+# UNIQUE ena ACTIVE na pravilo] + §15 LOČITEV guard NA TRIH LINIJAH:
+# (1) store ustvarjanje [409 PROJEKTANTSKA/STATISTICNA brez reviewerId +
+# reviewedAt], (2) store aktivacija, (3) BAZA CHECK erv_uradno_zahteva_pregled
+# [zavrne vrstico tudi mimo store-plasti — dokaz v r393 versions testu].
+# Seed 37 pravil (9 splošnih byte-exact iz generalMountingRules + 23 produktnih
+# razmakov iz zapisov profilov + 5 IZ calculator.ts [nepreverjeni citati
+# SIST EN 1264/Pravilnik/EVS EN 1991-1-1/SIST EN 1991-1-4 odkrito zabeleženi;
+# NEDOSLEDNOST 110 mm vs krogla 100 mm dokumentirana, NE tiho popravljena])
+# — VSA INFORMATIVNO + reviewedAt/reviewerId NULL [§8 honest: NIČ ni uradno
+# preverjeno]; /api/calculator GET+POST nosita razred INFORMATIVNO + opozorilo
+# ENega vira [DODATNA polja — §1 determinizem temeljev NESPREMENJEN].)
+# 3 need_static (živi stringi literalov novih rut/domaina; 0 v HEAD 0238292);
+# TODO-R393 must_miss. Naslednja era preverba ≥180 = 175 + njihovih 2 (R392 val 69) + mojih 3.
+Tehnična pravila urejajo uporabniki s pravico engineering.manage	R393 vrata POST /api/engineering-rules — sporočilo 403 v engineering-rules chunku (×1 .js; 0 v HEAD 0238292)	need_static
+nepreverjeno pravilo je lahko SAMO INFORMATIVNO	R393 §15 LOČITEV guard — javna napaka preveriUradnoOveritev v engineering-rules/lib chunku (409 ustvarjanje + aktivacija; 0 v HEAD 0238292)	need_static
+Verzije tehničnih pravil urejajo uporabniki s pravico engineering.manage	R393 vrata POST versions + PATCH versions/[id] — sporočilo 403 v verzijevih chunkih (×2 .js; 0 v HEAD 0238292)	need_static
+TODO-R393	must_miss: razvojni ostanki (nesme biti v produkcijskih čankih)	must_miss
