@@ -102,18 +102,28 @@ ERA_BESODE = {
     # R399: GLASNA razširitev — 52. era preverba (r347–r398; r399-era-harvest.sh;
     #  handover R398: "DVAINPETDESETA" — vzorec mape: dvainpetdeset → DVAINPETDESETA)
     52: ("DVAINPETDESETA", "dvainpetdesete", "dvainpetdeset", "DVAINPETDESETIH"),
+    # R401: GLASNA razširitev (guard zahteva) — 53. era preverba (r347–r399;
+    #  handover R400: "ERA_BESODE 53 TRETINPETDESETA GLASNO"; vzorec mape:
+    #  triinpetdeset → TRETINPETDESETA, tretji-(ordinalska) oblika kot 51./52.)
+    53: ("TRETINPETDESETA", "tretinpetdesete", "tretinpetdeset", "TRETINPETDESETIH"),
 }
 ERA_MEJA = max(ERA_BESODE)
 
 
 def reg_var(runda: int) -> str:
-    """A=347 … Z=372, AA=373, AB=374 … (kanon r373-era-harvest.sh)."""
+    """A=347 … Z=372, AA=373, AB=374 … BA=399 … (kanon r373-era-harvest.sh).
+    LEKCIJA R401: stara oblika 'A'+chr(65+i-26) je podpirala SAMO generacijo
+    A* (i 26–51); pri i=52 (r399) je izdelala 'A[' (chr 91) — neveljaven bash
+    identifikator, ujet šele ob poganjanju generiranega skripta (unexpected
+    EOF). Popravljeno splošno: dvečrkovni par iz (i-26)//26 + (i-26)%26.
+    GLASNO dokumentirano v worklogu R401."""
     i = runda - 347
     if i < 0:
         sys.exit("FAILOVEDANO: runda < 347 (era veriga začetek)")
     if i < 26:
         return chr(65 + i)
-    return "A" + chr(65 + i - 26)
+    i2 = i - 26
+    return chr(65 + i2 // 26) + chr(65 + i2 % 26)
 
 
 def need_static_disk(runda: int) -> int:

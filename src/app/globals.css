@@ -85,6 +85,13 @@
 }
 
 :root {
+  /* val 75 (R401) — COLOR-SCHEME PARITETA: eksplicitna color-scheme razglasitev
+     za UA-nativne površine (izbira datuma/časa ×10 mest v 5 datotekah, nativni
+     select ×1, range ×2, autofill) — accent-color teh površin NE doseže, saj
+     gre za UA-lastno krom (koledar popup, select seznam, sled). Eksplicitna
+     „light“ = 100 % determinizem (nič UA-prislova, enak izris čez brskalnike).
+     Temna polovica v .dark bloku spodaj. */
+  color-scheme: light;
   --radius: 0.75rem;
   --roksal-ink: #1d2b3e;
   --background: #f7f9ff;
@@ -121,6 +128,11 @@
 }
 
 .dark {
+  /* val 75 (R401) — temna polovica color-scheme paritete: nativni kontrolniki
+     (koledar izbire datuma, select popup, range track, autofill) se renderirajo
+     temno-nativno; brez tega UA odpre SVETEL koledar popup na temni temi
+     (vidna paritetna vrzel). Ključne besedi, 0 novih hex. */
+  color-scheme: dark;
   /* R162 — svetla niansa navy za besedilo: kontrast na temni kartici
      (#1a2744) in ozadju (#0f1724) ≈ 10:1 (WCAG AAA za običajno besedilo). */
   --roksal-ink: #d7e3f4;

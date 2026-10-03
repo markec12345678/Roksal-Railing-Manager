@@ -1,0 +1,18 @@
+# qa-needles/r401.tsv — REGISTER needlejev runde R401 (STIL val 75:
+# COLOR-SCHEME PARITETA — UA-nativne površine (koledar izbira datuma,
+# select popup, range sled, autofill) sledijo temi; CSS-nivojska
+# razglasitev (vzorec r396/val 71: globals.css pravilo → build CSS
+# čanek). Dodativno v obstoječa bloka :root in .dark (0 novih pravilnih
+# blokov, 0 novih hex — ključni besedi light/dark). 2 need_static
+# (temna + svetla polovica; 0 v HEAD 6abd7b1; ×1/×1 pojavitev);
+# TODO-R401 must_miss.
+# FEATURE TRINAJSTI STRAŽAR: color-scheme disciplina —
+# r401-color-scheme.test.ts ×7; komplet varuhov r385…r394 + r395 +
+# r396 (HEX cenzus) + r397 + r398 + r399 + r400 + r401.
+#
+# Era: 53. preverba TRETINPETDESETA (r347–r399) tek 1 iskren 194/198
+# [val 73 + 3× r399 PENDING — deploy rate-limited 24 h]; TA registra
+# (r401.tsv ×2) sta v 55. preverbi r347–r401 ≥201 [R402].
+color-scheme:dark	R401 val 75 color-scheme pariteta — temna polovica (×1 pojavitev v build CSS čanku; globals.css .dark blok) — UA-nativne površine sledijo temni temi: izbira datuma/časa ×10 mest (koledar popup + ikona), nativni select popup ×2, range sled ×2, autofill — accent-color teh NE doseže (UA-lastno krom); brez tega UA odpre SVETEL koledar popup na temni temi (vidna paritetna vrzel); ključna beseda, 0 novih hex	need_static
+color-scheme:light	R401 val 75 color-scheme pariteta — eksplicitna svetla polovica (×1 pojavitev v build CSS čanku; globals.css :root blok) — 100 % determinizem (izrecna razglasitev, nič UA-prislova; enak izris čez brskalnike); hybridna vrednost „light dark“ PREPOVEDANA (dvoumna) — r401-color-scheme.test.ts (B)	need_static
+TODO-R401	must_miss: razvojni ostanki (nesme biti v produkcijskih čankih)	must_miss
