@@ -3493,7 +3493,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                     m.oznaka || m.lokacija || `Meritev #${m.id.slice(-4)}`
                   )
                 }
-                className="flex items-center gap-1 rounded-lg bg-roksal-navy text-white px-2.5 py-1 text-[11px] font-medium hover:bg-roksal-navy/90 active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:outline-none transition-all duration-150 press-scale"
+                className="flex items-center gap-1 rounded-lg bg-roksal-navy text-white px-2.5 py-1 text-[11px] font-medium hover:bg-roksal-navy/90 active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:outline-none transition-all duration-150"
                 title="Izračunaj razmike v kalkulatorju"
                 aria-label={`Izračunaj razmike za meritev ${m.oznaka || m.id.slice(-4)}`}
               >
@@ -5208,7 +5208,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                 type="button"
                 onClick={() => void handleTerenPdf()}
                 disabled={pdfVteku}
-                className="flex shrink-0 items-center gap-1 rounded-lg border border-border/50 bg-secondary/50 px-2 py-1 text-2xs font-medium text-muted-foreground transition-all duration-150 press-scale active:scale-[0.96] hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
+                className="flex shrink-0 items-center gap-1 rounded-lg border border-border/50 bg-secondary/50 px-2 py-1 text-2xs font-medium text-muted-foreground transition-all duration-150 active:scale-[0.96] hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                 aria-label="Izvozi terenski pregled meritev kot PDF"
                 title="Terenski pregled meritev kot pravi PDF — VSE meritve projekta (tudi arhivirane)"
               >
@@ -5231,7 +5231,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                 type="button"
                 onClick={() => void handleZapisniListPdf()}
                 disabled={zapisniVteku}
-                className="flex shrink-0 items-center gap-1 rounded-lg border border-border/50 bg-secondary/50 px-2 py-1 text-2xs font-medium text-muted-foreground transition-all duration-150 press-scale active:scale-[0.96] hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
+                className="flex shrink-0 items-center gap-1 rounded-lg border border-border/50 bg-secondary/50 px-2 py-1 text-2xs font-medium text-muted-foreground transition-all duration-150 active:scale-[0.96] hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                 aria-label="Izvozi terenski zapisni list kot PDF"
                 title="Terenski zapisni list (issue #15 §3) — zapisane mere + prazni stolpci za fizično validacijo na terenu"
               >
@@ -5255,7 +5255,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                 type="button"
                 onClick={() => void handleZapisniListCsv()}
                 disabled={zapisniCsvVteku}
-                className="flex shrink-0 items-center gap-1 rounded-lg border border-border/50 bg-secondary/50 px-2 py-1 text-2xs font-medium text-muted-foreground transition-all duration-150 press-scale active:scale-[0.96] hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
+                className="flex shrink-0 items-center gap-1 rounded-lg border border-border/50 bg-secondary/50 px-2 py-1 text-2xs font-medium text-muted-foreground transition-all duration-150 active:scale-[0.96] hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                 aria-label="Izvozi terenski zapisni list kot CSV"
                 title="Terenski zapisni list kot CSV (issue #15 §3) — ista zapisana resnica + prazni stolpci fizicna_ref_mm/delta_mm/zapiski_terena za digitalno izpolnjevanje v Excelu"
               >

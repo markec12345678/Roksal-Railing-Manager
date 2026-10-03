@@ -301,12 +301,12 @@ describe('R272 — sklanjatev + filename + družinska anatomija', () => {
 })
 
 describe('R272 — vsebinski dokazi na komponenti (inclinometer-tab.tsx)', () => {
-  it('pill ŽIVO: aria + press-scale + disabled={pdfNagibiVteku} + guard + Loader2/FileDown aria-hidden + VEDNO viden pri projektu (NI gated na saved.length)', () => {
+  it('pill ŽIVO: aria + active:scale + disabled={pdfNagibiVteku} + guard + Loader2/FileDown aria-hidden + VEDNO viden pri projektu (NI gated na saved.length)', () => {
     expect(komponenta).toContain('aria-label="Izvozi terenski pregled nagibov kot PDF"')
     const pill = oknoMed(komponenta, '{/* R272 — terenski pregled nagibov PDF (28. člen', '</button>')
     expect(pill).toContain('onClick={() => void handleNagibiPdf()}')
     expect(pill).toContain('disabled={pdfNagibiVteku}')
-    expect(pill).toContain('press-scale')
+    expect(pill).toContain('active:scale-[0.96]') // [EVOLVED R390 val 68: dual mehanizem razrešen — utility scale ostane]
     expect(pill).toContain('<Loader2 aria-hidden="true" className="h-3 w-3 animate-spin" />')
     expect(pill).toContain('<FileDown aria-hidden="true" className="h-3 w-3" />')
     expect(pill).toContain('PDF')

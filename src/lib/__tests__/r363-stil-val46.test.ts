@@ -40,7 +40,7 @@ describe('R363 — STIL val 46: ring pariteta inventory-tab družine', () => {
 
   it('(B) era-diskriminatorji ×1/×1/×2/×1 (vsi ×0 v HEAD pred rundo — fetch-first git grep)', () => {
     // [PIN SHIFT R382 val 61 / EVOLVED: FB+dark opcionalna skupina — NASLEDNICA r363 (border-pariteta).]
-    expect(INV.match(/h-8 shrink-0 gap-1\.5 text-\[11px\] font-medium tabular-nums press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy\/40 focus-visible:ring-offset-2( focus-visible:border-roksal-navy\/40)?( dark:focus-visible:border-roksal-ink\/40)? active:scale-\[0\.96\]/g) ?? []).toHaveLength(1)
+    expect(INV.match(/h-8 shrink-0 gap-1\.5 text-\[11px\] font-medium tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy\/40 focus-visible:ring-offset-2( focus-visible:border-roksal-navy\/40)?( dark:focus-visible:border-roksal-ink\/40)? active:scale-\[0\.96\]/g) ?? []).toHaveLength(1) // [EVOLVED R390 val 68: press-scale odstranjen]
     expect(INV.match(/inline-flex items-center gap-1\.5 rounded-md px-1\.5 py-1 text-2xs font-semibold text-roksal-ink\/70 transition-colors hover:bg-secondary hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy\/40 focus-visible:ring-offset-2/g) ?? []).toHaveLength(1)
     expect(INV.match(/bg-roksal-navy hover:bg-roksal-navy\/90 text-white shadow-sm transition-all press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy\/40 focus-visible:ring-offset-2 disabled:opacity-50/g) ?? []).toHaveLength(2)
     expect(INV.match(/h-8 gap-1\.5 text-\[11px\] press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy\/40 focus-visible:ring-offset-2/g) ?? []).toHaveLength(1)

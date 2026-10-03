@@ -278,7 +278,7 @@ describe('R269 — WYSIWYG vir (tabela + KPI + sklep)', () => {
 })
 
 describe('R269 — komponenta (measurements-tab) — pill, mini-vrstica, handler, legenda', () => {
-  it('pill VEDNO viden, ko je projekt izbran (NI gated na filteredMeasurements.length — pariteta R263–R268) + disabled={pdfVteku} dvoklik guard + press-scale + FileDown aria-hidden', () => {
+  it('pill VEDNO viden, ko je projekt izbran (NI gated na filteredMeasurements.length — pariteta R263–R268) + disabled={pdfVteku} dvoklik guard + FileDown aria-hidden', () => {
     expect(komponenta).toContain('aria-label="Izvozi terenski pregled meritev kot PDF"')
     expect(komponenta).toContain('title="Terenski pregled meritev kot pravi PDF — VSE meritve projekta (tudi arhivirane)"')
     const pil = oknoMed(komponenta, "R269 — terenski pregled PDF (25. člen 'izvozi' družine): VEDNO", '<FileDown aria-hidden="true" className="h-3 w-3"')
@@ -289,7 +289,8 @@ describe('R269 — komponenta (measurements-tab) — pill, mini-vrstica, handler
     expect(komponenta).toContain('<Loader2 aria-hidden="true" className="h-3 w-3 animate-spin" />')
     // press-scale = pariteta žetona z družino (na točno tisto vrsto, ki jo ima
     // SAMO PDF gumb — sorojeniki CSV/Povzetek imajo brez).
-    expect(komponenta).toContain('press-scale active:scale-[0.96] hover:text-roksal-ink')
+    // [EVOLVED R390 val 68: press-scale odstranjen — utility scale ostane]
+    expect(komponenta).toContain('active:scale-[0.96] hover:text-roksal-ink')
   })
 
   it('F2 mini-vrstica (state-oka — kar uporabnik vidi): dot roksal-amber/green, kondicionalni žeton ŽIVO samo kadar akcija (R256 lekcija 4), tabular-nums, ISTA izpeljava meritevTerenPregled', () => {

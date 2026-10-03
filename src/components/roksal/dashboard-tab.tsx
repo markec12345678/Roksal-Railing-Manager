@@ -2423,7 +2423,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                     {detailProject.customer?.telefon && (
                       <a
                         href={`tel:${detailProject.customer.telefon}`}
-                        className="flex items-center gap-1.5 rounded-lg bg-roksal-green/10 border border-roksal-green/20 px-2.5 py-1.5 text-[11px] font-medium text-roksal-green hover:bg-roksal-green/20 active:scale-[0.96] transition-all duration-150 press-scale"
+                        className="flex items-center gap-1.5 rounded-lg bg-roksal-green/10 border border-roksal-green/20 px-2.5 py-1.5 text-[11px] font-medium text-roksal-green hover:bg-roksal-green/20 active:scale-[0.96] transition-all duration-150"
                       >
                         <Phone aria-hidden="true" className="h-3.5 w-3.5" />
                         <span>Kliči</span>
@@ -2432,7 +2432,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                     {detailProject.customer?.email && (
                       <a
                         href={`mailto:${detailProject.customer.email}`}
- className="flex items-center gap-1.5 rounded-lg bg-roksal-navy/10 border border-roksal-navy/20 dark:border-roksal-ink/20 px-2.5 py-1.5 text-[11px] font-medium text-roksal-ink hover:bg-roksal-navy/15 active:scale-[0.96] transition-all duration-150 press-scale"
+ className="flex items-center gap-1.5 rounded-lg bg-roksal-navy/10 border border-roksal-navy/20 dark:border-roksal-ink/20 px-2.5 py-1.5 text-[11px] font-medium text-roksal-ink hover:bg-roksal-navy/15 active:scale-[0.96] transition-all duration-150"
                       >
                         <Mail aria-hidden="true" className="h-3.5 w-3.5" />
                         <span>E-pošta</span>

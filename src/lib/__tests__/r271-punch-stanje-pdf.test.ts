@@ -300,12 +300,12 @@ describe('R271 — sklanjatev + filename + družinska anatomija', () => {
 })
 
 describe('R271 — vsebinski dokazi na komponenti (punch-list.tsx)', () => {
-  it('pill ŽIVO: aria + press-scale + disabled={stanjeVteku} + guard + Loader2/FileDown aria-hidden + VEDNO viden pri projektu (NI gated na items.length)', () => {
+  it('pill ŽIVO: aria + active:scale + disabled={stanjeVteku} + guard + Loader2/FileDown aria-hidden + VEDNO viden pri projektu (NI gated na items.length)', () => {
     expect(komponenta).toContain('aria-label="Izvozi pregled stanja zapisnika kot PDF"')
     const pill = oknoMed(komponenta, '{/* R271 — pregled stanja zapisnika PDF (27. člen', '</button>')
     expect(pill).toContain('onClick={() => void handleStanjePdf()}')
     expect(pill).toContain('disabled={stanjeVteku}')
-    expect(pill).toContain('press-scale')
+    expect(pill).toContain('active:scale-[0.96]') // [EVOLVED R390 val 68: dual mehanizem razrešen — utility scale ostane]
     expect(pill).toContain('<Loader2 aria-hidden="true" className="h-3 w-3 animate-spin" />')
     expect(pill).toContain('<FileDown aria-hidden="true" className="h-3 w-3" />')
     expect(pill).toContain('PDF stanje')

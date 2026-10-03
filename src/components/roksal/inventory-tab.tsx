@@ -1559,7 +1559,7 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
           size="sm"
           onClick={() => void handleInventuraCsv()}
           disabled={invCsvVteku}
-          className="h-8 shrink-0 gap-1.5 text-[11px] font-medium tabular-nums press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40 active:scale-[0.96]"
+          className="h-8 shrink-0 gap-1.5 text-[11px] font-medium tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40 active:scale-[0.96]"
           aria-label="Izvozi inventurni pregled premoženja kot CSV"
           title="Inventurni pregled premoženja kot CSV (30. člen izvozne družine) — ista zapisana resnica kot PDF v Excelu: 8 tabelnih stolpcev + id/Premiki/Izvoženo za računovodski uvoz"
         >
