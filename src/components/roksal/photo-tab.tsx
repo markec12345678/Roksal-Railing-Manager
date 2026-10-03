@@ -2110,7 +2110,7 @@ function AnnotationEditor({
               key={s.value}
               type="button"
               onClick={() => setStroke(s.value)}
-              className={`flex h-6 w-9 items-center justify-center rounded-md border text-2xs focus-visible:ring-2 focus-visible:ring-roksal-amber/60 focus-visible:ring-offset-2 ${
+              className={`flex h-6 w-9 items-center justify-center rounded-md border text-2xs focus-visible:ring-2 focus-visible:ring-roksal-amber/60 focus-visible:ring-offset-2 focus-visible:border-roksal-amber/60 dark:focus-visible:border-roksal-amber/40 ${
                 stroke === s.value
                   ? 'border-roksal-amber bg-roksal-amber/20 text-roksal-amber'
                   : 'border-white/20 text-white/70'

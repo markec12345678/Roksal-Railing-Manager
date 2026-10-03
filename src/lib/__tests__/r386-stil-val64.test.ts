@@ -73,8 +73,16 @@ describe('R386 stil val 64 — AMBER/40 border-pariteta (3 × INS + dark PAR v e
       dark50 += pod(src, 'dark:focus-visible:border-roksal-amber/30')
     }
     expect(light40, 'FB amber/40 light').toBe(3)
-    expect(dark40, 'FB amber/40 dark').toBe(3)
-    expect(dark40, 'PAR /40 — vsaka light ima dark').toBe(light40)
+    // [EVOLVED R387 val 65: dark FB amber/40 žeton je deljen — val 65 doda
+    // ×2 prek amber/60 družine (notification L748 + photo L2113); skupni
+    // dark:/40 = 5 (3 + 2); PAR /40 zdaj DRUŽINSKI: light40 + light60 == dark40]
+    expect(dark40, 'dark FB amber/40 skupaj (val 64 ×3 + val 65 ×2 — ISTI žeton)').toBe(5)
+    let light60 = 0
+    for (const z of readdirSync(koren)) {
+      if (!z.endsWith('.tsx')) continue
+      light60 += (readFileSync(join(koren, z), 'utf-8').match(/(?<!dark:)focus-visible:border-roksal-amber\/60/g) ?? []).length
+    }
+    expect(dark40, 'PAR /40+/60 skupni dark žeton').toBe(light40 + light60)
     expect(light50, 'FB amber/50 light (val 63)').toBe(15)
     expect(dark50, 'FB amber/50 dark (val 63)').toBe(15)
   })
@@ -113,11 +121,14 @@ describe('R386 stil val 64 — AMBER/40 border-pariteta (3 × INS + dark PAR v e
     expect(wcLinije(R('roksal/vodja-dashboard.tsx')), 'vodja in-place').toBe(2199)
   })
 
-  it('(E) IZVEN OBSEGA + REGRESIJA: amber/60 pod-družina (3 vrstice) nedotaknjena; rdeči val 62 (16/16) in navy val 61 (159/159) nedotaknjena', () => {
+  it('(E) IZVEN OBSEGA + REGRESIJA: amber/60 tarči L748+L2113 EVOLVED R387 val 65 (zdaj nosita FB amber/60+dark/40); L2414 ostaja nedotaknjena; rdeči val 62 (16/16) in navy val 61 (159/159) nedotaknjena', () => {
     const koren = join(process.cwd(), 'src/components/roksal')
+    // [EVOLVED R387 val 65: 2 amber/60 bordered tarči (notification L748,
+    // photo L2113) sta bili ob R386 izven obsega — val 65 ju je pariral
+    // (FB amber/60 + dark FB /40 TIK ZA O2 — val 57 kanon); izven obsega
+    // ostane SAMO photo L2414 (N/A — brez borderja, brez sorojenca z FB)]
     const IZVEN = [
-      { f: 'roksal/notification-center.tsx', ln: [748] },
-      { f: 'roksal/photo-tab.tsx', ln: [2113, 2414] },
+      { f: 'roksal/photo-tab.tsx', ln: [2414] },
     ]
     for (const { f, ln } of IZVEN) {
       const lines = R(f).split('\n')
@@ -125,6 +136,19 @@ describe('R386 stil val 64 — AMBER/40 border-pariteta (3 × INS + dark PAR v e
         const v = lines[n - 1]
         expect(v.includes('focus-visible:ring-roksal-amber/60'), `${f}:${n} amber/60 ring`).toBe(true)
         expect(v.includes('focus-visible:border-roksal-amber'), `${f}:${n} BREZ FB (izven obsega val 64)`).toBe(false)
+      }
+    }
+    // EVOLVED R387 val 65: 2 amber/60 bordered tarči zdaj nosita FB amber/60 + dark FB /40
+    const EVOLVED = [
+      { f: 'roksal/notification-center.tsx', ln: [748] },
+      { f: 'roksal/photo-tab.tsx', ln: [2113] },
+    ]
+    for (const { f, ln } of EVOLVED) {
+      const lines = R(f).split('\n')
+      for (const n of ln) {
+        const v = lines[n - 1]
+        expect(v.includes('focus-visible:ring-roksal-amber/60'), `${f}:${n} amber/60 ring`).toBe(true)
+        expect(v.includes('focus-visible:border-roksal-amber/60 dark:focus-visible:border-roksal-amber/40'), `${f}:${n} FB+dark PAR (EVOLVED R387 val 65)`).toBe(true)
       }
     }
     let redL = 0

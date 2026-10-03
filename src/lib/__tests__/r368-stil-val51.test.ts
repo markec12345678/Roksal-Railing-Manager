@@ -122,10 +122,14 @@ describe('r368 stil val 51 — amber OBLIKOVNA pariteta + e2e-lib dedup 8. val',
       expect(src.includes(novInv), `${s}: nov inventory pin manjka`).toBe(true)
       expect(src.includes('focus-visible:ring-offset-1 press-scale'), `${s}: star offset-1 pin še živ`).toBe(false)
     }
-    const novObv = 'focus-visible:ring-roksal-amber/60 focus-visible:ring-offset-2 dark:focus-visible:ring-roksal-amber/40 active:scale-[0.98]" "R245 notification kartica [PIN SHIFT R368 val 51: offset-2 — izjema zaključena]"'
+    // [PIN SHIFT R387 val 65: FB amber/60 + dark FB /40 vstavljen MED
+    // offset-2 in dark ring na notification L748 (val 57 kanon TIK ZA O2)
+    // — stari novObv (R368 sosednost) = 0; novObv EVOLVED: žig R387]
+    const novObv = 'focus-visible:ring-roksal-amber/60 focus-visible:ring-offset-2 focus-visible:border-roksal-amber/60 dark:focus-visible:border-roksal-amber/40 dark:focus-visible:ring-roksal-amber/40 active:scale-[0.98]" "R245 notification kartica [PIN SHIFT R368 val 51: offset-2; PIN SHIFT R387 val 65: FB amber/60+dark/40]"'
     for (const s of needleSkripte.slice(2, 13)) {
       const src = R(`scripts/${s}`)
       expect(src.includes(novObv), `${s}: nov notification pin manjka`).toBe(true)
+      expect(src.includes('focus-visible:ring-roksal-amber/60 focus-visible:ring-offset-2 dark:focus-visible:ring-roksal-amber/40 active:scale-[0.98]'), `${s}: star R368 pin še živ`).toBe(false)
       expect(src.includes('(dokumentirana izjema ostaja)'), `${s}: stara izjema še živa`).toBe(false)
     }
     // r175 regex prefix pin ([^"]* flex) preživi vstavitvi — dokumentirana

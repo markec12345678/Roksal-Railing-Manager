@@ -106,24 +106,39 @@ describe('R385 stil val 63 — AMBER/50 border-pariteta (15 × INS + dark PAR v 
     expect(wcLinije(R('roksal/inclinometer-tab.tsx')), 'inclinometer in-place').toBe(599)
   })
 
-  it('(E) IZVEN OBSEGA + REGRESIJA: amber/60 pod-družina (3 vrstice) nedotaknjena; amber/40 tarče EVOLVED R386 val 64 (zdaj nosijo FB); rdeči val 62 (16/16) in navy val 61 (159/159) nedotaknjena', () => {
+  it('(E) IZVEN OBSEGA + REGRESIJA: amber/60 tarči L748+L2113 EVOLVED R387 val 65 (zdaj nosita FB); L2414 + brez-border amber/40 ostajata nedotaknjeni; amber/40 EVOLVED R386; rdeči val 62 (16/16) in navy val 61 (159/159) nedotaknjena', () => {
     const koren = join(process.cwd(), 'src/components/roksal')
     // [EVOLVED R386 val 64: 3 amber/40 bordered tarče (dashboard L1946,
     // measurements L3478, vodja L2093) so bili ob R385 izven obsega —
-    // val 64 jih je pariral; izven obsega ostane SAMO amber/60 + brez-
-    // border amber/40 vrstici (dashboard L1749, measurements L3329)]
+    // val 64 jih je pariral; EVOLVED R387 val 65: 2 amber/60 bordered
+    // tarči (notification L748, photo L2113) sta bili izven obsega —
+    // val 65 ju je pariral (FB amber/60 + dark FB /40 TIK ZA O2);
+    // izven obsega ostane SAMO photo L2414 (N/A) + brez-border amber/40
+    // vrstici (dashboard L1749, measurements L3329)]
     const IZVEN = [
       { f: 'roksal/dashboard-tab.tsx', ln: [1749] },
       { f: 'roksal/measurements-tab.tsx', ln: [3329] },
-      { f: 'roksal/notification-center.tsx', ln: [748] },
-      { f: 'roksal/photo-tab.tsx', ln: [2113, 2414] },
+      { f: 'roksal/photo-tab.tsx', ln: [2414] },
     ]
     for (const { f, ln } of IZVEN) {
       const lines = R(f).split('\n')
       for (const n of ln) {
         const v = lines[n - 1]
         expect(/focus-visible:ring-roksal-amber\/(40|60)/.test(v), `${f}:${n} amber/40|60 ring`).toBe(true)
-        expect(v.includes('focus-visible:border-roksal-amber'), `${f}:${n} BREZ FB (izven obsega val 63+64)`).toBe(false)
+        expect(v.includes('focus-visible:border-roksal-amber'), `${f}:${n} BREZ FB (izven obsega val 63+64+65)`).toBe(false)
+      }
+    }
+    // EVOLVED R387 val 65: 2 amber/60 bordered tarči zdaj nosita FB amber/60 + dark FB /40
+    const EVOLVED65 = [
+      { f: 'roksal/notification-center.tsx', ln: [748] },
+      { f: 'roksal/photo-tab.tsx', ln: [2113] },
+    ]
+    for (const { f, ln } of EVOLVED65) {
+      const lines = R(f).split('\n')
+      for (const n of ln) {
+        const v = lines[n - 1]
+        expect(v.includes('focus-visible:ring-roksal-amber/60'), `${f}:${n} amber/60 ring`).toBe(true)
+        expect(v.includes('focus-visible:border-roksal-amber/60 dark:focus-visible:border-roksal-amber/40'), `${f}:${n} FB+dark PAR (EVOLVED R387 val 65)`).toBe(true)
       }
     }
     // EVOLVED: 3 amber/40 bordered tarče zdaj nosijo FB amber/40 + dark (val 64)

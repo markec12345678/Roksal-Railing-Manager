@@ -1,0 +1,58 @@
+# qa-needles/r387.tsv — REGISTER needlejev runde R387 (STIL val 65:
+# AMBER/60 BORDER-PARITETA — ZADNJA amber pod-družina; amber simetrija
+# TRETJIČ zaključena: /50 val 63 + /40 val 64 + /60 val 65; 2 × INS,
+# in-place, 0 novih vrstic; kanon R386 handover kandidat 1).
+# Disk resnica r387-triaza.py [polna triaža po LEKCIJI R382 (1)]: 2 tarči
+# z VIDLJIVIM borderjem — obe border-class [notification L748
+# border-border/60 + hover:border-roksal-amber/40 (ring par light /60 +
+# dark /40 ŽE na vrstici), photo L2113 nativni 'border' s pogojnima veja
+# border-roksal-amber / border-white/20 (trajno temna površina
+# bg-roksal-navy — brez dark: variant)], obe z O2; 1 N/A iskreno izključen
+# (photo L2414 — brez borderja in brez sorojenca z FB); 0 anomalij →
+# 2 × INS ' focus-visible:border-roksal-amber/60
+# dark:focus-visible:border-roksal-amber/40' TIK ZA O2 (val 57 kanon
+# R375) — LEKCIJA R383 (2): PAR (light + dark) v ENEM koraku; dark /40 po
+# DVEH skladiščih resnice: notification L748 lasten dark ring JE /40 (FB
+# sledi SVOJI ring pari) + crm-tab L811 'dark:border-roksal-amber/40'
+# Card (precedens val 64; /30 je par /50+/30 audit-trail L53 — namenjen
+# /50 družini; /60 NIMA lastnega dark border para v kodebazi → /40
+# UNIFORMNO za celo družino; amber ostane amber — NI ink).
+# ⭐ LEKCIJA R368 KANON (PIN SHIFT V ISTI RUNDI): notification L748
+# sosednost 'ring-offset-2 dark:focus-visible:ring-roksal-amber/40' je
+# PINANA v 11 zamrznjenih needle skriptah (r245–r255 build-needles) —
+# val 65 vstavi FB MED offset-2 in dark ring → PIN SHIFT VSEH 11 V ISTI
+# RUNDI (faza 2 r387-val65-apply.py, žig [PIN SHIFT R387 val 65]) +
+# r368-stil-val51 (C) novObv EVOLVED [stari adjacency = 0; nova ×11].
+# ⭐ LEKCIJA R386 (2) UPOŠTEVANA: pre-skan stil testov VSEH prejšnjih vals
+# iste družine — r385-stil-val63 (E) + r386-stil-val64 (E) EVOLVED [L748+
+# L2113 izven-obsega → EVOLVED z pozitivno FB preverbo; L2414 ostaja
+# izven]; r368 (A)/(B) ring števci nespremenjeni (FB je border žeton).
+# FEATURE (R387): FB-BORDER pariteta stražar GENERALIZACIJA (TRETJI varuh
+# — skupaj z r385 dark FB + r386 O2 varuhom pokriva celoten FB jezik) —
+# r387-fb-border-generalizacija.test.ts [×6: it.each per barva bordered+
+# O2 ring vrstica nosi FB iste barve — kršitve 0; števci zamrznjeni navy
+# 159 / red 16 / amber 20; obrnjena regresija 0 sirot FB brez ringa; N/A
+# vrstici iskreno izven]. Komplement r385-fb-dark-generalizacija [EVOLVED
+# R387: +družina amber/60→dark/40, deljen dark žeton — skupni PAR
+# 3+2==5; BREZ SIROT svetlobaDružine +amber/60].
+# Orodja: r387-triaza.py + r387-val65-apply.py [fail-closed kontrakt ×2 +
+# PIN SHIFT ×11 v ENEM atomskem koraku; POST closure lookbehind + in-place
+# + needle survival; ponovni tek = 0 INS / 0 SHIFT] + r383-window-scan
+# delta 79 'focus-visible:ring-roksal-amber/60 focus-visible:ring-offset-2'
+# [pre-skan PRED apply: 304 regexov 0 preozkih + 164 pinov 0 mrtvih +
+# 133 slice-oknen + 0 odstopanj] + r387-era-harvest.sh [40. preverba
+# ŠTIRIDESIJNA, EXIT=0 ×2 — 163/163 ŽIVO; VSEH 12 server-probe spec-ov —
+# LEKCIJA R384 (1)] + spot-r167/27 [val 64 POST-deploy: dashboard 1/1 +
+# vodja 1/1 MONTIRANO (20 tokenov LOČENO); measurements iskreno 0 (POGOJNA
+# resnica — brez foto mer); kolektor 0].
+# KOLIZIJA: brez (fetch-first origin/main == HEAD 3969bca == R386 push).
+#
+# FORMAT (TSV; EN vrstica = EN needle; TAB je LOČILO — presledki
+# znotraj needleja so POMENNI, ker grep -F išče dobesedno).
+# Vrste: need_static (MORA biti ŽIV v svežem buildu) | must_miss
+# (NESME biti v produkcijskih čankih).
+group flex w-full items-center gap-3 rounded-xl border border-border/60 bg-card p-3 text-left transition-all hover:-translate-y-0.5 hover:border-roksal-amber/40 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-amber/60 focus-visible:ring-offset-2 focus-visible:border-roksal-amber/60 dark:focus-visible:border-roksal-amber/40 dark:focus-visible:ring-roksal-amber/40 active:scale-[0.98]	R387 val 65 notification-center L748 (×1, kartica — ring par /60+/40 ŽE na vrstici) — border-pariteta: FB amber/60+dark/40 TIK ZA O2, seam pred dark ringom (0 v HEAD 3969bca)	need_static
+flex h-6 w-9 items-center justify-center rounded-md border text-2xs focus-visible:ring-2 focus-visible:ring-roksal-amber/60 focus-visible:ring-offset-2 focus-visible:border-roksal-amber/60 dark:focus-visible:border-roksal-amber/40	R387 val 65 photo-tab L2113 (×1, STROKES debelina — trajno temna površina, brez dark: ring variant) — border-pariteta: FB amber/60+dark/40 TIK ZA O2 (0 v HEAD 3969bca)	need_static
+focus-visible:border-roksal-amber/60 dark:focus-visible:border-roksal-amber/40	R387 val 65 družinski PAR žeton (×2 — notification L748 + photo L2113) — FB amber/60+dark/40 par (0 v HEAD 3969bca)	need_static
+dark:focus-visible:border-roksal-amber/40 dark:focus-visible:ring-roksal-amber/40	R387 val 65 seam adjacency (×1 — notification L748: dark FB PRED obstoječim dark ringom; dokaz vstavitve MED offset-2 in dark ringom) (0 v HEAD 3969bca)	need_static
+TODO-R387	must_miss: razvojni ostanki (nesme biti v produkcijskih cankih)	must_miss
