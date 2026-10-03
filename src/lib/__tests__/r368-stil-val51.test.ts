@@ -88,7 +88,13 @@ describe('r368 stil val 51 — amber OBLIKOVNA pariteta + e2e-lib dedup 8. val',
     // N2: photo L2113/L2414 + notification L748
     expect(pod(vse, 'focus-visible:ring-roksal-amber/60 focus-visible:ring-offset-2')).toBe(3)
     // N3: measurements L3329/L3478
-    expect(pod(vse, 'focus-visible:ring-roksal-amber/40 focus-visible:ring-offset-2 focus-visible:outline-none')).toBe(2)
+    // [PIN SHIFT R386 val 64: FB amber/40 + dark FB vstavljen MED offset-2
+    // in outline-none na L3478 (val 57 kanon TIK ZA O2 — bordered tarča
+    // val 64); L3329 (N/A, brez borderja) ohrani staro adjacency → stari
+    // N3 diskriminator 2→1; N3 EVOLVED: nova adjacency vključuje FB+dark
+    // par ×1 — disk resnica]
+    expect(pod(vse, 'focus-visible:ring-roksal-amber/40 focus-visible:ring-offset-2 focus-visible:outline-none')).toBe(1)
+    expect(pod(vse, 'focus-visible:ring-roksal-amber/40 focus-visible:ring-offset-2 focus-visible:border-roksal-amber/40 dark:focus-visible:border-roksal-amber/40 focus-visible:outline-none')).toBe(1)
     // N4: before-after L172 + viz-tab L125 (plain amber — poševnica bi bila lažni pozitiv)
     expect(pod(vse, 'outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-amber focus-visible:ring-offset-2')).toBe(2)
     // izpuščen kandidat 1: inclinometer '/50 offset-2' NI ×0 v HEAD (vodja

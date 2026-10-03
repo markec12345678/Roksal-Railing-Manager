@@ -1,0 +1,48 @@
+# qa-needles/r386.tsv — REGISTER needlejev runde R386 (STIL val 64:
+# AMBER/40 BORDER-PARITETA — zaključek amber simetrije skupaj z val 63;
+# 3 × INS, in-place, 0 novih vrstic; kanon R386 handover kandidat 1).
+# Disk resnica r386-triaza.py [polna triaža po LEKCIJI R382 (1)]: 3 tarče
+# z VIDLJIVIM borderjem — vse border-class [dashboard L1946
+# border-roksal-amber/40 kartica, measurements L3478 border-roksal-amber/30,
+# vodja L2093 border-roksal-amber/40 kartica — rdeči dvojček L2122 ima FB
+# že od val 62], vseh 3 z O2; 2 N/A iskreno izključena (dashboard L1749,
+# measurements L3329 — brez borderja + brez sorojenca z FB); 21 IZVEN
+# obsega (amber/50 zaključen val 63 ×15 + amber/60 prihodnji val) →
+# 3 × INS ' focus-visible:border-roksal-amber/40
+# dark:focus-visible:border-roksal-amber/40' TIK ZA O2 (val 57 kanon
+# R375) — LEKCIJA R383 (2): PAR (light + dark) v ENEM koraku; dark /40 po
+# družinskem precedensu z ISTO intenziveto — crm-tab L811
+# 'dark:border-roksal-amber/40' Card (edini obstoječi dark amber/40 border
+# v kodebazi; amber ostane amber v temni temi — barva je pomen, NI ink).
+# ⭐ LEKCIJA R385 (1) UPOŠTEVANA: r368-stil-val51 (B) N3 pojavitveni pin
+# PIN SHIFTAN V ISTI RUNDI [stari adjacency 2→1 — L3329 (N/A) ohrani;
+# EVOLVED adjacency ×1 — L3478 z FB+dark]; register r368 N3 needle ŽIVO
+# (grep binarno — L3329); register needle-survival v apply potrdil 0 mrtvih.
+# FEATURE (R386): O2 pairing stražar GENERALIZACIJA — vsak barvni focus
+# ring (navy 237 / red 25 / amber 26) nosi O2 — r386-ring-o2-
+# generalizacija.test.ts [×5: per-družina razcep = 0 + FROZEN izjema #2
+# roksal-catalog L95 <Input> dokumentirana + TOČNO 1 + globalna števca
+# zamrznjena]; komplement r385-fb-dark-generalizacija [EVOLVED — amber
+# PAR seznam razširjen na /50+/40 intenziteti, disk 159/16/15+3].
+# Orodja: r386-triaza.py [dark-polovica lookbehind fix — light ring /40
+# detekcija EXCLUDE 'dark:focus-visible:ring-roksal-amber/40' (notification
+# L748 light ring je /60!)] + r386-val64-apply.py [fail-closed kontrakt ×3,
+# POST closure lookbehind + in-place + needle survival; ponovni tek = 0
+# INS] + r383-window-scan delta 79 'focus-visible:ring-roksal-amber/40
+# focus-visible:ring-offset-2' [pre-skan PRED apply: 304 regexov 0 preozkih
+# + 164 pinov 0 mrtvih + 133 slice-oknen + 0 odstopanj] + r386-era-harvest.sh
+# [39. preverba DEVETINTRIDESIJNA, EXIT=0 ×2 — 159/159 ŽIVO; VSEH 12
+# server-probe spec-ov — LEKCIJA R384 (1)] + spot-r167/26 [val 63
+# POST-deploy: vodja N1 1/1 + N2 1/1 + photo kategorije 3/3 MONTIRANO
+# (tokeni LOČENO); inclinometer iskreno 0 [historyError vrata]; kolektor 0].
+# KOLIZIJA: brez (fetch-first origin/main == HEAD 666a7cc == R385 push).
+#
+# FORMAT (TSV; EN vrstica = EN needle; TAB je LOČILO — presledki
+# znotraj needleja so POMENNI, ker grep -F išče dobesedno).
+# Vrste: need_static (MORA biti ŽIV v svežem buildu) | must_miss
+# (NESME biti v produkcijskih čankih).
+flex w-full items-center gap-3 rounded-xl border border-roksal-amber/40 bg-roksal-amber/5 p-3 text-left animate-fade-in-up cursor-pointer transition-colors hover:bg-roksal-amber/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-amber/40 focus-visible:ring-offset-2 focus-visible:border-roksal-amber/40 dark:focus-visible:border-roksal-amber/40	R386 val 64 dashboard-tab L1946 (×1, kartica nativni gumb) — border-pariteta: FB amber/40+dark TIK ZA O2 (0 v HEAD 666a7cc)	need_static
+flex items-center gap-1 rounded-lg border border-roksal-amber/30 bg-roksal-amber/5 px-2 py-1 text-[11px] font-medium text-roksal-amber hover:bg-roksal-amber/10 active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-roksal-amber/40 focus-visible:ring-offset-2 focus-visible:border-roksal-amber/40 dark:focus-visible:border-roksal-amber/40 focus-visible:outline-none	R386 val 64 measurements-tab L3478 (×1, nativni gumb + active:scale rep) — border-pariteta: FB amber/40+dark TIK ZA O2 (0 v HEAD 666a7cc)	need_static
+flex w-full cursor-pointer items-center gap-2 rounded-xl border border-roksal-amber/40 bg-roksal-amber/5 p-3 text-left shadow-sm animate-fade-in-up transition-colors hover:bg-roksal-amber/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-amber/40 focus-visible:ring-offset-2 focus-visible:border-roksal-amber/40 dark:focus-visible:border-roksal-amber/40	R386 val 64 vodja-dashboard L2093 (×1, kartica — rdeči dvojček L2122 FB od val 62) — border-pariteta: FB amber/40+dark TIK ZA O2 (0 v HEAD 666a7cc)	need_static
+focus-visible:border-roksal-amber/40 dark:focus-visible:border-roksal-amber/40	R386 val 64 družinski PAR žeton (×3 — dashboard L1946 + measurements L3478 + vodja L2093; +EVOLVED r368 N3 adjacency) — FB amber/40+dark par (0 v HEAD 666a7cc)	need_static
+TODO-R386	must_miss: razvojni ostanki (nesme biti v produkcijskih cankih)	must_miss

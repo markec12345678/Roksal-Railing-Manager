@@ -106,22 +106,37 @@ describe('R385 stil val 63 — AMBER/50 border-pariteta (15 × INS + dark PAR v 
     expect(wcLinije(R('roksal/inclinometer-tab.tsx')), 'inclinometer in-place').toBe(599)
   })
 
-  it('(E) IZVEN OBSEGA + REGRESIJA: amber/40 + amber/60 pod-družini (8 vrstic) nedotaknjeni; rdeči val 62 (16/16) in navy val 61 (159/159) nedotaknjena', () => {
+  it('(E) IZVEN OBSEGA + REGRESIJA: amber/60 pod-družina (3 vrstice) nedotaknjena; amber/40 tarče EVOLVED R386 val 64 (zdaj nosijo FB); rdeči val 62 (16/16) in navy val 61 (159/159) nedotaknjena', () => {
     const koren = join(process.cwd(), 'src/components/roksal')
-    // izven obsega: amber/40 in amber/60 ring vrstice NOSIJO ring, NE FB
+    // [EVOLVED R386 val 64: 3 amber/40 bordered tarče (dashboard L1946,
+    // measurements L3478, vodja L2093) so bili ob R385 izven obsega —
+    // val 64 jih je pariral; izven obsega ostane SAMO amber/60 + brez-
+    // border amber/40 vrstici (dashboard L1749, measurements L3329)]
     const IZVEN = [
-      { f: 'roksal/dashboard-tab.tsx', ln: [1749, 1946] },
-      { f: 'roksal/measurements-tab.tsx', ln: [3329, 3478] },
+      { f: 'roksal/dashboard-tab.tsx', ln: [1749] },
+      { f: 'roksal/measurements-tab.tsx', ln: [3329] },
       { f: 'roksal/notification-center.tsx', ln: [748] },
       { f: 'roksal/photo-tab.tsx', ln: [2113, 2414] },
-      { f: 'roksal/vodja-dashboard.tsx', ln: [2093] },
     ]
     for (const { f, ln } of IZVEN) {
       const lines = R(f).split('\n')
       for (const n of ln) {
         const v = lines[n - 1]
         expect(/focus-visible:ring-roksal-amber\/(40|60)/.test(v), `${f}:${n} amber/40|60 ring`).toBe(true)
-        expect(v.includes('focus-visible:border-roksal-amber'), `${f}:${n} BREZ FB (izven obsega val 63)`).toBe(false)
+        expect(v.includes('focus-visible:border-roksal-amber'), `${f}:${n} BREZ FB (izven obsega val 63+64)`).toBe(false)
+      }
+    }
+    // EVOLVED: 3 amber/40 bordered tarče zdaj nosijo FB amber/40 + dark (val 64)
+    const EVOLVED = [
+      { f: 'roksal/dashboard-tab.tsx', ln: [1946] },
+      { f: 'roksal/measurements-tab.tsx', ln: [3478] },
+      { f: 'roksal/vodja-dashboard.tsx', ln: [2093] },
+    ]
+    for (const { f, ln } of EVOLVED) {
+      const lines = R(f).split('\n')
+      for (const n of ln) {
+        const v = lines[n - 1]
+        expect(v.includes('focus-visible:border-roksal-amber/40 dark:focus-visible:border-roksal-amber/40'), `${f}:${n} EVOLVED R386 val 64 FB+dark`).toBe(true)
       }
     }
     // regresija: rdeči val 62 in navy val 61 парa števca

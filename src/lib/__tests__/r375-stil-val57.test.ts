@@ -102,7 +102,7 @@ describe('R375 stil val 57 — ring↔border pariteta navy/40 obrobljenih gumbov
     }
   })
 
-  it('(B) census PO: bordered navy/40 gap 0 + amber/red ×2 dokumentirano BREZ sprememb + navy BREZ border širine ×25 mrtev-CSS izpuščeno + INPUT ×4 checkboxi iskreno izpuščeni + ui KIT border-ring ×11 zamrznjen', () => {
+  it('(B) census PO: bordered navy/40 gap 0 + amber EVOLVED R386 val 64 (FB+dark; red ×2 dokumentirano BREZ sprememb) + navy BREZ border širine ×25 mrtev-CSS izpuščeno + INPUT ×4 checkboxi iskreno izpuščeni + ui KIT border-ring ×11 zamrznjen', () => {
     const src = R(MER)
     const lines = src.split('\n')
     const SIRINA = /[\s'"{(]border(-[0-9](?:\.\d)?)?[\s'")}]/
@@ -114,9 +114,14 @@ describe('R375 stil val 57 — ring↔border pariteta navy/40 obrobljenih gumbov
       (v) => v.includes(NAVY) && v.includes(O2) && !v.includes(BORDER) && !SIRINA.test(v),
     ).length
     expect(brezSirine, 'mrtev-CSS izpuščeni').toBe(20) // [PIN SHIFT R382 val 61: 5 outline Button vrstic dobilo FB → izseljene]
+    // [EVOLVED R386 val 64: bordered amber/40 vrstica (L3478) je bila ob
+    // val 57 dokumentirano BREZ FB ('amber/red ×2 dokumentirano BREZ
+    // sprememb') — val 64 je pariral vseh 3 bordered amber/40 tarče;
+    // amber bordered zdaj NOSI FB amber/40 + dark /40 (crm-tab L811
+    // precedens) — disk resnica]
     const amberTarca = lines.find((v) => v.includes('focus-visible:ring-roksal-amber/40') && SIRINA.test(v))
     expect(amberTarca, 'amber bordered obstaja').toBeTruthy()
-    expect(amberTarca!.includes('focus-visible:border'), 'amber brez border-paritete').toBe(false)
+    expect(amberTarca!.includes('focus-visible:border-roksal-amber/40 dark:focus-visible:border-roksal-amber/40'), 'amber EVOLVED R386 val 64: FB+dark par prisoten').toBe(true)
     const log = R('src/components/roksal/logistics-tab.tsx').split('\n')
     const checkbowers = log.filter(
       (v) => v.includes('accent-roksal-navy') && v.includes(NAVY) && v.includes(O2) && !v.includes('focus-visible:border'),

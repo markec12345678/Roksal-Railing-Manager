@@ -35,10 +35,14 @@ const koren = join(process.cwd(), 'src/components/roksal')
 // Družinska mapa: light FB žeton → dark FB žeton (ISTI vrstični PAR).
 // Negative lookbehind (?<!dark:) loči light od dark polovice — LEKCIJA
 // R384 (2): dark: token VSEBUJE light podniz.
+// [EVOLVED R386 val 64: amber družina ima po val 64 DVE intenziteti —
+// /50→dark/30 (val 63, audit-trail precedens) + /40→dark/40 (val 64,
+// crm-tab L811 precedens) — PAR seznam razširjen na 4 vnosov]
 const DRUŽINE = [
   { ime: 'navy', light: /(?<!dark:)focus-visible:border-roksal-navy\/40/, dark: 'dark:focus-visible:border-roksal-ink/40', lightZeton: 'focus-visible:border-roksal-navy/40' },
   { ime: 'red', light: /(?<!dark:)focus-visible:border-roksal-red\/40/, dark: 'dark:focus-visible:border-roksal-red/50', lightZeton: 'focus-visible:border-roksal-red/40' },
-  { ime: 'amber', light: /(?<!dark:)focus-visible:border-roksal-amber\/50/, dark: 'dark:focus-visible:border-roksal-amber/30', lightZeton: 'focus-visible:border-roksal-amber/50' },
+  { ime: 'amber/50', light: /(?<!dark:)focus-visible:border-roksal-amber\/50/, dark: 'dark:focus-visible:border-roksal-amber/30', lightZeton: 'focus-visible:border-roksal-amber/50' },
+  { ime: 'amber/40', light: /(?<!dark:)focus-visible:border-roksal-amber\/40/, dark: 'dark:focus-visible:border-roksal-amber/40', lightZeton: 'focus-visible:border-roksal-amber/40' },
 ] as const
 
 const vrsticeVseh = (): { f: string; n: number; l: string }[] => {
@@ -61,12 +65,13 @@ describe('R385 FEATURE — R166 dark stražar GENERALIZACIJA: vsi barvni FB pari
     expect(kršitve, lightZeton).toEqual([])
   })
 
-  it('GLOBALNA PARITETA: števce light == dark per družina (delna aplikacija = glasna regresija); disk resnica 159/16/15', () => {
+  it('GLOBALNA PARITETA: števce light == dark per PAR (delna aplikacija = glasna regresija); disk resnica 159/16/15+3 — [EVOLVED R386 val 64: amber/40 ×3]', () => {
     const vse = vrsticeVseh().map(({ l }) => l).join('\n')
     const pricakovano: Record<string, [number, number]> = {
       navy: [159, 159],
       red: [16, 16],
-      amber: [15, 15],
+      'amber/50': [15, 15],
+      'amber/40': [3, 3],
     }
     for (const { ime, light, dark } of DRUŽINE) {
       const svetlo = (vse.match(new RegExp(light.source, 'g')) ?? []).length
@@ -77,14 +82,21 @@ describe('R385 FEATURE — R166 dark stražar GENERALIZACIJA: vsi barvni FB pari
     }
   })
 
-  it('BREZ SIROT: nobena vrstica ne nosi dark FB brez light polovice (obrnjena regresija — čiščenje ne sme pustiti sirot)', () => {
-    for (const { ime, light, lightZeton } of DRUŽINE) {
+  it('BREZ SIROT: nobena vrstica ne nosi dark FB brez light polovice (obrnjena regresija — čiščenje ne sme pustiti sirot) — light preverba na DRUŽINSKI ravni (katerakoli intenziveta, lookbehind)', () => {
+    const svetlobaDružine: Record<string, RegExp> = {
+      navy: /(?<!dark:)focus-visible:border-roksal-navy\//,
+      red: /(?<!dark:)focus-visible:border-roksal-red\//,
+      'amber/50': /(?<!dark:)focus-visible:border-roksal-amber\//,
+      'amber/40': /(?<!dark:)focus-visible:border-roksal-amber\//,
+    }
+    for (const { ime, lightZeton } of DRUŽINE) {
+      const svetloPat = svetlobaDružine[ime]
       const sirote = vrsticeVseh()
         .filter(({ l }) => l.includes('dark:focus-visible:border-roksal-'))
-        .filter(({ l }) => !light.test(l))
+        .filter(({ l }) => !svetloPat.test(l))
         .filter(({ l }) => {
           // vrstica nosi dark FB TE družine, NE pa light žetona TE družine
-          const darkTaDružina = ime === 'navy' ? 'dark:focus-visible:border-roksal-ink/' : `dark:focus-visible:border-roksal-${ime}/`
+          const darkTaDružina = ime === 'navy' ? 'dark:focus-visible:border-roksal-ink/' : `dark:focus-visible:border-roksal-${ime.split('/')[0]}/`
           return l.includes(darkTaDružina)
         })
         .map(({ f, n }) => `${f}:${n} ${ime} dark FB sirota (brez ${lightZeton})`)
