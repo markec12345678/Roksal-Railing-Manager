@@ -112,6 +112,11 @@ ERA_BESODE = {
     #  PETINPETDESETA — ista IN…DESIJNA družina kot 51.–53.)
     54: ("STIRIINPETDESETA", "štiriinpetdesete", "štiriinpetdeset", "STIRIINPETDESETIH"),
     55: ("PETINPETDESETA", "petinpetdesete", "petinpetdeset", "PETINPETDESETIH"),
+    # R403 (MOJA QA runda — verifikacija R402 deploya): GLASNA razširitev — 56. era
+    #  preverba (r347–r402; handover R402: "56. era preverba r347–r402 ≥204";
+    #  vzorec mape: šestinpetdeset → ŠESTINPETDESETA — ista IN…DESIJNA
+    #  družina kot 51.–55.)
+    56: ("ŠESTINPETDESETA", "šestinpetdesete", "šestinpetdeset", "ŠESTINPETDESETIH"),
 }
 ERA_MEJA = max(ERA_BESODE)
 
