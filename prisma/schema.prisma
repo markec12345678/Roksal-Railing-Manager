@@ -334,6 +334,7 @@ model Project {
   schedules            InstallationSchedule[]
   punchItems           PunchItem[]
   invoices             Invoice[]
+  payments             Payment[] // R402 §19 — plačila/avansi/dobropisi projekta (issue #13 korak R170)
   siteSurvey           SiteSurvey?
   portalAccess         PortalAccess[]
   qualityControls      QualityControl[] // R146 §27 — preverbe kakovosti projekta
@@ -1386,16 +1387,94 @@ model Invoice {
   /// Za plačilo (EUR)
   znesek        Decimal  @default(0) @db.Decimal(12, 2)
   opombe        String?
+  /// R402 (§19): kdaj je bil račun poslan kupcu (status POSLAN — stroj prehod IZDAN→POSLAN)
+  poslanoAt     DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project     Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  payments    Payment[]            @relation("PlacilaRacunaCilj") // R402 §19 — plačila s tem računom kot primarnim ciljem
+  allocations PaymentAllocation[]  // R402 §19 — vse allocacije plačil NANJ ta račun (vir resnice o plačilu)
 
   @@index([projectId])
   @@index([status])
   /// R136 (§18): dashboard/pregled filtrira "projekt + status" — kompozitni
   /// indeks pade iz dveh posameznih na en range scan.
   @@index([projectId, status])
+}
+
+// ============================================
+// 19a. PLAČILA — §19 (R402, issue #13 korak R170)
+// Invoice → Payment → Reconciliation. Kanon:
+//   • vir resnice o plačilu = PaymentAllocation vrstice plačil s statusom
+//     KNJIZENO — status računa DELNO_PLACAN/PLACAN je IZPELJAN strežniško
+//     (izpeljava ob vsakem zabeleženem/prekinjenem plačilu), NIKOLI ročno
+//     iz klienta (»Ni UI-only status rules« §21);
+//   • znesek vedno ≥ 0 — smer/namen nosi tip (PLACILO/AVANS/DOBROPIST/POVRACILO);
+//   • PREKINJENO plačilo (knjižna napaka/dvojnik) se NE briše — pravna sled:
+//     allocacije ostanejo, a se NE štejejo v izpeljavo;
+//   • createdBy NULL = sistemski backfill (R402 migracija legacy PLACAN).
+// ============================================
+model Payment {
+  id               String    @id @default(cuid())
+  projectId        String
+  /// Primarni ciljni račun iz sklica plačila (NULL = čist avans brez namena)
+  invoiceId        String?
+  /// PLACILO | AVANS | DOBROPIST | POVRACILO (smer nosi tip; znesek ≥ 0)
+  tip              String    @default("PLACILO")
+  /// Znesek v valuti (vedno ≥ 0; smer izraža tip)
+  znesek           Decimal   @db.Decimal(12, 2)
+  valuta           String    @default("EUR")
+  /// Datum plačila (knjiženje) — NE createdAt (vpis lahko sledi kasneje)
+  placanoAt        DateTime  @default(now())
+  /// Sklic/namen iz bančnega prometa (npr. sklic računa 2026-001)
+  referenca        String?
+  /// BANKA | GOTOVINA | KARTICA | DRUGO
+  metoda           String    @default("BANKA")
+  /// JSON allowlist: {iban?, swift?, nazivPrejemnika?, datumKnjizenja?, idTransakcije?}
+  bankaPodatki     String?
+  /// KNJIZENO | PREKINJENO (storno knjižne napake/dvojnika — allocacije se ne štejejo)
+  status           String    @default("KNJIZENO")
+  /// Razlog prekinitve (obvezen ob PREKINJENO — knjižna napaka/dvojnik/vračilo)
+  prekinitevRazlog String?
+  prekinjenoAt     DateTime?
+  /// Izdajatelj vnosa (Profile.id; NULL = sistemski backfill — ne FK: backfill vrstice nimajo uporabnika)
+  createdBy         String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  project     Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  invoice     Invoice?            @relation("PlacilaRacunaCilj", fields: [invoiceId], references: [id], onDelete: Restrict)
+  allocations PaymentAllocation[]
+
+  @@index([projectId])
+  @@index([projectId, status])
+  @@index([invoiceId])
+  @@index([placanoAt])
+}
+
+// ============================================
+// 19b. PORAZDELITEV PLAČILA — §19 (R402)
+// ENA vrstica = del plačila, knjižen na EN račun. Delno plačilo, več računov,
+// avans, dobropis in povratilo se IZRAŽAJO s temi vrsticami (spec: partial
+// payment / multiple invoice allocation / advance / credit note / refund).
+// @@unique(paymentId, invoiceId) — en plačilo-račun par se ne podvoji.
+// ============================================
+model PaymentAllocation {
+  id         String   @id @default(cuid())
+  paymentId  String
+  invoiceId  String
+  projectId  String
+  /// Del zneska plačila, knjižen na ta račun (> 0, ≤ znesek plačila)
+  znesek     Decimal  @db.Decimal(12, 2)
+  createdAt  DateTime @default(now())
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+
+  @@unique([paymentId, invoiceId])
+  @@index([invoiceId])
+  @@index([projectId])
 }
 
 // ============================================

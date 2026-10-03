@@ -106,6 +106,12 @@ ERA_BESODE = {
     #  handover R400: "ERA_BESODE 53 TRETINPETDESETA GLASNO"; vzorec mape:
     #  triinpetdeset → TRETINPETDESETA, tretji-(ordinalska) oblika kot 51./52.)
     53: ("TRETINPETDESETA", "tretinpetdesete", "tretinpetdeset", "TRETINPETDESETIH"),
+    # R402 (MOJA runda §19 plačila): GLASNA razširitev — 54. + 55. era preverba
+    #  (handover NJIOVE R401: "54. (r347–r400, ≥199) + 55. (r347–r401, ≥201)";
+    #  vzorec mape: štiriinpetdeset → STIRIINPETDESETA, petinpetdeset →
+    #  PETINPETDESETA — ista IN…DESIJNA družina kot 51.–53.)
+    54: ("STIRIINPETDESETA", "štiriinpetdesete", "štiriinpetdeset", "STIRIINPETDESETIH"),
+    55: ("PETINPETDESETA", "petinpetdesete", "petinpetdeset", "PETINPETDESETIH"),
 }
 ERA_MEJA = max(ERA_BESODE)
 

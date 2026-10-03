@@ -60,13 +60,13 @@ describe('r360 STIL val 43 — a11y resnica računovodskih akcij družine', () =
     expect(okno).toContain('title="Trajno izbriši osnutek računa — brisanje ni možno razveljaviti"')
   })
 
-  it('(C) Plačan blok: ring kanon + NOVI aria + NOVI title (isti rollback resnica)', () => {
-    const z = racuni.indexOf("onClick={() => patchStatus(inv, 'PLACAN')}")
+  it('(C) Plačan blok: ring kanon + NOVI aria + NOVI title (isti rollback resnica; EVOLVED R402 §19: gumb zdaj ZABELEŽI PLAČILO prek zabeleziPlacilo — odprta razlika iz strežniške izpeljave, status se izpelje na strežniku)', () => {
+    const z = racuni.indexOf('onClick={() => zabeleziPlacilo(inv)}')
     expect(z).toBeGreaterThan(-1)
     const okno = racuni.slice(Math.max(0, z - 400), z + 400)
     expect(okno).toContain(RING_KANON)
-    expect(okno).toContain('aria-label="Označi račun kot plačan"')
-    expect(okno).toContain('title="Potrdi plačilo računa — status se spremeni v plačan; neuspeh vrne prejšnje stanje"')
+    expect(okno).toContain('aria-label={`Zabeleži plačilo ${eur(odprto)} na račun ${inv.stevilka}`}')
+    expect(okno).toContain('title={`Zabeleži plačilo (${eur(odprto)}) prek /api/payments — status se izpelje strežniško (R402 §19); delno plačilo → Delno plačan`}')
   })
 
   it('(D) Storno blok: ring-2 roksal-red/40 + offset-2 (destruktivni žig ohranjen) + NOVI aria (dvoklik resnica) + NOVI title (3 s okno)', () => {
@@ -136,10 +136,11 @@ describe('r360 STIL val 43 — a11y resnica računovodskih akcij družine', () =
     expect(tab).toContain('title="Odstrani lokalni osnutek — ni bil nikoli poslan v bazo"')
   })
 
-  it('(J) NOVI nizi = enolični era-diskriminatorji (vsak točno ×1)', () => {
+  it('(J) NOVI nizi = enolični era-diskriminatorji (vsak točno ×1; EVOLVED R402 §19: "Označi račun kot plačan" → zabeleziPlacilo dobesedno ×1 + Novi gumb Poslan aria ×1)', () => {
     expect(racuni.match(/Izdaj račun — status iz osnutka v izdan/g)?.length).toBe(1)
     expect(racuni.match(/aria-label="Trajno izbriši osnutek računa"/g)?.length).toBe(1)
-    expect(racuni.match(/Označi račun kot plačan/g)?.length).toBe(1)
+    expect(racuni.match(/zabeleziPlacilo\(inv\)/g)?.length).toBe(1)
+    expect(racuni.match(/aria-label="Označi račun kot poslan kupcu"/g)?.length).toBe(1)
     expect(racuni.match(/Storniraj račun — drugi klik potrdi/g)?.length).toBe(1)
     expect(racuni.match(/Uredi osnutek — osnutek se odstrani, dialog zapolni polja; shranjevanje ustvari nov račun/g)?.length).toBe(1)
     expect(racuni.match(/Prenesi račun kot PDF/g)?.length).toBe(1)

@@ -164,7 +164,7 @@ describe('R375 stil val 57 — ring↔border pariteta navy/40 obrobljenih gumbov
     expect(pod(R('src/components/roksal/crm-tab.tsx'), 'focus-visible:border-roksal-amber'), 'crm precedens').toBe(1)
     let skupajNavyBorder = 0
     for (const f of vseDatoteke()) skupajNavyBorder += pod(R(f), BORDER)
-    expect(skupajNavyBorder, 'globalno navy-border').toBe(159) // [PIN SHIFT R382 val 61: +134 tarč +1 PAR sorojenec (material L2111 CSV)]
+    expect(skupajNavyBorder, 'globalno navy-border').toBe(160) // [PIN SHIFT R382 val 61: +134 tarč +1 PAR sorojenec (material L2111 CSV); PIN SHIFT R402 §19: +1 invoice-manager gumb Poslan (družinski navy/40 border+O2 kanon)]
     const createHash2 = createHash
     const zig = createHash2('md5').update(SEKVENCA + INS).digest('hex')
     expect(zig).toBe(createHash('md5').update(SEKVENCA + INS).digest('hex'))

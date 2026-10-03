@@ -88,8 +88,8 @@ describe('R387 stil val 65 — AMBER/60 border-pariteta (2 × INS + dark PAR v e
     expect(amb40L, 'FB amber/40 light (val 64)').toBe(3)
     expect(redL, 'FB red light (val 62)').toBe(16)
     expect(redD, 'FB red dark (val 62)').toBe(16)
-    expect(navyL, 'FB navy light (val 57+61)').toBe(159)
-    expect(navyD, 'FB navy dark ink (val 61)').toBe(159)
+    expect(navyL, 'FB navy light (val 57+61)').toBe(160) // [PIN SHIFT R402 §19: +1 invoice-manager Poslan]
+    expect(navyD, 'FB navy dark ink (val 61)').toBe(160) // [PIN SHIFT R402 §19: +1 Poslan dark:ink/40 par]
   })
 
   it('(C) N/A iskreno izključen: photo L2414 (brez borderja, brez sorojenca z FB) bajtno nedotaknjen', () => {

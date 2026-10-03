@@ -138,6 +138,6 @@ describe('R381 stil val 60 — nativni prehod-paritetni zaključek (11 × INS, v
       const lines = readFileSync(join(koren, z), 'utf-8').split('\n')
       sk += lines.filter((l) => l.includes(RING2) && (l.includes(NAVY) || l.includes(RED)) && !l.includes('transition')).length
     }
-    expect(sk, 'skupno brez-transition vrstic (162 = 170 − 8)').toBe(162)
+    expect(sk, 'skupno brez-transition vrstic (162 = 170 − 8 +1 R402)').toBe(163) // [PIN SHIFT R402 §19: +1 invoice-manager gumb Poslan (outline vrstica brez transition — ISTA oblika kot družinski outline gumbi)]
   })
 })

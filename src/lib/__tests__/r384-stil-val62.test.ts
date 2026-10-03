@@ -38,7 +38,8 @@ describe('R384 stil val 62 — RED/40 border-pariteta (16 × INS + dark PAR v en
     const VZORCI = [
       { f: 'roksal/dashboard-tab.tsx', ln: [1914, 1987, 2059, 2185, 2491, 2635] },
       { f: 'roksal/sessions-dialog.tsx', ln: [316, 348] },
-      { f: 'roksal/invoice-manager.tsx', ln: [1351, 1363] },
+      // [PIN SHIFT R402 §19: vrstici plačilo/opomnik premaknjeni +118 (STATUS_META/zabeleziPlacilo/gumbi) — 1351→1469, 1363→1481]
+      { f: 'roksal/invoice-manager.tsx', ln: [1469, 1481] },
       { f: 'roksal/termini-card.tsx', ln: [474] },
       { f: 'roksal/roksal-catalog.tsx', ln: [201] },
       { f: 'roksal/inventory-tab.tsx', ln: [1740] },
@@ -118,8 +119,8 @@ describe('R384 stil val 62 — RED/40 border-pariteta (16 × INS + dark PAR v en
       fbNavyDark += pod(src, 'dark:focus-visible:border-roksal-ink/40')
       kanon += pod(src, RING2 + ' ' + RED + ' ' + O2)
     }
-    expect(fbNavyLight, 'FB navy light (val 57+61)').toBe(159)
-    expect(fbNavyDark, 'FB navy dark ink (val 61 dark-fix)').toBe(159)
+    expect(fbNavyLight, 'FB navy light (val 57+61)').toBe(160) // [PIN SHIFT R402 §19: +1 invoice-manager gumb Poslan]
+    expect(fbNavyDark, 'FB navy dark ink (val 61 dark-fix)').toBe(160) // [PIN SHIFT R402 §19: +1 Poslan dark:ink/40 par]
     expect(kanon, 'rdeča KANON ×25 (val 59)').toBe(25)
     const TB = R('roksal/top-bar.tsx')
     expect(pod(TB, 'gap-2 transition-colors focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2')).toBe(3)

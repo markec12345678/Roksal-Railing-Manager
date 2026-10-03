@@ -82,7 +82,7 @@ describe('R385 FEATURE — R166 dark stražar GENERALIZACIJA: vsi barvni FB pari
     // strog per-družinski PAR se za ti dve nadomesti s SKUPNIM PAR-om
     // light40 + light60 == dark40 (isti žeton)]
     const pricakovano: Record<string, [number, number]> = {
-      navy: [159, 159],
+      navy: [160, 160], // [PIN SHIFT R402 §19: +1 Poslan FB par light+dark]
       red: [16, 16],
       'amber/50': [15, 15],
       'amber/40': [3, 5],

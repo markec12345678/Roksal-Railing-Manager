@@ -41,7 +41,7 @@ function roksalTsxs(): string[] {
 }
 
 describe('R392→R394 STIL val 70 — forced-colors fokus pariteta (outline-hidden)', () => {
-  it('(A) PARITETA: 105 × fv_hidden v roksal renderu (24 datotek; žeton-exact; per-file top 3: measurements 33, inventory 14, invoice 12)', () => {
+  it('(A) PARITETA: 106 × fv_hidden v roksal renderu (24 datotek; žeton-exact; per-file top 3: measurements 33, inventory 14, invoice 13; [PIN SHIFT R402 §19: +1 gumb Poslan — fv_hidden + ISTA družinska nadomestna indikatorja ring-2+O2])', () => {
     let vseh = 0
     const per: Record<string, number> = {}
     for (const f of roksalTsxs()) {
@@ -51,12 +51,12 @@ describe('R392→R394 STIL val 70 — forced-colors fokus pariteta (outline-hidd
         per[f.replace(/\\/g, '/').replace(/^\//, '')] = n
       }
     }
-    expect(vseh).toBe(105)
+    expect(vseh).toBe(106)
     expect(Object.keys(per).length).toBe(24)
     const kljuc = (x: string) => Object.keys(per).find((k) => k.endsWith(x))!
     expect(per[kljuc('measurements-tab.tsx')]).toBe(33)
     expect(per[kljuc('inventory-tab.tsx')]).toBe(14)
-    expect(per[kljuc('invoice-manager.tsx')]).toBe(12)
+    expect(per[kljuc('invoice-manager.tsx')]).toBe(13) // [PIN SHIFT R402 §19: +1 Poslan]
   })
 
   it('(B) CENZUS: 0 × fv_none v roksal renderu + žeton NI nikoli zraven .toBe(0) preživel kot delno stanje', () => {
@@ -109,7 +109,7 @@ describe('R392→R394 STIL val 70 — forced-colors fokus pariteta (outline-hidd
         if (!indikator) brez.push(`${f}:${m.index}`)
       }
     }
-    expect(zZetonom).toBe(105)
+    expect(zZetonom).toBe(106)
     expect(brez).toEqual([])
   })
 

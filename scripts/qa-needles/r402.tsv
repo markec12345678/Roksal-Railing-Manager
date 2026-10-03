@@ -1,0 +1,64 @@
+# qa-needles/r402.tsv — REGISTER needlejev runde R402 (issue #13, korak R170
+# iz §19 — INVOICE → PAYMENT → RECONCILIATION; KOLIZIJA #33: NJIHOVA R400
+# [6abd7b1 — val 74 slovar-raba + r400.tsv ×1 + r400-window-scan 22. gen]
+# IN NJIHOVA R401 [35e6f12 — val 75 color-scheme + r401.tsv ×2 + 53. era
+# preverba r400-era-harvest.sh + r401-window-scan 23. gen] sta pristali MED
+# mojim delom → kanon KOLIZIJE #4/R323/#13–#33: NJIHOVI rundi = pristala
+# resnica, MOJA preimenovana R400→R402 [register r402.tsv, testi r402-*,
+# migraciji r402_*, window-scan 24. gen, žigi v virih]. Kanonična domena plačil:
+# [A] FINANČNI STATUSNI STROJ (src/lib/invoice-lifecycle.ts — ČIST, isti
+#     vzorec kot project-state §14): 9 statusov; plačilna pot
+#     OSNUTEK→IZDAN→POSLAN→DELNO_PLACAN→PLACAN + izterjevalna
+#     IZDAN/POSLAN→ZAPADLO→OPOZORILO→IZTERJAVA; DELNO_PLACAN/PLACAN sta
+#     IZPELJANA iz plačil (ročni PATCH → 409 z navodilom na /api/payments —
+#     "Ni UI-only status rules" §21); PLACAN terminalen za plačilno pot
+#     (odprtje SAMO prek prekinitve plačila — ločena VOID množica);
+#     izpeljava v centih (FP varnost 0,1+0,2); povratni status po prekinitvi
+#     determinističen iz diska (rok/poslanoAt/izdan — R294 F4 now kot parameter).
+# [B] TRANSAKCIJSKA PLAST (src/lib/payments.ts — vzorec production-store
+#     R378): zabeleziPlaciloVTx (plačilo + allocacije + izpeljava statusov +
+#     auditi PAYMENT_RECORDED/INVOICE_STATUS VSE ATOMSKO; vrata: osnutek/
+#     storno 409, prečni projekt 409, NADPLACILO 409, vsota allocacij > plačilo
+#     400, valuta EUR-only 400, podvojen par 400) + prekiniPlaciloVTx
+#     (PREKINJENO z razlogom — plačilo se NE briše [pravna sled], računi se
+#     PONOVNO izpeljejo iz ostanka KNJIZENO allocacij; dvojna 409) +
+#     uskladiPlacila (samo-bralno poročilo: placiloZnesek/odprto/zapadlo +
+#     anomalije STATUS_PREPLACAN/STATUS_NIZJI/STATUS_VISJI/PLACANOAT_BREZ_
+#     STATUSA/PLACAN_BREZ_DATUMA/NEPORAZDELEJEN_OSTANEK/STORNO_S_PLACILOM —
+#     poroča, NE popravlja; kanon object-reconciliation R399).
+# [C] API (3 rute): POST/GET /api/payments (invoices.issue/invoices.read +
+#     resource-plast + rate-limit + Idempotency-Key exactly-once — bančni
+#     promet se NE podvoji ob retry; API ključ ZAVRNJEN — finančni uradni
+#     podatki, kanon R126) + GET/PATCH /api/payments/[id] (prekinitev —
+#     discipliniran vnos {action:'prekini', razlog}, kanon R378) + GET
+#     /api/payments/reconciliation (GET-samo BREZ rate-limit vrata — kanon
+#     catalog/products/[id] R390). GET /api/invoices nosi strežniško
+#     izpeljavo placiloZnesek (klient NE šteje plačil sam).
+# [D] BAZA (2 MIGRACIJI): Payment (tip PLACILO/AVANS/DOBROPIST/POVRACILO,
+#     metoda, bankaPodatki allowlist JSON, status KNJIZENO/PREKINJENO,
+#     prekinitevRazlog/prekinjenoAt, createdBy NULL=sistemski backfill) +
+#     PaymentAllocation (@@unique(paymentId,invoiceId) — delno plačilo/več
+#     računov/avans/dobropis/povratilo se izrazijo S TEMI vrsticami) +
+#     Invoice.poslanoAt + BACKFILL legacy PLACAN (po kanonu spec §33 korak 6:
+#     vsak PLACAN brez allocacij dobi ENO kanonsko plačilo za cel znesek,
+#     referenca BACKFILL-R402-LEGACY, createdBy NULL — odkrito sledljivo) +
+#     CHECK invoice_status_allowed razširjen na 9 statusov (2/2 — ločena
+#     migracija po precedensu R395; VALIDATE dokazuje skladnost starih vrstic).
+# [E] UI (invoice-manager): 9-statusni STATUS_META žetoni (plavnilna pot
+#     zeleno/navy, izterjevalna rdečo naraščajoče), gumb "Plačan" zdaj
+#     ZABELEŽI PLAČILO prek /api/payments (odprta razlika iz strežniške
+#     izpeljave — status se izpelje strežniško), nov gumb "Poslan"
+#     (IZDAN→POSLAN), "Doplata" za DELNO_PLACAN, povzetek šteje placiloZnesek
+#     (delno plačilo šteje delno); prihodki-pdf STATUSI razširjen (9) +
+#     placiloZnesek vrstica + zapadlost VSA neplačena stanja.
+# 3 need_static (živi stringi literalov novih rut/domaina; vsak ×1 v build
+# server čanku — števca IZ BUILDA, nikoli napovedana, LEKCIJA R398 (4);
+# 0 v HEAD d8a76c5 (R399));
+# era ≥204 = 201 (r347–r401) + mojih 3 (era veriga r347–r402 = 56 registrov;
+# AZ spec izpuščen NAMERNO — NJIOVA QA ugotovitev R401: middleware 401-catch-all
+# pomeni, da |401 probe NI deploy-diskriminator (false-ŽIVO zaščita); moji
+# needleji se preverijo DIRECT/hash v 56. preverbi [r403-era-harvest.sh]).
+Beleženje plačil zahteva pravico invoices.issue.	R402 vrata POST /api/payments — sporočilo 403 v payments chunku (×1 v build server čanku — app-route template; monter brez pravice; 0 v HEAD d8a76c5 (R399))	need_static
+Prekinitev plačila zahteva pravico invoices.issue.	R402 vrata PATCH /api/payments/[id] — sporočilo 403 v payments/[id] chunku (×1 v build server čanku; monter; 0 v HEAD d8a76c5 (R399))	need_static
+se izpelje iz plačil — zabeleži plačilo prek /api/payments	R402 zavrnitev ročnega PLACAN/DELNO_PLACAN prek PATCH /api/invoices (409 z navodilom; ×1 v build server čanku — invoices route; 0 v HEAD d8a76c5 (R399))	need_static
+TODO-R402	must_miss: razvojni ostanki (nesme biti v produkcijskih čankih)	must_miss

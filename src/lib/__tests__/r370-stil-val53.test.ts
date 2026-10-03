@@ -54,7 +54,8 @@ const DATOTEKE = [
   { f: 'roksal/calculator-tab.tsx', vrstice: 4489, navy40: 4, offset2: 4, hex: 16, aria: 16, title: 19 },
   // [PIN SHIFT R382 val 61: dashboard L2360/2696/3015 pridobile O2 — offset2 4→7]
   { f: 'roksal/dashboard-tab.tsx', vrstice: 3188, navy40: 9, offset2: 7, hex: 0, aria: 13, title: 22 },
-  { f: 'roksal/invoice-manager.tsx', vrstice: 1722, navy40: 10, offset2: 10, hex: 6, aria: 14, title: 18 },
+  // [PIN SHIFT R402 §19: invoice-manager +118 vrstic (9-statusni STATUS_META + zabeleziPlacilo + gumb Poslan/Doplata + odprta-razlika vrstica) — navy40 10→11 + offset2 10→11 (gumb Poslan nosi ISTI družinski kanon) + aria 14→15 + title 18→19; hex NESPREMENJEN 6]
+  { f: 'roksal/invoice-manager.tsx', vrstice: 1840, navy40: 11, offset2: 11, hex: 6, aria: 15, title: 19 },
   { f: 'roksal/vodja-dashboard.tsx', vrstice: 2199, navy40: 4, offset2: 4, hex: 1, aria: 25, title: 34 },
 ]
 

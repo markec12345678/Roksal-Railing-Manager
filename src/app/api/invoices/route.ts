@@ -13,10 +13,16 @@ import type { SessionPayload } from '@/lib/session'
 import { allocateDocumentNumber, createWithNumber } from '@/lib/numbering'
 import { auditInTx, audit } from '@/lib/audit'
 import { actorIdOf } from '@/lib/access'
-import { decToPlain } from '@/lib/decimal-policy'
+import { decToPlain, zaokroziDenar } from '@/lib/decimal-policy'
 
 import { zapisOmejitev } from '@/lib/rate-limit'
 import { preberiJsonTelo } from '@/lib/api-telo'
+import {
+  assertInvoiceTransition,
+  isDerivedInvoiceStatus,
+  InvalidInvoiceTransitionError,
+} from '@/lib/invoice-lifecycle'
+import type { Prisma } from '@prisma/client'
 const DDV_STOPLNJE = [22, 9.5, 0] as const
 const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100
 
@@ -72,7 +78,12 @@ const createInvoiceSchema = z.object({
 
 const updateInvoiceSchema = z.object({
   id: z.string().min(1),
-  status: z.enum(['OSNUTEK', 'IZDAN', 'PLACAN', 'STORNIRAN']).optional(),
+  // R402 (§19): finančni statusni stroj — nabor je ZAMRZNJEN v
+  // invoice-lifecycle.ts; DELNO_PLACAN/PLACAN sta IZPELJANA iz plačil (zavrnjena
+  // spodaj s 409 + navodilom na /api/payments — klient ne more izmisliti plačila).
+  status: z
+    .enum(['OSNUTEK', 'IZDAN', 'POSLAN', 'DELNO_PLACAN', 'PLACAN', 'ZAPADLO', 'OPOZORILO', 'IZTERJAVA', 'STORNIRAN'])
+    .optional(),
   postavke: z.array(postavkaSchema).min(1).max(100).optional(),
   rokPlacilaDni: z.number().int().min(0).max(365).optional(),
   opombe: z.string().max(1000).optional().nullable(),
@@ -99,6 +110,38 @@ function computeTotals(postavke: Array<{ kolicina: number; cenaNaEnoto: number; 
  * src/lib/numbering.ts). Oblika ostane združljiva: "2026-001" | "2026-PR-001".
  * Stara nextStevilka (findFirst + 1) je bila tekmovalna — odstranjena.
  */
+
+type RacunZZivaljo = Prisma.InvoiceGetPayload<{
+  include: {
+    project: {
+      select: { nazivProjekta: true; clientToken: true; customer: { select: { ime: true; naslov: true } } }
+    }
+  }
+}>
+
+/**
+ * R402 (§19): GET odgovor nosi izpeljano `placiloZnesek` — vsota KNJIZENO
+ * allocacij na račun (vir resnice o plačilu). UI s tem izračuna odprto razliko
+ * brez lastnega štetja (klient NE šteje plačil sam — strežniška izpeljava).
+ */
+async function odgovorZPlacilom(invoices: readonly RacunZZivaljo[]): Promise<NextResponse> {
+  const skupine =
+    invoices.length > 0
+      ? await db.paymentAllocation.groupBy({
+          by: ['invoiceId'],
+          where: { invoiceId: { in: invoices.map((i) => i.id) }, payment: { status: 'KNJIZENO' } },
+          _sum: { znesek: true },
+        })
+      : []
+  const placila = new Map(
+    skupine.map((g) => [g.invoiceId, g._sum.znesek === null ? 0 : Number(g._sum.znesek)] as const),
+  )
+  return NextResponse.json(
+    decToPlain(
+      invoices.map((i) => ({ ...i, placiloZnesek: zaokroziDenar(placila.get(i.id) ?? 0) })),
+    ),
+  )
+}
 
 export async function GET(request: Request) {
   const auth = await authenticate(request)
@@ -135,7 +178,7 @@ export async function GET(request: Request) {
           },
           orderBy: { createdAt: 'desc' },
         })
-        return NextResponse.json(decToPlain(invoices))
+        return await odgovorZPlacilom(invoices)
       }
       const uid = auth.session.sub
       const ownProjects = await db.project.findMany({
@@ -151,7 +194,7 @@ export async function GET(request: Request) {
         },
         orderBy: { createdAt: 'desc' },
       })
-      return NextResponse.json(decToPlain(invoices))
+      return await odgovorZPlacilom(invoices)
     }
 
     const invoices = await db.invoice.findMany({
@@ -163,7 +206,7 @@ export async function GET(request: Request) {
       },
       orderBy: { createdAt: 'desc' },
     })
-    return NextResponse.json(decToPlain(invoices))
+    return await odgovorZPlacilom(invoices)
   } catch (error) {
     if (error instanceof AccessDeniedError) {
       return NextResponse.json({ error: error.message }, { status: error.status })
@@ -275,6 +318,31 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: 'Račun ni najden' }, { status: 404 })
     }
 
+    // R402 (§19): izpeljana statusa klient NE more nastaviti ročno — plačilo se
+    // zabeleži prek /api/payments (tam se status IZPELJE iz vsote allocacij,
+    // strežniško + auditirano + idempotentno)."Ni UI-only status rules" §21.
+    if (data.status && isDerivedInvoiceStatus(data.status)) {
+      return NextResponse.json(
+        {
+          error: `Status ${data.status} se izpelje iz plačil — zabeleži plačilo prek /api/payments`,
+        },
+        { status: 409 },
+      )
+    }
+
+    // R402 (§19): VSak ročni prehod skozi finančni statusni stroj (409 ob
+    // preskoku — npr. OSNUTEK → POSLAN; ista semantika kot project-state §14).
+    if (data.status && data.status !== existing.status) {
+      try {
+        assertInvoiceTransition(existing.status, data.status)
+      } catch (napaka) {
+        if (napaka instanceof InvalidInvoiceTransitionError) {
+          return NextResponse.json({ error: napaka.message }, { status: napaka.status })
+        }
+        throw napaka
+      }
+    }
+
     // IZDAN/PLACAN/STORNIRAN račun je pravno-aktiven → postavke se več ne spreminjajo
     if (existing.status !== 'OSNUTEK' && (data.postavke || data.rokPlacilaDni !== undefined)) {
       return NextResponse.json(
@@ -286,7 +354,10 @@ export async function PATCH(request: Request) {
     const updateData: Record<string, unknown> = {}
     if (data.status) {
       updateData.status = data.status
-      if (data.status === 'PLACAN') updateData.placanoAt = new Date()
+      // R402 (§19): poslanoAt nosi PREHOD v POSLAN (dostavljeno kupcu); PLACAN
+      // prek PATCH ne more priti (zavrnjen zgoraj) — placanoAt nastavlja izključno
+      // plast plačil ob izpeljavi PLACAN; storno počišči plačilni datum.
+      if (data.status === 'POSLAN') updateData.poslanoAt = new Date()
       if (data.status === 'STORNIRAN' || data.status === 'IZDAN') updateData.placanoAt = null
     }
     if (data.postavke) {

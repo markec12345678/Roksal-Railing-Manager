@@ -29,7 +29,7 @@ import { join } from 'node:path'
 const koren = join(process.cwd(), 'src/components/roksal')
 
 const DRUŽINE = [
-  { ime: 'navy', pričakovano: 237 },
+  { ime: 'navy', pričakovano: 238 }, // [PIN SHIFT R402 §19: +1 invoice-manager gumb Poslan]
   { ime: 'red', pričakovano: 25 },
   { ime: 'amber', pričakovano: 26 },
 ] as const
@@ -67,7 +67,7 @@ describe('R386 FEATURE — O2 pairing stražar GENERALIZACIJA: vsak barvni focus
     expect(ostaleIzjeme, 'izjem mora biti TOČNO 1 (FROZEN L95)').toEqual([])
   })
 
-  it('GLOBALNA ŠTEVCA per družina zamrznjena (delna regresija = glasna): navy 237 / red 25 / amber 26', () => {
+  it('GLOBALNA ŠTEVCA per družina zamrznjena (delna regresija = glasna): navy 238 / red 25 / amber 26 [PIN SHIFT R402 §19: navy +1 — gumb Poslan]', () => {
     const števci: Record<string, number> = { navy: 0, red: 0, amber: 0 }
     for (const { l } of vrsticeVseh()) {
       if (!l.includes('focus-visible:ring-2')) continue

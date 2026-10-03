@@ -61,7 +61,7 @@ describe('R387 FEATURE — FB-border pariteta stražar GENERALIZACIJA: vsaka bor
   })
 
   it('GLOBALNI ŠTEVCI zamrznjeni: bordered+O2 FB nosilcev navy 159 / red 16 / amber 20 (disk resnica ob R387 val 65; delna aplikacija = glasna regresija)', () => {
-    const pričakovano: Record<string, number> = { navy: 159, red: 16, amber: 20 }
+    const pričakovano: Record<string, number> = { navy: 160, red: 16, amber: 20 } // [PIN SHIFT R402 §19: navy +1 Poslan]
     for (const barva of BARVE) {
       const nosilci = vrsticeVseh()
         .filter(({ l }) => l.includes('focus-visible:ring-2') && l.includes(O2))

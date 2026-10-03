@@ -254,7 +254,12 @@ describe('R261 — fail-closed v libu (družina R236/R250–R260)', () => {
 
   it('EN VIR import dokazi: STATUSI iz prihodki-pdf (R250) — nič dvojnega seznama; brat dobičkonost NESPREMENJEN (bajtni kontrakt)', () => {
     expect(lib).toContain("import { STATUSI as STATUSI_RACUNOV } from './prihodki-pdf'")
-    expect(prihodkiLib).toContain("export const STATUSI = ['OSNUTEK', 'IZDAN', 'PLACAN', 'STORNIRAN'] as const")
+    // EVOLVED R402 (§19): STATUSI razširjen s finančnim statusnim strojem
+    // (9 statusov — POSLAN/DELNO_PLACAN/ZAPADLO/OPOZORILO/IZTERJAVA) —
+    // ISTI EN VIR (izvoz iz prihodki-pdf), le nabor je zrasel z domeno plačil.
+    expect(prihodkiLib).toContain(
+      "export const STATUSI = [\n  'OSNUTEK',\n  'IZDAN',\n  'POSLAN',\n  'DELNO_PLACAN',\n  'PLACAN',\n  'ZAPADLO',\n  'OPOZORILO',\n  'IZTERJAVA',\n  'STORNIRAN',\n] as const",
+    )
     // R258 brat ima svoje soli — R261 mu nič ne vzame
     const dobiLib = beri('src/lib/dobicikonost-pdf.ts')
     expect(dobiLib).toContain('fnv1aHex(seed, 0x7d)')

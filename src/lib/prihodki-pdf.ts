@@ -63,10 +63,22 @@ const GRAY: [number, number, number] = [110, 110, 110]
 const LIGHT: [number, number, number] = [243, 244, 246]
 
 const TIPI = ['PREDRACUN', 'RACUN', 'PREDPLACILNI'] as const
-/** 4 znanih statusov računov — dobesedni kanon (prisma schema Invoice linija
- *  'OSNUTEK | IZDAN | PLACAN | STORNIRAN'). EXPORTIRAN od R258: dobičkonost
- *  po projektih (14. člen) re-use TA množico — EN VIR, nič dvojnega seznama. */
-export const STATUSI = ['OSNUTEK', 'IZDAN', 'PLACAN', 'STORNIRAN'] as const
+/** 9 znanih statusov računov — dobesedni kanon (invoice-lifecycle R402 §19
+ *  — finančni statusni stroj: plačilna pot OSNUTEK→IZDAN→POSLAN→
+ *  DELNO_PLACAN→PLACAN + izterjevalna ZAPADLO→OPOZORILO→IZTERJAVA).
+ *  EXPORTIRAN od R258: dobičkonost po projektih (14. člen) re-use TA
+ *  množico — EN VIR, nič dvojnega seznama.) */
+export const STATUSI = [
+  'OSNUTEK',
+  'IZDAN',
+  'POSLAN',
+  'DELNO_PLACAN',
+  'PLACAN',
+  'ZAPADLO',
+  'OPOZORILO',
+  'IZTERJAVA',
+  'STORNIRAN',
+] as const
 
 const TIPI_SI: Record<(typeof TIPI)[number], string> = {
   PREDRACUN: 'Predračun',
@@ -77,7 +89,12 @@ const TIPI_SI: Record<(typeof TIPI)[number], string> = {
 const STATUSI_SI: Record<(typeof STATUSI)[number], string> = {
   OSNUTEK: 'Osnutek',
   IZDAN: 'Izdan',
+  POSLAN: 'Poslan',
+  DELNO_PLACAN: 'Delno plačan',
   PLACAN: 'Plačan',
+  ZAPADLO: 'Zapadlo',
+  OPOZORILO: 'Opozorilo',
+  IZTERJAVA: 'Izterjava',
   STORNIRAN: 'Storniran',
 }
 
@@ -97,6 +114,10 @@ export interface PrihodkiPdfVnos {
   placanoAt: string | null
   /** Za plačilo (EUR; končno ne-negativno). */
   znesek: number
+  /** R402 (§19): vsota KNJIZENO allocacij na račun — strežniška izpeljava
+   *  iz GET /api/invoices (odprto = znesek − placiloZnesek). Neobvezno:
+   *  stare vrstice brez polja → PLACAN šteje cel znesek (legacy kanon). */
+  placiloZnesek?: number
   /** Snapshot kupca ob izdaji (ne-prazen niz). */
   kupec: string
   /** Projekt (ne-prazen niz — kontekst per račun). */
@@ -142,6 +163,12 @@ export function preveriPrihodkiVnos(p: PrihodkiPdfVnos, i: number): void {
   }
   if (p.status === 'PLACAN' && p.placanoAt === null) {
     throw new TypeError(`preveriPrihodkiVnos (${i}): PLACAN brez placanoAt je inkonzistenca — datum plačila NIKOLI izmišljen`)
+  }
+  if (
+    p.placiloZnesek !== undefined &&
+    (typeof p.placiloZnesek !== 'number' || !Number.isFinite(p.placiloZnesek) || p.placiloZnesek < 0 || p.placiloZnesek > p.znesek)
+  ) {
+    throw new TypeError(`preveriPrihodkiVnos (${i}): placiloZnesek mora biti končno število 0…znesek, ne ${String(p.placiloZnesek)}`)
   }
   if (p.status !== 'PLACAN' && p.placanoAt !== null) {
     throw new TypeError(`preveriPrihodkiVnos (${i}): placanoAt na statusu ${p.status} je inkonzistenca (plačilo se beleži samo na PLACAN)`)
@@ -197,16 +224,17 @@ export function sortirajPrihodki(vnosi: readonly PrihodkiPdfVnos[]): PrihodkiPdf
   })
 }
 
-/** Dnevi zapadlosti IZDANEGA računa glede na `now` — TOČNO ISTI vzorec kot
- *  zapadlaDni v invoice-manager (IZDAN only; due = izdaja + rok dni;
- *  diff = floor((now − due) / 86400000); > 0 → dni, sicer null). Razlika:
- *  Date.now() → now KOT PARAMETER (determinizem). STORNIRAN/PLACAN/OSNUTEK
- *  NIKOLI zapadl (plačan ni zapadl, storniran ne obstaja več). */
+/** Dnevi zapadlosti NEPLAČANEGA računa glede na `now` — TOČNO ISTI vzorec
+ *  kot zapadlaDni v invoice-manager (R402: VSA neplačena stanja — ne samo
+ *  IZDAN; due = izdaja + rok dni; diff = floor((now − due) / 86400000);
+ *  > 0 → dni, sicer null). Razlika: Date.now() → now KOT PARAMETER
+ *  (determinizem). STORNIRAN/PLACAN/OSNUTEK NIKOLI zapadl (plačan ni
+ *  zapadl, storniran ne obstaja več). */
 export function zapadlaDniVnos(
   p: Pick<PrihodkiPdfVnos, 'datumIzdaje' | 'rokPlacilaDni' | 'status'>,
   now: Date,
 ): number | null {
-  if (p.status !== 'IZDAN') return null
+  if (p.status === 'OSNUTEK' || p.status === 'PLACAN' || p.status === 'STORNIRAN') return null
   const due = new Date(p.datumIzdaje)
   due.setDate(due.getDate() + p.rokPlacilaDni)
   const diff = Math.floor((now.getTime() - due.getTime()) / 86400000)
@@ -251,18 +279,21 @@ export function prihodkiPovzetek(vnosi: readonly PrihodkiPdfVnos[], now: Date): 
     vseh: sortirane.length,
   }
   for (const p of sortirane) {
-    if (p.status === 'IZDAN' || p.status === 'PLACAN') {
+    // R402 (§19): izdano = vsa aktivna (ne osnutek, ne storno); plačano =
+    // vsota KNJIZENO allocacij (delno plačilo šteje delno — placiloZnesek,
+    // strežniška izpeljava; NULL na starih vrstah → PLACAN nosi cel znesek).
+    if (p.status !== 'OSNUTEK' && p.status !== 'STORNIRAN') {
       povzetek.izdano += p.znesek
-    }
-    if (p.status === 'PLACAN') {
-      povzetek.placano += p.znesek
+      povzetek.placano += p.placiloZnesek ?? (p.status === 'PLACAN' ? p.znesek : 0)
       // FP varnost: znesek je preverjen (končen, ≥ 0) — vsota ostane končna.
     }
     if (p.status === 'OSNUTEK') povzetek.osnutki += 1
     if (p.status === 'STORNIRAN') povzetek.stornirani += 1
     const dni = zapadlaDniVnos(p, now)
     if (dni !== null) {
-      povzetek.zapadlo += p.znesek
+      // R402: zapadlo šteje ODPRTO razliko (delno plačan račun zapadi samo z
+      // ostankom — ISTO kot UI summary).
+      povzetek.zapadlo += Math.max(p.znesek - (p.placiloZnesek ?? 0), 0)
       povzetek.zapadloN += 1
     }
   }

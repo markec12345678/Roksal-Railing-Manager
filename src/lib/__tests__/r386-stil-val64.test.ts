@@ -165,8 +165,8 @@ describe('R386 stil val 64 — AMBER/40 border-pariteta (3 × INS + dark PAR v e
     }
     expect(redL, 'FB red light (val 62)').toBe(16)
     expect(redD, 'FB red dark (val 62)').toBe(16)
-    expect(navyL, 'FB navy light (val 57+61)').toBe(159)
-    expect(navyD, 'FB navy dark ink (val 61)').toBe(159)
+    expect(navyL, 'FB navy light (val 57+61)').toBe(160) // [PIN SHIFT R402 §19: +1 invoice-manager Poslan]
+    expect(navyD, 'FB navy dark ink (val 61)').toBe(160) // [PIN SHIFT R402 §19: +1 Poslan dark:ink/40 par]
   })
 
   it('(F) SKUPNA RESNICA: vsaka amber/40 ring-2 vrstica z border class nosi FB ali je iskreno N/A; r368 N3 NASLEDNICA adjacency ŽIVO + NASLEDNICA navy ŽIVO', () => {

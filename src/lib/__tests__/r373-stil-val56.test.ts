@@ -200,8 +200,10 @@ describe('R373 stil val 56 — male družine RAW pariteta (white ×3 + white/60 
     expect(poDruzini('white/60')).toEqual({ NONE: 4, O0: 3, O2: 4 })
     expect(poDruzini('roksal-green/40')).toEqual({ O2: 1 })
     // barvni žigi bajtno nespremenjeni (shape-only runda — val 44–55 precedens)
+    // [PIN SHIFT R402 §19: navy 249→250 — invoice-manager gumb Poslan nosi ISTI
+    // družinski navy/40+O2 kanon (FINANČNA domena — plačilna pot runde R402)]
     const stevilo = (token: string): number => vseVrstice.filter((v) => v.includes(token)).length
-    expect(stevilo(NAVY)).toBe(249)
+    expect(stevilo(NAVY)).toBe(250)
     expect(stevilo(RED)).toBe(25)
     expect(stevilo(AMBER)).toBe(18)
     // navy ?INTERP razrešena: roksal-catalog L103 nosi <Button (KIT izjema #1),

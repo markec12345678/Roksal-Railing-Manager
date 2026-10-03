@@ -92,8 +92,23 @@ interface Invoice {
   datumIzdaje: string
   datumStoritve: string | null
   rokPlacilaDni: number
-  status: 'OSNUTEK' | 'IZDAN' | 'PLACAN' | 'STORNIRAN'
+  // R402 (§19): finančni statusni stroj — DELNO_PLACAN/PLACAN se izpeljeta iz
+  // plačil (strežniško); ZAPADLO/OPOZORILO/IZTERJAVA so izterjevalna pot.
+  status:
+    | 'OSNUTEK'
+    | 'IZDAN'
+    | 'POSLAN'
+    | 'DELNO_PLACAN'
+    | 'PLACAN'
+    | 'ZAPADLO'
+    | 'OPOZORILO'
+    | 'IZTERJAVA'
+    | 'STORNIRAN'
   placanoAt: string | null
+  poslanoAt: string | null
+  // R402 (§19): vsota KNJIZENO allocacij — strežniška izpeljava (GET odgovor);
+  // odprta razlika = znesek − placiloZnesek (klient NE šteje plačil sam).
+  placiloZnesek?: number
   postavke: string
   kupec: string | null
   osnova: number
@@ -156,7 +171,15 @@ const STATUS_META: Record<Invoice['status'], { label: string; className: string;
   // stanje — žetoni se sami prilagodijo; pika muted-foreground, R226 vzorec).
   OSNUTEK: { label: 'Osnutek', className: 'bg-muted text-muted-foreground border-border', dot: 'bg-muted-foreground' },
   IZDAN: { label: 'Izdan', className: 'bg-roksal-amber/10 text-roksal-ink border-roksal-amber/40', dot: 'bg-roksal-amber' },
+  // R402 (§19) — plačilna pot: POSLAN (dostavljeno) navy; DELNO_PLACAN zeleno
+  // družino deli s PLACAN (pika polna pri PLACAN, mehkejša pri DELNO);
+  // izterjevalna pot rdeča naraščajoče (ZAPADLO → OPOZORILO → IZTERJAVA).
+  POSLAN: { label: 'Poslan', className: 'bg-roksal-navy/10 text-roksal-ink border-roksal-navy/40 dark:border-roksal-ink/40', dot: 'bg-roksal-navy' },
+  DELNO_PLACAN: { label: 'Delno plačan', className: 'bg-roksal-green/10 text-roksal-ink border-roksal-green/40', dot: 'bg-roksal-green/60' },
   PLACAN: { label: 'Plačan', className: 'bg-roksal-green/10 text-roksal-ink border-roksal-green/40', dot: 'bg-roksal-green' },
+  ZAPADLO: { label: 'Zapadlo', className: 'bg-roksal-red/10 text-roksal-ink border-roksal-red/40', dot: 'bg-roksal-red/60' },
+  OPOZORILO: { label: 'Opozorilo', className: 'bg-roksal-red/10 text-roksal-ink border-roksal-red/50', dot: 'bg-roksal-red/80' },
+  IZTERJAVA: { label: 'Izterjava', className: 'bg-roksal-red/15 text-roksal-ink border-roksal-red/60', dot: 'bg-roksal-red' },
   STORNIRAN: { label: 'Storniran', className: 'bg-roksal-red/10 text-roksal-ink border-roksal-red/40', dot: 'bg-roksal-red' },
 }
 
@@ -181,9 +204,9 @@ function parseKupec(json: string | null): { ime: string; naslov: string; telefon
   }
 }
 
-/** Zapadlost: izdan + datumIzdaje + rokPlacila < danes */
+/** Zapadlost: neplačan (izdan/poslan/delno) + datumIzdaje + rokPlacila < danes — R402: pokriva VSA neplačena stanja */
 function zapadlaDni(inv: Invoice): number | null {
-  if (inv.status !== 'IZDAN') return null
+  if (inv.status === 'OSNUTEK' || inv.status === 'PLACAN' || inv.status === 'STORNIRAN') return null
   const due = new Date(inv.datumIzdaje)
   due.setDate(due.getDate() + inv.rokPlacilaDni)
   const diff = Math.floor((Date.now() - due.getTime()) / 86400000)
@@ -198,7 +221,12 @@ function exportRacuniCsv(invoices: Invoice[]) {
   const statusLabels: Record<Invoice['status'], string> = {
     OSNUTEK: 'Osnutek',
     IZDAN: 'Izdan',
+    POSLAN: 'Poslan',
+    DELNO_PLACAN: 'Delno plačan',
     PLACAN: 'Plačan',
+    ZAPADLO: 'Zapadlo',
+    OPOZORILO: 'Opozorilo',
+    IZTERJAVA: 'Izterjava',
     STORNIRAN: 'Storniran',
   }
   const tipLabels: Record<string, string> = {
@@ -379,6 +407,8 @@ export function InvoiceManager() {
         rokPlacilaDni: inv.rokPlacilaDni,
         placanoAt: inv.placanoAt,
         znesek: inv.znesek,
+        // R402 (§19): strežniška izpeljava plačila (delno plačilo v PDF KPI šteje delno)
+        placiloZnesek: inv.placiloZnesek,
         // Snapshot kupca, sicer ime stranke projekta, sicer iskren vezaj
         // (prikazna resnica — NIČ izmišljenega; lib fail-closed preveri
         // strukturo vrstic, kupec je prikazna resnica per račun).
@@ -476,12 +506,16 @@ export function InvoiceManager() {
     let zapadloN = 0
     let osnutki = 0
     for (const inv of invoices) {
-      if (inv.status === 'IZDAN' || inv.status === 'PLACAN') {
+      if (inv.status !== 'OSNUTEK' && inv.status !== 'STORNIRAN') {
         izdano += inv.znesek
       }
-      if (inv.status === 'PLACAN') placano += inv.znesek
+      // R402 (§19): plačano = vsota KNJIZENO allocacij (delno plačilo šteje
+      // delno — strežniška izpeljava placiloZnesek, klient ne šteje sam).
+      if (inv.status !== 'OSNUTEK' && inv.status !== 'STORNIRAN') {
+        placano += inv.placiloZnesek ?? 0
+      }
       if (zapadlaDni(inv) !== null) {
-        zapadlo += inv.znesek
+        zapadlo += Math.max(inv.znesek - (inv.placiloZnesek ?? 0), 0)
         zapadloN += 1
       }
       if (inv.status === 'OSNUTEK') osnutki += 1
@@ -560,7 +594,13 @@ export function InvoiceManager() {
     setInvoices((cur) =>
       cur.map((i) =>
         i.id === inv.id
-          ? { ...i, status, placanoAt: status === 'PLACAN' ? new Date().toISOString() : null }
+          ? {
+              ...i,
+              status,
+              placanoAt: null,
+              // R402 (§19): POSLAN nosi poslanoAt (dostavljeno kupcu)
+              poslanoAt: status === 'POSLAN' ? new Date().toISOString() : i.poslanoAt,
+            }
           : i
       )
     )
@@ -582,10 +622,64 @@ export function InvoiceManager() {
               : null
         throw new Error(razlog ?? 'Napaka pri posodabljanju')
       }
-      toast({ title: status === 'PLACAN' ? 'Račun plačan ✓' : status === 'STORNIRAN' ? 'Račun storniran' : 'Račun izdan' })
+      toast({ title: status === 'STORNIRAN' ? 'Račun storniran' : `Račun ${STATUS_META[status].label.toLowerCase()}` })
     } catch (e) {
       setInvoices(prev)
       toast({ title: e instanceof Error ? e.message : 'Napaka pri posodabljanju', variant: 'destructive' })
+    }
+  }
+
+  /**
+   * R402 (§19): beleženje plačila prek /api/payments — status DELNO_PLACAN/
+   * PLACAN se na strežniku IZPELJE iz vsote allocacij (klient ne nastavlja
+   * statusa ročno — "Ni UI-only status rules"). Znesek = odprta razlika
+   * (znesek − placiloZnesek iz strežniške izpeljava).
+   */
+  async function zabeleziPlacilo(inv: Invoice) {
+    const odprto = Math.max(inv.znesek - (inv.placiloZnesek ?? 0), 0)
+    if (odprto <= 0) {
+      toast({ title: 'Račun nima odprte razlike', variant: 'destructive' })
+      return
+    }
+    const prev = invoices
+    try {
+      const res = await fetch('/api/payments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId: inv.projectId,
+          invoiceId: inv.id,
+          tip: 'PLACILO',
+          znesek: Math.round(odprto * 100) / 100,
+          placanoAt: new Date().toISOString(),
+          metoda: 'BANKA',
+          referenca: inv.stevilka,
+        }),
+      })
+      if (!res.ok) {
+        const err = (await res.json().catch(() => null)) as { error?: unknown } | null
+        const razlog: string | null = typeof err?.error === 'string' ? err.error : null
+        throw new Error(razlog ?? 'Napaka pri beleženju plačila')
+      }
+      const odgovor = (await res.json()) as { payment?: { znesek?: number } }
+      const placilo = (odgovor.payment?.znesek ?? odprto) as number
+      // Osveži lokalno stanje iz strežniške izpeljave (placanoAt + status)
+      setInvoices((cur) =>
+        cur.map((i) =>
+          i.id === inv.id
+            ? {
+                ...i,
+                placiloZnesek: Math.round(((i.placiloZnesek ?? 0) + placilo) * 100) / 100,
+                status: (i.placiloZnesek ?? 0) + placilo >= i.znesek - 0.005 ? 'PLACAN' : 'DELNO_PLACAN',
+                placanoAt: (i.placiloZnesek ?? 0) + placilo >= i.znesek - 0.005 ? new Date().toISOString() : i.placanoAt,
+              }
+            : i
+        )
+      )
+      toast({ title: `Plačilo ${eur(placilo)} zabeleženo ✓` })
+    } catch (e) {
+      setInvoices(prev)
+      toast({ title: e instanceof Error ? e.message : 'Napaka pri beleženju plačila', variant: 'destructive' })
     }
   }
 
@@ -1261,13 +1355,19 @@ export function InvoiceManager() {
             {invoices.map((inv) => {
               const zapadlo = zapadlaDni(inv)
               const meta = STATUS_META[inv.status]
+              // R402 (§19): plačilna stanja zeleno, izterjevalna rdečo, POSLAN amber (čaka plačilo)
+              const placilni = inv.status === 'PLACAN' || inv.status === 'DELNO_PLACAN'
+              const izterjevalni = inv.status === 'ZAPADLO' || inv.status === 'OPOZORILO' || inv.status === 'IZTERJAVA'
+              const neplacan =
+                inv.status !== 'OSNUTEK' && inv.status !== 'PLACAN' && inv.status !== 'STORNIRAN'
+              const odprto = Math.max(inv.znesek - (inv.placiloZnesek ?? 0), 0)
               // Levo letvica kartice pripoveduje status — hitro prepoznavanje brez branja
               const rail =
-                zapadlo || inv.status === 'STORNIRAN'
+                zapadlo || inv.status === 'STORNIRAN' || izterjevalni
                   ? 'border-l-roksal-red'
-                  : inv.status === 'PLACAN'
+                  : placilni
                     ? 'border-l-roksal-green'
-                    : inv.status === 'IZDAN'
+                    : inv.status === 'IZDAN' || inv.status === 'POSLAN'
                       ? 'border-l-roksal-amber'
                       : 'border-l-muted-foreground/40'
               return (
@@ -1305,6 +1405,11 @@ export function InvoiceManager() {
                     </div>
                     <div className="text-right shrink-0">
                       <div className="text-sm font-bold tabular-nums text-roksal-ink">{eur(inv.znesek)}</div>
+                      {neplacan && (inv.placiloZnesek ?? 0) > 0 && (
+                        <div className="text-2xs tabular-nums text-muted-foreground">
+                          plačano {eur(inv.placiloZnesek ?? 0)} · odprto {eur(odprto)}
+                        </div>
+                      )}
                       <div className="text-2xs tabular-nums text-muted-foreground">z DDV {inv.ddv > 0 ? '22 %' : '0 %'}</div>
                     </div>
                   </div>
@@ -1331,17 +1436,30 @@ export function InvoiceManager() {
                         )}
                       </>
                     )}
-                    {inv.status === 'IZDAN' && (
+                    {neplacan && (
                       <>
+                        {inv.status === 'IZDAN' && lahkoIzdaja && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
+                            onClick={() => patchStatus(inv, 'POSLAN')}
+                            aria-label="Označi račun kot poslan kupcu"
+                            title="Račun je bil poslan kupcu — status IZDAN → POSLAN (finančni statusni stroj R402)"
+                          >
+                            <Send aria-hidden="true" className="h-3 w-3" /> Poslan
+                          </Button>
+                        )}
                         {lahkoIzdaja && (
                           <Button
                             size="sm"
                             className="h-7 text-xs bg-emerald-600 hover:bg-emerald-500 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
-                            onClick={() => patchStatus(inv, 'PLACAN')}
-                            aria-label="Označi račun kot plačan"
-                            title="Potrdi plačilo računa — status se spremeni v plačan; neuspeh vrne prejšnje stanje"
+                            onClick={() => zabeleziPlacilo(inv)}
+                            aria-label={`Zabeleži plačilo ${eur(odprto)} na račun ${inv.stevilka}`}
+                            title={`Zabeleži plačilo (${eur(odprto)}) prek /api/payments — status se izpelje strežniško (R402 §19); delno plačilo → Delno plačan`}
                           >
-                            <CheckCircle2 aria-hidden="true" className="h-3 w-3" /> Plačan
+                            <CheckCircle2 aria-hidden="true" className="h-3 w-3" />
+                            {inv.status === 'DELNO_PLACAN' ? `Doplata ${eur(odprto)}` : 'Plačan'}
                           </Button>
                         )}
                         {zapadlo && (
