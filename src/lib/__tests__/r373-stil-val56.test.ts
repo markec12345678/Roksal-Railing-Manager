@@ -150,7 +150,7 @@ describe('R373 stil val 56 — male družine RAW pariteta (white ×3 + white/60 
     const dash = R(DASH)
     expect(dash).toContain('onClick={() => setAuditOpen(true)}')
     // r370 (A) navy-obsegani števec dashboard: navy vrstice z offset-2 = 4
-    expect(dash.split('\n').filter((v) => v.includes(NAVY) && v.includes(O2)).length).toBe(4)
+    expect(dash.split('\n').filter((v) => v.includes(NAVY) && v.includes(O2)).length).toBe(7) // [PIN SHIFT R382 val 61: +3 S1 vrstice L2360/2696/3015]
     // r372 (D) navy vsota čez 7 val 55 datotek = 92 (žig per-datoteka)
     const sedem = ['roksal/dashboard-tab.tsx', 'roksal/vodja-dashboard.tsx', 'roksal/material-intelligence-tab.tsx', 'roksal/measurements-tab.tsx', 'roksal/notification-center.tsx', 'roksal/photo-tab.tsx', 'roksal/sistem-zdravje-card.tsx']
     let navy92 = 0
@@ -211,7 +211,7 @@ describe('R373 stil val 56 — male družine RAW pariteta (white ×3 + white/60 
     expect(kat[6].includes("from '@/components/ui/button'")).toBe(true)
     expect(kat[109].includes('focus-visible:ring-roksal-navy/40')).toBe(true)
     expect(kat[109].includes('${')).toBe(true)
-    expect(kat[109].includes('ring-offset')).toBe(false)
+    expect(kat[109].includes('ring-offset')).toBe(true) // [PIN SHIFT R382 val 61: L110 O2 — A/offset zaključek; frozen Input L95 ostaja]
   })
 
   it('(E) orodja ŽIVO: r373-family-census.py vir (4. generalizacija — argv družine, census+triaža, meja (?![/\\w-]), fail-closed 0 pojavitev) + r373-val56-apply.py fail-closed žigi (FAILOVEDANO, pred_outline pot, in-place) + r373-window-scan (2 TARGETS) + era klon kanon (ŠESTINDVJSETIJNA ×4, REG_Z, prag 109, TODO-R372) + register 4+1 + dedup 13. val IZPUST dokaz (32 blokov / 27 unikatnih / 5 ×2 — VSE ×2 še zmeraj znotraj r372, nič čez-rundnega)', () => {

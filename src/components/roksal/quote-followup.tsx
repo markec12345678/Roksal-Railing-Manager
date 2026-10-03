@@ -420,7 +420,7 @@ export function QuoteFollowUp() {
               type="button"
               size="sm"
               variant="outline"
-              className="h-7 shrink-0 gap-1.5 text-[11px] press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+              className="h-7 shrink-0 gap-1.5 text-[11px] press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
               onClick={() => void handleSpomnikiPdf()}
               disabled={pdfVteku}
               aria-label="Izvozi pregled spomnikov ponudb kot PDF"
@@ -450,7 +450,7 @@ export function QuoteFollowUp() {
               type="button"
               size="sm"
               variant="outline"
-              className="h-7 shrink-0 gap-1.5 text-[11px] press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+              className="h-7 shrink-0 gap-1.5 text-[11px] press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
               onClick={() => void handleSpomnikiCsv()}
               disabled={csvVteku}
               data-testid="ponudbe-spomniki-csv-pill"
@@ -468,7 +468,7 @@ export function QuoteFollowUp() {
               type="button"
               size="sm"
               variant="outline"
-              className="h-7 shrink-0 gap-1.5 text-[11px] press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+              className="h-7 shrink-0 gap-1.5 text-[11px] press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
               onClick={handleExportCsv}
               disabled={pending.length === 0 || exporting || loading || error !== null}
               aria-label={`Izvozi prikazani seznam ponudb v CSV (${ponudbeLabel(pending.length)})`}
@@ -511,7 +511,7 @@ export function QuoteFollowUp() {
               size="sm"
               variant="outline"
               onClick={() => void load()}
-              className="shrink-0 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+              className="shrink-0 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
               aria-label="Ponovno naloži seznam ponudb"
             >
               Poskusi znova
@@ -600,7 +600,7 @@ export function QuoteFollowUp() {
                       type="button"
                       size="sm"
                       variant="outline"
-                      className="h-8 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+                      className="h-8 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                       disabled={busyId === p.id}
                       onClick={() => plusDays(p.id, 3)}
                       aria-label={`Premakni spomnik za ${p.nazivProjekta} na +3 dni`}
@@ -611,7 +611,7 @@ export function QuoteFollowUp() {
                       type="button"
                       size="sm"
                       variant="outline"
-                      className="h-8 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+                      className="h-8 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                       disabled={busyId === p.id}
                       onClick={() => plusDays(p.id, 7)}
                       aria-label={`Premakni spomnik za ${p.nazivProjekta} na +7 dni`}

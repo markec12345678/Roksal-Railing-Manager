@@ -90,7 +90,8 @@ describe('R174 FIX — team-tab fail-silent → fail-verbose (R162/R173 vzorec)'
   it('Poskusi znova gumb ima hover detail (transition-colors hover:text-roksal-ink — R172/R173 vzorec)', () => {
     const src = team()
     expect(src).toMatch(
-      /className="shrink-0 transition-colors hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-navy\/40 focus-visible:ring-offset-2"\s*\n\s*aria-label="Ponovno naloži seznam ekipe"/,
+// [PIN SHIFT R382 val 61 / EVOLVED: FB+dark polovica vstavljena pred navedek — regex tolerira.]
+          /className="shrink-0 transition-colors hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-navy\/40 focus-visible:ring-offset-2( focus-visible:border-roksal-navy\/40)?( dark:focus-visible:border-roksal-ink\/40)?"\s*\n\s*aria-label="Ponovno naloži seznam ekipe"/,
     )
   })
 

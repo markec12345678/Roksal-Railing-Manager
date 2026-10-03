@@ -121,7 +121,9 @@ describe('R372 stil val 55 — red/40 RAW pariteta (2 SUB O1→O2 + 6 INS offset
     const r371 = R('src/lib/__tests__/r371-stil-val54.test.ts')
     expect(r371).toContain('PIN SHIFT R372 val 55')
     const szc = R('src/components/roksal/sistem-zdravje-card.tsx')
-    expect(szc.split('\n').filter((v) => v.includes('focus-visible:ring-roksal-navy/40')).every((v) => !v.includes('ring-offset'))).toBe(true)
+    // [PIN SHIFT R382 val 61 / EVOLVED: val 61 STEP 1 je zaprl A/offset na
+    // sistem-zdravje-card L204 — guard obrnjen: vse navy vrstice zdaj Nosijo O2.]
+    expect(szc.split('\n').filter((v) => v.includes('focus-visible:ring-roksal-navy/40')).every((v) => v.includes('ring-offset-2'))).toBe(true)
     // r371 (A) photo-tab in-place 2684 (val 54 tarča L2370 nespremenjena)
     const photo = R('src/components/roksal/photo-tab.tsx').split('\n')
     expect(photo[2369].includes('ring-roksal-navy/40')).toBe(true)
@@ -131,7 +133,9 @@ describe('R372 stil val 55 — red/40 RAW pariteta (2 SUB O1→O2 + 6 INS offset
     expect(dash).toContain('onClick={() => setAuditOpen(true)}')
     // navy/40 P census števci val 54 nespremenjeni (red SUB/INS ne tiče navy vrstic)
     const navyO2 = dash.split('\n').filter((v) => v.includes('focus-visible:ring-roksal-navy/40') && v.includes(O2)).length
-    expect(navyO2).toBe(4)
+    // [PIN SHIFT R382 val 61 / EVOLVED: val 61 STEP 1 zaprl A/offset na
+    // dashboard L2360/2696/3015 — navy+O2 census 4 → 7.]
+    expect(navyO2).toBe(7)
   })
 
   it('(D) census klasa dokaz: red/40 PO stanje čez vseh 15 nosilnih datotek (skupaj 25 = O2 25 + NONE 0, O1 0 — O1 razcep = 0) + navy/40 vsota 249 nespremenjena [PIN SHIFT R378 val 59: 14 NONE (12 KIT + 2 CMP) → O2 — rdeča družina zaključena]', () => {

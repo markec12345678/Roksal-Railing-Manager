@@ -4393,7 +4393,7 @@ export function CalculatorTab({ importedFromMeasurement, onClearImport, onBackTo
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="h-7 px-2 text-2xs text-roksal-ink hover:text-roksal-ink hover:bg-roksal-navy/5 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
+                    className="h-7 px-2 text-2xs text-roksal-ink hover:text-roksal-ink hover:bg-roksal-navy/5 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                     onClick={exportHistoryCsv}
                     aria-label="Izvozi zgodovino izračunov kot CSV datoteka"
                     title="Izvoz zgodovine izračunov kot CSV datoteka"

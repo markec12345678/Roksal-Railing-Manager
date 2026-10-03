@@ -50,8 +50,10 @@ const pod = (src: string, needle: string): number =>
 const wcLinije = (src: string): number => (src.match(/\n/g) ?? []).length
 
 const DATOTEKE = [
-  { f: 'roksal/calculator-tab.tsx', vrstice: 4489, navy40: 4, offset2: 3, hex: 16, aria: 16, title: 19 },
-  { f: 'roksal/dashboard-tab.tsx', vrstice: 3188, navy40: 9, offset2: 4, hex: 0, aria: 13, title: 22 },
+  // [PIN SHIFT R382 val 61: calculator L4396 pridobil O2 — A/offset zaključek — offset2 3→4]
+  { f: 'roksal/calculator-tab.tsx', vrstice: 4489, navy40: 4, offset2: 4, hex: 16, aria: 16, title: 19 },
+  // [PIN SHIFT R382 val 61: dashboard L2360/2696/3015 pridobile O2 — offset2 4→7]
+  { f: 'roksal/dashboard-tab.tsx', vrstice: 3188, navy40: 9, offset2: 7, hex: 0, aria: 13, title: 22 },
   { f: 'roksal/invoice-manager.tsx', vrstice: 1722, navy40: 10, offset2: 10, hex: 6, aria: 14, title: 18 },
   { f: 'roksal/vodja-dashboard.tsx', vrstice: 2199, navy40: 4, offset2: 4, hex: 1, aria: 25, title: 34 },
 ]
@@ -130,7 +132,7 @@ describe('R370 stil val 53 — navy/40 offset-1 rep normalizacija 1→2', () => 
     expect(PC237.includes('ring-offset-1')).toBe(false)
     // preživetja: r366 (C) not.toContain bere r242 TEST datoteko (nespremenjena)
     const R242T = R('src/lib/__tests__/r242-narocila-rbac.test.ts')
-    expect(R242T).toContain('"h-8 text-xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"')
+    expect(R242T).toContain('"h-8 text-xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"') // [PIN SHIFT R382 val 61 / EVOLVED]
     expect(R242T.includes('ring-offset-1')).toBe(false)
     // r364 (A) MERITVE-only offset-1 = 0 (measurements nedotaknjen — še vedno 0)
     const MERITVE = R('src/components/roksal/measurements-tab.tsx')

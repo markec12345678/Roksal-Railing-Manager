@@ -183,7 +183,7 @@ export function BottomNav({ activeTab, onTabChange, badges = {}, moreActive = nu
                   role="menuitem"
                   onClick={() => handleMoreClick(t.id)}
                   style={{ animationDelay: `${Math.min(i, 8) * 30}ms` }}
-                  className={`more-tile flex flex-col items-center gap-2 rounded-xl border-2 p-4 text-center transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 dark:focus-visible:ring-roksal-ink/40 ${
+                  className={`more-tile flex flex-col items-center gap-2 rounded-xl border-2 p-4 text-center transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40 dark:focus-visible:ring-roksal-ink/40 ${
                     active
                       ? 'border-roksal-amber bg-roksal-amber/10 shadow-[0_0_0_3px] shadow-roksal-amber/10'
                       : 'border-border bg-card hover:border-roksal-navy/30 dark:hover:border-roksal-ink/30'

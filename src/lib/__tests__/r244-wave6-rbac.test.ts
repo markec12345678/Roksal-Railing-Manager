@@ -232,7 +232,7 @@ describe('R244 — [Mandatory] stil: press-scale pariteta + žeton migracija', (
     // navy/40 in disabled:opacity-50 (LEKCIJA R363: substring pin se prelomi,
     // če se žeton vstavi MED dva dela pina — shiftan V ISTI rundi, precedens
     // R362 r242 L176/177 + R363 r237:230); števec ostane 5.
-    expect(logUi.split('bg-roksal-navy hover:bg-roksal-navy/90 text-white shadow-sm transition-all press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 disabled:opacity-50').length - 1).toBe(5)
+    expect(logUi.split('bg-roksal-navy hover:bg-roksal-navy/90 text-white shadow-sm transition-all press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2').length - 1).toBe(5) // [PIN SHIFT R382 val 61: token skrajšan do O2 — 2 od 5 submitov nosi FB+dark (border-pariteta), 3 ostaja; skupni števec 5 OHRANJEN]
     // stale pin shiftan val 50 (R367, precedens R362/R363/R365): red-400/50
     // oblikovna pariteta — ring-2 + offset-2 vstavljen MED barvo in
     // press-scale; barvni žig OHRANJEN (destruktivna semantika r236)

@@ -94,18 +94,20 @@ describe('R371 stil val 54 — navy/40 NONE triaža (13 surovih brand vrstic)', 
     expect(pod(R('src/components/roksal/audit-trail-dialog.tsx'), N1)).toBe(1)
     expect(pod(R('src/components/roksal/calculator-tab.tsx'), N2)).toBe(1)
     expect(pod(R('src/components/roksal/dashboard-tab.tsx'), N3)).toBe(1)
-    expect(pod(R('src/components/roksal/calculator-tab.tsx'), N4)).toBe(1)
+    expect(pod(R('src/components/roksal/calculator-tab.tsx'), N4)).toBe(2) // [PIN SHIFT R382 val 61: L4396 pridobil O2 — N4 sedaj ×2 (L4396+L4439)]
     // dokumentirani ne-tarčni: sistem-zdravje-card L204 kit override (spot D2-dokaz)
     const SZC = R('src/components/roksal/sistem-zdravje-card.tsx')
-    expect(SZC).toContain('press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:outline-none')
+    expect(SZC).toContain('press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40 focus-visible:outline-none') // [PIN SHIFT R382 val 61: O2+FB+dark na L204 — A/offset + C/border zaključek]
     // [PIN SHIFT R372 val 55: izvirnik 'SZC.includes("ring-offset") === false'
     // (celo-datoteka) → navy-vrstični guard z ISTO namero — val 55 je dodala
     // focus-visible:ring-offset-2 na RAW red/40 brand vrstico L228 (rdeča
     // pariteta); kit override L204 (navy) ostaja brez offseta]
+    // [PIN SHIFT R382 val 61: L204 pridobila O2 (+FB+dark) — guard obrnjen:
+    // vse navy vrstice SZC zdaj nosijo ring-offset-2 (A/offset zaključek).]
     expect(
       SZC.split('\n')
         .filter((v) => v.includes('focus-visible:ring-roksal-navy/40'))
-        .every((v) => !v.includes('ring-offset')),
+        .every((v) => v.includes('ring-offset-2')),
     ).toBe(true)
     // iskalni vnosi (INPUT) brez offseta — izven obsega, dokumentirano
     expect(R('src/components/roksal/dashboard-tab.tsx')).toContain('pl-9 h-10 bg-background focus-visible:ring-roksal-navy/40')
@@ -144,7 +146,7 @@ describe('R371 stil val 54 — navy/40 NONE triaža (13 surovih brand vrstic)', 
     expect(navy).toBe(32) // 3+4+9+4+2+3+3+1+2+1 — vsota po rundi (vstavljanje ne doda/odstrani žetonov)
     // punch-list template literal — offset pred interpolacijo (LEKCIJA R361: statični segment = veljaven)
     const punch = R('src/components/roksal/punch-list.tsx')
-    expect(punch).toContain('navy/40 focus-visible:ring-offset-2 ${')
+    expect(punch).toContain('navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40 ${')
     // inclinometer template — isti vzorec
     const incl = R('src/components/roksal/inclinometer-tab.tsx')
     expect(incl.split('\n')[340]).toContain(NAVY)

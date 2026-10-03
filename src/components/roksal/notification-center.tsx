@@ -878,7 +878,7 @@ export function NotificationCenter() {
                         <button
                           type="button"
                           onClick={() => void openPersisted(n)}
-                          className="group flex w-full items-start gap-3 rounded-xl border border-border/60 bg-card p-3 text-left transition-all hover:-translate-y-0.5 hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 dark:focus-visible:ring-roksal-ink/40 active:scale-[0.98]"
+                          className="group flex w-full items-start gap-3 rounded-xl border border-border/60 bg-card p-3 text-left transition-all hover:-translate-y-0.5 hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40 dark:focus-visible:ring-roksal-ink/40 active:scale-[0.98]"
                           aria-label={`${n.naslov} — ${st.label}`}
                         >
                           <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${varnostna ? 'bg-roksal-amber/10' : 'bg-roksal-navy/5'}`}>

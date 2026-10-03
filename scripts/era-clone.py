@@ -30,6 +30,12 @@
 #   - NE piše izhoda, če KOLIKR koli preverba faila (fail-closed).
 #   - LEKCIJA R375 (3): prag rebuild gre nad TRENUTNIM out (ne content) —
 #     rebuild iz starega vira pobije prejšnje replacemente.
+#   - R382 COMPANION integracija (handover kandidat 3 — ruta stolpec
+#     vgrajen): ob generaciji r{dst}-era-harvest.sh se AVTOMATSKO
+#     generira tudi companion r{dst}-era-ruta-map.py (needle→ruta mapa;
+#     klon r{src}-era-ruta-map.py z žigi r{src}→r{dst}; tolerantno
+#     preskočen, če vhodni companion ne obstaja — poslovne runde).
+#     Fail-closed: companion preverba PRED zapisom obeh datotek.
 import argparse, pathlib, re, sys
 
 REPO = pathlib.Path("/home/z/my-project")
@@ -373,11 +379,46 @@ fi
     if not ok:
         sys.exit(1)
 
+    # 13) ruta-map COMPANION (R382 integracija): kloniraj r{src}-era-ruta-map.py
+    #     → r{dst}-era-ruta-map.py z žigi (tolerantno: brez vhoda = preskočeno)
+    src_map = REPO / f"scripts/r{src}-era-ruta-map.py"
+    dst_map = REPO / f"scripts/r{dst}-era-ruta-map.py"
+    map_ok = True
+    if src_map.exists():
+        if dst_map.exists():
+            sys.exit(f"FAILOVEDANO: companion ŽE obstaja (nikoli prepisuj): {dst_map}")
+        mc = src_map.read_text(encoding="utf-8")
+        mc = mc.replace(f"r{src}-era-ruta-map.py", f"r{dst}-era-ruta-map.py")
+        mc = mc.replace(f'scripts/r{src}-era-harvest.sh', f'scripts/r{dst}-era-harvest.sh')
+        mc = mc.replace(f"REG_OD, REG_DO = 340, {src}", f"REG_OD, REG_DO = 340, {dst}")
+        mc = mc.replace(f"r340–r{src}", f"r340–r{dst}")
+        mc = mc.replace(f"R{src} ERA NEEDLE", f"R{dst} ERA NEEDLE")
+        # POST preverbe companiona (fail-closed PRED zapisom obeh)
+        map_checks = [
+            (f'Harvest = REPO / "scripts/r{dst}-era-harvest.sh"', 0),  # variable name check below
+        ]
+        if f'HARVEST = REPO / "scripts/r{dst}-era-harvest.sh"' not in mc:
+            print("FAILOVEDANO: companion HARVEST pot ni preimenovana")
+            map_ok = False
+        if f"REG_OD, REG_DO = 340, {dst}" not in mc:
+            print("FAILOVEDANO: companion REG window ni preimenovan")
+            map_ok = False
+        if f"r{src}-era-harvest.sh" in mc:
+            print("FAILOVEDANO: companion še nosi r{src}-era-harvest.sh referenco")
+            map_ok = False
+        if not map_ok:
+            sys.exit(1)
+    else:
+        print(f"OPOMBA: r{src}-era-ruta-map.py ne obstaja — companion preskočen (poslovna runda / stara veriga)")
+
     print("per-registr need_static:", per)
     print(f"SKUPAJ: {tot} (pričakovano ≥ {args.expected_total})")
     print(f"izpeljani labeli: src={srclabel} dst={dstlabel} (×{dst_n}); era={ERA} (števec {stevec})")
     DST_F.write_text(out, encoding="utf-8")
     print(f"OK: {DST_F} zapisan ({len(out)} bajtov)")
+    if src_map.exists():
+        dst_map.write_text(mc, encoding="utf-8")
+        print(f"OK: {dst_map} zapisan (COMPANION ruta-mapa, {len(mc)} bajtov)")
 
 
 if __name__ == "__main__":

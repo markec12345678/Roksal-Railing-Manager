@@ -338,7 +338,7 @@ export function InclinometerTab({ projectId, projektIme }: { projectId: string |
                   type="button"
                   onClick={() => void handleNagibiPdf()}
                   disabled={pdfNagibiVteku}
-                  className="flex shrink-0 items-center gap-1 rounded-lg border border-border/50 bg-secondary/50 px-2 py-1 text-2xs font-medium text-muted-foreground transition-all duration-150 press-scale active:scale-[0.96] hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+                  className="flex shrink-0 items-center gap-1 rounded-lg border border-border/50 bg-secondary/50 px-2 py-1 text-2xs font-medium text-muted-foreground transition-all duration-150 press-scale active:scale-[0.96] hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                   aria-label="Izvozi terenski pregled nagibov kot PDF"
                   title="Terenski pregled nagibov kot pravi PDF — VSI nagibi projekta (tudi označeni neveljavni)"
                 >
@@ -441,7 +441,7 @@ export function InclinometerTab({ projectId, projektIme }: { projectId: string |
               variant={monitoring ? 'outline' : 'default'}
               onClick={monitoring ? stopSensor : enableSensor}
               aria-pressed={monitoring}
-              className="w-full focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              className="w-full focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
             >
               {monitoring ? (
                 <>
@@ -568,7 +568,7 @@ export function InclinometerTab({ projectId, projektIme }: { projectId: string |
                 size="sm"
                 variant="outline"
                 onClick={handleExportCSV}
-                className="shrink-0 h-8 px-2.5 text-xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                className="shrink-0 h-8 px-2.5 text-xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                 aria-label={`Izvozi ${saved.length} nagibov kot CSV datoteko`}
               >
                 <Download className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />

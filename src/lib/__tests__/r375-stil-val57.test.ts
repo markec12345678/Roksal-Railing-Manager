@@ -80,7 +80,7 @@ describe('R375 stil val 57 — ring↔border pariteta navy/40 obrobljenih gumbov
     const tarce = lines
       .map((v, i) => (v.includes(SEKVENCA + INS) ? i + 1 : 0))
       .filter((v) => v > 0)
-    expect(tarce.length).toBe(22)
+    expect(tarce.length).toBe(27) // [PIN SHIFT R382 val 61: +5 measurements tarč]
     for (const ln of tarce) {
       const v = lines[ln - 1]
       expect(v.includes(NAVY), `${ln} navy/40`).toBe(true)
@@ -113,7 +113,7 @@ describe('R375 stil val 57 — ring↔border pariteta navy/40 obrobljenih gumbov
     const brezSirine = lines.filter(
       (v) => v.includes(NAVY) && v.includes(O2) && !v.includes(BORDER) && !SIRINA.test(v),
     ).length
-    expect(brezSirine, 'mrtev-CSS izpuščeni').toBe(25)
+    expect(brezSirine, 'mrtev-CSS izpuščeni').toBe(20) // [PIN SHIFT R382 val 61: 5 outline Button vrstic dobilo FB → izseljene]
     const amberTarca = lines.find((v) => v.includes('focus-visible:ring-roksal-amber/40') && SIRINA.test(v))
     expect(amberTarca, 'amber bordered obstaja').toBeTruthy()
     expect(amberTarca!.includes('focus-visible:border'), 'amber brez border-paritete').toBe(false)
@@ -154,16 +154,16 @@ describe('R375 stil val 57 — ring↔border pariteta navy/40 obrobljenih gumbov
 
   it('(D) shape-guard: INS žeton ×22 measurements + calculator precedens ×2 + crm amber ×1 + globalno components ×24 navy-border + pairana oblika ×22 + md5 cevovodni žig + 0 novih hex čez tarčo', () => {
     const mer = R(MER)
-    expect(pod(mer, BORDER), 'measurements INS').toBe(22)
+    expect(pod(mer, BORDER), 'measurements INS').toBe(27) // [PIN SHIFT R382 val 61: +5]
     expect(pod(R('src/components/roksal/calculator-tab.tsx'), BORDER), 'calculator precedens').toBe(2)
     expect(pod(R('src/components/roksal/crm-tab.tsx'), 'focus-visible:border-roksal-amber'), 'crm precedens').toBe(1)
     let skupajNavyBorder = 0
     for (const f of vseDatoteke()) skupajNavyBorder += pod(R(f), BORDER)
-    expect(skupajNavyBorder, 'globalno navy-border').toBe(24)
+    expect(skupajNavyBorder, 'globalno navy-border').toBe(159) // [PIN SHIFT R382 val 61: +134 tarč +1 PAR sorojenec (material L2111 CSV)]
     const createHash2 = createHash
     const zig = createHash2('md5').update(SEKVENCA + INS).digest('hex')
     expect(zig).toBe(createHash('md5').update(SEKVENCA + INS).digest('hex'))
-    expect(pod(mer, `${BORDER} ${DARK_BORDER}`), 'pairana oblika ×22').toBe(22)
+    expect(pod(mer, `${BORDER} ${DARK_BORDER}`), 'pairana oblika ×27').toBe(27) // [PIN SHIFT R382 val 61: +5]
     expect((mer.match(/#[0-9a-fA-F]{6}\b/g) ?? []).length, 'hex 0').toBe(0)
   })
 

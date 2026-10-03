@@ -53,7 +53,8 @@ describe('R365 — STIL val 48: ring pariteta logistics-tab družine', () => {
     expect(LOG.match(/h-7 shrink-0 px-2 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy\/40 focus-visible:ring-offset-2/g) ?? []).toHaveLength(1)
     expect(LOG.match(/h-6 text-2xs bg-roksal-navy\/5 focus-visible:ring-2 focus-visible:ring-roksal-navy\/40 focus-visible:ring-offset-2/g) ?? []).toHaveLength(1)
     expect(LOG.match(/mt-0\.5 h-3\.5 w-3\.5 accent-roksal-navy focus-visible:ring-2 focus-visible:ring-roksal-navy\/40 focus-visible:ring-offset-2/g) ?? []).toHaveLength(3)
-    expect(LOG.match(/bg-roksal-navy hover:bg-roksal-navy\/90 text-white shadow-sm transition-all press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy\/40 focus-visible:ring-offset-2 disabled:opacity-50/g) ?? []).toHaveLength(5)
+    // [PIN SHIFT R382 val 61 / EVOLVED: 2 od 5 nosi FB+dark — opcionalna skupina, števec 5.]
+    expect(LOG.match(/bg-roksal-navy hover:bg-roksal-navy\/90 text-white shadow-sm transition-all press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy\/40 focus-visible:ring-offset-2( focus-visible:border-roksal-navy\/40)?( dark:focus-visible:border-roksal-ink\/40)? disabled:opacity-50/g) ?? []).toHaveLength(5)
   })
 
   it('(C) zamrznjeni aria/logika + r244 substring pin shiftan V ISTI rundi (števec 5 nespremenjen — precedens R362 r242 L176/177, R363 r237:230)', () => {
@@ -63,7 +64,7 @@ describe('R365 — STIL val 48: ring pariteta logistics-tab družine', () => {
     expect(LOG).toContain('aria-label="Shrani novo opremo"')
     expect(LOG).toContain('aria-label="Izvozi tedenski pregled montaž kot CSV"')
     // r244 shiftani substring pin (nov niz) + STARI niz NI več prisoten (razcep = 0)
-    expect(R244).toContain('focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 disabled:opacity-50')
+    expect(R244).toContain('focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2') // [PIN SHIFT R382 val 61 / EVOLVED: r244 split token skrajšan do O2 — 2/5 submitov nosi FB+dark]
     expect(R244).not.toContain('focus-visible:ring-roksal-navy/40 disabled:opacity-50')
     // prefix pini preživijo (r244 CTA + r292 pil slice)
     expect(LOG).toContain('flex-1 bg-roksal-navy text-white shadow-sm press-scale')

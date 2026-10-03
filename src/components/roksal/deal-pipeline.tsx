@@ -216,7 +216,7 @@ function DraggableCard({
       {...attributes}
       aria-label={`Projekt ${p.nazivProjekta}, stopnja ${col.label}. Za premik povlecite kartico ali odprite meni.`}
       className={cn(
-        'touch-none select-none rounded-lg transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40',
+        'touch-none select-none rounded-lg transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2',
         isDragging && 'opacity-35',
         busy && 'animate-pulse',
       )}
@@ -232,7 +232,7 @@ function DraggableCard({
             <DropdownMenu>
               <DropdownMenuTrigger
                 aria-label={`Spremeni status projekta ${p.nazivProjekta}`}
-                className="rounded-md p-1 text-muted-foreground/60 transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                className="rounded-md p-1 text-muted-foreground/60 transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
               >
                 <MoreVertical aria-hidden="true" className="h-3.5 w-3.5" />
               </DropdownMenuTrigger>
@@ -599,7 +599,7 @@ export function DealPipeline() {
               type="button"
               variant="ghost"
               size="sm"
-              className="h-8 shrink-0 gap-1.5 px-2 text-xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              className="h-8 shrink-0 gap-1.5 px-2 text-xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
               onClick={handleExportPloscaCsv}
               disabled={loading || exportingPlosca}
               aria-label="Izvozi prodajno ploščo kot CSV"
@@ -643,7 +643,7 @@ export function DealPipeline() {
                 size="sm"
                 variant="outline"
                 onClick={() => void loadProjects()}
-                className="shrink-0 transition-colors hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+                className="shrink-0 transition-colors hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                 aria-label="Ponovno naloži prodajno ploščo"
               >
                 Poskusi znova

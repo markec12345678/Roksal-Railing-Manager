@@ -162,7 +162,7 @@ export function CenaZgodovinaPanel() {
                 size="sm"
                 variant="outline"
                 onClick={izvoziCsv}
-                className="press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:outline-none"
+                className="press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40 focus-visible:outline-none"
                 aria-label="Izvozi zgodovino cen materiala kot CSV"
                 title="Izvozi zgodovino cen materiala kot CSV"
               >
@@ -173,7 +173,7 @@ export function CenaZgodovinaPanel() {
                 size="sm"
                 variant="outline"
                 onClick={izvoziPdf}
-                className="press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:outline-none"
+                className="press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40 focus-visible:outline-none"
                 aria-label="Izvozi zgodovino cen materiala kot PDF"
                 title="Izvozi zgodovino cen materiala kot deterministični PDF"
               >

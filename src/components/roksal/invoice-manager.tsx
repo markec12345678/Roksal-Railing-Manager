@@ -1042,7 +1042,7 @@ export function InvoiceManager() {
               size="sm"
               variant="outline"
               onClick={() => exportRacuniCsv(invoices)}
-              className="h-8 gap-1.5 px-2.5 text-[11px] font-medium press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+              className="h-8 gap-1.5 px-2.5 text-[11px] font-medium press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
               aria-label="Izvozi račune kot CSV"
               title="Izvozi vse račune (številka, status, zneski) kot CSV za Excel"
             >
@@ -1058,7 +1058,7 @@ export function InvoiceManager() {
               variant="outline"
               onClick={handlePrihodkiPdf}
               disabled={prihodkiVTeku}
-              className="h-8 gap-1.5 px-2.5 text-[11px] font-medium press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+              className="h-8 gap-1.5 px-2.5 text-[11px] font-medium press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
               aria-label="Izvozi prihodke kot PDF"
               title="Prihodki, terjatve in zapadli računi kot pravi PDF — povzetek za vodstvo"
             >
@@ -1179,7 +1179,7 @@ export function InvoiceManager() {
                       variant="outline"
                       onClick={handleMeseciCsv}
                       disabled={meseciCsvVTeku}
-                      className="h-6 gap-1 px-1.5 text-2xs font-medium press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+                      className="h-6 gap-1 px-1.5 text-2xs font-medium press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                       aria-label="Izvozi prihodke po mesecih kot CSV"
                       title="Prihodki po mesecih kot CSV — ista resnica kot sekcija (skupaj + v teku + stornirani)"
                     >
@@ -1325,7 +1325,7 @@ export function InvoiceManager() {
                           </Button>
                         )}
                         {lahkoUstvarja && (
-                          <Button size="sm" variant="outline" className="h-7 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2" onClick={() => deleteInvoice(inv)} aria-label="Trajno izbriši osnutek računa" title="Trajno izbriši osnutek računa — brisanje ni možno razveljaviti">
+                          <Button size="sm" variant="outline" className="h-7 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40" onClick={() => deleteInvoice(inv)} aria-label="Trajno izbriši osnutek računa" title="Trajno izbriši osnutek računa — brisanje ni možno razveljaviti">
                             <Trash2 aria-hidden="true" className="h-3 w-3" /> Briši
                           </Button>
                         )}
@@ -1383,7 +1383,7 @@ export function InvoiceManager() {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="h-7 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+                        className="h-7 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                         onClick={() => {
                           setFormProject(inv.projectId)
                           setFormTip(inv.tip)
@@ -1399,14 +1399,14 @@ export function InvoiceManager() {
                         <Pencil aria-hidden="true" className="h-3 w-3" /> Uredi
                       </Button>
                     )}
-                    <Button size="sm" variant="outline" className="h-7 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2" onClick={() => generatePdf(inv)} aria-label="Prenesi račun kot PDF" title="Generiraj in prenesi račun kot PDF dokument">
+                    <Button size="sm" variant="outline" className="h-7 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40" onClick={() => generatePdf(inv)} aria-label="Prenesi račun kot PDF" title="Generiraj in prenesi račun kot PDF dokument">
                       <FileDown aria-hidden="true" className="h-3 w-3" /> PDF
                     </Button>
                     {inv.status !== 'STORNIRAN' && (
                       <Button
                         size="sm"
                         variant="outline"
-                        className="h-7 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+                        className="h-7 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                         onClick={() => setQrInvoice(inv)}
                         title="UPN QR koda za plačilo"
                         aria-label="UPN QR koda za plačilo"
@@ -1418,7 +1418,7 @@ export function InvoiceManager() {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="h-7 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+                        className="h-7 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                         onClick={() => void downloadXml(inv)}
                         disabled={xmlLoading === inv.id}
                         title="eRačun XML (eSlog 2.1 / EN 16931)"

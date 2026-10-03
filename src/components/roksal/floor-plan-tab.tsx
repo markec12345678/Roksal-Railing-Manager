@@ -1679,7 +1679,7 @@ export function FloorPlanTab({ projectId }: FloorPlanTabProps) {
                   size="icon"
                   variant="outline"
                   onClick={() => zoomBy(1 / 1.2)}
-                  className="h-7 w-7 border-roksal-navy/20 bg-white/90 focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                  className="h-7 w-7 border-roksal-navy/20 bg-white/90 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                   aria-label="Pomanjšaj načrt"
                 >
                   <ZoomOut className="h-3.5 w-3.5" aria-hidden="true" />
@@ -1689,7 +1689,7 @@ export function FloorPlanTab({ projectId }: FloorPlanTabProps) {
                   size="icon"
                   variant="outline"
                   onClick={() => zoomBy(1.2)}
-                  className="h-7 w-7 border-roksal-navy/20 bg-white/90 focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                  className="h-7 w-7 border-roksal-navy/20 bg-white/90 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                   aria-label="Povečaj načrt"
                 >
                   <ZoomIn className="h-3.5 w-3.5" aria-hidden="true" />
@@ -1699,7 +1699,7 @@ export function FloorPlanTab({ projectId }: FloorPlanTabProps) {
                   size="icon"
                   variant="outline"
                   onClick={resetView}
-                  className="h-7 w-7 border-roksal-navy/20 bg-white/90 focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                  className="h-7 w-7 border-roksal-navy/20 bg-white/90 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                   aria-label="Ponastavi pogled načrta"
                 >
                   <Maximize className="h-3.5 w-3.5" aria-hidden="true" />

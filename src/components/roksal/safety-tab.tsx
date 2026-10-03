@@ -284,7 +284,7 @@ export function SafetyTab() {
             size="sm"
             variant="outline"
             onClick={retryWeather}
-            className="shrink-0 transition-colors hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+            className="shrink-0 transition-colors hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
             aria-label="Ponovno poskusi pridobiti vremenske podatke"
           >
             Poskusi znova

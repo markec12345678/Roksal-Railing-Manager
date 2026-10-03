@@ -4144,7 +4144,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                     type="button"
                     variant="outline"
                     onClick={handleClearCalibration}
-                    className="h-9 px-3 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+                    className="h-9 px-3 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                     aria-label="Počisti umeritev"
                   >
                     <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
@@ -4536,7 +4536,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               <Button
                 type="button"
                 variant="outline"
-                className="h-9 px-3 text-[11px] gap-1.5 shrink-0 transition-colors focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+                className="h-9 px-3 text-[11px] gap-1.5 shrink-0 transition-colors focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                 onClick={() => toast.info('LiDAR skeniranje bo kmalu na voljo')}
                 aria-label="LiDAR skeniranje meritev — kmalu na voljo"
                 title="LiDAR skeniranje meritev (iskren stub — funkcija bo kmalu na voljo)"
@@ -4632,7 +4632,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                 <Button
                   type="button"
                   variant="outline"
-                  className="h-8 px-3 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+                  className="h-8 px-3 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                   onClick={() => setAddSegmentOpen(false)}
                   aria-label="Zapri dodajanje segmenta"
                 >
@@ -5877,7 +5877,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                       type="button"
                       variant="outline"
                       size="sm"
-                      className="h-7 text-[11px] ml-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+                      className="h-7 text-[11px] ml-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                       onClick={handleExportAuditCSV}
                       disabled={auditEntries.length === 0}
                       aria-label="Izvozi zgodovino meritev kot CSV"
@@ -5912,7 +5912,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               onClick={() => setBulkDeleteOpen(false)}
               disabled={bulkArchiveBusy}
               title="Zapri pogovorno okno — nič se ne arhivira, izbira meritev ostane"
-              className="focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+              className="focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
             >
               Prekliči
             </Button>

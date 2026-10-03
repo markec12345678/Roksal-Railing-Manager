@@ -16,6 +16,7 @@
 # FEATURE: e2e-lib dedup 4. val — eb_pocakaj_zalogo (identičen predikat
 # ×2 + ×1 O-R brat; proaktiven pri 2. ponovitvi, LEKCIJA R362 (3);
 # poraba ob 1. uporabi v r364-qa-spot.sh V ISTI rundi).
+# dark-fix korekcija (r382-val61-dark-fix): NASLEDNICA dopolnjena z dark polovico — register ni bil še pushan.
 # FORMAT (TSV; EN vrstica = EN needle; TAB je LOČILO) — kanon R340–R363.
 #   <needle_string><TAB><opis><TAB><vrsta>
 # vrsta: need_static (MORA biti ŽIV v čankih) | must_miss (NE SME biti)
@@ -24,5 +25,6 @@
 text-3xs font-medium border transition-all hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2	R364 val 47 status cikel chip ring offset-1→2 normalizacija (×1; 0 v HEAD)	need_static
 px-2.5 py-1 text-[11px] font-medium hover:bg-roksal-navy/90 active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2	R364 val 47 primarni navy akcijski gumb ring offset-2 (×1; 0 v HEAD)	need_static
 focus-visible:ring-inset focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:outline-none transition-colors	R364 val 47 ring-inset druzina (filtri/ckipi) ring offset-2 (×5; 0 v HEAD)	need_static
-h-8 px-3 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"	R364 val 47 h-8 pilula zaprti niz ring offset-2 (×1; 0 v HEAD)	need_static
+# h-8 px-3 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"	R364 val 47 h-8 pilula zaprti niz ring offset-2 (×1; 0 v HEAD)	need_static — EVOLVED R383 val 61: INS ' focus-visible:border-roksal-navy/40' TIK ZA 'focus-visible:ring-offset-2' NA ISTI vrstici (val 57 border-pariteta kanon) — vrstica KOMENTIRANA (zgodovina dobesedno; validate_registry/preberi_register/era-clone/window-scan je preskočijo), naslednica = naslednja podatkovna vrstica
+h-8 px-3 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"	R383 val 61 evolucija r364 needleja — NASLEDNICA komentirane vrstice zgoraj (NASLEDNICA ŽIVO ob R382 pushu; opis izvirnika: R364 val 47 h-8 pilula zaprti niz ring offset-2 (×1; 0 v HEAD))	need_static
 TODO-R364	must_miss: razvojni ostane (nesme biti v produkcijskih čankih)	must_miss

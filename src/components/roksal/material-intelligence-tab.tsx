@@ -453,7 +453,7 @@ function primerjalniVnosi(vrste: PrimerjalniVrsta[]): PrimerjalniPdfVnos[] {
 // R207 — stil statusnega filtra (pill družina R136/R204/R206; 0 novih hex,
 // tokeni + focus ring; aria-pressed namesto aria-selected — pravi toggle).
 function chipCls(aktiven: boolean): string {
-  return `h-7 rounded-full border px-3 text-[11px] font-medium tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 ${
+  return `h-7 rounded-full border px-3 text-[11px] font-medium tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40 ${
     aktiven
       ? 'border-roksal-navy bg-roksal-navy text-white'
       : 'border-border bg-background text-muted-foreground hover:border-roksal-navy/40 dark:hover:border-roksal-ink/40 hover:text-roksal-ink'
@@ -1546,7 +1546,7 @@ export function MaterialIntelligenceTab({
               disabled={loading}
               aria-label="Izvozi naročila kot CSV"
               title="Izvozi vsa naročila (neodvisno od statusnega filtra) kot CSV za Excel"
-              className="h-8 text-xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+              className="h-8 text-xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
             >
               <Download aria-hidden="true" className="h-3.5 w-3.5 mr-1 text-roksal-amber" /> CSV
             </Button>
@@ -1558,7 +1558,7 @@ export function MaterialIntelligenceTab({
               disabled={loading || narocilaVTeku}
               aria-label="Izvozi naročila kot PDF"
               title="Naročila kot pravi PDF — pregled (vrstica per naročilo) z žigom preteklenga roka"
-              className="h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+              className="h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
             >
               <FileText className="h-3 w-3" aria-hidden="true" />
               PDF
@@ -1576,7 +1576,7 @@ export function MaterialIntelligenceTab({
               disabled={loading || pokritostVTeku}
               aria-label="Izvozi pokritost zaloge in osnutkov kot PDF"
               title="Pokritost kot pravi PDF — kaj osnutki že pokrivajo in kaj pod minimumom še manjka"
-              className="h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+              className="h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
             >
               <FileText className="h-3 w-3" aria-hidden="true" />
               PDF
@@ -1677,7 +1677,7 @@ export function MaterialIntelligenceTab({
                     variant="outline"
                     size="sm"
                     onClick={() => setStatusFilter('VSI')}
-                    className="mt-3 h-8 text-xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+                    className="mt-3 h-8 text-xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                   >
                     Prikaži Vse
                   </Button>
@@ -1761,7 +1761,7 @@ export function MaterialIntelligenceTab({
                           type="button"
                           size="sm"
                           variant="outline"
-                          className="h-6 gap-1 text-2xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+                          className="h-6 gap-1 text-2xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                           onClick={() => void kopirajNarocilnicoIzNarocila(order)}
                           aria-label={`Kopiraj naročilnico naročila pri ${order.supplier.naziv} v odložišče`}
                           title="Naročilnica za dobavitelja iz postavk tega naročila — prilepi v e-pošto/SMS"
@@ -1776,7 +1776,7 @@ export function MaterialIntelligenceTab({
                           type="button"
                           size="sm"
                           variant="outline"
-                          className="h-6 gap-1 text-2xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+                          className="h-6 gap-1 text-2xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                           onClick={() => void prenesiNarocilnicoPdf(order)}
                           aria-label={`Prenesi naročilnico naročila pri ${order.supplier.naziv} kot PDF`}
                           title="Naročilnica kot pravi PDF za dobavitelja — determinističen dokument iz postavk"
@@ -1792,7 +1792,7 @@ export function MaterialIntelligenceTab({
                           size="sm"
                           variant="outline"
                           aria-expanded={zgodovinaOrderId === order.id}
-                          className="h-6 gap-1 text-2xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+                          className="h-6 gap-1 text-2xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                           onClick={() => odpriZgodovino(order.id)}
                           aria-label={`Zgodovina prehodov naročila pri ${order.supplier.naziv}`}
                           title="Sled prehodov statusa (kdo, kdaj) — sveže pridobljena ob vsakem odpiranju"
@@ -1805,17 +1805,17 @@ export function MaterialIntelligenceTab({
                             = procurement.approve, DOBLJENO = approve ALI
                             receive. Gumb, ki bi končal s 403, se NE rodi. */}
                         {order.status === 'OSNUTEK' && lahkoOdobri && (
-                          <Button type="button" size="sm" variant="outline" className="h-6 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2" onClick={() => handleOrderStatus(order.id, 'POSLANO')} title="Označi, da si naročilo poslal sam (aplikacija ne pošilja dokumentov)">
+                          <Button type="button" size="sm" variant="outline" className="h-6 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40" onClick={() => handleOrderStatus(order.id, 'POSLANO')} title="Označi, da si naročilo poslal sam (aplikacija ne pošilja dokumentov)">
                             Označi kot poslano
                           </Button>
                         )}
                         {order.status === 'POSLANO' && lahkoOdobri && (
-                          <Button type="button" size="sm" variant="outline" className="h-6 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2" onClick={() => handleOrderStatus(order.id, 'POTRJENO')}>
+                          <Button type="button" size="sm" variant="outline" className="h-6 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40" onClick={() => handleOrderStatus(order.id, 'POTRJENO')}>
                             Potrdi
                           </Button>
                         )}
                         {order.status === 'POTRJENO' && lahkoPrejme && (
-                          <Button type="button" size="sm" variant="outline" className="h-6 text-2xs bg-green-50 dark:bg-green-950/40 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2" onClick={() => { if (!lahkoPrejme) return; setReceiveDialogOrderId(order.id); }} title="Prejem v zalogo — potrditev s prikazom postavk">
+                          <Button type="button" size="sm" variant="outline" className="h-6 text-2xs bg-green-50 dark:bg-green-950/40 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40" onClick={() => { if (!lahkoPrejme) return; setReceiveDialogOrderId(order.id); }} title="Prejem v zalogo — potrditev s prikazom postavk">
                             <CheckCircle2 aria-hidden="true" className="h-3 w-3 mr-1" /> Dobljeno (v zalogo)
                           </Button>
                         )}
@@ -1823,7 +1823,7 @@ export function MaterialIntelligenceTab({
                             potrditveni dialog (družina R198/R207) — odpre se,
                             PATCH gre šele prek 'Potrdi preklic'. */}
                         {(order.status === 'OSNUTEK' || order.status === 'POSLANO' || order.status === 'POTRJENO') && lahkoOdobri && (
-                          <Button type="button" size="sm" variant="outline" className="h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2" onClick={() => { if (!lahkoOdobri) return; setCancelDialogOrderId(order.id); }} title="Preklic naročila — KONČNO stanje, ni razveljavljivo (dobavitelja obvestiš sam)">
+                          <Button type="button" size="sm" variant="outline" className="h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40" onClick={() => { if (!lahkoOdobri) return; setCancelDialogOrderId(order.id); }} title="Preklic naročila — KONČNO stanje, ni razveljavljivo (dobavitelja obvestiš sam)">
                             <XCircle className="h-3 w-3" aria-hidden="true" />
                             Prekliči
                           </Button>
@@ -1912,7 +1912,7 @@ export function MaterialIntelligenceTab({
               disabled={loading}
               aria-label="Izvozi dobavitelje kot CSV"
               title="Izvozi vse dobavitelje kot CSV za Excel"
-              className="h-8 text-xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+              className="h-8 text-xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
             >
               <Download aria-hidden="true" className="h-3.5 w-3.5 mr-1 text-roksal-amber" /> CSV
             </Button>
@@ -1924,7 +1924,7 @@ export function MaterialIntelligenceTab({
               disabled={loading}
               aria-label="Izvozi dobavitelje kot PDF"
               title="Dobavitelji kot pravi PDF — arhivski pregled kontaktnih in sodelovalnih podatkov"
-              className="h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+              className="h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
             >
               <FileText className="h-3 w-3" aria-hidden="true" />
               PDF
@@ -2038,7 +2038,7 @@ export function MaterialIntelligenceTab({
                     disabled={loading || cenikVTeku}
                     aria-label="Izvozi cenik materiala kot CSV"
                     title="Izvozi vse trenutno veljavne nabavne cene kot CSV za Excel"
-                    className="h-8 text-xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+                    className="h-8 text-xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                   >
                     <Download aria-hidden="true" className="h-3.5 w-3.5 mr-1 text-roksal-amber" /> CSV
                   </Button>
@@ -2050,7 +2050,7 @@ export function MaterialIntelligenceTab({
                     disabled={loading || cenikVTeku}
                     aria-label="Izvozi cenik materiala kot PDF"
                     title="Cenik materiala kot pravi PDF — pregled veljavnih nabavnih cen po dobaviteljih"
-                    className="h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+                    className="h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                   >
                     <FileText className="h-3 w-3" aria-hidden="true" />
                     PDF
@@ -2069,7 +2069,7 @@ export function MaterialIntelligenceTab({
                     disabled={loading || primerjalniVTeku}
                     aria-label="Izvozi primerjalni cenik kot CSV"
                     title="Izvozi najnižjo veljavno ceno per artikel kot CSV za Excel"
-                    className="h-8 text-xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+                    className="h-8 text-xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                   >
                     <Download aria-hidden="true" className="h-3.5 w-3.5 mr-1 text-roksal-amber" /> CSV
                   </Button>
@@ -2081,7 +2081,7 @@ export function MaterialIntelligenceTab({
                     disabled={loading || primerjalniVTeku}
                     aria-label="Izvozi primerjalni cenik kot PDF"
                     title="Primerjalni cenik kot pravi PDF — najnižja veljavna cena per artikel z dobaviteljem in razponom v %"
-                    className="h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+                    className="h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                   >
                     <FileText className="h-3 w-3" aria-hidden="true" />
                     PDF
@@ -2108,7 +2108,7 @@ export function MaterialIntelligenceTab({
                     aria-label="Izvozi pozicijo dobaviteljev kot CSV"
                     title="Pozicija dobaviteljev kot CSV — isti pregled, vrstni red in odstotki kot PDF (prazen seznam → iskren toast, nikoli prazna datoteka). PDF = tisk za pogajanja, CSV = Excel za filtriranje po dobavitelju"
                     data-testid="pozicija-dobaviteljev-csv-pill"
-                    className="h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+                    className="h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                   >
                     <FileSpreadsheet className="h-3 w-3" aria-hidden="true" />
                     CSV
@@ -2121,7 +2121,7 @@ export function MaterialIntelligenceTab({
                     disabled={loading || pozicijaVTeku}
                     aria-label="Izvozi pozicijo dobaviteljev kot PDF"
                     title="Pozicija dobaviteljev kot pravi PDF — kdo je najcenejši in kje je prostor za pogajanja"
-                    className="h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+                    className="h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                   >
                     <FileText className="h-3 w-3" aria-hidden="true" />
                     PDF
@@ -2195,7 +2195,7 @@ export function MaterialIntelligenceTab({
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setSupplierDialogOpen(false)}>Prekliči</Button>
             {/* R352 — val 35 a11y pariteta (kanon R346): vidno besedilo "Shrani" NE razlaga CILJA — aria-label + title + izrecen ring navy/40 V ISTEM commitu. */}
-            <Button type="button" onClick={handleCreateSupplier} aria-label="Shrani novega dobavitelja" title="Shrani novega dobavitelja v register dobaviteljev" className="w-full bg-roksal-navy text-white press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2">Shrani</Button>
+            <Button type="button" onClick={handleCreateSupplier} aria-label="Shrani novega dobavitelja" title="Shrani novega dobavitelja v register dobaviteljev" className="w-full bg-roksal-navy text-white press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40">Shrani</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -2272,7 +2272,7 @@ export function MaterialIntelligenceTab({
               size="sm"
               onClick={() => setReceiveDialogOrderId(null)}
               disabled={receiveSending}
-              className="focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+              className="focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
             >
               Prekliči
             </Button>
@@ -2337,7 +2337,7 @@ export function MaterialIntelligenceTab({
               size="sm"
               onClick={() => setCancelDialogOrderId(null)}
               disabled={cancelSending}
-              className="focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+              className="focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
             >
               Prekliči
             </Button>

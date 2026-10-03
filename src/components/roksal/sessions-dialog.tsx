@@ -258,7 +258,7 @@ export function SessionsDialog({ open, onOpenChange }: SessionsDialogProps) {
               variant="outline"
               size="sm"
               onClick={() => void load()}
-              className="h-8 shrink-0 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              className="h-8 shrink-0 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
             >
               Znova
             </Button>
@@ -360,7 +360,7 @@ export function SessionsDialog({ open, onOpenChange }: SessionsDialogProps) {
             <Button
               variant="outline"
               onClick={() => onOpenChange(false)}
-              className="press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              className="press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
             >
               Zapri
             </Button>

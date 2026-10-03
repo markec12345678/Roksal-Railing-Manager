@@ -449,7 +449,7 @@ export function DocumentsTab() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7 focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                          className="h-7 w-7 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
                           aria-label={`Prenesi PDF: ${docTypeLabels[doc.tipDokumenta] || doc.tipDokumenta}${verzija ? `, verzija ${verzija}` : ''}`}
                           onClick={(e) => {
                             e.stopPropagation()
@@ -577,7 +577,7 @@ export function DocumentsTab() {
                   <Button
                     variant="outline"
                     onClick={() => window.open(fileUrlOf(previewDoc) as string, '_blank', 'noopener')}
-                    className="gap-1.5 focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                    className="gap-1.5 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                     aria-label="Prenesi PDF datoteko dokumenta"
                   >
                     <Download aria-hidden="true" className="h-3.5 w-3.5" />

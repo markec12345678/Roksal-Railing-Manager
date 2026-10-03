@@ -238,7 +238,7 @@ describe('r317 STIL val 8 — izvozna družina: focus-visible ring STRAŽAR', ()
   it('R317 harmonizirana vrstica: site-survey PDF gumb ima družinski ring (regresijski pin — nazaj = fail)', () => {
     const raw = readFileSync(join(ROKSAL_DIR, 'site-survey-tab.tsx'), 'utf8')
     expect(raw).toContain(
-      'hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:outline-none',
+      'hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40 focus-visible:outline-none',
     )
   })
 })

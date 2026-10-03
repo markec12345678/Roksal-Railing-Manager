@@ -2169,7 +2169,7 @@ function AnnotationEditor({
                 </Button>
               )}
               <CollapsibleTrigger asChild>
-                <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0 focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
                   aria-label={calibrationExpanded ? 'Skrij hitre reference umeritve' : 'Prikaži hitre reference umeritve'}
                   aria-expanded={calibrationExpanded}
                 >

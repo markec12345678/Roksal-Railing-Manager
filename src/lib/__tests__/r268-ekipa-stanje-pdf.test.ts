@@ -287,7 +287,7 @@ describe('R268 — komponenta (team-tab) — pill, mini-vrstica, handler, legend
     expect(pil).not.toContain('disabled={users.length')
     // press-scale = pariteta žetona z družino (className je pred onClick v JSX —
     // ločena preverba na točno tisto vrsto, ki jo ima SAMO PDF gumb).
-    expect(komponenta).toContain('className="h-8 px-2.5 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"')
+    expect(komponenta).toContain('className="h-8 px-2.5 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"') // [PIN SHIFT R382 val 61 / EVOLVED]
     expect(komponenta).toContain('<FileDown className="mr-1 h-3.5 w-3.5" aria-hidden="true"')
   })
 

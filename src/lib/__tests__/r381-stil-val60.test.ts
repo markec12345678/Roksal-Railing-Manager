@@ -92,7 +92,10 @@ describe('R381 stil val 60 — nativni prehod-paritetni zaključek (11 × INS, v
   it('(D) FROZEN IZJEMA #2: besedilna polja ostajajo bajtno nespremenjena — natančni podnizi po vrsti (inventory Input ×1+×3, logistics native input ×1+×3, textarea ×1, catalog Input ×1)', () => {
     const INV = R('roksal/inventory-tab.tsx')
     expect(pod(INV, 'tabular-nums focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2')).toBe(1)
-    expect(pod(INV, 'className="focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"')).toBe(3)
+    // [PIN SHIFT R382 val 61 / EVOLVED: L2121 + L2272 = <Button variant="outline"> (border iz baze) —
+    // val 61 INS ' focus-visible:border-roksal-navy/40' ZA O2; L2226 = <Input> ostaja FROZEN izjema #2.]
+    expect(pod(INV, 'className="focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"')).toBe(1)
+    expect(pod(INV, 'className="focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"')).toBe(2) // [PIN SHIFT R382 val 61: dark polovica]
     const LOG = R('roksal/logistics-tab.tsx')
     expect(pod(LOG, 'mt-0.5 h-3.5 w-3.5 accent-roksal-navy focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2')).toBe(3)
     expect(pod(LOG, 'mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2')).toBe(1)

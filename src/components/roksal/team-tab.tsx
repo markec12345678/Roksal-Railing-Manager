@@ -494,7 +494,7 @@ export function TeamTab() {
               variant="outline"
               onClick={() => void handleStanjePdf()}
               disabled={pdfVteku}
-              className="h-8 px-2.5 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              className="h-8 px-2.5 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
               aria-label="Izvozi pregled stanja ekipe kot PDF"
               title="Pregled stanja ekipe kot pravi PDF — statusi računov, vloge, življenjski cikl (celotna ekipa)"
             >
@@ -512,7 +512,7 @@ export function TeamTab() {
               size="sm"
               variant="outline"
               onClick={handleExportCsv}
-              className="h-8 px-2.5 focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              className="h-8 px-2.5 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
               aria-label={`Izvozi CSV (${users.length} ${users.length === 1 ? 'član' : 'članov'})`}
               title="Izvozi seznam ekipe v CSV za Excel/nadaljnjo obdelavo"
             >
@@ -520,7 +520,7 @@ export function TeamTab() {
               Izvozi CSV
             </Button>
           )}
-          <Button type="button" size="sm" variant="ghost" onClick={() => void load()} className="h-8 px-2.5 focus-visible:ring-2 focus-visible:ring-roksal-navy/40" aria-label="Osveži seznam ekipe" aria-busy={loading}>
+          <Button type="button" size="sm" variant="ghost" onClick={() => void load()} className="h-8 px-2.5 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2" aria-label="Osveži seznam ekipe" aria-busy={loading}>
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
           </Button>
           {canManage && (
@@ -570,7 +570,7 @@ export function TeamTab() {
             size="sm"
             variant="outline"
             onClick={() => void load()}
-            className="shrink-0 transition-colors hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+            className="shrink-0 transition-colors hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
             aria-label="Ponovno naloži seznam ekipe"
           >
             Poskusi znova
@@ -913,7 +913,7 @@ export function TeamTab() {
               <div className="flex-1 min-w-0 truncate rounded-md border border-border bg-secondary/40 px-2.5 py-2 font-mono text-[11px] text-roksal-ink">
                 {typeof window !== 'undefined' ? `${window.location.origin}${oneTime.path}` : oneTime.path}
               </div>
-              <Button type="button" size="sm" variant="outline" onClick={() => void copyText(`${window.location.origin}${oneTime.path}`)} className="h-9 shrink-0 focus-visible:ring-2 focus-visible:ring-roksal-navy/40" aria-label="Kopiraj aktivacijsko povezavo">
+              <Button type="button" size="sm" variant="outline" onClick={() => void copyText(`${window.location.origin}${oneTime.path}`)} className="h-9 shrink-0 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40" aria-label="Kopiraj aktivacijsko povezavo">
                 <Copy className={`h-3.5 w-3.5 ${copied ? 'text-roksal-green' : ''}`} aria-hidden="true" />
               </Button>
             </div>
@@ -923,7 +923,7 @@ export function TeamTab() {
               <div className="flex-1 rounded-md border border-roksal-amber/40 bg-roksal-amber/10 px-2.5 py-2 font-mono text-sm font-bold tracking-wider text-roksal-ink">
                 {oneTime.password}
               </div>
-              <Button type="button" size="sm" variant="outline" onClick={() => void copyText(oneTime.password)} className="h-9 shrink-0 focus-visible:ring-2 focus-visible:ring-roksal-navy/40" aria-label="Kopiraj začasno geslo">
+              <Button type="button" size="sm" variant="outline" onClick={() => void copyText(oneTime.password)} className="h-9 shrink-0 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40" aria-label="Kopiraj začasno geslo">
                 <Copy className={`h-3.5 w-3.5 ${copied ? 'text-roksal-green' : ''}`} aria-hidden="true" />
               </Button>
             </div>

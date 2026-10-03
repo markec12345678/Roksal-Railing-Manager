@@ -90,7 +90,8 @@ describe('r366 STIL val 49 — ring PARITETA material-intelligence družine', ()
 
   it('(C) stale pini shiftani V ISTI rundi: r242 novi offset-2 pini prisotni + stari offset-1 odsoten; r333 PAR_ZETON_MATERIAL shiftan; r207 chipCls pin shiftan', () => {
     // r242 (3 quote pina — "minsko polje" razminirano)
-    expect(R242).toContain('"h-8 text-xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"')
+    // [PIN SHIFT R382 val 61 / EVOLVED: r242 pin nosi FB+dark]
+    expect(R242).toContain('"h-8 text-xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"')
     expect(R242).not.toContain('ring-roksal-navy/40 focus-visible:ring-offset-1"')
     // r333 (era žeton val 20 — shiftan z iskrenim komentarjem)
     expect(R333).toContain("const PAR_ZETON_MATERIAL = 'h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2'")

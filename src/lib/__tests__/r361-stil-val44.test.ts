@@ -32,7 +32,8 @@ describe('R361 — STIL val 44: ring pariteta crm-tab družine', () => {
 
   it('(B) CSV pill: ml-auto className + offset-2 (NOV needle ×1) + zamrznjena aria/title (era-kontrakt)', () => {
     expect(CRM).toContain(
-      'className="ml-auto h-7 shrink-0 gap-1.5 text-[11px] focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"'
+      // [PIN SHIFT R382 val 61 / EVOLVED: FB+dark na crm CSV pill vrstici]
+      'className="ml-auto h-7 shrink-0 gap-1.5 text-[11px] focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"'
     )
     // zamrznjeni nizi — needleji iz prejšnjih val ere ostanejo bajtno identični:
     expect(CRM).toContain('Izvozi CSV (')
@@ -57,7 +58,8 @@ describe('R361 — STIL val 44: ring pariteta crm-tab družine', () => {
 
   it('(D) opomnik PDF: ring-offset-1 → ring-offset-2 (NOV needle ×1); ring-offset-1 IZKORENINJEN iz datoteke', () => {
     expect(CRM).toContain(
-      'className="h-8 gap-1.5 px-2.5 text-[11px] font-medium press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"'
+      // [PIN SHIFT R382 val 61 / EVOLVED: FB+dark na crm opomnik PDF vrstici]
+      'className="h-8 gap-1.5 px-2.5 text-[11px] font-medium press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"'
     )
     expect(CRM).not.toContain('ring-offset-1')
     expect(CRM).toContain('aria-label="Pripravi opomnik kot PDF"')
@@ -118,7 +120,8 @@ describe('R361 — STIL val 44: ring pariteta crm-tab družine', () => {
   it('(K) era-diskriminatorji val 44: ×1/×1/×2 v crm-tab (register r361.tsv sovinizacija; LEKCIJA R361: statičen segment brez interpolacijske meje)', () => {
     const stevec = (needle: string) =>
       (CRM.match(new RegExp(needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) ?? []).length
-    expect(stevec('ml-auto h-7 shrink-0 gap-1.5 text-[11px] focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2')).toBe(1)
+    // [PIN SHIFT R382 val 61 / EVOLVED]
+    expect(stevec('ml-auto h-7 shrink-0 gap-1.5 text-[11px] focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40')).toBe(1)
     expect(stevec('font-medium press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2')).toBe(1)
     // N3' pokriva ×2 mesti (status filter bratje + CSV pill) — multiplicita
     // iskreno dokumentirana v register glavi (precedens r349 '×2 mesti');

@@ -155,8 +155,8 @@ describe('R242 — [Mandatory] stil: press-scale pariteta ISTIH akcij čez konte
     // stale pini shiftani val 49 (R366, precedens R334/R355–R365): ring-offset
     // kanon (val 43–48 družinski standard — vsi navy/40 nosijo ring-offset-2;
     // material pariteta 26/26), tokeni ostajajo bajtno isti razen offseta.
-    expect(uiSrc).toContain('"h-8 text-xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"')
-    expect(uiSrc).toContain('"h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"')
+    expect(uiSrc).toContain('"h-8 text-xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"')
+    expect(uiSrc).toContain('"h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"')
     expect(uiSrc).toContain('"w-full bg-roksal-navy text-white shadow-sm press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"')
   })
 
@@ -176,7 +176,7 @@ describe('R242 — [Mandatory] stil: press-scale pariteta ISTIH akcij čez konte
 
   it('inventory Osnutek dialog footer: CSV/PDF/Shrani = ISTI jezik kot header pilule sorojenci', () => {
     // dialog footer CSV + PDF (gap-1.5) + Shrani osnutek primarni
-    expect(invSrc).toContain('"gap-1.5 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 disabled:opacity-50"')
+    expect(invSrc).toContain('"gap-1.5 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40 disabled:opacity-50"')
     expect(invSrc).toContain('"bg-roksal-navy hover:bg-roksal-navy/90 text-white shadow-sm transition-all press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 disabled:opacity-50"')
   })
 

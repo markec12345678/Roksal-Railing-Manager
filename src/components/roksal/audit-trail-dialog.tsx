@@ -216,7 +216,7 @@ export function AuditTrailDialog({
               variant="outline"
               onClick={handleExportCsv}
               disabled={!entries || entries.length === 0 || exporting || loading || error !== null}
-              className="ml-auto h-7 shrink-0 gap-1.5 text-[11px] focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              className="ml-auto h-7 shrink-0 gap-1.5 text-[11px] focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
               aria-label={`Izvozi prikazani seznam revizijskih vpisov v CSV (${revizijaLabel(entries?.length ?? 0)})`}
               title="Izvozi prikazani seznam revizijskih vpisov v CSV"
             >
@@ -246,7 +246,7 @@ export function AuditTrailDialog({
                   type="button"
                   onClick={() => setFilter(key)}
                   aria-pressed={aktiv}
-                  className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-2xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 ${
+                  className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-2xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40 ${
                     aktiv ? razred : 'bg-muted text-muted-foreground border-border opacity-70 hover:opacity-100'
                   }`}
                 >

@@ -107,7 +107,7 @@ export function RoksalCatalog() {
                 size="sm"
                 aria-pressed={kategorija === k}
                 onClick={() => setKategorija(k)}
-                className={`h-7 shrink-0 text-[11px] focus-visible:ring-2 focus-visible:ring-roksal-navy/40 ${kategorija === k ? 'bg-roksal-navy text-white' : ''}`}
+                className={`h-7 shrink-0 text-[11px] focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 ${kategorija === k ? 'bg-roksal-navy text-white' : ''}`}
               >
                 {k}
               </Button>

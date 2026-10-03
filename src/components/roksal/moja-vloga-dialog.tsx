@@ -118,7 +118,7 @@ export function MojaVlogaDialog({ open, onOpenChange }: MojaVlogaDialogProps) {
             <Button
               variant="outline"
               size="sm"
-              className="ml-3 h-7 px-2 text-xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+              className="ml-3 h-7 px-2 text-xs focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
               onClick={() => void nalozi()}
               disabled={loading}
             >
@@ -192,7 +192,7 @@ export function MojaVlogaDialog({ open, onOpenChange }: MojaVlogaDialogProps) {
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
-            className="focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+            className="focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
           >
             Zapri
           </Button>

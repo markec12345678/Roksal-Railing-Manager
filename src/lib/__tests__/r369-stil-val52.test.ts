@@ -112,7 +112,7 @@ describe('r369 stil val 52 — navy+ink PARIŠKA pariteta + e2e-lib dedup 9. val
     const vse = VIRI.map(([, s]) => s).join('')
     // N1: 10 kontiguirnih pariških vrstic (termini ×6, bottom-nav ×2,
     // notification L881 ×1, quick-actions ×1) — offset MED svetlo in temno
-    expect(pod(vse, 'focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 dark:focus-visible:ring-roksal-ink/40')).toBe(10)
+    expect(pod(vse, 'focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 dark:focus-visible:ring-roksal-ink/40')).toBe(7) // [PIN SHIFT R382 val 61: 3 bordered vrstice nosi FB+dark MED O2 in dark:ring]
     // N2: notification L855 split vrstica (offset pred disabled:)
     expect(pod(vse, 'hover:text-roksal-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 disabled:cursor-not-allowed')).toBe(1)
     // N3: notification L940 split vrstica (offset pred active:)
@@ -164,7 +164,7 @@ describe('r369 stil val 52 — navy+ink PARIŠKA pariteta + e2e-lib dedup 9. val
     expect(bottomNav.match(/dark:focus-visible:ring-roksal-ink\/40/g)?.length).toBe(2)
     // r268-ekipa-stanje-pdf.test.ts:290 — team-tab pin (izven tarče, ŽIV)
     const teamTab = R('src/components/roksal/team-tab.tsx')
-    expect(teamTab).toContain('className="h-8 px-2.5 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40"')
+    expect(teamTab).toContain('className="h-8 px-2.5 press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"') // [PIN SHIFT R382 val 61 / EVOLVED: O2+FB+dark na team pill]
     // r361-stil-val44 (E) — crm-tab pariteta 13/13 (izven tarče, ŽIV)
     const crm = R('src/components/roksal/crm-tab.tsx')
     expect(pod(crm, 'focus-visible:ring-roksal-navy/40')).toBe(13)

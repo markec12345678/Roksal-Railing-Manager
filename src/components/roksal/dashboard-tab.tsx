@@ -1827,7 +1827,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                 size="sm"
                 variant="outline"
                 onClick={() => { setProjectsError(null); void fetchProjects() }}
-                className="shrink-0 transition-colors hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+                className="shrink-0 transition-colors hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                 aria-label="Ponovno naloži projekte"
               >
                 Poskusi znova
@@ -2357,7 +2357,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                   type="button"
                   variant="outline"
                   size="sm"
- className="mt-1 w-full border-roksal-navy/20 dark:border-roksal-ink/20 text-roksal-ink hover:bg-roksal-navy/5 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+ className="mt-1 w-full border-roksal-navy/20 dark:border-roksal-ink/20 text-roksal-ink hover:bg-roksal-navy/5 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                   aria-label="Odpri revizijsko sled projekta"
                   onClick={() => setAuditOpen(true)}
                 >
@@ -2693,7 +2693,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                               size="sm"
                               variant="outline"
                               onClick={copyPortalUrl}
-                              className="h-8 px-2.5 shrink-0 focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                              className="h-8 px-2.5 shrink-0 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                               aria-label="Kopiraj povezavo portala"
                             >
                               <Copy className="h-3.5 w-3.5" aria-hidden="true" />
@@ -3012,7 +3012,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                               size="sm"
                               variant="outline"
                               onClick={copyMeasureUrl}
-                              className="h-8 px-2.5 shrink-0 focus-visible:ring-2 focus-visible:ring-roksal-navy/40"
+                              className="h-8 px-2.5 shrink-0 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                               aria-label="Kopiraj merilno povezavo"
                             >
                               <Copy className="h-3.5 w-3.5" aria-hidden="true" />
