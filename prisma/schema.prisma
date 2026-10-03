@@ -970,6 +970,7 @@ model Supplier {
   orders         MaterialOrder[]
   lots           InventoryLot[]
   bomLines       BOMLine[] // R376 §6 — BOM vrstice z vezavo na dobavitelja
+  productMappings ProductSupplierMapping[] // R390 §14 — preslikave kataloških produktov
 }
 
 // Cena materiala pri posameznem dobavitelju (zgodovina cen)
@@ -1968,4 +1969,234 @@ model InstallationRecordLine {
 
   @@index([installationRecordId])
   @@index([bomLineId])
+}
+
+// ============================================
+// 45. R390 (issue #13, korak R170 iz §14) — PRODUKTNI KATALOG:
+//     APLIKACIJSKI KONTEKST (Family → Product → Variant →
+//     Application → Compatibility → Fixing/Accessory)
+// ============================================
+
+/// R390 (§14): verzija kataloga — isti statusni stroj kot PriceBookVersion
+/// R373/R374 (DRAFT → ACTIVE → RETIRED; aktivacija TRANSAKCIJSKO upokoji
+/// prejšnjo ACTIVE — dve ACTIVE hkrati = pokvarjeno stanje). Veljavnostni
+/// intervali so §14 "effective dates" na nivoju verzije kataloga.
+model ProductCatalogVersion {
+  id           String    @id @default(cuid())
+  /// Zaporedna številka verzije kataloga (1 = seed iz data/roksal-catalog.json).
+  verzija      Int       @unique
+  /// DRAFT | ACTIVE | RETIRED (CHECK v migraciji; stroj v catalog-store).
+  status       String
+  veljavnostOd DateTime
+  /// NULL = velja do preklica (odprt interval — §8 NE izmišljamo konca).
+  veljavnostDo DateTime?
+  opomba       String?
+  /// Mehka revizijska referenca na Profile (vzorec R374/R378 — brez FK).
+  createdById  String?
+  approvedById String?
+  createdAt    DateTime  @default(now())
+  approvedAt   DateTime?
+
+  products Product[]
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+/// R390 (§14): ProductFamily — vrh hierarhije kataloga (npr. WoodCore).
+/// Barvna paleta + splošna pravila montaže živijo TU (družinska resnica),
+/// NE v posameznih UI-jih (§14: "ne hardcodirati teh pravil v več UI-jih").
+model ProductFamily {
+  id                 String   @id @default(cuid())
+  /// EXACT kanonska šifra družine (npr. 'woodcore') — kanon §5 brez fuzzy.
+  sifra              String   @unique
+  naziv              String
+  material           String
+  garancija          String?
+  uradnaStran        String?
+  /// JSON barvne palete [{id,name,nameSl,approxHex|null,evidence}] — zod v catalog-domain.
+  barvnaPaletaJson   String
+  /// JSON splošnih pravil montaže (string[]) — §14 katalog nadomešča hardcode.
+  splosnaPravilaJson String
+  /// pending | granted | rejected (CHECK) — pariteta SDK RightsStatus.
+  pravice            String
+  aktivna            Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  products    Product[]
+  accessories ProductAccessory[]
+}
+
+/// R390 (§14): Product — profil v aplikacijskem kontekstu. Dimenzije/
+/// orientacijska pravila vijačenja/razmaki so PODATEK vrstice (EXACT iz
+/// data/roksal-catalog.json — seed r390), NE logika UI-ja.
+model Product {
+  id                       String   @id @default(cuid())
+  familyId                 String
+  catalogVersionId         String
+  /// EXACT kanonski id iz kataloga (npr. 'woodcore-romb-67') — kanon §5.
+  sifra                    String   @unique
+  naziv                    String
+  /// precna | pokoncna | precna+pokoncna (CHECK).
+  kategorija               String
+  faceWidthMm              Int
+  thicknessMm              Decimal  @db.Decimal(8, 2)
+  /// JSON tovarniških dolžin [5800, ...] (primitivni tip ne sme biti lista).
+  standardLengthsJson      String
+  fixingMetoda             String
+  /// §14 "screw constraints" — vidnost vijakov je PODATEK kataloga.
+  screwsVisible            Boolean
+  /// §14 "internal reinforcement" — alu cev v sredini profila (dokumentirana).
+  interniOkrepitev         Boolean  @default(false)
+  /// Citat vira okrepitve — NULL = ni dokumentirana (§8 NE izmišljamo).
+  okrepitevOpis            String?
+  /// §14 "maximum spacing" po orientaciji (mm) — NULL = NI dokumentiran
+  /// (npr. KUBO pokončno) → zahteva eksplicitne pozicije (SDK kanon S+8.1).
+  maxPostSpacingH          Int?
+  maxPostSpacingV          Int?
+  maxRailSpacingV          Int?
+  /// JSON kvalifikatorjev razmaka [{key,maxSpacingMm}] — NE-baza/h/v ključi
+  /// iz maxPostSpacingMm zapisa kataloga (horizontalWithMidConnection …).
+  razmakKvalifikatorjiJson String
+  gapMinMm                 Int
+  gapMaxMm                 Int
+  /// JSON ročaja (handle iz kataloga — zod v catalog-domain).
+  rocajJson                String
+  /// JSON posebnosti (specialFeatures iz kataloga — sledljivost vira).
+  posebnostiJson           String
+  /// pending | granted | rejected (CHECK) — pariteta SDK RightsStatus.
+  pravice                  String
+  /// JSON virov (sourceUrls iz kataloga — §14 "rights/source").
+  viriJson                 String
+  aktivna                  Boolean  @default(true)
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  family           ProductFamily            @relation(fields: [familyId], references: [id], onDelete: Restrict)
+  catalogVersion   ProductCatalogVersion    @relation(fields: [catalogVersionId], references: [id], onDelete: Restrict)
+  applications     ProductApplication[]
+  variants         ProductVariant[]
+  compatSource     ProductCompatibility[]   @relation("ProductCompatSource")
+  compatTarget     ProductCompatibility[]   @relation("ProductCompatTarget")
+  supplierMappings ProductSupplierMapping[]
+
+  @@index([familyId])
+  @@index([catalogVersionId])
+  @@index([kategorija])
+}
+
+/// R390 (§14): ProductApplication — EKSPPLICITNI aplikacijski kontekst.
+/// §14 nabor EXACT: HORIZONTALNA_OGRAJA | POKONCNA_OGRAJA | TERASA |
+/// PREDELNA_STENA | FASADA | STROP. ODSOTNOST vrstice = aplikacija NI
+/// dokumentirana (fail-closed — npr. KUBO uradno SAMO fasada, balkonska
+/// ograja odkrito NE dokumentirana). maxRazmakMm = razmak v kontekstu
+/// aplikacije (mm); NULL = neznano (§8).
+model ProductApplication {
+  id          String   @id @default(cuid())
+  productId   String
+  aplikacija  String
+  /// horizontal | vertical (CHECK).
+  orientacija String
+  maxRazmakMm Int?
+  /// Citat vira — katera stran/pravilo kataloga dokumentira aplikacijo.
+  vir         String
+  createdAt   DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, aplikacija, orientacija])
+  @@index([aplikacija])
+  @@index([orientacija])
+}
+
+/// R390 (§14): ProductVariant — barvna/površinska izvedba produkta.
+/// Seed r390 je PRAZEN (§8): colorsCount v katalogu je ŠTEVEC (4–8), ne
+/// enumeracija — katere barve veljajo za katere profile katalog NE imenuje,
+/// zato vrstic NE izmišljamo; vpiše jih pisarca prek API-ja.
+model ProductVariant {
+  id        String   @id @default(cuid())
+  productId String
+  /// EXACT šifra variante — kanon §5 brez fuzzy.
+  sifra     String   @unique
+  naziv     String
+  /// Id barve iz družinske palete (EXACT) — NULL = barvna izvedba ni vezana.
+  barvaId   String?
+  /// approxHex iz palete — NULL = uradni hex NE obstaja (SDK kanon).
+  barvaHex  String?
+  povrsina  String?
+  aktivna   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+}
+
+/// R390 (§14): ProductAccessory — Fixing/Accessory (čepi, letve, pokrovčki,
+/// ročaj, steber). Šifra = EXACT id dodatka iz kataloga.
+model ProductAccessory {
+  id                String   @id @default(cuid())
+  sifra             String   @unique
+  familyId          String
+  naziv             String
+  /// JSON dimenzije [92,45,5800] — NULL = ni dokumentirano (§8).
+  dimenzijeJson     String?
+  /// JSON notranjih mer [55,30] — NULL = ni dokumentirano (§8).
+  notranjeMereJson  String?
+  opis              String?
+  aktivna           Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  family        ProductFamily         @relation(fields: [familyId], references: [id], onDelete: Restrict)
+  compatTarget  ProductCompatibility[] @relation("AccessoryCompatTarget")
+
+  @@index([familyId])
+}
+
+/// R390 (§14): ProductCompatibility — kompatibilne komponente. Cilj je
+/// PRODUKT ali DODATEK (CHECK XOR — natanko en). Sejanje r390 pokriva SAMO
+/// v katalogu dokumentirane para (opis citira vir).
+model ProductCompatibility {
+  id                    String   @id @default(cuid())
+  productId             String
+  kompatibilenProductId String?
+  kompatibilenDodatekId String?
+  /// Citat vira kompatibilnosti (katalog besedilo) — sledljivost.
+  opis                  String?
+  createdAt             DateTime @default(now())
+
+  product             Product              @relation("ProductCompatSource", fields: [productId], references: [id], onDelete: Cascade)
+  kompatibilenProduct Product?             @relation("ProductCompatTarget", fields: [kompatibilenProductId], references: [id], onDelete: Restrict)
+  kompatibilenDodatek ProductAccessory?    @relation("AccessoryCompatTarget", fields: [kompatibilenDodatekId], references: [id], onDelete: Restrict)
+
+  @@index([productId])
+  @@index([kompatibilenProductId])
+  @@index([kompatibilenDodatekId])
+}
+
+/// R390 (§14): ProductSupplierMapping — preslikava produkta na dobavitelja
+/// z veljavnostnim intervalom (§14 "supplier mapping" + "effective dates").
+/// Prekrivanje intervalov istega (produkt, dobavitelj) → 409 v store-plasti.
+/// Seed PRAZEN (§8): katalog ne dokumentira dobaviteljskih preslikav.
+model ProductSupplierMapping {
+  id           String   @id @default(cuid())
+  productId    String
+  supplierId   String
+  veljavnostOd DateTime
+  /// NULL = velja do preklica (odprt interval).
+  veljavnostDo DateTime?
+  opomba       String?
+  /// Mehka revizijska referenca na Profile (vzorec R374/R378 — brez FK).
+  createdById  String?
+  createdAt    DateTime @default(now())
+
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+
+  @@unique([productId, supplierId, veljavnostOd])
+  @@index([productId])
+  @@index([supplierId])
 }

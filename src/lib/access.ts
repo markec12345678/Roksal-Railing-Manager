@@ -92,6 +92,15 @@ export function canManageCustomers(principal: AuthContext): boolean {
   return hasPermission(principal, 'customers.write')
 }
 
+/**
+ * Katalog produktov (R390 §14): pisanje = §10 catalog.manage (vodstvo —
+ * ADMIN/VODJA; matrika v permissions-core). Branje kataloga je authenticated
+ * (teren potrebuje aplikacijski kontekst — enak prag kot GET /api/customers).
+ */
+export function canManageCatalog(principal: AuthContext): boolean {
+  return hasPermission(principal, 'catalog.manage')
+}
+
 export function canDeleteCustomer(principal: AuthContext): boolean {
   // Brisanje stranke ni v katalogu dovoljenj (§10 ni customers.delete) —
   // vodstvena pravica: customers.write + manager vloga (ADMIN/VODJA).

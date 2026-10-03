@@ -45,10 +45,10 @@ function zberiRute(): { pot: string; vsebina: string }[] {
 const byId = (krš: MejaKršitev[], id: string) => krš.filter((k) => k.preverba === id)
 
 describe('R308 — REALNIM drevo: stena ura ŽIVO (0 kršitev na vseh 5 preverbah)', () => {
-  it('vseh 99 route datotek prebranih in pregledanih — obseg pregleda NI tiho skrčen (R326: + zgodovina cen; PIN SHIFT R374: 82→85 — +price-book, +quotes, +quotes/[id]; PIN SHIFT R376: 85→88 — +bom, +bom/[id], +bom/procurement [kanonični BOM #13 R166]; PIN SHIFT R378: 88→92 — +production, +production/[id], +installation-records, +installation-records/[id] [produkcija §10 + as-installed §9 #13 R167]; PIN SHIFT R382: 92→99 — +leads, +leads/[id], +opportunities, +opportunities/[id], +customers/[id], +customer-addresses, +customer-addresses/[id] [CRM lijak §13 #13 R169])', () => {
+  it('vseh 107 route datotek prebranih in pregledanih — obseg pregleda NI tiho skrčen (R326: + zgodovina cen; PIN SHIFT R374: 82→85 — +price-book, +quotes, +quotes/[id]; PIN SHIFT R376: 85→88 — +bom, +bom/[id], +bom/procurement [kanonični BOM #13 R166]; PIN SHIFT R378: 88→92 — +production, +production/[id], +installation-records, +installation-records/[id] [produkcija §10 + as-installed §9 #13 R167]; PIN SHIFT R382: 92→99 — +leads, +leads/[id], +opportunities, +opportunities/[id], +customers/[id], +customer-addresses, +customer-addresses/[id] [CRM lijak §13 #13 R169]; PIN SHIFT R390: 99→107 — +catalog, +catalog/products/[id], +catalog/products/[id]/applications, +catalog/products/[id]/variants, +catalog/versions, +catalog/versions/[id], +catalog/compatibility, +catalog/supplier-mappings [produktini katalog §14 #13 R170])', () => {
     const rute = zberiRute()
-    expect(rute).toHaveLength(99)
-    expect(new Set(rute.map((r) => r.pot)).size).toBe(99)
+    expect(rute).toHaveLength(107)
+    expect(new Set(rute.map((r) => r.pot)).size).toBe(107)
     expect(rute.some((r) => r.pot === 'src/app/api/material-prices/zgodovina/route.ts')).toBe(true)
     // R374 (issue #13 R165): nove kanonske rute morajo ostati v obsegu pregleda
     expect(rute.some((r) => r.pot === 'src/app/api/price-book/route.ts')).toBe(true)
