@@ -1687,7 +1687,7 @@ export function MaterialIntelligenceTab({
                 return (
                   <Card
                     key={order.id}
-                    className="transition-colors hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25 hover:shadow-sm"
+                    className="transition-[color,background-color,border-color,text-decoration-color,fill,stroke,box-shadow] hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25 hover:shadow-sm"
                   >
                     <CardContent className="p-3">
                       <div className="flex items-start justify-between gap-2 mb-2">
@@ -1977,7 +1977,7 @@ export function MaterialIntelligenceTab({
               // ENA resnica vidnega seznama (zaslon ⇔ CSV ⇔ toast).
               const segZaslon = dobaviteljiSegmentacija(suppliers)
               return suppliers.map((sup) => (
-                <Card key={sup.id} className="transition-colors hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25 hover:shadow-sm">
+                <Card key={sup.id} className="transition-[color,background-color,border-color,text-decoration-color,fill,stroke,box-shadow] hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25 hover:shadow-sm">
                   <CardContent className="p-3">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">

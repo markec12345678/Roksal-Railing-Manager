@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# r391-era-harvest.sh — R391 ŠTIRIDESIJNA era preverba: r347.tsv val 30
+# r390-era-harvest.sh — R390 TRIINŠTIRIDESIJNA era preverba: r347.tsv val 30
 # ×4 IN r348.tsv val 31 ×5 IN r349.tsv val 32 ×8 IN r350.tsv val 33 ×9 IN
 # r351.tsv val 34 ×3 IN r352.tsv val 35 ×8 IN r353.tsv val 36 ×4 IN
 # r354.tsv val 37 ×3 IN r355.tsv val 38 ×3 IN r356.tsv val 39 ×3 IN
 # r357.tsv val 40 ×3 IN r358.tsv val 41 ×3 IN r359.tsv val 42 ×3 IN
 # r360.tsv val 43 ×3 IN r361.tsv val 44 ×3 IN r362.tsv val 45 ×4 IN
 # r363.tsv val 46 ×4 IN r364.tsv val 47 ×4 IN r365.tsv val 48 ×4 IN
-# r366.tsv val 49 ×4 IN r367.tsv val 50 ×4 IN r368.tsv val 51 ×4 IN r369.tsv val 52 ×4 IN r370.tsv val 53 ×4 IN r371.tsv val 54 ×4 IN r372.tsv val 55 ×4 IN r373.tsv val 56 ×4 IN r374.tsv ×4 IN r375.tsv val 57 ×4 IN r376.tsv ×4 IN r377.tsv val 58 ×1 IN r378.tsv ×4 IN r382.tsv ×5 IN r383.tsv val 61 ×4 IN r384.tsv val 62 ×4 IN r385.tsv val 63 ×4 IN r386.tsv val 64 ×4 IN r387.tsv val 65 ×4 IN r388.tsv val 66 ×4 IN r389.tsv val 67 ×2 IN r390.tsv ×9 na
-# produkcijskih čankih (R391 pride na produ SAM — R347–R390 so ŽE ŽIVI od
-# štiridesete preverbe R391, del prek hash rezolucije). Kanon R345–R391
-# (r391-era-harvest.sh): URL-ji iz prod-qa teka (/tmp/r339-chunkurls.txt) →
+# r366.tsv val 49 ×4 IN r367.tsv val 50 ×4 IN r368.tsv val 51 ×4 IN r369.tsv val 52 ×4 IN r370.tsv val 53 ×4 IN r371.tsv val 54 ×4 IN r372.tsv val 55 ×4 IN r373.tsv val 56 ×4 IN r374.tsv ×4 IN r375.tsv val 57 ×4 IN r376.tsv ×4 IN r377.tsv val 58 ×1 IN r378.tsv ×4 IN r382.tsv ×5 IN r383.tsv val 61 ×4 IN r384.tsv val 62 ×4 IN r385.tsv val 63 ×4 IN r386.tsv val 64 ×4 IN r387.tsv val 65 ×4 IN r388.tsv val 66 ×4 IN r389.tsv val 67 ×2 na
+# produkcijskih čankih (R390 pride na produ SAM — R347–R389 so ŽE ŽIVI od
+# triinštiridesete preverbe R390, del prek hash rezolucije). Kanon R345–R390
+# (r390-era-harvest.sh): URL-ji iz prod-qa teka (/tmp/r339-chunkurls.txt) →
 # KANONSKA utrjena žeteva qa-harvest.sh (retry ×3 + parcialna guard) →
 # grep -rqF po TSV registru (need_static ŽIV / must_miss čisto) + HASH
 # REZOLUCIJA (LEKCIJA R354, inverz R351): needle MISS ≠ deploy pending —
@@ -22,7 +22,7 @@ set -u
 
 BASE="https://roksal-railing-manager.vercel.app"
 URLS="/tmp/r339-chunkurls.txt"
-OUT="/tmp/r391-prod-chunks"
+OUT="/tmp/r390-prod-chunks"
 REG_A="scripts/qa-needles/r347.tsv"
 REG_B="scripts/qa-needles/r348.tsv"
 REG_C="scripts/qa-needles/r349.tsv"
@@ -66,7 +66,6 @@ REG_AN="scripts/qa-needles/r386.tsv"
 REG_AO="scripts/qa-needles/r387.tsv"
 REG_AP="scripts/qa-needles/r388.tsv"
 REG_AQ="scripts/qa-needles/r389.tsv"
-REG_AR="scripts/qa-needles/r390.tsv"
 
 rm -rf "$OUT"; mkdir -p "$OUT"
 
@@ -104,7 +103,7 @@ if [ "$odpad" -gt 0 ]; then
   echo "OPOMBA: $odpad/$n čankov iz zamrznjenega URL seznama (R339) = 'Not Found' (opadel artefakt — pokritost gredo prek hash rezolucije, LEKCIJA R354)"
 fi
 
-# 2) need_static po VSEH ŠTIRIDESETIH registrov — vsi needleji MORAJO biti
+# 2) need_static po VSEH TRIINŠTIRIDESETIH registrov — vsi needleji MORAJO biti
 #    ŽIVO (3. stolpec = need_static, 1. = needle; TSV TAB ločilo — kanon
 #    R340–R368)
 NEED_OK=1; need_n=0
@@ -167,12 +166,11 @@ preberi_register "$REG_AN" "R386 val 64"
 preberi_register "$REG_AO" "R387 val 65"
 preberi_register "$REG_AP" "R388 val 66"
 preberi_register "$REG_AQ" "R389 val 67"
-preberi_register "$REG_AR" "R390 issue #13 (R170)"
-[ "$need_n" -lt 182 ] && { echo "FAILOVEDANO: VSI štirideset registrov SKUPAJ imajo $need_n need_static needlejev (pričakovano ≥ 182 = 4 + 5 + 8 + 9 + 3 + 8 + 4 + 3 + 3 + 3 + 3 + 3 + 3 + 3 + 3 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 1 + 4 + 4 + 4 + 4 + 5 + 4 + 4 + 4 + 4 + 4 + 4 + 2 + 9)"; exit 1; }
+[ "$need_n" -lt 173 ] && { echo "FAILOVEDANO: VSI triinštirideset registrov SKUPAJ imajo $need_n need_static needlejev (pričakovano ≥ 173 = 4 + 5 + 8 + 9 + 3 + 8 + 4 + 3 + 3 + 3 + 3 + 3 + 3 + 3 + 3 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 1 + 4 + 4 + 4 + 4 + 5 + 4 + 4 + 4 + 4 + 4 + 4 + 2)"; exit 1; }
 
 # 2b) REZOLUCIJA MISS needlejev prek lokalnega content-hash čanka (LEKCIJA R354)
 if [ "${#MISS_NEEDLES[@]}" -gt 0 ]; then
-  : > "/tmp/r391-resolucija-hash.txt"
+  : > "/tmp/r390-resolucija-hash.txt"
   if [ ! -d ".next/static/chunks" ]; then
     echo "REZOLUCIJA NEMOŽNA: lokalni .next/static/chunks ne obstaja — MISS ostaja dvoumen (deploy pending ALI pokritostna vrzel)"
     NEED_OK=0
@@ -185,10 +183,10 @@ if [ "${#MISS_NEEDLES[@]}" -gt 0 ]; then
         continue
       fi
       ime=$(basename "$lokalni")
-      koda=$(curl -sS --max-time 30 -o "/tmp/r391-resolucija-$ime" -w "%{http_code}" "$BASE/_next/static/chunks/$ime" 2>/dev/null || echo 000)
-      if [ "$koda" = "200" ] && grep -qF -- "$needle" "/tmp/r391-resolucija-$ime" 2>/dev/null; then
+      koda=$(curl -sS --max-time 30 -o "/tmp/r390-resolucija-$ime" -w "%{http_code}" "$BASE/_next/static/chunks/$ime" 2>/dev/null || echo 000)
+      if [ "$koda" = "200" ] && grep -qF -- "$needle" "/tmp/r390-resolucija-$ime" 2>/dev/null; then
         echo "REZOLUCIJA ŽIVO: hash dokaz $ime na prod CDN: HTTP 200 + niz prisoten — $needle"
-      printf '%s\n' "$needle" >> "/tmp/r391-resolucija-hash.txt"
+      printf '%s\n' "$needle" >> "/tmp/r390-resolucija-hash.txt"
       else
         echo "REZOLUCIJA MISS [lokalni čanek $ime, prod HTTP $koda / niz odsoten] — $needle"
         NEED_OK=0
@@ -204,12 +202,12 @@ fi
 #     izključen); (b) determinističen vedenjski probe lastniške rute na
 #     produ (fail-closed status; 404 = rute ni na produ = NI deployan).
 #     Needle se razreši, če KATERI KOLI spec uspe (server čanki v grahu več rut).
-SERVER_PROBE_SPECS=("AB|/api/price-book|401" "AD|/api/bom|401" "AD|/api/bom/procurement|401" "AF|/api/production|401" "AF|/api/installation-records|401" "AG|/api/price-book|401" "AH|/api/inventory|401" "AI|/api/sync|401" "AJ|/api/leads|401" "AJ|/api/opportunities|401" "AJ|/api/customer-addresses|401" "AK|/api/sync|401" "AR|/api/catalog|401" "AR|/api/catalog/versions|401" "AR|/api/catalog/compatibility|401" "AR|/api/catalog/supplier-mappings|401" "AR|/api/catalog/products/000/applications|401" "AR|/api/catalog/products/000/variants|401")
-SERVER_RES="/tmp/r391-resolucija-server.txt"
+SERVER_PROBE_SPECS=("AB|/api/price-book|401" "AD|/api/bom|401" "AD|/api/bom/procurement|401" "AF|/api/production|401" "AF|/api/installation-records|401" "AG|/api/price-book|401" "AH|/api/inventory|401" "AI|/api/sync|401" "AJ|/api/leads|401" "AJ|/api/opportunities|401" "AJ|/api/customer-addresses|401" "AK|/api/sync|401")
+SERVER_RES="/tmp/r390-resolucija-server.txt"
 : > "$SERVER_RES"
 if [ "${#MISS_NEEDLES[@]}" -gt 0 ] && [ -d ".next/server" ]; then
   for needle in "${MISS_NEEDLES[@]}"; do
-    grep -qxF -- "$needle" "/tmp/r391-resolucija-hash.txt" 2>/dev/null && continue
+    grep -qxF -- "$needle" "/tmp/r390-resolucija-hash.txt" 2>/dev/null && continue
     resolved=""
     for spec in "${SERVER_PROBE_SPECS[@]}"; do
       regvar="${spec%%|*}"; rest="${spec#*|}"; ruta="${rest%%|*}"; expect="${rest##*|}"
@@ -235,7 +233,7 @@ if [ "${#MISS_NEEDLES[@]}" -gt 0 ] && [ -d ".next/server" ]; then
   done
   preostalo=0
   for needle in "${MISS_NEEDLES[@]}"; do
-    if ! grep -qxF -- "$needle" "/tmp/r391-resolucija-hash.txt" 2>/dev/null && ! grep -qxF -- "$needle" "$SERVER_RES" 2>/dev/null; then
+    if ! grep -qxF -- "$needle" "/tmp/r390-resolucija-hash.txt" 2>/dev/null && ! grep -qxF -- "$needle" "$SERVER_RES" 2>/dev/null; then
       preostalo=$((preostalo+1))
     fi
   done
@@ -249,9 +247,9 @@ else
   fi
 fi
 
-# 3) must_miss — TODO-R347 … TODO-R390 NE SMEJO biti prisotni
+# 3) must_miss — TODO-R347 … TODO-R389 NE SMEJO biti prisotni
 MISS_OK=1
-for pair in 'TODO-R347|R347' 'TODO-R348|R348' 'TODO-R349|R349' 'TODO-R350|R350' 'TODO-R351|R351' 'TODO-R352|R352' 'TODO-R353|R353' 'TODO-R354|R354' 'TODO-R355|R355' 'TODO-R356|R356' 'TODO-R357|R357' 'TODO-R358|R358' 'TODO-R359|R359' 'TODO-R360|R360' 'TODO-R361|R361' 'TODO-R362|R362' 'TODO-R363|R363' 'TODO-R364|R364' 'TODO-R365|R365' 'TODO-R366|R366' 'TODO-R367|R367' 'TODO-R368|R368' 'TODO-R369|R369' 'TODO-R370|R370' 'TODO-R371|R371' 'TODO-R372|R372' 'TODO-R373|R373' 'TODO-R374|R374' 'TODO-R375|R375' 'TODO-R376|R376' 'TODO-R377|R377' 'TODO-R378|R378' 'TODO-R379|R379' 'TODO-R380|R380' 'TODO-R381|R381' 'TODO-R382|R382' 'TODO-R383|R383' 'TODO-R384|R384' 'TODO-R385|R385' 'TODO-R386|R386' 'TODO-R387|R387' 'TODO-R388|R388' 'TODO-R389|R389' 'TODO-R390|R390'; do
+for pair in 'TODO-R347|R347' 'TODO-R348|R348' 'TODO-R349|R349' 'TODO-R350|R350' 'TODO-R351|R351' 'TODO-R352|R352' 'TODO-R353|R353' 'TODO-R354|R354' 'TODO-R355|R355' 'TODO-R356|R356' 'TODO-R357|R357' 'TODO-R358|R358' 'TODO-R359|R359' 'TODO-R360|R360' 'TODO-R361|R361' 'TODO-R362|R362' 'TODO-R363|R363' 'TODO-R364|R364' 'TODO-R365|R365' 'TODO-R366|R366' 'TODO-R367|R367' 'TODO-R368|R368' 'TODO-R369|R369' 'TODO-R370|R370' 'TODO-R371|R371' 'TODO-R372|R372' 'TODO-R373|R373' 'TODO-R374|R374' 'TODO-R375|R375' 'TODO-R376|R376' 'TODO-R377|R377' 'TODO-R378|R378' 'TODO-R379|R379' 'TODO-R380|R380' 'TODO-R381|R381' 'TODO-R382|R382' 'TODO-R383|R383' 'TODO-R384|R384' 'TODO-R385|R385' 'TODO-R386|R386' 'TODO-R387|R387' 'TODO-R388|R388' 'TODO-R389|R389'; do
   needle="${pair%%|*}"; tag="${pair##*|}"
   if grep -rlqF -- "$needle" "$OUT" 2>/dev/null; then
     echo "$tag must_miss $needle: PRISOTEN — FAILOVEDANO"
@@ -271,8 +269,8 @@ for pair in 'letvev × 80mm = razmik|R340' 'Prstni odtis izračuna — verzija f
     res=""
     if [ -n "$lokalni" ]; then
       ime=$(basename "$lokalni")
-      koda=$(curl -sS --max-time 30 -o "/tmp/r391-kontrola-$ime" -w "%{http_code}" "$BASE/_next/static/chunks/$ime" 2>/dev/null || echo 000)
-      if [ "$koda" = "200" ] && grep -qF -- "$needle" "/tmp/r391-kontrola-$ime" 2>/dev/null; then
+      koda=$(curl -sS --max-time 30 -o "/tmp/r390-kontrola-$ime" -w "%{http_code}" "$BASE/_next/static/chunks/$ime" 2>/dev/null || echo 000)
+      if [ "$koda" = "200" ] && grep -qF -- "$needle" "/tmp/r390-kontrola-$ime" 2>/dev/null; then
         echo "era kontrola $tag: ŽIV (hash rezolucija $ime — URL seznam opadel)"; res=1
       fi
     fi
@@ -281,12 +279,12 @@ for pair in 'letvev × 80mm = razmik|R340' 'Prstni odtis izračuna — verzija f
 done
 
 if [ "$NEED_OK" = "1" ] && [ "$MISS_OK" = "1" ]; then
-  echo "=== R391 ŠTIRIDESIJNA ERA PREVERBA — R347 val 30 (×4) IN R348 val 31 (×5) IN R349 val 32 (×8) IN R350 val 33 (×9) IN R351 val 34 (×3) IN R352 val 35 (×8) IN R353 val 36 (×4) IN R354 val 37 (×3) IN R355 val 38 (×3) IN R356 val 39 (×3) IN R357 val 40 (×3) IN R358 val 41 (×3) IN R359 val 42 (×3) IN R360 val 43 (×3) IN R361 val 44 (×3) IN R362 val 45 (×4) IN R363 val 46 (×4) IN R364 val 47 (×4) IN R365 val 48 (×4) IN R366 val 49 (×4) IN R367 val 50 (×4) IN R368 val 51 (×4) IN R369 val 52 (×4) IN R370 val 53 (×4) IN R371 val 54 (×4) IN R372 val 55 (×4) IN R373 val 56 (×4) IN R374 issue #13 (×4) IN R375 val 57 (×4) IN R376 issue #13 (BOM) (×4) IN R377 val 58 (×1) IN R378 issue #13 (R167) (×4) IN R379 val 59 (×4) IN R380 issue #13 (R168) (×4) IN R381 val 60 (×4) IN R382 issue #13 (R169) (×5) IN R383 val 61 (×4) IN R384 val 62 (×4) IN R385 val 63 (×4) IN R386 val 64 (×4) IN R387 val 65 (×4) IN R388 val 66 (×4) IN R389 val 67 (×2) IN R390 issue #13 (R170) (×9) ŽIVO NA PRODU (deploy zelen, TODO čisto; morebiti delno prek hash rezolucije — LEKCIJA R354) ==="
+  echo "=== R390 TRIINŠTIRIDESIJNA ERA PREVERBA — R347 val 30 (×4) IN R348 val 31 (×5) IN R349 val 32 (×8) IN R350 val 33 (×9) IN R351 val 34 (×3) IN R352 val 35 (×8) IN R353 val 36 (×4) IN R354 val 37 (×3) IN R355 val 38 (×3) IN R356 val 39 (×3) IN R357 val 40 (×3) IN R358 val 41 (×3) IN R359 val 42 (×3) IN R360 val 43 (×3) IN R361 val 44 (×3) IN R362 val 45 (×4) IN R363 val 46 (×4) IN R364 val 47 (×4) IN R365 val 48 (×4) IN R366 val 49 (×4) IN R367 val 50 (×4) IN R368 val 51 (×4) IN R369 val 52 (×4) IN R370 val 53 (×4) IN R371 val 54 (×4) IN R372 val 55 (×4) IN R373 val 56 (×4) IN R374 issue #13 (×4) IN R375 val 57 (×4) IN R376 issue #13 (BOM) (×4) IN R377 val 58 (×1) IN R378 issue #13 (R167) (×4) IN R379 val 59 (×4) IN R380 issue #13 (R168) (×4) IN R381 val 60 (×4) IN R382 issue #13 (R169) (×5) IN R383 val 61 (×4) IN R384 val 62 (×4) IN R385 val 63 (×4) IN R386 val 64 (×4) IN R387 val 65 (×4) IN R388 val 66 (×4) IN R389 val 67 (×2) ŽIVO NA PRODU (deploy zelen, TODO čisto; morebiti delno prek hash rezolucije — LEKCIJA R354) ==="
   exit 0
 elif [ "$NEED_OK" = "0" ] && [ "$MISS_OK" = "1" ]; then
-  echo "=== R391 ŠTIRIDESIJNA ERA PREVERBA — needleji MISS neuspešno razrešeni (deploy pending ALI pokritostna vrzel brez lokalnega builda) ==="
+  echo "=== R390 TRIINŠTIRIDESIJNA ERA PREVERBA — needleji MISS neuspešno razrešeni (deploy pending ALI pokritostna vrzel brez lokalnega builda) ==="
   exit 2
 else
-  echo "=== R391 ŠTIRIDESIJNA ERA PREVERBA — FAILOVEDANO (must_miss ali žeteva) ==="
+  echo "=== R390 TRIINŠTIRIDESIJNA ERA PREVERBA — FAILOVEDANO (must_miss ali žeteva) ==="
   exit 1
 fi

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-# r391-era-ruta-map.py — R381 FEATURE: era-harvest NEEDLE→RUTA MAPPING
+# r390-era-ruta-map.py — R381 FEATURE: era-harvest NEEDLE→RUTA MAPPING
 # (handover R380 kandidat 4: "preciznejši server dokaz"). Za vsak
-# need_static needle iz registrov r340–r391 poroča KATERA RUTA streže
+# need_static needle iz registrov r340–r390 poroča KATERA RUTA streže
 # needlejev čanek — do zdaj je era žetva poročala SAMO chunk imena
 # (chunk_028.bin / hash .js), brez rutove asociacije.
 #
@@ -31,8 +31,8 @@ REPO = pathlib.Path("/home/z/my-project")
 SERVER = REPO / ".next/server"
 STATIC = REPO / ".next/static/chunks"
 REGISTRI = REPO / "scripts/qa-needles"
-HARVEST = REPO / "scripts/r391-era-harvest.sh"
-REG_OD, REG_DO = 340, 391
+HARVEST = REPO / "scripts/r390-era-harvest.sh"
+REG_OD, REG_DO = 340, 390
 
 
 def needleji_iz_registrov():
@@ -144,7 +144,7 @@ def main() -> None:
         glavna = rute[0].split(" (")[0]
         rezime[glavna] = rezime.get(glavna, 0) + 1
 
-    print("=== R391 ERA NEEDLE→RUTA MAPA (preciznejši server dokaz; vir: r340–r391 + lokalni build + probe specs) ===")
+    print("=== R391 ERA NEEDLE→RUTA MAPA (preciznejši server dokaz; vir: r340–r390 + lokalni build + probe specs) ===")
     for v in vrstice_out:
         print(v)
     print("=== REZIME PER RUTA (prva asociacija) ===")

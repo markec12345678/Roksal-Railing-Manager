@@ -1,0 +1,11 @@
+# qa-needles/r392.tsv — REGISTER needlejev runde R392 (STIL val 69:
+# HOVER-SENČNA GLADKOST — 2 × REPL in-place, 0 novih vrstic; edina 2
+# elementa v CELEM src s hover:shadow-sm BREZ senčne pokritosti; fix =
+# konzervativna nadgradnja transition-colors ∪ {box-shadow}). 1 need_static
+# (šivni needle — sekvenca čez nadgrajen seznam je NOVA = 0-v-HEAD kanon;
+# ×2 pojavitvi — Card sorojenci); TODO-R392 must_miss.
+# FEATURE SEDMI STRAŽAR: hover-transform + senčna pokritost disciplina
+# (globalna kršitev = 0; komplet varuhov r385…+r391+r392).
+# Naslednja era preverba ≥183 = 182 + 1 [45., r347–r391].
+transition-[color,background-color,border-color,text-decoration-color,fill,stroke,box-shadow] hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25 hover:shadow-sm	R392 val 69 material-intelligence L1690+L1980 (×2, Card sorojenci) — šiv transition-colors→transition-[…,box-shadow] (hover:shadow-sm SNAP → gladak; konzervativna nadgradnja = transition-colors definicija ∪ {box-shadow}, brez izgube pokritosti; družinski precedens logistics/roksal-catalog z ožjim seznamom) (0 v HEAD 0238292)	need_static
+TODO-R392	must_miss: razvojni ostanki (nesme biti v produkcijskih čankih)	must_miss
