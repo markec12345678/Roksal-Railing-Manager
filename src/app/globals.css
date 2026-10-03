@@ -445,6 +445,26 @@
       animation: none;
       opacity: 1;
     }
+    /* val 73 (R398): VSTOPNE ANIMACIJE — zaključek pokritosti gibanja
+       (kandidat 1 iz R397 handoverja; iskreno dokumentirana meja iz
+       R397 (A)/(B) je zdaj rešena). Forwards končno stanje (opacity 1 /
+       translate 0) je vizualno identično statičnemu stanju, zato
+       animation: none ne spremeni končnega videza; .stagger-children > *
+       nosi statično opacity: 0 — zato opacity: 1 spremljevalec (isti
+       vzorec kot .more-tile guard zgoraj). 0 novih hex — vrednosti se ne
+       dotikamo, samo ustavimo gibanje. Interaktivna družina (hover sweep
+       btn-shine-sweep, press/tap prehodi) ostaja kanon val 69
+       dokumentirana meja — uporabniško sproženo, ne samodejno gibanje. */
+    .animate-fade-in-up {
+      animation: none;
+    }
+    .slide-in-right {
+      animation: none;
+    }
+    .stagger-children > * {
+      animation: none;
+      opacity: 1;
+    }
   }
   @keyframes pulse-soft {
     0%, 100% { opacity: 1; }

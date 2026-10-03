@@ -1,0 +1,25 @@
+# qa-needles/r398.tsv — REGISTER needlejev runde R398 (STIL val 73:
+# VSTOPNE ANIMACIJE reduced-motion zaključek — 100 % pokritost
+# neinterakcijskih animacij; CSS-nivojska sprememba v globals.css
+# (+25 vrstic v OBSTOJEČEM .more-tile media guard bloku — media
+# guardov ostane TOČNO 3, zamrznjen kanon r397 (A); 0 className
+# žetonov → 0 pinov na src); rešuje kandidat 1 iz R397 handoverja:
+# .animate-fade-in-up (fadeInUp 0.3s forwards; ×55 TSX rab) +
+# .slide-in-right (slideInRight 300ms forwards; ×14 rab) mirujeta ob
+# prefers-reduced-motion: reduce; .stagger-children > * (×0 rab —
+# slovarska para, iskreno) dobi opacity:1 spremljevalca (isti vzorec
+# kot .more-tile guard). 1 need_static (šivni needle — lightningcss
+# ZLITI selector list je NOV = 0-v-HEAD kanon; ×1 pojavitev);
+# TODO-R398 must_miss.
+# FEATURE ENAJSTI STRAŽAR: gibanje-pariteta zaključek (strukturiran
+# dokaz pokritosti) — r398-gibanje-zakljucek.test.ts ×7; komplet
+# varuhov r385…r394 + r395 + r396 (HEX cenzus) + r397 + r398.
+#
+# KOLIZIJE: brez (fetch-first origin/main == HEAD d8dc884 ob startu).
+# Era: 51. preverba (r347–r397) 194/194 ŽIVO ×2 [LEKCIJA R398 (1):
+# CSS content-hash čanki NISO deterministični čez build okolja —
+# lokalni 698a1900a928a5e6.css ↔ prod f6eba6f080fd091b.css, ista
+# vsebina; žive prod .css URL-je iz HTML, ABSOLUTNE]; TA needle
+# (r398.tsv) je v 52. preverbi r347–r398 ≥195 [R399].
+.animate-fade-in-up,.slide-in-right{animation:none}	R398 val 73 vstopne animacije reduced-motion zaključek (×1 pojavitev v build CSS chunku; globals.css — lightningcss zliti selector list, LEKCIJA R397 (3)) — ob prefers-reduced-motion: reduce mirujeta tudi vstopni animaciji fadeInUp (.animate-fade-in-up ×55 rab) + slideInRight (.slide-in-right ×14 rab); kandidat 1 iz R397 handoverja — iskreno dokumentirana meja iz R397 (A)/(B) rešena; .stagger-children>* dobi opacity:1 spremljevalca (statično opacity:0 bi ostal neviden; build oblika {opacity:1;animation:none} — LEKCIJA R398 (4) kanonični redeklaracij); forwards končno stanje = statično, vizualno identično; interaktivna družina (btn-shine-sweep :hover) ostaja kanon val 69 meja; 0 novih hex; CSS nivo, 0 className žetonov, 0 pinov na src (0 v HEAD d8dc884)	need_static
+TODO-R398	must_miss: razvojni ostanki (nesme biti v produkcijskih čankih)	must_miss

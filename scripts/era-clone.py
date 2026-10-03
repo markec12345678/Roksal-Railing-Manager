@@ -89,6 +89,10 @@ ERA_BESODE = {
     # R397: GLASNA razširitev (guard zahteva) — 50. era preverba
     # (vzorec mape: petdeset → PETDESIJNA, ista stilizacija kot 30./40.)
     50: ("PETDESIJNA", "petdesete", "petdeset", "PETDESETIH"),
+    # R398: GLASNA razširitev (guard zahteva) — 51. era preverba
+    # (handover R397: "ERA_BESODE 51 ENAINPETDESETA GLASNO"; vzorec mape:
+    #  enainpetdeset → ENAINPETDESETA, kot 31.–39. IN…DESIJNA družina)
+    51: ("ENAINPETDESETA", "enainpetdesete", "enainpetdeset", "ENAINPETDESETIH"),
 }
 ERA_MEJA = max(ERA_BESODE)
 
