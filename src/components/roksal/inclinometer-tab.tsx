@@ -536,7 +536,7 @@ export function InclinometerTab({ projectId, projektIme }: { projectId: string |
                 size="sm"
                 variant="outline"
                 onClick={() => void loadSaved()}
-                className="shrink-0 transition-colors hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2"
+                className="shrink-0 transition-colors hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 focus-visible:border-roksal-amber/50 dark:focus-visible:border-roksal-amber/30"
                 aria-label="Poskusi znova naložiti zgodovino nagibov"
               >
                 <RefreshCw className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" /> Poskusi znova

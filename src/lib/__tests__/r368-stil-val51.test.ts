@@ -80,7 +80,11 @@ describe('r368 stil val 51 — amber OBLIKOVNA pariteta + e2e-lib dedup 8. val',
   it('(B) era-diskriminatorji val 51: N1 ×1 / N2 ×3 / N3 ×2 / N4 ×2 (POJAVITVE grep -o — LEKCIJA R365 (2)) + izpuščena kandidata dokumentirano', () => {
     const vse = VIRI.map(([, s]) => s).join('')
     // N1: photo L740 — offset-2 MED barvo in outline-none (LEKCIJA R363)
-    expect(pod(vse, 'focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 focus-visible:outline-none')).toBe(1)
+    // [PIN SHIFT R385 val 63: FB amber + dark FB vstavljen MED offset-2 in
+    // outline-none (val 57 kanon TIK ZA O2) — stari N1 adjacency = 0; N1
+    // EVOLVED: nova adjacency vključuje FB+dark par — disk resnica ×1]
+    expect(pod(vse, 'focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 focus-visible:outline-none')).toBe(0)
+    expect(pod(vse, 'focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 focus-visible:border-roksal-amber/50 dark:focus-visible:border-roksal-amber/30 focus-visible:outline-none')).toBe(1)
     // N2: photo L2113/L2414 + notification L748
     expect(pod(vse, 'focus-visible:ring-roksal-amber/60 focus-visible:ring-offset-2')).toBe(3)
     // N3: measurements L3329/L3478

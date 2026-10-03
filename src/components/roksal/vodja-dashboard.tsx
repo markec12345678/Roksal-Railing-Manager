@@ -1210,7 +1210,7 @@ export function VodjaDashboard() {
         <Button
           size="sm"
           variant="outline"
-          className="h-8 gap-1.5 border-roksal-navy/25 dark:border-roksal-ink/25 text-xs text-roksal-ink press-scale transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2"
+          className="h-8 gap-1.5 border-roksal-navy/25 dark:border-roksal-ink/25 text-xs text-roksal-ink press-scale transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 focus-visible:border-roksal-amber/50 dark:focus-visible:border-roksal-amber/30"
           onClick={exportDailyCsv}
           aria-label="Izvozi dnevni pregled vodje kot CSV"
           title="Izvozi dnevni pregled (KPI, opozorila in današnji termini) kot CSV za Excel"
@@ -1226,7 +1226,7 @@ export function VodjaDashboard() {
         <Button
           size="sm"
           variant="outline"
-          className="h-8 gap-1.5 border-roksal-navy/25 dark:border-roksal-ink/25 text-xs text-roksal-ink press-scale transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2"
+          className="h-8 gap-1.5 border-roksal-navy/25 dark:border-roksal-ink/25 text-xs text-roksal-ink press-scale transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 focus-visible:border-roksal-amber/50 dark:focus-visible:border-roksal-amber/30"
           onClick={exportDailyPdf}
           aria-label="Izvozi dnevni pregled vodje kot PDF"
           title="Izvozi dnevni pregled (KPI, opozorila in današnji termini) kot deterministični PDF"
@@ -1238,7 +1238,7 @@ export function VodjaDashboard() {
         <Button
           size="sm"
           variant="outline"
-          className="ml-auto h-8 gap-1.5 border-roksal-navy/25 dark:border-roksal-ink/25 text-xs text-roksal-ink press-scale transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2"
+          className="ml-auto h-8 gap-1.5 border-roksal-navy/25 dark:border-roksal-ink/25 text-xs text-roksal-ink press-scale transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 focus-visible:border-roksal-amber/50 dark:focus-visible:border-roksal-amber/30"
           onClick={downloadReport}
           disabled={reportLoading}
           aria-label="Prenesi mesečno PDF poročilo"
@@ -1255,7 +1255,7 @@ export function VodjaDashboard() {
         <Button
           size="sm"
           variant="outline"
-          className="h-8 gap-1.5 border-roksal-navy/25 dark:border-roksal-ink/25 text-xs text-roksal-ink press-scale transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2"
+          className="h-8 gap-1.5 border-roksal-navy/25 dark:border-roksal-ink/25 text-xs text-roksal-ink press-scale transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 focus-visible:border-roksal-amber/50 dark:focus-visible:border-roksal-amber/30"
           onClick={handleMesecniCsv}
           aria-label="Izvozi mesečno poročilo vodje kot CSV"
           title="Izvozi mesečno poročilo (isti KPI, prihodki, računi in projekti kot PDF) kot CSV za Excel — prazen/pokvaren vnos → iskren toast; PDF = tisk za pisarno, CSV = Excel za filtriranje po mesecu/statusu"
@@ -1472,7 +1472,7 @@ export function VodjaDashboard() {
           <Button
             size="sm"
             variant="outline"
-            className="h-6 gap-1 border-roksal-navy/25 px-2 text-2xs text-roksal-ink press-scale transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 dark:border-roksal-ink/25"
+            className="h-6 gap-1 border-roksal-navy/25 px-2 text-2xs text-roksal-ink press-scale transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 focus-visible:border-roksal-amber/50 dark:focus-visible:border-roksal-amber/30 dark:border-roksal-ink/25"
             onClick={exportAiRabaCsv}
             aria-label="Izvozi pregled AI rabe kot CSV"
             data-testid="ai-raba-csv-pill"
@@ -1546,7 +1546,7 @@ export function VodjaDashboard() {
             <Button
               size="sm"
               variant="outline"
-              className="h-6 gap-1 border-roksal-navy/25 px-2 text-2xs text-roksal-ink press-scale transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 dark:border-roksal-ink/25"
+              className="h-6 gap-1 border-roksal-navy/25 px-2 text-2xs text-roksal-ink press-scale transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 focus-visible:border-roksal-amber/50 dark:focus-visible:border-roksal-amber/30 dark:border-roksal-ink/25"
               onClick={exportZmogljivostPdf}
               aria-label="Izvozi meritve zmogljivosti kot PDF"
               title="Izvozi meritve zmogljivosti jedra (operacije × iteracije × časi — EN VIR zaslon) kot deterministični PDF"
@@ -1560,7 +1560,7 @@ export function VodjaDashboard() {
             <Button
               size="sm"
               variant="outline"
-              className="h-6 gap-1 border-roksal-navy/25 px-2 text-2xs text-roksal-ink press-scale transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 dark:border-roksal-ink/25"
+              className="h-6 gap-1 border-roksal-navy/25 px-2 text-2xs text-roksal-ink press-scale transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 focus-visible:border-roksal-amber/50 dark:focus-visible:border-roksal-amber/30 dark:border-roksal-ink/25"
               onClick={exportZmogljivostCsv}
               aria-label="Izvozi meritve zmogljivosti kot CSV"
               title="Izvozi meritve zmogljivosti jedra (operacije × iteracije × časi — EN VIR zaslon) kot deterministični CSV"
@@ -1643,7 +1643,7 @@ export function VodjaDashboard() {
           <Button
             size="sm"
             variant="outline"
-            className="h-6 gap-1 border-roksal-navy/25 px-2 text-2xs text-roksal-ink press-scale transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 dark:border-roksal-ink/25"
+            className="h-6 gap-1 border-roksal-navy/25 px-2 text-2xs text-roksal-ink press-scale transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 focus-visible:border-roksal-amber/50 dark:focus-visible:border-roksal-amber/30 dark:border-roksal-ink/25"
             onClick={exportAvtomatizacijaAuditCsv}
             aria-label="Izvozi avtomatizacijski audit kot CSV"
             title="Izvozi avtomatizacijski audit (11 območij + klasifikacije + poti) kot deterministični CSV"
@@ -1654,7 +1654,7 @@ export function VodjaDashboard() {
           <Button
             size="sm"
             variant="outline"
-            className="h-6 gap-1 border-roksal-navy/25 px-2 text-2xs text-roksal-ink press-scale transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 dark:border-roksal-ink/25"
+            className="h-6 gap-1 border-roksal-navy/25 px-2 text-2xs text-roksal-ink press-scale transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 focus-visible:border-roksal-amber/50 dark:focus-visible:border-roksal-amber/30 dark:border-roksal-ink/25"
             onClick={exportAvtomatizacijaAuditPdf}
             aria-label="Izvozi avtomatizacijski audit kot PDF"
             title="Izvozi avtomatizacijski audit (11 območij + klasifikacije + poti) kot deterministični PDF"
@@ -1669,7 +1669,7 @@ export function VodjaDashboard() {
           <Button
             size="sm"
             variant="outline"
-            className="h-6 gap-1 border-roksal-navy/25 px-2 text-2xs text-roksal-ink press-scale transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 dark:border-roksal-ink/25"
+            className="h-6 gap-1 border-roksal-navy/25 px-2 text-2xs text-roksal-ink press-scale transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 focus-visible:border-roksal-amber/50 dark:focus-visible:border-roksal-amber/30 dark:border-roksal-ink/25"
             onClick={exportAvtomatizacijaKatalogCsv}
             aria-label="Izvozi polni katalog avtomatizacijskih zmožnosti kot CSV"
             title="Izvozi polni katalog zmožnosti (§11 — ENA vrstica na zmožnost; AI vnosi z razrešenim nadomestkom — dokaz 'jedro deluje brez AI') kot deterministični CSV"
@@ -1741,7 +1741,7 @@ export function VodjaDashboard() {
           <Button
             size="sm"
             variant="outline"
-            className="h-6 gap-1 border-roksal-navy/25 px-2 text-2xs text-roksal-ink press-scale transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 dark:border-roksal-ink/25"
+            className="h-6 gap-1 border-roksal-navy/25 px-2 text-2xs text-roksal-ink press-scale transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 focus-visible:border-roksal-amber/50 dark:focus-visible:border-roksal-amber/30 dark:border-roksal-ink/25"
             onClick={exportKoncnaVerifikacijaJson}
             aria-label="Izvozi poročilo končne verifikacije kot JSON"
             title="Izvozi poročilo končne verifikacije (11 območij + 8 kriterijev + sklep) kot deterministični JSON"
@@ -1752,7 +1752,7 @@ export function VodjaDashboard() {
           <Button
             size="sm"
             variant="outline"
-            className="h-6 gap-1 border-roksal-navy/25 px-2 text-2xs text-roksal-ink press-scale transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 dark:border-roksal-ink/25"
+            className="h-6 gap-1 border-roksal-navy/25 px-2 text-2xs text-roksal-ink press-scale transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 focus-visible:border-roksal-amber/50 dark:focus-visible:border-roksal-amber/30 dark:border-roksal-ink/25"
             onClick={exportKoncnaVerifikacijaPdf}
             aria-label="Izvozi poročilo končne verifikacije kot PDF"
             title="Izvozi poročilo končne verifikacije (11 območij + 8 kriterijev + sklep) kot deterministični PDF"
@@ -1768,7 +1768,7 @@ export function VodjaDashboard() {
           <Button
             size="sm"
             variant="outline"
-            className="h-6 gap-1 border-roksal-navy/25 px-2 text-2xs text-roksal-ink press-scale transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 dark:border-roksal-ink/25"
+            className="h-6 gap-1 border-roksal-navy/25 px-2 text-2xs text-roksal-ink press-scale transition-all hover:border-roksal-amber hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 focus-visible:border-roksal-amber/50 dark:focus-visible:border-roksal-amber/30 dark:border-roksal-ink/25"
             onClick={exportKoncnaVerifikacijaCsv}
             aria-label="Izvozi poročilo končne verifikacije kot CSV"
             data-testid="koncna-verifikacija-csv-pill"

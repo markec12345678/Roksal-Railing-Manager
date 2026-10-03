@@ -737,7 +737,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
                   type="button"
                   onClick={() => setActiveKategorija(k.id as 'PRED' | 'MED' | 'PO')}
                   aria-pressed={activeKategorija === k.id}
-                  className={`rounded-md border px-2 py-2 text-[11px] font-medium transition-colors focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 focus-visible:outline-none ${
+                  className={`rounded-md border px-2 py-2 text-[11px] font-medium transition-colors focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 focus-visible:border-roksal-amber/50 dark:focus-visible:border-roksal-amber/30 focus-visible:outline-none ${
                     activeKategorija === k.id
                       ? 'border-roksal-amber bg-roksal-amber text-white'
                       : 'border-border bg-white text-muted-foreground hover:bg-muted'
