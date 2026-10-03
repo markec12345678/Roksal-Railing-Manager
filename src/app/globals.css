@@ -480,7 +480,19 @@
   .animate-bounce-subtle {
     animation: bounce-subtle 0.3s ease-in-out;
   }
-  /* Shimmer loading effect */
+  /* Shimmer loading effect
+     val 74 (R399): SLOVAR-RABA — slovarska para je dejansko V UI.
+     .shimmer = družina ročno valjanih nalagalnih skeletov (×7: katalog,
+     vodja, CRM, obvestila ×3, foto galerija — zamenja animate-pulse +
+     bg-muted; premikajoči se gradient = jasnejši „nalaganje".signal).
+     .animate-bounce-subtle = enojni 0.3s izski na bottom-nav znački
+     (pogojno montirana — 0→N prehod sproži animacijo naravno, brez JS).
+     MEJE: ui-kit Skeleton (FROZEN K1: bg-accent animate-pulse rounded-md)
+     ostaja bajtno; animate-pulse ×13 = busy/progress/ikon družina
+     (uporabniško sproženo, NI idle skelet) — semantična meja dokumentirana
+     v r400-slovar-raba.test.ts. Obe rabi sta ŽE pokriti z val 72 guardom
+     (shimmer + animate-bounce-subtle = animation: none ob
+     prefers-reduced-motion: reduce — spodnji blok, bajtno). */
   @keyframes shimmer {
     0% { background-position: -200% 0; }
     100% { background-position: 200% 0; }

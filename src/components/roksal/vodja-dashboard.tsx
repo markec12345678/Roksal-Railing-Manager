@@ -1148,7 +1148,7 @@ export function VodjaDashboard() {
     return (
       <div className="space-y-3 p-4" aria-busy="true" aria-live="polite">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="h-24 animate-pulse rounded-lg bg-muted" />
+          <div key={i} className="h-24 shimmer rounded-lg" />
         ))}
       </div>
     )

@@ -128,7 +128,7 @@ export function RoksalCatalog() {
       {loading ? (
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-28 animate-pulse rounded-lg bg-muted" />
+            <div key={i} className="h-28 shimmer rounded-lg" />
           ))}
         </div>
       ) : (

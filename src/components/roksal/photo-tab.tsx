@@ -935,7 +935,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
           {loading ? (
             <div className="columns-2 gap-2 sm:columns-3 md:columns-4">
               {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="mb-2 aspect-square animate-pulse rounded-lg bg-muted" />
+                <div key={i} className="mb-2 aspect-square shimmer rounded-lg" />
               ))}
             </div>
           ) : filteredPhotos.length === 0 ? (

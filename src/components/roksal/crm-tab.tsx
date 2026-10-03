@@ -1068,7 +1068,7 @@ export function CrmTab({
       {loading && customers.length === 0 ? (
         <div className="space-y-2" aria-busy="true" aria-live="polite">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-24 animate-pulse rounded-lg bg-muted" />
+            <div key={i} className="h-24 shimmer rounded-lg" />
           ))}
         </div>
       ) : error ? (

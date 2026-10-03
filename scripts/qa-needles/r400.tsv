@@ -1,0 +1,22 @@
+# qa-needles/r400.tsv — REGISTER needlejev runde R400 (STIL val 74:
+# SLOVAR-RABA — slovarska para shimmer/bounce-subtle je dejansko V UI;
+# TSX-nivojska className raba (vzorec r394: needle = string literal v
+# build JS čankih); rešuje kandidat 1 iz R398 handoverja, pot A
+# (uporabiti v UI — loading skeleti): .shimmer ×7 (vse ročno valjane
+# skelet kartice: katalog + vodja + CRM + obvestila ×3 + foto galerija
+# — zamenja animate-pulse + bg-muted) + .animate-bounce-subtle ×1
+# (bottom-nav značka, pogojno montirana — mount-sprožena, brez JS).
+# 1 need_static (šivni needle `shimmer rounded` — najširši skupni
+# podniz skelet družine; 0 v HEAD 9c248f9, tudi 0 v d8a76c5; ×7 pojavitev);
+# TODO-R400 must_miss.
+# FEATURE DVANAJSTI STRAŽAR: slovar-raba disciplina —
+# r400-slovar-raba.test.ts ×7; komplet varuhov r385…r394 + r395 +
+# r396 (HEX cenzus) + r397 + r398 + r399 + r400.
+#
+# KOLIZIJA #28: preimenovanje R399→R400 — njihova R399 [d8a76c5, §18 OBJECT
+# STORAGE] = pristala resnica, bajtno; MOJI artefakti preimenovani.
+# Era: 52. preverba (r347–r398) tek 1 iskren 194/195 [val 73 PENDING —
+# deploy rate-limited 24 h]; TA needle (r400.tsv) je v 54. preverbi
+# r347–r400 ≥199 [R401].
+shimmer rounded	R400 val 74 slovar-raba — shimmer/bounce-subtle v UI (×7 pojavitev v build JS čankih ×5 datotek: roksal-catalog h-28 + vodja-dashboard h-24 + crm-tab h-24 + notification-center h-10/h-3/h-2.5 + photo-tab aspect-square) — vse ročno valjane nalagalne skelet kartice zamenjajo `animate-pulse … bg-muted` s .shimmer (premikajoči se gradient = jasnejši nalaganje signal; background: shorthand nadomesti bg-muted, brez kaskadne dvoumnosti); kandidat 1 iz R398 handoverja, pot A (uporabiti v UI); .animate-bounce-subtle ×1 na bottom-nav znački (pogojno montirana — 0→N prehod remontira, brez JS ožičenja); obe rabi ŽE pokriti z val 72 reduced-motion guardom (bajtno); MEJE: ui-kit Skeleton FROZEN K1 (bg-accent animate-pulse rounded-md) bajtno + animate-pulse ×13 busy/progress/ikon družina ostaja (semantična meja, r400-slovar-raba.test.ts (D)/(G)); 0 novih hex; TSX nivo, className raba — needle ŽIVO v src in v build JS	need_static
+TODO-R399	must_miss: razvojni ostanki (nesme biti v produkcijskih čankih)	must_miss

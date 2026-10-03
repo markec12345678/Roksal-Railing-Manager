@@ -105,7 +105,7 @@ describe('R397 DESETI STRAŽAR — gibanje-pariteta disciplina (reduced-motion p
     expect(css.split('.more-tile {\n      animation: none;\n      opacity: 1;\n    }').length - 1).toBe(1)
   })
 
-  it('(E) DRUŽINA ŽIVA: disk resnica rabe — badge-pulse ×1, shine-effect ×1, animate-pulse-soft ×2; shimmer + bounce-subtle = slovar brez klicnih mest (iskreno, guard pokriva vse prihodnje rabe)', () => {
+  it('(E) DRUŽINA ŽIVA: disk resnica rabe — badge-pulse ×1, shine-effect ×1, animate-pulse-soft ×2; shimmer ×7 + bounce-subtle ×1 (EVOLVED PIN val 74/R399 — para posvojena v UI, guard jo pokriva; prej ×0 iskreno)', () => {
     const žetoni: Record<string, number> = {}
     const obišči = (dir: string) => {
       for (const e of readdirSync(dir, { withFileTypes: true })) {
@@ -124,10 +124,16 @@ describe('R397 DESETI STRAŽAR — gibanje-pariteta disciplina (reduced-motion p
     expect(žetoni['badge-pulse'] ?? 0).toBe(1)
     expect(žetoni['shine-effect'] ?? 0).toBe(1)
     expect(žetoni['animate-pulse-soft'] ?? 0).toBe(2)
-    // slovarski pari: definicija v globals.css (test (B)), rabe ×0 —
-    // dokumentirano tukaj, nič tihega (kanon disk-resnice R396 (6))
-    expect(žetoni['shimmer'] ?? 0).toBe(0)
-    expect(žetoni['animate-bounce-subtle'] ?? 0).toBe(0)
+    // slovarski pari: definicija v globals.css (test (B)). ZGODOVINSKA
+    // resnica R397: rabe ×0 (iskreno dokumentirano — kanon disk-resnice
+    // R396 (6)). ⭐ EVOLVED PIN (val 74 / R399, vzorec PIN SHIFT R394):
+    // slovarska para je DEJANSKO V UI — .shimmer ×7 (vse ročno valjane
+    // skelet kartice) + .animate-bounce-subtle ×1 (bottom-nav značka);
+    // prav to je guardova napovedana pot ("guard pokriva vse prihodnje
+    // rabe") — raba se je spremenila, val 72 guard blok ostane BAJTNATO
+    // (test (A)/(D) tu + r400-slovar-raba.test.ts (E)/(F) dokazujeta).
+    expect(žetoni['shimmer'] ?? 0).toBe(7)
+    expect(žetoni['animate-bounce-subtle'] ?? 0).toBe(1)
   })
 
   it('(F) KOMPILIRANI CSS dokaz (ko .next obstaja): minificiran reduced-motion guard nosi .badge-pulse{animation:none} — order-dependenca iskreno rešena (SKIP ob zastarelem buildu)', () => {

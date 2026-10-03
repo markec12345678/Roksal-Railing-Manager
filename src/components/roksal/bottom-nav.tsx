@@ -138,7 +138,7 @@ export function BottomNav({ activeTab, onTabChange, badges = {}, moreActive = nu
                 <span className="whitespace-nowrap">{tab.label}</span>
                 {badgeCount !== undefined && badgeCount > 0 && (
                   <span
-                    className={`absolute -top-0.5 right-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[9px] font-bold ${
+                    className={`animate-bounce-subtle absolute -top-0.5 right-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[9px] font-bold ${
                       isActive ? 'bg-white text-roksal-navy' : 'bg-roksal-red text-white'
                     }`}
                   >

@@ -726,10 +726,10 @@ export function NotificationCenter() {
               <div className="space-y-2 py-2">
                 {[0, 1, 2].map((i) => (
                   <div key={i} className="flex items-center gap-3 rounded-xl border border-border/50 p-3">
-                    <div className="h-10 w-10 shrink-0 animate-pulse rounded-lg bg-muted" />
+                    <div className="h-10 w-10 shrink-0 shimmer rounded-lg" />
                     <div className="flex-1 space-y-1.5">
-                      <div className="h-3 w-3/4 animate-pulse rounded bg-muted" />
-                      <div className="h-2.5 w-1/2 animate-pulse rounded bg-muted" />
+                      <div className="h-3 w-3/4 shimmer rounded" />
+                      <div className="h-2.5 w-1/2 shimmer rounded" />
                     </div>
                   </div>
                 ))}
