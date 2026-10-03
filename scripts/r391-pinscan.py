@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# r390-pinscan.py — R390 val 68 PIN-SHIFT pre-skan (kanon R368/R387/R389):
+# r391-pinscan.py — R391 val 68 PIN-SHIFT pre-skan (kanon R368/R387/R389):
 # ujemi VSE zamrznjene needleje (qa-needles/*.tsv podatkovne vrstice + ALL
 # scripts/*.sh needle spise + src testi), ki vsebujejo žeton 'press-scale' IN
 # so (pod)span ENEGA izmed 10 dual elementov (val 68 tarče) — ti needleji
@@ -13,7 +13,7 @@ import sys
 REPO = pathlib.Path("/home/z/my-project")
 ROK = REPO / "src/components/roksal"
 
-# 1) zgradi resnico dual elementov iz r390-triaza.py logike (isti parser)
+# 1) zgradi resnico dual elementov iz r391-triaza.py logike (isti parser)
 sys.path.insert(0, str(REPO / "scripts"))
 
 RE_SPAN = re.compile(r"className=(\{`|`|\"|')", re.M)

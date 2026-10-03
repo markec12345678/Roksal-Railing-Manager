@@ -289,7 +289,7 @@ describe('R269 — komponenta (measurements-tab) — pill, mini-vrstica, handler
     expect(komponenta).toContain('<Loader2 aria-hidden="true" className="h-3 w-3 animate-spin" />')
     // press-scale = pariteta žetona z družino (na točno tisto vrsto, ki jo ima
     // SAMO PDF gumb — sorojeniki CSV/Povzetek imajo brez).
-    // [EVOLVED R390 val 68: press-scale odstranjen — utility scale ostane]
+    // [EVOLVED R391 val 68: press-scale odstranjen — utility scale ostane]
     expect(komponenta).toContain('active:scale-[0.96] hover:text-roksal-ink')
   })
 

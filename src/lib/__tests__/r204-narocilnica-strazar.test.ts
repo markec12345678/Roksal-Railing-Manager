@@ -87,7 +87,7 @@ describe('R204 stražar: glavni gumb Naročilnica (pill družina + a11y)', () =>
     expect(okno).toContain('Naročilnica za dobavitelja (vidni artikli pod minimumom) — prilepi v e-pošto/SMS')
     expect(okno).toContain('<ClipboardList className="h-3.5 w-3.5" aria-hidden="true" />')
     // ista pill družina kot CSV (R136): višina/typografia + focus ring
-    expect(okno).toContain('h-8 shrink-0 gap-1.5 text-[11px] font-medium tabular-nums') // [EVOLVED R390 val 68: press-scale žeton odstranjen z dual elementa — množičen skrček transform×scale]
+    expect(okno).toContain('h-8 shrink-0 gap-1.5 text-[11px] font-medium tabular-nums') // [EVOLVED R391 val 68: press-scale žeton odstranjen z dual elementa — množičen skrček transform×scale]
     expect(okno).toContain('focus-visible:ring-2 focus-visible:ring-roksal-navy/40')
     // vidni artikli pod minimumom (WYSIWYG — ista definicija isLow kot vrstice)
     expect(okno).toContain('filtered.filter((i) => i.kolicinaZaloga <= i.minimalnaZaloga)')

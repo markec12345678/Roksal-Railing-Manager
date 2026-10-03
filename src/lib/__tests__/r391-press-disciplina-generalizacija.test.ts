@@ -1,4 +1,4 @@
-// r390-press-disciplina-generalizacija.test.ts — R390 FEATURE: ŠESTI STRAŽAR
+// r391-press-disciplina-generalizacija.test.ts — R391 FEATURE: ŠESTI STRAŽAR
 // — PRESS-SCALE DISCIPLINA GENERALIZACIJA.
 // Komplet varuhov: r385 (dark FB polovica) + r386 (O2 pairing) + r387
 // (FB-border istobarvnost) + r388 (transition pokritost) + r389 (kaskadna
@@ -61,7 +61,7 @@ function beriElemente(): Element[] {
 
 const ACT = /active:scale-\[?[0-9.]+\]?/
 
-describe('R390 FEATURE ŠESTI STRAŽAR — press-scale disciplina (dvojni mehanizem = 0)', () => {
+describe('R391 FEATURE ŠESTI STRAŽAR — press-scale disciplina (dvojni mehanizem = 0)', () => {
   it('(A) globalna kršitev = 0: noben element ne nosi press-scale + active:scale sočasno (element-točno čez VSE roksal tsx)', () => {
     const elementi = beriElemente()
     expect(elementi.length).toBeGreaterThan(2000) // disk resnica: sanitični prag

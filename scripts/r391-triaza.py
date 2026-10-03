@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# r390-triaza.py — R390 element-točna triaža press-scale dvojnega mehanizma
+# r391-triaza.py — R391 element-točna triaža press-scale dvojnega mehanizma
 # (LEKCIJA R388 (1) kanon: per-vrstični census je lažno pozitiven — className
 # lahko sega čez več vrstic; triaža PARSA elemente, ne vrstic).
 #
@@ -69,4 +69,4 @@ for name, vr, val, trans, ps in dual:
 if len(sys.argv) > 1 and sys.argv[1] == "--strict":
     if not dual:
         sys.exit("FAILOVEDANO: dual seznam prazen — pričakovano ≥8 (disk resnica)")
-print("OK: r390-triaza.py")
+print("OK: r391-triaza.py")

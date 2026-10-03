@@ -1,7 +1,7 @@
-// r390-stil-val68.test.ts — R390 MANDATORY STIL val 68: PRESS-SCALE DVOJNI
+// r391-stil-val68.test.ts — R391 MANDATORY STIL val 68: PRESS-SCALE DVOJNI
 // MEHANIZEM RESOLUCIJA (10 × REPL in-place, 0 novih vrstic).
 //
-// Disk resnica (r390-triaza.py element-točna, LEKCIJA R388 (1) kanon —
+// Disk resnica (r391-triaza.py element-točna, LEKCIJA R388 (1) kanon —
 // per-vrstični census je lažno pozitiven, triaža PARSA className spine):
 //   - globals.css `.press-scale:active { transform: scale(0.97) }` — LASTNOST
 //     `transform`;
@@ -21,7 +21,7 @@ import { join } from 'node:path'
 const ROK = join(process.cwd(), 'src', 'components', 'roksal')
 const TS = join(process.cwd(), 'src', 'lib', '__tests__')
 
-// element-točni parser (isti kontrakt kot r390-triaza.py / r390-pinscan.py)
+// element-točni parser (isti kontrakt kot r391-triaza.py / r391-pinscan.py)
 const RE_SPAN = /className=(\{`|`|"|')/g
 
 function spanKonec(text: string, po: number, odprt: string): number {
@@ -66,7 +66,7 @@ function beriVseSpine(): Dual[] {
   return out
 }
 
-// val 68 tarče (disk resnica r390-triaza.py; vrstica = className začetek)
+// val 68 tarče (disk resnica r391-triaza.py; vrstica = className začetek)
 const TARCE: Array<[string, number]> = [
   ['calculator-tab.tsx', 820],
   ['dashboard-tab.tsx', 2426],
@@ -80,7 +80,7 @@ const TARCE: Array<[string, number]> = [
   ['punch-list.tsx', 531],
 ]
 
-describe('R390 STIL val 68 — press-scale dvojni mehanizem resolucija', () => {
+describe('R391 STIL val 68 — press-scale dvojni mehanizem resolucija', () => {
   it('(A) PARITETA: vseh 10 tarč nosi active:scale-[0.96] in NE več press-scale (element-točno, bajtno)', () => {
     for (const [file, vrstica] of TARCE) {
       const span = beriSpine(file).find((s) => s.vrstica === vrstica)
@@ -98,7 +98,7 @@ describe('R390 STIL val 68 — press-scale dvojni mehanizem resolucija', () => {
     const dual = vsi.filter((s) => s.span.includes('press-scale') && /active:scale-\[?0\.96\]?/.test(s.span))
     expect(dual).toHaveLength(0)
     // žetonov press-scale v 6 target datotekah: zamrznjen po-vrednost
-    // (prej 38 → po 28: −10 dualov; disk resnica r390-val68-apply.py;
+    // (prej 38 → po 28: −10 dualov; disk resnica r391-val68-apply.py;
     // calculator = 0 — njegov edini press-scale JE bil dual)
     let zetoni = 0
     for (const f of ['calculator-tab.tsx', 'dashboard-tab.tsx', 'inclinometer-tab.tsx',
@@ -110,9 +110,9 @@ describe('R390 STIL val 68 — press-scale dvojni mehanizem resolucija', () => {
 
   it('(C) EVOLVED žigi: 5 testnih datotek bajtno (r204/r269/r271/r272/r363)', () => {
     const pri = (f: string) => readFileSync(join(TS, f), 'utf8')
-    expect(pri('r204-narocilnica-strazar.test.ts')).toContain('[EVOLVED R390 val 68')
+    expect(pri('r204-narocilnica-strazar.test.ts')).toContain('[EVOLVED R391 val 68')
     expect(pri('r204-narocilnica-strazar.test.ts')).not.toContain("tabular-nums press-scale'")
-    expect(pri('r363-stil-val46.test.ts')).toContain('[EVOLVED R390 val 68')
+    expect(pri('r363-stil-val46.test.ts')).toContain('[EVOLVED R391 val 68')
     expect(pri('r269-meritve-teren-pdf.test.ts')).toContain("'active:scale-[0.96] hover:text-roksal-ink'")
     expect(pri('r271-punch-stanje-pdf.test.ts')).toContain("expect(pill).toContain('active:scale-[0.96]')")
     expect(pri('r272-nagibi-teren-pdf.test.ts')).toContain("expect(pill).toContain('active:scale-[0.96]')")
@@ -127,7 +127,7 @@ describe('R390 STIL val 68 — press-scale dvojni mehanizem resolucija', () => {
     expect(naslednica).toBeDefined()
     const inv = readFileSync(join(ROK, 'inventory-tab.tsx'), 'utf8')
     expect(inv.split(naslednica!.split('\t')[0]).length - 1).toBe(1)
-    expect(reg).toContain('EVOLVED R390 val 68: žeton')
+    expect(reg).toContain('EVOLVED R391 val 68: žeton')
     expect(reg).not.toMatch(/^h-8 shrink-0 gap-1\.5 text-\[11px\] font-medium tabular-nums press-scale\t/m)
   })
 

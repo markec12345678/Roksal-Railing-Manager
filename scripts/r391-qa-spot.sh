@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# r390-qa-spot.sh — R390 produkcija QA spot seja (spot-r173/30; ZERO-MUTACIJA
+# r391-qa-spot.sh — R391 produkcija QA spot seja (spot-r173/30; ZERO-MUTACIJA
 # — SAMO sonde + navigacijski dispatch + Radix sheet odpiranje po kanonu;
 # NIČ klikov na odjavo/preklic/revoke/izvoz/obvestilne vrstice/označi prebrano;
 # setup bootstrapa NIKOLI ne sprožimo).
 # Fokus: val 67 POST-deploy verifikacija — 2 needleja r389.tsv (era preverba
-# TRIINŠTIRIDESIJNA R390 dokazuje 173/173 ŽIVO; ta sonda dokumentira MONTIRANO
+# TRIINŠTIRIDESIJNA R391 dokazuje 173/173 ŽIVO; ta sonda dokumentira MONTIRANO
 # DOM resnico z mounted + className LOČENO, LEKCIJA R365 (4)):
 #   A prijava → top-bar 'Obvestila' sheet (kanon odpiranje) → N1 notification
 #     L811 ChevronRight — property-list nadgradnja transition-[transform,color]
@@ -22,7 +22,7 @@ set -u
 cd /home/z/my-project
 source scripts/e2e-lib.sh
 
-echo "=== R390 QA spot seja (spot-r173/30 — val 67 POST-deploy) ==="
+echo "=== R391 QA spot seja (spot-r173/30 — val 67 POST-deploy) ==="
 
 echo "--- A: prijava → Obvestila sheet → N1 notification L811 ChevronRight (className LOČENO, vrstice samo MERJENE) ---"
 agent-browser close --all >/dev/null 2>&1
@@ -50,7 +50,7 @@ agent-browser eval "JSON.stringify({
   n2Report: [...document.querySelectorAll('button')].filter(b=>(b.getAttribute('aria-label')||'')==='Kopiraj varnostno poročilo na odložišče').length,
   n2Tokeni: (function(){const b=[...document.querySelectorAll('button')].find(x=>(x.getAttribute('aria-label')||'')==='Kopiraj varnostno poročilo na odložišče'); if(!b) return null; const c=(b.className||'').split(/\\s+/); return ['h-9','px-3','bg-roksal-navy','hover:bg-roksal-navy/90','text-white','gap-1.5','transition-[transform,background-color,box-shadow]','duration-200','active:scale-95','focus-visible:ring-2','focus-visible:ring-roksal-navy/40','focus-visible:ring-offset-2'].map(t=>c.includes(t));})(),
   n2Disabled: (function(){const b=[...document.querySelectorAll('button')].find(x=>(x.getAttribute('aria-label')||'')==='Kopiraj varnostno poročilo na odložišče'); return b?b.disabled:null;})(),
-  razlog: 'L254 Button je VEDNO renderan (disabled brez vetra — vrata !windData); className split 12 tokenov LOČENO; NI klika — klik bi bil clipboard mutacija (kanon R390 handover); mounted + className LOČENO (LEKCIJA R365 (4))'
+  razlog: 'L254 Button je VEDNO renderan (disabled brez vetra — vrata !windData); className split 12 tokenov LOČENO; NI klika — klik bi bil clipboard mutacija (kanon R391 handover); mounted + className LOČENO (LEKCIJA R365 (4))'
 })" 2>&1 | tail -1
 
 echo "--- C: sonde (navy + red štetje) ---"
@@ -61,4 +61,4 @@ echo "--- D: kolektor ---"
 eb_preberi_kolektor r390err
 
 agent-browser close --all >/dev/null 2>&1
-echo "=== R390 spot KONEC ==="
+echo "=== R391 spot KONEC ==="

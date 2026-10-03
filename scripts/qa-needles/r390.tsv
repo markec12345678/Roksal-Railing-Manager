@@ -1,14 +1,38 @@
-# qa-needles/r390.tsv — REGISTER needlejev runde R390 (STIL val 68:
-# PRESS-SCALE DVOJNI MEHANIZEM RESOLUCIJA — 10 × REPL in-place,
-# 0 novih vrstic). Disk resnica rundi [r390-triaza.py element-točna +
-# r390-pinscan.py pin-shift pre-skan + zgrajen CSS: .press-scale:active
-# = transform:scale(.97), .active\:scale-\[0\.96\]:active = scale:.96 —
-# neodvisni lastnosti, ko-obstoj = 0.9312 množičen skrček; LEKCIJA R390:
-# EN element = EN press mehanizem]. 2 need_static (šivni needleja —
-# sekvenca čez odstranjeni press-scale žeton je NOVA = 0-v-HEAD kanon);
-# TODO-R390 must_miss. EVOLVED: r363.tsv NASLEDNICA-3 (press-scale žeton
-# iz needleja) + 5 testnih pinov — vse v isti rundi (kanon R368).
-# Naslednja era preverba ≥175 = 173 + 2.
-flex items-center gap-1.5 rounded-lg border border-roksal-amber/30 bg-roksal-amber/10 px-2.5 py-1.5 text-[11px] font-medium text-roksal-ink hover:bg-roksal-amber/20 active:scale-[0.96] transition-all duration-150 shrink-0	R390 val 68 calculator L820 (×1) — šiv duration-150→shrink-0 (press-scale odstranjen; dual mehanizem transform:scale(.97) × scale:.96 = množičen skrček 0.9312); utility active:scale-[0.96] ostane edini mehanizem (0 v HEAD 35edf80)	need_static
-font-medium tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40	R390 val 68 inventory L1562 (×1) — šiv tabular-nums→focus-visible (press-scale odstranjen; element-specifičen active:scale-[0.96] ostane; NASLEDNICA r363 needleja v isti rundi — kanon R368) (0 v HEAD 35edf80)	need_static
+# qa-needles/r390.tsv — REGISTER needlejev runde R390 (issue #13, korak R170
+# iz §14 — PRODUKTNI KATALOG: APLIKACIJSKI KONTEKST: ProductFamily →
+# Product → ProductVariant → ProductApplication [§14 EXACT nabor 6:
+# HORIZONTALNA_OGRAJA|POKONCNA_OGRAJA|TERASA|PREDELNA_STENA|FASADA|STROP —
+# odsotnost vrstice = aplikacija NI dokumentirana; KUBO uradno SAMO FASADA]
+# → ProductCompatibility [XOR cilj produkt|dodatek, partial UNIQUE] →
+# ProductAccessory + ProductCatalogVersion [DRAFT→ACTIVE→RETIRED pariteta
+# R373, veljavnostOd/Do §14 effective dates] + ProductSupplierMapping
+# [intervali, prekrivanje 409]. Seed 8 produktov/10 aplikacij/5 dodatkov/12
+# kompatibilnosti IZKLJUČNO iz data/roksal-catalog.json (generator
+# scripts/r390-seed-sql-gen.mjs — byte-exact; variante+preslikave PRAZNE §8).
+# 8 API rut /api/catalog* [RBAC catalog.manage za pisanje — vodstvo;
+# branje authenticated]; catalog-store = EN VIR mutacij + revizija ATOMSKA
+# §19; catalog-domain = čisto jedro (nabori + matrike, R294 F4 asOf
+# parameter); 80 testov [r390-catalog-domain ×30, r390-catalog-seed ×22,
+# r390-catalog-api ×15, r390-catalog-versions-api ×13] + PIN SHIFT r308
+# [99→107 route datotek] + r191-val2 [58/74→65/82 + 67→74]. KOLIZIJA #24
+# [kanon KOLIZIJE #4/R323/#13–#23, 24. potrditev]: vzporedna lastniška QA
+# R389 [35edf80 — LASTNA-PREHOD GLADKOST val 67 + NJIHOV register r389.tsv +
+# r389-stil-val67 ×4 + r389-lasta-uzkost-generalizacija ×5] je pristala MED
+# mojim delom [fetch ob zaključni preverbi: 2ccba6c..35edf80] in vzela
+# številko → moja runda preimenovana R389→R390 (migracija
+# 20261008080000_r390_product_catalog + 4× r390-*.test.ts + žigi;
+# _prisma_migrations vrstica preimenovana V OBEH bazah dev+test, ista
+# vsebina novo ime + nov checksum; NJIHOVI r389-* artefakti ostanejo =
+# lastniška zgodovina; NJIHOV r389.tsv NEDOTAKNJEN — TODO-R389 je NJIHOV
+# must_miss, moj je TODO-R390). Viri: needleji = ASCII string literali ŽIVE
+# kode (sporočila napak v chunkih).
+Katalog urejajo uporabniki s pravico catalog.manage	R390 vrata POST /api/catalog — sporočilo 403 v catalog chunku (×1 .js; 0 v HEAD 35edf80)	need_static
+Verzije kataloga urejajo uporabniki s pravico catalog.manage	R390 vrata POST/PATCH /api/catalog/versions — sporočilo 403 v versions chunku (×1 .js; 0 v HEAD 35edf80)	need_static
+Aplikacije produktov urejajo uporabniki s pravico catalog.manage	R390 vrata POST applications — sporočilo 403 v products/[id]/applications chunku (×1 .js; 0 v HEAD 35edf80)	need_static
+Variante urejajo uporabniki s pravico catalog.manage	R390 vrata POST variants — sporočilo 403 v products/[id]/variants chunku (×1 .js; 0 v HEAD 35edf80)	need_static
+Kompatibilnost urejajo uporabniki s pravico catalog.manage	R390 vrata POST compatibility — sporočilo 403 v compatibility chunku (×1 .js; 0 v HEAD 35edf80)	need_static
+Preslikave dobaviteljev urejajo uporabniki s pravico catalog.manage	R390 vrata POST/PATCH supplier-mappings — sporočilo 403 v supplier-mappings chunku (×1 .js; 0 v HEAD 35edf80)	need_static
+Neznan tip aplikacije	R390 §14 EXACT kanon na tipih aplikacij — prefix javne napake 400 (catalog-domain → catalog chunk) (×1 .js; 0 v HEAD 35edf80)	need_static
+Ni ACTIVE verzije kataloga	R390 fail-closed resolucija verzije (§14 effective dates) — sporočilo 409 v catalog chunku (×1 .js; 0 v HEAD 35edf80)	need_static
+Podati morate NATANKO en cilj	R390 XOR kompatibilnost (§14 cilj produkt ALI dodatek) — sporočilo 400 v compatibility chunku (×1 .js; 0 v HEAD 35edf80)	need_static
 TODO-R390	must_miss: razvojni ostanki (nesme biti v produkcijskih čankih)	must_miss

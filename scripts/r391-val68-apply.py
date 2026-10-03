@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-# r390-val68-apply.py — R390 STIL val 68: PRESS-SCALE DVOJNI MEHANIZEM
+# r391-val68-apply.py — R391 STIL val 68: PRESS-SCALE DVOJNI MEHANIZEM
 # RESOLUCIJA (10 × REPL in-place, 0 novih vrstic) + EVOLVED ×5 testov +
 # register r363.tsv NASLEDNICA-3 — VSE V ENEM atomskem koraku (kanon R368).
 #
-# Disk resnica (r390-triaza.py + zgrajeni CSS):
+# Disk resnica (r391-triaza.py + zgrajeni CSS):
 #   - .press-scale:active { transform: scale(.97) }   → LASTNOST `transform`
 #   - .active\:scale-\[0\.96\]:active { scale: .96 }  → LASTNOST `scale`
 #   Element z OBEIMA: :active → 0.97 × 0.96 = 0.9312 MNOŽIČEN dvojni skrček.
@@ -24,7 +24,7 @@ import sys
 REPO = pathlib.Path("/home/z/my-project")
 ROK = REPO / "src/components/roksal"
 RE_SPAN = re.compile(r"className=(\{`|`|\"|')", re.M)
-ZIG = "[EVOLVED R390 val 68"
+ZIG = "[EVOLVED R391 val 68"
 
 def span_konec(text, po, od):
     z = "`" if od in ("{`", "`") else od
@@ -119,7 +119,7 @@ def main():
                 sys.exit(f"FAILOVEDANO: {fn}:{vr} — dual span NI najden (kontrakt bajtno ne velja)")
         post[f"src/components/roksal/{fn}"] = t
 
-    # 2) EVOLVED ×5 testov (žig [EVOLVED R390 val 68])
+    # 2) EVOLVED ×5 testov (žig [EVOLVED R391 val 68])
     TS = REPO / "src/lib/__tests__"
 
     p = TS / "r204-narocilnica-strazar.test.ts"
@@ -127,7 +127,7 @@ def main():
     t = rep_vrstica(
         t,
         "    expect(okno).toContain('h-8 shrink-0 gap-1.5 text-[11px] font-medium tabular-nums press-scale')\n",
-        "    expect(okno).toContain('h-8 shrink-0 gap-1.5 text-[11px] font-medium tabular-nums') // [EVOLVED R390 val 68: press-scale žeton odstranjen z dual elementa — množičen skrček transform×scale]\n",
+        "    expect(okno).toContain('h-8 shrink-0 gap-1.5 text-[11px] font-medium tabular-nums') // [EVOLVED R391 val 68: press-scale žeton odstranjen z dual elementa — množičen skrček transform×scale]\n",
         "r204:90", ZIG,
     )
     post["src/lib/__tests__/r204-narocilnica-strazar.test.ts"] = t
@@ -137,7 +137,7 @@ def main():
     t = rep_vrstica(
         t,
         "    expect(INV.match(/h-8 shrink-0 gap-1\\.5 text-\\[11px\\] font-medium tabular-nums press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy\\/40 focus-visible:ring-offset-2( focus-visible:border-roksal-navy\\/40)?( dark:focus-visible:border-roksal-ink\\/40)? active:scale-\\[0\\.96\\]/g) ?? []).toHaveLength(1)\n",
-        "    expect(INV.match(/h-8 shrink-0 gap-1\\.5 text-\\[11px\\] font-medium tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy\\/40 focus-visible:ring-offset-2( focus-visible:border-roksal-navy\\/40)?( dark:focus-visible:border-roksal-ink\\/40)? active:scale-\\[0\\.96\\]/g) ?? []).toHaveLength(1) // [EVOLVED R390 val 68: press-scale odstranjen]\n",
+        "    expect(INV.match(/h-8 shrink-0 gap-1\\.5 text-\\[11px\\] font-medium tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy\\/40 focus-visible:ring-offset-2( focus-visible:border-roksal-navy\\/40)?( dark:focus-visible:border-roksal-ink\\/40)? active:scale-\\[0\\.96\\]/g) ?? []).toHaveLength(1) // [EVOLVED R391 val 68: press-scale odstranjen]\n",
         "r363:43", ZIG,
     )
     post["src/lib/__tests__/r363-stil-val46.test.ts"] = t
@@ -153,7 +153,7 @@ def main():
     t = rep_vrstica(
         t,
         "    expect(komponenta).toContain('press-scale active:scale-[0.96] hover:text-roksal-ink')\n",
-        "    // [EVOLVED R390 val 68: press-scale odstranjen — utility scale ostane]\n    expect(komponenta).toContain('active:scale-[0.96] hover:text-roksal-ink')\n",
+        "    // [EVOLVED R391 val 68: press-scale odstranjen — utility scale ostane]\n    expect(komponenta).toContain('active:scale-[0.96] hover:text-roksal-ink')\n",
         "r269:292", ZIG,
     )
     post["src/lib/__tests__/r269-meritve-teren-pdf.test.ts"] = t
@@ -169,7 +169,7 @@ def main():
     t = rep_vrstica(
         t,
         "    expect(pill).toContain('press-scale')\n",
-        "    expect(pill).toContain('active:scale-[0.96]') // [EVOLVED R390 val 68: dual mehanizem razrešen — utility scale ostane]\n",
+        "    expect(pill).toContain('active:scale-[0.96]') // [EVOLVED R391 val 68: dual mehanizem razrešen — utility scale ostane]\n",
         "r271:308", ZIG,
     )
     post["src/lib/__tests__/r271-punch-stanje-pdf.test.ts"] = t
@@ -185,7 +185,7 @@ def main():
     t = rep_vrstica(
         t,
         "    expect(pill).toContain('press-scale')\n",
-        "    expect(pill).toContain('active:scale-[0.96]') // [EVOLVED R390 val 68: dual mehanizem razrešen — utility scale ostane]\n",
+        "    expect(pill).toContain('active:scale-[0.96]') // [EVOLVED R391 val 68: dual mehanizem razrešen — utility scale ostane]\n",
         "r272:309", ZIG,
     )
     post["src/lib/__tests__/r272-nagibi-teren-pdf.test.ts"] = t
@@ -201,18 +201,18 @@ def main():
             sys.exit("FAILOVEDANO: r363.tsv:21 nima 3 polj")
         nov_needle = deli[0].replace(" press-scale", "", 1)
         vrstice[20] = (
-            f"# {deli[0]}\t{deli[1]}\tneed_static — EVOLVED R390 val 68: žeton ' press-scale'"
+            f"# {deli[0]}\t{deli[1]}\tneed_static — EVOLVED R391 val 68: žeton ' press-scale'"
             " odstranjen iz vira (inventory L1562 — dvojni mehanizem press-scale"
             " transform:scale(.97) + active:scale scale:.96 = množičen skrček 0.9312);"
             " naslednica = naslednja podatkovna vrstica"
         )
         vrstice.insert(
             21,
-            f"{nov_needle}\tR390 val 68 NASLEDNICA r363 needleja (press-scale odstranjen iz vira; opis izvirnika: {deli[1]})\tneed_static",
+            f"{nov_needle}\tR391 val 68 NASLEDNICA r363 needleja (press-scale odstranjen iz vira; opis izvirnika: {deli[1]})\tneed_static",
         )
         rt_nov = "\n".join(vrstice)
         post["scripts/qa-needles/r363.tsv"] = rt_nov
-    elif l21.startswith("# h-8 shrink-0 gap-1.5 text-[11px] font-medium tabular-nums press-scale") and "EVOLVED R390 val 68" in l21:
+    elif l21.startswith("# h-8 shrink-0 gap-1.5 text-[11px] font-medium tabular-nums press-scale") and "EVOLVED R391 val 68" in l21:
         print("  preskočeno (že evoluirano): r363.tsv:21")
         rt_nov = rt
     else:

@@ -13,7 +13,7 @@
 #      FAILOVEDANO, primerjavo vodi zapis znotraj tega skripta).
 # Trije deli iz r379 ostajajo ISTI (okna / needle pini / slice-okna).
 #
-# r390-window-scan.py — R389 GENERALIZACIJA (14. — REG window 390) stale-pin
+# r391-window-scan.py — R389 GENERALIZACIJA (14. — REG window 390) stale-pin
 # PRED-SKANA (naslednik r389-window-scan.py, ki ga NIKOLI ne mutira — kanon
 # R358: hardening V NOVI skripti). Razlike proti r388 verziji:
 #   1. TARGETS SPROČENI (val 67 tarče ŽE pokrite — notification-center +
@@ -24,7 +24,7 @@
 # Trije deli iz r388 ostajajo ISTI (okna / needle pini / slice-okna /
 # in-place varstvo).
 #
-# Uporaba: python3 scripts/r390-window-scan.py [scan | delta <znakova> <žeton>]
+# Uporaba: python3 scripts/r391-window-scan.py [scan | delta <znakova> <žeton>]
 import re, pathlib, sys
 
 TARGETS = [
@@ -115,7 +115,7 @@ PRIČAKOVANE_VRSTICE = {
 }
 TESTS = pathlib.Path("src/lib/__tests__")
 REGISTRI = pathlib.Path("scripts/qa-needles")
-REG_OD, REG_DO = 340, 390
+REG_OD, REG_DO = 340, 391
 WIN = re.compile(r"\{0,(\d+)\}|\{(\d+),(\d+)\}")
 
 
@@ -239,7 +239,7 @@ def main():
     if napake:
         print(f"SKLEP: in-place kanon PREKRŠEN na {napake} tarčah — ukrepanje obvezno")
         sys.exit(1)
-    print("=== r390-window-scan KONEC (disk resnica, brez mutacij) ===")
+    print("=== r391-window-scan KONEC (disk resnica, brez mutacij) ===")
 
 
 if __name__ == "__main__":

@@ -305,7 +305,7 @@ describe('R271 — vsebinski dokazi na komponenti (punch-list.tsx)', () => {
     const pill = oknoMed(komponenta, '{/* R271 — pregled stanja zapisnika PDF (27. člen', '</button>')
     expect(pill).toContain('onClick={() => void handleStanjePdf()}')
     expect(pill).toContain('disabled={stanjeVteku}')
-    expect(pill).toContain('active:scale-[0.96]') // [EVOLVED R390 val 68: dual mehanizem razrešen — utility scale ostane]
+    expect(pill).toContain('active:scale-[0.96]') // [EVOLVED R391 val 68: dual mehanizem razrešen — utility scale ostane]
     expect(pill).toContain('<Loader2 aria-hidden="true" className="h-3 w-3 animate-spin" />')
     expect(pill).toContain('<FileDown aria-hidden="true" className="h-3 w-3" />')
     expect(pill).toContain('PDF stanje')
