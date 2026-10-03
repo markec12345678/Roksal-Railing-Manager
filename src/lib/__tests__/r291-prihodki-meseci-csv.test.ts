@@ -141,7 +141,7 @@ describe('R291 strazar — prihodki-meseci CSV žičenje (invoice-manager)', () 
     expect(im).toContain('aria-label="Izvozi prihodke po mesecih kot CSV"')
     expect(im).toContain('Prihodki po mesecih kot CSV — ista resnica kot sekcija (skupaj + v teku + stornirani)')
     expect(im).toContain('FileSpreadsheet aria-hidden="true"')
-    expect(im).toContain('press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40')
+    expect(im).toContain('press-scale focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40')
   })
 
   it('fail-closed toast pri 0 mesecih (NIČ datoteke — R250 vzorec)', () => {

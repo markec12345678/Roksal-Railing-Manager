@@ -72,6 +72,8 @@ ERA_BESODE = {
     43: ("TRIINŠTIRIDESIJNA", "triinštiridesete", "triinštirideset", "TRIINŠTIRIDESETIH"),
     # R392: GLASNA razširitev (guard zahteva) — 44. era preverba
     44: ("ŠTIRIDESIJNA", "štiridesete", "štirideset", "ŠTIRIDESETIH"),
+    # R393: GLASNA razširitev (guard zahteva) — 45. era preverba
+    45: ("PETINŠTIRIDESIJNA", "petinštiridesete", "petinštirideset", "PETINŠTIRIDESETIH"),
 }
 ERA_MEJA = max(ERA_BESODE)
 

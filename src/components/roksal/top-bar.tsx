@@ -168,7 +168,7 @@ export function TopBar({ onSync, syncing, onOpenPalette, hidden = false }: TopBa
           {/* Ukazna paleta (⌘K) — iskanje zavihkov, modulov in projektov */}
           <Button
             variant="ghost"
-            className="h-9 gap-1.5 rounded-md bg-white/10 px-2.5 text-white/70 hover:bg-white/15 hover:text-white md:h-10 md:px-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-0"
+            className="h-9 gap-1.5 rounded-md bg-white/10 px-2.5 text-white/70 hover:bg-white/15 hover:text-white md:h-10 md:px-3 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-0"
             onClick={onOpenPalette}
             aria-label="Odpri iskalnik (Ctrl+K)"
             title="Iskalnik — Ctrl+K"

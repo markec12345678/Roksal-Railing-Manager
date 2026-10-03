@@ -183,7 +183,7 @@ describe('R386 stil val 64 — AMBER/40 border-pariteta (3 × INS + dark PAR v e
     }
     expect(borderedBrezFB, 'bordered amber/40 vrstic brez FB').toBe(0)
     // r368 N3 needle (binarni grep) ŽIVO prek L3329 — val 64 ga NI ubil
-    expect(pod(R('roksal/measurements-tab.tsx'), 'focus-visible:ring-roksal-amber/40 focus-visible:ring-offset-2 focus-visible:outline-none')).toBe(1)
+    expect(pod(R('roksal/measurements-tab.tsx'), 'focus-visible:ring-roksal-amber/40 focus-visible:ring-offset-2 focus-visible:outline-hidden')).toBe(1)
     // NASLEDNICA (navy) ŽIVI v src — val 64 jih NI dotaknil
     expect(pod(R('roksal/inventory-tab.tsx'), 'focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40 active:scale-[0.96]')).toBe(1)
   })

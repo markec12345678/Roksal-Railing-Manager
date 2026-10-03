@@ -63,7 +63,7 @@ describe('R187 — Sistem — zdravje kartica: EN VIR + žičenje + fail-verbose
     expect(src).toContain('role="alert"')
     expect(src).toContain('aria-label="Ponovno preveri zdravje sistema"')
     expect(src).toContain('Poskusi znova')
-    expect(src).toMatch(/transition-colors hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-red\/40/)
+    expect(src).toMatch(/transition-colors hover:text-roksal-ink focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-red\/40/)
     // razlog = fail-verbose (vsebuje napako iz odgovora ALI status)
     expect(src).toMatch(/json\.error/)
     expect(src).toMatch(/napaka \$\{res\.status\}/)

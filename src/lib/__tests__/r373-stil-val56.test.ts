@@ -47,7 +47,7 @@ const NAVY = 'focus-visible:ring-roksal-navy/40'
 const RED = 'focus-visible:ring-roksal-red/40'
 const AMBER = 'focus-visible:ring-roksal-amber/50'
 const O2 = 'focus-visible:ring-offset-2'
-const OUTLINE = 'focus-visible:outline-none'
+const OUTLINE = 'focus-visible:outline-hidden'
 
 const PHOTO = 'src/components/roksal/photo-tab.tsx'
 const DASH = 'src/components/roksal/dashboard-tab.tsx'
@@ -144,7 +144,7 @@ describe('R373 stil val 56 — male družine RAW pariteta (white ×3 + white/60 
     expect(R('src/components/roksal/rate-limit-panel.tsx').includes('h-8 px-2 transition-colors hover:text-roksal-ink focus-visible:ring-roksal-navy/40')).toBe(false)
     expect(R('src/components/roksal/measurements/steber-table.tsx')).toContain('focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2')
     const calc = R('src/components/roksal/calculator-tab.tsx').split('\n')
-    const idx = calc.findIndex((v) => v.includes('hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2'))
+    const idx = calc.findIndex((v) => v.includes('hover:opacity-80 transition-opacity focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2'))
     expect(idx).toBeGreaterThan(7)
     expect(calc.slice(idx - 8, idx + 7).some((v) => v.includes('ring-roksal-navy/40'))).toBe(true)
     const dash = R(DASH)

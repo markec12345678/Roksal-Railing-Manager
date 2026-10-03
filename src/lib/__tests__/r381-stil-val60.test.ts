@@ -77,8 +77,8 @@ describe('R381 stil val 60 — nativni prehod-paritetni zaključek (11 × INS, v
   })
 
   it('(C) NATIVNI GUMBI EVOLVED: audit/measurements/photo vsak nosi val 60 evolved podniz ×1; pre-val podniz ×0', () => {
-    const AUDIT_EVOLVED = 'hover:text-roksal-ink focus-visible:outline-none transition-colors focus-visible:ring-2 focus-visible:ring-roksal-navy/40'
-    const MERITVE_EVOLVED = 'flex-1 text-left min-w-0 focus-visible:outline-none transition-colors focus-visible:ring-2 focus-visible:ring-roksal-navy/40'
+    const AUDIT_EVOLVED = 'hover:text-roksal-ink focus-visible:outline-hidden transition-colors focus-visible:ring-2 focus-visible:ring-roksal-navy/40'
+    const MERITVE_EVOLVED = 'flex-1 text-left min-w-0 focus-visible:outline-hidden transition-colors focus-visible:ring-2 focus-visible:ring-roksal-navy/40'
     const PHOTO_EVOLVED = 'hover:bg-muted hover:text-roksal-ink transition-colors focus-visible:ring-2 focus-visible:ring-roksal-navy/40'
     expect(pod(R('roksal/audit-trail-dialog.tsx'), AUDIT_EVOLVED)).toBe(1)
     expect(pod(R('roksal/measurements-tab.tsx'), MERITVE_EVOLVED)).toBe(1)

@@ -14,7 +14,7 @@ import { join } from 'node:path'
 const TAB = join(process.cwd(), 'src/components/roksal/measurements-tab.tsx')
 const tab = readFileSync(TAB, 'utf8')
 
-const RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40'
+const RING = 'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40'
 
 describe('r350 stil val 33 — bulk orodna vrstica a11y parity (4 gumba)', () => {
   it('Izberi vse: aria-label + title', () => {

@@ -92,10 +92,10 @@ describe('R379 stil val 59 — red/40 offset-2 pariteta (14 × INS, val 43 RED_K
   })
 
   it('(E) OBRNJENA REGRESIJA: val 55 needleji N1–N4 ostajajo ×1 + val 58 transition-colors + navy kanon + amber/50 pariteta 100%', () => {
-    const N1 = 'animate-fade-in-up cursor-pointer transition-colors hover:bg-roksal-red/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2'
-    const N2 = 'shadow-sm animate-fade-in-up transition-colors hover:bg-roksal-red/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2'
-    const N3 = 'p-1.5 rounded-lg hover:bg-roksal-red/10 focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2 focus-visible:outline-none transition-colors'
-    const N4 = 'flex items-center gap-1 transition-colors hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2'
+    const N1 = 'animate-fade-in-up cursor-pointer transition-colors hover:bg-roksal-red/10 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2'
+    const N2 = 'shadow-sm animate-fade-in-up transition-colors hover:bg-roksal-red/10 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2'
+    const N3 = 'p-1.5 rounded-lg hover:bg-roksal-red/10 focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2 focus-visible:outline-hidden transition-colors'
+    const N4 = 'flex items-center gap-1 transition-colors hover:text-roksal-ink focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2'
     expect(pod(R('roksal/dashboard-tab.tsx'), N1)).toBe(1)
     expect(pod(R('roksal/vodja-dashboard.tsx'), N2)).toBe(1)
     expect(pod(R('roksal/measurements-tab.tsx'), N3)).toBe(1)

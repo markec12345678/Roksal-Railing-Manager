@@ -123,7 +123,7 @@ describe('R391 STIL val 68 — press-scale dvojni mehanizem resolucija', () => {
     const podatkovne = reg.split('\n').filter((l) => l && !l.startsWith('#') && l.split('\t').length >= 3 && l.split('\t')[2].startsWith('need_static'))
     // need_static podatkovne NESPREMENJENE (4 — era vsota 173 ohranjena)
     expect(podatkovne).toHaveLength(4)
-    const naslednica = podatkovne.find((l) => l.startsWith('h-8 shrink-0 gap-1.5 text-[11px] font-medium tabular-nums focus-visible:outline-none'))
+    const naslednica = podatkovne.find((l) => l.startsWith('h-8 shrink-0 gap-1.5 text-[11px] font-medium tabular-nums focus-visible:outline-hidden'))
     expect(naslednica).toBeDefined()
     const inv = readFileSync(join(ROK, 'inventory-tab.tsx'), 'utf8')
     expect(inv.split(naslednica!.split('\t')[0]).length - 1).toBe(1)

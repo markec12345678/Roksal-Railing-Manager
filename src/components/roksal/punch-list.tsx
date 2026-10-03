@@ -528,7 +528,7 @@ export function PunchList({ project }: { project: Project | null }) {
               type="button"
               onClick={() => void handleStanjePdf()}
               disabled={stanjeVteku}
-              className={`flex shrink-0 items-center gap-1 rounded-lg border border-border/50 bg-secondary/50 px-2 py-1 text-2xs font-medium text-muted-foreground transition-all duration-150 active:scale-[0.96] hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40 ${items.length > 0 ? '' : 'ml-auto'}`}
+              className={`flex shrink-0 items-center gap-1 rounded-lg border border-border/50 bg-secondary/50 px-2 py-1 text-2xs font-medium text-muted-foreground transition-all duration-150 active:scale-[0.96] hover:text-roksal-ink focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40 ${items.length > 0 ? '' : 'ml-auto'}`}
               aria-label="Izvozi pregled stanja zapisnika kot PDF"
               title="Stanje zapisnika kot pravi PDF — VSE točke zapisnika (tudi rešene)"
             >

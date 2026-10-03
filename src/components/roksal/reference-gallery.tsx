@@ -1531,7 +1531,7 @@ export function ReferenceGallery() {
             return (
               <Card
                 key={item.id}
-                className="break-inside-avoid mb-3 overflow-hidden cursor-pointer transition-[border-color,box-shadow] duration-150 hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25 hover:shadow-md group relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
+                className="break-inside-avoid mb-3 overflow-hidden cursor-pointer transition-[border-color,box-shadow] duration-150 hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25 hover:shadow-md group relative focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                 tabIndex={0}
                 role="button"
                 aria-label={`Odpri realizacijo: ${item.naslov}`}

@@ -89,7 +89,7 @@ describe('R375 stil val 57 — ring↔border pariteta navy/40 obrobljenih gumbov
       expect(v.indexOf(BORDER), `${ln} INS TIK ZA offset`).toBe(v.indexOf(O2) + O2.length + 1)
       expect(v.indexOf(DARK_BORDER), `${ln} dark: tik za border`).toBe(v.indexOf(BORDER) + BORDER.length + 1)
       expect(v.includes(DARK_BORDER), `${ln} r166 dark obramba`).toBe(true)
-      const o = v.indexOf('focus-visible:outline-none')
+      const o = v.indexOf('focus-visible:outline-hidden')
       if (o !== -1) expect(o, `${ln} outline pred ring`).toBeLessThan(v.indexOf(NAVY))
     }
     expect(wcLinije(src), 'in-place vrstice').toBe(6232)

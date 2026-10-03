@@ -99,7 +99,7 @@ describe('R183 — fotografije (photo-tab): fail-verbose + živost', () => {
     expect(src).toContain('aria-label="Ponovno naloži fotografije"')
     expect(src).toMatch(/onClick=\{\(\) => void loadPhotos\(\)\}/)
     // hover družina (R172/R176/R182 — 9 → 10 površin)
-    expect(src).toMatch(/transition-colors hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-red\/40/)
+    expect(src).toMatch(/transition-colors hover:text-roksal-ink focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-red\/40/)
   })
 })
 

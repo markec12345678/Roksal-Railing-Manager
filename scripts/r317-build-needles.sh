@@ -61,7 +61,7 @@ echo "--- R317 MANDATORY STIL — val 8: izvozna družina — izrecni focus-visi
 need_static "focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2" "R317 vodja amber ring par (blok glave ×3)"
 # EVOLVED R383 val 61: site-survey L535 je dobil O2+FB+dark (A/offset + C/border zaključek) —
 # žeton razširjen na končno obliko; SEMANTIKA ostaja (harmoniziran ring na PDF gumbu).
-need_static "focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40 focus-visible:outline-none" "R317 site-survey PDF gumb harmoniziran ring (žeton)"
+need_static "focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40 focus-visible:outline-hidden" "R317 site-survey PDF gumb harmoniziran ring (žeton) [EVOLVED R394 val 70: outline-none→outline-hidden — forced-colors fokus pariteta]"
 need_static "focus-visible:ring-2 focus-visible:ring-roksal-navy/40" "R317 družinski navy ring (širina ring-2)"
 echo "--- R317 must_miss (negativni — SAMO enolično pripisljivi stari brez-ring-2 vzorci) ---"
 must_miss "px-2 text-xs focus-visible:ring-roksal-navy/40" "R317 deal-pipeline stari ring brez širine (izginil — unikaten px-2 rep)"

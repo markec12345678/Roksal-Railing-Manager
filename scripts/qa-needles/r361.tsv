@@ -13,6 +13,7 @@
 # ── R361 lastni needleji ──
 # STIL val 44: statične className celote (NOVI nizi — era-diskriminatorji):
 ml-auto h-7 shrink-0 gap-1.5 text-[11px] focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2	R361 val 44 CSV pill ring offset-2 (×1 v virih; 0 v HEAD)	need_static
-font-medium press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2	R361 val 44 opomnik PDF ring offset-1→2 (×1 v virih; 0 v HEAD)	need_static
+# font-medium press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2	R361 val 44 opomnik PDF ring offset-1→2 (×1 v virih; 0 v HEAD)	need_static — EVOLVED R394 val 70: žeton 'focus-visible:outline-none' → 'focus-visible:outline-hidden' (forced-colors fokus pariteta — ring/box-shadow NE preživi forced-colors mode, outline-hidden obnovi 2px outline; normal-mode CSS identična) — vrstica KOMENTIRANA (zgodovina dobesedno), naslednica = naslednja podatkovna vrstica
+font-medium press-scale focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2	R394 val 70 NASLEDNICA — žeton outline-none→outline-hidden (opis izvirnika: R361 val 44 opomnik PDF ring offset-1→2 (×1 v virih; 0 v HEAD))	need_static
 text-[11px] focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2	R361 val 44 status filter + CSV pill ring offset-2 (statičen segment ×2 mesti; 0 v HEAD)	need_static
 TODO-R361	R361 — brez razvojnih ostankov	must_miss

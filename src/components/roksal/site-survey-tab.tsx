@@ -532,7 +532,7 @@ export function SiteSurveyTab({ projectId, project }: SiteSurveyTabProps) {
                   type="button" size="sm" variant="outline"
                   onClick={() => void exportPdf()}
                   disabled={generating}
-                  className="h-8 gap-1.5 rounded-lg border-roksal-navy/20 dark:border-roksal-ink/20 px-2.5 text-[11px] font-bold text-roksal-ink transition-colors hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40 focus-visible:outline-none"
+                  className="h-8 gap-1.5 rounded-lg border-roksal-navy/20 dark:border-roksal-ink/20 px-2.5 text-[11px] font-bold text-roksal-ink transition-colors hover:bg-roksal-amber/10 hover:text-roksal-ink focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40 focus-visible:outline-hidden"
                   aria-label="Izvozi PDF zapisnik"
                 >
                   {generating ? <Loader2 aria-hidden="true" className="h-3.5 w-3.5 animate-spin" /> : <FileDown aria-hidden="true" className="h-3.5 w-3.5 text-roksal-amber" />}

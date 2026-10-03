@@ -333,7 +333,7 @@ export function TerminiCard({ myUserId, onOpenProjectId }: TerminiCardProps) {
           <button
             type="button"
             onClick={() => onOpenProjectId(t.projectId)}
-            className={`flex w-full items-start gap-3 rounded-lg py-2.5 pl-3 pr-12 text-left transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 dark:focus-visible:ring-roksal-ink/40 active:scale-[0.99] ${obrobe}`}
+            className={`flex w-full items-start gap-3 rounded-lg py-2.5 pl-3 pr-12 text-left transition-all duration-150 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 dark:focus-visible:ring-roksal-ink/40 active:scale-[0.99] ${obrobe}`}
           >
             {vsebina}
           </button>
@@ -349,7 +349,7 @@ export function TerminiCard({ myUserId, onOpenProjectId }: TerminiCardProps) {
           onClick={() => void kopiraj(t)}
           aria-label={kopirajLabel}
           title="Kopiraj v odložišče (za SMS/WhatsApp)"
-          className="absolute right-1.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 dark:focus-visible:ring-roksal-ink/40 dark:hover:text-roksal-ink"
+          className="absolute right-1.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-roksal-ink focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 dark:focus-visible:ring-roksal-ink/40 dark:hover:text-roksal-ink"
         >
           <Copy className="h-3.5 w-3.5" aria-hidden="true" />
         </button>

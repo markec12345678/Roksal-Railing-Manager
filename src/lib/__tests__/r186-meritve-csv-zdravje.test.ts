@@ -147,7 +147,7 @@ describe('R186 — žičenje (measurements-tab): gumb izvoza CSV', () => {
     // R254 pin shift: codemod P1-d vstavil aria-hidden="true" (dekorativna
     // ikona izven screen-reader drevesa — detektor r254 vzdržuje invarianto).
     expect(src).toMatch(/aria-label="Izvozi vidne meritve kot CSV"[\s\S]{0,400}<Download aria-hidden="true" className="h-3 w-3" \/>/)
-    expect(src).toContain('hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40')
+    expect(src).toContain('hover:text-roksal-ink focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40')
   })
 
   it('regresija R183: pečat + EN VIR loader ostajata nedotaknjena (živostna površina 18)', () => {

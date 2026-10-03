@@ -27,7 +27,8 @@
 # Era preverba: kanonski skript r366-era-harvest.sh (19 registrov
 # r347–r365, ≥81 need_static) + R367 pričakuje r366.tsv 4 needleje ŽIVO.
 w-full bg-roksal-navy text-white shadow-sm press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2	R366 val 49 Nov dobavitelj CTA ring offset-2 (x1; 0 v HEAD)	need_static
-tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2	R366 val 49 chipCls status filter template statičen segment ring offset-2 (x1; 0 v HEAD)	need_static
+# tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2	R366 val 49 chipCls status filter template statičen segment ring offset-2 (x1; 0 v HEAD)	need_static — EVOLVED R394 val 70: žeton 'focus-visible:outline-none' → 'focus-visible:outline-hidden' (forced-colors fokus pariteta — ring/box-shadow NE preživi forced-colors mode, outline-hidden obnovi 2px outline; normal-mode CSS identična) — vrstica KOMENTIRANA (zgodovina dobesedno), naslednica = naslednja podatkovna vrstica
+tabular-nums transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2	R394 val 70 NASLEDNICA — žeton outline-none→outline-hidden (opis izvirnika: R366 val 49 chipCls status filter template statičen segment ring offset-2 (x1; 0 v HEAD))	need_static
 h-8 text-xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2	R366 val 49 h-8 izvozni pilli ring offset-2 (x4 pojavitve; 0 v HEAD)	need_static
 h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2	R366 val 49 h-6 pilli ring offset-2 (x8 pojavitve; 0 v HEAD)	need_static
 TODO-R366	must_miss: razvojni ostanki (nesme biti v produkcijskih čankih)	must_miss

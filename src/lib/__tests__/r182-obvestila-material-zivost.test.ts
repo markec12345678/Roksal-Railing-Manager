@@ -104,7 +104,7 @@ describe('R182 — obvestila (notification-center): fail-verbose agregacije + ž
     expect(src).toContain('aria-label="Ponovno naloži obvestila"')
     expect(src).toMatch(/Poskusi znova\s*\n\s*<\/button>/)
     // stil družina retry gumbov (R172/R176) + focus ring
-    expect(src).toMatch(/transition-colors hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-red\/40/)
+    expect(src).toMatch(/transition-colors hover:text-roksal-ink focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-red\/40/)
     // error panel PREDNOST: prazno stanje 'Vse je pod nadzorom' NIČ, če viri padli
     expect(src).toMatch(/!persistedError && !viriNapaka && \(/)
   })
@@ -168,7 +168,7 @@ describe('R182 — materialna inteligenca (material-intelligence-tab): fail-verb
     expect(src).toMatch(/\{viriNapaka && \(/)
     expect(src).toContain('role="alert"')
     expect(src).toContain('aria-label="Ponovno naloži materialno inteligenco"')
-    expect(src).toMatch(/transition-colors hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-red\/40/)
+    expect(src).toMatch(/transition-colors hover:text-roksal-ink focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-red\/40/)
     // BOM: brez lažnega 'Deal ni zaklenjen', ko BOM vir ni naložen
     expect(src).toMatch(/!bomRefine && viriNapaka \? null : !bomRefine\?\.dealLocked \? \(/)
     // orders + suppliers: lažno prazno stanje NIČ, ko je vir padel

@@ -114,12 +114,12 @@ describe('r369 stil val 52 — navy+ink PARIŠKA pariteta + e2e-lib dedup 9. val
     // notification L881 ×1, quick-actions ×1) — offset MED svetlo in temno
     expect(pod(vse, 'focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 dark:focus-visible:ring-roksal-ink/40')).toBe(7) // [PIN SHIFT R382 val 61: 3 bordered vrstice nosi FB+dark MED O2 in dark:ring]
     // N2: notification L855 split vrstica (offset pred disabled:)
-    expect(pod(vse, 'hover:text-roksal-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 disabled:cursor-not-allowed')).toBe(1)
+    expect(pod(vse, 'hover:text-roksal-navy focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 disabled:cursor-not-allowed')).toBe(1)
     // N3: notification L940 split vrstica (offset pred active:)
     expect(pod(vse, 'focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 active:scale-[0.97]')).toBe(1)
     // N4: bottom-nav L123 file-diskriminator (outline-none + ring-2 MED
     // md:text-[11px] in navy/40 — žeton vrstnega reda, LEKCIJA R363)
-    expect(pod(vse, 'md:text-[11px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2')).toBe(1)
+    expect(pod(vse, 'md:text-[11px] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2')).toBe(1)
     // izpuščen kandidat (iskreno v registru dokumentiran): 'navy/40 offset-2
     // disabled:' BREZ hover prefixa — NI ×0 v HEAD (×1 starejša era v
     // inclinometer-tab, izven tarče val 52); nad 4 tarčnih datotek ×1 (nov

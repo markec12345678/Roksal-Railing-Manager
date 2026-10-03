@@ -75,7 +75,7 @@ describe('r366 STIL val 49 — ring PARITETA material-intelligence družine', ()
 
   it('(B) era-diskriminatorji: val 49 NOVI className tokeni (×0 v HEAD pred rundo — fetch-first git grep GLASNO potrjeno ×5); multiplicita ×1/×1/×4/×8 v POJAVITVAH (LEKCIJA R365 (2))', () => {
     const n1 = 'w-full bg-roksal-navy text-white shadow-sm press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2'
-    const n3 = 'tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2'
+    const n3 = 'tabular-nums transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2'
     const n4 = 'h-8 text-xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2'
     const n5 = 'h-6 gap-1 text-2xs press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2'
     expect(pojavitve(MATERIAL, n1)).toBe(1)

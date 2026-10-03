@@ -1286,7 +1286,7 @@ export function CrmTab({
                       variant="outline"
                       onClick={handleOpomnikPdf}
                       disabled={opomnikVTeku}
-                      className="h-8 gap-1.5 px-2.5 text-[11px] font-medium press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
+                      className="h-8 gap-1.5 px-2.5 text-[11px] font-medium press-scale focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                       aria-label="Pripravi opomnik kot PDF"
                       title="Terenski list za ponovni kontakt kot pravi PDF — stranka, naloga, kontekst"
                     >

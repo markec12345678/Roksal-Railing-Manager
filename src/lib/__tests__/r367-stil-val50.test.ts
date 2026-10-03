@@ -85,7 +85,7 @@ describe('r367 STIL val 50 — ring OBLIKOVNA pariteta rdeče focus družine (pe
 
   it('(B) era-diskriminatorji: val 50 NOVI className tokeni (×0 v HEAD pred rundo — fetch-first git grep GLASNO potrjeno ×5); multiplicita ×1 vsak (v POJAVITVAH — LEKCIJA R365 (2))', () => {
     const n1 = 'focus-visible:ring-2 focus-visible:ring-red-400/50 focus-visible:ring-offset-2 press-scale'
-    const n2 = 'focus-visible:ring-red-400/50 focus-visible:ring-offset-2 focus-visible:outline-none'
+    const n2 = 'focus-visible:ring-red-400/50 focus-visible:ring-offset-2 focus-visible:outline-hidden'
     const n3 = 'focus-visible:ring-red-400/60 focus-visible:ring-offset-2'
     const n4 = 'focus-visible:ring-red-600/40 focus-visible:ring-offset-2'
     expect(pojavitve(LOG, n1)).toBe(1)

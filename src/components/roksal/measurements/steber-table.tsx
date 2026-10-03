@@ -66,7 +66,7 @@ export function SteberTable({
         <button
           type="button"
           onClick={onExportCsv}
-          className="flex items-center gap-1 rounded-md border border-roksal-navy/20 dark:border-roksal-ink/20 bg-background px-1.5 py-0.5 text-[9px] font-medium text-roksal-ink hover:bg-roksal-navy/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+          className="flex items-center gap-1 rounded-md border border-roksal-navy/20 dark:border-roksal-ink/20 bg-background px-1.5 py-0.5 text-[9px] font-medium text-roksal-ink hover:bg-roksal-navy/10 transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
           aria-label="Izvozi preglednico stebrov kot CSV"
           title="Izvozi stebre tega segmenta kot CSV za Excel"
         >

@@ -79,10 +79,10 @@ describe('R372 stil val 55 — red/40 RAW pariteta (2 SUB O1→O2 + 6 INS offset
   })
 
   it('(B) era-diskriminatorji val 55: N1 ×1 / N2 ×1 / N3 ×1 / N4 ×1 (per-datoteka grep -rlF kanon, vsi ×0 v HEAD 810b691 fetch-first GLASNO) + dokumentirani ne-tarčni ostanki (top-bar CMP DropdownMenuItem ×2 brez offseta + dashboard KIT L1914 brez offseta — izjema #1)', () => {
-    const N1 = 'flex w-full items-center gap-3 rounded-xl border border-roksal-red/20 bg-roksal-red/5 p-3 text-left animate-fade-in-up cursor-pointer transition-colors hover:bg-roksal-red/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2'
-    const N2 = 'shadow-sm animate-fade-in-up transition-colors hover:bg-roksal-red/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2'
-    const N3 = 'p-1.5 rounded-lg hover:bg-roksal-red/10 focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2 focus-visible:outline-none transition-colors'
-    const N4 = 'flex items-center gap-1 transition-colors hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2'
+    const N1 = 'flex w-full items-center gap-3 rounded-xl border border-roksal-red/20 bg-roksal-red/5 p-3 text-left animate-fade-in-up cursor-pointer transition-colors hover:bg-roksal-red/10 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2'
+    const N2 = 'shadow-sm animate-fade-in-up transition-colors hover:bg-roksal-red/10 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2'
+    const N3 = 'p-1.5 rounded-lg hover:bg-roksal-red/10 focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2 focus-visible:outline-hidden transition-colors'
+    const N4 = 'flex items-center gap-1 transition-colors hover:text-roksal-ink focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2'
     expect(pod(R('src/components/roksal/dashboard-tab.tsx'), N1)).toBe(1)
     expect(pod(R('src/components/roksal/vodja-dashboard.tsx'), N2)).toBe(1)
     expect(pod(R('src/components/roksal/measurements-tab.tsx'), N3)).toBe(1)
@@ -114,7 +114,7 @@ describe('R372 stil val 55 — red/40 RAW pariteta (2 SUB O1→O2 + 6 INS offset
     // r346 LINE-okno (i-8..i+6 semantika): anchor vrstica okoli calculator
     // izvoznih gumbov še vedno z offset-2 (val 53)
     const calc = R('src/components/roksal/calculator-tab.tsx').split('\n')
-    const idx = calc.findIndex((v) => v.includes('hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2'))
+    const idx = calc.findIndex((v) => v.includes('hover:opacity-80 transition-opacity focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2'))
     expect(idx).toBeGreaterThan(7)
     expect(calc.slice(idx - 8, idx + 7).some((v) => v.includes('ring-roksal-navy/40'))).toBe(true)
     // [PIN SHIFT R372 val 55] marker ŽIVO v r371 testu + navy-vrstični guard

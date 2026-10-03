@@ -3122,7 +3122,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                       onClick={() => handleStatusCycle(m)}
                       disabled={statusBusyId === m.id}
                       aria-label={`Status meritve ${m.oznaka || m.lokacija || `#${m.id.slice(-4)}`}: ${statusLabels[mStatus]}. Klik za spremembo v ${statusLabels[statusCycle[mStatus]]}`}
-                      className={`inline-flex items-center gap-0.5 rounded px-1 py-0 text-3xs font-medium border transition-all hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40 disabled:cursor-wait disabled:opacity-50 ${
+                      className={`inline-flex items-center gap-0.5 rounded px-1 py-0 text-3xs font-medium border transition-all hover:opacity-80 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40 disabled:cursor-wait disabled:opacity-50 ${
                         statusColors[mStatus]
                       }`}
                       title="Klikni za cikliranje statusa (shranjeno v bazo)"
@@ -3286,7 +3286,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   <button
                     type="button"
                     onClick={() => toggleZgodovina(m)}
-                    className="p-1.5 rounded-lg hover:bg-roksal-navy/10 dark:hover:bg-roksal-ink/10 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:outline-none transition-colors"
+                    className="p-1.5 rounded-lg hover:bg-roksal-navy/10 dark:hover:bg-roksal-ink/10 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:outline-hidden transition-colors"
                     title="Zgodovina verzij"
                     aria-label={`Pokaži zgodovino verzij meritve ${m.oznaka || m.lokacija || `#${m.id.slice(-4)}`}`}
                   >
@@ -3307,7 +3307,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   <button
                     type="button"
                     onClick={() => handleStartCorrection(m)}
-                    className="p-1.5 rounded-lg hover:bg-roksal-navy/10 dark:hover:bg-roksal-ink/10 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:outline-none transition-colors"
+                    className="p-1.5 rounded-lg hover:bg-roksal-navy/10 dark:hover:bg-roksal-ink/10 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:outline-hidden transition-colors"
                     title="Popravi meritev (ustvari novo verzijo)"
                     aria-label={`Popravi meritev ${m.oznaka || m.lokacija || `#${m.id.slice(-4)}`} — ustvari novo verzijo`}
                   >
@@ -3326,7 +3326,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   <button
                     type="button"
                     onClick={() => handleViewPhoto(m)}
-                    className="p-1.5 rounded-lg hover:bg-roksal-amber/10 focus-visible:ring-2 focus-visible:ring-roksal-amber/40 focus-visible:ring-offset-2 focus-visible:outline-none transition-colors"
+                    className="p-1.5 rounded-lg hover:bg-roksal-amber/10 focus-visible:ring-2 focus-visible:ring-roksal-amber/40 focus-visible:ring-offset-2 focus-visible:outline-hidden transition-colors"
                     title="Poglej foto"
                     aria-label={`Poglej pripadajočo foto mero za ${m.oznaka || 'meritev'}`}
                   >
@@ -3339,7 +3339,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
             <button
               type="button"
               onClick={() => handleDuplicateMeasurement(m)}
-              className="p-1.5 rounded-lg hover:bg-secondary/60 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:outline-none transition-colors"
+              className="p-1.5 rounded-lg hover:bg-secondary/60 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:outline-hidden transition-colors"
               title="Podvoji meritev"
               aria-label={`Podvoji meritev ${m.oznaka || m.id.slice(-4)}`}
             >
@@ -3348,7 +3348,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
             <button
               type="button"
               onClick={() => handleDeleteMeasurement(m.id)}
-              className="p-1.5 rounded-lg hover:bg-roksal-red/10 focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2 focus-visible:outline-none transition-colors"
+              className="p-1.5 rounded-lg hover:bg-roksal-red/10 focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2 focus-visible:outline-hidden transition-colors"
               title="Izbriši meritev"
               aria-label={`Izbriši meritev ${m.oznaka || m.id.slice(-4)}`}
             >
@@ -3475,7 +3475,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               <button
                 type="button"
                 onClick={() => handleViewPhoto(m)}
-                className="flex items-center gap-1 rounded-lg border border-roksal-amber/30 bg-roksal-amber/5 px-2 py-1 text-[11px] font-medium text-roksal-amber hover:bg-roksal-amber/10 active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-roksal-amber/40 focus-visible:ring-offset-2 focus-visible:border-roksal-amber/40 dark:focus-visible:border-roksal-amber/40 focus-visible:outline-none transition-all duration-150"
+                className="flex items-center gap-1 rounded-lg border border-roksal-amber/30 bg-roksal-amber/5 px-2 py-1 text-[11px] font-medium text-roksal-amber hover:bg-roksal-amber/10 active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-roksal-amber/40 focus-visible:ring-offset-2 focus-visible:border-roksal-amber/40 dark:focus-visible:border-roksal-amber/40 focus-visible:outline-hidden transition-all duration-150"
                 title="Poglej pripadajočo foto mero"
                 aria-label={`Poglej pripadajočo foto mero za ${m.oznaka || 'meritev'}`}
               >
@@ -3493,7 +3493,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                     m.oznaka || m.lokacija || `Meritev #${m.id.slice(-4)}`
                   )
                 }
-                className="flex items-center gap-1 rounded-lg bg-roksal-navy text-white px-2.5 py-1 text-[11px] font-medium hover:bg-roksal-navy/90 active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:outline-none transition-all duration-150"
+                className="flex items-center gap-1 rounded-lg bg-roksal-navy text-white px-2.5 py-1 text-[11px] font-medium hover:bg-roksal-navy/90 active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:outline-hidden transition-all duration-150"
                 title="Izračunaj razmike v kalkulatorju"
                 aria-label={`Izračunaj razmike za meritev ${m.oznaka || m.id.slice(-4)}`}
               >
@@ -3672,7 +3672,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   type="button"
                   onClick={() => handleApplyPredloga(p.id)}
                   disabled={!selectedProject}
-                  className="flex flex-col items-start gap-1 rounded-lg border border-border/50 bg-secondary/30 p-2.5 text-left transition-all duration-150 hover:border-roksal-amber/40 hover:bg-roksal-amber/5 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
+                  className="flex flex-col items-start gap-1 rounded-lg border border-border/50 bg-secondary/30 p-2.5 text-left transition-all duration-150 hover:border-roksal-amber/40 hover:bg-roksal-amber/5 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                   aria-label={`Naloži predlogo meritev: ${p.naziv}`}
                   title="Naloži predlogo — zapolni vnosni obrazec z vrednostmi predloge"
                 >
@@ -3760,7 +3760,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   key={tip}
                   type="button"
                   onClick={() => handleQuickAdd(tip)}
-                  className={`flex flex-col items-center justify-center gap-1 rounded-lg border p-2.5 transition-all duration-150 active:scale-[0.96] hover:border-roksal-navy/40 dark:hover:border-roksal-ink/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40 ${tipMeritveColors[tip]}`}
+                  className={`flex flex-col items-center justify-center gap-1 rounded-lg border p-2.5 transition-all duration-150 active:scale-[0.96] hover:border-roksal-navy/40 dark:hover:border-roksal-ink/40 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40 ${tipMeritveColors[tip]}`}
                   aria-label={`Nova meritev: ${tipMeritveLabels[tip]}`}
                   title={`Hitro dodaj novo meritev vrste ${tipMeritveLabels[tip]} v ta projekt`}
                 >
@@ -3783,7 +3783,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   key={tip}
                   type="button"
                   onClick={() => handleQuickAdd(tip)}
-                  className={`flex flex-col items-center justify-center gap-1 rounded-lg border p-2.5 transition-all duration-150 active:scale-[0.96] hover:border-roksal-navy/40 dark:hover:border-roksal-ink/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40 ${tipMeritveColors[tip]}`}
+                  className={`flex flex-col items-center justify-center gap-1 rounded-lg border p-2.5 transition-all duration-150 active:scale-[0.96] hover:border-roksal-navy/40 dark:hover:border-roksal-ink/40 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40 ${tipMeritveColors[tip]}`}
                   aria-label={`Nova meritev: ${tipMeritveLabels[tip]}`}
                   title={`Hitro dodaj novo meritev vrste ${tipMeritveLabels[tip]} v ta projekt`}
                 >
@@ -3813,7 +3813,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   key={u}
                   type="button"
                   onClick={() => setPrimaryUnit(u)}
-                  className={`rounded-md px-3 py-1 text-xs font-medium transition-all duration-150 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 ${
+                  className={`rounded-md px-3 py-1 text-xs font-medium transition-all duration-150 active:scale-[0.96] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 ${
                     primaryUnit === u
                       ? 'bg-roksal-navy text-white shadow-sm'
                       : 'text-muted-foreground hover:text-roksal-ink'
@@ -3842,7 +3842,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
             <CollapsibleTrigger asChild>
               <button
                 type="button"
-                className="flex w-full items-center justify-between p-4 text-left hover:bg-secondary/30 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:outline-none transition-colors"
+                className="flex w-full items-center justify-between p-4 text-left hover:bg-secondary/30 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:outline-hidden transition-colors"
               >
                 <div className="flex items-center gap-2">
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-roksal-amber text-white">
@@ -4017,7 +4017,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                           <button
                             type="button"
                             onClick={() => handleLoadStairTemplate(t)}
-                            className="flex-1 text-left min-w-0 focus-visible:outline-none transition-colors focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 rounded"
+                            className="flex-1 text-left min-w-0 focus-visible:outline-hidden transition-colors focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 rounded"
                             aria-label={`Naloži stopnično predlogo: ${t.naziv}`}
                             title="Naloži stopnično predlogo v vnosni obrazec"
                           >
@@ -4052,7 +4052,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
           <CollapsibleTrigger asChild>
             <button
               type="button"
-              className="flex w-full items-center justify-between p-4 text-left hover:bg-secondary/30 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:outline-none transition-colors"
+              className="flex w-full items-center justify-between p-4 text-left hover:bg-secondary/30 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:outline-hidden transition-colors"
             >
               <div className="flex items-center gap-2">
                 <div
@@ -4194,7 +4194,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
         <button
           type="button"
           onClick={() => setFormOpen(!formOpen)}
-          className="flex w-full items-center justify-between p-4 text-left hover:bg-secondary/30 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:outline-none transition-colors"
+          className="flex w-full items-center justify-between p-4 text-left hover:bg-secondary/30 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:outline-hidden transition-colors"
         >
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-roksal-navy text-white">
@@ -4961,7 +4961,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
             <CollapsibleTrigger asChild>
               <button
                 type="button"
-                className="flex w-full items-center justify-between p-4 text-left hover:bg-secondary/30 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:outline-none transition-colors"
+                className="flex w-full items-center justify-between p-4 text-left hover:bg-secondary/30 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:outline-hidden transition-colors"
               >
                 <div className="flex items-center gap-2">
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-roksal-amber text-roksal-navy">
@@ -5151,7 +5151,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   aria-pressed={isActive}
                   aria-label={`Filtriraj po statusu: ${label} (${count})`}
                   title={`Pokaži meritve statusa ${label} (${count})`}
-                  className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-2xs font-medium transition-all duration-150 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40 ${color}`}
+                  className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-2xs font-medium transition-all duration-150 active:scale-[0.96] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40 ${color}`}
                 >
                   {label}
                   <span className="rounded-full bg-black/10 px-1 text-[9px]">{count}</span>
@@ -5164,7 +5164,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               onClick={() => setFotoFilterActive(!fotoFilterActive)}
               aria-pressed={fotoFilterActive}
               aria-label="Foto mere filter: prikaži samo meritve zajete na foto zavihku"
-              className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-2xs font-medium transition-all duration-150 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40 ${
+              className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-2xs font-medium transition-all duration-150 active:scale-[0.96] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40 ${
                 fotoFilterActive
                   ? 'bg-roksal-amber text-white border-roksal-amber'
                   : 'bg-roksal-amber/5 text-roksal-amber border-roksal-amber/30 hover:bg-roksal-amber/10'
@@ -5179,7 +5179,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
             <button
               type="button"
               onClick={izvoziMeritveCsv}
-              className="flex shrink-0 items-center gap-1 rounded-lg border border-border/50 bg-secondary/50 px-2 py-1 text-2xs font-medium text-muted-foreground transition-all duration-150 active:scale-[0.96] hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
+              className="flex shrink-0 items-center gap-1 rounded-lg border border-border/50 bg-secondary/50 px-2 py-1 text-2xs font-medium text-muted-foreground transition-all duration-150 active:scale-[0.96] hover:text-roksal-ink focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
               aria-label="Izvozi vidne meritve kot CSV"
               title="Izvozi vidne meritve (upošteva filter) kot CSV za Excel"
             >
@@ -5191,7 +5191,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
             <button
               type="button"
               onClick={() => void kopirajMeritvePovzetek()}
-              className="flex shrink-0 items-center gap-1 rounded-lg border border-border/50 bg-secondary/50 px-2 py-1 text-2xs font-medium text-muted-foreground transition-all duration-150 active:scale-[0.96] hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
+              className="flex shrink-0 items-center gap-1 rounded-lg border border-border/50 bg-secondary/50 px-2 py-1 text-2xs font-medium text-muted-foreground transition-all duration-150 active:scale-[0.96] hover:text-roksal-ink focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
               aria-label="Kopiraj povzetek vidnih meritev v odložišče"
               title="Kopiraj vidne meritve (upošteva filter) kot besedilo za SMS/WhatsApp"
             >
@@ -5208,7 +5208,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                 type="button"
                 onClick={() => void handleTerenPdf()}
                 disabled={pdfVteku}
-                className="flex shrink-0 items-center gap-1 rounded-lg border border-border/50 bg-secondary/50 px-2 py-1 text-2xs font-medium text-muted-foreground transition-all duration-150 active:scale-[0.96] hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
+                className="flex shrink-0 items-center gap-1 rounded-lg border border-border/50 bg-secondary/50 px-2 py-1 text-2xs font-medium text-muted-foreground transition-all duration-150 active:scale-[0.96] hover:text-roksal-ink focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                 aria-label="Izvozi terenski pregled meritev kot PDF"
                 title="Terenski pregled meritev kot pravi PDF — VSE meritve projekta (tudi arhivirane)"
               >
@@ -5231,7 +5231,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                 type="button"
                 onClick={() => void handleZapisniListPdf()}
                 disabled={zapisniVteku}
-                className="flex shrink-0 items-center gap-1 rounded-lg border border-border/50 bg-secondary/50 px-2 py-1 text-2xs font-medium text-muted-foreground transition-all duration-150 active:scale-[0.96] hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
+                className="flex shrink-0 items-center gap-1 rounded-lg border border-border/50 bg-secondary/50 px-2 py-1 text-2xs font-medium text-muted-foreground transition-all duration-150 active:scale-[0.96] hover:text-roksal-ink focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                 aria-label="Izvozi terenski zapisni list kot PDF"
                 title="Terenski zapisni list (issue #15 §3) — zapisane mere + prazni stolpci za fizično validacijo na terenu"
               >
@@ -5255,7 +5255,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                 type="button"
                 onClick={() => void handleZapisniListCsv()}
                 disabled={zapisniCsvVteku}
-                className="flex shrink-0 items-center gap-1 rounded-lg border border-border/50 bg-secondary/50 px-2 py-1 text-2xs font-medium text-muted-foreground transition-all duration-150 active:scale-[0.96] hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
+                className="flex shrink-0 items-center gap-1 rounded-lg border border-border/50 bg-secondary/50 px-2 py-1 text-2xs font-medium text-muted-foreground transition-all duration-150 active:scale-[0.96] hover:text-roksal-ink focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                 aria-label="Izvozi terenski zapisni list kot CSV"
                 title="Terenski zapisni list kot CSV (issue #15 §3) — ista zapisana resnica + prazni stolpci fizicna_ref_mm/delta_mm/zapiski_terena za digitalno izpolnjevanje v Excelu"
               >
@@ -5393,7 +5393,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   <button
                     type="button"
                     onClick={handleBulkSelectAll}
-                    className="flex items-center gap-1 rounded-md border border-border bg-background px-2 py-0.5 text-2xs font-medium hover:bg-secondary/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
+                    className="flex items-center gap-1 rounded-md border border-border bg-background px-2 py-0.5 text-2xs font-medium hover:bg-secondary/50 transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                     aria-label="Izberi vse vidne meritve za skupinske akcije"
                     title="Izberi vse meritve vidnega (filtriranega) seznama"
                   >
@@ -5403,7 +5403,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   <button
                     type="button"
                     onClick={handleBulkClear}
-                    className="flex items-center gap-1 rounded-md border border-border bg-background px-2 py-0.5 text-2xs font-medium hover:bg-secondary/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
+                    className="flex items-center gap-1 rounded-md border border-border bg-background px-2 py-0.5 text-2xs font-medium hover:bg-secondary/50 transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                     aria-label="Počisti izbor izbranih meritev"
                     title="Odizbori vse izbrane meritve"
                   >
@@ -5420,7 +5420,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   type="button"
                   onClick={handleBulkExportCSV}
                   disabled={selectedIds.size === 0}
-                  className="flex items-center justify-center gap-1 rounded-md border border-roksal-navy/20 dark:border-roksal-ink/20 bg-background px-2 py-1 text-2xs font-medium text-roksal-ink hover:bg-roksal-navy/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
+                  className="flex items-center justify-center gap-1 rounded-md border border-roksal-navy/20 dark:border-roksal-ink/20 bg-background px-2 py-1 text-2xs font-medium text-roksal-ink hover:bg-roksal-navy/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                   aria-label="Izvozi izbrane meritve kot CSV"
                   title="Izvozi samo izbrane meritve kot CSV za Excel"
                 >
@@ -5444,7 +5444,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                     type="button"
                     onClick={handleBulkCopyToSegment}
                     disabled={selectedIds.size === 0 || !bulkCopyTarget}
-                    className="flex items-center gap-1 rounded-md border border-roksal-amber/30 bg-roksal-amber/10 px-2 py-1 text-2xs font-medium text-roksal-amber hover:bg-roksal-amber/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
+                    className="flex items-center gap-1 rounded-md border border-roksal-amber/30 bg-roksal-amber/10 px-2 py-1 text-2xs font-medium text-roksal-amber hover:bg-roksal-amber/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors whitespace-nowrap focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                     aria-label="Kopiraj izbrane meritve v ciljni segment"
                     title="Kopiraj izbrane meritve v izbrani ciljni segment"
                   >
@@ -5456,7 +5456,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                   type="button"
                   onClick={() => setBulkDeleteOpen(true)}
                   disabled={selectedIds.size === 0}
-                  className="flex items-center justify-center gap-1 rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 px-2 py-1 text-2xs font-medium text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/15 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
+                  className="flex items-center justify-center gap-1 rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 px-2 py-1 text-2xs font-medium text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/15 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                   aria-label="Izbriši izbrane meritve"
                   title="Trajno izbriši vse izbrane meritve"
                 >
@@ -5698,7 +5698,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               <button
                 type="button"
                 onClick={handleExportCSV}
-                className="flex items-center gap-1 rounded-lg border border-roksal-navy/20 dark:border-roksal-ink/20 bg-roksal-navy/5 px-2 py-1 text-2xs font-medium text-roksal-ink hover:bg-roksal-navy/10 active:scale-[0.96] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
+                className="flex items-center gap-1 rounded-lg border border-roksal-navy/20 dark:border-roksal-ink/20 bg-roksal-navy/5 px-2 py-1 text-2xs font-medium text-roksal-ink hover:bg-roksal-navy/10 active:scale-[0.96] transition-all duration-150 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                 aria-label="Izvozi vse meritve kot CSV"
                 title="Izvozi VSE meritve projekta (brez filtra) kot CSV za Excel"
                 disabled={loading || measurements.length === 0}
@@ -5709,7 +5709,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               <button
                 type="button"
                 onClick={handleExportPDF}
-                className="flex items-center gap-1 rounded-lg border border-roksal-amber/30 bg-roksal-amber/10 px-2 py-1 text-2xs font-medium text-roksal-amber hover:bg-roksal-amber/20 active:scale-[0.96] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
+                className="flex items-center gap-1 rounded-lg border border-roksal-amber/30 bg-roksal-amber/10 px-2 py-1 text-2xs font-medium text-roksal-amber hover:bg-roksal-amber/20 active:scale-[0.96] transition-all duration-150 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                 aria-label="Izvozi pregled meritev kot PDF"
                 title="Pregled vseh meritev projekta kot PDF za arhiv"
                 disabled={loading || measurements.length === 0}
@@ -5781,7 +5781,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
           <CollapsibleTrigger asChild>
             <button
               type="button"
-              className="flex w-full items-center justify-between p-4 text-left hover:bg-secondary/30 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:outline-none transition-colors"
+              className="flex w-full items-center justify-between p-4 text-left hover:bg-secondary/30 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:outline-hidden transition-colors"
             >
               <div className="flex items-center gap-2">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-roksal-navy/10 text-roksal-ink">
@@ -5877,7 +5877,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                       type="button"
                       variant="outline"
                       size="sm"
-                      className="h-7 text-[11px] ml-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
+                      className="h-7 text-[11px] ml-auto focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                       onClick={handleExportAuditCSV}
                       disabled={auditEntries.length === 0}
                       aria-label="Izvozi zgodovino meritev kot CSV"

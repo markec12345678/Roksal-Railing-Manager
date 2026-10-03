@@ -12,7 +12,7 @@ import { join } from 'node:path'
 const TAB = join(process.cwd(), 'src/components/roksal/measurements-tab.tsx')
 const tab = readFileSync(TAB, 'utf8')
 
-const RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40'
+const RING = 'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40'
 
 describe('r351 stil val 34 — filter čipi a11y parity (4 status čipi + Foto mere)', () => {
   it('status čipi: aria-pressed toggle stanje (bralnik zaslona pove stanje)', () => {

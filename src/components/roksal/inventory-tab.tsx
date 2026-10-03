@@ -1361,7 +1361,7 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
             <button
               key={tab.id}
               onClick={() => setFilter(tab.id)}
-              className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 ${
+              className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors press-scale focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 ${
                 filter === tab.id
                   ? 'bg-roksal-navy text-white border-b-2 border-white/30'
                   : 'bg-secondary text-muted-foreground hover:text-foreground'
@@ -1394,7 +1394,7 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
                 : 'Pokaži samo artikle pod minimalno zalogo'
             }
             title="Pokaži samo artikle, katerih zaloga je pod ali na minimumu"
-            className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40 ${
+            className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors press-scale focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40 ${
               podMinOnly
                 ? 'border-roksal-red/30 bg-roksal-red/10 text-roksal-red'
                 : 'border-transparent bg-secondary text-muted-foreground hover:text-foreground'
@@ -1425,7 +1425,7 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
                 : 'Pokaži samo artikle na minimalni zalogi'
             }
             title="Pokaži samo artikle, katerih zaloga je točno na minimumu"
-            className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40 ${
+            className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors press-scale focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40 ${
               naMinOnly
                 ? 'border-roksal-red/30 bg-roksal-red/10 text-roksal-red'
                 : 'border-transparent bg-secondary text-muted-foreground hover:text-foreground'
@@ -1458,7 +1458,7 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
                 : 'Pokaži samo artikle brez vpisane dobaviteljske cene'
             }
             title="Pokaži samo artikle, za katere ni vpisana cena pri nobenem dobavitelju"
-            className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40 ${
+            className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors press-scale focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40 ${
               brezDobaviteljaOnly
                 ? 'border-roksal-amber/40 bg-roksal-amber/10 text-roksal-amber'
                 : 'border-transparent bg-secondary text-muted-foreground hover:text-foreground'
@@ -1482,7 +1482,7 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
               'vidni artikli pod minimumom',
             )
           }
-          className="h-8 shrink-0 gap-1.5 text-[11px] font-medium tabular-nums press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+          className="h-8 shrink-0 gap-1.5 text-[11px] font-medium tabular-nums press-scale focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
           aria-label="Kopiraj naročilnico vidnih artiklov pod minimalno zalogo"
           title="Naročilnica za dobavitelja (vidni artikli pod minimumom) — prilepi v e-pošto/SMS"
         >
@@ -1497,7 +1497,7 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
           variant="outline"
           size="sm"
           onClick={() => openOsnutekDialog()}
-          className="h-8 shrink-0 gap-1.5 text-[11px] font-medium tabular-nums press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
+          className="h-8 shrink-0 gap-1.5 text-[11px] font-medium tabular-nums press-scale focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
           aria-label="Shrani naročilnico vidnih artiklov kot osnutek naročila"
           title="Shrani naročilnico (vidni artikli pod minimumom) kot osnutek naročila — Material → Naročila"
         >
@@ -1508,7 +1508,7 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
           variant="outline"
           size="sm"
           onClick={exportZalogaCsv}
-          className="h-8 shrink-0 gap-1.5 text-[11px] font-medium tabular-nums press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
+          className="h-8 shrink-0 gap-1.5 text-[11px] font-medium tabular-nums press-scale focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
           aria-label="Izvozi vidno zalogo kot CSV"
           title="Izvozi vidno zalogo (upošteva filter) kot CSV za Excel"
         >
@@ -1522,7 +1522,7 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
           variant="outline"
           size="sm"
           onClick={exportZalogaPdf}
-          className="h-8 shrink-0 gap-1.5 text-[11px] font-medium tabular-nums press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
+          className="h-8 shrink-0 gap-1.5 text-[11px] font-medium tabular-nums press-scale focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
           aria-label="Izvozi vidno zalogo kot PDF"
           title="Izvozi vidno zalogo (upošteva filter) kot PDF poročilo"
         >
@@ -1538,7 +1538,7 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
           size="sm"
           onClick={() => void handleInventuraPdf()}
           disabled={invPdfVteku}
-          className="h-8 shrink-0 gap-1.5 text-[11px] font-medium tabular-nums press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
+          className="h-8 shrink-0 gap-1.5 text-[11px] font-medium tabular-nums press-scale focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
           aria-label="Izvozi inventurni pregled premoženja kot PDF"
           title="Inventurni pregled premoženja kot pravi PDF — VSA zalogovna premoženja (FRESH ob kliku)"
         >
@@ -1559,7 +1559,7 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
           size="sm"
           onClick={() => void handleInventuraCsv()}
           disabled={invCsvVteku}
-          className="h-8 shrink-0 gap-1.5 text-[11px] font-medium tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40 active:scale-[0.96]"
+          className="h-8 shrink-0 gap-1.5 text-[11px] font-medium tabular-nums focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40 active:scale-[0.96]"
           aria-label="Izvozi inventurni pregled premoženja kot CSV"
           title="Inventurni pregled premoženja kot CSV (30. člen izvozne družine) — ista zapisana resnica kot PDF v Excelu: 8 tabelnih stolpcev + id/Premiki/Izvoženo za računovodski uvoz"
         >
@@ -1580,7 +1580,7 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
           size="sm"
           onClick={() => void handleVrednostPdf()}
           disabled={valPdfVteku}
-          className="h-8 shrink-0 gap-1.5 text-[11px] font-medium tabular-nums press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
+          className="h-8 shrink-0 gap-1.5 text-[11px] font-medium tabular-nums press-scale focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
           aria-label="Izvozi pregled vrednosti zaloge kot PDF"
           title="Pregled vrednosti zaloge kot pravi PDF — VSA zalogovna premoženja s trenutno veljavnimi cenami (FRESH ob kliku)"
         >
@@ -1800,7 +1800,7 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
                         type="button"
                         onClick={() => void toggleLots(item)}
                         aria-expanded={lotsOpenId === item.id}
-                        className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 text-2xs font-semibold text-roksal-ink/70 transition-colors hover:bg-secondary hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+                        className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 text-2xs font-semibold text-roksal-ink/70 transition-colors hover:bg-secondary hover:text-roksal-ink focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
                         title="Od kod je ta material? Šarže, dobavitelji in poraba"
                       >
                         <PackageSearch className="h-3 w-3" aria-hidden="true" />
@@ -2013,7 +2013,7 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
                   <button
                     key={key}
                     onClick={() => setMovementType(key)}
-                    className={`rounded-lg border p-2 text-center text-xs font-medium transition-all press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40 ${
+                    className={`rounded-lg border p-2 text-center text-xs font-medium transition-all press-scale focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40 ${
                       movementType === key
                         ? `border-roksal-navy bg-roksal-navy/10 text-roksal-ink shadow-sm`
                         : 'border-border bg-background text-muted-foreground hover:bg-secondary'
@@ -2188,7 +2188,7 @@ export function InventoryTab({ osnutekHint, filterHint }: InventoryTabProps) {
                     variant="outline"
                     size="sm"
                     onClick={() => void naloziDobavitelje()}
-                    className="h-8 gap-1.5 text-[11px] press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
+                    className="h-8 gap-1.5 text-[11px] press-scale focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"
                   >
                     Poskusi znova
                   </Button>

@@ -83,9 +83,9 @@ describe('R370 stil val 53 — navy/40 offset-1 rep normalizacija 1→2', () => 
   })
 
   it('(B) era-diskriminatorji val 53: N1 ×1 / N2 ×1 / N3 ×1 / N4 ×1 (POJAVITVE per-datoteka — LEKCIJA R368 (6): cat brez ločila laže) + 2 izpuščena kandidata DOKAZANA (vodja niz = material ×8; invoice pill niz = crm ×1)', () => {
-    const N1 = 'hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2'
+    const N1 = 'hover:opacity-80 transition-opacity focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2'
     const N2 = 'bg-roksal-navy hover:bg-roksal-navy/90 text-white h-9 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2'
-    const N3 = 'text-2xs font-medium press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2'
+    const N3 = 'text-2xs font-medium press-scale focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2'
     const N4 = 'focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 transition-colors'
     expect(pod(R('src/components/roksal/calculator-tab.tsx'), N1)).toBe(1)
     expect(pod(R('src/components/roksal/dashboard-tab.tsx'), N2)).toBe(1)
@@ -97,7 +97,7 @@ describe('R370 stil val 53 — navy/40 offset-1 rep normalizacija 1→2', () => 
     expect(pod(R('src/components/roksal/vodja-dashboard.tsx'), VODJA_NIZ)).toBe(3)
     expect(pod(R('src/components/roksal/material-intelligence-tab.tsx'), VODJA_NIZ)).toBe(8)
     // izpuščeni kandidat 2: invoice L1045/L1061 pill niz = ISTI kot crm ×1
-    const PILL_NIZ = 'h-8 gap-1.5 px-2.5 text-[11px] font-medium press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2'
+    const PILL_NIZ = 'h-8 gap-1.5 px-2.5 text-[11px] font-medium press-scale focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2'
     expect(pod(R('src/components/roksal/invoice-manager.tsx'), PILL_NIZ)).toBe(2)
     expect(pod(R('src/components/roksal/crm-tab.tsx'), PILL_NIZ)).toBe(1)
     // dokumentirana izjema: 'Izvozi CSV' L1678 = shadcn kit override (BREZ
@@ -118,7 +118,7 @@ describe('R370 stil val 53 — navy/40 offset-1 rep normalizacija 1→2', () => 
     expect(pod(B236, ZIG)).toBe(3)
     expect(B236).toContain('focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2" "R236 invoice CSV pill navy/40 [PIN SHIFT R370 val 53')
     expect(B236).toContain('focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2" "R236 Prejem navy/40 [PIN SHIFT R370 val 53')
-    expect(B236).toContain('bg-emerald-600 hover:bg-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40')
+    expect(B236).toContain('bg-emerald-600 hover:bg-emerald-500 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40')
     expect(B236.includes('ring-offset-1')).toBe(false)
     // (5) r237-build-needles L43
     const B237 = R('scripts/r237-build-needles.sh')

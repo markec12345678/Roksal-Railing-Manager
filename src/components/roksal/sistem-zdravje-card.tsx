@@ -201,7 +201,7 @@ export function SistemZdravjeCard() {
                 size="sm"
                 variant="outline"
                 onClick={handleZdravjeCsv}
-                className="press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40 focus-visible:outline-none"
+                className="press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40 focus-visible:outline-hidden"
                 aria-label="Izvozi sistem zdravje kot CSV"
                 title="Izvozi sistem zdravje (iste meritve odzivnih časov te seje) kot CSV za Excel — prazna/pokvarena zgodovina → iskren toast; zaslon in CSV = ista resnica; CSV = Excel za arhiv in filtriranje"
                 data-testid="sistem-zdravje-csv-pill"
@@ -225,7 +225,7 @@ export function SistemZdravjeCard() {
               type="button"
               onClick={() => void load()}
               aria-label="Ponovno preveri zdravje sistema"
-              className="flex items-center gap-1 transition-colors hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2"
+              className="flex items-center gap-1 transition-colors hover:text-roksal-ink focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2"
             >
               <RefreshCw className="h-3 w-3" aria-hidden="true" />
               Poskusi znova

@@ -50,7 +50,7 @@ describe('r336 STIL val 23 — sistem zdravje CSV pill: navy/40 družina + takti
     // className VRSTICA (ne okno — komentarji omenjajo register, NE stil)
     const razred = gumb.split('\n').find((v) => v.includes('className='))
     expect(razred).toContain(
-      'press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40 focus-visible:outline-none', // [PIN SHIFT R382 val 61]
+      'press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40 focus-visible:outline-hidden', // [PIN SHIFT R382 val 61]
     )
     expect(razred?.includes('amber')).toBe(false)
     expect(src.includes('focus-visible:ring-roksal-amber/50')).toBe(false)

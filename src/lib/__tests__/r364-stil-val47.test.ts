@@ -41,9 +41,9 @@ describe('R364 — STIL val 47: ring pariteta measurements-tab družine', () => 
   })
 
   it('(B) era-diskriminatorji ×1/×1/×5/×1 (vsi ×0 v HEAD pred rundo — fetch-first git grep)', () => {
-    expect(MERITVE.match(/text-3xs font-medium border transition-all hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy\/40 focus-visible:ring-offset-2/g) ?? []).toHaveLength(1)
+    expect(MERITVE.match(/text-3xs font-medium border transition-all hover:opacity-80 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy\/40 focus-visible:ring-offset-2/g) ?? []).toHaveLength(1)
     expect(MERITVE.match(/px-2\.5 py-1 text-\[11px\] font-medium hover:bg-roksal-navy\/90 active:scale-\[0\.96\] focus-visible:ring-2 focus-visible:ring-roksal-navy\/40 focus-visible:ring-offset-2/g) ?? []).toHaveLength(1)
-    expect(MERITVE.match(/focus-visible:ring-inset focus-visible:ring-roksal-navy\/40 focus-visible:ring-offset-2 focus-visible:outline-none transition-colors/g) ?? []).toHaveLength(5)
+    expect(MERITVE.match(/focus-visible:ring-inset focus-visible:ring-roksal-navy\/40 focus-visible:ring-offset-2 focus-visible:outline-hidden transition-colors/g) ?? []).toHaveLength(5)
     expect(MERITVE.match(/h-8 px-3 focus-visible:ring-2 focus-visible:ring-roksal-navy\/40 focus-visible:ring-offset-2( focus-visible:border-roksal-navy\/40)?( dark:focus-visible:border-roksal-ink\/40)?"/g) ?? []).toHaveLength(1)
   })
 

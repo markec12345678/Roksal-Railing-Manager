@@ -216,7 +216,7 @@ function DraggableCard({
       {...attributes}
       aria-label={`Projekt ${p.nazivProjekta}, stopnja ${col.label}. Za premik povlecite kartico ali odprite meni.`}
       className={cn(
-        'touch-none select-none rounded-lg transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2',
+        'touch-none select-none rounded-lg transition-opacity focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2',
         isDragging && 'opacity-35',
         busy && 'animate-pulse',
       )}
@@ -232,7 +232,7 @@ function DraggableCard({
             <DropdownMenu>
               <DropdownMenuTrigger
                 aria-label={`Spremeni status projekta ${p.nazivProjekta}`}
-                className="rounded-md p-1 text-muted-foreground/60 transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+                className="rounded-md p-1 text-muted-foreground/60 transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
               >
                 <MoreVertical aria-hidden="true" className="h-3.5 w-3.5" />
               </DropdownMenuTrigger>

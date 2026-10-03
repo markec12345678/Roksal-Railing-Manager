@@ -453,7 +453,7 @@ function primerjalniVnosi(vrste: PrimerjalniVrsta[]): PrimerjalniPdfVnos[] {
 // R207 — stil statusnega filtra (pill družina R136/R204/R206; 0 novih hex,
 // tokeni + focus ring; aria-pressed namesto aria-selected — pravi toggle).
 function chipCls(aktiven: boolean): string {
-  return `h-7 rounded-full border px-3 text-[11px] font-medium tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40 ${
+  return `h-7 rounded-full border px-3 text-[11px] font-medium tabular-nums transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40 ${
     aktiven
       ? 'border-roksal-navy bg-roksal-navy text-white'
       : 'border-border bg-background text-muted-foreground hover:border-roksal-navy/40 dark:hover:border-roksal-ink/40 hover:text-roksal-ink'
@@ -1405,7 +1405,7 @@ export function MaterialIntelligenceTab({
             type="button"
             onClick={() => void loadData()}
             aria-label="Ponovno naloži materialno inteligenco"
-            className="rounded px-1 py-0.5 font-bold transition-colors hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2"
+            className="rounded px-1 py-0.5 font-bold transition-colors hover:text-roksal-ink focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2"
           >
             Poskusi znova
           </button>
@@ -1728,7 +1728,7 @@ export function MaterialIntelligenceTab({
                         type="button"
                         aria-expanded={expanded}
                         onClick={() => setExpandedOrder(expanded ? null : order.id)}
-                        className="flex w-full items-center gap-1 rounded px-1 py-0.5 text-2xs text-muted-foreground transition-colors hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
+                        className="flex w-full items-center gap-1 rounded px-1 py-0.5 text-2xs text-muted-foreground transition-colors hover:text-roksal-ink focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2"
                       >
                         {expanded ? <ChevronDown aria-hidden="true" className="h-3 w-3" /> : <ChevronRight aria-hidden="true" className="h-3 w-3" />}
                         {expanded ? 'Skrij postavke' : 'Pokaži postavke'}

@@ -59,7 +59,7 @@ describe('R361 — STIL val 44: ring pariteta crm-tab družine', () => {
   it('(D) opomnik PDF: ring-offset-1 → ring-offset-2 (NOV needle ×1); ring-offset-1 IZKORENINJEN iz datoteke', () => {
     expect(CRM).toContain(
       // [PIN SHIFT R382 val 61 / EVOLVED: FB+dark na crm opomnik PDF vrstici]
-      'className="h-8 gap-1.5 px-2.5 text-[11px] font-medium press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"'
+      'className="h-8 gap-1.5 px-2.5 text-[11px] font-medium press-scale focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40"'
     )
     expect(CRM).not.toContain('ring-offset-1')
     expect(CRM).toContain('aria-label="Pripravi opomnik kot PDF"')
@@ -122,7 +122,7 @@ describe('R361 — STIL val 44: ring pariteta crm-tab družine', () => {
       (CRM.match(new RegExp(needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) ?? []).length
     // [PIN SHIFT R382 val 61 / EVOLVED]
     expect(stevec('ml-auto h-7 shrink-0 gap-1.5 text-[11px] focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40')).toBe(1)
-    expect(stevec('font-medium press-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2')).toBe(1)
+    expect(stevec('font-medium press-scale focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2')).toBe(1)
     // N3' pokriva ×2 mesti (status filter bratje + CSV pill) — multiplicita
     // iskreno dokumentirana v register glavi (precedens r349 '×2 mesti');
     // 1. kandidat '…offset-2 ${statusFilter' ZAVRŽEN — SWC konkatenacija v

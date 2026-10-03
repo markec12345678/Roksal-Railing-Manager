@@ -700,7 +700,7 @@ export function NotificationCenter() {
                   type="button"
                   onClick={() => void load()}
                   aria-label="Ponovno naloži obvestila"
-                  className="rounded px-1 py-0.5 font-bold transition-colors hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2"
+                  className="rounded px-1 py-0.5 font-bold transition-colors hover:text-roksal-ink focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2"
                 >
                   Poskusi znova
                 </button>
@@ -745,7 +745,7 @@ export function NotificationCenter() {
                     <button
                       type="button"
                       onClick={() => handleClick(item)}
-                      className="group flex w-full items-center gap-3 rounded-xl border border-border/60 bg-card p-3 text-left transition-all hover:-translate-y-0.5 hover:border-roksal-amber/40 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-amber/60 focus-visible:ring-offset-2 focus-visible:border-roksal-amber/60 dark:focus-visible:border-roksal-amber/40 dark:focus-visible:ring-roksal-amber/40 active:scale-[0.98]"
+                      className="group flex w-full items-center gap-3 rounded-xl border border-border/60 bg-card p-3 text-left transition-all hover:-translate-y-0.5 hover:border-roksal-amber/40 hover:shadow-sm focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-amber/60 focus-visible:ring-offset-2 focus-visible:border-roksal-amber/60 dark:focus-visible:border-roksal-amber/40 dark:focus-visible:ring-roksal-amber/40 active:scale-[0.98]"
                       /* R217 (P1-f) — dostopnost: stock vrstica naj v
                          zaslonskem bralniku pove, kam dejanje vodi (odpre
                          naročilni tok), namesto da samo prebere napis.
@@ -852,7 +852,7 @@ export function NotificationCenter() {
                         type="button"
                         onClick={() => void oznaciVsePrebrano()}
                         disabled={oznacujemVse}
-                        className="ml-auto flex items-center gap-1 rounded-md px-1.5 py-0.5 text-2xs font-bold uppercase tracking-wider text-muted-foreground transition-colors hover:bg-roksal-navy/5 hover:text-roksal-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:text-muted-foreground dark:hover:bg-roksal-ink/10 dark:hover:text-roksal-ink dark:focus-visible:ring-roksal-ink/40"
+                        className="ml-auto flex items-center gap-1 rounded-md px-1.5 py-0.5 text-2xs font-bold uppercase tracking-wider text-muted-foreground transition-colors hover:bg-roksal-navy/5 hover:text-roksal-navy focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:text-muted-foreground dark:hover:bg-roksal-ink/10 dark:hover:text-roksal-ink dark:focus-visible:ring-roksal-ink/40"
                         aria-label={`Označi vse kot prebrano (${neprebrana})`}
                         title={`Označi vse kot prebrano (${neprebrana})`}
                       >
@@ -878,7 +878,7 @@ export function NotificationCenter() {
                         <button
                           type="button"
                           onClick={() => void openPersisted(n)}
-                          className="group flex w-full items-start gap-3 rounded-xl border border-border/60 bg-card p-3 text-left transition-all hover:-translate-y-0.5 hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40 dark:focus-visible:ring-roksal-ink/40 active:scale-[0.98]"
+                          className="group flex w-full items-start gap-3 rounded-xl border border-border/60 bg-card p-3 text-left transition-all hover:-translate-y-0.5 hover:border-roksal-navy/25 dark:hover:border-roksal-ink/25 hover:shadow-sm focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40 dark:focus-visible:ring-roksal-ink/40 active:scale-[0.98]"
                           aria-label={`${n.naslov} — ${st.label}`}
                         >
                           <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${varnostna ? 'bg-roksal-amber/10' : 'bg-roksal-navy/5'}`}>
@@ -937,7 +937,7 @@ export function NotificationCenter() {
                           <button
                             type="button"
                             onClick={() => void odpriEkipoZaPregled(n)}
-                            className="ml-11 mt-1.5 inline-flex items-center gap-1 rounded-full bg-roksal-navy/5 px-2.5 py-1 text-2xs font-bold uppercase tracking-wider text-roksal-navy transition-colors hover:bg-roksal-navy/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 active:scale-[0.97] dark:bg-roksal-ink/10 dark:text-roksal-ink dark:hover:bg-roksal-ink/20 dark:focus-visible:ring-roksal-ink/40"
+                            className="ml-11 mt-1.5 inline-flex items-center gap-1 rounded-full bg-roksal-navy/5 px-2.5 py-1 text-2xs font-bold uppercase tracking-wider text-roksal-navy transition-colors hover:bg-roksal-navy/10 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 active:scale-[0.97] dark:bg-roksal-ink/10 dark:text-roksal-ink dark:hover:bg-roksal-ink/20 dark:focus-visible:ring-roksal-ink/40"
                             aria-label="Odpri Ekipa — pregled ekipnih računov"
                             title="Pregled ekipnih računov (zaklep, vloge, aktivnost)"
                           >

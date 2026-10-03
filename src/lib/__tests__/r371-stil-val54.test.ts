@@ -82,7 +82,7 @@ describe('R371 stil val 54 — navy/40 NONE triaža (13 surovih brand vrstic)', 
   })
 
   it('(B) era-diskriminatorji val 54: N1 ×1 / N2 ×1 / N3 ×1 / N4 ×1 (per-datoteka grep -rlF) + dokumentirani ne-tarčni ostanki (KIT ×35 / INPUT ×2 / CMP ×5 / drag ×1 — vsi NE-tarče brez offseta)', () => {
-    const N1 = 'rounded-full border px-2 py-0.5 text-2xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2'
+    const N1 = 'rounded-full border px-2 py-0.5 text-2xs transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2'
     const N2 = 'p-1 rounded-md hover:bg-secondary/60 transition-colors shrink-0 focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2'
     // [PIN SHIFT R377 val 58: izvirnik N3 'top-1/2 -translate-y-1/2
     // focus-visible:ring-2 …' — val 58 je vstavila ' transition-colors' NA
@@ -97,7 +97,7 @@ describe('R371 stil val 54 — navy/40 NONE triaža (13 surovih brand vrstic)', 
     expect(pod(R('src/components/roksal/calculator-tab.tsx'), N4)).toBe(2) // [PIN SHIFT R382 val 61: L4396 pridobil O2 — N4 sedaj ×2 (L4396+L4439)]
     // dokumentirani ne-tarčni: sistem-zdravje-card L204 kit override (spot D2-dokaz)
     const SZC = R('src/components/roksal/sistem-zdravje-card.tsx')
-    expect(SZC).toContain('press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40 focus-visible:outline-none') // [PIN SHIFT R382 val 61: O2+FB+dark na L204 — A/offset + C/border zaključek]
+    expect(SZC).toContain('press-scale focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:border-roksal-navy/40 dark:focus-visible:border-roksal-ink/40 focus-visible:outline-hidden') // [PIN SHIFT R382 val 61: O2+FB+dark na L204 — A/offset + C/border zaključek]
     // [PIN SHIFT R372 val 55: izvirnik 'SZC.includes("ring-offset") === false'
     // (celo-datoteka) → navy-vrstični guard z ISTO namero — val 55 je dodala
     // focus-visible:ring-offset-2 na RAW red/40 brand vrstico L228 (rdeča

@@ -1,0 +1,17 @@
+# qa-needles/r394.tsv — REGISTER needlejev runde R394 (STIL val 70:
+# FORCED-COLORS FOKUS PARITETA — 105 × REPL in-place, 0 novih vrstic;
+# roksal render plast ×24 datotek; normal-mode kompilirani CSS identična
+# (disk dokaz .next/static/chunks), forced-colors: outline-hidden obnovi
+# 2px outline ker ring/box-shadow NE preživi forced-colors). 1 need_static
+# (šivni needle — sekvenca čez zamenjan žeton je NOVA = 0-v-HEAD kanon;
+# ×64 pojavitve — najpogostejši fv_hidden+ring-navy/40 par);
+# TODO-R394 must_miss.
+# FEATURE OSMI STRAŽAR: outline/fokus indikator disciplina (globalna
+# kršitev = 0; komplet varuhov r385…+r391+r392+r394).
+# EVOLVED ISTI KORAK (kanon R368): 48 testnih pinov ×27 datotek
+# (token-for-token; 3 pričakovane NIČLE ostale) + 32 NASLEDNIC ×18
+# registrskih datotek (stare vrstice komentirane dobesedno).
+# Era veriga: 46. preverba (r347–r392) ≥185 = 184 + 1; TA needle se pokrije v 48.
+# preverbi (r347–r394) ≥189 = 188 + 1 [njihov r393 engineering ×3 v 47.].
+focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-navy/40	R394 val 70 forced-colors fokus pariteta (×64 pojavitev v 24 datotekah, roksal render) — šiv outline-none→outline-hidden (normal-mode CSS identična: oba outline-style:none; forced-colors mode: ring/box-shadow NE preživi, outline-hidden obnovi 2px outline = WCAG 2.4.7; družinski precedens viz ×3 z ring-roksal-amber; swap ×105 čez roksal — ta šiv najpogostejši par z ring-navy/40) (0 v HEAD 0634c2b)	need_static
+TODO-R394	must_miss: razvojni ostanki (nesme biti v produkcijskih čankih)	must_miss

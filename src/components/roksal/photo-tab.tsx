@@ -714,7 +714,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
               type="button"
               onClick={() => void loadPhotos()}
               aria-label="Ponovno naloži fotografije"
-              className="rounded px-1 py-0.5 font-bold transition-colors hover:text-roksal-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2"
+              className="rounded px-1 py-0.5 font-bold transition-colors hover:text-roksal-ink focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2"
             >
               Poskusi znova
             </button>
@@ -737,7 +737,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
                   type="button"
                   onClick={() => setActiveKategorija(k.id as 'PRED' | 'MED' | 'PO')}
                   aria-pressed={activeKategorija === k.id}
-                  className={`rounded-md border px-2 py-2 text-[11px] font-medium transition-colors focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 focus-visible:border-roksal-amber/50 dark:focus-visible:border-roksal-amber/30 focus-visible:outline-none ${
+                  className={`rounded-md border px-2 py-2 text-[11px] font-medium transition-colors focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 focus-visible:border-roksal-amber/50 dark:focus-visible:border-roksal-amber/30 focus-visible:outline-hidden ${
                     activeKategorija === k.id
                       ? 'border-roksal-amber bg-roksal-amber text-white'
                       : 'border-border bg-white text-muted-foreground hover:bg-muted'
@@ -975,7 +975,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
                         e.stopPropagation()
                         handleDelete(p.id)
                       }}
-                      className="absolute right-1 top-1 rounded-full bg-black/50 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:outline-none"
+                      className="absolute right-1 top-1 rounded-full bg-black/50 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:outline-hidden"
                       aria-label={`Izbriši sliko${p.opomba ? ` (${p.opomba})` : ''}`}
                     >
                       <Trash2 aria-hidden="true" className="h-3 w-3" />
@@ -1126,7 +1126,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); navPreview(-1) }}
-                      className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/60 p-1.5 text-white hover:bg-black/80 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:outline-none"
+                      className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/60 p-1.5 text-white hover:bg-black/80 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:outline-hidden"
                       aria-label="Prejšnja"
                     >
                       <ChevronLeft aria-hidden="true" className="h-5 w-5" />
@@ -1134,7 +1134,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); navPreview(1) }}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/60 p-1.5 text-white hover:bg-black/80 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:outline-none"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/60 p-1.5 text-white hover:bg-black/80 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:outline-hidden"
                       aria-label="Naslednja"
                     >
                       <ChevronRight aria-hidden="true" className="h-5 w-5" />
@@ -1159,7 +1159,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label={`Odpri lokacijo fotografije v Google Maps (${previewPhoto.latitude.toFixed(5)}, ${previewPhoto.longitude.toFixed(5)})`}
-                    className="flex items-center gap-1.5 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 transition-colors hover:text-roksal-amber"
+                    className="flex items-center gap-1.5 rounded-md focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 transition-colors hover:text-roksal-amber"
                   >
                     <MapPin className="h-3 w-3 text-roksal-amber" aria-hidden="true" />
                     {previewPhoto.latitude.toFixed(5)}, {previewPhoto.longitude.toFixed(5)}
@@ -2367,7 +2367,7 @@ function AnnotationEditor({
                             isCalibration: false,
                           })
                         }
-                        className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-roksal-ink transition-colors focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:outline-none"
+                        className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-roksal-ink transition-colors focus-visible:ring-2 focus-visible:ring-roksal-navy/40 focus-visible:ring-offset-2 focus-visible:outline-hidden"
                         aria-label="Uredi mero"
                       >
                         <Pencil aria-hidden="true" className="h-3 w-3" />
@@ -2375,7 +2375,7 @@ function AnnotationEditor({
                       <button
                         type="button"
                         onClick={() => deleteMeasure(m.id ?? '')}
-                        className="rounded p-1 text-muted-foreground hover:bg-red-50 hover:text-red-600 focus-visible:ring-2 focus-visible:ring-red-400/50 focus-visible:ring-offset-2 focus-visible:outline-none"
+                        className="rounded p-1 text-muted-foreground hover:bg-red-50 hover:text-red-600 focus-visible:ring-2 focus-visible:ring-red-400/50 focus-visible:ring-offset-2 focus-visible:outline-hidden"
                         aria-label="Izbriši mero"
                       >
                         <Trash2 aria-hidden="true" className="h-3 w-3" />
@@ -2411,7 +2411,7 @@ function AnnotationEditor({
               type="button"
               onClick={() => setTool(t.id)}
               aria-pressed={tool === t.id}
-              className={`flex shrink-0 flex-col items-center gap-0.5 rounded-md px-2.5 py-1.5 text-[9px] transition-colors focus-visible:ring-2 focus-visible:ring-roksal-amber/60 focus-visible:ring-offset-2 focus-visible:outline-none ${
+              className={`flex shrink-0 flex-col items-center gap-0.5 rounded-md px-2.5 py-1.5 text-[9px] transition-colors focus-visible:ring-2 focus-visible:ring-roksal-amber/60 focus-visible:ring-offset-2 focus-visible:outline-hidden ${
                 tool === t.id
                   ? 'bg-roksal-amber text-white'
                   : 'bg-white/10 text-white/70 hover:bg-white/20'
