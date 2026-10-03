@@ -2119,7 +2119,7 @@ export function VodjaDashboard() {
             // digest R208 — subTab whitelist isMaterialSubTab).
             <button
               type="button"
-              className="flex w-full cursor-pointer items-center gap-2 rounded-xl border border-roksal-red/20 bg-roksal-red/5 p-3 text-left shadow-sm animate-fade-in-up transition-colors hover:bg-roksal-red/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2"
+              className="flex w-full cursor-pointer items-center gap-2 rounded-xl border border-roksal-red/20 bg-roksal-red/5 p-3 text-left shadow-sm animate-fade-in-up transition-colors hover:bg-roksal-red/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2 focus-visible:border-roksal-red/40 dark:focus-visible:border-roksal-red/50"
               aria-label={`Zamujena dobava (${stats.zamujeneDobave}) — odpre Material → Naročila`}
               title="Obljubljeni datum dobave je pretekel, naročilo pa še ni prejeto"
               onClick={() =>

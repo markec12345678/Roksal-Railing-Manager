@@ -1728,7 +1728,7 @@ export function FloorPlanTab({ projectId }: FloorPlanTabProps) {
               size="icon"
               variant="outline"
               onClick={clearAll}
-              className="absolute top-2 left-2 h-7 w-7 border-roksal-red/30 text-roksal-red bg-white/90 focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2"
+              className="absolute top-2 left-2 h-7 w-7 border-roksal-red/30 text-roksal-red bg-white/90 focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2 focus-visible:border-roksal-red/40 dark:focus-visible:border-roksal-red/50"
               aria-label="Pobriši vse točke načrta"
             >
               <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />

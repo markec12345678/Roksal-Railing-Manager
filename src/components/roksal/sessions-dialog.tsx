@@ -313,7 +313,7 @@ export function SessionsDialog({ open, onOpenChange }: SessionsDialogProps) {
                       onClick={() => void revoke(s.id)}
                       disabled={revokingId !== null}
                       aria-label={`Prekliči sejo na napravi: ${label.device}, ${label.os}`}
-                      className="h-7 shrink-0 gap-1 border-roksal-red/30 px-2 text-2xs text-roksal-red hover:bg-roksal-red/10 press-scale focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2"
+                      className="h-7 shrink-0 gap-1 border-roksal-red/30 px-2 text-2xs text-roksal-red hover:bg-roksal-red/10 press-scale focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2 focus-visible:border-roksal-red/40 dark:focus-visible:border-roksal-red/50"
                     >
                       {revoking ? (
                         <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
@@ -345,7 +345,7 @@ export function SessionsDialog({ open, onOpenChange }: SessionsDialogProps) {
                 onClick={() => void revokeOstale()}
                 disabled={revokingId !== null}
                 aria-label={`Odjavi vse ostale naprave (${ostaliCount}) — ta naprava ostaja prijavljena`}
-                className="h-8 gap-1.5 border-roksal-red/30 px-2.5 text-xs text-roksal-red hover:bg-roksal-red/10 press-scale focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2"
+                className="h-8 gap-1.5 border-roksal-red/30 px-2.5 text-xs text-roksal-red hover:bg-roksal-red/10 press-scale focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2 focus-visible:border-roksal-red/40 dark:focus-visible:border-roksal-red/50"
               >
                 {revokingId === '__ostali__' ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />

@@ -1,0 +1,42 @@
+# qa-needles/r384.tsv — REGISTER needlejev runde R384 (STIL val 62:
+# RED/40 BORDER-PARITETA — rdeča simetrija po navy zaključku val 61;
+# 16 × INS, in-place, 0 novih vrstic; kanon R384 handover kandidat 1).
+# Disk resnica r384-triaza.py [polna triaža po LEKCIJI R382 (1)]: 16 tarč
+# z VIDLJIVIM borderjem [border-roksal-red/N barvni override na <Button
+# variant="outline"> ALI eksplicitni border na nativnem gumbu/kartici],
+# vseh 16 z O2; 9 N/A iskreno izključenih (brez borderja + brez
+# sorojenca z FB: top-bar ×2, photo, material, notification, measurements
+# ×2, quote-followup, sistem-zdravje) → 16 × INS ' focus-visible:
+# border-roksal-red/40 dark:focus-visible:border-roksal-red/50' TIK ZA
+# O2 (val 57 kanon R375) — LEKCIJA R383 (2): PAR (light + dark) v ENEM
+# koraku; dark /50 po precedensu team-tab L619 'border-roksal-red/40
+# dark:border-roksal-red/50' (rdeča ostane rdeča v temni temi).
+# PAR-SOROJENCI (R384 kandidat 3, LEKCIJA R382 (2)): r384-triaza.py
+# detekcija — 14 BREZ-SOROJENCA + 2 red-red dvojčka (dashboard
+# L1914↔L2059, oba parirana) + top-bar navy/red meni (obe strani brez
+# FB = uniformost); živi čuvaj: r384-sorojenci-par.test.ts (3 it).
+# Orodja: r384-triaza.py + r384-val62-apply.py [fail-closed kontrakt
+# vrstičnih list bajtno, POST closure+in-place+needle survival — lekcija:
+# dark: token VSEBUJE light podniz → closure števec rabi negative
+# lookbehind; needle-survival fallback MORA pokrivati .ts server rute] +
+# r383-window-scan delta 75 'focus-visible:ring-roksal-red/40
+# focus-visible:ring-offset-2' [pre-skan PRED apply, LEKCIJA R383 (3):
+# 304 okenskih regexov 0 preozkih + 164 needle pinov 0 mrtvih → 0 PIN
+# SHIFT potrebno] + r384-era-harvest.sh [37. preverba SEDEMINTRIDESIJNA,
+# EXIT=0 ×2 — 151/151 ŽIVO = 127 direktno + 6 hash + 18 server; LEKCIJA
+# R384 (1): era-clone --server-probe MENJA spec list, ne dopolnjuje —
+# prvotni tek z 1 specom EXIT=2 [24 MISS, 0 razrešenih], popravek z
+# VSEH 12 spec-ov EXIT=0] + spot-r167/24 [val 61 POST-deploy: calculator
+# izvoz 11/11 + sessions Zapri 6/6 MONTIRANO; ekipa 0 [users.read 403
+# gate] + material 0 ['Izberi projekt' prazno stanje] iskreno; kolektor 0].
+# KOLIZIJA: brez (fetch-first origin/main == HEAD d1cb4d2 == R383 push).
+#
+# FORMAT (TSV; EN vrstica = EN needle; TAB je LOČILO — presledki
+# znotraj needleja so POMENNI, ker grep -F išče dobesedno).
+# Vrste: need_static (MORA biti ŽIV v svežem buildu) | must_miss
+# (NESME biti v produkcijskih čankih).
+h-7 border-roksal-red/40 text-roksal-red hover:bg-roksal-red/10 hover:text-roksal-red focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2 focus-visible:border-roksal-red/40 dark:focus-visible:border-roksal-red/50	R384 val 62 dashboard-tab L1914 (×2 — bajtni dvojček L2059, sorojenec kanon) — Button outline border-pariteta: FB+dark TIK ZA O2 (0 v HEAD d1cb4d2)	need_static
+h-7 shrink-0 gap-1 border-roksal-red/30 px-2 text-2xs text-roksal-red hover:bg-roksal-red/10 press-scale focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2 focus-visible:border-roksal-red/40 dark:focus-visible:border-roksal-red/50	R384 val 62 sessions-dialog L316 (×1) — Button outline /30 barvni override: FB+dark TIK ZA O2 (0 v HEAD d1cb4d2)	need_static
+rounded-lg border border-roksal-red/30 bg-roksal-red/5 p-1 text-roksal-red hover:bg-roksal-red/10 focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2 focus-visible:border-roksal-red/40 dark:focus-visible:border-roksal-red/50 active:scale-[0.96]	R384 val 62 measurements-tab L5679 (×1, nativni gumb) — eksplicitni border + FB+dark + active:scale rep (0 v HEAD d1cb4d2)	need_static
+flex w-full cursor-pointer items-center gap-2 rounded-xl border border-roksal-red/20 bg-roksal-red/5 p-3 text-left shadow-sm animate-fade-in-up transition-colors hover:bg-roksal-red/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2 focus-visible:border-roksal-red/40 dark:focus-visible:border-roksal-red/50	R384 val 62 vodja-dashboard L2122 (×1, kartica) — eksplicitni border kartice: FB+dark TIK ZA O2 (0 v HEAD d1cb4d2)	need_static
+TODO-R384	must_miss: razvojni ostanki (nesme biti v produkcijskih cankih)	must_miss

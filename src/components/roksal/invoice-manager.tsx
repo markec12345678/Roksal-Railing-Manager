@@ -1348,7 +1348,7 @@ export function InvoiceManager() {
                           <Button
                             size="sm"
                             variant="outline"
-                            className="h-7 text-xs border-roksal-red/40 text-roksal-ink hover:bg-roksal-red/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2"
+                            className="h-7 text-xs border-roksal-red/40 text-roksal-ink hover:bg-roksal-red/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2 focus-visible:border-roksal-red/40 dark:focus-visible:border-roksal-red/50"
                             onClick={() => generateOpomnik(inv)}
                             title={`Plačilni opomnik — zapadlo ${zapadlo} dni`}
                             aria-label={`Plačilni opomnik za račun ${inv.stevilka}`}
@@ -1360,7 +1360,7 @@ export function InvoiceManager() {
                           <Button
                             size="sm"
                             variant="outline"
-                            className={`h-7 text-xs border-roksal-red/40 hover:bg-roksal-red/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2 ${stornoId === inv.id ? 'bg-roksal-red text-white hover:bg-roksal-red/90' : 'text-roksal-ink'}`}
+                            className={`h-7 text-xs border-roksal-red/40 hover:bg-roksal-red/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2 focus-visible:border-roksal-red/40 dark:focus-visible:border-roksal-red/50 ${stornoId === inv.id ? 'bg-roksal-red text-white hover:bg-roksal-red/90' : 'text-roksal-ink'}`}
                             onClick={() => {
                               if (stornoId === inv.id) {
                                 setStornoId(null)

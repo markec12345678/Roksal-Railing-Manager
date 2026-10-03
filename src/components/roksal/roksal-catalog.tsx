@@ -198,7 +198,7 @@ export function RoksalCatalog() {
             <Button
               variant="outline"
               size="sm"
-              className="mt-2 h-7 border-roksal-red/40 text-roksal-red hover:bg-roksal-red/10 hover:text-roksal-red focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2"
+              className="mt-2 h-7 border-roksal-red/40 text-roksal-red hover:bg-roksal-red/10 hover:text-roksal-red focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2 focus-visible:border-roksal-red/40 dark:focus-visible:border-roksal-red/50"
               onClick={() => void fetchProfili()}
             >
               <RefreshCw className="mr-1.5 h-3 w-3" aria-hidden="true" />

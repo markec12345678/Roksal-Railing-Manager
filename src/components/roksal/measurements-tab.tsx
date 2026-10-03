@@ -5676,7 +5676,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                           onClick={() => discardMeasurementDraft(d.draftId)}
                           aria-label={`Odstrani osnutek ${d.label || 'brez oznake'} (ni bil nikoli v bazi)`}
                           title="Odstrani lokalni osnutek — ni bil nikoli poslan v bazo"
-                          className="rounded-lg border border-roksal-red/30 bg-roksal-red/5 p-1 text-roksal-red hover:bg-roksal-red/10 focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2 active:scale-[0.96] transition-all duration-150"
+                          className="rounded-lg border border-roksal-red/30 bg-roksal-red/5 p-1 text-roksal-red hover:bg-roksal-red/10 focus-visible:ring-2 focus-visible:ring-roksal-red/40 focus-visible:ring-offset-2 focus-visible:border-roksal-red/40 dark:focus-visible:border-roksal-red/50 active:scale-[0.96] transition-all duration-150"
                         >
                           <X className="h-3.5 w-3.5" aria-hidden="true" />
                         </button>
