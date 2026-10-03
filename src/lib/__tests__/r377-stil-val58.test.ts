@@ -61,10 +61,11 @@ describe('R377 stil val 58 — transition-colors skladnost dashboard nativni gum
     expect(src.split(NEEDLE).length - 1).toBe(1)
   })
 
-  it('števcguards: transition-colors 11→12, vrstice in-place 3189, aria + ring-offset rounded zamrznjena', () => {
+  it('števcguards: transition-colors 12→23 [EVOLVED R388 val 66 +11 PRE anchorjev], vrstice in-place 3189, aria + ring-offset rounded zamrznjena', () => {
     const src = R(DASH)
     // R377 žig: transition-colors števec PO val 58 = 12 (PRED = 11, disk resnica)
-    expect(src.split('transition-colors').length - 1).toBe(12)
+    // EVOLVED R388 val 66: +11 transition-colors INS na dashboard (hover gladkost)
+    expect(src.split('transition-colors').length - 1).toBe(23)
     expect(src.split('\n').length).toBe(3189) // in-place INS — 0 novih vrstic
     expect(src.split(ARIA).length - 1).toBe(1)
     expect(src.split('focus-visible:ring-offset-2 rounded').length - 1).toBe(1)

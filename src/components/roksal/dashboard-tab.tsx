@@ -1220,23 +1220,23 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
 
       {/* Quick Stats Row — R136: tabular-nums (stabilna širina števcov ob osvežitvi) + focus rings */}
       <div className="flex items-center gap-2 overflow-x-auto pb-0.5 scrollbar-thin animate-fade-in-up" style={{ animationDelay: '30ms' }}>
-        <Badge className="shrink-0 bg-roksal-navy/10 text-roksal-ink hover:bg-roksal-navy/15 text-[11px] px-2.5 py-1 tabular-nums">
+        <Badge className="shrink-0 bg-roksal-navy/10 text-roksal-ink transition-colors hover:bg-roksal-navy/15 text-[11px] px-2.5 py-1 tabular-nums">
           <TrendingUp className="mr-1 h-3 w-3" aria-hidden="true" />
           <span className="font-bold mr-0.5">{activeCount}</span> aktivnih
         </Badge>
-        <Badge className="shrink-0 bg-roksal-amber/15 text-roksal-ink hover:bg-roksal-amber/20 text-[11px] px-2.5 py-1 tabular-nums">
+        <Badge className="shrink-0 bg-roksal-amber/15 text-roksal-ink transition-colors hover:bg-roksal-amber/20 text-[11px] px-2.5 py-1 tabular-nums">
           <Clock className="mr-1 h-3 w-3 text-roksal-amber" aria-hidden="true" />
           <span className="font-bold mr-0.5">{pendingCount}</span> načrtovanih
         </Badge>
-        <Badge className="shrink-0 bg-roksal-green/15 text-roksal-green hover:bg-roksal-green/20 text-[11px] px-2.5 py-1 tabular-nums">
+        <Badge className="shrink-0 bg-roksal-green/15 text-roksal-green transition-colors hover:bg-roksal-green/20 text-[11px] px-2.5 py-1 tabular-nums">
           <CheckCircle2 className="mr-1 h-3 w-3" aria-hidden="true" />
           <span className="font-bold mr-0.5">{completedCount}</span> končanih
         </Badge>
         {!invLoading && totalInventoryItems > 0 && (
           <Badge className={`shrink-0 text-[11px] px-2.5 py-1 tabular-nums ${
             lowStockCount > 0
-              ? 'bg-roksal-red/15 text-roksal-red hover:bg-roksal-red/20'
-              : 'bg-roksal-green/15 text-roksal-green hover:bg-roksal-green/20'
+              ? 'bg-roksal-red/15 text-roksal-red transition-colors hover:bg-roksal-red/20'
+              : 'bg-roksal-green/15 text-roksal-green transition-colors hover:bg-roksal-green/20'
           }`}>
             <Package className="mr-1 h-3 w-3" aria-hidden="true" />
             <span className="font-bold mr-0.5">{totalInventoryItems}</span> artiklov
@@ -1316,7 +1316,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                 Danes & opozorila
               </CardTitle>
               {(todayInstallations.length + overdueProjects.length) > 0 && (
-                <Badge className="bg-roksal-navy/10 text-roksal-ink hover:bg-roksal-navy/15">
+                <Badge className="bg-roksal-navy/10 text-roksal-ink transition-colors hover:bg-roksal-navy/15">
                   {todayInstallations.length + overdueProjects.length}
                 </Badge>
               )}
@@ -2456,7 +2456,7 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                     </div>
                     <div className="flex items-center gap-2">
                       {detailMeasurementsError ? (
-                        <Badge variant="secondary" className="text-[11px] bg-roksal-red/15 text-roksal-red hover:bg-roksal-red/20" title={detailMeasurementsError}>!</Badge>
+                        <Badge variant="secondary" className="text-[11px] bg-roksal-red/15 text-roksal-red transition-colors hover:bg-roksal-red/20" title={detailMeasurementsError}>!</Badge>
                       ) : (
                         <Badge variant="secondary" className="text-[11px]">{detailMeasurements.length}</Badge>
                       )}
@@ -2599,12 +2599,12 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                     {portalLoading ? (
                       <Loader2 aria-hidden="true" className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
                     ) : portalError ? (
-                      <Badge className="bg-roksal-red/15 text-roksal-red hover:bg-roksal-red/20 text-2xs" title={portalError}>
+                      <Badge className="bg-roksal-red/15 text-roksal-red transition-colors hover:bg-roksal-red/20 text-2xs" title={portalError}>
                         <AlertTriangle className="mr-1 h-3 w-3" aria-hidden="true" />
                         Napaka
                       </Badge>
                     ) : portalInfo?.enabled ? (
-                      <Badge className="bg-roksal-green/15 text-roksal-green hover:bg-roksal-green/20 text-2xs">
+                      <Badge className="bg-roksal-green/15 text-roksal-green transition-colors hover:bg-roksal-green/20 text-2xs">
                         <ShieldCheck aria-hidden="true" className="mr-1 h-3 w-3" />
                         Omogočen
                       </Badge>
@@ -2933,12 +2933,12 @@ export function DashboardTab({ selectedProjectId, onSelectProject }: DashboardTa
                     {portalLoading ? (
                       <Loader2 aria-hidden="true" className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
                     ) : portalError ? (
-                      <Badge className="bg-roksal-red/15 text-roksal-red hover:bg-roksal-red/20 text-2xs" title={portalError}>
+                      <Badge className="bg-roksal-red/15 text-roksal-red transition-colors hover:bg-roksal-red/20 text-2xs" title={portalError}>
                         <AlertTriangle className="mr-1 h-3 w-3" aria-hidden="true" />
                         Napaka
                       </Badge>
                     ) : portalInfo?.measure?.enabled ? (
-                      <Badge className="bg-roksal-amber/15 text-roksal-amber hover:bg-roksal-amber/25 text-2xs">
+                      <Badge className="bg-roksal-amber/15 text-roksal-amber hover:bg-roksal-amber/25 transition-colors text-2xs">
                         <ShieldCheck aria-hidden="true" className="mr-1 h-3 w-3" />
                         Izdana
                       </Badge>

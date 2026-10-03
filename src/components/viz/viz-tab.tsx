@@ -327,7 +327,7 @@ export function VizTab() {
         <div className="mx-auto flex w-full max-w-lg flex-col items-center gap-2 px-4 text-center sm:max-w-2xl">
           <button
             type="button"
-            className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground hover:text-roksal-ink sm:hidden"
+            className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground transition-colors hover:text-roksal-ink sm:hidden"
             onClick={() => window.dispatchEvent(new CustomEvent('roksal:navigate', { detail: { tab: 'dashboard' } }))}
           >
             <Hammer className="h-3 w-3" aria-hidden="true" />

@@ -62,7 +62,7 @@ export function ActivationClient({ token, ime }: ActivationClientProps) {
           </p>
           <Link
             href="/login"
-            className="mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-roksal-amber px-5 text-sm font-bold text-white shadow-md hover:bg-roksal-amber/90"
+            className="mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-roksal-amber px-5 text-sm font-bold text-white shadow-md transition-colors hover:bg-roksal-amber/90"
           >
             <KeyRound aria-hidden="true" className="h-4 w-4" />
             Na prijavo

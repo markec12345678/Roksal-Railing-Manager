@@ -3352,7 +3352,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
               title="Izbriši meritev"
               aria-label={`Izbriši meritev ${m.oznaka || m.id.slice(-4)}`}
             >
-              <Trash2 aria-hidden="true" className="h-3.5 w-3.5 text-muted-foreground hover:text-roksal-red" />
+              <Trash2 aria-hidden="true" className="h-3.5 w-3.5 text-muted-foreground transition-colors hover:text-roksal-red" />
             </button>
           </div>
         </div>
@@ -4033,7 +4033,7 @@ export function MeasurementsTab({ onNavigateToCalculator, selectedProjectId }: M
                             title="Izbriši predlogo"
                             aria-label={`Izbriši predlogo ${t.naziv}`}
                           >
-                            <Trash2 className="h-3 w-3 text-muted-foreground hover:text-roksal-red" aria-hidden="true" />
+                            <Trash2 className="h-3 w-3 text-muted-foreground transition-colors hover:text-roksal-red" aria-hidden="true" />
                           </button>
                         </div>
                       ))}

@@ -1,0 +1,49 @@
+# qa-needles/r388.tsv — REGISTER needlejev runde R388 (STIL val 66:
+# HOVER-BARVNA GLADKOST — transition-colors na nativnih interaktivnih
+# elementih z roksal hover barvami; 21 × INS, in-place, 0 novih vrstic).
+# Disk resnica rundi [r388-triaza*.py, element-točna triaža]: 21 REALnih
+# gapov (hover:(bg|text)-roksal-* BREZ transition pokritosti na nivoju
+# elementa); ui-kit Button baza 'transition-all' pokrije vse, Badge baza
+# 'transition-[color,box-shadow]' NE pokrije bg → Badge vrstice z
+# hover:bg rabijo LASTNO transition-colors (dashboard ×11 + termini-card
+# ×1); iskrene izključitve: mrtvi hover žetoni (hover:bg == bg ×4,
+# pointer-events-none ×2), mrtvi izvozi termini-prikaz ×4, transition-
+# transform konflikt notification L811 (NI aditivno rešljiv).
+# ANKOR: PRE ×19 + PO ×2 [dashboard L2941 + photo L2081 — PRE span je
+# PINAN v zamrznjenih prod-qa skriptah r313–r339 + r315-stil-val6; PO
+# vstavljanje ohranja span → brez PIN SHIFTa za zamrznjene skripte;
+# LEKCIJA R387 kanon: pre-skan MORA grepati TUDI scripts/*.sh].
+# ⭐ LEKCIJA R368 KANON (PIN SHIFT V ISTI RUNDI): r211-fail-verbose-
+# detail-strazar.test.ts je pinil celoten className L2459+L2602 — PIN
+# SHIFT ×2 V ISTI RUNDI (faza 2 r388-val66-apply.py, žig [PIN SHIFT
+# R388 val 66]).
+# FEATURE (R388): ČETRTI STRAŽAR — hover gladkost GENERALIZACIJA
+# r388-hover-gladkost-generalizacija.test.ts [×10: it.each val 66 tarče +
+# globalna kršitev = 0 čez VSE src z element-točno pokritostno logiko +
+# ui-kit bazi zamrznjeni]. Komplet varuhov: r385 (dark FB) + r386 (O2)
+# + r387 (FB-border) + r388 (transition pokritost).
+# Orodja: r388-triaza.py (K1/K2/K3 sveža triaža handover kandidatov —
+# plain amber ring 9, mrtev-CSS navy 82, dark-only pari 1 = ZAMRZNJENE
+# statistike, disk resnica) + r388-triaza3/4/5.py (transition census,
+# element-točno) + r388-val66-apply.py [fail-closed kontrakt ×21 + PIN
+# SHIFT r211 ×2 v ENEM atomskem koraku; POST in-place; ponovni tek =
+# 0 INS / abort] + r388-window-scan.py [12. generacija; TARGETS +4:
+# setup-client, activation-client, viz-tab, product-home; REG_DO 387;
+# delta 18 ×9 žetonov: 304 regexov 0 preozkih + 180 pinov 0 mrtvih +
+# 133 slice-oknen + 0 odstopanj] + r388-era-harvest.sh [41. preverba
+# ENAINŠTIRIDESIJNA, EXIT=0 ×2 — 167/167 ŽIVO; VSEH 12 server-probe
+# spec-ov IZRECNO — LEKCIJA R384 (1)] + spot-r167/28 [val 65
+# POST-deploy: notification L748 MONTIRANO 10× (20 tokenov LOČENO +
+# seam 10×), photo STROKES iskreno 0 (POGOJNA — brez odprte fotografije),
+# PAR žeton 10×, sonde čiste, kolektor 0].
+# KOLIZIJA: brez (fetch-first origin/main == HEAD 30f9864 == R387 push).
+#
+# FORMAT (TSV; EN vrstica = EN needle; TAB je LOČILO — presledki
+# znotraj needleja so POMENNI, ker grep -F išče dobesedno).
+# Vrste: need_static (MORA biti ŽIV v svežem buildu) | must_miss
+# (NESME biti v produkcijskih čankih).
+rounded-xl bg-roksal-amber px-5 text-sm font-bold text-white shadow-md transition-colors hover:bg-roksal-amber/90	R388 val 66 setup L100 + aktivacija L65 (×2, nativni <Link> CTA — PRE anchor; ožji žeton ker m/[token] measure-client L322 nosi ISTI span ŽE v HEAD — obstojec precedens gladkosti) (0 v HEAD 30f9864)	need_static
+text-roksal-ink transition-colors hover:bg-roksal-navy/15	R388 val 66 dashboard L1223+L1319 (×2, Badge navy/10→/15 hover — Badge baza NE pokrije bg; PRE anchor) (0 v HEAD 30f9864)	need_static
+hover:bg-roksal-amber/90 transition-colors disabled:opacity-50	R388 val 66 photo L2081 (×1, PO anchor dokaz — hover žeton PRED transition-colors; PRE span pinan v prod-qa skriptah) (0 v HEAD 30f9864)	need_static
+text-roksal-red transition-colors hover:bg-roksal-red/20	R388 val 66 dashboard red/20 družina (×4: L1238/L2459/L2602/L2936) + r211 PIN SHIFT žig žeton (0 v HEAD 30f9864)	need_static
+TODO-R388	must_miss: razvojni ostanki (nesme biti v produkcijskih cankih)	must_miss

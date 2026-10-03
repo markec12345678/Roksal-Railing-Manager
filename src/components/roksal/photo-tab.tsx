@@ -1159,7 +1159,7 @@ export function PhotoTab({ projectId }: { projectId: string | null }) {
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label={`Odpri lokacijo fotografije v Google Maps (${previewPhoto.latitude.toFixed(5)}, ${previewPhoto.longitude.toFixed(5)})`}
-                    className="flex items-center gap-1.5 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 hover:text-roksal-amber"
+                    className="flex items-center gap-1.5 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-roksal-amber/50 focus-visible:ring-offset-2 transition-colors hover:text-roksal-amber"
                   >
                     <MapPin className="h-3 w-3 text-roksal-amber" aria-hidden="true" />
                     {previewPhoto.latitude.toFixed(5)}, {previewPhoto.longitude.toFixed(5)}
@@ -2078,7 +2078,7 @@ function AnnotationEditor({
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="rounded-md bg-roksal-amber px-3 py-1.5 text-[11px] font-medium text-white hover:bg-roksal-amber/90 disabled:opacity-50"
+            className="rounded-md bg-roksal-amber px-3 py-1.5 text-[11px] font-medium text-white hover:bg-roksal-amber/90 transition-colors disabled:opacity-50"
           >
             {saving ? <Loader2 aria-hidden="true" className="h-3.5 w-3.5 animate-spin" /> : <Save aria-hidden="true" className="h-3.5 w-3.5" />}
             <span className="ml-1">Shrani</span>
@@ -2291,7 +2291,7 @@ function AnnotationEditor({
           <button
             type="button"
             onClick={() => setSuggestion(null)}
-            className="shrink-0 rounded p-0.5 hover:bg-roksal-amber/25"
+            className="shrink-0 rounded p-0.5 transition-colors hover:bg-roksal-amber/25"
             aria-label="Zapri priporočilo"
           >
             <X aria-hidden="true" className="h-3 w-3" />

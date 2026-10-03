@@ -144,7 +144,7 @@ export function ProductHome() {
           <button
             type="button"
             onClick={scrollToHow}
-            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-roksal-ink sm:hidden"
+            className="flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-roksal-ink sm:hidden"
             aria-label="Nazaj na zgornji del strani"
           >
             <ChevronDown className="h-3.5 w-3.5 rotate-180" aria-hidden="true" />

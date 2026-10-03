@@ -385,7 +385,7 @@ export function TerminiCard({ myUserId, onOpenProjectId }: TerminiCardProps) {
               </span>
             )}
             {skupnoSkupin > 0 && (
-              <Badge className="bg-roksal-navy/10 text-roksal-ink hover:bg-roksal-navy/15 tabular-nums">
+              <Badge className="bg-roksal-navy/10 text-roksal-ink transition-colors hover:bg-roksal-navy/15 tabular-nums">
                 {skupnoSkupin}
               </Badge>
             )}
