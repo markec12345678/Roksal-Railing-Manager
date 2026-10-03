@@ -475,6 +475,30 @@
     background-size: 200% 100%;
     animation: shimmer 1.5s ease-in-out infinite;
   }
+  /* val 72 (R397): REDUCED-MOTION PARITETA — kontinuirane zanke mirujejo.
+     P2 meja iz R396 (G) je zdaj rešena: ob prefers-reduced-motion: reduce
+     vsaka NESKončna zanka (badge-pulse-breathe / shine / pulse-soft /
+     shimmer) miruje (animation: none); animate-bounce-subtle (enojni
+     0.3s izski) je pokrit za popolnost družine — končno stanje je
+     vizualno identično (skala 1 / polna opaciteta / statičen skelet).
+     0 novih hex — vrednosti se NE dotikamo, samo ustavimo gibanje. */
+  @media (prefers-reduced-motion: reduce) {
+    .badge-pulse {
+      animation: none;
+    }
+    .shine-effect::after {
+      animation: none;
+    }
+    .animate-pulse-soft {
+      animation: none;
+    }
+    .shimmer {
+      animation: none;
+    }
+    .animate-bounce-subtle {
+      animation: none;
+    }
+  }
   /* Slide in from right */
   @keyframes slideInRight {
     from {

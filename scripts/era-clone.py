@@ -78,6 +78,17 @@ ERA_BESODE = {
     46: ("ŠESTINŠTIRIDESIJNA", "šestinštiridesete", "šestinštirideset", "ŠESTINŠTIRIDESETIH"),
     # R395: GLASNA razširitev (guard zahteva) — 47. era preverba
     47: ("SEDEMINŠTIRIDESIJNA", "sedeminštiridesete", "sedeminštirideset", "SEDEMINŠTIRIDESETIH"),
+    # R397: GLASNA razširitev (guard zahteva) — 48. era preverba
+    # (handover R396: "ERA_BESODE 48 OSEMINŠTIRIDESIJNA GLASNO")
+    48: ("OSEMINŠTIRIDESIJNA", "oseminštiridesete", "oseminštirideset", "OSEMINŠTIRIDESETIH"),
+    # R397: GLASNA razširitev (guard zahteva) — 49. era preverba
+    # (handover R396 piše žeton "NEDEVETA" — to NI vzorec mape (…INŠTIRIDESIJNA);
+    #  vzorcem zvesta oblika za 49. = DEVETINŠTIRIDESIJNA — odmik GLASNO
+    #  dokumentiran v worklogu R397, nič tihega)
+    49: ("DEVETINŠTIRIDESIJNA", "devetinštiridesete", "devetinštirideset", "DEVETINŠTIRIDESETIH"),
+    # R397: GLASNA razširitev (guard zahteva) — 50. era preverba
+    # (vzorec mape: petdeset → PETDESIJNA, ista stilizacija kot 30./40.)
+    50: ("PETDESIJNA", "petdesete", "petdeset", "PETDESETIH"),
 }
 ERA_MEJA = max(ERA_BESODE)
 
