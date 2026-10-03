@@ -72,8 +72,10 @@ export type ProjectAccess = 'read' | 'update' | 'delete' | 'lock' | 'changeStatu
 /**
  * Vodstvene pravice ima SAMO uporabnik z vlogo ADMIN/VODJA.
  * API ključ (MOBILE_SYNC) NI manager — glej matriko zgoraj (R120).
+ * R396 (§18): izvožen — vodstvena vrata globalne spravne rute
+ * /api/storage/reconcile (isti prag kot ostale globalne rute).
  */
-function isManager(principal: AuthContext): boolean {
+export function isManager(principal: AuthContext): boolean {
   return principal.kind === 'user' && hasRole(principal.session, MANAGER_ROLES)
 }
 

@@ -1,0 +1,47 @@
+# qa-needles/r399.tsv — REGISTER needlejev runde R399 (issue #13, korak R173
+# iz §18 — OBJECT STORAGE PRIVATE BY DEFAULT). VSAH §18 zahtev izpolnjenih:
+# [A] PRIVATE BY DEFAULT (JEDRO): putObject piše Vercel Blob objekte z
+#     access:'private' (SDK v2 BlobAccessType — R121 je pisal 'public':
+#     poslovni artefakti so bili javno dostopni Z ZNANIM URL-JEM brez
+#     avtentikacije — §18 to IZRECNO prepoveduje); getObject bere prek SDK
+#     get(key, {access:'private', useCache:false}) — žeton-avtentikirano,
+#     vedno izvorna vsebina (prej: head + fetch javni URL); PREHODNI javni
+#     fallback pokriva obstoječe javne blobe (pisane pred R396) Z GLASNIM
+#     opozorilom vsakega javnega dostopa (console.warn — 0 javnih blobov po
+#     migraciji = 0 opozoril; fallback ne prikriva regresije); deleteObject
+#     briše po PATHNAME prek del() (žeton — brez head/URL plesa).
+# [B] MIGRACIJA ZASEBNOSTI: migrateBlobAccessPrivate() — VEDENJSKA detekcija
+#     (neavtentikciran fetch URL-ja: 2xx = javen), copy(key→key,
+#     access:'private', allowOverwrite) z nadomestno potjo get(javno)+put
+#     (zasebno), PO-verifikacija MORA biti zavrnjena (4xx) — sicer izid
+#     'napaka' (fail-closed); local driver = iskren no-op (niso pod public/).
+#     Poganja skript --migrate-private (izrecna lastniška akcija).
+# [C] ORPHAN RECONCILIATION: src/lib/object-reconciliation.ts — DB je vir
+#     resnice (R121): SIROTA (objekt brez vrstice; milostna doba 48 h loči
+#     pisanje v teku), PRETRGANA VEZAVA (vrstica brez objekta — NIKOLI
+#     samodejno popravlja), CHECKSUM sweep (RE-HASH vseh obstoječih
+#     objektov ≠ sha256 v DB — isto jedro kot §16 deal-lock RE-HASH R395,
+#     razširjeno na VSE 6 družin); legacy vrstice brez ključa iskreno
+#     štete; galerija pred+po = DVE vezavi; dokumenti DocumentVersion
+#     (kanonično) + Document legacy kazalčnik = dedup mapa.
+# [D] IZVEDBE: GET /api/storage/reconcile (vodstvo isManager — 401/403/200,
+#     GET-samo brez rate-limit kanon R390/R393) + skript
+#     scripts/r396-storage-reconcile.ts (report privzeto, --prune-orphans
+#     SAMO sirote ≥ milostne dobe [starejše od 48 h; neznan čas = NE briše],
+#     --migrate-private, EXIT 0/1/2 fail-closed) + listObjectEntries
+#     (velikost + čas zapisa za milostno dobo).
+# KOLIZIJA #28+#29+#30 (kanon KOLIZIJE #4/R323/#13–#27): vzporedne lastniške
+# QA rundi R396 [9cf275d — val 71 scrollbar + era 46./47.], R397 [d8dc884 —
+# val 72 reduced-motion + era 48./49./50.] IN R398 [9c248f9 — val 73
+# gibanje-zakljucek + NJIOV r398.tsv + r398-window-scan 20. gen + era 51.
+# preverba] so pristale MED mojim delom → njihove runde = pristala resnica,
+# MOJA preimenovana R396→R397→R398→R399 [register, skript, test, window-scan
+# 21. gen, žigi]; NJIHOVI r396-*/r397-*/r398-* artefakti BAJTNATO ohranjeni;
+# moje era-harvest duplikati (r393–r398) zbrisani.
+# 3 need_static (živi stringi literalov novih rut/domaina; 0 v HEAD 9c248f9);
+# era ≥198 = 195 (r347–r398) + mojih 3 (era veriga r347–r399 = 53 registrov;
+# AZ = /api/storage/reconcile|401 server-probe za 53. preverbo).
+Spravo shrambe urejajo uporabniki z vodstveno vlogo	R399 vrata GET /api/storage/reconcile — sporočilo 403 v storage/reconcile chunku (vodstvo isManager; 0 v HEAD 0dd9e12 (R395))	need_static
+Napaka pri spravi shrambe — poženi skript r399-storage-reconcile za podrobnosti	R399 fail-closed 500 sporočilo storage/reconcile rute (javno, brez internov; 0 v HEAD 0dd9e12 (R395))	need_static
+je JAVEN (zapis pred migracijo) — poženi scripts/r399-storage-reconcile.ts --migrate-private	R399 §18 prehoden javni fallback opozorilo — fragment template literala v getObject (vsak javni dostop GLASNO v dnevnik; 0 v HEAD 0dd9e12 (R395))	need_static
+TODO-R399	must_miss: razvojni ostanki (nesme biti v produkcijskih čankih)	must_miss

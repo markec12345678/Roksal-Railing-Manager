@@ -40,9 +40,13 @@
 #     guard po žetevi — 403 "Vercel Security Checkpoint" strani v žetevi
 #     (qa-harvest uspeh = ne-prazno telo, 403 stran JE ne-prazna) = glasno
 #     abort z diagnozo, NIKOLI lažni MISS storm.
-import argparse, pathlib, re, sys
+import argparse, os, pathlib, re, sys
 
-REPO = pathlib.Path("/home/z/my-project")
+# R396: REPO env-overridable (ROKSAL_REPO) — v svežem sandboxu je
+# /home/z/my-project TUJI repo (my-project template; LEKCIJA R393) in
+# era-clone.py s trdo kodirano potjo ne vidi registrskih datotek. Privzeta
+# vrednost NESPRENJENA (kanon prejšnjih rund — backward compatible).
+REPO = pathlib.Path(os.environ.get("ROKSAL_REPO", "/home/z/my-project"))
 
 ERA_BESODE = {
     22: ("DVAINDVJSETIJNA", "dvaindvajsete", "dvaindvajset", "DVAINDVJSETIH"),
@@ -74,25 +78,30 @@ ERA_BESODE = {
     44: ("ŠTIRIDESIJNA", "štiridesete", "štirideset", "ŠTIRIDESETIH"),
     # R393: GLASNA razširitev (guard zahteva) — 45. era preverba
     45: ("PETINŠTIRIDESIJNA", "petinštiridesete", "petinštirideset", "PETINŠTIRIDESETIH"),
-    # R395: GLASNA razširitev (guard zahteva) — 46. era preverba
+    # R395 (NJIHova runda R396): GLASNA razširitev (guard zahteva) — 46. era preverba
     46: ("ŠESTINŠTIRIDESIJNA", "šestinštiridesete", "šestinštirideset", "ŠESTINŠTIRIDESETIH"),
-    # R395: GLASNA razširitev (guard zahteva) — 47. era preverba
+    # R395 (NJIHova runda R396): GLASNA razširitev (guard zahteva) — 47. era preverba
     47: ("SEDEMINŠTIRIDESIJNA", "sedeminštiridesete", "sedeminštirideset", "SEDEMINŠTIRIDESETIH"),
-    # R397: GLASNA razširitev (guard zahteva) — 48. era preverba
+    # R397 (NJIHOVA, pristala resnica — KOLIZIJA #29): GLASNA razširitev (guard zahteva) — 48. era preverba
     # (handover R396: "ERA_BESODE 48 OSEMINŠTIRIDESIJNA GLASNO")
     48: ("OSEMINŠTIRIDESIJNA", "oseminštiridesete", "oseminštirideset", "OSEMINŠTIRIDESETIH"),
-    # R397: GLASNA razširitev (guard zahteva) — 49. era preverba
+    # R397 (NJIHOVA, pristala resnica — KOLIZIJA #29): GLASNA razširitev (guard zahteva) — 49. era preverba
     # (handover R396 piše žeton "NEDEVETA" — to NI vzorec mape (…INŠTIRIDESIJNA);
     #  vzorcem zvesta oblika za 49. = DEVETINŠTIRIDESIJNA — odmik GLASNO
     #  dokumentiran v worklogu R397, nič tihega)
     49: ("DEVETINŠTIRIDESIJNA", "devetinštiridesete", "devetinštirideset", "DEVETINŠTIRIDESETIH"),
-    # R397: GLASNA razširitev (guard zahteva) — 50. era preverba
-    # (vzorec mape: petdeset → PETDESIJNA, ista stilizacija kot 30./40.)
+    # R397 (NJIHOVA, pristala resnica — KOLIZIJA #29): GLASNA razširitev (guard zahteva) — 50. era preverba
+    # (vzorec mape: petdeset → PETDESIJNA, ista stilizacija kot 30./40.;
+    #  MOJA pred-rebase oblika PETINDESETIJNA je bila NAPAČNA — njihova je kanon)
     50: ("PETDESIJNA", "petdesete", "petdeset", "PETDESETIH"),
-    # R398: GLASNA razširitev (guard zahteva) — 51. era preverba
+    # R398 (NJIHOVA, pristala resnica — KOLIZIJA #30): GLASNA razširitev (guard zahteva) — 51. era preverba
     # (handover R397: "ERA_BESODE 51 ENAINPETDESETA GLASNO"; vzorec mape:
-    #  enainpetdeset → ENAINPETDESETA, kot 31.–39. IN…DESIJNA družina)
+    #  enainpetdeset → ENAINPETDESETA, kot 31.–39. IN…DESIJNA družina;
+    #  MOJA pred-rebase oblika ENAINPETDESIJNA — njihova je kanon)
     51: ("ENAINPETDESETA", "enainpetdesete", "enainpetdeset", "ENAINPETDESETIH"),
+    # R399: GLASNA razširitev — 52. era preverba (r347–r398; r399-era-harvest.sh;
+    #  handover R398: "DVAINPETDESETA" — vzorec mape: dvainpetdeset → DVAINPETDESETA)
+    52: ("DVAINPETDESETA", "dvainpetdesete", "dvainpetdeset", "DVAINPETDESETIH"),
 }
 ERA_MEJA = max(ERA_BESODE)
 

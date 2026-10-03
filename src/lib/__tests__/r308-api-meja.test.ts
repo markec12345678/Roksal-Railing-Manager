@@ -45,10 +45,10 @@ function zberiRute(): { pot: string; vsebina: string }[] {
 const byId = (krš: MejaKršitev[], id: string) => krš.filter((k) => k.preverba === id)
 
 describe('R308 — REALNIM drevo: stena ura ŽIVO (0 kršitev na vseh 5 preverbah)', () => {
-  it('vseh 112 route datotek prebranih in pregledanih — obseg pregleda NI tiho skrčen (R326: + zgodovina cen; PIN SHIFT R374: 82→85 — +price-book, +quotes, +quotes/[id]; PIN SHIFT R376: 85→88 — +bom, +bom/[id], +bom/procurement [kanonični BOM #13 R166]; PIN SHIFT R378: 88→92 — +production, +production/[id], +installation-records, +installation-records/[id] [produkcija §10 + as-installed §9 #13 R167]; PIN SHIFT R382: 92→99 — +leads, +leads/[id], +opportunities, +opportunities/[id], +customers/[id], +customer-addresses, +customer-addresses/[id] [CRM lijak §13 #13 R169]; PIN SHIFT R390: 99→107 — +catalog, +catalog/products/[id], +catalog/products/[id]/applications, +catalog/products/[id]/variants, +catalog/versions, +catalog/versions/[id], +catalog/compatibility, +catalog/supplier-mappings [produktini katalog §14 #13 R170]; PIN SHIFT R393: 107→111 — +engineering-rules, +engineering-rules/[id], +engineering-rules/[id]/versions, +engineering-rules/versions/[id] [inženirska/compliance pravila §15 #13 R171]; PIN SHIFT R395: 111→112 — +quotes/[id]/pdf [§16 dokumentna veriga #13 R172])', () => {
+  it('vseh 113 route datotek prebranih in pregledanih — obseg pregleda NI tiho skrčen (R326: + zgodovina cen; PIN SHIFT R374: 82→85 — +price-book, +quotes, +quotes/[id]; PIN SHIFT R376: 85→88 — +bom, +bom/[id], +bom/procurement [kanonični BOM #13 R166]; PIN SHIFT R378: 88→92 — +production, +production/[id], +installation-records, +installation-records/[id] [produkcija §10 + as-installed §9 #13 R167]; PIN SHIFT R382: 92→99 — +leads, +leads/[id], +opportunities, +opportunities/[id], +customers/[id], +customer-addresses, +customer-addresses/[id] [CRM lijak §13 #13 R169]; PIN SHIFT R390: 99→107 — +catalog, +catalog/products/[id], +catalog/products/[id]/applications, +catalog/products/[id]/variants, +catalog/versions, +catalog/versions/[id], +catalog/compatibility, +catalog/supplier-mappings [produktini katalog §14 #13 R170]; PIN SHIFT R393: 107→111 — +engineering-rules, +engineering-rules/[id], +engineering-rules/[id]/versions, +engineering-rules/versions/[id] [inženirska/compliance pravila §15 #13 R171]; PIN SHIFT R395: 111→112 — +quotes/[id]/pdf [§16 dokumentna veriga #13 R172]; PIN SHIFT R399: 112→113 — +storage/reconcile [orphan reconciliation §18 #13 R173])', () => {
     const rute = zberiRute()
-    expect(rute).toHaveLength(112)
-    expect(new Set(rute.map((r) => r.pot)).size).toBe(112)
+    expect(rute).toHaveLength(113)
+    expect(new Set(rute.map((r) => r.pot)).size).toBe(113)
     expect(rute.some((r) => r.pot === 'src/app/api/material-prices/zgodovina/route.ts')).toBe(true)
     // R374 (issue #13 R165): nove kanonske rute morajo ostati v obsegu pregleda
     expect(rute.some((r) => r.pot === 'src/app/api/price-book/route.ts')).toBe(true)
@@ -81,6 +81,9 @@ describe('R308 — REALNIM drevo: stena ura ŽIVO (0 kršitev na vseh 5 preverba
     expect(rute.some((r) => r.pot === 'src/app/api/engineering-rules/versions/[id]/route.ts')).toBe(true)
     // R395 (issue #13 R172): PONUDBA PDF ruta mora ostati v obsegu pregleda
     expect(rute.some((r) => r.pot === 'src/app/api/quotes/[id]/pdf/route.ts')).toBe(true)
+    // R399 (issue #13 §18): spravna ruta shrambe mora ostati v obsegu pregleda
+    // (orphan reconciliation poročilo — GET-samo, vodstvena vrata):
+    expect(rute.some((r) => r.pot === 'src/app/api/storage/reconcile/route.ts')).toBe(true)
   })
 
   it('pregledajApiMejo nad celotnim drevesom → 0 kršitev (stena ura potrjena)', () => {
